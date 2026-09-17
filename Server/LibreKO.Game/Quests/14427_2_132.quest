@@ -1,0 +1,43 @@
+Bind Npc 14427 Zone 2 for warrior
+Bind Npc 14427 Zone 2 for rogue
+Bind Npc 14427 Zone 2 for mage
+Bind Npc 14427 Zone 2 for priest
+Quest 132 "Sabertooth Hunt"
+    Journal "[Guard] Zalk has commissioned you to hunt Sabertooth."
+    Kill 15 of 603, 653 at direction_100
+
+Requires player level >= 37 and player is elmorad
+
+Rewards for warrior
+    Give 1 of 205004289
+    Give 825000 experience
+
+Rewards for rogue
+    Give 1 of 245004290
+    Give 825000 experience
+
+Rewards for mage
+    Give 1 of 265004291
+    Give 825000 experience
+
+Rewards for priest
+    Give 1 of 285004292
+    Give 825000 experience
+
+direction_100 = location "Sabertooth" about "Sabertooth\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "El Morad" elmorad at 1724 1191 in zone 2
+
+On available
+    Say "Master, how're you feeling? The imperial palace guard is looking for you..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Did you just get here? How are you feeling? We're hunting Saber Tooth this time, a Smirdon like monster. I feel a little guilty always enlisting your help."
+    Topic "Tell me more..." do
+        Show quest "In return, I'll give you knight-class body armor as reward beginning with this mission. It's incomparable to the previous ones."
+
+On ready
+    Say "A hunt of this intensity is a piece of cake, right? Heh heh..."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you. This is the imperial knight body armor."

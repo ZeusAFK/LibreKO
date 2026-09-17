@@ -1,0 +1,26 @@
+Bind Npc 24424 Zone 11
+Quest 1034 "Dominated warriors"
+    Journal "Defeat 20 Warrior Leaders"
+    Kill 20 of 9614, 9615 at direction_1176
+
+Requires player level >= 60 and player is karus
+
+Rewards
+    Give 21250000 experience
+
+direction_1176 = location "Dragon Tooth Commander" about "Dragon Tooth Commander\nMade by Pathos they are undeads but they continue with rituals" found "Karus Eslant" karus at 412 686 in zone 11
+
+On offer
+    Say "Welcome. Did you get to see the Knight Captain outside of the town? They used to be our soldiers. After they died, they were resurrected by lich."
+    Topic "Tell me more..." do
+        Show quest "I hope they rest now. Could you help? Help at least 20 of them."
+        Topic "Where can I find it?" do
+            Map direction_1176
+
+On in_progress
+    Say "Don't you pity their souls?"
+    Topic "Where can I find it?" do
+        Map direction_1176
+
+On claimable
+    Show quest "Thank you. Because of you they can rest now."

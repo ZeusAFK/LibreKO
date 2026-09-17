@@ -1,0 +1,25 @@
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 14202 Zone 2 for elmorad rogue
+Quest 366 "80Lv skill"
+    Journal for karus "I've decided to undergo the test to learn the hidden skills of [Secret Agent] Clarence."
+    Journal for elmorad "I've decided to undergo the test to learn the hidden skills of [Secret Agent] Clarence."
+    Collect 15 of 810369000
+
+Requires player level >= 80
+
+Rewards none
+
+On offer
+    Say "you are well qualified to master and use Level 80 skills."
+    Topic "Tell me more..." do
+        Show quest "To learn lv.80 skill, you need 15 [Spell Stone Powder]. Are you ready to learn the ultimate skill?"
+
+On in_progress
+    Say "To complete the lv.80 rogue skill, you need 15 [Spell Stone Powder]."
+
+On ready
+    Say "Master, you've collected all the items needed to master rogue Level 80 skills. Hurry back to [Secret Agent] Clarence."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "This is Power Shot Critical and Smoke Screen,  rogue Level 80 skills. Your power will give us rogues hope."

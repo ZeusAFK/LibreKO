@@ -1,0 +1,37 @@
+Bind Npc 24410 Zone 1 for karus
+Bind Npc 14410 Zone 2 for elmorad
+Quest 519 "[Descendant of Hero] preparation is the best part of the Festival III"
+    Journal for karus "You have to deliver festival goods to the [Royal Chef] at Luferson Castle."
+    Journal for elmorad "You have to deliver festival goods to the [Royal Chef] at El Morad Castle."
+    Collect 1 of 910209000
+
+Requires player level >= 60 and quest 518 is completed
+
+Rewards
+    Give 1 of 910210000
+    Give 125000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "You just need to give the [Royal Chef] the [Festival Preparation Box]. He is in Luferson Castle."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "You just need to give the [Royal Chef] the [Festival Preparation Box]. He is in El Morad Castle."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You are <selfname> aren't you? What brings you here?"
+        Topic "Tell me more..." do
+            Show quest "You came to deliver this from Bellua Village? I was waiting for it, let's see ...\n\nDeliver [Celebration Preparation Box] to [Castle Cook]."
+    If player is elmorad
+        Say "You are <selfname> aren't you? What brings you here?"
+        Topic "Tell me more..." do
+            Show quest "You came to deliver this from Asga Village? I was waiting for it, let's see ...\n\nDeliver [Celebration Preparation Box] to [Castle Cook]."
+
+On in_progress
+    Say "Blast! It is not the right stuff ..."
+
+On claimable
+    Show quest "Well, well, shall we get the food started? It'll be over soon, give me a minute."

@@ -1,0 +1,34 @@
+Bind Npc 24424 Zone 11 for karus
+Bind Npc 14424 Zone 12 for elmorad
+Quest 562 "[Hidden Truth] Ready to Access"
+    Journal for karus "You must talk to [Ascetic] Veda, of Eslant."
+    Journal for elmorad "You must talk to [Ascetic] Tabeth, of Eslant."
+
+Requires player level >= 64 and quest 561 is completed
+
+Rewards
+    Give 1 of 910231000
+
+On available
+    If player is karus
+        Say "Entry is ready to have been made??! [Ascetic] Beda tell the !"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Entry is ready to have been made??![Ascetic] Tabeth tell the !"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "What is the result been?"
+        Topic "Tell me more..." do
+            Show quest "It lo the secure  entrance? It strikes by <selfname>! Now, all that's left to ask the troops to Luferson Castle!\n\nTalk to Beda."
+    If player is elmorad
+        Say "What is the result been?"
+        Topic "Tell me more..." do
+            Show quest "It lo the secure  entrance? It strikes by <selfname>!Now, all that's left to ask the troops to Elmo Rad!\n\nTalk to Tabeth."
+
+On claimable
+    If player is karus
+        Show quest "re Vying hourly. I'll be carrying Luferson Castle [Captain] Hurago for you to pass this plan, like to ask the troop request.\n\n[Captain] appliance's located in a nature blessed You'll find it."
+    If player is elmorad
+        Show quest "Luferson Castle [Captain] Falkwine, God passed the plan and history of the request, I'll be pleased to ask\n\nCaptain Falkwine You'll find it's located in a nature blessed."

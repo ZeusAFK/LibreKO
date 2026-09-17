@@ -1,0 +1,37 @@
+Bind Npc 31558 Zone 1 for karus
+Bind Npc 31557 Zone 2 for elmorad
+Quest 647 "Procurement of Specialty Goods III"
+    Journal for karus "You must accept the request of [Sailor] Hayes."
+    Journal for elmorad "You must accept the request of [Sailor] Hein."
+    Collect 3 of 389510000
+
+Requires player level >= 63 and quest 646 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 10000 coins
+    Give 1 of 900213000
+
+direction_22 = location "Undying" about "Undying\nCorpse which has lost volition due to evil energy; undead monster exclusively harboring a hostility against all life forms" found "Burial site vicinity" at 287 891 in zone 21
+
+On available
+    Say "Master, [Sailor] Hayes is looking for you. I think it's another collection duty."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "It's nice to meet you again."
+        Topic "Tell me more..." do
+            Show quest "You need to collect something very unusual this time. It's called [Undying Tooth] that comes from the [Undying]. I'm surprised that somebody's looking for such. Well, I don't have high hopes, but good luck.\n\nYou must go in accordance with the request of Karus Regional Executive pugeo port sailors and yes, collected from the Undying Undying teeth."
+    If player is elmorad
+        Say "It's nice to meet you again."
+        Topic "Tell me more..." do
+            Show quest "You need to collect something very unusual this time. It's called [Undying Tooth] that comes from the [Undying]. I'm surprised that somebody's looking for such. Well, I don't have high hopes, but good luck.\n\n[Undying] from [the captain] Aladdin at the request of the port of the Shark Elmo Regional rod-collected [Undying teeth, go."
+
+On in_progress
+    Say "Too difficult? I know, who wants to deal with them rotten bodies?"
+    Topic "Where can I find it?" do
+        Map direction_22
+
+On claimable
+    Show quest "Great! That's going to fill all the demands.\n\nWell, please help that foolish man by delivering this [Suspicious Parcel] to Pablo, the [Sage of Islant]. And make sure you bring the receipt."

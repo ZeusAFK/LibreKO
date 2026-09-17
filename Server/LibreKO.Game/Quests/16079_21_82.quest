@@ -1,0 +1,34 @@
+Bind Npc 16079 Zone 21
+Quest 82 "Making a movement speed potion"
+    Journal "[Daughter of Grand Merchant] Menissiah asked me to bring two Apple of Moradon to her."
+    Collect 1 of 810418000
+
+Requires player level >= 7
+
+Rewards
+    Give 1 of 910114000
+    Give 7500 experience
+    Choose one
+        Give 1 of 202002005
+        Give 1 of 242002005
+        Give 1 of 262002005
+        Give 1 of 282002005
+
+On available
+    Say "Master, I hear Menissiah is making new a potion."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh, you thought of me. Thank you. I'm studying how to move higher and faster than everyone else."
+    Topic "Tell me more..." do
+        Show quest "Just in time. I know it sounds thick-skinned, but I have another favor to ask you. I need Apple of Moradon to make this medicine.\n\nI'll be able to make my experiment ingredients and yours as well, <selfname>, if only I had just five Apples of Moradon...\n\nHow about it? Will you get them for me?\n\nI mastered a potion production method which requires Apples of Moradon, but I haven't been able to obtain the ingredients yet. I will give you the hasten potion if you  bring me Apples of Moradon."
+
+On in_progress
+    Say "I need 1 Apples of Moradon."
+
+On ready
+    Say "Master, you collected all 1 Gavolt scales. Take them to Menissiah."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "I am finally be able to make potion. Please wait .\n\nHere it is. Potion made with Menissiah's care."

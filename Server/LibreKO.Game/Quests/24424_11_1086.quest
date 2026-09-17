@@ -1,0 +1,18 @@
+Bind Npc 24424 Zone 11
+Quest 1086 "Ambush from the skies"
+    Journal "Defeat 30 Falcon."
+    Kill 30 of 2254, 2224 at direction_379
+
+Requires player level >= 68 and player is karus
+
+Rewards
+    Give 47500000 experience
+
+direction_379 = location "Falcon" about "Falcon\nA type of a Harpy. They also have low intelligence but are aggrestive and attacks anyone who comes into their territories.." found "Karus Eslant" karus at 396 208 in zone 11
+
+On offer
+    Say "Chief of Raven Harpys are invading South west towns now."
+    Topic "Tell me more..." do
+        Show quest "Thank you! The name of the chief is 'Falcon.' Please defeat him."
+        Topic "Where can I find it?" do
+            Map direction_379

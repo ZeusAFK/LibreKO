@@ -1,0 +1,25 @@
+Bind Npc 24204 Zone 1 for karus priest
+Bind Npc 14204 Zone 2 for elmorad priest
+Quest 337 "70Lv skill"
+    Journal for karus "I decided to undergo the test to learn hidden skills from [Priest] Minerva."
+    Journal for elmorad "I decided to undergo the test to learn hidden skills from [Priest] Minerva."
+    Collect 5 of 810369000
+
+Requires player level >= 70
+
+Rewards none
+
+On offer
+    Say "Priests save the world in the name of the gods. You are qualified to undergo the final training of the priesthood. In the final training the gods will confer the greatest ability available to a priest upon you."
+    Topic "Tell me more..." do
+        Show quest "To train the ultimate divine power, you will need 5 [Spell Stone Powder]. Are you ready for this?"
+
+On in_progress
+    Say "To receive the ultimate divine power, you need 5 [Spell Stone Powder]."
+
+On ready
+    Say "Master, you have collected all the items needed to be bestowed with the ability of the gods. Let's hurry back to [Priest] Minerva."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "The gods have heeded your will. Please continue to work to save the world."

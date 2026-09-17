@@ -1,0 +1,14 @@
+Bind Npc 24432 Zone 1
+Quest 269 "Dragon Tooth Commander Hunt"
+    Journal "[Guard] Keife has commissioned you to hunt the Dragon Tooth Commander."
+    Kill 20 of 8003, 8053 at direction_587
+
+Requires player level >= 58 and player is karus
+
+Rewards
+    Give 32500000 experience
+
+direction_587 = location "Dragon Tooth Commander" about "Dragon Tooth Commander\nA monster created by Pathos in the Great War of Evil; possesses a conscience which is rare for an undead" found "Karus" at 1131 462 in zone 1
+
+On offer
+    Show quest "[Guard] Keife will reward you when you complete the  Dragon Tooth Commander. Hunt."

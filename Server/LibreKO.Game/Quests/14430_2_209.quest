@@ -1,0 +1,21 @@
+Bind Npc 14430 Zone 2
+Quest 209 "Ash Knight Hunt"
+    Journal "[Mercenary] Tales has commissioned you to hunt Ash Knight."
+    Kill 20 of 1113, 1163 at direction_503
+
+Requires player level >= 48 and player is elmorad
+
+Rewards
+    Give 4250000 experience
+
+direction_503 = location "Ash Knight" about "Ash Knight\nAn undead like the skeletons; possesses great strength as it is composed of powerful bone structure" found "El Morad" at 1200 1300 in zone 2
+
+On available
+    Say "Master, [Mercenary] Russel is looking for you urgently."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "Hey. I'm going on a hunt. Have you heard of Ash Knights? If this comes through we'll make a bundle. Lend me a hand."
+
+On claimable
+    Show quest "A chance to put some experience under your belt like this doesn't come by often."

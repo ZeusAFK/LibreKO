@@ -1,0 +1,18 @@
+Bind Npc 25171 Zone 1
+Quest 1322 "The Hole of Purity"
+    Journal "Use the hole of purity 20 times to those who were contaminated by the soul stone"
+    Collect 5 of 900616000
+
+Requires player level >= 35 and player is karus and quest 1321 is completed
+
+Rewards
+    Give 300000 experience
+
+On offer
+    Show quest "There gotta be some refugees who got contaminated by Spiritual Stone at Elmorad castle. Go there and heal them."
+
+On in_progress
+    Say "Contaminated refugees are at the castle. Please hurry."
+
+On claimable
+    Show quest "Good job. Now those people won't die because of the Spiritual Stone."

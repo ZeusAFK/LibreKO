@@ -1,0 +1,25 @@
+Bind Npc 24203 Zone 1 for karus mage
+Bind Npc 14203 Zone 2 for elmorad mage
+Quest 336 "70Lv skill"
+    Journal for karus "I decided to undergo the test to learn hidden skills from [Archmage] Drake."
+    Journal for elmorad "I decided to undergo the test to learn hidden skills from [Archmage] Drake."
+    Collect 5 of 810369000
+
+Requires player level >= 70
+
+Rewards none
+
+On offer
+    Say "Magic is the greatest ability created by man. You are well qualified to employ the ultimate magic. Is it time for another archmage to come on board..."
+    Topic "Tell me more..." do
+        Show quest "To complete the ultimate mage spell, you will need 5 [Spell Stone Powder]. Are you ready for this?"
+
+On in_progress
+    Say "To complete the ultimate mage spell, you need 5 [Spell Stone Powder]."
+
+On ready
+    Say "Master, all the items needed to complete ultimate magic employed by archmages have been acquired. Let's hurry back to [Archmage] Drake."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You now possess ultimate magic. With two different magic for each element, your powers will be incomparable and unprecedented. You have nothing more to wish for as a mage."

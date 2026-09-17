@@ -1,0 +1,18 @@
+Bind Npc 25001 Zone 21
+Quest 1216 "Save Moradon"
+    Journal "Defeat 10 black pirate crewmen"
+    Kill 10 of 9658, 9659
+
+Requires player level >= 24 and quest 1215 is completed
+
+Rewards
+    Give 75000 experience
+
+On offer
+    Show quest "We are ready now. Please go to Mora Island and defeat the Pirates. For now, get about 20 pirates.\nOh, Mora Island is located in the south of Moradon. Go to Quayside to find Laidas or Portman."
+
+On in_progress
+    Say "There are still many pirates left. Please get them all.\nMora Island is on the south side of Moradon. Go to Quayside to find Laidas or Portman."
+
+On claimable
+    Show quest "Oh! If it wasn't for you <selfname> Moradon could have been...     Thank you so very much. Here, this is the reward."

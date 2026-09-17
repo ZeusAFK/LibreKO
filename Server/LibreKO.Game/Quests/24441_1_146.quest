@@ -1,0 +1,23 @@
+Bind Npc 24441 Zone 1
+Quest 146 "Uninvited Guest at Gravesite"
+    Journal "[Caretaker] Bottom has commissioned you to eradicate Vatalion."
+    Kill 20 of 1052, 1002 at direction_109
+
+Requires player level >= 42 and player is karus
+
+Rewards
+    Give 2250000 experience
+
+direction_109 = location "Battalion" about "Battalion\nResurrected of corpses; devoid of volition and harbors general hostility against all forms of life" found "Karus" karus at 1050 1365 in zone 1
+
+On available
+    Say "There must be something wrong down in the Tomb, master."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "What brings you here?"
+    Topic "Tell me more..." do
+        Show quest "Hmm... we seem to have some unexpected guests at the graveyard. They are certainly uninvited guests - they are called  Vatalions, which are much tougher than the Undyings or Rotten Eyes. I can't do any work because of them. Could you help me?\n\nYou'll get some Armor out of this if you do [Graveyard Keeper] Bottom this favor."
+
+On claimable
+    Show quest "What - How - You drove out all those Vatalions..I'll never forget this. And this is something I picked up near the graveyard a few days ago, and it doesn't look like something ordinary... Please, take it as a token of my appreciation."

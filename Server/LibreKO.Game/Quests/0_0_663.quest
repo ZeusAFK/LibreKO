@@ -1,0 +1,38 @@
+Bind Npc 31562 Zone 1 for karus
+Bind Npc 31561 Zone 2 for elmorad
+Quest 663 "How to hunt"
+    Journal for karus "You must talk to [Hunter] Zarg."
+    Journal for elmorad "You must talk to [Hunter] Halon."
+
+Requires player level >= 61
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Master, Jarg the [Hunter] is at Donna camp. You, too, are a skilled hunter. How about a match with him?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, Halon the [Hunter] is at Raon camp. You, too, are a skilled hunter. How about a match with him?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "What the... Who are you?"
+        Topic "Tell me more..." do
+            Say "What? You want to hunt with me? Hahahaha! You just make me laugh."
+            Topic "Tell me more..." do
+                Say "So you think you've got enough skills? Have you even had a proper hunting before?"
+                Topic "Tell me more..." do
+                    Show quest "You must hunter Karus Local Donna camp  Cut the conversation with him."
+    If player is elmorad
+        Say "What the... Who are you?"
+        Topic "Tell me more..." do
+            Say "What? You want to hunt with me? Hahahaha! You just make me laugh."
+            Topic "Tell me more..." do
+                Say "So you think you've got enough skills? Have you even had a proper hunting before?"
+                Topic "Tell me more..." do
+                    Show quest "Raon Camp El Morad region of the hunter must dialogue with the halon."
+
+On claimable
+    Show quest "Well, it doesn't matter. Anyway, you'll have to learn how to hunt first. Will you learn it from me? If you're willing to learn it, bring ten [Blood of Wolves], [Horn Crossbow (+3)] and five thousand [Arrows]. By the way, you can make [Horn Crossbow (+3)] by refining [Horn Crossbow (+1)], which you can buy at the store on an anvil."

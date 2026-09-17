@@ -1,0 +1,32 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 565 "[Hidden Truth] I do permit your participation."
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at Luferson Castle."
+    Collect 1 of 910233000
+
+Requires player level >= 64 and quest 564 is completed
+
+Rewards
+    Give 125000 experience
+    Give 30000 coins
+
+On available
+    Say "I finally got the order appearances! Eslant updated to now be able to dispatch troops have been made??!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "[A] request for appearances, we back delivered deuryeotneunga?"
+        Topic "Tell me more..." do
+            Show quest "By the [Advisor]Herga What does the? Does that to sending troops?\n\nThere's an order from the King. For the glory of Karus! Deliver [Participation Order] to Fargo."
+    If player is elmorad
+        Say "[A] request for appearances, we back delivered deuryeotneunga?"
+        Topic "Tell me more..." do
+            Show quest "[Advisor]Nez, What Does? Does that to sending troops?\n\nThere's an order from the King. For the glory of El morad! Deliver [Participation Order] to Falkwine."
+
+On in_progress
+    Say "Still will not ? [Advisor] by revelation near the Guard Tower, you been coming fast."
+
+On claimable
+    Show quest "The appearances orders! Sending troops led figured out!Okay! Like this is at once marched up to the enemy's lair!"

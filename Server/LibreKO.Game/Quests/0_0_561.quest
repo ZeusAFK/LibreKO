@@ -1,0 +1,39 @@
+Bind Npc 31518 Zone 11 for karus
+Bind Npc 31522 Zone 12 for elmorad
+Quest 561 "[Hidden Truth] Secure Access Road III"
+    Journal for karus "You must perform the mission given by [Valley Surveillance Scout] of Eslant."
+    Journal for elmorad "You must perform the mission given by [Valley Surveillance Scout] of Eslant."
+    Kill 30 of 2451, 2401, 2421
+
+Requires player level >= 64 and quest 560 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 50000 coins
+    Give 50 np
+
+direction_1155 = location "Stone Golem" about "Stone Golem\nAncient Priests were able to give power to stones and made slaves. These slaves were called Stone Golems. After Patos War, Stone Golems were able to freely attack anyone they want as priests power has been decreased." found "Karus Eslant" karus at 198 143 in zone 11
+
+On available
+    Say "Asking for, but the last mission I've ever seen. Come to the last look!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Now secured the last one place, friendly forces will be able to enter."
+    Topic "Tell me more..." do
+        Show quest "Geez ...Not be obtained at this time residing in the driveway ... [Stone Golem], they. Are going to be a tough fight.\n\nDefeat [Stone Golum]."
+
+On in_progress
+    If player is karus
+        Say "Please cheer up a little bit more. It is a little bit now."
+        Topic "Where can I find it?" do
+            Map direction_1155
+    If player is elmorad
+        Say "Please cheer up a little bit more. It is a little bit now."
+
+On ready
+    Say "Oh, she's all down! I lost a stout, solid guys."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Embraced complete secure! Now, it's the end of my mission! Lot of trouble as well.\n\nNow the ones to report that [Ascetic] Beda God now secured in the driveway. Lot of trouble as well. I reside here until friendly forces arrive and we will continue to look to the war situation."

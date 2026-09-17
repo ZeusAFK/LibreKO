@@ -1,0 +1,34 @@
+Bind Npc 13013 Zone 21
+Quest 86 "Subdual of Vulture"
+    Journal "[Sentinel] Patrick asked me to subdue fifteen Vultures for him."
+    Kill 5 of 254 at direction_38
+
+Requires player level >= 14
+
+Rewards
+    Give 13750 experience
+    Choose one
+        Give 1 of 340150005
+        Give 1 of 340150015
+        Give 1 of 340150025
+        Give 1 of 340150035
+        Give 1 of 340150075
+
+direction_38 = location "Bulture" about "Bulture\nGiant bulcan-type monster with strong sharp horns used as weapon ingredient " found "Moradon seashore" at 457 350 in zone 21
+
+On offer
+    Say "For the protection of Moradon... What did you want to say to me?"
+    Topic "Tell me more..." do
+        Show quest "Do you know of monsters called Bultures? They belong to the Bulcan species, but 3 times as large. Even the most accomplished warriors are rendered helpless in front of them, but they should be no match for you. Their numbers have increased markedly lately. Nothing trumps Bultures in the Moradon monster food chain so we can't just sit by the sidelines. Can you please hunt them and rein them in?"
+
+On in_progress
+    Say "I commend you for accepting my request but you should have kept your word."
+    Topic "Where can I find it?" do
+        Map direction_38
+
+On ready
+    Say "Wow, you're incredible, Master, getting rid of so many of these giant monsters. Let's hurry back to [Sentinel] Patrick and brag."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You succeeded again? Amazing!"

@@ -1,0 +1,51 @@
+Bind Npc 14427 Zone 2 for warrior
+Bind Npc 14427 Zone 2 for rogue
+Bind Npc 14427 Zone 2 for mage
+Bind Npc 14427 Zone 2 for priest
+Quest 126 "Shadow Seeker Hunt"
+    Journal "[Guard] Zalk has commissioned you to hunt 15 Shadow Seekers."
+    Kill 15 of 503, 553 at direction_96
+
+Requires player level >= 35 and player is elmorad
+
+Rewards for warrior
+    Give 675000 experience
+    Choose one
+        Give 1 of 972010790
+        Give 1 of 972050433
+        Give 1 of 972080821
+        Give 1 of 972090735
+
+Rewards for rogue
+    Give 1 of 972020495
+    Give 675000 experience
+    Choose one
+        Give 1 of 972020495
+        Give 1 of 972060922
+
+Rewards for mage
+    Give 675000 experience
+    Choose one
+        Give 1 of 972030357
+        Give 1 of 972030365
+        Give 1 of 972030373
+
+Rewards for priest
+    Give 1 of 972040765
+    Give 1 of 972070762
+    Give 675000 experience
+
+direction_96 = location "Shadow Seeker" about "Shadow Seeker\nMonster which evolved in the war with Pathos by a curse which turned man into wolfman" found "El Morad" elmorad at 1297 1006 in zone 2
+
+On offer
+    Say "Hmm... a stranger- It might be your first adventure here in El Morad. Nice to meet you.- I'm Jalk, a Sentinel at the El Morad Castle. I'm at your service.-If you have time, could you do me a favor?"
+    Topic "Tell me more..." do
+        Show quest "Here in the mainland, we have Shadow Seekers, and they're notorious for their disturbance to our people. Could you give us a hand dealing with them?\n\nAnd listen, Sir, you need weapons, this is the place. I got all you need up to Level 35."
+
+On in_progress
+    Say "You must be still hunting... Don't give up!!"
+    Topic "Where can I find it?" do
+        Map direction_96
+
+On claimable
+    Show quest "Oh~ you tried very hard. I hope you did not hurt yourself. As a token of our appreciation, I will give you my weapon. Here, you'll have an easier time hunting with this weapon. Please pick one item you like among them."

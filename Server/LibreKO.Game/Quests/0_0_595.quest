@@ -1,0 +1,39 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 595 "[Great Battle] The Sixth Day: Coexistence"
+    Journal for karus "You must talk to [Base Spearhead] Cruzed at the Stronghold of Ronark Land."
+    Journal for elmorad "You must talk to [Base Spearhead] Krable at the Stronghold of Ronark Land."
+    Collect 1 of 910238000
+
+Requires player level >= 67 and quest 594 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "I think on both sides of the damage was Maxim. Once the peace treaty to God I'm supposed to deliver the the base paper forefront [Base Scout]Crewjed de"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "I think on both sides of the damage was Maxim.Once the peace treaty] I'm supposed to deliver to the the base paper forefront greater Dear labels"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "From the nature of the contact?"
+        Topic "Tell me more..." do
+            Show quest "Evacuated come to see where the concludes peace treaty ahswiwoseo, what now achieved victory?\n\nYou need to talk to [Base Scout]Crewjed in Ronark Land Base."
+    If player is elmorad
+        Say "From the nature of the contact?"
+        Topic "Tell me more..." do
+            Show quest "Evacuated come to see where the concludes peace treaty ahswiwoseo, what now achieved victory?\n\nYou need to talk to [Base Scout]Crable in Ronark Land Base."
+
+On in_progress
+    Say "Hmm?Peace treaty, is not it?"
+
+On claimable
+    If player is karus
+        Show quest "[Peace treaty] ... All right bring myself, but if the command [Captain]Harugo by carrying. Never to come true, but the fact that we neither suffered heavy losses because ... I can not help it.\n\n[Priest] [Priest]Majal and dialog, go ahead, if you willing to lend a hand in negotiations with El Morad. Base not in this place so go see"
+    If player is elmorad
+        Show quest "The peace treaty ... All right, if the command of [Captain] Falkwine's wine but unwilling to rot. Never to come true, but the fact that we neither suffered heavy losses because ... I can not help it.\n\nNot my conversation with [the priests], so go ahead, its If negotiations with Karus, willing to lend a hand. Base not in this place so go see"

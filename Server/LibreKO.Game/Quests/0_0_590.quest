@@ -1,0 +1,47 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 590 "[Great Battle] The Second Day: Revive"
+    Journal for karus "You must perform the duty of [Base Spearhead] Cruzed at the Stronghold of Ronark Land."
+    Journal for elmorad "You must perform the duty of [Base Spearhead] Krable at the Stronghold of Ronark Land."
+    Kill 30 of 9017, 9033 at direction_759
+
+Requires player level >= 67 and quest 589 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+
+direction_759 = location "Elite Guard" about "Elite Guard\nKarus's superior guardian who defense the Ronark Land Base" found "Ronark Land Base" elmorad at 457 723 in zone 73
+
+On available
+    If player is karus
+        Say "They are struggling to the attack of the enemy. Get ready for battle and go to [Base Scout]Crewjed."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "I'm this time to confuse the enemy troops! I'm sure we did sat forefront not base de [Base Scout]Crewjed's find the urgently"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "I've succeeded to subdue the enemy's steamer, the name of the <selfname>'s false! This time has got to confuse the enemy troops, to the confusion you ask? Well, of course, deal with the guy who led them not!"
+        Topic "Tell me more..." do
+            Show quest "The story story [Guard], and commanded them, asking aid of the elite [Guard].\n\nYou will receive a mission from [Base Scout]Crewjed in Ronark Land Base."
+    If player is elmorad
+        Say "I've succeeded to subdue the enemy's steamer, the name of the <selfname>'s false! This time has got to confuse the enemy troops, to the confusion you ask? Well, of course, deal with the guy who led them not!"
+        Topic "Tell me more..." do
+            Show quest "The story story [Guard], and commanded them, asking aid of the elite [Guard].\n\nYou will receive a mission from [Base Scout]Crable in Ronark Land Base."
+
+On in_progress
+    Say "Never lacking to cause confusion."
+    Topic "Where can I find it?" do
+        Map direction_759
+
+On ready
+    Say "The elite [Guard] thought I'd River, in front of the master, I'm worse than dead leaves!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    If player is karus
+        Show quest "Enemy of confusion  been observed. Well done!\n\nNow that could actually compete against the enemy's main forces and finally! Of the initiative of the bout, you'll have come back and check out the equipment!"
+    If player is elmorad
+        Show quest "Enemy of confusion  been observed. Well done!\n\nNow that could actually compete against the enemy's main forces and finally!Of the initiative of the bout gonna check out from your equipment and come back!"

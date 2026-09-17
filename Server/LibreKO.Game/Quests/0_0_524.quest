@@ -1,0 +1,60 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 524 "[Descendant of Hero] Identity of the Monster"
+    Journal for karus "You must perform the duty of [Sage of Eslant] Pablo. "
+    Journal for elmorad "You must perform the duty of [Sage of Eslant] Agatha."
+    Kill 20 of 9618, 9619, 2201, 2251
+
+Requires player level >= 60 and quest 523 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 1 of 910214000
+    Give 50 np
+    Choose one
+        Give 1 of 207003599
+        Give 1 of 247003600
+        Give 1 of 267003601
+        Give 1 of 287003602
+
+direction_1180 = location "Harpy" about "Harpy\nHarpies have low intelligence and attacks just about anyone coming into their territories. When they meet up with other harpie groups of the mountainous area they have battles without a reason. " found "Karus Eslant" karus at 432 493 in zone 11
+direction_1181 = location "Harpy" about "Harpy\nHarpies have low intelligence and attacks just about anyone coming into their territories. When they meet up with other harpie groups of the mountainous area they have battles without a reason. " found "El Morad Eslant" elmorad at 420 499 in zone 12
+
+On available
+    If player is karus
+        Say "Master, [Eslant Wise Man]Pablo might know the answer. Try talking to him again."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, [Eslant Wise Man]Agata might know the answer. Try talking to him again."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You want to know the identity of the monster? Then I will need some more time."
+        Topic "Tell me more..." do
+            Show quest "For now go kill some [Harpys], they are so loud that its hard for me to concentrate.\n\nDefeat [Harpy] who's threatening the Eslant while Pablo is trying to locate the monster cave."
+    If player is elmorad
+        Say "You want to know the identity of the monster? Then I will need some more time."
+        Topic "Tell me more..." do
+            Show quest "For now go kill some [Harpys], they are so loud that its hard for me to concentrate.\n\nDefeat [Harpy] who's threatening the Eslant while Agatha is trying to locate the monster cave."
+
+On in_progress
+    If player is karus
+        Say "Done already? I still need more time, so go catch some more Harpys."
+        Topic "Where can I find it?" do
+            Map direction_1180
+    If player is elmorad
+        Say "Done already? I still need more time, so go catch some more Harpys."
+        Topic "Where can I find it?" do
+            Map direction_1181
+
+On ready
+    If player is karus
+        Say "This should take care of the [Harpys] right? Go find [Eslant Wise Man]Pablo to find out what the monster is!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "This should take care of the [Harpys] right? Go find [Eslant Wise Man]Agata to find out what the monster is!"
+        Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You came at the right moment, I found out what it was. It's [Gredel], it is huge and dislikes noise. I'll give you a map to its location but first go to you [Captain] and discuss."

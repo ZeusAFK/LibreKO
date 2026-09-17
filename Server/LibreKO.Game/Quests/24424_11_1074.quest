@@ -1,0 +1,21 @@
+Bind Npc 24424 Zone 11
+Quest 1074 "Human? Horse?"
+    Journal "Defeat 30 Satiroses"
+    Kill 30 of 9067, 9078 at direction_804
+
+Requires player level >= 66 and player is karus
+
+Rewards
+    Give 37500000 experience
+
+direction_804 = location "Satiros" about "Satiros\n The monster in goat shape, it symbol for demon." found "Karus Eslant" karus at 876 724 in zone 11
+
+On offer
+    Say "Horse holding a pickaxe? That's a funny monster.."
+    Topic "Tell me more..." do
+        Show quest "Horse with pickaxes are threatening the townspeople. Can't you help?"
+        Topic "Where can I find it?" do
+            Map direction_804
+
+On claimable
+    Show quest "I knew you'd be the person."

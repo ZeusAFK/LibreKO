@@ -1,0 +1,37 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 598 "[Great Battle/Boss] The End of the Tyrant"
+    Journal for karus "You must kill [Tyrant] Breth according to the order of [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must kill [Tyrant] Breth according to the order of [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910206000
+
+Requires player level >= 67 and quest 597 is completed
+
+Rewards
+    Give 55000000 experience
+    Give 100 np
+    Give 3 of 900017000
+
+On available
+    If player is karus
+        Say "Maybe, seems to be going to happen, it should go directly to God, and you [Captain]"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Captain] Falkwine's going to happen somehow, like I should go directly to the wine"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "...Synapse to synapse, but soldiers in order to arrest and missed Breath you flee Troy Eslant."
+        Topic "Tell me more..." do
+            Show quest "In the aftermath of the military morale has dropped to the bottom four. Then you gonna have to once again reluctantly. Eslant go Tropez [tyrants] Decision of breath, and he has evidence that a deal with the devil crabs coming\n\n[Tyrant] in accordance with the command of Captain Luferson Castle, the carrying breath must be removed."
+    If player is elmorad
+        Say "...Synapse to synapse, but soldiers in order to arrest and missed Breath you flee Troy Eslant."
+        Topic "Tell me more..." do
+            Show quest "The morale of the military in the aftermath, she fell to the floor. Again, it is unavoidable then you have to guess. Crabs go Tropez Eslant evidence that he had a contract with the devil has come to punish the tyrant breath\n\n[Tyrant] in accordance with the command of Captain Falkwine El Morad Castle breath must be removed."
+
+On in_progress
+    Say "yet? Let Go, go, go, meantime I'll be doing the maintenance group."
+
+On claimable
+    Show quest "s Evidence that a job well done. In contrast to reciprocate, but this will only give it or"

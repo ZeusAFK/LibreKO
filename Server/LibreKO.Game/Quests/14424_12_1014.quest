@@ -1,0 +1,24 @@
+Bind Npc 14424 Zone 12
+Quest 1014 "Gargoyle hunt"
+    Journal "[Ascetic] Tabeth asked me to hunt 40 Gargoyles."
+    Kill 40 of 7017, 17017 at direction_610
+
+Requires player level >= 64 and player is elmorad and quest 316 is completed
+
+Rewards
+    Give 26250000 experience
+
+direction_610 = location "Gargoyle" about "Gargoyle\nOriginally a stone statue, it is endowed with life only via an ancient spell. After the war against Pathos, the seal has been permanently and they now pose a threat to mankind. " found "El Morad Eslant" at 228 673 in zone 12
+
+On available
+    Say "Master, There's a monster with a devil's shape! I'll bet Veda knows about it."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Yeah, the devil monster is really a Gargoyle."
+    Topic "Tell me more..." do
+        Show quest "It's a stony monster with the devil's visage that owes its life to an ancient spell. After the war against Pathos, the seals were permanently removed and it's been stuck here threatening humans ever since. I think it'd be good to 'train' on these beasts next. Heh."
+
+On ready
+    Say "It's a terrible monster to be sure. Wasn't it? I don't want to mess with them again. Anyway, we were fortunate to finish all that without any troubles."
+    Topic "All right, I'll swing by" goto close

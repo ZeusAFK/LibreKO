@@ -1,0 +1,26 @@
+Bind Npc 14406 Zone 2
+Quest 428 "[Repeatable Solo] Hornet Hunt"
+    Repeat always
+    Journal "[Imperial Guard] Telson has commissioned you to hunt Hornet. However, it will not count when you are in a party."
+    Kill 20 of 4401, 4451 at direction_27
+
+Requires player level >= 47 and player is elmorad
+
+Rewards
+    Give 1000000 experience or 1400000 with premium
+
+direction_27 = location "Hornet" about "Hornet\nReferred to as Hell`s Bees; inhabits plains; powerful venom can kill humans with one sting" found "El Morad" karus at 1383 1110 elmorad at 607 991 in zone 2
+direction_31 = location "[Imperial Palace Guard] Telson" about "[Imperial Palace Guard] Telson\nJack-of-all-trades who takes care of everything for the Imperial Palace " found "El Morad Castle" at 1673 315 in zone 2
+
+On available
+    Say "Master. [Imperial Palace Guard] Telson is about to go on a hunt, so how about joining him?"
+    Topic "Where is he/she?" do
+        Map direction_31
+
+On offer
+    Say "Ha ha~ I guess it reached your ears as well. Yes, it is true. This time I am going to hunt the Hornets, so do you want to join me?"
+    Topic "Tell me more..." do
+        Show quest "You may be able to gain valuable experience from this hunt. Why don't you and your colleagues come join us?\n\nIf you do a favor for [Imperial Guard] Telson, you will be rewarded with experience points."
+
+On claimable
+    Show quest "Haha... how is it going? Good work."

@@ -1,0 +1,43 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 116 "Full Plate Armor II"
+    Journal "[Mercenary Adjutant] Rage asked me to hunt twenty Paralyzers for him."
+    Kill 5 of 954 at direction_570
+
+Requires player level >= 31
+
+Rewards for warrior
+    Give 1 of 204004005
+    Give 1 of 204004285
+    Give 375000 experience
+
+Rewards for rogue
+    Give 1 of 244004005
+    Give 1 of 244004286
+    Give 375000 experience
+
+Rewards for mage
+    Give 1 of 264004005
+    Give 1 of 264004287
+    Give 375000 experience
+
+Rewards for priest
+    Give 1 of 284004005
+    Give 1 of 284004288
+    Give 375000 experience
+
+direction_570 = location "Paralyzer" about "Paralyzer\nA type of scorpion which spews lethal venom from its tail but can also be used as herbicide " found "Moradon" at 406 790 in zone 21
+
+On available
+    Say "Master, the imperial palace sentinel wants to see you quick."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I looked everywhere for you.  If you're not too busy I could use your help. I received word that Paralyzer monsters surfaced around the castle. I've got a hunch something's up their sleeve."
+    Topic "Tell me more..." do
+        Show quest "They should be eliminated just in case. Eliminate 20 of them. Will you take on the task?\n\n[Mercenary Adjutant] Rage will award craft armor for heeding his request."
+
+On claimable
+    Show quest "You're already finished? I'll give you my body armor as reward. They're supplied exclusively to us imperial palace guards but they're more useful than they look. Haha..."

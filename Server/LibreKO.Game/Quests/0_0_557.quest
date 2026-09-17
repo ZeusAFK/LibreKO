@@ -1,0 +1,30 @@
+Bind Npc 24424 Zone 11 for karus
+Bind Npc 14424 Zone 12 for elmorad
+Quest 557 "[Hidden Truth] Hero's Request"
+    Journal for karus "You must talk to [Ascetic] Veda, of Eslant."
+    Journal for elmorad "You must talk to [Ascetic] Tabeth, of Eslant."
+
+Requires player level >= 64 and quest 556 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Please find the other bed by the master, [ascetic]. Go Eslant Tropez"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Find the Master, [the ascetic] by Veda. Go Eslant Tropez"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Thank you a favor last by <selfname>, did. Did return safely thanks to the hero."
+        Topic "Tell me more..." do
+            Show quest "Additionally, the hero wishes to extend gratitude to <selfname>. These days, he is living in peace and doing well.\n\nHowever, it seems that the sorrow of losing friends and loyal subordinates has not yet been alleviated. Therefore, there is a wish to personally summon <selfname> once more to make another request.\n\nTalk to Fargo. Talk to Beda."
+    If player is elmorad
+        Say "Thank you a favor last by <selfname>, did. Did return safely thanks to the hero."
+        Topic "Tell me more..." do
+            Show quest "Additionally, the hero wishes to extend gratitude to <selfname>. These days, he is living in peace and doing well.\n\nHowever, it seems that the sorrow of losing friends and loyal subordinates has not yet been alleviated. Therefore, there is a wish to personally summon <selfname> once more to make another request.\n\nTalk to Fargo. Talk to Tabeth."
+
+On claimable
+    Show quest "Please go to the [Valley Scout] who has been dispatched to the southwest, where the unit was annihilated. He will give you a mission, <selfname>"

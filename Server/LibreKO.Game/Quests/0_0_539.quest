@@ -1,0 +1,26 @@
+Bind Npc 31515 Zone 1 for karus
+Bind Npc 31519 Zone 2 for elmorad
+Quest 539 "[Self-made Hero] Whereabouts of a Thief"
+    Journal for karus "You must talk to the [Fled Slave] after going to Kalluga Valley."
+    Journal for elmorad "You must talk to the [Fled Slave] after going to Kalluga Valley."
+
+Requires player level >= 62 and quest 538 is completed
+
+Rewards none
+
+On available
+    Say "Master culprit Kalluga,'m in the valley! Go ahead and grab it!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Help me!"
+        Topic "Tell me more..." do
+            Show quest "I just wanted freedom only. Please keep me alive. Die sinned. Please spare me!\n\nGo find Fled Slaves from Kalluga Valley."
+    If player is elmorad
+        Say "Hebrews, hiik. , Please make use of four!"
+        Topic "Tell me more..." do
+            Show quest "I just wanted freedom only. Please keep me alive. Die sinned. Please spare me!\n\nGo find Fled Slaves from Kalluga Valley."
+
+On claimable
+    Show quest "Wants a golden cup? Well, I did not know what the thing is so big. Me, I'm terribly sorry. Hiik"

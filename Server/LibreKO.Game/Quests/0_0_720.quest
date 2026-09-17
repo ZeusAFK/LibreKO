@@ -1,0 +1,50 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 720 "[Lemegeton] President of the 36 Legions"
+    Journal for karus "You must join the devil war with [Order of the Sorcery] Bros."
+    Journal for elmorad "You must join the devil war with [Order of the Sorcery] Sais."
+    Collect 1 of 900239000
+    Collect 1 of 900240000
+    Collect 1 of 900241000
+
+Requires player level >= 71 and quest 719 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900242000
+    Choose one
+        Give 1 of 310140024
+        Give 1 of 310140025
+        Give 1 of 310140026
+        Give 1 of 310140027
+
+On available
+    If player is karus
+        Say "Again to another world? It's all conusing. They all look the same. Let's talk to Bros of [Order of the Sorcery] about it."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Again to another world? It's all conusing. They all look the same. Let's talk to Sais of [Order of the Sorcery] about it."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "In the underworld, there are many same worlds in different dimensions. Devils, as the owner of these dimensions, raise their army and power. And we, [Order of the Sorcery], take the responsibility of resisting their force."
+        Topic "Tell me more..." do
+            Show quest "Anyways, time to cross into another world. [21Devil] General Marax of 36 troops is another devil with many troops. With him are powerful [45Devil] Vine and [65Devil] Andrealphus. Please eliminate and seal their souls.\n\nWe must give Bros of [Order of the Sorcery] of Ronark Land the seal Scrolls for [21Devil] Marax, [45Devil] Vine, and [65Devil] Andrealphus."
+    If player is elmorad
+        Say "In the underworld, there are many same worlds in different dimensions. Devils, as the owner of these dimensions, raise their army and power. And we, [Order of the Sorcery], take the responsibility of resisting their force."
+        Topic "Tell me more..." do
+            Show quest "Anyways, time to cross into another world. [21Devil] General Marax of 36 troops is another devil with many troops. With him are powerful [45Devil] Vine and [65Devil] Andrealphus. Please eliminate and seal their souls.\n\nWe must give Sais of [Order of the Sorcery] of Ronark Land the seal Scrolls for [21Devil] Marax, [45Devil] Vine, and [65Devil] Andrealphus."
+
+On in_progress
+    Say "You haven't sealed yet? Then I will send you again to them."
+
+On claimable
+    Show quest "You have sealed them up for sure. With this, we can seal three more devils."
+
+On completed
+    If player is karus
+        Say "This time you have to fight against [Devil 9] Paimon, King of Hell, who has two hundred legions of demons under his rule. He's a devil who regards honor and glory as very important, and he always leads the war with his strong legions. Bring the [Devil 9 Summoning Scroll] and summon him from the [Devil 9 Summoning Stone] at [Luferson Castle]. Then, destroy him so that we can seal his spirit."
+    If player is elmorad
+        Say "This time you have to fight against [Devil 9] Paimon, King of Hell, who has two hundred legions of demons under his rule. He's a devil who regards honor and glory as very important, and he always leads the war with his strong legions. Bring the [Devil 9 Summoning Scroll] and summon him from the [Devil 9 Summoning Stone] at [El Morad Castle]. Then, destroy him so that we can seal his spirit."

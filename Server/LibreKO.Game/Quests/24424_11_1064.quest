@@ -1,0 +1,18 @@
+Bind Npc 24424 Zone 11
+Quest 1064 "Storm calling Acolyte"
+    Journal "Defeat 25 Acolytes of the Storm"
+    Kill 25 of 9070, 9081 at direction_807
+
+Requires player level >= 64 and player is karus and quest 1062 is completed
+
+Rewards
+    Give 30000000 experience
+
+direction_807 = location "Apostle of the Storm" about "Apostle of the Storm\n It is storm wizard who using strong power of wind" found "Karus Eslant" karus at 730 341 in zone 11
+
+On offer
+    Say "From the past week, it's happening again."
+    Topic "Tell me more..." do
+        Show quest "Yeah. Could you take care of them?"
+        Topic "Where can I find it?" do
+            Map direction_807

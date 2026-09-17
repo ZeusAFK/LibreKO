@@ -1,0 +1,33 @@
+Bind Npc 24430 Zone 1
+Quest 423 "[Repeatable Solo] Kongaus Hunt"
+    Repeat always
+    Journal "[Mercenary] Russell has commissioned you to hunt Kongaus. However, it will not count when you are in a party."
+    Kill 20 of 1350, 1300 at direction_512
+
+Requires player level >= 45 and player is karus
+
+Rewards
+    Give 1000000 experience or 1400000 with premium
+
+direction_512 = location "Konga" about "Konga\nDark Army`s attack squad formerly under Atilla`s command possessing exceptional Strength, Defense Power, and Immunity " found "Karus" at 1299 1746 in zone 1
+
+On available
+    Say "Master, I heard there's a mercenary at Raon Camp who exclusively hunts monsters. You think that's true?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I'm Russel, the monster-hunting mercenary. There's no monster in the world I can't capture. How are your monster hunting skills? Wanna learn a few tips from me? Haha..."
+    Topic "Tell me more..." do
+        Show quest "Shall we start with simple Kongau since you don't look too sharp? You can quit if you think you won't be able to handle it."
+
+On in_progress
+    Say "Is that the best you can do? What a joke."
+    Topic "Where can I find it?" do
+        Map direction_512
+
+On ready
+    Say "Master! It won't make any more trouble now that I've given it a good fright."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Hmm... you hunted them faster than I thought. Here's a valuable body armor as reward. It might be too lavish for you, haha..."

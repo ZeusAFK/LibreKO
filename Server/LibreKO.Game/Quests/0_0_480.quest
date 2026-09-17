@@ -1,0 +1,44 @@
+Bind Npc 24406 Zone 1 for karus
+Bind Npc 14406 Zone 2 for elmorad
+Quest 480 "[Repeatable Solo] Groom Hound Hunt"
+    Repeat always
+    Journal for karus "[Imperial Guard] Bekar has commissioned you to hunt Groom Hound. However, it will not count when you are in a party."
+    Journal for elmorad "[Imperial Guard] Telson has commissioned you to hunt Groom Hound. However, it will not count when you are in a party."
+    Kill 30 of 3571 at direction_601
+
+Requires player level >= 58
+
+Rewards
+    Give 2500000 experience or 3750000 with premium
+
+direction_601 = location "Gloom Hound" about "Gloom Hound\nMonsters summoned from Hell like the Hell Hounds, these guard the 5th floor of the Abyss of Hell." found "Abyss Dungeon" at 260 621 in zone 30
+
+On available
+    If player is elmorad
+        Say "Master. [Imperial Palace Guard] Telson is about to go on a hunt, so how about joining him?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "[Imperial Guard] Bekar will reward you when you complete the Groom Hound Hunt."
+        Topic "Tell me more..." do
+            Show quest "You may be able to gain valuable experience from this hunt. Why don't you and your colleagues come join us?"
+    If player is elmorad
+        Say "[Imperial Guard] Telson will reward you when you complete the Groom Hound Hunt."
+        Topic "Tell me more..." do
+            Show quest "You may be able to gain valuable experience from this hunt. Why don't you and your colleagues come join us?"
+
+On in_progress
+    Say "How's the hunt going? Experience doesn't always come easy. Cheer up!"
+    Topic "Where can I find it?" do
+        Map direction_601
+
+On ready
+    Say "Whew... it's over!! That was one difficult hunt, wasn't it?"
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Well done. Was it as hard as they say?"
+
+On completed
+    Say "Haha. Thank you!"

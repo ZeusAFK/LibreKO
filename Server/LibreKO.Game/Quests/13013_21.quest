@@ -1,0 +1,13 @@
+Bind Npc 13013 Zone 21
+
+On greeting
+    If quest 538 is started and player lacks 910220000
+        Say "The patrol yesterday spun the story to load, but someone is scuttled out of trekked haneungunyo. Kalluga Valley direction, did not know exactly where you have to move. Will be in place to take because there was no big deal."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910220000
+    Else
+        Say "What mission are you going to undertake?"
+        If no topic fits
+            Say "There are too many sentinels around.. Come back some other time.."
+            Topic "Close" goto close

@@ -1,0 +1,46 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 732 "[Lemegeton] Duke of Silver Armor"
+    Journal for karus "You must join the devil war with [Order of the Sorcery] Bros."
+    Journal for elmorad "You must join the devil war with [Order of the Sorcery] Sais."
+    Collect 1 of 900251000
+    Collect 1 of 900252000
+    Collect 1 of 900253000
+
+Requires player level >= 72 and quest 731 is completed
+
+Rewards
+    Give 8750000 experience
+    Give 30000 coins
+    Give 50 np
+    Give 1 of 900254000
+
+On available
+    If player is karus
+        Say "Hmm, I'm starting to feel nervous myself. This is all because of Bros of [Order of the Sorcery], right?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Hmm, I'm starting to feel nervous myself. This is all because of Sais of [Order of the Sorcery], right?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Ah, let's put aside the nervousness and get down to our business."
+        Topic "Tell me more..." do
+            Show quest "Now it's time to get the Duke of Silver Armor out of the deep abyss. It shouldn't be that hard to find him because [19Devil] Sallos is always dressed in his glittering armor. And with him are [43Devil] Savnock and [64Devil] Haures. Seal them up as well.\n\nWe must give Bros of [Order of the Sorcery] of Ronark Land the seal Scrolls for [19Devil] Sallos, [43Devil] Savnock, and [64Devil] Haures."
+    If player is elmorad
+        Say "Ah, let's put aside the nervousness and get down to our business."
+        Topic "Tell me more..." do
+            Show quest "Now it's time to get the Duke of Silver Armor out of the deep abyss. It shouldn't be that hard to find him because [19Devil] Sallos is always dressed in his glittering armor. And with him are [43Devil] Savnock and [64Devil] Haures. Seal them up as well.\n\nWe must give Sais of [Order of the Sorcery] of Ronark Land the seal Scrolls for [19Devil] Sallos, [43Devil] Savnock, and [64Devil] Haures."
+
+On in_progress
+    Say "You haven't sealed yet? Then I will send you again to them."
+
+On claimable
+    Show quest "You have sealed them up for sure. With this, we can seal three more devils."
+
+On completed
+    If player is karus
+        Say "I received bad news. [Devil 7] Amon, the first enemy that we've been on the lookout for, started a huge attack. I've heard that a lot of our members are dying on the battlefield. Originally, he was called [Unknowable Man], and this was the reason I felt so agitated. It's very urgent. Bring the [Devil 7 Summoning Scroll], which I gave you, and go to [Devil 7 Summoning Stone] in the [Luferson Castle]. Then, summon and destroy him. There isn't much time! Hurry!"
+    If player is elmorad
+        Say "I received bad news. [Devil 7] Amon, the first enemy that we've been on the lookout for, started a huge attack. I've heard that a lot of our members are dying on the battlefield. Originally, he was called [Unknowable Man], and this was the reason I felt so agitated. It's very urgent. Bring the [Devil 7 Summoning Scroll], which I gave you, and go to [Devil 7 Summoning Stone] in the [Luferson Castle]. Then summon and destroy him. There isn't much time! Hurry!"

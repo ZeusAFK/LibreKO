@@ -1,0 +1,12 @@
+Bind Npc 25277 Zone 2
+Quest 1537 "Investigation Mission"
+    Journal "Investigation Mission"
+
+Requires player level >= 35 and player is elmorad
+
+Rewards
+    Give 1500000 experience
+    Give 70 of 900790000
+
+On offer
+    Show quest "I see... That was what Drakis have been plotting for. If Drakis are going back in time, the only thing we can do is to defeat them over and over again until we find a solution to defeat them completely. I will ask for God's help."

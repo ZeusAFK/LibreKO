@@ -1,0 +1,33 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 599 "[Prophetic Poetry of Light] The Second Attack of the Evil Army"
+    Journal for karus "You must talk to [Base Spearhead] Cruzed."
+    Journal for elmorad "You must talk to [Base Spearhead] Krable."
+
+Requires player level >= 68 and quest 598 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Wow.I'm looking for a master in the Again Ronark Land Base was. [Base Scout]Crewjed de base not spearhead should go to God."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Wow.I'm looking for a master in the Again Ronark Land Base was.Should go to God, not spearhead base label."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hello, you suffer a lot. You Again As expected, there's a difficult thing to occur."
+        Topic "Tell me more..." do
+            Show quest "Demonic forces had invaded this place last Launching the king of Forwar Keyhole has re-invasion, sudden attack, defense properly does not\n\nSo whether I will call you so urgently? Again, Who can help us?\n\nYou need to talk to [Base Scout]Crewjed in Ronark Land Base."
+    If player is elmorad
+        Say "Hello, you suffer a lot. You Again As expected, there's a difficult thing to occur."
+        Topic "Tell me more..." do
+            Show quest "Demonic forces had invaded this place last Launching the king of Forwar Keyhole has re-invasion, sudden attack, defense properly does not\n\nSo whether I will call you so urgently? Again, Who can help us?\n\nYou need to talk to [Base Scout]Crable in Ronark Land Base."
+
+On claimable
+    If player is karus
+        Show quest "Thank you! The glory of the Karus to stay with you! When you are ready, come back to me undergo Do battle with the enemy's vanguard troops"
+    If player is elmorad
+        Show quest "Thank you!The glory of El Morad to stay with you! When you are ready, come back to me undergo Do battle with the enemy's vanguard troops"

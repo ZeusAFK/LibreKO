@@ -1,0 +1,30 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 535 "[Long Revenge] Everything's ready"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+
+Requires player level >= 61 and quest 534 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "[Captain] God and fell, and you go!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Did God [Captain] Falkwine and fell!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hmm?What happened? He looks very tired."
+        Topic "Tell me more..." do
+            Show quest "Anyway, I went to days Guess  the well! Revenge of the soldiers who died unjustly Now lets guys!\n\nGo report to [Captain] Fargo that we're ready."
+    If player is elmorad
+        Say "Hmm?What happened? He looks very tired."
+        Topic "Tell me more..." do
+            Show quest "Anyway, I went to days Guess  the well! Revenge of the soldiers who died unjustly Now lets guys!\n\nGo report to [Captain] Falkwine that we're ready."
+
+On claimable
+    Show quest "So in preparation for the big fight, and has come back quite ready for the battle"

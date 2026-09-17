@@ -1,0 +1,18 @@
+Bind Npc 24424 Zone 11
+Quest 1058 "Wing flaps at night"
+    Journal "Defeat 40 Ironclaws"
+    Kill 40 of 9064, 9075 at direction_801
+
+Requires player level >= 63 and player is karus
+
+Rewards
+    Give 26250000 experience
+
+direction_801 = location "Ironclaw" about "Ironclaw\nIt is evolved gargoyle, Attack with terrible claw." found "Karus Eslant" karus at 387 715 in zone 11
+
+On offer
+    Say "These days, the residents of Eslant can't go outside."
+    Topic "Tell me more..." do
+        Show quest "Because of 'Iron Claw'  At night they come out to find prey."
+        Topic "Where can I find it?" do
+            Map direction_801

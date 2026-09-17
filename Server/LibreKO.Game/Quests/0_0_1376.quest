@@ -1,0 +1,22 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 1376 "Ecosystem Research 2"
+    Journal for karus "Collect 3 Manticore's leather"
+    Journal for elmorad "Collect 3 Manticore's leather"
+    Collect 3 of 810497000
+
+Requires player level >= 55
+
+Rewards
+    Give 25000000 experience
+
+On offer
+    Say "Those elders are saying that they wanted to investigate. This time they want Manticore's life cycle."
+    Topic "Tell me more..." do
+        Show quest "Thank you so much!!! Then could you get manticore's leather x 5?"
+
+On in_progress
+    Say "You...  you can do this right?"
+
+On claimable
+    Show quest "Oh!! This is the manticore leather!!!"

@@ -1,0 +1,54 @@
+Bind Npc 14441 Zone 2 for warrior
+Bind Npc 14441 Zone 2 for rogue
+Bind Npc 14441 Zone 2 for mage
+Bind Npc 14441 Zone 2 for priest
+Quest 129 "Defend the Gravesite"
+    Journal "[Caretaker] has commissioned you to eradicate Rotten Eye."
+    Kill 15 of 1003, 1053 at direction_98
+
+Requires player level >= 36 and player is elmorad
+
+Rewards for warrior
+    Give 1 of 205005289
+    Give 750000 experience
+    Give 75 of 900790000
+    Give 40 of 900820000
+
+Rewards for rogue
+    Give 1 of 245005290
+    Give 750000 experience
+    Give 75 of 900790000
+    Give 40 of 900820000
+
+Rewards for mage
+    Give 1 of 265005291
+    Give 750000 experience
+    Give 75 of 900790000
+    Give 40 of 900820000
+
+Rewards for priest
+    Give 1 of 285005292
+    Give 750000 experience
+    Give 75 of 900790000
+    Give 40 of 900820000
+
+direction_98 = location "Rotten Eyes" about "Rotten Eyes\nCorpse which has lost volition due to evil energy; undead monster exclusively harboring a hostility against all life forms" found "El Morad" elmorad at 1016 626 in zone 2
+
+On available
+    Say "Master, the mainland has its own Gravesite. Slay defends the site. How about you meet him?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hello...  I'm Slay, I manage the Graveyard. I don't know how many years have passed since I started to watch over this graveyard. Ah- Could you help me?"
+    Topic "Tell me more..." do
+        Show quest "I don't know since when, but  Rotten Eyes have appeared around the tomb, and I can't drive them out by myself. They're Zombie Monsters like Undyings, and the problem is they make a terrible mess everywhere, makes the Tomb look awful. Could you try and stop them from coming in and ruining the place?\n\nYou'll get some Armor out of this if you do [Graveyard Keeper] Bottom this favor."
+
+On in_progress
+    Say "You must save this Tomb no matter what happens. Please, do your best."
+
+On ready
+    Say "Well done master, well done."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Meeting you was possibly the best bit of luck I've ever had! Thank you very much. Here's a little something for ya. This is what I found while I've managed this place. This will be quite useful."

@@ -1,0 +1,24 @@
+Bind Npc 29052 Zone 35
+Quest 811 "Room of Dark Dragon"
+    Journal "You must talk about [Room of Dark Dragon] with [Sorcerer] Samaran."
+    Collect 5 of 900060000
+
+Requires player level >= 1
+
+Rewards
+    Give 1 of 900061000
+
+On available
+    Say "Who is it? What are you looking for?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You must want to enter [Dark Dragon Room]. Then you are at the right place. If you bring what I tell you now, you'll get the [Castellan Key] to enter [Unknown tombstone]"
+    Topic "Tell me more..." do
+        Show quest "It can't be too hard to obtain the item. You want to know what it is? It's [Tarantula Tooth] x 5. I'm sure it's not hard to get. Right?\n\n[Shaman] Samaran will exchange 5 x [Tarantula Tooth] with [Castallen Key]."
+
+On in_progress
+    Say "You don't have enough. Do better now."
+
+On claimable
+    Show quest "You have collected them all! Do you want to receive [Castellan Key]?"

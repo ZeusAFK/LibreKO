@@ -1,0 +1,23 @@
+Bind Npc 25000 Zone 21
+Quest 1200 "Obtaining food"
+    Journal "Gather food, the main condition to settle"
+    Collect 2 of 810418000
+
+Requires player level >= 1
+
+Rewards
+    Give 250 experience
+    Give 2000 coins
+
+On available
+    Say "Master! Mr. Potrang is looking for you."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "We are very tired and hungry. In this state, we won't be able to last long. Get some worms to make some food. You should be able to know how to get your own food."
+
+On in_progress
+    Say "Worms will be near Moradon Castle. There are people who aren't well. Could you get 5 more?"
+
+On claimable
+    Show quest "Good job. We will not starve now."

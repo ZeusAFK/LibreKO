@@ -1,0 +1,18 @@
+Bind Npc 14431 Zone 2
+Quest 468 "[Repeatable Solo] Ancient Hunt"
+    Repeat always
+    Journal "[Guard] Beth has commissioned you to hunt Ancient. However, it will not count when you are in a party."
+    Kill 20 of 5301, 5351 at direction_546
+
+Requires player level >= 54 and player is elmorad
+
+Rewards
+    Give 1250000 experience or 1900000 with premium
+
+direction_546 = location "Ancient" about "Ancient\nAs with Treant, levels attacks using branches; old vines afford exceptional Defense Power" found "El Morad" at 811 1823 in zone 2
+
+On offer
+    Show quest "Oh, you're here. Please protect our village from the Ancients. They're treant like monsters with high defense ability."
+
+On claimable
+    Show quest "Sorry to be only asking for help all the time. I'll requite your help someday."

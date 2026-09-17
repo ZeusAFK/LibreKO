@@ -1,0 +1,51 @@
+Bind Npc 24427 Zone 1 for warrior
+Bind Npc 24427 Zone 1 for rogue
+Bind Npc 24427 Zone 1 for mage
+Bind Npc 24427 Zone 1 for priest
+Quest 125 "Shadow Seeker Hunt"
+    Journal "[Guard] Melverick has commissioned you to hunt 15 Shadow Seekers."
+    Kill 15 of 553, 503 at direction_95
+
+Requires player level >= 35 and player is karus
+
+Rewards for warrior
+    Give 675000 experience
+    Choose one
+        Give 1 of 972010790
+        Give 1 of 972050433
+        Give 1 of 972080821
+        Give 1 of 972090735
+
+Rewards for rogue
+    Give 1 of 972020495
+    Give 675000 experience
+    Choose one
+        Give 1 of 972020495
+        Give 1 of 972060922
+
+Rewards for mage
+    Give 675000 experience
+    Choose one
+        Give 1 of 972030357
+        Give 1 of 972030365
+        Give 1 of 972030373
+
+Rewards for priest
+    Give 1 of 972040765
+    Give 1 of 972070762
+    Give 675000 experience
+
+direction_95 = location "Shadow Seeker" about "Shadow Seeker\nMonster which evolved in the war with Pathos by a curse which turned man into wolfman" found "Karus" karus at 909 1279 in zone 1
+
+On offer
+    Say "Hm... A stranger- It might be your first adventure here in Karus. Nice to meet you.- I am Melverick, a Sentinel at the Luferson Castle. I am at your service.-If you have time, could you do me a favor?"
+    Topic "Tell me more..." do
+        Show quest "Here in the mainland, we have creatures called  Shadow Seekers that are notorious for causing troubles everywhere. Even now they are rampaging about at various places, so could you please help us with them?\n\nOh, you can always come and see me when you need new weapons. I can keep supporting you with weapons until you reach 35Lv."
+
+On in_progress
+    Say "Don't strain yourself. You won't be able to handle them alone."
+    Topic "Where can I find it?" do
+        Map direction_95
+
+On claimable
+    Show quest "Thanks a lot! I will ask a favor of you next time too."

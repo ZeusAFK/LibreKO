@@ -1,0 +1,33 @@
+Bind Npc 24427 Zone 1 for karus
+Bind Npc 14427 Zone 2 for elmorad
+Quest 537 "[Self-made Hero] Dragon's Warning"
+    Journal for karus "You must talk to [Guard] Melverick at Luferson Castle."
+    Journal for elmorad "You must talk to [Guard] Zalk at El Morad Castle."
+
+Requires player level >= 62 and quest 536 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Master!This was a big deal for someone stole the treasure I'm, go away but , ... I'm more of the [Guard] by Mel Berwick PATTY know."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master!This was a big deal for someone stole the treasure I'm, go away but , ...PATTY you know I'm more of the [Guard] Zalk by this"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "* Sigh * ...Oh, this You a <selfname>.Hello everyone."
+        Topic "Tell me more..." do
+            Show quest "Must have heard the rumors. He got a break who are not resident Castle slaves sleeping facilitate steals a golden cup from the shelter went away.\n\nFind out what's happened by visiting Malverick."
+    If player is elmorad
+        Say "* Sigh * ...Oh, this You a <selfname>.Hello everyone."
+        Topic "Tell me more..." do
+            Show quest "Must have heard the rumors. He got a break who are not resident Castle slaves sleeping facilitate steals a golden cup from the shelter went away.\n\nFind out what's happened by visiting Zark."
+
+On claimable
+    If player is karus
+        Show quest "If you do not have the treasure again, thanks enraged dragon, a warning would be devastated Castle happened. Huff ... There is someone I'd like you to help. Did you press group. Not so? A hero 'Karus Have <selfname>,"
+    If player is elmorad
+        Show quest "If you do not have the treasure again, thanks enraged dragon, a warning would be devastated Castle happened. Huff ... There is someone I'd like you to help. Did you press group.Have the 'lard Elmo heroes' <selfname>, do not you think?"

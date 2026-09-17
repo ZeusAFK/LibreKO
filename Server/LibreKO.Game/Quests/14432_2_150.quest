@@ -1,0 +1,14 @@
+Bind Npc 14432 Zone 2
+Quest 150 "Megantereon Hunt"
+    Journal "[Guard] Chayna has commissioned you to hunt Megantereon."
+    Kill 20 of 605, 655 at direction_112
+
+Requires player level >= 43 and player is elmorad
+
+Rewards
+    Give 2375000 experience
+
+direction_112 = location "Megantereon" about "Megantereon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "El Morad" elmorad at 1914 1040 in zone 2
+
+On offer
+    Show quest "[Sentinel] Cheina will compensate you with 5th armor if you heed the request."

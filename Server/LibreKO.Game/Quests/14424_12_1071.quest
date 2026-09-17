@@ -1,0 +1,16 @@
+Bind Npc 14424 Zone 12
+Quest 1071 "Spell of destruction"
+    Journal "Defeat 25 Death Wizards"
+    Kill 25 of 9079, 9068 at direction_815
+
+Requires player level >= 65 and player is elmorad
+
+Rewards
+    Give 33750000 experience
+
+direction_815 = location "Death Wizard" about "Death Wizard\n Also called death of king of terrors." found "El Morad Eslant" elmorad at 308 719 in zone 12
+
+On offer
+    Say "Do you know of the Order of Destruction?"
+    Topic "Tell me more..." do
+        Show quest "You can kill the enemy instantly. Death Wizard is using that magic. I'll give you the immune so that you can go get rid of them."

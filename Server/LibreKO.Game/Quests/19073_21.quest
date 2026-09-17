@@ -1,0 +1,10 @@
+Bind Npc 19073 Zone 21
+
+On greeting
+    If quest 772 is started and player lacks 900292000
+        Say "Oh, you are here! You must be here for what [Order of the Sorcery] has requested. I have just finished it. Harharhar! This is a piece of cake for me. This is the [Lock cannot be open] that never unlocks!"
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 900292000
+    Else
+        Say ""

@@ -1,0 +1,18 @@
+Bind Npc 25001 Zone 21
+Quest 1218 "Mysterious Elixir"
+    Journal "Bring the mysterious elixir the black pirate captain has with him"
+    Collect 1 of 900615000
+
+Requires player level >= 24 and quest 1215 is completed
+
+Rewards
+    Give 75000 experience
+
+On offer
+    Show quest "Hmm.. According to the Smuggler's testimony, the Pirate's captain has that weird potion. Once you drink it you gain tremendous power... Can you get me that potion from the captain next time you see him?"
+
+On in_progress
+    Say "You didn't get it yet?\n Mora Island is located in the south from Moradon. Go to Quayside to find Laidas or Portman."
+
+On claimable
+    Show quest "Oh! This is a leap. What? Eat a pirate ship this chapter, these three forces, yet eventually rupture the body dead? \n Hmm .. Know the leap ... you'll have to investigate a little more, and I know this area well."

@@ -1,0 +1,28 @@
+Bind Npc 19002 Zone 21
+Quest 119 "Wolf Products"
+    Journal "Gather 4 Apples of Moradon for [Middle man] Berret."
+    Collect 4 of 810418000
+
+Requires player level >= 32
+
+Rewards
+    Give 550000 experience
+
+On available
+    Say "Berret is looking for something special, right?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Welcome, <selfname>\n Apple of Moradon is just what I've been looking for. Apples of Moradon sell really well around the Luferson Castle area in Karus because it's so cold around there. It profits you to profit from it. Heh heh heh!"
+    Topic "Tell me more..." do
+        Show quest "Karus' Luferson Castle area makes special Apples of Moradon, and trades it out to all sorts of places."
+
+On in_progress
+    Say "I really want a Apple of Moradon. You'll get a Apple of Moradon from an Any Wolf and Lycan, no problems."
+
+On ready
+    Say "Master! You've got a hold of a Apple of Moradon. Now you just need to trade 'em with Berret."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Oh, great, you got all the right stuff and just enough of it too. Thanks. You helped our chief make a big profit there. Well done."

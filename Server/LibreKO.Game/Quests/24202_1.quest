@@ -1,0 +1,18 @@
+Bind Npc 24202 Zone 1
+
+On greeting
+    If quest 519 is started and player lacks 910209000
+        Say "You forgot? I'll give it to you one last time."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910209000
+    Else if quest 646 is started and player has 900198000
+        Say "How precious! You are great. Thank you. Let me write you a receipt."
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900198000
+                Give 1 of 900195000
+    Else if quest 646 is started
+        Say "Where's the fruit box?"
+    Else
+        Say ""

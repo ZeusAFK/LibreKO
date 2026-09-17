@@ -1,0 +1,32 @@
+Bind Npc 16079 Zone 21
+Quest 63 "Bandicoot Tooth"
+    Journal "[Daughter of Grand Merchant] Menissiah asked me to bring 2 Apples of Moradon to her."
+    Collect 2 of 810418000
+
+Requires player level >= 4
+
+Rewards
+    Give 850 experience
+    Give 3500 coins
+
+direction_5 = location "[Daughter of Grand Merchant] Menissiah" about "[Daughter of Grand Merchant] Menissiah\nCheerful girl who likes to help others; interested in production and medicine" found "Moradon central stepfront" at 797 543 in zone 21
+
+On available
+    Say "Wonder what Menissiah's up to lately. I miss her. Let's go see her, Master."
+    Topic "Where is he/she?" do
+        Map direction_5
+
+On offer
+    Say "As my father has issued an order, I can't go out of the castle gate on my own authority. So can we be friends with each other? We appear to be of similar age and the foreigner Inisia may have a lot of stories... Oh! This is a secret from my father"
+    Topic "Tell me more..." do
+        Show quest "Oh? Nowadays, I am totally preoccupied with the manufacturing of medications learned from my teacher but it is so hard to find the materials for practice. Can you find two Apples of Moradon for me?"
+
+On in_progress
+    Say "In order to make the medication, I need two Apple of Moradon."
+
+On ready
+    Say "All the ingredients requested by [Grand Merchant's Daughter] Menissiah have been collected."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thanks to you, I will be able to finish the practice safely."

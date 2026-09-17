@@ -1,0 +1,24 @@
+Bind Npc 29014 Zone 71
+Quest 739 "[Lemegeton] Devil 6 Count Valefor"
+    Journal "You must join the devil war with [Order of the Sorcery] Bros."
+    Kill 1 of 9121, 9194
+
+Requires player level >= 73 and player is karus and quest 738 is completed
+
+Rewards
+    Give 52500000 experience
+    Give 100000 coins
+    Give 100 np
+    Give 2 of 900017000
+
+On available
+    Say "As Bros of [Order of the Sorcery] said, we have turned the corner but it still looks very bad. Shouldn't we just fight the boss? Hehe."
+
+On offer
+    Show quest "An instruction from above. Looks like they want to resolve this situation.\n\nOne more devil to seal! It's the [6Devil] Duke Valefor, the god of thieves. Be careful, this man's got bad habit of stealing. Take the [6Devil Sommon Scroll] to [6Devil Summon Stone] in [Eslant]. Summon and eliminate him there.\n\nYou have to receive [Devil 6 Summoning Scroll] from [Order of the sorcery] Bros, of Ronark Land. Then, summon [Devil 6] Valefor from [Devil 6 Summoning Stone] at Luferson Castle area and kill him. \n※ [Devil 6 Summoning Scroll] is free the first time, but from the next time on you'll have to pay a million Noahs."
+
+On in_progress
+    Say "The [6Devil] Valefor's touch just doesn't know how to stop."
+
+On claimable
+    Show quest "The [6Devil] Valefor's touch has finally stopped.Thank you.\n\nIt's [29Devil] Astaroth, the archduke of the underworld. As you are well-aware of it, he is a powerful devil so be careful. With him are [53Devil] Camio and he is not too be taken lightly, either. Stay focus!"

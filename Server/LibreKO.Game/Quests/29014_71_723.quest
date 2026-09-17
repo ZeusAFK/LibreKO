@@ -1,0 +1,33 @@
+Bind Npc 29014 Zone 71
+Quest 723 "[Lemegeton] King of the Hidden Treasures"
+    Journal "You must join the devil war with [Order of the Sorcery] Bros."
+    Kill 1 of 9111, 9184
+    Kill 50 of 9113, 9186
+
+Requires player level >= 72 and player is karus and quest 721 is completed
+
+Rewards
+    Give 8750000 experience
+    Give 30000 coins
+    Give 1 of 900243000
+    Give 1 of 900244000
+    Choose one
+        Give 1 of 209001626
+        Give 1 of 249001627
+        Give 1 of 269001628
+        Give 1 of 289001629
+
+On available
+    Say "The number of our enemy's soldier has drasticall gone down. It surely was worth it to take down their main force. Let's go to Bros of [Order of the Sorcery]."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You are here. Since you, <selfname>, defeated [9Devil] Paimon, the war is going in our favor. We cannot lose this chance. Let's seal the next devil."
+    Topic "Tell me more..." do
+        Show quest "He often finds hidden treasures and thus revered as god by many treasure hunters. But to us, he is just another threatening devil. Please eliminate [20Devil] Purson and [44Devil] Shax.\n\nWe must help Bros of [Order of the Sorcery] of Ronark Land seal the [20Devil] Purson and [44Devil] Shax."
+
+On in_progress
+    Say "I don't see the souls imbued in you. You haven't eliminate them yet."
+
+On claimable
+    Show quest "You're imbued with souls of devil. You have done well.\n\nI have sealed the souls of devil that were imbued in you, <selfname>. Now please give me that seal Scroll."

@@ -1,0 +1,33 @@
+Bind Npc 29014 Zone 71
+Quest 717 "[Lemegeton] Sovereign of 66 Legions"
+    Journal "You must join the devil war with [Order of the Sorcery] Bros."
+    Kill 1 of 9100, 9173
+    Kill 50 of 9102, 9175
+
+Requires player level >= 71 and player is karus and quest 715 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900237000
+    Give 1 of 900238000
+    Choose one
+        Give 1 of 209002626
+        Give 1 of 249002627
+        Give 1 of 269002628
+        Give 1 of 289002629
+
+On available
+    Say "Are you sure they are low-ranking devil? Then, how much more powerful will the higher ones be? Does Bros of [Order of the Sorcery] know?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Among them, there are still many devils in the human world tormenting people even at this moment. And this has been growing ever since the start of the [Devil World]. To resist it, we must eliminate their numbers."
+    Topic "Tell me more..." do
+        Show quest "Among them, there are devils who have many troops. They are [33Devil] Gaap and [57Devil] Ose. They say [33Devil] Gaap has a total of 66 troops. Your mission is to scatter their underworld troops by eliminating them.\n\nWe must help Bros of [Order of the Sorcery] of Ronark Land seal the [33Devil] Gaap and [57Devil] Ose."
+
+On in_progress
+    Say "I don't see the souls imbued in you. You haven't eliminate them yet."
+
+On claimable
+    Show quest "You're imbued with souls of devil. You have done well.\n\nI have sealed the souls of devil that were imbued in you, <selfname>. Now please give me that seal Scroll."

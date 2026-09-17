@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://world_scene"]
+
+[ext_resource type="Script" path="res://src/World/World.cs" id="1_world"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(400, 400)
+
+[node name="World" type="Node3D"]
+script = ExtResource("1_world")
+
+[node name="Camera" type="Camera3D" parent="."]
+current = true
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_ground")
+
+[node name="Entities" type="Node3D" parent="."]

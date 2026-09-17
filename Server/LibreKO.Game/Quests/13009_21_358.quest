@@ -1,0 +1,42 @@
+Bind Npc 13009 Zone 21 for warrior
+Bind Npc 13009 Zone 21 for rogue
+Bind Npc 13009 Zone 21 for mage
+Bind Npc 13009 Zone 21 for priest
+Quest 358 "Dragon hunt"
+    Journal "I promised [Mercenary Captain] Cougar to kill the dragon."
+    Kill 1 of 7035 at direction_492
+
+Requires player level >= 75
+
+Rewards for warrior
+    Give 1 of 156310005
+
+Rewards for rogue
+    Choose one
+        Give 1 of 111310005
+        Give 1 of 168610005
+
+Rewards for mage
+    Give 1 of 181210005
+
+Rewards for priest
+    Give 1 of 170210275
+
+direction_492 = location "Felankor" about "Felankor\n  If character moves from the abyss with dragon`s marbles with can be obtained from Isiloon, entry into Dragon Cave is granted. " found "Dragon Cave" at 100 100
+
+On available
+    Say "Master! Let's go to [Mercenary Captain] Kugar and get the lowdown on Nest of the Fire Dragon."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "In the center of Ronark Land, the Felankor, which was in the nest in the Felankor, comes out and guards the Guard Tower. We must defeat the Felankor to claim the Guard Tower."
+
+On in_progress
+    Say "You still haven't thwarted the Red Dragon"
+
+On ready
+    Say "Master, you're the best, \n hunting down Red Dragon.. Let's go to Cougar to get your reward"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Did you hunt the Red Dragon in the Nest of the Fire Dragon? I cannot help but express my admiration.. \n I will give you the reward of your choice from below for its life"

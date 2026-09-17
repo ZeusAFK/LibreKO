@@ -1,0 +1,42 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 105 "Battle Armor 4"
+    Journal "You'll earn some Battle Pads if you hunt the Loup-garou, as [Mercenary Adjutant] Rage asked you to."
+    Kill 10 of 552 at direction_68
+
+Requires player level >= 27
+
+Rewards for warrior
+    Give 1 of 203002281
+    Give 175000 experience
+
+Rewards for rogue
+    Give 1 of 243002282
+    Give 175000 experience
+
+Rewards for mage
+    Give 1 of 263002283
+    Give 175000 experience
+
+Rewards for priest
+    Give 1 of 283002284
+    Give 175000 experience
+
+direction_68 = location "Loup-Garou" about "Loup-Garou\nMonster who evolved during the war with Pathos by a curse which turned man into woflman" found "Moradon" at 534 689 in zone 21
+
+On available
+    Say "Master, [Sentinel] Zalk is giving body armor bottom as reward this time. Wonder which monster it is..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Welcome. Will you help with the Loup-garou Hunt? I only need you to hunt 10 of them."
+    Topic "Tell me more..." do
+        Show quest "I will give you my body armor bottom this time.\n\nIf you heed [Mercenary Adjutant] Rage's request you can obtain craft items as a reward."
+
+On in_progress
+    Say "If it sounds too demanding, it's not too late to give up"
+
+On claimable
+    Show quest "You're truly reliable. Good work!"

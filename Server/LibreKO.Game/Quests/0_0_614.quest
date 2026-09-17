@@ -1,0 +1,30 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 614 "[New Hero] Found the cause!"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+
+Requires player level >= 69 and quest 613 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Somehow tricked me priest [Priest]Majal, by feeling what is the reason? Once you Go with God, and you [Captain]"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "What is the reason why not deceived me,  My feeling? Well, once [should go of Captain Falkwine to God."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "By were waiting <selfname>, priest [Priest]Majal, you would come."
+        Topic "Tell me more..." do
+            Show quest "For unidentified song's not done a lot of research. And found out that even upon a time something like this was happening frequently not.\n\nPrevious records told me that any evil spirits associated with this phenomenon. The information we found out did not even here. People to know about the evil spirits on the Moradon.\n\nI will be carrying a conversation with the Luferson Castle province [Captain]."
+    If player is elmorad
+        Say "were waiting <selfname>, Mai is not the you told me you'd come"
+        Topic "Tell me more..." do
+            Show quest "For unidentified song's not done a lot of research. And found out that even upon a time something like this was happening frequently not.\n\nPrevious records told me that any evil spirits associated with this phenomenon. The information we found out did not even here. People to know about the evil spirits on the Moradon.\n\n[And Captain Falkwine, El Morad Castle dialog."
+
+On claimable
+    Show quest "Unidentified elderly Moradon, Moradon somewhere to go to find out information about the evil spirits come to find him should be"

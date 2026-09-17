@@ -1,0 +1,37 @@
+Bind Npc 31516 Zone 11 for karus
+Bind Npc 31520 Zone 12 for elmorad
+Quest 549 "[Failed Mission] Noble Spirit"
+    Journal for karus "You must accept the request of [Hero who lost his eyes], of Eslant."
+    Journal for elmorad "You must accept the request of [Hero who lost his eyes], of Eslant."
+    Collect 1 of 910228000
+
+Requires player level >= 63 and quest 548 is completed
+
+Rewards
+    Give 1 of 910229000
+    Give 2500000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 207004603
+        Give 1 of 247004604
+        Give 1 of 267004605
+        Give 1 of 287004606
+
+On available
+    If player is karus
+        Say "[Eyeless Hero] by continually lamenting look talk to her again."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "You not able to return by [Eyeless Hero]. Ong something more you should?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Four I regret it so much!, I'm still your friend's ghost wandering the earth would be regarded as a sin, if you think that resting comfortably"
+    Topic "Tell me more..." do
+        Show quest "Once again, I'll have to ask. Recovered, let me give a [Noble Soul] enter the the snow valley of southwest [Corpse of the Hero]\n\nFind [Hero's Corpse] and collect [Valuable Soul]."
+
+On in_progress
+    Say "Still? How the I regret it so much!."
+
+On claimable
+    Show quest "Greater  ... Now leave this world comfort can be sent to the underworld, you could ...\n\nIt's something I'd like to get rid of the pain of the soul to go to the [Ascetic] Bedas will help."

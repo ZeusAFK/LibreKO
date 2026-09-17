@@ -1,0 +1,35 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 632 "Collecting Poison I"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 5 of 389520000
+
+Requires player level >= 60 and quest 631 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900200000
+    Give 1 of 900201000
+    Give 1 of 900202000
+
+On available
+    Say "What does he mean by playing the [joke]? \nI keep thinking about the last laugh he had...Let's go once again."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hmm ... first ...you would need ingredients.  How can you mess around if you don't have the ingredients?"
+        Topic "Tell me more..." do
+            Show quest "First, you need to collect [Oaks Herb Bundle] that [Rad Oaks] carry around.  That nasty looking herb that stinks will be the main ingredient of this joke.\n\n[Rad] from the poisonous weeds Orc pockets] Orc of Goblin Karus area near the village of [Staff] Squad Vere at the request of the need to collect."
+    If player is elmorad
+        Say "Hmm ... first ...you would need ingredients.  How can you mess around if you don't have the ingredients?"
+        Topic "Tell me more..." do
+            Show quest "First, you need to collect [Oaks Herb Bundle] that [Rad Oaks] carry around.  That nasty looking herb that stinks will be the main ingredient of this joke.\n\nEl Morad near the villages of the region Goblin Grey [Staff Squad] and upon request, should be collected from the the poisonous weeds Orc pockets Rad Orc."
+
+On in_progress
+    Say "What are you doing? Are you playing a joke on me?"
+
+On claimable
+    Show quest "You have collected well.  Wait for a moment.  All I have to do is mix it with this pre-made medicine. He he he.\n\nNow, take these [experimental poisonous weeds] into the Goblin village and mix them with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and bring me a sample so I can see the reaction."

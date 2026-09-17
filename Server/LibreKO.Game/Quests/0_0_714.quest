@@ -1,0 +1,46 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 714 "[Lemegeton] Count of Storm and Thunderbolt"
+    Journal for karus "You must join the devil war with [Order of the Sorcery] Bros."
+    Journal for elmorad "You must join the devil war with [Order of the Sorcery] Sais."
+    Collect 1 of 900233000
+    Collect 1 of 900234000
+    Collect 1 of 900235000
+
+Requires player level >= 71 and quest 713 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900236000
+    Choose one
+        Give 1 of 310140024
+        Give 1 of 310140025
+        Give 1 of 310140026
+        Give 1 of 310140027
+
+On available
+    Say "Be gone, devils! Here comes <selfname>. Hehe, let's go to Bros of [Order of the Sorcery] to get the next mission."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "It is time to go to the third underground world. Our opponent is a very powerful devil this time."
+        Topic "Tell me more..." do
+            Show quest "[Devil 34] Furfur has very strong and dreadful power, and he rules storms and thunderbolts. According to a story, the [Devil 34] Furfur has destroyed a castle only by his power. Destroy [Devil 58] Amy and [Devil 71] Dantalion with [Devil 34] Furfur. It'll be helpful if you remove the devils that can be strong forces for the devil army.\n\nWe must give Bros of [Order of the Sorcery] of Ronark Land the seal Scrolls for [34Devil] Furfur, [58Devil] Amy, and [71Devil] Dantalion."
+    If player is elmorad
+        Say "It is time to go to the third underground world. Our opponent is a very powerful devil this time."
+        Topic "Tell me more..." do
+            Show quest "[Devil 34] Furfur has very strong and dreadful power, and he rules storms and thunderbolts. According to a story, the [Devil 34] Furfur has destroyed a castle only by his power. Destroy [Devil 58] Amy and [Devil 71] Dantalion with [Devil 34] Furfur. It'll be helpful if you remove the devils that can be strong forces for the devil army.\n\nWe must give Sais of [Order of the Sorcery] of Ronark Land the seal Scrolls for [34Devil] Furfur, [58Devil] Amy, and [71Devil] Dantalion."
+
+On in_progress
+    Say "You haven't sealed yet? Then I will send you again to them."
+
+On claimable
+    Show quest "You have sealed them up for sure. With this, we can seal three more devils."
+
+On completed
+    If player is karus
+        Say "This one has the shape of Kentauros and also the shape of a starfish . . . Oh, I was talking about [Devil 10] Commander Buer who you have to fight against this time. It's said that one can be cured and treated only by his touch. It's certainly a good ability. However, since he's our enemy we can't consider his ability a good one. Bring this [Devil 10 Summoning Scroll] and go to the [Luferson Castle] where the [Devil 10 Summoning Stone] is located. Then, summon and destroy him."
+    If player is elmorad
+        Say "This one has the shape of Kentauros and also the shape of a starfish . . . Oh, I was talking about [Devil 10] Commander Buer who you have to fight against this time. It's said that one can be cured and treated only by his touch. It's certainly a good ability. However, since he's our enemy we can't consider his ability a good one. Bring this [Devil 10 Summoning Scroll] and go to the [El Morad Castle] where the [Devil 10 Summoning Stone] is located. Then, summon and destroy him."

@@ -1,0 +1,682 @@
+[
+  {
+    "ResourceId": 105,
+    "Resource": "Lunar Kapisi açildi. Savas basladi."
+  },
+  {
+    "ResourceId": 106,
+    "Resource": "Karus is victorious. They killed %d warriors and lost %d warriors"
+  },
+  {
+    "ResourceId": 107,
+    "Resource": "El Morad is victorious. They killed %d warriors and lost %d warriors"
+  },
+  {
+    "ResourceId": 108,
+    "Resource": "El Morad warriors in the battle zone have been banned!"
+  },
+  {
+    "ResourceId": 109,
+    "Resource": "Karus warriors in the battle zone have been banned!"
+  },
+  {
+    "ResourceId": 110,
+    "Resource": "This Knights name already exist."
+  },
+  {
+    "ResourceId": 111,
+    "Resource": "You are already in a Knights"
+  },
+  {
+    "ResourceId": 112,
+    "Resource": "You need to be at least at Level 20 in order to create a Knights"
+  },
+  {
+    "ResourceId": 113,
+    "Resource": "You need to have at least 800 National Points in order to create a Knights"
+  },
+  {
+    "ResourceId": 114,
+    "Resource": "You need to have at least 10 Leadership skill points and 5 Manner skill points in order to create a"
+  },
+  {
+    "ResourceId": 115,
+    "Resource": "You need to have at least 120 Attractactiveness skill points in order to create a Knights"
+  },
+  {
+    "ResourceId": 116,
+    "Resource": "You need to have at least 1,000,000 Coins in order to create a Knights"
+  },
+  {
+    "ResourceId": 117,
+    "Resource": "You have failed creating a Knights"
+  },
+  {
+    "ResourceId": 118,
+    "Resource": "This Knights does not exist"
+  },
+  {
+    "ResourceId": 119,
+    "Resource": "This is authorized for Head of Knights only."
+  },
+  {
+    "ResourceId": 120,
+    "Resource": "This is authorized for ranks higher than Vice Head of Knights only."
+  },
+  {
+    "ResourceId": 121,
+    "Resource": "Not Register Knights"
+  },
+  {
+    "ResourceId": 122,
+    "Resource": "Failed Update DB with Knights"
+  },
+  {
+    "ResourceId": 123,
+    "Resource": "This ID does not exist"
+  },
+  {
+    "ResourceId": 124,
+    "Resource": "Source Unable"
+  },
+  {
+    "ResourceId": 125,
+    "Resource": "This is authorized for ranks higher than officer"
+  },
+  {
+    "ResourceId": 126,
+    "Resource": "#### NOTICE : %s ####"
+  },
+  {
+    "ResourceId": 130,
+    "Resource": "El Morad have lost the war. They killed [%d] warriors and lost [%d] warriors"
+  },
+  {
+    "ResourceId": 131,
+    "Resource": "Karus have lost the war. They killed [%d] warriors and lost [%d] warriors"
+  },
+  {
+    "ResourceId": 132,
+    "Resource": "Users in Lunar Valley and in enemy land will be deported to their countries."
+  },
+  {
+    "ResourceId": 133,
+    "Resource": "Lunar Gate is closed. War has commenced."
+  },
+  {
+    "ResourceId": 134,
+    "Resource": "Düsmanin kaptanini öldüren kullanici [%s][%s]. Tebrikler!!"
+  },
+  {
+    "ResourceId": 135,
+    "Resource": "Düsmanin kaptanini öldüren kullanici [%s][%s]. Tebrikler!!"
+  },
+  {
+    "ResourceId": 136,
+    "Resource": "1st chief gatekeeper of Karus has been slain in battle. Opponent User [%s][%s] killed him."
+  },
+  {
+    "ResourceId": 137,
+    "Resource": "2nd chief gatekeeper of Karus has been slain in battle. Opponent User [%s][%s] killed him."
+  },
+  {
+    "ResourceId": 138,
+    "Resource": "1st chief gatekeeper of Karus has been slain in battle. Opponent User [%s][%s] killed him."
+  },
+  {
+    "ResourceId": 139,
+    "Resource": "2nd chief gatekeeper of El Morad has been slain in battle. Opponent User [%s][%s] killed him."
+  },
+  {
+    "ResourceId": 140,
+    "Resource": "The captain(s) for Karus is(are) %s, %s, %s, %s, %s"
+  },
+  {
+    "ResourceId": 141,
+    "Resource": "The captain(s) for El Morad is(are) %s, %s, %s, %s, %s"
+  },
+  {
+    "ResourceId": 142,
+    "Resource": "[%s][%s], the captain for Karus has been killed"
+  },
+  {
+    "ResourceId": 143,
+    "Resource": "[%s][%s], the captain for El Morad has been killed"
+  },
+  {
+    "ResourceId": 144,
+    "Resource": "3572-8471-3720-2495"
+  },
+  {
+    "ResourceId": 145,
+    "Resource": "7352-6539-3720-2495"
+  },
+  {
+    "ResourceId": 146,
+    "Resource": "#### %s has joined. ###"
+  },
+  {
+    "ResourceId": 147,
+    "Resource": "#### %s has left. ###"
+  },
+  {
+    "ResourceId": 148,
+    "Resource": "#### %s has been banned. ###"
+  },
+  {
+    "ResourceId": 149,
+    "Resource": "#### %s has been appointed as a leader. ###"
+  },
+  {
+    "ResourceId": 150,
+    "Resource": "#### %s has been appointed as a co-leader. ###"
+  },
+  {
+    "ResourceId": 151,
+    "Resource": "#### the knights %s has disbanded ###"
+  },
+  {
+    "ResourceId": 152,
+    "Resource": "#### the clan %s has disbanded ###"
+  },
+  {
+    "ResourceId": 153,
+    "Resource": "The Clan %s has won the clan duel."
+  },
+  {
+    "ResourceId": 154,
+    "Resource": "*** %s(Lv %d)has entered the Arena Lobby ***"
+  },
+  {
+    "ResourceId": 155,
+    "Resource": "*** %s(Lv %d)has left ***"
+  },
+  {
+    "ResourceId": 156,
+    "Resource": "The Snow Fight Zone is now open"
+  },
+  {
+    "ResourceId": 157,
+    "Resource": "The Snow Fight Zone is now closed"
+  },
+  {
+    "ResourceId": 158,
+    "Resource": "The users in the Snow Fight Zone will be teleported back to their native country."
+  },
+  {
+    "ResourceId": 159,
+    "Resource": "Number of dead Karus users: %d, Number of dead El Morad users: %d"
+  },
+  {
+    "ResourceId": 160,
+    "Resource": "The users of the defeated nation in Lunar Valley will be teleported back to their native country."
+  },
+  {
+    "ResourceId": 161,
+    "Resource": "The victorious nation can invade the opposite nation."
+  },
+  {
+    "ResourceId": 162,
+    "Resource": "Karus mainland is under attack."
+  },
+  {
+    "ResourceId": 163,
+    "Resource": "El Morad mainland is under attack."
+  },
+  {
+    "ResourceId": 164,
+    "Resource": "The Knights %s has entered the confederacy."
+  },
+  {
+    "ResourceId": 165,
+    "Resource": "The Knights %s has left the confederacy."
+  },
+  {
+    "ResourceId": 166,
+    "Resource": "The alliance with the Knights %s has been canceled"
+  },
+  {
+    "ResourceId": 167,
+    "Resource": "%s has won the fight"
+  },
+  {
+    "ResourceId": 168,
+    "Resource": "- %s defeat %s (x: %d, y: %d) -"
+  },
+  {
+    "ResourceId": 169,
+    "Resource": "Castle Siege War is about to begin. The designated Knights should enter the Castle Siege War zone."
+  },
+  {
+    "ResourceId": 170,
+    "Resource": "This is a time for building your base. Please build your base."
+  },
+  {
+    "ResourceId": 171,
+    "Resource": "Siege has begun"
+  },
+  {
+    "ResourceId": 172,
+    "Resource": "Siege has ended"
+  },
+  {
+    "ResourceId": 173,
+    "Resource": "There are %d minutes remaining in the Siege Warfare."
+  },
+  {
+    "ResourceId": 174,
+    "Resource": "We are currently accepting challengers for Castle Siege War. Location Moradon : 351,400"
+  },
+  {
+    "ResourceId": 175,
+    "Resource": "The registration period for Castle Siege War has now ended."
+  },
+  {
+    "ResourceId": 176,
+    "Resource": "There are %d minutes remaining for building your base. If you don't build a base by then, you'll aut"
+  },
+  {
+    "ResourceId": 177,
+    "Resource": " %d minutes left in the siege war"
+  },
+  {
+    "ResourceId": 178,
+    "Resource": "The base of the Knights %s has been destroyed the Center Artifact."
+  },
+  {
+    "ResourceId": 179,
+    "Resource": "Center Artifact has been destroyed"
+  },
+  {
+    "ResourceId": 180,
+    "Resource": "Sentry Artifact has been destroyed"
+  },
+  {
+    "ResourceId": 181,
+    "Resource": "Guard Tower Artifact has been destroyed"
+  },
+  {
+    "ResourceId": 182,
+    "Resource": "Defense Artifact has been destroyed"
+  },
+  {
+    "ResourceId": 184,
+    "Resource": "Shield Artifact has been destroyed"
+  },
+  {
+    "ResourceId": 185,
+    "Resource": "- %s was killed by %s -"
+  },
+  {
+    "ResourceId": 186,
+    "Resource": "%s Knight Squad has won."
+  },
+  {
+    "ResourceId": 187,
+    "Resource": "Money Increase Event is under way! Earn %d percent extra Noah from monster hunting."
+  },
+  {
+    "ResourceId": 188,
+    "Resource": "There are %d minutes remaining until the war commences."
+  },
+  {
+    "ResourceId": 189,
+    "Resource": "%s has been overrun"
+  },
+  {
+    "ResourceId": 190,
+    "Resource": "%s has been captured"
+  },
+  {
+    "ResourceId": 191,
+    "Resource": "%s ?  has blessed the warriors of  Karus."
+  },
+  {
+    "ResourceId": 192,
+    "Resource": "%s ?  has blessed the warriors of  El Morad."
+  },
+  {
+    "ResourceId": 193,
+    "Resource": "The server will shutdown after %d minutes."
+  },
+  {
+    "ResourceId": 195,
+    "Resource": "We're under attack by monsters. Please save the World from the monsters!!"
+  },
+  {
+    "ResourceId": 196,
+    "Resource": "The monsters have stopped. The World is safe now."
+  },
+  {
+    "ResourceId": 197,
+    "Resource": "EXP Increase Event is under way! Earn %d percent extra EXP from monster hunting."
+  },
+  {
+    "ResourceId": 198,
+    "Resource": "At %d Level %d  to %d Lost Temple will begin."
+  },
+  {
+    "ResourceId": 199,
+    "Resource": "Lost Temple has opened."
+  },
+  {
+    "ResourceId": 200,
+    "Resource": "Monsters are surfacing."
+  },
+  {
+    "ResourceId": 201,
+    "Resource": "All monsters in the temple have been destroyed. Temple's treasure chest has been earned."
+  },
+  {
+    "ResourceId": 202,
+    "Resource": "Lost Temple is now over."
+  },
+  {
+    "ResourceId": 203,
+    "Resource": "Dark Lunar Gate is now open. The war has begun."
+  },
+  {
+    "ResourceId": 204,
+    "Resource": "Please nominate a King."
+  },
+  {
+    "ResourceId": 205,
+    "Resource": "The period for nomination has ended."
+  },
+  {
+    "ResourceId": 206,
+    "Resource": "Election is in progress for selecting a King."
+  },
+  {
+    "ResourceId": 207,
+    "Resource": "A request for an impeachment of King has been made."
+  },
+  {
+    "ResourceId": 208,
+    "Resource": "election in progress for impeaching a King."
+  },
+  {
+    "ResourceId": 209,
+    "Resource": "A new King has been appointed."
+  },
+  {
+    "ResourceId": 210,
+    "Resource": "the king of karus has paid %s %d noahs as reward"
+  },
+  {
+    "ResourceId": 211,
+    "Resource": "the king of karus has paid %s %d noahs as reward"
+  },
+  {
+    "ResourceId": 212,
+    "Resource": "%s killed %s and received %d coins as a reward."
+  },
+  {
+    "ResourceId": 213,
+    "Resource": "the king of el morad has paid %s %d noahs as reward"
+  },
+  {
+    "ResourceId": 214,
+    "Resource": "the king of el morad has paid %s %d noahs as reward"
+  },
+  {
+    "ResourceId": 215,
+    "Resource": "The Karus King has cleared the weather."
+  },
+  {
+    "ResourceId": 216,
+    "Resource": "The Karus King has summoned the rain clouds."
+  },
+  {
+    "ResourceId": 217,
+    "Resource": "The Karus King has summoned the snow storm."
+  },
+  {
+    "ResourceId": 218,
+    "Resource": "The El Morad King has cleared the weather."
+  },
+  {
+    "ResourceId": 219,
+    "Resource": "The El Morad King has summoned the rain clouds."
+  },
+  {
+    "ResourceId": 220,
+    "Resource": "The El Morad King has summoned the snow storm."
+  },
+  {
+    "ResourceId": 221,
+    "Resource": "The Karus King has initiated the %d (percent) increased item drop rate event."
+  },
+  {
+    "ResourceId": 222,
+    "Resource": "The Karus King has initiated the %d (percent) increased experience point event."
+  },
+  {
+    "ResourceId": 223,
+    "Resource": "The El Morad King has initiated the %d (percent) increased item drop rate event."
+  },
+  {
+    "ResourceId": 224,
+    "Resource": "The El Morad King has initiated the %d (percent) increased experience point event."
+  },
+  {
+    "ResourceId": 225,
+    "Resource": "%s can nominate a King."
+  },
+  {
+    "ResourceId": 226,
+    "Resource": "%s has nominated %s as king."
+  },
+  {
+    "ResourceId": 227,
+    "Resource": "It is king nomination period. If you are qualified to nominate, please submint a nomination."
+  },
+  {
+    "ResourceId": 228,
+    "Resource": "It is election period to choose a King. If you have not already voted please choose a King."
+  },
+  {
+    "ResourceId": 229,
+    "Resource": "%d(percent) of total votes received and %s has been elected as king."
+  },
+  {
+    "ResourceId": 230,
+    "Resource": "The increased experience point event has ended."
+  },
+  {
+    "ResourceId": 231,
+    "Resource": "The increased item drop rate event has ended."
+  },
+  {
+    "ResourceId": 232,
+    "Resource": "Inpeachment Request In Progress"
+  },
+  {
+    "ResourceId": 233,
+    "Resource": "Inpeachment successfull"
+  },
+  {
+    "ResourceId": 234,
+    "Resource": "Inpeachment has been Rejected"
+  },
+  {
+    "ResourceId": 235,
+    "Resource": "Please select for your Inpeachment"
+  },
+  {
+    "ResourceId": 236,
+    "Resource": "Inpeachment Election has been accepted"
+  },
+  {
+    "ResourceId": 237,
+    "Resource": "Inpeachment Election has been Declined"
+  },
+  {
+    "ResourceId": 238,
+    "Resource": "Gate siege to penetrate the Bifrost has begun."
+  },
+  {
+    "ResourceId": 239,
+    "Resource": "Great Warrior Karus Gate has been completed to penetrate the Bifrost."
+  },
+  {
+    "ResourceId": 240,
+    "Resource": "Conguer of the Continent El Morad Gate has been completed to penetrate the Bifrost."
+  },
+  {
+    "ResourceId": 241,
+    "Resource": "Bifrost Gate is now close."
+  },
+  {
+    "ResourceId": 242,
+    "Resource": "The gate energy for penetrating the Bifrost has dropped."
+  },
+  {
+    "ResourceId": 243,
+    "Resource": "Karus : %d Points, El Morad %d Points, Number of Dead Karus Users : %d, Number of Dead El Morad Users : %d"
+  },
+  {
+    "ResourceId": 244,
+    "Resource": "You have occupied %s."
+  },
+  {
+    "ResourceId": 245,
+    "Resource": "%s has been occupied by the opponent country."
+  },
+  {
+    "ResourceId": 246,
+    "Resource": "Bonus National point event in effect. You'll receive additional %d percent of NPs for kill."
+  },
+  {
+    "ResourceId": 247,
+    "Resource": "The entrance to %s is now open. The event support Max 50 players!"
+  },
+  {
+    "ResourceId": 249,
+    "Resource": "Thanks for participating in %s event!..I hope you enjoyed."
+  },
+  {
+    "ResourceId": 250,
+    "Resource": "%s is now over. Users remaining in the event zone will be teleported out."
+  },
+  {
+    "ResourceId": 251,
+    "Resource": "%s will open at %d (GMT+1). To enter talk with npc \"[Exclusive Events] Nian\" !"
+  },
+  {
+    "ResourceId": 254,
+    "Resource": "Experience point Exp Flash event Started. You will Earn %d Percent of Experience for killing Mobs."
+  },
+  {
+    "ResourceId": 255,
+    "Resource": "Experience point DC Flash event Started. You will Earn %d Percent of Experience for killing Mobs."
+  },
+  {
+    "ResourceId": 256,
+    "Resource": "Experience point War Flash event Started. You will Earn %d Percent of Experience for killing Mobs."
+  },
+  {
+    "ResourceId": 257,
+    "Resource": "There are 5  minutes remaining in the Under The Castle."
+  },
+  {
+    "ResourceId": 258,
+    "Resource": "Under the Castle has opened. You may now enter Under The Castle."
+  },
+  {
+    "ResourceId": 259,
+    "Resource": "The Monsters are appearing, Get ready!!!"
+  },
+  {
+    "ResourceId": 260,
+    "Resource": "You have eliminated all the monsters in the temple."
+  },
+  {
+    "ResourceId": 261,
+    "Resource": "Under The Castle is now over."
+  },
+  {
+    "ResourceId": 262,
+    "Resource": "There are 5 minutes remaining until the start war."
+  },
+  {
+    "ResourceId": 263,
+    "Resource": "There are 5 minutes remaining until the end war."
+  },
+  {
+    "ResourceId": 264,
+    "Resource": "There are Dark Lunar %d minutes remaining until the start war."
+  },
+  {
+    "ResourceId": 265,
+    "Resource": "There are Dark Lunar %d minutes remaining until the end war."
+  },
+  {
+    "ResourceId": 266,
+    "Resource": "There are Oreads %d minutes remaining until the start war. (Special War)"
+  },
+  {
+    "ResourceId": 267,
+    "Resource": "There are Oreads %d minutes remaining until the end war.  (Special War)"
+  },
+  {
+    "ResourceId": 268,
+    "Resource": " %d minutes left in the war"
+  },
+  {
+    "ResourceId": 269,
+    "Resource": "Clan %s has %d minutes remaining for defending itself from being occupied."
+  },
+  {
+    "ResourceId": 270,
+    "Resource": "Deathmatch will begin in %d minutes. Please deploy your barracks"
+  },
+  {
+    "ResourceId": 271,
+    "Resource": "Deathmatch has begun"
+  },
+  {
+    "ResourceId": 272,
+    "Resource": "%d minutes remaining"
+  },
+  {
+    "ResourceId": 273,
+    "Resource": "Siege standby. Participating knights please enter the siege zone."
+  },
+  {
+    "ResourceId": 274,
+    "Resource": "%d minutes lesft to the siege standby time. Participating knights please enter the siege zone."
+  },
+  {
+    "ResourceId": 275,
+    "Resource": "(No.%d)Clan War has been finished. The winner is %s"
+  },
+  {
+    "ResourceId": 276,
+    "Resource": "(No.%d)Clan War is draw."
+  },
+  {
+    "ResourceId": 277,
+    "Resource": "#### Notice : Hesap güvenliginiz için bilgilerinizi oyun yöneticileri dahil hiç kimse ile paylasmayiniz.####"
+  },
+  {
+    "ResourceId": 278,
+    "Resource": "#### Notice : For your account security, do not share your information with anyopne, including game administrators.####"
+  },
+  {
+    "ResourceId": 279,
+    "Resource": "%s knighttage's barrack has been destroyed by %s of %s knightage"
+  },
+  {
+    "ResourceId": 280,
+    "Resource": "Opponent troops, who were hiding out in the main castle of the war region, are beginning to flee."
+  },
+  {
+    "ResourceId": 281,
+    "Resource": "Drop Increase Event is under way! Earn %d percent extra Drop from monster hunting."
+  },
+  {
+    "ResourceId": 999,
+    "Resource": "%s"
+  }
+]

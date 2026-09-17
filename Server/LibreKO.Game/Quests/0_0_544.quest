@@ -1,0 +1,50 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 544 "[Self-made Hero] Is it really Unmeltable?"
+    Journal for karus "You must follow [Captain] Fargo's suggestion at Luferson Castle."
+    Journal for elmorad "You must follow [Captain] Falkwine's suggestion at El Morad Castle."
+    Kill 40 of 3801, 3851, 3871
+
+Requires player level >= 62 and quest 543 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 100 np
+
+direction_374 = location "Flame Rock" about "Flame Rock\nMade up with burning rocks, has very strong fighting skills" found "El Morad" elmorad at 114 1334 in zone 2
+direction_375 = location "Flame Rock" about "Flame Rock\nMade up with burning rocks, has very strong fighting skills" found "Karus" karus at 1893 638 in zone 1
+
+On available
+    If player is karus
+        Say "Oh ... This armor will melt with fire? But you have to say to master [Captain]Harugo, by carrying on the armor is going?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Oh ... This armor will melt with fire?But you have to say to the armor by wine master, [Captain] Falkwine going?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Never been well made. You'll have to check the performance of the armor?"
+        Topic "Tell me more..." do
+            Show quest "The men of the is not by fireball boulder over guy called [Flame Rock], against those guys 'lightly' to try to come.\n\nDefeat [Flame Rock] following the suggestion of [Captain] Fargo."
+    If player is elmorad
+        Say "Never been well made. You'll have to check the performance of the armor?"
+        Topic "Tell me more..." do
+            Show quest "The men of the is not by fireball boulder over guy called [Flame Rock], against those guys 'lightly' to try to come.\n\nDefeat [Flame Rock] following the suggestion of [Captain] Falkwine."
+
+On in_progress
+    If player is karus
+        Say "How is your armor still cool? Did you even try?"
+        Topic "Where can I find it?" do
+            Map direction_375
+    If player is elmorad
+        Say "Among primary armor? 'm Testing right?"
+        Topic "Where can I find it?" do
+            Map direction_374
+
+On ready
+    Say "The armor you think is better? You do not have completely melted traces!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Oh, also ... Seems to be well made??! Thank you, Chief."

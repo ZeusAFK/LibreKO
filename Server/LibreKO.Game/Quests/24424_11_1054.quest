@@ -1,0 +1,26 @@
+Bind Npc 24424 Zone 11
+Quest 1054 "The shinning Half Troll Captain"
+    Journal "Defeat 40 Half Troll Captains"
+    Kill 40 of 9065, 9076 at direction_802
+
+Requires player level >= 62 and player is karus
+
+Rewards
+    Give 33750000 experience
+
+direction_802 = location "Half Troll Captain" about "Half Troll Captain\n This monster mixed by Unknown species, for that it is weakened species than normal troll" found "Karus Eslant" karus at 697 820 in zone 11
+
+On offer
+    Say "The boss has been finally appeared. 'Troll Captain' is the one. Heard they are powerful"
+    Topic "Tell me more..." do
+        Show quest "Yes! You have the talent."
+        Topic "Where can I find it?" do
+            Map direction_802
+
+On in_progress
+    Say "do you have an understanding of their power now?"
+    Topic "Where can I find it?" do
+        Map direction_802
+
+On claimable
+    Show quest "They weren't so much different from half Troll Berserkers. Good job."

@@ -1,0 +1,18 @@
+Bind Npc 24424 Zone 11
+Quest 1080 "Seal the Half Troll Shaman's magic"
+    Journal "Defeat 30 Half Troll Shamans."
+    Kill 30 of 9066, 9077 at direction_803
+
+Requires player level >= 66 and player is karus and quest 1078 is completed
+
+Rewards
+    Give 37500000 experience
+
+direction_803 = location "Half Troll Shaman" about "Half Troll Shaman\n This monster mixed by Unknown species, for that it is weakened species than normal troll" found "Karus Eslant" karus at 652 656 in zone 11
+
+On offer
+    Say "Welcome. Those Half Troll Shaman are gathering around now."
+    Topic "Tell me more..." do
+        Show quest "I think they are trying to call out the trolls evil god. Can you get rid of them and seal the magic?"
+        Topic "Where can I find it?" do
+            Map direction_803

@@ -1,0 +1,57 @@
+Bind Npc 24202 Zone 1 for warrior
+Bind Npc 24202 Zone 1 for rogue
+Bind Npc 24202 Zone 1 for mage
+Bind Npc 24202 Zone 1 for priest
+Quest 492 "Eradicate Cardinal"
+    Journal "Eradicate Cardinal for [Secret Agent] Clarence and you will receive a reward."
+    Kill 40 of 1211, 1254, 1204 at direction_315
+
+Requires player level >= 55 and player is karus
+
+Rewards for warrior
+    Give 25000000 experience
+    Choose one
+        Give 1 of 972280734
+        Give 1 of 972320789
+        Give 1 of 972350824
+        Give 1 of 972360432
+
+Rewards for rogue
+    Give 1 of 972290492
+    Give 25000000 experience
+    Choose one
+        Give 1 of 972290492
+        Give 1 of 972330920
+
+Rewards for mage
+    Give 25000000 experience
+    Choose one
+        Give 1 of 972300360
+        Give 1 of 972300368
+        Give 1 of 972300376
+
+Rewards for priest
+    Give 1 of 972310762
+    Give 1 of 972340766
+    Give 25000000 experience
+
+direction_315 = location "Cardinal" about "Cardinal\nA magic organism created when Pathos cast a curse on a scarecrow" found "Karus Cursed Land " at 622 833 in zone 1
+
+On available
+    Say "Master, those must be what [Secret Agent] Clarence mentioned!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Do you know what a Cardinal is?"
+    Topic "Tell me more..." do
+        Show quest "A Cardinal is a magical lifeform created when Pathos cast a curse on a Scarecrow. No one knows how these monsters managed to wander onto the Adonis continent, but lately we've had a few show up on the outskirts of our village.\n\nIt was only yesterday. A Guard out on a patrol discovered a bunch of these monsters. It wasn't a big deal with only one or two of them around, but they increase in number every day.\n\nAt this rate, the monsters will overwhelm not only our village, but all of Adonis itself. We are currently working with other [Secret Agents] to eradicate them but we're shorthanded. <selfname>, please help us.\n\nI entrust this matter to you. Time is ticking so you should be on the move."
+
+On in_progress
+    Say "Quite a few Cardinals have been found in places other than the outskirts of the village."
+
+On ready
+    Say "Those monsters were multiplying fast, but you put a stop to THAT! Please go see [Secret Agent] Clarence!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you! You did better than I expected. You've made our job much easier."

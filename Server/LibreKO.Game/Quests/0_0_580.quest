@@ -1,0 +1,33 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 580 "[Legless Devil] Triumph"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+
+Requires player level >= 66 and quest 579 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "The Ronark Land Base paper successfully defended the fact that [captain], and you want me to tell you God!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "The fact that how successfully defended Ronark Land Base wine [Captain] Polk God want me to tell him!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "News from all over the base here?"
+        Topic "Tell me more..." do
+            Show quest "I was worried, Atta boy, Lorna, how war situation jiui the large land base is going?\n\nI will be carrying a conversation with the Luferson Castle province [Captain]."
+    If player is elmorad
+        Say "News from all over the base here?"
+        Topic "Tell me more..." do
+            Show quest "I was worried, Atta boy, Lorna, how war situation jiui the large land base is going?\n\n[And Captain Falkwine, El Morad Castle dialog."
+
+On claimable
+    If player is karus
+        Show quest "Did you win? Of course! Effort four lots <selfname>! You b always taken care of!\n\nAh, sorry for asking, We'll need one more, Lorna the [Priest]Majal, whether the large land base by what's going on that I'm looking for you, Why do not you try me?"
+    If player is elmorad
+        Show quest "Did you win? Of course! Effort four lots <selfname>! You b always taken care of!\n\nAh, sorry for asking, We'll need one more, not large land base in which  My Lorna what's going on that I'm looking for you, why do not you try me?"

@@ -1,0 +1,10379 @@
+[
+  {
+    "Id": 103002,
+    "DirectType": 1,
+    "FirstDamage": -24,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 103003,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -60,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 103005,
+    "DirectType": 1,
+    "FirstDamage": -62,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 103007,
+    "DirectType": 1,
+    "FirstDamage": -68,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 103009,
+    "DirectType": 1,
+    "FirstDamage": -88,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 104002,
+    "DirectType": 1,
+    "FirstDamage": 15,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 104003,
+    "DirectType": 1,
+    "FirstDamage": -29,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 104006,
+    "DirectType": 1,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 104008,
+    "DirectType": 1,
+    "FirstDamage": -77,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 104009,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 50,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 104018,
+    "DirectType": 2,
+    "FirstDamage": -105,
+    "TimeDamage": -10,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 104024,
+    "DirectType": 2,
+    "FirstDamage": -260,
+    "TimeDamage": -30,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 104033,
+    "DirectType": 2,
+    "FirstDamage": -385,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 105255,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 105660,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 105710,
+    "DirectType": 2,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 105725,
+    "DirectType": 1,
+    "FirstDamage": -150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 105730,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 750,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 105731,
+    "DirectType": 2,
+    "FirstDamage": 400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 105735,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 105740,
+    "DirectType": 1,
+    "FirstDamage": 250,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 105750,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 105760,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 10
+  },
+  {
+    "Id": 106255,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 106575,
+    "DirectType": 2,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 20,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 106660,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 106710,
+    "DirectType": 2,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 106725,
+    "DirectType": 1,
+    "FirstDamage": -150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 106730,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 750,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 106731,
+    "DirectType": 2,
+    "FirstDamage": 400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 106735,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 106740,
+    "DirectType": 1,
+    "FirstDamage": 250,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 106750,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 106760,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 10
+  },
+  {
+    "Id": 106775,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 106780,
+    "DirectType": 14,
+    "FirstDamage": 105,
+    "TimeDamage": 0,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 106815,
+    "DirectType": 13,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 106820,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 107265,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 107505,
+    "DirectType": 1,
+    "FirstDamage": -156,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 107510,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -232,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 107530,
+    "DirectType": 1,
+    "FirstDamage": -309,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 107535,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -463,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 107545,
+    "DirectType": 1,
+    "FirstDamage": -463,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 107550,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -691,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 107610,
+    "DirectType": 9,
+    "FirstDamage": 5,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 107650,
+    "DirectType": 9,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 107660,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 107705,
+    "DirectType": 1,
+    "FirstDamage": 60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 108265,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 108505,
+    "DirectType": 1,
+    "FirstDamage": -156,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 108510,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -232,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 108530,
+    "DirectType": 1,
+    "FirstDamage": -309,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 108535,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -463,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 108545,
+    "DirectType": 1,
+    "FirstDamage": -463,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 108550,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -691,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 108566,
+    "DirectType": 1,
+    "FirstDamage": -150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 108567,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 250,
+    "Duration": 5,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 108568,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 500,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 108610,
+    "DirectType": 9,
+    "FirstDamage": 5,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 108650,
+    "DirectType": 9,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 108660,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 108705,
+    "DirectType": 1,
+    "FirstDamage": 60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 109002,
+    "DirectType": 1,
+    "FirstDamage": -24,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109003,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -60,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109005,
+    "DirectType": 1,
+    "FirstDamage": -62,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109007,
+    "DirectType": 1,
+    "FirstDamage": -68,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109009,
+    "DirectType": 1,
+    "FirstDamage": -88,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109269,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 109503,
+    "DirectType": 1,
+    "FirstDamage": -168,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109509,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -280,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109515,
+    "DirectType": 1,
+    "FirstDamage": -308,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109518,
+    "DirectType": 1,
+    "FirstDamage": -238,
+    "TimeDamage": -336,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109527,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109533,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 8
+  },
+  {
+    "Id": 109535,
+    "DirectType": 1,
+    "FirstDamage": -840,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109539,
+    "DirectType": 1,
+    "FirstDamage": -480,
+    "TimeDamage": -1120,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109542,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109543,
+    "DirectType": 1,
+    "FirstDamage": -615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109545,
+    "DirectType": 1,
+    "FirstDamage": -504,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 109551,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109554,
+    "DirectType": 8,
+    "FirstDamage": -1550,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109556,
+    "DirectType": 1,
+    "FirstDamage": -1015,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109557,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -1000,
+    "Duration": 10,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 109560,
+    "DirectType": 1,
+    "FirstDamage": -1800,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 109603,
+    "DirectType": 1,
+    "FirstDamage": -118,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109609,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -196,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109615,
+    "DirectType": 1,
+    "FirstDamage": -216,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109618,
+    "DirectType": 1,
+    "FirstDamage": -167,
+    "TimeDamage": -236,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109627,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109633,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 8
+  },
+  {
+    "Id": 109635,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109639,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": -784,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109642,
+    "DirectType": 1,
+    "FirstDamage": -236,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109643,
+    "DirectType": 1,
+    "FirstDamage": -431,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109645,
+    "DirectType": 1,
+    "FirstDamage": -353,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 109651,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109656,
+    "DirectType": 1,
+    "FirstDamage": -711,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109657,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": -700,
+    "Duration": 10,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 109660,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -420,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 109703,
+    "DirectType": 1,
+    "FirstDamage": -118,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109709,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -196,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109715,
+    "DirectType": 1,
+    "FirstDamage": -216,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109718,
+    "DirectType": 1,
+    "FirstDamage": -167,
+    "TimeDamage": -236,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109727,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109733,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 8
+  },
+  {
+    "Id": 109735,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109739,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": -784,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109742,
+    "DirectType": 1,
+    "FirstDamage": -236,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109743,
+    "DirectType": 1,
+    "FirstDamage": -431,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109745,
+    "DirectType": 1,
+    "FirstDamage": -353,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 109751,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109754,
+    "DirectType": 8,
+    "FirstDamage": -1100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109756,
+    "DirectType": 1,
+    "FirstDamage": -711,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109757,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": -700,
+    "Duration": 10,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 109760,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -420,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 110002,
+    "DirectType": 1,
+    "FirstDamage": -24,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110003,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -60,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110005,
+    "DirectType": 1,
+    "FirstDamage": -62,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110007,
+    "DirectType": 1,
+    "FirstDamage": -68,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110009,
+    "DirectType": 1,
+    "FirstDamage": -88,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110269,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 110503,
+    "DirectType": 1,
+    "FirstDamage": -168,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110509,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -280,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110515,
+    "DirectType": 1,
+    "FirstDamage": -308,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110518,
+    "DirectType": 1,
+    "FirstDamage": -238,
+    "TimeDamage": -336,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110527,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110533,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 8
+  },
+  {
+    "Id": 110535,
+    "DirectType": 1,
+    "FirstDamage": -840,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110539,
+    "DirectType": 1,
+    "FirstDamage": -480,
+    "TimeDamage": -1120,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110542,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110543,
+    "DirectType": 1,
+    "FirstDamage": -615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110545,
+    "DirectType": 1,
+    "FirstDamage": -504,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 110551,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110554,
+    "DirectType": 8,
+    "FirstDamage": -1550,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110556,
+    "DirectType": 1,
+    "FirstDamage": -1015,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110557,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -1000,
+    "Duration": 10,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110560,
+    "DirectType": 1,
+    "FirstDamage": -1800,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 110570,
+    "DirectType": 1,
+    "FirstDamage": -2500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110571,
+    "DirectType": 1,
+    "FirstDamage": -2100,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 110572,
+    "DirectType": 1,
+    "FirstDamage": -1103,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110574,
+    "DirectType": 16,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110575,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 110603,
+    "DirectType": 1,
+    "FirstDamage": -118,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110609,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -196,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110615,
+    "DirectType": 1,
+    "FirstDamage": -216,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110618,
+    "DirectType": 1,
+    "FirstDamage": -167,
+    "TimeDamage": -236,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110627,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110633,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 8
+  },
+  {
+    "Id": 110635,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110639,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": -784,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110642,
+    "DirectType": 1,
+    "FirstDamage": -236,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110643,
+    "DirectType": 1,
+    "FirstDamage": -431,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110645,
+    "DirectType": 1,
+    "FirstDamage": -353,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 110651,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110656,
+    "DirectType": 1,
+    "FirstDamage": -711,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110657,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": -700,
+    "Duration": 10,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110660,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -420,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 110670,
+    "DirectType": 1,
+    "FirstDamage": -1750,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110671,
+    "DirectType": 1,
+    "FirstDamage": -1470,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 110672,
+    "DirectType": 1,
+    "FirstDamage": -883,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 110674,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 2,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 110703,
+    "DirectType": 1,
+    "FirstDamage": -118,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110709,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -196,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110715,
+    "DirectType": 1,
+    "FirstDamage": -216,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110718,
+    "DirectType": 1,
+    "FirstDamage": -167,
+    "TimeDamage": -236,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110727,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110733,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 8
+  },
+  {
+    "Id": 110735,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110739,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": -784,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110742,
+    "DirectType": 1,
+    "FirstDamage": -236,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110743,
+    "DirectType": 1,
+    "FirstDamage": -431,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110745,
+    "DirectType": 1,
+    "FirstDamage": -353,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 110751,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110754,
+    "DirectType": 8,
+    "FirstDamage": -1100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110756,
+    "DirectType": 1,
+    "FirstDamage": -711,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110757,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": -700,
+    "Duration": 10,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110760,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -420,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 110770,
+    "DirectType": 1,
+    "FirstDamage": -1750,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 110771,
+    "DirectType": 1,
+    "FirstDamage": -1470,
+    "TimeDamage": -420,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 110772,
+    "DirectType": 1,
+    "FirstDamage": -883,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 111002,
+    "DirectType": 1,
+    "FirstDamage": 15,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111003,
+    "DirectType": 1,
+    "FirstDamage": -29,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 111005,
+    "DirectType": 1,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111008,
+    "DirectType": 1,
+    "FirstDamage": -77,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 111009,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 50,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111018,
+    "DirectType": 2,
+    "FirstDamage": -105,
+    "TimeDamage": -10,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 111024,
+    "DirectType": 2,
+    "FirstDamage": -260,
+    "TimeDamage": -30,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 111033,
+    "DirectType": 2,
+    "FirstDamage": -385,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 111266,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 111500,
+    "DirectType": 1,
+    "FirstDamage": 60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111503,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 100,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111509,
+    "DirectType": 1,
+    "FirstDamage": 240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111512,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 400,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111518,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111521,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 600,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111527,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111530,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111536,
+    "DirectType": 1,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111539,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111545,
+    "DirectType": 1,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111548,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 2500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111554,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111557,
+    "DirectType": 1,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 111560,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 111709,
+    "DirectType": 2,
+    "FirstDamage": -480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 111736,
+    "DirectType": 2,
+    "FirstDamage": -960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112002,
+    "DirectType": 1,
+    "FirstDamage": 15,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112003,
+    "DirectType": 1,
+    "FirstDamage": -29,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 112005,
+    "DirectType": 1,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112008,
+    "DirectType": 1,
+    "FirstDamage": -77,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 112009,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 50,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112018,
+    "DirectType": 2,
+    "FirstDamage": -105,
+    "TimeDamage": -10,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 112024,
+    "DirectType": 2,
+    "FirstDamage": -260,
+    "TimeDamage": -30,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 112033,
+    "DirectType": 2,
+    "FirstDamage": -385,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 112266,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 112500,
+    "DirectType": 1,
+    "FirstDamage": 60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112503,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 100,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112509,
+    "DirectType": 1,
+    "FirstDamage": 240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112512,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 400,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112518,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112521,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 600,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112527,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112530,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112536,
+    "DirectType": 1,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112539,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112545,
+    "DirectType": 1,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112548,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 2500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112554,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112557,
+    "DirectType": 1,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 112560,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 112570,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 3000,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 112575,
+    "DirectType": 1,
+    "FirstDamage": 2500,
+    "TimeDamage": 3000,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 112580,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 6000,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 112709,
+    "DirectType": 2,
+    "FirstDamage": -480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112736,
+    "DirectType": 2,
+    "FirstDamage": -960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 112772,
+    "DirectType": 2,
+    "FirstDamage": -3840,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 15
+  },
+  {
+    "Id": 114255,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 114503,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -100,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 114525,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -200,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 114551,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -400,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 114660,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 114700,
+    "DirectType": 1,
+    "FirstDamage": 100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 114705,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -98,
+    "Duration": 20,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 114715,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 300,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 114720,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -205,
+    "Duration": 20,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 114725,
+    "DirectType": 1,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 114730,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 114735,
+    "DirectType": 1,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 114740,
+    "DirectType": 1,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 114750,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 114755,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1920,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 114760,
+    "DirectType": 1,
+    "FirstDamage": 1280,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 114765,
+    "DirectType": 1,
+    "FirstDamage": 1280,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 114775,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 114780,
+    "DirectType": 24,
+    "FirstDamage": 0,
+    "TimeDamage": -2500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 115255,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 115503,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -100,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 115525,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -200,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 115551,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -400,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 115566,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 115575,
+    "DirectType": 2,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 20,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 115660,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 115700,
+    "DirectType": 1,
+    "FirstDamage": 100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 115705,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -98,
+    "Duration": 20,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 115715,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 300,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 115720,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -205,
+    "Duration": 20,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 115725,
+    "DirectType": 1,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 115730,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 115735,
+    "DirectType": 1,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 115740,
+    "DirectType": 1,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 115750,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 115755,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1920,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 115760,
+    "DirectType": 1,
+    "FirstDamage": 1280,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 115765,
+    "DirectType": 1,
+    "FirstDamage": 1280,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 115775,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 115780,
+    "DirectType": 24,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 115810,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 10
+  },
+  {
+    "Id": 115815,
+    "DirectType": 13,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 115818,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 10
+  },
+  {
+    "Id": 120011,
+    "DirectType": 11,
+    "FirstDamage": -3500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 15
+  },
+  {
+    "Id": 190573,
+    "DirectType": 15,
+    "FirstDamage": -1400,
+    "TimeDamage": -700,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 190673,
+    "DirectType": 15,
+    "FirstDamage": -1120,
+    "TimeDamage": -490,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 190773,
+    "DirectType": 15,
+    "FirstDamage": -1120,
+    "TimeDamage": -490,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 203002,
+    "DirectType": 1,
+    "FirstDamage": -24,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 203003,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -60,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 203005,
+    "DirectType": 1,
+    "FirstDamage": -62,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 203007,
+    "DirectType": 1,
+    "FirstDamage": -68,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 203009,
+    "DirectType": 1,
+    "FirstDamage": -88,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 204002,
+    "DirectType": 1,
+    "FirstDamage": 15,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 204003,
+    "DirectType": 1,
+    "FirstDamage": -29,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 204005,
+    "DirectType": 1,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 204008,
+    "DirectType": 1,
+    "FirstDamage": -77,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 204009,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 50,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 204018,
+    "DirectType": 2,
+    "FirstDamage": -105,
+    "TimeDamage": -10,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 204024,
+    "DirectType": 2,
+    "FirstDamage": -260,
+    "TimeDamage": -30,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 204033,
+    "DirectType": 2,
+    "FirstDamage": -385,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 205255,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 205660,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 205710,
+    "DirectType": 2,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 205725,
+    "DirectType": 1,
+    "FirstDamage": -150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 205730,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 750,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 205731,
+    "DirectType": 2,
+    "FirstDamage": 400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 205735,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 205740,
+    "DirectType": 1,
+    "FirstDamage": 250,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 205750,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 205760,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 10
+  },
+  {
+    "Id": 206255,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 206575,
+    "DirectType": 2,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 20,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 206660,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 206710,
+    "DirectType": 2,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 206725,
+    "DirectType": 1,
+    "FirstDamage": -150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 206730,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 750,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 206731,
+    "DirectType": 2,
+    "FirstDamage": 400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 206735,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 206740,
+    "DirectType": 1,
+    "FirstDamage": 250,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 206750,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 206760,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 10
+  },
+  {
+    "Id": 206775,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 206780,
+    "DirectType": 14,
+    "FirstDamage": 105,
+    "TimeDamage": 0,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 206815,
+    "DirectType": 13,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 206820,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 207265,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 207505,
+    "DirectType": 1,
+    "FirstDamage": -156,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 207510,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -232,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 207530,
+    "DirectType": 1,
+    "FirstDamage": -309,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 207535,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -463,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 207545,
+    "DirectType": 1,
+    "FirstDamage": -463,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 207550,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -691,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 207610,
+    "DirectType": 9,
+    "FirstDamage": 5,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 207650,
+    "DirectType": 9,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 207660,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 207705,
+    "DirectType": 1,
+    "FirstDamage": 60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 208265,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 208505,
+    "DirectType": 1,
+    "FirstDamage": -156,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 208510,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -232,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 208530,
+    "DirectType": 1,
+    "FirstDamage": -309,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 208535,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -463,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 208545,
+    "DirectType": 1,
+    "FirstDamage": -463,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 208550,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -691,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 208566,
+    "DirectType": 1,
+    "FirstDamage": -150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 208567,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 250,
+    "Duration": 5,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 208568,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 500,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 208610,
+    "DirectType": 9,
+    "FirstDamage": 5,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 208650,
+    "DirectType": 9,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 208660,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 208705,
+    "DirectType": 1,
+    "FirstDamage": 60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 209002,
+    "DirectType": 1,
+    "FirstDamage": -24,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209003,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -60,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209005,
+    "DirectType": 1,
+    "FirstDamage": -62,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209007,
+    "DirectType": 1,
+    "FirstDamage": -68,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209009,
+    "DirectType": 1,
+    "FirstDamage": -88,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209269,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 209503,
+    "DirectType": 1,
+    "FirstDamage": -168,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209509,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -280,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209515,
+    "DirectType": 1,
+    "FirstDamage": -308,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209518,
+    "DirectType": 1,
+    "FirstDamage": -238,
+    "TimeDamage": -336,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209527,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209533,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 8
+  },
+  {
+    "Id": 209535,
+    "DirectType": 1,
+    "FirstDamage": -840,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209539,
+    "DirectType": 1,
+    "FirstDamage": -480,
+    "TimeDamage": -1120,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209542,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209543,
+    "DirectType": 1,
+    "FirstDamage": -615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209545,
+    "DirectType": 1,
+    "FirstDamage": -504,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 209551,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209554,
+    "DirectType": 8,
+    "FirstDamage": -1550,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209556,
+    "DirectType": 1,
+    "FirstDamage": -1015,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209557,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -1000,
+    "Duration": 10,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 209560,
+    "DirectType": 1,
+    "FirstDamage": -1800,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 209603,
+    "DirectType": 1,
+    "FirstDamage": -118,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209609,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -196,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209615,
+    "DirectType": 1,
+    "FirstDamage": -216,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209618,
+    "DirectType": 1,
+    "FirstDamage": -167,
+    "TimeDamage": -236,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209627,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209633,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 8
+  },
+  {
+    "Id": 209635,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209639,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": -784,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209642,
+    "DirectType": 1,
+    "FirstDamage": -236,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209643,
+    "DirectType": 1,
+    "FirstDamage": -431,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209645,
+    "DirectType": 1,
+    "FirstDamage": -353,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 209651,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209656,
+    "DirectType": 1,
+    "FirstDamage": -711,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209657,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": -700,
+    "Duration": 10,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 209660,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -420,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 209703,
+    "DirectType": 1,
+    "FirstDamage": -118,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209709,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -196,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209715,
+    "DirectType": 1,
+    "FirstDamage": -216,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209718,
+    "DirectType": 1,
+    "FirstDamage": -167,
+    "TimeDamage": -236,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209727,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209733,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 8
+  },
+  {
+    "Id": 209735,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209739,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": -784,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209742,
+    "DirectType": 1,
+    "FirstDamage": -236,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209743,
+    "DirectType": 1,
+    "FirstDamage": -431,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209745,
+    "DirectType": 1,
+    "FirstDamage": -353,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 209751,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209754,
+    "DirectType": 8,
+    "FirstDamage": -1100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209756,
+    "DirectType": 1,
+    "FirstDamage": -711,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209757,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": -700,
+    "Duration": 10,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 209760,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -420,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 210002,
+    "DirectType": 1,
+    "FirstDamage": -24,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210003,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -60,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210005,
+    "DirectType": 1,
+    "FirstDamage": -62,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210007,
+    "DirectType": 1,
+    "FirstDamage": -68,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210009,
+    "DirectType": 1,
+    "FirstDamage": -88,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210269,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 210503,
+    "DirectType": 1,
+    "FirstDamage": -168,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210509,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -280,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210515,
+    "DirectType": 1,
+    "FirstDamage": -308,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210518,
+    "DirectType": 1,
+    "FirstDamage": -238,
+    "TimeDamage": -336,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210527,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210533,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 8
+  },
+  {
+    "Id": 210535,
+    "DirectType": 1,
+    "FirstDamage": -840,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210539,
+    "DirectType": 1,
+    "FirstDamage": -480,
+    "TimeDamage": -1120,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210542,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210543,
+    "DirectType": 1,
+    "FirstDamage": -615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210545,
+    "DirectType": 1,
+    "FirstDamage": -504,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 210551,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210554,
+    "DirectType": 8,
+    "FirstDamage": -1550,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210556,
+    "DirectType": 1,
+    "FirstDamage": -1015,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210557,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -1000,
+    "Duration": 10,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210560,
+    "DirectType": 1,
+    "FirstDamage": -1800,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 210570,
+    "DirectType": 1,
+    "FirstDamage": -2500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210571,
+    "DirectType": 1,
+    "FirstDamage": -2100,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 210572,
+    "DirectType": 1,
+    "FirstDamage": -1103,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210574,
+    "DirectType": 16,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210575,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 210603,
+    "DirectType": 1,
+    "FirstDamage": -118,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210609,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -196,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210615,
+    "DirectType": 1,
+    "FirstDamage": -216,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210618,
+    "DirectType": 1,
+    "FirstDamage": -167,
+    "TimeDamage": -236,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210627,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210633,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 8
+  },
+  {
+    "Id": 210635,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210639,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": -784,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210642,
+    "DirectType": 1,
+    "FirstDamage": -236,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210643,
+    "DirectType": 1,
+    "FirstDamage": -431,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210645,
+    "DirectType": 1,
+    "FirstDamage": -353,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 210651,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210656,
+    "DirectType": 1,
+    "FirstDamage": -711,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210657,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": -700,
+    "Duration": 10,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210660,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -420,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 210670,
+    "DirectType": 1,
+    "FirstDamage": -1750,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210671,
+    "DirectType": 1,
+    "FirstDamage": -1470,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 210672,
+    "DirectType": 1,
+    "FirstDamage": -883,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 210674,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 2,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 210703,
+    "DirectType": 1,
+    "FirstDamage": -118,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210709,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -196,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210715,
+    "DirectType": 1,
+    "FirstDamage": -216,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210718,
+    "DirectType": 1,
+    "FirstDamage": -167,
+    "TimeDamage": -236,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210727,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210733,
+    "DirectType": 1,
+    "FirstDamage": -412,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 8
+  },
+  {
+    "Id": 210735,
+    "DirectType": 1,
+    "FirstDamage": -588,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210739,
+    "DirectType": 1,
+    "FirstDamage": -336,
+    "TimeDamage": -784,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210742,
+    "DirectType": 1,
+    "FirstDamage": -236,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210743,
+    "DirectType": 1,
+    "FirstDamage": -431,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210745,
+    "DirectType": 1,
+    "FirstDamage": -353,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 210751,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210754,
+    "DirectType": 8,
+    "FirstDamage": -1100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210756,
+    "DirectType": 1,
+    "FirstDamage": -711,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210757,
+    "DirectType": 1,
+    "FirstDamage": -882,
+    "TimeDamage": -700,
+    "Duration": 10,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210760,
+    "DirectType": 1,
+    "FirstDamage": -1260,
+    "TimeDamage": -420,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 210770,
+    "DirectType": 1,
+    "FirstDamage": -1750,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 210771,
+    "DirectType": 1,
+    "FirstDamage": -1470,
+    "TimeDamage": -420,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 15
+  },
+  {
+    "Id": 210772,
+    "DirectType": 1,
+    "FirstDamage": -883,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 211002,
+    "DirectType": 1,
+    "FirstDamage": 15,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211003,
+    "DirectType": 1,
+    "FirstDamage": -29,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 211005,
+    "DirectType": 1,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211008,
+    "DirectType": 1,
+    "FirstDamage": -77,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 211009,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 50,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211018,
+    "DirectType": 2,
+    "FirstDamage": -105,
+    "TimeDamage": -10,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 211024,
+    "DirectType": 2,
+    "FirstDamage": -260,
+    "TimeDamage": -30,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 211033,
+    "DirectType": 2,
+    "FirstDamage": -385,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 211266,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 211500,
+    "DirectType": 1,
+    "FirstDamage": 60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211503,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 100,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211509,
+    "DirectType": 1,
+    "FirstDamage": 240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211512,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 400,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211518,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211521,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 600,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211527,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211530,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211536,
+    "DirectType": 1,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211539,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211545,
+    "DirectType": 1,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211548,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 2500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211554,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211557,
+    "DirectType": 1,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 211560,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 211709,
+    "DirectType": 2,
+    "FirstDamage": -480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 211736,
+    "DirectType": 2,
+    "FirstDamage": -960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212002,
+    "DirectType": 1,
+    "FirstDamage": 15,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212003,
+    "DirectType": 1,
+    "FirstDamage": -29,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 212005,
+    "DirectType": 1,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212008,
+    "DirectType": 1,
+    "FirstDamage": -77,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 212009,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 50,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212018,
+    "DirectType": 2,
+    "FirstDamage": -105,
+    "TimeDamage": -10,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 212024,
+    "DirectType": 2,
+    "FirstDamage": -260,
+    "TimeDamage": -30,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 212033,
+    "DirectType": 2,
+    "FirstDamage": -385,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 212266,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 212500,
+    "DirectType": 1,
+    "FirstDamage": 60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212503,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 100,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212509,
+    "DirectType": 1,
+    "FirstDamage": 240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212512,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 400,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212518,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212521,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 600,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212527,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212530,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212536,
+    "DirectType": 1,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212539,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212545,
+    "DirectType": 1,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212548,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 2500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212554,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212557,
+    "DirectType": 1,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 212560,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 212570,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 3000,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 212575,
+    "DirectType": 1,
+    "FirstDamage": 2500,
+    "TimeDamage": 3000,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 212580,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 6000,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 212709,
+    "DirectType": 2,
+    "FirstDamage": -480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212736,
+    "DirectType": 2,
+    "FirstDamage": -960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 212772,
+    "DirectType": 2,
+    "FirstDamage": -3840,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 15
+  },
+  {
+    "Id": 214255,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 214503,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -100,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 214525,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -200,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 214551,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -400,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 214660,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 214700,
+    "DirectType": 1,
+    "FirstDamage": 100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 214705,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -98,
+    "Duration": 20,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 214715,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 300,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 214720,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -205,
+    "Duration": 20,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 214725,
+    "DirectType": 1,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 214730,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 214735,
+    "DirectType": 1,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 214740,
+    "DirectType": 1,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 214750,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 214755,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1920,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 214760,
+    "DirectType": 1,
+    "FirstDamage": 1280,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 214765,
+    "DirectType": 1,
+    "FirstDamage": 1280,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 214775,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 214780,
+    "DirectType": 24,
+    "FirstDamage": 0,
+    "TimeDamage": -2500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 215255,
+    "DirectType": 18,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 215503,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -100,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 215525,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -200,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 215551,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -400,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 215566,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 215575,
+    "DirectType": 2,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 20,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 215660,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 215700,
+    "DirectType": 1,
+    "FirstDamage": 100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 215705,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -98,
+    "Duration": 20,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 215715,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 300,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 215720,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -205,
+    "Duration": 20,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 215725,
+    "DirectType": 1,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 215730,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 215735,
+    "DirectType": 1,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 215740,
+    "DirectType": 1,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 215750,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 215755,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1920,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 215760,
+    "DirectType": 1,
+    "FirstDamage": 1280,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 215765,
+    "DirectType": 1,
+    "FirstDamage": 1280,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 215775,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 215780,
+    "DirectType": 24,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 215810,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 10
+  },
+  {
+    "Id": 215815,
+    "DirectType": 13,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 215818,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 10
+  },
+  {
+    "Id": 220011,
+    "DirectType": 11,
+    "FirstDamage": -3500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 15
+  },
+  {
+    "Id": 290573,
+    "DirectType": 15,
+    "FirstDamage": -1400,
+    "TimeDamage": -700,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 290673,
+    "DirectType": 15,
+    "FirstDamage": -1120,
+    "TimeDamage": -490,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 290773,
+    "DirectType": 15,
+    "FirstDamage": -1120,
+    "TimeDamage": -490,
+    "Duration": 20,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300101,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": -120,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300102,
+    "DirectType": 1,
+    "FirstDamage": -120,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300103,
+    "DirectType": 1,
+    "FirstDamage": -270,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300104,
+    "DirectType": 1,
+    "FirstDamage": -1440,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300105,
+    "DirectType": 1,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 30
+  },
+  {
+    "Id": 300106,
+    "DirectType": 1,
+    "FirstDamage": 2400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 30
+  },
+  {
+    "Id": 300107,
+    "DirectType": 1,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300108,
+    "DirectType": 1,
+    "FirstDamage": -350,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300109,
+    "DirectType": 1,
+    "FirstDamage": -400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300110,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300111,
+    "DirectType": 1,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300112,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300113,
+    "DirectType": 1,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300114,
+    "DirectType": 1,
+    "FirstDamage": -240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300115,
+    "DirectType": 1,
+    "FirstDamage": -360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300116,
+    "DirectType": 1,
+    "FirstDamage": 1152,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300117,
+    "DirectType": 1,
+    "FirstDamage": -360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300118,
+    "DirectType": 1,
+    "FirstDamage": -400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300119,
+    "DirectType": 1,
+    "FirstDamage": -600,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300120,
+    "DirectType": 1,
+    "FirstDamage": -800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300121,
+    "DirectType": 1,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300122,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300123,
+    "DirectType": 1,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300124,
+    "DirectType": 1,
+    "FirstDamage": -1400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300125,
+    "DirectType": 1,
+    "FirstDamage": -1800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300126,
+    "DirectType": 1,
+    "FirstDamage": -2200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300127,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300128,
+    "DirectType": 2,
+    "FirstDamage": -100,
+    "TimeDamage": -1200,
+    "Duration": 30,
+    "Attribute": 5,
+    "Radius": 15
+  },
+  {
+    "Id": 300129,
+    "DirectType": 2,
+    "FirstDamage": -200,
+    "TimeDamage": -1600,
+    "Duration": 30,
+    "Attribute": 5,
+    "Radius": 15
+  },
+  {
+    "Id": 300130,
+    "DirectType": 2,
+    "FirstDamage": -300,
+    "TimeDamage": -2000,
+    "Duration": 30,
+    "Attribute": 5,
+    "Radius": 15
+  },
+  {
+    "Id": 300131,
+    "DirectType": 2,
+    "FirstDamage": -500,
+    "TimeDamage": -2400,
+    "Duration": 30,
+    "Attribute": 5,
+    "Radius": 15
+  },
+  {
+    "Id": 300132,
+    "DirectType": 2,
+    "FirstDamage": -5000,
+    "TimeDamage": -3000,
+    "Duration": 30,
+    "Attribute": 5,
+    "Radius": 20
+  },
+  {
+    "Id": 300134,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": -5000,
+    "Duration": 200,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300135,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": -10000,
+    "Duration": 200,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300136,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": -15000,
+    "Duration": 200,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300137,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": -20000,
+    "Duration": 200,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300138,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": -25000,
+    "Duration": 200,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300139,
+    "DirectType": 1,
+    "FirstDamage": -2100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300140,
+    "DirectType": 1,
+    "FirstDamage": 120,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300141,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300142,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -2000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300143,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300144,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -4000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300145,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -8000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300146,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300147,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300148,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300149,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300150,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300151,
+    "DirectType": 1,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300152,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300153,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300154,
+    "DirectType": 1,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 300155,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 300156,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 300157,
+    "DirectType": 1,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300158,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300159,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300160,
+    "DirectType": 1,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300161,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300162,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300163,
+    "DirectType": 1,
+    "FirstDamage": 1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300164,
+    "DirectType": 1,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300165,
+    "DirectType": 1,
+    "FirstDamage": 4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300166,
+    "DirectType": 1,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300167,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300168,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300169,
+    "DirectType": 1,
+    "FirstDamage": -1000,
+    "TimeDamage": -4000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300170,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -6000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300171,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": -8000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300172,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": -10000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300173,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": -12000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300174,
+    "DirectType": 2,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300175,
+    "DirectType": 2,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300176,
+    "DirectType": 2,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300177,
+    "DirectType": 2,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300178,
+    "DirectType": 2,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300179,
+    "DirectType": 1,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300180,
+    "DirectType": 1,
+    "FirstDamage": 4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300181,
+    "DirectType": 1,
+    "FirstDamage": 6000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300182,
+    "DirectType": 1,
+    "FirstDamage": 8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300183,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300184,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 300185,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 300186,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 300187,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 300188,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 300189,
+    "DirectType": 2,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300190,
+    "DirectType": 2,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300191,
+    "DirectType": 2,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300192,
+    "DirectType": 2,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300193,
+    "DirectType": 2,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300194,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300195,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300196,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300197,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300198,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300199,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300200,
+    "DirectType": 1,
+    "FirstDamage": -8,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300201,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -200,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300202,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -400,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300203,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -1300,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300207,
+    "DirectType": 1,
+    "FirstDamage": 1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300208,
+    "DirectType": 1,
+    "FirstDamage": 1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300211,
+    "DirectType": 1,
+    "FirstDamage": -8,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 1
+  },
+  {
+    "Id": 300212,
+    "DirectType": 1,
+    "FirstDamage": -1046,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 2
+  },
+  {
+    "Id": 300213,
+    "DirectType": 1,
+    "FirstDamage": -2414,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 3
+  },
+  {
+    "Id": 300214,
+    "DirectType": 1,
+    "FirstDamage": -1046,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300215,
+    "DirectType": 1,
+    "FirstDamage": -2067,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300216,
+    "DirectType": 1,
+    "FirstDamage": -2067,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300217,
+    "DirectType": 1,
+    "FirstDamage": -2500,
+    "TimeDamage": -1700,
+    "Duration": 10,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 300218,
+    "DirectType": 1,
+    "FirstDamage": -2800,
+    "TimeDamage": -2000,
+    "Duration": 10,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300219,
+    "DirectType": 2,
+    "FirstDamage": -800,
+    "TimeDamage": -3000,
+    "Duration": 30,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 300220,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -2000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 10
+  },
+  {
+    "Id": 300223,
+    "DirectType": 19,
+    "FirstDamage": 0,
+    "TimeDamage": -1500,
+    "Duration": 6,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 300226,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -10000,
+    "Duration": 60,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300228,
+    "DirectType": 11,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 6
+  },
+  {
+    "Id": 300229,
+    "DirectType": 11,
+    "FirstDamage": -30000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 16
+  },
+  {
+    "Id": 300231,
+    "DirectType": 1,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300232,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300233,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300234,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 20
+  },
+  {
+    "Id": 300235,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 20
+  },
+  {
+    "Id": 300236,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 20
+  },
+  {
+    "Id": 300238,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300239,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300244,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 2,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300251,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300252,
+    "DirectType": 1,
+    "FirstDamage": -700,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300253,
+    "DirectType": 1,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300261,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300264,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300269,
+    "DirectType": 1,
+    "FirstDamage": -20000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 30
+  },
+  {
+    "Id": 300271,
+    "DirectType": 1,
+    "FirstDamage": -375,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300272,
+    "DirectType": 1,
+    "FirstDamage": -540,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300281,
+    "DirectType": 2,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300291,
+    "DirectType": 1,
+    "FirstDamage": -175,
+    "TimeDamage": -320,
+    "Duration": 20,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 300309,
+    "DirectType": 1,
+    "FirstDamage": -15000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 30
+  },
+  {
+    "Id": 300310,
+    "DirectType": 1,
+    "FirstDamage": -11000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 30
+  },
+  {
+    "Id": 300321,
+    "DirectType": 1,
+    "FirstDamage": -400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 300322,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 300331,
+    "DirectType": 9,
+    "FirstDamage": 20,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300341,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300351,
+    "DirectType": 1,
+    "FirstDamage": -1150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300361,
+    "DirectType": 8,
+    "FirstDamage": -1275,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300371,
+    "DirectType": 1,
+    "FirstDamage": -1555,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 300381,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -2600,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 15
+  },
+  {
+    "Id": 300391,
+    "DirectType": 3,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300401,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -3600,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 25
+  },
+  {
+    "Id": 300411,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -6500,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 25
+  },
+  {
+    "Id": 300421,
+    "DirectType": 1,
+    "FirstDamage": -7055,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300422,
+    "DirectType": 4,
+    "FirstDamage": -250,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300431,
+    "DirectType": 1,
+    "FirstDamage": -31115,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 30
+  },
+  {
+    "Id": 300432,
+    "DirectType": 1,
+    "FirstDamage": -4555,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 300433,
+    "DirectType": 1,
+    "FirstDamage": -3615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300434,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": -25000,
+    "Duration": 200,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300435,
+    "DirectType": 1,
+    "FirstDamage": -10115,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 40
+  },
+  {
+    "Id": 300436,
+    "DirectType": 1,
+    "FirstDamage": -3615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300437,
+    "DirectType": 1,
+    "FirstDamage": -3615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300438,
+    "DirectType": 1,
+    "FirstDamage": -3615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300439,
+    "DirectType": 1,
+    "FirstDamage": -2100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300440,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300441,
+    "DirectType": 1,
+    "FirstDamage": -2100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300442,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 300443,
+    "DirectType": 1,
+    "FirstDamage": -1400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 0
+  },
+  {
+    "Id": 300444,
+    "DirectType": 2,
+    "FirstDamage": -200,
+    "TimeDamage": -1600,
+    "Duration": 30,
+    "Attribute": 5,
+    "Radius": 15
+  },
+  {
+    "Id": 300446,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -1300,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300447,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300448,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 20
+  },
+  {
+    "Id": 300449,
+    "DirectType": 1,
+    "FirstDamage": -15000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 4,
+    "Radius": 30
+  },
+  {
+    "Id": 300450,
+    "DirectType": 8,
+    "FirstDamage": -1275,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300451,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -2600,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 15
+  },
+  {
+    "Id": 300452,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -6500,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 25
+  },
+  {
+    "Id": 300453,
+    "DirectType": 1,
+    "FirstDamage": -7055,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300454,
+    "DirectType": 4,
+    "FirstDamage": -250,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 300455,
+    "DirectType": 1,
+    "FirstDamage": -4555,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 300456,
+    "DirectType": 1,
+    "FirstDamage": -3615,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 300457,
+    "DirectType": 17,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300458,
+    "DirectType": 1,
+    "FirstDamage": -2100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 300459,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300463,
+    "DirectType": 2,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 20,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 300509,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300510,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": -2000,
+    "Duration": 6,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300511,
+    "DirectType": 1,
+    "FirstDamage": -7000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300512,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300513,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": -2000,
+    "Duration": 6,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300514,
+    "DirectType": 1,
+    "FirstDamage": -9000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300515,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300516,
+    "DirectType": 1,
+    "FirstDamage": -6000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300517,
+    "DirectType": 1,
+    "FirstDamage": -6600,
+    "TimeDamage": -3000,
+    "Duration": 6,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300518,
+    "DirectType": 1,
+    "FirstDamage": -6600,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300519,
+    "DirectType": 1,
+    "FirstDamage": -9000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300520,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300521,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300522,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": -3000,
+    "Duration": 6,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300523,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300524,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300525,
+    "DirectType": 22,
+    "FirstDamage": -9000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300526,
+    "DirectType": 1,
+    "FirstDamage": -3500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300527,
+    "DirectType": 1,
+    "FirstDamage": -6000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300528,
+    "DirectType": 1,
+    "FirstDamage": -2500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300529,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300530,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300531,
+    "DirectType": 1,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300532,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300533,
+    "DirectType": 1,
+    "FirstDamage": -9000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300534,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300535,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300536,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300537,
+    "DirectType": 1,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 300538,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300539,
+    "DirectType": 1,
+    "FirstDamage": -3500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300540,
+    "DirectType": 1,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300541,
+    "DirectType": 1,
+    "FirstDamage": -7000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300542,
+    "DirectType": 1,
+    "FirstDamage": -7000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300543,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 5000,
+    "Duration": 6,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300544,
+    "DirectType": 1,
+    "FirstDamage": -9000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300545,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300546,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300547,
+    "DirectType": 1,
+    "FirstDamage": -7000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300548,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300549,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300550,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300551,
+    "DirectType": 1,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 300554,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300557,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300573,
+    "DirectType": 5,
+    "FirstDamage": 40,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 300575,
+    "DirectType": 1,
+    "FirstDamage": -9000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300582,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300595,
+    "DirectType": 9,
+    "FirstDamage": 20,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 10
+  },
+  {
+    "Id": 300597,
+    "DirectType": 9,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 300599,
+    "DirectType": 9,
+    "FirstDamage": 50,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 301011,
+    "DirectType": 2,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 40
+  },
+  {
+    "Id": 301014,
+    "DirectType": 1,
+    "FirstDamage": -200,
+    "TimeDamage": -15000,
+    "Duration": 200,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 301016,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": -10000,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 301019,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": -10000,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 301020,
+    "DirectType": 5,
+    "FirstDamage": 5,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 301021,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 80
+  },
+  {
+    "Id": 301022,
+    "DirectType": 1,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 80
+  },
+  {
+    "Id": 301023,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 40
+  },
+  {
+    "Id": 301024,
+    "DirectType": 2,
+    "FirstDamage": -1500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 80
+  },
+  {
+    "Id": 301025,
+    "DirectType": 5,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 302000,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 302045,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 302090,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 302135,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 302180,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 302225,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 302270,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 302315,
+    "DirectType": 1,
+    "FirstDamage": -2000,
+    "TimeDamage": -3000,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 20
+  },
+  {
+    "Id": 302316,
+    "DirectType": 17,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 302317,
+    "DirectType": 17,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 2
+  },
+  {
+    "Id": 302416,
+    "DirectType": 17,
+    "FirstDamage": -50,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 302417,
+    "DirectType": 17,
+    "FirstDamage": -100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 302418,
+    "DirectType": 17,
+    "FirstDamage": -150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 302419,
+    "DirectType": 22,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 302420,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 302421,
+    "DirectType": 1,
+    "FirstDamage": 300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 302422,
+    "DirectType": 0,
+    "FirstDamage": -90,
+    "TimeDamage": -250,
+    "Duration": 10,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 302423,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 302424,
+    "DirectType": 0,
+    "FirstDamage": -120,
+    "TimeDamage": -300,
+    "Duration": 10,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 302425,
+    "DirectType": 1,
+    "FirstDamage": -700,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 302426,
+    "DirectType": 1,
+    "FirstDamage": -700,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 302427,
+    "DirectType": 1,
+    "FirstDamage": -400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 303001,
+    "DirectType": 1,
+    "FirstDamage": -10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 30
+  },
+  {
+    "Id": 303002,
+    "DirectType": 5,
+    "FirstDamage": 50,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 303003,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 100
+  },
+  {
+    "Id": 303004,
+    "DirectType": 28,
+    "FirstDamage": 100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 170
+  },
+  {
+    "Id": 303005,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 100
+  },
+  {
+    "Id": 303100,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 750,
+    "Duration": 6,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 303120,
+    "DirectType": 11,
+    "FirstDamage": -200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 20
+  },
+  {
+    "Id": 303200,
+    "DirectType": 1,
+    "FirstDamage": -10115,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 40
+  },
+  {
+    "Id": 307006,
+    "DirectType": 2,
+    "FirstDamage": -105,
+    "TimeDamage": -100,
+    "Duration": 10,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 308007,
+    "DirectType": 1,
+    "FirstDamage": -840,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 309008,
+    "DirectType": 1,
+    "FirstDamage": -504,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 311010,
+    "DirectType": 1,
+    "FirstDamage": -1050,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 460006,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 50,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490001,
+    "DirectType": 1,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490002,
+    "DirectType": 1,
+    "FirstDamage": 400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490003,
+    "DirectType": 1,
+    "FirstDamage": 800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490004,
+    "DirectType": 2,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490005,
+    "DirectType": 2,
+    "FirstDamage": 400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490006,
+    "DirectType": 2,
+    "FirstDamage": 800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490010,
+    "DirectType": 1,
+    "FirstDamage": 45,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490011,
+    "DirectType": 1,
+    "FirstDamage": 90,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490012,
+    "DirectType": 1,
+    "FirstDamage": 180,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490013,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490014,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490015,
+    "DirectType": 1,
+    "FirstDamage": 1440,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490016,
+    "DirectType": 2,
+    "FirstDamage": 120,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490017,
+    "DirectType": 2,
+    "FirstDamage": 240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490018,
+    "DirectType": 2,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490019,
+    "DirectType": 2,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490020,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490021,
+    "DirectType": 1,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 490022,
+    "DirectType": 1,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 490024,
+    "DirectType": 1,
+    "FirstDamage": -30000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 25
+  },
+  {
+    "Id": 490028,
+    "DirectType": 1,
+    "FirstDamage": -900,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 490030,
+    "DirectType": 1,
+    "FirstDamage": 10000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490032,
+    "DirectType": 1,
+    "FirstDamage": -800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 20
+  },
+  {
+    "Id": 490033,
+    "DirectType": 2,
+    "FirstDamage": -3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490043,
+    "DirectType": 1,
+    "FirstDamage": -10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490044,
+    "DirectType": 1,
+    "FirstDamage": -5000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 490048,
+    "DirectType": 1,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490049,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490057,
+    "DirectType": 1,
+    "FirstDamage": -250,
+    "TimeDamage": -1800,
+    "Duration": 60,
+    "Attribute": 6,
+    "Radius": 0
+  },
+  {
+    "Id": 490058,
+    "DirectType": 1,
+    "FirstDamage": -480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490059,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 6000,
+    "Duration": 180,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490060,
+    "DirectType": 1,
+    "FirstDamage": 90,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490061,
+    "DirectType": 1,
+    "FirstDamage": 180,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490062,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490063,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490064,
+    "DirectType": 1,
+    "FirstDamage": 1440,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490065,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490066,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490067,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490068,
+    "DirectType": 1,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490071,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490072,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490073,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490074,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490075,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490076,
+    "DirectType": 20,
+    "FirstDamage": 720,
+    "TimeDamage": 3500,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490077,
+    "DirectType": 1,
+    "FirstDamage": -10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490078,
+    "DirectType": 2,
+    "FirstDamage": 120,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490079,
+    "DirectType": 2,
+    "FirstDamage": 240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490080,
+    "DirectType": 2,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490081,
+    "DirectType": 2,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490082,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490083,
+    "DirectType": 4,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490084,
+    "DirectType": 21,
+    "FirstDamage": 1920,
+    "TimeDamage": 5400,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490091,
+    "DirectType": 1,
+    "FirstDamage": -5,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490094,
+    "DirectType": 1,
+    "FirstDamage": 500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490095,
+    "DirectType": 1,
+    "FirstDamage": 400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490099,
+    "DirectType": 11,
+    "FirstDamage": -650,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490101,
+    "DirectType": 3,
+    "FirstDamage": 50,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490102,
+    "DirectType": 3,
+    "FirstDamage": 20,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490103,
+    "DirectType": 3,
+    "FirstDamage": 80,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490104,
+    "DirectType": 4,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490105,
+    "DirectType": 4,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490106,
+    "DirectType": 4,
+    "FirstDamage": -4000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490107,
+    "DirectType": 17,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490108,
+    "DirectType": 17,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490109,
+    "DirectType": 17,
+    "FirstDamage": -800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490110,
+    "DirectType": 17,
+    "FirstDamage": -1800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 490111,
+    "DirectType": 5,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490112,
+    "DirectType": 3,
+    "FirstDamage": 20,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490113,
+    "DirectType": 3,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490114,
+    "DirectType": 4,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490115,
+    "DirectType": 4,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490116,
+    "DirectType": 5,
+    "FirstDamage": 20,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490117,
+    "DirectType": 5,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490118,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 490122,
+    "DirectType": 17,
+    "FirstDamage": -2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 5
+  },
+  {
+    "Id": 490131,
+    "DirectType": 1,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 490132,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 4500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 490139,
+    "DirectType": 17,
+    "FirstDamage": -1800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 490140,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490142,
+    "DirectType": 17,
+    "FirstDamage": -500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 490143,
+    "DirectType": 17,
+    "FirstDamage": -1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 10
+  },
+  {
+    "Id": 490149,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490151,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490152,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490153,
+    "DirectType": 4,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490154,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490155,
+    "DirectType": 4,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490156,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490160,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490181,
+    "DirectType": 1,
+    "FirstDamage": 200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490202,
+    "DirectType": 4,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490204,
+    "DirectType": 5,
+    "FirstDamage": 120,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490205,
+    "DirectType": 5,
+    "FirstDamage": 135,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490206,
+    "DirectType": 5,
+    "FirstDamage": 150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490207,
+    "DirectType": 1,
+    "FirstDamage": 3600,
+    "TimeDamage": 3000,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490210,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 750,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490214,
+    "DirectType": 5,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490215,
+    "DirectType": 4,
+    "FirstDamage": 25000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490216,
+    "DirectType": 4,
+    "FirstDamage": 25000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490217,
+    "DirectType": 4,
+    "FirstDamage": 25000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490221,
+    "DirectType": 19,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 490222,
+    "DirectType": 1,
+    "FirstDamage": 100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490224,
+    "DirectType": 19,
+    "FirstDamage": 0,
+    "TimeDamage": -300,
+    "Duration": 6,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 490227,
+    "DirectType": 19,
+    "FirstDamage": -200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 10
+  },
+  {
+    "Id": 490228,
+    "DirectType": 5,
+    "FirstDamage": 20,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 490231,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1000,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490232,
+    "DirectType": 19,
+    "FirstDamage": -1,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490234,
+    "DirectType": 1,
+    "FirstDamage": 500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490331,
+    "DirectType": 19,
+    "FirstDamage": -60,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 490332,
+    "DirectType": 19,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 490333,
+    "DirectType": 1,
+    "FirstDamage": 100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490335,
+    "DirectType": 19,
+    "FirstDamage": 0,
+    "TimeDamage": -300,
+    "Duration": 6,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 490337,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 500,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490338,
+    "DirectType": 19,
+    "FirstDamage": -200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 490339,
+    "DirectType": 1,
+    "FirstDamage": -700,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490340,
+    "DirectType": 19,
+    "FirstDamage": -150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 490350,
+    "DirectType": 1,
+    "FirstDamage": 300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490352,
+    "DirectType": 1,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490353,
+    "DirectType": 1,
+    "FirstDamage": 70,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490359,
+    "DirectType": 1,
+    "FirstDamage": -50,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 490402,
+    "DirectType": 12,
+    "FirstDamage": 50,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490406,
+    "DirectType": 1,
+    "FirstDamage": 1000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 40
+  },
+  {
+    "Id": 490407,
+    "DirectType": 1,
+    "FirstDamage": 15000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 40
+  },
+  {
+    "Id": 490410,
+    "DirectType": 1,
+    "FirstDamage": 1440,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490601,
+    "DirectType": 1,
+    "FirstDamage": 810,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490701,
+    "DirectType": 2,
+    "FirstDamage": 2160,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490800,
+    "DirectType": 2,
+    "FirstDamage": 0,
+    "TimeDamage": -50,
+    "Duration": 20,
+    "Attribute": 4,
+    "Radius": 0
+  },
+  {
+    "Id": 490804,
+    "DirectType": 1,
+    "FirstDamage": 100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490805,
+    "DirectType": 14,
+    "FirstDamage": 105,
+    "TimeDamage": 1,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 490815,
+    "DirectType": 1,
+    "FirstDamage": -128,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 490816,
+    "DirectType": 1,
+    "FirstDamage": -67,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 490817,
+    "DirectType": 1,
+    "FirstDamage": -38,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 490819,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 15,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 490824,
+    "DirectType": 2,
+    "FirstDamage": -384,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 15
+  },
+  {
+    "Id": 491015,
+    "DirectType": 2,
+    "FirstDamage": 800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491016,
+    "DirectType": 1,
+    "FirstDamage": 800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491038,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491039,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491040,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491041,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491042,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491043,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491044,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491045,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491046,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491047,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491048,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491049,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491050,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491051,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491052,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491053,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491054,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491055,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491056,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491057,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491063,
+    "DirectType": 1,
+    "FirstDamage": -250,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 491202,
+    "DirectType": 27,
+    "FirstDamage": 0,
+    "TimeDamage": -100,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 491203,
+    "DirectType": 27,
+    "FirstDamage": 0,
+    "TimeDamage": -200,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 491204,
+    "DirectType": 27,
+    "FirstDamage": 0,
+    "TimeDamage": -400,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 491205,
+    "DirectType": 27,
+    "FirstDamage": 0,
+    "TimeDamage": -600,
+    "Duration": 10,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 491224,
+    "DirectType": 9,
+    "FirstDamage": 5,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491225,
+    "DirectType": 9,
+    "FirstDamage": 10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491226,
+    "DirectType": 9,
+    "FirstDamage": 20,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491227,
+    "DirectType": 9,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491246,
+    "DirectType": 1,
+    "FirstDamage": -222,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491247,
+    "DirectType": 1,
+    "FirstDamage": -339,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491248,
+    "DirectType": 1,
+    "FirstDamage": -455,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491249,
+    "DirectType": 1,
+    "FirstDamage": -680,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491250,
+    "DirectType": 1,
+    "FirstDamage": -164,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491251,
+    "DirectType": 1,
+    "FirstDamage": -281,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491252,
+    "DirectType": 1,
+    "FirstDamage": -397,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491253,
+    "DirectType": 1,
+    "FirstDamage": -630,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491254,
+    "DirectType": 1,
+    "FirstDamage": -466,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491255,
+    "DirectType": 1,
+    "FirstDamage": -582,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491256,
+    "DirectType": 1,
+    "FirstDamage": -699,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491257,
+    "DirectType": 1,
+    "FirstDamage": -736,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491258,
+    "DirectType": 1,
+    "FirstDamage": -268,
+    "TimeDamage": -330,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491259,
+    "DirectType": 1,
+    "FirstDamage": -559,
+    "TimeDamage": -110,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491260,
+    "DirectType": 1,
+    "FirstDamage": -384,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491261,
+    "DirectType": 1,
+    "FirstDamage": -140,
+    "TimeDamage": -100,
+    "Duration": 10,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 491262,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -190,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491263,
+    "DirectType": 1,
+    "FirstDamage": -186,
+    "TimeDamage": -230,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491264,
+    "DirectType": 1,
+    "FirstDamage": -361,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491265,
+    "DirectType": 1,
+    "FirstDamage": -477,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491266,
+    "DirectType": 1,
+    "FirstDamage": -594,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491267,
+    "DirectType": 1,
+    "FirstDamage": -710,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491268,
+    "DirectType": 1,
+    "FirstDamage": -268,
+    "TimeDamage": -580,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491269,
+    "DirectType": 1,
+    "FirstDamage": -230,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 491270,
+    "DirectType": 1,
+    "FirstDamage": -408,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 491272,
+    "DirectType": 1,
+    "FirstDamage": -640,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 491273,
+    "DirectType": 1,
+    "FirstDamage": -960,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 491274,
+    "DirectType": 1,
+    "FirstDamage": -1200,
+    "TimeDamage": -600,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 15
+  },
+  {
+    "Id": 491275,
+    "DirectType": 1,
+    "FirstDamage": -560,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 491276,
+    "DirectType": 1,
+    "FirstDamage": -880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 491277,
+    "DirectType": 1,
+    "FirstDamage": -1240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 2,
+    "Radius": 15
+  },
+  {
+    "Id": 491285,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491286,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 800,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491287,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 1500,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491288,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 2000,
+    "Duration": 30,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491289,
+    "DirectType": 1,
+    "FirstDamage": 300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491290,
+    "DirectType": 1,
+    "FirstDamage": 500,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491291,
+    "DirectType": 1,
+    "FirstDamage": 800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491292,
+    "DirectType": 1,
+    "FirstDamage": 1200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491293,
+    "DirectType": 1,
+    "FirstDamage": 250,
+    "TimeDamage": 300,
+    "Duration": 20,
+    "Attribute": 0,
+    "Radius": 30
+  },
+  {
+    "Id": 491319,
+    "DirectType": 2,
+    "FirstDamage": -3840,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 15
+  },
+  {
+    "Id": 491410,
+    "DirectType": 5,
+    "FirstDamage": 120,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 491411,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492001,
+    "DirectType": 25,
+    "FirstDamage": 30,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492002,
+    "DirectType": 1,
+    "FirstDamage": 90,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492003,
+    "DirectType": 1,
+    "FirstDamage": 180,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492004,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492005,
+    "DirectType": 2,
+    "FirstDamage": 240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492006,
+    "DirectType": 2,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492007,
+    "DirectType": 2,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492011,
+    "DirectType": 1,
+    "FirstDamage": -10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492025,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492026,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492027,
+    "DirectType": 1,
+    "FirstDamage": -777,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 3,
+    "Radius": 10
+  },
+  {
+    "Id": 492029,
+    "DirectType": 24,
+    "FirstDamage": 0,
+    "TimeDamage": -1000,
+    "Duration": 15,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492030,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": -500,
+    "Duration": 15,
+    "Attribute": 5,
+    "Radius": 0
+  },
+  {
+    "Id": 492031,
+    "DirectType": 0,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 5
+  },
+  {
+    "Id": 492032,
+    "DirectType": 1,
+    "FirstDamage": 0,
+    "TimeDamage": 2000,
+    "Duration": 5,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492035,
+    "DirectType": 4,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492060,
+    "DirectType": 5,
+    "FirstDamage": 150,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492069,
+    "DirectType": 1,
+    "FirstDamage": -10,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492070,
+    "DirectType": 1,
+    "FirstDamage": 3000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492071,
+    "DirectType": 1,
+    "FirstDamage": 7000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492074,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492082,
+    "DirectType": 4,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492083,
+    "DirectType": 1,
+    "FirstDamage": -50,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492084,
+    "DirectType": 1,
+    "FirstDamage": -51,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 492085,
+    "DirectType": 1,
+    "FirstDamage": -100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492092,
+    "DirectType": 4,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492436,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 492437,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 494010,
+    "DirectType": 4,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 494020,
+    "DirectType": 1,
+    "FirstDamage": 800,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 494021,
+    "DirectType": 2,
+    "FirstDamage": 2100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500001,
+    "DirectType": 1,
+    "FirstDamage": 90,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500002,
+    "DirectType": 1,
+    "FirstDamage": 180,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500003,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500004,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500005,
+    "DirectType": 1,
+    "FirstDamage": 1440,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500006,
+    "DirectType": 2,
+    "FirstDamage": 120,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500007,
+    "DirectType": 2,
+    "FirstDamage": 240,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500008,
+    "DirectType": 2,
+    "FirstDamage": 480,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500009,
+    "DirectType": 2,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500010,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500012,
+    "DirectType": 1,
+    "FirstDamage": 45,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500014,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500020,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500036,
+    "DirectType": 1,
+    "FirstDamage": 3600,
+    "TimeDamage": 3000,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500037,
+    "DirectType": 2,
+    "FirstDamage": 3600,
+    "TimeDamage": 3000,
+    "Duration": 60,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500073,
+    "DirectType": 5,
+    "FirstDamage": 25,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 500082,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500083,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500100,
+    "DirectType": 4,
+    "FirstDamage": 2000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500139,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500140,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500141,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500142,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500143,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500144,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500145,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500146,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500213,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500214,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500218,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500219,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500226,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500227,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500228,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500229,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500230,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500231,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500232,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500233,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500268,
+    "DirectType": 2,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500269,
+    "DirectType": 2,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500312,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 500313,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 501011,
+    "DirectType": 255,
+    "FirstDamage": 0,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 502015,
+    "DirectType": 1,
+    "FirstDamage": -8000,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 10
+  },
+  {
+    "Id": 512001,
+    "DirectType": 1,
+    "FirstDamage": 20,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 520110,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 520111,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 520112,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 520113,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 520114,
+    "DirectType": 1,
+    "FirstDamage": 1080,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 520115,
+    "DirectType": 2,
+    "FirstDamage": 2880,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 571271,
+    "DirectType": 15,
+    "FirstDamage": -112,
+    "TimeDamage": -49,
+    "Duration": 20,
+    "Attribute": 2,
+    "Radius": 0
+  },
+  {
+    "Id": 610122,
+    "DirectType": 1,
+    "FirstDamage": -5,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 610127,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 610129,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 610144,
+    "DirectType": 1,
+    "FirstDamage": 720,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 610145,
+    "DirectType": 2,
+    "FirstDamage": 1920,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 610146,
+    "DirectType": 1,
+    "FirstDamage": 360,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 610147,
+    "DirectType": 2,
+    "FirstDamage": 960,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 0,
+    "Radius": 0
+  },
+  {
+    "Id": 610154,
+    "DirectType": 23,
+    "FirstDamage": -200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 610155,
+    "DirectType": 23,
+    "FirstDamage": -400,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 610156,
+    "DirectType": 23,
+    "FirstDamage": -600,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 610157,
+    "DirectType": 23,
+    "FirstDamage": -100,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 610158,
+    "DirectType": 23,
+    "FirstDamage": -200,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 610159,
+    "DirectType": 23,
+    "FirstDamage": -300,
+    "TimeDamage": 0,
+    "Duration": 0,
+    "Attribute": 1,
+    "Radius": 0
+  },
+  {
+    "Id": 1105744,
+    "DirectType": 19,
+    "FirstDamage": 0,
+    "TimeDamage": -3000,
+    "Duration": 20,
+    "Attribute": 1,
+    "Radius": 0
+  }
+]

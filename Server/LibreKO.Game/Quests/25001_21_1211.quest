@@ -1,0 +1,20 @@
+Bind Npc 25001 Zone 21
+Quest 1211 "Suspicious Smuggler"
+    Journal "Defeat the monsters that the smuggler has summoned"
+    Kill 2 of 9666 at direction_1261
+
+Requires player level >= 20 and quest 1210 is completed
+
+Rewards
+    Give 75000 experience
+
+direction_1261 = location "Guard of Black Marketer" about "Pirate hired by Black Marketer" found "Moradon" at 463 524 in zone 21
+
+On offer
+    Show quest "After decoding the secret ledger, it seems smugglers are trying to steal goods from Moradon for Pirates. Could you interrogate the pirates, please?"
+
+On in_progress
+    Say "You haven't found the smugglers? They should be around Folk Village."
+
+On claimable
+    Show quest "Smugglers were indeed communicating with Black Pirates..."

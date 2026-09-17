@@ -1,0 +1,54 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 534 "[Long Revenge] Rehearsal"
+    Journal for karus "You must accept the suggestion of [Sage of Eslant] Pablo at Luferson Castle."
+    Journal for elmorad "You must accept the suggestion of [Sage of Eslant] Agatha at El Morad Castle."
+    Kill 30 of 9616, 9617, 1777, 1776
+
+Requires player level >= 61 and quest 533 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 207002599
+        Give 1 of 247002600
+        Give 1 of 267002601
+        Give 1 of 287002602
+
+direction_1178 = location "Troll" about "Troll\nTrolls are monsters who were involved in the war between Human and Pathos. They have low defense power but they have high HP and powers." found "Karus Eslant" karus at 565 656 in zone 11
+direction_1179 = location "Troll" about "Troll\nTrolls are monsters who were involved in the war between Human and Pathos. They have low defense power but they have high HP and powers." found "El Morad Eslant" elmorad at 562 672 in zone 12
+
+On available
+    If player is karus
+        Say "The status [the Eslant updated Sage Pablo's a little weird. I feel bad laughing it is. Let the talk?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "The status [the Eslant updated Sage Agatha's a little weird. I feel bad laughing it is. Let the talk?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Good good good good, now put your sword anger, revenge, to realize not!"
+        Topic "Tell me more..." do
+            Show quest "Before! The body will not solve?  euhaha! [Troll] The Troll's good! Against 'lightly' Troll, to come and practice!\n\nPractice against [Troll] following Pablo's order."
+    If player is elmorad
+        Say "Good good good good, now put your sword anger, revenge, to realize not!"
+        Topic "Tell me more..." do
+            Show quest "Before! The body will not solve?  euhaha! [Troll] The Troll's good! Against 'lightly' Troll, to come and practice!\n\nPractice against [Troll] following Agatha's order."
+
+On in_progress
+    If player is karus
+        Say "He just needed the practice yet, do you think? Git or bosige"
+        Topic "Where can I find it?" do
+            Map direction_1178
+    If player is elmorad
+        Say "He just needed the practice yet, do you think? Git or bosige"
+        Topic "Where can I find it?" do
+            Map direction_1179
+
+On claimable
+    Show quest "Now move a little bit, but you'll be se all wet with sweat sOrced body!"
+
+On completed
+    Say "Wraps all ready to go back to nature, going to be reported to the Captain guy. What annoys true man."

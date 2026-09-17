@@ -1,0 +1,32 @@
+Bind Npc 14424 Zone 12
+Quest 1023 "Unfinished Hunt III"
+    Journal "Troll Captain is the target for this job!"
+    Kill 40 of 1724, 1774 at direction_170
+
+Requires player level >= 79 and player is elmorad and quest 346 is completed
+
+Rewards
+    Give 68750000 experience
+
+direction_170 = location "Troll Captain" found "Eslant" at 740 845 in zone 12
+
+On available
+    Say "Master, what about another quest in Eslant?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Are you looking for another quest? I like this attitude of ceaseless effort! Find the Troll Captain."
+    Topic "Tell me more..." do
+        Show quest "Given all the quests you have done so far, this quest may not be unreasonable..."
+
+On in_progress
+    Say "What about your quest?"
+    Topic "Where can I find it?" do
+        Map direction_170
+
+On ready
+    Say "Master, you completed another quest!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Another quest is completed. Well-done!"

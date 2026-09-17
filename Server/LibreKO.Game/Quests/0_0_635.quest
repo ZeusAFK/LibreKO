@@ -1,0 +1,40 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 635 "Putting poison in the food II"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 1 of 900149000
+    Collect 1 of 900154000
+    Collect 1 of 900163000
+
+Requires player level >= 61 and quest 634 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+
+On available
+    Say "Uhg, now [Manticore Poison Pouch] on top of [Oaks Poison Pouch]?...You sure have one peculiar taste."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Shall we begin the second joke? Isn't it just too fun?"
+        Topic "Tell me more..." do
+            Show quest "Now, in the same way again, mix this [experimental poisonous weeds] with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and bring me a sample so I can see the reaction.\n\nInside the Goblin Goblin Village cauldron, used to poison wells Goblin Goblin food box, and must be followed in collecting the s, depending on the of Goblin Karus area near the village of [Staff] Squad Vere request."
+    If player is elmorad
+        Say "Shall we begin the second joke? Isn't it just too fun?"
+        Topic "Tell me more..." do
+            Show quest "Now, in the same way again, mix this [experimental poisonous weeds] with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and bring me a sample so I can see the reaction.\n\nStaff Squad of the El Morad region goblins near the village of gray in accordance with the request of the Goblin [Goblin village inside the cauldron], and used to poison wells Goblin Goblin food box, must be followed in collecting the s."
+
+On in_progress
+    Say "Why are you here? What about the sample?"
+
+On claimable
+    If player is karus
+        Show quest "Oh, goood. Very good. This is getting better!\n\nNext, I decided to use more special ingredient.\nAccording to the essay, [Turning a curse into a poison?], you can make a curse turn into poison. Get it? Please go bring me the [cursed plant stem] from [Barron] which is the element that makes up hi s body."
+    If player is elmorad
+        Show quest "Oh, goood. Very good. This is getting better!\n\nNext, I decided to use more special ingredient.\nAccording to the essay, [Turning a curse into a poison?], you can make a curse turn into poison. Get it? Please go bring me the [cursed plant stem] from [Barron] which is the element that makes up his body."
+
+On completed
+    Say "Come again when you reach Lv62. You don't have enough skills to perform this yet."

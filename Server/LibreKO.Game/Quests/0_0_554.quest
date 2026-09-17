@@ -1,0 +1,27 @@
+Bind Npc 31516 Zone 11 for karus
+Bind Npc 31520 Zone 12 for elmorad
+Quest 554 "[Failed Mission] Consideration for Returning Hero"
+    Journal for karus "You must talk to [Hero who lost his eyes], of Eslant."
+    Journal for elmorad "You must talk to [Hero who lost his eyes], of Eslant."
+
+Requires player level >= 63 and quest 553 is completed
+
+Rewards
+    Give 1 of 910230000
+
+On available
+    Say "Master, and a conversation with a hero who lost both eyes by now the news Need help to inform returnees."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Cause I hear footsteps It's <selfname>. Yeah, my friend's soul how ?"
+        Topic "Tell me more..." do
+            Show quest "Ah, thank you ... I really thank you. Now I could relax, military ...\n\nTalk to [Hero who has lost his eyes]."
+    If player is elmorad
+        Say "Cause I hear footsteps It's <selfname>. Yeah, my friend's soul how ?"
+        Topic "Tell me more..." do
+            Show quest "Ah, thank you ... I really thank you. Now I could relax, military\n\nTalk to [Hero who has lost his eyes]."
+
+On claimable
+    Show quest "Return? So care like that forever! My grace I'll never forget. So Let me take the first return order.\n\nThe thing I had to play the return order, now's an honorable group [Captain], and you could preach God. [Captain] <selfname> you this God put me in passing, and you"

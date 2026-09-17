@@ -1,0 +1,20 @@
+Bind Npc 14424 Zone 12
+Quest 1103 "Armors without souls"
+    Journal "Collect 10 pieces of the armors without soul."
+    Collect 10 of 810301000
+
+Requires player level >= 61 and player is elmorad
+
+Rewards
+    Give 25000000 experience or 50000000 with premium
+
+On offer
+    Say "Have you seen the doom knight?"
+    Topic "Tell me more..." do
+        Show quest "Without the soul their armors are just wandering around. I want to know why so could you bring me 10 armor pieces?"
+
+On in_progress
+    Say "Hm.. Not yet?"
+
+On claimable
+    Show quest "I need to study more. It's amazing."

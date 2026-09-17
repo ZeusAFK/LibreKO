@@ -1,0 +1,85 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="LibreKO"
+run/main_scene="res://scenes/Boot.tscn"
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+boot_splash/bg_color=Color(0.05, 0.05, 0.07, 1)
+boot_splash/image="res://assets/backgrounds/splash.png"
+
+[autoload]
+
+Packs="*res://src/Packs.cs"
+GameData="*res://src/Domain/GameData.cs"
+Net="*res://src/Network/Net.cs"
+Audio="*res://src/Audio/Audio.cs"
+LoginNet="*res://src/Network/LoginNet.cs"
+DebugOverlay="*res://src/Ui/DebugOverlay.cs"
+ReconnectOverlay="*res://src/Ui/ReconnectOverlay.cs"
+BackButton="*res://src/Ui/BackButton.cs"
+
+[display]
+
+window/size/mode=2
+
+[dotnet]
+
+project/assembly_name="LibreKO"
+
+[importer_defaults]
+
+texture={
+"mipmaps/generate": true
+}
+
+[input]
+
+gko_move_left={
+"deadzone": 0.2,
+"events": []
+}
+gko_move_right={
+"deadzone": 0.2,
+"events": []
+}
+gko_move_up={
+"deadzone": 0.2,
+"events": []
+}
+gko_move_down={
+"deadzone": 0.2,
+"events": []
+}
+gko_look_left={
+"deadzone": 0.2,
+"events": []
+}
+gko_look_right={
+"deadzone": 0.2,
+"events": []
+}
+gko_look_up={
+"deadzone": 0.2,
+"events": []
+}
+gko_look_down={
+"deadzone": 0.2,
+"events": []
+}
+
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true
+lights_and_shadows/directional_shadow/size=2048
+environment/ssao/quality=1
+anti_aliasing/quality/msaa_3d=1
+anti_aliasing/quality/screen_space_aa=1

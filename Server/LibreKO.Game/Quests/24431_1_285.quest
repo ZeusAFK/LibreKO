@@ -1,0 +1,44 @@
+Bind Npc 24431 Zone 1 for warrior
+Bind Npc 24431 Zone 1 for rogue
+Bind Npc 24431 Zone 1 for mage
+Bind Npc 24431 Zone 1 for priest
+Quest 285 "Deruvish hunt"
+    Journal "[Sentinel] Hashan asked me to hunt 40 Deruvish."
+    Kill 40 of 2151, 2101 at direction_518
+
+Requires player level >= 60 and player is karus
+
+Rewards for warrior
+    Give 1 of 206004003
+
+Rewards for rogue
+    Give 1 of 246004003
+
+Rewards for mage
+    Give 1 of 266004003
+
+Rewards for priest
+    Give 1 of 286004003
+
+direction_518 = location "Deruvish" about "Deruvish\nNomadic monks of Esoteric Buddhism who do not level attacks first at warrior passersby but turn into savage mages of darkness at night" found "Karus" at 1440 785 in zone 1
+
+On available
+    Say "Master, isn't it high time you got a new body armor? [Sentinel] Hashan should know where we can find top-of-the-line armor."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh, speaking of body armor, I have one myself. A warrior gave it to me during the war against Pathos and I've held onto it till now. I'll give it to you for every mission you accomplish."
+    Topic "Tell me more..." do
+        Show quest "Would you like to try hunting Deruvish? There's a relic site in the village outskirts but careful since they're no easy prey."
+
+On in_progress
+    Say "The body armor's valuable and I can't just hand it out for free."
+    Topic "Where can I find it?" do
+        Map direction_518
+
+On ready
+    Say "Yes~! Hunting mission accomplished~!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Seems like there's no one else who can handle such valuables. Here's the gauntlet, as promised."

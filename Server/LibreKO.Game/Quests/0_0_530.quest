@@ -1,0 +1,27 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 530 "[Long Revenge] Can't rest in peace because of a grudge"
+    Journal for karus "You must accept the request of [Sage of Eslant] Pablo, of Eslant."
+    Journal for elmorad "You must accept the request of [Sage of Eslant] Agatha, of Eslant."
+    Collect 5 of 508105000
+
+Requires player level >= 61 and quest 529 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 30000 coins
+
+On available
+    Say "[Shattered Remains] take a lot of materials doesn't it?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Alright, we need to gather the materials first, so..."
+    Topic "Tell me more..." do
+        Show quest "First we need some [Shards of Rage]. You can get them from the [Dragon Knight Leader].\n\nPablo has asked to collect [Piece of Rage] to honor the ones who's died in the battle."
+
+On in_progress
+    Say "We don't have a time. Please hurry up."
+
+On claimable
+    Show quest "Okay, the groundwork is set. The next thing you need is [Holy Restoration Water].\n\nBeen to Minerva [Governor] Come on, I need about restore Holy Water] [. To be able to make it, would Minerva fuse. Come on, run!"

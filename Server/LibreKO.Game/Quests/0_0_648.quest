@@ -1,0 +1,39 @@
+Bind Npc 31560 Zone 1 for karus
+Bind Npc 31559 Zone 2 for elmorad
+Quest 648 "Quick Delivery III"
+    Journal for karus "You must accept the request of [Sailor] Armada."
+    Journal for elmorad "You must accept the request of [Sailor] Keed."
+    Collect 1 of 900193000
+
+Requires player level >= 63 and quest 647 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "[Sailor] Armada is going frantic again. Go do him a favor before it gets worse."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Sailor] Kidd is going frantic again. Go do him a favor before it gets worse."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Aaaaaaaah, Eeeeeeek, Waaaaahhhh...What the hell is this. Oh, you are here."
+        Topic "Tell me more..." do
+            Show quest "(Stammering) Please! Put this strange box away! That bad fellow passed this to me and told me to deliver. However, it looks really strange and filthy, and it's driving me crazy! Deliver this to a person called [Sage of Eslant] Pablo!! Get this thing away from me, quickly!! Don't forget to bring the receipt!! If you forget the receipt, I'm going to see this thing again!\n\nWould bring suspicious deliveries of Karus Regional Executive pugeo port sailors at the request of the Armada to the the [the Eslant updated sages Pablo, you must come to accept receipt of the Eslant updated Sage."
+    If player is elmorad
+        Say "Aaaaaaaah, Eeeeeeek, Waaaaahhhh...What the hell is this. Oh, you are here."
+        Topic "Tell me more..." do
+            Show quest "(Stammering) Please! Put this strange box away! That bad fellow passed this to me and told me to deliver. However, it looks really strange and filthy, and it's driving me crazy! Deliver this to a person called [Sage of Eslant] Agatha!! Get this thing away from me, quickly!! Don't forget to bring the receipt!! If you forget the receipt, I'm going to see this thing again!\n\nDeliveries winning would bring Elmo Shark rad area of the port in accordance with the request of Captain Kidd, bring it to the [Eslant Sage] Agata, you must come accept receipt of the [Eslant Sage]."
+
+On in_progress
+    Say "Good lord! Why is that box still here? Get it off!!"
+
+On claimable
+    Show quest "Huff..huff. How dare that little mucker trying to revenge me. Good lord!\n\nAhh, it's almost finished. I heard [Lamia] tribe that gives you a rare armor material called [Hard Snake Scale] lives nearby. Can you go get it? Upon delivery, he will reward you handsomely."
+
+On completed
+    Say "Come back later when you reach Lv64. I will have another favor to ask you, then."

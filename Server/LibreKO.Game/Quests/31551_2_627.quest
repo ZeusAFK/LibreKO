@@ -1,0 +1,27 @@
+Bind Npc 31551 Zone 2
+Quest 627 "Subjugation of the Goblin Village III"
+    Journal "You must perform mission with [Goblin Subjugation Squad] Welz."
+    Kill 20 of 2903, 2953 at direction_825
+
+Requires player level >= 62 and player is elmorad and quest 625 is completed
+
+Rewards
+    Give 12500000 experience
+    Give 30000 coins
+
+direction_825 = location "Pooka" about "Pooka\n Goblins are communal living monsters. In classification, the strongest order of those are Cobalt, Bugbear, Goblin bouncer." found "El Morad Goblin Village" elmorad at 1724 1772 in zone 2
+
+On available
+    Say "Ah, master. The continued subjugation has made the Goblins angry. Let's hurry to [Goblin Subjugation Squad] at once."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh no, this is bad. The two previous subjugations has made the Goblins really angry."
+    Topic "Tell me more..." do
+        Show quest "We won't just sit and watch them attack us.  Why don't we strike first and defeat [Pookas], their vanguard, so that they won't even dare thinking about attacking us.\n\nCombating [Goblin Squad] Wells of the Goblin Elmo Rad region near the town of Puka."
+
+On in_progress
+    Say "Come on guy, not yet! Our enemies are still strong."
+
+On claimable
+    Show quest "Phew, I guess we can breath now.  Well done."

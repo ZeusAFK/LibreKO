@@ -1,0 +1,48 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 578 "[Legless Devil] Base Defense II"
+    Journal for karus "You must perform the duty of [Base Spearhead] Cruzed of the Stronghold of Ronark Land."
+    Journal for elmorad "You must perform the duty of [Base Spearhead] Krable, of the Stronghold of Ronark Land."
+    Kill 40 of 9014 at direction_756
+
+Requires player level >= 66 and quest 577 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 100 np
+
+direction_756 = location "Forwird" about "Forwird\n Demon who follow the King of Forwaru. It described as losing one arm and one leg soldier." found "Ronark Land Base" karus at 373 390 elmorad at 632 728 in zone 73
+
+On available
+    If player is karus
+        Say "Think it's first battle was somewhat bland, like the word by [Base Scout]Crewjed de base paper forefront from the first potion dissemination and armor, should not you go back and repair."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Like you said, by not spearhead base label's first battle was somewhat bland, from the first potion dissemination and armor, should not you go back and repair guess"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Battle, then we back lightly want to go?"
+        Topic "Tell me more..." do
+            Show quest "This time Forwar the family of Forwar [the men of] signs and much more than a normal human, but very strong, and to be careful\n\nYou need to perform a large land base the the base paper forefront [Base Scout]Crewjed jiui the mission of de Lorna."
+    If player is elmorad
+        Say "Battle, then we back lightly want to go?"
+        Topic "Tell me more..." do
+            Show quest "This time Forwar the family of Forwar [the men of] signs and much more than a normal human, but very strong, and to be careful\n\nRonark Land Base the base paper forefront jiui greater mission of the label must be performed."
+
+On in_progress
+    Say "Still?Mission Must be a little flock to you ..."
+    Topic "Where can I find it?" do
+        Map direction_756
+
+On ready
+    If player is karus
+        Say "It was a little difficult at this time. Let's come to the the base paper forefront [Base Scout]Crewjed de Dear."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "It was a little difficult at this time.Let's come to the the large label base paper forefront God."
+        Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest ", But quite ! Anyway, job well done! Thanks to we, it's getting easier to defend! I pray the future\n\nA tough fight, you will be sure to spread the final battle to defeat the enemy or bonded to come!"

@@ -1,0 +1,31 @@
+Bind Npc 24431 Zone 1 for warrior
+Bind Npc 24431 Zone 1 for rogue
+Bind Npc 24431 Zone 1 for mage
+Bind Npc 24431 Zone 1 for priest
+Quest 293 "Stone golem hunt"
+    Journal "I promised [Sentinel] Hashan to hunt 20 stone golems."
+    Kill 20 of 2451, 2401 at direction_557
+
+Requires player level >= 62 and player is karus
+
+Rewards for warrior
+    Give 1 of 206001003
+
+Rewards for rogue
+    Give 1 of 246001003
+
+Rewards for mage
+    Give 1 of 266001003
+
+Rewards for priest
+    Give 1 of 286001003
+
+direction_557 = location "Stone Golem" about "Stone Golem\nStone golems are stones which ancient priests are said to have infused with life and employed as servants. With priests losing self-control subsequent to the War against Pathos, they attack all life in their vicinity." found "Karus" at 1774 557 in zone 1
+
+On offer
+    Say "Did you obtain the bottom? Now all I have left is the top. The prey for this hunt is Stone Golem. Ancient priests infused stones with life and employed them as servants. But they've lost self-control and have turned into savage monsters now..."
+    Topic "Tell me more..." do
+        Show quest "I wish you success in this hunt as well."
+
+On claimable
+    Show quest "Thank you. Here's the top, as promised."

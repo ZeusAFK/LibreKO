@@ -1,0 +1,35 @@
+Bind Npc 19004 Zone 21
+Quest 102 "Falk Village Construction"
+    Journal "I promised [Mercenary Supply Officer] Osmond to obtain Apples of Moradon and bring it to him"
+    Collect 2 of 810418000
+
+Requires player level >= 24
+
+Rewards
+    Give 125000 experience
+    Give 50000 coins
+    Choose one
+        Give 1 of 330150006
+        Give 1 of 330150016
+        Give 1 of 330150026
+        Give 1 of 330150036
+        Give 1 of 330150076
+
+On available
+    Say "Master! I've heard that Apple of Moradon has a sticky effect. Let's go and find [Mercenary Supply Officer] Osmond and check it out."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hello.\nMy name is Osmond. I'm the official Quartermaster for Mercenaries and so on. You're <selfname>, right? I knew it was you- I've heard all the stories! So what brings you here?"
+    Topic "Tell me more..." do
+        Show quest "Right now we're in the middle of repairing the wall of Moradon castle, and need lots of cement. Please bring me any Apple of Moradon you have. I will give you a reasonable price for them.\n\nWe are short of the Apples of Moradon to be used for the repair of the castle wall. I will give you appropriate compensation if you bring two Apples of Moradon."
+
+On in_progress
+    Say "Shoot... There isn't enough Apple of Moradon for all the repairs."
+
+On ready
+    Say "Master! It's the Apple of Moradon! You can trade it to  Osmond at a reasonable price."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you.\nWe were worried about our lack of Apple of Moradon, but this really helps. Thanks again!"

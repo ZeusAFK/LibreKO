@@ -1,0 +1,20 @@
+Bind Npc 14424 Zone 12
+Quest 1101 "The staff that calls upon the fire, the ice and the storm"
+    Journal "Bring back 10 Staff of Disciple"
+    Collect 10 of 810299000
+
+Requires player level >= 64 and player is elmorad
+
+Rewards
+    Give 30000000 experience or 60000000 with premium
+
+On offer
+    Say "Have you seen the Apostle of the Storm?"
+    Topic "Tell me more..." do
+        Show quest "The reason that they can call out the storm is due to their magical staff. Bring me 10 'Apostle's Staff.'"
+
+On in_progress
+    Say "Hurry! Bring them to me."
+
+On claimable
+    Show quest "hahahaha I can not improve my magic."

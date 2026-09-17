@@ -1,0 +1,23 @@
+Bind Npc 24424 Zone 11
+Quest 313 "Crimson Wing hunt"
+    Journal "[Ascetic] Veda asked me to hunt 40 Crimson Wings."
+    Kill 40 of 2253, 2203 at direction_609
+
+Requires player level >= 63 and player is karus
+
+Rewards
+    Give 25000000 experience
+
+direction_609 = location "Crimson Wing" about "Crimson Wing\nCrimson Wings are ferovious Harpy monsters. With their savagery and scant intelligence, they indiscriminately level attacks at all organisms which enter its habitat. " found "Eslant" at 396 208 in zone 11
+
+On available
+    Say "You were with Veda a long time. How about paying him a little visit?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "We meet again. How goes the training?"
+    Topic "Tell me more..." do
+        Show quest "I saw some Harpy type Monsters - Crimson Wings I think they're called - a few days ago while I was training. Big wings, Sharp claws... it's said that hundreds of people have died from their poisons in even little scratches. But, for you, they'd make for great training."
+
+On claimable
+    Show quest "Well done. Was it a hard hunt? But I can see the results of your training already. Well done. Heh."

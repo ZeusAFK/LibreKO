@@ -1,0 +1,20 @@
+Bind Npc 25005 Zone 12
+Quest 1278 "Weakening of Bathin's troops"
+    Journal "Defeat 20 of Bathin's servants"
+    Kill 20 of 9645 at direction_1241
+
+Requires player level >= 60 and player is elmorad and quest 1274 is completed
+
+Rewards
+    Give 2125000 experience
+
+direction_1241 = location "Minion of Bathin" about "[18 Devil] Subordinate of Badin" found "Eslant" at 128 703 in zone 12
+
+On offer
+    Show quest "Are you on the way to kill Bathin? Then I have another favor. Bathin's fellows invade to cilvilian's village and steal foods and kidnap the kids and women in the village these days. We will appreciate if you kill those bastards.\n\nLet's kill 20 fellows of Bathin."
+
+On in_progress
+    Say "Fellows not yet defeated? Their settlement are located  at northwest."
+
+On claimable
+    Show quest "I heard the news. You're awesome. That you got rid of them. You're the true here. The legendary God's equipments probably belong to you.<selfname>"

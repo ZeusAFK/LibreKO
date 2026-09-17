@@ -1,0 +1,24 @@
+Bind Npc 19002 Zone 21
+Quest 117 "Antidote"
+    Journal "I promised [Middle Man] Berrett that I would find and provide three Apples of Moradon to him."
+    Collect 3 of 810418000
+
+Requires player level >= 31
+
+Rewards
+    Give 500000 experience
+
+On offer
+    Say "Damn... Big trouble...\nKNIGHT!! Can you please, please help me? I'm in dire straits here."
+    Topic "Tell me more..." do
+        Show quest "You need Apple of Moradon to make the antidote. Hunt the Pincers Scorpion and collect the poison in its tail."
+
+On in_progress
+    Say "To save them all, we need at least <font color=@#660066@>three Apples of Moradon</font>. Please take courage and find them for me"
+
+On ready
+    Say "Master, Ok, you've got enough Apple of Moradon for Berret. Let's get it back to him."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thanks. Thank you so much. Really, you saved everyone. We really are thankful."

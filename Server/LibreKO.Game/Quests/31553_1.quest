@@ -1,0 +1,29 @@
+Bind Npc 31553 Zone 1
+
+On greeting
+    If quest 633 is started and player has 900201000
+        Say "[Being mixed with food, it looks appetizing.]"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900201000
+                Give 1 of 900156000
+    Else if quest 635 is started and player has 900204000
+        Say "[Discolored fruits exuding an awful odor]"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900204000
+                Give 1 of 900154000
+    Else if quest 637 is started and player has 900207000
+        Say "[Looks appetizing just as before]"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900207000
+                Give 1 of 900155000
+    Else if quest 639 is started and player has 900210000
+        Say "[Cannot see how it looks like because parts of fruits melt down on it]"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900210000
+                Give 1 of 900152000
+    Else
+        Say "[Tantalizing fruits are stacked in large]"

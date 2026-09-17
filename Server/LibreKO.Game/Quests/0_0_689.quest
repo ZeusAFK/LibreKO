@@ -1,0 +1,38 @@
+Bind Npc 31572 Zone 11 for karus
+Bind Npc 31571 Zone 12 for elmorad
+Quest 689 "Collecting Mana Pieces II"
+    Journal for karus "You must collect Mana pieces with [Senior Researcher] Gaaz."
+    Journal for elmorad "You must collect Mana pieces with [Senior Researcher] Aldos."
+    Collect 5 of 389470000
+
+Requires player level >= 67 and quest 688 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+
+On available
+    Say "Got a call, he needs the second [Mana Piece]. Go to [Chief Researcher] Gaz."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "So I see you again. You had no choice? Hmm... you could refuse if you want to. Well...enough of idle talk."
+        Topic "Tell me more..." do
+            Show quest "Anyway, next [Mana Pieces] that you should collect are [Impure Mana Pieces] of [Death Wizards]. They, also called as a psycho-pump, absorb the last consciousness from their victims and accumulate impure energies in their body during that evil deed. However, the numbers of those [Death Wizards] have increased enormously in recent days. Please hurry.\n\n[Senior Researcher]Gaz in Eslant has asked for [Impure mana pice] from the [Death Wizards]."
+    If player is elmorad
+        Say "So I see you again. You had no choice? You could refuse if you want to. Well...enough of idle talk."
+        Topic "Tell me more..." do
+            Show quest "Anyway, next [Mana Pieces] that you should collect are [Impure Mana Pieces] of [Death Wizards]. They, also called as a psycho-pump, absorb the last consciousness from their victims and accumulate impure energies in their body during that evil deed. However, the numbers of those [Death Wizards] have increased enormously in recent days. Please hurry.\n\n[Senior Researcher]Aldos in Eslant has asked for [Impure mana pice] from the [Death Wizards]."
+
+On in_progress
+    Say "It's [Impure Mana Piece] from the [Death Wizard]. Understand?  [Death Wizard] and [Impure Mana Piece]!"
+
+On claimable
+    Show quest "So this is [Impure Mana Piece]. Let's hurry and see the reaction..\n\nLet's see ...next I need [Bitter mana piece]. As you can expect, you can get it from [Apostle of Piercing Cold]. It is a magical creature that uses the cold magic. Please go get it."
+
+On completed
+    If player is karus
+        Say "Please come back to me when you reach Lv67. You look very weak. You need to be stronger."
+    If player is elmorad
+        Say "Please come back to me when you reach Lv68. You look very weak. You need to be stronger."

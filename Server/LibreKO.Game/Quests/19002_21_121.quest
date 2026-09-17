@@ -1,0 +1,28 @@
+Bind Npc 19002 Zone 21
+Quest 121 "Smirdons Meat"
+    Journal "Bring 2 juicy Apples of Moradon to [Middle man] Berret."
+    Collect 2 of 810418000
+
+Requires player level >= 33
+
+Rewards
+    Give 625000 experience
+
+On available
+    Say "Have you ever eaten Apple of Moradon before? They say it tastes amazing...(Gulping) Berret sells it doesn't he?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Apple of Moradon? Heh heh, how could you still not know how it tastes? Apple of Moradon is the best fruit. However, there aren't enough supplies of it in Moradon! Words can't do the melting taste justice. You just gotta try it!"
+    Topic "Tell me more..." do
+        Show quest "Well, unfortunately we don't have any at the moment. The hunter used to trade a certain amount of meat with me at the end of each day. But he seems to have disappeared... This is going to cost me. Ach, trouble. Nothing but trouble.\n\nPlease fetch some Apples of Moradon."
+
+On in_progress
+    Say "Ach...How much is lost! Agrrr, I'm so stupid!"
+
+On ready
+    Say "Hmm, so this is Apple of Moradon eh? Tastes awesome doesn't it? So juicy!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Well then! This is the Apple of Moradon then? Well thank you very much indeed. I don't really know how to repay your continual help. Hey! How about this- Here's Apple of Moradon for yourselves. Enjoy!"

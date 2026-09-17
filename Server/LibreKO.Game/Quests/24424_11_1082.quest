@@ -1,0 +1,18 @@
+Bind Npc 24424 Zone 11
+Quest 1082 "Is it a human or a bird?"
+    Journal "Defeat 30 Raven Harpys"
+    Kill 30 of 2252, 2202 at direction_373
+
+Requires player level >= 68 and player is karus
+
+Rewards
+    Give 47500000 experience
+
+direction_373 = location "Raven Harpy" about "Raven Harpy\nRaven Harpies are monsters with strong attack powers. They have low intelligence but are very aggressive so they attack anyone who comes into their territories. " found "Karus Eslant" karus at 278 527 in zone 11
+
+On offer
+    Say "Have you seen the human with wings from the South West?"
+    Topic "Tell me more..." do
+        Show quest "They are the monsters who are with the evil. We call them Raven Harpy.They had bad characters and are just killing anyone they see. Can you go get rid of them?"
+        Topic "Where can I find it?" do
+            Map direction_373

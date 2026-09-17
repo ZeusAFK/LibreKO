@@ -1,0 +1,22 @@
+Bind Npc 32557 Zone 71
+Quest 1755 "[Character Daily] Defeat the Elite Pirates"
+    Daily
+    Journal "Defeat 1 Elite Pirate"
+    Kill 1 of 10800, 10801 at direction_2107
+
+Requires player level >= 61 and player is karus
+
+Rewards
+    Give 1000000 experience
+    Give 100 np
+
+direction_2107 = location "Elite Pirate Member" found "Ronak Land" karus at 1018 765 elmorad at 974 1246 in zone 71
+
+On offer
+    Show quest "If you defeat 1 member of the Elite Pirates and return, you will receive 1 million EXP and 100 Ladder Points! Do you want to proceed?"
+
+On in_progress
+    Say "You have not defeated 1 member of the Elite Pirates. Come back once you defeat the Elite Pirate."
+
+On claimable
+    Show quest "You have defeated 1 Elite Pirate and came back! Here's your reward!"

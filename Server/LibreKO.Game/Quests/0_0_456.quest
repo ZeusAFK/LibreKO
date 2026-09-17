@@ -1,0 +1,46 @@
+Bind Npc 24204 Zone 1 for karus warrior
+Bind Npc 24204 Zone 1 for karus rogue
+Bind Npc 24204 Zone 1 for karus mage
+Bind Npc 24204 Zone 1 for karus priest
+Bind Npc 14204 Zone 2 for elmorad warrior
+Bind Npc 14204 Zone 2 for elmorad rogue
+Bind Npc 14204 Zone 2 for elmorad mage
+Bind Npc 14204 Zone 2 for elmorad priest
+Quest 456 "Fallen Angel"
+    Journal for karus "Kill Fallen Angel for [Priest] Minerva and you will receive a reward."
+    Journal for elmorad "Kill Fallen Angel for [Priest] Minerva and you will receive a reward."
+    Kill 15 of 2353
+
+Requires player level >= 65
+
+Rewards for warrior
+    Give 25000000 experience
+
+Rewards for rogue
+    Give 25000000 experience
+
+Rewards for mage
+    Give 25000000 experience
+
+Rewards for priest
+    Give 25000000 experience
+
+On available
+    If player is elmorad
+        Say "Master, they're none other than Fallen Angels. They're powerful monsters so be careful."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Do you know about an object called the horn of comprehension?"
+    Topic "Tell me more..." do
+        Show quest "The horn of comprehension is the most precious object to us priests.\n\nA prospective priest who went out training a while ago had lost it to the Fallen Angels on the lowest level of the Abyss Dungeon.  Right now, that prospective priest is going through a period of repentance for his mistake, so we need someone to go there and bring it back.\n\nIf it goes into someone's hand, worse yet into the hand of the enemy, then it could be a big problem for us.  Could youKill the Fallen Angel from the lowest level of the Abyss Dungeon?"
+
+On in_progress
+    Say "horn of comprehension can be retrieved from Fallen Angels in the nether Abyss Dungeon."
+
+On ready
+    Say "Master, you Kill the Fallen Angel. Hurry back to [Priest] Minerva."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Thank you. This completes the  Kill the Fallen Angel in the mainland. May the gods shower you with blessings."

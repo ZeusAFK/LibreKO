@@ -1,0 +1,2171 @@
+[
+  {
+    "Index": 486,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 9980
+  },
+  {
+    "Index": 487,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 507001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 488,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 507002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 489,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 507003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 490,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 507004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 491,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 507005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 492,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 547001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 493,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 547002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 494,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 547003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 495,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 547004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 496,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 547005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 497,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 567001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 498,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 567002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 499,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 567003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 500,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 567004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 501,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 567005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 502,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 587001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 503,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 587002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 504,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 587003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 505,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 587004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 506,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 587005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 507,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 9987
+  },
+  {
+    "Index": 508,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 507001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 509,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 507002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 510,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 507003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 511,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 507004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 512,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 507005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 513,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 547001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 514,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 547002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 515,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 547003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 516,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 547004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 517,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 547005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 518,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 567001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 519,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 567002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 520,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 567003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 521,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 567004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 522,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 567005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 523,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 587001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 524,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 587002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 525,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 587003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 526,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 587004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 527,
+    "Type": 0,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 587005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 528,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 9980
+  },
+  {
+    "Index": 529,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 208001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 530,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 208002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 531,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 208003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 532,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 208004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 533,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 208005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 534,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 535,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 536,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 537,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 538,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 539,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 268001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 540,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 268002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 541,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 268003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 542,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 268004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 543,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 268005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 544,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 545,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 546,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 547,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 548,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 549,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 9987
+  },
+  {
+    "Index": 550,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 208001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 551,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 208002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 552,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 208003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 553,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 208004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 554,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 208005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 555,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 556,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 557,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 558,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 559,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 248001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 560,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 268001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 561,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 268002001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 562,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 268003001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 563,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 268004001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 564,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 268005001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 565,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 566,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 567,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 568,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 569,
+    "Type": 0,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 288001001,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 570,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 9000
+  },
+  {
+    "Index": 571,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 508226000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5200
+  },
+  {
+    "Index": 572,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 389196000,
+    "GiveItemCount": 1,
+    "SuccessRate": 84
+  },
+  {
+    "Index": 573,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 389197000,
+    "GiveItemCount": 1,
+    "SuccessRate": 89
+  },
+  {
+    "Index": 574,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 389198000,
+    "GiveItemCount": 1,
+    "SuccessRate": 94
+  },
+  {
+    "Index": 575,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 100
+  },
+  {
+    "Index": 576,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 104
+  },
+  {
+    "Index": 577,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 1,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 110
+  },
+  {
+    "Index": 578,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 508226000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5200
+  },
+  {
+    "Index": 579,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 389196000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 580,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 389197000,
+    "GiveItemCount": 1,
+    "SuccessRate": 80
+  },
+  {
+    "Index": 581,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 389198000,
+    "GiveItemCount": 1,
+    "SuccessRate": 85
+  },
+  {
+    "Index": 582,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 90
+  },
+  {
+    "Index": 583,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 95
+  },
+  {
+    "Index": 584,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 100
+  },
+  {
+    "Index": 585,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 9000
+  },
+  {
+    "Index": 586,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 508226000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5350
+  },
+  {
+    "Index": 587,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389196000,
+    "GiveItemCount": 1,
+    "SuccessRate": 81
+  },
+  {
+    "Index": 588,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389197000,
+    "GiveItemCount": 1,
+    "SuccessRate": 86
+  },
+  {
+    "Index": 589,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389198000,
+    "GiveItemCount": 1,
+    "SuccessRate": 91
+  },
+  {
+    "Index": 590,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 96
+  },
+  {
+    "Index": 591,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 101
+  },
+  {
+    "Index": 592,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 593,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389166000,
+    "GiveItemCount": 1,
+    "SuccessRate": 79
+  },
+  {
+    "Index": 594,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389165000,
+    "GiveItemCount": 1,
+    "SuccessRate": 84
+  },
+  {
+    "Index": 595,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389164000,
+    "GiveItemCount": 1,
+    "SuccessRate": 89
+  },
+  {
+    "Index": 596,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389163000,
+    "GiveItemCount": 1,
+    "SuccessRate": 94
+  },
+  {
+    "Index": 597,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389162000,
+    "GiveItemCount": 1,
+    "SuccessRate": 99
+  },
+  {
+    "Index": 598,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389161000,
+    "GiveItemCount": 1,
+    "SuccessRate": 104
+  },
+  {
+    "Index": 599,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 1,
+    "GiveItemNum": 389160000,
+    "GiveItemCount": 1,
+    "SuccessRate": 109
+  },
+  {
+    "Index": 600,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 9800
+  },
+  {
+    "Index": 601,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 508226000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5200
+  },
+  {
+    "Index": 602,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389196000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 603,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389197000,
+    "GiveItemCount": 1,
+    "SuccessRate": 80
+  },
+  {
+    "Index": 604,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389198000,
+    "GiveItemCount": 1,
+    "SuccessRate": 85
+  },
+  {
+    "Index": 605,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 90
+  },
+  {
+    "Index": 606,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 95
+  },
+  {
+    "Index": 607,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 100
+  },
+  {
+    "Index": 608,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389166000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 609,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389165000,
+    "GiveItemCount": 1,
+    "SuccessRate": 80
+  },
+  {
+    "Index": 610,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389164000,
+    "GiveItemCount": 1,
+    "SuccessRate": 85
+  },
+  {
+    "Index": 611,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389163000,
+    "GiveItemCount": 1,
+    "SuccessRate": 90
+  },
+  {
+    "Index": 612,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389162000,
+    "GiveItemCount": 1,
+    "SuccessRate": 95
+  },
+  {
+    "Index": 613,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389161000,
+    "GiveItemCount": 1,
+    "SuccessRate": 100
+  },
+  {
+    "Index": 614,
+    "Type": 1,
+    "WarStatus": 2,
+    "UseItemType": 0,
+    "GiveItemNum": 389160000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 615,
+    "Type": 1,
+    "WarStatus": 1,
+    "UseItemType": 0,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 9800
+  },
+  {
+    "Index": 616,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 617,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379021000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 618,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 619,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389160000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 620,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389161000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 621,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389162000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 622,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389076000,
+    "GiveItemCount": 1,
+    "SuccessRate": 6
+  },
+  {
+    "Index": 623,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 399128000,
+    "GiveItemCount": 1,
+    "SuccessRate": 110
+  },
+  {
+    "Index": 624,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389074000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5
+  },
+  {
+    "Index": 625,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 626,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 10
+  },
+  {
+    "Index": 627,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 381001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 55
+  },
+  {
+    "Index": 628,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 810241000,
+    "GiveItemCount": 1,
+    "SuccessRate": 250
+  },
+  {
+    "Index": 629,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 508226000,
+    "GiveItemCount": 1,
+    "SuccessRate": 1500
+  },
+  {
+    "Index": 630,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379025000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 631,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 10
+  },
+  {
+    "Index": 632,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 25
+  },
+  {
+    "Index": 633,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 25
+  },
+  {
+    "Index": 634,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379154000,
+    "GiveItemCount": 1,
+    "SuccessRate": 45
+  },
+  {
+    "Index": 635,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379023000,
+    "GiveItemCount": 1,
+    "SuccessRate": 40
+  },
+  {
+    "Index": 636,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379016000,
+    "GiveItemCount": 1,
+    "SuccessRate": 30
+  },
+  {
+    "Index": 637,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 638,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5
+  },
+  {
+    "Index": 639,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379021000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5
+  },
+  {
+    "Index": 640,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 641,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389160000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 642,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389161000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 643,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389162000,
+    "GiveItemCount": 1,
+    "SuccessRate": 35
+  },
+  {
+    "Index": 644,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 399128000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 645,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389075000,
+    "GiveItemCount": 1,
+    "SuccessRate": 4
+  },
+  {
+    "Index": 646,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389074000,
+    "GiveItemCount": 1,
+    "SuccessRate": 2
+  },
+  {
+    "Index": 647,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 7
+  },
+  {
+    "Index": 648,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 7
+  },
+  {
+    "Index": 649,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 381001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 45
+  },
+  {
+    "Index": 650,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 508226000,
+    "GiveItemCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Index": 651,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5
+  },
+  {
+    "Index": 652,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379025000,
+    "GiveItemCount": 1,
+    "SuccessRate": 10
+  },
+  {
+    "Index": 653,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 654,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379154000,
+    "GiveItemCount": 1,
+    "SuccessRate": 25
+  },
+  {
+    "Index": 655,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379023000,
+    "GiveItemCount": 1,
+    "SuccessRate": 35
+  },
+  {
+    "Index": 656,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379016000,
+    "GiveItemCount": 1,
+    "SuccessRate": 20
+  },
+  {
+    "Index": 657,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 810241000,
+    "GiveItemCount": 1,
+    "SuccessRate": 700
+  },
+  {
+    "Index": 658,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389035000,
+    "GiveItemCount": 1,
+    "SuccessRate": 3
+  },
+  {
+    "Index": 659,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379021000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5
+  },
+  {
+    "Index": 660,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389076000,
+    "GiveItemCount": 1,
+    "SuccessRate": 7
+  },
+  {
+    "Index": 661,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389075000,
+    "GiveItemCount": 1,
+    "SuccessRate": 7
+  },
+  {
+    "Index": 662,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389074000,
+    "GiveItemCount": 1,
+    "SuccessRate": 7
+  },
+  {
+    "Index": 663,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 664,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 25
+  },
+  {
+    "Index": 665,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 45
+  },
+  {
+    "Index": 666,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379016000,
+    "GiveItemCount": 1,
+    "SuccessRate": 30
+  },
+  {
+    "Index": 667,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 379023000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 668,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 399127000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 669,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 10
+  },
+  {
+    "Index": 670,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 389156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 671,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 399128000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 672,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 399129000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 673,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379021000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5
+  },
+  {
+    "Index": 674,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389076000,
+    "GiveItemCount": 1,
+    "SuccessRate": 3
+  },
+  {
+    "Index": 675,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389075000,
+    "GiveItemCount": 1,
+    "SuccessRate": 4
+  },
+  {
+    "Index": 676,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389074000,
+    "GiveItemCount": 1,
+    "SuccessRate": 2
+  },
+  {
+    "Index": 677,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 399129000,
+    "GiveItemCount": 1,
+    "SuccessRate": 30
+  },
+  {
+    "Index": 678,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 399128000,
+    "GiveItemCount": 1,
+    "SuccessRate": 150
+  },
+  {
+    "Index": 679,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 399127000,
+    "GiveItemCount": 1,
+    "SuccessRate": 150
+  },
+  {
+    "Index": 680,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 50
+  },
+  {
+    "Index": 681,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 50
+  },
+  {
+    "Index": 682,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 683,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 379016000,
+    "GiveItemCount": 1,
+    "SuccessRate": 25
+  },
+  {
+    "Index": 684,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 7
+  },
+  {
+    "Index": 685,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 389156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 7
+  },
+  {
+    "Index": 687,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 688,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379021000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 689,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 690,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389160000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 691,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389161000,
+    "GiveItemCount": 1,
+    "SuccessRate": 105
+  },
+  {
+    "Index": 692,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389162000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 693,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389076000,
+    "GiveItemCount": 1,
+    "SuccessRate": 6
+  },
+  {
+    "Index": 694,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 399128000,
+    "GiveItemCount": 1,
+    "SuccessRate": 110
+  },
+  {
+    "Index": 695,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389074000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5
+  },
+  {
+    "Index": 696,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 697,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 10
+  },
+  {
+    "Index": 698,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 381001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 100
+  },
+  {
+    "Index": 699,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 810241000,
+    "GiveItemCount": 1,
+    "SuccessRate": 250
+  },
+  {
+    "Index": 700,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 508226000,
+    "GiveItemCount": 1,
+    "SuccessRate": 1500
+  },
+  {
+    "Index": 701,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379025000,
+    "GiveItemCount": 1,
+    "SuccessRate": 15
+  },
+  {
+    "Index": 702,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 10
+  },
+  {
+    "Index": 703,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 85
+  },
+  {
+    "Index": 704,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 25
+  },
+  {
+    "Index": 705,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379154000,
+    "GiveItemCount": 1,
+    "SuccessRate": 45
+  },
+  {
+    "Index": 706,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379023000,
+    "GiveItemCount": 1,
+    "SuccessRate": 40
+  },
+  {
+    "Index": 707,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379016000,
+    "GiveItemCount": 1,
+    "SuccessRate": 30
+  },
+  {
+    "Index": 708,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389035000,
+    "GiveItemCount": 1,
+    "SuccessRate": 2
+  },
+  {
+    "Index": 709,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379021000,
+    "GiveItemCount": 1,
+    "SuccessRate": 35
+  },
+  {
+    "Index": 710,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389076000,
+    "GiveItemCount": 1,
+    "SuccessRate": 6
+  },
+  {
+    "Index": 711,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389075000,
+    "GiveItemCount": 1,
+    "SuccessRate": 7
+  },
+  {
+    "Index": 712,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389074000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5
+  },
+  {
+    "Index": 713,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389199000,
+    "GiveItemCount": 1,
+    "SuccessRate": 95
+  },
+  {
+    "Index": 714,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389201000,
+    "GiveItemCount": 1,
+    "SuccessRate": 120
+  },
+  {
+    "Index": 715,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389205000,
+    "GiveItemCount": 1,
+    "SuccessRate": 130
+  },
+  {
+    "Index": 716,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379016000,
+    "GiveItemCount": 1,
+    "SuccessRate": 30
+  },
+  {
+    "Index": 717,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 379023000,
+    "GiveItemCount": 1,
+    "SuccessRate": 35
+  },
+  {
+    "Index": 718,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 399127000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 719,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389155000,
+    "GiveItemCount": 1,
+    "SuccessRate": 10
+  },
+  {
+    "Index": 720,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 389156000,
+    "GiveItemCount": 1,
+    "SuccessRate": 13
+  },
+  {
+    "Index": 721,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 399128000,
+    "GiveItemCount": 1,
+    "SuccessRate": 75
+  },
+  {
+    "Index": 722,
+    "Type": 1,
+    "WarStatus": 0,
+    "UseItemType": 4,
+    "GiveItemNum": 399129000,
+    "GiveItemCount": 1,
+    "SuccessRate": 25
+  },
+  {
+    "Index": 723,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 900001000,
+    "GiveItemCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Index": 900001,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 399210000,
+    "GiveItemCount": 1,
+    "SuccessRate": 400
+  },
+  {
+    "Index": 900002,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 0,
+    "GiveItemNum": 399200000,
+    "GiveItemCount": 1,
+    "SuccessRate": 100
+  },
+  {
+    "Index": 900003,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 399210000,
+    "GiveItemCount": 1,
+    "SuccessRate": 400
+  },
+  {
+    "Index": 900004,
+    "Type": 0,
+    "WarStatus": 0,
+    "UseItemType": 1,
+    "GiveItemNum": 399200000,
+    "GiveItemCount": 1,
+    "SuccessRate": 250
+  }
+]

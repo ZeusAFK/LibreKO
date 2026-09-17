@@ -1,0 +1,25 @@
+Bind Npc 29049 Zone 35
+Quest 810 "The beginning of the darkness"
+    Journal "You must accept [Pontifex] Skadi's request."
+    Kill 3 of 9251 at direction_1011
+    Kill 3 of 8601 at direction_1012
+
+Requires player level >= 1
+
+Rewards
+    Give 25000000 experience
+    Give 1 of 508194000
+
+direction_1011 = location "Bloody Krowaz" about "Bloody Krowaz\n Ancient demon who appears in Delos castle underground dungeon." found "Delos Castle Dungeon" at 0 0 in zone 35
+direction_1012 = location "Krowaz" about "Krowaz\n He is lord of crowaz territory, owner of abyss dragon Vertcave, and lord of resources" found "Delos Castle Dungeon" at 0 0
+
+On offer
+    Say "The darkness comes from the dark dungeons of the Delian."
+    Topic "Tell me more..." do
+        Show quest "I'm very scared. Let's get rid of the darkness roots.\n\nGet rid of [Bloody Krowaz] and [Krowaz] of Krowaz territory and return back to [High Priest] Scotty."
+
+On in_progress
+    Say "Ah...still darkness..."
+
+On claimable
+    Show quest "Thank you. Right now darkness is gone but it will come again."

@@ -1,0 +1,18 @@
+Bind Npc 24424 Zone 11
+Quest 1088 "Ambush from the skies"
+    Journal "Defeat 30 Falcon."
+    Kill 30 of 2254, 2224 at direction_379
+
+Requires player level >= 68 and player is karus and quest 1086 is completed
+
+Rewards
+    Give 47500000 experience
+
+direction_379 = location "Falcon" about "Falcon\nA type of a Harpy. They also have low intelligence but are aggrestive and attacks anyone who comes into their territories.." found "Karus Eslant" karus at 396 208 in zone 11
+
+On offer
+    Say "Thank you for what you did the last time."
+    Topic "Tell me more..." do
+        Show quest "However, those in retreat might come back to invade again. Can you get rid of the rest of the falcons?"
+        Topic "Where can I find it?" do
+            Map direction_379

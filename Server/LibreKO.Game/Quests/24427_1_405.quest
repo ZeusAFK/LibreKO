@@ -1,0 +1,28 @@
+Bind Npc 24427 Zone 1
+Quest 405 "[Repeatable Solo] Sabertooth Hunt"
+    Repeat always
+    Journal "[Guard] Melverick has commissioned you to hunt Sabertooth. However, it will not count when you are in a party."
+    Kill 10 of 653, 603 at direction_99
+
+Requires player level >= 37 and player is karus
+
+Rewards
+    Give 550000 experience or 750000 with premium
+
+direction_99 = location "Sabertooth" about "Sabertooth\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "Karus" karus at 881 1296 in zone 1
+
+On available
+    Say "Master, how're you feeling? The imperial palace guard is looking for you..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "How is your adventure here in the mainland? Isn't it tough? Haha- just like before, I came here to ask you for a hunt. The targets are the Saber Tooths.. They are pretty ferocious, but would you like to hunt them?"
+    Topic "Tell me more..." do
+        Show quest "I will give you a very useful armor when you complete this hunt."
+
+On ready
+    Say "A hunt of this intensity is a piece of cake, right? Heh heh..."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Well done. The reward is the armor suppied only to the Palace Guards, so I am sure you'll find it handy."

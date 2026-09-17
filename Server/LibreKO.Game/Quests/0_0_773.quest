@@ -1,0 +1,36 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 773 "[Lemegeton] Deprived Ring"
+    Journal for karus "You must deliver [Completed Scroll of Seal] to [Order of the Sorcery] Bros."
+    Journal for elmorad "You must deliver [Completed Scroll of Seal] to [Order of the Sorcery] Sais."
+    Collect 1 of 900294000
+
+Requires player level >= 75 and quest 772 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "Something's up. What could it be? Go visit [Order of the Sorcery] Bros."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Something is up. What could it be? Go visit Seis to find out."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Ah..  <selfname> you are finally here."
+        Topic "Tell me more..." do
+            Show quest "[Devil32] Asmodeus has been unsealed. It was my mistake. He turned himself to look like me and locked me in and he told you to go to [Eslant]. While you were at Eslant, he stole the [Sealed Ring] and ran away!!\n\nWe must deliver [Completed Sealed Scroll] to Bros of [Order of the Sorcery] of Ronark Land."
+    If player is elmorad
+        Say "Ah..  <selfname> you are finally here."
+        Topic "Tell me more..." do
+            Show quest "[Devil32] Asmodeus has been unsealed. It was my mistake. He turned himself to look like me and locked me in and he told you to go to [Eslant]. While you were at Eslant, he stole the [Sealed Ring] and ran away!!\n\nWe must deliver [Completed Sealed Scroll] to Sais of [Order of the Sorcery] of Ronark Land."
+
+On in_progress
+    Say "What? You brought the [Completed Sealed Scroll]? Where is it?"
+
+On claimable
+    Show quest "You brought [Completed Sealed Scroll]? Malraseu must have known about this. I think with this we can capture [Devil32] Asmodeus again.\n\nWe now have to seal [Devil32]. But Im not sure if he's more powerful now than ever. He could have awaken all the devils to become [Awaken Asmodeus]."

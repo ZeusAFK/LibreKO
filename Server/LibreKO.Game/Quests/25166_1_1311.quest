@@ -1,0 +1,19 @@
+Bind Npc 25166 Zone 1
+Quest 1311 "Pocket money that cannot be spent"
+    Journal "The girl that gave the present, has been contaminated and will die. Let's give the girls last wishes to her parents"
+    Give 1 of 900670000 on accept
+    Collect 1 of 900659000
+
+Requires player level >= 35 and player is karus and quest 1310 is completed
+
+Rewards
+    Give 300000 experience
+
+On offer
+    Show quest "(Cough)(Cough) Hello <selfname>. Can you deliver this gift to my mother? She is probably near the [Advisor].(Cough)(Cough)\n\n(cough) I..I'm fine~ Please do me this favor."
+
+On in_progress
+    Say "You didn't give her the present yet? (cough)"
+
+On claimable
+    Show quest "<selfname> thank you. Did my mother like it?\n\nThank you to <selfname>. I wanted to give a present to mother before I die..Really thank you..(Cough)..(Co...ug)"

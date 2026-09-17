@@ -1,0 +1,20 @@
+Bind Npc 24424 Zone 11
+Quest 1096 "Giants Bone"
+    Journal "Bring back 10 Troll Bones"
+    Collect 10 of 810297000
+
+Requires player level >= 62 and player is karus
+
+Rewards
+    Give 27500000 experience or 55000000 with premium
+
+On offer
+    Say "I heard that the trolls bones are good for disc."
+    Topic "Tell me more..." do
+        Show quest "Yep. We'll boil that and drink the soup. Could you bring 10 bones?"
+
+On in_progress
+    Say "Come on! Bring trolls bones."
+
+On claimable
+    Show quest "Thank you. Because of you it'll help on fixing the disc."

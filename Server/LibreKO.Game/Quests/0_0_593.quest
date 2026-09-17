@@ -1,0 +1,52 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 593 "[Great Battle] The Fourth Day: Defeat"
+    Journal for karus "You must perform the duty of [Base Spearhead] Cruzed at the Stronghold of Ronark Land."
+    Journal for elmorad "You must perform the duty of [Base Spearhead] Krable at the Stronghold of Ronark Land."
+    Kill 30 of 9018, 9061 at direction_760
+
+Requires (player level >= 67 and player is karus and quest 591 is completed) or (player level >= 67 and player is elmorad and quest 592 is completed)
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+    Give 1 of 910237000
+
+direction_760 = location "Scout" about "Scout\n Elite scout who gets information from enemy or chase enemy" found "Ronark Land Base" karus at 605 266 in zone 73
+
+On available
+    If player is karus
+        Say "Master!It's a big deal!Went to attack if the enemy stronghold and defeat all the troops I came back! God somehow the base paper forefront [Base Scout]Crewjed de Go!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master!It's a big deal!Went to attack if the enemy stronghold and defeat all the troops I came back!Is somehow larger label base paper forefront Dear Come on!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "...? The attack, the synapse fail completely, I gave you worked hard so I do not have a peg."
+        Topic "Tell me more..." do
+            Show quest "I found out that we were trapped right after we raided the enemy's stronghold. Our force was deeply damaged and then barely escaped. I'm sorry to ask a favor of you like this, but I have to. Please remove the [Scouts], who are chasing us, for the retreat of our army.\n\nYou will receive a mission from [Base Scout]Crewjed in Ronark Land Base."
+    If player is elmorad
+        Say "...? The attack, the synapse fail completely, I gave you worked hard so I do not have a peg."
+        Topic "Tell me more..." do
+            Show quest "I found out that we were trapped right after we raided the enemy's stronghold. Our force was deeply damaged and then barely escaped. I'm sorry to ask a favor of you like this, but I have to. Please remove the [Scouts], who are chasing us, for the retreat of our army.\n\nYou will receive a mission from [Base Scout]Crable in Ronark Land Base."
+
+On in_progress
+    Say "Never lacking to cause confusion."
+    Topic "Where can I find it?" do
+        Map direction_760
+
+On ready
+    If player is karus
+        Say "I took care of Scout Islands Karus will be able to retreat safely."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Scout took care of all now El Morad, will be able to retreat safely Islands"
+        Topic "All right, I'll swing by" goto close
+
+On claimable
+    If player is karus
+        Show quest "Good work, thanks you [Scout] to cause confusion in the enemy's information network from home safely reinforcements arrived Yes!\n\nIt's unexpected! In the battle ever underwent did not in vain! To me wicked the El Morad guys, sandbag here! The nature of [Captain]Harugo carrying the good news to me to give God to"
+    If player is elmorad
+        Show quest "Good work, thanks you [Scout] to cause confusion in the enemy's information network from home safely reinforcements arrived Yes!\n\nIt's unexpected! In the battle ever underwent did not in vain!The to me the wicked Karus guys sandbag here! It to me to give the good news of God the captain of nature wine Polk!"

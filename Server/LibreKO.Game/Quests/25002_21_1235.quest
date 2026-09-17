@@ -1,0 +1,20 @@
+Bind Npc 25002 Zone 21
+Quest 1235 "Soul stone's powers"
+    Journal "Try the soul stone to a bandicoot"
+    Kill 1 of 9663 at direction_1258
+
+Requires player level >= 26 and quest 1234 is completed
+
+Rewards
+    Give 150000 experience
+
+direction_1258 = location "Transformed Worm" about "Changed due to the power of the Stone" found "Moradon" at 0 0 in zone 21
+
+On offer
+    Show quest "Here. This is the Spiritual Stone and blood sample you brought. Feed this to that worm over there. Something incredible will happen Haha. Oh, make sure you put an armor on yourself just in case."
+
+On in_progress
+    Say "Haven't feed it yet? Go head come on~Haha"
+
+On claimable
+    Show quest "How's it? Unbelievable huh? That's an ability of Spiritual Stone. Make even a puny thing into a monster...Hope the stone doesn't spread out no more..."

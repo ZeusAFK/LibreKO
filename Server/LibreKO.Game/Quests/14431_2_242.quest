@@ -1,0 +1,17 @@
+Bind Npc 14431 Zone 2
+Quest 242 "Manticore Hunt"
+    Journal "[Guard] Beth has commissioned you to hunt the Manticore."
+    Kill 20 of 1824, 1874 at direction_1145
+
+Requires player level >= 55 and player is elmorad
+
+Rewards
+    Give 25000000 experience
+
+direction_1145 = location "Manticore" about "Manticore\n Monster figured lion body with have scorpion tail and wing, powerful poison come from scorpion tail to hunt." found "El Morad" elmorad at 635 1932 in zone 2
+
+On offer
+    Show quest "To see is to belive.. I heard it's seen from somewhere Elmorad."
+
+On claimable
+    Show quest "I don't know how to thank you. This is compensation for your help. This is all I can give you."

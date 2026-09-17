@@ -1,0 +1,50 @@
+Bind Npc 31558 Zone 1 for karus
+Bind Npc 31557 Zone 2 for elmorad
+Quest 645 "Procurement of Specialty Goods II"
+    Journal for karus "You must accept the request of [Sailor] Hayes."
+    Journal for elmorad "You must accept the request of [Sailor] Hein."
+    Collect 3 of 389760000
+
+Requires player level >= 62 and quest 644 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 10000 coins
+    Give 1 of 900198000
+
+direction_14 = location "Tyon" about "Tyon\nBoar monster evolved by Pathos' evil power" found "El Morad " at 1684 779 in zone 2
+direction_344 = location "Tyon" about "Tyon\nBoar monster evolved by Pathos' evil power" found "Karus" at 360 1300 in zone 1
+
+On available
+    If player is karus
+        Say "[Sailor] Hayes is looking for me again. I think he's going to ask me to bring him something again."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "The sailors by Hein that I'm looking for us. Saved somehow something else ... I think I will come"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Good to see you again. I asked for you because I need to ask you for a favor."
+        Topic "Tell me more..." do
+            Show quest "It is called [Rare Fruit]. I'm certain that it comes from this area here in Adonis but I just can't seem to find it. I heard [Tions] know where it is.\n\n[From the tayion] in accordance with the request of Karus Regional Executive pugeo port sailors and yes, you will need to gather a rare fruit."
+    If player is elmorad
+        Say "Embraced see you again. I can ask, is so welcome."
+        Topic "Tell me more..." do
+            Show quest "It is called [Rare Fruit]. I'm certain that it comes from this area here in Adonis but I just can't seem to find it. I heard [Tions] know where to get it. Well...good luck, then.\n\nUpon request of Aladdin and Local Rod Elmo Sharks captain of the port, you will need to gather a rare fruit from the tayion."
+
+On in_progress
+    If player is karus
+        Say "Stii haven't found it? It's taking longer than I thought."
+        Topic "Where can I find it?" do
+            Map direction_344
+    If player is elmorad
+        Say "Stii haven't found it? It's taking longer than I thought."
+        Topic "Where can I find it?" do
+            Map direction_14
+
+On claimable
+    If player is karus
+        Show quest "Hmm ... So you've managed to get it. Thank you.\n\nThen again, it also ask for delivery. A fruit box specially made for this time secret agent Clarence can be delivered. Please the receipt and packed pilhi, last. Goodbye."
+    If player is elmorad
+        Show quest "Hmm ... So you've managed to get it. Thank you.\n\nI have another delivery request to make of you again. Please deliver this [Specialty Fruits Box] to Clarence, the [Secret Agent]. And please don't forget to bring me the receipt! Good luck."

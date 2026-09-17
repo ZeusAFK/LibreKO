@@ -1,0 +1,38 @@
+Bind Npc 31564 Zone 11 for karus
+Bind Npc 31563 Zone 12 for elmorad
+Quest 651 "Dispatch to Eslant"
+    Journal for karus "You must deliver recommendation letter to [Trader] Drill."
+    Journal for elmorad "You must deliver recommendation letter to [Trader] Ellon."
+    Collect 1 of 900191000
+
+Requires player level >= 64 and quest 650 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    Say "Somebody's looking us from Islant. Go to him at once."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "How do you ...and who are you?"
+        Topic "Tell me more..." do
+            Show quest "You are recommended by the captain? Hmmm...I guess you've got some skills.\n\nThe Eslant updated traders must be passed to the [Captain recommendation to drill."
+    If player is elmorad
+        Say "How do you ...and who are you?"
+        Topic "Tell me more..." do
+            Show quest "You are recommended by the captain? Hmmm...I guess you've got some skills.\n\nEslant [updated] Ellen traders to Captain recommendation must be passed."
+
+On in_progress
+    If player is karus
+        Say "By the way, where's the [Captain Recommendation]? [Sailor] Armada? That clumsy fool must have forgotten to give it to you. Please come back with it."
+    If player is elmorad
+        Say "By the way, where's the [Captain Recommendation]? [Sailor] Kidd? That clumsy fool must have forgotten to give it to you. Please come back with it."
+
+On claimable
+    Show quest "Hmm, this looks like it. Well, then I will officially ask you to help us with our mission here.\n\nGood. But first, I need to ask you something urgently."
+
+On completed
+    Say "You need more training. See you when you reach Lv65."

@@ -1,0 +1,27 @@
+Bind Npc 31561 Zone 2
+Quest 666 "Practice Hunt"
+    Journal "You must show your ability before you compete in hunting with [Hunter] Halon."
+    Kill 50 of 4401, 4451 at direction_27
+
+Requires player level >= 61 and player is elmorad and quest 664 is completed
+
+Rewards
+    Give 15000000 experience
+    Give 30000 coins
+
+direction_27 = location "Hornet" about "Hornet\nReferred to as Hell`s Bees; inhabits plains; powerful venom can kill humans with one sting" found "El Morad" karus at 1383 1110 elmorad at 607 991 in zone 2
+
+On available
+    Say "Master, everything is ready. Go kick their.. I mean...please win!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I guess you were serious now that I see that you didn't run away"
+    Topic "Tell me more..." do
+        Show quest "I guess you are serious about this. Good. Let's first have a practice round so I can see how good you are. How about a [Hornet] hunting?\n\nHornet to the Halon Raon Camp El Morad region of the hunter, hunting and show your skills."
+
+On in_progress
+    Say "What? You can't even take the practice?"
+
+On claimable
+    Show quest "That was not bad. You would at least make a sparring partner."

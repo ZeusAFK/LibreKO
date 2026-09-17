@@ -1,0 +1,15 @@
+Bind Npc 25017 Zone 2
+Quest 1237 "Sharine's message"
+    Journal "Talk with the high priest"
+    Collect 1 of 900650000
+
+Requires player level >= 35 and player is elmorad and quest 1236 is completed
+
+Rewards
+    Give 25000 experience
+
+On offer
+    Show quest "Welcome...,I knew it that you will come."
+
+On claimable
+    Show quest "Long time nosee Sharine.. So is he doing alright? (Atlas unseals the letter) Oh no! The Spiritual Stone has been spreaded out this wide...Have to find a Pole of Purification ASAP..\n\nAccording to legend, a Pole of purification was divided by 3 pieces and given to 3 most sacred sprits in Temple of Water. And when the temple collapsed, it got diappeared since then..\n\nWhen Temple of Water collapsed, all 3 spirits died and there's no way to find the Pole of Purification.\n\nHowever according to oral tradition, the Spirit of Water reincarnate in human-being. If we find the reincarnated spirt of Water, we could find a Pole of Purification as well."

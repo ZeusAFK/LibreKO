@@ -1,0 +1,23 @@
+Bind Npc 18004 Zone 21
+Quest 661 "Trade with Grand Merchant"
+    Journal "You must talk about the trade with [Grand Merchant] Kaishan."
+    Collect 1 of 900194000
+
+Requires player level >= 67 and quest 660 is completed
+
+Rewards
+    Give 250000 experience
+    Give 10000 coins
+    Give 1 of 900168000
+
+On available
+    Say "So it is a trade with Kaishan, the [Merchant Prince]! It is so exciting to see him in a long time."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh, how great to see you, <selfname>."
+    Topic "Tell me more..." do
+        Show quest "A trade with a merchant from a different continent? Hmm...can we trust them?\n\nThey are items that you can guarantee of their quality, <selfname>? Well, then I trust you.\n\nMoradon of  [subject] Kai Shan to deliver [the Eslant updated specialties Set and the top trade and the need to close the deal."
+
+On claimable
+    Show quest "Hmm. Let me see them, then. Oh...these are really good items!\n\nGood. Give this [Trade Contract] to the merchants in Islant! They are indded very good items. Hahaha."

@@ -1,0 +1,18 @@
+Bind Npc 25002 Zone 21
+Quest 1234 "The one who handles the soul stones"
+    Journal "Acquire Amelie's blood"
+    Collect 1 of 900649000
+
+Requires player level >= 26 and quest 1233 is completed
+
+Rewards
+    Give 150000 experience
+
+On offer
+    Show quest "Can you get me Amelie's blood sample? If you bring it to me, I will show you something cool."
+
+On in_progress
+    Say "You haven't got Amelie's blood sample yet?"
+
+On claimable
+    Show quest "Good Job you've got it. Let's see. Keke"

@@ -1,0 +1,23 @@
+Bind Npc 24424 Zone 11
+Quest 1052 "Shut down the trolls"
+    Journal "Defeat 40 Half Troll Berserkers"
+    Kill 40 of 9063, 9074 at direction_800
+
+Requires player level >= 62 and player is karus and quest 1050 is completed
+
+Rewards
+    Give 26250000 experience
+
+direction_800 = location "Half Troll Berserker" about "Half Troll Berserker\n This monster mixed by Unknown species, for that it is weakened species than normal troll" found "Karus" karus at 654 858 in zone 11
+
+On offer
+    Say "Our punitive force has been sieged by the berserkers."
+    Topic "Tell me more..." do
+        Show quest "Could you go help them?"
+        Topic "Where can I find it?" do
+            Map direction_800
+
+On in_progress
+    Say "Their lives at stake."
+    Topic "Where can I find it?" do
+        Map direction_800

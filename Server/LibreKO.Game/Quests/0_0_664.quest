@@ -1,0 +1,38 @@
+Bind Npc 31562 Zone 1 for karus
+Bind Npc 31561 Zone 2 for elmorad
+Quest 664 "Prepare to Hunt"
+    Journal for karus "You must prepare for hunting according to [Hunter] Zarg."
+    Journal for elmorad "You must prepare for hunting according to [Hunter] Halon."
+    Collect 10 of 370004000
+    Collect 1 of 168210003
+    Collect 5000 of 391010000
+
+Requires player level >= 61 and quest 663 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "Master. Hunting bout Does! I do delightedly already! I want to see the skills of the master!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master. It's hunting time! I'm so excited about this. Go show them what you got!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You guys fight with me? Fu Ha ha ha, you, uh, a really interesting person."
+        Topic "Tell me more..." do
+            Show quest "Well, it doesn't matter. Anyway, you'll have to learn how to hunt first. Will you learn it from me? If you're willing to learn it, bring ten [Blood of Wolves], [Horn Crossbow (+3)] and five thousand [Arrows]. By the way, you can make [Horn Crossbow (+3)] by refining [Horn Crossbow (+1)], which you can buy at the store on an anvil.\n\n※ local Karus Donna [Horn Crossbow (+3)], the [arrow] 5000, [10] the blood of the wolf ready to crop and hunting game hunter's camp go \n soul Crossbow sold in stores [Horn Crossbow (+1)] (+3), you must upgrade the orders strengthening Intermediate] ["
+    If player is elmorad
+        Say "So you want to have a match with me? Puhahaha, you're a funny man."
+        Topic "Tell me more..." do
+            Show quest "Well, it doesn't matter. Anyway, you'll have to learn how to hunt first. Will you learn it from me? If you're willing to learn it, bring ten [Blood of Wolves], [Horn Crossbow (+3)] and five thousand [Arrows]. By the way, you can make [Horn Crossbow (+3)] by refining [Horn Crossbow (+1)], which you can buy at the store on an anvil.\n\nYou have to prepare [Horn Crossbow(+3)], [5000 arrows] and [10 Blood of Wolves] to compete in hunting with [Hunter] Halon at Dona Camp in the area of El Morad.\n※ You have to upgrade [Horn Crossbow(+1)], which you can buy at the store, to [Horn Crossbow(+3)] by using [Mid-grade Strengthening Scroll]."
+
+On in_progress
+    Say "What is this? Are you scaring away now?"
+
+On claimable
+    Show quest "Oh, so you have prepared it all."

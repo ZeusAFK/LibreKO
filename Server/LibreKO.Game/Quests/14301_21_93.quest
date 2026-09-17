@@ -1,0 +1,28 @@
+Bind Npc 14301 Zone 21
+Quest 93 "Silan's bone"
+    Journal "If you bring 2 Apples of Moradon to [Blacksmith Hepa], you can receive 8000 EXP."
+    Collect 2 of 810418000
+
+Requires player level >= 17
+
+Rewards
+    Give 20000 experience
+
+On available
+    Say "Master, I hear Blacksmith Heppa needs for Apples of Moradon. Let's go see him."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Silan's bones, concentrated with Silan's life force, are harder than steel but most blacksmiths don't touch them as they are hard to melt.  But I discovered a special method to melt Silan bones. I will give you a big reward if you bring me the bones."
+    Topic "Tell me more..." do
+        Show quest "Can you go find me 2 Apples of Moradon to make a special body armor?"
+
+On in_progress
+    Say "You're short on Apple of Moradon. This is not enough."
+
+On ready
+    Say "All 2 Apples of Moradon have been collected."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Hand me the Apple of Moradon and I'll give you a reward."

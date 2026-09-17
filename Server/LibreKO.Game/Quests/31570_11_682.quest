@@ -1,0 +1,27 @@
+Bind Npc 31570 Zone 11
+Quest 682 "Removing Magic of Darkness IV"
+    Journal "You must accept the request of [Order of the Sorcery] Caesar."
+    Kill 25 of 8055, 8005 at direction_616
+
+Requires player level >= 68 and player is karus and quest 680 is completed
+
+Rewards
+    Give 25000000 experience
+    Give 30000 coins
+
+direction_616 = location "Apostle of Piercing Cold " about "Apostle of Piercing Cold \nA type of Esoteric Buddhist priest who employ ice magic of darkness whose ice magic is powerful enough to freeze the opponent down to the bones. " found "Karus Eslant" at 607 138 in zone 11
+
+On available
+    Say "The magic force is now in balance. Cesar of [Order of the Sorcery] says things must be done swiftly without delay from now on."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "There you are. Let me explain right away."
+    Topic "Tell me more..." do
+        Show quest "Now just two axes left. You really need to move faster now. First, eliminate [Apostle of Piercing Cold]. They must be elimiated first before we can destroy the other axis.\n\nIn combating the Apostle cold at the request of the the Phalanx magic Cesar Eslant updated you will need to remove the threat of darkness magic"
+
+On in_progress
+    Say "They are about to collapst but not just yet."
+
+On claimable
+    Show quest "Now just one axis left. Let's get it together."

@@ -1,0 +1,29 @@
+Bind Npc 31552 Zone 1
+
+On greeting
+    If quest 633 is started and player has 900200000
+        Say "[Something smells very awful]"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900200000
+                Give 1 of 900151000
+    Else if quest 635 is started and player has 900203000
+        Say "[It had a red reaction but looks like it's been mixed well.]"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900203000
+                Give 1 of 900149000
+    Else if quest 637 is started and player has 900206000
+        Say "[Looks like it's getting a good reaction.]"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900206000
+                Give 1 of 900150000
+    Else if quest 639 is started and player has 900209000
+        Say "[Boiling with unknown scrambled contents]"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900209000
+                Give 1 of 900148000
+    Else
+        Say "[Awful smell spreading everywhere]"

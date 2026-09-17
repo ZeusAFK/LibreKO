@@ -1,0 +1,53 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 589 "[Great Battle] The First Day: Struggle"
+    Journal for karus "You must perform the duty of [Base Spearhead] Cruzed at the Stronghold of Ronark Land."
+    Journal for elmorad "You must perform the duty of [Base Spearhead] Krable at the Stronghold of Ronark Land."
+    Kill 40 of 9016, 9032 at direction_758
+
+Requires player level >= 67 and quest 588 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 100 np
+
+direction_758 = location "Guard" about "Guard\nKarus's Guardian who guard the Ronark Land Base" found "Ronark Land Base" elmorad at 569 705 in zone 73
+
+On available
+    If player is karus
+        Say "Now struggling to attack the enemy think should go ready to come to God finished the base paper forefront [Base Scout]Crewjed de"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "They are struggling to the attack of the enemy. Get ready for battle and go to [Base Scout]Crewjed."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Attack the enemy than you think  group. Ready returned from?"
+        Topic "Tell me more..." do
+            Show quest "The bonded out of the battlefield! Let's chase the enemy base! The first is imperative to subdue the enemy's steamer right! Once the Trojan [Guard] them down the enemy flag hinge right beorise!\n\nYou will receive a mission from [Base Scout]Crewjed in Ronark Land Base."
+    If player is elmorad
+        Say "The enemy is stronger than I thought. Are you ready for this?"
+        Topic "Tell me more..." do
+            Show quest "If that's the case, let's go straight into battle! Let's teach them a lesson. First we need to get those [Guards] down and break the enemy's ego!\n\nYou will receive a mission from [Base Scout]Crable in Ronark Land Base."
+
+On in_progress
+    If player is karus
+        Say "Everyone is so hard and to inspire you!"
+        Topic "Where can I find it?" do
+            Map direction_758
+    If player is elmorad
+        Say "Everyone is working hard, keep it up!"
+        Topic "Where can I find it?" do
+            Map direction_758
+
+On ready
+    If player is karus
+        Say "I've been down all updated! This steamer to knock success!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "They are all down! Great Job!"
+        Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "This is just a fingerling. Let's keep going.\n\nWe will try to confuse the enemy troops next time. So you better come prepared."

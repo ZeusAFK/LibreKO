@@ -1,0 +1,15 @@
+Bind Npc 25006 Zone 71
+Quest 1295 "Rise my warrior"
+    Journal "Use the hole of life to the fallen wariors 30 times"
+    Collect 10 of 900657000
+
+Requires player level >= 80 and player is elmorad and quest 1293 is completed
+
+Rewards
+    Give 8375000 experience
+
+On offer
+    Show quest "What! Perhaps that's pole of Life? Thought it was a legend.\n\nThat holy aurora light..really beautiful and powerful. That should purify the warriors. I have to ask you for one more time.\n\nFallen warriors' dead bodies should be near the village. If you use the pole onto dead bodies, you will get purified stones. Bring 10 of them.\n\nUtilize Life Pole to heal 10 fallen down soldiers."
+
+On claimable
+    Show quest "Yes.. O yes... What can't a pole of Life cure.. Thank you"

@@ -1,0 +1,356 @@
+[
+  {
+    "Id": 107736,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 107748,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 108736,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 108748,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 111525,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 111535,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 111733,
+    "Type": 3,
+    "ExpRecover": 60,
+    "NeedStone": 4
+  },
+  {
+    "Id": 111742,
+    "Type": 3,
+    "ExpRecover": 70,
+    "NeedStone": 10
+  },
+  {
+    "Id": 111754,
+    "Type": 3,
+    "ExpRecover": 80,
+    "NeedStone": 30
+  },
+  {
+    "Id": 112525,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 112535,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 112671,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 112733,
+    "Type": 3,
+    "ExpRecover": 60,
+    "NeedStone": 4
+  },
+  {
+    "Id": 112742,
+    "Type": 3,
+    "ExpRecover": 70,
+    "NeedStone": 10
+  },
+  {
+    "Id": 112754,
+    "Type": 3,
+    "ExpRecover": 80,
+    "NeedStone": 30
+  },
+  {
+    "Id": 112805,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 207736,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 207748,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 208736,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 208748,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 211525,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 211535,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 211733,
+    "Type": 3,
+    "ExpRecover": 60,
+    "NeedStone": 4
+  },
+  {
+    "Id": 211742,
+    "Type": 3,
+    "ExpRecover": 70,
+    "NeedStone": 10
+  },
+  {
+    "Id": 211754,
+    "Type": 3,
+    "ExpRecover": 80,
+    "NeedStone": 30
+  },
+  {
+    "Id": 212525,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 212535,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 212671,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 212733,
+    "Type": 3,
+    "ExpRecover": 60,
+    "NeedStone": 4
+  },
+  {
+    "Id": 212742,
+    "Type": 3,
+    "ExpRecover": 70,
+    "NeedStone": 10
+  },
+  {
+    "Id": 212754,
+    "Type": 3,
+    "ExpRecover": 80,
+    "NeedStone": 30
+  },
+  {
+    "Id": 212805,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 300133,
+    "Type": 5,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 300244,
+    "Type": 5,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 300445,
+    "Type": 5,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480001,
+    "Type": 4,
+    "ExpRecover": 60,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480002,
+    "Type": 4,
+    "ExpRecover": 50,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480003,
+    "Type": 4,
+    "ExpRecover": 60,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480004,
+    "Type": 4,
+    "ExpRecover": 100,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480005,
+    "Type": 4,
+    "ExpRecover": 50,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480006,
+    "Type": 4,
+    "ExpRecover": 60,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480007,
+    "Type": 4,
+    "ExpRecover": 70,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480008,
+    "Type": 4,
+    "ExpRecover": 80,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480009,
+    "Type": 4,
+    "ExpRecover": 90,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480010,
+    "Type": 4,
+    "ExpRecover": 80,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480011,
+    "Type": 4,
+    "ExpRecover": 100,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480012,
+    "Type": 4,
+    "ExpRecover": 100,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480013,
+    "Type": 6,
+    "ExpRecover": 100,
+    "NeedStone": 1
+  },
+  {
+    "Id": 480014,
+    "Type": 6,
+    "ExpRecover": 100,
+    "NeedStone": 1
+  },
+  {
+    "Id": 480015,
+    "Type": 4,
+    "ExpRecover": 80,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480017,
+    "Type": 4,
+    "ExpRecover": 60,
+    "NeedStone": 0
+  },
+  {
+    "Id": 480018,
+    "Type": 4,
+    "ExpRecover": 100,
+    "NeedStone": 0
+  },
+  {
+    "Id": 488031,
+    "Type": 4,
+    "ExpRecover": 80,
+    "NeedStone": 0
+  },
+  {
+    "Id": 488032,
+    "Type": 4,
+    "ExpRecover": 90,
+    "NeedStone": 0
+  },
+  {
+    "Id": 490409,
+    "Type": 5,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 490812,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 490813,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 491353,
+    "Type": 2,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  },
+  {
+    "Id": 491354,
+    "Type": 1,
+    "ExpRecover": 0,
+    "NeedStone": 0
+  }
+]

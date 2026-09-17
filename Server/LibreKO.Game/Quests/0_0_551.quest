@@ -1,0 +1,45 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 551 "[Failed Mission] Rest in Peace"
+    Journal for karus "You must accept [Ascetic] Veda's request."
+    Journal for elmorad "You must accept [Ascetic] Tabeth's request."
+    Collect 1 of 910229000
+
+Requires player level >= 63 and quest 550 is completed
+
+Rewards
+    Give 125000 experience
+    Give 20000 coins
+
+On available
+    If player is karus
+        Say "Something [Eslant Wise Man] Pablo would not know of?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Eslant [updated] Sage Agatha by Will know of?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Liberation of the soul are suffering because ... What lasts"
+        Topic "Tell me more..." do
+            Show quest "Once the show, look, what the soul is\n\nDeliver to Pablo the [Collected Hero's Article]."
+    If player is elmorad
+        Say "Liberation of the soul are suffering because ... What lasts"
+        Topic "Tell me more..." do
+            Show quest "Once the show, look, what the soul is\n\nDeliver to Agatha the [Collected Hero's Article]."
+
+On in_progress
+    Say "Do not ... ? Want to b free your soul is in my hand?"
+
+On claimable
+    If player is karus
+        Show quest "That's very noble, noble enough, you can easily handle that. Well done. The responsible soul I'm gonna leave this world."
+    If player is elmorad
+        Show quest "THOMPSON: That's very noble, noble enough, you can easily handle that. Well done. The responsible soul I'm gonna leave this world."
+
+On completed
+    If player is karus
+        Say "[The ascetic] standing there , or report to the Vedas."
+    If player is elmorad
+        Say "[The ascetic] Tabeth standing there , or report."

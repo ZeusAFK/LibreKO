@@ -1,0 +1,36 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 529 "[Long Revenge] Broken Loyalty"
+    Journal for karus "You must accept the request of [Sage of Eslant] Pablo, of Eslant."
+    Journal for elmorad "You must accept the request of [Sage of Eslant] Agatha, of Eslant."
+    Collect 1 of 910215000
+
+Requires player level >= 61 and quest 528 is completed
+
+Rewards
+    Give 125000 experience
+    Give 20000 coins
+
+On available
+    If player is karus
+        Say "We need to talk to [Eslant Wise Man]Pablo again. I think Drake and Pablo are very alike."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "We need to talk to [Eslant Wise Man]Agata again. I think Drake and Agata are very alike."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "<selfname>? Long time no see. What brings you here?"
+        Topic "Tell me more..." do
+            Show quest "Drake sent you? I know how to make the Holy restoration water but...\n\nBring [Broken Soldiers Article] to Pablo."
+    If player is elmorad
+        Say "<selfname>? Long time no see. What brings you here?"
+        Topic "Tell me more..." do
+            Show quest "Drake sent you? I know how to make the Holy restoration water but...\n\nBring [Broken Soldiers Article] to Agatha."
+
+On in_progress
+    Say "Still not taking care of what you need to bring?"
+
+On claimable
+    Show quest "Is that right? It seems like it is full of grudge. You want this to be restored, right?"

@@ -1,0 +1,33 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 618 "[New Hero/Boss] Under the name of the Knight"
+    Journal for karus "You must kill [Demon of the Night] Feast by following the order of [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must kill [Demon of the Night] Feast by following the order of [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910208000
+
+Requires player level >= 69 and quest 617 is completed
+
+Rewards
+    Give 60000000 experience
+    Give 150 np
+    Give 3 of 900017000
+
+On available
+    Say "The days of to punish evil spirits, folks! You can do this Come on!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Well, you are ready for battle, a lot of research on the evil spirits've ."
+        Topic "Tell me more..." do
+            Show quest "I've found out that the demon is called [Feast]. He is the demon of night and bewitches people by making a sound with his harp! I'm going to issue an order. Remove [Feast], the demon of night in Eslant, and bring the [Broken Harp] so that no one can play it again.\n\nYou must remove the evil spirits of the night according to the command of carrying Luferson Castle [Captain] Fist."
+    If player is elmorad
+        Say "Well, you are ready for battle, a lot of research on the evil spirits've ."
+        Topic "Tell me more..." do
+            Show quest "I've found out that the demon is called [Feast]. He is the demon of the night and bewitches people by making a sound with his harp! I'm going to issue an order. Remove [Feast], the demon of night in Eslant, and bring the [Broken Harp] so that no one can play it again.\n\nThe typist [evil spirits of the night, depending on the command of Captain Falkwine El Morad Castle, must be removed."
+
+On in_progress
+    Say "the harp, and have fend standing, department!"
+
+On claimable
+    Show quest "The broken half? Now, I guess you not be able to play music again demand! Well done!"

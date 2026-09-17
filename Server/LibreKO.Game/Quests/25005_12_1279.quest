@@ -1,0 +1,18 @@
+Bind Npc 25005 Zone 12
+Quest 1279 "Garlong's Slave"
+    Journal "Rescue 20 Garlong's slave"
+    Collect 10 of 900685000
+
+Requires player level >= 60 and player is elmorad and quest 1274 is completed
+
+Rewards
+    Give 2125000 experience
+
+On offer
+    Show quest "<selfname>, are you now on the way to kill Garlong? If so, please save Eslant people over there. I heard that our people are used as servants. Please help them.\n\nI have to free the people treated as servants under one of the Eslant's Devils, Garlong. Have to let people escape from the Prison around Garlong."
+
+On in_progress
+    Say "Our people not yet? The kidnapped people are captured in northeast of Garlong's settlement."
+
+On claimable
+    Show quest "You really saved kidnapped people, <selfname> thank you. This is nothing but our express of appreciation."

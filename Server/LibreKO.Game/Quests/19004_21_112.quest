@@ -1,0 +1,30 @@
+Bind Npc 19004 Zone 21
+Quest 112 "First preparation of war materials"
+    Journal "I promised to secure and provide 2 Apples of Moradon, which are used as explosive material, among the goods needed for the war"
+    Collect 2 of 810418000
+
+Requires player level >= 29
+
+Rewards
+    Give 150000 experience
+    Choose one
+        Give 1 of 320150006
+        Give 1 of 320150016
+        Give 1 of 320150026
+        Give 1 of 320150036
+        Give 1 of 320150076
+
+On available
+    Say "Master- They're preparing the War Supplies over in the Folk Vilage. So Osmond is busy eh? You should go and pay him a visit."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Ach, so busy, so busy...\nAhh, <selfname>. Welcome. Folk Village is really jumping, preparing the war supplies for our people. If you're not too busy, would you mind lending me a hand?"
+    Topic "Tell me more..." do
+        Show quest "Perhaps you've heard of Apple of Moradon?  Apple of Moradon contains an explosive chemical element so it's often used in explosives.\n\nAlways be ready. You never know when war will break out."
+
+On in_progress
+    Say "I must report back to Rage by tomorrow... Can you speed up a bit, Ok? Thanks."
+
+On claimable
+    Show quest "At last, I can relax a bit. Thank you so much. I do appreciate it."

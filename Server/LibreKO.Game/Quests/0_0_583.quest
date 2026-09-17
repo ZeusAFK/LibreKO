@@ -1,0 +1,26 @@
+Bind Npc 24204 Zone 1 for karus
+Bind Npc 14204 Zone 2 for elmorad
+Quest 583 "[Legless Devil] This isn't Enough"
+    Journal for karus "You must talk to [Priest] Minerva at Luferson Castle."
+    Journal for elmorad "You must talk to [Priest] Minerva at El Morad Castle."
+
+Requires player level >= 66 and quest 582 is completed
+
+Rewards none
+
+On available
+    Say "To treat the disease a [Holy Water of Salvation] is needed. Go find [Priest]Minerva and ask for it."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "May God be with you ..."
+        Topic "Tell me more..." do
+            Show quest "The [Holy Water of Salvation]? Of course it can be made... I see so a disease has spread throughout Ronark Land Base.\n\nIf the devils were the ones who spread the disease then there is no use. However, we may use the power of the light to to cleanse the disease.\n\nLuferson Castle [Governor] conversation with Minerva."
+    If player is elmorad
+        Say "May God be with you ..."
+        Topic "Tell me more..." do
+            Show quest "The [Holy Water of Salvation]? Of course it can be made... I see so a disease has spread throughout Ronark Land Base.\n\nIf the devils were the ones who spread the disease then there is no use. However, we may use the power of the light to to cleanse the disease.\n\n[Governor] Minerva of El Morad Castle dialog."
+
+On claimable
+    Show quest "Then we can start collecting the materials for the [Holy Water of Salvation]. First I need to contact some people but it will take some time. Talk to me in a few."

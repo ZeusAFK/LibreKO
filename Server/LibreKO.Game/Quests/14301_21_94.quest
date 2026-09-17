@@ -1,0 +1,34 @@
+Bind Npc 14301 Zone 21
+Quest 94 "Collecting Wolfman's fangs"
+    Journal "I must take 3 Apples of Moradon to [Blacksmith] Heppa to receive EXP in return. "
+    Collect 3 of 810418000
+
+Requires player level >= 18
+
+Rewards
+    Give 25000 experience
+
+direction_629 = location "Werewolf" about "Werewolf\nDescendants of the evil race, Werewolves are cursed humans transformed into wolves following the war against Pathos. " found "Moradon Coast" at 385 464 in zone 21
+direction_8 = location "[Blacksmith] Hepa" about "[Blacksmith] Hepa\nThe most accomplished blacksmith of Moradon who makes special weapons and armor with magic abilities." found "Moradon Castle interior " at 711 594 in zone 21
+
+On available
+    Say "Master, I heard that [Blacksmith] Heppa has been awfully down lately. Let's go see what's getting him so down."
+    Topic "Where is he/she?" do
+        Map direction_8
+
+On offer
+    Say "Frankly, I've been concerned about weapon production methods lately. As you're well aware, unremarkable ingredients produce stock weapons and special ingredients are so hard to come by  ...\nI'm contemplating using Apples of Moradon but there aren't many warriors in Moradon who can hunt werewolves, the only ones with  Apples of Moradon."
+    Topic "Tell me more..." do
+        Show quest "Now it occurs to me that you may have the ability to hunt werewolf. You don't need to be modest.  My eyes, which have dealt with numerous warriors and knights for decades, are relatively correct! So I want to ask of you a favor. Can you hunt werewolf and collect 3 Apples of Moradon for me? I really need the materials as I am in a slump.\n\nIn order to help the research on weapon production by [Blacksmith] Hepa who is in a slump, we need 3 Apples of Moradon. If you bring 3 Apples of Moradon to [Blacksmith] Hepa, you can receive experience as compensation."
+
+On in_progress
+    Say "I need 3 Apples of Moradon for my research on weapon production!"
+    Topic "Where can I find it?" do
+        Map direction_629
+
+On ready
+    Say "Master, now werewolf is not a difficult opponent any more. You are really great. By the way, I collected 3 Apples of Moradon. Hurry, bring them to [Blacksmith] Hepa."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Wow, you brought the Apples of Moradon I asked for. I feel motivated already. Shall we begin?"

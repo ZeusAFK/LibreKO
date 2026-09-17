@@ -1,0 +1,13 @@
+Bind Npc 16079 Zone 21
+
+On greeting
+    If quest 521 is started and player lacks 910212000
+        Say "Festival invite? What should I wear... Oh! Here is my reply!"
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910212000
+    Else
+        Say "Will you help me?"
+        If no topic fits
+            Say "As the materials have alredy been secured, I have nothing to ask of you for today... I will ask you a favor next time~"
+            Topic "Close" goto close

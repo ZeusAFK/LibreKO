@@ -1,0 +1,26 @@
+Bind Npc 24414 Zone 21
+Quest 107 "Unknown warrior's song"
+    Journal "Unknown warrior asked me to bring Apple of Moradon to him."
+    Collect 3 of 810418000
+
+Requires player level >= 26
+
+Rewards
+    Give 112500 experience
+    Choose one
+        Give 1 of 310150006
+        Give 1 of 310150016
+        Give 1 of 310150026
+        Give 1 of 310150036
+        Give 1 of 310150076
+
+On offer
+    Say "Thanks to you, I think we will have a ceremony to commemorate the spirits of the warriors who have been freed. As there were troubles up to now because of these Zombie creatures, I think we'll use Apples of Moradon as a sacrifice. What do you think? Isn't it a good idea?"
+    Topic "Tell me more..." do
+        Show quest "So can you obtain their apples for me? Even though I am in such a situation, I intend to perform the grave site ceremonies so that the spirits of the dead warriors can sleep peacefully. Apples of Moradon can be obtained from all kinds of zombies.\n\nKill the Undyings around here and bring me their Apples of Moradon."
+
+On in_progress
+    Say "As soon as Apple of Moradon is secured, I am going to hold the ceremony immediately. Please note that Apple of Moradon can be obtained from all kinds of zombies."
+
+On claimable
+    Show quest "We are eternally grateful.\nNow the dead warriors can finally rest after their ancient wanderings."

@@ -1,0 +1,10 @@
+Bind Npc 18005 Zone 21
+
+On greeting
+    If quest 538 is started and player lacks 910217000
+        Say "I heard the story on the [Golden Goblet of a Dragon] gone ... Hmm ... Well who did not see the other winning. I [caretaker] direct the officials in compliance with exactly the right time to go home late at night at home mainly because. Ahem."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910217000
+    Else
+        Say ""

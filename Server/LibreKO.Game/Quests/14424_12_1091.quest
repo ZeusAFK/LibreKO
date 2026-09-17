@@ -1,0 +1,17 @@
+Bind Npc 14424 Zone 12
+Quest 1091 "Commending the fallen warriors"
+    Journal "Bring back 50 Captain's medals"
+    Collect 5 of 810294000
+
+Requires player level >= 60 and player is elmorad
+
+Rewards
+    Give 22500000 experience or 45000000 with premium
+
+On offer
+    Say "Have you seen the necklace the chief was wearing?"
+    Topic "Tell me more..." do
+        Show quest "Can you get at least 5 necklaces?"
+
+On claimable
+    Show quest "That's the valuable necklace."

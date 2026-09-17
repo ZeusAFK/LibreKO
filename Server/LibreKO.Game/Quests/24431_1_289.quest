@@ -1,0 +1,31 @@
+Bind Npc 24431 Zone 1 for warrior
+Bind Npc 24431 Zone 1 for rogue
+Bind Npc 24431 Zone 1 for mage
+Bind Npc 24431 Zone 1 for priest
+Quest 289 "Troll hunt"
+    Journal "[Sentinel] Hashan asked me to hunt 20 trolls."
+    Kill 20 of 1776, 1777, 1721 at direction_368
+
+Requires player level >= 60 and player is karus
+
+Rewards for warrior
+    Give 1 of 206003003
+
+Rewards for rogue
+    Give 1 of 246003003
+
+Rewards for mage
+    Give 1 of 266003003
+
+Rewards for priest
+    Give 1 of 286003003
+
+direction_368 = location "Troll" about "Troll\nMonsters that were at the forefront of the Army of Darkness in the war between humans and Patos. Their defense and resistances are weak, but they possess great strength and high HP." found "El Morad" elmorad at 604 1524 in zone 1
+
+On offer
+    Say "Welcome. You will be hunting trolls this time. They are monsters which led the Army of Darkness in the war against Pathos. They have low defense power and immunity but they possess great strength and high HP."
+    Topic "Tell me more..." do
+        Show quest "If you hunt 40 trolls I'll give you my helmet. Will you do it?"
+
+On claimable
+    Show quest "Thank you. Here's the helmet, as promised."

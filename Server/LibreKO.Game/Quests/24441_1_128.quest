@@ -1,0 +1,54 @@
+Bind Npc 24441 Zone 1 for warrior
+Bind Npc 24441 Zone 1 for rogue
+Bind Npc 24441 Zone 1 for mage
+Bind Npc 24441 Zone 1 for priest
+Quest 128 "Defend the Gravesite"
+    Journal "[Caretaker] Bottom has commissioned you to eradicate Rotten Eye."
+    Kill 15 of 1053, 1003 at direction_97
+
+Requires player level >= 36 and player is karus
+
+Rewards for warrior
+    Give 1 of 205005289
+    Give 750000 experience
+    Give 75 of 900790000
+    Give 40 of 900820000
+
+Rewards for rogue
+    Give 1 of 245005290
+    Give 750000 experience
+    Give 75 of 900790000
+    Give 40 of 900820000
+
+Rewards for mage
+    Give 1 of 265005291
+    Give 750000 experience
+    Give 75 of 900790000
+    Give 40 of 900820000
+
+Rewards for priest
+    Give 1 of 285005292
+    Give 750000 experience
+    Give 75 of 900790000
+    Give 40 of 900820000
+
+direction_97 = location "Rotten Eyes" about "Rotten Eyes\nCorpse which has lost volition due to evil energy; undead monster exclusively harboring a hostility against all life forms" found "Karus" karus at 961 1466 in zone 1
+
+On available
+    Say "Master, here in the mainland there is a graveyard... How about meeting Bottom who is the keeper of the place?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hello... I'm Bottom, and I manage the Graveyard. I don't know how many years have passed since I started to keep this graveyard. Ah- Could you help me, by the way?"
+    Topic "Tell me more..." do
+        Show quest "I don't know since when, but  Rotten Eyes have begun to appear at the graveyard and I cannot drive them out by myself. They're zombie monsters like Undyings, and the problem is that they come and make a terrible mess in the place. Could you try and protect the graveyard from them?\n\nYou'll get some Armor out of this if you do the [Nameless Warrior] this favor."
+
+On in_progress
+    Say "The graveyard must be protected no matter what happens. Please, do your best."
+
+On ready
+    Say "Well done master, well done."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Meeting you is possibly the best bit of luck I've ever had! Thank you, thank you so much. Here's a little something for ya. This is what I found while I've been keeping this place, and should be quite useful."

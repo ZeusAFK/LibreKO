@@ -1,0 +1,18 @@
+Bind Npc 14424 Zone 12
+Quest 1089 "Ambush from the skies"
+    Journal "Defeat 30 Falcon."
+    Kill 30 of 2224, 2254 at direction_377
+
+Requires player level >= 68 and player is elmorad and quest 1087 is completed
+
+Rewards
+    Give 47500000 experience
+
+direction_377 = location "Falcon" about "Falcon\nA type of aHarpy. They also have low intelligence but are aggrestive and attacks anyone who comes into their territories.." found "El Morad Eslant" elmorad at 113 549 in zone 12
+
+On offer
+    Say "Thank you for what you did the last time."
+    Topic "Tell me more..." do
+        Show quest "However, those in retreat might come back to invade again. Can you get rid of the rest of the falcons?"
+        Topic "Where can I find it?" do
+            Map direction_377

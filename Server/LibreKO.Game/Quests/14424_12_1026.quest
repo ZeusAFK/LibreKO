@@ -1,0 +1,32 @@
+Bind Npc 14424 Zone 12
+Quest 1026 "Nightmare"
+    Journal "Get rid of the cause of the nightmare hidden in the northeast forest of Eslant, and regain peace!"
+    Kill 80 of 7016 at direction_172
+
+Requires player level >= 80 and player is elmorad and quest 351 is completed
+
+Rewards
+    Give 83750000 experience
+
+direction_172 = location "Booro" about "Buro" found "Eslant" at 840 900 in zone 12
+
+On available
+    Say "Master, it's said that something strange is going on in Eslant. Please go to [Ascetic] Tabeth and ask."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Nights here in Eslant are getting more and more fearful. Citizens here are suffering from a monster in their dreams every night..."
+    Topic "Tell me more..." do
+        Show quest "Given the shape of the monster, I suspect it's a Buro, a monster living in the northeastern part of the forest. They're said to be capable of real magic, but who knows? If they're the real cause of the nightmares, they should be removed..."
+
+On in_progress
+    Say "Where's the end of the nightmares..."
+    Topic "Where can I find it?" do
+        Map direction_172
+
+On ready
+    Say "Eslant is not suffering from nightmares any more, is it?"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "After you got rid of Buro, no one is suffering from nightmares any more. Thank you!"

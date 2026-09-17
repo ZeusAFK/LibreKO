@@ -1,0 +1,38 @@
+Bind Npc 19004 Zone 21
+Quest 114 "Second preparation of war materials"
+    Journal "In order to secure the supply route for the provision of war materials, we have to remove [Boss] Wolflaiger, [Boss] Scolaid, [Boss] Omegatron and [Boss] Gavoltin."
+    Kill 1 of 8649 at direction_694
+    Kill 1 of 8651 at direction_695
+    Kill 1 of 8646 at direction_696
+    Kill 1 of 8648 at direction_697
+
+Requires player level >= 30
+
+Rewards
+    Give 250000 experience
+    Give 60 of 900790000
+    Give 40 of 900820000
+
+direction_694 = location "[Field Boss] Wolfraiger" about "[Field Boss] Wolfraiger\n head of a werewolf, and the sleek body has a powerful attack." found "El Morad" at 0 0 in zone 21
+direction_695 = location "[Field Boss] Omegatron" about "[Field Boss] Omegatron\n Smirdon's header, with sharp teeth bites is the enemy." found "El Morad" at 0 0 in zone 21
+direction_696 = location "[Field Boss] Gavoltin" about "[Field Boss] Gavoltin\n Gavolt their heads, a huge wing, the enemy will be removed." found "El Morad" at 0 0 in zone 21
+direction_697 = location "[Field Boss] Scolaid" about "[Field Boss] Scolaid\n Scorpion of the header, a deadly poison in the tail makes the enemy addiction." found "El Morad" at 0 0 in zone 21
+
+On available
+    Say "Master!  <font color=@#990000@>[Mercenary Quartermaster] Mr. Osmond</font> is looking for you, Master, for the preparation of war materials"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "What shall we do with this.. It's huge trouble.. Gasp! Oh my! Not even a hint of your approaching. Oh, are you asking me what I am so worried about? It's because of the supply route for the provision of war materials."
+    Topic "Tell me more..." do
+        Show quest "While we were trying to transport war materials for their provisioning, the violence of [Boss] monsters has become more severe. Consequently, the transportation plan is being delayed indefinitely. I wish someone would take care of these guys.. Oh! I think I can ask <selfname> a favor! Fortunately, you don't seem to have anything to do! As for a reward, I will talk to the Commander so that you can be richly rewarded. Please, do me this favor."
+
+On in_progress
+    Say "Um.. Not yet..? Oh.. My heart breaks when I think about the fellow soldiers who are suffering as the materials are not delivered!"
+
+On ready
+    Say "Is this guy the last one? Master! I took care of all the guys on the wanted list!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Oh! You took care of them all! Thank you. Now we can start the transporation! Here is your compensation. Do us a favor the next time too!"

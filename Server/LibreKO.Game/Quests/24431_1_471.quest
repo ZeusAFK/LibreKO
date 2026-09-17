@@ -1,0 +1,22 @@
+Bind Npc 24431 Zone 1
+Quest 471 "[Repeatable Solo] Dragon Tooth Commander Hunt"
+    Repeat always
+    Journal "[Guard] Hashan has commissioned you to hunt Dragon Tooth Commander. However, it will not count when you are in a party."
+    Kill 15 of 1874, 1824 at direction_704
+
+Requires player level >= 55 and player is karus
+
+Rewards
+    Give 2500000 experience or 3750000 with premium
+
+direction_704 = location "Manticore" about "Manticore\nA winged beast that has the body of a lion and the tail of a scorpion. The manticore kills its prey using the deadly venom that drips from its tail." found "Karus" karus at 1602 226 elmorad at 426 1929 in zone 1
+
+On offer
+    Say "Manticore is known for its body of lion, a tail of scorpion and fearful wings."
+    Topic "Where can I find it?" do
+        Map direction_704
+    Topic "Tell me more..." do
+        Show quest "If you do a favor for [Guard] Hashan, you will be rewarded."
+
+On claimable
+    Show quest "I don't know how to thank you. This is compensation for your help. This is all I can give you."

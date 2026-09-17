@@ -1,0 +1,33 @@
+Bind Npc 13009 Zone 21
+Quest 88 "Gemstone of Courage"
+    Journal "I must bring [Mercenary Captain] Cougar the Gemstone of Courage and receive a reward."
+    Collect 10 of 910039000
+
+Requires player level >= 21
+
+Rewards
+    Give 150000 experience
+    Choose one
+        Give 1 of 202001006
+        Give 1 of 242001006
+        Give 1 of 262001006
+        Give 1 of 282001006
+
+On available
+    Say "Master, I heard the mercenary captain is preparing a training evaluation. Let's go see him."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I think the time has come to test how much you've grown."
+    Topic "Tell me more..." do
+        Show quest "Don't feel obligated. It's not a difficult exam. Catch the Smirdon inside the stadium and bring back 10 Dragon Jewels. Isn't it a piece of cake?\n\nYou will pass the test if you catch the Smirdon in the arena where Mercenary Captain Cougar sends you and bring back 10 Dragon Jewels to him."
+
+On in_progress
+    Say "You're short on Dragon Jewels. Are you going to go back to the stadium?"
+
+On ready
+    Say "Master, all the Dragon Jewels have been collected. Let's talk to the stadium manager and get out of here."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Good. You're all right. I should give you an appropriate award for passing the test."

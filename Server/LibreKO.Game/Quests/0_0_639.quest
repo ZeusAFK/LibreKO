@@ -1,0 +1,37 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 639 "Putting poison in the food IV"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 1 of 900148000
+    Collect 1 of 900152000
+    Collect 1 of 900159000
+
+Requires player level >= 63 and quest 638 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+
+On available
+    Say "Master! My wish came true! This is the last one! Let's make it count!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "So this experiment will be the end of the all jokes. Kekeke, I hate to stop now but what I can do....."
+        Topic "Tell me more..." do
+            Show quest "This will be the last specimen. Again, go mix this [Experimental Burning Poison] with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and, bring me a sample.\n\nInside the village Goblin Goblin cauldron used to poison wells Goblin Goblin food box, and must be followed in collecting the s, depending on the of Goblin Karus area near the village of [Staff] Squad Vere request."
+    If player is elmorad
+        Say "So this experiment will be the end of the all jokes. Kekeke, I hate to stop now but what I can do....."
+        Topic "Tell me more..." do
+            Show quest "This will be the last specimen. Again, go mix this [Experimental Burning Poison] with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and, bring me a sample.\n\nStaff Squad of the El Morad region goblins near the village of gray in accordance with the request of the Goblin [Goblin village inside the cauldron], and used to poison wells Goblin Goblin food box, must be followed in collecting the s."
+
+On in_progress
+    Say "A joke til the end, huh? You certainly are the master of jokes.  But won't ya complete your mission first? Kekeke..."
+
+On claimable
+    Show quest "Good. All samples have been collected. This ends all experiments. Good work, <selfname>. Clap, clap, clap!\n\nNow, I need to find out how all my precious samples work. The best coagulant would be the [Muddy Coagulant] made from [Half-Troll Warrior] . Why are you still there? You heard me! Now, go!"
+
+On completed
+    Say "Come to the level of 64? Not skills yet to do is Boise."

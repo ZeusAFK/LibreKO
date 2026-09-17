@@ -1,0 +1,15 @@
+Bind Npc 18004 Zone 21
+Quest 71 "1st job change"
+    Journal "I promised to pay 3,000 Noahs to [Grand Merchant] Kaishan for the job change."
+    Collect 3000 coins
+
+Requires player level >= 10
+
+Rewards
+    Promote to novice
+
+On offer
+    Show quest "I've heard that you're a great help to Moradon including contributing to its security. \nYou seem to be well qualified for a job change indeed. Will you under go a job change?"
+
+On completed
+    Say "The job change ceremony has already ended"

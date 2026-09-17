@@ -1,0 +1,14 @@
+Bind Npc 25167 Zone 1
+
+On greeting
+    If quest 1311 is started and player has 900670000
+        Say "Hello. What is it?"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900670000
+                Give 1 of 900659000
+            Say "Oh. Sadi..sobbing..I have done nothing to deserve this...\n\nThis is not much, but it is some extra money for Sadi.\nCan you deliver this <selfname>?"
+    Else if quest 1311 is completed
+        Say "Sobbing..my Sadi..Sadi died ...contaminated by the Spiritual Stone.."
+    Else
+        Say "Sigh...I wonder how Sadi is doing... it's hard to see her face because she's extremely busy working.."

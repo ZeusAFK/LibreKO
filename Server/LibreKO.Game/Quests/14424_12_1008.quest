@@ -1,0 +1,32 @@
+Bind Npc 14424 Zone 12
+Quest 1008 "Doom Soldier hunt"
+    Journal "I promised to hunt [Ascetic Tabeth] 40 Doom Soldiers."
+    Kill 40 of 8007, 18007 at direction_628
+
+Requires player level >= 61 and player is elmorad and quest 303 is completed
+
+Rewards
+    Give 23750000 experience
+
+direction_628 = location "Doom Soldier" about "Doom Soldier\nOne of the monsters held in the deep underground following the war against Pathos, they are also referred to as the Knight of Darkness." found "Eslant" at 255 761 in zone 12
+
+On available
+    Say "Veda is looking for you, master. But who is Veda??"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Welcome to Eslant. I appreciate your interest in our corner of the world. My name is Tabeth, I train in aesthetic practices here in Eslant."
+    Topic "Tell me more..." do
+        Show quest "I called for you because with your reputation and ability, Eslant is the perfect place for you to improve your skills. You'll understand if you start hunting Doom Soldiers.\n\nYou'll earn 23.75 million EXP if you go back to [Ascetic] Tabeth after the mission of Doom Soldier Hunt."
+
+On in_progress
+    Say "The road of practice must be walked with patience."
+    Topic "Where can I find it?" do
+        Map direction_628
+
+On ready
+    Say "Well done~ The work here in Eslant is better than I expected."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Good job. Are you satisfied with that?"

@@ -1,0 +1,26 @@
+Bind Npc 14424 Zone 12
+Quest 1035 "Dominated warriors"
+    Journal "Defeat 20 Warrior Leaders"
+    Kill 20 of 9615, 9614 at direction_1177
+
+Requires player level >= 60 and player is elmorad
+
+Rewards
+    Give 21250000 experience
+
+direction_1177 = location "Dragon Tooth Commander" about "Dragon Tooth Commander\nMade by Pathos they are undeads but they continue with rituals" found "El Morad Eslant" elmorad at 425 676 in zone 12
+
+On offer
+    Say "Welcome. Did you get to see the Knight Captain outside of the town? They used to be our soldiers. After they died, they were resurrected by lich."
+    Topic "Tell me more..." do
+        Show quest "I hope they rest now. Could you help? Help at least 20 of them."
+        Topic "Where can I find it?" do
+            Map direction_1177
+
+On in_progress
+    Say "Don't you pity their souls?"
+    Topic "Where can I find it?" do
+        Map direction_1177
+
+On claimable
+    Show quest "Thank you. Because of you they can rest now."

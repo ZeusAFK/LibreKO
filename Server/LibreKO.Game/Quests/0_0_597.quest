@@ -1,0 +1,26 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 597 "[Great Battle] Sovereign in Collusion with Evil"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+
+Requires player level >= 67 and quest 596 is completed
+
+Rewards none
+
+On available
+    Say "According to [priest] by [Priest]Majal the end, I'm [Breath], had a contract with the devil. Tell him [Captain] carrying God that"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "A <selfname>? This time, also come to have you as a surprise?"
+        Topic "Tell me more..." do
+            Show quest "What? [Breath] had a contract with the devil? This can not be ... Self-hero when ...\n\nIt's shocking isn't it. Hm... Let the enemy know of this and bring mayham to their minds.\n\nI will be carrying a conversation with the Luferson Castle province [Captain]."
+    If player is elmorad
+        Say "A <selfname>? This time, also come to have you as a surprise?"
+        Topic "Tell me more..." do
+            Show quest "What? [Breath] had a contract with the devil? This can not be ... Self-hero when ...\n\nThe impact does not go away.Well, he ... Once informed of this fact in full force, and I'll be chopped off his dominion\n\n[And Captain Falkwine, El Morad Castle dialog."
+
+On claimable
+    Show quest "Once you ready for battle in case you do not know the situation, I'm begging you. And then I'll come back to me."

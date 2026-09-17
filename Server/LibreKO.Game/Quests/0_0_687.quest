@@ -1,0 +1,43 @@
+Bind Npc 31572 Zone 11 for karus
+Bind Npc 31571 Zone 12 for elmorad
+Quest 687 "Preparing for Research"
+    Journal for karus "You must help research preparation of [Senior Researcher] Gaaz."
+    Journal for elmorad "You must help research preparation of [Senior Researcher] Aldos."
+    Collect 50 of 379061000
+    Collect 20 of 389020000
+
+Requires player level >= 65 and quest 686 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 100000 coins
+
+On available
+    If player is karus
+        Say "[Chief Researcher] Gaz needs materials for his experiment."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Chief Researcher] Aldos needs materials for his experiment."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "So did you decide to help me?"
+        Topic "Tell me more..." do
+            Show quest "If you have decided to help me, please first bring me the apparatus. I need a catalyst called [Potion of Soul] and [Magician's Stone] to test its reaction to pure magic. You can get them from [Potion Merchant] and [Store] respectively. Please hurry.\n\nWe need to get the [Sorcerer's Stone]and the [Potion of soul] from the [Sundries] to [Senior Researcher]Gaz in Eslant."
+    If player is elmorad
+        Say "So did you decide to help me?"
+        Topic "Tell me more..." do
+            Show quest "If you have decided to help me, please first bring me the apparatus. I need a catalyst called [Potion of Soul] and [Magician's Stone] to test its reaction to pure magic. You can get them from [Potion Merchant] and [Store] respectively. Please hurry.\n\nWe need to get the [Sorcerer's Stone]and the [Potion of soul] from the [Sundries] to [Senior Researcher]Aldos in Eslant."
+
+On in_progress
+    Say "You don't have enough money? You lack a lot of stuff."
+
+On claimable
+    If player is karus
+        Show quest "Good, you have collect them well.\n\nThen, please collect [Mana Piece] of the magical creature.\nFirst collect [Unstable Mana Piece] from [Half Troll Shaman]. It has the most disturbing appearance. With that, I should be able to dig into the cause."
+    If player is elmorad
+        Show quest "Good, you have collect them well.\n\nThen, please collect [Mana Piece] of the magical creature. \nFirst collect [Unstable Mana Piece] from [Half Troll Shaman]. It has the most disturbing appearance. With that, I should be able to dig into the cause."
+
+On completed
+    Say "Please come back to me when you reach Lv66. You look very weak. You need to be stronger."

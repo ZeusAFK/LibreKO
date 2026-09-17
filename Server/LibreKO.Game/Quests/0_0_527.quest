@@ -1,0 +1,36 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 527 "[Long Revenge] The Second Attack"
+    Journal for karus "You must talk to [Guard] Melverick at Luferson Castle."
+    Journal for elmorad "You must talk to [Guard] Zalk at El Morad Castle."
+
+Requires player level >= 61 and quest 526 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "[Captain]Harugo is looking for you. Since you are the only one that helped on the last raid."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Captain]Falkwine is looking for you. Since you are the only one that helped on the last raid."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Oh, hello <selfname>. The great work last time, Luferson Castle is safe because of that!"
+        Topic "Tell me more..." do
+            Show quest "But there is a small problem. The mother of the [Gredel] that we took down last time planned a revenge and attacked our castle!\n\n[Captain] Fargo proclaimed the emergency. Go to [Elder Wizard] Drake."
+    If player is elmorad
+        Say "Oh, hello <selfname>. The great work last time, Luferson Castle is safe because of that!"
+        Topic "Tell me more..." do
+            Show quest "But there is a small problem. The mother of the [Gredel] that we took down last time planned a revenge and attacked our castle!\n\n[Captain] Falkwine proclaimed the emergency. Go to [Elder Wizard] Drake."
+
+On claimable
+    Show quest "Problem is one of the king's loyal soldiers was killed by her. For now go to Linate Village and find [Archmage]Drake and find the remains!..."
+
+On completed
+    If player is karus
+        Say "[Archmage]Drake is in [Linate Village] so don't get lost."
+    If player is elmorad
+        Say "[Archmage]Drake is in [Raive Village] so don't get lost."

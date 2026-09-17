@@ -1,0 +1,15 @@
+Bind Npc 25002 Zone 21
+Quest 1232 "Sharine?"
+    Journal "Hand [Amelie's soul stone] to Sharine"
+    Collect 1 of 900614000
+
+Requires player level >= 26 and quest 1219 is completed
+
+Rewards
+    Give 25000 experience
+
+On offer
+    Show quest "<Sharine> O what this? Where did you get this stone?"
+
+On claimable
+    Show quest "What the..She finally...\n\nI heard that she was kidnapped by Draki and was used for his experiment. The experiment to strengthen the Spiritual Stone... She was the only survivor who escaped from there.\n\nShe oneday came to me and ask for a cure but I didn't have any at the time.. She was left like that and I realized of my incapacity. I started to travel around the world studying more about the Spiritual Stone.."

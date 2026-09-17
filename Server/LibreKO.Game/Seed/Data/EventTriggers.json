@@ -1,0 +1,602 @@
+[
+  {
+    "Index": 1,
+    "NpcType": 28,
+    "NpcId": 1,
+    "TriggerNum": 40001
+  },
+  {
+    "Index": 2,
+    "NpcType": 28,
+    "NpcId": 2,
+    "TriggerNum": 40002
+  },
+  {
+    "Index": 3,
+    "NpcType": 28,
+    "NpcId": 3,
+    "TriggerNum": 40003
+  },
+  {
+    "Index": 4,
+    "NpcType": 28,
+    "NpcId": 4,
+    "TriggerNum": 40004
+  },
+  {
+    "Index": 5,
+    "NpcType": 28,
+    "NpcId": 5,
+    "TriggerNum": 40005
+  },
+  {
+    "Index": 6,
+    "NpcType": 28,
+    "NpcId": 6,
+    "TriggerNum": 40006
+  },
+  {
+    "Index": 7,
+    "NpcType": 28,
+    "NpcId": 7,
+    "TriggerNum": 40007
+  },
+  {
+    "Index": 8,
+    "NpcType": 28,
+    "NpcId": 8,
+    "TriggerNum": 40008
+  },
+  {
+    "Index": 9,
+    "NpcType": 28,
+    "NpcId": 9,
+    "TriggerNum": 40009
+  },
+  {
+    "Index": 10,
+    "NpcType": 28,
+    "NpcId": 10,
+    "TriggerNum": 40010
+  },
+  {
+    "Index": 11,
+    "NpcType": 28,
+    "NpcId": 11,
+    "TriggerNum": 40011
+  },
+  {
+    "Index": 12,
+    "NpcType": 28,
+    "NpcId": 12,
+    "TriggerNum": 40012
+  },
+  {
+    "Index": 13,
+    "NpcType": 28,
+    "NpcId": 13,
+    "TriggerNum": 40013
+  },
+  {
+    "Index": 14,
+    "NpcType": 28,
+    "NpcId": 14,
+    "TriggerNum": 40014
+  },
+  {
+    "Index": 15,
+    "NpcType": 28,
+    "NpcId": 15,
+    "TriggerNum": 40015
+  },
+  {
+    "Index": 16,
+    "NpcType": 28,
+    "NpcId": 16,
+    "TriggerNum": 40016
+  },
+  {
+    "Index": 17,
+    "NpcType": 28,
+    "NpcId": 17,
+    "TriggerNum": 40017
+  },
+  {
+    "Index": 18,
+    "NpcType": 28,
+    "NpcId": 18,
+    "TriggerNum": 40018
+  },
+  {
+    "Index": 19,
+    "NpcType": 28,
+    "NpcId": 19,
+    "TriggerNum": 40019
+  },
+  {
+    "Index": 20,
+    "NpcType": 28,
+    "NpcId": 20,
+    "TriggerNum": 40020
+  },
+  {
+    "Index": 21,
+    "NpcType": 28,
+    "NpcId": 21,
+    "TriggerNum": 42001
+  },
+  {
+    "Index": 22,
+    "NpcType": 28,
+    "NpcId": 22,
+    "TriggerNum": 42002
+  },
+  {
+    "Index": 23,
+    "NpcType": 28,
+    "NpcId": 23,
+    "TriggerNum": 42003
+  },
+  {
+    "Index": 24,
+    "NpcType": 28,
+    "NpcId": 24,
+    "TriggerNum": 42004
+  },
+  {
+    "Index": 25,
+    "NpcType": 28,
+    "NpcId": 25,
+    "TriggerNum": 42005
+  },
+  {
+    "Index": 26,
+    "NpcType": 28,
+    "NpcId": 26,
+    "TriggerNum": 42006
+  },
+  {
+    "Index": 27,
+    "NpcType": 28,
+    "NpcId": 27,
+    "TriggerNum": 42007
+  },
+  {
+    "Index": 28,
+    "NpcType": 28,
+    "NpcId": 28,
+    "TriggerNum": 42008
+  },
+  {
+    "Index": 29,
+    "NpcType": 28,
+    "NpcId": 29,
+    "TriggerNum": 42009
+  },
+  {
+    "Index": 30,
+    "NpcType": 28,
+    "NpcId": 30,
+    "TriggerNum": 42010
+  },
+  {
+    "Index": 31,
+    "NpcType": 28,
+    "NpcId": 31,
+    "TriggerNum": 42011
+  },
+  {
+    "Index": 32,
+    "NpcType": 28,
+    "NpcId": 32,
+    "TriggerNum": 42012
+  },
+  {
+    "Index": 33,
+    "NpcType": 28,
+    "NpcId": 33,
+    "TriggerNum": 42013
+  },
+  {
+    "Index": 34,
+    "NpcType": 28,
+    "NpcId": 34,
+    "TriggerNum": 42014
+  },
+  {
+    "Index": 35,
+    "NpcType": 28,
+    "NpcId": 35,
+    "TriggerNum": 42015
+  },
+  {
+    "Index": 36,
+    "NpcType": 28,
+    "NpcId": 36,
+    "TriggerNum": 42016
+  },
+  {
+    "Index": 37,
+    "NpcType": 28,
+    "NpcId": 37,
+    "TriggerNum": 43601
+  },
+  {
+    "Index": 38,
+    "NpcType": 28,
+    "NpcId": 38,
+    "TriggerNum": 43701
+  },
+  {
+    "Index": 39,
+    "NpcType": 28,
+    "NpcId": 39,
+    "TriggerNum": 43801
+  },
+  {
+    "Index": 40,
+    "NpcType": 28,
+    "NpcId": 40,
+    "TriggerNum": 43901
+  },
+  {
+    "Index": 41,
+    "NpcType": 28,
+    "NpcId": 41,
+    "TriggerNum": 44001
+  },
+  {
+    "Index": 42,
+    "NpcType": 28,
+    "NpcId": 42,
+    "TriggerNum": 44101
+  },
+  {
+    "Index": 43,
+    "NpcType": 28,
+    "NpcId": 43,
+    "TriggerNum": 44201
+  },
+  {
+    "Index": 44,
+    "NpcType": 28,
+    "NpcId": 44,
+    "TriggerNum": 44301
+  },
+  {
+    "Index": 45,
+    "NpcType": 28,
+    "NpcId": 45,
+    "TriggerNum": 44401
+  },
+  {
+    "Index": 46,
+    "NpcType": 28,
+    "NpcId": 46,
+    "TriggerNum": 44501
+  },
+  {
+    "Index": 47,
+    "NpcType": 28,
+    "NpcId": 47,
+    "TriggerNum": 44601
+  },
+  {
+    "Index": 48,
+    "NpcType": 28,
+    "NpcId": 48,
+    "TriggerNum": 44701
+  },
+  {
+    "Index": 49,
+    "NpcType": 28,
+    "NpcId": 49,
+    "TriggerNum": 44801
+  },
+  {
+    "Index": 50,
+    "NpcType": 28,
+    "NpcId": 50,
+    "TriggerNum": 44901
+  },
+  {
+    "Index": 51,
+    "NpcType": 28,
+    "NpcId": 51,
+    "TriggerNum": 45001
+  },
+  {
+    "Index": 52,
+    "NpcType": 28,
+    "NpcId": 52,
+    "TriggerNum": 45101
+  },
+  {
+    "Index": 53,
+    "NpcType": 28,
+    "NpcId": 53,
+    "TriggerNum": 45201
+  },
+  {
+    "Index": 54,
+    "NpcType": 28,
+    "NpcId": 54,
+    "TriggerNum": 45301
+  },
+  {
+    "Index": 55,
+    "NpcType": 28,
+    "NpcId": 55,
+    "TriggerNum": 45401
+  },
+  {
+    "Index": 56,
+    "NpcType": 28,
+    "NpcId": 56,
+    "TriggerNum": 45501
+  },
+  {
+    "Index": 57,
+    "NpcType": 28,
+    "NpcId": 57,
+    "TriggerNum": 45601
+  },
+  {
+    "Index": 58,
+    "NpcType": 28,
+    "NpcId": 58,
+    "TriggerNum": 45701
+  },
+  {
+    "Index": 59,
+    "NpcType": 28,
+    "NpcId": 59,
+    "TriggerNum": 45801
+  },
+  {
+    "Index": 60,
+    "NpcType": 28,
+    "NpcId": 60,
+    "TriggerNum": 45901
+  },
+  {
+    "Index": 61,
+    "NpcType": 28,
+    "NpcId": 61,
+    "TriggerNum": 46001
+  },
+  {
+    "Index": 62,
+    "NpcType": 28,
+    "NpcId": 62,
+    "TriggerNum": 46101
+  },
+  {
+    "Index": 63,
+    "NpcType": 28,
+    "NpcId": 63,
+    "TriggerNum": 46201
+  },
+  {
+    "Index": 64,
+    "NpcType": 28,
+    "NpcId": 64,
+    "TriggerNum": 46301
+  },
+  {
+    "Index": 65,
+    "NpcType": 28,
+    "NpcId": 65,
+    "TriggerNum": 46401
+  },
+  {
+    "Index": 66,
+    "NpcType": 28,
+    "NpcId": 66,
+    "TriggerNum": 46501
+  },
+  {
+    "Index": 67,
+    "NpcType": 28,
+    "NpcId": 67,
+    "TriggerNum": 46601
+  },
+  {
+    "Index": 68,
+    "NpcType": 28,
+    "NpcId": 68,
+    "TriggerNum": 46701
+  },
+  {
+    "Index": 69,
+    "NpcType": 28,
+    "NpcId": 69,
+    "TriggerNum": 46801
+  },
+  {
+    "Index": 70,
+    "NpcType": 28,
+    "NpcId": 70,
+    "TriggerNum": 46901
+  },
+  {
+    "Index": 71,
+    "NpcType": 28,
+    "NpcId": 71,
+    "TriggerNum": 47001
+  },
+  {
+    "Index": 72,
+    "NpcType": 28,
+    "NpcId": 72,
+    "TriggerNum": 47101
+  },
+  {
+    "Index": 73,
+    "NpcType": 28,
+    "NpcId": 73,
+    "TriggerNum": 47201
+  },
+  {
+    "Index": 74,
+    "NpcType": 28,
+    "NpcId": 74,
+    "TriggerNum": 47301
+  },
+  {
+    "Index": 75,
+    "NpcType": 28,
+    "NpcId": 75,
+    "TriggerNum": 47401
+  },
+  {
+    "Index": 76,
+    "NpcType": 28,
+    "NpcId": 76,
+    "TriggerNum": 47501
+  },
+  {
+    "Index": 77,
+    "NpcType": 28,
+    "NpcId": 77,
+    "TriggerNum": 47601
+  },
+  {
+    "Index": 78,
+    "NpcType": 28,
+    "NpcId": 78,
+    "TriggerNum": 47701
+  },
+  {
+    "Index": 79,
+    "NpcType": 28,
+    "NpcId": 79,
+    "TriggerNum": 47801
+  },
+  {
+    "Index": 80,
+    "NpcType": 28,
+    "NpcId": 80,
+    "TriggerNum": 47901
+  },
+  {
+    "Index": 81,
+    "NpcType": 28,
+    "NpcId": 81,
+    "TriggerNum": 48001
+  },
+  {
+    "Index": 82,
+    "NpcType": 28,
+    "NpcId": 82,
+    "TriggerNum": 48101
+  },
+  {
+    "Index": 83,
+    "NpcType": 28,
+    "NpcId": 83,
+    "TriggerNum": 48201
+  },
+  {
+    "Index": 84,
+    "NpcType": 28,
+    "NpcId": 84,
+    "TriggerNum": 48301
+  },
+  {
+    "Index": 85,
+    "NpcType": 28,
+    "NpcId": 85,
+    "TriggerNum": 48401
+  },
+  {
+    "Index": 86,
+    "NpcType": 28,
+    "NpcId": 86,
+    "TriggerNum": 48501
+  },
+  {
+    "Index": 87,
+    "NpcType": 28,
+    "NpcId": 87,
+    "TriggerNum": 48601
+  },
+  {
+    "Index": 88,
+    "NpcType": 28,
+    "NpcId": 88,
+    "TriggerNum": 48701
+  },
+  {
+    "Index": 89,
+    "NpcType": 28,
+    "NpcId": 89,
+    "TriggerNum": 48801
+  },
+  {
+    "Index": 90,
+    "NpcType": 28,
+    "NpcId": 90,
+    "TriggerNum": 48901
+  },
+  {
+    "Index": 91,
+    "NpcType": 28,
+    "NpcId": 91,
+    "TriggerNum": 49001
+  },
+  {
+    "Index": 92,
+    "NpcType": 28,
+    "NpcId": 92,
+    "TriggerNum": 49101
+  },
+  {
+    "Index": 93,
+    "NpcType": 28,
+    "NpcId": 93,
+    "TriggerNum": 49201
+  },
+  {
+    "Index": 94,
+    "NpcType": 28,
+    "NpcId": 94,
+    "TriggerNum": 49301
+  },
+  {
+    "Index": 95,
+    "NpcType": 28,
+    "NpcId": 95,
+    "TriggerNum": 49401
+  },
+  {
+    "Index": 96,
+    "NpcType": 28,
+    "NpcId": 96,
+    "TriggerNum": 49501
+  },
+  {
+    "Index": 97,
+    "NpcType": 28,
+    "NpcId": 97,
+    "TriggerNum": 49601
+  },
+  {
+    "Index": 98,
+    "NpcType": 28,
+    "NpcId": 98,
+    "TriggerNum": 49701
+  },
+  {
+    "Index": 99,
+    "NpcType": 28,
+    "NpcId": 99,
+    "TriggerNum": 49801
+  },
+  {
+    "Index": 100,
+    "NpcType": 28,
+    "NpcId": 100,
+    "TriggerNum": 49901
+  }
+]

@@ -1,0 +1,64 @@
+Bind Npc 31516 Zone 11 for karus warrior
+Bind Npc 31516 Zone 11 for karus rogue
+Bind Npc 31516 Zone 11 for karus mage
+Bind Npc 31516 Zone 11 for karus priest
+Bind Npc 31520 Zone 12 for elmorad warrior
+Bind Npc 31520 Zone 12 for elmorad rogue
+Bind Npc 31520 Zone 12 for elmorad mage
+Bind Npc 31520 Zone 12 for elmorad priest
+Quest 548 "[Failed Mission] Belongings of deceased Great Knight"
+    Journal for karus "You must accept the request of [Hero who lost his eyes], of Eslant."
+    Journal for elmorad "You must accept the request of [Hero who lost his eyes], of Eslant."
+    Collect 5 of 508108000
+
+Requires player level >= 63 and quest 547 is completed
+
+Rewards for warrior
+    Give 2500000 experience
+    Give 50 np
+    Give 1 of 910228000
+    Choose one
+        Give 1 of 972280738
+        Give 1 of 972350826
+        Give 1 of 972360437
+        Give 1 of 972320795
+
+Rewards for rogue
+    Give 1 of 972290498
+    Give 2500000 experience
+    Give 50 np
+    Give 1 of 910228000
+    Choose one
+        Give 1 of 972290498
+        Give 1 of 972330925
+
+Rewards for mage
+    Give 2500000 experience
+    Give 50 np
+    Give 1 of 910228000
+    Choose one
+        Give 1 of 972300394
+        Give 1 of 972300395
+        Give 1 of 972300396
+
+Rewards for priest
+    Give 1 of 972340768
+    Give 1 of 972310768
+    Give 2500000 experience
+    Give 50 np
+    Give 1 of 910228000
+
+On available
+    Say "[Eyeless Hero] is still moaning, go talk to him again."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "* Sigh * We've supposed to be together until the end, so to survive alone nourish the face."
+    Topic "Tell me more..." do
+        Show quest "One's favor. Let the sun rectify a memento of my friends died fighting until the last Undaunted. I think maybe that probably took off a near [Raven Harpy] flashing stuff.\n\n[Hero who has lost two eyes] asked a favor to collect [Hero's Article]."
+
+On in_progress
+    Say "I still did not recover?"
+
+On claimable
+    Show quest "Thank you.Thank you ... The group worries that is."

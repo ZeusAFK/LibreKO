@@ -1,0 +1,30 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>LibreKO</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Layer namespaces follow folders (mirrors LibreKO); global usings keep call sites clean. -->
+  <ItemGroup>
+    <Using Include="LibreKO.Network" />
+    <Using Include="LibreKO.Domain" />
+  </ItemGroup>
+
+  <!--
+    The wire codec is vendored from LibreKO under src/Network/Shared/ (see the README there) so this
+    project builds on its own. It used to <Compile Include> those files out of a sibling LibreKO
+    checkout, which made the client unbuildable without one.
+  -->
+
+  <!--
+    Keep the dev harness out of shipped builds: while those classes exist in LibreKO.dll, a hand-made patch
+    pck can re-create a scenes/dev/*.tscn and run them. Only Godot's export uses ExportRelease, so the
+    editor and `dotnet build` (Debug) still see src/Tools.
+  -->
+  <ItemGroup Condition="'$(Configuration)' == 'ExportRelease'">
+    <Compile Remove="src/Tools/**/*.cs" />
+  </ItemGroup>
+</Project>

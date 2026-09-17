@@ -1,0 +1,30 @@
+Bind Npc 25001 Zone 21
+Quest 1221 "The beautiful Amelie"
+    Journal "Let's find the Apple of Moradon for Jed who has Amelie in mind"
+    Collect 2 of 810418000
+
+Requires player level >= 24 and quest 1220 is completed
+
+Rewards
+    Give 125000 experience
+    Give 1 of 810418000
+    Give 1 of 810418000
+
+On offer
+    Say "Ohh! Did you see?\n\nA gorgeous woman among those refugees~"
+    Topic "Yes" do
+        Say "Hmm ..Hmm, hmm. So, I have a favor to ask of you ..."
+        Topic "Tell me more..." do
+            Show quest "I want to confess my love to her, and having a gift would be a plus. Can you go find me something good for a gift? I'm begging you. Since I'm a leader of security guards, I can't go outside of Folk Village..."
+    Topic "No." do
+        Say "What?! You must be blind! How can you miss that beauty?"
+        Topic "Tell me more..." do
+            Say "Hmm ..Hmm, hmm. So, I have a favor to ask of you ..."
+            Topic "Tell me more..." do
+                Show quest "I want to confess my love to her, and having a gift would be a plus. Can you go find me something good for a gift? I'm begging you. Since I'm a leader of security guards, I can't go outside of Folk Village..."
+
+On in_progress
+    Say "You didn't find one yet? Well it's not easy to decide what's good for a gift.. I once heard that the king of fruits are Apples of Moradon.. I wish I could get one..."
+
+On claimable
+    Show quest "Ohh! This is an Apple of Moradon!? I really appreciate it. Just in time to eat."

@@ -1,0 +1,44 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 577 "[Legless Devil] Base Defense I"
+    Journal for karus "You must perform the duty of [Base Spearhead] Cruzed of the Stronghold of Ronark Land."
+    Journal for elmorad "You must perform the duty of [Base Spearhead] Krable, of the Stronghold of Ronark Land."
+    Kill 30 of 9013 at direction_755
+
+Requires player level >= 66 and quest 576 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+
+direction_755 = location "Demon's Pawn" about "Demon's Pawn\n Tailender demon of Demon Corps, it always do wicked act first." found "Ronark Land Base" karus at 319 522 elmorad at 680 508 in zone 73
+
+On available
+    If player is karus
+        Say "Come ready to battle at the end of the base forefront not go back to God [Base Scout]Crewjed de"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Come ready to finish the battle, go back to God not spearhead base label."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Once finished, ready to ride, or, where a number of of Forwar family called the devil's army penetrated it is, from now on, here is how to keep the base Subjugation them."
+        Topic "Tell me more..." do
+            Show quest "From the minions of the devil, not to start the process and gently\n\nYou need to perform a large land base the the base paper forefront [Base Scout]Crewjed jiui the mission of de Lorna."
+    If player is elmorad
+        Say "Once finished, ready to ride, or, where a number of of Forwar family called the devil's army penetrated it is, from now on, here is how to keep the base Subjugation them."
+        Topic "Tell me more..." do
+            Show quest "From the minions of the devil, not to start the process and gently\n\nRonark Land Base the base paper forefront jiui greater mission of the label must be performed."
+
+On in_progress
+    Say "Hmm? I did not start yet? [It's] minions of the devil, and should not be confused with other guys."
+    Topic "Where can I find it?" do
+        Map direction_755
+
+On ready
+    Say "Called the Devil, and thought it was scary and it's not a big deal! Now go back!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Oh, you back safely after mission, thereby moved to defend the first step but not the same!\n\nAnd maintenance equipment for the next battle, Come back to me again. Preparation is complete, come back not to give the mission."

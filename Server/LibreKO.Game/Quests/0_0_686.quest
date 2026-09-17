@@ -1,0 +1,30 @@
+Bind Npc 31572 Zone 11 for karus
+Bind Npc 31571 Zone 12 for elmorad
+Quest 686 "Twisted Flow of Mana"
+    Journal for karus "You must talk to [Senior Researcher] Gaaz."
+    Journal for elmorad "You must talk to [Senior Researcher] Aldos."
+
+Requires player level >= 65 and quest 675 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "[Chief Researcher] Gaz is in Islant. He's doing a research on magic at the [Magic Soceity]."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Chief Researcher] Aldos is in Islant. He's doing a research on magic at the [Magic Soceity]."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "What do you want? Unless it's urgent, leave me alone."
+        Topic "Tell me more..." do
+            Show quest "The leader? I see. Let me explain to you. There have been some strange movements of magical creatures in Islant. And I'm here to invetigate by collecting specimen and conducting a research.g specimen.\n\nBy specimen, I mean magical creatures in whose body [Mana Piece] is already finished crystalizing. And I collect and analyze them. <selfname>, it would mean a great deal if you could collect [Mana Piece] and bring them back to me.\n\nWe need to talk to [Senior Researcher]Gaz."
+    If player is elmorad
+        Say "What do you want? Unless it's urgent, leave me alone."
+        Topic "Tell me more..." do
+            Show quest "The leader? I see. Let me explain to you. There have been some strange movements of magical creatures in Islant. And I'm here to invetigate by collecting specimen and conducting a research.g specimen.\n\nBy specimen, I mean magical creatures in whose body [Mana Piece] is already finished crystalizing. And I collect and analyze them. <selfname>, it would mean a great deal if you could collect [Mana Piece] and bring them back to me.\n\nWe need to talk to [Senior Researcher]Aldos."
+
+On claimable
+    Show quest "If you have decided to help me, please first bring me the apparatus. I need a catalyst called [Potion of Soul] and [Magician's Stone] to test its reaction to pure magic. You can get them from [Potion Merchant] and [Store] respectively. Please hurry."

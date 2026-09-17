@@ -1,0 +1,39 @@
+Bind Npc 31572 Zone 11 for karus
+Bind Npc 31571 Zone 12 for elmorad
+Quest 690 "Collecting Mana Pieces III"
+    Journal for karus "You must collect Mana pieces with [Senior Researcher] Gaaz."
+    Journal for elmorad "You must collect Mana pieces with [Senior Researcher] Aldos."
+    Collect 5 of 389750000
+
+Requires player level >= 68 and quest 689 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "I feel like [Chief Researcher] Gaz is going to need you. Let's go to Islant."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "I feel like [Chief Researcher] Aldos is going to need you. Let's go to Islant."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "What a coincidence! I was just about to ask for you."
+        Topic "Tell me more..." do
+            Show quest "Let's see ...next I need [Bitter mana piece]. As you can expect, you can get it from [Apostle of Piercing Cold]. It is a magical creature that uses the cold magic. Please go get it.\n\n[Senior Researcher]Gaz from Eslant has requested to get some [Bitter mana piece] from the [Apostle of Piercing Cold]."
+    If player is elmorad
+        Say "What a coincidence! I was just about to ask for you."
+        Topic "Tell me more..." do
+            Show quest "Let's see ...next I need [Bitter mana piece]. As you can expect, you can get it from [Apostle of Piercing Cold]. It is a magical creature that uses the cold magic. Please go get it.\n\n[Senior Researcher]Aldos from Eslant has requested to get some [Bitter mana piece] from the [Apostle of Piercing Cold]."
+
+On in_progress
+    Say "[Bitter mana piece] from the [Apostle of Piercing Cold]...are they called [Apostle of Piercing Cold] because they give you [Bitter mana piece]? Kekeke...it's just too funny. By the way, what are you doing here?"
+
+On claimable
+    Show quest "Just looking at it makes me cold. Please give it to me fast.\n\nSo this is going to be the last one. It will be pretty tough this time. It's the [Apostle of the Storm], a magical creature that uses storm magic. Please get the [Wild mana piece] which carries their energy."
+
+On completed
+    Say "Please come back to me when you reach Lv69. You look very weak. You need to be stronger."

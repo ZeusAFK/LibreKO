@@ -1,0 +1,10 @@
+Bind Npc 13009 Zone 21
+
+On greeting
+    If quest 521 is started and player lacks 910213000
+        Say "Festival? I'm a little worried but because you <selfname> are working so hard, makes me feel better. I will have Patrick work and attend."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910213000
+    Else
+        Say ""

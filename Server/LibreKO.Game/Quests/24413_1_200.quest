@@ -1,0 +1,31 @@
+Bind Npc 24413 Zone 1
+Quest 200 "Protecting the farm"
+    Journal "Farm Manager wants me to eliminate the Tyon and bring him Tyon meat."
+    Collect 1 of 379204000
+
+Requires player level >= 47 and player is karus
+
+Rewards
+    Give 10000 coins
+
+On available
+    Say "Tyons penetrated the farm and are ruining the crops. There's even a reward being offered for Tyons."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "This year's harvest will be ruined because of the Tyons. Wish someone would get rid of them for me."
+    Topic "Tell me more..." do
+        Show quest "I will award you handsomely if you eliminate the Tyons what infiltrated the farm and bring me their meat. I'm counting on you."
+
+On in_progress
+    Say "Tyons are stock monsters around the farm. There will be plenty of them here."
+
+On ready
+    Say "Shouldn't this be enough!? If we hand over the meat to the Farm Manager, we will get a large reward."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Not bad. Look outside. There's already some of them lurking outside. but they will multiply again as they have superior breeding ability."
+
+On completed
+    Say "Tyons have disappeared to an extent, but they will multiply again as they have superior breeding ability."

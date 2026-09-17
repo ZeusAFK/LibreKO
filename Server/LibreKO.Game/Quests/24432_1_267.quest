@@ -1,0 +1,32 @@
+Bind Npc 24432 Zone 1
+Quest 267 "Hell Hound Hunt"
+    Journal "[Guard] Keife has commissioned you to hunt the Hell Hound."
+    Kill 20 of 666, 616 at direction_37
+
+Requires player level >= 57 and player is karus
+
+Rewards
+    Give 30000000 experience
+
+direction_37 = location "Hell Hound" about "Hell Hound\nGatekeeper of hell, a monster summoned from hell by Pathos' it's entire body is red" found "Karus" at 114 365 in zone 1
+
+On available
+    Say "Master, Shall we go some hunting and get some more experience? Hee Hee!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Are you going out to hunt? Hmm... How about hunting Hell Hounds?"
+    Topic "Tell me more..." do
+        Show quest "Hell Hounds are meat-eating beasts that have their breeding grounds behind the Goblin Village. Its has a characteristically fast attack speed and is popular among hunters because it drops Talismans of Destruction. This hunt will be a great experience for you."
+
+On in_progress
+    Say "How's the hunt going? Experience doesn't always come easy. Cheer up!"
+    Topic "Where can I find it?" do
+        Map direction_37
+
+On ready
+    Say "Well done! Should I give you a massage now? Hee Hee!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Hahahahaha!! You got wasted! Well done. I think."

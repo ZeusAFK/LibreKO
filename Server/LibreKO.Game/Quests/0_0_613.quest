@@ -1,0 +1,44 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 613 "[New Hero] Isn't it here?"
+    Journal for karus "You must help [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must help [Priest] Maia at the Stronghold of Ronark Land."
+    Kill 100 of 512 at direction_769
+
+Requires player level >= 69 and quest 612 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+    Give 50 np
+
+direction_769 = location "Blood Seeker" about "Blood Seeker\nHuman evolved to werewolf who has demon's blood vessel caused by after war with a Patos." found "Ronark Land Base" karus at 720 250 elmorad at 160 770 in zone 73
+
+On available
+    Say "Properly investigate arguably  words, sir? Surely ... I hope?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "The last survey seems somewhat caught bookmark. This time, based on the results of the last to have identified the culprit."
+        Topic "Tell me more..." do
+            Show quest "At this time, by introducing the mathematical principles results  calculated. As a result, the next suspect is determined by the Blood Seeker ... It has not been identified. Then ask for the investigation.\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "The last survey seems somewhat caught bookmark. This time, based on the results of the last to have identified the culprit."
+        Topic "Tell me more..." do
+            Show quest "At this time, by introducing the mathematical principles results  calculated. As a result, the next suspect is determined by the Blood Seeker ... It has not been identified. Then ask for the investigation.\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On in_progress
+    Say "Believe this is an error in my math? Come and go ahead and back the investigation."
+    Topic "Where can I find it?" do
+        Map direction_769
+
+On ready
+    Say "Master mathematical principle has been introduced where the hell I can not identify at all. Maybe we should go back."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    If player is karus
+        Show quest "What?This time, it certainly would not have been. Let's keep this progress?\n\nWhat?This time, uhh ... Also, they are no big deal. Then the culprit is one that makes compression. [Captain]Harugo, please go by and you. I sent to him, if you know what I mean."
+    If player is elmorad
+        Show quest "What?This time, it certainly would not have been. Let's keep this progress?\n\nMm-hmm. Also, they are no big deal. Then the culprit is one that makes compression.Please visit [Captain] Falkwine's wine. I sent to him, if you know what I mean."

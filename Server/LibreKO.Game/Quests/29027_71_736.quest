@@ -1,0 +1,25 @@
+Bind Npc 29027 Zone 71
+Quest 736 "[Lemegeton] Archduke of Hell"
+    Journal "You must join the devil war with [Order of the Sorcery] Sais."
+    Kill 1 of 9196, 9123
+    Kill 50 of 9198, 9125
+
+Requires player level >= 73 and player is elmorad and quest 734 is completed
+
+Rewards
+    Give 8750000 experience
+    Give 30000 coins
+    Give 1 of 900255000
+    Give 1 of 900256000
+
+On available
+    Say "The devils' massive counterattack has begun. What should we do, master? Let's help Bros of [Order of the Sorcery]."
+
+On offer
+    Show quest "The [7Devil] Amon is defeated but their attack has gotten stronger. We had no choice but to retreat at the moment. This is why I must ask you, <selfname>, for a very difficult mission.\n\nYour next opponent is a [18Devil] Bathin also called the Archduke of Hell. And he is not too be taken lightly. With him is [42Devil] Vephar who is as powerful. Please elliminate them both.\n\nWe must help Sais of [Order of the Sorcery] of Ronark Land seal the [18Devil] Bathin and [42Devil] Vephar."
+
+On in_progress
+    Say "I don't see the souls imbued in you. You haven't eliminate them yet."
+
+On claimable
+    Show quest "You're imbued with souls of devil. You have done well.\n\nI have sealed the souls of devil that were imbued in you, <selfname>. Now please give me that seal Scroll."

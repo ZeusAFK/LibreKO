@@ -1,0 +1,26 @@
+Bind Npc 25020 Zone 71
+Quest 1354 "The chief stained by the soul stone"
+    Journal "Defeat Havok / Cruel / Enigma / Hellfire"
+    Kill 1 of 8402 at direction_163
+    Kill 1 of 8404 at direction_165
+    Kill 1 of 8403 at direction_164
+    Kill 1 of 8401 at direction_162
+
+Requires player level >= 80 and player is karus and quest 1353 is completed
+
+Rewards
+    Give 8375000 experience
+
+direction_162 = location "Hellfire" about "Hell Fire" found "Ronark Land" at 0 0 in zone 71
+direction_163 = location "Enigma" found "Ronark Land" at 0 0 in zone 71
+direction_164 = location "Havoc" found "Ronark Land" at 0 0 in zone 71
+direction_165 = location "Cruel" found "Ronark Land" at 0 0 in zone 71
+
+On offer
+    Show quest "Welcome. Ronalk tribe's patriarches gone crazy since you were gone. Please hurry to get rid of them!\n\nIn Ronarkland, tribe chiefs are getting more violent. Defeat Tribe chiefs."
+
+On in_progress
+    Say "The damage grows by patriarches everyday. Help us."
+
+On claimable
+    Show quest "You. What's up with your power? I never seen a person like you fast and strong."

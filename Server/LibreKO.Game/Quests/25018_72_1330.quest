@@ -1,0 +1,17 @@
+Bind Npc 25018 Zone 72
+Quest 1330 "Their leader"
+    Journal "Defeat Kaishirak / acquire Mysterious Note / acquire Red Soul Stone"
+    Kill 1 of 9643 at direction_1239
+
+Requires player level >= 50 and player is karus and quest 1327 is completed
+
+Rewards
+    Give 1250000 experience
+
+direction_1239 = location "Kaishirak" about "Very First Orc contaminated by the red stone. Used to be one of the low intelligent Orc until contaminated. Now, they are more powerful and more intelligent" found "Ardream" at 523 521 in zone 72
+
+On offer
+    Show quest "Welcome. It's all because of the commander Kaisraq controls those brainless monsters blocking our attacks. If we get rid of him, those Oaks are nothing. Please get Kaisraq down.\n\nPlease cut Kaisraq's head off!\n\nThere is an Oak which is smarter than other Oaks. Kill Kaisiraq who is being a leader of Oak tribe."
+
+On claimable
+    Show quest "Indeed you're great! Thank you."

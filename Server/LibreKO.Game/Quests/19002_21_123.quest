@@ -1,0 +1,28 @@
+Bind Npc 19002 Zone 21
+Quest 123 "Smirdons Hides"
+    Journal "Bring 2 juicy Apples of Moradon to [Middle man] Berret."
+    Collect 2 of 810418000
+
+Requires player level >= 34
+
+Rewards
+    Give 675000 experience
+
+On available
+    Say "There must be something wrong with Berret's guild?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Why is it so hard to run a simple business? This is really getting me down... Why is that we don't have enough  Apple of Moradon at the height of the fashion season?"
+    Topic "Tell me more..." do
+        Show quest "Apple of Moradon has a reputation for juiciness so it's often used in smoothies and foods. Thing is, it's so good there's never enough of it. Excuse me, I'm kind of busy~ Hey, Secretary~~!! Hunters... Call the hunters quickly~!!"
+
+On in_progress
+    Say "Oh my god, I can't even scrape a tiny piece off!"
+
+On ready
+    Say "Wow, that's tough! Just like we heard it was."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "This is Smirdon Hide!? Thank you sooo much, this is great. Would you like to work for our boss? HA HA HA!"

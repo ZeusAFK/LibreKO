@@ -1,0 +1,16 @@
+Bind Npc 24424 Zone 11
+Quest 1072 "Spell of destruction"
+    Journal "Defeat 25 Death Wizards"
+    Kill 25 of 9068, 9079 at direction_805
+
+Requires player level >= 65 and player is karus and quest 1070 is completed
+
+Rewards
+    Give 33750000 experience
+
+direction_805 = location "Death Wizard" about "Death Wizard\n Also called death of king of terrors." found "Karus Eslant" karus at 333 724 in zone 11
+
+On offer
+    Say "Thank you for the last time."
+    Topic "Tell me more..." do
+        Show quest "No..  It's beacause you've done the deed. Could you get rid of the death wizards one more time?"

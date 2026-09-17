@@ -1,0 +1,32 @@
+Bind Npc 31564 Zone 11 for karus
+Bind Npc 31563 Zone 12 for elmorad
+Quest 662 "Contract Delivery"
+    Journal for karus "You must accept the request of [Trader] Drill."
+    Journal for elmorad "You must accept the request of [Trader] Ellon."
+    Collect 1 of 900168000
+
+Requires player level >= 67 and quest 661 is completed
+
+Rewards
+    Give 250000 experience
+    Give 10000 coins
+
+On available
+    Say "So the trading was successful! Return to [Merchant] Drill."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hmm. Oh, you're back! How did it go?"
+        Topic "Tell me more..." do
+            Show quest "Oh! Is it true? Very pleased? Hahaha! Thanks to you,we can now do our business well here.\n\nEslant updated traders passed to the Transaction Agreement, the drill must inform the success of the agreement."
+    If player is elmorad
+        Say "Hmm. Oh, you're back! How did it go?"
+        Topic "Tell me more..." do
+            Show quest "Oh! Is it true? Very pleased? Hahaha! Thanks to you,we can now do our business well here.\n\nEslant updated traders Ellen passed to the Transaction Agreement, you must inform the success of the agreement."
+
+On in_progress
+    Say "However, where is the [Trade Contract]? Have you forgotten it?"
+
+On claimable
+    Show quest "Oh, it is indeed the [Trade Contract]. I have confirmed it.\n\nYou have done very well. I will see you again with another opportunity!"

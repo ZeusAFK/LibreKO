@@ -1,0 +1,22 @@
+Bind Npc 25163 Zone 1
+Quest 1315 "Finding the Spirit"
+    Journal "Acquire the Spirits earring and bracelet"
+    Collect 1 of 900654000
+    Collect 1 of 900655000
+
+Requires player level >= 35 and player is karus and quest 1314 is completed
+
+Rewards
+    Give 300000 experience
+
+On offer
+    Show quest "First of all, I have to go find my sisters. I could find them if I had the Earring of Spirit and Bracelet of Spirit with me. They are...(Leia concentrates on her ring) hmm..They are located northwest from here. Seems Death Knight and Ancient have them near Raiba Village."
+
+On in_progress
+    Say "Please find spirit of earring and bracelet."
+
+On ready
+    Say "Please find spirit of earring and bracelet."
+
+On claimable
+    Show quest "Aahh. Finally I can meet my sisters."

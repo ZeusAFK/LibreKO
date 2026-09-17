@@ -1,0 +1,29 @@
+// Locations in global - converted from Quest_Npc_Desc_us
+
+caitharos = location "Caitharos" found "Stadium interior" at 100 100
+captured_karus_warrior = location "Captured Karus Warrior" found "Draky Tower"
+country_cont = location "Country CONT" found "War zone"
+draki_el_rasaga = location "Draki El Rasaga" found "Draky Tower"
+el_morad = location "El Morad" found "El Morad" at 100 100
+envy = location "Envy" found "Beef Roast" at 100 100
+fallen_angel = location "Fallen Angel" found "Far reaches of the Dungeon of Abyss" at 1 1
+felankor = location "Felankor" found "Cave of the Fire Dragon" at 100 100
+gatekeeper_of_lost_chamber_rothen = location "[Gatekeeper of Lost Chamber] Rothen" found "Beef Roast" at 100 100
+girl_s_mother = location "Girl's Mother" found "Draky Tower"
+gluttony = location "Gluttony" found "Beef Roast" at 100 100
+goblin_food_supply = location "[Goblin Food Supply]" found "Goblin Village" at 327 103
+goblin_iron_pot = location "[Goblin Iron Pot]" found "Goblin Village" at 306 163
+goblin_well = location "[Goblin Well]" found "Goblin Village" at 392 128
+greed = location "Greed" found "Beef Roast" at 100 100
+isiloon = location "Isiloon" found "Abyss of Hell" at 100 100
+karus = location "Karus" found "Karus" at 100 100
+lust = location "Lust" found "Beef Roast" at 100 100
+noah = location "Noah" found "All regions of the Adonis Continent"
+power_up_item = location "Power-up item" found "Power-up store" at 100 100
+pride = location "Pride" found "Beef Roast" at 100 100
+priest_of_akara = location "[Priest of Akara]" found "The Continent of Adonis"
+princess_of_forgotten_kingdom = location "Princess of Forgotten Kingdom" found "Draky Tower"
+sloth = location "Sloth" found "Beef Roast" at 100 100
+spellbound_princess = location "Spellbound Princess" found "Draky Tower"
+spirit_of_water = location "Spirit of Water" found "Bilinmiyor"
+wrath = location "Wrath" found "Beef Roast" at 100 100

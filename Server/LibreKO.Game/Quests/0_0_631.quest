@@ -1,0 +1,30 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 631 "Long-lasting Life"
+    Journal for karus "You must talk to the [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must talk to the [Staff of Subjugation Squad] Gray."
+
+Requires player level >= 60 and quest 621 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Ver, the [Chief of Subjugation Squad] needs help.  Shall we talk to him?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Grey, the [Chief of Subjugation Squad] needs help.  Shall we talk to him?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Good day to you. I am Ver, the [Chief of Subjugation Squad]."
+        Topic "Tell me more..." do
+            Show quest "We are currently running a research to find more [effective ways] to reduce the number of Goblins to minimize the number of battles.\n\nThat being said ...Have you ever messed around with food when you were young? I need to ask you a favor in regards to that.\n\nThe of Goblin Karus area near the village of Bell] [Staff Squad, and dialogue."
+    If player is elmorad
+        Say "Good day to you. I am Grey, the [Chief of Subjugation Squad]."
+        Topic "Tell me more..." do
+            Show quest "We are currently running a research to find more [effective ways] to reduce the number of Goblins to minimize the number of battles.\n\nThat being said ...Have you ever messed around with food when you were young? I need to ask you a favor in regards to that.\n\nEl Morad near the villages of the region Goblin gray] [Staff Squad, and need to talk."
+
+On claimable
+    Show quest "Good. You sure are full of skills enough to play a [joke]. You need some ingredients to obtain. You need to gather [Oaks Poisonous Weed Bundle] that [Rad Oaks] carry around."

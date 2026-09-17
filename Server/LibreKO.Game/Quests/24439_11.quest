@@ -1,0 +1,18 @@
+Bind Npc 24439 Zone 11
+
+On greeting
+    If quest 525 is started and player lacks 910214000
+        Say "This is stupid ... Can't you take care of one map?"
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910214000
+    Else if quest 648 is started and player has 900213000
+        Say "Harharhar...so I finally have it! What? You want to know what this is? There's no need for you to know that. Just take this receipt and go."
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900213000
+                Give 1 of 900193000
+    Else if quest 648 is started
+        Say "Are you kidding me? Where the hell is that box?"
+    Else
+        Say ""

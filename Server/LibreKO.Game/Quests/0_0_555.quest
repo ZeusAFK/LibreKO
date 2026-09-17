@@ -1,0 +1,38 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 555 "[Failed Mission] Another Hero's Return"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle"
+    Collect 1 of 910230000
+
+Requires player level >= 63 and quest 554 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    Say "[Captain], the carrying God, the return order had ever delivered a formal"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "A <selfname>?What's going on?"
+        Topic "Tell me more..." do
+            Show quest "Yeah, you got destroyed in the bag for the left-Tropez Eslant?\n\nDeliver [Order of Return] to [Captain] Fargo."
+    If player is elmorad
+        Say "A <selfname>?What's going on?"
+        Topic "Tell me more..." do
+            Show quest "Yeah, you got destroyed in the bag for the left-Tropez Eslant?\n\nDeliver [Order of Return] to [Captain] Falkwine."
+
+On in_progress
+    If player is karus
+        Say "... kidding me right now!"
+    If player is elmorad
+        Say "...Gardenia kidding me right now!"
+
+On claimable
+    If player is karus
+        Show quest "Return this [order] group is obviously wrote with my own hand! I not think mothaetneunde Glad the person who survived the brightness. We need to begin to prepare for the return of the hero come!"
+    If player is elmorad
+        Show quest "Return this [order] group is obviously wrote with my own hand! I not think  Glad the person who survived the brightness. We need to begin to prepare for the return of the hero come!"

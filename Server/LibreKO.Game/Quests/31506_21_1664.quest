@@ -1,0 +1,25 @@
+Bind Npc 31506 Zone 21
+Quest 1664 "Hit and Miss Festival Begins"
+    Journal "Hit and Miss Festival Begins"
+    Kill 10 of 2154 at direction_78
+    Kill 10 of 8007
+    Kill 10 of 1723 at direction_131
+    Kill 10 of 2452 at direction_559
+
+Requires player level >= 1
+
+Rewards
+    Give 20000000 experience
+
+direction_131 = location "Troll Berserker" about "Troll Berserker\nMonsters who lead the Dark Army during the war between human and Pathos, in the past. They have low defense and poor immunities, but possess great strength and high HP." found "El Morad Eslant" at 740 760 in zone 12
+direction_559 = location "Giant Golem" about "Giant Golem\nColossal stone golem with enormously high power and HP" found "Karus" at 1895 564 in zone 1
+direction_78 = location "Paramun" about "Paramun\nNomad priests of Esoteric Buddhism, their souls disappear and they turn into savage Darkness Mages at night. They employ Lightning Attack that debuffs HP." found "Eslant" at 724 465 in zone 11
+
+On offer
+    Show quest "Please kill 10 of each monsters [Parmun, Doom Solider, Troll Berseker, Giant Golem]"
+
+On in_progress
+    Say "You have not completed the quest!"
+
+On claimable
+    Show quest "You have completed the quest!"

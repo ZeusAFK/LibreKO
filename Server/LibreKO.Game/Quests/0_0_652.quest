@@ -1,0 +1,33 @@
+Bind Npc 31564 Zone 11 for karus
+Bind Npc 31563 Zone 12 for elmorad
+Quest 652 "New Specialty Goods"
+    Journal for karus "You must accept the request of [Trader] Drill."
+    Journal for elmorad "You must accept the request of [Trader] Ellon. "
+
+Requires player level >= 65 and quest 651 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "I think [Merchant] Drill has something to say to you. Go talk to him."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "I think [Trader] Ellen has something to say to you. Go talk to him."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "We broke up with other party at the Port Pugative and came striaght here first to Islant."
+        Topic "Tell me more..." do
+            Show quest "Our mission is to collect articles that are rare and precious to Islant area.\n\nBut with the failure to employ combat troops, we are just sitting here stand-by. But now that the captain sent us you, would you please help us?\n\nThe Eslant updated traders will need to drill and conversation."
+    If player is elmorad
+        Say "We broke up with other party at the Port Hashak and came striaght here first to Islant."
+        Topic "Tell me more..." do
+            Show quest "Our mission is to collect articles that are rare and precious to Islant area.\n\nBut with the failure to employ combat troops, we are just sitting here stand-by. But now that the captain sent us you, would you please help us?\n\nEslant updated traders should be a conversation with Ellen."
+
+On claimable
+    If player is karus
+        Show quest "You're going to help us, aren't you? Good. Then, let's collect the items that we decided to collect, one by one. First, collect the [Blood of Berserker] from [Half Troll Berserker] and then deliver it to [Appraiser] Rockus. It's very popular because it hugely increases the body's adrenaline."
+    If player is elmorad
+        Show quest "You're going to help us, aren't you? Good. Then, let's collect the items that we decided to collect, one by one. First, collect the [Blood of Berserker] from [Half Troll Berserker] and then deliver it to [Appraiser] Diz. It's very popular because it hugely increases the body's adrenaline."

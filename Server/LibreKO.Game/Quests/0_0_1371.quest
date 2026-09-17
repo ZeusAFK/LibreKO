@@ -1,0 +1,25 @@
+Bind Npc 25003 Zone 1 for karus kurian
+Bind Npc 25017 Zone 2 for elmorad kurian
+Quest 1371 "2nd job"
+    Journal for karus "[Elder] Promised to Morbor to deliver item collection"
+    Journal for elmorad "[Elder] Promised to Atlas to deliver item collection"
+    Collect 1 of 810095000
+    Collect 1 of 810090000
+    Collect 1 of 810094000
+
+Requires player level >= 60
+
+Rewards
+    Promote
+
+On offer
+    If player is karus
+        Show quest "Welcome, I can't belive that you are already ready for 2nd job. How time flies. You have to prove your strangth to me. You have to kill Urkthron, Centaurs, and Alkeradeua and collect the proof.\n\nYou have to pass a test by the [Elder] Morbor for 2nd job"
+    If player is elmorad
+        Show quest "Welcome, I can't belive that you are already ready for 2nd job. How time flies. You have to prove your strangth to me. You have to kill Urkthron, Centaurs, and Alkeradeua and collect the proof.\n\nYou have to pass a test by the [Elder] Atlas for 2nd Job"
+
+On in_progress
+    Say "you have not proof yet"
+
+On claimable
+    Show quest "Congratulation for you are bing 2nd job"

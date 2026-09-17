@@ -1,0 +1,45 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 600 "[Prophetic Poetry of Light] Prelude"
+    Journal for karus "You must perform the duty of [Base Spearhead] Cruzed at the Stronghold of Ronark Land."
+    Journal for elmorad "You must perform the duty of [Base Spearhead] Krable at the Stronghold of Ronark Land."
+    Kill 50 of 8858, 8857 at direction_767
+
+Requires player level >= 68 and quest 599 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+    Give 100 np
+
+direction_767 = location "Cardinal" about "Cardinal\nIt is magic creature, it created when Patos put a whammy on scarecrow." found "Ronark Land Base" at 387 456 in zone 73
+
+On available
+    If player is karus
+        Say "It's a skirmish takes literally! I'm wondering if any enemy or whether this time! Now preparation is complete the the base paper forefront [Base Scout]Crewjed de go back to God"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "It's a skirmish takes literally! I'm wondering if any enemy or whether this time!Now preparation is complete, the the large label base paper forefront to God Go back"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Properly prepared to come? Well, we do not care, this battle would be a very important battle. Mind to eat tightly."
+        Topic "Tell me more..." do
+            Show quest "According to the information of the allies, I'm [Cardinal] mass  the,. Perhaps the enemy vanguard bag's shape. Battle with them, we need to find out how strong their forces  be imperative.\n\nYou need to talk to [Base Scout]Crewjed in Ronark Land Base."
+    If player is elmorad
+        Say "Properly prepared to come? Well, we do not care, this battle would be a very important battle. Mind to eat tightly"
+        Topic "Tell me more..." do
+            Show quest "According to the information of the allies, I'm [Cardinal] mass  the,. Perhaps the enemy vanguard bag's shape. Battle with them, we need to find out how strong their forces  be imperative.\n\nYou need to talk to [Base Scout]Crable in Ronark Land Base."
+
+On in_progress
+    Say "yet? Been brought in."
+    Topic "Where can I find it?" do
+        Map direction_767
+
+On ready
+    Say "Panting. Endless parlor flock. Have to go back to looking at this point."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Mm-hmm.That's the number of the enemy than you think . Given the wish to be a little more maintenance time.\n\nFirst, the fact that  want to report Dear [Priest]Majal, the He know something good policy."

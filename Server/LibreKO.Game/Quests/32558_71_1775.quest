@@ -1,0 +1,14 @@
+Bind Npc 32558 Zone 71
+Quest 1775 "Event EXP Quest - Titan"
+    Journal "Event EXP Quest - Titan"
+    Kill 50 of 2424 at direction_2117
+
+Requires player level >= 45 and player is elmorad
+
+Rewards
+    Give 18000000 experience
+
+direction_2117 = location "Titan" found "Ronak Land" at 1140 482 in zone 71
+
+On offer
+    Show quest "Welcome! If you hunt 50 Titans in Ronarkland, you will receive 18 million EXP. Will you accept the challenge?"

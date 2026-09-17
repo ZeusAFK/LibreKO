@@ -1,0 +1,45 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 638 "Collecting Poison IV"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 5 of 389430000
+
+Requires player level >= 63 and quest 637 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900209000
+    Give 1 of 900210000
+    Give 1 of 900211000
+
+On available
+    If player is karus
+        Say "I hope this is the last one. I feel like I'm going to be poisoned if I collect anymore poison."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Huh, for some reason this time would like to last. Then gather more poison, I'm gonna be addicted to."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hehehe ... unfortunately, this will be the last experiment now that the subjugation is almost complete and I'm beginning to see the research result. I hate to end the joke but can't help it because it's an order."
+        Topic "Tell me more..." do
+            Show quest "So I'm going to use an ingredient that's wild. I mean WILD!. I need [Burning Poison] from the body of [Burning Stone].  Watch out, you might burn your hands, kekeke.\n\nOf Goblin Karus area near the village of [Staff] Squad Vere at the request of the Burning Stone must be collected from the boiling poison."
+    If player is elmorad
+        Say "Hehe ... Unfortunately, this experiment seems to be the last. Subjugation is almost endless, and the ground, and one of the study because it is derived. Unfortunately, in the end the joke's upper command., I is not."
+        Topic "Tell me more..." do
+            Show quest "So, this time, will seem a little more hot stuff. It's literally the hottest materials. Taken from the body of the Burning Stone boiling poison. Dale hands so wary ... Giggle ...\n\nEl Morad near the villages of the region Goblin Grey [Staff Squad] and upon request, you must gather the boiling poison from Burning Stone."
+
+On in_progress
+    If player is karus
+        Say "Come on, be wild and hurry up!"
+    If player is elmorad
+        Say "You are not such a hot bitch minutes. Come Been faster?"
+
+On claimable
+    If player is karus
+        Show quest "Damn it, this is hot! Just kidding. I'm going to burn my hands if I don't use the pincers...\n\nOK, this is the last specimen. Hot experimental poison, as you have done until now, [Goblin cauldron, mix well Goblin goblins food box, please bring a ."
+    If player is elmorad
+        Show quest "Oops! Is a joke, por favor! ... Giggle ... Burns the hand eotdaga home just guess. Also with forceps ...\n\nThis will be the last specimen. Again, go mix this [Experimental Burning Poison] with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and, bring me a sample."

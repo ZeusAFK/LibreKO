@@ -1,0 +1,19 @@
+Bind Npc 25004 Zone 72
+Quest 1266 "Short on time"
+    Journal "Defeat 20 Orc Bandit Archers, 20 Orc Bandit Warriors, 20 Orc Bandit Wizards."
+    Kill 10 of 2809, 2808
+    Kill 10 of 2805, 2806
+    Kill 10 of 2803 at direction_1408
+
+Requires player level >= 50 and player is elmorad and quest 1265 is completed
+
+Rewards
+    Give 1250000 experience
+
+direction_1408 = location "Orc Bandit Warrior" about "Regularly attacks Adonis Continent." found "Ardream" at 477 547 in zone 72
+
+On offer
+    Show quest "Weldome <selfname>. We're conducting a rescue operation after you destroyed the sealing towers from last time, but Oak's resistance is not easy. Can <selfname> go to them and reduce Oak's strength?\n\nThere still many resistance by Oaks. Please defeat only 20 each Oak warriors, archer, wizards.\n\nOaks try to use kidnapped refugees as offering to God. Get rid of those Oaks in central of Ardream."
+
+On claimable
+    Show quest "Thank you. You're so sexy to cut those Oaks at once. This is reward for that."

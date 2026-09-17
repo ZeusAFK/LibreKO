@@ -1,0 +1,24 @@
+Bind Npc 29027 Zone 71
+Quest 770 "[Lemegeton] Devil 1 Great Devil Bael"
+    Journal "You must join the devil war with [Order of the Sorcery] Sais."
+    Kill 1 of 9219, 9146
+
+Requires player level >= 75 and player is elmorad and quest 768 is completed
+
+Rewards
+    Give 77500000 experience
+    Give 100000 coins
+    Give 50 np
+    Give 1 of 900106000
+
+On available
+    Say "You've sealed 71 Devils. There's only one more. Go visit Seis for the last mission."
+
+On offer
+    Show quest "You are here! We're almost done with this.\n\nThis is the final stage. Only the most colossal enemy remains. That is [Devil 1] Demon King Bael. He is the Demon King who rules the East, commanding 66 legions and a master of swordsmanship, reigning supreme as the 1st in rank among all demons. To end this Demon War, you must seal him. Take the [Devil 1 Lord Summoning Scroll] I gave you and find the [Devil 1 Summoning Stone] here in [Ronark Land]. Then, summon him and settle the score. I wish you luck. Bring this war to an end.\n\nYou have to receive [Devil 1 Summoning Scroll] from [Order of the sorcery] Seis, of Ronark Land. Then, summon [Devil 1] Bael from [Devil 1 Summoning Stone] at El Morad Castle area and kill him. \n※ [Devil 1 Summoning Scroll] is free the first time, but from the next time on you'll have to pay a million Noahs."
+
+On in_progress
+    Say "[Devil1] Bael's Army is still alive. Please end the war."
+
+On claimable
+    Show quest "Thank you! Now the War will end! Thank you again!\n\nDo you remember the monk [Order of the Sorcery Leader] Pelore? He wants to see you, <selfname>. He wants to award you, probably. He'll also tell you how we can forever seal the Devils."

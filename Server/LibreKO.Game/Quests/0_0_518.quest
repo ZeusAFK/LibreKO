@@ -1,0 +1,37 @@
+Bind Npc 24202 Zone 1 for karus
+Bind Npc 14202 Zone 2 for elmorad
+Quest 518 "[Descendant of Hero] preparation is the best part of the Festival II"
+    Journal for karus "You must help [Secret Agent] Clarence, of Asga Village, to prepare for the Festival."
+    Journal for elmorad "You must help [Secret Agent] Clarence of Belua Village to prepare for the Festival."
+    Collect 5 of 508103000
+
+Requires player level >= 60 and quest 517 is completed
+
+Rewards
+    Give 1 of 910209000
+    Give 2500000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 207004599
+        Give 1 of 247004600
+        Give 1 of 267004601
+        Give 1 of 287004602
+
+On available
+    If player is karus
+        Say "Master, Clarence is looking for you. He is still in Bellua Village"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, Clarence is looking for you. He is still in Asga Village"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "We have enough wine fruit! Thank you <selfname>. Now we can get started in other matters."
+    Topic "Tell me more..." do
+        Show quest "A festival would need meat! So , this time to collect [Blood Pig Meat], People like it due to its great taste. You can do it quickly can't you?\n\nYou have to help [Secret Deputy] Clarence to obtain Blood Money and Meat."
+
+On in_progress
+    Say "You said you would hurry?"
+
+On claimable
+    Show quest "Good quality meat... Makes me feel good! Thanks."

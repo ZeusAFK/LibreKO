@@ -1,0 +1,28 @@
+Bind Npc 31550 Zone 1
+Quest 628 "Subjugation of the Goblin Village IV"
+    Journal "You must perform mission with [Goblin Subjugation Squad] Raul."
+    Kill 20 of 2954, 2904 at direction_600
+
+Requires player level >= 63 and player is karus and quest 626 is completed
+
+Rewards
+    Give 20000000 experience
+    Give 30000 coins
+    Give 1 of 900197000
+
+direction_600 = location "Goblin Bouncer" about "Goblin Bouncer\nGoblins live in groups and are classified as Kobolt, Bug Bear and Goblin Bouncer in descending strength. " found "Karus Goblin Village" at 321 113 in zone 1
+
+On available
+    Say "Now, we have come to our final subjugation mission!\n[Goblin Bouncers] dwell only in the deep underground or where there is only darkness. But it is clear that they are sensing the danger of our subjugation!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You are here. The [Goblin Bouncers], our enemy's main troop, are finally  exposed. If we subjugate them, they won't dare to act for some time."
+    Topic "Tell me more..." do
+        Show quest "Of Goblin Karus area near the town of [the Raul Goblin Squad] and goblins need to fight against the bouncer."
+
+On in_progress
+    Say "More! More! It is still not enough!"
+
+On claimable
+    Show quest "They always gave us trouble because they only attacked from behind.  But we have finally wiped them out completely.  All thanks to you, <selfname>. Now, come on and let's get going.\n\nYou have done well! You live up to your reputation. May the glory of God be with you, <selfname>."

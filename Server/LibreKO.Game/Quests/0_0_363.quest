@@ -1,0 +1,25 @@
+Bind Npc 24204 Zone 1 for karus priest
+Bind Npc 14204 Zone 2 for elmorad priest
+Quest 363 "76Lv skill"
+    Journal for karus "I've decided to undergo the test to learn the hidden skills of [Priest] Minerva."
+    Journal for elmorad "I've decided to undergo the test to learn the hidden skills of [Priest] Minerva."
+    Collect 11 of 810369000
+
+Requires player level >= 76
+
+Rewards none
+
+On offer
+    Say "Priests save the world in the name of the gods. You are qualified to undergo the final training of the priesthood."
+    Topic "Tell me more..." do
+        Show quest "To train the [Insensibility Guard] skill, you will need 11 [Spell Stone Powder]. Are you ready for this?"
+
+On in_progress
+    Say "To receive the [Insensibility Guard] skill, you need 11 [Spell Stone Powder]."
+
+On ready
+    Say "Master, you have collected all items needed to be conferred the Insensibility Guard skill. Hurry back to [Priest] Minerva."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You now possess the Insensibility Guard skill. I trust you will continue to work toward saving the world."

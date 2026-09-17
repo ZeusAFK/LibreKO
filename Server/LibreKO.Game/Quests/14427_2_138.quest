@@ -1,0 +1,32 @@
+Bind Npc 14427 Zone 2 for warrior
+Bind Npc 14427 Zone 2 for rogue
+Bind Npc 14427 Zone 2 for mage
+Bind Npc 14427 Zone 2 for priest
+Quest 138 "Skeleton Knight Hunt"
+    Journal "[Guard] Zalk has commissioned you to hunt Skeleton Knight."
+    Kill 15 of 1102, 1152 at direction_104
+
+Requires player level >= 39 and player is elmorad
+
+Rewards for warrior
+    Give 1 of 205002289
+    Give 1000000 experience
+
+Rewards for rogue
+    Give 1 of 245002290
+    Give 1000000 experience
+
+Rewards for mage
+    Give 1 of 265002291
+    Give 1000000 experience
+
+Rewards for priest
+    Give 1 of 285002292
+    Give 1000000 experience
+
+direction_104 = location "Skeleton Knight" about "Skeleton Knight\nAn undead like the undying, possesses great strength as it is composed of powerful bone structure" found "El Morad" elmorad at 1199 654 in zone 2
+
+On offer
+    Say "So does my armor fit you? My nation only issues it to high ranking guards. Not just anyone can get hold of it."
+    Topic "Tell me more..." do
+        Show quest "I am sure you are quite familiar with Skeleton monsters by now. Your target is Skeleton Knight."

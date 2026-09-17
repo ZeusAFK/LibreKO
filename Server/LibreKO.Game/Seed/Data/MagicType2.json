@@ -1,0 +1,730 @@
+[
+  {
+    "Id": 102003,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 102008,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 120,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107003,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107007,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 120,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107500,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 150,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107505,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107510,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107515,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 99,
+    "AddRange": 100,
+    "NeedArrow": 3
+  },
+  {
+    "Id": 107520,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107525,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 200,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107530,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107535,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107540,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 250,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107545,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107550,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107552,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 400,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107555,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 5
+  },
+  {
+    "Id": 107557,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 200,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107560,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 107656,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108003,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108007,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 120,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108500,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 150,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108505,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108510,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108515,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 99,
+    "AddRange": 100,
+    "NeedArrow": 3
+  },
+  {
+    "Id": 108520,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108525,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 200,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108530,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108535,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108540,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 250,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108545,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108550,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108552,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 400,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108555,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 99,
+    "AddRange": 100,
+    "NeedArrow": 5
+  },
+  {
+    "Id": 108557,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 200,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108560,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108562,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108566,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108570,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 350,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108580,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 400,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108585,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 800,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 108656,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 202003,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 202008,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 120,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207003,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207007,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 120,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207500,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 150,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207505,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207510,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207515,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 99,
+    "AddRange": 100,
+    "NeedArrow": 3
+  },
+  {
+    "Id": 207520,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207525,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 200,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207530,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207535,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207540,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 250,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207545,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207550,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207552,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 400,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207555,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 5
+  },
+  {
+    "Id": 207557,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 200,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207560,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 207656,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208003,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208007,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 120,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208500,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 150,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208505,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208510,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208515,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 99,
+    "AddRange": 100,
+    "NeedArrow": 3
+  },
+  {
+    "Id": 208520,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208525,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 200,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208530,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208535,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208540,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 250,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208545,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208550,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208552,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 400,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208555,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 99,
+    "AddRange": 100,
+    "NeedArrow": 5
+  },
+  {
+    "Id": 208557,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 200,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208560,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208562,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208566,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208570,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 350,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208580,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 400,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208585,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 800,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 208656,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 300,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 300460,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 400,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 300461,
+    "HitType": 2,
+    "HitRate": 100,
+    "AddDamage": 350,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 310009,
+    "HitType": 0,
+    "HitRate": 100,
+    "AddDamage": 100,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 490356,
+    "HitType": 0,
+    "HitRate": 90,
+    "AddDamage": 70,
+    "AddRange": 100,
+    "NeedArrow": 1
+  },
+  {
+    "Id": 490358,
+    "HitType": 2,
+    "HitRate": 80,
+    "AddDamage": 250,
+    "AddRange": 100,
+    "NeedArrow": 1
+  }
+]

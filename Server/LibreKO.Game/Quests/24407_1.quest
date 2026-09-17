@@ -1,0 +1,10 @@
+Bind Npc 24407 Zone 1
+
+On greeting
+    If quest 565 is started and player lacks 910233000
+        Say "To properly'll give you back!"
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910233000
+    Else
+        Say ""

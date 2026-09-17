@@ -1,0 +1,23 @@
+Bind Npc 25000 Zone 21
+Quest 1202 "Get rid of the mice"
+    Journal "Defeat the given Bandicoot count"
+    Kill 5 of 850, 851, 853, 852 at direction_7
+
+Requires player level >= 1
+
+Rewards
+    Give 250 experience
+    Give 2000 coins
+
+direction_7 = location "Bandicoot" about "Bandicoot\nA rodent which grew abnormally by feeding on corpses of evil races in the War with Pathos." found "Inhabits Seashore of Hope" at 632 465 in zone 21
+
+On offer
+    Say "I'm sorry to ask you for another request. But could you help us one more time?"
+    Topic "Tell me more..." do
+        Show quest "Recently, Bandicoots have increased in their population and are ruining our precious crops. Help us catch 5 Bandicoots."
+
+On in_progress
+    Say "I can tell how many you have, so make sure that you have enough."
+
+On claimable
+    Show quest "You have them all. Well done."

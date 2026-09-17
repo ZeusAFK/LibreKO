@@ -1,0 +1,27 @@
+Bind Npc 31561 Zone 2
+Quest 670 "Hunting Game II"
+    Journal "Compete with [Hunter] Halon in hunting."
+    Kill 50 of 1004, 1054 at direction_828
+
+Requires player level >= 63 and player is elmorad and quest 668 is completed
+
+Rewards
+    Give 20000000 experience
+    Give 30000 coins
+
+direction_828 = location "Undying" about "Undying\n Goblins are communal living monsters. In classification, the strongest order of those are Cobalt, Bugbear, Goblin bouncer." found "Karus" elmorad at 974 686 in zone 2
+
+On available
+    Say "Huff ... It's now the second bout. [Hunter] really, it's the best in the hunt. Do not be still!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I have been waiting for Sovereign. You're slow! Hahaha keuha"
+    Topic "Tell me more..." do
+        Show quest "Group fun in a long time, though. Then the second game into the game do you like to try? 'Cause this time by Undying. So Keep departure. Beginners to start against the throw will eopji? Hot haha!\n\nCompete the the Undying hunting halronwa Raon Camp El Morad region [Hunter]."
+
+On in_progress
+    Say "(Yawning) ... This is boring.. Why don't you hunt some more to get stronger?"
+
+On claimable
+    Show quest "You made it? Is this a little too laodback for you?"

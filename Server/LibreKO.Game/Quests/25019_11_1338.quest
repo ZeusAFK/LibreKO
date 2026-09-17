@@ -1,0 +1,20 @@
+Bind Npc 25019 Zone 11
+Quest 1338 "Weakening of Marsil's troops"
+    Journal "Defeat 20 of Marsil's servants"
+    Kill 20 of 9644 at direction_1325
+
+Requires player level >= 60 and player is karus and quest 1336 is completed
+
+Rewards
+    Give 2125000 experience
+
+direction_1325 = location "Minion of Marsil" about "[King of Savage Tribe] Subordinate of Marsil" found "Eslant" karus at 126 98 in zone 11
+
+On offer
+    Show quest "Are you on the way to kill Marsil? Then I have another favor. Marsil's fellows invade to cilvilian's village and steal foods and kidnap the kids and women in the village these days. We will appreciate if you kill those bastards.\n\nLet's kill 20 fellows of Marsil."
+
+On in_progress
+    Say "Fellows not yet defeated? Their settlement are located  at southwest."
+
+On claimable
+    Show quest "I heard the news. You're awesome. That you got rid of them. You're the true hero. The legendary God's equipments probably belong to you.<selfname>"

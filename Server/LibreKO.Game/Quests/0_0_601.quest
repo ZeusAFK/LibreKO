@@ -1,0 +1,29 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 601 "[Prophetic Poetry of Light] We're not ready"
+    Journal for karus "You must talk to [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must talk to [Priest] Maia at the Stronghold of Ronark Land."
+
+Requires player level >= 68 and quest 600 is completed
+
+Rewards none
+
+On available
+    Say "I guess a lot of lack of military. What is a good strategy for ways to supplement the forces that? Go God [Priest]Majal now?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "There you are.I already heard the story. Said current situation of our military are a lot of disadvantages."
+        Topic "Tell me more..." do
+            Show quest "There are many ways, but I guess the best way way to slow down the attack without bloodshed. Once the enemy to negotiate seems to be a run.\n\nThere is one person who's right for this negotiation. It's [Archmage] Drake. However, it won't be easy to persuade him . . . Will you talk to the [Advisor] in the main castle first? I guess the [Advisor] is able to persuade [Archmage] Drake and ask the [Archmage] to sit at the negotiating table.\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "There you are.I already heard the story. Said current situation of our military are a lot of disadvantages."
+        Topic "Tell me more..." do
+            Show quest "There are many ways, but I guess the best way way to slow down the attack without bloodshed. Once the enemy to negotiate seems to be a run.\n\nThere is one person who's right for this negotiation. It's [Archmage] Drake. However, it won't be easy to persuade him . . . Will you talk to the [Advisor] in the main castle first? I guess the [Advisor] is able to persuade [Archmage] Drake and ask the [Archmage] to sit at the negotiating table.\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On claimable
+    If player is karus
+        Show quest "So, thank you. [Advisor]Herga You are the nature Guard Tower near"
+    If player is elmorad
+        Show quest "So, thank you.[Advisor]Nes on the nature Guard Tower near."

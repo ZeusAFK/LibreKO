@@ -1,0 +1,21 @@
+Bind Npc 14431 Zone 2
+Quest 264 "Uruk Blade Hunt"
+    Journal "[Guard] Beth has commissioned you to hunt the Uruk Blade."
+    Kill 20 of 1693, 9717 at direction_550
+
+Requires player level >= 56 and player is elmorad
+
+Rewards
+    Give 25000000 experience
+
+direction_550 = location "Uruk Blade" about "Uruk Blade\nA high-level orc race inhabiting the continent of Adonis; distinguishing trait: strong Attack Power" found "El Morad Eslant" at 380 1642 in zone 2
+
+On offer
+    Say "Uruk Blades are advancing toward this region after having killed people at the village entrance. I knew orcs were strong and brutal but I never imagine it would be to this extent. Please help me."
+    Topic "Where can I find it?" do
+        Map direction_550
+    Topic "Tell me more..." do
+        Show quest "Don't tell me you're planning on facing them alone.\n\nIf you do a favor for [Guard] Beth, you will be rewarded."
+
+On claimable
+    Show quest "I don't know how to thank you. This is compensation for your help. This is all I can give you."

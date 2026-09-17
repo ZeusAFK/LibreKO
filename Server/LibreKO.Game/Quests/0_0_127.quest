@@ -1,0 +1,53 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 127 "Animal Blood"
+    Journal for karus "You have promised [Moradon Merchant] Shymer to bring her  Animal Blood."
+    Journal for elmorad "You have promised [Moradon Merchant] Clark to bring him  Animal Blood."
+    Collect 3 of 379273000
+
+Requires player level >= 35
+
+Rewards
+    Give 675000 experience
+
+direction_95 = location "Shadow Seeker" about "Shadow Seeker\nMonster which evolved in the war with Pathos by a curse which turned man into wolfman" found "Karus" karus at 909 1279 in zone 1
+direction_96 = location "Shadow Seeker" about "Shadow Seeker\nMonster which evolved in the war with Pathos by a curse which turned man into wolfman" found "El Morad" elmorad at 1297 1006 in zone 2
+
+On available
+    If player is karus
+        Say "Master! Shaimer is looking for you urgently, Master!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master! Clark is looking for you urgently, Master!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Welcome. Nice to meet you. I am Shaimer, and I visit many places around Moradon to do trade. I have something urgent to tell you. [Scroll Merchant] Karon lost some materials she need for making a new scroll, and she has asked me to find some of the them, but I'm having difficulty finding them."
+        Topic "Tell me more..." do
+            Show quest "I can find most of them, but I just can't get the  Shadow Seeker's blood or the Blood of Beast. You'd have to hunt Shadow Seekers to get it, but that's easy enough for you, isn't it <selfname>? Heh Heh.\n\nYou need some Shadow Seeker's blood and some Blood of Beasts for Karon to use as Scroll material."
+    If player is elmorad
+        Say "Welcome. Nice to meet you. I'm Clark. I visit many places around Moradon for trading. I have something to urgently tell you. [Scroll Merchant] Karon lost some materials she needed for making a new scroll. She's asked me to find some of the items, but I'm having difficulty."
+        Topic "Tell me more..." do
+            Show quest "I can find most of them, but I just can't get the  Shadow Seeker's blood or the Blood of Beast. You'd have to hunt Shadow Seekers to get it, but that's easy enough for you, isn't it <selfname>? Heh Heh.\n\nYou need some Shadow Seeker's blood and some Blood of Beasts for Karon to use as Scroll material."
+
+On in_progress
+    If player is karus
+        Say "Seems I've only <selfname> to trust. Take care out there eh? Heh."
+        Topic "Where can I find it?" do
+            Map direction_95
+    If player is elmorad
+        Say "Seems I've only <selfname> to trust. Take care out there eh? Heh."
+        Topic "Where can I find it?" do
+            Map direction_96
+
+On ready
+    If player is karus
+        Say "You have gathered all the Animal Blood Shymer has asked for. Sigh!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "You have gathered all the Animal Blood Clark has asked for. Sigh!"
+        Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "I knew you could do it, <selfname>. Thanks~ thanks~ and Thank you again. Hee hee!"

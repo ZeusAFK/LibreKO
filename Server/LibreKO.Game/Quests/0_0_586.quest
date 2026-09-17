@@ -1,0 +1,30 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 586 "[Legless Devil] Root of Evil"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+
+Requires player level >= 66 and quest 585 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Think that truly epidemic. [Captain] for the origin of the epidemic by carrying, I guess you know. Should go tells sindani find."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Think that truly epidemic.[Captain] Falkwine, wine by Go know about the origin of the epidemic. Should go tells sindani find."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "As you probably know, this epidemic is rapidly expanding since the war of the military and the devil was recently completed."
+        Topic "Tell me more..." do
+            Show quest "So we hung out that at the center of investigation in many ways, lead them this year the keyhole [the king of Forwar] have been invaded here\n\nFour epidemic Fortunately, thanks to the activity of your big damage could prevent. And yet that's not the main culprit disappeared\n\nI will be carrying a conversation with the Luferson Castle province [Captain]."
+    If player is elmorad
+        Say "As you probably know, this epidemic is rapidly expanding since the war of the military and the devil was recently completed."
+        Topic "Tell me more..." do
+            Show quest "So we hung out that at the center of investigation in many ways, lead them this year the keyhole [the king of Forwar] have been invaded here\n\nFour epidemic Fortunately, thanks to the activity of your big damage could prevent. And yet that's not the main culprit disappeared\n\n[And Captain Falkwine, El Morad Castle dialog."
+
+On claimable
+    Show quest "It would have to punish the ringleader of [Forwar King] Keyhole. If you help me think of mind and come back ready to give or"

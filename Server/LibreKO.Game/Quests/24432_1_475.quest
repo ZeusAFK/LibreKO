@@ -1,0 +1,29 @@
+Bind Npc 24432 Zone 1
+Quest 475 "[Repeatable Solo] Grell Hunt"
+    Repeat always
+    Journal "[Guard] Keife has commissioned you to hunt Grell. However, it will not count when you are in a party."
+    Kill 30 of 4751, 4701 at direction_330
+
+Requires player level >= 56 and player is karus
+
+Rewards
+    Give 2500000 experience or 3750000 with premium
+
+direction_330 = location "Grell" about "Grell\n Terrifies anyone who beholds its eyes; attacks terrified enemies with tentacles" found "Karus" at 225 565 in zone 1
+
+On offer
+    Say "Long time no see. How have you been? Do you know about a monster named Grell? They look hideous, can see through objects, and they can ascertain objects 10 Km away."
+    Topic "Tell me more..." do
+        Show quest "Can you capture that Grell? I'd really like to see them."
+
+On in_progress
+    Say "I'd really like to see those Grell monsters..."
+    Topic "Where can I find it?" do
+        Map direction_330
+
+On ready
+    Say "Hooray... treasure chest here I come!!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you. With my seeking your help all the time, at least this time I can give you something in return."

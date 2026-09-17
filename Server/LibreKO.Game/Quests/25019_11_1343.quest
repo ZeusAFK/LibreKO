@@ -1,0 +1,24 @@
+Bind Npc 25019 Zone 11
+Quest 1343 "Eslant's 3 demons"
+    Journal "Defeat [Barbarian King] Marsil / Bathin / [Betrayed Paladin] Garlong"
+    Kill 1 of 9026, 9695 at direction_736
+    Kill 1 of 9123, 9196 at direction_894
+    Kill 1 of 9027, 9696 at direction_738
+
+Requires player level >= 60 and player is karus and quest 1336 is completed
+
+Rewards
+    Give 2125000 experience
+
+direction_736 = location "[Barbarian King] Marsil" about "[Barbarian King] Marsil\n As the barbarian king he is very ill minded." found "Karus Eslant" karus at 140 75 in zone 11
+direction_738 = location "[Betrayed Paladin] Garlong" about "[Betrayed Paladin] Garlong\n Even as a paladin he betrayed his kingdom." found "Karus Eslant" karus at 736 930 in zone 11
+direction_894 = location "Bathin" about "Bathin\n Take the shape of good constitution man had snake tail, he rode a pale horse. He located in under the flame of hell. He helps human to go far away with flying." found "Karus Eslant" karus at 206 675 in zone 11
+
+On offer
+    Show quest "Are you going to face the enemy?Don't forget about us supporting your back, <selfname>. Please bring the peace back after you defeat Marsil / Bathin / Garlong.\n\nDefeat Eslant's 3 Devils Marsil, Bathin, Garlong."
+
+On in_progress
+    Say "Not easy enemies. They're located at southwest / northwest / northeast."
+
+On claimable
+    Show quest "Unbelievable to defeat that strong enemy. You're truly a hero this era."

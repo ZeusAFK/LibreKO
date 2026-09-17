@@ -1,0 +1,33 @@
+Bind Npc 24427 Zone 1 for karus
+Bind Npc 14427 Zone 2 for elmorad
+Quest 538 "[Self-made Hero] Finding Clues"
+    Journal for karus "You must collect information from people in Moradon."
+    Journal for elmorad "You must collect information from people in Moradon."
+    Collect 1 of 910217000
+    Collect 1 of 910219000
+    Collect 1 of 910220000
+
+Requires player level >= 62 and quest 537 is completed
+
+Rewards
+    Give 250000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "Mel by Berwick [Guard] [[Fled Slave], do you want to find the clues you need. Getting the help of a master's want too."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[[Guard] Zalk, by a [Fled Slave], do you want to find the clues you need. Getting the help of a master's want too."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The report came last night patrols to. I said yesterday suspicious man has moved towards Moradon."
+    Topic "Tell me more..." do
+        Show quest "Look for clues about [Fled Slave] go to Moradon, for that reason, I'll pray.\n\nMove to Moradon and collect information about [Fled Slave]."
+
+On in_progress
+    Say "Did you still can not find a clue?"
+
+On claimable
+    Show quest "These thank you. Thanks to you think we can know the whereabouts of the [Fled Slave].\n\nHmm. The testimony played together [Fled Slave] of the [Kalluga Valley] I think she ran away. Move towards it, to investigate [Fled Slave] Kindly please."

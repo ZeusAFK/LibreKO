@@ -1,0 +1,21 @@
+Bind Npc 14424 Zone 12
+Quest 1075 "Human? Horse?"
+    Journal "Defeat 30 Satiroses"
+    Kill 30 of 9078, 9067 at direction_814
+
+Requires player level >= 66 and player is elmorad
+
+Rewards
+    Give 37500000 experience
+
+direction_814 = location "Satiros" about "Satiros\n The monster in goat shape, it symbol for demon." found "El Morad Eslant" elmorad at 862 735 in zone 12
+
+On offer
+    Say "Horse holding a pickaxe? That's a funny monster.."
+    Topic "Tell me more..." do
+        Show quest "Horse with pickaxes are threatening the townspeople. Can't you help?"
+        Topic "Where can I find it?" do
+            Map direction_814
+
+On claimable
+    Show quest "I knew you'd be the person."

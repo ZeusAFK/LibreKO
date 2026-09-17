@@ -1,0 +1,17 @@
+Bind Npc 25006 Zone 71
+Quest 1285 "The dead are coming"
+    Journal "Defeat 30 Karus / El Morad fallen warriors"
+    Kill 20 of 9648 at direction_1244
+
+Requires player level >= 70 and player is elmorad
+
+Rewards
+    Give 6250000 experience
+
+direction_1244 = location "Contaminated Karus Warrior" about "Elmorad Warrior who lost conscious due to contamination" found "Ronark Land" at 1629 959 in zone 71
+
+On offer
+    Show quest "From someday, the dead bodies around village arose and attack the village.\n\nWould you? Ok. Then can you kill 20 (contaminated Karuth warrior) or (contaminated Elmorad warrior) around here?\n\nDead Warriors have resurrected and are attacking the town. Defeat them now."
+
+On claimable
+    Show quest "Thanks.. Give them a rest in peace. About 20."

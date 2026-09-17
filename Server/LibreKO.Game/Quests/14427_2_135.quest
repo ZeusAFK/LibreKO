@@ -1,0 +1,35 @@
+Bind Npc 14427 Zone 2 for warrior
+Bind Npc 14427 Zone 2 for rogue
+Bind Npc 14427 Zone 2 for mage
+Bind Npc 14427 Zone 2 for priest
+Quest 135 "Skeleton Warrior Hunt"
+    Journal "[Guard] Zalk has commissioned you to hunt Skeleton Warrior."
+    Kill 15 of 1101, 1151 at direction_102
+
+Requires player level >= 38 and player is elmorad
+
+Rewards for warrior
+    Give 1 of 205003289
+    Give 925000 experience
+
+Rewards for rogue
+    Give 1 of 245003290
+    Give 925000 experience
+
+Rewards for mage
+    Give 1 of 265003291
+    Give 925000 experience
+
+Rewards for priest
+    Give 1 of 285003292
+    Give 925000 experience
+
+direction_102 = location "Skeleton Warrior" about "Skeleton Warrior\nAn undead like the undying, possesses great strength as it is composed of powerful bone structure" found "El Morad" elmorad at 1280 728 in zone 2
+
+On offer
+    Say "Hum...The targets of this hunt are Skeletons of the Warrior class. It might be a difficult hunt as it is said that they never stop attacking until the last drop of the magic of life that sustains them is left in them."
+    Topic "Tell me more..." do
+        Show quest "I know you will succeed."
+
+On claimable
+    Show quest "As I expected... Well done. I'll contact you when there is another assignment, then."

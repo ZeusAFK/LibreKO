@@ -1,0 +1,33 @@
+Bind Npc 24424 Zone 11 for karus
+Bind Npc 14424 Zone 12 for elmorad
+Quest 571 "[Regained Honor] The Truth About the Rumor"
+    Journal for karus "You must talk to [Ascetic] Veda, of Eslant."
+    Journal for elmorad "You must talk to [Ascetic] Tabeth, of Eslant."
+
+Requires player level >= 65 and quest 570 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "[Ascetic]Veda, will you? Come's the Eslant Tropez."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Ascetic] Tabeth by what happened, will you? Come's the Eslant Tropez."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "ve Asked him?<selfname>? In fact, supply say tell."
+        Topic "Tell me more..." do
+            Show quest "Investigate before this <selfname>, was in regards to the destruction of the bag. Figures associated with the documents recovered from the room at the time of Mar, according to the command of the King, has been secretly investigating.\n\nAnd found out that they are savages and pestle deserve that ugly selfishness behind it\n\nThe truth has been revealed. Talk to Beda."
+    If player is elmorad
+        Say "ve Asked him?<selfname>? In fact, supply say tell."
+        Topic "Tell me more..." do
+            Show quest "Investigate before this <selfname>, was in regards to the destruction of the bag. Figures associated with the documents recovered from the room at the time of Mar, according to the command of the King, has been secretly investigating.\n\nAnd found out that they are savages and pestle deserve that ugly selfishness behind it\n\nThe truth has been revealed. Talk to Tabeth."
+
+On claimable
+    If player is karus
+        Show quest "The more detailed story, he knows [Eslant Wise Man]Pablo me Shige talk with him once."
+    If player is elmorad
+        Show quest "The stories more information [Eslant Wise Man]Agata God know me Shige talk with him once."

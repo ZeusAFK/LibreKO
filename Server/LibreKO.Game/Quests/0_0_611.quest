@@ -1,0 +1,26 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 611 "[New Hero] Identity of Demon"
+    Journal for karus "You must talk to [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must talk to [Priest] Maia at the Stronghold of Ronark Land."
+
+Requires player level >= 69 and quest 610 is completed
+
+Rewards none
+
+On available
+    Say "Well, he ...For this testimony, I, even if I do not know him. Bugger, I would not think the previous?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Thing, why did you went?"
+        Topic "Tell me more..." do
+            Show quest "Hmm weird,'s testimonies. Happened at night, where the common It is not that bizarre sounds heard.\n\nMm-hmm.Hundreds of investigations, one can try to infer the situation of the various things that the suspect is a good idea to try.\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "Thing, why did you went?"
+        Topic "Tell me more..." do
+            Show quest "Hmm weird,'s testimonies. Happened at night, where the common It is not that bizarre sounds heard.\n\nMm-hmm.Hundreds of investigations, one can try to infer the situation of the various things that the suspect is a good idea to try.\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On claimable
+    Show quest "It will be a fairly long investigation. Once overhaul and re-equipment, please talk to me."

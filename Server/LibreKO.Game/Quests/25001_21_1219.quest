@@ -1,0 +1,19 @@
+Bind Npc 25001 Zone 21
+Quest 1219 "Finding Sharine"
+    Journal "Find Sharine's excavation journal inside the mysterious boxes scaterred around Moradon"
+    Collect 4 of 810418000
+
+Requires player level >= 24 and quest 1230 is completed
+
+Rewards
+    Give 100000 experience
+    Give 1 of 900558000
+
+On offer
+    Show quest "You know about a person who is called Sharine? She's a wanderer of potion researcher, I asked her to search about a mysterious elixir but haven't seen her since then.. Can you first find an evidence for her disappearance? You probably get an evidence if you open the 'Suspicious Box' on the side street."
+
+On in_progress
+    Say "Hmm..Indeed..Can't find that easily"
+
+On claimable
+    Show quest "Finally we might find him soon, but then.. How come Amelie possessed the last piece?"

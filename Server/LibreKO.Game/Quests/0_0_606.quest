@@ -1,0 +1,53 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 606 "[Prophetic Poetry of Light] The Descent of the Light"
+    Journal for karus "You must help [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must help [Priest] Maia at the Stronghold of Ronark Land."
+    Kill 40 of 9019 at direction_761
+    Kill 40 of 9020
+
+Requires player level >= 68 and quest 605 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 100 np
+    Give 1 of 910241000
+
+direction_761 = location "Forwird Knight" about "Forwird Knight\n Demon who follow the King of Fowarue. It described as losing one arm and one leg soldier." found "Ronark Land Base" karus at 239 750 elmorad at 664 281 in zone 73
+
+On available
+    If player is karus
+        Say "Prepare all over. unto my not go back! Finally do you think you can defeat the enemy!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Prepare all over.  Dear [Priest]Majal, go back! Finally do you think you can defeat the enemy!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "The advent of time, too. The wind is helping us. Shea unlike my enemy lines. It's been time to punish the wicked crowd."
+        Topic "Tell me more..." do
+            Show quest "It will be a large-scale war. And chopped up [invaders Forwar and [Article] Forwar them if applicable. Hope the rest of the troops, while their defense, undertaken a surprise offensive.\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "The advent of time, too. The wind is helping us. Shea unlike my enemy lines. It's been time to punish the wicked crowd."
+        Topic "Tell me more..." do
+            Show quest "It will be a large-scale war. And chopped up [invaders Forwar and [Article] Forwar them if applicable. Hope the rest of the troops, while their defense, undertaken a surprise offensive.\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On in_progress
+    Say "I'm still lacking.Now you are going to finish the preparation of a surprise. Fight more enemies and conquer the enemy's attention, so please feel free to."
+    Topic "Where can I find it?" do
+        Map direction_761
+
+On ready
+    If player is karus
+        Say "Enough to trim down, I guess! A surprise attack would have been a success? Oh My God  should go back to the"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Enough to trim down, I guess! A surprise attack would have been a success?[Priest]Majal, God should go back to the"
+        Topic "All right, I'll swing by" goto close
+
+On claimable
+    If player is karus
+        Show quest "The surprise attack was a success! They scattered and ppulppulhi, friendly Scout is chasing them!\n\nWe have removed all the enemies from here. However, they've stolen our [Prophetic Poetry of the Goddess], which was kept here, the stronghold of Ronark land. Deliver this [Trace Request] to [Captain] Fargo. We must recover the [Prophetic Poetry of the Goddess]."
+    If player is elmorad
+        Show quest "The surprise attack was a success! They scattered and ppulppulhi, friendly Scout is chasing them!\n\nDespite having enemies out of here stolen goddess of prophecy, whether Ronark Land Base had been kept.The chasing a request, please convey to you Captain Falkwine. You must recapture the goddess of prophecy ."

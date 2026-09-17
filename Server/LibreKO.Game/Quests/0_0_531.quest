@@ -1,0 +1,21 @@
+Bind Npc 24204 Zone 1 for karus
+Bind Npc 14204 Zone 2 for elmorad
+Quest 531 "[Long Revenge] Holy Water for Restoration"
+    Journal for karus "You must accept the request of [Priest] Minerva at Luferson Castle."
+    Journal for elmorad "You must accept the request of [Priest] Minerva at El Morad Castle. "
+
+Requires player level >= 61 and quest 530 is completed
+
+Rewards none
+
+On available
+    Say "Do you Luferson Castle stars located inside the fuse by Minerva"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hi, how can I help you?"
+    Topic "Tell me more..." do
+        Show quest "Restore the holy water's Need? Of course, I am making is possible, but ...\n\nAsk Minerva to restore the article."
+
+On claimable
+    Show quest "It is for the soldiers who died unjustly. You got it. Material left in the temple, that you'll need to contact."

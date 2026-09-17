@@ -1,0 +1,27 @@
+Bind Npc 31570 Zone 11
+Quest 680 "Removing Magic of Darkness III"
+    Journal "You must accept the request of [Order of the Sorcery] Caesar."
+    Kill 25 of 9068, 9079 at direction_805
+
+Requires player level >= 67 and player is karus and quest 678 is completed
+
+Rewards
+    Give 25000000 experience
+    Give 30000 coins
+
+direction_805 = location "Death Wizard" about "Death Wizard\n Also called death of king of terrors." found "Karus Eslant" karus at 333 724 in zone 11
+
+On available
+    Say "I feel something even worse in Islant. Would Cesar of [Order of the Sorcery] know what's going on?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Just in the nick of time. We have an emergency."
+    Topic "Tell me more..." do
+        Show quest "Will the next mission. During the five-axis began to stroke the magic of the darkness disappears and the two balance fluctuations. Fend down the a axis, with remaining two must be balanced. Please balance out quickly by removing the Death Wizard.\n\nAt the request of the the Phalanx magic Cesar Eslant updated, you will need to remove the threat of darkness magic to fight against the Death Wizard"
+
+On in_progress
+    Say "Uhh... I'm not sure how much longer it can hold up. Please get rid of [Death Wizard] at once."
+
+On claimable
+    Show quest "Huff ... Now it is balanced. I thought we almost lost it."

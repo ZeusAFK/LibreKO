@@ -1,0 +1,32 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 525 "[Descendant of Hero] I'm asking for permission to participate."
+    Journal for karus "You must deliver the map of monster's den to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must deliver the map of monster's den to [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910214000
+
+Requires player level >= 60 and quest 524 is completed
+
+Rewards
+    Give 125000 experience
+    Give 30000 coins
+
+On available
+    Say "Finally found the monster! Now we only need to be consent to kill it!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You are here at last! What did [Eslant Wise Man]Pablo tell you?"
+        Topic "Tell me more..." do
+            Show quest "It will be a headache, but the monster [Gredel] has to go down! Do you know of its location?\n\nDeliver [Monster Base Map] to [Captain] Fargo."
+    If player is elmorad
+        Say "You are here at last! What did [Eslant Wise Man]Agata tell you?"
+        Topic "Tell me more..." do
+            Show quest "It will be a headache, but the monster [Gredel] has to go down! Do you know of its location?\n\nDeliver [Monster Base Map] to [Captain] Falkwine."
+
+On in_progress
+    Say "Can't you bring a map properly!?"
+
+On claimable
+    Show quest "So its this place! Well done <selfname>!"

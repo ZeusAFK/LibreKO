@@ -1,0 +1,32 @@
+Bind Npc 24424 Zone 11
+Quest 1031 "Fallen Spirit of Flame"
+    Journal "Get rid of Balrog, an outlaw in Eslant!"
+    Kill 80 of 9621 at direction_1183
+
+Requires player level >= 82 and player is karus and quest 354 is completed
+
+Rewards
+    Give 102500000 experience
+
+direction_1183 = location "Balrog" about "Balrog\nCreated by the corrupted spirits." found "Karus Eslant" karus at 934 172 in zone 11
+
+On available
+    Say "Master, it's said that there're creatures that were created from the changes of Spirit of Flame... Please meet [Ascetic] Veda and check it out."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Fallen Spirit of Flame...  They seem like huge burning men with manes and whips of flames with many leather strings... If you see how horrible they look once, you'll never want to see them again."
+    Topic "Tell me more..." do
+        Show quest "It's called Balog. They're already notorious in this region. You may be the one who can get rid of them. Don't you think so?"
+
+On in_progress
+    Say "They're already notorious in this region. We need your help."
+    Topic "Where can I find it?" do
+        Map direction_1183
+
+On ready
+    Say "Even Balog dropped their knees before you, Master~"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You did it again... well~now that you caught Balog, where do you want to go?? Haha~"

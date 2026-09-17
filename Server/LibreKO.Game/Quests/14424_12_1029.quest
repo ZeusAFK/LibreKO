@@ -1,0 +1,32 @@
+Bind Npc 14424 Zone 12
+Quest 1029 "Past Mistake"
+    Journal "Put the Dark Stone who lost control to sleep!"
+    Kill 80 of 2403, 2453 at direction_173
+
+Requires player level >= 81 and player is elmorad and quest 353 is completed
+
+Rewards
+    Give 83750000 experience
+
+direction_173 = location "Dark Stone" found "Eslant" at 130 135 in zone 12
+
+On available
+    Say "Master, it's said that there's a monster who's gone berserk in Eslant. Please ask [Ascetic] Tabeth for details."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hm~they were no more than rocks. The ancient Priest gave life to them, and employed them as servants. They're Stone Golems. After the war against Pathos, the Priests lost control of them, and they staged an attack agasint anything living."
+    Topic "Tell me more..." do
+        Show quest "Well, the carelessness of the ancient Priests may have caused the current problem, but everybody makes mistakes. But the power of Dark Stones is the strongest, and they're ruthless. The outcome of one mistake seems too severe..."
+
+On in_progress
+    Say "Dark Stone is one of the strongest Stone Golems."
+    Topic "Where can I find it?" do
+        Map direction_173
+
+On ready
+    Say "Dark Stones which lost control, rest in peace... ha~"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You're still very good. If we have a way to regain control over them, we won't need to be engaged in tough fights like this..."

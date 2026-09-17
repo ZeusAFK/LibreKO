@@ -1,0 +1,39 @@
+Bind Npc 13013 Zone 21
+Quest 87 "Giant bulcan hunting"
+    Journal "[Sentinel] Patrick asked me to hunt twentyfive Giant Bulcans for him."
+    Kill 10 of 253 at direction_593
+
+Requires player level >= 15
+
+Rewards
+    Give 15000 experience
+    Give 30 of 900780000
+    Give 20 of 900810000
+    Choose one
+        Give 1 of 202004006
+        Give 1 of 242004006
+        Give 1 of 262004006
+        Give 1 of 282004006
+
+direction_593 = location "Giant Bulcan" about "Giant Bulcan\nA representative monster of Moradon which produces iron by extracting iron elements from their stomachs. " found "Moradon" at 382 405 in zone 21
+
+On available
+    Say "Master, do you know a monster called the Giant Bulcan? No? Let's go and ask [Sentinel Patrick] about it."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The Giant Bulcan? Yeah, he's an enormous bugger, even by Bulcan standards. Bulcans have no eyes so they hate it when you go up close and mess with them."
+    Topic "Tell me more..." do
+        Show quest "Here's a thought... Go out and catch 10 Bulcans to start."
+
+On in_progress
+    Say "Nail the Giant Bulcan after you've taken care of all the others."
+    Topic "Where can I find it?" do
+        Map direction_593
+
+On ready
+    Say "Phew! Well done master. Did the world of good for your abilities and experience eh? Ha ha!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Obviously, the harder the hunt, the more EXP you'll get from it.\n\nGood job. Your skills got a good workout there eh master?."

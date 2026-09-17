@@ -1,0 +1,18 @@
+Bind Npc 25065 Zone 2
+Quest 1248 "Death Knights"
+    Journal "Defeat 20 Death Knights"
+    Kill 20 of 1104, 9667, 1154, 9674
+
+Requires player level >= 35 and player is elmorad and quest 1244 is completed
+
+Rewards
+    Give 300000 experience
+
+On offer
+    Show quest "If Death Knights are alive, they will kill anyone. When you get the earring, please kill those Death Knights."
+
+On in_progress
+    Say "Please kill more Death Knights"
+
+On claimable
+    Show quest "Ahah. <selfname> thank you."

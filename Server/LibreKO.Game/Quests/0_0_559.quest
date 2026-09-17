@@ -1,0 +1,51 @@
+Bind Npc 31518 Zone 11 for karus
+Bind Npc 31522 Zone 12 for elmorad
+Quest 559 "[Hidden Truth] Secure Access Road I"
+    Journal for karus "You must perform the mission given by [Valley Surveillance Scout] of Eslant."
+    Journal for elmorad "You must perform the mission given by [Valley Surveillance Scout] of Eslant."
+    Kill 40 of 2252, 2202
+
+Requires player level >= 64 and quest 558 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 207005603
+        Give 1 of 247005604
+        Give 1 of 267005605
+        Give 1 of 287005606
+
+direction_372 = location "Raven Harpy" about "Raven Harpy\nRaven Harpies are monsters with strong attack powers. They have low intelligence but are very aggressive so they attack anyone who comes into their territories. " found "El Morad Eslant" elmorad at 278 527 in zone 12
+direction_373 = location "Raven Harpy" about "Raven Harpy\nRaven Harpies are monsters with strong attack powers. They have low intelligence but are very aggressive so they attack anyone who comes into their territories. " found "Karus Eslant" karus at 278 527 in zone 11
+
+On available
+    Say "So I'm the master! What is the first mission? Delightedly, I do!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "It is important to drilling the first entrance of the valley. Because of the many monsters sick headaches."
+        Topic "Tell me more..." do
+            Show quest "[Raven Harpy] ask to remove them. This lays him from entering the inlet District annoy.\n\nDefeat [Raven Harpy]."
+    If player is elmorad
+        Say "It is important to drilling the first entrance of the valley. Because of the many monsters sick headaches."
+        Topic "Tell me more..." do
+            Show quest "[Raven Harpy] ask to remove them. This lays him from entering the inlet District annoy\n\nDefeat [Raven Harpy]."
+
+On in_progress
+    If player is karus
+        Say "Still, I do not smooth entrance. Please cheer up a bit more."
+        Topic "Where can I find it?" do
+            Map direction_373
+    If player is elmorad
+        Say "Still, I do not smooth entrance. Please cheer up a bit more."
+        Topic "Where can I find it?" do
+            Map direction_372
+
+On ready
+    Say "Yes! Now Go!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you."

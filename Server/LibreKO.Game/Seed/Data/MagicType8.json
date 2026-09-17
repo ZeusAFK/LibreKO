@@ -1,0 +1,970 @@
+[
+  {
+    "Id": 101015,
+    "Target": 1,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 101016,
+    "Target": 0,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 102014,
+    "Target": 3,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 102015,
+    "Target": 4,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 103016,
+    "Target": 5,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 103017,
+    "Target": 6,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 104015,
+    "Target": 7,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 104016,
+    "Target": 8,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 105015,
+    "Target": 9,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 105016,
+    "Target": 10,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 105650,
+    "Target": 1,
+    "Radius": 60,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 106015,
+    "Target": 12,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 106016,
+    "Target": 13,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 106650,
+    "Target": 1,
+    "Radius": 60,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 107036,
+    "Target": 15,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 107037,
+    "Target": 16,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 108036,
+    "Target": 17,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 108037,
+    "Target": 18,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 108770,
+    "Target": 1,
+    "Radius": 40,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 109004,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 12,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 109015,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 109035,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 109041,
+    "Target": 23,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 109042,
+    "Target": 24,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 110004,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 12,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 110015,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 110035,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 110041,
+    "Target": 28,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 110042,
+    "Target": 29,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 110774,
+    "Target": 1,
+    "Radius": 20,
+    "WarpType": 20,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 111015,
+    "Target": 31,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 111016,
+    "Target": 32,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 111700,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 112015,
+    "Target": 34,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 112016,
+    "Target": 35,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 112700,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 113015,
+    "Target": 97,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 113016,
+    "Target": 98,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 114015,
+    "Target": 99,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 114016,
+    "Target": 100,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 114509,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 30,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 114650,
+    "Target": 1,
+    "Radius": 60,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 115015,
+    "Target": 102,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 115016,
+    "Target": 103,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 115509,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 30,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 115570,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 31,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 115650,
+    "Target": 1,
+    "Radius": 60,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 201015,
+    "Target": 37,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 201016,
+    "Target": 38,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 202011,
+    "Target": 39,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 202012,
+    "Target": 40,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 203016,
+    "Target": 41,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 203017,
+    "Target": 42,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 204015,
+    "Target": 43,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 204016,
+    "Target": 44,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 205015,
+    "Target": 45,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 205016,
+    "Target": 46,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 205650,
+    "Target": 1,
+    "Radius": 60,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 206015,
+    "Target": 48,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 206016,
+    "Target": 49,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 206650,
+    "Target": 1,
+    "Radius": 60,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 207036,
+    "Target": 51,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 207037,
+    "Target": 52,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 208036,
+    "Target": 53,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 208037,
+    "Target": 54,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 208770,
+    "Target": 1,
+    "Radius": 40,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 209004,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 12,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 209015,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 209035,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 209041,
+    "Target": 59,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 209042,
+    "Target": 60,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 210004,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 12,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 210015,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 210035,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 210041,
+    "Target": 64,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 210042,
+    "Target": 65,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 210774,
+    "Target": 1,
+    "Radius": 20,
+    "WarpType": 20,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 211015,
+    "Target": 67,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 211016,
+    "Target": 68,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 211700,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 212015,
+    "Target": 70,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 212016,
+    "Target": 71,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 212700,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 213015,
+    "Target": 105,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 213016,
+    "Target": 106,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 214015,
+    "Target": 107,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 214016,
+    "Target": 108,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 214509,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 30,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 214650,
+    "Target": 1,
+    "Radius": 60,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 215015,
+    "Target": 110,
+    "Radius": 7,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 215016,
+    "Target": 111,
+    "Radius": 14,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 215509,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 30,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 215570,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 31,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 215650,
+    "Target": 1,
+    "Radius": 60,
+    "WarpType": 25,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 301007,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 29,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 301008,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 28,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490042,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 12,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490050,
+    "Target": 1,
+    "Radius": 10000,
+    "WarpType": 12,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490088,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 21,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490093,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 21,
+    "ExpRecover": 2,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490096,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 21,
+    "ExpRecover": 1,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490097,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 21,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490301,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 2,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490302,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 2,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490303,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 2,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490304,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 2,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490305,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 2,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490306,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 2,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 490307,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 2,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 492008,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 27,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 492015,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 21,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 500022,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 1,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 500038,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 27,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 500106,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 27,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 500133,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 21,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 500202,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 21,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 500306,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 27,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 610090,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 3,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 610091,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 3,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 610100,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 3,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  },
+  {
+    "Id": 610124,
+    "Target": 1,
+    "Radius": 0,
+    "WarpType": 3,
+    "ExpRecover": 0,
+    "KickDistance": 0
+  }
+]

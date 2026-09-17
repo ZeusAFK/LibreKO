@@ -1,0 +1,10 @@
+Bind Npc 31568 Zone 11
+
+On greeting
+    If quest 773 is started and player lacks 900294000
+        Say "I'll give it to you again. Don't lose it."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 900294000
+    Else
+        Say ""

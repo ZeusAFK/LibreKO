@@ -1,0 +1,42 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 574 "[Regained Honor] Identity of the Betrayer"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910235000
+
+Requires player level >= 65 and quest 573 is completed
+
+Rewards
+    Give 125000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "This verbal heard Deputy King adviser arrested orders! The force felt  this. [Captain] come and you go to deliver to you!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "This verbal heard Deputy King adviser arrested orders! The force felt  this.Come on, go to [Captain] Falkwine delivered to you!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "In addition, your group. When you find me, always great military orders. (Chuckles). Do not worry about the jokes are."
+        Topic "Tell me more..." do
+            Show quest "And why is this? This is not a joke? Also at this time, what's going on?\n\nEverything's been revealed. Deliver [Treason Arrest Order] to Fargo."
+    If player is elmorad
+        Say "Oh its you again. You always bring me big problems to solve. I'm just kidding."
+        Topic "Tell me more..." do
+            Show quest "What it's not a joke!? What is it this time?\n\nEverything's been revealed. Deliver [Treason Arrest Order] to Fargo."
+
+On in_progress
+    If player is karus
+        Say "That where the arrest order! What a joke, come one badly!"
+    If player is elmorad
+        Say "So where is this [Arrest Warrant]? This has gone past its limits!"
+
+On claimable
+    If player is karus
+        Show quest "This! [Order rebels arrested ... ... You must, if the representative of the King [advisor] by the command or charge of'm saying."
+    If player is elmorad
+        Show quest "This is! [Order rebels arrested ... ... You must, if the representative of the King [advisor] by the command or charge of'm saying."

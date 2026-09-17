@@ -1,0 +1,23 @@
+Bind Npc 14432 Zone 2
+Quest 176 "Scolar Hunt"
+    Journal "[Guard] Chayna has commissioned you to hunt Scolar."
+    Kill 10 of 1200, 1250 at direction_539
+
+Requires player level >= 45 and player is elmorad
+
+Rewards
+    Give 3750000 experience
+
+direction_539 = location "Scolar" about "Scolar\nMagic organism created by Pathos`s casting curse on scarecrow unlike golems, Scolar do not possess conscience; showers curse attacks at all humans who approach it" found "El Morad" at 1421 1461 in zone 2
+
+On available
+    Say "Master, there's a message from [Sentinel] Cheina."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I have yet another favor to ask you. Monsters named Scolars dwell in our village outskirts. It's a magic organism Pathos spurned out of casting a curse on scarecrows. They attack all humans who approach them with curse magic."
+    Topic "Tell me more..." do
+        Show quest "I know it's no easy task but I don't have anyone else to ask. Please help us."
+
+On claimable
+    Show quest "Thank you. Peace has been restored to the village once again. This is all I can give you now in compensation but I promise to reward you handsomely next time."

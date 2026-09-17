@@ -1,0 +1,39 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 585 "[Legless Devil] Evil is gone now!"
+    Journal for karus "You must talk to [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must talk to [Priest] Maia at the Stronghold of Ronark Land."
+    Collect 1 of 910236000
+
+Requires player level >= 66 and quest 584 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "Can I bring unto the of salvation Holy Water] [[priest] My not come. Epidemic want one of these things that disappear!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Can I bring [of salvation] Holy Water, come on [priest] Dear [Priest]Majal,,. Epidemic want one of these things that disappear!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Thing, why did you went?"
+        Topic "Tell me more..." do
+            Show quest "I'm pulley  brighter constant expression Apparently the gnome. Where can I find the holy water of salvation?\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "Thing, why did you went?"
+        Topic "Tell me more..." do
+            Show quest "I'm pulley  brighter constant expression Apparently the gnome. Where can I find the holy water of salvation?\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On in_progress
+    Say "Manufacturing still less do I end? You [of salvation Holy Water] I do ."
+
+On claimable
+    If player is karus
+        Show quest "I am sure the holy water of salvation. Now only if the epidemic is over. Effort has been tainted writes.\n\nNow, please go and report the results to the nature of [Captain]Harugo carrying. The fight against the epidemic, but the main culprit has not been solved yet. Please move it."
+    If player is elmorad
+        Show quest "I am sure the holy water of salvation. Now only if the epidemic is over. Effort has been tainted writes.\n\nTake the results to [Captain]Falkwine and explain the situation. The disease was stopped from spreading but the main culprit is still out there. Quickly now."

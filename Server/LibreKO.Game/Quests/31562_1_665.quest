@@ -1,0 +1,27 @@
+Bind Npc 31562 Zone 1
+Quest 665 "Practice Hunt"
+    Journal "You must show your ability before you compete in hunting with [Hunter] Zarg."
+    Kill 50 of 4451, 4401 at direction_545
+
+Requires player level >= 61 and player is karus and quest 664 is completed
+
+Rewards
+    Give 15000000 experience
+    Give 30000 coins
+
+direction_545 = location "Hornet" about "Hornet\nReferred to as Hell`s Bees; inhabits plains; powerful venom can kill humans with one sting" found "Karus" karus at 1091 1600 elmorad at 607 991 in zone 1
+
+On available
+    Say "Master, everything is ready. Go kick their.. I mean...please win!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I guess you were serious now that I see that you didn't run away"
+    Topic "Tell me more..." do
+        Show quest "I guess you are serious about this. Good. Let's first have a practice round so I can see how good you are. How about a [Hornet] hunting?\n\nHunting crop him the Karus Local Donna camp [Hunter] [Hornet] must show proficiency."
+
+On in_progress
+    Say "What? You can't even take the practice?"
+
+On claimable
+    Show quest "That was not bad. You would at least make a sparring partner."

@@ -1,0 +1,50 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 702 "[Lemegeton] Prince of Raven"
+    Journal for karus "You must join the devil war with [Order of the Sorcery] Bros."
+    Journal for elmorad "You must join the devil war with [Order of the Sorcery] Sais."
+    Collect 1 of 900221000
+    Collect 1 of 900222000
+    Collect 1 of 900223000
+
+Requires player level >= 70 and quest 701 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900224000
+    Choose one
+        Give 1 of 310170032
+        Give 1 of 310170033
+        Give 1 of 310170034
+        Give 1 of 310170035
+
+On available
+    If player is karus
+        Say "Wow, how amazing to seal them up in a flash! Surely [Order of the Sorcery] is full of amazing people. Now let's go to Bros of [Order of the Sorcery] to get the next mission."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Wow, how amazing to seal them up in a flash! Surely [Order of the Sorcery] is full of amazing people. Now let's go to Sais of [Order of the Sorcery] to get the next mission."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Now you have to go through a portal into another world and fight devils there."
+        Topic "Tell me more..." do
+            Show quest "You must first fight [60Devil] Vapula and [72Devil] Andromalius then [36Devil] Storas, the crow's noble. Be fully prepared for they are strong and have many men.\n\nWe must give Bros of [Order of the Sorcery] of Ronark Land the seal Scrolls for [36Devil] Storas, [60Devil] Vapula, and [72Devil] Andromalius."
+    If player is elmorad
+        Say "Now you have to go through a portal into another world and fight devils there."
+        Topic "Tell me more..." do
+            Show quest "You must first fight [60Devil] Vapula and [72Devil] Andromalius then [36Devil] Storas, the crow's noble. Be fully prepared for they are strong and have many men.\n\nWe must give Sais of [Order of the Sorcery] of Ronark Land the seal Scrolls for [36Devil] Storas, [60Devil] Vapula, and [72Devil] Andromalius."
+
+On in_progress
+    Say "You haven't sealed yet? Then I will send you again to them."
+
+On claimable
+    Show quest "You have sealed them up for sure. With this, we can seal three more devils."
+
+On completed
+    If player is karus
+        Say "I see you have much more power and you'll be able to fight against the stronger devils, <selfname>. Therefore, I'm going to ask you to seal [Devil 12] Prince Sitri this time. He's a Prince of Devildom. He can control everything related to the love and sex of people with magic. Bring the [Devil 12 Summoning Scroll] that I gave you, and go to the [Luferson Castle], where the [Devil 12 Summoning Stone] is located. You can summon and destroy him there."
+    If player is elmorad
+        Say "I see you have much more power and you'll be able to fight against the stronger devils, <selfname>. Therefore, I'm going to ask you to seal [Devil 12] Prince Sitri this time. He's a Prince of Devildom. He can control everything related to the love and sex of people with magic. Bring the [Devil 12 Summoning Scroll] that I gave you, and go to the [El Morad] Castle, where the [Devil 12 Summoning Stone] is located. You can summon and destroy him there."

@@ -1,0 +1,21 @@
+Bind Npc 24424 Zone 11
+Quest 1076 "Human? Horse?"
+    Journal "Defeat 30 Satiroses"
+    Kill 30 of 9067, 9078 at direction_804
+
+Requires player level >= 66 and player is karus and quest 1074 is completed
+
+Rewards
+    Give 37500000 experience
+
+direction_804 = location "Satiros" about "Satiros\n The monster in goat shape, it symbol for demon." found "Karus Eslant" karus at 876 724 in zone 11
+
+On offer
+    Say "Welcome. I hear that our soldiers are eating horse meat because of you."
+    Topic "Tell me more..." do
+        Show quest "Since those monsters can be a good food supply to use. Can you take care of them again?"
+        Topic "Where can I find it?" do
+            Map direction_804
+
+On claimable
+    Show quest "Thank you. Eslant is getting full because of you now."

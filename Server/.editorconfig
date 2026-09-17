@@ -1,0 +1,9 @@
+root = true
+
+[*.cs]
+# CA1873: Avoid unnecessary argument evaluation for logging.
+# Suppressed because 95%+ of our log arguments are trivial property reads (session.Name, npc.Id)
+# where the evaluation cost is negligible. Wrapping every log call in IsEnabled guards
+# would hurt readability without meaningful perf benefit for a game server.
+# The few expensive cases (Convert.ToHexString, string formatting) are already guarded manually.
+dotnet_diagnostic.CA1873.severity = none

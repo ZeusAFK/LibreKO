@@ -1,0 +1,27 @@
+Bind Npc 13013 Zone 21
+Quest 80 "Kekoon warrior hunt"
+    Journal "Please hunt 5 Kekoon warriors for [Sentinel] Patrick. "
+    Kill 5 of 155 at direction_326
+
+Requires player level >= 10
+
+Rewards
+    Give 6250 experience
+    Give 2000 coins
+    Choose one
+        Give 1 of 310150005
+        Give 1 of 310150015
+        Give 1 of 310150025
+        Give 1 of 310150035
+        Give 1 of 310150075
+
+direction_326 = location "Kecoon Warrior" about "Kecoon Warrior\nExceptional Kekoon warriors who live among themselves" found "Moradon" at 627 311 in zone 21
+
+On offer
+    Show quest "Kecoons seem to be running rampant again lately in the Moradon outskirts."
+
+On in_progress
+    Say "What are you doing?"
+
+On claimable
+    Show quest "Thank you so much. I'll never forget what you did for me today. Wish you can be a true colleague of mine."

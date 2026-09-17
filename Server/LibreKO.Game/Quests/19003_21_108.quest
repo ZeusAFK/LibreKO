@@ -1,0 +1,42 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 108 "Battle Armor 5"
+    Journal "You'll earn armor top if you hunt Dark Eyes, as [Mercenary Adjutant] Rage asked you to."
+    Kill 10 of 554 at direction_568
+
+Requires player level >= 28
+
+Rewards for warrior
+    Give 1 of 203001281
+    Give 150000 experience
+
+Rewards for rogue
+    Give 1 of 243001282
+    Give 150000 experience
+
+Rewards for mage
+    Give 1 of 263001283
+    Give 150000 experience
+
+Rewards for priest
+    Give 1 of 283001284
+    Give 150000 experience
+
+direction_568 = location "Dark Eyes" about "Dark Eyes\nMonster who evolved during the war with Pathos by a curse which turned man into wolfman" found "Moradon" at 477 782 in zone 21
+
+On available
+    Say "Master, [Sentinel] Melverick called again. Ready to go hunting?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Knew you'd show up again. Haha. Hunt me 20 Dark Eyes this time."
+    Topic "Tell me more..." do
+        Show quest "Want to give it a try?\n\nIf you heed [Mercenary Adjutant] Rage's request you can obtain craft items as a reward."
+
+On in_progress
+    Say "Haha~ Take it slow. They're not as docile as you think."
+
+On claimable
+    Show quest "Good work. Don't be too rough on my body armor now."

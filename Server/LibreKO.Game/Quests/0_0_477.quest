@@ -1,0 +1,44 @@
+Bind Npc 24406 Zone 1 for karus
+Bind Npc 14406 Zone 2 for elmorad
+Quest 477 "[Repeatable Solo] Phantom Hunt"
+    Repeat always
+    Journal for karus "[Imperial Guard] Bekar has commissioned you to hunt Phantom. However, it will not count when you are in a party."
+    Journal for elmorad "[Imperial Guard] Telson has commissioned you to hunt Phantom. However, it will not count when you are in a party."
+    Kill 30 of 1271, 1272 at direction_702
+
+Requires player level >= 57
+
+Rewards
+    Give 2500000 experience or 3750000 with premium
+
+direction_702 = location "Phantom" about "Phantom\nAncient Spirit that stalks the Abyss Dungeon." found "It wanders from Delos Castle to Abyss Dungeon." at 260 621 in zone 30
+
+On available
+    If player is elmorad
+        Say "Master. [Imperial Palace Guard] Telson is about to go on a hunt, so how about joining him?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Would you like to join the Phantom Hunt?"
+        Topic "Tell me more..." do
+            Show quest "The Phantom is in the Hell Abyss of Delos Abyss Dungeon. Return from the hunt and the Transformation Magic Scroll is yours.\n\n[Imperial Guard] Bekar will reward you when you complete the Phantom Hunt,"
+    If player is elmorad
+        Say "Would you like to join the Phantom Hunt?"
+        Topic "Tell me more..." do
+            Show quest "The Phantom is in the Hell Abyss of Delos Abyss Dungeon. Return from the hunt and the Transformation Magic Scroll is yours.\n\n[Imperial Guard] Telson will reward you when you complete the Phantom Hunt,"
+
+On in_progress
+    Say "I heard the Phantom can be found in Hell Abyss of Delos Abyss Dungeon."
+    Topic "Where can I find it?" do
+        Map direction_702
+
+On ready
+    Say "Phew~ It's done. Let's get out of here. I don't like this eerie feeling..."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Well done. Here's the Transformation Scroll, as promised."
+
+On completed
+    Say "Haha. Thank you!"

@@ -1,0 +1,16 @@
+Bind Npc 14424 Zone 12
+Quest 1073 "Spell of destruction"
+    Journal "Defeat 25 Death Wizards"
+    Kill 25 of 9079, 9068 at direction_815
+
+Requires player level >= 65 and player is elmorad and quest 1071 is completed
+
+Rewards
+    Give 33750000 experience
+
+direction_815 = location "Death Wizard" about "Death Wizard\n Also called death of king of terrors." found "El Morad Eslant" elmorad at 308 719 in zone 12
+
+On offer
+    Say "Thank you for the last time."
+    Topic "Tell me more..." do
+        Show quest "No..  It's beacause you've done the deed. Could you get rid of the death wizards one more time?"

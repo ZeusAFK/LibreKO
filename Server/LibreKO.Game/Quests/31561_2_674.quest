@@ -1,0 +1,27 @@
+Bind Npc 31561 Zone 2
+Quest 674 "Hunting Game IV"
+    Journal "Compete with [Hunter] Halon in hunting."
+    Kill 50 of 2607, 2657 at direction_682
+
+Requires player level >= 65 and player is elmorad and quest 672 is completed
+
+Rewards
+    Give 25000000 experience
+    Give 30000 coins
+
+direction_682 = location "Centaur Foal" about "Centaur Foal\nAn incompletely transformed Kentaurus, the half-man, half-horse monsters created during the war against Patos." found "El Morad" at 165 1645 in zone 2
+
+On available
+    Say "[Hunter] Halon is great but so are you. This is already the fourth match. Let's fight to the end!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You are getting better! Guess can't laugh at you anymore."
+    Topic "Tell me more..." do
+        Show quest "Then, let's choose something more serious to hunt. How about [Anxious Kentauros]? This will be a real match. Go ahead first. I will catch up with soon. Hahaha.\n\nIs the compete uneasy hunt kentawooreuseu, halronwa Raon Camp El Morad region [Hunter]."
+
+On in_progress
+    Say "Oh, so you think you can take your time on me now? I won't go easy on you."
+
+On claimable
+    Show quest "Good lord, I might actually lose!\n\nThat was fantastic. It's difficult to decide who won based on the matches we've had so far. Why don't I contact you next time for a better match? I had a lot of fun! Hahaha!"

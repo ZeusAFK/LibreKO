@@ -1,0 +1,34 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 572 "[Regained Honor] Internal Conspirator"
+    Journal for karus "You must talk to [Sage of Eslant] Pablo."
+    Journal for elmorad "You must talk to [Sage of Eslant] Agatha."
+
+Requires player level >= 65 and quest 571 is completed
+
+Rewards
+    Give 1 of 910234000
+
+On available
+    If player is karus
+        Say "You saying that to listen to the story [Eslant Wise Man]Pablo. It must be some big secret?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "You saying that listen to a story by [Eslant Wise Man]Agata. It must be some big secret?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You have heard the story, where she is, but I'll say it again."
+        Topic "Tell me more..." do
+            Show quest "The letter you recovered ... She contains huge. Mar barbarian king room and tossed through the life of many allies in the name of the traitor.\n\nPrivate feelings should be Knew the usual timid line, to risk so much that I did not know that. Nowhere, I'll give you in this article. Nature of advisor to the guy passed me. The selfishness of the human that you are, yeah ... What is so scary\n\nThis is really important that you do not tell anyone. Talk to Pablo."
+    If player is elmorad
+        Say "You have heard the story, where she is, but I'll say it again."
+        Topic "Tell me more..." do
+            Show quest "The letter you recovered ... She contains huge. Mar barbarian king room and tossed through the life of many allies in the name of the traitor.\n\nPrivate feelings should be Knew the usual timid line, to risk so much that I did not know that. Nowhere, I'll give you in this article. Nature of advisor to the guy passed me. The selfishness of the human that you are, yeah ... What is so scary\n\nThis is really important that you do not tell anyone. Talk to Agatha."
+
+On claimable
+    Show quest "[Advisor] I'm always preach to him. Souls died with it ought to be good, but you have to take a rest ..."
+
+On completed
+    Say "The head and the spirit ... It's packed important documents!"

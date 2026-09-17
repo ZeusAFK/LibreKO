@@ -1,0 +1,30 @@
+Bind Npc 24424 Zone 11
+Quest 343 "Unfinished Hunt II"
+    Journal "Troll Berserker is the target for this job!"
+    Kill 40 of 1773, 1723 at direction_130
+
+Requires player level >= 78 and player is karus
+
+Rewards
+    Give 68750000 experience
+
+direction_130 = location "Troll Berserker" about "Troll Berserker\nMonsters who lead the Dark Army during the war between human and Pathos, in the past. They have low defense and poor immunities, but possess great strength and high HP." found "Karus Eslant" at 770 750 in zone 11
+
+On available
+    Say "Master, what about hunting in Eslant?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Welcome! It's been quite a while since I saw you here. Did you come here to loosen up? Haha~"
+    Topic "Tell me more..." do
+        Show quest "Troll Berserker! It's one of the targets which many hunters and questers want to hunt. Do you accept the challenge? The quest target is 250..."
+
+On in_progress
+    Say "Isn't your quest just a tad bit too difficult for you? Haha!"
+
+On ready
+    Say "Whooa...! It's not just not to loosen up!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "What about your quest this time?... Was it bearable?"

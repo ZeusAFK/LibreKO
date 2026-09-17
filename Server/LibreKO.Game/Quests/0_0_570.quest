@@ -1,0 +1,70 @@
+Bind Npc 24427 Zone 1 for karus
+Bind Npc 14427 Zone 2 for elmorad
+Quest 570 "[Regained Honor] Peacekeeping in Raiba/Linate Village"
+    Journal for karus "You must perform the duty of [Guard] Melverick at Luferson Castle."
+    Journal for elmorad "You must perform the duty of [Guard] Zalk at El Morad Castle."
+    Kill 50 of 9717, 1693
+    Kill 30 of 1692, 9777
+
+Requires player level >= 65 and quest 569 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 50 np
+    Give 30000 coins
+    Choose one
+        Give 1 of 207001603
+        Give 1 of 247001604
+        Give 1 of 267001605
+        Give 1 of 287001606
+
+direction_543 = location "Uruk Hai" about "Uruk Hai\nA high-level orc race inhabiting the continent of Adonis; distinguishing trait: strong Attack Power" found "El Morad Eslant" at 344 1598 in zone 2
+direction_544 = location "Uruk Hai" about "Uruk Hai\nA high-level orc race inhabiting the continent of Adonis; distinguishing trait: strong Attack Power" found "Karus Eslant" at 1745 691 in zone 1
+
+On available
+    If player is karus
+        Say "Panting ... Master, are you tired? Jump too quickly do you go to do die hard. Where? I guess God [Guard] Mel Berwick"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Panting ... Master, are you tired? Jump too quickly do you go to do die hard. Where?[Go] Zalk God [Guard]"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Now you have one place left. Linate Village. Thanking you in advance."
+        Topic "Tell me more..." do
+            Show quest "Last. And Uruk Hai Uruk blade notorious. Nowadays, the frequent looting and the beginning was the need for rapid processing.\n\nCitizens of Karus are afraid because of the rumor. Defeat [Urkblade] and [Urkhi]."
+    If player is elmorad
+        Say "Now you have one place left.It will be just a sliver village. Thanking you in advance"
+        Topic "Tell me more..." do
+            Show quest "Last. And Uruk Hai Uruk blade notorious. Nowadays, the frequent looting and the beginning was the need for rapid processing.\n\nCitizens El morad are afraid because of the rumor. Defeat [Urkblade] and [Urkhi]."
+
+On in_progress
+    If player is karus
+        Say "Ah ... Uruk blade! [Ego] Uruk-Hai ... Sorry about that. Not ask for faster processing."
+        Topic "Where can I find it?" do
+            Map direction_544
+    If player is elmorad
+        Say "Ah ... Uruk blade! [Ego] Uruk-Hai ... Sorry about that. Not ask for faster processing."
+        Topic "Where can I find it?" do
+            Map direction_543
+
+On ready
+    If player is karus
+        Say "... Huuk huuk. Cut all processed. Seems somehow [Guard] Melburick, b a good, so ... What can I say"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "... Huuk huuk. Cut all processed.But somehow [Guard] Dear Zalk, of b a good, so ... What can I say"
+        Topic "All right, I'll swing by" goto close
+
+On claimable
+    If player is karus
+        Show quest "Haha, thank you. You gonna handle both. The the policing mainland Karus, thanks to <selfname> by the much better. Reminds me, there was a letter from the earlier [Ascetic] Beda."
+    If player is elmorad
+        Show quest "Haha, thank you. You gonna handle both.The Policing the El Morad mainland thanks to <selfname> by much better. Come to think of it, the other bed, I [the ascetic] Previous There was a letter."
+
+On completed
+    If player is karus
+        Say "[Ascetic] Beda Eslant have Troyes You. When the contact's are you locked up? I [APE] You catch  ...?"
+    If player is elmorad
+        Say "[Ascetic] Tabeth by Eslant Tropez and you asked. When the contact's are you locked up? I [APE] You catch  ...?"

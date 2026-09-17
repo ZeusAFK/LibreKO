@@ -1,0 +1,44 @@
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: libreko
+      MARIADB_DATABASE: libreko
+      MARIADB_USER: libreko
+      MARIADB_PASSWORD: libreko
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  login:
+    build:
+      context: ./Server
+      target: login
+    environment:
+      ConnectionStrings__Default: Server=db;Port=3306;Database=libreko;User=libreko;Password=libreko
+      LoginServer__BindHost: 0.0.0.0
+    ports:
+      - "15100:15100"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  game:
+    build:
+      context: ./Server
+      target: game
+    environment:
+      ConnectionStrings__Default: Server=db;Port=3306;Database=libreko;User=libreko;Password=libreko
+      GameServer__BindHost: 0.0.0.0
+    ports:
+      - "15001:15001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dbdata:

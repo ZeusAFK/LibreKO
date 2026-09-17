@@ -1,0 +1,33 @@
+Bind Npc 24432 Zone 1
+Quest 413 "[Repeatable Solo] Eradicate Lard Orc"
+    Repeat always
+    Journal "[Guard] Keife has commissioned you to eradicate Lard Orc. However, it will not count when you are in a party."
+    Kill 20 of 1673, 2673 at direction_107
+
+Requires player level >= 41 and player is karus
+
+Rewards
+    Give 1000000 experience or 1400000 with premium
+
+direction_107 = location "Lard Orc" about "Lard Orc\nAn orc race inhabiting Adonis, possesses a relatively low HP but equipped with powerful Attack Power" found "Karus" karus at 410 461 in zone 1
+
+On available
+    Say "Master, there is an an urgent message from [Sentinel] Cape!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Nice to meet you. I am Cape, a Sentinel of the Belua Village. Since I've heard a lot about your reputation, I've contacted you to ask you a favor."
+    Topic "Tell me more..." do
+        Show quest "Residents are terrified from recent Lard Orc attacks. There aren't any competent soldiers to stand guard and their morale's hit rock bottom as well. Please thwart the Lard Orcs."
+
+On in_progress
+    Say "Hmm, the Lard Orcs are getting ready to charge again. Listen, if you take out the Lard Orcs I'll supply you with as many weapons as you want."
+    Topic "Where can I find it?" do
+        Map direction_107
+
+On ready
+    Say "Master, what you did was noble."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you so much. As a token of our appreciation, we'd like to give you our village treasure.\nIt won't be a great boon to you, but please accept it anyway. Choose what you want."

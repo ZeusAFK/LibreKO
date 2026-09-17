@@ -1,0 +1,34 @@
+Bind Npc 13009 Zone 21
+Quest 84 "Discipline"
+    Journal "I must defeat the orc captive and bring 5 duel certificates."
+    Collect 5 of 910038000
+
+Requires player level >= 12
+
+Rewards
+    Give 30000 coins
+    Give 10000 experience
+    Choose one
+        Give 1 of 202001005
+        Give 1 of 242001005
+        Give 1 of 262001005
+        Give 1 of 282001005
+
+On available
+    Say "The mercenary squad haven't assigned any missions lately. Go see [Mercenary Captain] Kugar. At this rate, we'll even forget that we're mercenaries."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Just in time. I've prepared a special training session as the morale among mercenary ranks seem to be low. The orc Prisoners captured thus far are kept in an underground holding cell in Moradon. I've lodged a combat Certificate in each of their clothes. Think of this as a training session."
+    Topic "Tell me more..." do
+        Show quest "Fight a duel with the Orc prisoners of war at the P.O.W. camp and collect just five certificates of duels which are held by them. How about starting it now?\n\n[Mercenary Commander] Couger orders the Mercenary to have duels against the Orc prisoners of war at the dungeon as a special training for mercenaries. If you hunt Orc prisoners of war at the dungeon and collect five cetificates of duel held by them, you can be compensated."
+
+On in_progress
+    Say "What happened? Don't say that you caught Orc but forgot to collect the duel certificates! You should have collected at least five duel certificates."
+
+On ready
+    Say "Master all the certificates have been retrieved. Let's go report to the captain."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "I knew you'd be able to do it with ease. You can train freely until the mission."

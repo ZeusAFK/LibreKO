@@ -1,0 +1,17 @@
+Bind Npc 14424 Zone 12
+Quest 1105 "Spirit permeated armors"
+    Journal "Collect 1 Spirit of the Grudge"
+    Collect 1 of 810302000
+
+Requires player level >= 65 and player is elmorad
+
+Rewards
+    Give 12500000 experience or 25000000 with premium
+
+On offer
+    Say "I've figured it out! There is the soul on the armor but we just can't see it!"
+    Topic "Tell me more..." do
+        Show quest "Could you now bring me 'Resentment Soul' It's hard to find but if you keep defeating doom Knight you'll be able to obtain them."
+
+On claimable
+    Show quest "oh!! You got it!!!!  You are the best."

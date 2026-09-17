@@ -1,0 +1,191 @@
+[
+  {
+    "Sid": 506,
+    "Name": "Lobo",
+    "Level": 45,
+    "Probability": 650,
+    "Type": 1
+  },
+  {
+    "Sid": 507,
+    "Name": "Lupus",
+    "Level": 50,
+    "Probability": 650,
+    "Type": 1
+  },
+  {
+    "Sid": 508,
+    "Name": "Lycaon",
+    "Level": 55,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 607,
+    "Name": "Barrkk",
+    "Level": 55,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 608,
+    "Name": "Barkirra",
+    "Level": 60,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 906,
+    "Name": "Antares",
+    "Level": 50,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 907,
+    "Name": "Shaula",
+    "Level": 75,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 908,
+    "Name": "Lesath",
+    "Level": 75,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 1005,
+    "Name": "Hyde",
+    "Level": 45,
+    "Probability": 650,
+    "Type": 1
+  },
+  {
+    "Sid": 1106,
+    "Name": "bone collecter",
+    "Level": 300,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 1107,
+    "Name": "Dragon tooth",
+    "Level": 80,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 1205,
+    "Name": "Duke",
+    "Level": 55,
+    "Probability": 300,
+    "Type": 1
+  },
+  {
+    "Sid": 1206,
+    "Name": "Bach",
+    "Level": 60,
+    "Probability": 300,
+    "Type": 1
+  },
+  {
+    "Sid": 1207,
+    "Name": "Bishop",
+    "Level": 65,
+    "Probability": 300,
+    "Type": 1
+  },
+  {
+    "Sid": 1306,
+    "Name": "Samma",
+    "Level": 90,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 1400,
+    "Name": "attila",
+    "Level": 85,
+    "Probability": 200,
+    "Type": 1
+  },
+  {
+    "Sid": 1725,
+    "Name": "Troll King",
+    "Level": 110,
+    "Probability": 50,
+    "Type": 1
+  },
+  {
+    "Sid": 2005,
+    "Name": "Snake Queen",
+    "Level": 100,
+    "Probability": 50,
+    "Type": 1
+  },
+  {
+    "Sid": 2105,
+    "Name": "Deruvish founder",
+    "Level": 100,
+    "Probability": 50,
+    "Type": 1
+  },
+  {
+    "Sid": 2205,
+    "Name": "Harpy Queen",
+    "Level": 110,
+    "Probability": 50,
+    "Type": 1
+  },
+  {
+    "Sid": 2405,
+    "Name": "Talos",
+    "Level": 140,
+    "Probability": 50,
+    "Type": 1
+  },
+  {
+    "Sid": 2817,
+    "Name": "Orc bandit leader",
+    "Level": 120,
+    "Probability": 50,
+    "Type": 1
+  },
+  {
+    "Sid": 8260,
+    "Name": "Javana",
+    "Level": 65,
+    "Probability": 600,
+    "Type": 1
+  },
+  {
+    "Sid": 9589,
+    "Name": "Hell Fire",
+    "Level": 75,
+    "Probability": 1000,
+    "Type": 2
+  },
+  {
+    "Sid": 9590,
+    "Name": "Enigma",
+    "Level": 75,
+    "Probability": 1000,
+    "Type": 2
+  },
+  {
+    "Sid": 9591,
+    "Name": "Havoc",
+    "Level": 75,
+    "Probability": 1000,
+    "Type": 2
+  },
+  {
+    "Sid": 9592,
+    "Name": "Cruel",
+    "Level": 75,
+    "Probability": 1000,
+    "Type": 2
+  }
+]

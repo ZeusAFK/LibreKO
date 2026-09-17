@@ -1,0 +1,43 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 118 "Full Plate Armor III"
+    Journal "[Mercenary Adjutant] Rage asked you to hunt down 10 Dire Wolves."
+    Kill 10 of 555 at direction_523
+
+Requires player level >= 32
+
+Rewards for warrior
+    Give 1 of 204003005
+    Give 1 of 204003285
+    Give 425000 experience
+
+Rewards for rogue
+    Give 1 of 244003005
+    Give 1 of 244003286
+    Give 425000 experience
+
+Rewards for mage
+    Give 1 of 264003005
+    Give 1 of 264003287
+    Give 425000 experience
+
+Rewards for priest
+    Give 1 of 284003005
+    Give 1 of 284003288
+    Give 425000 experience
+
+direction_523 = location "Dire Wolf" about "Dire Wolf\nMonster which evolved in the war with Pathos by a curse which turned man into wolfman" found "Moradon" at 522 803 in zone 21
+
+On available
+    Say "Master, the imperial palace guard sent an urgent message. Why don't you go see him?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh, you're here. I wanted to see you urgently as there was no one else with whom I could entrust this mission. We've just organized the list of monsters who pose a potential threat."
+    Topic "Tell me more..." do
+        Show quest "We're short on knights who can take on this mission. We need your help. The first monster to be eliminated is the Dire Wolf.\n\n[Mercenary Adjutant] Rage will award craft armor for heeding his request."
+
+On claimable
+    Show quest "Thank you. I hope you'll continue to help me in the future."

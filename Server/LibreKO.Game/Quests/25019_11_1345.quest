@@ -1,0 +1,20 @@
+Bind Npc 25019 Zone 11
+Quest 1345 "The monster not to be awaken"
+    Journal "Defeat Pricilla and destroy the Draki Gate"
+    Kill 1 of 9647 at direction_1328
+
+Requires player level >= 60 and player is karus and quest 1343 is completed
+
+Rewards
+    Give 2125000 experience
+
+direction_1328 = location "Pricilla" about "Ancient Monster. Has power so great that it can even want to destroy a whole mountain. It's sealed in the Eslant South West." found "Eslant" karus at 130 116 in zone 11
+
+On offer
+    Show quest "<selfname>, have you heard of sound that a mountain collapsed in southwest?\n\nYes. The Southwest mountain which has ancient ruins collapsed last night. Regarding what Patrol said, a legendary monster Pricilla just revived there. Why troubles keep happening.. Perhaps <selfname> can get rid of it too?\n\nAn ancient monster Pricilla shows up at northern Mountain from southwest of Eslant. Defeat Pricilla."
+
+On in_progress
+    Say "if Pricilla is alive, Eslant could be exterminated anytime. Pricilla would be at southwest area."
+
+On claimable
+    Show quest "Although you've got 3 God's equipments on you, didn't know you could still knock out a legendary monster."

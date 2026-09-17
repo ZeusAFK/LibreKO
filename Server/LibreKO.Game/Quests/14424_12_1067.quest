@@ -1,0 +1,26 @@
+Bind Npc 14424 Zone 12
+Quest 1067 "The animated armor"
+    Journal "Defeat 25 Doom Knights"
+    Kill 25 of 9080, 9069 at direction_816
+
+Requires player level >= 65 and player is elmorad
+
+Rewards
+    Give 33750000 experience
+
+direction_816 = location "Doom Knight" about "Doom Knight\n Monster that fighting spirits of warriors imagery to wear a armor" found "El Morad Eslant" elmorad at 393 816 in zone 12
+
+On offer
+    Say "So many are afraid these days."
+    Topic "Tell me more..." do
+        Show quest "A few days ago, they say that armors with no bodies were killing townspeople. Can you find out what's really happening? If it's the monster, please get rid of them."
+        Topic "Where can I find it?" do
+            Map direction_816
+
+On in_progress
+    Say "You found out of their identity?!"
+    Topic "Where can I find it?" do
+        Map direction_816
+
+On claimable
+    Show quest "Doom knight? What's happening in Eslant..."

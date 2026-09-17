@@ -1,0 +1,37 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 608 "[Prophetic Poetry of Light/Boss] God of Light"
+    Journal for karus "You should kill [Devil] Balor according to the order of [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You should kill [Devil] Balor according to the order of [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910207000
+
+Requires player level >= 68 and quest 607 is completed
+
+Rewards
+    Give 57500000 experience
+    Give 100 np
+    Give 3 of 900017000
+
+On available
+    If player is karus
+        Say "Goddess of prophecy and that was what kept the base is very valuable. You take away the heck did [Captain]Harugo excited by carrying nabwayo"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Goddess of prophecy and that was what kept the base is very valuable.You deprived me that you Captain] by Falkwine, excitement did nabwayo"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Combat readiness is all done? You need to start right now."
+        Topic "Tell me more..." do
+            Show quest "So,,  command'll steal the goddess of prophecy involving the Ronark Land Base paper to cause confusion, even after defeat, and punish it kicking the Devil fled my Eslant site [recovery] on the goddess of prophecy to come\n\nAccording to the command of carrying Luferson Castle [Captain] [Devil] feet, you will need to remove the le."
+    If player is elmorad
+        Say "Combat readiness is all done? You need to start right now."
+        Topic "Tell me more..." do
+            Show quest "So,,  command'll steal the goddess of prophecy involving the Ronark Land Base paper to cause confusion, even after defeat, and punish it kicking the Devil fled my Eslant site [recovery] on the goddess of prophecy to come\n\nYou will need to remove [the devil] feet, according to the command of Captain Falkwine El Morad Castle."
+
+On in_progress
+    Say "yet?I went away I'm kicking. Eslant flowing trough [Devil]"
+
+On claimable
+    Show quest "This sacred finally recaptured squeezes yours is be keep secretly moved to a safe place, the goddess of prophecy"

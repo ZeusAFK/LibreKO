@@ -1,0 +1,38 @@
+Bind Npc 31572 Zone 11 for karus
+Bind Npc 31571 Zone 12 for elmorad
+Quest 688 "Collecting Mana Pieces I"
+    Journal for karus "You must collect Mana pieces with [Senior Researcher] Gaaz."
+    Journal for elmorad "You must collect Mana pieces with [Senior Researcher] Aldos."
+    Collect 5 of 389480000
+
+Requires player level >= 66 and quest 687 is completed
+
+Rewards
+    Give 8750000 experience
+    Give 30000 coins
+
+On available
+    Say "[Chief Researcher] Gaz is starting his research. He wouldn't be able to collect all that by himself. Let's go help him."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You are here. You should prepare them in advance because it could be a tough work."
+        Topic "Tell me more..." do
+            Show quest "Then, please collect [Mana Piece] of the magical creature. \nFirst collect [Unstable Mana Piece] from [Half Troll Shaman]. It has the most disturbing appearance. With that, I should be able to dig into the cause.\n\n[Senior Researcher]Gaz in Eslant has requested to collect a [Unstable Magic Piece] from the [Half-Troll Shaman]."
+    If player is elmorad
+        Say "You are here. You should prepare them in advance because it can be a tough work."
+        Topic "Tell me more..." do
+            Show quest "Then, please collect [Mana Piece] of the magical creature. \nFirst collect [Unstable Mana Piece] from [Half Troll Shaman]. It has the most disturbing appearance. With that, I should be able to dig into the cause.\n\n[Senior Researcher]Aldos in Eslant has requested to collect a [Unstable Magic Piece] from the [Half-Troll Shaman]."
+
+On in_progress
+    Say "It's [Unstable Mana Piece] from the [Half Troll Shaman].  You haven't forgotten, right?"
+
+On claimable
+    If player is karus
+        Show quest "It's twisting the flow of manas around as if it's unstable...just like the book said.\n\nThe next [Mana Piece] is [Unstable Mana Piece] of [Death Wizard]. Also called envoy, they suck the vitim's last worldly thought and in doing that, they acculumate impure energy. And recently that energy had an explosive amount of growth. Please hurry."
+    If player is elmorad
+        Show quest "It's twisting the flow of manas around as if it's unstable...just like the book said.\n\nThe next [Mana Piece] is [Impure Mana Piece] of [Death Wizard]. Also called envoy, they suck the vitim's last worldly thought and in doing that, they acculumate impure energy. And recently that energy had an explosive amount of growth. Please hurry."
+
+On completed
+    Say "Please come back to me when you reach Lv67. You look very weak. You need to be stronger."

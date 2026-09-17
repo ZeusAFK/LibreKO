@@ -1,0 +1,32 @@
+Bind Npc 24424 Zone 11
+Quest 1007 "Doom Soldier hunt"
+    Journal "I promised to hunt [Ascetic Veda] 40 Doom Soldiers."
+    Kill 40 of 18007, 8007 at direction_627
+
+Requires player level >= 61 and player is karus and quest 302 is completed
+
+Rewards
+    Give 23750000 experience
+
+direction_627 = location "Doom Soldier" about "Doom Soldier\nOne of the monsters held in the deep underground following the war against Pathos, they are also referred to as the Knight of Darkness." found "Eslant" at 331 769 in zone 11
+
+On available
+    Say "Veda is looking for you, master. But who is Veda??"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Welcome to Eslant. I appreciate your interest in our corner of the world. My name is Veda, I train in aesthetic practices here in Eslant."
+    Topic "Tell me more..." do
+        Show quest "I called for you because with your reputation and ability, Eslant is the perfect place for you to improve your skills. You'll understand if you start hunting Doom Soldiers.\n\nYou'll earn 23.75 million EXP if you go back to [Ascetic] Veda after the mission of Doom Soldier Hunt."
+
+On in_progress
+    Say "The road of practice must be walked with patience."
+    Topic "Where can I find it?" do
+        Map direction_627
+
+On ready
+    Say "Well done~ The work here in Eslant is better than I expected."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Good job. Are you satisfied with that?"

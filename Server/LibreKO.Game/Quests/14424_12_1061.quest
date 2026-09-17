@@ -1,0 +1,18 @@
+Bind Npc 14424 Zone 12
+Quest 1061 "Wing flaps at night"
+    Journal "Defeat 40 Ironclaws"
+    Kill 40 of 9075, 9064 at direction_811
+
+Requires player level >= 63 and player is elmorad and quest 1059 is completed
+
+Rewards
+    Give 26250000 experience
+
+direction_811 = location "Ironclaw" about "Ironclaw\nIt is evolved gargoyle, Attack with terrible claw." found "El Morad Eslant" elmorad at 405 709 in zone 12
+
+On offer
+    Say "Not yet..Not enough."
+    Topic "Tell me more..." do
+        Show quest "Iron Claw' are still out. Could you get rid of them?"
+        Topic "Where can I find it?" do
+            Map direction_811

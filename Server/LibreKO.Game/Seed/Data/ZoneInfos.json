@@ -1,0 +1,596 @@
+[
+  {
+    "ServerNo": 1,
+    "ZoneNo": 1,
+    "SmdName": "karus2004.smd",
+    "MapName": "Karus",
+    "InitX": 163000,
+    "InitZ": 39400,
+    "InitY": 15000
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 2,
+    "SmdName": "elmo2004.smd",
+    "MapName": "Elmorad",
+    "InitX": 163000,
+    "InitZ": 39400,
+    "InitY": 15000
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 5,
+    "SmdName": "karus2004.smd",
+    "MapName": "Karus 2",
+    "InitX": 163000,
+    "InitZ": 39400,
+    "InitY": 15000
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 7,
+    "SmdName": "elmo2004.smd",
+    "MapName": "Elmorad 2",
+    "InitX": 163000,
+    "InitZ": 39400,
+    "InitY": 15000
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 11,
+    "SmdName": "k_eslant.smd",
+    "MapName": "Eslant",
+    "InitX": 15000,
+    "InitZ": 15000,
+    "InitY": 15000
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 12,
+    "SmdName": "e_eslant.smd",
+    "MapName": "Eslant II",
+    "InitX": 15000,
+    "InitZ": 15000,
+    "InitY": 15000
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 13,
+    "SmdName": "k_eslant.smd",
+    "MapName": "Eslant III",
+    "InitX": 15000,
+    "InitZ": 15000,
+    "InitY": 15000
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 15,
+    "SmdName": "e_eslant.smd",
+    "MapName": "Eslant IV",
+    "InitX": 15000,
+    "InitZ": 15000,
+    "InitY": 15000
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 21,
+    "SmdName": "Moradon2.smd",
+    "MapName": "Moradon",
+    "InitX": 81590,
+    "InitZ": 53079,
+    "InitY": 469
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 22,
+    "SmdName": "Moradon2.smd",
+    "MapName": "Moradon II",
+    "InitX": 81590,
+    "InitZ": 53079,
+    "InitY": 469
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 23,
+    "SmdName": "Moradon2.smd",
+    "MapName": "Moradon III",
+    "InitX": 81590,
+    "InitZ": 53079,
+    "InitY": 469
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 24,
+    "SmdName": "Moradon2.smd",
+    "MapName": "Moradon IV",
+    "InitX": 81590,
+    "InitZ": 53079,
+    "InitY": 469
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 25,
+    "SmdName": "Moradon2.smd",
+    "MapName": "Moradon V",
+    "InitX": 81590,
+    "InitZ": 53079,
+    "InitY": 469
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 30,
+    "SmdName": "war_a.smd",
+    "MapName": "Delos",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 31,
+    "SmdName": "dungeon_a.smd",
+    "MapName": "Bi-Frost",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 32,
+    "SmdName": "dungeon_b1th.smd",
+    "MapName": "Desperation Abyss",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 33,
+    "SmdName": "dungeon_b2th.smd",
+    "MapName": "Hell Abyss",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 34,
+    "SmdName": "dragon_a.smd",
+    "MapName": "Felankor Lair",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 35,
+    "SmdName": "unknown.smd",
+    "MapName": "Delos Basement",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 36,
+    "SmdName": "unknown.smd",
+    "MapName": "Stronghold Siege War",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 48,
+    "SmdName": "arena.smd",
+    "MapName": "Battle Arena",
+    "InitX": 128,
+    "InitZ": 123,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 51,
+    "SmdName": "clanfight_b.smd",
+    "MapName": "Orc Prisoner Quest",
+    "InitX": 13900,
+    "InitZ": 13900,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 52,
+    "SmdName": "clanfight_b.smd",
+    "MapName": "Blood Don Quest",
+    "InitX": 13900,
+    "InitZ": 13900,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 53,
+    "SmdName": "clanfight_b.smd",
+    "MapName": "Goblin Quest",
+    "InitX": 13900,
+    "InitZ": 13900,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 54,
+    "SmdName": "clanfight_b.smd",
+    "MapName": "Cape Quest",
+    "InitX": 13900,
+    "InitZ": 13900,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 55,
+    "SmdName": "clanfight_b.smd",
+    "MapName": "Forgotten Temple",
+    "InitX": 13900,
+    "InitZ": 13900,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 61,
+    "SmdName": "BattleZone.smd",
+    "MapName": "Napies Gorge",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 62,
+    "SmdName": "BattleZone_b.smd",
+    "MapName": "Alseids Prairie",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 63,
+    "SmdName": "BattleZone_d.smd",
+    "MapName": "Nieds Triangle",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 64,
+    "SmdName": "BattleZone_e.smd",
+    "MapName": "Nereids Island",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 65,
+    "SmdName": "BattleZone_f.smd",
+    "MapName": "Zipang",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 66,
+    "SmdName": "new_runawar.smd",
+    "MapName": "Oreads",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 69,
+    "SmdName": "BattleZone_b.smd",
+    "MapName": "Snow War",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 71,
+    "SmdName": "freezone_b.smd",
+    "MapName": "Ronark Land",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 72,
+    "SmdName": "freezone_a.smd",
+    "MapName": "Ardream",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 73,
+    "SmdName": "freezone_c.smd",
+    "MapName": "Ronark Land Base",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 74,
+    "SmdName": "old_freezone_b.smd",
+    "MapName": "Chrono Lands",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 75,
+    "SmdName": "itemzone_a.smd",
+    "MapName": "Krowaz Domion",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 77,
+    "SmdName": "dragon_a.smd",
+    "MapName": "Ardream Clan War",
+    "InitX": 13900,
+    "InitZ": 13900,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 79,
+    "SmdName": "freezone_b.smd",
+    "MapName": "Nation war",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 81,
+    "SmdName": "In_dungeon01.smd",
+    "MapName": "Monster Suppression Squad 1",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 82,
+    "SmdName": "In_dungeon02.smd",
+    "MapName": "Monster Suppression Squad 2",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 83,
+    "SmdName": "In_dungeon03.smd",
+    "MapName": "Monster Suppression Squad 3",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 84,
+    "SmdName": "In_dungeon05.smd",
+    "MapName": "Border War Defance",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 85,
+    "SmdName": "sky_war_2009.smd",
+    "MapName": "Chaos Dengueon",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 86,
+    "SmdName": "bossmode.smd",
+    "MapName": "Under The Castle",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 87,
+    "SmdName": "In_dungeon05.smd",
+    "MapName": "Juraid Mountain",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 89,
+    "SmdName": "In_dungeon04.smd",
+    "MapName": "Border War Defance",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 92,
+    "SmdName": "clanfight_b.smd",
+    "MapName": "Prison",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 93,
+    "SmdName": "dungeon_b2th.smd",
+    "MapName": "Isillion Lair",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 94,
+    "SmdName": "dragon_a.smd",
+    "MapName": "Felankor Lair",
+    "InitX": 13900,
+    "InitZ": 13900,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 95,
+    "SmdName": "unknown.smd",
+    "MapName": "Drakis Tower",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 96,
+    "SmdName": "In_dungeon06.smd",
+    "MapName": "Party Batle 1",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 97,
+    "SmdName": "In_dungeon06.smd",
+    "MapName": "Party Batle 2",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 98,
+    "SmdName": "In_dungeon06.smd",
+    "MapName": "Party Batle 3",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 99,
+    "SmdName": "In_dungeon06.smd",
+    "MapName": "Party Batle 4",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 105,
+    "SmdName": "freezone_a.smd",
+    "MapName": "Zinan War",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 106,
+    "SmdName": "lolevent.smd",
+    "MapName": "Divine Combat",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 107,
+    "SmdName": "kobawar.smd",
+    "MapName": "Dark Delos",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 108,
+    "SmdName": "unknown.smd",
+    "MapName": "Survivor  War",
+    "InitX": 1000,
+    "InitZ": 100,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 109,
+    "SmdName": "freezone_a.smd",
+    "MapName": "Dark Ardream",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 110,
+    "SmdName": "old_freezone_b.smd",
+    "MapName": "Old Ronark Land",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 111,
+    "SmdName": "dungeon_a_new.smd",
+    "MapName": "Savage War",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 112,
+    "SmdName": "batle_war.smd",
+    "MapName": "Moradon War",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 113,
+    "SmdName": "newevent.smd",
+    "MapName": "Blood Pact",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  },
+  {
+    "ServerNo": 1,
+    "ZoneNo": 114,
+    "SmdName": "BattleZone_f.smd",
+    "MapName": "Zipan War",
+    "InitX": 1000,
+    "InitZ": 1000,
+    "InitY": 0
+  }
+]

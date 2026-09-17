@@ -1,0 +1,28 @@
+Bind Npc 14430 Zone 2
+Quest 426 "[Repeatable Solo] Burning Skeleton Hunt"
+    Repeat always
+    Journal "[Mercenary] Russell has commissioned you to hunt Burning Skeleton. However, it will not count when you are in a party."
+    Kill 20 of 3601, 3651 at direction_509
+
+Requires player level >= 46 and player is elmorad
+
+Rewards
+    Give 1000000 experience or 1400000 with premium
+
+direction_509 = location "Burning Skeleton" about "Burning Skeleton\nAn undead-type monster which takes control of opponents with its powerful bone structure and flames spewing from its body" found "El Morad" at 973 1126 in zone 2
+
+On available
+    Say "Master, maybe you should go hunting with [Mercenary] Tales."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "What's that? You want to go hunting with me? Haha... Don't go overboard now, my prey is no piece of cake."
+    Topic "Tell me more..." do
+        Show quest "I'll give you another prey. Burning Skeletons should be perfect for you. Want to give it a shot?\n\nYou know what? If you bring me Burning Skeletons, I'll repay you in weapons all the way to Level 50! Come see me anytime, Ok?"
+
+On ready
+    Say "Sheesh, wasn't it one heck of a fight?"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Don't tell me you hunted them alone. At any rate, good work."

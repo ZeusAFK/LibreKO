@@ -1,0 +1,20 @@
+Bind Npc 25019 Zone 11
+Quest 1344 "Eslant's 3 God Weapons"
+    Journal "Retrieve the Armor of Experanzo, Eclipse, and Jerpher after defeating Marsil, Bathin, and Garlong"
+    Collect 1 of 900634000
+    Collect 1 of 900635000
+    Collect 1 of 900633000
+
+Requires player level >= 60 and player is karus and quest 1336 is completed
+
+Rewards
+    Give 2125000 experience
+
+On offer
+    Show quest "Please find back those stolen Eslant's 3 treasures from the Devils. We're all counting on you. <selfname>\n\nLet's get 3 God's equipments that were stolen by Eslant's 3 Devils."
+
+On in_progress
+    Say "Marsil, Bathin and Garlong each possess the 3 treasures. Please bring them back.."
+
+On claimable
+    Show quest "Thank you. Now this equipments finally find its owner?"

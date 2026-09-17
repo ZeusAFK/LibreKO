@@ -1,0 +1,31 @@
+Bind Npc 14413 Zone 2
+Quest 201 "Protecting the farm"
+    Journal "Farm Manager wants me to eliminate the Tyon and bring him Tyon meat."
+    Collect 1 of 379204000
+
+Requires player level >= 47 and player is elmorad
+
+Rewards
+    Give 10000 coins
+
+On available
+    Say "Tyons penetrated the farm and are ruining the crops. There's even a reward being offered for Tyons."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "This year's harvest will be ruined because of the Tyons. Wish someone would get rid of them."
+    Topic "Tell me more..." do
+        Show quest "I will award you handsomely if you eliminate the Tyons that penetrated the farm and bring me their meat. I'm counting on you.\n\nIf you bring Tyon meat to the Farm Manager, he turns them into 10,000 Noahs."
+
+On in_progress
+    Say "Tyons are stock monsters spotted in the vicinity of farms. There should be loads of them here."
+
+On ready
+    Say "Shouldn't this be enough!? If we hand over the meat to the Farm Manager, we will get a large reward."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Hmm, not bad. But they'll soon multiply again as their breeding ability's exceptional. Take a look outside. There's already more of them lingering outside."
+
+On completed
+    Say "Tyons have disappeared to a certain extent, but they're able to breed exceptional well. Their numbers are sure to increase again."

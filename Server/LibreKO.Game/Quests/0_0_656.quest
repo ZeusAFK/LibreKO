@@ -1,0 +1,36 @@
+Bind Npc 31566 Zone 11 for karus
+Bind Npc 31565 Zone 12 for elmorad
+Quest 656 "Searching Specialties III"
+    Journal for karus "You must accept the request of [Appraiser] Rockus."
+    Journal for elmorad "You must accept the request of [Appraiser] Diz."
+    Collect 5 of 389450000
+
+Requires player level >= 66 and quest 655 is completed
+
+Rewards
+    Give 8750000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "I guess appraising is a difficult thing. It's about time for [Item Appraiser] Lockers to look for you.  Shall we go to him?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "I guess appraising is a difficult thing. It's about time for [Item Appraiser] Disney to look for you.  Shall we go to him?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hmm... It's almost done. Its superb quality gets me so excited. So the next appraisal is on the second item you collected."
+        Topic "Tell me more..." do
+            Show quest "Well, we still have a lot of time left.  In the meantime, let's collect the next item. I need [Thick Half Troll Leather] from [Half Troll Captain]. It's the toughest of all leather. You can take your time on this.\n\nAppraisers of Goods Eslant updated according to the rocker's request, from [half-trolls Captain], [Thick Leather Half-Troll to come sujiphae the."
+    If player is elmorad
+        Say "Hmm... It's almost done. Its superb quality gets me so excited. So the next appraisal is on the second item you collected."
+        Topic "Tell me more..." do
+            Show quest "Well, we still have a lot of time left.  In the meantime, let's collect the next item. I need [Thick Half Troll Leather] from [Half Troll Captain]. It's the toughest of all leather. You can take your time on this.\n\nAt the request of the Appraisers of Goods Eslant updated Deeds from [half-trolls Captain], [Thick Leather Half-Troll sujiphae expected."
+
+On in_progress
+    Say "You don't have it yet? It's okay. Please take your time."
+
+On claimable
+    Show quest "Good timing. All appraisals are finished.\n\nIt's taking longer than I thought to appraise. While you're waiting, please go to [Blacksmith] Heppa of Moradon and receive [Appraisal Tool Set], which I have requested from him not long ago. Then, bring it to me. I guess it'll cost a hundred thousand Noahs, so bring the money. Don't worry. I'll give you the money when you bring the receipt."

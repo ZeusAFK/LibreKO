@@ -1,0 +1,42 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 762 "[Lemegeton] Duke of the Dead"
+    Journal for karus "You must join the devil war with [Order of the Sorcery] Bros."
+    Journal for elmorad "You must join the devil war with [Order of the Sorcery] Sais."
+    Collect 1 of 900281000
+    Collect 1 of 900282000
+    Collect 1 of 900283000
+
+Requires player level >= 75 and quest 761 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+    Give 1 of 900284000
+
+On available
+    If player is karus
+        Say "We're almost done. Cheer up, Master! Bros is looking for you so go find him at Ronarkland."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "End did not stay long! Come master! Looking monk Keisei Phalanx magic reveal with your Lorna greater land can not be."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "We have to hope for the best."
+        Topic "Tell me more..." do
+            Show quest "It's about time that the heads of the Devils are coming out. Defeat [Devil26] Bune, [Devil50] Furcas, [Devil67] Amdusias.\n\nWe must give Bros of [Order of the Sorcery] of Ronark Land the seal Scrolls for [26Devil] Bune, [50Devil] Furcas, and [67Devil] Amdusias."
+    If player is elmorad
+        Say "We have to hope for the best."
+        Topic "Tell me more..." do
+            Show quest "It's about time that the heads of the Devils are coming out. Defeat [Devil26] Bune, [Devil50] Furcas, [Devil67] Amdusias.\n\nWe must give Sais of [Order of the Sorcery] of Ronark Land the seal Scrolls for [26Devil] Bune, [50Devil] Furcas, and [67Devil] Amdusias."
+
+On in_progress
+    Say "You aren't done sealing? I'll send you once again."
+
+On claimable
+    Show quest "You've done sealing."
+
+On completed
+    Say "This time is't [Devil2] Agares. With the [Devil2 Summoning Scroll] find [Devil2 Summon Stone] here at Ronarkland. They might be"

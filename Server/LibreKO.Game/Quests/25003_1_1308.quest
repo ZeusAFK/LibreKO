@@ -1,0 +1,24 @@
+Bind Npc 25003 Zone 1
+Quest 1308 "The dangerous escape"
+    Journal "Defeat 30 savages and wolfgods"
+    Kill 30 of 9693, 9673 at direction_1323
+    Kill 30 of 9692, 9672 at direction_1322
+
+Requires player level >= 35 and player is karus
+
+Rewards
+    Give 300000 experience
+
+direction_1322 = location "Savage" about "Was produced to support the food chain but because of their violent character, went back to wild." found "Karus" karus at 773 1756 in zone 1
+direction_1323 = location "Wolf Dog" about "Wolfman's descendant. People have different opinions about them being human or wolves." found "Karus" karus at 753 1745 in zone 1
+
+On offer
+    Say "Welcome <selfname>. Come on in. Can you do me a favor by any chance?\n\nWhen we Portu ran away from Draky, there were some refugees came out together as well. However among refugees, there are few still chased by monsters."
+    Topic "Tell me more..." do
+        Show quest "Yes. Please get rid of the Savages and Wolfdogs to guard the refugee way."
+
+On in_progress
+    Say "You haven't finish them yet? Please protect our refugees.."
+
+On claimable
+    Show quest "Thank you for your help. The refugees got arrived to the castle safely."

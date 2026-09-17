@@ -1,0 +1,17 @@
+Bind Npc 14424 Zone 12
+Quest 1109 "Noises that don't let us sleep"
+    Journal "Bring back 10 Harpy's feathers"
+    Collect 10 of 810304000
+
+Requires player level >= 68 and player is elmorad and quest 1093 is completed
+
+Rewards
+    Give 45000000 experience or 90000000 with premium
+
+On offer
+    Say "Help me!!!  I can't sleep because of those Harpys."
+    Topic "Tell me more..." do
+        Show quest "Please forgive me if I was rude the last time. Please get rid of those awful Harpys. And bring me 10 'Harpys wings'. Then I'll give you reward."
+
+On claimable
+    Show quest "Thank you so much!"

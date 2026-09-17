@@ -1,0 +1,36 @@
+Bind Npc 24204 Zone 1 for karus
+Bind Npc 14204 Zone 2 for elmorad
+Quest 584 "[Legless Devil] Effective Method"
+    Journal for karus "You must help [Priest] Minerva at Luferson Castle."
+    Journal for elmorad "You must help [Priest] Minerva at El Morad Castle."
+    Collect 2 of 379006000
+    Collect 10 of 389014000
+
+Requires player level >= 66 and quest 583 is completed
+
+Rewards
+    Give 250000 experience
+    Give 1 of 910236000
+
+On available
+    Say "Could she have found the ingredients? We are in a hurry so go talk to [Priest]Minerva once again."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You have come at last <selfname>."
+        Topic "Tell me more..." do
+            Show quest "Now I'm not the material remaining in the church. Donations are reduced lately saw this phenomenon. After all the ingredients need to be bought by <selfname> [holy water of salvation] we will produce.\n\nLuferson Castle [Governor] conversation with Minerva."
+    If player is elmorad
+        Say "You have come at last <selfname>."
+        Topic "Tell me more..." do
+            Show quest "Now I'm not the material remaining in the church. Donations are reduced lately saw this phenomenon. After all the ingredients need to be bought by <selfname> [holy water of salvation] we will produce.\n\n[Governor] Minerva of El Morad Castle dialog."
+
+On in_progress
+    Say "Material lacks. Insufficient material can not create the holy water."
+
+On claimable
+    Show quest "I've collected all the materials! Wait a minute and I'll be right."
+
+On completed
+    Say "We've delivered the holy water of salvation. Now worry about the epidemic can release the worries. Badalona large land base site that securely deliver thank you."

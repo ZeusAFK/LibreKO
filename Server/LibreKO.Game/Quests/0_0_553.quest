@@ -1,0 +1,49 @@
+Bind Npc 24424 Zone 11 for karus
+Bind Npc 14424 Zone 12 for elmorad
+Quest 553 "[Failed Mission] Another Preparation"
+    Journal for karus "You must accept [Ascetic] Veda's request."
+    Journal for elmorad "You must accept [Ascetic] Tabeth's request."
+    Kill 50 of 2102, 2152
+    Kill 50 of 2151, 2101, 2121
+
+Requires player level >= 63 and quest 552 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 207003603
+        Give 1 of 247003604
+        Give 1 of 267003605
+        Give 1 of 287003606
+
+On available
+    If player is karus
+        Say "[Ascetic] Beda I might have to speak to promote the return of another hero. We Need Help"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Ascetic] Tabeth, I might have to speak to promote the return of another hero. We Need Help"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Sorry, I think I owe you retrieve <selfname> by Hao. This time, for the return of [Eyeless Hero]  you want to rent a power Hao"
+        Topic "Tell me more..." do
+            Show quest "Luferson Castle to return to the castle, but the in Eslant updated my warriors to escort your root [the apostles] and  [Derubish] irritating. I move to Karus me to kill them\n\nHave to help the returning of the soul by defeating [Apostle] and [DeruBishi]."
+    If player is elmorad
+        Say "Sorry, I think I owe you retrieve <selfname> by Hao. This time, for the return of [Eyeless Hero] you want to rent a power Hao"
+        Topic "Tell me more..." do
+            Show quest "Eslant updated my warrior, but my escort to return to St. El Morad at the root of [the apostles], and [Derubish] irritating. Give them scoring area El Morad.\n\nHave to help the returning of the soul by defeating [Apostle] and [DeruBishi]."
+
+On in_progress
+    Say "yet? Did not return far! Sondrio asked quickly."
+
+On ready
+    Say "Master!Clear all values ??Nice! This you'll be able to return safely!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "This root pigment was prepared to return safely. Thank you for the. Would you hurry now ready to return."
+
+On completed
+    Say "Give us now the <selfname> by [Eyeless Hero] and return to inform the news."

@@ -1,0 +1,27 @@
+Bind Npc 29049 Zone 35
+Quest 809 "Find the weapons of the dead Castellan"
+    Journal "Listen and learn about the [Castellan's weapon] from [Pontifex] Skadi."
+    Collect 30 of 508213000
+    Collect 1 of 508211000
+    Collect 1 of 508212000
+
+Requires player level >= 1
+
+Rewards
+    Choose one
+        Give 1 of 191332670
+        Give 1 of 191333690
+        Give 1 of 191334530
+        Give 1 of 191335510
+        Give 1 of 191336810
+
+On offer
+    Say "Hi. I'm the [High Priest] Scotty. I'm guarding the seal of the Dark Dragon in this room [Dark Dragon Room]. But because our Castellan has passed away, what I do is meaningless."
+    Topic "Tell me more..." do
+        Show quest "Fortunately, a new castellan came to rule over this place, but the former castellan's ghost is wandering around here. I need 30 [Castellan's stamp], 1 [blooded Fantasy Cube] and 1 [Gold peels] to ease the former castellan's grudge. Please bring me these items so that I can ease his grudge. At the same time, I'll make you a weapon that's covered with the ghost of the former castellan.\n\nPlease bring the following to [High Priest] Scotty:30 x [Castellan Seal], 1 x [Red Ringshaped Cube], 1 x [Golden Shell]"
+
+On in_progress
+    Say "Please check the material you have. You need certain items I mentioned before.30 x [Castellan Seal], 1 x [Red Ringshaped Cube], 1 x [Golden Shell]"
+
+On claimable
+    Show quest "You corrected all. Which weapon do you want?"

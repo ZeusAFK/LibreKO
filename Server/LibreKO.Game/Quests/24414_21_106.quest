@@ -1,0 +1,34 @@
+Bind Npc 24414 Zone 21
+Quest 106 "Rest of soul"
+    Journal "[Unknown warrior] asked me to mop up the rotten eyes."
+    Kill 5 of 1057 at direction_576
+
+Requires player level >= 25
+
+Rewards
+    Give 125000 experience
+    Give 50 of 900790000
+    Give 40 of 900820000
+    Choose one
+        Give 1 of 310150006
+        Give 1 of 310150016
+        Give 1 of 310150026
+        Give 1 of 310150036
+        Give 1 of 310150076
+
+direction_576 = location "Rotten Eyes" about "Rotten Eyes\nCorpse which has lost volition due to evil energy; undead monster exclusively harboring a hostility against all life forms" found "Moradon" at 348 949 in zone 21
+
+On available
+    Say "The Nameless Warrior will perform a ritual to praise the souls of the dead warriors. Go and meet him, check him out. ^^"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The war on the continent of Adonis is doing great injustice to the warriors who have turned into casualties of war."
+    Topic "Tell me more..." do
+        Show quest "With the ceremony delayed, Rotten Eyes have seized this place and turned it into a situation which the warriors' spirits can't reside peacefully. I feel like I am turning into the dead being surrounded by this. If we do nothing, Rotten Eyes will take over the warriors' spirits soon.\n\nAs long as these Rotten Eyes exist, their spirits may not be able to sleep peacefully. I feel pathetic that there is nothing I can do."
+
+On in_progress
+    Say "Don't block me any more."
+
+On claimable
+    Show quest "I heard that someone wiped out Rotten Eyes.. Was it you? I think I probably was a little rude to you. I am sorry. Their spirits can rest comfortably now, can't they? Oh, thank you very much."

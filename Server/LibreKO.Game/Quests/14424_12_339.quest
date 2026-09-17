@@ -1,0 +1,56 @@
+Bind Npc 14424 Zone 12 for warrior
+Bind Npc 14424 Zone 12 for rogue
+Bind Npc 14424 Zone 12 for mage
+Bind Npc 14424 Zone 12 for priest
+Quest 339 "Danger from monsters"
+    Journal " I promised to hunt 4 4 unique monsters of Eslant."
+    Kill 1 of 7025 at direction_481
+    Kill 1 of 7029 at direction_482
+    Kill 1 of 7027 at direction_483
+    Kill 1 of 7028 at direction_484
+
+Requires player level >= 70 and player is elmorad
+
+Rewards for warrior
+    Choose one
+        Give 1 of 910120350
+        Give 1 of 910121300
+        Give 1 of 910126544
+
+Rewards for rogue
+    Choose one
+        Give 1 of 910119300
+        Give 1 of 910122350
+
+Rewards for mage
+    Choose one
+        Give 1 of 910123355
+        Give 1 of 910124351
+
+Rewards for priest
+    Choose one
+        Give 1 of 910125324
+        Give 1 of 910126544
+        Give 1 of 910120350
+
+direction_481 = location "[Quest] Lard Orc" about "[Quest]Lard orc" found "El Morad Eslant" at 508 391 in zone 12
+direction_482 = location "[Quest] Troll Captain" about "[Quest]Troll captain" found "El Morad Eslant" at 757 902 in zone 12
+direction_483 = location "[Quest] Giant Golem" about "[Quest]Giant golem" found "El Morad Eslant" at 105 185 in zone 12
+direction_484 = location "[Quest] Uruk Tron" about "[Quest]Uruk Tron" found "El Morad Eslant" at 701 128 in zone 12
+
+On available
+    Say "Master! Let's go see Eslant's [Ascetic] Tabeth!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "Go destroy the monsters below who are posing a threat to Eslant."
+
+On in_progress
+    Say "You haven't completed the Lard Orc [Quest]"
+
+On ready
+    Say "You have finished unique monster hunt. Go see [Ascetic] Tabeth"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Have you killed all the mosters? \nIt is as I expected. If you give me those lives, then I will give you what you choose from below in return.   But remember that you won't be able to return to Ronark Land Base if you take this weapon because of its power."

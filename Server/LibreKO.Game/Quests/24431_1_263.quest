@@ -1,0 +1,21 @@
+Bind Npc 24431 Zone 1
+Quest 263 "Uruk Blade Hunt"
+    Journal "[Guard] Hashan has commissioned you to hunt the Uruk Blade."
+    Kill 20 of 9717, 1693 at direction_551
+
+Requires player level >= 56 and player is karus
+
+Rewards
+    Give 25000000 experience
+
+direction_551 = location "Uruk Blade" about "Uruk Blade\nA high-level orc race inhabiting the continent of Adonis; distinguishing trait: strong Attack Power" found "Karus Eslant" at 1699 625 in zone 1
+
+On offer
+    Say "Uruk Blades are advancing toward this region after having killed people at the village entrance. I knew orcs were strong and brutal but I never imagine it would be to this extent. Please help me."
+    Topic "Where can I find it?" do
+        Map direction_551
+    Topic "Tell me more..." do
+        Show quest "Don't tell me you're planning on facing them alone.\n\nIf you do a favor for [Guard] Hashan, you will be rewarded."
+
+On claimable
+    Show quest "I don't know how to thank you. This is compensation for your help. This is all I can give you."

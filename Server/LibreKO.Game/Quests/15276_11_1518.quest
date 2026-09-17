@@ -1,0 +1,21 @@
+Bind Npc 15276 Zone 11
+Quest 1518 "[Daily Party] Demonic Legion of Eslant (Lust)"
+    Daily
+    Journal "Kill 50 Booro"
+    Kill 50 of 7016, 9622 at direction_1184
+
+Requires player level >= 60 and player is karus
+
+Rewards
+    Give 10000000 experience
+
+direction_1184 = location "Booro" about "Buro" found "Karus Eslant" karus at 851 907 in zone 11
+
+On offer
+    Show quest "I appreciate all of you're here for peace of Islant..| Please don't let them from summoning their leaders."
+
+On in_progress
+    Say "In order to stop the summoning of their leader, we need to defeat 50 Booros. "
+
+On claimable
+    Show quest "You have defeated all 50 of them.. Please help us out again in the future. "

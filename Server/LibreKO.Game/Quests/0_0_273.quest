@@ -1,0 +1,79 @@
+Bind Npc 24201 Zone 1 for karus warrior
+Bind Npc 14201 Zone 2 for elmorad warrior
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 14202 Zone 2 for elmorad rogue
+Bind Npc 24203 Zone 1 for karus mage
+Bind Npc 14203 Zone 2 for elmorad mage
+Bind Npc 24204 Zone 1 for karus priest
+Bind Npc 14204 Zone 2 for elmorad priest
+Quest 273 "2nd job change"
+    Journal for warrior "I promised to bring [Warrior Master] Skaki collectible items."
+    Journal for rogue "I promised to bring [Secret Agent] Clarence collectible items."
+    Journal for mage "I promised to bring [Archmage] Drake collectible items."
+    Journal for priest "I promised to bring [Priest] Minerva collectible items."
+    Collect 1 of 810095000 for warrior
+    Collect 1 of 810090000 for warrior
+    Collect 1 of 810094000 for warrior
+    Collect 1 of 810095000 for rogue
+    Collect 1 of 810092000 for rogue
+    Collect 1 of 810093000 for rogue
+    Collect 1 of 810095000 for mage
+    Collect 1 of 810091000 for mage
+    Collect 1 of 810092000 for mage
+    Collect 1 of 810095000 for priest
+    Collect 1 of 810091000 for priest
+    Collect 1 of 810093000 for priest
+
+Requires player level >= 60
+
+Rewards for warrior
+    Promote
+
+Rewards for rogue
+    Promote
+
+Rewards for mage
+    Promote
+
+Rewards for priest
+    Promote
+
+On offer
+    If player is warrior
+        Show quest "Oh, it's time for you to undergo a 2nd job change? You have persevered well. Don't be lax as the true chivalric mission begins now. You need the ingredients below to perform the 2nd job change ritual."
+    If player is rogue
+        Show quest "You have finally fulfilled the requirements for the 2nd job change. You will be the pride of us rogues if you successfully complete it. Your road to becoming a true rogue master begins now. To complete the 2nd job change you need the ingredients below."
+    If player is mage
+        Show quest "Mages undergoing a 2nd job change are no longer governed by my powers. If you want that power go and collect the ingredients below."
+    If player is priest
+        Show quest "You're attempting your 2nd job change, how impressive... Your training thus far must have moved the gods. You need the ingredients below to approach the gods closer."
+
+On in_progress
+    If player is warrior
+        Say "Not all the sacrificial offerings to hold the ceremony have been prepared yet."
+    If player is rogue
+        Say "You haven't collected all the sacrificial offerings to hold the ceremony yet."
+    If player is mage
+        Say "You haven't collected all the sacrificial offerings to hold the ceremony yet."
+    If player is priest
+        Say "You haven't collected all the sacrificial offerings to hold the ceremony yet."
+
+On claimable
+    If player is warrior
+        Show quest "All the preparations are complete. I appoint you Berserkerhero. Do you want to change jobs now?"
+    If player is rogue
+        Show quest "All the items needed for the ceremony have been prepared.  I will confer you by the name of Shadow Bane.  Would you like to hold the ceremony right now?"
+    If player is mage
+        Show quest "You brought everything I asked for. Here... you will now receive the appellation of omniscient Elimentalload  Do you want to undergo the job change now?"
+    If player is priest
+        Show quest "You are equipped with all the materials needed for your 2nd job change. You have made a vow with the gods under the title Shadowknight. Would you like to perform the ceremony now?"
+
+On completed
+    If player is warrior
+        Say "You have already completed the ritual."
+    If player is rogue
+        Say "You have already completed the ritual."
+    If player is mage
+        Say "You have already completed the ritual."
+    If player is priest
+        Say "You have already completed the ritual."

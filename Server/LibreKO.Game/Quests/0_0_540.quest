@@ -1,0 +1,37 @@
+Bind Npc 31515 Zone 1 for karus
+Bind Npc 31519 Zone 2 for elmorad
+Quest 540 "[Self-made Hero] Lost Golden Goblet"
+    Journal for karus "You must recover Golden Goblet, which the [Fled Slave] has lost. [Fled Slave] is in the Kalluga Valley."
+    Journal for elmorad "You must recover the Golden Goblet, which the [Fled Slave] has lost. [Fled Slave] is in the Kalluga Valley."
+    Collect 5 of 508106000
+
+Requires player level >= 62 and quest 539 is completed
+
+Rewards
+    Give 1 of 910227000
+    Give 2500000 experience
+    Give 10000 coins
+
+On available
+    Say "Master, slave, somehow I think that nervous? I think there is something to hide something. Once again, go investigate"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "That seupnidayo that, well, a fact lost in the way this of Kalluga Valley, where, to Uruk Tron."
+    Topic "Tell me more..." do
+        Show quest "Lavatory, sorry! Once, though he collected a golden cup of Uruk Tron, the check of them, I'll come.\n\nFind Golden Chalice from [Urkuron]."
+
+On in_progress
+    Say "Oh, still yet?"
+
+On claimable
+    If player is karus
+        Show quest "Oh!, Here. You've got to find properly"
+    If player is elmorad
+        Show quest "Oh!, Here. You've got to find properly."
+
+On completed
+    If player is karus
+        Say "[Guard] Mel Berwick God, You going out? Find the number of goblet've offered me, Do not Look at me, I look? When you return, I will die. Ask me."
+    If player is elmorad
+        Say "[Guard] God Zalk, You going out? Find the number of goblet've offered me, I look at it, can you please look at all? When you return, I will die. Ask me."

@@ -1,0 +1,22 @@
+Bind Npc 25065 Zone 2
+Quest 1243 "Ape threat"
+    Journal "Defeat 20 Apes"
+    Kill 20 of 4201, 4251 at direction_114
+
+Requires player level >= 35 and player is elmorad
+
+Rewards
+    Give 300000 experience
+
+direction_114 = location "Ape" about "Ape\nGiant Large carnivore inhabiting the jungle, distinguishing trait: attacks loot with ambushes, primary attack method: brandishes powerful arms and pulls and twists target" found "El Morad" elmorad at 1861 702 in zone 2
+
+On offer
+    Say "Are you <selfname>? Right. Can you help me?"
+    Topic "Tell me more..." do
+        Show quest "Refugees were caught by Apes during their exodus. \n Can you get rid of those Apes before they eat the refugees?"
+
+On in_progress
+    Say "We don't have time. Let's hurry."
+
+On claimable
+    Show quest "Ohoh! <selfname> thank you."

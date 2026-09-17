@@ -1,0 +1,20 @@
+Bind Npc 24424 Zone 11
+Quest 1094 "Evidence of Pagan"
+    Journal "Bring back 10 Evidence of Pagan"
+    Collect 10 of 810296000
+
+Requires player level >= 61 and player is karus
+
+Rewards
+    Give 25000000 experience or 50000000 with premium
+
+On offer
+    Say "Have you see the apostles?"
+    Topic "Tell me more..." do
+        Show quest "They are carrying around the skull statue. Bring me 10 of that."
+
+On in_progress
+    Say "You do not have enough."
+
+On claimable
+    Show quest "Thank you. Now I'll make a good use of them."

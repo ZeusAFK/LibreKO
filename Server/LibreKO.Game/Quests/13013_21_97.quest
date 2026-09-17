@@ -1,0 +1,26 @@
+Bind Npc 13013 Zone 21
+Quest 97 "Werewolf skin"
+    Journal "[Sentinel] Patrick asked me to bring 5 Apples of Moradon to him."
+    Collect 5 of 810418000
+
+Requires player level >= 20
+
+Rewards
+    Give 75000 experience
+
+On available
+    Say "Master, They say that [Sentinel] Patrick is collecting  Apple of Moradon. Let's go and see if we can profit from this."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "Please bring me Apple of Moradon. You already know that you can get apples if you catch werewolves even if I don't explain it to you, don't you? Ha ha..."
+
+On in_progress
+    Say "I need 5 Apples of Moradon."
+
+On ready
+    Say "You've collected all the Apple of Moradon. Let's go back and see Patrick now."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Good job. Here's a little something for you."

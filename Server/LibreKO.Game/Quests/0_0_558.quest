@@ -1,0 +1,30 @@
+Bind Npc 31518 Zone 11 for karus
+Bind Npc 31522 Zone 12 for elmorad
+Quest 558 "[Hidden Truth] Find the Vestige"
+    Journal for karus "You must find [Valley Surveillance Scout] of Eslant."
+    Journal for elmorad "You must find [Valley Surveillance Scout] of Eslant."
+
+Requires player level >= 64 and quest 557 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "It's a place where you [Eyeless Hero] by the southwest. So Go ahead."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "It's a place where you [Eyeless Hero] by the southwest. So Go ahead"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "<selfname> Do not?"
+        Topic "Tell me more..." do
+            Show quest "This is an honor. No way lines come by <selfname>, did not know\n\nAh, this is not the time for such matters. We are currently monitoring the situation for entering the valley, and so far, there have been no issues.\n\nYou have just heard about hero's favor from Beda. Go find[Valley Surveillance Scout] and talk to him."
+    If player is elmorad
+        Say "<selfname> Do not?"
+        Topic "Tell me more..." do
+            Show quest "This is an honor. No way lines come by <selfname>, did not know.\n\nYou have just heard about hero's favor from Tabeth. Go find[Valley Surveillance Scout] and talk to him."
+
+On claimable
+    Show quest "So from now on, thank you. Bag entry'm requested to formal support by <selfname> for the bar."

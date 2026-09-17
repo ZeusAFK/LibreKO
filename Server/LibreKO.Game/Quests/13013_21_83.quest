@@ -1,0 +1,37 @@
+Bind Npc 13013 Zone 21
+Quest 83 "Subdual of Gavolt"
+    Journal "[Sentinel] Patrick asked me to subdue five Gavolts for him."
+    Kill 5 of 350 at direction_12
+
+Requires player level >= 11
+
+Rewards
+    Give 6250 experience
+    Choose one
+        Give 1 of 202003005
+        Give 1 of 242003005
+        Give 1 of 262003005
+        Give 1 of 282003005
+
+direction_12 = location "Gavolt" about "Gavolt\nBird monsters endowed with power by Pathos`s evil energy" found "Inhabits Seashore of Hope" at 566 260 in zone 21
+
+On available
+    Say "Master, wonder what's going on with the food rationing. [Sentinel] Patrick should know about it. Go ask him."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Moradon is in my hands. What do you want?"
+    Topic "Tell me more..." do
+        Show quest "Wheat bread, Moradon's special local product, has killer taste. But since not too long ago, Gavolts raided the harvested mill and as a result, the food supply is running low and the number of citizens suffering from malnutrition rising. Can you wipe those monsters out and help the farmers of Moradon?"
+
+On in_progress
+    Say "In order for the farmers to be relieved, at least five of them may have to be caught."
+    Topic "Where can I find it?" do
+        Map direction_12
+
+On ready
+    Say "Master, you've done a decent job at wiping out Gavolts. Go back to [Sentinel] Patrick ."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Good work. The wheat supply has been normalized again. Let's indulge in plenty of bread and wine tonight."

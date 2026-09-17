@@ -1,0 +1,25 @@
+Bind Npc 24204 Zone 1 for karus priest
+Bind Npc 14204 Zone 2 for elmorad priest
+Quest 368 "80Lv skill"
+    Journal for karus "I've decided to undergo the test to learn the hidden skills of [Priest] Minerva."
+    Journal for elmorad "I've decided to undergo the test to learn the hidden skills of [Priest] Minerva."
+    Collect 15 of 810369000
+
+Requires player level >= 80
+
+Rewards none
+
+On offer
+    Say "Priests save the world in the name of the gods. You are qualified to undergo the final training of the priesthood."
+    Topic "Tell me more..." do
+        Show quest "To train the lv.80 skill, you will need 15 [Spell Stone Powder]. Are you ready for this?"
+
+On in_progress
+    Say "To receive the lv.80 skill, you need 15 [Spell Stone Powder]."
+
+On ready
+    Say "Master, you have collected all items needed to be conferred Level 80 skills. Hurry back to [Priest] Minerva."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You now possess Fast Restore, Counter Curse, and Discount Curse, Level 80 skills. I trust you will continue to work toward saving the world."

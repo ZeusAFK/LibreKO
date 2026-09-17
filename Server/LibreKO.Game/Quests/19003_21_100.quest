@@ -1,0 +1,32 @@
+Bind Npc 19003 Zone 21
+Quest 100 "Subdual of Keilan"
+    Journal "[Mercenary Adjutant Rage] asked me to subdue Keilan for him."
+    Kill 10 of 256 at direction_527
+
+Requires player level >= 29
+
+Rewards
+    Give 150000 experience
+    Give 100 of 900790000
+    Give 100 of 900820000
+
+direction_527 = location "Keilan" about "Keilan\nMetamorphosed bulcan which possesses Strength incomparable to that of other bulcans" found "Moradon" at 338 775 in zone 21
+
+On available
+    Say "Master, [Mercenary Adjutant] Rage is urgently looking for you!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "As I see <selfname>, now I am relieved. I just want to let you know that Keilans are gathering near the outskirts of Folk Village and their numbers are growing."
+    Topic "Tell me more..." do
+        Show quest "As their numbers are growing rapidly, we are in big trouble. Can you help me take care of these of Keilans?\n\nYou'll receive 500,000 Noah and Intro if you do [Sentinel] Patrick's favor."
+
+On in_progress
+    Say "I just believe in you <selfname>."
+
+On ready
+    Say "Master, you did a good job. Now Rage's worry will completely disappear."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you very much! This is a small token of my appreciation."

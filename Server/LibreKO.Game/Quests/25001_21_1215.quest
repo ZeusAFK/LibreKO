@@ -1,0 +1,20 @@
+Bind Npc 25001 Zone 21
+Quest 1215 "Not enough time"
+    Journal "Bring Apples of Moradon."
+    Collect 4 of 810418000
+
+Requires player level >= 20 and quest 1214 is completed
+
+Rewards
+    Give 75000 experience
+
+On offer
+    Say "There isn't a day I can rest! As you know, pirates are trying to invade Moradon. We need to do something about it."
+    Topic "Tell me more..." do
+        Show quest "Since we don't have enough food to get to Mora Island, we will need Apples of Moradon, and  Hm..  I think the scorpions have a habit of collecting Apples of Moradon..."
+
+On in_progress
+    Say "We are running out of time. Please get Apple of Moradon. Apple of Moradon can be obtained from wolves and scorpions."
+
+On claimable
+    Show quest "Oh!!! Because of you <selfname> we can do this before they attack Moradon. This is a reward to show you my appreciation."

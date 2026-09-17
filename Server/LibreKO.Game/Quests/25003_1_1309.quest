@@ -1,0 +1,18 @@
+Bind Npc 25003 Zone 1
+Quest 1309 "Food shortage 2"
+    Journal "Acquire 5 savage meat"
+    Collect 5 of 900651000
+
+Requires player level >= 35 and player is karus
+
+Rewards
+    Give 300000 experience
+
+On offer
+    Show quest "Welcome. I called you because food has been scarce since the refugee population has grown. Can you find something to eat for the refugees? I heard that Shebiji's Meat is delicious."
+
+On in_progress
+    Say "No food yet? People are starving to death."
+
+On claimable
+    Show quest "Ohh.. This is Shebiji's Meat. Thank you so much. Many refugees can survive with this."

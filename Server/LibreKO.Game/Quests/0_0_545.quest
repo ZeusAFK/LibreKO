@@ -1,0 +1,40 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 545 "[Self-made Hero/Boss] Fighting is the best way"
+    Journal for karus "You must get rid of Fierce Red Dragon by following [Captain] Fargo's order at Luferson Castle."
+    Journal for elmorad "You must get rid of Fierce Red Dragon by following [Captain] Falkwine's order at El Morad Castle."
+    Collect 1 of 910197000
+
+Requires player level >= 62 and quest 544 is completed
+
+Rewards
+    Give 50000000 experience
+    Give 150 np
+    Give 2 of 900017000
+
+On available
+    If player is karus
+        Say "It's now for the next opponent, Ew, [Captain]Harugo by carrying Find. Can we not have to go by the way?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "It's now for the next opponent, Ew, [Captain] Falkwine for you. Can we not have to go by the way?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "<selfname> ... The relative you know It's an Fierce Red Dragon, it's going to be a pretty tough fight."
+        Topic "Tell me more..." do
+            Show quest "So, to start. Always tough opponents before the battle is going to prepare this and that ... I think you'd better nor not even win, because nothing can happen in your life could be in danger.\n\nBring molar of the [Fierce Red Dragon] following [Captain] Fargo's order."
+    If player is elmorad
+        Say "<selfname> ... The relative you know It's an Fierce Red Dragon, it's going to be a pretty tough fight."
+        Topic "Tell me more..." do
+            Show quest "So, to start. Always tough opponents before the battle is going to prepare this and that ... I think you'd better nor not even win, because nothing can happen in your life could be in danger.\n\nBring molar of the [Fierce Red Dragon] following [Captain]Falkwine's order."
+
+On in_progress
+    If player is karus
+        Say "Did not start yet? Good luck."
+    If player is elmorad
+        Say "I did not start yet? Luck luck."
+
+On claimable
+    Show quest "Did you succeed ...! [Molar of Felankor], huh! You are my true hero!"

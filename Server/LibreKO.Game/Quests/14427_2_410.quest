@@ -1,0 +1,17 @@
+Bind Npc 14427 Zone 2
+Quest 410 "[Repeatable Solo] Skeleton Knight Hunt"
+    Repeat always
+    Journal "[Guard] Zalk has commissioned you to hunt Skeleton Knight. However, it will not count when you are in a party."
+    Kill 10 of 1102, 1152 at direction_104
+
+Requires player level >= 39 and player is elmorad
+
+Rewards
+    Give 650000 experience or 900000 with premium
+
+direction_104 = location "Skeleton Knight" about "Skeleton Knight\nAn undead like the undying, possesses great strength as it is composed of powerful bone structure" found "El Morad" elmorad at 1199 654 in zone 2
+
+On offer
+    Say "So does my armor fit you? My nation only issues it to high ranking guards. Not just anyone can get hold of it."
+    Topic "Tell me more..." do
+        Show quest "I am sure you are quite familiar with Skeleton monsters by now. Your target is Skeleton Knight."

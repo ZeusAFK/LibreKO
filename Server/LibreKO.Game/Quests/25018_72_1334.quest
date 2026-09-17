@@ -1,0 +1,17 @@
+Bind Npc 25018 Zone 72
+Quest 1334 "Angered Monsters 4"
+    Journal "Defeat 20 Aciants"
+    Kill 20 of 8854 at direction_1414
+
+Requires player level >= 50 and player is karus and quest 1330 is completed
+
+Rewards
+    Give 1250000 experience
+
+direction_1414 = location "Ancient" about "Ancient\nSimilar to Trent, it attacks using it's branches. Has good defense skills" found "Ardream" at 917 596 in zone 72
+
+On offer
+    Show quest "<selfname> came? Recently the monsters around Eslant bocome stronger and more damages rise. I think it's all about the red Spiritual stone effects. I want you <selfname> to defeat them. Please defeat 20 Ashents\n\nExisting Monsters become more violent with an effect of red spiritual stone. Kill the 20 violent(Ashunts)."
+
+On in_progress
+    Say "Not yet on Ashents? More damages appear on the Refugees' immigration to Ardream"

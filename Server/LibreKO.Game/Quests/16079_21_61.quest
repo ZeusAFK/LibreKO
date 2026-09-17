@@ -1,0 +1,19 @@
+Bind Npc 16079 Zone 21
+Quest 61 "Silk Spool"
+    Journal "Promised [Daughter of Grand Merchant] Menissiah that 2 Apple of Moradon would be collected and brought to her."
+    Collect 2 of 810418000
+
+Requires player level >= 2
+
+Rewards
+    Give 250 experience
+    Give 2500 coins
+
+On offer
+    Show quest "If you find and bring three of them to me so that I can make strong cloth, I will give you a rich reward. Apple of Moradon can be obtained from the worms in front of the castle."
+
+On in_progress
+    Say "Oh.. Dear.. Cloth can be made only when three Apple of Moradon are collected.."
+
+On claimable
+    Show quest "I feel good about all of the Apple of Moradon you brought!"

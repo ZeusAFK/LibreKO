@@ -1,0 +1,26 @@
+Bind Npc 24424 Zone 11
+Quest 1066 "The animated armor"
+    Journal "Defeat 25 Doom Knights"
+    Kill 25 of 9069, 9080 at direction_806
+
+Requires player level >= 65 and player is karus
+
+Rewards
+    Give 33750000 experience
+
+direction_806 = location "Doom Knight" about "Doom Knight\n Monster that fighting spirits of warriors imagery to wear a armor" found "Karus Eslant" karus at 395 806 in zone 11
+
+On offer
+    Say "So many are afraid these days."
+    Topic "Tell me more..." do
+        Show quest "A few days ago, they say that armors with no bodies were killing townspeople. Can you find out what's really happening? If it's the monster, please get rid of them."
+        Topic "Where can I find it?" do
+            Map direction_806
+
+On in_progress
+    Say "You found out of their identity?!"
+    Topic "Where can I find it?" do
+        Map direction_806
+
+On claimable
+    Show quest "Doom knight? What's happening in Eslant..."

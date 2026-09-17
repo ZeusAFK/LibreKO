@@ -1,0 +1,27 @@
+Bind Npc 31550 Zone 1
+Quest 624 "Subjugation of the Goblin Village II"
+    Journal "You must perform mission with [Goblin Subjugation Squad] Raul."
+    Kill 20 of 2952, 2902 at direction_824
+
+Requires player level >= 61 and player is karus and quest 622 is completed
+
+Rewards
+    Give 15000000 experience
+    Give 30000 coins
+
+direction_824 = location "Bugbear" about "Bugbear\n Goblins are communal living monsters. In classification, the strongest order of those are Cobalt, Bugbear, Goblin bouncer." found "Karus Goblin Village" karus at 304 158 in zone 1
+
+On available
+    Say "Master, once again, the Goblin subjugation. Looks like there's an intel that Bug Bears are about to attack a nearby town. Let's go and stop them."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh, you're back. There's an important intel that just came in. The [Bug Bears] which are known to be very hostile among Goblins are about attack a nearby town."
+    Topic "Tell me more..." do
+        Show quest "We must stop them before they attack the town. I need you to help me again.\n\nNear the village of Goblin Karus area [the Raul Goblin Squad] and must fight against the bugbear."
+
+On in_progress
+    Say "Let's keep it up and subjugate our enemy!"
+
+On claimable
+    Show quest "Haha, that's great. I fought hard, too, but I am no comparison to you, <selfname>."

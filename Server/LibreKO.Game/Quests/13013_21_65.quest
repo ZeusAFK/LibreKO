@@ -1,0 +1,39 @@
+Bind Npc 13013 Zone 21
+Quest 65 "Kecoon hunting"
+    Journal "[Sentinel] Patrick asked me to hunt five Kecoons for him."
+    Kill 5 of 150 at direction_11
+
+Requires player level >= 6
+
+Rewards
+    Give 1875 experience
+    Give 2000 coins
+    Choose one
+        Give 1 of 330150005
+        Give 1 of 330150015
+        Give 1 of 330150025
+        Give 1 of 330150035
+        Give 1 of 330150075
+
+direction_11 = location "Kecoon" about "Kecoon\nBipedal insect evolved from the war against Pathos" found "Moradon lakefront" at 616 341 in zone 21
+
+On available
+    Say "Master, [Sentinel] Patrick looks preoccupied again."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "For the protection of Moradon... What is it you wanted to say to me?"
+    Topic "Tell me more..." do
+        Show quest "Peddlers that have arrived recently say they were attacked by Kecoons en route to the castle. Kecoons are malicious monsters who attack humans and take their belongings. Say, do you mind venturing to the outskirts of Moradon and teaching them a lesson?"
+
+On in_progress
+    Say "Your ability is wasted. Don't you need to catch this much at least?"
+    Topic "Where can I find it?" do
+        Map direction_11
+
+On ready
+    Say "Master, I caught all of the Kecoons as promised. Let's go back to [Sentinel] Patrick."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thanks to you the number of Kecoons dwelling in the village outskirts have been reduced significantly. Thank you. I'll ask for your help again next time."

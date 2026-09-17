@@ -1,0 +1,20 @@
+Bind Npc 24424 Zone 11
+Quest 1092 "Noises that don't let us sleep"
+    Journal "Bring back 50 Harpy's feathers"
+    Collect 5 of 810295000
+
+Requires player level >= 60 and player is karus
+
+Rewards
+    Give 22500000 experience or 45000000 with premium
+
+On offer
+    Say "Can you sleep well these days?"
+    Topic "Tell me more..." do
+        Show quest "What are you talking about? Harpys are crying outloud at night. Defeat them and bring me 5 Harpys feathers."
+
+On in_progress
+    Say "If you want to earn experience bring me feathers."
+
+On claimable
+    Show quest "Because of you I can sleep now."

@@ -1,0 +1,37 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 533 "[Long Revenge] Sword strengthened by anger"
+    Journal for karus "You must accept the request of [Priest] Minerva at Luferson Castle."
+    Journal for elmorad "You must talk to [Priest] Minerva at El Morad Castle."
+    Collect 1 of 910216000
+
+Requires player level >= 61 and quest 532 is completed
+
+Rewards
+    Give 3 of 389155000
+    Give 125000 experience
+    Give 50 np
+
+On available
+    If player is karus
+        Say "Trojan Eslant go back! [Eslant Wise Man]Pablo'll be waiting"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Trojan Eslant go back![Eslant Wise Man]Agata'll be waiting!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Oh, <selfname>! So glad to finally arrive!"
+        Topic "Tell me more..." do
+            Show quest "Yes, restore the holy water safely have? Come on, give me a brought\n\n[Restoration Holy Water] needs to be delivered to Pablo."
+    If player is elmorad
+        Say "Oh, <selfname>! So glad to finally arrive!"
+        Topic "Tell me more..." do
+            Show quest "Yes, restore the holy water safely have? Come on, give me a brought\n\n[Restoration Holy Water] needs to be delivered to Agatha."
+
+On in_progress
+    Say "What is it? yet? Come on, come!"
+
+On claimable
+    Show quest "[Restore Holy Water] this group! So, Do I need to restore a vigorous"

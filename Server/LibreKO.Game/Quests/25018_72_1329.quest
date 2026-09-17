@@ -1,0 +1,15 @@
+Bind Npc 25018 Zone 72
+Quest 1329 "The people almost sacrificed"
+    Journal "Rescue 10 captured Fortu"
+    Collect 10 of 900691000
+
+Requires player level >= 50 and player is karus and quest 1327 is completed
+
+Rewards
+    Give 1250000 experience
+
+On offer
+    Show quest "Come. We're running out of time.  Save the people while you wipe out the Oaks.\n\nThere are still many hostages captured. Their lives are hanging on the cliff. Please save them from the prison.\n\nOaks try to use kidnapped refugees as offering to God. Save refugees from the prison in central of Ardream."
+
+On claimable
+    Show quest "Indeed! <selfname>! I knew you were awesome when I first saw you. But you are more than awesome. Thank you."

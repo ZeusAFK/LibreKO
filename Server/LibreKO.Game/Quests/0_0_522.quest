@@ -1,0 +1,39 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 522 "[Descendant of Hero] Attack"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+
+Requires player level >= 60 and quest 521 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Luferson Castle seems to be in trouble. Find [Captain]Harugo."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "El Morad Castle seems to be in trouble. Find [Captain]Falkwine."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Welcome <selfname>, your deeds are famous these days, I've heard a lot about you."
+        Topic "Tell me more..." do
+            Show quest "Many soldiers were attacked last night to monsters in the middle of the festival. We are preparing to find those monsters! But we don't know what it is...\n\nTalk to [Captain] Fargo about what's happened during the celebration."
+    If player is elmorad
+        Say "Welcome <selfname>, your deeds are famous these days, I've heard a lot about you."
+        Topic "Tell me more..." do
+            Show quest "Many soldiers were attacked last night to monsters in the middle of the festival. We are preparing to find those monsters! But we don't know what it is...\n\nTalk to [Captain] Falkwine about what's happened during the celebration."
+
+On claimable
+    If player is karus
+        Show quest "In the meantime go to [Eslant] and find [Eslant Wise Man]Pablo and identify the monster!"
+    If player is elmorad
+        Show quest "In the meantime go to [Eslant] and find [Eslant Wise Man]Agata and identify the monster!"
+
+On completed
+    If player is karus
+        Say "[Eslant Wise Man]Pablo is in the entrance of Eslant, you may take the portal to get there."
+    If player is elmorad
+        Say "[Eslant Wise Man]Agata is in the entrance of Eslant, you may take the portal to get there."

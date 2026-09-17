@@ -1,0 +1,27 @@
+Bind Npc 31569 Zone 12
+Quest 677 "Removing Magic of Darkness I"
+    Journal "You must accept the request of [Order of the Sorcery] Reisa."
+    Kill 25 of 9074, 9063 at direction_810
+
+Requires player level >= 65 and player is elmorad and quest 675 is completed
+
+Rewards
+    Give 25000000 experience
+    Give 30000 coins
+
+direction_810 = location "Half Troll Berserker" about "Half Troll Berserker\n This monster mixed by Unknown species, for that it is weakened species than normal troll" found "El Morad" elmorad at 641 888 in zone 12
+
+On available
+    Say "It's very thoughtful of Peltro, the [Leader of Associate of Magic] to care so much about his men. Let's help Cesar of [Order of the Sorcery]."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "How are you? The leader told me about you. We were just short of troops and thank you so much for helping us."
+    Topic "Tell me more..." do
+        Show quest "Please forgive me for being rude, but due to lack of time, I will get straight to the point. Islant is being tainted by the dark magic. We must disspell the chain one by one. But first, please get rid of one of their axes, [Half Troll Berserker].\n\nEslant updated Phalanx magic, depending on Ray's request, the magic of darkness threatening to eradicate the Half-Troll Berserker should be removed."
+
+On in_progress
+    Say "The axis has not gone down yet for I still can sense a strong magic force."
+
+On claimable
+    Show quest "I felt one of the five axes collapse. Thank you so much."

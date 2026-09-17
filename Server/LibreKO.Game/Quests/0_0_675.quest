@@ -1,0 +1,33 @@
+Bind Npc 31568 Zone 11 for karus
+Bind Npc 31567 Zone 12 for elmorad
+Quest 675 "Order of the Sorcery"
+    Journal for karus "You must talk to the [Leader of Order of the Sorcery] Malas."
+    Journal for elmorad "You must talk to the [Leader of Order of the Sorcery] Felor."
+
+Requires player level >= 65
+
+Rewards none
+
+On available
+    Say "Have you heard of [Magic Soceity]? That name sounds really cool. They are upto something in Islant. Let's go find out."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Who are you? Are you the great knight, <selfname>?"
+        Topic "Tell me more..." do
+            Say "Sorry for the late introduction. I'm Malas doing the little that I could as the [Leader of Associate of Magic] of the proud [Order of the Sorcery]."
+            Topic "Tell me more..." do
+                Show quest "It's so great to see you. I was just in need of a skilled warrior. Would you ease our mind by helping us?\n\nDo not su to talk a bit of magic Eslant Phalanx refurbished."
+    If player is elmorad
+        Say "Who are you? Are you the great knight, <selfname>?"
+        Topic "Tell me more..." do
+            Say "Sorry for the late introduction. I'm Paltro doing the little that I could as the [Leader of Associate of Magic] of the proud [Order of the Sorcery]."
+            Topic "Tell me more..." do
+                Show quest "It's so great to see you. I was just in need of a skilled warrior. Would you ease our mind by helping us?\n\nEslant updated dialogue and a Fellow refurbished Magic Phalanx] [Le."
+
+On claimable
+    If player is karus
+        Show quest "You are as valiant as I heard. Please help us with the mission given to my subordinate Cesar of [Order of the Sorcery] and [Chief Researcher] Gaz."
+    If player is elmorad
+        Show quest "You are as valiant as I heard. Please help us with the mission given to my subordinate Reisa of [Order of the Sorcery] and [Chief Researcher] Aldos."

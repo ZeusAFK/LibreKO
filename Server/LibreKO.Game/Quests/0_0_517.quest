@@ -1,0 +1,64 @@
+Bind Npc 24202 Zone 1 for karus warrior
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 24202 Zone 1 for karus mage
+Bind Npc 24202 Zone 1 for karus priest
+Bind Npc 14202 Zone 2 for elmorad warrior
+Bind Npc 14202 Zone 2 for elmorad rogue
+Bind Npc 14202 Zone 2 for elmorad mage
+Bind Npc 14202 Zone 2 for elmorad priest
+Quest 517 "[Descendant of Hero] preparation is the best part of Festival I"
+    Journal for karus "You must help [Secret Agent] Clarence of Asga Village to prepare for the Festival."
+    Journal for elmorad "You must help [Secret Agent] Clarence of Belua Village to prepare for the Festival."
+    Collect 5 of 508102000
+
+Requires player level >= 60 and quest 516 is completed
+
+Rewards for warrior
+    Give 2500000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 972280737
+        Give 1 of 972350825
+        Give 1 of 972360436
+        Give 1 of 972320794
+
+Rewards for rogue
+    Give 1 of 972290497
+    Give 2500000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 972290497
+        Give 1 of 972330924
+
+Rewards for mage
+    Give 2500000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 972300391
+        Give 1 of 972300392
+        Give 1 of 972300393
+
+Rewards for priest
+    Give 1 of 972340767
+    Give 1 of 972310767
+    Give 2500000 experience
+    Give 50 np
+
+On available
+    If player is karus
+        Say "[Secret Agent]Clarence is in [Bellua Village]."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Secret Agent]Clarence is in [Asga Village]."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hi <selfname>? Have you come to help prepare the Festival?"
+    Topic "Tell me more..." do
+        Show quest "Welcome. We need your help. Food needs to be delivered to the castle but there is still a lot missing. [Aged Wine Fruit] is needed, could you get it for me?\n\nYou have to help [Secret Deputy] Clarence to obtain Wine Fruit."
+
+On in_progress
+    Say "Not done yet? We have to hurry to finish the Festival preparations."
+
+On claimable
+    Show quest "One, two ... That's everything! Thanks for you help. I should compensate you! These are the weapons I used to use, take what you need!"

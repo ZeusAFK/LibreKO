@@ -1,0 +1,21 @@
+Bind Npc 25276 Zone 12
+Quest 1515 "[Daily Party] Demonic Legion of Eslant (Nightmare)"
+    Daily
+    Journal "Kill 50 Titans"
+    Kill 50 of 2404 at direction_1496
+
+Requires player level >= 60 and player is elmorad
+
+Rewards
+    Give 15000000 experience
+
+direction_1496 = location "Titan" found "Eslant El Morad" at 169 954 in zone 12
+
+On offer
+    Show quest "I appreciate all of you're here for peace of Islant..| Please don't let them from summoning their leaders."
+
+On in_progress
+    Say "In order to stop the summoning of their leader, we need to defeat 50 Titans. "
+
+On claimable
+    Show quest "You have defeated all 50 of them.. Please help us out again in the future. "

@@ -1,0 +1,13 @@
+Bind Npc 16079 Zone 21
+Quest 620 "Knock, and the door will open II"
+    Journal "You have to bring [Extract of Ore Magic Power] to [Kaishan's Daughter] Menissiah.|※ If you select [Refine] from [Miner] Pitman while you're performing this quest, [Extracting Ore Magic Power] will be activated."
+    Collect 20 of 389770000
+
+Requires player level >= 64 and quest 619 is completed
+
+Rewards
+    Give 25000000 experience
+    Give 200000 coins
+
+On offer
+    Show quest "Moradon the the subject daughter of [Daughter of Grand Merchant]Menissiah, acquires a mysterious ore mining miners feet distant was purified [Magic extract ore] to go to make."

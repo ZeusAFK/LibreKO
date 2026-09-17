@@ -1,0 +1,36 @@
+Bind Npc 31566 Zone 11 for karus
+Bind Npc 31565 Zone 12 for elmorad
+Quest 657 "Appraising Specialties II"
+    Journal for karus "You must accept the request of [Appraiser] Rockus."
+    Journal for elmorad "You must accept the request of [Appraiser] Diz."
+    Collect 1 of 900166000
+    Collect 1 of 900167000
+
+Requires player level >= 66 and quest 656 is completed
+
+Rewards
+    Give 250000 experience
+    Give 100000 coins
+
+On available
+    Say "Ahh, this is exhausting. We should go to  [Item Appraiser] Lockers.  I think he's holding a grudge against us. Boohoo."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Phew ... So finally the appraisal is done. It took too much time."
+        Topic "Tell me more..." do
+            Show quest "It's taking longer than I thought to appraise. While you're waiting, please go to [Blacksmith] Heppa of Moradon and receive [Appraisal Tool Set], which I have requested from him not long ago. Then, bring it to me. I guess it'll cost a hundred Noahs, so bring the money. Don't worry. I'll give you the money when you bring the receipt.\n\nAppraisers of Goods Eslant updated rocker's feelings of emotional set of tools and a set of emotional tools bill Moradon of  blacksmith to retrieve a sea wave."
+    If player is elmorad
+        Say "Phew ... So finally the appraisal is done. It took too much time."
+        Topic "Tell me more..." do
+            Show quest "It's taking longer than I thought to appraise. While you're waiting, please go to [Blacksmith] Heppa of Moradon and receive [Appraisal Tool Set], which I have requested from him not long ago. Then, bring it to me. I guess it'll cost a hundred thousand Noahs, so bring the money. Don't worry. I'll give you the money when you bring the receipt.\n\nEmotional set of tools, the materials and the bill set of emotional tools to help the feelings of Appraisers of Goods Eslant updated Deeds Moradon of  blacksmith to retrieve a sea wave."
+
+On in_progress
+    Say "100,000 Noa?, Where's the tool?"
+
+On claimable
+    Show quest "You are finally here. So you have managed to set aside all your emotions!\n\nThen, shall we bring it together and search for the next item? The next item is [Brilliant Stone] of [Death Wizard].  Good luck."
+
+On completed
+    Say "Then please come back when you reach Lv67. You will only be able to collect the next items then."

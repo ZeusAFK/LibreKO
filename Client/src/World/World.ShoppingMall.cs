@@ -1,0 +1,449 @@
+﻿using System.Collections.Generic;
+using Godot;
+using LibreKO.Network;
+using LibreKO.Domain;
+
+namespace LibreKO;
+
+public partial class World
+{
+    private CanvasLayer _shoppingmallLayer = null!;
+    private HudWindow _shoppingmallPanel = null!;
+    private bool _shoppingmallShown;
+
+    private Label _shoppingmallStoreStatus = null!;
+
+    private Button _shoppingmallInboxTab = null!;
+    private Button _shoppingmallHistoryTab = null!;
+    private VBoxContainer _shoppingmallList = null!;
+    private bool _shoppingmallHistoryView;
+    private readonly List<ShoppingMallLetter> _shoppingmallLetters = new();
+    private int _shoppingmallUnread;
+
+    private Label _shoppingmallReadTitle = null!;
+    private Label _shoppingmallReadBody = null!;
+
+    private LineEdit _shoppingmallToEdit = null!;
+    private LineEdit _shoppingmallSubjectEdit = null!;
+    private TextEdit _shoppingmallMsgEdit = null!;
+    private OptionButton _shoppingmallGiftPick = null!;
+    private Label _shoppingmallStatus = null!;
+
+    private void ShoppingMallInit()
+    {
+        BuildShoppingMallPanel();
+        Net.I.ShoppingMallOpenEvent += OnShoppingMallOpen;
+        Net.I.ShoppingMallUnreadEvent += OnShoppingMallUnread;
+        Net.I.ShoppingMallLetterListEvent += OnShoppingMallLetterList;
+        Net.I.ShoppingMallLetterReadEvent += OnShoppingMallLetterRead;
+        Net.I.ShoppingMallGiftResultEvent += OnShoppingMallGiftResult;
+        Net.I.ShoppingMallSendResultEvent += OnShoppingMallSendResult;
+        Net.I.ShoppingMallDeleteEvent += OnShoppingMallDelete;
+    }
+
+    private void ShoppingMallDispose()
+    {
+        Net.I.ShoppingMallOpenEvent -= OnShoppingMallOpen;
+        Net.I.ShoppingMallUnreadEvent -= OnShoppingMallUnread;
+        Net.I.ShoppingMallLetterListEvent -= OnShoppingMallLetterList;
+        Net.I.ShoppingMallLetterReadEvent -= OnShoppingMallLetterRead;
+        Net.I.ShoppingMallGiftResultEvent -= OnShoppingMallGiftResult;
+        Net.I.ShoppingMallSendResultEvent -= OnShoppingMallSendResult;
+        Net.I.ShoppingMallDeleteEvent -= OnShoppingMallDelete;
+    }
+
+    private void BuildShoppingMallPanel()
+    {
+        _shoppingmallLayer = new CanvasLayer { Layer = 73 };
+        AddChild(_shoppingmallLayer);
+
+        _shoppingmallPanel = new HudWindow("shoppingmall", "Power-Up Store", new Vector2(220, 120)) { Visible = false };
+        _shoppingmallPanel.Closed += CloseShoppingMall;
+        _shoppingmallLayer.AddChild(_shoppingmallPanel);
+
+        var root = _shoppingmallPanel.Body;
+        root.AddThemeConstantOverride("separation", 8);
+
+        root.AddChild(UiTheme.SectionTitle("Cash Shop"));
+        var storeRow = new HBoxContainer();
+        storeRow.AddThemeConstantOverride("separation", 8);
+        _shoppingmallStoreStatus = HudStyle.Label(13);
+        _shoppingmallStoreStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        _shoppingmallStoreStatus.Text = "Store closed.";
+        storeRow.AddChild(_shoppingmallStoreStatus);
+        var openBtn = new Button { Text = "Open Store", FocusMode = Control.FocusModeEnum.None };
+        openBtn.AddThemeFontSizeOverride("font_size", 12);
+        openBtn.Pressed += () => Net.I.SendShoppingMallOpen();
+        storeRow.AddChild(openBtn);
+        root.AddChild(storeRow);
+
+        root.AddChild(new HSeparator());
+
+        root.AddChild(UiTheme.SectionTitle("Gift Letters"));
+
+        var tabs = new HBoxContainer();
+        tabs.AddThemeConstantOverride("separation", 6);
+        _shoppingmallInboxTab = MakeTab("Inbox", () => SwitchLetterView(false));
+        _shoppingmallHistoryTab = MakeTab("History", () => SwitchLetterView(true));
+        tabs.AddChild(_shoppingmallInboxTab);
+        tabs.AddChild(_shoppingmallHistoryTab);
+        var refresh = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
+        refresh.AddThemeFontSizeOverride("font_size", 12);
+        refresh.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        refresh.Pressed += RequestLetterList;
+        tabs.AddChild(refresh);
+        root.AddChild(tabs);
+
+        var listScroll = new ScrollContainer
+        {
+            CustomMinimumSize = new Vector2(420, 220),
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+        };
+        root.AddChild(listScroll);
+        _shoppingmallList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        _shoppingmallList.AddThemeConstantOverride("separation", 3);
+        listScroll.AddChild(_shoppingmallList);
+
+        var readPanel = UiTheme.Section();
+        var readBox = new VBoxContainer();
+        readBox.AddThemeConstantOverride("separation", 2);
+        readPanel.AddChild(readBox);
+        _shoppingmallReadTitle = UiTheme.Text("Select a letter to read.", 13, UiTheme.GoldBright);
+        readBox.AddChild(_shoppingmallReadTitle);
+        _shoppingmallReadBody = UiTheme.Text("", 12, UiTheme.TextLo);
+        _shoppingmallReadBody.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        _shoppingmallReadBody.CustomMinimumSize = new Vector2(420, 44);
+        readBox.AddChild(_shoppingmallReadBody);
+        root.AddChild(readPanel);
+
+        root.AddChild(new HSeparator());
+
+        root.AddChild(UiTheme.SectionTitle("Send a Letter"));
+        _shoppingmallToEdit = MakeField(root, "To", 16);
+        _shoppingmallSubjectEdit = MakeField(root, "Subject", 31);
+
+        var msgLbl = UiTheme.Text("Message", 12, UiTheme.TextLo);
+        root.AddChild(msgLbl);
+        _shoppingmallMsgEdit = new TextEdit
+        {
+            CustomMinimumSize = new Vector2(420, 56),
+            PlaceholderText = "Write your message…",
+            WrapMode = TextEdit.LineWrappingMode.Boundary,
+        };
+        root.AddChild(_shoppingmallMsgEdit);
+
+        var giftRow = new HBoxContainer();
+        giftRow.AddThemeConstantOverride("separation", 8);
+        giftRow.AddChild(UiTheme.Text("Attach", 12, UiTheme.TextLo));
+        _shoppingmallGiftPick = new OptionButton { FocusMode = Control.FocusModeEnum.None };
+        _shoppingmallGiftPick.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        giftRow.AddChild(_shoppingmallGiftPick);
+        root.AddChild(giftRow);
+
+        var sendRow = new HBoxContainer();
+        sendRow.AddThemeConstantOverride("separation", 8);
+        _shoppingmallStatus = HudStyle.Label(12);
+        _shoppingmallStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        sendRow.AddChild(_shoppingmallStatus);
+        var sendBtn = new Button { Text = "Send", FocusMode = Control.FocusModeEnum.None };
+        sendBtn.AddThemeFontSizeOverride("font_size", 12);
+        sendBtn.Pressed += SendComposedLetter;
+        sendRow.AddChild(sendBtn);
+        root.AddChild(sendRow);
+    }
+
+    private Button MakeTab(string text, System.Action onPressed)
+    {
+        var b = new Button { Text = text, ToggleMode = true, FocusMode = Control.FocusModeEnum.None };
+        b.AddThemeFontSizeOverride("font_size", 12);
+        b.Pressed += () => onPressed();
+        return b;
+    }
+
+    private LineEdit MakeField(VBoxContainer parent, string label, int maxLen)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 8);
+        var lbl = UiTheme.Text(label, 12, UiTheme.TextLo);
+        lbl.CustomMinimumSize = new Vector2(60, 0);
+        row.AddChild(lbl);
+        var edit = new LineEdit { MaxLength = maxLen };
+        edit.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        row.AddChild(edit);
+        parent.AddChild(row);
+        return edit;
+    }
+
+    public void ToggleShoppingMall()
+    {
+        if (_shoppingmallShown) CloseShoppingMall();
+        else OpenShoppingMall();
+    }
+
+    public void OpenShoppingMall()
+    {
+        if (_shoppingmallShown) return;
+        _shoppingmallShown = true;
+        _shoppingmallPanel.Visible = true;
+
+        SwitchLetterView(_shoppingmallHistoryView);
+        RebuildGiftPicker();
+        RequestLetterList();
+        Net.I.SendShoppingMallUnread();
+    }
+
+    public void CloseShoppingMall()
+    {
+        if (!_shoppingmallShown) return;
+        _shoppingmallShown = false;
+        _shoppingmallPanel.Visible = false;
+        Net.I.SendShoppingMallClose();
+    }
+
+    private void SwitchLetterView(bool history)
+    {
+        _shoppingmallHistoryView = history;
+        _shoppingmallInboxTab.ButtonPressed = !history;
+        _shoppingmallHistoryTab.ButtonPressed = history;
+        if (_shoppingmallShown) RequestLetterList();
+    }
+
+    private void RequestLetterList()
+    {
+        if (_shoppingmallHistoryView) Net.I.SendShoppingMallLetterHistory();
+        else Net.I.SendShoppingMallLetterList();
+    }
+
+    private void OnShoppingMallLetterList(List<ShoppingMallLetter> letters, bool history)
+    {
+        if (!_shoppingmallShown) return;
+        if (history != _shoppingmallHistoryView) return;
+        _shoppingmallLetters.Clear();
+        _shoppingmallLetters.AddRange(letters);
+        RebuildLetterList();
+    }
+
+    private void RebuildLetterList()
+    {
+        foreach (var c in _shoppingmallList.GetChildren()) c.QueueFree();
+        if (_shoppingmallLetters.Count == 0)
+        {
+            var empty = HudStyle.Label(13);
+            empty.Text = _shoppingmallHistoryView ? "No past letters." : "Your mailbox is empty.";
+            _shoppingmallList.AddChild(empty);
+            return;
+        }
+        foreach (var letter in _shoppingmallLetters)
+            _shoppingmallList.AddChild(BuildLetterRow(letter));
+    }
+
+    private Control BuildLetterRow(ShoppingMallLetter letter)
+    {
+        var row = UiTheme.RowPanel();
+        var hb = new HBoxContainer();
+        hb.AddThemeConstantOverride("separation", 8);
+        row.AddChild(hb);
+
+        if (letter.HasGift && letter.ItemId != 0)
+        {
+            hb.AddChild(new TextureRect
+            {
+                Texture = ItemData.Icon(letter.ItemId),
+                CustomMinimumSize = new Vector2(30, 30),
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+            });
+        }
+        else
+        {
+            var glyph = UiTheme.Text(letter.HasGift ? "$" : "✉", 18, UiTheme.Gold, HorizontalAlignment.Center);
+            glyph.CustomMinimumSize = new Vector2(30, 30);
+            hb.AddChild(glyph);
+        }
+
+        var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        info.AddThemeConstantOverride("separation", -2);
+        var subject = UiTheme.Text("", 13, letter.Status == 1 ? UiTheme.TextHi : UiTheme.TextLo);
+        subject.Text = string.IsNullOrEmpty(letter.Subject) ? "(no subject)" : letter.Subject;
+        info.AddChild(subject);
+        string gift = letter.HasGift
+            ? (letter.ItemId != 0
+                ? $"  ·  {ItemData.DisplayName(letter.ItemId)}" + (letter.Count > 1 ? $" x{letter.Count}" : "")
+                : "") + (letter.Coins > 0 ? $"  ·  {letter.Coins:n0} gold" : "")
+            : "";
+        var meta = UiTheme.Text($"from {letter.Sender}{gift}   ({letter.DaysLeft}d left)", 11, UiTheme.TextDim);
+        info.AddChild(meta);
+        hb.AddChild(info);
+
+        int id = letter.LetterId;
+        var readBtn = new Button { Text = "Read", FocusMode = Control.FocusModeEnum.None };
+        readBtn.AddThemeFontSizeOverride("font_size", 11);
+        readBtn.Pressed += () => Net.I.SendShoppingMallReadLetter(id);
+        hb.AddChild(readBtn);
+
+        if (letter.HasGift)
+        {
+            var getBtn = new Button { Text = "Get", FocusMode = Control.FocusModeEnum.None };
+            getBtn.AddThemeFontSizeOverride("font_size", 11);
+            getBtn.Pressed += () => Net.I.SendShoppingMallGetGift(id);
+            hb.AddChild(getBtn);
+        }
+
+        var delBtn = new Button { Text = "×", FocusMode = Control.FocusModeEnum.None, TooltipText = "Delete" };
+        delBtn.AddThemeFontSizeOverride("font_size", 13);
+        delBtn.Pressed += () => Net.I.SendShoppingMallDelete(new[] { id });
+        hb.AddChild(delBtn);
+
+        return row;
+    }
+
+    private void OnShoppingMallLetterRead(bool ok, int letterId, string message)
+    {
+        if (!ok)
+        {
+            _shoppingmallReadTitle.Text = "That letter is no longer available.";
+            _shoppingmallReadBody.Text = "";
+            return;
+        }
+        var subject = "Letter";
+        foreach (var l in _shoppingmallLetters)
+            if (l.LetterId == letterId) { subject = string.IsNullOrEmpty(l.Subject) ? "Letter" : l.Subject; break; }
+        _shoppingmallReadTitle.Text = subject;
+        _shoppingmallReadBody.Text = message;
+    }
+
+    private void OnShoppingMallGiftResult(bool ok, int letterId, int code)
+    {
+        if (ok)
+        {
+            Chat.Info("Gift claimed from your mailbox.");
+            RequestLetterList();
+            Net.I.SendShoppingMallUnread();
+        }
+        else
+        {
+            SetShoppingMallStatus(code switch
+            {
+                -2 => "That gift was already claimed.",
+                _  => "Couldn't claim the gift (bags full or too heavy).",
+            }, true);
+        }
+    }
+
+    private void OnShoppingMallDelete(List<int> deletedIds, bool overflow)
+    {
+        if (overflow)
+        {
+            SetShoppingMallStatus("Delete up to 5 letters at a time.", true);
+            return;
+        }
+        if (deletedIds.Count > 0)
+        {
+            RequestLetterList();
+            Net.I.SendShoppingMallUnread();
+        }
+    }
+
+    private void OnShoppingMallUnread(int count)
+    {
+        _shoppingmallUnread = count;
+        _shoppingmallInboxTab.Text = count > 0 ? $"Inbox ({count})" : "Inbox";
+    }
+
+    private void OnShoppingMallOpen(short error, short freeSlot)
+    {
+        if (error == 1)
+        {
+            _shoppingmallStoreStatus.Text = "Store open — browse cash items on the website.";
+            _shoppingmallStoreStatus.AddThemeColorOverride("font_color", UiTheme.Good);
+        }
+        else
+        {
+            string reason = error switch
+            {
+                -2 => "You can't shop while dead.",
+                -3 => "Close your trade first.",
+                -4 => "Close your stall first.",
+                -5 => "The store is closed in this zone.",
+                -8 => "Make a free inventory slot first.",
+                _  => "The store couldn't open.",
+            };
+            _shoppingmallStoreStatus.Text = reason;
+            _shoppingmallStoreStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
+        }
+    }
+
+    private void RebuildGiftPicker()
+    {
+        _shoppingmallGiftPick.Clear();
+        _shoppingmallGiftPick.AddItem("None", 0);
+        _shoppingmallGiftPick.SetItemMetadata(0, -1);
+        int idx = 1;
+        for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
+        {
+            if (Inv[abs].IsEmpty) continue;
+            string name = ItemData.DisplayName(Inv[abs].ItemId);
+            if (Inv[abs].Count > 1) name += $" x{Inv[abs].Count}";
+            _shoppingmallGiftPick.AddItem(name, idx);
+            _shoppingmallGiftPick.SetItemMetadata(idx, abs);
+            idx++;
+        }
+        _shoppingmallGiftPick.Selected = 0;
+    }
+
+    private void SendComposedLetter()
+    {
+        string to = _shoppingmallToEdit.Text.Trim();
+        string subject = _shoppingmallSubjectEdit.Text.Trim();
+        string message = _shoppingmallMsgEdit.Text.Trim();
+
+        if (to.Length == 0) { SetShoppingMallStatus("Enter a recipient.", true); return; }
+        if (subject.Length == 0) { SetShoppingMallStatus("Enter a subject.", true); return; }
+        if (message.Length == 0) { SetShoppingMallStatus("Write a message.", true); return; }
+
+        int sel = _shoppingmallGiftPick.Selected;
+        int absSlot = sel > 0 ? (int)_shoppingmallGiftPick.GetItemMetadata(sel) : -1;
+
+        if (absSlot >= 0 && absSlot < Inv.Length && !Inv[absSlot].IsEmpty)
+        {
+            int cost = Net.ShoppingMallGiftCost;
+            if (Sheet.Gold < cost) { SetShoppingMallStatus($"Sending a gift costs {cost:n0} gold.", true); return; }
+            byte srcPos = (byte)(absSlot - GridStart);
+            Net.I.SendShoppingMallGiftLetter(to, subject, message, Inv[absSlot].ItemId, srcPos);
+        }
+        else
+        {
+            int cost = Net.ShoppingMallLetterCost;
+            if (Sheet.Gold < cost) { SetShoppingMallStatus($"Sending a letter costs {cost:n0} gold.", true); return; }
+            Net.I.SendShoppingMallTextLetter(to, subject, message);
+        }
+        SetShoppingMallStatus("Sending…", false);
+    }
+
+    private void OnShoppingMallSendResult(bool ok, int code)
+    {
+        if (ok)
+        {
+            SetShoppingMallStatus("Letter sent.", false);
+            Chat.Info("Your letter was delivered.");
+            _shoppingmallToEdit.Text = "";
+            _shoppingmallSubjectEdit.Text = "";
+            _shoppingmallMsgEdit.Text = "";
+            RebuildGiftPicker();
+            return;
+        }
+        SetShoppingMallStatus(code switch
+        {
+            -6  => "You can't mail yourself.",
+            -32 => "That item can't be mailed.",
+            _   => "Couldn't send (check the name / your gold).",
+        }, true);
+    }
+
+    private void SetShoppingMallStatus(string text, bool warn)
+    {
+        _shoppingmallStatus.Text = text;
+        _shoppingmallStatus.AddThemeColorOverride("font_color", warn ? UiTheme.Bad : UiTheme.Good);
+    }
+}

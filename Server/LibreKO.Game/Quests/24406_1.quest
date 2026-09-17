@@ -1,0 +1,4 @@
+Bind Npc 24406 Zone 1
+
+On greeting
+    Say "This is the mission I can assign you now..."

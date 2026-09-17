@@ -1,0 +1,33 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 588 "[Great Battle] War Clouds over the Stronghold"
+    Journal for karus "You must talk to [Base Spearhead] Cruzed at the Stronghold of Ronark Land."
+    Journal for elmorad "You must talk to [Base Spearhead] Krable at the Stronghold of Ronark Land."
+
+Requires player level >= 67 and quest 587 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "[Base Scout]Crewjed's another check. This time, I'm a war broke out, and El Morad."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "The base paper forefront label's check by another master. This time, I'm a war broke out, and El Morad."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "<selfname>?Oh, here we are! Were waiting!"
+        Topic "Tell me more..." do
+            Show quest "Demons go back sooner this time by El Morad guy he attacks started work, though, but not to victory in the battle of the last demon army, but our troops are weakened in the aftermath of it aimed at a gap gauge ...\n\nSo, inevitably, were you also may have trouble Yes, once again we can help it?\n\nYou need to talk to [Base Scout]Crewjed in Ronark Land Base."
+    If player is elmorad
+        Say "<selfname>?Oh, here we are! Were waiting!"
+        Topic "Tell me more..." do
+            Show quest "Demons go away, terrified, this time Karus guys been attacked've started, though, but not to victory in the battle of the last demon army, but our troops are weakened in the aftermath of it aimed at a gap gauge ...\n\nSo, inevitably, were you also may have trouble Yes, once again we can help it?\n\nYou need to talk to [Base Scout]Crable in Ronark Land Base."
+
+On claimable
+    If player is karus
+        Show quest "A Waha ! Once again on the battlefield, and you'll be able to set out! Please come and come prepared!"
+    If player is elmorad
+        Show quest "Waha ! Once again on the battlefield, and you'll be able to set out! Please come and come prepared!"

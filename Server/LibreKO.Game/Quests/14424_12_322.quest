@@ -1,0 +1,20 @@
+Bind Npc 14424 Zone 12
+Quest 322 "Apostle of Flames hunt"
+    Journal "[Ascetic] Tabeth asked me to hunt 40 Apostles of Flames."
+    Kill 40 of 8006, 8056 at direction_617
+
+Requires player level >= 77 and player is elmorad
+
+Rewards
+    Give 50000000 experience
+
+direction_617 = location "Apostle of Flame" about "Apostle of Flame\nA type of Esoteric Buddhist priest who employs fire magic of darkness whose fire magic is powerful enough to burn anything." found "El Morad Eslant" at 784 331 in zone 12
+
+On available
+    Say "Master, Are you ready for more training?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hmm... Did you have anything in particular in mind?"
+    Topic "Tell me more..." do
+        Show quest "What? What are you going to do with that worm? It'll just decrease your ability. Ha Ha! This time, let's make the Apostle of Flames the target of the training. His Flame Spell of Darkness attack cannot be explained in words. So please, be careful. And wear asbestos underwear for this one!."

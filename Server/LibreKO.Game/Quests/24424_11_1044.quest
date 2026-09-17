@@ -1,0 +1,18 @@
+Bind Npc 24424 Zone 11
+Quest 1044 "Acolytes' counter attack"
+    Journal "Defeat 20 Acolyte"
+    Kill 20 of 9612, 9613 at direction_1174
+
+Requires player level >= 60 and player is karus and quest 1042 is completed
+
+Rewards
+    Give 21250000 experience
+
+direction_1174 = location "Apostle" about "Apostle\nOne level higher than DeruBishi. They don't just attack first but at night they become violent dark magicians." found "Karus Eslant" karus at 573 493 in zone 11
+
+On offer
+    Say "Welcome. The reason I called you is to tell you that the apostles are gathering around."
+    Topic "Tell me more..." do
+        Show quest "Well.. I'm not sure why.. But let's catch them first."
+        Topic "Where can I find it?" do
+            Map direction_1174

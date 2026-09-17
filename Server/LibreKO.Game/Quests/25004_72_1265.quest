@@ -1,0 +1,21 @@
+Bind Npc 25004 Zone 72
+Quest 1265 "Weakening shield."
+    Journal "Deactivate the towers in the north, south, east and west."
+    Collect 1 of 900679000
+    Collect 1 of 900680000
+    Collect 1 of 900681000
+    Collect 1 of 900682000
+
+Requires player level >= 50 and player is elmorad and quest 1264 is completed
+
+Rewards
+    Give 1250000 experience
+
+On offer
+    Show quest "Thank you for saying to help us. First we have to stop the operation of Sealing tower located at Ardream's every corners.\n\nThere have to be Oaks around the sealing towers. Obtain a key to release the seal on the tower after defeating the Oaks.\n\nYes. It's tough job, it' ll be hard without <selfname>. Please do it for us.\n\nTo go to central Oak village in Ardream, the sealing tower in every corners of Ardream have to be destroyed. Defeat the Oaks around the tower, get a key and release the seal."
+
+On in_progress
+    Say "Not released the seal yet? Please hurry."
+
+On claimable
+    Show quest "Indeed <selfname>. You're awesome as I heard. This is nothing but a small reward for all this."

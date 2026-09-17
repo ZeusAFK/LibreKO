@@ -1,0 +1,10 @@
+Bind Npc 19004 Zone 21
+
+On greeting
+    If quest 697 is started and player lacks 900217000
+        Say "It's been a while, <selfname>. I thought you had no more business here. Hmm...[Magical power transmit marble]? I have a pile of them here. I guess I could just give you one for old times' sake. But you must keep this secret from Rage."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 900217000
+    Else
+        Say ""

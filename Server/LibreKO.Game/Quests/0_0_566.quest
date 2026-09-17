@@ -1,0 +1,32 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 566 "[Hidden Truth/Boss] Barbarian King"
+    Journal for karus "You must get rid of Barbarian King Marsil by following [Captain] Fargo's order at Luferson Castle."
+    Journal for elmorad "You must get rid of Barbarian King Marsil by following [Captain] Fargo's order at El Morad Castle."
+    Collect 1 of 910199000
+
+Requires player level >= 64 and quest 565 is completed
+
+Rewards
+    Give 50000000 experience
+    Give 150 np
+    Give 2 of 900017000
+
+On available
+    If player is karus
+        Say "s Been involved soldiers safely! But That's should say to [Captain]Harugo by carrying separate us"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "s Been involved soldiers safely!I should say to us separately by Captain Falkwine should go"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Led forces worked you . Associated with this battle, but would like to try, I'll ask you specifically"
+    Topic "Tell me more..." do
+        Show quest "Marsil the barbarian king, and not to bring certain things. I think maybe that would probably be a traitor inside. Marsil be holding the evidence of the inner I regret it so much!. So you only believe\n\nObtain [Garlong's Secret letter] by defeating [King Savage]."
+
+On in_progress
+    Say "yet?Come into the barbarian king [the Eslant updated Mar fact."
+
+On claimable
+    Show quest "This is not! This is not happening! National hero did this ..."

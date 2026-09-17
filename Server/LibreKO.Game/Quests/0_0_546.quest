@@ -1,0 +1,33 @@
+Bind Npc 24424 Zone 11 for karus
+Bind Npc 14424 Zone 12 for elmorad
+Quest 546 "[Failed Mission] Attack of Barbarians"
+    Journal for karus "You must talk to an [Ascetic] Veda, of Eslant."
+    Journal for elmorad "You must talk to an [Ascetic] Tabeth, of Eslant."
+
+Requires player level >= 63
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Master! Find [Ascetic] Beda in Eslant!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master! Find [Ascetics] Tabeth on Eslant!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "are you <selfname>? Welcome"
+        Topic "Tell me more..." do
+            Show quest "Eslant here recently had a sugar content messenger of the King-Tropez. Tell me the story was concerned that worked for the conquest of the barbarian troops attacked and destroyed.\n\nStart conversation with [Ascetic] Beda about missing Unit."
+    If player is elmorad
+        Say "<selfname>? Come on."
+        Topic "Tell me more..." do
+            Show quest "Eslant here recently had a sugar content messenger of the King-Tropez. Tell me the story was concerned that worked for the conquest of the barbarian troops attacked and destroyed.\n\nStart conversation with [Ascetic] Beda about missing Unit."
+
+On claimable
+    If player is karus
+        Show quest "So enshrined by <selfname>, lo Been destroyed, let me find a trace of the bag. Would you like to ask to protect you if you have Survivors.\n\nThe bag was missing from the the Eslant updated snow-capped southwest y'know"
+    If player is elmorad
+        Show quest "So enshrined by <selfname>, lo Been destroyed, let me find a trace of the bag. Would you like to ask to protect you if you have Survivors.\n\nThe bag was missing from the the Eslant updated snow-capped southwest y'know."

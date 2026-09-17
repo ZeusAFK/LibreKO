@@ -1,0 +1,18 @@
+Bind Npc 14424 Zone 12
+Quest 1065 "Storm calling Acolyte"
+    Journal "Defeat 25 Acolytes of the Storm"
+    Kill 25 of 9081, 9070 at direction_817
+
+Requires player level >= 64 and player is elmorad and quest 1063 is completed
+
+Rewards
+    Give 30000000 experience
+
+direction_817 = location "Apostle of the Storm" about "Apostle of the Storm\n It is storm wizard who using strong power of wind" found "El Morad Eslant" elmorad at 730 338 in zone 12
+
+On offer
+    Say "From the past week, it's happening again."
+    Topic "Tell me more..." do
+        Show quest "Yeah. Could you take care of them?"
+        Topic "Where can I find it?" do
+            Map direction_817

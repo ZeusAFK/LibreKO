@@ -1,0 +1,15 @@
+[
+  {
+    "Id": 1,
+    "Name": "1",
+    "GroupId": 1,
+    "Category": 0,
+    "IpAddress": "127.0.0.1",
+    "LanIpAddress": "127.0.0.1",
+    "Port": 15001,
+    "OnlinePlayers": 0,
+    "MaxPlayers": 3000,
+    "FreePlayerCap": 3000,
+    "Status": "Online"
+  }
+]

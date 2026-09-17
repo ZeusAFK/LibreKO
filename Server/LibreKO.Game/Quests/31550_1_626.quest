@@ -1,0 +1,27 @@
+Bind Npc 31550 Zone 1
+Quest 626 "Subjugation of the Goblin Village III"
+    Journal "You must perform mission with [Goblin Subjugation Squad] Raul."
+    Kill 20 of 2953, 2903 at direction_826
+
+Requires player level >= 62 and player is karus and quest 624 is completed
+
+Rewards
+    Give 12500000 experience
+    Give 30000 coins
+
+direction_826 = location "Pooka" about "Pooka\n Goblins are communal living monsters. In classification, the strongest order of those are Cobalt, Bugbear, Goblin bouncer." found "Karus Goblin Village" karus at 304 158 in zone 1
+
+On available
+    Say "Ah, master. The continued subjugation has made the Goblins angry. Let's hurry to [Goblin Subjugation Squad] at once."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh no, this is bad. The two previous subjugations has made the Goblins really angry."
+    Topic "Tell me more..." do
+        Show quest "We won't just sit and watch them attack us.  Why don't we strike first and defeat [Pookas], their vanguard, so that they won't even dare thinking about attacking us.\n\nCombating Puka of Goblin Karus area near the village of [the Raul Goblin Squad] and must"
+
+On in_progress
+    Say "Come on guy, not yet! Our enemies are still strong."
+
+On claimable
+    Show quest "Phew, I guess we can breath now.  Well done."

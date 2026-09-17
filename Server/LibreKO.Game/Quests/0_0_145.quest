@@ -1,0 +1,48 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 145 "Orc Talisman"
+    Journal for karus "You have promised [Moradon Merchant] Shymer to bring her Orc Talisman."
+    Journal for elmorad "You have promised [Moradon Merchant] Clark to bring him the Orc Talisman."
+    Collect 7 of 379277000
+
+Requires player level >= 41
+
+Rewards
+    Give 2250000 experience
+
+direction_107 = location "Lard Orc" about "Lard Orc\nAn orc race inhabiting Adonis, possesses a relatively low HP but equipped with powerful Attack Power" found "Karus" karus at 410 461 in zone 1
+direction_108 = location "Lard Orc" about "Lard Orc\nAn orc race inhabiting Adonis, possesses a relatively low HP but equipped with powerful Attack Power" found "El Morad" elmorad at 1840 1669 in zone 2
+
+On available
+    If player is karus
+        Say "Master! Did you know that these days Orc Talismans are used for making weapons? Why's that? Would Shaimer know why?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master! Did you know that these days Orc Talismans are used for making weapons? Why's that? Would Clark know why?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Ah~ an Orc Talisman?\nI've heard that Moradon's [Blacksmith] Heppa is always interested in making special weapons. He and I have traded a lot of stuff, and Orc Talismans have always been the most popular."
+    Topic "Tell me more..." do
+        Show quest "Phew... <selfname> knows too much about me!  It's really quite simple - Orc Talismans are found on Lard Orc's armor. One more thing - Lard Orcs are really ugly.\n\nIf possible, make them high quality Talismans, Ok?"
+
+On in_progress
+    If player is karus
+        Say "Heppa wants 1,000 of 'em this month, and I'm... hmm... exactly 7 short. Not bad."
+        Topic "Where can I find it?" do
+            Map direction_107
+    If player is elmorad
+        Say "Heppa wants 1,000 of 'em this month, and I'm... hmm... exactly 7 short. Not bad."
+        Topic "Where can I find it?" do
+            Map direction_108
+
+On ready
+    If player is karus
+        Say "Is this an Orc Talisman? Looks like scrap to me..."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Is this Orc Talisman? Looks like scrap to me..."
+        Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Ah, so this month's trade with Heppa was a success. Thanks."

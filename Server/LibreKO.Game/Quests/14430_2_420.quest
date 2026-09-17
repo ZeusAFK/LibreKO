@@ -1,0 +1,33 @@
+Bind Npc 14430 Zone 2
+Quest 420 "[Repeatable Solo] Ape Hunt"
+    Repeat always
+    Journal "[Mercenary] Tales has commissioned you to hunt Ape. However, it will not count when you are in a party."
+    Kill 20 of 4201, 4251 at direction_114
+
+Requires player level >= 44 and player is elmorad
+
+Rewards
+    Give 1000000 experience or 1400000 with premium
+
+direction_114 = location "Ape" about "Ape\nGiant Large carnivore inhabiting the jungle, distinguishing trait: attacks loot with ambushes, primary attack method: brandishes powerful arms and pulls and twists target" found "El Morad" elmorad at 1861 702 in zone 2
+
+On available
+    Say "And with Apes causing a headache recently, the injury to Tales is really a bad news.\n\nMmm... How about dealing with the Ape problem yourself, master?\n\nYou might like to know that the Apes around here are enormous meat-eating bastards who favor surprise attacks. So, like, be careful!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The Apes around here are acting up...It's actually a serious problem because Rage is out of action."
+    Topic "Tell me more..." do
+        Show quest "Not long ago, I was wounded in battle and I wanted to call you for help, but you already had too many missions, and no one else could help."
+
+On in_progress
+    Say "Apes... ."
+    Topic "Where can I find it?" do
+        Map direction_114
+
+On ready
+    Say "Master, you tried hard. Let's go and claim the reward."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You've conquered those oversized and foul smelling Apes?! Thank you very much ? This is a sign of my appreciation, use it well."

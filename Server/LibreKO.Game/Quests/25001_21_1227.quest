@@ -1,0 +1,19 @@
+Bind Npc 25001 Zone 21
+Quest 1227 "Gone missing in Fork Town"
+    Journal "Defeat the monsters in the graveyard to find Apples of Moradon and a proposal ring"
+    Collect 3 of 810418000
+    Collect 1 of 900678000
+
+Requires player level >= 26 and quest 1226 is completed
+
+Rewards
+    Give 300000 experience
+
+On offer
+    Show quest "Long time no see <selfname>. Did you hear that people of Folk village are vanishing? I haven't find any clues on their whereabouts, but only people who went to the graveyard are gone..<selfname>, can you search for more evidence?"
+
+On in_progress
+    Say "Any clue yet? We need more clues."
+
+On claimable
+    Show quest "Oh my!... Clothing from missing people..And..This ring..what???"

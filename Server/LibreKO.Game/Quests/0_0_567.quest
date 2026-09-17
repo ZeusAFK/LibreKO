@@ -1,0 +1,30 @@
+Bind Npc 24427 Zone 1 for karus
+Bind Npc 14427 Zone 2 for elmorad
+Quest 567 "[Regained Honor] Rumor"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+
+Requires player level >= 65 and quest 566 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "[Guard] Melburick check for a long time. Should go find it."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Guard] Zalk This long time's check. Should go find it."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "... Oh, you back. <selfname>!"
+        Topic "Tell me more..." do
+            Show quest "It is something else, but these days because of the strange rumors and anxious residents of the mainland. What does this rumor? One of the famous heroes are related to people the bag destroyed was updated Eslant\n\nThere's a rumor about annihilation. [Captain] Fargo is looking for you."
+    If player is elmorad
+        Say "... Oh, you back. <selfname>!"
+        Topic "Tell me more..." do
+            Show quest "It is something else, but these days because of the strange rumors and anxious residents of the mainland. What does this rumor? One of the famous heroes are related to people the bag destroyed was updated Eslant\n\nThere's a rumor about annihilation. [Captain] Falkwine is looking for you."
+
+On claimable
+    Show quest "Because of the rumors, but the truth is the fact that residents are worried. So now's rotting headaches. So help me, to help maintain peace and order, please?"

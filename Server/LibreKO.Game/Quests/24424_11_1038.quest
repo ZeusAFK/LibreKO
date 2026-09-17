@@ -1,0 +1,26 @@
+Bind Npc 24424 Zone 11
+Quest 1038 "Identity of the strange weeping"
+    Journal "Defeat 20 Harpys"
+    Kill 20 of 9618, 9619 at direction_1180
+
+Requires player level >= 60 and player is karus
+
+Rewards
+    Give 21250000 experience
+
+direction_1180 = location "Harpy" about "Harpy\nHarpies have low intelligence and attacks just about anyone coming into their territories. When they meet up with other harpie groups of the mountainous area they have battles without a reason. " found "Karus Eslant" karus at 432 493 in zone 11
+
+On offer
+    Say "(Look at the eyes..  There's so much dark circle...)"
+    Topic "Tell me more..." do
+        Show quest "Harpys are making noises so I can't sleep. Can you get rid of them?"
+        Topic "Where can I find it?" do
+            Map direction_1180
+
+On in_progress
+    Say "You're still not done? I can't sleep a good night sleep at night."
+    Topic "Where can I find it?" do
+        Map direction_1180
+
+On claimable
+    Show quest "Now thanks to you. I can sleep."

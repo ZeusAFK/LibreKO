@@ -1,0 +1,32 @@
+Bind Npc 29014 Zone 71
+Quest 765 "[Lemegeton] President of Slayer"
+    Journal "You must join the devil war with [Order of the Sorcery] Bros."
+    Kill 1 of 9148, 9221 at direction_919
+    Kill 50 of 9150, 9223
+
+Requires player level >= 75 and player is karus and quest 763 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+    Give 1 of 900285000
+    Give 1 of 900286000
+
+direction_919 = location "Glasya Labolas" about "Glasya Labolas\n He looks middle age man wear scholar clothes and has bat wings on back. He is always blood hungry murderer, so incite murder. He has power of invisible. Handle 36corps in hell. " found "Ronark Land" karus at 1348 679 in zone 71
+
+On available
+    Say "Master, you are awesome! I can almost taste the glory. Go visit Bros."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "We are not far from winning."
+    Topic "Tell me more..." do
+        Show quest "Because of the sealing of [Devil2] Devils are defeated. Now the left ones are [Devil25] Glasya-labolas and [Devil49] Corcell.\n\nWe must help Bros of [Order of the Sorcery] of Ronark Land seal the [25Devil] Glasya-labolas and [49Devil] Corcell."
+
+On in_progress
+    Say "You haven't defeated them all."
+    Topic "Where can I find it?" do
+        Map direction_919
+
+On claimable
+    Show quest "Good job.\n\nGive me the sealed documents."

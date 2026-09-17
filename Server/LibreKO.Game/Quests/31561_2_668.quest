@@ -1,0 +1,27 @@
+Bind Npc 31561 Zone 2
+Quest 668 "Hunting Game I"
+    Journal "Compete with [Hunter] Halon in hunting."
+    Kill 50 of 4301, 4351 at direction_14
+
+Requires player level >= 62 and player is elmorad and quest 666 is completed
+
+Rewards
+    Give 12500000 experience
+    Give 30000 coins
+
+direction_14 = location "Tyon" about "Tyon\nBoar monster evolved by Pathos' evil power" found "El Morad " at 1684 779 in zone 2
+
+On available
+    Say "This much practice is a joke to you, master! So it's a real game from now on."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh, you are here. Be prepared. I will not go easy on you."
+    Topic "Tell me more..." do
+        Show quest "Then, shall we start the first match? How about hunting some [Tion] to begin with. You go ahead first. I will follow you shortly...perhaps after I take a nap or something. Hahaha!\n\nCompete [the hunter]] [tayion halronwa, hunting El Morad region Raon Camp."
+
+On in_progress
+    Say "Well, it seems like I will have no problem even if I have another nap."
+
+On claimable
+    Show quest "Oooh, so you have fulfilled your goal at least."

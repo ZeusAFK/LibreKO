@@ -1,0 +1,47 @@
+Bind Npc 31558 Zone 1 for karus
+Bind Npc 31557 Zone 2 for elmorad
+Quest 649 "Procurement of Specialty Goods IV"
+    Journal for karus "You must accept the request of [Sailor] Hayes."
+    Journal for elmorad "You must accept the request of [Sailor] Hein."
+    Collect 3 of 389440000
+
+Requires player level >= 64 and quest 648 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 10000 coins
+    Give 1 of 900214000
+
+direction_513 = location "Lamia" about "Lamia\nMust feed on fresh human blood; attacks all warriors in its vicinity" found "El Morad" at 610 1079 in zone 2
+direction_514 = location "Lamia" about "Lamia\nMust feed on fresh human blood; attacks all warriors in its vicinity" found "Karus" at 1409 987 in zone 1
+
+On available
+    If player is karus
+        Say "[Sailor] Hayes is looking for you again. He sent you off to Islant last time. What's he want now?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Sailor] Haine is looking for you again. He sent you off to Islant last time. What's he want now?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Tut, tut,tut...That fool... Oh, you are here."
+        Topic "Tell me more..." do
+            Show quest "The next thing I need to ask of you is a rare armor material called [Hard Snake Scale] which you can get from [Lamia]. This will be your last favor. Thank you for all your work.\n\n, From [Lamia], in accordance with the request of Karus Regional Executive pugeo port sailors and yes, you bring in solid snake scales."
+    If player is elmorad
+        Say "Tut, tut,tut...That fool... Oh, you are here."
+        Topic "Tell me more..." do
+            Show quest "The next thing I need to ask of you is a rare armor material called [Hard Snake Scale] which you can get from [Lamia]. This will be your last favor. Thank you for all your work.\n\n[Lamia] upon request of Aladdin and Local Rod Elmo Sharks captain of the port, bring in from [solid snake scales]."
+
+On in_progress
+    If player is karus
+        Say "It's the last mission. Can you do a little better?"
+        Topic "Where can I find it?" do
+            Map direction_514
+    If player is elmorad
+        Say "It's the last mission. Can you do a little better?"
+        Topic "Where can I find it?" do
+            Map direction_513
+
+On claimable
+    Show quest "Well ... The quality is very good. Good.\n\nCould you help that fool for the last time? Please deliver [Armor Material Box] to [Blacksmith] of Moradon. This will be the last delivery. But please bring me the receipt!"

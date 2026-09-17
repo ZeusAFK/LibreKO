@@ -1,0 +1,57 @@
+Bind Npc 24410 Zone 1 for karus
+Bind Npc 14410 Zone 2 for elmorad
+Quest 202 "Barbeque Ingredient"
+    Journal for karus "You must bring 2 Tyon Meats to [Imperial Palace Chef] to receive experience."
+    Journal for elmorad "You must bring 2 Tyon Meats to [Imperial Palace Chef] to receive experience."
+    Collect 2 of 379204000
+
+Requires player level >= 46
+
+Rewards
+    Give 2500000 experience
+    Give 1 of 389620000
+
+direction_14 = location "Tyon" about "Tyon\nBoar monster evolved by Pathos' evil power" found "El Morad " at 1684 779 in zone 2
+direction_344 = location "Tyon" about "Tyon\nBoar monster evolved by Pathos' evil power" found "Karus" at 360 1300 in zone 1
+
+On available
+    If player is karus
+        Say "Master, it's time for the Imperial Palace Chef to start cooking. Go see what he's up to."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, it's time for the Imperial Palace Chef to start cooking. Go and see him."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Don't you think I should make a fabulous dish!?\n\nOh, no. I'm going to make BBQ but I'm short on Tyon meat."
+        Topic "Tell me more..." do
+            Show quest "Can you bring me 2 slabs of Tyon meat from the nearby farm? I will make you great BBQ and a handsome reward in return. How about it?\n\nThe Imperial Palace Chef  will give a reward for the Tyon meat he needs and receive the quest which entails delivering BBQ to the Lunar Gate Sentinel."
+    If player is elmorad
+        Say "Don't you think I should make a lavish dish!?"
+        Topic "Tell me more..." do
+            Show quest "Can you find me 2 slabs of Tyon meat from the nearby farm? I'll give you a hefty reward and some BBQ. What do you say?\n\nThe Imperial Palace Chef will give a reward for the Tyon meat he needs and receive the quest which entails delivering BBQ to the Lunar Gate Sentinel."
+
+On in_progress
+    If player is karus
+        Say "Tyons live near the farm to the right of the castle. They're a bit savage so be careful."
+        Topic "Where can I find it?" do
+            Map direction_344
+    If player is elmorad
+        Say "Tyons live to the right of the nearby farm. They're a bit wild so be careful now."
+        Topic "Where can I find it?" do
+            Map direction_14
+
+On ready
+    If player is karus
+        Say "Master, you have collected all slabs of Tyon meat. Let's go the Imperial Palace Chef."
+        Topic "Confirm" goto close
+    If player is elmorad
+        Say "Master, you've collected all slabs of Tyon meat. Let's go to the Imperial Palace Chef."
+        Topic "Confirm" goto close
+
+On claimable
+    If player is karus
+        Show quest "Oh! You brought them? Here's your reward."
+    If player is elmorad
+        Show quest "Wow! You brought them!?!? Here's your reward."

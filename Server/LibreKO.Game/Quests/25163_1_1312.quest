@@ -1,0 +1,20 @@
+Bind Npc 25163 Zone 1
+Quest 1312 "Saving Leia's parents"
+    Journal "Save Leia's parents and defeat the Ape King"
+    Kill 1 of 9697 at direction_1337
+
+Requires player level >= 35 and player is karus
+
+Rewards
+    Give 300000 experience
+
+direction_1337 = location "King Ape" about "King of Aif who eats human meat. Likes to prison human. (Prison Key is managed by aives near the prison)" found "Karus" karus at 176 1355 in zone 1
+
+On offer
+    Show quest "<selfname>, have you seen my father while rescuing the refugees? My father was kidnapped too.. Could you try one more time?\n\nThank you so much"
+
+On in_progress
+    Say "You didn't find my father yet?"
+
+On claimable
+    Show quest "What? My father died? (Wailing) Father ... Father ... sobbing ...."

@@ -1,0 +1,42 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 630 "Reporting Results"
+    Journal for karus "You must report to [Advisor] Herga."
+    Journal for elmorad "You must report to [Advisor] Nez."
+    Collect 1 of 900197000
+
+Requires (player level >= 63 and player is karus and quest 628 is completed) or (player level >= 63 and player is elmorad and quest 629 is completed)
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "The subjugation is now complete. Give this [Subjugation Report] to Herga, the [advisor]."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "The subjugation is now complete. Give this [Subjugation Report] to Nez, the [advisor]."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Is that you, <selfname>? What's going on?"
+        Topic "Tell me more..." do
+            Show quest "Is this a report from the [Goblin Subjugation Squad] that was dispatched to the Goblin village?\n\nHerga the Subjugation results report to the Luferson Castle [advisor] must be passed."
+    If player is elmorad
+        Say "Is that you, <selfname>? What's going on?"
+        Topic "Tell me more..." do
+            Show quest "Is this a report from the [Goblin Subjugation Squad] that was dispatched to the Goblin village?\n\n[Advisor]Nez El Morad Castle must be passed to the the Subjugation results report."
+
+On in_progress
+    If player is karus
+        Say "You need to stop messing around!"
+    If player is elmorad
+        Say "Stop messing around. You are making me angry."
+
+On claimable
+    If player is karus
+        Show quest "Oh, the subjugation is complete. You contributed to this greatly, <selfname>. Great work."
+    If player is elmorad
+        Show quest "The subjugation is complete. You contributed to this greatly, <selfname>. Great work."

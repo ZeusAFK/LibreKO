@@ -1,0 +1,24 @@
+Bind Npc 29014 Zone 71
+Quest 727 "[Lemegeton] Devil 8 Count Barbatos"
+    Journal "You must join the devil war with [Order of the Sorcery] Bros."
+    Kill 1 of 9109, 9182
+
+Requires player level >= 72 and player is karus and quest 726 is completed
+
+Rewards
+    Give 47500000 experience
+    Give 100000 coins
+    Give 100 np
+    Give 2 of 900017000
+
+On available
+    Say "Was this guy the tough one? This is too ... Anyways, I'm glad we got sealed. Shouldn't we complain to Bros of [Order of the Sorcery]? Hehe."
+
+On offer
+    Show quest "There's a strange movement of the devils. They have been quiet since the fall of [9 Devil] but I think they are upto something. No time to rest. Let's get down to the next devil.\n\n[Devil 8] Barbatos, also called Ace Hunter, is able to understand the voices of animals. It means that he's a natural-born hunter. As you can predict, something horrible will happen if he decides to hunt us . . . I don't even want to think about it. So, we have to get him before he gets us. Go to the [Luferson Castle] with the [Devil 8 Summoning Scroll], find the [Devil 8 Summoning Stone] at [Luferson Castle], and then, summon and destroy him.\n\nYou have to receive [Devil 8 Summoning Scroll] from [Order of the sorcery] Bros, of Ronark Land. Then, summon [Devil 8] Barbatos from [Devil 8 Summoning Stone] at Luferson Castle area and kill him. \n※ [Devil 8 Summoning Scroll] is free the first time, but from the next time on you'll have to pay a million Noahs."
+
+On in_progress
+    Say "The bowstring of [8Devil] Barbatos still sings on his hand. And that song is the requiem for the prey. Let's hurry."
+
+On claimable
+    Show quest "His bowstring is cut!\n\nHmm, there's a strange energy. I feel something is about to happen. Here's your next mission. Eliminate [31Devil] Foras and [55Devil] Orobas and bring their soul to me."

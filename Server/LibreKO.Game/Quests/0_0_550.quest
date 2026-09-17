@@ -1,0 +1,43 @@
+Bind Npc 24424 Zone 11 for karus
+Bind Npc 14424 Zone 12 for elmorad
+Quest 550 "[Failed Mission] In Memory of Hero"
+    Journal for karus "You must accept the request of [Hero who lost his eyes], of Eslant."
+    Journal for elmorad "You must accept the request of [Hero who lost his eyes], of Eslant."
+    Collect 1 of 910229000
+
+Requires player level >= 63 and quest 549 is completed
+
+Rewards
+    Give 1 of 910229000
+    Give 125000 experience
+    Give 20000 coins
+
+On available
+    If player is karus
+        Say "It's a really deep friendship. Oh, admiration, and when not! Whoops, quickly [Ascetic] Bedas God Go"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "It's a really deep friendship. Oh, admiration, and when not!Whoops, fast other bed I guess God [the ascetic]"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Make no <selfname>? Alleviating the suffering of the soul?"
+        Topic "Tell me more..." do
+            Show quest "To rectify this keepsake.Hmm ... The [Noble Soul] is filled with keepsakes and immature I'm untouchable.\n\nDeliver to Beda the [Collected Hero's Article]."
+    If player is elmorad
+        Say "Make no <selfname>? Alleviating the suffering of the soul?"
+        Topic "Tell me more..." do
+            Show quest "To rectify this keepsake.Hmm ... The [Noble Soul] is filled with keepsakes and immature I'm untouchable.\n\nDeliver to Tabeth the [Collected Hero's Article]."
+
+On in_progress
+    Say "The Where's probationary goods?"
+
+On claimable
+    If player is karus
+        Show quest "Why do I want to go [Eslant Wise Man] Pablo once ..."
+    If player is elmorad
+        Show quest "Why do I want to go [the Eslant updated Sage Dear Agatha, once ..."
+
+On completed
+    Say "A keepsake to rectify?"

@@ -1,0 +1,24 @@
+Bind Npc 29027 Zone 71
+Quest 722 "[Lemegeton] Devil 9 Satan Paimon"
+    Journal "You must join the devil war with [Order of the Sorcery] Sais."
+    Kill 1 of 9171, 9098
+
+Requires player level >= 71 and player is elmorad and quest 720 is completed
+
+Rewards
+    Give 42500000 experience
+    Give 100000 coins
+    Give 50 np
+    Give 1 of 900106000
+
+On available
+    Say "Has the number of underworld troops gone down? We have defeated their boss but their troops still remain strong. Let's find out what Sais of [Order of the Sorcery] thinks about this."
+
+On offer
+    Show quest "You are here. You need to fight a devil with a larger scale of army.\n\nIt's [Devil 9] Paimon, King of Hell, who has two hundred legions of demons under his rule. He's a devil who regards honor and glory as very important, and he always leads the war with his strong legions. Bring the [Devil 9 Summoning Scroll] and summon him from the [Devil 9 Summoning Stone] at [El Morad Castle]. Then, destroy him so that we can seal his spirit.\n\nDevil 9 summoned of Elmo rod provinces to Lorna greater land of magic Phalanx Alsace, Devil 9 summoning stone] [Devil 9] Gusion, the summons must be removed. \n * Summon Devil 9 stand and receive one free when you get back, you must pay 100 million Noah."
+
+On in_progress
+    Say "Not yet. [9Devil] Paimon...his glory and honor have not fallen yet."
+
+On claimable
+    Show quest "The fall of [9Devil] Paimon's glory and honor is confirmed. And his soul, sealed. Great work.\n\nHe often finds hidden treasures and thus revered as god by many treasure hunters. But to us, he is just another threatening devil. Please eliminate [20Devil] Purson and [44Devil] Shax."

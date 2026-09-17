@@ -1,0 +1,24 @@
+Bind Npc 29027 Zone 71
+Quest 716 "[Lemegeton] Devil 10 Commander Buer"
+    Journal "You must join the devil war with [Order of the Sorcery] Sais."
+    Kill 1 of 9170, 9097
+
+Requires player level >= 71 and player is elmorad and quest 714 is completed
+
+Rewards
+    Give 37500000 experience
+    Give 100000 coins
+    Give 100 np
+    Give 2 of 900017000
+
+On available
+    Say "Sais of [Order of the Sorcery] requests for you, master. Is this about the [Devil War]? Let's go to Ronark Land."
+
+On offer
+    Show quest "We the [Order of the Sorcery] are heading for our victory. However, we also suspect our enemy's counterattack. Hmm...\n\nThis one has the shape of Kentauros and also the shape of a starfish . . . Oh, I was talking about [Devil 10] Commander Buer who you have to fight against this time. It's said that one can be cured and treated only by his touch. It's certainly a good ability. However, since he's our enemy we can't consider his ability a good one. Bring this [Devil 10 Summoning Scroll] and go to the [El Morad Castle] where the [Devil 10 Summoning Stone] is located. Then, summon and destroy him.\n\nYou have to receive [Devil 10 Summoning Scroll] from [Order of the sorcery] Seis, of Ronark Land. Then, summon [Devil 10] Buer from [Devil 10 Summoning Stone] at El Morad Castle area and kill him. \n※ [Devil 10 Summoning Scroll] is free the first time, but from the next time on you'll have to pay a million Noahs."
+
+On in_progress
+    Say "Still... I feel the soul of [10Devil] Commander Buer. He must be eliminated fast."
+
+On claimable
+    Show quest "Good work. Now we have 18 of'em sealed up. Still a long way left to go. Good luck!\n\nThere are devils who have many troops. They are [33Devil] Gaap and [57Devil] Ose. They say [33Devil] Gaap has a total of 66 troops. Your mission is to scatter their underworld troops by eliminating them."

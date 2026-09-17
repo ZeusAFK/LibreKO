@@ -1,0 +1,21 @@
+Bind Npc 18004 Zone 21 for karus
+Bind Npc 18004 Zone 21 for elmorad
+Quest 609 "[New Hero] Demon of Night"
+    Journal for karus "You must talk to [Grand Merchant] Kaishan of Moradon."
+    Journal for elmorad "You must talk to [Grand Merchant] Kaishan of Moradon."
+
+Requires player level >= 69 and quest 608 is completed
+
+Rewards none
+
+On available
+    Say "Find by [Grand Merchant]Kaishan. That something important referral rubbish."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "How are you? I have not seen a long time. When first seen the just dineu my first Moradon,'s time to syeoteul. Hahaha"
+    Topic "Tell me more..." do
+        Show quest "Is not Moradon nowadays strange things. Suddenly become dim and burned around only at night when the spirit of the people will be such a phenomenon.\n\n, Burning any of numerous trade goods because it does not call my own.  having an adverse effect on the entire region, as well as well as the people in the castle Moradon.\n\nI need to talk with [Grand Merchant]Kaishan of Moradon."
+
+On claimable
+    Show quest "Why do not you help me? If you have two days to help me think me, please come again."

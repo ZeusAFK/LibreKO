@@ -1,0 +1,27 @@
+Bind Npc 31562 Zone 1
+Quest 667 "Hunting Game I"
+    Journal "Compete with [Hunter] Zarg in hunting."
+    Kill 50 of 4351, 4301 at direction_344
+
+Requires player level >= 62 and player is karus and quest 665 is completed
+
+Rewards
+    Give 12500000 experience
+    Give 30000 coins
+
+direction_344 = location "Tyon" about "Tyon\nBoar monster evolved by Pathos' evil power" found "Karus" at 360 1300 in zone 1
+
+On available
+    Say "It's probably nothing to the master's practice yijeongdo! It is now a full-fledged fight?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Oh, Oh, yes. Put determination does not need to look at me now I will not give. Hot, hot"
+    Topic "Tell me more..." do
+        Show quest "Then, shall we start the first match? How about hunting some [Tion] to begin with. You go ahead first. I will follow you shortly...perhaps after I  take a nap or something. Hahaha!\n\nCompete the crop Karus Local Donna camp [Hunter] and [tayion hunting."
+
+On in_progress
+    Say "Well, it seems like I will have no problem even if I have another nap."
+
+On claimable
+    Show quest "Oooh, so you have fulfilled your goal at least."

@@ -1,0 +1,26 @@
+Bind Npc 31550 Zone 1 for karus
+Bind Npc 31551 Zone 2 for elmorad
+Quest 621 "Subjugation Squad of the Goblin Village"
+    Journal for karus "You must talk to [Goblin Subjugation Squad] Raul. "
+    Journal for elmorad "You must talk to [Goblin Subjugation Squad] Welz."
+
+Requires player level >= 60
+
+Rewards none
+
+On available
+    Say "Master, have you heard of the [Goblin Subjugation Squad]? They are a special dispatch of troops created to subjugate Goblins by residing around Goblin villages.  You can receive your mission from them.  So why don't you go?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "How are you? I am Raul of the [Goblin Subjugation Squad]. We are currently subjugating Goblins nearby in obedience to the King his majesty's orders."
+        Topic "Tell me more..." do
+            Show quest "We have moblized the troops because the number of Goblin attacks has drastically increased recently.\n\nSo with various situations, we are trying to repel the increasing number of Goblins.  <selfname>, why don't you fulfill your responsiblity as a citizen of Karus by joining us?\n\nNear  Goblin Squad of town Goblin Karus area to talk with Raul."
+    If player is elmorad
+        Say "How are you? I am Wells of the [Goblin Subjugation Squad]. We are currently subjugating Goblins nearby in obedience to the King his majesty's orders."
+        Topic "Tell me more..." do
+            Show quest "We have moblized the troops because the number of Goblin attacks has drastically increased recently.\n\nSo with various situations, we are trying to repel the increasing number of Goblins.  <selfname>, why don't you fulfill your responsiblity as a citizen of El Morad by joining us?\n\nEl Morad near the villages of the region Goblin [is conversation with Wells Goblin Squad],."
+
+On claimable
+    Show quest "Good. The number of Kobold has been increasing recently. Please start by subjugating them first."

@@ -1,0 +1,32 @@
+Bind Npc 31566 Zone 11 for karus
+Bind Npc 31565 Zone 12 for elmorad
+Quest 653 "Searching Specialties I"
+    Journal for karus "You must accept the request of [Appraiser] Rockus."
+    Journal for elmorad "You must accept the request of [Appraiser] Diz."
+    Collect 5 of 389410000
+
+Requires player level >= 65 and quest 652 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+
+On available
+    Say "Man, another collecting mission? Talk to the [Item Appraiser] Lockers."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hmm ... This looks like ... Whoa, you the hell are you?"
+        Topic "Tell me more..." do
+            Show quest "Oh, [Trader] Drill sent you here. You surprised me, standing there like that! Anyway, that's not important. I'll get to the point right away. Please obtain [Blood of Berserker] from [Half Troll Berserker]. It's very precious, since it increases the body's adrenaline very rapidly. Please bring it carefully.\n\nAppraisers of Goods Eslant updated according to the rocker's request to come Berserker blood of sujiphae from Half-Troll Berserker."
+    If player is elmorad
+        Say "Hmm ... This looks like ... Whoa, you the hell are you?"
+        Topic "Tell me more..." do
+            Show quest "Oh, [Trader] Drill sent you here. You surprised me by standing there like that! Anyway, that's not important. I'll get to the point right away. Please obtain [Blood of Berserker] from [Half Troll Berserker]. It's very precious, since it increases the body's adrenaline very rapidly. Please bring it carefully.\n\nAt the request of the Appraisers of Goods Eslant updated Deeds to come Berserker blood of sujiphae from Half-Troll Berserker."
+
+On in_progress
+    Say "You haven't got it yet? Talk to me when you have it. I'm busy organizing the list. ."
+
+On claimable
+    Show quest "Well, Good. We have enough now.\n\nWell, then I need to start the appraisal but I am currently out of [Exid Potion]. Can you bring me a few [Exid Potion] from the [Store]?"

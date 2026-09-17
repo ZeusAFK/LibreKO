@@ -1,0 +1,37 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 637 "Putting poison in the food III"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 1 of 900150000
+    Collect 1 of 900155000
+    Collect 1 of 900164000
+
+Requires player level >= 62 and quest 636 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+
+On available
+    Say "So what joke now? This joke is just too exhuasting for both the one who plays and the one that's being played on."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Now that I have the ingredient, as a [researcher] with the right attitude, I should test it right away, right?"
+        Topic "Tell me more..." do
+            Show quest "In that sense, the effect would have to experiment? Experimental plants, the the Goblin village of [Goblin cauldron station allows the reaction placed in wells Goblin Goblin food box, when or. Please bring Swatches!\n\nInside the village Goblin Goblin cauldron used to poison wells Goblin Goblin food box, and must be followed in collecting the s, depending on the of Goblin Karus area near the village of [Staff] Squad Vere request."
+    If player is elmorad
+        Say "Now that I have the ingredient, as a [researcher] with the right attitude, I should test it right away, right?"
+        Topic "Tell me more..." do
+            Show quest "In that sense, the effect would have to experiment? Experimental plants, the the Goblin village of [Goblin cauldron station allows the reaction placed in wells Goblin Goblin food box, when or. Please bring Swatches!\n\nStaff Squad of the El Morad region goblins near the village of gray in accordance with the request of the Goblin [Goblin village inside the cauldron], and used to poison wells Goblin Goblin food box, must be followed in collecting the s."
+
+On in_progress
+    Say "Hurry up, will ya?"
+
+On claimable
+    Show quest "I can't believe that I just proved that you can turn a curse into a poison.  What an overwhelming feeling this is!\n\nNow, I'm going to use an ingredient that's wild. I mean WILD!. I need [Burning Poison] from the body of [Burning Stone].  Watch out, you might burn your hands, kekeke."
+
+On completed
+    Say "Come again when you reach Lv63. You don't have enough skills to perform this yet."

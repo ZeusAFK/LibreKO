@@ -1,0 +1,22 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 1375 "Ecosystem Research 1"
+    Journal for karus "Collect 5 Hell Hound's teeth"
+    Journal for elmorad "Collect 5 Hell Hound's teeth"
+    Collect 5 of 810496000
+
+Requires player level >= 55
+
+Rewards
+    Give 25000000 experience
+
+On offer
+    Say "You are here again, great! This time, the elders are trying to understand monster's life cycle. And now they are asking to get samples from me. I'm just a merchant."
+    Topic "Tell me more..." do
+        Show quest "I need Hellhound's teeth x 5. Could you please get them?"
+
+On in_progress
+    Say "You still don't have the teeth?"
+
+On claimable
+    Show quest "oh wow, so sharp!"

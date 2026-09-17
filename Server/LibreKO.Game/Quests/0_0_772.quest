@@ -1,0 +1,45 @@
+Bind Npc 31568 Zone 11 for karus
+Bind Npc 31567 Zone 12 for elmorad
+Quest 772 "[Lemegeton] Scroll of Seal"
+    Journal for karus "You must collect the materials that the [Leader of Order of the Sorcery] Malraseu needs."
+    Journal for elmorad "You must collect the materials that the [Leader of Order of the Sorcery] Pelore needs."
+    Collect 1 of 900291000
+    Collect 1 of 900292000
+    Collect 1 of 900293000
+
+Requires player level >= 75 and quest 771 is completed
+
+Rewards
+    Give 500000 experience
+    Give 50000 coins
+    Give 1 of 900294000
+
+On available
+    If player is karus
+        Say "That's weird. Didn't bros say that Malraseu will tell us about it? But Monk Malraseu has no idea."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "That's weird. Didn't Seis say that Pelore will tell us about it? But Pelore has no idea."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "[Order of the Sorcery] Bros will teach you isolation? I haven't heard about that."
+        Topic "Tell me more..." do
+            Show quest "First, we need materials to make the [Scroll of Seal]. Obtain [Hidden Sealed Scroll] from [Unidentified Old Man] in Moradon. Then, collect [Unopenable Lock] from [Heppa's Disciple] Shojin in Moradon, and [Magic Power Point of Krowaz Territory] from [White Shadow] Chacer, in Krowaz territory. Come back once you've finished collecting all the materials.\n\nCollect [Hidden Sealed Scroll] from [Unidentified Old Man] of Moradon, [Lock cannot be open] from [Disciple of Hepa] Shozin of Moradon, and [Magic Power Point of Krowaz Territory] from [White Shadow] Chaser in Krowaz territory, and deliver them to the [Order of the Sorcery Leader] Malraseu of Eslant."
+    If player is elmorad
+        Say "Seis will teach isolation? I haven't heard of that."
+        Topic "Tell me more..." do
+            Show quest "First, we need materials to make the [Scroll of Seal]. Obtain [Hidden Sealed Scroll] from [Unidentified Old Man] in Moradon. Then, collect [Unopenable Lock] from [Heppa's Disciple] Shojin in Moradon, and [Magic Power Point of Krowaz Territory] from [White Shadow] Chacer, in Ronark Land. Come back once you've finished collecting all the materials.\n\nCollect [Hidden Sealed Scroll] from [Unidentified Old Man] of Moradon, [Lock cannot be open] from [Disciple of Hepa] Shozin of Moradon, and [Magic Power Point of Krowaz Territory] from [White Shadow] Chaser in Krowaz territory, and deliver them to the [Order of the Sorcery Leader] Pelore of Eslant."
+
+On in_progress
+    If player is karus
+        Say "You haven't collected them all, yet. Let me tell you one more time. You have to collect [Hidden Sealed Scroll] from [Unidentified Old Man] in Moradon, [Unopenable Lock] from [Heppa's Disciple] Shojin in Moradon, and [Magic Power Point of Krowaz Territory] from [White Shadow] Chacer, in Krowaz territory."
+    If player is elmorad
+        Say "You haven't collected them all, yet. Let me tell you one more time. You have to collect [Hidden Sealed Scroll] from [Unidentified Old Man] in Moradon, [Unopenable Lock] from [Heppa's Disciple] Shojin in Moradon, and [Magic Power Point of Krowaz Territory] from [White Shadow] Chacer, in Ronark Land"
+
+On claimable
+    If player is karus
+        Show quest "You brought them all!\n\nHere, with [Completed Sealed Document] bring it to Bros. I feel something bad is going to happen."
+    If player is elmorad
+        Show quest "You brought them all!\n\nHere, with [Completed Sealed Document] bring it to Seis. I feel something bad is going to happen."

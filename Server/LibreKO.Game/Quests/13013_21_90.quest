@@ -1,0 +1,37 @@
+Bind Npc 13013 Zone 21
+Quest 90 "Werewolf elimination"
+    Journal "[Sentinel] Patrick has asked me to eliminate 5 werewolves. "
+    Kill 5 of 550 at direction_629
+
+Requires player level >= 16
+
+Rewards
+    Give 15000 experience
+    Choose one
+        Give 1 of 202005006
+        Give 1 of 242005006
+        Give 1 of 262005006
+        Give 1 of 282005006
+
+direction_629 = location "Werewolf" about "Werewolf\nDescendants of the evil race, Werewolves are cursed humans transformed into wolves following the war against Pathos. " found "Moradon Coast" at 385 464 in zone 21
+
+On available
+    Say "Master, have you heard of a monster called the werewolf?\n\nThey're nocturnal but I heard they grew increasingly violent of late.\n\nYou know who to go see about this time as well, don't you?\n\nJeez, [Sentinel] Patrick's just the person who'd be in the know on something like this, right?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Moradon's Guardian, no still just Sentinel Patrick. What is it?"
+    Topic "Tell me more..." do
+        Show quest "You appear just in time like an apparition. I don't know if you've heard but the werewolves are funning rampant recently. They're powerful enough that not many mercenaries in Moradon can take them down.  Maybe they're no match for you, either. And what's more, their habitat is teeming with all kinds of fierce monsters. You still want to have a go at them?"
+
+On in_progress
+    Say "Your resolve was commendable but looks like you failed to reduce the number of werewolves."
+    Topic "Where can I find it?" do
+        Map direction_629
+
+On ready
+    Say "Incredible, Master. Werewolves are one of the strongest monsters in Moradon. I bet [Sentinel] Patrick will be pleasantly surprised as well."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You're amazing. I would like to express my admiration as a fellow guard. I'm being totally sincere.\n\nThis is a token of my gratitude. I think you're ready to venture out to a bigger world. Thanks for everything. (He may have already surpassed me...)"

@@ -1,0 +1,35 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 636 "Collecting Poison III"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 5 of 389540000
+
+Requires player level >= 62 and quest 635 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900206000
+    Give 1 of 900207000
+    Give 1 of 900208000
+
+On available
+    Say "Master, Ver, the [Subjugation Squad Chief], is studying something very hard thesedays.  Is he upto something?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hmm ...I see..so it is possible? Oh, <selfname>, you are here. Good."
+        Topic "Tell me more..." do
+            Show quest "Next, I decided to use more special ingredient.\nAccording to the essay, [Turning a curse into a poison?], you can make a curse turn into poison. Get it? Please go bring me the [cursed plant stem] from [Barron] which is the element that makes him up.\n\nCursed plant stem must collect from the of Goblin Karus area near the village of [Staff] Squad Vere at the request of the [Barron]"
+    If player is elmorad
+        Say "Hmm ...I see..so it is possible? Oh, <selfname>, you are here. Good."
+        Topic "Tell me more..." do
+            Show quest "Next, I decided to use more special ingredient.\nAccording to the essay, [Turning a curse into a poison?], you can make a curse turn into poison. Get it? Please go bring me the [cursed plant stem] from [Barron] which is the element that makes him up.\n\nEl Morad near the villages of the region Goblin Grey [Staff Squad] and upon request, must be collected from the the cursed plant stem   Barron."
+
+On in_progress
+    Say "Hmm, I see. What are you doing there? [Barron] is not here?"
+
+On claimable
+    Show quest "So this is how it looks like. Shall I get to the experiment at once?\n\nShall we test how this works right away?  Now, take this [Experimental Plant] into the Gobliln village and mix it with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and, once again, bring me a [sample] so I can see the reaction!"

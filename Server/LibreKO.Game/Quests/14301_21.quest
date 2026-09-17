@@ -1,0 +1,27 @@
+Bind Npc 14301 Zone 21
+
+On greeting
+    If quest 538 is started and player lacks 910219000
+        Say "I do not know ... Kalluga put your drink on the way back towards the valley toward someone feel good at the Folk Village yesterday the same, I've seen, but ... Drunken state, so I do not know whether this accurately."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910219000
+    Else if quest 650 is started and player has 900214000
+        Say "So this is a rare armor material. It looks spectacular! Now take this receipt."
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900214000
+                Give 1 of 900199000
+    Else if quest 657 is started and player lacks 900166000 and player lacks 900167000
+        Say "Here are [Appraisal Tool Set] and [Appraisal Tool Set Receipt]. Take them with you and be careful."
+        Topic "Confirm" do
+            Transaction
+                Take 100000 coins
+                Give 1 of 900166000
+                Give 1 of 900167000
+    Else if quest 650 is started
+        Say "Where's the box?"
+    Else if quest 657 is started
+        Say "What? You need to pay 100,000 noahs for this."
+    Else
+        Say ""

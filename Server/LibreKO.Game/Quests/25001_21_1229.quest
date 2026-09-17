@@ -1,0 +1,20 @@
+Bind Npc 25001 Zone 21
+Quest 1229 "Pursuit at the middle of the night"
+    Journal "Defeat Amelie that turned into a monster at the graveyard"
+    Kill 1 of 9662 at direction_1257
+
+Requires player level >= 26 and quest 1228 is completed
+
+Rewards
+    Give 300000 experience
+
+direction_1257 = location "Transformed Amelie" about "Once Amelie was beautiful but now she's been contaminated." found "Moradon" at 0 0 in zone 21
+
+On offer
+    Show quest "I can't just sit and watch. So many people gone missing. <selfname>, you want to join me for a stakeout at the graveyard tonight? I want to find these missing people no matter what."
+
+On in_progress
+    Say "Find anything yet?"
+
+On claimable
+    Show quest "Amelie..How...(Shocked silence)"

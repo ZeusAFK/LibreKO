@@ -1,0 +1,22 @@
+Bind Npc 14431 Zone 2
+Quest 238 "Ancient Hunt"
+    Journal "[Guard] Beth has commissioned you to hunt the Ancient."
+    Kill 20 of 5301, 5351 at direction_546
+
+Requires player level >= 54 and player is elmorad
+
+Rewards
+    Give 16250000 experience
+    Choose one
+        Give 1 of 925000595
+        Give 1 of 925005596
+        Give 1 of 926000597
+        Give 1 of 926005598
+
+direction_546 = location "Ancient" about "Ancient\nAs with Treant, levels attacks using branches; old vines afford exceptional Defense Power" found "El Morad" at 811 1823 in zone 2
+
+On offer
+    Show quest "Oh, you're here. Please protect our village from the Ancients. They're treant like monsters with high defense ability."
+
+On claimable
+    Show quest "Sorry to be only asking for help all the time. I'll requite your help someday."

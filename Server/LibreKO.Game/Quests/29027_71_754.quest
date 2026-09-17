@@ -1,0 +1,28 @@
+Bind Npc 29027 Zone 71
+Quest 754 "[Lemegeton] Earl of Red Mist"
+    Journal "You must join the devil war with [Order of the Sorcery] Sais."
+    Kill 1 of 9209, 9136
+    Kill 50 of 9211, 9138
+
+Requires player level >= 74 and player is elmorad and quest 752 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+    Give 1 of 900273000
+    Give 1 of 900274000
+
+On available
+    Say "You defeated the [4Devil] Samigina the chief devil. But it seems our enemy has gotten stronger. What happened? Will Bros of [Order of the Sorcery] know what's going on?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You have sealed the [4Devil] Samigina. You are good! However, the opposite of what we expected is happening."
+    Topic "Tell me more..." do
+        Show quest "They seem to be confused after [Devil 4] Gamygyn is sealed. However, it made them to strengthen their solidarity. It was an unexpected result, but we can't stop there. We can vanquish them slowly. Your next target is [Devil 27] Ronove, who's also called, Earl of Red Mist, and [Devil 51] Balam. If their numbers decrease they'll have no choice, no matter how their solidarity is strengthened. Let's advance!\n\nWe must help Sais of [Order of the Sorcery] of Ronark Land seal the [27Devil] Ronove and [51Devil] Balam."
+
+On in_progress
+    Say "I don't see the souls imbued in you. You haven't eliminate them yet."
+
+On claimable
+    Show quest "You're imbued with souls of devil. You have done well.\n\nI have sealed the souls of devil that were imbued in you, <selfname>. Now please give me that seal Scroll."

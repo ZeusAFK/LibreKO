@@ -1,0 +1,29 @@
+Bind Npc 24431 Zone 1
+Quest 223 "Eradicate Uruk Hai"
+    Journal "[Guard] Hashan has commissioned you to hunt Uruk Hai."
+    Kill 20 of 9777, 1692, 11692 at direction_544
+
+Requires player level >= 51 and player is karus
+
+Rewards
+    Give 13750000 experience
+    Choose one
+        Give 1 of 925004595
+        Give 1 of 925009596
+        Give 1 of 926004597
+        Give 1 of 926009598
+
+direction_544 = location "Uruk Hai" about "Uruk Hai\nA high-level orc race inhabiting the continent of Adonis; distinguishing trait: strong Attack Power" found "Karus Eslant" at 1745 691 in zone 1
+
+On available
+    Say "Master! [Sentinel] Hashan an urgent from Linnart Village! You must go see him now!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You came. Residents are shivering in fear due to the Uruk Hai who have converged at the village entrance. Please get rid of them."
+    Topic "Tell me more..." do
+        Show quest "There's a lot of them, but it should be a simple task for someone of your skill level, <selfname>."
+
+On ready
+    Say "Thank you. Wasn't it more demanding than you thought?"
+    Topic "All right, I'll swing by" goto close

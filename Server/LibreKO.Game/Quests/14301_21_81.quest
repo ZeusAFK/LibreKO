@@ -1,0 +1,35 @@
+Bind Npc 14301 Zone 21
+Quest 81 "Kecoon Armor"
+    Journal "I will bring [Blacksmith] Heppa 2 Apples of Moradon."
+    Collect 2 of 810418000
+
+Requires player level >= 11
+
+Rewards
+    Give 6250 experience
+    Give 10000 coins
+    Choose one
+        Give 1 of 320150005
+        Give 1 of 320150015
+        Give 1 of 320150025
+        Give 1 of 320150035
+        Give 1 of 320150075
+
+On available
+    Say "Master, I'm bored. Why don't we go see [Blacksmith] Heppa?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Kecoons are hostile but they like to hide nice objects\nWhat if I give you a reward for bringing me what I ask for?"
+    Topic "Tell me more..." do
+        Show quest "Bring 2 Apples of Moradon which can be acquired from Kecoons. How about it? Want to give it a shot?\n\n[Blacksmith] Heppa will award a new armor for Apples of Moradon."
+
+On in_progress
+    Say "Didn't you remember that I told you I needed at least 2 Apples of Moradon?"
+
+On ready
+    Say "Master, all 4 Apples of Moradon [Blacksmith] Heppa asked for have been collected"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Haha, you brought them\nI will give you a reward in exchange for the Apples of Moradon."

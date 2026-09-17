@@ -1,0 +1,46 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 113 "Full Plate Armor I"
+    Journal "[Mercenary Adjutant] Rage asked you to hunt down 10 Skeletons."
+    Kill 10 of 1180 at direction_23
+
+Requires player level >= 30
+
+Rewards for warrior
+    Give 1 of 204005005
+    Give 1 of 204005285
+    Give 250000 experience
+
+Rewards for rogue
+    Give 1 of 244005005
+    Give 1 of 244005286
+    Give 250000 experience
+
+Rewards for mage
+    Give 1 of 264005005
+    Give 1 of 264005287
+    Give 250000 experience
+
+Rewards for priest
+    Give 1 of 284005005
+    Give 1 of 284005288
+    Give 250000 experience
+
+direction_23 = location "Skeleton" about "Skeleton\nAn undead like the undying, possesses great strength as it is composed of powerful bone structure" found "Moradon" at 349 861 in zone 21
+
+On available
+    Say "Master, do you know Verca in charge of imperial palace security? Why don't you pay him a visit?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Nice to meet you. I'm the [Mercenary Adjutant] Rage. I'd like to ask you a favor if you don't mind."
+    Topic "Tell me more..." do
+        Show quest "There's these Skeleton monsters. Undead, undying, you know the drill. So will you protect our village and hunt them down for us?\n\n[Mercenary Adjutant] Rage will award craft armor for heeding his request."
+
+On in_progress
+    Say "When are you going to finish your mission?"
+
+On claimable
+    Show quest "Thank you very much. The toughest is behind us. I will give you my body armor as compensation."

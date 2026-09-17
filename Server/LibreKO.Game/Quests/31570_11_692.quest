@@ -1,0 +1,27 @@
+Bind Npc 31570 Zone 11
+Quest 692 "Sinner of Nightmare I"
+    Journal "You must accept the request of [Order of the Sorcery] Caesar."
+    Kill 25 of 9069, 9080 at direction_806
+
+Requires player level >= 68 and player is karus
+
+Rewards
+    Give 25000000 experience
+    Give 100000 coins
+
+direction_806 = location "Doom Knight" about "Doom Knight\n Monster that fighting spirits of warriors imagery to wear a armor" found "Karus Eslant" karus at 395 806 in zone 11
+
+On available
+    Say "Master, are you familiar with [Nightmare Sinner]? They appear in people's dream and extort of their souls. I didn't think they actually exist! Let's go see Cesar of [Order of the Sorcery]."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Ah, you are here, <selfname>. I'm in a mess because I've gone through so much stress these days. It's because of the monsters that are stigmatized as [Nightmare Sinner]. And I'm in charge of eliminating them. Can you please help me?"
+    Topic "Tell me more..." do
+        Show quest "Ah, thank you. Then, please take care of [Doomed Knights] first. What rancour could they possible have against people that they appear in their dreams to torment them? Well, be careful and good luck!\n\nStigmatized as sinners nightmare [Phalanx] magic Eslant updated with Cesar, you must remove the Doom Knight."
+
+On in_progress
+    Say "Not yet? Please hurry."
+
+On claimable
+    Show quest "Well done. You live upto your name, <selfname>"

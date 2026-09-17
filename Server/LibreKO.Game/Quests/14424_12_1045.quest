@@ -1,0 +1,18 @@
+Bind Npc 14424 Zone 12
+Quest 1045 "Acolytes' counter attack"
+    Journal "Defeat 20 Acolyte"
+    Kill 20 of 9613, 9612 at direction_1175
+
+Requires player level >= 60 and player is elmorad and quest 1043 is completed
+
+Rewards
+    Give 21250000 experience
+
+direction_1175 = location "Apostle" about "Apostle\nOne level higher than DeruBishi. They don't just attack first but at night they become violent dark magicians." found "El Morad Eslant" elmorad at 575 485 in zone 12
+
+On offer
+    Say "Welcome. The reason I called you is to tell you that the apostles are gathering around."
+    Topic "Tell me more..." do
+        Show quest "Well.. I'm not sure why.. But let's catch them first."
+        Topic "Where can I find it?" do
+            Map direction_1175

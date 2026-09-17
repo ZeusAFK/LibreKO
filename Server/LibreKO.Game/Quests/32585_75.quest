@@ -1,0 +1,11 @@
+Bind Npc 32585 Zone 75
+
+On greeting
+    If quest 772 is started and player lacks 900293000
+        Say "I'm patrol leader [Chaser] of [White Shadow]."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 900293000
+            Say "So you need the [Benshar's spell water]. You don't need to look any further because I have it. Let me give you some."
+    Else
+        Say ""

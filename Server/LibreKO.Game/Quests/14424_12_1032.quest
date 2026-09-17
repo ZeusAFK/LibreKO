@@ -1,0 +1,32 @@
+Bind Npc 14424 Zone 12
+Quest 1032 "Fallen Spirit of Flame"
+    Journal "Get rid of Balrog, an outlaw in Eslant!"
+    Kill 80 of 7015 at direction_175
+
+Requires player level >= 82 and player is elmorad and quest 355 is completed
+
+Rewards
+    Give 102500000 experience
+
+direction_175 = location "Balrog" about "Balrog\nCreatures that were created from changes in the Spirit of Flame." found "Eslant" at 930 200 in zone 12
+
+On available
+    Say "Master, it's said that there are creatures that were created from the changes of Spirit of Flame... Please meet [Ascetic] Veda and check it out."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Fallen Spirit of Flame...  They seem like huge burning men with manes and whips of flames with many leather strings... If you see how horrible they look once, you'll never want to see them again."
+    Topic "Tell me more..." do
+        Show quest "It's called Balog. They're already notorious in this region. You may be the one who can get rid of them. Don't you think so?"
+
+On in_progress
+    Say "They're already notorious in this region. We need your help."
+    Topic "Where can I find it?" do
+        Map direction_175
+
+On ready
+    Say "Even Balog dropped their knees before you, Master~"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You did it again... well~now that you caught Balog, where do you want to go?? Haha~"

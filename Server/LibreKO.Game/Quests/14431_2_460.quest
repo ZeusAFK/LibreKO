@@ -1,0 +1,25 @@
+Bind Npc 14431 Zone 2
+Quest 460 "[Repeatable Solo] Uruk Hai Hunt"
+    Repeat always
+    Journal "[Guard] Beth has commissioned you to hunt Uruk Hai. However, it will not count when you are in a party."
+    Kill 20 of 1692, 9777, 11692 at direction_543
+
+Requires player level >= 51 and player is elmorad
+
+Rewards
+    Give 1250000 experience or 1900000 with premium
+
+direction_543 = location "Uruk Hai" about "Uruk Hai\nA high-level orc race inhabiting the continent of Adonis; distinguishing trait: strong Attack Power" found "El Morad Eslant" at 344 1598 in zone 2
+
+On available
+    Say "Master! [Sentinel] Beth an urgent from Laiva Village! You must go see her now!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You came. Residents are shivering in fear due to the Uruk Hai who have converged at the village entrance. Please get rid of them."
+    Topic "Tell me more..." do
+        Show quest "There's a lot of them, but it should be a simple task for someone of your skill level, <selfname>."
+
+On ready
+    Say "Thank you. Wasn't it more demanding than you thought?"
+    Topic "All right, I'll swing by" goto close

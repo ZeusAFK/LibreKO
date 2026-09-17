@@ -1,0 +1,25 @@
+Bind Npc 31551 Zone 2
+Quest 623 "Subjugation of the Goblin Village I"
+    Journal "You must perform mission with [Goblin Subjugation Squad] Welz."
+    Kill 20 of 2901, 2951
+
+Requires player level >= 60 and player is elmorad and quest 621 is completed
+
+Rewards
+    Give 12500000 experience
+    Give 30000 coins
+
+On available
+    Say "Master, let's help [Goblin Subjugation Squad] and start fighting Goblins!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You are here, <selfname>. The number of Kobold inhabiting in Goblin villages has been growing exponentially."
+    Topic "Tell me more..." do
+        Show quest "It is clear that if Kobold continues to expand, they will take over this entire land to make it their habitat if we do nothing.  Would you help me?\n\nWells and the need to fight against Kobold El Morad region goblins near the village of [Goblin Squad]."
+
+On in_progress
+    Say "There are just too many of them. Let's do a little better this time."
+
+On claimable
+    Show quest "You have done well/Goob job."

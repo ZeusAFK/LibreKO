@@ -1,0 +1,32 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 543 "[Self-made Hero] Unmeltable Armor"
+    Journal for karus "You must bring Unmeltable Iron Piece to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must bring Unmeltable Iron Piece to [Captain] Falkwine at El Morad Castle."
+    Collect 5 of 508107000
+
+Requires player level >= 62 and quest 542 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 207001599
+        Give 1 of 247001600
+        Give 1 of 267001601
+        Give 1 of 287001602
+
+On available
+    Say "Dragon battle, huh? Whoops! Would not it be nice to flee master? I still do not want to die! Still get God guys at getdamyeon [captain] and you walk to the end of,"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You've been determined to fight. Relative right Helong spit flame breath! Melt in the fire in order to withstand the flame does not need armor!"
+    Topic "Tell me more..." do
+        Show quest "So, there's a guy wearing armor blazing in the Eternal Fire, let's see ... It's been a burning skeleton from them paillette insoluble give guhaeda.\n\nTo prepare the fight against the dragon, bring [Unsmelted Metal ]."
+
+On in_progress
+    Say "Not yet? Want to be careful it is going to be ."
+
+On claimable
+    Show quest "All have gathered. You gotta feel the tremendous heat!"

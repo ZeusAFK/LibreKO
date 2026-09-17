@@ -1,0 +1,42 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 564 "[Hidden Truth] Report to Councilor"
+    Journal for karus "You must talk to [Advisor] Herga at Luferson Castle."
+    Journal for elmorad "You must talk to [Advisor] Nez at El Morad Castle."
+    Collect 1 of 910232000
+
+Requires player level >= 64 and quest 563 is completed
+
+Rewards
+    Give 1 of 910233000
+    Give 125000 experience
+
+On available
+    If player is karus
+        Say "[Advisor]Herga near Guard Tower. Um, you possessed ... Not easily give the troops ..."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Advisor]Nez near Guard Tower. Impossible, of my mind ... Not easily give the troops ..."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "<selfname>?What's going on?[Captain]Harugo carrying troops because request. No extra charges?"
+        Topic "Tell me more..." do
+            Show quest "Request troops from Eslant updated, once sent a request for [Captain]Harugo carrying and decide not to let.\n\nTalk to Herga to get approval for subjugation."
+    If player is elmorad
+        Say "<selfname>?Can I help you? [Captain] the troops spoke the Falkwine by request. No extra charges?"
+        Topic "Tell me more..." do
+            Show quest "Once a request sent by Captain Falkwine by troops from Eslant updated, request decision to do.\n\nTalk to Nez to get approval for subjugation."
+
+On in_progress
+    If player is karus
+        Say "What are you doing now? If you do not have exhibited a request's sending troops!"
+    If player is elmorad
+        Say "Are you doing now? If you do not have exhibited a request not sending troops!"
+
+On claimable
+    If player is karus
+        Show quest "This definitely [Captain]Harugo carrying tension. Okay, Eslant updated with the name of the King, will dispatch troops.\n\n[Captain]Harugo orders to be delivered to the carrying!"
+    If player is elmorad
+        Show quest "Captain Falkwine's tension. Okay, the Eslant updated with the name of the King to dispatch troops to do.\n\nPlease pass the order appearances Dear Captain Falkwine,"

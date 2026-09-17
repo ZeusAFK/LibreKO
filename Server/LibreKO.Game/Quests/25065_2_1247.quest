@@ -1,0 +1,20 @@
+Bind Npc 25065 Zone 2
+Quest 1247 "The dead Knight King"
+    Journal "Defeat the Death Knight King - Acquire the Spirits Earring"
+    Kill 1 of 9669 at direction_1314
+
+Requires player level >= 35 and player is elmorad and quest 1244 is completed
+
+Rewards
+    Give 300000 experience
+
+direction_1314 = location "King Death Knight" about "Very powerful death knight." found "El Morad" at 0 0 in zone 2
+
+On offer
+    Show quest "Death Knight's King...I think the Death knight's king has the earring. Be careful. When you get rid of the knight, the king will appear. Get him too and find the Earring of Spirit."
+
+On in_progress
+    Say "Death Knight's King will appear when you kill death knights."
+
+On claimable
+    Show quest "Ohoh! <selfname> thank you."

@@ -1,0 +1,56 @@
+Bind Npc 24424 Zone 11 for warrior
+Bind Npc 24424 Zone 11 for rogue
+Bind Npc 24424 Zone 11 for mage
+Bind Npc 24424 Zone 11 for priest
+Quest 338 "Danger from monsters"
+    Journal " I promised to hunt 4 4 unique monsters of Eslant."
+    Kill 1 of 7018 at direction_474
+    Kill 1 of 7019 at direction_475
+    Kill 1 of 7022 at direction_476
+    Kill 1 of 7021 at direction_477
+
+Requires player level >= 70 and player is karus
+
+Rewards for warrior
+    Choose one
+        Give 1 of 910120350
+        Give 1 of 910121300
+        Give 1 of 910126544
+
+Rewards for rogue
+    Choose one
+        Give 1 of 910119300
+        Give 1 of 910122350
+
+Rewards for mage
+    Choose one
+        Give 1 of 910123355
+        Give 1 of 910124351
+
+Rewards for priest
+    Choose one
+        Give 1 of 910125324
+        Give 1 of 910126544
+        Give 1 of 910120350
+
+direction_474 = location "[Quest] Uruk Hai" about "[Quest]Uruk hai" found "Karus Eslant" at 388 495 in zone 11
+direction_475 = location "[Quest] Stone Golem" about "[Quest]Stone golem" found "Karus Eslant" at 96 126 in zone 11
+direction_476 = location "[Quest] Troll Berserker" about "[Quest]Troll berserker" found "Karus Eslant" at 783 714 in zone 11
+direction_477 = location "[Quest] Apostle" about "[Quest]Apostle" found "Karus Eslant" at 864 394 in zone 11
+
+On available
+    Say "Master! Let's go see Eslant's [Ascetic] Veda!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "Go destroy the monsters below who are posing a threat to Eslant."
+
+On in_progress
+    Say "You haven't completed the Uruk Hai [Quest]"
+
+On ready
+    Say "You have finished unique monster hunt. Go see [Ascetic] Veda"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Have you killed all the mosters? \nIt is as I expected. If you give me those lives, then I will give you what you choose from below in return.   But remember that you won't be able to return to Ronark Land Base if you take this weapon because of its power."

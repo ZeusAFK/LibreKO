@@ -1,0 +1,38 @@
+Bind Npc 13013 Zone 21
+Quest 62 "Bandicoot hunt"
+    Journal "[Sentinel] Patrick has asked me to hunt him 5 Bandicoots."
+    Kill 5 of 850, 851, 853, 852 at direction_7
+
+Requires player level >= 3
+
+Rewards
+    Give 375 experience
+    Give 2700 coins
+
+direction_4 = location "[Guard] Patrick" about "[Guard] Patrick\nSentinel with high self-esteem who guards Moradon; always strives for Moradon`s safety" found "Moradon central stepfront" at 830 551 in zone 21
+direction_7 = location "Bandicoot" about "Bandicoot\nA rodent which grew abnormally by feeding on corpses of evil races in the War with Pathos." found "Inhabits Seashore of Hope" at 632 465 in zone 21
+
+On available
+    Say "Patrick's hiring more guards. Go and apply."
+    Topic "Where is the [Sentinel]?" do
+        Map direction_4
+
+On offer
+    Say "Have you seen monsters that look like rats in front of Moradon Castle?"
+    Topic "Yes, I just saw him" do
+        Show quest "They're called Bandicoots. They sometimes venture into the castle and gnaw on the gates and skedaddle. What a major headache. Get rid of 5 of them."
+
+On in_progress
+    Say "You still haven't caught all 5 Bandicoots?"
+    Topic "Where can I find it?" do
+        Map direction_7
+
+On ready
+    Say "Whoa, Master, you've caught all 5 Bandicoots. Bring them to the sentinel and get our reward."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Wow, I underestimated you. Here, this is compensation for guarding Moradon."
+
+On completed
+    Say "You are better than you look. Haha... You say it was a joke? I've prepared compensation for your trouble. Please kindly accept it."

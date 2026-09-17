@@ -1,0 +1,9 @@
+[
+  {
+    "Type": 1,
+    "MaxSuccess": 1,
+    "MaxFail": 1,
+    "CurrentSuccess": 1,
+    "CurrentFail": 1
+  }
+]

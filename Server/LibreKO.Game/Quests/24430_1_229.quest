@@ -1,0 +1,32 @@
+Bind Npc 24430 Zone 1
+Quest 229 "Dragon Tooth Soldier Hunt"
+    Journal "[Mercenary] Russell has commissioned you to hunt Dragon Tooth Soldier."
+    Kill 20 of 8052, 8002 at direction_585
+
+Requires player level >= 53 and player is karus
+
+Rewards
+    Give 13750000 experience
+    Choose one
+        Give 1 of 925001595
+        Give 1 of 925006596
+        Give 1 of 926001597
+        Give 1 of 926006598
+
+direction_585 = location "Dragon Tooth Soldier" about "Dragon Tooth Soldier\nA monster created by Pathos in the Great War of Evil; possesses a conscience which is rare for an undead" found "Karus" at 454 819 in zone 1
+
+On available
+    Say "Master, [Mercenary] Russel is looking for you."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "What took you so long?  I have a favor to ask you. Dragon Tooth soldiers and knights have been killing and looting the village of late. I need your help as there's too many of them to handle alone."
+    Topic "Tell me more..." do
+        Show quest "The first Dragon Tooth soldiers to hunt is a far from the previous skeleton-class monsters. Brace yourself!"
+
+On ready
+    Say "Master, the hunt was demanding but you gained a lot of experience."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you. We will depart for Dragon Tooth Skeleton hunting soon. Rest up."

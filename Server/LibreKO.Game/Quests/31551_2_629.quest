@@ -1,0 +1,28 @@
+Bind Npc 31551 Zone 2
+Quest 629 "Subjugation of the Goblin Village IV"
+    Journal "You must perform mission with [Goblin Subjugation Squad] Welz."
+    Kill 20 of 2904, 2954 at direction_599
+
+Requires player level >= 63 and player is elmorad and quest 627 is completed
+
+Rewards
+    Give 20000000 experience
+    Give 30000 coins
+    Give 1 of 900197000
+
+direction_599 = location "Goblin Bouncer" about "Goblin Bouncer\nGoblins live in groups and are classified as Kobolt, Bug Bear and Goblin Bouncer in descending strength. " found "El Morad Goblin Village" at 1692 1945 in zone 2
+
+On available
+    Say "Now, we have come to our final subjugation mission!\n [Goblin Bouncers] dwell only in the deep underground or where there is only darkness. But it is clear that they are sensing the danger of our subjugation!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You are here. The [Goblin Bouncers], our enemy's main troop, are finally  exposed. If we subjugate them, they won't dare to act for some time."
+    Topic "Tell me more..." do
+        Show quest "[The Goblin Squad Wells and El Morad near the villages of the region Goblin Goblin Bouncers must fight against."
+
+On in_progress
+    Say "More! More! It is still not enough!"
+
+On claimable
+    Show quest "They always gave us trouble because they only attacked from behind.  But we have finally wiped them out completely.  All thanks to you, <selfname>. Now, come on and let's get going.\n\nYou have done well! You live up to your reputation. May the glory of God be with you, <selfname>."

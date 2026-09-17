@@ -1,0 +1,34 @@
+Bind Npc 24431 Zone 1
+Quest 233 "Treant Hunt"
+    Journal "You have to hunt down Ape for [Guard] Hashan."
+    Kill 20 of 5451, 5401 at direction_506
+
+Requires player level >= 53 and player is karus
+
+Rewards
+    Give 5 of 900145000
+    Give 5 of 900146000
+    Give 15000000 experience
+
+direction_506 = location "Treant" about "Treant\nLevels attacks using branches\nold vines afford exceptional Defense Power" found "Karus" at 1159 175 in zone 1
+
+On available
+    Say "Master, [Sentinel] Hashan's gravely concerned on account of the monsters. What if you go ahead and hunt them down first?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I never knew protecting the village was this demanding."
+    Topic "Tell me more..." do
+        Show quest "Is there anything you want to say to me... If not, I have to get going. I'm on my want to hunt treants."
+
+On in_progress
+    Say "Hmm... looks like you're in the middle of a hunt."
+    Topic "Where can I find it?" do
+        Map direction_506
+
+On ready
+    Say "The hunt's over!! Let's go see [Sentinel] Hashan now."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Whoa... you've hunted treants. That's my job. Thank you. This is your compensation. Please accept it."

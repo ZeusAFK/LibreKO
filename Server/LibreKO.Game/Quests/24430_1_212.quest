@@ -1,0 +1,23 @@
+Bind Npc 24430 Zone 1
+Quest 212 "Haunga Hunt"
+    Journal "[Mercenary] Russell has commissioned you to hunt Haunga."
+    Kill 20 of 1353, 1303 at direction_516
+
+Requires player level >= 49 and player is karus
+
+Rewards
+    Give 4500000 experience
+
+direction_516 = location "Haunga" about "Haunga\nWields strength and Defense Power one grade above that of Kongau " found "Karus" at 1271 1549 in zone 1
+
+On available
+    Say "[Mercenary] Russel sent word. Must be about another hunting mission."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "How are you feeling? We're embarking on another big hunt, want to join us? As I won't be able to face the prey alone,  I'm gathering colleagues to accompany me."
+    Topic "Tell me more..." do
+        Show quest "We're going after 40 Haungas! Isn't that great! Ha-ha-ha!"
+
+On claimable
+    Show quest "Your ability's growing by leaps and bounds. You know that's all on my account, don't you? Haha..."

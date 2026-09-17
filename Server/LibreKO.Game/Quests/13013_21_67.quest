@@ -1,0 +1,36 @@
+Bind Npc 13013 Zone 21
+Quest 67 "Bulcan hunting"
+    Journal "[Sentinel] Patrick asked me to hunt five Bulcans for him."
+    Kill 5 of 250 at direction_34
+
+Requires player level >= 6
+
+Rewards
+    Give 3500 experience
+    Give 2000 coins
+    Give 200 of 900780000
+    Give 200 of 900810000
+    Choose one
+        Give 1 of 202004005
+        Give 1 of 242004005
+        Give 1 of 262004005
+        Give 1 of 282004005
+
+direction_34 = location "Bulcan" about "Bulcan\nRepresentative monster of Moradon which refines traces of steel from the earth in its stomach" found "Moradon seashore" at 535 414 in zone 21
+
+On offer
+    Say "Another day in thriving Moradon! What do you want?"
+    Topic "Tell me more..." do
+        Show quest "I received word that peddlers are having a hard time traveling due to Bulcans lurking in the sand plains. Moradon is a quasi-desert with 80% of the terrain covered with sand. Their numbers are sure to grow if they go unchecked. Do you think it's possible for you to wipe out the Bulcans inhabiting the sand?"
+
+On in_progress
+    Say "In order to guarantee the safety of the peddlers, at least five Bulcans must be caught."
+    Topic "Where can I find it?" do
+        Map direction_34
+
+On ready
+    Say "I caught all of 5 Bulcans. Let's go back to [Guard] Patrick."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Excellent. Thanks to you the number of Bulcans have declined markedly. Thank you."

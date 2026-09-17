@@ -1,0 +1,26 @@
+Bind Npc 14441 Zone 2
+Quest 147 "Uninvited Guest at Gravesite"
+    Journal "[Caretaker] Slay has commissioned you to eradicate Vatalion."
+    Kill 20 of 1002, 1052 at direction_110
+
+Requires player level >= 42 and player is elmorad
+
+Rewards
+    Give 2250000 experience
+
+direction_110 = location "Battalion" about "Battalion\nResurrected of corpses; devoid of volition and harbors general hostility against all forms of life" found "El Morad" elmorad at 974 686 in zone 2
+
+On available
+    Say "There must be something wrong down in the Tomb, master."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "What brings you here?"
+    Topic "Tell me more..." do
+        Show quest "Hmm... we seem to have a special guest in the Tomb. It's certainly an uninvited Guest -  people call it Vatalion, and it's stronger than both Zombies and Undyings. I can't do anything with them here. Could you help me?\n\nYou'll get some Armor out of this if you do [Graveyard Keeper] Slay this favor."
+
+On in_progress
+    Say "God, what am I supposed to do?"
+
+On claimable
+    Show quest "What - How - You drove out the Vatalions... I'll never forget this. This is something I dug-up near the Tomb a few days ago. Doesn't look like ordinary stuff. Please, take it as a token of my appreciation."

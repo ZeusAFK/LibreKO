@@ -1,0 +1,36 @@
+Bind Npc 31524 Zone 21 for karus
+Bind Npc 31524 Zone 21 for elmorad
+Quest 616 "[New Hero] Ability evaluation"
+    Journal for karus "You must accept the request of [Unidentified Old Man] of Moradon."
+    Journal for elmorad "You must accept the request of [Unidentified Old Man] of Moradon."
+    Kill 4 of 9021 at direction_763
+
+Requires player level >= 69 and quest 615 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 100 np
+    Give 1 of 910244000
+
+direction_763 = location "Wandering Specter" about "Wandering Specter\n Wandering spercters in a corner of Moradon's Demon Village. Spirits only have murderous " found "Moradon" at 144 435 in zone 21
+
+On available
+    Say "Dare you defy your master! Master! Forget immediate response supposed to go, we now test whether something! Let's give it is simple to show that much!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Test view  think? 'Cause than you think it will be a tough test"
+    Topic "Tell me more..." do
+        Show quest "Village, Moradon tail, deep in the back the [drifting specter, they'm attending. Come back and kill them. Note that they do not stay in one place and is supposed to have the patience of a long time\n\nYou have to listen to the request of the unidentified elderly Moradon"
+
+On in_progress
+    Say "yet? The evil spirits did not pass the exam can not be a relative."
+    Topic "Where can I find it?" do
+        Map direction_763
+
+On ready
+    Say "Hyped 'It's not nothing! Come on! Make it the go-to boldly go and have passed the test!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "I I look at people eye'm not mistaken.\n\nLook, [note  so open with your boss. So Kyul against evil spirits would be easier. Guide his name out of my mouth, and before you handle the evil spirits, is not?"

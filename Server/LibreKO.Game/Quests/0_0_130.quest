@@ -1,0 +1,44 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 130 "Rotten Eye"
+    Journal for karus "You have promised [Moradon Merchant] Shymer to bring her Rotten Eye."
+    Journal for elmorad "You have promised [Moradon Merchant] Clark to bring him Rotten Eye."
+    Collect 3 of 379274000
+
+Requires player level >= 36
+
+Rewards
+    Give 750000 experience
+
+direction_97 = location "Rotten Eyes" about "Rotten Eyes\nCorpse which has lost volition due to evil energy; undead monster exclusively harboring a hostility against all life forms" found "Karus" karus at 961 1466 in zone 1
+direction_98 = location "Rotten Eyes" about "Rotten Eyes\nCorpse which has lost volition due to evil energy; undead monster exclusively harboring a hostility against all life forms" found "El Morad" elmorad at 1016 626 in zone 2
+
+On available
+    If player is karus
+        Say "Master! Moradon Merchant Shaimer is looking for you. Hmm~ He is becoming a bother for my master!!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master! Moradon Merchant Clark is looking for you. Hmm~ He is becoming a bother for my master!!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Ahhh~ My savior, <selfname>! Listen up. One of the nobles in Moradon is collecting eyes. Funny guy, but anyway. He's collected almost every monster eye around, except for the  Eyes of Rotten Eye... And guess who he's asked to find it for him? He's always coming by doing business with the boss, so I couldn't refuse him..."
+    Topic "Tell me more..." do
+        Show quest "Well, there's not much I can do because as you know,  even the hunters stay away from those zombies. So you can see my dilemma. You up for a bit of eye collection then?\n\nNot TOO weird a hobby. This guy's psycho, I'm thinking. Repulsive as it is, find me a Rotten Eye."
+
+On in_progress
+    If player is karus
+        Say "That's some weird hobby he's got there. Blurgh~ It makes me feel sick."
+        Topic "Where can I find it?" do
+            Map direction_97
+    If player is elmorad
+        Say "That's some weird hobby he's got there. Blurgh~ It makes me feel sick."
+        Topic "Where can I find it?" do
+            Map direction_98
+
+On ready
+    Say "Master, you've collected enough Rotten Eyes. Let's get out of here as soon as possible."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Ill... Yuk\nGood effort though. I was worried you wouldn't make it back from this one. Thank you so much. Ill... Yuk~ Yuk~"

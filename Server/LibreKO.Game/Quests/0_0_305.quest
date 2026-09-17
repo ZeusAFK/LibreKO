@@ -1,0 +1,34 @@
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 14202 Zone 2 for elmorad rogue
+Quest 305 "Magic Shield"
+    Journal for karus "[Secret Agent] Clarence will give you the Scroll of Magic Shield if you achieve 7 victories in the National Defence Combat (the upper reaches of the Kalluga Valley)."
+    Journal for elmorad "[Secret Agent] Clarence will give you the Scroll of Magic Shield if you achieve 7 victories in the National Defence Combat (the upper reaches of the Kalluga Valley)."
+    Collect 7 of 900017000
+
+Requires player level >= 61
+
+Rewards
+    Give 1 of 379064000
+
+On available
+    Say "Master, I heard that [Secret Agent] Clarence knows of an assistant magic that increases all resistance of the body during combat."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "For me to make the Scroll of Magic Shield, you must prove your ability at the National Combat.  And that can also prove whether you are qualified to use the Magic Shield."
+    Topic "Tell me more..." do
+        Show quest "Win seven victories at the National Defence Combat at upper reaches of the kalluga valley and bring me the Symbol of Victory, and I will  make the Scroll of Magic Shield for you. Do you want to do it?\n\nI guess you came to me after hearing some stories, but I don't carelessly make it for just anyone."
+
+On in_progress
+    Say "The border defending battle is held every day at 10 AM and 1, 3, 5 and 10 PM and 1 AM. And it is held additionally at 8 PM on Tuesday, Friday, Saturday and Sunday when there is no war. When the relevant time comes, the announcement for recruitment will be aired automatically so that application for participation can be made"
+
+On ready
+    If player is karus
+        Say "Master, you have won seven victories.  Let's return to [Secret Agent] Clarence."
+        Topic "Confirm" goto close
+    If player is elmorad
+        Say "Master, you have finally won all seven victories.  Let's return to [Secret Agent] Clarence."
+        Topic "Confirm" goto close
+
+On claimable
+    Show quest "You have moved me with your drive. Here is the Magic Shield Scroll. Please don't lose that rogue's passion of yours."

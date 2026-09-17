@@ -1,0 +1,27 @@
+Bind Npc 31562 Zone 1
+Quest 671 "Hunting Game III"
+    Journal "Compete with [Hunter] Zarg in hunting."
+    Kill 50 of 9072, 9083 at direction_819
+
+Requires player level >= 64 and player is karus and quest 669 is completed
+
+Rewards
+    Give 22500000 experience
+    Give 30000 coins
+
+direction_819 = location "Half Troll Warrior" about "Half Troll Warrior\n This monster mixed by Unknown species, for that it is weakened species than normal troll " found "Karus" karus at 1418 406 in zone 1
+
+On available
+    Say "Errr ...You're not tired yet, master? It's the third hunting. Go to [Hunter] Jarg at once!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Welcome. Getting used to this yet?"
+    Topic "Tell me more..." do
+        Show quest "ok, let's move on to the next match. Next is [Half Troll Warrior] and it will not give up easily. Kekeke. Good luck! Go ahead first. I will catch up with you soon.\n\nHalf-Troll Warrior hunting crop Karus Local Donna camp [Hunter] and compete."
+
+On in_progress
+    Say "I could even take a break!"
+
+On claimable
+    Show quest "Are you getting better at this yet?"

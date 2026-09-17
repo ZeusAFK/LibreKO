@@ -1,0 +1,32 @@
+Bind Npc 13013 Zone 21
+Quest 60 "Worm hunt"
+    Journal "[Sentinel] Patrick has asked me to hunt him 5 Worms."
+    Kill 5 of 750, 700, 751, 752 at direction_1
+
+Requires player level >= 1
+
+Rewards
+    Give 50 experience
+    Give 10 of 389010000
+    Give 5 of 389016000
+    Give 2000 coins
+
+direction_1 = location "Worm" about "Worm\nA giant worm-like monster which levels head-on attacks with long tentacles and body" found "Inhabits the bridgefront outside Moradon central gate" at 637 429 in zone 21
+
+On available
+    Say "Uh-oh, Master, you're short on Noahs. You'll have a hard time making ends meet.. Go see Sentinel Patrick. I heard they're hiring extra guards."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Moradon maintains peace at all times as we protect it from monsters which were created by the war against Pathos. Incidentally, I'm running low on guards lately. Can you lend a hand?"
+    Topic "Tell me more..." do
+        Show quest "If you exit through that gate you'll spot Worms right outside. They began to breed after the war against Pathos. Go hunt me 5 of those pesky monsters!!"
+
+On in_progress
+    Say "Listen, capture all 5. Is that the best you can do?"
+    Topic "Where can I find it?" do
+        Map direction_1
+
+On ready
+    Say "I hunted all 5 Worms. Report it to the guards"
+    Topic "All right, I'll swing by" goto close

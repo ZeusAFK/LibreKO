@@ -1,0 +1,45 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 612 "[New Hero] The culprit is in this place."
+    Journal for karus "You must help [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must help [Priest] Maia at the Stronghold of Ronark Land."
+    Kill 100 of 8855 at direction_749
+
+Requires player level >= 69 and quest 611 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+    Give 50 np
+
+direction_749 = location "Ancient" about "Ancient\n Like the Trent, they use their branches to attack and have a great defence due to their old stems" found "Ronark Land Base" karus at 338 293 elmorad at 664 757 in zone 73
+
+On available
+    If player is karus
+        Say "re Here to investigate a suspected something seems to be systematic.My  is not something wrong her."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "re Here to investigate a suspected something seems to be systematic. [Priest]Majal, by something wrong her."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Welcome back. So, let's proceed with an investigation. Is assumed to be in greater land base to where the culprit."
+        Topic "Tell me more..." do
+            Show quest "...You do not need to wonder how were estimated. All scientific and magical way, you want to be found out. Ahem. Anyway, I first suspected culprit [eyisyeonteu] handle ... Please investigate.\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "Welcome back. So, let's proceed with an investigation. Is assumed to be in greater land base to where the culprit."
+        Topic "Tell me more..." do
+            Show quest "...You do not need to wonder how were estimated. All scientific and magical way, you want to be found out. Ahem. Anyway, I first suspected culprit [eyisyeonteu] handle ... Please investigate.\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On in_progress
+    Say "To finish the investigation? Please come back to finish it."
+    Topic "Where can I find it?" do
+        Map direction_749
+
+On ready
+    Say "Systematic doubt, or something unlikely  ... Eww ..."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Handle all still under investigation ... End of the investigation?  Now, watch the progress.\n\nStrange. It does not stop them all, even though sound bizarre tip sounds. So frills to move on to the next,"

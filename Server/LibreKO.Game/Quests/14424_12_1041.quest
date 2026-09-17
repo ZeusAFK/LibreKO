@@ -1,0 +1,18 @@
+Bind Npc 14424 Zone 12
+Quest 1041 "Identity of the strange weeping"
+    Journal "Defeat 20 Harpys"
+    Kill 20 of 9619, 9618 at direction_1181
+
+Requires player level >= 60 and player is elmorad and quest 1039 is completed
+
+Rewards
+    Give 21250000 experience
+
+direction_1181 = location "Harpy" about "Harpy\nHarpies have low intelligence and attacks just about anyone coming into their territories. When they meet up with other harpie groups of the mountainous area they have battles without a reason. " found "El Morad Eslant" elmorad at 420 499 in zone 12
+
+On offer
+    Say "Ah I'm so sleepy.  Hey there! You are!!"
+    Topic "Tell me more..." do
+        Show quest "You really don't know? Those Harpys are making weird noises! Please take care of them."
+        Topic "Where can I find it?" do
+            Map direction_1181

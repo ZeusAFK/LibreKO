@@ -1,0 +1,34 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 602 "[Prophetic Poetry of Light] Slow down the Attack"
+    Journal for karus "You must talk to [Advisor] Herga at Luferson Castle."
+    Journal for elmorad "You must talk to [Advisor] Nez at El Morad Castle."
+
+Requires player level >= 68 and quest 601 is completed
+
+Rewards
+    Give 1 of 910239000
+
+On available
+    If player is karus
+        Say "It is a race against time. Go back to your main castle and notify [Advisor]Herga. She is near the guard tower."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "It's fight time.Come on, go back to nature [Advisor]Nes are you looking for a job in the near Guard Tower"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "<selfname>? Request form Ronark Land Base this time?"
+        Topic "Tell me more..." do
+            Show quest "[Archmage] Drake by him to persuade ... If certainly negotiate with demons and brought good results Nash did.\n\nThere should be a conversation with Herr Luferson Castle [advisor"
+    If player is elmorad
+        Say "<selfname>? Request form Ronark Land Base this time?"
+        Topic "Tell me more..." do
+            Show quest "Archmage] Drake's persuaded. Definitely ... If he's discretion should lead to the success of the negotiations room.\n\nIt will be a conversation with the Nez Province [advisor] El Morad."
+
+On claimable
+    If player is karus
+        Show quest "Once I not give written request for negotiations. [Archmage] Drake's passed. Then It's something that will respond. I just happened to, at any give dumaleopyi the. Do it takes gukun."
+    If player is elmorad
+        Show quest "Once you are happy with the request for negotiations. Only formal request something, so it will be the answer. However, he did to what the unconditional must. I problems with gukun!\n\n[Archmage] Drake's Rye Bar in the village. Hopefully you guys sat odd nature, please be careful."

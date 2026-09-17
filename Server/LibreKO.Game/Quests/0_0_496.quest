@@ -1,0 +1,50 @@
+Bind Npc 24427 Zone 1 for karus rogue
+Bind Npc 14427 Zone 2 for elmorad rogue
+Quest 496 "[Repeat] Sporadic guerrilla warfare III"
+    Repeat always
+    Journal for karus "The monster that [Guard] Melverick is demanding must be captured. However, counter is not going up at party play."
+    Journal for elmorad "The monster that [Guard] Zalk is demanding must be captured. However, counter is not going up at party play."
+    Kill 20 of 1203, 1253
+
+Requires player level >= 60
+
+Rewards for rogue
+    Give 2000000 experience
+
+direction_245 = location "Baron" about "Baron\nA magical creature Pathos created by casting a curse upon a scarecrow." found "El Morad" karus at 565 687 elmorad at 598 641 in zone 2
+direction_246 = location "Baron" about "Baron\nA magical creature Pathos created by casting a curse upon a scarecrow." found "Karus" karus at 1399 1298 elmorad at 1427 1267 in zone 1
+
+On available
+    If player is karus
+        Say "I can Boy mental. The following policing, where?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "I can confused. The following policing, where?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Bellua Village at this time. But still a lot of rumors spread that residents and shaking it slowly."
+        Topic "Tell me more..." do
+            Show quest "Please scoring around the town [Barron] and [Cardinal]. You did not have much better would if eerie things away,\n\nCitizens of Karus are afraid because of the rumor. Defeat [Beren] and [Cardinal]."
+    If player is elmorad
+        Say "This time, the town of Tiberias. But still a lot of rumors spread that residents and shaking it slowly."
+        Topic "Tell me more..." do
+            Show quest "Please scoring around the town [Barron] and [Cardinal]. You did not have much better would if eerie things away,\n\nCitizens of El morad are afraid because of the rumor. Defeat [Beren] and [Cardinal]."
+
+On in_progress
+    If player is karus
+        Say "Alas ...[Barron] ... The Cardinal! -Whoa, Aaaaaaaah!"
+        Topic "Where can I find it?" do
+            Map direction_246
+    If player is elmorad
+        Say "Alas ...[Barron] ... The Cardinal! -Whoa, Aaaaaaaah!"
+        Topic "Where can I find it?" do
+            Map direction_245
+
+On ready
+    Say "It's a feeling that somehow purify your mind. I did a good job!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "WOW, Now I can breathe. So I'll go to the next!"

@@ -1,0 +1,36 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 542 "[Self-made Hero] It's too late"
+    Journal for karus "You must deliver Golden Goblet of a Dragon to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must deliver Golden Goblet of a Dragon to [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910227000
+
+Requires player level >= 62 and quest 541 is completed
+
+Rewards
+    Give 125000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "[Captain]Harugo carrying God delivered the cup to touch missions  complete!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Dear Wine [Captain] Polk delivered the cup to touch missions  complete!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You are here, <selfname>. Did you bring the [Golden Goblet of a Dragon]?"
+        Topic "Tell me more..." do
+            Show quest "According to a report in Berwick Mel [Fled Slave] from fast re-reclaim the cup, but I heard did a magazine.\n\nBring [Dragon Golden Chalice] to Fargo."
+    If player is elmorad
+        Say "She is <selfname>.Did you bring the [Golden Goblet of a Dragon] for?"
+        Topic "Tell me more..." do
+            Show quest "I heard from a [Fled Slave], according to the report of the Zalk to reclaim the cup, but did the magazine fast re-.\n\nBring [Dragon Golden Chalice] to Falkwine."
+
+On in_progress
+    Say "I Guess Were a mistake. To bring back to me."
+
+On claimable
+    Show quest "This is it ... But unfortunately for the anger soar synapse springs. Give me back the cup, not too late unavoidable, so I've decided to engage the battle of dragons?"

@@ -1,0 +1,30 @@
+Bind Npc 14413 Zone 2
+Quest 215 "Eradicate Tyon"
+    Journal "You have promised [Farm Manager] to hunt Tyon."
+    Kill 40 of 4301, 4351 at direction_14
+
+Requires player level >= 49 and player is elmorad
+
+Rewards
+    Give 5250000 experience
+
+direction_14 = location "Tyon" about "Tyon\nBoar monster evolved by Pathos' evil power" found "El Morad " at 1684 779 in zone 2
+
+On available
+    Say "Master, The [Farm Manager] has found a great treasure! I'm curious, let's go and see it."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Treasure? Ahh, well, I was plowing the fields when I saw something shining in the dirt. So I picked it up, and it turned out to be an earring. It looks expensive, but it doesn't seem right to sell it."
+    Topic "Tell me more..." do
+        Show quest "Trade? Hmm... Are you strong? As you must have noticed on the way here, there are so many Tyons wandering around it makes it hard tog et anything done outside. If you take care of the Tyons, I'll give you the earring. No matter how valuable it is, it's not more precious than my farm.\n\nYou'll earn the ring that holds the Strength of Legend, if you go on the hunt after listening to  the [Farm Manager]'s story about the Tyon."
+
+On in_progress
+    Say "Catch some more! It's not right to take the earring for only that many."
+
+On ready
+    Say "I think this is enough~"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you so much. Ah~ Now I don't have to risk my life just walking around the farm. Heh."

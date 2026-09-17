@@ -1,0 +1,14 @@
+Bind Npc 31402 Zone 21
+
+On greeting
+    If quest 698 is started and player has 900216000 and player has 900217000
+        Say "So you want me to make [Elaborated Sealed ring]? Let see...you got [Ordinary old ring], [Magical power transmit marble]...Guess you got all the materials.  But it's going to cost you [200,000 Noahs]. Do you still want it?"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900216000
+                Take 1 of 900217000
+                Take 200000 coins
+                Give 1 of 900218000
+            Say "Here, it's finished. Piece of a cake. Please come back to me if you need anything else."
+    Else
+        Say ""

@@ -1,0 +1,27 @@
+Bind Npc 14424 Zone 12
+Quest 320 "Apostle of Piercing Cold hunt"
+    Journal "[Ascetic] Tabeth asked me to hunt 40 Apostles of Piercing Cold."
+    Kill 40 of 8005, 8055 at direction_615
+
+Requires player level >= 67 and player is elmorad
+
+Rewards
+    Give 41250000 experience
+
+direction_615 = location "Apostle of Piercing Cold " about "Apostle of Piercing Cold \nA type of Esoteric Buddhist priest who employ ice magic of darkness whose ice magic is powerful enough to freeze the opponent down to the bones. " found "El Morad Eslant" at 694 202 in zone 12
+
+On available
+    Say "Master, How about we go and ask Tabeth for another training mission?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "You want to keep training? You look strong enough already... How much stronger do you want to be?? Heh."
+    Topic "Tell me more..." do
+        Show quest "Right then, I think it's time you met the Apostle of Piercing Cold. You should be able to dispatch him easily enough. Just watch out for that meddling monk's Glacier Spell of Darkness. It can freeze your bones solid.\n\nYou'll earn 41.25 million EXP if you go back to [Ascetic] Tabeth after the mission of Apostle of Piercing Cold Hunt."
+
+On ready
+    Say "Phew- Good effort. It was a hard fight, wasn't it?"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Their seems to be no end to your skill! Simply amazing."

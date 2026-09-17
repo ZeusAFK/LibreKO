@@ -1,0 +1,16 @@
+Bind Npc 24424 Zone 11
+Quest 1070 "Spell of destruction"
+    Journal "Defeat 25 Death Wizards"
+    Kill 25 of 9068, 9079 at direction_805
+
+Requires player level >= 65 and player is karus
+
+Rewards
+    Give 33750000 experience
+
+direction_805 = location "Death Wizard" about "Death Wizard\n Also called death of king of terrors." found "Karus Eslant" karus at 333 724 in zone 11
+
+On offer
+    Say "Do you know of the Order of Destruction?"
+    Topic "Tell me more..." do
+        Show quest "You can kill the enemy instantly. Death Wizard is using that magic. I'll give you the immune so that you can go get rid of them."

@@ -1,0 +1,38 @@
+Bind Npc 31560 Zone 1 for karus
+Bind Npc 31559 Zone 2 for elmorad
+Quest 644 "Quick Delivery I"
+    Journal for karus "You must accept the request of [Sailor] Armada."
+    Journal for elmorad "You must accept the request of [Sailor] Keed."
+    Collect 1 of 900169000
+
+Requires player level >= 61 and quest 643 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 10000 coins
+
+On available
+    Say "Master, somebody wants you immediately at the port.  What does he want from you so urgently?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Grrr!! There's just too much of it. What am I supposed to do with all this?? What the hell do you want from me?"
+        Topic "Tell me more..." do
+            Show quest "What? Captain told you to help me? Oh, that's the good news. Deliver this [Specialty Honey Box] to [Moradon Merchant] Shymer at Luferson Castle! Don't forget to bring the receipt! What? You've seen this honey before? It's just your imagination. So, forget about it and go, quickly! Come on, hurry!!\n\nMust be followed, at the request of the Armada sailors of Karus Regional Executive pugeo port the  traders Moradon Shire Mer to bring a box specially made honey, give, take receipt of  traders Mora."
+    If player is elmorad
+        Say "Grrr!! There's just too much of it. What am I supposed to do with all this?? And what the hell do you want from me?"
+        Topic "Tell me more..." do
+            Show quest "What? Captain told you to help me? Oh, that's the good news. Deliver this [Specialty Honey Box] to the [Moradon Merchant] Clark at El Morad Castle! Don't forget to bring the receipt! What? You've seen this honey before? It's just your imagination. So, forget about it, and go quickly! Come on, hurry!!\n\nElmo Shark rad area of the port in accordance with the request of Captain Kidd, the  traders Moradon Clark give to bring a box specially made honey come take receipt of  traders Mora."
+
+On in_progress
+    Say "I'm busy! Hurry up!"
+
+On claimable
+    If player is karus
+        Show quest "Phew,,,Now I can breathe. Thanks. Please do this again next time. Let see, the next work is.....\n\nYou know what? [Sailor] Hayes did ask me for a favor. You can do that for me. Go get [Rare Fruit] from the pigs called [Tion] and give it to [Crewman] Hayes.  Don't bring it to me.  Give it to Hayes! You got it?"
+    If player is elmorad
+        Show quest "Phew,,,Now I can breathe. Thanks. Please do this again next time. Let see, the next work is.....\n\nYou know what? [Sailor] Haine did ask me for a favor. You can do that for me. Go get [Rare Fruit] from the pigs called [Tion] and give it to [Crewman] Hayes.  Don't bring it to me.  Give it to Haine! You got it?"
+
+On completed
+    Say "I'm busy now, come back later when you reach Lv62, okay? Make sure you come back."

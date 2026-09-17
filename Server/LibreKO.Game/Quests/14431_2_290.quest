@@ -1,0 +1,29 @@
+Bind Npc 14431 Zone 2 for warrior
+Bind Npc 14431 Zone 2 for rogue
+Bind Npc 14431 Zone 2 for mage
+Bind Npc 14431 Zone 2 for priest
+Quest 290 "Troll hunt"
+    Journal "[Sentinel] Beth asked me to hunt 20 trolls."
+    Kill 20 of 1777, 1776, 1721
+
+Requires player level >= 60 and player is elmorad
+
+Rewards for warrior
+    Give 1 of 206003003
+
+Rewards for rogue
+    Give 1 of 246003003
+
+Rewards for mage
+    Give 1 of 266003003
+
+Rewards for priest
+    Give 1 of 286003003
+
+On offer
+    Say "Welcome. You will be hunting trolls this time. They are monsters which led the Army of Darkness in the war against Pathos. They have low defense power and immunity but they possess great strength and high HP."
+    Topic "Tell me more..." do
+        Show quest "If you hunt 40 trolls I'll give you my helmet. Will you do it?"
+
+On claimable
+    Show quest "Thank you. Here's the helmet, as promised."

@@ -1,0 +1,28 @@
+Bind Npc 14406 Zone 2
+Quest 226 "Haunga Warrior Hunt"
+    Journal "[Imperial Guard] Telson has commissioned you to hunt Haunga Warrior."
+    Kill 20 of 1312, 1362 at direction_59
+
+Requires player level >= 52 and player is elmorad
+
+Rewards
+    Give 11250000 experience
+    Choose one
+        Give 1 of 925002595
+        Give 1 of 925007596
+        Give 1 of 926002597
+        Give 1 of 926007598
+
+direction_59 = location "Haunga Warrior" about "Haunga Warrior\n Haunga endowed with relative intelligence;,wears armor with Talia Skin affixed onto them " found "El Morad Garnac Plains" at 800 500 in zone 2
+
+On available
+    Say "Master, [Imperial Palace Guard] Telson is recruiting warriors for a Haunga Warrior hunt. Why don't you go join him?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "This time it's hunting the Haunga Warriors, so do you want to be on it? By the way, a Haunga Warrior isn't easy to hunt as it is strong and has high defense power as well as resistances."
+    Topic "Tell me more..." do
+        Show quest "However, this should be a simple task for someone of your skill level, <selfname>.\n\nIf you do a favor for [Imperial Guard] Telson, you will be rewarded."
+
+On claimable
+    Show quest "Good work. You've gained valuable experience from this hunt."

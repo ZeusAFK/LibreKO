@@ -1,0 +1,19 @@
+Bind Npc 24430 Zone 1 for karus rogue
+Bind Npc 14430 Zone 2 for elmorad rogue
+Quest 484 "[Repeatable Solo] Preemptive Strike"
+    Repeat always
+    Journal for karus "[Mercenary] Russell has commissioned you for Preemptive Strike. However, it will not count when you are in a party."
+    Journal for elmorad "[Mercenary] Tales has commissioned you for Preemptive Strike. However, it will not count when you are in a party."
+    Kill 2 of 8653, 8659
+    Kill 2 of 8658, 8664
+
+Requires player level >= 59
+
+Rewards
+    Give 2500000 experience or 3750000 with premium
+
+On offer
+    If player is karus
+        Show quest "[Mercenary] Russell has commissioned you to hunt [Boss].\n# You can locate the [Boss] Monster with ease if you click Full Map (Shortcut Key::M) and then use the [NPC&MOB Search] option."
+    If player is elmorad
+        Show quest "[Mercenary] Tales has commissioned you to hunt [Boss].\n# You can locate the [Boss] Monster with ease if you click Full Map (Shortcut Key::M) and then use the [NPC&MOB Search] option."

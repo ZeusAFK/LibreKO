@@ -1,0 +1,24 @@
+Bind Npc 14203 Zone 2 for mage
+Quest 309 "Absolute Power"
+    Journal "[Archmage] Drake will give it to you if achieve 7 victories in the National Defence Combat (the upper reaches of the Kalluga Valley)."
+    Collect 7 of 900017000
+
+Requires player level >= 61 and player is elmorad
+
+Rewards
+    Give 1 of 379065000
+
+On offer
+    Say "Absolute Power... It is an amazing skill that briefly increases magical attack by 30%, so mastering the spell of Absolute Power will boost your magical attack power significantly."
+    Topic "Tell me more..." do
+        Show quest "I will give it to you if you pass my test. Win seven victories at the National Defence Combat at the upper reaches of the Kalluga Valley and bring me the Symbol of Victory.  Would you like to try?\n\nI will give you the Absolute Power scroll as a reward for your seven victories at the National Defence Combat."
+
+On in_progress
+    Say "The border defending battle is held every day at 10 AM and 1, 3, 5 and 10 PM and 1 AM. And it is held additionally at 8 PM on Tuesday, Friday, Saturday and Sunday when there is no war. When the relevant time comes, the announcement for recruitment will be aired automatically so that application for participation can be made"
+
+On ready
+    Say "Master, you have won seven victories at the National Defence Combat.  Let's go and visit [Archmage] Drake to get the Absolute Power scroll that he promised."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Oh, have you won seven times at the combat? You must have worked incredibly hard.  Right then, here is your Absolute Power."

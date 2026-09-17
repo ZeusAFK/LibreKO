@@ -1,0 +1,30 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 576 "[Legless Evil] Attack of the Devil Army"
+    Journal for karus "You must talk to [Base Spearhead] Cruzed at Stronghold of Ronark Land."
+    Journal for elmorad "You must talk to [Base Spearhead] Krable at Stronghold of Ronark Land."
+
+Requires player level >= 66
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Master! They are looking for you at Ronark Land Base. Go find [Base Scout]Crewjed in Ronark Land Base."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master!Getting request form Ronark Land Base this time?look.Ronark Land Base paper, base paper forefront Did you find the size label by"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Have they finally arrived! I've been waiting a lot. Lorna where large land base for land attack from the demonic army started getting done"
+        Topic "Tell me more..." do
+            Show quest "El Morad guys head alone is killing me, but ... Troops and not enough ... Even now ten hands, hat Edition.\n\nSo I called you here, did not defeat a demon army to help me, huh?\n\nMust the greater Ronark Land Base base base paper forefront [Base Scout]Crewjed dialogue with the de"
+    If player is elmorad
+        Say "Have they finally arrived! I've been waiting a lot. Lorna where large land base for land attack from the demonic army started getting done."
+        Topic "Tell me more..." do
+            Show quest "Head hurts just the Karus guys die, but ... Troops and not enough ... Even now ten hands, hat Edition.\n\nSo I called you here, did not defeat a demon army to help me, huh?\n\nLarge greater Ronark Land Base base [base forefront not to talk to the label."
+
+On claimable
+    Show quest "Okay!So come ready to battle and come back to me again. I'll be right here waiting for you"

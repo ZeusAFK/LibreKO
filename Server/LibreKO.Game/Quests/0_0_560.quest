@@ -1,0 +1,47 @@
+Bind Npc 31518 Zone 11 for karus
+Bind Npc 31522 Zone 12 for elmorad
+Quest 560 "[Hidden Truth] Secure Access Road II"
+    Journal for karus "You must perform the mission given by [Valley Surveillance Scout] of Eslant."
+    Journal for elmorad "You must perform the mission given by [Valley Surveillance Scout] of Eslant."
+    Kill 30 of 2253, 2203
+    Kill 30 of 2224, 2254, 2256, 2204
+
+Requires player level >= 64 and quest 559 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 207002603
+        Give 1 of 247002604
+        Give 1 of 267002605
+        Give 1 of 287002606
+
+direction_377 = location "Falcon" about "Falcon\nA type of aHarpy. They also have low intelligence but are aggrestive and attacks anyone who comes into their territories.." found "El Morad Eslant" elmorad at 113 549 in zone 12
+direction_378 = location "Falcon" about "Falcon\nA type of a Harpy. They also have low intelligence but are aggrestive and attacks anyone who comes into their territories.." found "Eslant" at 396 208 in zone 11
+
+On available
+    Say "The second mission.! Go ahead and start!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Now that you have pierced the front of the driveway must be drilled back. Before and lot number so opponents can not."
+    Topic "Tell me more..." do
+        Show quest "[Crimson Wing] [Falcon]. Be dealing with two types of guys, but as long as the operational am sure, please remove.\n\nDefeat [Crimson Wing] and [Falcon]."
+
+On in_progress
+    If player is karus
+        Say "Seems to be little more. Please cheer up!"
+        Topic "Where can I find it?" do
+            Map direction_378
+    If player is elmorad
+        Say "Seems to be little more. Please cheer up!"
+        Topic "Where can I find it?" do
+            Map direction_377
+
+On ready
+    Say "Panting ...Difficult finished safely. Come on back right.Panting ..."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "The second entrance safely done! Now make more in one place, you can enter!"

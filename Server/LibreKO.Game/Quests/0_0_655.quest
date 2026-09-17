@@ -1,0 +1,35 @@
+Bind Npc 31566 Zone 11 for karus
+Bind Npc 31565 Zone 12 for elmorad
+Quest 655 "Searching Specialties II"
+    Journal for karus "You must accept the request of [Appraiser] Rockus."
+    Journal for elmorad "You must accept the request of [Appraiser] Diz."
+    Collect 5 of 389490000
+
+Requires player level >= 66 and quest 654 is completed
+
+Rewards
+    Give 8750000 experience
+    Give 30000 coins
+
+On available
+    Say "Is appraisal done yet? Let's go to [Item Appraiser] Lockers."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hmm ... So it takes a longer time that I thought to calculate each quality."
+        Topic "Tell me more..." do
+            Show quest "And in the meantime, please collect the next item. [First-Class Canine] from [Iron Claws]. It's very precious and tough to get it.  Good luck.\n\nAppraisers of Goods Eslant updated in accordance with the request of the rocker's from Iron Claw, you must, to come sujiphae [canine sangdeunggeup]."
+    If player is elmorad
+        Say "Hmm ... So it takes a longer time that I thought to calculate each quality."
+        Topic "Tell me more..." do
+            Show quest "And in the meantime, please collect the next item. [First-Class Canine] from [Iron Claws]. It's very precious and tough to get it.  Good luck.\n\nAppraisers of Goods Eslant updated Deeds in accordance with the request of the [Iron Claw] from [canine sangdeunggeup] must come sujiphae."
+
+On in_progress
+    Say "You don't have it yet?"
+
+On claimable
+    If player is karus
+        Show quest "That was fast. I'm not even through with the previous appraisal yet.\n\nWell, we still have a lot of time left.  In the meantime, let's collect the next item. I need [Thick Half Troll Leather] from [Half Troll Captain]. It's the toughest of all leather. This time, take your time."
+    If player is elmorad
+        Show quest "That was fast. I'm not even through with the previous appraisal yet.\n\nWell, we still have a lot of time left.  In the meantime, let's collect the next item. I need [Thick Half Troll Leather] from [Half Troll Captain]. It's the toughest of all leather. You can take your time on this."

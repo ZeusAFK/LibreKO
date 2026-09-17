@@ -1,0 +1,47 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 579 "[Legless Devil] Base Defense III"
+    Journal for karus "You must perform the duty of [Base Spearhead] Cruzed of the Stronghold of Ronark Land."
+    Journal for elmorad "You must perform the duty of [Base Spearhead] Krable, of the Stronghold of Ronark Land."
+    Kill 50 of 9015 at direction_757
+
+Requires player level >= 66 and quest 578 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 100 np
+
+direction_757 = location "Forwird Warrior" about "Forwird Warrior\n Demon who follow the King of Forwaru. It described as losing one arm and one leg soldier." found "Ronark Land Base" karus at 162 376 elmorad at 857 640 in zone 73
+
+On available
+    If player is karus
+        Say "The inner our group Karus win that I will prevent this, but the Way to go until the end!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Prevent this, but the inner the our El Morad group of win that I will. Way to go until the end!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Yes, now would be the last the enemy gunse of you, thanks a lot, whilst holding that, we defense through a lot of preparation Make sure your guys"
+        Topic "Tell me more..." do
+            Show quest "Now, Lorna Finally, the [Forwar Warrior], Senna drove in from all over the large land base!\n\nYou need to perform a large land base the the base paper forefront [Base Scout]Crewjed jiui the mission of de Lorna."
+    If player is elmorad
+        Say "Yes, now would be the last the enemy gunse of you, thanks a lot, whilst holding that, we defense through a lot of preparation Make sure your guys"
+        Topic "Tell me more..." do
+            Show quest "Now, Lorna Finally, the [Forwar Warrior], Senna drove in from all over the large land base!\n\nRonark Land Base the base paper forefront jiui greater mission of the label must be performed."
+
+On in_progress
+    Say "Come on Come on, hurry! The time delay is I'm in a hurry!"
+    Topic "Where can I find it?" do
+        Map direction_757
+
+On ready
+    Say "Ow! Handle all of the a powerful [Forwar Warrior] My god! It's also a master!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    If player is karus
+        Show quest "Okay!Now time to embark on a counterattack!\n\nRonark Land Base, drove the demon army gutted! [Captain] carrying the good news to the nature of God, or give her!"
+    If player is elmorad
+        Show quest "Okay!Now time to embark on a counterattack!\n\nRonark Land Base, drove the demon army gutted!Please give her the glad tidings Captain] Falkwine, God in nature [!"

@@ -1,0 +1,10 @@
+Bind Npc 24427 Zone 1
+
+On greeting
+    If quest 542 is started and player lacks 910227000
+        Say "Did I give you the [Golden Goblet of a Dragon] for me? I'll again"
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910227000
+    Else
+        Say ""

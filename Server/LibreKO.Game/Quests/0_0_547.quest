@@ -1,0 +1,21 @@
+Bind Npc 31516 Zone 11 for karus
+Bind Npc 31520 Zone 12 for elmorad
+Quest 547 "[Failed Mission] Disappeared Hero"
+    Journal for karus "You must talk to the [Hero who lost his eyes], of Eslant."
+    Journal for elmorad "You must talk to the [Hero who lost his eyes], of Eslant."
+
+Requires player level >= 63 and quest 546 is completed
+
+Rewards none
+
+On available
+    Say "The Eslant updated SW, did you? Try to find once Maybe the survivors."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Who's there? I see and do not see the front, a little closer."
+    Topic "Tell me more..." do
+        Show quest "Fortunately, a friendly, knocks ... The name of ...? called <selfname>?\n\nMemory was suddenly attacked during the move, and knew in advance would like. Many soldiers had collapsed hassle, chopping, chopping, chopping ... Of London, with two eyes and I'd lost my best friend.\n\nFind whereabouts of the two who were leading the unit."
+
+On claimable
+    Show quest "Ashamed of my own friend could come away alone ... Bunch"

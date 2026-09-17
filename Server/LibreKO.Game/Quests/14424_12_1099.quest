@@ -1,0 +1,20 @@
+Bind Npc 14424 Zone 12
+Quest 1099 "Skin harder than stone"
+    Journal "Bring back 10 Gargoyle"
+    Collect 10 of 810298000
+
+Requires player level >= 63 and player is elmorad
+
+Rewards
+    Give 27500000 experience or 55000000 with premium
+
+On offer
+    Say "Did you know? Gargoyles skin is harder than the rocks."
+    Topic "Tell me more..." do
+        Show quest "We'll need to study their skin and maybe we can improve our armors. Bring me 10 gargoyles wings."
+
+On in_progress
+    Say "If you bring the Gargoyle wings we'll be able to make improved armors."
+
+On claimable
+    Show quest "Thank you."

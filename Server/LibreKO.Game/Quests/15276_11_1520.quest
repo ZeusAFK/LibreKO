@@ -1,0 +1,21 @@
+Bind Npc 15276 Zone 11
+Quest 1520 "[Daily Party] Demonic Legion of Eslant (Chaos)"
+    Daily
+    Journal "Kill 50 Balrog"
+    Kill 50 of 7015, 9621 at direction_1183
+
+Requires player level >= 60 and player is karus
+
+Rewards
+    Give 15000000 experience
+
+direction_1183 = location "Balrog" about "Balrog\nCreated by the corrupted spirits." found "Karus Eslant" karus at 934 172 in zone 11
+
+On offer
+    Show quest "I appreciate all of you're here for peace of Islant..| Please don't let them from summoning their leaders."
+
+On in_progress
+    Say "In order to stop the summoning of their leader, we need to defeat 50 Balrogs. "
+
+On claimable
+    Show quest "You have defeated all 50 of them.. Please help us out again in the future. "

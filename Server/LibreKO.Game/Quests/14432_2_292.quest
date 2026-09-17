@@ -1,0 +1,35 @@
+Bind Npc 14432 Zone 2 for warrior
+Bind Npc 14432 Zone 2 for rogue
+Bind Npc 14432 Zone 2 for mage
+Bind Npc 14432 Zone 2 for priest
+Quest 292 "Lich hunt"
+    Journal "I have to hunt 10 Lich for [Sentinel] Cheina."
+    Kill 10 of 4501, 4551 at direction_16
+
+Requires player level >= 61 and player is elmorad
+
+Rewards for warrior
+    Give 1 of 206002003
+
+Rewards for rogue
+    Give 1 of 246002003
+
+Rewards for mage
+    Give 1 of 266002003
+
+Rewards for priest
+    Give 1 of 286002003
+
+direction_16 = location "Lich" about "Lich\nResurrected corpse of a mage slain in battle against Pathos; practices powerful magic" found "Caluga Valley vicinity" at 1328 1830 in zone 2
+
+On available
+    Say "Master, the 6th armor bottom is in Belua Village. [Sentinel] Cheina should know."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Long time no see. What brings you to our village?"
+    Topic "Tell me more..." do
+        Show quest "The 6th armor is in our village. Do you want it?"
+
+On claimable
+    Show quest "No way.. You hunted Liches? I could've just given it to you for free. Thanks anyhow."

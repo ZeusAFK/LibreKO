@@ -1,0 +1,48 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 768 "[Lemegeton] King of Madness"
+    Journal for karus "You must join the devil war with [Order of the Sorcery] Bros."
+    Journal for elmorad "You must join the devil war with [Order of the Sorcery] Sais."
+    Collect 1 of 900287000
+    Collect 1 of 900288000
+    Collect 1 of 900289000
+
+Requires player level >= 75 and quest 767 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+    Give 1 of 900290000
+
+On available
+    If player is karus
+        Say "Go visit Bros."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Go visit Seis."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Now we can only move forward. We're almost done with sealing all the devils."
+        Topic "Tell me more..." do
+            Show quest "We've found the hidden hell. They say that there are [Devil13] Beleth and [Devil37] Phenex, [Devil61] Zagan.\n\nWe must give Bros of [Order of the Sorcery] of Ronark Land the seal Scrolls for [13Devil] Beleth, [37Devil] Phenex, and [61Devil] Zagan."
+    If player is elmorad
+        Say "Now we can only move forward. We're almost done with sealing all the devils."
+        Topic "Tell me more..." do
+            Show quest "We've found the hidden hell. They say that there are [Devil13] Beleth and [Devil37] Phenex, [Devil61] Zagan.\n\nWe must give Sais of [Order of the Sorcery] of Ronark Land the seal Scrolls for [13Devil] Beleth, [37Devil] Phenex, and [61Devil] Zagan."
+
+On in_progress
+    If player is karus
+        Say "You aren't done? I'll send you there again."
+    If player is elmorad
+        Say "You aren't done with sealing? I'll send you there again."
+
+On claimable
+    If player is karus
+        Show quest "You are done sealing! You did seal all 71 Devils."
+    If player is elmorad
+        Show quest "You are done! Now we've all sealed 71 Devils."
+
+On completed
+    Say "Now it's the last mission. There's [Devil1] The Boss Bael. With the sealing of this boss the war will end. With the [Devil1 Summoning Scroll] find [Devil1 Summoning Stone] and summon him."

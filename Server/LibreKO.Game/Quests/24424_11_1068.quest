@@ -1,0 +1,18 @@
+Bind Npc 24424 Zone 11
+Quest 1068 "The animated armor"
+    Journal "Defeat 25 Doom Knights"
+    Kill 25 of 9069, 9080 at direction_806
+
+Requires player level >= 65 and player is karus and quest 1066 is completed
+
+Rewards
+    Give 33750000 experience
+
+direction_806 = location "Doom Knight" about "Doom Knight\n Monster that fighting spirits of warriors imagery to wear a armor" found "Karus Eslant" karus at 395 806 in zone 11
+
+On offer
+    Say "You know those doom knights you defeated? They are the armors of our soldiers."
+    Topic "Tell me more..." do
+        Show quest "I think that's it..  Please make sure that our soldiers armors don't do that again."
+        Topic "Where can I find it?" do
+            Map direction_806

@@ -1,0 +1,27 @@
+Bind Npc 31564 Zone 11 for karus
+Bind Npc 31563 Zone 12 for elmorad
+Quest 660 "Start Trading"
+    Journal for karus "You must accept the request of [Trader] Drill."
+    Journal for elmorad "You must accept the request of [Trader] Ellon."
+
+Requires player level >= 67 and quest 659 is completed
+
+Rewards
+    Give 1 of 900194000
+
+On available
+    Say "All searches are finally done. [Merchant] Drill has something to say to you. Please go meet him."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Oh, you are here. The captain was right about you. You've been a great help."
+        Topic "Tell me more..." do
+            Show quest "Now there's only one last trade to make.\n\nDo you, by chance, know Kaishan, the [Merchant Prince] of Moradon? We are making a trade with him this time. I need you to do this because I heard that you have a close relationship with him, <selfname>.\n\nThe Eslant updated traders will need to drill and conversation."
+    If player is elmorad
+        Say "Oh, you are here. The captain was right about you. You've been a great help."
+        Topic "Tell me more..." do
+            Show quest "Now there's only one last trade to make.\n\nDo you, by chance, know Kaishan, the [Merchant Prince] of Moradon? We are making a trade with him this time. I need you to do this because I heard that you have a close relationship with him, <selfname>.\n\nEslant updated traders should be a conversation with Ellen."
+
+On claimable
+    Show quest "All items are ready. You collected them and had them appraised. I know you, <selfname>, will explain them well."

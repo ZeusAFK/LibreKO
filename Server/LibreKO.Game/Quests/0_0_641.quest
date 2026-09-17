@@ -1,0 +1,42 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 641 "Research Result"
+    Journal for karus "You must report to [Advisor] Herga."
+    Journal for elmorad "You must report to [Advisor] Nez."
+    Collect 1 of 900192000
+
+Requires player level >= 64 and quest 640 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "Wow, you've finished it nicely! Hurry and take this research report to Herga, the[advisor] of Luperson Castle."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Hiya,'s you do the finishing neatly. This report the experimental results [[advisor] Dear Jimenez, come on, you want me to!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Is not <selfname>."
+        Topic "Tell me more..." do
+            Show quest "Brought [the] report experimental results from [the Chiefs Tobeoldae Vere?\n\nHerzegovina, the Luferson Castle province [advisor, you must pass the report experimental results."
+    If player is elmorad
+        Say "It's you, <selfname>."
+        Topic "Tell me more..." do
+            Show quest "Have you come with the [Research Report] from Grey, the [Subjugation Squad Chief]?\n\nAdvisor to the Nez El Morad Castle, you must pass the report experimental results."
+
+On in_progress
+    If player is karus
+        Say "This friends ... Hit, but the joke came up to me, are you going to fool around?"
+    If player is elmorad
+        Say "Are you trying to play a joke on me now?"
+
+On claimable
+    If player is karus
+        Show quest "Hmm ... Hmm ... Yeah ... It looks like the end of the experiment. You can also create weapons Goblin basis for this guess Thank you, Chief."
+    If player is elmorad
+        Show quest "Hmm ... Hmm ... I see ... I think the experiment is done well. I can create Couter-Goblin weapon from this. Well done. ."

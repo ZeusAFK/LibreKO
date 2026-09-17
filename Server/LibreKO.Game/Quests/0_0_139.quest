@@ -1,0 +1,44 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 139 "Coarse Bone Powder"
+    Journal for karus "You have promised [Moradon Merchant] Shymer to bring her Coarse Bone Powder."
+    Journal for elmorad "You have promised [Moradon Merchant] Clark to bring him Coarse Bone Powder."
+    Collect 3 of 379275000
+
+Requires player level >= 39
+
+Rewards
+    Give 1000000 experience
+
+direction_103 = location "Skeleton Knight" about "Skeleton Knight\nAn undead like the undying, possesses great strength as it is composed of powerful bone structure" found "Karus" karus at 959 1113 in zone 1
+direction_104 = location "Skeleton Knight" about "Skeleton Knight\nAn undead like the undying, possesses great strength as it is composed of powerful bone structure" found "El Morad" elmorad at 1199 654 in zone 2
+
+On available
+    If player is karus
+        Say "Master! Shaimer's merchant caravan has been attacked by someone while on the move. You should go and see if they need assistance."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master! Clark's merchant caravan has been attacked by someone while on the move. You should go and see if they need assistance."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Phew... We were on the way to Moradon with all the stuff you found for us. Somewhere along the way though, bandits ambushed us, gave us a real good beating. we've patched ourselves up as best as we can, but... There are still some serious injuries, broken bones and so on..."
+    Topic "Tell me more..." do
+        Show quest "Maybe it's true, maybe not, but I heard if you grind <font color=@#660066@>Coarse Bone Powder</font> into a potion, it heals broken bones. Three men are wounded, so 3 portions would do it. Please help us.\n\nTo save the sickly Merchant, we need Rough Bone Powder. Quick! Quick! We must save them, they're like family to me. I'll go mad without them!"
+
+On in_progress
+    If player is karus
+        Say "Can you please hurry up? There isn't much time left before these injuries become fatal."
+        Topic "Where can I find it?" do
+            Map direction_103
+    If player is elmorad
+        Say "Can you please hurry up? There isn't much time left before these injuries become fatal."
+        Topic "Where can I find it?" do
+            Map direction_104
+
+On ready
+    Say "3 Coarse Bone Powders have been gathered. Hope it's not too late."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "I don't know what to say... I'm constantly in your debt. My staff are like my family to me. Thank you so, so much."

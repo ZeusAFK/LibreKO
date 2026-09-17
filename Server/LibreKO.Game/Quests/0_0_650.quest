@@ -1,0 +1,33 @@
+Bind Npc 31560 Zone 1 for karus
+Bind Npc 31559 Zone 2 for elmorad
+Quest 650 "Quick Delivery I"
+    Journal for karus "You must accept the request of [Sailor] Armada."
+    Journal for elmorad "You must accept the request of [Sailor] Keed."
+    Collect 1 of 900199000
+
+Requires player level >= 64 and quest 649 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 10000 coins
+    Give 1 of 900191000
+
+On available
+    Say "Ahhh, how come [Sailor] Armada looks always busy? What am I trying to say? Well...he is looking for you again. Go at once."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Whoa, now I'm back to myself. Oh, you are here!"
+        Topic "Tell me more..." do
+            Show quest "Ha-ha-ha! Hey buddy, thank you so far. I called you because I wanted to show my appreciation to you. Do you want to know how I'm going to show it? Hmm . . . Here. It's [Armor Material Box]. What? Are you asking me what it is? Give me a break. Of course, this is what you have to deliver. Deliver this to a person called [Blacksmith] Heppa in Moradon, and bring the receipt. Come on! Go, quickly!\n\nSea wave a blacksmith, depending on the request of the Armada sailors of Karus Regional Executive pugeo port to bringing the armor material box and retrieve a receipt of the sea wave."
+    If player is elmorad
+        Say "Whoa, now I'm back to myself. Oh, you are here!"
+        Topic "Tell me more..." do
+            Show quest "Ha-ha-ha! Hey buddy, thank you so far. I called you because I wanted to show my appreciation to you. Do you want to know how I'm going to show it? Hmm . . . Here. It's [Armor Material Box]. What? Are you asking me what it is? Give me a break. Of course, this is what you have to deliver. Deliver this to a person called [Blacksmith] Heppa in Moradon, and bring the receipt. Come on! Go, quickly!\n\nElmo Shark rad area of ??the port of Captain Kidd, upon request, to the blacksmith sea wave, bringing the box armor materials come take receipt of the sea wave."
+
+On in_progress
+    Say "Why are you still here? Don't be sluggish."
+
+On claimable
+    Show quest "Kekeke, well done. Why am I laughing? I'm laughing because the work is almost finished. Harharhar!\n\nBy the way, you're very good at working. I've told the captain that You've done a very good job and he wrote a [Captain's Recommendation Letter]! Bring this to a person called [Trader] Drill. He's one of our colleagues and is now in Eslant. He's somewhat meticulous, but he'll hire you if you show him this recommendation letter! So, see you again!"

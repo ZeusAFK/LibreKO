@@ -1,0 +1,33 @@
+namespace LibreKO.Common.Enums;
+
+public enum ChatType : byte
+{
+    General = 1,
+    Private = 2,
+    Party = 3,
+    Forced = 4,
+    Shout = 5,
+    Clan = 6,
+    Public = 7,
+    WarSystem = 8,
+    Permanent = 9,
+    PermanentEnd = 10,
+    MonumentNotice = 11,
+    GameMaster = 12,
+    Command = 13,
+    Merchant = 14,
+    Alliance = 15,
+    Announcement = 17,
+    SeekingParty = 19,
+    GameMasterInfo = 21,
+    CommandPrivate = 22,
+    ClanOfficer = 23,
+    ClanNotice = 24,
+    KrowazNotice = 25,
+    DeathNotice = 26,
+    ChaosStoneEnemyNotice = 27,
+    ChaosStoneNotice = 28,
+    AnnouncementWhite = 29,
+    ChatRoom = 33,
+    ClanRecruit = 34,
+}

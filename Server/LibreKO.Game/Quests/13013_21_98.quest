@@ -1,0 +1,36 @@
+Bind Npc 13013 Zone 21
+Quest 98 "Glyptodont hunt"
+    Journal "[Sentinel] Patrick asked me to hunt 1 Glyptodont."
+    Kill 1 of 450 at direction_595
+
+Requires player level >= 20
+
+Rewards
+    Give 50000 experience
+    Give 30 of 900790000
+    Give 30 of 900820000
+
+direction_4 = location "[Guard] Patrick" about "[Guard] Patrick\nSentinel with high self-esteem who guards Moradon; always strives for Moradon`s safety" found "Moradon central stepfront" at 830 551 in zone 21
+direction_595 = location "Glyptodon" about "Glyptodon\nDocile large-bodied monster which can grow savagely violent. " found "Moradon" at 586 573 in zone 21
+
+On available
+    Say "Master, Do you know a monster called the Glyptodont? Let's go and ask [Sentinel Patrick] about it."
+    Topic "Where is the [Sentinel]?" do
+        Map direction_4
+
+On offer
+    Say "The Glyptodont? You're talking about that big, ugly-looking bugger?"
+    Topic "Tell me more..." do
+        Show quest "Well, the Glyptodont is a giant omnivore that can be found pretty much anywhere on the Adonisian Continent. It's slow, but hits hard. How about going out and thinning their numbers a bit? It'll go much easier if you form a party."
+
+On in_progress
+    Say "It'll be hard to deal with on your own. Better to form a party before tackling it."
+    Topic "Where can I find it?" do
+        Map direction_595
+
+On ready
+    Say "Phew! Well done master. It looks stupid, but it's pretty powerful. Hee Hee!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "So, what's it like hunting Glyptodont? Ha Ha! Anyway, Well done."

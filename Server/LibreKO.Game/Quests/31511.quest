@@ -1,0 +1,96 @@
+include locations/global
+include translations/31511_pitman
+
+RewardPool drop_367
+    135622000 weight 8800
+    135623000 weight 1200
+
+RewardPool drop_368
+    135621000 weight 9000
+    135622000 weight 1000
+
+Bind Npc 31511
+
+On greeting
+    Say "The weather sure is great today. Who are you? What do you want?"
+    Topic "Buying a pickaxe" goto event_400
+    Topic "[Quest/Mining] Extracting magic from the rocks" goto event_300
+    Topic "Close" goto close
+    Goto close
+
+On event_400
+    If quest 433 is completed
+        Say what_you_want_a
+        Topic "Accepted" goto event_402
+        Topic "Rejected" goto close
+    Else
+        Say "Mattock? Here's a spare one. No need to pay for it. Just go mine up some ores already. For your information, it has to be repaired when it runs out of durability, or else you will have to purchase it from me again."
+        Topic "Take it." goto event_401
+        Topic "Don't take it." goto close
+
+On event_401
+    If quest 433 is completed
+        Say what_you_want_a
+        Topic "Confirm" goto close
+    Else
+        Say "Here, take it."
+        Topic "Confirm" goto close
+        Give 1 of 389132000
+        Complete 433
+
+On event_402
+    If player has < 1000000 of 900000000
+        Say "That will be 1 M Noah. 1 M Noah, I tell you. You have to bring me 1 M Noah!"
+        Topic "Where can I find it?" goto event_1000
+    Else
+        If player has 389132000
+            Say why_am_i_standing
+            Topic "Close" goto close
+        Else
+            Transaction
+                Take 1000000 coins
+                Give 1 of 389132000
+            Abandon 434
+
+On event_1000
+    Map noah
+
+On event_300
+    If quest 619 is started or quest 620 is started
+        Say oh_you_actually_managed
+        Topic "[Mysterious Ore] from extract" goto event_301
+        Topic "[Mysterious Gold Ore] from extract" goto event_302
+        Topic "[Quest/Mining] Extracting magic from the rocks" goto event_304
+    Else
+        Say oh_you_actually_managed
+        Topic "[Mysterious Ore] from extract" goto event_301
+        Topic "[Mysterious Gold Ore] from extract" goto event_302
+
+On event_301
+    Transaction
+        Take 1 of 399210000
+        Give random from drop_367
+        Say "Here, take it. Hopefully it is something you wanted."
+        Topic "Confirm" goto close
+    Goto close
+
+On event_302
+    Transaction
+        Take 1 of 399200000
+        Give random from drop_368
+        Say "Here, take it. Hopefully it is something you wanted."
+        Topic "Confirm" goto close
+    Goto close
+
+On event_304
+    Say "What? Did you say that you want to extract the magic power? It's not difficult. I can extract magic power for one time per one ore. Well, two times are possible, with luck. So, do you want to do it?|¡Ø This menu is only for the quest [Knock, and the Door Will Open].|¡Ø You need [Mysterious Ore] or [Mysterious Gold Ore]."
+    Topic "[Mysterious Ore] from extract" do
+        Transaction
+            Give 1 of 389770000
+            Take 1 of 399210000
+        Goto close
+    Topic "[Mysterious Gold Ore] from extract" do
+        Transaction
+            Give 1 of 389770000
+            Take 1 of 399200000
+        Goto close

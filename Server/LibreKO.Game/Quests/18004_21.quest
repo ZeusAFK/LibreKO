@@ -1,0 +1,10 @@
+Bind Npc 18004 Zone 21
+
+On greeting
+    If quest 521 is started and player lacks 910211000
+        Say "It's the festival. Here is my reply. Tell him I will be there for sure."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910211000
+    Else
+        Say ""

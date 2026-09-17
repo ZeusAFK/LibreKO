@@ -1,0 +1,40 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 701 "[Lemegeton] The door to the other world"
+    Journal for karus "You must join the devil war with [Order of the Sorcery] Bros."
+    Journal for elmorad "You must join the devil war with [Order of the Sorcery] Sais."
+    Collect 1 of 900219000
+    Collect 1 of 900220000
+
+Requires (player level >= 70 and player is karus and quest 699 is completed) or (player level >= 70 and player is elmorad and quest 700 is completed)
+
+Rewards
+    Give 250000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "I thought they would be stronger considering the name and all. How pathetic! Huhuhu. Let's report it to Bros of [Order of the Sorcery]."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "I thought they would be stronger considering the name and all. How pathetic! Huhuhu. Let's report it to Sais of [Order of the Sorcery]."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You are here. Your last work was great."
+        Topic "Tell me more..." do
+            Show quest "Please give me the seal Scroll that you will seal in your body, then, <selfname>.\n\nWe must give Bros of [Order of the Sorcery] of Ronark Land the seal Scrolls for [24Devil] Naberius and [48Devil] Haagenti."
+    If player is elmorad
+        Say "You are here. Your last work was great."
+        Topic "Tell me more..." do
+            Show quest "Please give me the seal Scroll that you will seal in your body, then, <selfname>.\n\nWe must give Sais of [Order of the Sorcery] of Ronark Land the seal Scrolls for [24Devil] Naberius and [48Devil] Haagenti."
+
+On in_progress
+    Say "Where is the seal Scroll?"
+
+On claimable
+    Show quest "Thank you. With this seal Scroll, the soul of devil will be locked in this ring."
+
+On completed
+    Say "It is now time to eliminate devils in the other world. We must first fight [60Devil] Vapula and [72Devil] Andromalius then [36Devil] Storas, the crow's noble. Be fully prepared for they are strong and have many men."

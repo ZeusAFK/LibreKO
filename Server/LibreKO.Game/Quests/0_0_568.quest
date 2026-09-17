@@ -1,0 +1,52 @@
+Bind Npc 24427 Zone 1 for karus
+Bind Npc 14427 Zone 2 for elmorad
+Quest 568 "[Regained Honor] Peacekeeping at El Morad Castle/Luferson Castle"
+    Journal for karus "You must perform the duty of [Guard] Melverick at Luferson Castle."
+    Journal for elmorad "You must perform the duty of [Guard] Zalk at El Morad Castle."
+    Kill 50 of 4251, 4201
+    Kill 30 of 4601, 4651
+
+Requires player level >= 65 and quest 567 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 50 np
+    Give 30000 coins
+
+direction_113 = location "Ape" about "Ape\nGiant Large carnivore inhabiting the jungle, distinguishing trait: attacks loot with ambushes, primary attack method: brandishes powerful arms and pulls and twists target" found "Karus" karus at 206 1340 in zone 1
+direction_114 = location "Ape" about "Ape\nGiant Large carnivore inhabiting the jungle, distinguishing trait: attacks loot with ambushes, primary attack method: brandishes powerful arms and pulls and twists target" found "El Morad" elmorad at 1861 702 in zone 2
+
+On available
+    If player is karus
+        Say "Help the master, our [Guard] Melburick policing"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Help maintain the master, we [Guard] Zalk by policing"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "The First Person Luferson Castle. The source 'policing worse, and ask from this place."
+        Topic "Tell me more..." do
+            Show quest "Thank you [APE], and  's fight against [Gray Oozy] increased rapidly lately.\n\nCitizens of Karus are afraid because of the rumor. Defeat [Aif] and [Grey Oz]."
+    If player is elmorad
+        Say "First around El Morad Castle. The source 'policing worse, and ask from this place."
+        Topic "Tell me more..." do
+            Show quest "Thank you [APE], and  's fight against [Gray Oozy] increased rapidly lately.\n\nCitizens of El Morad are afraid because of the rumor. Defeat [Aif] and [Grey Oz]."
+
+On in_progress
+    If player is karus
+        Say "Alas, the Ape! Gray Oozy! Alas! We are flooded!"
+        Topic "Where can I find it?" do
+            Map direction_113
+    If player is elmorad
+        Say "Alas, the Ape! Gray Oozy! Alas! We are flooded!"
+        Topic "Where can I find it?" do
+            Map direction_114
+
+On ready
+    Say "This much do !"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you.The policing thanks to of <selfname> by playing an active part in the improved. Ask the place immediately following."

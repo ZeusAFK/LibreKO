@@ -1,0 +1,15 @@
+Bind Npc 24432 Zone 1
+Quest 417 "[Repeatable Solo] Megantereon Hunt"
+    Repeat always
+    Journal "[Guard] Keife has commissioned you to hunt Megantereon. However, it will not count when you are in a party."
+    Kill 20 of 655, 605 at direction_111
+
+Requires player level >= 43 and player is karus
+
+Rewards
+    Give 1000000 experience or 1400000 with premium
+
+direction_111 = location "Megantereon" about "Megantereon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "Karus" karus at 169 1045 in zone 1
+
+On offer
+    Show quest "You'll get the 5th piece of Armor  out of this if you do [Sentinel] Cape this favor."

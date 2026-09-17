@@ -1,0 +1,35 @@
+# Godot cache and import files
+.godot/
+.mono/
+
+# Per-user settings (server host/port), auto-created on first run
+settings.cfg
+
+# Export presets are per developer; Godot writes them when you create one under Project > Export
+export_presets.cfg
+export_credentials.cfg
+
+
+# Exported builds
+export/
+builds/
+*.exe
+*.x86_64
+*.apk
+*.aab
+*.ipa
+*.pck
+*.zip
+
+# Baked game content comes from the LibreKO-Assets pipeline; only original art and third-party icons are tracked
+assets/*
+!assets/backgrounds/
+!assets/ui/
+assets/ui/*
+!assets/ui/icons/
+!assets/terrain/
+assets/terrain/*
+!assets/terrain/*/
+assets/terrain/*/*
+!assets/terrain/*/minimap.webp
+!assets/terrain/*/minimap.webp.import

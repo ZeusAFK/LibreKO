@@ -1,0 +1,30 @@
+Bind Npc 31556 Zone 1 for karus
+Bind Npc 31555 Zone 2 for elmorad
+Quest 642 "Labor Shortage"
+    Journal for karus "You must talk to [Captain] Pasha."
+    Journal for elmorad "You must talk to [Captain] Redin."
+
+Requires player level >= 61
+
+Rewards none
+
+On available
+    If player is karus
+        Say "There are people who have sailed from afar at the Port Pugative.  What's going on?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "There are people who have sailed from afar at the Port Hashak.  What's going on?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "How do you do? I am Pasha, the [captain] of this merchant vessel."
+        Topic "Tell me more..." do
+            Show quest "I've come from a long distance to exchange various specialty products.\n\nLet's see ... You look pretty strong. I need a hand. Can you help us?\n\nIt should be a conversation with the Captain Pasha of Karus Regional Executive pugeo port."
+    If player is elmorad
+        Say "How do you do? I am Reddin, the [captain] of this merchant vessel."
+        Topic "Tell me more..." do
+            Show quest "I've come from a long distance to exchange various specialty products.\n\nLet's see ... You look pretty strong. I need a hand. Can you help us?\n\nIt should be a conversation with the Captain of the Sharks port Aladdin and El Morad area."
+
+On claimable
+    Show quest "Hahaha, so you are a broad-minded fellow! Good! First, get me [Adonis Specialty Honey] from [Hornet]! I heard it's very precious so how could I not want it? Hahaha!"

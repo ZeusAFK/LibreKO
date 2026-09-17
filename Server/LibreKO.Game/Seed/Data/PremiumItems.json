@@ -1,0 +1,119 @@
+[
+  {
+    "Type": 1,
+    "ExpRestorePercent": 0.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 0,
+    "RepairDiscountPercent": 0,
+    "ItemSellPercent": 0
+  },
+  {
+    "Type": 2,
+    "ExpRestorePercent": 0.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 0,
+    "RepairDiscountPercent": 0,
+    "ItemSellPercent": 0
+  },
+  {
+    "Type": 3,
+    "ExpRestorePercent": 10.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 2,
+    "RepairDiscountPercent": 50,
+    "ItemSellPercent": 30
+  },
+  {
+    "Type": 4,
+    "ExpRestorePercent": 0.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 0,
+    "RepairDiscountPercent": 0,
+    "ItemSellPercent": 0
+  },
+  {
+    "Type": 5,
+    "ExpRestorePercent": 2.0,
+    "NoahPercent": 5,
+    "DropPercent": 1,
+    "BonusLoyalty": 4,
+    "RepairDiscountPercent": 50,
+    "ItemSellPercent": 50
+  },
+  {
+    "Type": 6,
+    "ExpRestorePercent": 0.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 0,
+    "RepairDiscountPercent": 0,
+    "ItemSellPercent": 0
+  },
+  {
+    "Type": 7,
+    "ExpRestorePercent": 2.0,
+    "NoahPercent": 5,
+    "DropPercent": 1,
+    "BonusLoyalty": 5,
+    "RepairDiscountPercent": 50,
+    "ItemSellPercent": 30
+  },
+  {
+    "Type": 8,
+    "ExpRestorePercent": 0.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 0,
+    "RepairDiscountPercent": 0,
+    "ItemSellPercent": 0
+  },
+  {
+    "Type": 9,
+    "ExpRestorePercent": 0.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 0,
+    "RepairDiscountPercent": 0,
+    "ItemSellPercent": 0
+  },
+  {
+    "Type": 10,
+    "ExpRestorePercent": 2.0,
+    "NoahPercent": 100,
+    "DropPercent": 2,
+    "BonusLoyalty": 5,
+    "RepairDiscountPercent": 50,
+    "ItemSellPercent": 50
+  },
+  {
+    "Type": 11,
+    "ExpRestorePercent": 1.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 5,
+    "RepairDiscountPercent": 50,
+    "ItemSellPercent": 50
+  },
+  {
+    "Type": 12,
+    "ExpRestorePercent": 2.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 12,
+    "RepairDiscountPercent": 50,
+    "ItemSellPercent": 50
+  },
+  {
+    "Type": 13,
+    "ExpRestorePercent": 1.0,
+    "NoahPercent": 0,
+    "DropPercent": 0,
+    "BonusLoyalty": 5,
+    "RepairDiscountPercent": 50,
+    "ItemSellPercent": 50
+  }
+]

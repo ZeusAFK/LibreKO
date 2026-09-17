@@ -1,0 +1,34 @@
+Bind Npc 13013 Zone 21
+Quest 70 "Wild bulcan hunting"
+    Journal "[Sentinel] Patrick asked me to hunt five Wild Bulcans for him."
+    Kill 5 of 251 at direction_325
+
+Requires player level >= 6
+
+Rewards
+    Give 4500 experience
+    Give 2000 coins
+    Choose one
+        Give 1 of 202005005
+        Give 1 of 242005005
+        Give 1 of 262005005
+        Give 1 of 282005005
+
+direction_325 = location "Wild Bulcan" about "Wild Bulcan\nMoradon`s beasts; the most belligerent and savage of the bulcans who are shunned by their own" found "Moradon" at 502 415 in zone 21
+
+On offer
+    Say "I'm Moradon's Guardian, no, still just Sentinel Patrick. What did you want?"
+    Topic "Tell me more..." do
+        Show quest "This time Bulcan creatures have appeared, but they are more powerful. The creatures called Wild Bulcan look similar to regular Bulcan in appearance, but these creatures are more ferocious. Several mercenaries and peddlers have already been vicitimized by these Wild Bulcans. I think you can solve this matter for us this time too. Please hunt five Wild Bulcans, which are similar to but fiercer than Bulcan, and come back."
+
+On in_progress
+    Say "Hey, you must hunt at least five Wild Bulcans. Don't even think about going easy."
+    Topic "Where can I find it?" do
+        Map direction_325
+
+On ready
+    Say "Master, you've hunted down the Bulcans again. Hurry back to [Sentinel] Patrick."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "I should've asked you from the beginning. Thank you for taking care of it for me."

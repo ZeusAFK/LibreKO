@@ -1,0 +1,34 @@
+Bind Npc 13016 Zone 21
+Quest 78 "Pet"
+    Journal "Pets can be grown."
+    Kill 3 of 750, 700, 751, 752 at direction_1
+    Kill 3 of 850, 851, 853, 852 at direction_7
+    Kill 3 of 150 at direction_11
+    Kill 3 of 250 at direction_34
+
+Requires player level >= 10
+
+Rewards
+    Give 1 of 600001000
+    Give 5 of 389191000
+
+direction_1 = location "Worm" about "Worm\nA giant worm-like monster which levels head-on attacks with long tentacles and body" found "Inhabits the bridgefront outside Moradon central gate" at 637 429 in zone 21
+direction_11 = location "Kecoon" about "Kecoon\nBipedal insect evolved from the war against Pathos" found "Moradon lakefront" at 616 341 in zone 21
+direction_34 = location "Bulcan" about "Bulcan\nRepresentative monster of Moradon which refines traces of steel from the earth in its stomach" found "Moradon seashore" at 535 414 in zone 21
+direction_7 = location "Bandicoot" about "Bandicoot\nA rodent which grew abnormally by feeding on corpses of evil races in the War with Pathos." found "Inhabits Seashore of Hope" at 632 465 in zone 21
+
+On available
+    Say "Aren't you tired of travelling alone, master? Why not get yourself one of the Familiars that [Trainer] Kate breeds?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Familiars, devoid of evil, are surfacing all over the continent. Are you ready to domesticate them?"
+    Topic "Tell me more..." do
+        Show quest "Before you receive a Familiar egg, show me you're ready to tame this docile creature \n If you've undertaken [Sentinel] Patrick's task diligently, it should not be difficult."
+
+On ready
+    Say "Master, you've completed the task \n Go to [Trainer] Kate and receive the Familiar egg."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You've completed the task. \nAfter the egg hatches, use summon items to summon the Familiar. Place the summon items in the shortcut-key window. They can be bought from the sundries store."

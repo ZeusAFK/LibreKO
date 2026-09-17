@@ -1,0 +1,32 @@
+Bind Npc 31568 Zone 11 for karus
+Bind Npc 31567 Zone 12 for elmorad
+Quest 777 "[Lemegeton] Lemegeton, Scroll which sealed Devil 72"
+    Journal for karus "You must deliver [Lemegeton] to the [Leader of Order of the Sorcery] Malraseu."
+    Journal for elmorad "You must deliver [Lemegeton] to the [Leader of Order of the Sorcery] Pelore."
+    Collect 1 of 900296000
+
+Requires (player level >= 75 and player is karus and quest 775 is completed) or (player level >= 75 and player is elmorad and quest 776 is completed)
+
+Rewards
+    Give 250000 experience
+    Give 30000 coins
+
+On available
+    Say "Master, everything seems to be almost done. At last, let's bring this book to Malraseus."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "I knew you would come around this time."
+        Topic "Tell me more..." do
+            Show quest "The Demon War will soon be over. The remaining remnants are being pursued by our [Order of the Sorcery]\n\nWe must deliver [Lemegeton] to Malraseu the [Order of the Sorcery Leade] of Eslant."
+    If player is elmorad
+        Say "I knew you would come around this time."
+        Topic "Tell me more..." do
+            Show quest "The Demon War will soon be over. The remaining remnants are being pursued by our [Order of the Sorcery]\n\nWe must deliver [Lemegeton] to Pelore the [Order of the Sorcery Leade] of Eslant."
+
+On in_progress
+    Say "Where did you forget it? Check it again."
+
+On claimable
+    Show quest "Good job. This [Devil72 Seal Lemegeton] will be on the bottom of the lake forever.\n\nThis has been a long journey. What you have done will be told and retold. Hope you can help for our next war."

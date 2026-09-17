@@ -1,0 +1,32 @@
+Bind Npc 24203 Zone 1 for karus
+Bind Npc 14203 Zone 2 for elmorad
+Quest 603 "[Prophetic Poetry of Light] Negotiation Techniques"
+    Journal for karus "You must talk to [Archmage] Drake, of Linate Village."
+    Journal for elmorad "You must talk to [Archmage] Drake of Raiba Village."
+    Collect 1 of 910239000
+
+Requires player level >= 68 and quest 602 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    Say "Ew, [Archmage] Drake's? You those wacky personality'm se ..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "What kind of people are you? Do not bother away"
+        Topic "Tell me more..." do
+            Show quest "What did you say? Request for negotiations? That's ing annoying ... Wanted to Ceduna still holding what else do they come from?\n\nLinate Village [Archmage] Drake and dialog"
+    If player is elmorad
+        Say "What kind of people are you? Do not bother away"
+        Topic "Tell me more..." do
+            Show quest "What did you say? Request for negotiations? That's ing annoying ... Wanted to Ceduna still holding what else do they come from?\n\n[Archmage] Drake and the sliver of town to talk"
+
+On in_progress
+    Say "What? I do not have any? It's a joke! Do you want to show  We got him!"
+
+On claimable
+    Show quest "Only when you need something, do you find the ... Groups that fought negotiations and where the guys Forwar Let asking. Asking to buy us some time, precisely the story eh.\n\nWhat difficult, but it is hard to maenip. Is not it?"

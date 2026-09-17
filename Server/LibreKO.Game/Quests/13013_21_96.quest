@@ -1,0 +1,16 @@
+Bind Npc 13013 Zone 21
+Quest 96 "Giant Gavolt hunting"
+    Journal "[Sentinel] Patrick asked me to hunt twentyfive Giant Gavolts for him."
+    Kill 10 of 351 at direction_594
+
+Requires player level >= 19
+
+Rewards
+    Give 47500 experience
+
+direction_594 = location "Giant Gavolt" about "Giant Gavolt\nA bird monster spawned with Pathos' evil magic powers. " found "Moradon" at 546 246 in zone 21
+
+On offer
+    Say "Ah~ Welcome. I thought you would come. Have you seen a monster called Giant Gavolt?"
+    Topic "Tell me more..." do
+        Show quest "It is called that way as its body is big even among Gavolts.  Anyway, those with big bodies are strong so be careful. Ha ha... your goal is 25 of them! Will you give it a try?\n\nYou'll receive 8,000 EXP if you do [Sentinel] Patrick's favor."

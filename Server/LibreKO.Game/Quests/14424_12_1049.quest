@@ -1,0 +1,26 @@
+Bind Npc 14424 Zone 12
+Quest 1049 "Is it a man or an animal!?"
+    Journal "Defeat 40 Trolls"
+    Kill 40 of 9617, 9616 at direction_1179
+
+Requires player level >= 61 and player is elmorad and quest 1047 is completed
+
+Rewards
+    Give 23750000 experience
+
+direction_1179 = location "Troll" about "Troll\nTrolls are monsters who were involved in the war between Human and Pathos. They have low defense power but they have high HP and powers." found "El Morad Eslant" elmorad at 562 672 in zone 12
+
+On offer
+    Say "No!!!  That can't be?!!"
+    Topic "Tell me more..." do
+        Show quest "Trolls have invaded the North town. There's no survivor. Could you take revenge?"
+        Topic "Where can I find it?" do
+            Map direction_1179
+
+On in_progress
+    Say "Did you take revenge?"
+    Topic "Where can I find it?" do
+        Map direction_1179
+
+On claimable
+    Show quest "You have done well here..  Thank you."

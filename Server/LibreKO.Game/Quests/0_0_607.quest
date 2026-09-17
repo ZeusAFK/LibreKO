@@ -1,0 +1,36 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 607 "[Prophetic Poetry of Light] Trace"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910241000
+
+Requires player level >= 68 and quest 606 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "Master!Need to recapture the goddess of prophecy ! C'mon, I'm forwarding [chasing a request, [Captain], the carrying God."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master!Need to recapture the goddess of prophecy !Dear Captain Falkwine, C'mon, I'm passing [chasing a request,!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "From Ronark Land Base? Yeah, the war situation?"
+        Topic "Tell me more..." do
+            Show quest "It's a good win, and I'm glad.What? Victory, but had to keep the base from all over the theft of a goddess of prophecy? Sent [chasing a request, where the base not see me!\n\nI will be carrying a conversation with the Luferson Castle province [Captain]."
+    If player is elmorad
+        Say "From Ronark Land Base? Yeah, the war situation?"
+        Topic "Tell me more..." do
+            Show quest "It's a good win, and I'm glad.What? Victory, but had to keep the base from all over the theft of a goddess of prophecy? Sent [chasing a request, where the base not see me!\n\n[And Captain Falkwine, El Morad Castle dialog."
+
+On in_progress
+    Say "That chasing a request? Where shedding will come!A hurry at the time!"
+
+On claimable
+    Show quest "Geez ...Feet le bastard ...  Just not having a finely, then surely fall have to fend guess!\n\n[The devil] feet, chased Le request Ronark Land Base base treatment and am going to recover the goddess of prophecy come up tightly and prepare for battle!"

@@ -1,0 +1,20 @@
+Bind Npc 25019 Zone 11
+Quest 1336 "The 3 Demons and God Weapons"
+    Journal "Talk to Uth"
+
+Requires player level >= 60 and player is karus
+
+Rewards
+    Give 212500 experience
+
+On offer
+    Say "I don't know what to say but we've lost the Eslant's treasure which are 3 God equipments."
+    Topic "3 novelties?" do
+        Say "Yes. They're Esperancer's armor that protects against any attacks, Eclipse's Spear that cut through any armors, and Jerper's guntlet that makes user's hand as fast as the light. Of course they work on only chosen person but they're important to people of Eslant as God's possessions."
+        Topic "Who stole that important stuff from you?" do
+            Say "Lost to Marsil, Bathin, Garlong. They were not big threats to us but someday they came up with incredible powers and attacked us. It was too sudden and I'm sorry we couldn't protect those equipments."
+            Topic "Where did they get the power?" do
+                Show quest "It is mystery to us too. For now it's more important to get those 3 equipments back from them.\n and there is a rumor that a strange monster showed up near ancient site in Southwest area. .\n<selfname>, please bring peace to Eslant.\n\nEslant's 3 God's equipments were stolen by Devils. We have to bring them back from the Devils."
+
+On claimable
+    Show quest "Eslant's 3 God's equipments were stolen by Devils. We have to bring them back from the Devils."

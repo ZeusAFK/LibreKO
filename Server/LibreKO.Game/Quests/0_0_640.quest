@@ -1,0 +1,33 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 640 "Research on Sample"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 3 of 389550000
+
+Requires player level >= 64 and quest 639 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900192000
+
+On available
+    Say "Master, all experiments are fisnished. But it seems he may still have a favor to ask you. Shall we talk to him?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "We are nearing the end of our experiments thanks to your work, <selfname>. Clap, clap, clap to you, <selfname> and here is another mission for you!"
+        Topic "Tell me more..." do
+            Show quest "Now, I need to find out how all my precious samples work. The best coagulant would be the [Muddy Coagulant] made from [Half-Troll Warrior] . Why are you still there? You heard me! Now, go!\n\nOf Goblin Karus area near the village to help the [Staff] Squad Vere materials for the study  from the Half-Troll Warrior, squishy coagulant be obtained."
+    If player is elmorad
+        Say "We are nearing the end of our experiments thanks to your work, <selfname>. Clap, clap, clap to you, <selfname> and here is another mission for you!"
+        Topic "Tell me more..." do
+            Show quest "Now you need to find out the reaction of the  had saved the meantime, cherish the last. Half-Troll Warrior, fatigue made the best coagulant kind. It's like [squishy coagulant]? What do you do? Go and rescue hear syeoteumyeon fast ohsyeoyajyo\n\nShould come help the El Morad region goblins near the village of Staff Squad gray materials for the study  from the Half-Troll Warrior, obtained squishy coagulant."
+
+On in_progress
+    Say "Huhuhu ... Is it enough?"
+
+On claimable
+    Show quest "How nice of you to do all these. Thanks a lot. Kekek...\n\nNow, all the experiments are done. Take this research report to Herga, the[advisor] of Luperson Castle. We will be breaking up our camp here soon. Thank you for all your work."

@@ -1,0 +1,18 @@
+Bind Npc 25019 Zone 11
+Quest 1339 "Bathin's Slave"
+    Journal "Rescue 20 Bathin's slave"
+    Collect 10 of 900684000
+
+Requires player level >= 60 and player is karus and quest 1336 is completed
+
+Rewards
+    Give 2125000 experience
+
+On offer
+    Show quest "<selfname>, are you now on the way to kill Bathin? If so, please save Eslant people over there. I heard that our people are used as servants. Please help them.\n\nI have to free the people treated as servants under one of the Eslant's Devils, Bathin. Have to let people escape from the Prison around Barin"
+
+On in_progress
+    Say "Our people not yet? The kidnapped people are captured in northwest of Bathin's settlement."
+
+On claimable
+    Show quest "You really saved kidnapped people, <selfname> thank you. This is nothing but our express of appreciation."

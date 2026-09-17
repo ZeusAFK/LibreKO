@@ -1,0 +1,17 @@
+Bind Npc 24424 Zone 11
+Quest 1106 "Jeweled horse shoe!"
+    Journal "Collect 10 jeweled horse shoes"
+    Collect 10 of 810303000
+
+Requires player level >= 66 and player is karus
+
+Rewards
+    Give 37500000 experience or 75000000 with premium
+
+On offer
+    Say "Do you know?"
+    Topic "Tell me more..." do
+        Show quest "Heard that jewels are embeded on the Satiros horse's hoofs? Could you bring 10 hoofs?"
+
+On claimable
+    Show quest "So shiny. I'll give you the reward later."

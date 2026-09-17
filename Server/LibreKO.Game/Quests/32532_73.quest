@@ -1,0 +1,10 @@
+Bind Npc 32532 Zone 73
+
+On greeting
+    If quest 594 is started and player lacks 910237000
+        Say "I'll give it to you one more time , don't lose it!"
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910237000
+    Else
+        Say ""

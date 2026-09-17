@@ -1,0 +1,49 @@
+Bind Npc 14301 Zone 21 for warrior
+Bind Npc 14301 Zone 21 for rogue
+Bind Npc 14301 Zone 21 for mage
+Bind Npc 14301 Zone 21 for priest
+Quest 89 "Low-level weapon production"
+    Journal "I must bring [Blacksmith] Heppa 10 Apples of Moradon and 1,000 Noahs and receive makes low-level weaponry in return."
+    Collect 3 of 910017000
+    Collect 3 of 379076000
+    Collect 1000 coins
+
+Requires player level >= 16
+
+Rewards for warrior
+    Give 1 of 971810435
+
+Rewards for rogue
+    Choose one
+        Give 1 of 971780489
+        Give 1 of 971820918
+
+Rewards for mage
+    Choose one
+        Give 1 of 971790363
+        Give 1 of 971790371
+        Give 1 of 971790379
+
+Rewards for priest
+    Choose one
+        Give 1 of 971800760
+        Give 1 of 971830444
+
+On available
+    Say "Whew, this is exhausting. Master, we're low on weapons. Go see [Blacksmith] Heppa. Who knows? Maybe he'll give you a nice weapon."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Craftsmen can distinguish high-grade ingredients with a single glance. I discovered something while traversing the Seashore of Hope. With that, I should be able to make you a to-die-for weapon. How about it?"
+    Topic "Tell me more..." do
+        Show quest "If you're tempted, bring me Bulture horns and iron bar and I'll make you something fabulous.\n\n[Blacksmith] Heppa will make you 16Lv weaponry for 3 Bulture horns and 5 iron bar."
+
+On in_progress
+    Say "Didn't I tell you Bulture horns and iron bar are required for weapons? It's an easy task for me, still I'm charging a fee of 1,000 Noahs."
+
+On ready
+    Say "Master, all the materials [Blacksmith] Heppa asked for have been collected. All right, it's time for Weapon Change!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "[Select the weapon you want to be awarded]\nHmm. You brought them. Time to burn my craftsman's passion. \nThere you go. Hope it comes to good use."

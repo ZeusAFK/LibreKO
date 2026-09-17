@@ -1,0 +1,21 @@
+Bind Npc 25276 Zone 12
+Quest 1514 "[Daily Party] Demonic Legion of Eslant (Lust)"
+    Daily
+    Journal "Kill 50 Booro"
+    Kill 50 of 7016 at direction_172
+
+Requires player level >= 60 and player is elmorad
+
+Rewards
+    Give 10000000 experience
+
+direction_172 = location "Booro" about "Buro" found "Eslant" at 840 900 in zone 12
+
+On offer
+    Show quest "I appreciate all of you're here for peace of Islant..| Please don't let them from summoning their leaders."
+
+On in_progress
+    Say "In order to stop the summoning of their leader, we need to defeat 50 Booros. "
+
+On claimable
+    Show quest "You have defeated all 50 of them.. Please help us out again in the future. "

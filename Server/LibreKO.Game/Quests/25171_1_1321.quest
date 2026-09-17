@@ -1,0 +1,21 @@
+Bind Npc 25171 Zone 1
+Quest 1321 "Postponing the happiness.."
+    Journal "Defend the spirits that are summoning the hole of purity. Defeat all monsters and the boss"
+    Collect 1 of 900628000
+    Collect 1 of 900629000
+    Collect 1 of 900630000
+
+Requires player level >= 35 and player is karus and quest 1315 is completed
+
+Rewards
+    Give 300000 experience
+    Give 1 of 900637000
+
+On offer
+    Show quest "Thank you Warrior. It's all your effort for our reunion. Summon the Pole of Purification. Once we start summoning, the monsters will come and attack us. I want you to protect us against those monsters.\n\nAre you ready?"
+
+On in_progress
+    Say "The Pole of Purification doesn't have enough holy power.."
+
+On claimable
+    Show quest "(Bang!)(A bright shining staff is in the air above altar.) It's done.. Use this pole to cure those people contaminated with Spiritual Stone."

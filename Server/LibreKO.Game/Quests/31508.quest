@@ -1,0 +1,196 @@
+include locations/global
+include translations/31508_nenchant
+
+Bind Npc 31508
+
+On greeting
+    Say "How are you? I am the Enchanter dispatched to Moradon Castle. I offer buffs to help you on your journey. The are three types of buffs that you can receive: attack power, defensive power and enhancement of physical strength, and they can be stacked! Possible payment means are Noah, and for those people between level 36 and 60, can pay with the [sign of victory] too."
+    Topic "[Buff][Noah/Symbol of Victory]" goto event_200
+    Topic "[Spirit Alseids] Of mounting" goto close
+    Topic "Settlement support free of charge buff" do
+        If player lacks 900667000
+            Say "You don't have buff coupon."
+            Topic "Confirm" goto close
+    Goto close
+
+On event_200
+    If player level < 35
+        Say "Knights between levels 1 and 35 can use it free of charge. The list of buffs which a user can receive is as follows: |#Shout for charge: Attack power 10%|# Firm will: Defensive power 100|# Endless patience: Enhancement of physical strength by 500 |The price is 30000 Noah per buff. It can also be paid by one [sign of victory]."
+        Topic "Yes" goto event_203
+        Topic "No" goto close
+    Else if player level > 34 and player level < 61
+        Say "This is the list of buffs which a user between levels 36 and 60 can receive: |#Shout for charge: Attack power 10%|# Unbeatable will: Defensive power 150|# Unlimited patience: Enhancement of physical strength by 800|The price is 30000 Noah per buff. It can also be paid by two [signs of victory]."
+        Topic "Yes" goto event_204
+        Topic "No" goto close
+    Else if player level > 60
+        Say "This is the list of buffs which a user between levels 61 and 83 can receive:|# Shout for charge: Attack power 10%|# Unyielding will: Defensive power 200|# Extreme patience: Enhancement of physical strength by 1000|The price is 50000 Noah per buff."
+        Topic "Yes" goto event_205
+        Topic "No" goto close
+
+On event_203
+    Say information_on_the_npc
+    Topic "Confirm" goto event_209
+
+On event_209
+    If player level > 20
+        If player has < 30000 of 900000000
+            Say please_select_your_method
+            Topic "Where can I find it?" do
+                Map noah
+        Else
+            Say please_select_the_buff
+            Topic "[Attack] Shout for charge" do
+                Cast 302344
+                If the last step worked
+                    Cast 302344
+                    Take 10000 coins
+                Else
+                    Say "You are already completed. Have a good time."
+                    Topic "Close" goto close
+            Topic "[Defense] Firm will" do
+                Cast 302331
+                If the last step worked
+                    Cast 302331
+                    Take 10000 coins
+                Else
+                    Say "You are already completed. Have a good time."
+                    Topic "Close" goto close
+            Topic "[Physical strength] Endless patience" do
+                Cast 302328
+                If the last step worked
+                    Cast 302328
+                    Take 10000 coins
+                Else
+                    Say "You are already completed. Have a good time."
+                    Topic "Close" goto close
+            Topic "Strong legs [Go]" do
+                Cast 107010
+                If the last step worked
+                    Cast 107010
+                    Take 10000 coins
+                Else
+                    Say "You are already completed. Have a good time."
+                    Topic "Close" goto close
+    Else
+        Say please_select_the_buff
+        Topic "[Attack] Shout for charge" do
+            Cast 302344
+            If the last step worked
+                Cast 302344
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "[Defense] Firm will" do
+            Cast 302331
+            If the last step worked
+                Cast 302331
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "[Physical strength] Endless patience" do
+            Cast 302328
+            If the last step worked
+                Cast 302328
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "Strong legs [Go]" do
+            Cast 107010
+            If the last step worked
+                Cast 107010
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+
+On event_204
+    Say information_on_the_npc
+    Topic "Confirm" goto event_210
+
+On event_210
+    If player has < 30000 of 900000000
+        Say please_select_your_method
+        Topic "Where can I find it?" do
+            Map noah
+    Else
+        Say "Please select the buff you would like to receive.|# Shout for charge : Attack power 10%|# Unbeatable will: Defensive power 150|# Unlimited patience: Enhancement of physical strength by 800"
+        Topic "[Attack] Shout for charge" do
+            Cast 302344
+            If the last step worked
+                Cast 302344
+                Take 30000 coins
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "[Defense] Unbeatable will" do
+            Cast 302332
+            If the last step worked
+                Cast 302332
+                Take 30000 coins
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "[Physical strength] Unlimited patience" do
+            Cast 302329
+            If the last step worked
+                Cast 302329
+                Take 30000 coins
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "Strong legs [Go]" do
+            Cast 107010
+            If the last step worked
+                Cast 107010
+                Take 30000 coins
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+
+On event_205
+    Say information_on_the_npc
+    Topic "Confirm" goto event_206
+
+On event_206
+    Say "Please select your method of payment. |#Noah : 50000 Noah consumed"
+    Topic "Provided in Noah" goto event_207
+    Topic "Provided as a sign of victory" goto close
+
+On event_207
+    If player has < 50000 of 900000000
+        Say please_select_your_method
+        Topic "Where can I find it?" do
+            Map noah
+    Else
+        Say "Please select the buff you would like to receive.|# Shout for charge : Attack power 10%|# Unyielding will: Defensive power 200|# Extreme patience: Enhancement of physical strength by 1000"
+        Topic "[Attack] Shout for charge" do
+            Cast 302344
+            If the last step worked
+                Cast 302344
+                Take 50000 coins
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "[Defense] Unyielding will" do
+            Cast 302333
+            If the last step worked
+                Cast 302333
+                Take 50000 coins
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "[Physical strength] Extreme patience" do
+            Cast 302330
+            If the last step worked
+                Cast 302330
+                Take 50000 coins
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close
+        Topic "Strong legs [Go]" do
+            Cast 107010
+            If the last step worked
+                Cast 107010
+                Take 50000 coins
+            Else
+                Say "You are already completed. Have a good time."
+                Topic "Close" goto close

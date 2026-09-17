@@ -1,0 +1,32 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 556 "[Failed Mission/Boss] Securing Retreat Route"
+    Journal for karus "You must help Hero's return by following the order of [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must help Hero's return by following the order of [Captain] Falkwine at Luferson Castle."
+    Collect 1 of 910198000
+
+Requires player level >= 63 and quest 555 is completed
+
+Rewards
+    Give 50000000 experience
+    Give 150 np
+    Give 2 of 900017000
+
+On available
+    If player is karus
+        Say "[Captain]Harugo by carrying our master, join together in preparation for the return of the hero."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Our master [Captain] Falkwine and join together in preparation for the return of the hero."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Okay! Eslant the mainland Karus updated to spearhead the conduct of the savages coming down on the doorstep in colorectal scoring ass!"
+    Topic "Tell me more..." do
+        Show quest ", Detective, and scoring the the barbarian vanguard colon] and give them the stolen Horn back!\n\nDefeat [Chief of Savage Tribe] and obtain [Recovered Horn] to help out with the returning of the Hero."
+
+On in_progress
+    Say "Have you found them yet?"
+
+On claimable
+    Show quest "The horn will see line! Trumpet victory!"

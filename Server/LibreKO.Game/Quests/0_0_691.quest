@@ -1,0 +1,36 @@
+Bind Npc 31572 Zone 11 for karus
+Bind Npc 31571 Zone 12 for elmorad
+Quest 691 "Collecting Mana Pieces IV"
+    Journal for karus "You must collect Mana pieces with [Senior Researcher] Gaaz."
+    Journal for elmorad "You must collect Mana pieces with [Senior Researcher] Aldos."
+    Collect 5 of 389560000
+
+Requires player level >= 69 and quest 690 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+
+On available
+    If player is karus
+        Say "Got a call from [Chief Researcher] Gaz. He says this going to be the last one. Let's go to Islant."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Got a call from [Chief Researcher] Ados. He says this going to be the last one. Let's go to Islant."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Ah, you are here. I'm going to ask you for the last request. The previous researches went smoothly so I suspect no need for further experiments. Now, there's only one last experiment left to go."
+        Topic "Tell me more..." do
+            Show quest "It will be pretty tough this time. It's the [Apostle of the Storm], a magical creature that uses storm magic. Please get the [Wild mana piece] which carries their energy.\n\n[Senior Researcher]Gaz from Eslant has requested to get some [Wild mana piece] from the [Apostle of the Storm]."
+    If player is elmorad
+        Say "Ah, you are here. I'm going to ask you for the last request. The previous researches went smoothly so I suspect no need for further experiments. Now, there's only one last experiment left to go."
+        Topic "Tell me more..." do
+            Show quest "It will be pretty tough this time. It's the [Apostle of the Storm], a magical creature that uses storm magic. Please get the [Wild mana piece] which carries their energy.\n\n[Senior Researcher]Aldos from Eslant has requested to get some [Wild mana piece] from the [Apostle of the Storm]."
+
+On in_progress
+    Say "It's [Apostle of the Storm]. It's [Wild mana piece]!. Please don't do this to me."
+
+On claimable
+    Show quest "Nicely done. I can now do the final experiment.\n\nYou have done very well. You will be on top of my list if I need something else in the future, <selfname. Goodbye."

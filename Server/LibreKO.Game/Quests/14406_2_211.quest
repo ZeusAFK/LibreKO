@@ -1,0 +1,14 @@
+Bind Npc 14406 Zone 2
+Quest 211 "Eradicate Gray Oz"
+    Journal "You have promised [Imperial Guard] Telson to hunt Gray Oz."
+    Kill 40 of 4601, 4651 at direction_507
+
+Requires player level >= 48 and player is elmorad
+
+Rewards
+    Give 5000000 experience
+
+direction_507 = location "Gray Oozy" about "Gray Oozy\nAcidic venom spewed by its body is extremely lethal" found "El Morad" at 1667 709 in zone 2
+
+On offer
+    Show quest "You want to trade with me? If you defeat the Gray Oozy monsters on the way to the farm, then I'll give you the treasure. The chaos on the farm is made even worse by all the poison they gush out.\n\nYou'll earn the ring that holds the Strength of Legend, if you go on the hunt after listening to [Imperial Palace Guard] Telson's story about the Gray Oozy."

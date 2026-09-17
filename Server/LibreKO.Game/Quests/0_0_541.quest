@@ -1,0 +1,42 @@
+Bind Npc 24427 Zone 1 for karus
+Bind Npc 14427 Zone 2 for elmorad
+Quest 541 "[Self-made Hero] Put the things back"
+    Journal for karus "You must deliver Golden Goblet of a Dragon to [Guard] Melverick at Luferson Castle."
+    Journal for elmorad "You must deliver Golden Goblet of a Dragon to [Guard] Zalk at El Morad Castle."
+    Collect 1 of 910227000
+
+Requires player level >= 62 and quest 540 is completed
+
+Rewards
+    Give 1 of 910227000
+    Give 125000 experience
+
+On available
+    If player is karus
+        Say "Now you babysitting?Hmm ... I'm passing a [Golden Goblet of a Dragon] for the [Guard] Melburick."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Now you babysitting?Hmm ...Once [Guard] Dear Zalk, of a [Golden Goblet of a Dragon] for I'm passing."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "<selfname> welcome back."
+        Topic "Tell me more..." do
+            Show quest "How did the day went? Will you come looking for the [Golden Goblet of a Dragon]?\n\nBring [Dragon Golden Chalice] to Malverick."
+    If player is elmorad
+        Say "Welcome back <selfname>."
+        Topic "Tell me more..." do
+            Show quest "How did the day went? Will you come looking for the [Golden Goblet of a Dragon]?\n\nBring [Dragon Golden Chalice] to Zark."
+
+On in_progress
+    If player is karus
+        Say "Still can not find a god?  Out of time"
+    If player is elmorad
+        Say "Still can not find a god?  Out of time ..."
+
+On claimable
+    If player is karus
+        Show quest "You've come! This puts my mind at ease. But as for the [Fled Slave]... well, it doesn't matter, right? Understood.\n\nDeliver the [Dragon's [Golden Goblet of a Dragon]] to the [Captain]."
+    If player is elmorad
+        Show quest "You've come! This puts my mind at ease. But as for the [Fled Slave]... well, it doesn't matter, right? Understood.\n\nThe [Golden Goblet of a Dragon] for passing the [Captain Falkwine, God thank you."

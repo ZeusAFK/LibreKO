@@ -1,0 +1,43 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 120 "Full Plate Armor IV"
+    Journal "[Mercenary Adjutant] Rage asked me to hunt ten Smirdons for him."
+    Kill 5 of 650 at direction_525
+
+Requires player level >= 33
+
+Rewards for warrior
+    Give 1 of 204002005
+    Give 1 of 204002285
+    Give 500000 experience
+
+Rewards for rogue
+    Give 1 of 244002005
+    Give 1 of 244002286
+    Give 500000 experience
+
+Rewards for mage
+    Give 1 of 264002005
+    Give 1 of 264002287
+    Give 500000 experience
+
+Rewards for priest
+    Give 1 of 284002005
+    Give 1 of 284002288
+    Give 500000 experience
+
+direction_525 = location "Smilodon" about "Smilodon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "Moradon" at 488 829 in zone 21
+
+On available
+    Say "Master, you're going to help out the imperial palace guard again, aren't you? That means now!! Heh heh..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The monster to be hunted this time is the Smilodon. They're the local carnivore of the Adonis continent whose bodies are covered by a hard shell. Be careful as they are capable of waging a rapid attack."
+    Topic "Tell me more..." do
+        Show quest "The reward will be the same as last time, imperial palace guard body armor. Thank you in advance.\n\n[Mercenary Adjutant] Rage will award craft armor for heeding his request."
+
+On claimable
+    Show quest "Thank you so much. We'll meet again when there's another mission."

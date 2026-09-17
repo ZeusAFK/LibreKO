@@ -1,0 +1,27 @@
+Bind Npc 31562 Zone 1
+Quest 669 "Hunting Game II"
+    Journal "Compete with [Hunter] Zarg in hunting."
+    Kill 50 of 1054, 1004 at direction_827
+
+Requires player level >= 63 and player is karus and quest 667 is completed
+
+Rewards
+    Give 20000000 experience
+    Give 30000 coins
+
+direction_827 = location "Undying" about "Undying\n Goblins are communal living monsters. In classification, the strongest order of those are Cobalt, Bugbear, Goblin bouncer." found "El Morad" karus at 1050 1365 in zone 1
+
+On available
+    Say "Huff huff... It's now the second match. [Hunter] really is the best when it comes to hunting. But still, don't lose!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I was waiting for you. You're slow! Hahahaha!"
+    Topic "Tell me more..." do
+        Show quest "Still, this is fun. Shall we begin the second match? Let's hunt some [Undying] this time. You go ahead and leave first. I'm not that merciless to start at the same time with a beginner. Hahaha!\n\nIts and Undying hunting, hunter Karus Local Donna camp [crop] to compete."
+
+On in_progress
+    Say "This makes me yawn. Is that all you've got?"
+
+On claimable
+    Show quest "Fulfilled your goal yet? Aren't you being a little too laid-back?"

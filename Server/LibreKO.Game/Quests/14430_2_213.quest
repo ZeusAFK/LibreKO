@@ -1,0 +1,23 @@
+Bind Npc 14430 Zone 2
+Quest 213 "Haunga Hunt"
+    Journal "[Mercenary] Tales has commissioned you to hunt Haunga."
+    Kill 20 of 1303, 1353 at direction_515
+
+Requires player level >= 49 and player is elmorad
+
+Rewards
+    Give 4500000 experience
+
+direction_515 = location "Haunga" about "Haunga\nWields strength and Defense Power one grade above that of Kongau " found "El Morad" at 498 593 in zone 2
+
+On available
+    Say "[Mercenary] Tales sent word. Must be about another hunting mission."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "How are you feeling? We're embarking on another big hunt, want to join us? As I won't be able to face the prey alone,  I'm gathering colleagues to accompany me."
+    Topic "Tell me more..." do
+        Show quest "We're going after 40 Haungas! Isn't that great! Ha-ha-ha!"
+
+On claimable
+    Show quest "Your ability's growing by leaps and bounds. You know that's all on my account, don't you? Haha..."

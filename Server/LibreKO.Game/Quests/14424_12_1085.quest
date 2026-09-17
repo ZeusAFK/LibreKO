@@ -1,0 +1,18 @@
+Bind Npc 14424 Zone 12
+Quest 1085 "Is it a human or a bird?"
+    Journal "Defeat 30 Raven Harpys"
+    Kill 30 of 2252, 2202 at direction_372
+
+Requires player level >= 68 and player is elmorad and quest 1083 is completed
+
+Rewards
+    Give 47500000 experience
+
+direction_372 = location "Raven Harpy" about "Raven Harpy\nRaven Harpies are monsters with strong attack powers. They have low intelligence but are very aggressive so they attack anyone who comes into their territories. " found "El Morad Eslant" elmorad at 278 527 in zone 12
+
+On offer
+    Say "Raven Harpys are invading the South west towns."
+    Topic "Tell me more..." do
+        Show quest "You have to help once again."
+        Topic "Where can I find it?" do
+            Map direction_372

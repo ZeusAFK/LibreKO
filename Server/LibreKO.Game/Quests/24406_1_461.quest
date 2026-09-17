@@ -1,0 +1,24 @@
+Bind Npc 24406 Zone 1
+Quest 461 "[Repeatable Solo] Haunga Warrior Hunt"
+    Repeat always
+    Journal "[Imperial Guard] Bekar has commissioned you to hunt Haunga Warrior. However, it will not count when you are in a party."
+    Kill 10 of 1362, 1312 at direction_58
+
+Requires player level >= 52 and player is karus
+
+Rewards
+    Give 1250000 experience or 1900000 with premium
+
+direction_58 = location "Haunga Warrior" about "Haunga Warrior\n Haunga endowed with relative intelligence, wears armor with Talia Skin affixed onto them " found "Karus Delaga Plains" at 1200 1750 in zone 1
+
+On available
+    Say "Master, [Imperial Palace Guard] Verca is recruiting warriors for a massive Haunga hunt. Why don't you go join him?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "This time it's hunting the Haunga Warriors, so do you want to be on it? By the way, a Haunga Warrior isn't easy to hunt as it is strong and has high defense power as well as resistances."
+    Topic "Tell me more..." do
+        Show quest "However, this should be a simple task for someone of your skill level, <selfname>.\n\nIf you do a favor for [Imperial Guard] Bekar, you will be rewarded."
+
+On claimable
+    Show quest "Good work. You've gained valuable experience from this hunt."

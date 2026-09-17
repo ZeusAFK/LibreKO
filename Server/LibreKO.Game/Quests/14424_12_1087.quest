@@ -1,0 +1,18 @@
+Bind Npc 14424 Zone 12
+Quest 1087 "Ambush from the skies"
+    Journal "Defeat 30 Falcon."
+    Kill 30 of 2224, 2254 at direction_377
+
+Requires player level >= 68 and player is elmorad
+
+Rewards
+    Give 47500000 experience
+
+direction_377 = location "Falcon" about "Falcon\nA type of aHarpy. They also have low intelligence but are aggrestive and attacks anyone who comes into their territories.." found "El Morad Eslant" elmorad at 113 549 in zone 12
+
+On offer
+    Say "Chief of Raven Harpys are invading South west towns now."
+    Topic "Tell me more..." do
+        Show quest "Thank you! The name of the chief is 'Falcon.' Please defeat him."
+        Topic "Where can I find it?" do
+            Map direction_377

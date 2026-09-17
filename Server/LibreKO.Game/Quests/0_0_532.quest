@@ -1,0 +1,30 @@
+Bind Npc 24204 Zone 1 for karus
+Bind Npc 14204 Zone 2 for elmorad
+Quest 532 "[Long Revenge] Materials of Holy Water"
+    Journal for karus "You must accept the request of [Priest] Minerva at Luferson Castle."
+    Journal for elmorad "You must accept the request of [Priest] Minerva at El Morad Castle."
+    Collect 8 of 379006000
+    Collect 100 of 379062000
+
+Requires player level >= 61 and quest 531 is completed
+
+Rewards
+    Give 1 of 910216000
+    Give 1250000 experience
+    Give 100000 coins
+
+On available
+    Say "Dear Minerva, the fuse should go in the temple came up again"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "If you need still you'd be purchasing some goods come? The main component of seed liquid potions, priest of stone] [stone of life, is lacking. Will come as list obtained from the [Store].\n\nCollect the ingredients to make [Restoration Holy Water]."
+
+On in_progress
+    Say "yet? I would should not be late ..."
+
+On claimable
+    Show quest "You were all together. The grace of God be with ... I'll soon made??."
+
+On completed
+    Say "I think I want to appease the ghost who died unjustly the to restore holy water, Thank you safely [Eslant updated to carry. I can spare just in case I'll make more."

@@ -1,0 +1,35 @@
+Bind Npc 13013 Zone 21
+Quest 85 "Kekoon Captain hunt"
+    Journal "[Sentinel] Patrick asked me to hunt 5 Kekoon Captains."
+    Kill 5 of 159 at direction_54
+
+Requires player level >= 13
+
+Rewards
+    Give 11250 experience
+    Give 50000 coins
+    Choose one
+        Give 1 of 310150005
+        Give 1 of 310150015
+        Give 1 of 310150025
+        Give 1 of 310150035
+        Give 1 of 310150075
+
+direction_54 = location "Kecoon Captain" about "Kecoon Captain\nKekoons are the offspring of evil soldiers and live on the outskirts of Moradon. They live and hunt in groups and often raid human villages." found "Moradon" at 658 291 in zone 21
+
+On offer
+    Say "Have you seen the Kecoon Captains around the castle? It's alarming how their numbers have suddenly shot up."
+    Topic "Tell me more..." do
+        Show quest "Yaaah... hunting about 5 of them would do the trick. I'll pay you loads."
+
+On in_progress
+    Say "Hey! Is the mission over yet?"
+    Topic "Where can I find it?" do
+        Map direction_54
+
+On ready
+    Say "Yahoo! Well done. Now let's go and get that reward from Patrick."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Good job. It was clever of me to ask you to do that. Heh! Here's the reward I promised."

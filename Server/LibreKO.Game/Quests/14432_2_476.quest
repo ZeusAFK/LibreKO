@@ -1,0 +1,29 @@
+Bind Npc 14432 Zone 2
+Quest 476 "[Repeatable Solo] Grell Hunt"
+    Repeat always
+    Journal "[Guard] Chayna has commissioned you to hunt Grell. However, it will not count when you are in a party."
+    Kill 30 of 4701, 4751 at direction_318
+
+Requires player level >= 56 and player is elmorad
+
+Rewards
+    Give 2500000 experience or 3750000 with premium
+
+direction_318 = location "Grell" about "Grell\n Terrifies anyone who beholds its eyes; attacks terrified enemies with tentacles" found "El Morad" at 1791 1494 in zone 2
+
+On offer
+    Say "Long time no see. How have you been? Do you know about a monster named Grell? They look hideous, can see through objects, and they can ascertain objects 10Km away."
+    Topic "Tell me more..." do
+        Show quest "Can you capture that Grell? I'd really like to see them."
+
+On in_progress
+    Say "I'd really like to see those Grell monsters..."
+    Topic "Where can I find it?" do
+        Map direction_318
+
+On ready
+    Say "Hooray... treasure chest here I come!!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you. With my seeking your help all the time, at least this time I can give you something in return."

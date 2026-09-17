@@ -1,0 +1,18 @@
+Bind Npc 14424 Zone 12
+Quest 1079 "Seal the Half Troll Shaman's magic"
+    Journal "Defeat 30 Half Troll Shamans."
+    Kill 30 of 9077, 9066 at direction_813
+
+Requires player level >= 66 and player is elmorad
+
+Rewards
+    Give 37500000 experience
+
+direction_813 = location "Half Troll Shaman" about "Half Troll Shaman\n This monster mixed by Unknown species, for that it is weakened species than normal troll" found "El Morad Eslant" elmorad at 658 656 in zone 12
+
+On offer
+    Say "Because of us getting rid of trolls, magicians are mad and they are coming out."
+    Topic "Tell me more..." do
+        Show quest "Half Troll Shaman are pretty powerful. Careful."
+        Topic "Where can I find it?" do
+            Map direction_813

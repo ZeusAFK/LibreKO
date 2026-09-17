@@ -1,0 +1,52 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 109 "Stop decrease in morale"
+    Journal "Please bring five Apples of Moradon to [Mercenary Adjutant] Rage"
+    Collect 3 of 810418000
+
+Requires player level >= 28
+
+Rewards for warrior
+    Give 1 of 971980793
+    Give 125000 experience
+
+Rewards for rogue
+    Give 1 of 971950493
+    Give 125000 experience
+    Choose one
+        Give 1 of 971950493
+        Give 1 of 971990921
+
+Rewards for mage
+    Give 125000 experience
+    Choose one
+        Give 1 of 971960361
+        Give 1 of 971960369
+        Give 1 of 971960377
+
+Rewards for priest
+    Give 125000 experience
+    Choose one
+        Give 1 of 971970763
+        Give 1 of 972000446
+
+On available
+    Say "Not long ago, our Village's Knight Squad suffered great losses from a Monster attack. Since then, our morale has been badly shaken."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Not long ago, our Village's Knight Squad suffered great losses from a Monster attack. So it's of no small concern that our citizen's morale is falling because it's been confirmed that more of our men died than monsters. As such, we've decided to... increase... the number of dead monsters when we officially inform the citizenry."
+    Topic "Tell me more..." do
+        Show quest "If you're not too busy, could you lend us a hand? We don't have enough hunters because most of them are busy re-building the village.\n\nI should do this for all our citizens and soldiers. Please, help me."
+
+On in_progress
+    Say "Hmm... I feel this isn't really enough."
+
+On ready
+    Say "This is an Apple of Moradon, isn't it? Uh ? These guys look scary so they make my blood run cold, aren't they?"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you so much.\nI'm ashamed of myself as an Imperial Palace Guard in Folk Village. But I think you did what's best for the citizens and soldiers, and for that I thank you. Here's a little something for ya. Choose the one you like."

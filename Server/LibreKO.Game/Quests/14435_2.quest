@@ -1,0 +1,13 @@
+Bind Npc 14435 Zone 2
+
+On greeting
+    If quest 644 is started and player has 900196000
+        Say "Wow, this is trully on top of its class. Please do send him my regards. And here's the receipt!"
+        Topic "Confirm" do
+            Transaction
+                Take 1 of 900196000
+                Give 1 of 900169000
+    Else if quest 644 is started
+        Say "Where's the honey?"
+    Else
+        Say ""

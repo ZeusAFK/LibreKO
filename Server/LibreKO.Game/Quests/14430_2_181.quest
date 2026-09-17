@@ -1,0 +1,34 @@
+Bind Npc 14430 Zone 2
+Quest 181 "Kongaus Hunt"
+    Journal "[Mercenary] Tales has commissioned you to hunt Kongaus."
+    Kill 20 of 1300, 1350 at direction_511
+
+Requires player level >= 45 and player is elmorad
+
+Rewards
+    Give 3750000 experience
+    Give 200 of 931786000
+    Give 100 of 931787000
+
+direction_511 = location "Konga" about "Konga\nDark Army`s attack squad formerly under Atilla`s command possessing exceptional Strength, Defense Power, and Immunity " found "El Morad" at 766 301 in zone 2
+
+On available
+    Say "Master, I heard there's a mercenary at Raon Camp who exclusively hunts monsters. You think that's true?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I'm Russel, the monster-hunting mercenary. There's no monster in the world I can't capture. How are your monster hunting skills? Wanna learn a few tips from me? Haha..."
+    Topic "Tell me more..." do
+        Show quest "Shall we start with simple Kongau since you don't look too sharp? You can quit if you think you won't be able to handle it."
+
+On in_progress
+    Say "Is that the best you can do? What a joke."
+    Topic "Where can I find it?" do
+        Map direction_511
+
+On ready
+    Say "You underestimated my master... this is a piece of cake!! Don't flinch. Let's go get our reward!!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Hmm... you hunted them faster than I thought. Here's a valuable body armor as reward. It might be too lavish for you, haha..."

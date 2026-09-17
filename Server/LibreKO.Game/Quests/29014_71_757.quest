@@ -1,0 +1,24 @@
+Bind Npc 29014 Zone 71
+Quest 757 "[Lemegeton] Devil 3 Prince Vassago"
+    Journal "You must join the devil war with [Order of the Sorcery] Bros."
+    Kill 1 of 9134, 9207
+
+Requires player level >= 74 and player is karus and quest 756 is completed
+
+Rewards
+    Give 67500000 experience
+    Give 100000 coins
+    Give 50 np
+    Give 1 of 900106000
+
+On available
+    Say "He was the devil but was a good Knight. But of course, master, you were better. Go visit [Order of the Sorcery]Bros. There's a new mission for you."
+
+On offer
+    Show quest "Welcome sir. Good job. Are you ready for the next battle?\n\nIt seems that their forces became weakened due to the continuous sealing. I think it was effective to seal from the lower level devils. Now, it's time to remove their brain. It's [Devil 3] Vassago who you have to fight against, this time. [Devil 3] Vassago is playing a key role as their brain with his infinite wisdom and ability to look into the past and the future. It's time for him to step down from his post. Go to [Eslant] with the [Devil 3 Summoning Scroll], which I gave you. Find [Devil 3 Summoning Stone], and then summon and destroy him.\n\nYou have to receive [Devil 3 Summoning Scroll] from [Order of the sorcery] Bros, of Ronark Land. Then, summon [Devil 3] Vassago from [Devil 3 Summoning Stone] at Luferson Castle area and kill him. \n※ [Devil 3 Summoning Scroll] is free the first time, but from the next time on you'll have to pay a million Noahs."
+
+On in_progress
+    Say "You haven't defeated him."
+
+On claimable
+    Show quest "You have defeated him! Glory is ours now.\n\nNow we only have Devil12. Don't be so relaxed now. We'll need to seal them all. [Devil14] Leraje is a great hunter. Almost same skill as [Devil8] Barbatos. You'll need to get rid of him now. And you'll also see [Devil38] Halphas."

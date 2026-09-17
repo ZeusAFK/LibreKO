@@ -1,0 +1,29 @@
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 14202 Zone 2 for elmorad rogue
+Quest 347 "72Lv skill"
+    Journal for karus "I've decided to undergo the test to learn the hidden skills of [Secret Agent] Clarence."
+    Journal for elmorad "I've decided to undergo the test to learn the hidden skills of [Secret Agent] Clarence."
+    Collect 7 of 810369000
+
+Requires player level >= 72
+
+Rewards none
+
+On offer
+    Say "You are qualified to learn and use Level 72 skills."
+    Topic "Tell me more..." do
+        Show quest "To learn lv.72 skill, you need 7 [Spell Stone Powder]. Are you ready to learn the ultimate skill?"
+
+On in_progress
+    Say "To complete the lv.72 rogue skilll, you need 7 [Spell Stone Powder]."
+
+On ready
+    If player is karus
+        Say "Master, you've collected all the items needed to master rogue Level 72 skills. Hurry back to [Secret Agent] Clarence."
+        Topic "Confirm" goto close
+    If player is elmorad
+        Say "Master, you've collected all the items needed to master rogue Level 72. Hurry back to [Secret Agent] Clarence."
+        Topic "Confirm" goto close
+
+On claimable
+    Show quest "This is Blow Arrow and Blinding, rogue Level 72 skills. Your power will be the hope of us rogues."

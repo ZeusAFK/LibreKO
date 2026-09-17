@@ -1,0 +1,59 @@
+Bind Npc 24432 Zone 1 for warrior
+Bind Npc 24432 Zone 1 for rogue
+Bind Npc 24432 Zone 1 for mage
+Bind Npc 24432 Zone 1 for priest
+Quest 143 "Eradicate Lard Orc"
+    Journal "[Guard] Keife has commissioned you to eradicate Lard Orc."
+    Kill 20 of 1673, 2673 at direction_107
+
+Requires player level >= 41 and player is karus
+
+Rewards for warrior
+    Give 2125000 experience
+    Choose one
+        Give 1 of 972100791
+        Give 1 of 972140434
+        Give 1 of 972170822
+        Give 1 of 972180736
+
+Rewards for rogue
+    Give 1 of 972110496
+    Give 2125000 experience
+    Choose one
+        Give 1 of 972110496
+        Give 1 of 972150923
+
+Rewards for mage
+    Give 2125000 experience
+    Choose one
+        Give 1 of 972120358
+        Give 1 of 972120366
+        Give 1 of 972120374
+
+Rewards for priest
+    Give 1 of 972130766
+    Give 1 of 972160763
+    Give 2125000 experience
+
+direction_107 = location "Lard Orc" about "Lard Orc\nAn orc race inhabiting Adonis, possesses a relatively low HP but equipped with powerful Attack Power" found "Karus" karus at 410 461 in zone 1
+
+On available
+    Say "Master, there is an an urgent message from [Sentinel] Cape!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Nice to meet you. I am Cape, a Sentinel of the Belua Village. Since I've heard a lot about your reputation, I've contacted you to ask you a favor."
+    Topic "Tell me more..." do
+        Show quest "Residents are terrified from recent Lard Orc attacks. There aren't any competent soldiers to stand guard and their morale's hit rock bottom as well. Please thwart the Lard Orcs."
+
+On in_progress
+    Say "Hmm, the Lard Orcs are getting ready to charge again. Listen, if you take out the Lard Orcs I'll supply you with as many weapons as you want."
+    Topic "Where can I find it?" do
+        Map direction_107
+
+On ready
+    Say "Master, what you did was noble."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Thank you so much. As a token of our appreciation, we'd like to give you our village treasure.\nIt won't be a great boon to you, but please accept it anyway. Choose what you want."

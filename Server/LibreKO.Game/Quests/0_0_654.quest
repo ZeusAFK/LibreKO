@@ -1,0 +1,42 @@
+Bind Npc 31566 Zone 11 for karus
+Bind Npc 31565 Zone 12 for elmorad
+Quest 654 "Appraising Specialties"
+    Journal for karus "You must accept the request of [Appraiser] Rockus."
+    Journal for elmorad "You must accept the request of [Appraiser] Diz"
+    Collect 10 of 379006000
+
+Requires player level >= 65 and quest 653 is completed
+
+Rewards
+    Give 250000 experience
+    Give 20000 coins
+
+On available
+    If player is karus
+        Say "[Item Appraiser] Lockers is appraising something. Let's go take a look."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Item Appraiser] Disney is appraising something. Let's go take a look."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "There you are. Now that you have what I asked you for, shall we start the appraisal?"
+        Topic "Tell me more..." do
+            Show quest "Well, that's why I need to start the appraisal but I am currently out of [Exid Potion]. Can you bring me a few [Exid Potion] from the [Store]?\n\nStore materials, the amount of seed potions to help the Appraisers of Goods Eslant updated rocker's feelings of purchasing must be followed."
+    If player is elmorad
+        Say "There you are. Now that you have what I asked you for, shall we start the appraisal?"
+        Topic "Tell me more..." do
+            Show quest "Well, that's why I need to start the appraisal but I am currently out of [Exid Potion]. Can you bring me a few [Exid Potion] from the [Store]?\n\nStore materials, the amount of seed potions to help the feelings of Appraisers of Goods Eslant updated Deeds purchase must be followed."
+
+On in_progress
+    Say "Are you holding a grudge against me? Go get it fast."
+
+On claimable
+    If player is karus
+        Show quest "So you have it. Well done. Let's start the appraisal.\n\nAnd in the meanwhile, please collect the next item. [First-Class Canine] from [Iron Claws]. It's very precious and tough to get it.  Good luck."
+    If player is elmorad
+        Show quest "So you have it. Well done. Let's start the appraisal.\n\nAnd in the meantime, please collect the next item. [First-Class Canine] from [Iron Claws]. It's very precious and tough to get it.  Good luck."
+
+On completed
+    Say "Then, I will see you when you reach Lv66. You don't have enough skills to collect the following items."

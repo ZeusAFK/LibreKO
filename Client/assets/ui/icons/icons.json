@@ -1,0 +1,32 @@
+{
+  "game": {
+    "helmet": "game/helmet.svg",
+    "chest": "game/chest.svg",
+    "shoulder": "game/shoulder.svg",
+    "gloves": "game/gloves.svg",
+    "boots": "game/boots.svg",
+    "legs": "game/legs.svg",
+    "belt": "game/belt.svg",
+    "necklace": "game/necklace.svg",
+    "earrings": "game/earrings.svg",
+    "ring": "game/ring.svg",
+    "main-hand": "game/main-hand.svg",
+    "off-hand": "game/off-hand.svg"
+  },
+  "system": {
+    "bag": "system/bag.svg",
+    "close": "system/close.svg",
+    "help": "system/help.svg",
+    "lock": "system/lock.svg",
+    "unlock": "system/unlock.svg",
+    "trash": "system/trash.svg",
+    "search": "system/search.svg",
+    "refresh": "system/refresh.svg",
+    "coins": "system/coins.svg",
+    "weight": "system/weight.svg",
+    "scroll": "system/scroll.svg",
+    "users-three": "system/users-three.svg",
+    "home": "system/home.svg",
+    "gift": "system/gift.svg"
+  }
+}

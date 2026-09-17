@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>LibreKO.Game</AssemblyName>
+    <UseAppHost>false</UseAppHost>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <Target Name="PruneLegacyAppHostFromCleanCache"
+          BeforeTargets="_CleanGetCurrentAndPriorFileWrites"
+          Condition="'$(UseAppHost)' == 'false' and Exists('$(CleanFile)')">
+    <ReadLinesFromFile File="$(CleanFile)">
+      <Output TaskParameter="Lines" ItemName="_ExistingCleanFileLines" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <_PrunedCleanFileLines Include="@(_ExistingCleanFileLines)"
+                             Exclude="$(TargetDir)$(AssemblyName).exe" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(CleanFile)"
+                      Lines="@(_PrunedCleanFileLines)"
+                      Overwrite="true" />
+  </Target>
+  <ItemGroup>
+    <None Remove="appsettings.Development.json" />
+    <None Remove="appsettings.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Seed\Data\**\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Quests\**\*.quest;Quests\**\*.po;Quests\quest-manifest.json" Exclude="Quests\samples\**">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LibreKO.Common\LibreKO.Common.csproj" />
+    <ProjectReference Include="..\LibreKO.Quests\LibreKO.Quests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.5" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>LibreKO.Game.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

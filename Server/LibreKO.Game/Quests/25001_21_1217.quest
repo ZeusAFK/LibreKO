@@ -1,0 +1,18 @@
+Bind Npc 25001 Zone 21
+Quest 1217 "Weapon breaker"
+    Journal "Destroy the pirate's Apples of Moradon supply"
+    Collect 2 of 810418000
+
+Requires player level >= 24 and quest 1215 is completed
+
+Rewards
+    Give 75000 experience
+
+On offer
+    Show quest "Welcome back. When you were defeating the pirates, you should have been able to see their weapons. They use Apples of Moradon to strengthen them. Steal their Apples of Moradon.\nMora Island is located on the south side of Moradon. Go to Quayside to find Laidas or Portman."
+
+On in_progress
+    Say "You didn't get the apples? You don't care if Moradon gets invaded? \nMora Island is located in the south of Moradon. Go to Quayside to find Laidas and Portman."
+
+On claimable
+    Show quest "You are great! Because of you, all the townsmen can sleep without any worries now."

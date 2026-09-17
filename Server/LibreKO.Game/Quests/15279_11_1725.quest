@@ -1,0 +1,27 @@
+Bind Npc 15279 Zone 11
+Quest 1725 "[Eslant] Dark Mithril Piece"
+    Journal "[Eslant] Dark Mithril Piece"
+    Kill 1 of 7018 at direction_474
+    Kill 1 of 7019 at direction_475
+    Kill 1 of 7021 at direction_477
+    Kill 1 of 7022 at direction_476
+
+Requires player level >= 1 and player is karus
+
+Rewards
+    Give 10000000 experience
+    Give 1 of 998080000
+
+direction_474 = location "[Quest] Uruk Hai" about "[Quest]Uruk hai" found "Karus Eslant" at 388 495 in zone 11
+direction_475 = location "[Quest] Stone Golem" about "[Quest]Stone golem" found "Karus Eslant" at 96 126 in zone 11
+direction_476 = location "[Quest] Troll Berserker" about "[Quest]Troll berserker" found "Karus Eslant" at 783 714 in zone 11
+direction_477 = location "[Quest] Apostle" about "[Quest]Apostle" found "Karus Eslant" at 864 394 in zone 11
+
+On offer
+    Show quest "Leaders of each races are receving Dark Mythril Fragment from Devil legion and creating their own weapons. I will give you Dark Mythril Fragment if you defeat them for me.\n\nDefeat the leaders of each races and I will give you the Dark Mythril Fragment.You can exchange Dark Mythril Fragments to one 7th armor or to <selfname>weapon."
+
+On in_progress
+    Say "[Quest] Defeat the 4 types of monsters."
+
+On claimable
+    Show quest "[Quest] You have defeated 4 types of monsters. I will give you the Dark Mythril Fragment."

@@ -1,0 +1,33 @@
+Bind Npc 16079 Zone 21
+Quest 91 "Trade with Menissiah"
+    Journal "You decided to trade with Menissiah."
+    Collect 5 of 810418000
+
+Requires player level >= 17
+
+Rewards
+    Give 3 of 379229000
+
+direction_5 = location "[Daughter of Grand Merchant] Menissiah" about "[Daughter of Grand Merchant] Menissiah\nCheerful girl who likes to help others; interested in production and medicine" found "Moradon central stepfront" at 797 543 in zone 21
+
+On available
+    Say "Master, if you need <font color=@#006666@>Low Level Elemental Magic Scroll</font>, look for Menissiah."
+    Topic "Where is he/she?" do
+        Map direction_5
+
+On offer
+    Say "Low Level Elemental Magic Scroll? Did I have that?"
+    Topic "Tell me more..." do
+        Say "Ah, here it is! This what you wanted? I haven't used it for a while so it slipped my mind. You need it?"
+        Topic "Tell me more..." do
+            Show quest "Make you a deal. I need Apples of Moradon for reasons of my own, see, but I have no clue how to find it. Suppose you get me 5 Apples of Moradon and I'll give YOU this Magic Scroll.\n\nNothing free in this world. Or can't you handle it?"
+
+On in_progress
+    Say "Still don't have it? Putting me on the spot here..."
+
+On ready
+    Say "Master, all 5 Apples of Moradon have been gathered!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Look at that, got it right away. You're better than I thought."

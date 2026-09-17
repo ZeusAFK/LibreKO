@@ -1,0 +1,36 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 587 "[Legless Devil/Boss] King of Devil Tribe"
+    Journal for karus "You must get rid of [Fomorian King] Kihol by following the order of [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must get rid of [Fomorian King] Kihol by following the order of [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910205000
+
+Requires player level >= 66 and quest 586 is completed
+
+Rewards
+    Give 45000000 experience
+    Give 100 np
+    Give 3 of 900017000
+
+On available
+    Say "Keyhole [Forwar King] huh? Ah .. Picking the name, but I'm horrid. Shall we run away?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Have you finished the preparation of the heart? Thank you for your decision a tough fight!"
+        Topic "Tell me more..." do
+            Show quest "Causing a disturbance to the base for the invasion of whether the lack of anything that can spread this epidemic, many people put to death the king of Forwar] [Keyhole, he fled Eslant Trojan chase and punish his symbol to bring!\n\nIt is, chopped the keyhole [Forwar King] in accordance with the command of Captain Luferson Castle, the carrying"
+    If player is elmorad
+        Say "Are you done with the preparations? I appreciate you participating to this harsh battle!"
+        Topic "Tell me more..." do
+            Show quest "Causing a disturbance to the base for the invasion of whether the lack of anything that can spread this epidemic, many people put to death the king of Forwar] [Keyhole, he fled Eslant Trojan chase and punish his symbol to bring!\n\nIt is, chopped the keyhole [Forwar King] in accordance with the command of Captain Falkwine El Morad Castle."
+
+On in_progress
+    If player is karus
+        Say "It must be a tough fight! Me a little more power"
+    If player is elmorad
+        Say "It will be a though battle! Keep it up!"
+
+On claimable
+    Show quest "It's a symbol of the demon king! Of words should Forwar to this evidence that the king! This is not more than a while, I'm not the invasion of the demon army."

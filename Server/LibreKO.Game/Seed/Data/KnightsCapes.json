@@ -1,0 +1,4502 @@
+[
+  {
+    "CapeIndex": 0,
+    "Name": "basic",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 1,
+    "Name": "black",
+    "BuyPrice": 20000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 2,
+    "Name": "blue",
+    "BuyPrice": 50000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 3,
+    "Name": "red",
+    "BuyPrice": 100000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 4,
+    "Name": "purple",
+    "BuyPrice": 20000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 5,
+    "Name": "green",
+    "BuyPrice": 50000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 6,
+    "Name": "yellow",
+    "BuyPrice": 100000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 7,
+    "Name": "dark purple",
+    "BuyPrice": 20000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 8,
+    "Name": "orange",
+    "BuyPrice": 50000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 9,
+    "Name": "light green",
+    "BuyPrice": 100000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 10,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 11,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 12,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 13,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 14,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 15,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 16,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 17,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 18,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 29,
+    "Name": "iron window bar",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 180000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 30,
+    "Name": "cross",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 288000,
+    "Ranking": 4
+  },
+  {
+    "CapeIndex": 31,
+    "Name": "checker",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 432000,
+    "Ranking": 5
+  },
+  {
+    "CapeIndex": 32,
+    "Name": "bisymmetry",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 648000,
+    "Ranking": 6
+  },
+  {
+    "CapeIndex": 33,
+    "Name": "eagle",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 864000,
+    "Ranking": 7
+  },
+  {
+    "CapeIndex": 40,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 41,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 42,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 43,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 44,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 45,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 46,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 47,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 48,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 60,
+    "Name": "Imperial Household5",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1080000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 61,
+    "Name": "Imperial Household4",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1368000,
+    "Ranking": 9
+  },
+  {
+    "CapeIndex": 62,
+    "Name": "Imperial Household3",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1728000,
+    "Ranking": 10
+  },
+  {
+    "CapeIndex": 63,
+    "Name": "Imperial Household2",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2160000,
+    "Ranking": 11
+  },
+  {
+    "CapeIndex": 64,
+    "Name": "Imperial Household1",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2880000,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 65,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 66,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 67,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 68,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 69,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 70,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 71,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 72,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 73,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 74,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 75,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 76,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 77,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 78,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 79,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 80,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 95,
+    "Name": "xmas_ka",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 0,
+    "Ranking": 0
+  },
+  {
+    "CapeIndex": 96,
+    "Name": "xmas_el",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 0,
+    "Ranking": 0
+  },
+  {
+    "CapeIndex": 97,
+    "Name": "karus_king",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 0,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 98,
+    "Name": "elmo_king",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 0,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 99,
+    "Name": "king",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 0,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 101,
+    "Name": "pattern01black",
+    "BuyPrice": 40000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 102,
+    "Name": "pattern01blue",
+    "BuyPrice": 70000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 103,
+    "Name": "pattern01red",
+    "BuyPrice": 120000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 104,
+    "Name": "pattern01purple",
+    "BuyPrice": 40000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 105,
+    "Name": "pattern01green",
+    "BuyPrice": 70000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 106,
+    "Name": "pattern01yellow",
+    "BuyPrice": 120000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 107,
+    "Name": "pattern01dark purple",
+    "BuyPrice": 40000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 108,
+    "Name": "pattern01orange",
+    "BuyPrice": 70000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 109,
+    "Name": "pattern01light green",
+    "BuyPrice": 120000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 110,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 111,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 112,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 113,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 114,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 115,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 116,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 117,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 118,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 129,
+    "Name": "iron window bar",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 180000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 130,
+    "Name": "cross",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 288000,
+    "Ranking": 4
+  },
+  {
+    "CapeIndex": 131,
+    "Name": "checker",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 432000,
+    "Ranking": 5
+  },
+  {
+    "CapeIndex": 132,
+    "Name": "bisymmetry",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 648000,
+    "Ranking": 6
+  },
+  {
+    "CapeIndex": 133,
+    "Name": "eagle",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 864000,
+    "Ranking": 7
+  },
+  {
+    "CapeIndex": 140,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 141,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 142,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 143,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 144,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 145,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 146,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 147,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 148,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 160,
+    "Name": "Imperial Household5",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1080000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 161,
+    "Name": "Imperial Household4",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1368000,
+    "Ranking": 9
+  },
+  {
+    "CapeIndex": 162,
+    "Name": "Imperial Household3",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1728000,
+    "Ranking": 10
+  },
+  {
+    "CapeIndex": 163,
+    "Name": "Imperial Household2",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2160000,
+    "Ranking": 11
+  },
+  {
+    "CapeIndex": 164,
+    "Name": "Imperial Household1",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2880000,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 165,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 166,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 167,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 168,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 169,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 170,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 171,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 172,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 173,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 174,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 175,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 176,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 177,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 178,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 179,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 180,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 201,
+    "Name": "pattern02black",
+    "BuyPrice": 50000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 202,
+    "Name": "pattern02blue",
+    "BuyPrice": 80000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 203,
+    "Name": "pattern02red",
+    "BuyPrice": 130000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 204,
+    "Name": "pattern02purple",
+    "BuyPrice": 50000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 205,
+    "Name": "pattern02green",
+    "BuyPrice": 80000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 206,
+    "Name": "pattern02yellow",
+    "BuyPrice": 130000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 207,
+    "Name": "pattern02dark purple",
+    "BuyPrice": 50000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 208,
+    "Name": "pattern02orange",
+    "BuyPrice": 80000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 209,
+    "Name": "pattern02light green",
+    "BuyPrice": 130000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 210,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 211,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 212,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 213,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 214,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 215,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 216,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 217,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 218,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 229,
+    "Name": "iron window bar",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 180000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 230,
+    "Name": "cross",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 288000,
+    "Ranking": 4
+  },
+  {
+    "CapeIndex": 231,
+    "Name": "checker",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 432000,
+    "Ranking": 5
+  },
+  {
+    "CapeIndex": 232,
+    "Name": "bisymmetry",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 648000,
+    "Ranking": 6
+  },
+  {
+    "CapeIndex": 233,
+    "Name": "eagle",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 864000,
+    "Ranking": 7
+  },
+  {
+    "CapeIndex": 240,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 241,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 242,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 243,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 244,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 245,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 246,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 247,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 248,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 260,
+    "Name": "Imperial Household5",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1080000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 261,
+    "Name": "Imperial Household4",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1368000,
+    "Ranking": 9
+  },
+  {
+    "CapeIndex": 262,
+    "Name": "Imperial Household3",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1728000,
+    "Ranking": 10
+  },
+  {
+    "CapeIndex": 263,
+    "Name": "Imperial Household2",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2160000,
+    "Ranking": 11
+  },
+  {
+    "CapeIndex": 264,
+    "Name": "Imperial Household1",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2880000,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 265,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 266,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 267,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 268,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 269,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 270,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 271,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 272,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 273,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 274,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 275,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 276,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 277,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 278,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 279,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 280,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 301,
+    "Name": "pattern03black",
+    "BuyPrice": 60000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 302,
+    "Name": "pattern03blue",
+    "BuyPrice": 90000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 303,
+    "Name": "pattern03red",
+    "BuyPrice": 140000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 304,
+    "Name": "pattern03purple",
+    "BuyPrice": 60000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 305,
+    "Name": "pattern03green",
+    "BuyPrice": 90000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 306,
+    "Name": "pattern03yellow",
+    "BuyPrice": 140000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 307,
+    "Name": "pattern03dark purple",
+    "BuyPrice": 60000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 308,
+    "Name": "pattern03orange",
+    "BuyPrice": 90000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 309,
+    "Name": "pattern03light green",
+    "BuyPrice": 140000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 310,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 311,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 312,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 313,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 314,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 315,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 316,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 317,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 318,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 329,
+    "Name": "iron window bar",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 180000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 330,
+    "Name": "cross",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 288000,
+    "Ranking": 4
+  },
+  {
+    "CapeIndex": 331,
+    "Name": "checker",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 432000,
+    "Ranking": 5
+  },
+  {
+    "CapeIndex": 332,
+    "Name": "bisymmetry",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 648000,
+    "Ranking": 6
+  },
+  {
+    "CapeIndex": 333,
+    "Name": "eagle",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 864000,
+    "Ranking": 7
+  },
+  {
+    "CapeIndex": 340,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 341,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 342,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 343,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 344,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 345,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 346,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 347,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 348,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 360,
+    "Name": "Imperial Household5",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1080000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 361,
+    "Name": "Imperial Household4",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1368000,
+    "Ranking": 9
+  },
+  {
+    "CapeIndex": 362,
+    "Name": "Imperial Household3",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1728000,
+    "Ranking": 10
+  },
+  {
+    "CapeIndex": 363,
+    "Name": "Imperial Household2",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2160000,
+    "Ranking": 11
+  },
+  {
+    "CapeIndex": 364,
+    "Name": "Imperial Household1",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2880000,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 365,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 366,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 367,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 368,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 369,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 370,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 371,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 372,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 373,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 374,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 375,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 376,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 377,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 378,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 379,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 380,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 401,
+    "Name": "pattern04black",
+    "BuyPrice": 70000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 402,
+    "Name": "pattern04blue",
+    "BuyPrice": 100000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 403,
+    "Name": "pattern04red",
+    "BuyPrice": 150000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 404,
+    "Name": "pattern04purple",
+    "BuyPrice": 70000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 405,
+    "Name": "pattern04green",
+    "BuyPrice": 100000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 406,
+    "Name": "pattern04yellow",
+    "BuyPrice": 150000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 407,
+    "Name": "pattern04dark purple",
+    "BuyPrice": 70000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 408,
+    "Name": "pattern04orange",
+    "BuyPrice": 100000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 409,
+    "Name": "pattern04light green",
+    "BuyPrice": 150000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 410,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 411,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 412,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 413,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 414,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 415,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 416,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 417,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 418,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 429,
+    "Name": "iron window bar",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 180000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 430,
+    "Name": "cross",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 288000,
+    "Ranking": 4
+  },
+  {
+    "CapeIndex": 431,
+    "Name": "checker",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 432000,
+    "Ranking": 5
+  },
+  {
+    "CapeIndex": 432,
+    "Name": "bisymmetry",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 648000,
+    "Ranking": 6
+  },
+  {
+    "CapeIndex": 433,
+    "Name": "eagle",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 864000,
+    "Ranking": 7
+  },
+  {
+    "CapeIndex": 440,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 441,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 442,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 443,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 444,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 445,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 446,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 447,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 448,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 460,
+    "Name": "Imperial Household5",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1080000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 461,
+    "Name": "Imperial Household4",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1368000,
+    "Ranking": 9
+  },
+  {
+    "CapeIndex": 462,
+    "Name": "Imperial Household3",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1728000,
+    "Ranking": 10
+  },
+  {
+    "CapeIndex": 463,
+    "Name": "Imperial Household2",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2160000,
+    "Ranking": 11
+  },
+  {
+    "CapeIndex": 464,
+    "Name": "Imperial Household1",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2880000,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 465,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 466,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 467,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 468,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 469,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 470,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 471,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 472,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 473,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 474,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 475,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 476,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 477,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 478,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 479,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 480,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 501,
+    "Name": "pattern05black",
+    "BuyPrice": 80000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 502,
+    "Name": "pattern05blue",
+    "BuyPrice": 110000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 503,
+    "Name": "pattern05red",
+    "BuyPrice": 160000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 504,
+    "Name": "pattern05purple",
+    "BuyPrice": 80000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 505,
+    "Name": "pattern05green",
+    "BuyPrice": 110000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 506,
+    "Name": "pattern05yellow",
+    "BuyPrice": 160000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 507,
+    "Name": "pattern05dark purple",
+    "BuyPrice": 80000000,
+    "Duration": 0,
+    "Grade": 3,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 508,
+    "Name": "pattern05orange",
+    "BuyPrice": 110000000,
+    "Duration": 0,
+    "Grade": 2,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 509,
+    "Name": "pattern05light green",
+    "BuyPrice": 160000000,
+    "Duration": 0,
+    "Grade": 1,
+    "BuyLoyalty": 0,
+    "Ranking": 2
+  },
+  {
+    "CapeIndex": 510,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 511,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 512,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 513,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 514,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 515,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 516,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 517,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 518,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 36000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 529,
+    "Name": "iron window bar",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 180000,
+    "Ranking": 3
+  },
+  {
+    "CapeIndex": 530,
+    "Name": "cross",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 288000,
+    "Ranking": 4
+  },
+  {
+    "CapeIndex": 531,
+    "Name": "checker",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 432000,
+    "Ranking": 5
+  },
+  {
+    "CapeIndex": 532,
+    "Name": "bisymmetry",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 648000,
+    "Ranking": 6
+  },
+  {
+    "CapeIndex": 533,
+    "Name": "eagle",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 864000,
+    "Ranking": 7
+  },
+  {
+    "CapeIndex": 540,
+    "Name": "black",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 541,
+    "Name": "blue",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 542,
+    "Name": "red",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 543,
+    "Name": "purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 544,
+    "Name": "green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 545,
+    "Name": "yellow",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 546,
+    "Name": "dark purple",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 547,
+    "Name": "orange",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 548,
+    "Name": "light green",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 360000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 560,
+    "Name": "Imperial Household5",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1080000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 561,
+    "Name": "Imperial Household4",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1368000,
+    "Ranking": 9
+  },
+  {
+    "CapeIndex": 562,
+    "Name": "Imperial Household3",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 1728000,
+    "Ranking": 10
+  },
+  {
+    "CapeIndex": 563,
+    "Name": "Imperial Household2",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2160000,
+    "Ranking": 11
+  },
+  {
+    "CapeIndex": 564,
+    "Name": "Imperial Household1",
+    "BuyPrice": 0,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 2880000,
+    "Ranking": 12
+  },
+  {
+    "CapeIndex": 565,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 566,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 567,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 568,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 569,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 570,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 571,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 572,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 573,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 574,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 575,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 576,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 577,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 578,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 579,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 580,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 665,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 666,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 667,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 668,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 669,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 670,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 671,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 672,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 673,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 674,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 675,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 676,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 677,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 678,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 679,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 680,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 765,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 766,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 767,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 768,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 769,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 770,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 771,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 772,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 773,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 774,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 775,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 776,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 777,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 778,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 779,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 780,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 865,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 866,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 867,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 868,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 869,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 870,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 871,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 872,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 873,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 874,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 875,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 876,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 877,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 878,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 879,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 880,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 965,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 966,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 967,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 968,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 969,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 970,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 971,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 972,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 973,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 974,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 975,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 976,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 977,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 978,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 979,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 980,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1065,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1066,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1067,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1068,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1069,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1070,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1071,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1072,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1073,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1074,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1075,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1076,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1077,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1078,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1079,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1080,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1165,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1166,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1167,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1168,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1169,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1170,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1171,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1172,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1173,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1174,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1175,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1176,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1177,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1178,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1179,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1180,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1265,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1266,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1267,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1268,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1269,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1270,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1271,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1272,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1273,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1274,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1275,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1276,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1277,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1278,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1279,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1280,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1365,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1366,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1367,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1368,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1369,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1370,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1371,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1372,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1373,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1374,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1375,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1376,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1377,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1378,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1379,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1380,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1465,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1466,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1467,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1468,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1469,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1470,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1471,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1472,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1473,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1474,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1475,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1476,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1477,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1478,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1479,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1480,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1565,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1566,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1567,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1568,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1569,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1570,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1571,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1572,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1573,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1574,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1575,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1576,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1577,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1578,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1579,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1580,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1665,
+    "Name": "Castle Cloak1",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1666,
+    "Name": "Castle Cloak2",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1667,
+    "Name": "Castle Cloak3",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1668,
+    "Name": "Castle Cloak4",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1669,
+    "Name": "Castle Cloak5",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1670,
+    "Name": "Castle Cloak6",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1671,
+    "Name": "Castle Cloak7",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1672,
+    "Name": "Castle Cloak8",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1673,
+    "Name": "Castle Cloak9",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1674,
+    "Name": "Castle Cloak10",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1675,
+    "Name": "Castle Cloak11",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1676,
+    "Name": "Castle Cloak12",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1677,
+    "Name": "Castle Cloak13",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1678,
+    "Name": "Castle Cloak14",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1679,
+    "Name": "Castle Cloak15",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  },
+  {
+    "CapeIndex": 1680,
+    "Name": "Castle Cloak16",
+    "BuyPrice": 300000000,
+    "Duration": 0,
+    "Grade": 0,
+    "BuyLoyalty": 150000,
+    "Ranking": 8
+  }
+]

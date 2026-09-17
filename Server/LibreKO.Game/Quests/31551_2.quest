@@ -1,0 +1,10 @@
+Bind Npc 31551 Zone 2
+
+On greeting
+    If quest 630 is started and player lacks 900197000
+        Say "Are you talking about the [Subjugation Result Report]? Here it is."
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 900197000
+    Else
+        Say "What can I do for you?/What's going on?"

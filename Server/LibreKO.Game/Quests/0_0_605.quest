@@ -1,0 +1,36 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 605 "[Prophetic Poetry of Light] I'll sit at the negotiating table."
+    Journal for karus "You must talk to [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must talk to [Priest] Maia at the Stronghold of Ronark Land."
+    Collect 1 of 910240000
+
+Requires player level >= 68 and quest 604 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "[Archmage] Drake did approve the request! Evidence to request approval've given things!Can I delivered unto  not my come."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Archmage] Drake did approve the request! Evidence to request approval've given things! Come Can I deliver Dear [Priest]Majal, the [priest]"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Thing, why did you went?"
+        Topic "Tell me more..." do
+            Show quest "[Archmage] Drake saw that bright expression, who had approved the request must be shaped?\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "Thing, why did you went?"
+        Topic "Tell me more..." do
+            Show quest "[Archmage] Drake saw that bright expression, who had approved the request must be shaped?\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On in_progress
+    Say "But Where's request approval? Does you Oda shed,?"
+
+On claimable
+    Show quest "Drake - I'm coming negotiations] I'm sure. Thank you. Certainly not negotiate, draw'm  away. Now burn break to reorganize the army and reinforcements seem to be right touch.\n\nLet's finish now ready to intercept the enemy. Please come to me at the end of the last maintenance. Do not miss this opportunity."

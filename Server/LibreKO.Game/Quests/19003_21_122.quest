@@ -1,0 +1,43 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 122 "Full Plate Armor V"
+    Journal "[Mercenary Adjutant] Rage asked me to hunt ten Wild Smirdons for him."
+    Kill 5 of 652 at direction_572
+
+Requires player level >= 34
+
+Rewards for warrior
+    Give 1 of 204001005
+    Give 1 of 204001285
+    Give 550000 experience
+
+Rewards for rogue
+    Give 1 of 244001005
+    Give 1 of 244001286
+    Give 550000 experience
+
+Rewards for mage
+    Give 1 of 264001005
+    Give 1 of 264001287
+    Give 550000 experience
+
+Rewards for priest
+    Give 1 of 284001005
+    Give 1 of 284001288
+    Give 550000 experience
+
+direction_572 = location "Wild Smilodon" about "Wild Smilodon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "Moradon" at 452 879 in zone 21
+
+On available
+    Say "Master, we have a message from Melverick. He would surely give us a hunting mission, right?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The third target is Wild Smilodon. Their defense ability is higher than ordinary Smirdons."
+    Topic "Tell me more..." do
+        Show quest "Your objective is to capture 10 of them. It shouldn't be too difficult.\n\n[Mercenary Adjutant] Rage will award craft armor for heeding his request."
+
+On claimable
+    Show quest "Thank you. Things are progressing faster than planned."

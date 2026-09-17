@@ -1,0 +1,46 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 104 "Battle Armor 3"
+    Journal "You'll earn a Battle Helmet if you hunt Lycan, as [Mercenary Adjutant] Rage asked you to."
+    Kill 10 of 551 at direction_61
+
+Requires player level >= 26
+
+Rewards for warrior
+    Give 1 of 203003281
+    Give 112500 experience
+
+Rewards for rogue
+    Give 1 of 243003282
+    Give 112500 experience
+
+Rewards for mage
+    Give 1 of 263003283
+    Give 112500 experience
+
+Rewards for priest
+    Give 1 of 283003284
+    Give 112500 experience
+
+direction_61 = location "Lycan" about "Lycan\nMonster who evolved during the war with Pathos by a curse which turned man into wolfman" found "El Morad" at 457 666 in zone 21
+
+On available
+    Say "Master, Rage is giving you the helmet this time."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "It's Lycan monsters this time. They're wolfmen and you'll be able to find them right outside the castle gate. Want to give it a shot?"
+    Topic "Tell me more..." do
+        Show quest "Hunt me 20 Lycans\n\nIf you heed [Mercenary Adjutant] Rage's request you can obtain craft items as a reward."
+
+On in_progress
+    Say "Listen, I'm not in the mood to joke around."
+
+On ready
+    Say "Master, you did try hard, I know."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You're amazing. I'll be sure to remember your name."

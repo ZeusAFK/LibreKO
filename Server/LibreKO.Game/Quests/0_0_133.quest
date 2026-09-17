@@ -1,0 +1,40 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 133 "Silver Hair I"
+    Journal for karus "You have promised [Moradon Merchant] Shymer to bring her Silver Hair."
+    Journal for elmorad "You have promised [Moradon Merchant] Clark to bring him Silver Hair."
+    Collect 3 of 379272000
+
+Requires player level >= 37
+
+Rewards
+    Give 825000 experience
+
+direction_100 = location "Sabertooth" about "Sabertooth\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "El Morad" elmorad at 1724 1191 in zone 2
+direction_99 = location "Sabertooth" about "Sabertooth\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "Karus" karus at 881 1296 in zone 1
+
+On available
+    Say "These days, Silver Feather is very popular with the society crowd."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Erm, Silver Feather? Silver Feather shines, even at night~ just wear it once, and you'll feel like a god~~ Heh, It's the one material that's never left out of a noble woman's dress. But, being so valuable, it's a bugger to get hold of."
+    Topic "Tell me more..." do
+        Show quest "I heard that some of the  Saber Tooths have Silver Feathers... But I'm not sure if this is entirely true. Anyway, can you please hunt me down some Silver Feather? I'll make some profit selling it, and you'll get some decent EXP. Everyone's a winner! Hee Hee!\n\nI've heard a rumor that there're ometimes Silver Feathers in amongst the Saber Tooth's feathers."
+
+On in_progress
+    If player is karus
+        Say "I need at least  <font color=@#660066@>3 Silver Hairs</font> to make a profit. Yes, indeed."
+        Topic "Where can I find it?" do
+            Map direction_99
+    If player is elmorad
+        Say "I need at least  <font color=@#660066@>3 Silver Hairs</font> to make a profit. Yes, indeed."
+        Topic "Where can I find it?" do
+            Map direction_100
+
+On ready
+    Say "Weelll.... Not every Saber Tooth has Silver Feather. Anyway Master, you tried hard."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Wow! The shine! It must be Silver Feather~!!"

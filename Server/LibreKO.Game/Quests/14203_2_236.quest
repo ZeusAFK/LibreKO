@@ -1,0 +1,17 @@
+Bind Npc 14203 Zone 2
+Quest 236 "Create Magic Powder"
+    Journal "You must bring 5 Sapphires, 5 Crystals, AND 5 Opals to [Archmage] Drake to make Magic Powder."
+    Collect 3 of 389074000
+    Collect 3 of 389075000
+    Collect 3 of 389076000
+
+Requires player level >= 53 and player is elmorad
+
+Rewards
+    Give 1 of 379236000
+
+On offer
+    Show quest "Higher level magic and skills are not granted automatically. Some can only be crafted from items that must be collected. Of these, Magic Powder is the most sought after. It can be obtained from [Archmage] Drake if you bring him 5 Sapphires, 5 Crystals and 5 Opals."
+
+On claimable
+    Show quest "Hmm. You brought all the ingredients I enumerated.\nHere you are. You too will soon be able to employ rare and exceptional technique."

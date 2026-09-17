@@ -1,0 +1,36 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 617 "[New Hero] Name of the Demon"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910244000
+
+Requires player level >= 69 and quest 616 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+
+On available
+    If player is karus
+        Say "Do you have to touch God deliver [Captain] carrying this message? It's that simple than you think. However, what is written?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Do you have to touch God deliver this message [Captain] Falkwine? It's that simple than you think. However, what is written?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "The Been Here they are, unidentified elderly, Have you met?"
+        Topic "Tell me more..." do
+            Show quest "Right. County, Moradon was on the  but comest been a lot of hard work, important things right now, so relax, rest do, because, I'm sorry. Yeah, Where'd information?\n\nI will be carrying a conversation with the Luferson Castle province [Captain]."
+    If player is elmorad
+        Say "The Been Here they are, unidentified elderly, Have you met?"
+        Topic "Tell me more..." do
+            Show quest "Right. County, Moradon was on the  but comest been a lot of hard work, important things right now, so relax, rest do, because, I'm sorry. Yeah, Where'd information?\n\n[And Captain Falkwine, El Morad Castle dialog."
+
+On in_progress
+    Say "Returned without any income? Must have to go back."
+
+On claimable
+    Show quest "Note? Give it here. Well, he ... Right. Bastard finally know the name of the evil spirit! Now days leaves to punish the evil spirits!\n\nIt would be the end of this long and tedious fight. Now, you'll no longer need to avoid damage to punish the evil spirits. When you are ready to give back to me."

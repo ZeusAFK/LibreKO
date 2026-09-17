@@ -1,0 +1,33 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 582 "[Legless Devil] What is the Devil afraid of?"
+    Journal for karus "You must help [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must help [Priest] Maia at the Stronghold of Ronark Land."
+    Collect 3 of 508110000
+    Collect 3 of 508109000
+
+Requires player level >= 66 and quest 581 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 30000 coins
+
+On available
+    Say "[Epidemic], which means that I lost a silent devil, then the devil you do not like materials that cure epidemic's that?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Once the material is necessary to prevent the spread of the communicable diseases. Do you need materials with strong vitality and regeneration."
+        Topic "Tell me more..." do
+            Show quest "First troll [p] [rotten old tree fruit, and two sujiphae and please feel free to. Please note only the material which is available only on the base where are you, are you guys?\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "Once the material is necessary to prevent the spread of the communicable diseases. Do you need materials with strong vitality and regeneration."
+        Topic "Tell me more..." do
+            Show quest "First troll [p] [rotten old tree fruit, and two sujiphae and please feel free to. Please note only the material which is available only on the base where are you, are you guys?\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On in_progress
+    Say "I'm still a lack of material. More Please Git."
+
+On claimable
+    Show quest "All the material was collected. Now the most important ingredients of the holy water of salvation.\n\nThe fuse by the holy water of salvation, because it can be made very a rare . But if you ask directly to the fuse, it is a thing to be obtained in a matter of seconds. The nature of the [Governor] Minerva to go check."

@@ -1,0 +1,25 @@
+Bind Npc 24406 Zone 1
+Quest 203 "Hornet Hunt"
+    Journal "[Imperial Guard] Bekar has commissioned you to hunt Hornet."
+    Kill 30 of 4451, 4401 at direction_545
+
+Requires player level >= 47 and player is karus
+
+Rewards
+    Give 4000000 experience
+
+direction_47 = location "[Imperial Palace Guard] Verca" about "[Imperial Palace Guard] Verca\nJack-of-all-trades who takes care of everything for the Imperial Palace " found "Luferson Castle interior" at 401 1739 in zone 1
+direction_545 = location "Hornet" about "Hornet\nReferred to as Hell`s Bees; inhabits plains; powerful venom can kill humans with one sting" found "Karus" karus at 1091 1600 elmorad at 607 991 in zone 1
+
+On available
+    Say "Master. [Imperial Palace Guard] Verca is about to go on a hunt, so how about joining him?"
+    Topic "Where is he/she?" do
+        Map direction_47
+
+On offer
+    Say "Ha ha~ I guess it reached your ears as well. Yes, it is true. This time I am going to hunt the Hornets, so do you want to join me?"
+    Topic "Tell me more..." do
+        Show quest "You may be able to gain valuable experience from this hunt. Why don't you and your colleagues come join us?\n\nIf you do a favor for [Imperial Guard] Bekar, you will be rewarded with experience points."
+
+On claimable
+    Show quest "Haha... how is it going? Good work."

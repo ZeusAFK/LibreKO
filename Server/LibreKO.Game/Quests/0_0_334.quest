@@ -1,0 +1,25 @@
+Bind Npc 24201 Zone 1 for karus warrior
+Bind Npc 14201 Zone 2 for elmorad warrior
+Quest 334 "70Lv skill"
+    Journal for karus "I decided to undergo the test to learn hidden skills from [Warrior Master] Skaki."
+    Journal for elmorad "I decided to undergo the test to learn hidden skills from [Warrior Master] Skaki."
+    Collect 5 of 810369000
+
+Requires player level >= 70
+
+Rewards none
+
+On offer
+    Say "You are well qualified to advance to the ultimate warrior level."
+    Topic "Tell me more..." do
+        Show quest "To complete the ultimate warrior skill, you will need 5 [Spell Stone Powder]. Are you ready for this?"
+
+On in_progress
+    Say "To complete the ultimate warrior skilll, you need 5 [Spell Stone Powder]."
+
+On ready
+    Say "Master, all the items needed to master ultimate warrior skills have been acquired. Let's hurry back to [Warrior Master] Skaki."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "This is Howling Sword and Iron Skin, the ultimate level skills. You will triumph in the war by your own powers."

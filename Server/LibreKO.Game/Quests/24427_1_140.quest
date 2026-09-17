@@ -1,0 +1,50 @@
+Bind Npc 24427 Zone 1 for warrior
+Bind Npc 24427 Zone 1 for rogue
+Bind Npc 24427 Zone 1 for mage
+Bind Npc 24427 Zone 1 for priest
+Quest 140 "Death Knight Hunt"
+    Journal "[Guard] Melverick has commissioned you to hunt Death Knight."
+    Kill 20 of 1154, 1104 at direction_105
+
+Requires player level >= 40 and player is karus
+
+Rewards for warrior
+    Give 1 of 205001289
+    Give 1875000 experience
+    Give 85 of 900790000
+    Give 50 of 900820000
+
+Rewards for rogue
+    Give 1 of 245001290
+    Give 1875000 experience
+    Give 85 of 900790000
+    Give 50 of 900820000
+
+Rewards for mage
+    Give 1 of 265001291
+    Give 1875000 experience
+    Give 85 of 900790000
+    Give 50 of 900820000
+
+Rewards for priest
+    Give 1 of 285001292
+    Give 1875000 experience
+    Give 85 of 900790000
+    Give 50 of 900820000
+
+direction_105 = location "Death Knight" about "Death Knight\nAn undead like the undying, possesses great strength as it is composed of powerful bone structure" found "Karus" karus at 1185 1220 in zone 1
+
+On available
+    Say "Master, Melverick is looking for you. I wonder when these missions would end..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "This is the your mission. You've been an enormous help. The prey is Death Knights, skeletons known for their power."
+
+On in_progress
+    Say "Please do your best till the end!"
+    Topic "Where can I find it?" do
+        Map direction_105
+
+On claimable
+    Show quest "Thank you. I will remember your name!"

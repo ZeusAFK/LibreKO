@@ -1,0 +1,36 @@
+Bind Npc 24203 Zone 1 for karus
+Bind Npc 14203 Zone 2 for elmorad
+Quest 604 "[Prophetic Poetry of Light] Not for free"
+    Journal for karus "You must accept the request of [Archmage] Drake, of Linate Village."
+    Journal for elmorad "You must accept the request of [Archmage] Drake of Raiba Village."
+    Collect 1 of 508111000
+
+Requires player level >= 68 and quest 603 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 30000 coins
+    Give 1 of 910240000
+
+On available
+    Say "And the andoeda maenip something that there's a story ... Knit pull the horns of the Centaurs you do not?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Aww, I was not born with a heart to listen?"
+        Topic "Tell me more..." do
+            Show quest "Yeah, yeah, one thing that is not wanted before. 's A the horns broken Centaur]. It's a superlative centaur, horns, rare and go, but a lot of the value of taking a magic material! Asking too much to avoid the only one not to ask.\n\nYou have to listen to the request of the Linate Village [Archmage] Drake."
+    If player is elmorad
+        Say "Aww, I was not born with a heart to listen?"
+        Topic "Tell me more..." do
+            Show quest "Yeah, yeah, one thing that is not wanted before. 's A the horns broken Centaur]. It's a superlative centaur, horns, rare and go, but a lot of the value of taking a magic material! Asking too much to avoid the only one not to ask.\n\nYou have to listen to the request of the sliver of the village [Archmage] Drake."
+
+On in_progress
+    Say "yet?Pathetic skills than you think?"
+
+On claimable
+    If player is karus
+        Show quest "I did not cut it so cleanly, right. Where to buy, do not or something? Hagin buy expensive things, but true;\n\nOkay! Ate, so, let's give you a request! [Approval Request] whether [Priest]Majal that base to get me. Then I'll proceed."
+    If player is elmorad
+        Show quest "I did not cut it so cleanly, right. Where to buy, do not or something? Hagin buy expensive things, but true;\n\nOkay! Ate, so, let's give you a request!Whether  base [Approval Request] [Priest]Maia bring them to me. Then I'll proceed."

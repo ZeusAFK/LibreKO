@@ -1,0 +1,23 @@
+Bind Npc 14424 Zone 12
+Quest 1053 "Shut down the trolls"
+    Journal "Defeat 40 Half Troll Berserkers"
+    Kill 40 of 9074, 9063 at direction_810
+
+Requires player level >= 62 and player is elmorad and quest 1051 is completed
+
+Rewards
+    Give 26250000 experience
+
+direction_810 = location "Half Troll Berserker" about "Half Troll Berserker\n This monster mixed by Unknown species, for that it is weakened species than normal troll" found "El Morad" elmorad at 641 888 in zone 12
+
+On offer
+    Say "Our punitive force has been sieged by the berserkers."
+    Topic "Tell me more..." do
+        Show quest "Could you go help them?"
+        Topic "Where can I find it?" do
+            Map direction_810
+
+On in_progress
+    Say "Their lives at stake."
+    Topic "Where can I find it?" do
+        Map direction_810

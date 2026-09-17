@@ -1,0 +1,42 @@
+[
+  {
+    "Index": 1,
+    "NpcId": 31511,
+    "GiveEffect": 1,
+    "OreType": 1,
+    "OriginItemNum": 399200000,
+    "GiveItemNum": 135621000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5000
+  },
+  {
+    "Index": 2,
+    "NpcId": 31511,
+    "GiveEffect": 1,
+    "OreType": 1,
+    "OriginItemNum": 399200000,
+    "GiveItemNum": 135622000,
+    "GiveItemCount": 1,
+    "SuccessRate": 5000
+  },
+  {
+    "Index": 3,
+    "NpcId": 31511,
+    "GiveEffect": 1,
+    "OreType": 2,
+    "OriginItemNum": 399210000,
+    "GiveItemNum": 135622000,
+    "GiveItemCount": 1,
+    "SuccessRate": 4000
+  },
+  {
+    "Index": 4,
+    "NpcId": 31511,
+    "GiveEffect": 1,
+    "OreType": 2,
+    "OriginItemNum": 399210000,
+    "GiveItemNum": 135623000,
+    "GiveItemCount": 1,
+    "SuccessRate": 6000
+  }
+]

@@ -1,0 +1,15 @@
+Bind Npc 32532 Zone 73
+Quest 592 "[Great Battle] The Third Day: Counterattack"
+    Journal "You must perform the duty of [Base Spearhead] Krable at the Stronghold of Ronark Land."
+    Kill 5 of 9014 at direction_756
+
+Requires player level >= 67 and player is elmorad and quest 590 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 100 np
+
+direction_756 = location "Forwird" about "Forwird\n Demon who follow the King of Forwaru. It described as losing one arm and one leg soldier." found "Ronark Land Base" karus at 373 390 elmorad at 632 728 in zone 73
+
+On offer
+    Show quest "You will receive a mission from [Base Scout]Crable in Ronark Land Base."

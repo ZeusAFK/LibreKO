@@ -1,0 +1,26 @@
+Bind Npc 14424 Zone 12
+Quest 1055 "The shinning Half Troll Captain"
+    Journal "Defeat 40 Half Troll Captains"
+    Kill 40 of 9076, 9065 at direction_812
+
+Requires player level >= 62 and player is elmorad
+
+Rewards
+    Give 33750000 experience
+
+direction_812 = location "Half Troll Captain" about "Half Troll Captain\n This monster mixed by Unknown species, for that it is weakened species than normal troll" found "El Morad Eslant" elmorad at 669 830 in zone 12
+
+On offer
+    Say "The boss has been finally appeared. 'Troll Captain' is the one. Heard they are powerful"
+    Topic "Tell me more..." do
+        Show quest "Yes! You have the talent."
+        Topic "Where can I find it?" do
+            Map direction_812
+
+On in_progress
+    Say "do you have an understanding of their power now?"
+    Topic "Where can I find it?" do
+        Map direction_812
+
+On claimable
+    Show quest "They weren't so much different from half Troll Berserkers. Good job."

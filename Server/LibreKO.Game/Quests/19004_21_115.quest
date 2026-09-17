@@ -1,0 +1,34 @@
+Bind Npc 19004 Zone 21
+Quest 115 "Third preparation of war materials"
+    Journal "Promised to provide 2 Apples of Moradon which are needed for the ceremony commemorating safety"
+    Collect 2 of 810418000
+
+Requires player level >= 30
+
+Rewards
+    Give 300000 experience
+    Choose one
+        Give 1 of 340150006
+        Give 1 of 340150016
+        Give 1 of 340150026
+        Give 1 of 340150036
+        Give 1 of 340150076
+
+On available
+    Say "Master! Master, Folk Village is preparing some kind of weird ritual in preparation for the war. Would you like to look around?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Errrm... Right, yeah, erm, OK, so I made a mistake!! What should I do?! Our war preparations are almost over. We just need to hold the 'safety ritual'. But, uh, I forgot to prepare the materials for it. So... You know, if Rage finds out..."
+    Topic "Tell me more..." do
+        Show quest "Are you sure? You see! We only have <selfname>!! If you can resolve this matter, I will treat you as my benefactor for the rest of my life. All you have to do is to collect two Apples of Moradon needed for the ceremony. Please look for them quickly before Rage finds out."
+
+On in_progress
+    Say "Ugh! If you <selfname> move that slowly, my life.."
+
+On ready
+    Say "The collection has been completed!!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Ah, my life is safe now. You <selfname> saved my life!!"

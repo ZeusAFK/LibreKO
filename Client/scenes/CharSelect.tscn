@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://gko_charselect"]
+
+[ext_resource type="Script" path="res://src/Ui/CharSelect.cs" id="1_cs"]
+
+[node name="CharSelect" type="Node3D"]
+script = ExtResource("1_cs")

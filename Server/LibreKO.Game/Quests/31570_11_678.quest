@@ -1,0 +1,27 @@
+Bind Npc 31570 Zone 11
+Quest 678 "Removing Magic of Darkness II"
+    Journal "You must accept the request of [Order of the Sorcery] Caesar."
+    Kill 25 of 9066, 9077 at direction_803
+
+Requires player level >= 66 and player is karus and quest 676 is completed
+
+Rewards
+    Give 27500000 experience
+    Give 30000 coins
+
+direction_803 = location "Half Troll Shaman" about "Half Troll Shaman\n This monster mixed by Unknown species, for that it is weakened species than normal troll" found "Karus Eslant" karus at 652 656 in zone 11
+
+On available
+    Say "I guess magic is a difficult thing. Go to Cesar of [Order of the Sorcery]. He will give you another mission."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "It is an honor to meet you again. The last mission was successful. You did an excellent job."
+    Topic "Tell me more..." do
+        Show quest "Let me give your next mission right away. Please take down their second axis, the [Half Troll Shaman]. It's going to be tougher but I have my faith in you.\n\nCombating the threat of darkness at the request of the the Phalanx magic Cesar Eslant updated Half-Troll Shaman magic should be removed."
+
+On in_progress
+    Say "The magic force is becoming more unstable. Please take down the second axis, the [Half Troll Shaman]."
+
+On claimable
+    Show quest "The second axis has collapsed successfully. But we are not safe yet."

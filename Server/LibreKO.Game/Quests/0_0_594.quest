@@ -1,0 +1,40 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 594 "[Great Battle] The Fifth Day: Victory"
+    Journal for karus "You must talk to [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must talk to [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910237000
+
+Requires player level >= 67 and quest 593 is completed
+
+Rewards
+    Give 125000 experience
+    Give 10000 coins
+    Give 1 of 910238000
+
+On available
+    If player is karus
+        Say "Come on Victory Report] nature of [Captain], and you linger on pleasing God really tell!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Come on Victory Report] God really tell the nature of Captain Falkwine linger on pleasing!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hello <selfname>, What do you need?"
+        Topic "Tell me more..." do
+            Show quest "Ronark Land Base from contact? Let me know to go but does not send reinforcements, core over chosa\n\nI will be carrying a conversation with the Luferson Castle province [Captain]."
+    If player is elmorad
+        Say "To Hello, my <selfname>, or something?"
+        Topic "Tell me more..." do
+            Show quest "Ronark Land Base from contact? Let me know to go but does not send reinforcements, core over chosa\n\n[And Captain Falkwine, El Morad Castle dialog."
+
+On in_progress
+    Say "Did not have any news?Once again, check to see"
+
+On claimable
+    If player is karus
+        Show quest "It's a Victory Report! The group achieved a victory, as the wind! But too much heulrinpi, not in the future so much blood shed that many did. I guess at this point to conclude a peace treaty.\n\nOnce the peace treaty to the the base paper forefront [Base Scout]Crewjed de Give Now It is time to take a moment."
+    If player is elmorad
+        Show quest "It's a Victory Report! The group achieved a victory, as the wind! But too much heulrinpi, not in the future so much blood shed that many did. I guess at this point to conclude a peace treaty.\n\nOnce the peace treaty, give it to a larger label base paper forefront. Now It is time to take a moment."

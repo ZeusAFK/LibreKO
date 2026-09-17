@@ -1,0 +1,14 @@
+Bind Npc 14432 Zone 2
+Quest 270 "Dragon Tooth Commander Hunt"
+    Journal "[Guard] Chayna has commissioned you to hunt the Dragon Tooth Commander."
+    Kill 20 of 8003, 8053 at direction_586
+
+Requires player level >= 58 and player is elmorad
+
+Rewards
+    Give 32500000 experience
+
+direction_586 = location "Dragon Tooth Commander" about "Dragon Tooth Commander\nA monster created by Pathos in the Great War of Evil; possesses a conscience which is rare for an undead" found "El Morad" at 866 1752 in zone 2
+
+On offer
+    Show quest "[Guard] Chayna will reward you when you complete the  Dragon Tooth Commander. Hunt."

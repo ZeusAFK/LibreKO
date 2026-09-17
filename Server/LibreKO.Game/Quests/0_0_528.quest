@@ -1,0 +1,43 @@
+Bind Npc 24203 Zone 1 for karus
+Bind Npc 14203 Zone 2 for elmorad
+Quest 528 "[Long Revenge] Belongings of Fallen Soldier"
+    Journal for karus "You must accept the request of [Archmage] Drake, of Linate Village."
+    Journal for elmorad "You must accept the request of [Archmage] Drake of Raiba Village."
+    Collect 3 of 508104000
+
+Requires player level >= 61 and quest 527 is completed
+
+Rewards
+    Give 1 of 910215000
+    Give 2500000 experience
+    Give 50 np
+    Choose one
+        Give 1 of 207005599
+        Give 1 of 247005600
+        Give 1 of 267005601
+        Give 1 of 287005602
+
+On available
+    If player is karus
+        Say "[Archmage]Drake is in Linate village! Hurry!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Archmage]Drake is in Raive village! Hurry!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "I wondered who they would send, and its you! That's odd. <selfname> has come to me"
+    Topic "Tell me more..." do
+        Show quest "By the way, why so late! Move it! The spirit is crying! Take care of the [Lich] and gather the [Remains of the Fallen Warrior]!\n\nCollect the Soldier's article following the order of [Elder Wizard] Drake."
+
+On in_progress
+    Say "Still here? You prick ... Move it quickly!"
+
+On claimable
+    Show quest "Good job, you have brought enough. I will reward you for b on time."
+
+On completed
+    If player is karus
+        Say "Find your [Captain] and deliver this remains to him, he should know what to do."
+    If player is elmorad
+        Say "My role is over. Deliver this to [Eslant Wise Man]Agata."

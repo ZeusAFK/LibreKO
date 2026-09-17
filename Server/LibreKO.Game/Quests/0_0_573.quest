@@ -1,0 +1,38 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 573 "[Regained Honor] Revealed Situation"
+    Journal for karus "You must talk to [Advisor] Herga at Luferson Castle."
+    Journal for elmorad "You must talk to [Advisor] Nez at El Morad Castle."
+    Collect 1 of 910234000
+
+Requires player level >= 65 and quest 572 is completed
+
+Rewards
+    Give 1 of 910235000
+    Give 125000 experience
+
+On available
+    Say "Knew the whole picture of all the events. Now, to punish the traitor, and the days, folks!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "The Eslant updated from the top-secret documents had arrived?"
+        Topic "Tell me more..." do
+            Show quest "Occurred in an emergency, what did you today! Come on, give me the document\n\nDeliver [Top Secret Document] to Herga."
+    If player is elmorad
+        Say "Eslant updated from the arrival of the confidential documents made?"
+        Topic "Tell me more..." do
+            Show quest "What is urgent even she would occur! Please come show me the document.\n\nDeliver [Top Secret Document] to Nez."
+
+On in_progress
+    If player is karus
+        Say "Now you kidding me?"
+    If player is elmorad
+        Say "You do not have time to play games with now."
+
+On claimable
+    If player is karus
+        Show quest "This, this! I The group revealed the full picture of all events. The betrayal a barbarian fallen from the hands of the hero and going to the King group and then make a judgment mace Long!\n\n<selfname>!I have given the order rebels arrested delivered to [Captain] carrying Decision traitor!"
+    If player is elmorad
+        Show quest "This, this! IIt is revealed the whole picture of all the events. It is time to make a withdrawal of the judgment from the fallen hero gareul the barbarian hands and looks bad for the Garlong!\n\nby <selfname>!God delivered the Captain Falkwine, I gave the rebels arrest order and punish the traitor!"

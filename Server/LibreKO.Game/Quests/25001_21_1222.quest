@@ -1,0 +1,19 @@
+Bind Npc 25001 Zone 21
+Quest 1222 "Jewelry"
+    Journal "Let's find [Jeweler] Jewel and ask to make a ring."
+    Collect 1 of 900608000
+
+Requires player level >= 24 and quest 1221 is completed
+
+Rewards
+    Give 50000 experience
+    Give 100000 coins
+
+On offer
+    Show quest "Oh~ Welcome <selfname>. If you have time, do you want to get a proposal ring from Jewel for me? I will pay you."
+
+On in_progress
+    Say "The ring is not ready yet? My heart is racing. I can't wait to give her this ring!!(Jed's face turns red.) She will be in my arms~ah~!"
+
+On claimable
+    Show quest "Ah~ Who in the world's going to refuse this ring? This is really beautiful! Even to guys like me!!"

@@ -1,0 +1,32 @@
+Bind Npc 31566 Zone 11 for karus
+Bind Npc 31565 Zone 12 for elmorad
+Quest 658 "Searching Specialties IV"
+    Journal for karus "You must accept the request of [Appraiser] Rockus."
+    Journal for elmorad "You must accept the request of [Appraiser] Diz."
+    Collect 5 of 389420000
+
+Requires player level >= 67 and quest 657 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+
+On available
+    Say "Ahh, this is already the fourth! How many times more is [Item Appraiser] Lockers going to sweat us?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You are here. [Appraisal Tool Set] has really did its job. Hahaha! Thank you, <selfname.."
+        Topic "Tell me more..." do
+            Show quest "Then, shall we bring it together and search for the next item? The next item is [Brilliant Stone] of [Death Wizard].  Good luck.\n\nAppraisers of Goods Eslant updated in accordance with the request of the rocker's stone brilliance from to come sujiphae the Death Wizard."
+    If player is elmorad
+        Say "You are here. [Appraisal Tool Set] has really did its job. Hahaha! Thank you, <selfname.."
+        Topic "Tell me more..." do
+            Show quest "Then, shall we bring it together and search for the next item? The next item is [Brilliant Stone] of [Death Wizard].  Good luck.\n\nAppraisers of Goods Eslant updated Deeds in accordance with the request of the stone brilliance from to come sujiphae the Death Wizard."
+
+On in_progress
+    Say "Lalalala - Huh? You don't have it yet?"
+
+On claimable
+    Show quest "Good! Let me start the appraisal at once.\n\nCome on, there is no time for a rest. Let's collect the next item. It's going to the last item. Go get  [Perfect Goat Horn] of [Satyros]. It's the most expensive item of this area!"

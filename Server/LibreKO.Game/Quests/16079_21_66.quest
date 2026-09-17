@@ -1,0 +1,36 @@
+Bind Npc 16079 Zone 21
+Quest 66 "Making Bezoar"
+    Journal "I promised [Daughter of Grand Merchant] Menissiah to bring her 2 Apples of Moradon."
+    Collect 1 of 810418000
+
+Requires player level >= 7
+
+Rewards
+    Give 3 of 389034000
+    Give 3500 experience
+    Give 5000 coins
+    Choose one
+        Give 1 of 330150005
+        Give 1 of 330150015
+        Give 1 of 330150025
+        Give 1 of 330150035
+        Give 1 of 330150075
+
+On available
+    Say "Wonder what Menissiah's up to lately. I miss her. Let's go see her, Master."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "<selfname>, as a token of my gratitude for your help last time, here's a special medicine I developed. It's a special gift just for you."
+    Topic "Tell me more..." do
+        Show quest "It's called antifebrile and Apple of Moradon is the main ingredient. How about it? Can you get some for me?\n\nI learned a different potion production method, and I need Apple of Moradon this time. If you bring me 5 Apple of Moradon, I think I can make antifebrile. Will you help me?"
+
+On in_progress
+    Say "Hmm. I need Apple of Moradon to make antifebrile."
+
+On ready
+    Say "Master, you have the Apple of Moradon. Go to [Grand Merchant's Daughter] Menissiah and receive antifebriles."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You finally brought Apple of Moradon. Here you are. I hope they'll be of valuable use and I look forward to our next exchange."

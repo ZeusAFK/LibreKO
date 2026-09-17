@@ -1,0 +1,20 @@
+Bind Npc 25163 Zone 1
+Quest 1319 "Into the forest…"
+    Journal "Defeat 20 Ancients"
+    Kill 20 of 5301, 9668, 5351 at direction_547
+
+Requires player level >= 35 and player is karus and quest 1314 is completed
+
+Rewards
+    Give 300000 experience
+
+direction_547 = location "Ancient" about "Ancient\nAs with Treant, levels attacks using branches; old vines afford exceptional Defense Power" found "Karus" at 1207 176 in zone 1
+
+On offer
+    Show quest "Warrior. Can you ged rid of those Ashunts while you find the bracelet? The forest won't be safe as long as they're there."
+
+On in_progress
+    Say "Cheer up warrior! Get rid of 20 Ashunts"
+
+On claimable
+    Show quest "Ahah. <selfname> thank you."

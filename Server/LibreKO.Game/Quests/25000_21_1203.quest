@@ -1,0 +1,22 @@
+Bind Npc 25000 Zone 21
+Quest 1203 "Gaining trust"
+    Journal "Find those who are influential in Moradon and gain their trust"
+    Collect 1 of 900600000
+    Collect 1 of 900601000
+    Collect 1 of 900603000
+    Collect 1 of 900604000
+
+Requires player level >= 4
+
+Rewards
+    Give 15000 experience
+    Give 2000 coins
+
+On offer
+    Show quest "Life has gotten better since we have settled in here, but now we need to get the trust of the townspeople.\n\nYou don't need every single townsperson's trust, but make sure to convince the influential ones. Then, others' trust will follow. Go to those with the power and obtain their tokens of trust."
+
+On in_progress
+    Say "I don't think you have their trust yet. Try harder."
+
+On claimable
+    Show quest "Well done. Because of you, the townspeople will trust us."

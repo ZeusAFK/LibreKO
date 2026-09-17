@@ -1,0 +1,20 @@
+Bind Npc 25166 Zone 1
+Quest 1310 "Daughter's present"
+    Journal "Acquire 5 wolfdogs skin"
+    Collect 5 of 900652000
+
+Requires player level >= 35 and player is karus
+
+Rewards
+    Give 300000 experience
+
+On offer
+    Say "Hello. <selfname> right? So..I need a favor.\n\nMy mother's birthday is soon and I'd liked to give her a warm coat for a gift but...I don't have money, nor the energy to work..."
+    Topic "Tell me more..." do
+        Show quest "Can you get me 5 pieces of Wolfdog's Leather so I can make a coat for her? I will pay you back once I grow up..Please, I am begging you."
+
+On in_progress
+    Say "Mother's birthday is around the corner.. Do you have them yet??"
+
+On claimable
+    Show quest "Wow! Thank you <selfname>. Really I truly mean it!!"

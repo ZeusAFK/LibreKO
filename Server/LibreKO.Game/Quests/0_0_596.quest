@@ -1,0 +1,33 @@
+Bind Npc 31702 Zone 73 for karus
+Bind Npc 31703 Zone 73 for elmorad
+Quest 596 "[Great Battle] Two Dogs Fight For a Bone, and a Third Runs Away With It"
+    Journal for karus "You must talk to [Priest] Mazal at the Stronghold of Ronark Land."
+    Journal for elmorad "You must talk to [Priest] Maia at the Stronghold of Ronark Land."
+
+Requires player level >= 67 and quest 595 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "We need to ask [Priest]Majal to make a peace treaty with the other nation."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "We need to ask [Priest]Maia to make a peace treaty with the other nation."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "I'll be waiting for you."
+        Topic "Tell me more..." do
+            Show quest "A peace treaty. Okay, I will try to help you but you <selfname> have to go to your castle and get me some information\n\nI think that Ruler[Bres] has made a contract with the devil and plans to take over. You need to let your castle know about this!\n\nConversation with [Priest]Majal greater Ronark Land Base base ."
+    If player is elmorad
+        Say "I'll be waiting for you."
+        Topic "Tell me more..." do
+            Show quest "A peace treaty. Okay, I will try to help you but you <selfname> have to go to your castle and get me some information\n\nI think that Ruler[Bres] has made a contract with the devil and plans to take over. You need to let your castle know about this!\n\nConversation with [Priest]Maia greater Ronark Land Base base ."
+
+On claimable
+    If player is karus
+        Show quest "[Captain]Harugo is in the main castle so you'll find him there."
+    If player is elmorad
+        Show quest "[Captain]Falkwine is in the main castle so you'll find him there."

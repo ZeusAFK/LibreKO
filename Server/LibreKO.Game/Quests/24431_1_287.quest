@@ -1,0 +1,35 @@
+Bind Npc 24431 Zone 1 for warrior
+Bind Npc 24431 Zone 1 for rogue
+Bind Npc 24431 Zone 1 for mage
+Bind Npc 24431 Zone 1 for priest
+Quest 287 "Apostle hunt"
+    Journal "[Sentinel] Hashan asked me to hunt 40 Apostles."
+    Kill 40 of 2152, 2102 at direction_553
+
+Requires player level >= 61 and player is karus
+
+Rewards for warrior
+    Give 1 of 206005003
+
+Rewards for rogue
+    Give 1 of 246005003
+
+Rewards for mage
+    Give 1 of 266005003
+
+Rewards for priest
+    Give 1 of 286005003
+
+direction_553 = location "Apostle" about "Apostle\nMonks a grade above Deruvish who do not level attacks first at warrior passersby but turn into savage mages of darkness at night" found "Karus" at 1529 833 in zone 1
+
+On available
+    Say "Master, let's go get a mission from [Sentinel] Hashan."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "If you succeed in this hunt I'll give you boots as reward. Apostle are nomad monks of the Esoteric Buddhist order and turn into savage mages of darkness come nightfall."
+    Topic "Tell me more..." do
+        Show quest "If you hunt 40 Apostles I'll give you my boots. Will you do it?"
+
+On claimable
+    Show quest "Thank you. Here are the boots, as promised."

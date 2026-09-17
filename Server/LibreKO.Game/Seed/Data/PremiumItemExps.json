@@ -1,0 +1,100 @@
+[
+  {
+    "Index": 1,
+    "Type": 1,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 0
+  },
+  {
+    "Index": 2,
+    "Type": 2,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 0
+  },
+  {
+    "Index": 3,
+    "Type": 3,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 20
+  },
+  {
+    "Index": 4,
+    "Type": 4,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 20
+  },
+  {
+    "Index": 5,
+    "Type": 5,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 20
+  },
+  {
+    "Index": 6,
+    "Type": 6,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 0
+  },
+  {
+    "Index": 7,
+    "Type": 7,
+    "MinLevel": 1,
+    "MaxLevel": 50,
+    "Percent": 400
+  },
+  {
+    "Index": 8,
+    "Type": 7,
+    "MinLevel": 51,
+    "MaxLevel": 83,
+    "Percent": 100
+  },
+  {
+    "Index": 9,
+    "Type": 8,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 0
+  },
+  {
+    "Index": 10,
+    "Type": 9,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 0
+  },
+  {
+    "Index": 11,
+    "Type": 10,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 30
+  },
+  {
+    "Index": 12,
+    "Type": 11,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 100
+  },
+  {
+    "Index": 16,
+    "Type": 12,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 0
+  },
+  {
+    "Index": 17,
+    "Type": 13,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "Percent": 10
+  }
+]

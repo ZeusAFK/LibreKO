@@ -1,0 +1,22 @@
+Bind Zone 21
+Quest 500 "Rescuing Sid / Rescuing Michelle"
+    Journal "I promised to hunt Worm outside the village to rescue a human."
+    Kill 1 of 700, 701, 750, 751
+
+Requires player level >= 1
+Auto accept
+
+On started
+    Say "Help! Someone help me!\nA human has been eaten by the Worm outside the village"
+
+On ready
+    If player is karus
+        Say "Growl..Growl...."
+        Topic "You OK, kid?" do
+            Complete quest
+            Say "Gasp... I almost died... If you were going to rescue me, you should have come earlier. I almost croaked."
+    Else
+        Say "Growl..Growl...."
+        Topic "Pummel to death" do
+            Complete quest
+            Say "Gasp... I almost died... If you were going to rescue me, you should have come earlier. I almost croaked."

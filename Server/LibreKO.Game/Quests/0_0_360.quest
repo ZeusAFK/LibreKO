@@ -1,0 +1,25 @@
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 14202 Zone 2 for elmorad rogue
+Quest 360 "75Lv skill"
+    Journal for karus "I've decided to undergo the test to learn the hidden skills of [Secret Agent] Clarence."
+    Journal for elmorad "I've decided to undergo the test to learn the hidden skills of [Secret Agent] Clarence."
+    Collect 10 of 810369000
+
+Requires player level >= 75
+
+Rewards none
+
+On offer
+    Say "You are qualified to learn and use Level 75 skills."
+    Topic "Tell me more..." do
+        Show quest "To learn lv.75 skill, you need 10 [Spell Stone Powder]. Are you ready to learn the ultimate skill?"
+
+On in_progress
+    Say "To complete the lv.75 rogue skilll, you need 10 [Spell Stone Powder]."
+
+On ready
+    Say "Master, you've collected all the items needed to master rogue Level 75 skills. Hurry back to [Secret Agent] Clarence."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "This is Blinding Strape, Beast Hiding, and Strengthen Concentration, rogue Level 75 skills. Your power will give us rogues hope."

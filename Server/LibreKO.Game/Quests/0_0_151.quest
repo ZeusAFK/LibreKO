@@ -1,0 +1,44 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 151 "Silver Hair II"
+    Journal for karus "You have promised [Moradon Merchant] Shymer to bring her Silver Hair."
+    Journal for elmorad "You have promised [Moradon Merchant] Clark to bring him Silver Hair."
+    Collect 7 of 379272000
+
+Requires player level >= 43
+
+Rewards
+    Give 2375000 experience
+
+direction_111 = location "Megantereon" about "Megantereon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "Karus" karus at 169 1045 in zone 1
+direction_112 = location "Megantereon" about "Megantereon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "El Morad" elmorad at 1914 1040 in zone 2
+
+On available
+    If player is karus
+        Say "Master. I think I hear the sound of Shaimer hitting jackpot even from here! Heh heh!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master. I think I hear the sound of Clark hitting jackpot even from here! Heh heh!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Ha Ha, fortune eh? I've still got a long way to go yet! Ahh, Silver Feather-based clothes have become this season's must-have items for our Noble women. If you're not wearing  Silver Feather clothes, you're nobody!  The feathers are well known for their amazing color and incredible softness."
+    Topic "Tell me more..." do
+        Show quest "But, as always, supply is being outstripping by demand. I've hired some renowned Moradon hunters to gather the feathers for me, but it ain't easy because the  Meganterions are really brutal beasts. Ahem... <selfname>, perhaps you might have better luck in this endeavor? Heh Heh.\n\nIt'd be great if Silver Feathers were in greater supply... Ha, the Hunters say that Meganterions are really brutal. Take care of yourself."
+
+On in_progress
+    If player is karus
+        Say "I need about 10 of 'em. Keep up the good work <selfname>! Hee Hee!"
+        Topic "Where can I find it?" do
+            Map direction_111
+    If player is elmorad
+        Say "I need about 10 of 'em. Keep up the good work <selfname>! Hee Hee!"
+        Topic "Where can I find it?" do
+            Map direction_112
+
+On ready
+    Say "Phew! Master, you really tried hard. Looks like they really are hard to get."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Great work <selfname>, thanks to your effort, Moradon's ladies are still the best-dressed! Infinite thanks!"

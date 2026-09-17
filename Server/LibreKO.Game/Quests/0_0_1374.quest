@@ -1,0 +1,22 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 1374 "Collection of Weapon materials"
+    Journal for karus "Collect 5 weapon fragments"
+    Journal for elmorad "Collect 5 weapon fragments"
+    Collect 5 of 810495000
+
+Requires player level >= 55
+
+Rewards
+    Give 25000000 experience
+
+On offer
+    Say "Oh man..  Why do we keep needing stuff? This time it's the weapon materials. Could you just get some weapons monsters use? We're really in a hurry so could you please start now?"
+    Topic "Tell me more..." do
+        Show quest "Urkblade weapons will be perfect. Could you get about 20 of them?"
+
+On in_progress
+    Say "Urkblades are stronger than you thought? I thought you would be stronger."
+
+On claimable
+    Show quest "Oh great! I knew you could have done it."

@@ -1,0 +1,37 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 633 "Putting poison in the food"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 1 of 900151000
+    Collect 1 of 900156000
+    Collect 1 of 900165000
+
+Requires player level >= 60 and quest 632 is completed
+
+Rewards
+    Give 5000000 experience
+    Give 30000 coins
+
+On available
+    Say "Looks like he's about to start the joke.  What kind of joke is he playing?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Now, it's the time for the joke you've all been waiting for."
+        Topic "Tell me more..." do
+            Show quest "Now, take these [experimental poisonous weeds] into the Goblin village and mix them with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and bring me a sample so I can see the reaction.\n\nInside the village Goblin Goblin cauldron used to poison wells Goblin Goblin food box, and must be followed in collecting the s, depending on the of Goblin Karus area near the village of [Staff] Squad Vere request."
+    If player is elmorad
+        Say "Now, it's the time for the joke you've all been waiting for."
+        Topic "Tell me more..." do
+            Show quest "Now, take these [experimental poisonous weeds] into the Goblin village and mix them with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and bring me a sample so I can see the reaction.\n\nStaff Squad of the El Morad region goblins near the village of gray in accordance with the request of the Goblin [Goblin village inside the cauldron], and used to poison wells Goblin Goblin food box, must be followed in collecting the s."
+
+On in_progress
+    Say "Tut,tut you have such a weak mind ..."
+
+On claimable
+    Show quest "Oh, great. My eyes never mistake. I look forward to your next joke.\n\nNow, shall we move on to the next joke? I need [Manticore Poison Pouch] that only comes from the tail of the [Manticore]. Hurry up and collect them fast."
+
+On completed
+    Say "Come again when you reach Lv61. You don't have enough skills to perform this yet."

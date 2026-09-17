@@ -1,0 +1,25 @@
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 14202 Zone 2 for elmorad rogue
+Quest 335 "70Lv skill"
+    Journal for karus "I decided to undergo the test to learn hidden skills from [Secret Agent] Clarence."
+    Journal for elmorad "I decided to undergo the test to learn hidden skills from [Secret Agent] Clarence."
+    Collect 5 of 810369000
+
+Requires player level >= 70
+
+Rewards none
+
+On offer
+    Say "Children of wind and shadow, that is us rogues. You, who have reached the final rogue training stage, are qualified to learn and employ the final skill."
+    Topic "Tell me more..." do
+        Show quest "To learn the ultimate rogue skill, you will need 5 [Spell Stone Powder]. Are you ready for this?"
+
+On in_progress
+    Say "To learn the ultimate rogue skilll, you need 5 [Spell Stone Powder]."
+
+On ready
+    Say "Master, all the items needed to learn the rogue final skill has been collected. Let's hurry back to [Secret Agent] Clarence."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "This is the final secret technique, Dark Pursuer and Bloody Beast. Your ability will be a hope to us rogues."

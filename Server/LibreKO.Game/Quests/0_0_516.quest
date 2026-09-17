@@ -1,0 +1,36 @@
+Bind Npc 24435 Zone 1 for karus
+Bind Npc 14435 Zone 2 for elmorad
+Quest 516 "[Descendant of Hero] Festival Preparation"
+    Journal for karus "You must talk to [Secret Agent] Clarence from Belua Village."
+    Journal for elmorad "You must talk to [Secret Agent] Clarence of Asga Village."
+
+Requires player level >= 60
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Master, [Moradon Merchant] Shaimer is looking for you. Go ahead and visit him, please."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, [Moradon Merchant] Clark is looking for you. Go ahead and visit him, please."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hello <selfname>! Long time no see! Ha, ha, ha. What are you looking for today?"
+        Topic "Tell me more..." do
+            Show quest "Not sure if you know but we will be opening a party for the king's grace to thank him! Please help us prepare for the celebration!\n\n[Moradon Merchant] Shaimer  has asked to help [Secret Deputy] Clarence for the celebration preparation."
+    If player is elmorad
+        Say "Hello <selfname>! Long time no see! Ha, ha, ha. What are you looking for today?"
+        Topic "Tell me more..." do
+            Show quest "Not sure if you know but we will be opening a party for the king's grace to thank him! Please help us prepare for the celebration!\n\n[Moradon Merchant] Clark has asked to help [Secret Deputy] Clarence for the preparation of celebration."
+
+On claimable
+    Show quest "You will help us? Thank you! So for now, please visit [Secret Agent]Clarence. He will send the needed food for the festival!"
+
+On completed
+    If player is karus
+        Say "[Secret Agent]Clarence is in Bellua Village. Thanks for you cooperation."
+    If player is elmorad
+        Say "[Secret Agent]Clarence is in Asga Village. Thanks for you cooperation."

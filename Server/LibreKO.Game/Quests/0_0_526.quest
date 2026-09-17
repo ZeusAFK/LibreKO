@@ -1,0 +1,36 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 526 "[Descendant of Hero/Boss] Horrible Spoil"
+    Journal for karus "You must get rid of Grendel by following [Captain] Fargo's order at Luferson Castle."
+    Journal for elmorad "You must get rid of Grendel by following [Captain] Falkwine's order at El Morad Castle."
+    Collect 1 of 910195000
+
+Requires player level >= 60 and quest 525 is completed
+
+Rewards
+    Give 25000000 experience
+    Give 150 np
+    Give 2 of 900017000
+
+On available
+    Say "At last the final battle! Good luck master!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You are here <selfname>. Are you combat ready?"
+        Topic "Tell me more..." do
+            Show quest "Now, go and bring me he's right arm that symbolizes his power!\n\nDefeat Monster [Grendel] and bring it's right arm like [Captain] Fargo ordered."
+    If player is elmorad
+        Say "You are here <selfname>. Are you combat ready?"
+        Topic "Tell me more..." do
+            Show quest "Now, go and bring me he's right arm that symbolizes his power!\n\nDefeat Monster [Grendel] and bring it's right arm like [Captain] Falkwine ordered."
+
+On in_progress
+    Say "Didn't leave yet?"
+
+On claimable
+    If player is karus
+        Show quest "Great! Luferson Castle is in peace once again!"
+    If player is elmorad
+        Show quest "Great! El Morad Castle is in peace once again!"

@@ -1,0 +1,27 @@
+Bind Npc 31570 Zone 11
+Quest 694 "Sinner of Nightmare II"
+    Journal "You must accept the request of [Order of the Sorcery] Caesar."
+    Kill 25 of 9071, 9082 at direction_808
+
+Requires player level >= 69 and player is karus and quest 692 is completed
+
+Rewards
+    Give 25000000 experience
+    Give 100000 coins
+
+direction_808 = location "Nightmare" about "Nightmare\nThis demon eats dream. The monster in horse shape." found "Karus Eslant" karus at 887 258 in zone 11
+
+On available
+    Say "Master, are you familiar with [Nightmare Sinner]? They appear in people's dream and extort of their souls. I didn't think they actually exist! Let's go see Cesar of [Order of the Sorcery]."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hello again. Thank you last time for the [Doom Knight]. However, [Nightmare Sinners] are still around."
+    Topic "Tell me more..." do
+        Show quest "The second nightmare sinners are called the [Nightmare]. They are the worst of their kind. They appear in people's dream riding a horse and guide them to the deep end of nightmare. Be careful and good luck!\n\nBranded as a sinner of a nightmare, with the magic updated Eslant Phalanx and Cesar Nightmare will have to be removed."
+
+On in_progress
+    Say "[The endless desire of the sinners that devour dreams...] What the... You didn'tleave yet?"
+
+On claimable
+    Show quest "Oh no, you completed eliminated them.\n\nThank you. All existing [Nightmare Sinners] all paid for their sins. However, another [Nightmare sinners] may appear once again. If such day comes, I hope you could help us again."

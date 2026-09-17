@@ -1,0 +1,36 @@
+Bind Npc 29014 Zone 71 for karus
+Bind Npc 29027 Zone 71 for elmorad
+Quest 713 "[Lemegeton] The Third Underworld"
+    Journal for karus "You must join the devil war with [Order of the Sorcery] Bros."
+    Journal for elmorad "You must join the devil war with [Order of the Sorcery] Sais."
+    Collect 1 of 900231000
+    Collect 1 of 900232000
+
+Requires (player level >= 71 and player is karus and quest 711 is completed) or (player level >= 71 and player is elmorad and quest 712 is completed)
+
+Rewards
+    Give 250000 experience
+    Give 30000 coins
+
+On available
+    Say "Phew, it was a tough fight. Let's go to Bros of [Order of the Sorcery]"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You are here. Your last work was great."
+        Topic "Tell me more..." do
+            Show quest "Please give me the seal Scroll that you will seal in your body, then, <selfname>.\n\nWe must give Bros of [Order of the Sorcery] of Ronark Land the seal Scrolls for [22Devil] Ipos and [46Devil] Bifrons."
+    If player is elmorad
+        Say "You are here. Your last work was great."
+        Topic "Tell me more..." do
+            Show quest "Please give me the seal Scroll that you will seal in your body, then, <selfname>.\n\nWe must give Sais of [Order of the Sorcery] of Ronark Land the seal Scrolls for [22Devil] Ipos and [46Devil] Bifrons."
+
+On in_progress
+    Say "Where is the seal Scroll?"
+
+On claimable
+    Show quest "Thank you. With this seal Scroll, the soul of devil will be locked in this ring."
+
+On completed
+    Say "[Devil 34] Furfur has very strong and dreadful power, and he rules storms and thunderbolts. According to a story, the [Devil 34] Furfur has destroyed a castle only by his power. Destroy [Devil 58] Amy and [Devil 71] Dantalion with [Devil 34] Furfur. It'll be helpful if you remove the devils that can be strong forces for the devil army."

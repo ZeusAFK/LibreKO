@@ -1,0 +1,27 @@
+Bind Npc 31569 Zone 12
+Quest 685 "Removing Magic of Darkness V"
+    Journal "You must accept the request of [Order of the Sorcery] Reisa."
+    Kill 25 of 9081, 9070 at direction_817
+
+Requires player level >= 69 and player is elmorad and quest 683 is completed
+
+Rewards
+    Give 25000000 experience
+    Give 30000 coins
+
+direction_817 = location "Apostle of the Storm" about "Apostle of the Storm\n It is storm wizard who using strong power of wind" found "El Morad Eslant" elmorad at 730 338 in zone 12
+
+On available
+    Say "Just one axis left! Let's go get'em."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Are you all ready?"
+    Topic "Tell me more..." do
+        Show quest "Okay, we are left with just one axis. Once that is taken down, the magic force of Islant will normalize along with other regions. Please eliminate [Apostle of the Storm]. They are the last axis. With them gone, everything will be stable again.\n\nBit of the magic Phalanx Eslant, depending on Ray's request, you must remove the threat of darkness magic, the fight against Apostle of the Storm."
+
+On in_progress
+    Say "The last axis still remains for magic force is yet in balance. Do a little better."
+
+On claimable
+    Show quest "The magic force is coming back! The Islant will soon be stable.\n\nYou have done very well. Please help us [Order of the Sorcery] again."

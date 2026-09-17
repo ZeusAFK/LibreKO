@@ -1,0 +1,35 @@
+Bind Npc 31573 Zone 1 for karus
+Bind Npc 31574 Zone 2 for elmorad
+Quest 634 "Collecting Poison II"
+    Journal for karus "You must perform the mission given by [Staff of Subjugation Squad] Verr."
+    Journal for elmorad "You must perform the mission given by [Staff of Subjugation Squad] Gray."
+    Collect 5 of 389460000
+
+Requires player level >= 61 and quest 633 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900203000
+    Give 1 of 900204000
+    Give 1 of 900205000
+
+On available
+    Say "Ugh, so this is what you meant by playing the joke with food. You see, my mom told me never to play with food..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hmm let's see, ah, I know which ingredient to play joke with.  You will help me out with this, right?"
+        Topic "Tell me more..." do
+            Show quest "Guess what! It's the [Manticore Poison Pouch] that only comes from the tail of the [Manticore]. Not Surprised? Well... anyhow, hurry up and bring it to me!\n\n, Depending on the of Goblin Karus area near the village of [Staff] Squad Vere request must be collected from the Manticore Manticore solo"
+    If player is elmorad
+        Say "Hmm let's see, ah, I know which ingredient to play joke with.  You will help me out with this, right?"
+        Topic "Tell me more..." do
+            Show quest "Guess what! It's the [Manticore Poison Pouch] that only comes from the tail of the [Manticore]. Not Surprised? Well... anyhow, hurry up and bring it to me!\n\nEl Morad near the villages of the region Goblin Grey [Staff Squad] and [upon request from the Manticore Manticore solo  must be collected."
+
+On in_progress
+    Say "Oh man, that joke is just not funny.  Go gather the ingredient fast so that I can show you what a real joke is all about!"
+
+On claimable
+    Show quest "This is it! Hehehe! Now let me mix it here like this and that and this and uh...\n\nNow, in the same way again, mix this [experimental poisonous weeds] with [Goblin Iron Pot], [Gobllin Food Box], and [Goblin Well], and bring me a sample so I can see the reaction."

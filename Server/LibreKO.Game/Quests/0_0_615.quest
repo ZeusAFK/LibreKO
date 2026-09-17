@@ -1,0 +1,25 @@
+Bind Npc 31524 Zone 21 for karus
+Bind Npc 31524 Zone 21 for elmorad
+Quest 615 "[New Hero] Finding someone"
+    Journal for karus "You must talk to [Unidentified Old Man] in Moradon."
+    Journal for elmorad "You must talk to [Unidentified Old Man] in Moradon."
+
+Requires player level >= 69 and quest 614 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Unidentified elderly disgrace ... Moradon got a clue that the  should go to find one."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Unidentified elderly disgrace ... Moradon got a clue that the  should go to find one."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Who are you? Even errands to an old man?"
+    Topic "Tell me more..." do
+        Show quest "Yeah ... I possessed the people behind the burning village possessed. ' I know, of course, I am. I've heard a few times, I'm a guy.\n\nWell ... The evil spirits the name of the abuse a secret, so I curse the evil spirits inside out of the mouth to receive me. So carelessly can tell you is I have not done anything. Unless if you have the ability to handle the evil spirits ...\n\nIt should be a conversation with the unidentified elderly Moradon."
+
+On claimable
+    Show quest "If you think you've got to find me again. Shall I give you the power to take down the evil spirits to test whether ..."

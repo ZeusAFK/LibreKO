@@ -1,0 +1,10 @@
+Bind Npc 31515 Zone 1
+
+On greeting
+    If quest 541 is started and player lacks 910227000
+        Say "I'll give it to you one more time so be careful!"
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 910227000
+    Else
+        Say ""

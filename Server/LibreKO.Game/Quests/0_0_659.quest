@@ -1,0 +1,32 @@
+Bind Npc 31566 Zone 11 for karus
+Bind Npc 31565 Zone 12 for elmorad
+Quest 659 "Searching Specialties V"
+    Journal for karus "You must accept the request of [Appraiser] Rockus."
+    Journal for elmorad "You must accept the request of [Appraiser] Diz."
+    Collect 5 of 389530000
+
+Requires player level >= 67 and quest 658 is completed
+
+Rewards
+    Give 10000000 experience
+    Give 30000 coins
+
+On available
+    Say "There is nothing more to collect in Islant and he still wants us. Will this be the last time? Go to [Item Appraiser] Lockers."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Oh, you are here. It feels good to finish the appraisal fast. Thanks to you, I have secured a lot of good items."
+        Topic "Tell me more..." do
+            Show quest "Come on, there is no time for a rest. Let's collect the next item. It's going to the last item. Go get  [Perfect Goat Horn] of [Satyros]. It's the most expensive item of this area!\n\nAppraisers of Goods Eslant updated according to the rocker's request must come from sujiphae complete goat horns Satyr."
+    If player is elmorad
+        Say "Oh, you are here. It feels good to finish the appraisal fast. Thanks to you, I have secured a lot of good items."
+        Topic "Tell me more..." do
+            Show quest "Come on, there is no time for a rest. Let's collect the next item. It's going to the last item. Go get  [Perfect Goat Horn] of [Satyros]. It's the most expensive item of this area!\n\nSujiphae a complete goat horns from Satyr at the request of the Appraisers of Goods Eslant updated Deeds expected."
+
+On in_progress
+    Say "You don't have it yet? Is it too much for you to handle?"
+
+On claimable
+    Show quest "There's nothing too difficult for you to collect! Well done.\n\nAll searches are done. I have acquired many first-class items. Oh, [Merchant] Drill has something to say to you. Please go meet him."

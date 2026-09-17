@@ -1,0 +1,28 @@
+Bind Npc 13013 Zone 21
+Quest 92 "Subdual of Silan"
+    Journal "[Sentinel] Patrick asked me to subdue ten Silans for him."
+    Kill 5 of 257 at direction_60
+
+Requires player level >= 17
+
+Rewards
+    Give 17500 experience
+    Choose one
+        Give 1 of 202003006
+        Give 1 of 242003006
+        Give 1 of 262003006
+        Give 1 of 282003006
+
+direction_60 = location "Silan" about "Silan\nBulcans with tenacious life, armor can be produced with its bones" found "Moradon seashore" at 415 431 in zone 21
+
+On offer
+    Say "Another day in thriving Moradon! What do you want?"
+    Topic "Tell me more..." do
+        Show quest "You've arrived again without fail. Bulcan-type monsters are really tenacious. The giant Bultures seem to be the most powerful of them all, but that's not true. Across the creek outside of Moradon in the farthest outskirts dwell human-sized Silans. They are normal  sized, but their muscle strength and physical power are incomparable since they primarily feed on underground iron bars. With their numbers continuously escalating, we need to wipe them out for the safety of the residents. Those shoddy mercenaries were no match for them. That is why I'm asking you.\n\nIt should be a boon to your ability enhancement. Thank you."
+
+On ready
+    Say "Master, you've caught all 5 Silans. Your ability is growing everyday. Hurry back to [Sentinel] Patrick."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "I knew you'd be able to pull it off this time as well. You'll soon catch up to me."

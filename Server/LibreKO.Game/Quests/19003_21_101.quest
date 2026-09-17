@@ -1,0 +1,46 @@
+Bind Npc 19003 Zone 21 for warrior
+Bind Npc 19003 Zone 21 for rogue
+Bind Npc 19003 Zone 21 for mage
+Bind Npc 19003 Zone 21 for priest
+Quest 101 "Battle Armor 1"
+    Journal "You'll earn a pair of Battle Boots if you hunt Spoiler as [Mercenary Adjutant] Rage asked you to."
+    Kill 10 of 353 at direction_521
+
+Requires player level >= 24
+
+Rewards for warrior
+    Give 1 of 203005281
+    Give 75000 experience
+
+Rewards for rogue
+    Give 1 of 243005282
+    Give 75000 experience
+
+Rewards for mage
+    Give 1 of 263005283
+    Give 75000 experience
+
+Rewards for priest
+    Give 1 of 283005284
+    Give 75000 experience
+
+direction_521 = location "Spoiler" about "Spoiler\nBird monsters endowed with power by Pathos`s evil energy" found "Moradon" at 429 614 in zone 21
+
+On available
+    Say "Master, there's a rumor going about that Rage is handing out great treasure... Let's go and check if its true or not."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Ha ha, so you heard the rumor? Well, I found some armor and a weapon and I'm going to give 'em away. But not for free, as a reward for some hard work. So I'm giving a nice pair of boots to the one who hunts 10 Spoilers in the shortest time."
+    Topic "Tell me more..." do
+        Show quest "Want to give it a shot? You should be able to pull it off.\n\nIf you heed [Mercenary Adjutant] Rage's request you can obtain craft items as a reward."
+
+On in_progress
+    Say "I told you to bring me 10!"
+
+On ready
+    Say "Yes!! Now the treasure is all ours- I mean yours, master!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "My intuition never fails.. You are well qualified to wear the boots. Hope they will come to good use."

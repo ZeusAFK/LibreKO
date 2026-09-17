@@ -1,0 +1,32 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 575 "[Regained Honor] Downfall of Betrayer"
+    Journal for karus "You must perform the final attack against Betrayer Paladin Garlong by following the order of [Captain] Fargo at Luferson Castle."
+    Journal for elmorad "You must perform the final attack against Betrayer Paladin Garlong by following the order of [Captain] Falkwine at El Morad Castle."
+    Collect 1 of 910200000
+
+Requires player level >= 65 and quest 574 is completed
+
+Rewards
+    Give 57500000 experience
+    Give 150 np
+    Give 2 of 900017000
+
+On available
+    If player is karus
+        Say "Hath surprised I've ever seen. When you are ready again [Captain] I guess God and you"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Hath surprised I've ever seen.When you are ready [Captain]Falkwine"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The line was a traitor who knew you were a hero ... In addition, contracted selfishness, his followers, men and friends to death ! I can not forgive it!"
+    Topic "Tell me more..." do
+        Show quest "<selfname>!To sin right now punish the the Eslant Tropez escaped] Long how the betrayed paladin and a plurality of those who died and the King , ask!\n\nDefeat Garlong and collect [Traitor's Evidence]."
+
+On in_progress
+    Say "Long how the betrayed paladin go away'm hiding from Trogir Eslant"
+
+On claimable
+    Show quest "Evidence of a traitor, huh! He has betrayed the country, betrayed friendship never be forgiven for any reason!"

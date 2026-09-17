@@ -1,0 +1,25 @@
+Bind Npc 24201 Zone 1 for karus warrior
+Bind Npc 14201 Zone 2 for elmorad warrior
+Quest 365 "80Lv skill"
+    Journal for karus "I've decided to undergo the test to learn the hidden skills of [Warrior Master] Skaki."
+    Journal for elmorad "I've decided to undergo the test to learn the hidden skills of [Warrior Master] Skaki."
+    Collect 15 of 810369000
+
+Requires player level >= 80
+
+Rewards none
+
+On offer
+    Say "You are well qualified to possess Level 75 skills."
+    Topic "Tell me more..." do
+        Show quest "To complete the ultimate warrior skill, you will need 15 [Spell Stone Powder]. Are you ready for this?"
+
+On in_progress
+    Say "To complete the ultimate warrior skilll, you need 15 [Spell Stone Powder]."
+
+On ready
+    Say "Master, you have obtained all the items needed to master Level 80 skills. Go back to [Warrior Master] Skaki."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "This is Hell Blade, Iron Linker, and HP Booster, the skills of the Level 75 warrior. You will lead us to victory in this war."

@@ -1,0 +1,33 @@
+Bind Npc 29014 Zone 71
+Quest 711 "[Lemegeton] Count of a Fool"
+    Journal "You must join the devil war with [Order of the Sorcery] Bros."
+    Kill 1 of 9099, 9172
+    Kill 50 of 9101, 9174
+
+Requires player level >= 71 and player is karus and quest 709 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 30000 coins
+    Give 1 of 900231000
+    Give 1 of 900232000
+    Choose one
+        Give 1 of 209003626
+        Give 1 of 249003627
+        Give 1 of 269003628
+        Give 1 of 289003629
+
+On available
+    Say "I guess this will slow down the underworld's acitivities for a while? Let's go to Ronark Land to report to Bros of [Order of the Sorcery]."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The fall of [11Devil] Gucion has weakened our enemy's strength. Thanks to you, <selfname>."
+    Topic "Tell me more..." do
+        Show quest "We need to keep on going! Please eliminate [22Devil] Ipos and [46Devil] Bifrons. As before, bring their souls to me.\n\nWe must help Bros of [Order of the Sorcery] of Ronark Land seal the [22Devil] Ipos and [46Devil] Bifrons."
+
+On in_progress
+    Say "I don't see the souls imbued in you. You haven't eliminate them yet."
+
+On claimable
+    Show quest "You're imbued with souls of devil. You have done well.\n\nI have sealed the souls of devil that were imbued in you, <selfname>. Now please give me that seal Scroll."

@@ -1,0 +1,30 @@
+Bind Npc 24424 Zone 11 for karus
+Bind Npc 14424 Zone 12 for elmorad
+Quest 552 "[Failed Mission] Return"
+    Journal for karus "You must talk to [Ascetic] Veda, of Eslant."
+    Journal for elmorad "You must talk to [Ascetic] Tabeth, of Eslant."
+
+Requires player level >= 63 and quest 551 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "[Ascetics]Beda God can not be. To tell good news."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "[Ascetics]Tabeth. Leave her bed other To tell good news."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Did [Eslant Wise Man] Pablo do all the work?"
+        Topic "Tell me more..." do
+            Show quest "I did confirm that the soul is safe to get the rest? Undefiled clear and [Noble Soul] too, that much more ... ought have sseoteoya the care\n\nNoble Soul is resting now. Talk to Beda."
+    If player is elmorad
+        Say "Did [Eslant Wise Man] Agata do all the work?"
+        Topic "Tell me more..." do
+            Show quest "I did confirm that the soul is safe to get the rest? Undefiled clear and [Noble Soul] too, that much more ... ought have sseoteoya the care\n\nNoble Soul is resting now. Talk to Tabeth."
+
+On claimable
+    Show quest "I'm Glad. I'm going to give you to thank God <selfname>,"

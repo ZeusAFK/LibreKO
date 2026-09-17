@@ -1,0 +1,27 @@
+Bind Npc 25279 Zone 12
+Quest 1724 "[Eslant] Dark Mithril Piece"
+    Journal "[Eslant] Dark Mithril Piece"
+    Kill 1 of 7025 at direction_481
+    Kill 1 of 7029 at direction_482
+    Kill 1 of 7027 at direction_483
+    Kill 1 of 7028 at direction_484
+
+Requires player level >= 1 and player is elmorad
+
+Rewards
+    Give 10000000 experience
+    Give 1 of 998080000
+
+direction_481 = location "[Quest] Lard Orc" about "[Quest]Lard orc" found "El Morad Eslant" at 508 391 in zone 12
+direction_482 = location "[Quest] Troll Captain" about "[Quest]Troll captain" found "El Morad Eslant" at 757 902 in zone 12
+direction_483 = location "[Quest] Giant Golem" about "[Quest]Giant golem" found "El Morad Eslant" at 105 185 in zone 12
+direction_484 = location "[Quest] Uruk Tron" about "[Quest]Uruk Tron" found "El Morad Eslant" at 701 128 in zone 12
+
+On offer
+    Show quest "Leaders of each races are receving Dark Mythril Fragment from Devil legion and creating their own weapons. I will give you Dark Mythril Fragment if you defeat them for me.\n\nDefeat the leaders of each races and I will give you the Dark Mythril Fragment.You can exchange Dark Mythril Fragments to one 7th armor or to <selfname>weapon."
+
+On in_progress
+    Say "[Quest] Defeat the 4 types of monsters."
+
+On claimable
+    Show quest "[Quest] You have defeated 4 types of monsters. I will give you the Dark Mythril Fragment."

@@ -1,0 +1,20 @@
+Bind Npc 14430 Zone 2
+Quest 470 "[Repeatable Solo] Dragon Tooth Knight Hunt"
+    Repeat always
+    Journal "[Mercenary] Tales has commissioned you to hunt Dragon Tooth Knight. However, it will not count when you are in a party."
+    Kill 20 of 1114, 1164 at direction_29
+
+Requires player level >= 54 and player is elmorad
+
+Rewards
+    Give 1250000 experience or 1900000 with premium
+
+direction_29 = location "Dragon Tooth Knight" about "Dragon Tooth Knight\nAn undead monster created during the Great War of Evil; possesses a conscience rare for the undead" found "El Morad" elmorad at 500 930 in zone 2
+
+On offer
+    Show quest "No time to kill. Get ready to go hunting right away. It's Dragon Tooth Skeletons this time so repair your equipment and be well prepared."
+
+On in_progress
+    Say "You should be able to do this alone. Are you scared?"
+    Topic "Where can I find it?" do
+        Map direction_29

@@ -1,0 +1,25 @@
+Bind Npc 24203 Zone 1 for karus mage
+Bind Npc 14203 Zone 2 for elmorad mage
+Quest 361 "75Lv skill"
+    Journal for karus "I've decided to undergo the test to learn the hidden skills of [Archmage] Drake."
+    Journal for elmorad "I've decided to undergo the test to learn the hidden skills of [Archmage] Drake."
+    Collect 10 of 810369000
+
+Requires player level >= 75
+
+Rewards none
+
+On offer
+    Say "Magic is the greatest ability created by man. You are well qualified to employ the ultimate magic. Is it time for another archmage to join the club..."
+    Topic "Tell me more..." do
+        Show quest "To learn lv.75 skill, you need 10 [Spell Stone Powder]. Are you ready to learn the ultimate spell?"
+
+On in_progress
+    Say "To complete the lv.75 mage spell, you need 10 [Spell Stone Powder]."
+
+On ready
+    Say "Master, all the items needed to complete Level 75 have been collected. Hurry back to [Archmage] Drake."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You now possess Armor of Flames, Armor of Cruelty, Armor of Electric Shock, Level 75 skills. For a mage, this is as good as it gets."

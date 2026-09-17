@@ -1,0 +1,46 @@
+Bind Npc 31558 Zone 1 for karus
+Bind Npc 31557 Zone 2 for elmorad
+Quest 643 "Procurement of Specialty Goods I"
+    Journal for karus "You must accept the request of [Sailor] Hayes."
+    Journal for elmorad "You must accept the request of [Sailor] Hein."
+    Collect 5 of 389500000
+
+Requires player level >= 61 and quest 642 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 10000 coins
+    Give 1 of 900196000
+
+direction_27 = location "Hornet" about "Hornet\nReferred to as Hell`s Bees; inhabits plains; powerful venom can kill humans with one sting" found "El Morad" karus at 1383 1110 elmorad at 607 991 in zone 2
+direction_545 = location "Hornet" about "Hornet\nReferred to as Hell`s Bees; inhabits plains; powerful venom can kill humans with one sting" found "Karus" karus at 1091 1600 elmorad at 607 991 in zone 1
+
+On available
+    Say "Master, there's a request from the Traders. Get to [Sailor] Hayes at the port."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "How are you? I am [Sailor] Hayes."
+        Topic "Tell me more..." do
+            Show quest "The captain told me that you will help us from now on. Hmm. let's find out what you got. Now first, get me [Adonis Specialty Honey] from [Hornet]! I heard it's very precious. Make sure you get it.\n\n[Hornet] in accordance with the request of Karus Regional Executive pugeo port sailors and yes, bring in specially made honey from Adonis."
+    If player is elmorad
+        Say "How are you? I am [Sailor] Haine."
+        Topic "Tell me more..." do
+            Show quest "The captain told me that you will help us from now on. Hmm. let's find out what you got. Now first, get me [Adonis Specialty Honey] from [Hornet]! I heard it's very precious. Make sure you get it.\n\nUpon request of Aladdin and Local Rod Elmo Sharks captain of the port, from the Hornet bring in specially made honey Adonis."
+
+On in_progress
+    If player is karus
+        Say "You don't have enough. I still need more."
+        Topic "Where can I find it?" do
+            Map direction_545
+    If player is elmorad
+        Say "You don't have enough. I still need more."
+        Topic "Where can I find it?" do
+            Map direction_27
+
+On claimable
+    If player is karus
+        Show quest "Very nice. Thank you.  This sure is top of quality. Let me ask you for another favor.\n\nOh, let me just ask you to do [Sailor] Armada's delivery work. He is busy and reckless. Let see..please deliver this [Specialty Honey Box] to Shaymer, the [Merchant of Moradon] of Luperson Castle. Oh, and don't forget to bring me the receipt."
+    If player is elmorad
+        Show quest "Very nice. Thank you.  This sure is top of quality. Let me ask you for another favor.\n\nOh, let me just ask you to do [Crewman] Kidd's delivery work. He is busy and reckless. Let see..Please deliver this [Specialty Honey Box] to Clark, the [Merchant of Moradon] of El Morad Castle. Oh, and don't forget to bring me the receipt."
