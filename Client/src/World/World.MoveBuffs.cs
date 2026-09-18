@@ -26,6 +26,8 @@ public partial class World
     private MoveKeys _movePrevMask;
     private bool _movePressedEdge;
     private bool _walkKeyHeld;
+    private bool _moveInputHeld;
+    private const double CastHoldCancelGraceSeconds = 0.15;
 
     private const float AnimSpeedDeltaMin = 0.01f;
     private const float AnimSpeedDeltaMax = 10.0f;
@@ -99,8 +101,12 @@ public partial class World
 
     private void CastMoveCancelTick()
     {
-        if (_castingSkillId == 0 || !_movePressedEdge) return;
-        InterruptSelfCast();
+        if (_castingSkillId == 0) return;
+        if (_movePressedEdge) { InterruptSelfCast(); return; }
+        if (!_moveInputHeld) return;
+        var s = SkillData.Get(_castingSkillId);
+        if (s != null && Now() - (_castingUntil - s.CastSeconds) >= CastHoldCancelGraceSeconds)
+            InterruptSelfCast();
     }
 
     private void InterruptSelfCast()

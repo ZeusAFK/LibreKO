@@ -335,6 +335,7 @@ public partial class World
         switch (sub)
         {
             case 1:
+                if (Diag.SlowLog) GD.Print($"[fx] casting skill={skillId} caster={casterId} selfFx1={s?.SelfFx1} part={s?.SelfPart1}");
                 if (targetId < 0) FaceTowardImpact(casterId, data);
                 else FaceToward(casterId, targetId);
                 StopSkillFx(casterId, skillId);
@@ -369,6 +370,7 @@ public partial class World
             case 3:
                 bool miss = data.Length > 3 && data[3] <= -100;
                 int affected = targetId == 0 ? casterId : targetId;
+                if (Diag.SlowLog) GD.Print($"[fx] effecting skill={skillId} caster={casterId} target={targetId} miss={miss} targetFx={s?.TargetFx} part={s?.TargetPart} data3={(data.Length > 3 ? data[3] : 0)}");
                 StopSkillFx(casterId, skillId, 1);
                 if (s != null && (s.IsMelee || s.SelfAnim2 != 0))
                 {

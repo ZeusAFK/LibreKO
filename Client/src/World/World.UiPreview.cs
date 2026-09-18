@@ -370,6 +370,8 @@ public partial class World
 
     internal (float X, float Z) KoPositionForSmoke() => (_myKoX, _myKoZ);
 
+    internal void CastSkillForSmoke(int skillId) => CastSkill(skillId);
+
     internal void ShowAttendanceFailureUiPreview() =>
         OnAttendanceFailed(Net.EventBoardAttendanceClaim, Net.AttendanceClaimInventoryFull);
 

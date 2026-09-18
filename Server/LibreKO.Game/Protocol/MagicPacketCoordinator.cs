@@ -126,7 +126,8 @@ public class MagicPacketCoordinator(
 
                 await HandleClientExecutionAsync(session, magic, skillId, targetId, data, magicOpcode);
                 break;
-            case MagicProcessOpcode.Fail when magic.PrimaryType == MagicSkillType.OverTime:
+            case MagicProcessOpcode.Fail when magic.PrimaryType == MagicSkillType.OverTime
+                && session.CastingSkillId != skillId:
                 await HandleClientExecutionAsync(session, magic, skillId, targetId, data, magicOpcode);
                 break;
             case MagicProcessOpcode.Fail:

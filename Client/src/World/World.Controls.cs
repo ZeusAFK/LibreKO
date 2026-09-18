@@ -244,6 +244,7 @@ public partial class World
             _movePressedEdge = _movePrevMask == MoveKeys.None;
             _movePrevMask = MoveKeys.Forward;
             _walkKeyHeld = false;
+            _moveInputHeld = true;
             return _faceDir;
         }
 
@@ -259,6 +260,7 @@ public partial class World
                        | (turnRight ? MoveKeys.TurnRight : MoveKeys.None);
         _movePressedEdge = (moveMask & ~_movePrevMask) != MoveKeys.None;
         _walkKeyHeld = (moveMask & MoveKeys.Walk) != MoveKeys.None;
+        _moveInputHeld = keyboardControl;
         _movePrevMask = moveMask;
         if (keyboardControl)
         {
