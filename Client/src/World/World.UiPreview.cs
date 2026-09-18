@@ -360,6 +360,9 @@ public partial class World
         return DetachPreviewControl(_admPanel);
     }
 
+    internal void ShowAttendanceFailureUiPreview() =>
+        OnAttendanceFailed(Net.EventBoardAttendanceClaim, Net.AttendanceClaimInventoryFull);
+
     internal Control BuildAttendanceUiPreview(bool noReply = false)
     {
         ItemData.EnsureLoaded();

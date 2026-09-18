@@ -37,11 +37,13 @@ public partial class World
 
     private const int AttendanceDailyColumns = 5;
     private const int AttendanceBonusColumns = 3;
-    private const int AttendanceGridSeparation = 6;
-    private const int AttendanceBodyWidth = 376;
-    private const float AttendanceSlotSize = 60f;
-    private const float AttendanceBonusSlotSize = 78f;
-    private const float AttendanceCaptionHeight = 26f;
+    private const int AttendanceGridSeparation = 5;
+    private const int AttendanceBodyWidth = 324;
+    private const float AttendanceSlotSize = 50f;
+    private const float AttendanceBonusSlotSize = 60f;
+    private const float AttendanceCaptionHeight = 22f;
+    private static readonly Color AttendanceClaimedColor = new(0.42f, 0.78f, 0.45f);
+    private static readonly Color AttendanceLockedIcon = new(0.6f, 0.6f, 0.6f, 0.55f);
     private const byte AttendanceStateLocked = 5;
 
     private CanvasLayer _attendanceLayer = null!;
@@ -49,6 +51,7 @@ public partial class World
     private GridContainer _attendanceGrid = null!;
     private GridContainer _attendanceBonusRow = null!;
     private Label _attendanceCountLabel = null!;
+    private Label _attendanceNotice = null!;
     private CanvasLayer _attendanceGiftLayer = null!;
     private Button _attendanceGift = null!;
     private TextureRect _attendanceGiftIcon = null!;
@@ -209,6 +212,12 @@ public partial class World
         header.AddChild(_attendanceCountLabel);
         root.AddChild(header);
 
+        _attendanceNotice = UiTheme.Text("", 11, UiTheme.Warning, HorizontalAlignment.Center);
+        _attendanceNotice.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        _attendanceNotice.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        _attendanceNotice.Visible = false;
+        root.AddChild(_attendanceNotice);
+
         _attendanceGrid = AttendanceCellGrid(AttendanceDailyColumns);
         root.AddChild(AttendanceSection(_attendanceGrid));
 
@@ -216,6 +225,7 @@ public partial class World
 
         _attendanceBonusRow = AttendanceCellGrid(AttendanceBonusColumns);
         root.AddChild(AttendanceSection(_attendanceBonusRow));
+        root.AddChild(AttendanceLegend());
 
         ResetAttendanceBoard();
         RebuildAttendance();
@@ -277,6 +287,7 @@ public partial class World
 
     private void OnAttendanceBoard(int[] slots, byte[] states)
     {
+        _attendanceNotice.Visible = false;
         ResetAttendanceBoard();
         int count = Mathf.Min(slots.Length, _attendanceSlots.Length);
         for (int i = 0; i < count; i++)
@@ -296,7 +307,11 @@ public partial class World
 
     private void OnAttendanceFailed(byte sub, uint result)
     {
-        CombatNotice(AttendanceFailureText(sub, result));
+        string text = AttendanceFailureText(sub, result);
+        CombatNotice(text);
+        if (sub != Net.EventBoardAttendanceClaim) return;
+        _attendanceNotice.Text = text;
+        _attendanceNotice.Visible = true;
     }
 
     private static string AttendanceFailureText(byte sub, uint result)
@@ -308,6 +323,8 @@ public partial class World
         return result switch
         {
             0 or 200 => ItemData.Text(TextAttendanceClaimFailed, "Failed to obtain the item."),
+            Net.AttendanceClaimInventoryFull => "Your inventory is full. Free a slot and claim again.",
+            Net.AttendanceClaimTooHeavy => "You are carrying too much to take this reward.",
             2 => ItemData.Text(TextAttendanceNoNoah, "You don't have enough noah."),
             20 => ItemData.Text(TextAttendanceNoNoahItem,
                 "Failed to obtain the item due to not enough Noah."),
@@ -404,7 +421,7 @@ public partial class World
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
-                Modulate = claimed ? new Color(1, 1, 1, 0.35f) : Colors.White,
+                Modulate = claimed ? new Color(1, 1, 1, 0.35f) : claimable ? Colors.White : AttendanceLockedIcon,
             };
             icon.SetAnchorsPreset(Control.LayoutPreset.FullRect);
             socket.AddChild(icon);
@@ -423,6 +440,13 @@ public partial class World
             }
         }
 
+        if (claimed)
+            socket.AddChild(AttendanceGlyph.Make(AttendanceGlyph.Kind.Check, AttendanceClaimedColor));
+        else if (!claimable)
+            socket.AddChild(AttendanceGlyph.Make(AttendanceGlyph.Kind.Lock, UiTheme.TextLo, 18f));
+        else
+            socket.Ready += () => PulseAttendanceSlot(socket);
+
         if (state != AttendanceStateLocked)
         {
             int shown = slot >= Net.AttendanceBonusFirstSlot
@@ -439,13 +463,50 @@ public partial class World
         }
 
         var caption = UiTheme.Text(AttendanceSlotCaption(slot, state), 10,
-            claimable ? UiTheme.Gold : UiTheme.TextLo, HorizontalAlignment.Center);
+            claimable ? UiTheme.GoldBright : claimed ? AttendanceClaimedColor : UiTheme.TextLo,
+            HorizontalAlignment.Center);
         caption.CustomMinimumSize = new Vector2(0, AttendanceCaptionHeight);
         caption.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         caption.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         cell.AddChild(caption);
 
         return cell;
+    }
+
+    private static void PulseAttendanceSlot(Control socket)
+    {
+        var tween = socket.CreateTween().SetLoops();
+        tween.TweenProperty(socket, "modulate", new Color(1f, 1f, 1f, 0.65f), 0.8)
+            .SetTrans(Tween.TransitionType.Sine);
+        tween.TweenProperty(socket, "modulate", Colors.White, 0.8).SetTrans(Tween.TransitionType.Sine);
+    }
+
+    private static Control AttendanceLegend()
+    {
+        var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        row.AddThemeConstantOverride("separation", 16);
+        row.AddChild(AttendanceLegendItem(AttendanceGlyph.Kind.Check, AttendanceClaimedColor, "Acquired"));
+        row.AddChild(AttendanceLegendItem(null, UiTheme.GoldBright, "Ready to claim"));
+        row.AddChild(AttendanceLegendItem(AttendanceGlyph.Kind.Lock, UiTheme.TextLo, "Not yet"));
+        return row;
+    }
+
+    private static Control AttendanceLegendItem(AttendanceGlyph.Kind? kind, Color color, string text)
+    {
+        var item = new HBoxContainer();
+        item.AddThemeConstantOverride("separation", 5);
+        var sample = new Panel
+        {
+            CustomMinimumSize = new Vector2(16, 16),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        sample.AddThemeStyleboxOverride("panel",
+            UiTheme.Slot(kind == null ? UiTheme.Gold : null, locked: kind == AttendanceGlyph.Kind.Lock));
+        if (kind is { } glyph)
+            sample.AddChild(AttendanceGlyph.Make(glyph, color, 11f));
+        item.AddChild(sample);
+        item.AddChild(UiTheme.Text(text, 10, color));
+        return item;
     }
 
     private static void OutlineAttendanceLabel(Label label)

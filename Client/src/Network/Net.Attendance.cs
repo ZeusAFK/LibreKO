@@ -13,6 +13,9 @@ public partial class Net
     public const byte AttendanceStateClaimable = 3;
     public const byte AttendanceStateClaimableExtra = 4;
 
+    public const uint AttendanceClaimInventoryFull = 21;
+    public const uint AttendanceClaimTooHeavy = 22;
+
     public const byte EventBoardAttendanceList = 4;
     public const byte EventBoardAttendanceClaim = 5;
 

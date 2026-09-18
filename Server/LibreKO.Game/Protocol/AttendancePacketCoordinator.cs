@@ -23,6 +23,8 @@ public class AttendancePacketCoordinator(
 
     private const uint ResultOk = 1;
     private const uint ResultFailed = 0;
+    internal const uint ResultInventoryFull = 21;
+    internal const uint ResultTooHeavy = 22;
 
     private const byte StateClaimed = 1;
     private const byte StateExpired = 2;
@@ -108,14 +110,14 @@ public class AttendancePacketCoordinator(
         var count = (ushort)(reward.ItemCount < 1 ? 1 : reward.ItemCount);
         if (session.Stats.ItemWeight + (long)itemData.Weight * count > session.Stats.MaxWeight)
         {
-            await session.Client.SendPacket(BuildFailure(EventBoardSubOpcode.AttendanceClaim, ResultFailed));
+            await session.Client.SendPacket(BuildFailure(EventBoardSubOpcode.AttendanceClaim, ResultTooHeavy));
             return;
         }
 
         var slotIndex = session.FindSlotForItem(reward.ItemId, gameDataService, count);
         if (slotIndex < 0)
         {
-            await session.Client.SendPacket(BuildFailure(EventBoardSubOpcode.AttendanceClaim, ResultFailed));
+            await session.Client.SendPacket(BuildFailure(EventBoardSubOpcode.AttendanceClaim, ResultInventoryFull));
             return;
         }
 
