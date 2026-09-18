@@ -299,6 +299,7 @@ public partial class SettingsPanel : CanvasLayer
     private CheckButton _fxAmbient = null!, _fxNumbers = null!, _fxCombatLog = null!;
     private HSlider _fxDistance = null!;
     private HSlider _uiScale = null!;
+    private HSlider _nameScale = null!;
     private HSlider _viewDistance = null!;
     private HSlider _camTurnSpeed = null!, _camEdgeSpeed = null!;
     private HSlider? _moveStick, _lookStick;
@@ -387,6 +388,7 @@ public partial class SettingsPanel : CanvasLayer
             if (_moveStick != null && _lookStick != null)
                 Config.SetStickSensitivity((float)_moveStick.Value, (float)_lookStick.Value);
             Config.SetUiScale((float)_uiScale.Value);
+            Config.SetNamePlateScale((float)_nameScale.Value);
             ApplyLanguage();
             Config.SetViewDistance((float)_viewDistance.Value);
             Config.SetAudio(_sndOn.ButtonPressed, Config.AudioMuted, (float)_volMaster.Value,
@@ -464,6 +466,22 @@ public partial class SettingsPanel : CanvasLayer
         scaleRow.AddChild(scaleValue);
         scaleRow.TooltipText = "Scales every menu, window and HUD element. Larger values suit small or touch screens.";
         vb.AddChild(scaleRow);
+
+        _nameScale = new HSlider
+        {
+            MinValue = Config.NamePlateScaleMin, MaxValue = Config.NamePlateScaleMax, Step = Config.NamePlateScaleStep,
+            Value = Config.NamePlateScale, CustomMinimumSize = new Vector2(0, 18),
+        };
+        var nameScaleValue = new Label
+        {
+            Text = UiScaleText(Config.NamePlateScale),
+            CustomMinimumSize = new Vector2(52, 0),
+        };
+        _nameScale.ValueChanged += v => nameScaleValue.Text = UiScaleText((float)v);
+        var nameScaleRow = Row("Name Size", _nameScale);
+        nameScaleRow.AddChild(nameScaleValue);
+        nameScaleRow.TooltipText = "Size of the names over characters, monsters and NPCs.";
+        vb.AddChild(nameScaleRow);
 
         var vsyncRow = Row("V-Sync", _vsync = new CheckButton { ButtonPressed = Config.VSync });
         vsyncRow.Visible = Platform.PointerUi;

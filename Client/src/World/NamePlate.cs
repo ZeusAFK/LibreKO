@@ -6,6 +6,8 @@ public static class NamePlate
 {
     public const int FontPx = 12;
     public const int OutlinePx = 2;
+    private const string Group = "nameplate";
+    private const string BaseMeta = "plate_base_px";
 
     private const float ReferenceViewportHeight = 1080f;
     private const float ReferenceHalfFovTan = 0.76733f;
@@ -29,7 +31,7 @@ public static class NamePlate
     }
 
     public const int SmallFontPx = 10;
-    public const float LinePx = 13f;
+    public static float LinePx => 13f * Config.NamePlateScale;
     public const int StackPriority = 4;
 
     public static readonly Color TitleColor = Color.Color8(236, 217, 166);
@@ -42,22 +44,40 @@ public static class NamePlate
     private static Label3D Small(string text, float y, Color color)
     {
         var label = Make(text, y);
-        label.FontSize = SmallFontPx;
+        label.FontSize = Scaled(SmallFontPx);
+        label.SetMeta(BaseMeta, SmallFontPx);
         label.Modulate = color;
         return label;
     }
 
-    public static Label3D Make(string name, float y) => new()
+    public static Label3D Make(string name, float y)
     {
-        Text = name,
-        Position = new Vector3(0, y, 0),
-        Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
-        FixedSize = true,
-        FontSize = FontPx,
-        PixelSize = Pixels,
-        Modulate = Colors.White,
-        OutlineSize = OutlinePx,
-        OutlineModulate = Colors.Black,
-        NoDepthTest = true,
-    };
+        var label = new Label3D
+        {
+            Text = name,
+            Position = new Vector3(0, y, 0),
+            Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+            FixedSize = true,
+            FontSize = Scaled(FontPx),
+            PixelSize = Pixels,
+            Modulate = Colors.White,
+            OutlineSize = OutlinePx,
+            OutlineModulate = Colors.Black,
+            NoDepthTest = true,
+        };
+        label.SetMeta(BaseMeta, FontPx);
+        label.AddToGroup(Group);
+        return label;
+    }
+
+    private static int Scaled(int basePx) => Mathf.RoundToInt(basePx * Config.NamePlateScale);
+
+    public static void Rescale()
+    {
+        if (Engine.GetMainLoop() is not SceneTree tree)
+            return;
+        foreach (var node in tree.GetNodesInGroup(Group))
+            if (node is Label3D label && label.HasMeta(BaseMeta))
+                label.FontSize = Scaled(label.GetMeta(BaseMeta).AsInt32());
+    }
 }

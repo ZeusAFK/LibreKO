@@ -300,9 +300,9 @@ public class GamePacketHandler(
         var message = packet.ReadString();
 
         logger.LogDebug("Chat from {Name}: IsGM={IsGM}, message={Message}", session.Name, session.IsGM, message);
-        if (session.IsGM && message.StartsWith('+'))
+        if (message.StartsWith('+') && (session.IsGM || adminPacketCoordinator.IsOpenToEveryone(message)))
         {
-            logger.LogInformation("GM command from {Name}: {Message}", session.Name, message);
+            logger.LogInformation("Chat command from {Name}: {Message}", session.Name, message);
             await adminPacketCoordinator.HandleGmCommandAsync(session, message);
             return;
         }

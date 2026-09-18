@@ -42,6 +42,7 @@ public class PublicDemoSettings
 {
     public bool GrantGameMasterPanelToEveryone { get; set; }
     public bool GrantGameMasterSpeedToEveryone { get; set; }
+    public bool GrantSetLevelToEveryone { get; set; }
 }
 
 public class MonsterSettings

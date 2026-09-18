@@ -70,6 +70,7 @@ public class GameServerBootstrapper(
         var granted = new List<string>();
         if (demo.GrantGameMasterPanelToEveryone) granted.Add("GM panel");
         if (demo.GrantGameMasterSpeedToEveryone) granted.Add("GM speed");
+        if (demo.GrantSetLevelToEveryone) granted.Add("+setlevel");
         if (granted.Count == 0)
             return;
 

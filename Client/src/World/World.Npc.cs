@@ -63,6 +63,7 @@ public partial class World
 
         var best = PickEntityAt(mouse, TalkPickRadius, out int bestId, out _);
         if (best == null) return TryOpenWarpGate(mouse) || TryOpenAnvil(mouse);
+        if (best.Attackable) return false;
 
         Select(bestId, best);
         if (!best.Attackable) TalkToNpc(bestId);

@@ -38,6 +38,12 @@ public static class Config
 
     public static float UiScale { get; private set; } = 1f;
 
+    public const float NamePlateScaleMin = 0.75f;
+    public const float NamePlateScaleMax = 2.0f;
+    public const float NamePlateScaleStep = 0.05f;
+
+    public static float NamePlateScale { get; private set; } = 1.25f;
+
     public const float StickSensitivityMin = 0.5f;
     public const float StickSensitivityMax = 2.0f;
     public const float StickSensitivityStep = 0.05f;
@@ -203,6 +209,8 @@ public static class Config
         UiScale = Mathf.Clamp((float)cfg.GetValue("video", "ui_scale",
                               Platform.TouchUi ? UiScaleMobileDefault : UiScale).AsDouble(),
                               UiScaleMin, UiScaleMax);
+        NamePlateScale = Mathf.Clamp((float)cfg.GetValue("video", "name_plate_scale", NamePlateScale).AsDouble(),
+                                     NamePlateScaleMin, NamePlateScaleMax);
         MoveStickSensitivity = Mathf.Clamp(
             (float)cfg.GetValue("controls", "move_stick", MoveStickSensitivity).AsDouble(),
             StickSensitivityMin, StickSensitivityMax);
@@ -269,6 +277,7 @@ public static class Config
         cfg.SetValue("video", "width", WinWidth);
         cfg.SetValue("video", "height", WinHeight);
         cfg.SetValue("video", "ui_scale", UiScale);
+        cfg.SetValue("video", "name_plate_scale", NamePlateScale);
         cfg.SetValue("game", "language", (int)Language);
         cfg.SetValue("video", "touch_ui", (int)TouchUi);
         cfg.SetValue("graphics", "shadows", Shadows);
@@ -455,6 +464,16 @@ public static class Config
     {
         UiScale = Mathf.Clamp(scale, UiScaleMin, UiScaleMax);
         ApplyUiScale();
+        Save();
+    }
+
+    public static void SetNamePlateScale(float scale)
+    {
+        var clamped = Mathf.Clamp(scale, NamePlateScaleMin, NamePlateScaleMax);
+        if (Mathf.IsEqualApprox(clamped, NamePlateScale))
+            return;
+        NamePlateScale = clamped;
+        NamePlate.Rescale();
         Save();
     }
 

@@ -6,6 +6,8 @@ using LibreKO.Common.Infrastructure.Persistence.Seed;
 using LibreKO.Game.Scripting;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using LibreKO.Game.Configuration;
 using Microsoft.Extensions.Logging;
 using LibreKO.Game.Protocol.Writers;
 
@@ -15,10 +17,12 @@ public interface IAdminPacketCoordinator
 {
     Task HandleOperatorAsync(IClient client, Packet packet);
     Task HandleGmCommandAsync(UserSession session, string command);
+    bool IsOpenToEveryone(string command);
 }
 
 public class AdminPacketCoordinator(
     IServiceProvider serviceProvider,
+    IOptions<GameServerSettings> settings,
     SessionManager sessionManager,
     ISessionTerminationService sessionTerminationService,
     IZoneTransitionService zoneTransitionService,
@@ -85,8 +89,20 @@ public class AdminPacketCoordinator(
         }
     }
 
+    public bool IsOpenToEveryone(string command) =>
+        CommandWord(command) == "setlevel" && settings.Value.PublicDemo.GrantSetLevelToEveryone;
+
+    private static string CommandWord(string command)
+    {
+        var parts = command.TrimStart('+').Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 0 ? string.Empty : parts[0].ToLowerInvariant();
+    }
+
     public async Task HandleGmCommandAsync(UserSession session, string command)
     {
+        if (!session.IsGM && !IsOpenToEveryone(command))
+            return;
+
         var parts = command.TrimStart('+').Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
             return;
@@ -359,7 +375,7 @@ public class AdminPacketCoordinator(
             $"Level {level}: {session.StatPoints} stat points, {mastery} mastery points, " +
             $"HP {session.MaxHp}, MP {session.MaxMp}. Stats, mastery and skill bar reset.");
         logger.LogInformation(
-            "GM {Gm} set own level to {Level} (stat points {StatPoints}, mastery {Mastery})",
+            "{Name} set own level to {Level} (stat points {StatPoints}, mastery {Mastery})",
             session.Name, level, session.StatPoints, mastery);
     }
 
