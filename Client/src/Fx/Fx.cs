@@ -34,6 +34,7 @@ public static class Fx
     private static Node3D? SpawnBaked(string name, Node parent, Vector3 pos, bool oneShot,
         float sizeScale, bool forceAdditive = false)
     {
+        var watch = Diag.Watch();
         var desc = LoadDescriptor(name);
         if (desc == null)
         {
@@ -84,6 +85,7 @@ public static class Fx
         }
 
         root.BundleLife = oneShot && life <= 0.001f ? Mathf.Max(0.05f, oneShotLife) : life;
+        Diag.Slow($"fx spawn {name}", watch);
         return root;
     }
 

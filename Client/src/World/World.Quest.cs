@@ -1024,6 +1024,18 @@ public partial class World
         return result;
     }
 
+    private void WarmRoleFx()
+    {
+        _npcRoleFx ??= LoadNpcRoleFx();
+        var names = new HashSet<string>(_npcRoleFx.Values);
+        if (_questMarkerFx != null)
+            foreach (var fx in _questMarkerFx.Values) names.Add(fx);
+        var warm = new Node3D { Name = "FxWarm", Visible = false };
+        AddChild(warm);
+        foreach (var name in names) Fx.Spawn(name, warm, Vector3.Zero);
+        warm.QueueFree();
+    }
+
     private static Node3D? SpawnNpcIndicator(Ent ent, string fxName)
     {
         // Same rise for every bundle: keying off each one's own extent instead made the wide-winged

@@ -126,11 +126,15 @@ public partial class World
     private void ProcessSpawnQueue()
     {
         int built = 0;
-        while (built < SpawnBuildBudget && _pendingOrder.Count > 0)
+        int examined = 0, pending = _pendingOrder.Count;
+        while (built < SpawnBuildBudget && examined < pending && _pendingOrder.Count > 0)
         {
             int id = _pendingOrder.Dequeue();
-            if (!_pendingSpawns.Remove(id, out var info)) continue;
-            if (_ents.ContainsKey(id)) continue;
+            examined++;
+            if (!_pendingSpawns.TryGetValue(id, out var info)) continue;
+            if (_ents.ContainsKey(id)) { _pendingSpawns.Remove(id); continue; }
+            if (!SceneReadyFor(info)) { _pendingOrder.Enqueue(id); continue; }
+            _pendingSpawns.Remove(id);
             BuildEntity(info);
             built++;
         }
@@ -140,10 +144,13 @@ public partial class World
     {
         var label = info.Name.Length > 0 ? info.Name : (info.IsNpc ? "NPC" : "Player");
 
+        var watch = Diag.Watch();
         bool mapObject = info.ObjectType == NpcTypes.ObjectType.MapObject;
+        var loadWatch = Diag.Watch();
         PackedScene? scene = mapObject ? null
             : info.IsNpc ? ResolveMobScene(info.ModelId)
                          : ResolvePlayerScene(info.Race);
+        Diag.Slow($"model load {label} model={info.ModelId} race={info.Race}", loadWatch);
         float lift = scene != null || mapObject ? 0f : CapsuleHalf;
         var pos = GroundPos(info.X, info.Z, info.Y, lift);
 
@@ -242,6 +249,7 @@ public partial class World
         if (ent.Gathering && !info.Dead) BeginRemoteGather(info.Id, ent.GatherFishing);
         RefreshNpcQuestMarker(ent);
         AttachPendingStall(info.Id);
+        Diag.Slow($"entity {label} model={info.ModelId} npc={info.IsNpc}", watch);
     }
 
     private void LayOutCorpse(Ent e, bool settled = true)

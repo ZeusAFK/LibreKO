@@ -80,6 +80,7 @@ public partial class World : Node3D, IWorldContext
             BuildWater();
             GD.Print("[load] world objects: ambient FX");
             BuildFxPlacements();
+            WarmRoleFx();
             GD.Print("[load] world objects: complete");
         }
         if (!await LoadStep("Loading character…", 0.70f,

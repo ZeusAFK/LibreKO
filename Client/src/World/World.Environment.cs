@@ -67,6 +67,8 @@ public partial class World
     private const float MapFxFrustumMargin = 40f;
     private const float MapFxFrustumSleepMargin = 70f;
     private const double FxCullInterval = 0.2;
+    private const int MapFxWakeBudget = 3;
+    private readonly List<(float D2, int Index)> _fxWakeQueue = new();
     private const string SunShaftFxMarker = "sunshain";
     private const float SunShaftMinShine = 0.02f;
     private Sky _sky = null!;
@@ -594,10 +596,12 @@ public partial class World
             });
             placed++;
         }
-        CullMapFx();
+        CullMapFx(int.MaxValue);
     }
 
-    private void CullMapFx()
+    private void CullMapFx() => CullMapFx(MapFxWakeBudget);
+
+    private void CullMapFx(int wakeBudget)
     {
         if (_mapFx.Count == 0 || _camera == null) return;
         var cp = _camera.GlobalPosition;
@@ -606,6 +610,7 @@ public partial class World
         float sleepFar2 = MapFxSleepDist * MapFxSleepDist;
         var planes = _camera.GetFrustum();
         float shine = _sky?.SunShine ?? 1f;
+        _fxWakeQueue.Clear();
         for (int i = 0; i < _mapFx.Count; i++)
         {
             var info = _mapFx[i];
@@ -631,13 +636,28 @@ public partial class World
                         if (GodotObject.IsInstanceValid(gi)) gi.Transparency = 1f - shine;
                 }
             }
-            if (show != awake)
+            if (show == awake) continue;
+            if (show)
             {
-                node.Visible = show;
-                node.ProcessMode = show ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
-                SetFxAmbience(node, show);
+                _fxWakeQueue.Add((d2, i));
+                continue;
             }
+            node.Visible = false;
+            node.ProcessMode = ProcessModeEnum.Disabled;
+            SetFxAmbience(node, false);
         }
+        if (_fxWakeQueue.Count == 0) return;
+        _fxWakeQueue.Sort((a, b) => a.D2.CompareTo(b.D2));
+        int wake = Mathf.Min(wakeBudget, _fxWakeQueue.Count);
+        for (int k = 0; k < wake; k++)
+        {
+            var node = _mapFx[_fxWakeQueue[k].Index].Node;
+            node.Visible = true;
+            node.ProcessMode = ProcessModeEnum.Inherit;
+            SetFxAmbience(node, true);
+        }
+        if (Diag.SlowLog) GD.Print($"[slow] mapfx woke {wake} of {_fxWakeQueue.Count}");
+        _fxWakeQueue.Clear();
     }
 
     private const float LargeObjectFootprint = 15f;

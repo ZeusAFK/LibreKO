@@ -360,6 +360,16 @@ public partial class World
         return DetachPreviewControl(_admPanel);
     }
 
+    internal void WalkToForSmoke(float koX, float koZ)
+    {
+        if (_self == null) return;
+        _moveTarget = GroundPos(koX, koZ, _myKoY, _selfLift);
+        _hasMoveTarget = true;
+        ShowMoveIndicator(_moveTarget);
+    }
+
+    internal (float X, float Z) KoPositionForSmoke() => (_myKoX, _myKoZ);
+
     internal void ShowAttendanceFailureUiPreview() =>
         OnAttendanceFailed(Net.EventBoardAttendanceClaim, Net.AttendanceClaimInventoryFull);
 

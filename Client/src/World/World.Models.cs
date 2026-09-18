@@ -105,6 +105,34 @@ public partial class World
     private static readonly System.Collections.Generic.Dictionary<ulong,
         System.Collections.Generic.Dictionary<string, AnimMeta>> AnimationMetaByName = new();
 
+    private string? _sceneLoadInFlight;
+
+    private bool SceneReadyFor(EntitySnapshot info)
+    {
+        if (info.ObjectType == NpcTypes.ObjectType.MapObject) return true;
+        var cache = info.IsNpc ? _mobSceneCache : _playerSceneCache;
+        int key = info.IsNpc ? info.ModelId : info.Race;
+        if (cache.ContainsKey(key)) return true;
+        _mobIndex ??= LoadIdIndex("res://assets/npcs/index.json");
+        _playerIndex ??= LoadIdIndex("res://assets/characters/index.json");
+        var index = info.IsNpc ? _mobIndex : _playerIndex;
+        if (!index.TryGetValue(key, out var stem)) { cache[key] = null; return true; }
+        string path = info.IsNpc ? $"res://assets/npcs/{stem}.glb" : $"res://assets/characters/{stem}.glb";
+        if (!ResourceLoader.Exists(path)) { cache[key] = null; return true; }
+        if (_sceneLoadInFlight == null)
+        {
+            if (ResourceLoader.LoadThreadedRequest(path) != Error.Ok) return true;
+            _sceneLoadInFlight = path;
+        }
+        if (_sceneLoadInFlight != path) return false;
+        var status = ResourceLoader.LoadThreadedGetStatus(path);
+        if (status == ResourceLoader.ThreadLoadStatus.InProgress) return false;
+        if (status == ResourceLoader.ThreadLoadStatus.Loaded)
+            cache[key] = ResourceLoader.LoadThreadedGet(path) as PackedScene;
+        _sceneLoadInFlight = null;
+        return true;
+    }
+
     private PackedScene? ResolveMobScene(int modelId)
     {
         if (_mobSceneCache.TryGetValue(modelId, out var cached)) return cached;

@@ -16,6 +16,17 @@ public static class Diag
     private static bool _installed;
 
     public static string Phase { get; set; } = "startup";
+    public static bool SlowLog { get; set; }
+
+    public static System.Diagnostics.Stopwatch? Watch() =>
+        SlowLog ? System.Diagnostics.Stopwatch.StartNew() : null;
+
+    public static void Slow(string what, System.Diagnostics.Stopwatch? watch, double thresholdMs = 4)
+    {
+        if (watch == null) return;
+        double ms = watch.Elapsed.TotalMilliseconds;
+        if (ms >= thresholdMs) GD.Print($"[slow] {what} {ms:0.0}ms");
+    }
 
     public static void Install()
     {
