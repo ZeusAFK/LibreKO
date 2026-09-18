@@ -84,10 +84,15 @@ public partial class World
         if (_ents.TryGetValue(info.Id, out var existing))
         {
             var rp = GroundPos(info.X, info.Z, info.Y, existing.Lift);
-            existing.Body.Position = rp;
+            float jump = existing.Body.Position.DistanceTo(rp);
+            if (existing.Dead || info.Dead || jump > TeleportSnap || jump < MoveArriveEps)
+            {
+                existing.Body.Position = rp;
+                existing.Speed = 0f;
+            }
+            else existing.Speed = Mathf.Max(jump / RelistGlideSeconds, 1f);
             existing.Target = rp;
             existing.HasTarget = true;
-            existing.Speed = 0f;
             existing.KoX = info.X; existing.KoZ = info.Z; existing.KoY = info.Y;
             if (existing.Attackable != info.Attackable)
             {
@@ -303,6 +308,8 @@ public partial class World
     private const float MoveFacingWarpSq = 900f;
     private const float MovePlaybackSeconds = 1.5f;
     private const float MovePlaybackDamp = 0.85f;
+    private const float NpcMovePlaybackSeconds = 0.3f;
+    private const float RelistGlideSeconds = 0.5f;
 
     private const float EntityTurnDegPerSec = 720f;
 
@@ -386,9 +393,10 @@ public partial class World
         float dist = new Vector2(delta.X, delta.Z).Length();
         e.Target = dest;
         e.HasTarget = true;
-        e.Speed = Mathf.Abs(velHint) > 0.01f
-            ? dist / MovePlaybackSeconds * MovePlaybackDamp
-            : 0f;
+        float playback = dist / MovePlaybackSeconds * MovePlaybackDamp;
+        if (e.IsNpc && velHint > 0.01f)
+            playback = Mathf.Max(velHint, dist / NpcMovePlaybackSeconds);
+        e.Speed = Mathf.Abs(velHint) > 0.01f ? playback : 0f;
     }
 
     private static bool EntityMoving(Ent e) =>
