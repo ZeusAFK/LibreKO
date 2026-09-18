@@ -327,6 +327,7 @@ public partial class World
 
         _moveTarget = destination;
         _hasMoveTarget = true;
+        InterruptSelfCast();
         StopAutoAttack();
         ShowMoveIndicator(_moveTarget);
         return true;

@@ -232,6 +232,7 @@ public class UserSession
     public ConcurrentDictionary<int, long> SkillCooldowns { get; } = new();
     public int CastingSkillId { get; set; }
     public long CastReadyTicks { get; set; }
+    public long CastCommitTicks { get; set; }
     public long CastExpireTicks { get; set; }
     public ConcurrentDictionary<int, long> AcceptedCasts { get; } = new();
     public long SkillBurstTicks { get; set; }

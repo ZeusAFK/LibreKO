@@ -129,6 +129,13 @@ public class MagicPacketCoordinator(
             case MagicProcessOpcode.Fail when magic.PrimaryType == MagicSkillType.OverTime:
                 await HandleClientExecutionAsync(session, magic, skillId, targetId, data, magicOpcode);
                 break;
+            case MagicProcessOpcode.Fail:
+                magicTimingService.OnCastAborted(session, skillId);
+                await sessionManager.Regions.SendToRegion(
+                    session,
+                    MagicProcessPacketWriter.Create(MagicProcessOpcode.Fail, magic.Id, (short)session.CharacterId, targetId, data),
+                    excludeSender: true);
+                break;
             case MagicProcessOpcode.Cancel:
             case MagicProcessOpcode.SkillValueUpdate:
             case MagicProcessOpcode.DurationExpired:

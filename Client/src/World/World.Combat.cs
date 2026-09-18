@@ -356,6 +356,7 @@ public partial class World
                 break;
 
             case 2:
+                if (s?.NeedsFlying == true) StopSkillFx(casterId, skillId, 1);
                 if (s?.FlyingFx != null)
                 {
                     SpawnFxProjectile(casterId, targetId, s.FlyingFx);

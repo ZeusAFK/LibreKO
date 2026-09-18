@@ -1,4 +1,5 @@
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Enums;
 using LibreKO.Game.World;
 
 namespace LibreKO.Game.Protocol;
@@ -30,6 +31,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
     private const int LatencyGraceMs = 250;
     private const int AbandonedCastGraceMs = 3000;
     private const int SkillBurstFloorMs = 250;
+    private const int RangedCommitMs = 400;
     private const int TenthsPerSecond = 10;
     private const int MillisecondsPerTenth = 1000 / TenthsPerSecond;
     private const int CooldownEntryPruneThreshold = 256;
@@ -61,7 +63,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
 
         if (session.CastingSkillId == magic.Id)
         {
-            return now + LatencyGraceMs * TimeSpan.TicksPerMillisecond < session.CastReadyTicks
+            return now + LatencyGraceMs * TimeSpan.TicksPerMillisecond < session.CastCommitTicks
                 ? MagicTimingVerdict.CastTooEarly
                 : MagicTimingVerdict.Allowed;
         }
@@ -90,7 +92,10 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
             return;
 
         session.CastingSkillId = magic.Id;
-        session.CastReadyTicks = now + magic.CastTime * MillisecondsPerTenth * TimeSpan.TicksPerMillisecond;
+        var castMs = magic.CastTime * MillisecondsPerTenth;
+        var commitMs = magic.PrimaryType == MagicSkillType.Ranged ? Math.Min(castMs, RangedCommitMs) : castMs;
+        session.CastReadyTicks = now + castMs * TimeSpan.TicksPerMillisecond;
+        session.CastCommitTicks = now + commitMs * TimeSpan.TicksPerMillisecond;
         session.CastExpireTicks = session.CastReadyTicks + AbandonedCastGraceMs * TimeSpan.TicksPerMillisecond;
     }
 
@@ -106,7 +111,10 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
     public void OnCastAborted(UserSession session, int skillId)
     {
         if (session.CastingSkillId == skillId)
+        {
             ClearCast(session);
+            session.SkillBurstTicks = 0;
+        }
 
         session.AcceptedCasts.TryRemove(skillId, out _);
         session.SkillCooldowns.TryRemove(skillId, out _);

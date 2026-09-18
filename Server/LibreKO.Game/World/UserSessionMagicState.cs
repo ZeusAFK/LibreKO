@@ -177,6 +177,7 @@ internal static class UserSessionMagicState
         session.PendingOverTimeExecution = null;
         session.CastingSkillId = 0;
         session.CastReadyTicks = 0;
+        session.CastCommitTicks = 0;
         session.CastExpireTicks = 0;
         RebuildSpecialStates(session, gameData);
         session.RecalculateStatsWithBuffs(gameData);

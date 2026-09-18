@@ -95,14 +95,44 @@ public partial class World
         _selfActionUntil = Now() + s.CastSeconds;
     }
 
+    private const double RangedCommitSeconds = 0.4;
+
     private void CastMoveCancelTick()
     {
         if (_castingSkillId == 0 || !_movePressedEdge) return;
-        CancelSelfCast(_castingSkillId);
+        InterruptSelfCast();
+    }
+
+    private void InterruptSelfCast()
+    {
+        int skillId = _castingSkillId;
+        if (skillId == 0) return;
+        var s = SkillData.Get(skillId);
+        if (s is { NeedsFlying: true } && Now() >= _castingUntil - s.CastSeconds + RangedCommitSeconds)
+            ReleaseSelfCastEarly(skillId);
+        else
+            CancelSelfCast(skillId);
+    }
+
+    private void ReleaseSelfCastEarly(int skillId)
+    {
+        double now = Now();
+        for (int i = 0; i < _pendingCasts.Count; i++)
+        {
+            var pc = _pendingCasts[i];
+            if (pc.SkillId != skillId || pc.Stage != PendingFlying) continue;
+            pc.EffectTime = now;
+            _pendingCasts[i] = pc;
+        }
+        StopSkillFx(_myId, skillId, 1);
+        EndCast(skillId);
+        _selfActionUntil = 0;
+        _selfClip = null;
     }
 
     private void CancelSelfCast(int skillId)
     {
+        StopSkillFx(_myId, skillId);
         EndCast(skillId);
         ClearPendingCast(skillId);
         var s = SkillData.Get(skillId);
