@@ -301,7 +301,7 @@ public partial class World
         if (!Net.I.AttendanceAutoOpened)
         {
             Net.I.AttendanceAutoOpened = true;
-            ShowAttendancePanel();
+            if (ClaimableAttendanceCount() > 0) ShowAttendancePanel();
         }
     }
 
