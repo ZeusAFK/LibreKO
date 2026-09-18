@@ -233,8 +233,7 @@ public class UserSession
     public int CastingSkillId { get; set; }
     public long CastReadyTicks { get; set; }
     public long CastExpireTicks { get; set; }
-    public long CastAcceptedTicks { get; set; }
-    public int CastAcceptedSkillId { get; set; }
+    public ConcurrentDictionary<int, long> AcceptedCasts { get; } = new();
     public long SkillBurstTicks { get; set; }
 
     // Buff type-specific state flags (recalculated from ActiveBuffs)

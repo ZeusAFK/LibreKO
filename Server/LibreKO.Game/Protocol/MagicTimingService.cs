@@ -78,8 +78,9 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
     {
         var now = _time.GetUtcNow().UtcTicks;
         ArmCooldown(session, magic, now);
-        session.CastAcceptedTicks = now;
-        session.CastAcceptedSkillId = magic.Id;
+        session.AcceptedCasts[magic.Id] = now;
+        if (session.AcceptedCasts.Count > CooldownEntryPruneThreshold)
+            PruneAcceptedCasts(session, now);
 
         if (ConsumesAnItem(magic))
             return;
@@ -95,6 +96,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
 
     public void OnReleaseAccepted(UserSession session, MagicData magic)
     {
+        session.AcceptedCasts.TryRemove(magic.Id, out _);
         if (session.CastingSkillId == magic.Id)
             ClearCast(session);
         else
@@ -106,6 +108,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
         if (session.CastingSkillId == skillId)
             ClearCast(session);
 
+        session.AcceptedCasts.TryRemove(skillId, out _);
         session.SkillCooldowns.TryRemove(skillId, out _);
     }
 
@@ -123,11 +126,22 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
 
     private static bool IsReleaseOfTheAcceptedCast(UserSession session, MagicData magic, long now)
     {
-        if (session.CastAcceptedSkillId != magic.Id)
+        if (!session.AcceptedCasts.TryGetValue(magic.Id, out var accepted))
             return false;
 
         var windowMs = magic.CastTime * MillisecondsPerTenth + AbandonedCastGraceMs;
-        return MillisecondsSince(session.CastAcceptedTicks, now) <= windowMs;
+        if (MillisecondsSince(accepted, now) <= windowMs)
+            return true;
+
+        session.AcceptedCasts.TryRemove(magic.Id, out _);
+        return false;
+    }
+
+    private static void PruneAcceptedCasts(UserSession session, long now)
+    {
+        foreach (var (skillId, accepted) in session.AcceptedCasts)
+            if (MillisecondsSince(accepted, now) > AbandonedCastGraceMs * 10)
+                session.AcceptedCasts.TryRemove(skillId, out _);
     }
 
     private static long RemainingCooldownMs(UserSession session, int skillId, long now)

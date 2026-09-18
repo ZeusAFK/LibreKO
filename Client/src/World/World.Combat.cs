@@ -411,8 +411,8 @@ public partial class World
                     ClearPendingCast(skillId);
                     EndCast(skillId);
                     if (s != null) CancelSkillCooldown(s);   // a refused cast must not eat the cooldown
-                    if (sub == 4 && awaited && s is { UseItem: not 0, ItemGroup: WeaponAnimation.GroupNeedsNoWeapon })
-                        CombatNotice($"You couldn't use {ItemData.DisplayName(s.UseItem)}.");
+                    if (sub == 4 && awaited && s is { UseItem: not 0, IsRanged: false })
+                        CombatNotice($"You couldn't use {ItemData.DisplayName(s.UseItem)} right now.");
                     else if (sub == 4 && awaited && s != null && ConflictingBuff(s) is { } blocker)
                         CombatNotice($"{blocker.Name} is already active.");
                 }
