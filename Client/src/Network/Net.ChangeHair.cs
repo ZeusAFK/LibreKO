@@ -7,8 +7,10 @@ public partial class Net
     public const byte ChangeHairSubDefault = 1;
     public const byte ChangeHairResultOk = 0;
     public const byte ChangeHairResultFail = 1;
+    public const byte ChangeHairOpenShop = 2;
 
     public event Action<bool, int, int>? ChangeHairResultEvent;
+    public event Action? BeautyShopEvent;
 
     private int _changeHairReqFace;
     private int _changeHairReqHair;
@@ -17,6 +19,7 @@ public partial class Net
     {
         if (p.RemainingBytes < 1) return;
         byte result = p.ReadByte();
+        if (result == ChangeHairOpenShop) { BeautyShopEvent?.Invoke(); return; }
         ChangeHairResultEvent?.Invoke(result == ChangeHairResultOk, _changeHairReqFace, _changeHairReqHair);
     }
 

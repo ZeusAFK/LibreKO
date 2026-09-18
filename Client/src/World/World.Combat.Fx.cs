@@ -54,15 +54,18 @@ public partial class World
         Fx.Spawn(fxName, parent, new Vector3(0, y, 0), oneShot: true);
     }
 
-    private double ProjectileTravelTime(int casterId, int targetId)
+    private static float ProjectileSpeedFor(string? fxName) =>
+        Mathf.Max(fxName != null ? Fx.AuthoredVelocity(fxName) : 0f, ProjectileFxSpeed);
+
+    private double ProjectileTravelTime(int casterId, int targetId, string? fxName)
     {
         var from = WorldPosOf(casterId);
         var to = WorldPosOf(targetId);
         if (from == null || to == null) return 0.2;
-        return Mathf.Clamp(from.Value.DistanceTo(to.Value) / ProjectileFxSpeed, 0.08f, 1.5f);
+        return Mathf.Clamp(from.Value.DistanceTo(to.Value) / ProjectileSpeedFor(fxName), 0.08f, 1.5f);
     }
 
-    private void SpawnFxProjectile(int casterId, int targetId, string fxName)
+    private void SpawnFxProjectile(int casterId, int targetId, string fxName, float lateral = 0f)
     {
         var from = WorldPosOf(casterId);
         var to = WorldPosOf(targetId);
@@ -74,6 +77,11 @@ public partial class World
 
         var start = from.Value + new Vector3(0, ProjectileFxHeight, 0);
         var end = to.Value + new Vector3(0, ProjectileFxHeight, 0);
+        if (lateral != 0f)
+        {
+            var side = (end - start).Cross(Vector3.Up);
+            if (side.LengthSquared() > 0.0001f) start += side.Normalized() * lateral;
+        }
         var node = Fx.Spawn(fxName, this, start);
         if (node is not FxInstance flight)
         {
@@ -83,12 +91,20 @@ public partial class World
         flight.HomingTarget = _ents.TryGetValue(targetId, out var te) ? te.Body : null;
         flight.HomingPoint = end;
         flight.HomingHeight = ProjectileFxHeight;
-        flight.FlightSpeed = Mathf.Max(flight.AuthoredVelocity, ProjectileFxSpeed);
+        flight.FlightSpeed = ProjectileSpeedFor(fxName);
         flight.GlobalBasis = FxInstance.AimBasis(end - start);
     }
 
     private bool SpawnFxAtImpact(int casterId, int targetId, string fxName, int targetPart, short[] data)
     {
+        if (targetId >= 0 && SkillFxTarget.IsTerrain(targetPart))
+        {
+            int entityId = targetId == 0 ? casterId : targetId;
+            Node3D? body = entityId == _myId ? _self : (_ents.TryGetValue(entityId, out var e) ? e.Body : null);
+            if (body == null) return false;
+            Fx.Spawn(fxName, this, body.GlobalPosition + new Vector3(0, 0.15f, 0), oneShot: true);
+            return true;
+        }
         if (!SkillFxTarget.MatchesPacket(targetPart, targetId)) return false;
         if (targetId >= 0)
         {

@@ -25,11 +25,13 @@ public partial class World
     {
         BuildChangeHairPanel();
         Net.I.ChangeHairResultEvent += OnChangeHairResult;
+        Net.I.BeautyShopEvent += OpenChangeHair;
     }
 
     private void ChangeHairDispose()
     {
         Net.I.ChangeHairResultEvent -= OnChangeHairResult;
+        Net.I.BeautyShopEvent -= OpenChangeHair;
     }
 
     private void BuildChangeHairPanel()
@@ -89,6 +91,11 @@ public partial class World
 
         parent.AddChild(row);
         return value;
+    }
+
+    private void OpenChangeHair()
+    {
+        if (!_changeHairShown) ToggleChangeHair();
     }
 
     private void ToggleChangeHair()

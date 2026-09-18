@@ -45,7 +45,7 @@ public class NpcAiMagicService(
 
         npc.ActiveSkillId = npc.Magic1;
         npc.ActiveTargetId = target.CharacterId;
-        npc.CastEndTicks = nowTicks + TimeSpan.FromSeconds(magic.CastTime).Ticks;
+        npc.CastEndTicks = nowTicks + TimeSpan.FromMilliseconds(magic.CastTimeMs).Ticks;
         npc.State = NpcState.Casting;
 
         var castPacket = CreateMagicProcessPacket(MagicCasting, npc.Magic1, npc.UniqueId, target.CharacterId);
@@ -75,7 +75,7 @@ public class NpcAiMagicService(
         healer.ActiveSkillId = healer.Magic3;
         healer.ActiveTargetId = target.UniqueId;
         healer.HealTargetIsNpc = true;
-        healer.CastEndTicks = nowTicks + TimeSpan.FromSeconds(magic.CastTime).Ticks;
+        healer.CastEndTicks = nowTicks + TimeSpan.FromMilliseconds(magic.CastTimeMs).Ticks;
         healer.State = NpcState.Casting;
 
         var castPacket = CreateMagicProcessPacket(MagicCasting, healer.Magic3, healer.UniqueId, target.UniqueId);

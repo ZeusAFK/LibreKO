@@ -76,6 +76,7 @@ public partial class World : Node3D, IWorldContext
             if (!Alive) return;
             GD.Print("[load] world objects: collision");
             BuildObjectCollision();
+            RegroundEntities();
             GD.Print("[load] world objects: water");
             BuildWater();
             GD.Print("[load] world objects: ambient FX");
@@ -310,7 +311,8 @@ public partial class World : Node3D, IWorldContext
         {
             if (nowSec < _selfActionUntil
                 && _walkKeyHeld
-                && !IsRootedByCast())
+                && !IsRootedByCast()
+                && (_selfActionRank != ActionRankSkill || _movePressedEdge))
             {
                 _selfActionUntil = 0;
                 _selfClip = null;

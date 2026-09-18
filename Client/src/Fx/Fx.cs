@@ -17,6 +17,12 @@ public static class Fx
         StopFxUnder(root);
     }
 
+    public static float AuthoredVelocity(string name)
+    {
+        var desc = LoadDescriptor(name);
+        return desc != null && desc.ContainsKey("velocity") ? (float)desc["velocity"].AsDouble() : 0f;
+    }
+
     public static float AuthoredCentreY(string name)
     {
         var desc = LoadDescriptor(name);

@@ -156,10 +156,6 @@ public class NpcAiTargetingService(
             bestTarget = ally;
         }
 
-        var selfHpPct = (float)healer.Hp / Math.Max(1, healer.MaxHp);
-        if (selfHpPct < lowestHpPct)
-            bestTarget = healer;
-
         return bestTarget;
     }
 

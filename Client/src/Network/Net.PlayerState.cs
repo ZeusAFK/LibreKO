@@ -12,6 +12,8 @@ public partial class Net
 
     public Dictionary<int, double> SkillCooldowns { get; } = new();
 
+    public double PotionReadyAt { get; set; }
+
     public Dictionary<int, double> BuffEnds { get; } = new();
 
     private readonly HashSet<string> _openWindows = new();
@@ -42,6 +44,7 @@ public partial class Net
         byte[] skillPoints)
     {
         SkillCooldowns.Clear();
+        PotionReadyAt = 0;
         BuffEnds.Clear();
         Sheet.SeedStats(str, sta, dex, intel, magicStat, statPoints);
         Sheet.SeedStatBonuses(strBonus, staBonus, dexBonus, intelBonus, magicBonus);

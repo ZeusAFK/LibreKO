@@ -255,12 +255,23 @@ public partial class CharSelect : Node3D
     {
         float uiStart = GetViewport().GetVisibleRect().Size.X
                         - Platform.Pick(PointerStageMargin, PanelWidth);
-        if (inputEvent is InputEventMouseButton mouseButton
-            && mouseButton.ButtonIndex == MouseButton.Left
-            && mouseButton.Position.X < uiStart)
+        if (inputEvent is InputEventMouseButton mouseButton)
         {
-            _draggingCharacter = mouseButton.Pressed;
-            GetViewport().SetInputAsHandled();
+            if (mouseButton.ButtonIndex == MouseButton.Left)
+            {
+                if (!mouseButton.Pressed) { _draggingCharacter = false; return; }
+                if (mouseButton.Position.X >= uiStart || ColourPopupOpen()) return;
+                _draggingCharacter = true;
+                GetViewport().SetInputAsHandled();
+            }
+            else if (mouseButton.Pressed
+                     && mouseButton.ButtonIndex is MouseButton.WheelUp or MouseButton.WheelDown
+                     && _createPanel.Visible
+                     && mouseButton.Position.X < uiStart)
+            {
+                ZoomCreateCamera(mouseButton.ButtonIndex == MouseButton.WheelUp ? -1 : 1);
+                GetViewport().SetInputAsHandled();
+            }
         }
         else if (_draggingCharacter && inputEvent is InputEventMouseMotion motion)
         {

@@ -235,7 +235,9 @@ public class UserSession
     public long CastCommitTicks { get; set; }
     public long CastExpireTicks { get; set; }
     public ConcurrentDictionary<int, long> AcceptedCasts { get; } = new();
+    public ConcurrentDictionary<int, int> PendingArrowHits { get; } = new();
     public long SkillBurstTicks { get; set; }
+    public long LastPotionTicks { get; set; }
 
     // Buff type-specific state flags (recalculated from ActiveBuffs)
     public bool IsBlinded { get; set; }
@@ -261,6 +263,7 @@ public class UserSession
     public byte NoahGainAmount { get; set; } = 100;
     public byte PlayerAttackAmount { get; set; } = 100;
     public byte AttackAmount { get; set; } = 100;
+    public short AttackSpeedAmount { get; set; } = 100;
     public short MagicAttackAmount { get; set; }
     public byte ReflectArmorType { get; set; }
 

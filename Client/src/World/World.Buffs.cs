@@ -75,6 +75,20 @@ public partial class World
         return row;
     }
 
+    private float AttackSpeedMultiplier()
+    {
+        double now = Now();
+        float best = 1f;
+        foreach (var (skillId, end) in Net.I.BuffEnds)
+        {
+            if (end <= now) continue;
+            var s = SkillData.Get(skillId);
+            if (s == null || s.AttackSpeedPercent == 100) continue;
+            best = Mathf.Max(best, s.AttackSpeedPercent / 100f);
+        }
+        return best;
+    }
+
     private void RegisterBuff(SkillData.Skill s, int targetId, int duration)
     {
         if (_buffPanel == null || targetId != _myId || duration <= 0) return;

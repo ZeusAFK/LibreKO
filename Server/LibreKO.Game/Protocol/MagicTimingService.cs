@@ -21,6 +21,7 @@ public interface IMagicTimingService
 
     void OnCastAccepted(UserSession session, MagicData magic);
 
+    void OnVolleyAccepted(UserSession session, MagicData magic, int arrows);
     void OnReleaseAccepted(UserSession session, MagicData magic);
 
     void OnCastAborted(UserSession session, int skillId);
@@ -32,6 +33,9 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
     private const int AbandonedCastGraceMs = 3000;
     private const int SkillBurstFloorMs = 250;
     private const int RangedCommitMs = 400;
+    private const int PotionSharedCooldownMs = 2000;
+    private const byte PotionItemGroup = 9;
+    private const byte MoralSelf = 1;
     private const int TenthsPerSecond = 10;
     private const int MillisecondsPerTenth = 1000 / TenthsPerSecond;
     private const int CooldownEntryPruneThreshold = 256;
@@ -43,6 +47,9 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
         var now = _time.GetUtcNow().UtcTicks;
 
         if (RemainingCooldownMs(session, magic.Id, now) > 0)
+            return MagicTimingVerdict.OnCooldown;
+
+        if (IsPotion(magic) && MillisecondsSince(session.LastPotionTicks, now) < PotionSharedCooldownMs)
             return MagicTimingVerdict.OnCooldown;
 
         if (!ConsumesAnItem(magic))
@@ -84,6 +91,9 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
         if (session.AcceptedCasts.Count > CooldownEntryPruneThreshold)
             PruneAcceptedCasts(session, now);
 
+        if (IsPotion(magic))
+            session.LastPotionTicks = now;
+
         if (ConsumesAnItem(magic))
             return;
 
@@ -99,8 +109,21 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
         session.CastExpireTicks = session.CastReadyTicks + AbandonedCastGraceMs * TimeSpan.TicksPerMillisecond;
     }
 
+    public void OnVolleyAccepted(UserSession session, MagicData magic, int arrows)
+    {
+        if (arrows > 1)
+            session.PendingArrowHits[magic.Id] = arrows;
+    }
+
     public void OnReleaseAccepted(UserSession session, MagicData magic)
     {
+        if (session.PendingArrowHits.TryGetValue(magic.Id, out var arrows) && arrows > 1)
+        {
+            session.PendingArrowHits[magic.Id] = arrows - 1;
+            return;
+        }
+
+        session.PendingArrowHits.TryRemove(magic.Id, out _);
         session.AcceptedCasts.TryRemove(magic.Id, out _);
         if (session.CastingSkillId == magic.Id)
             ClearCast(session);
@@ -116,6 +139,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
             session.SkillBurstTicks = 0;
         }
 
+        session.PendingArrowHits.TryRemove(skillId, out _);
         session.AcceptedCasts.TryRemove(skillId, out _);
         session.SkillCooldowns.TryRemove(skillId, out _);
     }
@@ -181,6 +205,14 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
     }
 
     private static bool ConsumesAnItem(MagicData magic) => magic.UseItem != 0;
+
+    private static bool IsPotion(MagicData magic) =>
+        ConsumesAnItem(magic)
+        && magic.ItemGroup == PotionItemGroup
+        && magic.Moral == MoralSelf
+        && magic.PrimaryType == MagicSkillType.OverTime
+        && magic.CastTime == 0
+        && magic.ReCastTime == 0;
 
     private static void ClearCast(UserSession session)
     {

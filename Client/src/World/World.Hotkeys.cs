@@ -91,7 +91,6 @@ public partial class World : Node3D
         Bound(KeyAction.ClanWarehouse, () => ToggleClanWarehouse());
         Bound(KeyAction.VipWarehouse, () => ToggleVipWarehouse());
         Bound(KeyAction.Report, () => ToggleReport());
-        Bound(KeyAction.BeautyShop, () => ToggleChangeHair());
         Bound(KeyAction.Achievements, () => ToggleAchievements());
         Bound(KeyAction.Mail, () => ToggleMail());
         Bound(KeyAction.Auction, () => ToggleAuction());

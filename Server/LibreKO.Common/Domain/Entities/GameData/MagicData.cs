@@ -36,6 +36,11 @@ public class MagicData
 
     [NotMapped]
     public MagicSkillType SecondaryType => (MagicSkillType)Type2;
+
+    private const int MillisecondsPerTenth = 100;
+
+    [NotMapped]
+    public int CastTimeMs => CastTime * MillisecondsPerTenth;
     public short Range { get; set; }
     public short Etc { get; set; }
     public short UseStanding { get; set; }

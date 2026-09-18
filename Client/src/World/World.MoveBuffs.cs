@@ -35,7 +35,9 @@ public partial class World
     private void ApplySelfAnimSpeed()
     {
         if (_selfAnim == null) return;
-        float delta = IsRootedByCast() ? _castAnimScale : _selfMoving ? MoveSpeedMultiplier() : 1f;
+        float delta = IsRootedByCast() ? _castAnimScale
+            : SelfSwinging() ? AttackSpeedMultiplier()
+            : _selfMoving ? MoveSpeedMultiplier() : 1f;
         if (delta < AnimSpeedDeltaMin || delta >= AnimSpeedDeltaMax) return;
         if (!Mathf.IsEqualApprox(_selfAnim.SpeedScale, delta)) _selfAnim.SpeedScale = delta;
     }
@@ -102,10 +104,11 @@ public partial class World
     private void CastMoveCancelTick()
     {
         if (_castingSkillId == 0) return;
+        var s = SkillData.Get(_castingSkillId);
+        if (s is not { HasCastPhase: true }) return;
         if (_movePressedEdge) { InterruptSelfCast(); return; }
         if (!_moveInputHeld) return;
-        var s = SkillData.Get(_castingSkillId);
-        if (s != null && Now() - (_castingUntil - s.CastSeconds) >= CastHoldCancelGraceSeconds)
+        if (!s.NeedsFlying && Now() - (_castingUntil - s.CastSeconds) >= CastHoldCancelGraceSeconds)
             InterruptSelfCast();
     }
 
@@ -114,7 +117,8 @@ public partial class World
         int skillId = _castingSkillId;
         if (skillId == 0) return;
         var s = SkillData.Get(skillId);
-        if (s is { NeedsFlying: true } && Now() >= _castingUntil - s.CastSeconds + RangedCommitSeconds)
+        if (s is not { HasCastPhase: true }) return;
+        if (s.NeedsFlying && Now() >= _castingUntil - s.CastSeconds + RangedCommitSeconds)
             ReleaseSelfCastEarly(skillId);
         else
             CancelSelfCast(skillId);

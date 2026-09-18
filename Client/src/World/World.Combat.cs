@@ -24,6 +24,8 @@ public partial class World
     private double _swingCommitAt;
     private double _nextSwingIfCancelled;
 
+    private const double VolleyHitGapSeconds = 0.12;
+    private const float VolleyLateralSpacing = 0.35f;
     private const double ComboLen = 1.0;
     private const double ComboGrace = 1.0;
     private double _comboStepLen = ComboLen;
@@ -228,7 +230,7 @@ public partial class World
 
         var rangedSkill = BasicRangedAttackSkill();
         _nextSwingIfCancelled = _nextSwing;
-        _nextSwing = now + (rangedSkill != null ? rangedSkill.CastSeconds + RangedSwingPad : SwingInterval);
+        _nextSwing = now + (rangedSkill != null ? rangedSkill.CastSeconds + RangedSwingPad : SwingInterval / AttackSpeedMultiplier());
         BasicAttack();
     }
 
@@ -358,13 +360,19 @@ public partial class World
 
             case 2:
                 if (s?.NeedsFlying == true) StopSkillFx(casterId, skillId, 1);
+                int arrows = s is { NeedsFlying: true } ? Mathf.Max(1, s.NeedArrow) : 1;
                 if (s?.FlyingFx != null)
                 {
-                    SpawnFxProjectile(casterId, targetId, s.FlyingFx);
+                    for (int k = 0; k < arrows; k++)
+                        SpawnFxProjectile(casterId, targetId, s.FlyingFx, (k - (arrows - 1) * 0.5f) * VolleyLateralSpacing);
                     AudioFxAt(s.FlyingFxId, casterId);
                 }
                 if (casterId == _myId && s?.NeedsFlying == true)
-                    QueuePendingStage(skillId, targetId, PendingEffecting, ProjectileTravelTime(casterId, targetId));
+                {
+                    double travel = ProjectileTravelTime(casterId, targetId, s.FlyingFx);
+                    for (int k = 0; k < arrows; k++)
+                        QueuePendingStage(skillId, targetId, PendingEffecting, travel + k * VolleyHitGapSeconds, replace: k == 0);
+                }
                 break;
 
             case 3:
@@ -384,16 +392,20 @@ public partial class World
                 }
                 if (!miss && s?.TargetFx != null)
                 {
-                    if (SpawnFxAtImpact(casterId, targetId, s.TargetFx, s.TargetPart, data))
+                    if (SpawnFxAtImpact(casterId, targetId, s.TargetFx, s.TargetPart, data)
+                        && !(casterId == _myId && s.IsPotion))
                         AudioFxAt(s.TargetFxId, targetId > 0 ? targetId : casterId);
                 }
                 if (!miss && s != null && s.TargetAnim != 0 && targetId >= 0)
                     PlaySkillAction(affected, s.TargetAnim, StruckClips, ActionRankStruck);
                 if (casterId == _myId)
                 {
-                    bool requested = HasPendingCast(skillId);
-                    ClearPendingCast(skillId);
-                    EndCast(skillId);
+                    bool requested = ResolvePendingReply(skillId);
+                    if (!HasPendingCast(skillId)) EndCast(skillId);
+                    if (requested && s != null && !HasPendingCast(skillId) && BasicRangedAttackSkill()?.Id != skillId)
+                        CombatLogAdd(s.IsPotion
+                            ? $"You used {ItemData.DisplayName(s.UseItem)}."
+                            : $"You used {s.Name}.", CombatLogKind.Status);
                     if (s != null)
                     {
                         if (requested) EnsureSkillCooldown(s);
@@ -467,6 +479,7 @@ public partial class World
         if (_selfDead) return;
         _selfDead = true;
         StopAutoAttack();
+        Deselect();
         _pendingCasts.Clear();
         _selfFlinch?.Stop();
         double len = PlayActionOn(_selfAnim, DeathClips);

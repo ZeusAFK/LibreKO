@@ -74,6 +74,10 @@ public sealed class PreGamePacketWriter
         return packet;
     }
 
+    public const byte ChangeHairOpenShop = 2;
+
+    public static Packet ChangeHairShop() => ChangeHairResult(ChangeHairOpenShop);
+
     public static Packet ChangeHairResult(byte result)
     {
         var packet = new Packet(GameOpcodes.GS_CHANGE_HAIR);

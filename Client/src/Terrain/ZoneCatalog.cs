@@ -58,6 +58,13 @@ public static class ZoneCatalog
         new(109, "freezone_a", "Dark Ardream"),
     };
 
+    public static string Name(int zoneId)
+    {
+        foreach (var z in All)
+            if (z.Id == zoneId) return z.Name;
+        return $"Zone {zoneId}";
+    }
+
     public static string? Stem(int zoneId)
     {
         foreach (var z in All)

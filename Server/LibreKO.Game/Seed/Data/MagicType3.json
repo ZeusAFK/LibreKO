@@ -145,12 +145,12 @@
   },
   {
     "Id": 105725,
-    "DirectType": 1,
-    "FirstDamage": -150,
+    "DirectType": 0,
+    "FirstDamage": 0,
     "TimeDamage": 0,
     "Duration": 0,
-    "Attribute": 4,
-    "Radius": 0
+    "Attribute": 0,
+    "Radius": 5
   },
   {
     "Id": 105730,
@@ -199,12 +199,12 @@
   },
   {
     "Id": 105760,
-    "DirectType": 1,
-    "FirstDamage": -500,
+    "DirectType": 0,
+    "FirstDamage": 0,
     "TimeDamage": 0,
     "Duration": 0,
-    "Attribute": 4,
-    "Radius": 10
+    "Attribute": 0,
+    "Radius": 5
   },
   {
     "Id": 106255,
@@ -244,12 +244,12 @@
   },
   {
     "Id": 106725,
-    "DirectType": 1,
-    "FirstDamage": -150,
+    "DirectType": 0,
+    "FirstDamage": 0,
     "TimeDamage": 0,
     "Duration": 0,
-    "Attribute": 4,
-    "Radius": 0
+    "Attribute": 0,
+    "Radius": 5
   },
   {
     "Id": 106730,
@@ -298,12 +298,12 @@
   },
   {
     "Id": 106760,
-    "DirectType": 1,
-    "FirstDamage": -500,
+    "DirectType": 0,
+    "FirstDamage": 0,
     "TimeDamage": 0,
     "Duration": 0,
-    "Attribute": 4,
-    "Radius": 10
+    "Attribute": 0,
+    "Radius": 5
   },
   {
     "Id": 106775,
@@ -318,10 +318,10 @@
     "Id": 106780,
     "DirectType": 14,
     "FirstDamage": 105,
-    "TimeDamage": 0,
+    "TimeDamage": 1,
     "Duration": 20,
     "Attribute": 0,
-    "Radius": 0
+    "Radius": 30
   },
   {
     "Id": 106815,
@@ -2701,12 +2701,12 @@
   },
   {
     "Id": 205725,
-    "DirectType": 1,
-    "FirstDamage": -150,
+    "DirectType": 0,
+    "FirstDamage": 0,
     "TimeDamage": 0,
     "Duration": 0,
-    "Attribute": 4,
-    "Radius": 0
+    "Attribute": 0,
+    "Radius": 5
   },
   {
     "Id": 205730,
@@ -2755,12 +2755,12 @@
   },
   {
     "Id": 205760,
-    "DirectType": 1,
-    "FirstDamage": -500,
+    "DirectType": 0,
+    "FirstDamage": 0,
     "TimeDamage": 0,
     "Duration": 0,
-    "Attribute": 4,
-    "Radius": 10
+    "Attribute": 0,
+    "Radius": 5
   },
   {
     "Id": 206255,
@@ -2800,12 +2800,12 @@
   },
   {
     "Id": 206725,
-    "DirectType": 1,
-    "FirstDamage": -150,
+    "DirectType": 0,
+    "FirstDamage": 0,
     "TimeDamage": 0,
     "Duration": 0,
-    "Attribute": 4,
-    "Radius": 0
+    "Attribute": 0,
+    "Radius": 5
   },
   {
     "Id": 206730,
@@ -2854,12 +2854,12 @@
   },
   {
     "Id": 206760,
-    "DirectType": 1,
-    "FirstDamage": -500,
+    "DirectType": 0,
+    "FirstDamage": 0,
     "TimeDamage": 0,
     "Duration": 0,
-    "Attribute": 4,
-    "Radius": 10
+    "Attribute": 0,
+    "Radius": 5
   },
   {
     "Id": 206775,
@@ -2874,10 +2874,10 @@
     "Id": 206780,
     "DirectType": 14,
     "FirstDamage": 105,
-    "TimeDamage": 0,
+    "TimeDamage": 1,
     "Duration": 20,
     "Attribute": 0,
-    "Radius": 0
+    "Radius": 30
   },
   {
     "Id": 206815,

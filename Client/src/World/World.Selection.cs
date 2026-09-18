@@ -171,7 +171,8 @@ public partial class World
         if (_selectedId >= 0 && _ents.TryGetValue(_selectedId, out var e) && Selectable(e))
         {
             var p = e.Body.Position;
-            TargetSymbol.Place(_selRing, new Vector3(p.X, p.Y - e.Lift, p.Z), e.BoundRadius);
+            var feet = new Vector3(p.X, p.Y - e.Lift, p.Z);
+            TargetSymbol.Place(_selRing, feet, e.BoundRadius, GroundNormalAt(feet));
         }
         else
         {

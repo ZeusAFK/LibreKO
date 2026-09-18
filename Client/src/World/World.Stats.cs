@@ -493,7 +493,11 @@ public partial class World : Node3D
     {
         long gained = total - Sheet.Gold;
         Sheet.SetGold(total);
-        if (gained > 0) Floaters?.Gold(gained);
+        if (gained > 0)
+        {
+            Floaters?.Gold(gained);
+            CombatLogAdd($"You picked up {gained:n0} coins.", CombatLogKind.Resource);
+        }
         RefreshStatsUI();
     }
 
@@ -508,7 +512,11 @@ public partial class World : Node3D
     {
         long gained = exp - Sheet.Exp;
         Sheet.ApplyExp(exp);
-        if (gained > 0) Floaters?.Exp(gained);
+        if (gained > 0)
+        {
+            Floaters?.Exp(gained);
+            CombatLogAdd($"You gained {gained:n0} experience.", CombatLogKind.Resource);
+        }
         RefreshStatsUI();
     }
 
@@ -540,7 +548,16 @@ public partial class World : Node3D
         Audio.Play(Sfx.LevelUp(nation), WorldPosOf(charId) ?? _self.GlobalPosition);
     }
 
-    private void OnLoyaltyChange(int np, int monthly) { Sheet.ApplyLoyalty(np); RefreshStatsUI(); }
+    private void OnLoyaltyChange(int np, int monthly)
+    {
+        int gained = np - Sheet.Np;
+        Sheet.ApplyLoyalty(np);
+        if (gained != 0 && Sheet.Level > 0)
+            CombatLogAdd(gained > 0
+                ? $"You gained {gained:n0} National Points."
+                : $"You lost {-gained:n0} National Points.", CombatLogKind.Resource);
+        RefreshStatsUI();
+    }
 
     private static string ClassName(int cls) => CharacterClassCatalog.DisplayName(cls);
 }

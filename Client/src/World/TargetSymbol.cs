@@ -32,6 +32,15 @@ public static class TargetSymbol
 
     public static void Tint(ShaderMaterial mat, Color colour) => mat.SetShaderParameter("tint", colour);
 
+    public static void Place(Node3D marker, Vector3 groundCentre, float radius, Vector3 up)
+    {
+        var side = Mathf.Abs(up.X) < 0.99f ? Vector3.Right : Vector3.Forward;
+        var fwd = up.Cross(side).Normalized();
+        var right = fwd.Cross(up).Normalized();
+        marker.Transform = new Transform3D(new Basis(right * radius, up, fwd * radius), groundCentre + up * GroundLift);
+        marker.Visible = true;
+    }
+
     public static void Place(Node3D marker, Vector3 groundCentre, float radius)
     {
         marker.Position = groundCentre + new Vector3(0f, GroundLift, 0f);

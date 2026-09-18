@@ -27,6 +27,10 @@ public partial class CharSelect
     private const float CreateCameraHeight = 1.25f;
     private const float CreateCameraAimHeight = 1.05f;
     private const float CreateCameraFov = 34f;
+    private const float CreateCameraHeadHeight = 1.6f;
+    private const float CreateZoomMin = 0.35f;
+    private const float CreateZoomStep = 0.1f;
+    private float _createZoom = 1f;
 
     private Terrain? _stageTerrain;
     private Sky? _stageSky;
@@ -134,16 +138,25 @@ public partial class CharSelect
         _stageSky?.Tick(StageDayFraction, Weather.Sunny, _stageCamera.GlobalPosition);
     }
 
+    private void ZoomCreateCamera(int steps)
+    {
+        _createZoom = Mathf.Clamp(_createZoom + steps * CreateZoomStep, CreateZoomMin, 1f);
+        FrameStageCamera(forCreate: true);
+    }
+
     private void FrameStageCamera(bool forCreate)
     {
         if (_stageCamera == null) return;
         if (forCreate)
         {
             Vector3 stand = _characterAnchor.Position;
+            float closeness = (1f - _createZoom) / (1f - CreateZoomMin);
+            float eyeY = Mathf.Lerp(CreateCameraHeight, CreateCameraHeadHeight, closeness);
+            float aimY = Mathf.Lerp(CreateCameraAimHeight, CreateCameraHeadHeight, closeness);
             _stageCamera.Fov = CreateCameraFov;
             _stageCamera.LookAtFromPosition(
-                stand + _stageFacing * CreateCameraDistance + new Vector3(0, CreateCameraHeight, 0),
-                stand + new Vector3(0, CreateCameraAimHeight, 0),
+                stand + _stageFacing * CreateCameraDistance * _createZoom + new Vector3(0, eyeY, 0),
+                stand + new Vector3(0, aimY, 0),
                 Vector3.Up);
             return;
         }

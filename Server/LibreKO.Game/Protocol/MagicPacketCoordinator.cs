@@ -393,6 +393,7 @@ public class MagicPacketCoordinator(
 
             session.Mp -= (short)magic.Msp;
             await combatLifecycleService.SendMspChangeAsync(session);
+            magicTimingService.OnVolleyAccepted(session, magic, requiredArrowCount);
         }
 
         await sessionManager.Regions.SendToRegion(

@@ -110,7 +110,7 @@ public class NpcInstance
     public int Magic3 { get; set; }          // Healing magic ID
 
     public bool HasMagicAttack => MagicAttack > 0 && Magic1 > 0;
-    public bool IsHealer => Magic3 > 0;
+    public bool IsHealer => NpcType == NpcData.TypeHealer && Magic3 > 0;
 
     private const byte ActTypeRetaliateFirst = 1;
     private const byte ActTypeRetaliateLast = 4;

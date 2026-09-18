@@ -263,10 +263,14 @@ public partial class CharSelect : Node3D
         }
         _createPanel.Visible = true;
         _selectPanel.Visible = false;
+        _createZoom = 1f;
         FrameStageCamera(forCreate: true);
         BuildRaceButtons(Net.I.Nation);
         if (Platform.PointerUi) _createName.GrabFocus();
     }
+
+    private bool ColourPopupOpen() =>
+        _hairColour is { } picker && GodotObject.IsInstanceValid(picker) && picker.GetPopup().Visible;
 
     private void CloseCreate()
     {

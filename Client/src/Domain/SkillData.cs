@@ -39,6 +39,7 @@ public static class SkillData
         public int BuffType;
         public int NeedWeapon, NeedItem;
         public int CooldownGroup;
+        private const int PotionItemGroup = 9;
         public Godot.Collections.Dictionary Effect = new();
 
         public bool IsEnemy => SkillTarget.IsHostile(Moral);
@@ -50,17 +51,21 @@ public static class SkillData
 
         public bool IsCasterAreaMoral => SkillTarget.IsCasterArea(Moral);
 
-        public bool IsArea => Radius > 0 && Type1 is MagicType.DotHeal or MagicType.Aoe;
+        public bool IsArea => Radius > 0 && Type1 is MagicType.DotHeal or MagicType.Aoe or MagicType.Melee;
 
-        public bool IsGroundArea => IsArea && IsAreaMoral;
+        public bool IsGroundArea => IsArea && IsAreaMoral && HasCastPhase;
 
-        public bool IsCasterArea => IsArea && IsCasterAreaMoral;
+        public bool IsCasterArea => IsArea && (IsCasterAreaMoral || (IsAreaMoral && !HasCastPhase));
 
         public bool IsMelee => Type1 == MagicType.Melee || Type2 == MagicType.Melee;
 
         public bool IsRanged => Type1 == MagicType.Ranged || Type2 == MagicType.Ranged;
 
         public bool IsNonAction => SelfAnim1 < 0;
+
+        public bool IsPotion =>
+            UseItem != 0 && ItemGroup == PotionItemGroup && Moral == SkillTarget.Self
+            && Type1 == MagicType.DotHeal && Cast == 0 && Recast == 0;
 
         public bool HasCastPhase => Cast > 0;
 
@@ -69,6 +74,11 @@ public static class SkillData
         public int MoveSpeedPercent =>
             Type1 == MagicType.Buff && Effect.TryGetValue("Speed", out var v) && (int)v > 0
                 ? (int)v
+                : 100;
+
+        public int AttackSpeedPercent =>
+            Type1 == MagicType.Buff && Effect.TryGetValue("AttackSpeed", out var a) && (int)a > 0
+                ? (int)a
                 : 100;
 
         public int SpecialKind =>

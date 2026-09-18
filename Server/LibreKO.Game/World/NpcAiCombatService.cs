@@ -47,12 +47,6 @@ public class NpcAiCombatService(
         if (nowTicks - npc.LastAttackTicks < attackDelayTicks)
             return;
 
-        if (npc.IsHealer && (float)npc.Hp / Math.Max(1, npc.MaxHp) < 0.5f)
-        {
-            await StartHealCastAsync(npc, npc, nowTicks);
-            return;
-        }
-
         await ExecuteAttackAsync(npc, target, nowTicks);
     }
 

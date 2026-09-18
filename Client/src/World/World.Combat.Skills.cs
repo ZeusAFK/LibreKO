@@ -131,18 +131,36 @@ public partial class World
 
     private static double CastDelay(SkillData.Skill s) => Mathf.Max(0f, s.CastSeconds);
 
-    private void QueuePendingStage(int skillId, int targetId, int stage, double delay, short[]? data = null)
+    private void QueuePendingStage(int skillId, int targetId, int stage, double delay, short[]? data = null, bool replace = true)
     {
         double when = Now() + delay;
         var pending = new PendingCast
         { EffectTime = when, SkillId = skillId, TargetId = targetId, Stage = stage, Data = data };
-        for (int i = 0; i < _pendingCasts.Count; i++)
+        for (int i = 0; replace && i < _pendingCasts.Count; i++)
         {
             if (_pendingCasts[i].SkillId != skillId) continue;
             _pendingCasts[i] = pending;
             return;
         }
         _pendingCasts.Add(pending);
+    }
+
+    private bool ResolvePendingReply(int skillId)
+    {
+        int fallback = -1;
+        for (int i = 0; i < _pendingCasts.Count; i++)
+        {
+            if (_pendingCasts[i].SkillId != skillId) continue;
+            if (_pendingCasts[i].Stage == PendingAwaitServer)
+            {
+                _pendingCasts.RemoveAt(i);
+                return true;
+            }
+            if (fallback < 0) fallback = i;
+        }
+        if (fallback < 0) return false;
+        _pendingCasts.RemoveAt(fallback);
+        return true;
     }
 
     private bool HasPendingCast(int skillId)
@@ -171,6 +189,7 @@ public partial class World
     private void BeginLocalCast(SkillData.Skill s)
     {
         StartSkillCooldown(s);
+        if (s.IsPotion) AudioFxAt(s.TargetFxId, _myId);
         BeginCast(s);
         if (s.IsNonAction) return;
         PlaySkillAction(_myId, SkillAnim(_myId, s, false), ClipsForCast(s), ActionRankSkill);
@@ -180,22 +199,34 @@ public partial class World
     private bool SelfCasting(double now) =>
         IsRootedByCast() || (_selfActionRank == ActionRankSkill && now < _selfActionUntil);
 
+    private const double PotionCooldownSeconds = 2.0;
+
     private void StartSkillCooldown(SkillData.Skill s)
     {
+        if (s.IsPotion)
+        {
+            Net.I.PotionReadyAt = Now() + PotionCooldownSeconds;
+            return;
+        }
         if (s.Recast <= 0) return;
         _skillReady[s.Id] = Now() + s.RecastSeconds;
     }
 
     private void EnsureSkillCooldown(SkillData.Skill s)
     {
-        if (_skillReady.TryGetValue(s.Id, out double until) && Now() < until) return;
+        if (SkillOnCooldown(s, Now())) return;
         StartSkillCooldown(s);
     }
 
-    private void CancelSkillCooldown(SkillData.Skill s) => _skillReady.Remove(s.Id);
+    private void CancelSkillCooldown(SkillData.Skill s)
+    {
+        if (!s.IsPotion) _skillReady.Remove(s.Id);
+    }
 
     private bool SkillOnCooldown(SkillData.Skill s, double now) =>
-        s.Recast > 0 && _skillReady.TryGetValue(s.Id, out double until) && now < until;
+        s.IsPotion
+            ? now < Net.I.PotionReadyAt
+            : s.Recast > 0 && _skillReady.TryGetValue(s.Id, out double until) && now < until;
 
     private SkillData.Skill? GroupCooldownBlocker(SkillData.Skill s, double now)
     {
@@ -220,6 +251,8 @@ public partial class World
 
     private float SkillCooldown(SkillData.Skill s, double now)
     {
+        if (s.IsPotion)
+            return Mathf.Clamp((float)((Net.I.PotionReadyAt - now) / PotionCooldownSeconds), 0f, 1f);
         if (s.Recast <= 0 || !_skillReady.TryGetValue(s.Id, out double until)) return 0f;
         double left = until - now;
         if (left <= 0) return 0f;

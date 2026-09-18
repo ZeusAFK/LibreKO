@@ -150,15 +150,7 @@ public partial class World
 
     private static void UpdateStatusHud() { }
 
-    private static string MapName(int zone) => zone switch
-    {
-        1 => "Karus",
-        2 => "El Morad",
-        11 => "Karus Eslant",
-        12 => "El Morad Eslant",
-        21 => "Moradon",
-        _ => $"Zone {zone}",
-    };
+    private static string MapName(int zone) => ZoneCatalog.Name(zone);
 
     private static Label3D NameLabel(string name, float y) => NamePlate.Make(name, y);
 

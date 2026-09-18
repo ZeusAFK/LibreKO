@@ -83,7 +83,7 @@ public partial class World
 
         if (_ents.TryGetValue(info.Id, out var existing))
         {
-            var rp = GroundPos(info.X, info.Z, info.Y, existing.Lift);
+            var rp = EntityGroundPos(info.X, info.Z, info.Y, existing.Lift);
             float jump = existing.Body.Position.DistanceTo(rp);
             if (existing.Dead || info.Dead || jump > TeleportSnap || jump < MoveArriveEps)
             {
@@ -157,7 +157,7 @@ public partial class World
                          : ResolvePlayerScene(info.Race);
         Diag.Slow($"model load {label} model={info.ModelId} race={info.Race}", loadWatch);
         float lift = scene != null || mapObject ? 0f : CapsuleHalf;
-        var pos = GroundPos(info.X, info.Z, info.Y, lift);
+        var pos = EntityGroundPos(info.X, info.Z, info.Y, lift);
 
         Node3D body;
         AnimationPlayer? anim = null;
@@ -354,7 +354,7 @@ public partial class World
             RefreshEntityCollision(e);
         }
 
-        var dest = GroundPos(x, z, y, e.Lift);
+        var dest = EntityGroundPos(x, z, y, e.Lift);
         float dxKo = x - e.KoX, dzKo = z - e.KoZ;
         float koMove2 = dxKo * dxKo + dzKo * dzKo;
         if (travelling && koMove2 > MoveFacingEpsSq)

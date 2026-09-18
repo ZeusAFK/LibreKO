@@ -288,6 +288,7 @@ internal static class UserSessionMagicState
         session.NoahGainAmount = 100;
         session.PlayerAttackAmount = 100;
         session.AttackAmount = 100;
+        session.AttackSpeedAmount = 100;
         session.MagicAttackAmount = 0;
         session.ReflectArmorType = 0;
     }
@@ -311,6 +312,14 @@ internal static class UserSessionMagicState
             case BuffType.Damage:
                 if (buff.BonusAttack > 0)
                     session.AttackAmount = (byte)buff.BonusAttack;
+                break;
+            case BuffType.AttackSpeedArmor:
+                if (buff.BonusAttack > 0)
+                    session.AttackAmount = (byte)(session.AttackAmount + buff.BonusAttack - 100);
+                break;
+            case BuffType.AttackSpeed:
+                if (buff.BonusAttackSpeed > 0)
+                    session.AttackSpeedAmount += (short)(buff.BonusAttackSpeed - 100);
                 break;
             case BuffType.DamageDouble:
                 if (buff.BonusAttack > 0)

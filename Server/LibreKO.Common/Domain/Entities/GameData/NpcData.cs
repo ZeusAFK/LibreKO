@@ -17,7 +17,9 @@ public class NpcData
     public const byte TypeClanCape = 25;
     public const byte TypeWarehouse = 31;
     public const byte TypeClassChange = 35;
+    public const byte TypeHealer = 40;
     public const byte TypeGate = 50;
+    public const byte TypeMakeupArtist = 64;
     public const byte TypeObjectWood = 54;
     public const byte TypeChaoticGenerator = 162;
     public const byte TypeScarecrow = 171;

@@ -228,6 +228,48 @@ public partial class World
     }
 
     private const float StepUp = 0.7f;
+    private const float EntityFloorProbeUp = 2f;
+    private const float EntityFloorProbeDown = 0.5f;
+    private const float GroundNormalProbe = 0.6f;
+
+    private Vector3 EntityGroundPos(float koX, float koZ, float serverY, float lift)
+    {
+        var onTerrain = GroundPos(koX, koZ, serverY, lift);
+        if (_terrain == null) return onTerrain;
+        float terrainFeetY = onTerrain.Y - lift;
+        float anchorY = Mathf.Max(terrainFeetY, _terrain.KoToWorld(koX, serverY, koZ).Y);
+        var space = GetWorld3D().DirectSpaceState;
+        var from = new Vector3(onTerrain.X, anchorY + EntityFloorProbeUp, onTerrain.Z);
+        var to = new Vector3(onTerrain.X, terrainFeetY - EntityFloorProbeDown, onTerrain.Z);
+        var hit = space.IntersectRay(PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer));
+        if (hit.Count == 0 || ((Vector3)hit["normal"]).Y < 0.5f) return onTerrain;
+        float floorY = ((Vector3)hit["position"]).Y;
+        return floorY > terrainFeetY ? new Vector3(onTerrain.X, floorY + lift, onTerrain.Z) : onTerrain;
+    }
+
+    private void RegroundEntities()
+    {
+        foreach (var e in _ents.Values)
+        {
+            if (e.HasTarget) continue;
+            e.Body.Position = EntityGroundPos(e.KoX, e.KoZ, e.KoY, e.Lift);
+        }
+    }
+
+    private Vector3 GroundNormalAt(Vector3 world)
+    {
+        if (_terrain == null) return Vector3.Up;
+        float d = GroundNormalProbe;
+        float hx = HeightNear(world + new Vector3(d, 0, 0)) - HeightNear(world - new Vector3(d, 0, 0));
+        float hz = HeightNear(world + new Vector3(0, 0, d)) - HeightNear(world - new Vector3(0, 0, d));
+        return new Vector3(-hx, 2f * d, -hz).Normalized();
+    }
+
+    private float HeightNear(Vector3 world)
+    {
+        var (kx, kz) = WorldToKo(world);
+        return _terrain != null && _terrain.SampleHeight(kx, kz, out float y) ? _terrain.KoToWorld(kx, y, kz).Y : world.Y;
+    }
 
     private float ObjectFloorY(Vector3 atGodot, float feetY)
     {

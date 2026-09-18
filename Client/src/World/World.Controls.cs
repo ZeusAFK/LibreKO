@@ -123,8 +123,7 @@ public partial class World
             _terrainMoveHeld = false;
             if (TryClickLootBox(mouseButton.Position))
                 return true;
-            bool pickHoldsGround = TryPickAt(mouseButton.Position) && !SelectionKeepsGroundMove();
-            if (!pickHoldsGround
+            if (!TryPickAt(mouseButton.Position)
                 && !TouchControls.Available
                 && TrySetTerrainMoveTarget(mouseButton.Position))
             {
@@ -185,11 +184,6 @@ public partial class World
         return true;
     }
 
-    private bool SelectionKeepsGroundMove() =>
-        _selectedId >= 0
-        && _ents.TryGetValue(_selectedId, out var e)
-        && e.Attackable;
-
     private void UpdateHeldMoveTarget(double delta)
     {
         if (!_terrainMoveHeld)
@@ -235,16 +229,16 @@ public partial class World
             _autoMoveForward = false;
             _hasMoveTarget = false;
             _terrainMoveHeld = false;
-            StopAutoAttack();
+            _movePressedEdge = _movePrevMask == MoveKeys.None;
+            _movePrevMask = MoveKeys.Forward;
+            _walkKeyHeld = false;
+            _moveInputHeld = true;
+            if (_movePressedEdge && RangedAutoAttack()) StopAutoAttack();
             var wish = CameraRelative(stick);
             float toTurn = _faceDir.SignedAngleTo(wish, Vector3.Up);
             float limit = PadTurnSpeed * (float)delta;
             _faceDir = _faceDir.Rotated(Vector3.Up, Mathf.Clamp(toTurn, -limit, limit)).Normalized();
             _turning = !Mathf.IsZeroApprox(toTurn);
-            _movePressedEdge = _movePrevMask == MoveKeys.None;
-            _movePrevMask = MoveKeys.Forward;
-            _walkKeyHeld = false;
-            _moveInputHeld = true;
             return _faceDir;
         }
 
@@ -267,7 +261,7 @@ public partial class World
             if (moveForward || moveBackward)
                 _autoMoveForward = false;
             _hasMoveTarget = false;
-            StopAutoAttack();
+            if (_movePressedEdge && RangedAutoAttack()) StopAutoAttack();
         }
 
         float turn = (turnLeft ? 1f : 0f) - (turnRight ? 1f : 0f);
@@ -290,22 +284,7 @@ public partial class World
             return moveBackward ? -_faceDir : _faceDir;
         }
 
-        if (_autoAttack
-            && _autoTargetId >= 0
-            && _ents.TryGetValue(_autoTargetId, out var autoTarget)
-            && autoTarget.Attackable
-            && !autoTarget.Dead)
-        {
-            Vector3 towardTarget = autoTarget.Body.GlobalPosition - _self.Position;
-            towardTarget.Y = 0;
-            float closeTo = BasicAttackRange(autoTarget) * ApproachFraction;
-            if (towardTarget.LengthSquared() > closeTo * closeTo)
-            {
-                _faceDir = towardTarget.Normalized();
-                return _faceDir;
-            }
-            return Vector3.Zero;
-        }
+        if (AutoAttackTarget() is { } autoTarget) return AutoAttackWish(autoTarget);
 
         if (!_hasMoveTarget)
             return Vector3.Zero;
@@ -318,6 +297,28 @@ public partial class World
             return Vector3.Zero;
         }
         _faceDir = toward.Normalized();
+        return _faceDir;
+    }
+
+    private Ent? AutoAttackTarget() =>
+        _autoAttack
+        && _autoTargetId >= 0
+        && _ents.TryGetValue(_autoTargetId, out var target)
+        && target.Attackable
+        && !target.Dead
+            ? target
+            : null;
+
+    private bool RangedAutoAttack() => BasicRangedAttackSkill() != null;
+
+    private Vector3 AutoAttackWish(Ent autoTarget)
+    {
+        if (RangedAutoAttack()) return Vector3.Zero;
+        Vector3 towardTarget = autoTarget.Body.GlobalPosition - _self.Position;
+        towardTarget.Y = 0;
+        float closeTo = BasicAttackRange(autoTarget) * ApproachFraction;
+        if (towardTarget.LengthSquared() <= closeTo * closeTo) return Vector3.Zero;
+        _faceDir = towardTarget.Normalized();
         return _faceDir;
     }
 

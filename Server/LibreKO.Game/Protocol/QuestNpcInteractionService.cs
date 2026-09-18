@@ -192,6 +192,7 @@ public class QuestNpcInteractionService(
             NpcData.TypeClanCape => BuildClanCapePacket(),
             NpcData.TypeWarehouse => BuildWarehousePacket(),
             NpcData.TypeClassChange => BuildClassChangePacket(),
+            NpcData.TypeMakeupArtist => PreGamePacketWriter.ChangeHairShop(),
             NpcData.TypeChaoticGenerator => BuildChaoticGeneratorPacket(npc),
             _ => null
         };

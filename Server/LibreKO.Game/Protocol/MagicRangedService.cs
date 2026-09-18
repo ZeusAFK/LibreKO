@@ -51,10 +51,15 @@ public class MagicRangedService(
         else
         {
             var npcTarget = sessionManager.Regions.GetNpc(targetId);
-            if (npcTarget == null || !npcTarget.IsAlive || npcTarget.ZoneId != caster.ZoneId
-                || !NpcHostility.IsAttackableBy(npcTarget, caster))
+            if (npcTarget != null && npcTarget.IsAlive && !NpcHostility.IsAttackableBy(npcTarget, caster))
             {
                 await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
+                return;
+            }
+
+            if (npcTarget == null || !npcTarget.IsAlive || npcTarget.ZoneId != caster.ZoneId)
+            {
+                await EchoAsync(caster, skillId, targetId, data, 0);
                 return;
             }
 
@@ -76,7 +81,11 @@ public class MagicRangedService(
             }
         }
 
-        // Preserves client sData and sets sData[3] = miss indicator
+        await EchoAsync(caster, skillId, targetId, data, finalDamage);
+    }
+
+    private async Task EchoAsync(UserSession caster, int skillId, int targetId, int[] data, int finalDamage)
+    {
         data[3] = (short)(finalDamage == 0 ? -100 : 0);
         await sessionManager.Regions.SendToRegion(
             caster,

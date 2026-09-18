@@ -18,6 +18,7 @@ public class MagicOverTimeService(
     ILogger<MagicOverTimeService> logger)
 {
     private const byte PotionItemGroup = 9;
+    private const byte OverTimeTickSeconds = 2;
 
     private const int ItemGrantedSkillIdBase = 400000;
     private const int PercentScale = 100;
@@ -420,7 +421,7 @@ public class MagicOverTimeService(
             return 0;
 
         if ((MagicDirectType)type3Data.DirectType == MagicDirectType.HealthBooster)
-            return (int)(caster.Level * (1 + caster.Level / 30.0)) + 3;
+            return type3Data.Duration / OverTimeTickSeconds * ((int)(caster.Level * (1 + caster.Level / 30.0)) + 3);
 
         if (type3Data.TimeDamage < 0)
         {
@@ -441,7 +442,7 @@ public class MagicOverTimeService(
             return 0;
 
         if ((MagicDirectType)type3Data.DirectType == MagicDirectType.HealthBooster)
-            return (int)(caster.Level * (1 + caster.Level / 30.0)) + 3;
+            return type3Data.Duration / OverTimeTickSeconds * ((int)(caster.Level * (1 + caster.Level / 30.0)) + 3);
 
         if (type3Data.TimeDamage < 0)
         {
@@ -464,8 +465,7 @@ public class MagicOverTimeService(
             return;
         }
 
-        const byte tickIntervalSeconds = 2;
-        var tickCountFloat = duration / (float)tickIntervalSeconds;
+        var tickCountFloat = duration / (float)OverTimeTickSeconds;
         var tickLimit = Math.Max(1, (int)tickCountFloat);
         var tickAmount = (short)(totalAmount / tickCountFloat);
         if (tickAmount == 0)
@@ -479,10 +479,10 @@ public class MagicOverTimeService(
             MagicId = skillId,
             CasterId = casterId,
             TickAmount = tickAmount,
-            TickIntervalSeconds = tickIntervalSeconds,
+            TickIntervalSeconds = OverTimeTickSeconds,
             TickCount = 0,
             TickLimit = (byte)Math.Min(byte.MaxValue, tickLimit),
-            NextTickTicks = DateTime.UtcNow.AddSeconds(tickIntervalSeconds).Ticks
+            NextTickTicks = DateTime.UtcNow.AddSeconds(OverTimeTickSeconds).Ticks
         };
     }
 

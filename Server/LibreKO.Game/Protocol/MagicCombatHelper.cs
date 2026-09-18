@@ -134,8 +134,12 @@ internal static class MagicCombatHelper
 
     private static int ScaleTotalHit(UserSession caster, int rawDamage)
     {
-        var charisma = caster.Magic + caster.Stats.ChaBonus;
-        var totalHit = (int)Math.Ceiling(rawDamage * charisma / CharismaDivisor);
+        var totalHit = rawDamage;
+        if (ClassIdHelper.IsMage(caster.Class))
+        {
+            var charisma = caster.Magic + caster.Stats.ChaBonus;
+            totalHit = (int)Math.Ceiling(rawDamage * charisma / CharismaDivisor);
+        }
 
         return totalHit * (caster.MagicAttackAmount + PercentScale) / PercentScale;
     }
