@@ -16,7 +16,7 @@ public partial class World : Node3D
         EscapeCloses(() => AimingAreaSkill, () => CancelAreaCast());
         EscapeCloses(() => _fullMapShown, () => ToggleFullMap());
         EscapeCloses(() => _buyAmountShown, () => CloseBuyAmount());
-        EscapeCloses(() => _questNotifications.Count > 0, () => AnswerQuestNotification(-1));
+        EscapeCloses(() => _questNotifications.Count > 0, () => DismissQuestNotifications());
         EscapeCloses(() => _npcDialogShown, () => CloseNpcDialog());
         EscapeCloses(() => _vendorShown, () => CloseVendor());
         EscapeCloses(() => _repairShown, () => CloseRepair());

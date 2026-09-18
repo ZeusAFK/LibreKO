@@ -801,9 +801,26 @@ public partial class World
         return DetachPreviewControl(_questToastPanel!);
     }
 
-    internal Control BuildQuestNotificationUiPreview()
+    internal Control BuildQuestNotificationUiPreview(int count = 3)
     {
-        EnsureQuestNotificationWindow();
+        QuestText.EnsureLoaded();
+        var samples = new[]
+        {
+            new QuestView(663, 31561, 2, true, true, false, false, QuestViewState.Available, 0, "How to hunt",
+                "You must talk to [Hunter] Halon.",
+                "So you think you've got enough skills? Have you even had a proper hunting before? Come and see me at the camp.",
+                new QuestObjectives(663, false, []), [], [], ["I'll come by", "Not now"], Notification: true),
+            new QuestView(60, 13013, 21, true, true, false, false, QuestViewState.Available, 0, "Doom Soldier hunt",
+                "Hunt 40 Doom Soldiers for the guard captain.",
+                "The Doom Soldiers are pressing on the north gate again. Thin their ranks and the captain will reward you.",
+                new QuestObjectives(60, false, []), [], [], ["Accept"], Notification: true),
+            new QuestView(1233, 25002, 21, true, false, true, false, QuestViewState.Claimable, 0, "Draki's Heart",
+                "Bring the Spiritual Stone to the sage.",
+                "You found it. Bring the stone to me and I will tell you what the Draki left behind.",
+                new QuestObjectives(1233, false, []), [], [], ["Turn in"], Notification: true),
+        };
+        for (var i = 0; i < Mathf.Min(count, samples.Length); i++)
+            ShowQuestNotification(samples[i]);
         return DetachPreviewControl(_questNotificationWindow!);
     }
 
