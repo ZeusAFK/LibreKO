@@ -39,7 +39,7 @@ public static class KoScenery
             World.ConfigureKoObjectMaterials(instance);
             var rotation = new Quaternion(o.Rot.X, -o.Rot.Y, -o.Rot.Z, o.Rot.W).Normalized();
             instance.Transform = new Transform3D(
-                terrain.Transform.Basis * new Basis(rotation).Scaled(o.Scale),
+                terrain.Transform.Basis * new Basis(rotation) * Basis.FromScale(o.Scale),
                 terrain.KoToWorld(o.KoPos.X, o.KoPos.Y, o.KoPos.Z));
 
             if (FindFirst<AnimationPlayer>(instance) is { } animation)

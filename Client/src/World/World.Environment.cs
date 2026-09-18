@@ -413,7 +413,7 @@ public partial class World
         Diag.Step($"object {key}");
         var scene = ResolveObjectScene(key);
         var q = new Quaternion(o.KoRot.X, -o.KoRot.Y, -o.KoRot.Z, o.KoRot.W).Normalized();
-        var localBasis = new Basis(q).Scaled(o.Scale);
+        var localBasis = new Basis(q) * Basis.FromScale(o.Scale);
 
         if (scene != null && ObjectNeedsCompleteScene(key, scene))
         {
