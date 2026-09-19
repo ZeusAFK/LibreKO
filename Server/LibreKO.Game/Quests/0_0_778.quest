@@ -1,0 +1,30 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 778 "[Crack of All Means] Ominous Atmosphere"
+    Journal for karus "You must talk to [Advisor] Herga."
+    Journal for elmorad "You must talk to [Advisor] Nez."
+
+Requires player level >= 50
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Herga is asking for you. Please go to Luferson Castle."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Nez is asking for you. Please go to El Morad Castle."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "<selfname>.Are you doing well?"
+        Topic "Tell me more..." do
+            Show quest "Bad Energy is disrupting Adonis Continent. Wizards are trying to find the reason for this but have no luck.\n\nWe have no resouces to further find out what's going on. Can you take this assignment?\n\nLuferson Castle's Herga is looking for you to find out what's going on with the unknown incident."
+    If player is elmorad
+        Say "<selfname>.Are you doing well?"
+        Topic "Tell me more..." do
+            Show quest "Bad Energy is disrupting Adonis Continent. Wizards are trying to find the reason for this but have no luck.\n\nWe have no resouces to further find out what's going on. Can you take this assignment?\n\nElmorad Castle's Nez is looking for you to find out what's going on with the unknown incident."
+
+On claimable
+    Show quest "Thank you for accepting. For now, [Cracked Snake Scale] should be collected from [Lamia]. This will be used to find out the reason for the incident."

@@ -1,0 +1,35 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 792 "[Crack of All Means] Drug to the Pharmacist"
+    Journal for karus "You must accept the request of [Order of the Sorcery] Gater."
+    Journal for elmorad "You must accept the request of [Order of the Sorcery] Nez."
+    Collect 1 of 900330000
+
+Requires player level >= 55 and quest 791 is completed
+
+Rewards
+    Give 250000 experience
+
+On available
+    If player is karus
+        Say "We have to go back to Luferson Castle and meet [Advisor] Herga. Let's go, Master."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "We have to go back to El Morad Castle and meet [Advisor] Nez. Let's go, Master."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You've come back. So what's happened?"
+        Topic "Tell me more..." do
+            Show quest "Antibiotic creation has been completed? Good job, <selfname>. [Completed Antibiotics]...\n\nDeliver [Complete Antibiotic] to Luferson Castle's Herga following the request from Gator."
+    If player is elmorad
+        Say "You've come back. So what's happened?"
+        Topic "Tell me more..." do
+            Show quest "Antibiotic creation has been completed? Good job, <selfname>. [Completed Antibiotics]...\n\nDeliver [Complete Antibiotic] to Luferson Castle's Herga following the request from Noker."
+
+On in_progress
+    Say "So where is it?"
+
+On claimable
+    Show quest "Give it to me. I'll see how we can distribute this before the disease spreads.\n\nFirst, get this [Timing Flow (Taion)]. Equip this and vaccinate [Taion]. It'll only work on [Taion]."

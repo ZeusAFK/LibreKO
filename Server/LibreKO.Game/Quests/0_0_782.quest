@@ -1,0 +1,36 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 782 "[Crack of All Means] Reason for Contamination"
+    Journal for karus "You must perform the mission assigned by [Advisor] Herga."
+    Journal for elmorad "You must perform the mission assigned by [Advisor] Nez."
+    Collect 4 of 508215000
+
+Requires player level >= 52 and quest 781 is completed
+
+Rewards
+    Give 7500000 experience
+    Give 1 of 900338000
+
+On available
+    If player is karus
+        Say "...  I ... think.. I'm getting the symptoms. Herga must know what to do."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "...  I ... think.. I'm getting the symptoms. Nez must know what to do."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "I've heard of the story again."
+        Topic "Tell me more..." do
+            Show quest "The person who seems to be infected are [haoong's Clan Warriors]. We have to get [Haoong Clan's Warrior Blood] to study further.\n\nCollect [Haoong Clan's Warrior Blood] following the order from Luferson Castle's Herga."
+    If player is elmorad
+        Say "I've heard of the story again."
+        Topic "Tell me more..." do
+            Show quest "The person who seems to be infected are [haoong's Clan Warriors]. We have to get [Haoong Clan's Warrior Blood] to study further.\n\nCollect [Haoong Clan's Warrior Blood] following the order from Elmorad Castle's Nez."
+
+On in_progress
+    Say "You don't have enough. Hurry."
+
+On claimable
+    Show quest "You have it. Let's make sample.\n\nTake this [Haoong Clan Warrior Blood sample] to [Magic Association] Gator."

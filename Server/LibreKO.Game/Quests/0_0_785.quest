@@ -1,0 +1,31 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 785 "[Crack of All Means] Question"
+    Journal for karus "You must talk to [Advisor] Herga."
+    Journal for elmorad "You must talk to [Advisor] Nez."
+
+Requires player level >= 53 and quest 784 is completed
+
+Rewards
+    Give 1 of 900323000
+
+On available
+    If player is karus
+        Say "Master, Herga is looking for you. He has to talk to you about the component of the contamination."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, Nez is looking for you. He has to talk to you about the component of the contamination."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hm.. Something scary is happening..."
+        Topic "Tell me more..." do
+            Show quest "According to the report Gator sent, the contamination is spreading fast. Karus will die if this keeps continue like this. It's horrible.\n\nBut we really can't find out how and why this is happening.\n\nTalk to Herga from Luferson Castle."
+    If player is elmorad
+        Say "Hm.. Something scary is happening..."
+        Topic "Tell me more..." do
+            Show quest "According to the report Noker sent, the contamination is spreading fast. El Morads will die if this keeps continue like this. It's horrible.\n\nBut we really can't find out how and why this is happening.\n\nTalk to Nez from El Morad Castle."
+
+On claimable
+    Show quest "Deliver this report to Clarence. Since she's an elf she might have a clue."

@@ -1,0 +1,45 @@
+Bind Npc 29070 Zone 1 for karus
+Bind Npc 29071 Zone 2 for elmorad
+Quest 781 "[Crack of All Means] What's the problem?"
+    Journal for karus "You must accept the request of [Order of the Sorcery] Gater."
+    Journal for elmorad "You must accept the request of [Order of the Sorcery] Knocker."
+    Collect 4 of 900318000
+    Collect 1 of 900319000
+
+Requires player level >= 51 and quest 780 is completed
+
+Rewards
+    Give 10000000 experience
+
+On available
+    If player is karus
+        Say "New disease? Is it like the flu?? Let's hurry and go visit Gather. I don't want to go to the doctors."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "New disease? Is it like the flu?? Let's hurry and go take a visit to Noker. I don't want to go to the doctors."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "From the contaminated area, a new kind of disease is spreading. Currently it's spreading through pigs. But this might definitely effect human. Can you help us?"
+        Topic "Tell me more..." do
+            Show quest "Sure. I'll move you to the contaminated area. Obtain [Contaminated Snake Scale] from [Contaminated Lamia] and [Contaminated Hard Snake Scales] from their chief [Contaminated Ramiros].\n\nCollect [Contaminated Snake Scales] and [Contaminated Hard Snake Scales] from the contaminated area which Gator is sending you."
+    If player is elmorad
+        Say "From the contaminated area, a new kind of disease is spreading. Currently it's spreading through pigs. But this might definitely effect human. Can you help us?"
+        Topic "Tell me more..." do
+            Show quest "Sure. I'll move you to the contaminated area. Obtain [Contaminated Snake Scale] from [Contaminated Lamia] and [Contaminated Hard Snake Scales] from their chief [Contaminated Ramiros].\n\nCollect [Contaminated Snake Scales] and [Contaminated Hard Snake Scales] from the contaminated area which Noker is sending you."
+
+On in_progress
+    Say "What's the problem? I don't think you have enough."
+
+On claimable
+    If player is karus
+        Show quest "You have them all! We can start the experiment.\n\nHerga from Luferson Castle is looking for you, <selfname>. When you come she says deliver [Haoong Clan Warrior's Blood]."
+    If player is elmorad
+        Show quest "You have them all! We can start the experiment.\n\nNez from El Morad Castle is looking for you, <selfname>. When you come she says deliver [Haoong Clan Warrior's Blood]."
+
+On completed
+    If player is karus
+        Say "Please come back when you level up to 52."
+    If player is elmorad
+        Say "Please come back when you level up to be 52."

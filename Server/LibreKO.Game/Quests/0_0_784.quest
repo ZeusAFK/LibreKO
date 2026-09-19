@@ -1,0 +1,42 @@
+Bind Npc 29070 Zone 1 for karus
+Bind Npc 29071 Zone 2 for elmorad
+Quest 784 "[Crack of All Means] The best medicine for a maniac is a club."
+    Journal for karus "You must accept the request of [Order of the Sorcery] Gater."
+    Journal for elmorad "You must accept the request of [Order of the Sorcery] Knocker."
+    Collect 4 of 900321000
+    Collect 1 of 900322000
+
+Requires player level >= 52 and quest 783 is completed
+
+Rewards
+    Give 7500000 experience
+
+On available
+    If player is karus
+        Say "Herga has a nickname like that? Wow he's more awesome than I had imagined."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Nez has a nickname like that? Wow he's more awesome than I had imagined."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Because of Herga, we're seeing some progress."
+        Topic "Tell me more..." do
+            Show quest "Since we have the [Haoong Clan Blood Sample] I need something that'll can be compaired with. I'll send you to a place where you can collect [Contaminated Haoong's Warrior Blood], [Contaminated Powder Nut Blood].\n\nCollect [Contaminated Haoong Clan's Warrior Blood] and [Contaminated Powder Nut Blood] from where Gator is sending you."
+    If player is elmorad
+        Say "Because of Nez, we're seeing some progress."
+        Topic "Tell me more..." do
+            Show quest "Since we have the [Haoong Clan Blood Sample] I need something that'll can be compaired with. I'll send you to a place where you can collect [Contaminated Haoong's Warrior Blood], [Contaminated Powder Nut Blood].\n\nCollect [Contaminated Haoong Clan's Warrior Blood] and [Contaminated Powder Nut Blood] from where Noker is sending you."
+
+On in_progress
+    Say "I don't think you have enough. Go collect more."
+
+On claimable
+    If player is karus
+        Show quest "You have them all! I'll start experiement.\n\nFind Herga. I've sent the contamination report. He says he'll need to talk to you, <selfname>."
+    If player is elmorad
+        Show quest "You have them all! I'll start experiement.\n\nFind Nez. I've sent the contamination report. He says he'll need to talk to you, <selfname>."
+
+On completed
+    Say "I'll give you the next mission when you are level 53."

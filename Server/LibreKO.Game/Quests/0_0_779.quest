@@ -1,0 +1,41 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 779 "[Crack of All Means] Sign"
+    Journal for karus "You must perform the mission assigned by [Advisor] Herga."
+    Journal for elmorad "You must perform the mission assigned by [Advisor] Nez."
+    Collect 4 of 508214000
+
+Requires player level >= 50 and quest 778 is completed
+
+Rewards
+    Give 8750000 experience
+
+On available
+    If player is karus
+        Say "According to Herga, something's happening at Adonis Continent."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "According to Nez, something's happening at Adonis Continent."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "It seems you are going to help now. Like I said, find out what's causing this."
+        Topic "Tell me more..." do
+            Show quest "For now, collect [Cracked Snake Scale] from [Lamia].\n\nLuferson Castle's Herga said to bring [Split Snake Scales] from [Lamia]."
+    If player is elmorad
+        Say "It seems you are going to help now. Like I said, find out what's causing this."
+        Topic "Tell me more..." do
+            Show quest "For now, collect [Cracked Snake Scale] from [Lamia].\n\nElmorad Castle's Nez said to bring [Split Snake Scales] from [Lamia]."
+
+On in_progress
+    Say "We have no time. Hurry!"
+
+On claimable
+    If player is karus
+        Show quest "You brought it. Good job.\n\nI can't tell what's happening here..  Hm...   Please do me a favor again. Go find Gather."
+    If player is elmorad
+        Show quest "You brought it. Good job.\n\nI can't tell what's happening here..  Hm...   You'll need to do me a favor again. Go find Knoker."
+
+On completed
+    Say "Level up to 51 and come back."

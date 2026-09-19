@@ -1,0 +1,30 @@
+Bind Npc 29070 Zone 1 for karus
+Bind Npc 29071 Zone 2 for elmorad
+Quest 780 "[Crack of All Means] Dispatching Inspectors"
+    Journal for karus "You must talk to [Order of the Sorcery] Gater."
+    Journal for elmorad "You must talk to [Order of the Sorcery] Knocker."
+
+Requires player level >= 51 and quest 779 is completed
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Let's go find Gather like Herga has suggested."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Let's go find Knoker like Nez has suggested."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You must be <selfname>. Herga has contacted me already."
+        Topic "Tell me more..." do
+            Show quest "From what Herga has reported and given the information we received we were able to find out that the contamination is happening all over the Adonis Continent.\n\nFrom the contaminated area, a new kind of disease is spreading. Currently it's spreading through pigs. But this might definitely effect human. Can you help us?\n\nFind [Magic Association] Gator following what Herga said."
+    If player is elmorad
+        Say "You must be <selfname>. Nez has contacted me already."
+        Topic "Tell me more..." do
+            Show quest "From what Nez has reported and given the information we received we were able to find out that the contamination is happening all over the Adonis Continent.\n\nFrom the contaminated area, a new kind of disease is spreading. Currently it's spreading through pigs. But this might definitely effect human. Can you help us?\n\nFind [Magic Association] Gator following what Nez said."
+
+On claimable
+    Show quest "Sure. I'll move you to the contaminated area. Obtain [Contaminated Snake Scale] from [Contaminated Lamia] and [Contaminated Hard Snake Scales] from their chief [Contaminated Ramiros]."

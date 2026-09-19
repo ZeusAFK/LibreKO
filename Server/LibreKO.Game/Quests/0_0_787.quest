@@ -1,0 +1,39 @@
+Bind Npc 24202 Zone 1 for karus
+Bind Npc 14202 Zone 2 for elmorad
+Quest 787 "[Crack of All Means] Mend the barn before the horse is stolen."
+    Journal for karus "You must accept the request of [Secret Agent] Clarence."
+    Journal for elmorad "You must accept the request of [Secret Agent] Clarence."
+    Collect 5 of 900324000
+    Collect 1 of 900325000
+
+Requires player level >= 53 and quest 786 is completed
+
+Rewards
+    Give 12500000 experience
+    Give 1 of 900326000
+
+On available
+    Say "Let's hurry and go."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "I've read the report. It seems it's a big deal. It's better to always prevent things than fixing after bad things happen."
+        Topic "Tell me more..." do
+            Show quest "Please collect [Shiny Fruit] and [Legendary Shiny Fruit] from the place I send you. You can get them from [Anceitn Trent] and [Legendary Old Tree].\n\nCollect [Shiny Fruit] and [Legendary Shiny Fruit] from the place [Secret Deputy] Clarence from Belua Town sends you."
+    If player is elmorad
+        Say "I've read the report. It seems it's a big deal. It's better to always prevent things than fixing after bad things happen."
+        Topic "Tell me more..." do
+            Show quest "Please collect [Shiny Fruit] and [Legendary Shiny Fruit] from the place I send you. You can get them from [Anceitn Trent] and [Legendary Old Tree].\n\nCollect [Shiny Fruit] and [Legendary Shiny Fruit] from the place [Secret Deputy] Clarence from Asga Town sends you."
+
+On in_progress
+    Say "You don't have enough yet. Do I have to send you again? So annoying..."
+
+On claimable
+    If player is karus
+        Show quest "You have them all! Good!\n\nBring this fruit juice to Herga. Herga will make a good use out of this."
+    If player is elmorad
+        Show quest "You have them all! Good!\n\nBring this fruit juice to Nez. Nez will make a good use out of this."
+
+On completed
+    Say "Come back when you are level 54."

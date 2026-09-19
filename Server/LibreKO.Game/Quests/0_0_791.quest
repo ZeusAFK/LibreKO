@@ -1,0 +1,34 @@
+Bind Npc 29070 Zone 1 for karus
+Bind Npc 29071 Zone 2 for elmorad
+Quest 791 "[Crack of All Means] Developing antibiotic?"
+    Journal for karus "You must talk to [Order of the Sorcery] Gater."
+    Journal for elmorad "You must talk to [Order of the Sorcery] Knocker."
+
+Requires player level >= 55 and quest 790 is completed
+
+Rewards
+    Give 1 of 900330000
+
+On available
+    If player is karus
+        Say "Phew.. Finally. Go find Gator."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Phew.. Finally. Go find Noker."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You're back. I've received the story from Ramark with the result."
+        Topic "Tell me more..." do
+            Show quest "Made [Complete Antibiotic] combining the [Shiny Fruit Juice] and [Clean Old Tree Sap].\n\nWe can't be sure that this will resolve completely.\n\nTalk to Gator about antibiotic study."
+    If player is elmorad
+        Say "You're back. I've received the story from Ramark with the result."
+        Topic "Tell me more..." do
+            Show quest "Made [Complete Antibiotic] combining the [Shiny Fruit Juice] and [Clean Old Tree Sap].\n\nWe can't be sure that this will resolve completely.\n\nTalk to Noker about antibiotic study."
+
+On claimable
+    If player is karus
+        Show quest "Please deliver this [Completed Antibiotic] to Herga and do as he says. I'll try to find out if we can make more of this antibiotics."
+    If player is elmorad
+        Show quest "Please deliver this [Completed Antibiotic] to Nez and do as he says. I'll try to find out if we can make more of this antibiotics."

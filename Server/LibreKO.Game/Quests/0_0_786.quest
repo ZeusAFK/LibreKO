@@ -1,0 +1,35 @@
+Bind Npc 24202 Zone 1 for karus
+Bind Npc 14202 Zone 2 for elmorad
+Quest 786 "[Crack of All Means] What's this?"
+    Journal for karus "You must perform the mission assigned by [Advisor] Herga."
+    Journal for elmorad "You must perform the mission assigned by [Advisor] Nez."
+    Collect 1 of 900323000
+
+Requires player level >= 53 and quest 785 is completed
+
+Rewards
+    Give 125000 experience
+
+On available
+    If player is karus
+        Say "So we just have to go find [Secret Agent] Clarence from [Belua Village]. Let's hurry."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "So we just have to go find [Secret Agent] Clarence from [Aska Village]. Let's hurry."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Long time no see, <selfname>. What's going on?"
+        Topic "Tell me more..." do
+            Show quest "Contaminants Report? Another strange thing carrying nice surprise. What good. That I owe one they do not need you to help me.\n\nDeliver [Contamination Component Report] to [Secret Deputy] Clarence following the order from Herga."
+    If player is elmorad
+        Say "Long time no see, <selfname>. What's going on?"
+        Topic "Tell me more..." do
+            Show quest "Contaminants Report? Another strange thing carrying nice surprise. What good. That I owe one they do not need you to help me.\n\nDeliver [Contamination Component Report] to [Secret Deputy] Clarence following the order from Nez."
+
+On in_progress
+    Say "Where's the report?"
+
+On claimable
+    Show quest "What's this?\n\nPlease collect [Shiny Fruit] and [Legendary Shiny Fruit] from the place I send you. You can get them from [Anceitn Trent] and [Legendary Old Tree]."

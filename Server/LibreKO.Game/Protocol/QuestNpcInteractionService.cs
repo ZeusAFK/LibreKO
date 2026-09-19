@@ -184,7 +184,7 @@ public class QuestNpcInteractionService(
 
     private static async Task<bool> TryHandleNpcUiAsync(IClient client, NpcInstance npc, NpcData npcData)
     {
-        Packet? response = npcData.NpcType switch
+        Packet? response = npc.NpcId == NpcData.MakeupArtist ? PreGamePacketWriter.ChangeHairShop() : npcData.NpcType switch
         {
             NpcData.TypeTradeMerchant => BuildTradeNpcPacket(npcData),
             NpcData.TypeRepairMerchant => BuildRepairNpcPacket(npcData),
@@ -192,7 +192,6 @@ public class QuestNpcInteractionService(
             NpcData.TypeClanCape => BuildClanCapePacket(),
             NpcData.TypeWarehouse => BuildWarehousePacket(),
             NpcData.TypeClassChange => BuildClassChangePacket(),
-            NpcData.TypeMakeupArtist => PreGamePacketWriter.ChangeHairShop(),
             NpcData.TypeChaoticGenerator => BuildChaoticGeneratorPacket(npc),
             _ => null
         };

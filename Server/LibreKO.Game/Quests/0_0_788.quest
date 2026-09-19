@@ -1,0 +1,36 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 788 "[Crack of All Means] How to deal with the new disease"
+    Journal for karus "You must accept the request of [Secret Agent] Clarence."
+    Journal for elmorad "You must accept the request of [Secret Agent] Clarence."
+    Collect 1 of 900326000
+
+Requires player level >= 54 and quest 787 is completed
+
+Rewards
+    Give 125000 experience
+    Give 1 of 900327000
+
+On available
+    If player is karus
+        Say "We have to go back to Herga. I'm tired, Master!"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "We have to go back to Nez. I'm tired, Master!"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "How's the result."
+        Topic "Tell me more..." do
+            Show quest "It seems the result is good. Is this [Shiny Fruit Juice]? This is the antibiotic for the disease? But this isn't enough.\n\nDeliver [Shiny Fruit Juice] to [Advisor] Herga following the request by [Secret Deputy] Clarence."
+    If player is elmorad
+        Say "How's the result."
+        Topic "Tell me more..." do
+            Show quest "It seems the result is good. Is this [Shiny Fruit Juice]? This is the antibiotic for the disease? But this isn't enough.\n\nDeliver [Shiny Fruit Juice] to [Advisor] Nez following the request by [Secret Deputy] Clarence."
+
+On in_progress
+    Say "But where is the juice?"
+
+On claimable
+    Show quest "It's literally shining. Wait here.\n\nBring this [Shiny Fruit Juice Sample] to Ramark. He's one of the [Magic Associate] who's been dispatched to study this disease."
