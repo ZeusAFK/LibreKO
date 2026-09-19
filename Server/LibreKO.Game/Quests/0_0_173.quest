@@ -1,0 +1,39 @@
+Bind Npc 24440 Zone 1 for karus
+Bind Npc 14440 Zone 2 for elmorad
+Quest 173 "[Party/Repeatable]Incomplete Hunt I"
+    Repeat always
+    Journal for karus "The quest to eradicate Troll is a repeatable mission from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Journal for elmorad "The quest to eradicate Troll is a repeatable mission from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Kill 20 of 1776, 1777, 1771, 1721
+
+Requires player level >= 45
+
+Rewards
+    Give 2000000 experience or 4000000 with premium
+
+direction_554 = location "Troll" about "Troll\n Monsters who led the Army of Darkness in the war between humans and Pathos; Defense Power and Immunity are not high but they possess high Attack Power and HP" found "El Morad" elmorad at 604 1524 in zone 2
+direction_555 = location "Troll" about "Troll\n Monsters who led the Army of Darkness in the war between humans and Pathos; Defense Power and Immunity are not high but they possess high Attack Power and HP" found "Karus" karus at 1290 350 in zone 1
+
+On offer
+    If player is karus
+        Say "[Whoever wants to, erm, 'share the glory', come to the Waste Land!]"
+        Topic "Tell me more..." do
+            Show quest "- Offical Notice -\n\nI have killed millions of monsters, and I've never been afraid for my life. But! Those Trolls were a real pants-filler. I nearly died several times fighting them, but next time they won't be so lucky. That's because I'm going to go back there and rip them some new ones! Anyone else who wants a piece, come and meet me at the Waste Land!!"
+    If player is elmorad
+        Say "[Who want to enjoy the glory together come to the Revival Hole!!]"
+        Topic "Tell me more..." do
+            Show quest "- Offical Notice -\n\nI have killed millions of monsters, and I've never been afraid for my life. But! Those Trolls were a real bed-wetter. I nearly died several times fighting them, but next time they won't be so lucky. That's because I'm going to go back there and rip them some new ones! Anyone else who wants a piece, come and meet me at the Revival Hole!!"
+
+On in_progress
+    If player is karus
+        Say "(Monologue) Must get to the Waste Land..."
+        Topic "Where can I find it?" do
+            Map direction_555
+    If player is elmorad
+        Say "(Monologue) Must go to the Revival Hole..."
+        Topic "Where can I find it?" do
+            Map direction_554
+
+On ready
+    Say "Well, the Trolls were just as tough as advertised. But, errr~ Master, you killed them all! Ha Ha Ha!"
+    Topic "Confirm" goto close

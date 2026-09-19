@@ -46,7 +46,7 @@ public static class QuestClassifier
 
     private static readonly HashSet<string> StructureVerbs = new(StringComparer.OrdinalIgnoreCase)
     {
-        "kill", "journal", "daily", "requires", "rewards",
+        "kill", "title", "journal", "daily", "requires", "rewards",
     };
 
     private static readonly HashSet<string> StructureWords = new(StringComparer.OrdinalIgnoreCase)

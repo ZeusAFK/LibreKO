@@ -1,0 +1,35 @@
+Bind Npc 24440 Zone 1 for karus
+Bind Npc 14440 Zone 2 for elmorad
+Quest 174 "[Party/Repeatable] Menace of Harpys"
+    Repeat always
+    Journal for karus "The quest to eradicate Harpy is a repeatable mission from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Journal for elmorad "The quest to eradicate Harpy is a repeatable mission from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Kill 20 of 2251, 2201
+
+Requires player level >= 45
+
+Rewards
+    Give 1500000 experience or 3000000 with premium
+
+direction_548 = location "Harpy" about "Harpy\nFrenzied and unintelligent, Harpies indiscriminately attack all life that enter its habitat. Even the most powerful parties will have to wage demanding battle against them in the mountains" found "El Morad" at 113 1021 in zone 2
+direction_549 = location "Harpy" about "Harpy\nFrenzied and unintelligent, Harpies indiscriminately attack all life that enter its habitat. Even the most powerful parties will have to wage demanding battle against them in the mountains" found "Karus" at 1628 1254 in zone 1
+
+On offer
+    If player is karus
+        Say "It is of great concern that the number of Harpys is increasing dramatically in the Valley of Dry Wind."
+        Topic "Tell me more..." do
+            Show quest "Not long ago, in the Valley of Dry Wind, I noticed an incredible increase in the number of Harpy. Everyone knows what Harpys are like... I'm concerned that if we don't do something about them, they'll overtake the whole village!\n\n          - Weapon Merchant Mori."
+    If player is elmorad
+        Say "It is of great concern that the number of Harpys is increasing dramatically in Blue Feather Valley."
+        Topic "Tell me more..." do
+            Show quest "Not long ago, in Blue Feather Valley, I noticed an incredible increase in the number of Harpy. Everyone knows what Harpys are like... I'm concerned that if we don't do something about them, they'll overtake the whole village!\n\n          - Weapon Merchant Falthus."
+
+On in_progress
+    If player is karus
+        Say "(Monologue) Have to take extra care here not to pull whole bunches of them in one go."
+        Topic "Where can I find it?" do
+            Map direction_549
+    If player is elmorad
+        Say "(Monologue) Have to take extra care here not to pull whole bunches of them in one go."
+        Topic "Where can I find it?" do
+            Map direction_548

@@ -1,0 +1,33 @@
+Bind Npc 24440 Zone 1 for karus
+Bind Npc 14440 Zone 2 for elmorad
+Quest 170 "[Party/Repeatable]Ressurection of Leech"
+    Repeat always
+    Journal for karus "The quest to eradicate Leech is a repeatable mission from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Journal for elmorad "The quest to eradicate Leech is a repeatable mission from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Kill 20 of 4551, 4501
+
+Requires player level >= 45
+
+Rewards
+    Give 2500000 experience or 5000000 with premium
+
+direction_16 = location "Lich" about "Lich\nResurrected corpse of a mage slain in battle against Pathos; practices powerful magic" found "Caluga Valley vicinity" at 1328 1830 in zone 2
+direction_17 = location "Lich" about "Lich\nResurrected corpse of a mage slain in battle against Pathos; practices powerful magic" found "Caluga Valley vicinity" at 630 262 in zone 1
+
+On offer
+    If player is karus
+        Show quest "I feel it... They are resurrecting... Any true knights of Karus  must go immediately to the Plains of Silence!! And STOP THEM! Their strength will overwhelm Karus if they are not put down. Do so. Now.\n\n                - Archmage Drake."
+    If player is elmorad
+        Say "(Monologue)... Must stop their resurrection in the Ruins of Kalia Village!!"
+        Topic "Tell me more..." do
+            Show quest "I feel it... They are resurrecting... Any true knights of El Morad  must go immediately to the  Ruins of Kalia Village!! And stop their resurrection! Their strength will overwhelm El Morad if they are not put down. Do so. Now.\n\n                - Archmage Drake."
+
+On in_progress
+    If player is karus
+        Say "(Monologue) The Leech's resurrecting in... The Plains of Silence. It's southwest from here."
+        Topic "Where can I find it?" do
+            Map direction_17
+    If player is elmorad
+        Say "(Monologue) The Leech's resurrecting in... The Ruins of Kalia Village It's northeast from here."
+        Topic "Where can I find it?" do
+            Map direction_16

@@ -1,0 +1,53 @@
+Bind Npc 24440 Zone 1 for karus
+Bind Npc 14440 Zone 2 for elmorad
+Quest 167
+    Title for karus "[Party/Repeatable]Marauders of Darkland I"
+    Title for elmorad "[Party/Repeatable]Marauders of Blue Feather Valley I"
+    Repeat always
+    Journal for karus "The quest to eradicate the Dragon Tooth Soldier is repeatable from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Journal for elmorad "The quest to eradicate the Dragon Tooth Soldier is repeatable from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Kill 20 of 8052, 8002
+
+Requires player level >= 45
+
+Rewards
+    Give 1125000 experience or 2250000 with premium
+
+direction_584 = location "Dragon Tooth Soldier" about "Dragon Tooth Soldier\nA monster created by Pathos in the Great War of Evil; possesses a conscience which is rare for an undead" found "El Morad" at 854 566 in zone 2
+direction_585 = location "Dragon Tooth Soldier" about "Dragon Tooth Soldier\nA monster created by Pathos in the Great War of Evil; possesses a conscience which is rare for an undead" found "Karus" at 454 819 in zone 1
+
+On available
+    If player is karus
+        Say "Master, have you seen the village notice board in Linnart Village? Lots of quests... What're they all about?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, have you seen the village notice board in Laiva Village? Lots of quests... What're they all about?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "[Recently, many Dragon Tooth Soldiers have been seen west of Linnart Village in the Dark Lands]"
+        Topic "Tell me more..." do
+            Show quest "Recently, in the Dark Land west of Linnart Village, large numbers of  Dragon Tooth Soldiers have been sighted. They've been attacking and plundering the merchants coming from Moradon. Travellers are advised to avoid the Dark Lands untill the Dragon Teeth Sodlers have been cleared out.\n\n- Sentinel Hassan."
+    If player is elmorad
+        Say "[Recently, many Dragon Tooth Soldiers have been appearing southeast of Laiva Village in Blue Feather  Valley]"
+        Topic "Tell me more..." do
+            Show quest "Recently, in Blue Feather's Valley, southeast of Laiva Village, large numbers of  Dragon Tooth Solders have been sighted. They've been attacking and plundering the merchants coming from Moradon. Travellers are warned to steer clear of Blue Feather's Valley untill the Dragon Tooth Soldiers have been dealt with.\n\n                  - Sentinel Beth."
+
+On in_progress
+    If player is karus
+        Say "(Monologue) Hmmm... are the Dark Lands west from here?"
+        Topic "Where can I find it?" do
+            Map direction_585
+    If player is elmorad
+        Say "(Monologue) Hmm... is Blue Feather Valley southeast from here?"
+        Topic "Where can I find it?" do
+            Map direction_584
+
+On ready
+    If player is karus
+        Say "Hopefully the Dark Lands will quite-down for awhile. Master, you tried incredibly hard."
+        Topic "Confirm" goto close
+    If player is elmorad
+        Say "Blue Feather's Valley will become quite for some time? Master, you tried hard."
+        Topic "Confirm" goto close

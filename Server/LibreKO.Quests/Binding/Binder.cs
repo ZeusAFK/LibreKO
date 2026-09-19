@@ -746,25 +746,23 @@ public sealed class Binder
             var title = BindQuestText(block.Title);
             var journal = BindQuestText(block.Journal);
             var perNation = block.Journals ?? [];
-            if (perNation.Count > 0)
+            var perNationTitles = block.Titles ?? [];
+            if (perNation.Count > 0 || perNationTitles.Count > 0)
             {
+                var scoped = new Dictionary<(int Nation, int ClassGroup), (string? Title, string? Journal)>();
+                foreach (var entry in perNationTitles)
+                    if (TextScope(entry.Nation) is { } scope)
+                        scoped[scope] = (BindQuestText(entry.Text), null);
                 foreach (var entry in perNation)
-                {
-                    if (QuestVocabulary.ClassGroups.TryGetValue(entry.Nation.Text, out var group))
-                    {
-                        _questTexts.Add(new QuestText((int)block.QuestId, title,
-                            BindQuestText(entry.Text), block.Daily, 0, group, block.Repeat));
-                        continue;
-                    }
-                    if (!QuestVocabulary.Nations.TryGetValue(entry.Nation.Text, out var nation))
-                    {
+                    if (TextScope(entry.Nation) is { } scope)
+                        scoped[scope] = (scoped.GetValueOrDefault(scope).Title, BindQuestText(entry.Text));
+                foreach (var entry in perNation)
+                    if (perNationTitles.Count > 0 && TextScope(entry.Nation) is { } scope && scoped[scope].Title is null)
                         _diagnostics.Error(DiagnosticId.UnknownDirective, entry.Nation.Span,
-                            $"\"{entry.Nation.Text}\" is not a nation or a class.");
-                        continue;
-                    }
-                    _questTexts.Add(new QuestText((int)block.QuestId, title,
-                        BindQuestText(entry.Text), block.Daily, nation, 0, block.Repeat));
-                }
+                            $"\"{entry.Nation.Text}\" has a Journal line but no Title line; give every nation a title, or write it on the Quest line.");
+                foreach (var (scope, text) in scoped)
+                    _questTexts.Add(new QuestText((int)block.QuestId, text.Title ?? title,
+                        text.Journal ?? journal, block.Daily, scope.Nation, scope.ClassGroup, block.Repeat));
             }
             else if (title is not null || journal is not null || block.Daily || block.Repeat)
             {
@@ -776,6 +774,17 @@ public sealed class Binder
                     (int)block.QuestId, groups,
                     block.AnyWillDo ? ObjectiveRule.Any : ObjectiveRule.All));
         }
+    }
+
+    private (int Nation, int ClassGroup)? TextScope(Token scope)
+    {
+        if (QuestVocabulary.ClassGroups.TryGetValue(scope.Text, out var group))
+            return (0, group);
+        if (QuestVocabulary.Nations.TryGetValue(scope.Text, out var nation))
+            return (nation, 0);
+        _diagnostics.Error(DiagnosticId.UnknownDirective, scope.Span,
+            $"\"{scope.Text}\" is not a nation or a class.");
+        return null;
     }
 
     private IReadOnlyList<BoundStatement.Action> BindGrantedItems() =>

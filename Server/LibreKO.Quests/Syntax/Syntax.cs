@@ -138,7 +138,8 @@ public sealed record QuestObjectivesSyntax(
     IReadOnlyList<NationTextSyntax>? Journals = null,
     IReadOnlyList<CollectSyntax>? Collects = null,
     IReadOnlyList<GrantSyntax>? Grants = null,
-    bool Repeat = false) : SyntaxNode(Span);
+    bool Repeat = false,
+    IReadOnlyList<NationTextSyntax>? Titles = null) : SyntaxNode(Span);
 
 public sealed record RewardRowSyntax(
     TextSpan Span,
