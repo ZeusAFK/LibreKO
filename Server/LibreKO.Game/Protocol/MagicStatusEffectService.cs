@@ -537,7 +537,7 @@ public class MagicStatusEffectService(
             return;
         }
 
-        if (stealthType != MagicStealthType.SeeInvisibleParty)
+        if (stealthType is MagicStealthType.DispelOnMove or MagicStealthType.DispelOnAttack)
             await AnnounceStealthAsync(caster, target, skillId, type9Data, data);
     }
 
@@ -571,6 +571,7 @@ public class MagicStatusEffectService(
 
             await stealthService.GrantSightAsync(caster, type9Data.Radius);
             AddStealthBuff(caster, caster, skillId, type9Data);
+            await AnnounceStealthAsync(caster, caster, skillId, type9Data, data);
             return true;
         }
 
