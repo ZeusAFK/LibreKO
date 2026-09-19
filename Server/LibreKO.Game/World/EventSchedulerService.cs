@@ -37,7 +37,7 @@ public class EventSchedulerService(
     {
         logger.LogInformation("Event scheduler service started");
 
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
@@ -212,7 +212,7 @@ public class EventSchedulerService(
         return TempleEvent.None;
     }
 
-    private async Task StartTempleEventAsync(TempleEvent contest, DateTime now, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds)
+    private async Task StartTempleEventAsync(TempleEvent contest, DateTime now, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds, UserSession? autoJoinSession = null)
     {
         _templeEvent = contest;
         _templeEventZone = TempleEventRules.ZoneFor(contest);
@@ -222,6 +222,10 @@ public class EventSchedulerService(
             .AddSeconds(TempleEventRules.DurationSecondsFor(contest));
         _lastTempleEventCall = now;
         _templeParticipants.Clear();
+        if (autoJoinSession != null)
+        {
+            _templeParticipants.Add(autoJoinSession.CharacterId);
+        }
 
         logger.LogInformation(
             "{Contest} called in zone {Zone}; entries are open for {Window}",
@@ -322,12 +326,12 @@ public class EventSchedulerService(
 
     public bool TempleEventAcceptingEntries => _templeEventJoinOpen;
 
-    public void CallTempleEvent(TempleEvent contest, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds)
+    public void CallTempleEvent(TempleEvent contest, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds, UserSession? autoJoinSession = null)
     {
         if (contest == TempleEvent.None)
             return;
 
-        _ = StartTempleEventAsync(contest, DateTime.UtcNow, joinWindowSeconds);
+        _ = StartTempleEventAsync(contest, DateTime.UtcNow, joinWindowSeconds, autoJoinSession);
     }
 
     public async Task CancelTempleEventAsync()

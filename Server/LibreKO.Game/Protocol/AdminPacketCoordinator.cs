@@ -201,29 +201,62 @@ public class AdminPacketCoordinator(
 
             case "juraid":
             case "jr":
-                var schedulerJr = serviceProvider.GetService<EventSchedulerService>();
-                if (schedulerJr != null)
+                if (arg is "0" or "now")
                 {
-                    int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : TempleEventRules.JoinWindowSeconds;
-                    schedulerJr.CallTempleEvent(TempleEvent.JuraidMountain, joinSec);
+                    await zoneTransitionService.ChangeZoneAsync(session, (byte)ZoneId.JuradMountain, 0f, 0f);
+                    await SendNoticeAsync(session, "[Juraid Mountain] Teleported directly to event map!");
+                }
+                else
+                {
+                    var schedulerJr = serviceProvider.GetService<EventSchedulerService>();
+                    if (schedulerJr != null)
+                    {
+                        int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : 30;
+                        schedulerJr.CallTempleEvent(TempleEvent.JuraidMountain, joinSec, session);
+                        var confirmPkt = EventPacketWriter.TempleEvent(8, 1, (short)ZoneId.JuradMountain);
+                        await session.Client.SendPacket(confirmPkt);
+                        await SendNoticeAsync(session, $"[Juraid Mountain] Registration open ({joinSec}s). You are registered and will teleport automatically!");
+                    }
                 }
                 break;
 
             case "bdw":
-                var schedulerBdw = serviceProvider.GetService<EventSchedulerService>();
-                if (schedulerBdw != null)
+                if (arg is "0" or "now")
                 {
-                    int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : TempleEventRules.JoinWindowSeconds;
-                    schedulerBdw.CallTempleEvent(TempleEvent.BorderDefenseWar, joinSec);
+                    await zoneTransitionService.ChangeZoneAsync(session, (byte)ZoneId.BorderDefenseWar, 0f, 0f);
+                    await SendNoticeAsync(session, "[Border Defense War] Teleported directly to event map!");
+                }
+                else
+                {
+                    var schedulerBdw = serviceProvider.GetService<EventSchedulerService>();
+                    if (schedulerBdw != null)
+                    {
+                        int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : 30;
+                        schedulerBdw.CallTempleEvent(TempleEvent.BorderDefenseWar, joinSec, session);
+                        var confirmPkt = EventPacketWriter.TempleEvent(8, 1, (short)ZoneId.BorderDefenseWar);
+                        await session.Client.SendPacket(confirmPkt);
+                        await SendNoticeAsync(session, $"[Border Defense War] Registration open ({joinSec}s). You are registered and will teleport automatically!");
+                    }
                 }
                 break;
 
             case "chaos":
-                var schedulerChaos = serviceProvider.GetService<EventSchedulerService>();
-                if (schedulerChaos != null)
+                if (arg is "0" or "now")
                 {
-                    int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : TempleEventRules.JoinWindowSeconds;
-                    schedulerChaos.CallTempleEvent(TempleEvent.Chaos, joinSec);
+                    await zoneTransitionService.ChangeZoneAsync(session, (byte)ZoneId.ChaosDungeon, 0f, 0f);
+                    await SendNoticeAsync(session, "[Chaos Dungeon] Teleported directly to event map!");
+                }
+                else
+                {
+                    var schedulerChaos = serviceProvider.GetService<EventSchedulerService>();
+                    if (schedulerChaos != null)
+                    {
+                        int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : 30;
+                        schedulerChaos.CallTempleEvent(TempleEvent.Chaos, joinSec, session);
+                        var confirmPkt = EventPacketWriter.TempleEvent(8, 1, (short)ZoneId.ChaosDungeon);
+                        await session.Client.SendPacket(confirmPkt);
+                        await SendNoticeAsync(session, $"[Chaos Dungeon] Registration open ({joinSec}s). You are registered and will teleport automatically!");
+                    }
                 }
                 break;
 
