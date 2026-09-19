@@ -93,11 +93,11 @@ public class MagicStatusEffectService(
         if ((TransformationUse)type6Data.UserSkillUse == TransformationUse.Monster)
         {
             return (magicItemUsageService.CanUseItem(caster, magic.BeforeAction)
-                    && magicItemUsageService.CanUseItem(caster, magic.UseItem))
+                    && magicItemUsageService.CanUseSkillItems(caster, magic))
                 || magicItemUsageService.CanUseItem(caster, DisguiseScrollItem);
         }
 
-        return magic.UseItem == 0 || magicItemUsageService.CanUseItem(caster, magic.UseItem);
+        return magicItemUsageService.CanUseSkillItems(caster, magic);
     }
 
     private static bool IsTransformationClassAllowed(short classId, short allowedClasses)
@@ -139,12 +139,12 @@ public class MagicStatusEffectService(
         if (magic.UseItem != 0)
         {
             if ((magic.ItemGroup == PotionItemGroup && !caster.CanUsePotions)
-                || !magicItemUsageService.CanUseItem(caster, magic.UseItem))
+                || !magicItemUsageService.CanUseSkillItems(caster, magic))
             {
                 logger.LogWarning(
                     "Skill {SkillId} refused for {Name}: item {ItemId} is {Reason} (class {Class}, level {Level})",
-                    skillId, caster.Name, magic.UseItem,
-                    magicItemUsageService.CheckItem(caster, magic.UseItem), caster.Class, caster.Level);
+                    skillId, caster.Name, magic.ConsumedItem,
+                    magicItemUsageService.CheckItem(caster, magic.ConsumedItem), caster.Class, caster.Level);
                 await SendMagicFailAsync(caster, skillId);
                 return;
             }
@@ -236,7 +236,7 @@ public class MagicStatusEffectService(
         if (statusType > 0 && isDebuff)
             await combatNotificationService.SendPartyStatusUpdateAsync(target, statusType, applied: true);
 
-        if (magic.UseItem != 0 && !await magicItemUsageService.TryConsumeItemAsync(caster, magic.UseItem))
+        if (!await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
         {
             await SendMagicFailAsync(caster, skillId);
             return;
@@ -500,8 +500,7 @@ public class MagicStatusEffectService(
                 effectingData),
             excludeSender: false);
 
-        if (magic.UseItem != 0)
-            await magicItemUsageService.TryConsumeItemAsync(caster, magic.UseItem);
+        await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic);
     }
 
     private const byte ZoneDelos = (byte)ZoneId.Delos;

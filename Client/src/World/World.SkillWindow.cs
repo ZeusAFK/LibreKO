@@ -229,8 +229,8 @@ public partial class World
         _skillItem1Lbl.Text = s.NeedItem != 0
             ? $"Required item : {ItemData.DisplayName(s.NeedItem)}"
             : "No required item";
-        _skillItem2Lbl.Text = s.UseItem != 0 && s.UseItem != s.NeedItem
-            ? $"Item consumed : {ItemData.DisplayName(s.UseItem)}"
+        _skillItem2Lbl.Text = s.ConsumedItem != 0 && s.ConsumedItem != s.NeedItem
+            ? $"Item consumed : {ItemData.DisplayName(s.ConsumedItem)}"
             : "No item consumed";
     }
 

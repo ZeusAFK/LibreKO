@@ -18,9 +18,11 @@ public enum ItemUsability
 public interface IMagicItemUsageService
 {
     bool CanUseItem(UserSession session, int itemId, int count = 1);
+    bool CanUseSkillItems(UserSession session, MagicData magic, int count = 1);
     ItemUsability CheckItem(UserSession session, int itemId, int count = 1);
     bool HasArrows(UserSession session, int count = 1);
     Task<bool> TryConsumeItemAsync(UserSession session, int itemId, int count = 1);
+    Task<bool> TryConsumeSkillItemAsync(UserSession session, MagicData magic, int count = 1);
     Task<bool> TryConsumeArrowAsync(UserSession session, int count = 1);
 }
 
@@ -39,6 +41,12 @@ public class MagicItemUsageService(
 
     public bool CanUseItem(UserSession session, int itemId, int count = 1) =>
         CheckItem(session, itemId, count) == ItemUsability.Usable;
+
+    public bool CanUseSkillItems(UserSession session, MagicData magic, int count = 1) =>
+        magic.UseItem == 0
+        || (magic.ConsumedItem == magic.UseItem
+            ? CanUseItem(session, magic.UseItem, count)
+            : CanUseItem(session, magic.UseItem) && CanUseItem(session, magic.ConsumedItem, count));
 
     public ItemUsability CheckItem(UserSession session, int itemId, int count = 1)
     {
@@ -62,6 +70,11 @@ public class MagicItemUsageService(
             ? ItemUsability.Usable
             : ItemUsability.NotCarryingEnough;
     }
+
+    public Task<bool> TryConsumeSkillItemAsync(UserSession session, MagicData magic, int count = 1) =>
+        magic.UseItem == 0 ? Task.FromResult(true)
+        : !CanUseSkillItems(session, magic, count) ? Task.FromResult(false)
+        : TryConsumeItemAsync(session, magic.ConsumedItem, count);
 
     public async Task<bool> TryConsumeItemAsync(UserSession session, int itemId, int count = 1)
     {

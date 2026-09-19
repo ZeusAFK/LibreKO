@@ -155,7 +155,7 @@ public class MagicPacketCoordinator(
         magic.PrimaryType == MagicSkillType.None
         && magic.SecondaryType != MagicSkillType.None
         && magic.UseItem != 0
-        && magicItemUsageService.CanUseItem(session, magic.UseItem)
+        && magicItemUsageService.CanUseSkillItems(session, magic)
         && !BattleZoneManager.IsBattleZone(session.ZoneId)
         && !BattleZoneManager.IsPvpZone(session.ZoneId);
 
@@ -301,6 +301,12 @@ public class MagicPacketCoordinator(
         int targetId,
         int[] data)
     {
+        if (!magicItemUsageService.CanUseSkillItems(session, magic))
+        {
+            await SendMagicFailAsync(session, skillId);
+            return;
+        }
+
         if (magic.Msp > 0)
         {
             if (session.Mp < magic.Msp)
@@ -311,6 +317,12 @@ public class MagicPacketCoordinator(
 
             session.Mp -= (short)magic.Msp;
             await combatLifecycleService.SendMspChangeAsync(session);
+        }
+
+        if (!await magicItemUsageService.TryConsumeSkillItemAsync(session, magic))
+        {
+            await SendMagicFailAsync(session, skillId);
+            return;
         }
 
         await magicExecutionService.ExecuteAsync(session, magic, skillId, targetId, data);
