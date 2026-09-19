@@ -117,6 +117,7 @@ public class NationPacketWriterTests
         packet.GetOpcode().Should().Be((byte)GameOpcodes.GS_BIFROST);
         packet.ReadByte().Should().Be((byte)TempleSubOpcode.BifrostRemaining);
         packet.ReadInt().Should().Be(600);
+        packet.ReadByte().Should().Be(0);
         packet.RemainingBytes.Should().Be(0);
     }
 }
