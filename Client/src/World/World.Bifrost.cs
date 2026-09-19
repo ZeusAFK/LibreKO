@@ -76,6 +76,9 @@ public partial class World
             GrowHorizontal = Control.GrowDirection.Both,
             OffsetTop = 140,
             Visible = false,
+            MouseFilter = Control.MouseFilterEnum.Stop,
+            MouseDefaultCursorShape = Control.CursorShape.PointingHand,
+            TooltipText = "Click to open registration window",
         };
         _bifrostBanner.AddThemeStyleboxOverride("panel", UiTheme.Panel(7, true));
         _bifrostBanner.GuiInput += ev =>
@@ -85,15 +88,15 @@ public partial class World
         };
         _bifrostLayer.AddChild(_bifrostBanner);
 
-        var m = new MarginContainer();
+        var m = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         UiTheme.Margins(m, 22, 9, 22, 10);
         _bifrostBanner.AddChild(m);
 
-        var col = new VBoxContainer { CustomMinimumSize = new Vector2(240, 0) };
+        var col = new VBoxContainer { CustomMinimumSize = new Vector2(240, 0), MouseFilter = Control.MouseFilterEnum.Ignore };
         col.AddThemeConstantOverride("separation", 4);
         m.AddChild(col);
 
-        var head = new HBoxContainer();
+        var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         head.AddThemeConstantOverride("separation", 12);
         col.AddChild(head);
 
@@ -113,6 +116,7 @@ public partial class World
             MinValue = 0, MaxValue = 1, Value = 1,
             ShowPercentage = false,
             CustomMinimumSize = new Vector2(0, 6),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         var track = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.45f) };
         track.SetCornerRadiusAll(3);
@@ -122,7 +126,7 @@ public partial class World
         _bifrostBar.AddThemeStyleboxOverride("fill", _bifrostBarFill);
         col.AddChild(_bifrostBar);
 
-        HudLayout.Attach(_bifrostBanner, "hud_bifrost", head, () => _bifrostBanner.Position);
+        HudLayout.Attach(_bifrostBanner, "hud_bifrost", null, () => _bifrostBanner.Position);
     }
 
     private void BuildBifrostJoinDialog()
@@ -130,18 +134,10 @@ public partial class World
         _joinModal = new Control
         {
             Visible = false,
-            MouseFilter = Control.MouseFilterEnum.Stop,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         _joinModal.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         _bifrostLayer.AddChild(_joinModal);
-
-        var blocker = new ColorRect
-        {
-            Color = new Color(0, 0, 0, 0.45f),
-            MouseFilter = Control.MouseFilterEnum.Stop,
-        };
-        blocker.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        _joinModal.AddChild(blocker);
 
         var center = new CenterContainer
         {
@@ -152,35 +148,34 @@ public partial class World
 
         var panel = new PanelContainer
         {
-            CustomMinimumSize = new Vector2(360, 0),
+            CustomMinimumSize = new Vector2(270, 0),
             MouseFilter = Control.MouseFilterEnum.Stop,
         };
-        // Persis sama dengan stylebox panel cooldown banner (UiTheme.Panel(7, true))
         panel.AddThemeStyleboxOverride("panel", UiTheme.Panel(7, true));
         center.AddChild(panel);
 
         var m = new MarginContainer();
-        UiTheme.Margins(m, 18, 12, 18, 14);
+        UiTheme.Margins(m, 14, 8, 14, 10);
         panel.AddChild(m);
 
         var vb = new VBoxContainer();
-        vb.AddThemeConstantOverride("separation", 10);
+        vb.AddThemeConstantOverride("separation", 6);
         m.AddChild(vb);
 
         // Header Bar (Title & Close Button)
         var headerRow = new HBoxContainer();
-        headerRow.AddThemeConstantOverride("separation", 8);
+        headerRow.AddThemeConstantOverride("separation", 6);
         vb.AddChild(headerRow);
 
-        _joinModalTitle = UiTheme.Text($"#  {_eventTitle.ToUpper()}  #", 16, UiTheme.GoldBright, HorizontalAlignment.Center);
-        _joinModalTitle.AddThemeConstantOverride("outline_size", 4);
+        _joinModalTitle = UiTheme.Text($"#  {_eventTitle.ToUpper()}  #", 13, UiTheme.GoldBright, HorizontalAlignment.Center);
+        _joinModalTitle.AddThemeConstantOverride("outline_size", 3);
         _joinModalTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         headerRow.AddChild(_joinModalTitle);
 
         var xBtn = new Button
         {
             Text = "✕",
-            CustomMinimumSize = new Vector2(24, 24),
+            CustomMinimumSize = new Vector2(20, 20),
             FocusMode = Control.FocusModeEnum.None,
         };
         xBtn.AddThemeColorOverride("font_color", UiTheme.TextDim);
@@ -188,51 +183,62 @@ public partial class World
         xBtn.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
         xBtn.AddThemeStyleboxOverride("hover", new StyleBoxEmpty());
         xBtn.AddThemeStyleboxOverride("pressed", new StyleBoxEmpty());
-        xBtn.Pressed += () => _joinModal.Visible = false;
+        xBtn.Pressed += CloseJoinModal;
         headerRow.AddChild(xBtn);
 
-        // Timer & Mini Progress Bar (Identik dengan bar cooldown)
+        // Timer & Mini Progress Bar
         var timerBox = new VBoxContainer();
-        timerBox.AddThemeConstantOverride("separation", 6);
+        timerBox.AddThemeConstantOverride("separation", 4);
         vb.AddChild(timerBox);
 
-        _joinModalTimer = UiTheme.Text("--:--", 28, UiTheme.GoldBright, HorizontalAlignment.Center);
-        _joinModalTimer.AddThemeConstantOverride("outline_size", 4);
+        _joinModalTimer = UiTheme.Text("--:--", 22, UiTheme.GoldBright, HorizontalAlignment.Center);
+        _joinModalTimer.AddThemeConstantOverride("outline_size", 3);
         timerBox.AddChild(_joinModalTimer);
 
         _joinModalBar = new ProgressBar
         {
             MinValue = 0, MaxValue = 1, Value = 1,
             ShowPercentage = false,
-            CustomMinimumSize = new Vector2(0, 6),
+            CustomMinimumSize = new Vector2(0, 4),
         };
         var modalTrack = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.45f) };
-        modalTrack.SetCornerRadiusAll(3);
+        modalTrack.SetCornerRadiusAll(2);
         _joinModalBarFill = new StyleBoxFlat { BgColor = BifrostCalmCol };
-        _joinModalBarFill.SetCornerRadiusAll(3);
+        _joinModalBarFill.SetCornerRadiusAll(2);
         _joinModalBar.AddThemeStyleboxOverride("background", modalTrack);
         _joinModalBar.AddThemeStyleboxOverride("fill", _joinModalBarFill);
         timerBox.AddChild(_joinModalBar);
 
-        // Status keterangan
-        _joinModalStatus = UiTheme.Text("Pendaftaran sedang dibuka! Klik [Daftar] untuk ikut pertempuran.", 12, UiTheme.TextHi, HorizontalAlignment.Center);
+        // Status text
+        _joinModalStatus = UiTheme.Text("Registration is OPEN! Click [Join] to participate.", 11, UiTheme.TextHi, HorizontalAlignment.Center);
         _joinModalStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         vb.AddChild(_joinModalStatus);
 
-        // Tombol Aksi KO Theme
+        // Action Buttons KO Theme
         var btnRow = new HBoxContainer();
-        btnRow.AddThemeConstantOverride("separation", 10);
+        btnRow.AddThemeConstantOverride("separation", 8);
         vb.AddChild(btnRow);
 
-        _joinModalBtn = Ui.MenuButton("Daftar (Join)", height: 36, fontSize: 13);
+        _joinModalBtn = Ui.MenuButton("Join", height: 28, fontSize: 11);
         _joinModalBtn.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _joinModalBtn.Pressed += OnJoinModalToggle;
         btnRow.AddChild(_joinModalBtn);
 
-        _joinModalCloseBtn = Ui.MenuButton("Tutup", height: 36, fontSize: 13);
+        _joinModalCloseBtn = Ui.MenuButton("Close", height: 28, fontSize: 11);
         _joinModalCloseBtn.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        _joinModalCloseBtn.Pressed += () => _joinModal.Visible = false;
+        _joinModalCloseBtn.Pressed += CloseJoinModal;
         btnRow.AddChild(_joinModalCloseBtn);
+    }
+
+    private void CloseJoinModal()
+    {
+        if (_joinModal != null && IsInstanceValid(_joinModal))
+            _joinModal.Visible = false;
+
+        if (_bifrostActive)
+        {
+            Chat.Info($"[{_eventTitle}] Window closed. Click the top timer banner anytime to reopen.");
+        }
     }
 
     private void OnBifrostNotice(string msg)
@@ -272,7 +278,7 @@ public partial class World
 
         if (!wasActive)
         {
-            Chat.Info($"[{_eventTitle}] Pendaftaran event dibuka ({remaining} detik)!");
+            Chat.Info($"[{_eventTitle}] Registration is open ({remaining} seconds)!");
             OfferBifrostJoin();
         }
     }
@@ -300,16 +306,16 @@ public partial class World
 
         if (_isEventRegistered)
         {
-            _joinModalStatus.Text = "✓ Terdaftar! Bersiaplah, kamu akan otomatis dipindahkan.";
+            _joinModalStatus.Text = "✓ Registered! You will be teleported automatically.";
             _joinModalStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-            _joinModalBtn.Text = "Batal Daftar";
+            _joinModalBtn.Text = "Cancel";
             _joinModalBtn.AddThemeColorOverride("font_color", UiTheme.Bad);
         }
         else
         {
-            _joinModalStatus.Text = "Pendaftaran sedang dibuka! Klik [Daftar] untuk ikut pertempuran.";
+            _joinModalStatus.Text = "Registration is OPEN! Click [Join] to participate.";
             _joinModalStatus.AddThemeColorOverride("font_color", UiTheme.TextHi);
-            _joinModalBtn.Text = "Daftar (Join)";
+            _joinModalBtn.Text = "Join";
             _joinModalBtn.AddThemeColorOverride("font_color", UiTheme.TextHi);
         }
     }
@@ -320,11 +326,11 @@ public partial class World
         UpdateJoinModalState();
         if (joined)
         {
-            Chat.Info($"[{_eventTitle}] Kamu berhasil terdaftar! Bersiaplah untuk pertempuran.");
+            Chat.Info($"[{_eventTitle}] You have registered! Prepare for battle.");
         }
         else
         {
-            Chat.Info($"[{_eventTitle}] Pendaftaran event tidak dapat dilakukan saat ini.");
+            Chat.Info($"[{_eventTitle}] Unable to register for the event at this time.");
         }
     }
 
@@ -332,12 +338,12 @@ public partial class World
     {
         _isEventRegistered = false;
         UpdateJoinModalState();
-        Chat.Info($"[{_eventTitle}] Kamu membatalkan pendaftaran event.");
+        Chat.Info($"[{_eventTitle}] You cancelled your event registration.");
     }
 
     private void EndBifrostEvent()
     {
-        if (_bifrostActive) Chat.Info($"[{_eventTitle}] Waktu pendaftaran event telah selesai.");
+        if (_bifrostActive) Chat.Info($"[{_eventTitle}] Event registration has ended.");
         _bifrostActive = false;
         _bifrostRemaining = 0;
         _bifrostMaxSeen = 0;

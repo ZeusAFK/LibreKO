@@ -4,8 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>LibreKO.Game</AssemblyName>
-    <UseAppHost>false</UseAppHost>
+    <AssemblyName>GameServer</AssemblyName>
+    <UseAppHost>true</UseAppHost>
+    <ApplicationIcon>game.ico</ApplicationIcon>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>

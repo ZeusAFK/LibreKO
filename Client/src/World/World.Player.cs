@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -214,7 +214,23 @@ public partial class World
     private bool RunLocalCommand(string command)
     {
         string[] parts = command.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0 || !parts[0].Equals("collision", System.StringComparison.OrdinalIgnoreCase))
+        if (parts.Length == 0) return false;
+
+        string cmd = parts[0].ToLowerInvariant();
+        if (cmd is "event" or "jr" or "juraid" or "bdw" or "chaos" or "bifrost")
+        {
+            if (_bifrostActive)
+            {
+                BifrostShowJoinPrompt();
+            }
+            else
+            {
+                Chat.Info("No event registration is currently active.");
+            }
+            return true;
+        }
+
+        if (!parts[0].Equals("collision", System.StringComparison.OrdinalIgnoreCase))
             return false;
         if (!_isGm) return false;
         bool on = parts.Length < 2

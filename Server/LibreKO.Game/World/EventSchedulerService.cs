@@ -232,8 +232,8 @@ public class EventSchedulerService(
         };
 
         string timeStr = joinWindowSeconds >= 60
-            ? $"{joinWindowSeconds / 60} Menit"
-            : $"{joinWindowSeconds} Detik";
+            ? (joinWindowSeconds / 60 == 1 ? "1 Minute" : $"{joinWindowSeconds / 60} Minutes")
+            : $"{joinWindowSeconds} Seconds";
 
         var noticePkt = NoticePacketWriter.Broadcast($"### [EVENT] {contestName} registration is now OPEN ({timeStr})! ###");
         await sessionManager.BroadcastToAll(noticePkt);
