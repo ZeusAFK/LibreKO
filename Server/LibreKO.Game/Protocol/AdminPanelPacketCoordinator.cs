@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
@@ -14,6 +14,7 @@ public interface IAdminPanelPacketCoordinator
 {
     Task HandleAsync(IClient client, Packet packet);
     Task SendGrantAsync(UserSession session);
+    Task SendStateAsync(UserSession session, bool granted);
 }
 
 public class AdminPanelPacketCoordinator(
@@ -22,6 +23,7 @@ public class AdminPanelPacketCoordinator(
     IUserNotificationService userNotificationService,
     ICombatNotificationService combatNotificationService,
     IZoneTransitionService zoneTransitionService,
+    IWorldVisibilityService worldVisibilityService,
     IServiceScopeFactory scopeFactory,
     IOptions<GameServerSettings> settings,
     ILogger<AdminPanelPacketCoordinator> logger) : IAdminPanelPacketCoordinator
@@ -198,6 +200,7 @@ public class AdminPanelPacketCoordinator(
             session, (byte)outcome.SlotIndex, outcome.ItemId, outcome.Count, outcome.Durability, outcome.IsNew);
         await userNotificationService.SendWeightChangeAsync(session);
         await SendResultAsync(session, true, $"Received {itemData.Name} x{count}.");
+        PersistInBackground(session);
         logger.LogInformation("GM {Name} granted self item {ItemId} x{Count}", session.Name, itemId, count);
     }
 
@@ -207,26 +210,53 @@ public class AdminPanelPacketCoordinator(
             return;
 
         var target = packet.ReadShort();
-        if (!ClassOptionsFor(session).Contains(target))
+        byte requestedRace = packet.RemainingBytes >= 1 ? packet.ReadByte() : (byte)0;
+        byte faceByte = packet.RemainingBytes >= 1 ? packet.ReadByte() : (byte)255;
+        int requestedHair = packet.RemainingBytes >= 4 ? packet.ReadInt() : -1;
+
+        if (!ClassOptionsFor(session).Contains(target) && target != session.Class)
         {
             await SendResultAsync(session, false, $"Class {target} is not a valid change for class {session.Class}.");
             return;
         }
 
         var previous = session.Class;
+        var previousRace = session.Race;
+        var previousNation = session.Nation;
+        var targetNation = target < 200 ? AccountNation.Karus : AccountNation.ElMorad;
+
+        if (session.Nation != targetNation)
+        {
+            session.Nation = targetNation;
+            _ = PersistAccountNationAsync(session.AccountId, targetNation);
+        }
+
         session.Class = target;
 
-        session.ResetMasteryPoints();
+        byte newRace = requestedRace > 0 && IsValidRaceForClassAndNation(target, requestedRace, session.Nation)
+            ? requestedRace
+            : ResolveRaceForClass(target, session.Race, session.Nation);
+
+        session.Race = newRace;
+        if (faceByte != 255)
+            session.Face = faceByte;
+        if (requestedHair >= 0)
+            session.Hair = requestedHair;
+
+        if (target != previous)
+            session.ResetMasteryPoints();
 
         Recalculate(session);
         await RefillVitalsAsync(session);
 
         PersistInBackground(session);
         await combatNotificationService.SendPartyClassUpdateAsync(session);
+        await worldVisibilityService.BroadcastUserInOutAsync(session, InOutType.In);
         await SendStateAsync(session, granted: true);
         await SendResultAsync(session, true,
-            $"Class {previous} → {target}. Mastery points refunded and the skill bar cleared.");
-        logger.LogInformation("GM {Name} changed own class {Previous} → {Target}", session.Name, previous, target);
+            $"Class {previous} → {target} (Race {previousRace} → {session.Race}, Nation {previousNation} → {session.Nation}). Model & appearance updated.");
+        logger.LogInformation("GM {Name} changed own class {Previous} → {Target}, race {PreviousRace} → {NewRace}, nation {PreviousNation} → {NewNation}, face {Face}, hair {Hair}",
+            session.Name, previous, target, previousRace, session.Race, previousNation, session.Nation, session.Face, session.Hair);
     }
 
     private async Task HandleZoneAsync(UserSession session, Packet packet)
@@ -269,6 +299,24 @@ public class AdminPanelPacketCoordinator(
         var nationBase = (short)(session.Class / 100 * 100);
         if (nationBase <= 0)
             return options;
+
+        if (session.IsGM)
+        {
+            foreach (short baseId in new short[] { 100, 200 })
+            {
+                foreach (var family in JobFamilies)
+                {
+                    foreach (var member in family)
+                    {
+                        var candidate = (short)(baseId + member);
+                        if (gameDataService.GetCoefficient(candidate) == null)
+                            continue;
+                        options.Add(candidate);
+                    }
+                }
+            }
+            return options;
+        }
 
         var subtype = (short)ClassIdHelper.GetSubtype(session.Class);
         foreach (var family in JobFamilies)
@@ -320,7 +368,7 @@ public class AdminPanelPacketCoordinator(
     private bool SpeedGrantedFor(UserSession session) =>
         session.IsGM || settings.Value.PublicDemo.GrantGameMasterSpeedToEveryone;
 
-    private async Task SendStateAsync(UserSession session, bool granted)
+    public async Task SendStateAsync(UserSession session, bool granted)
     {
         if (!granted)
         {
@@ -329,14 +377,66 @@ public class AdminPanelPacketCoordinator(
         }
 
         var state = new AdminPanelPacketWriter.State(
-            session.Class, session.Level,
+            session.Class, session.Race, session.Level,
             session.Strength, session.Stamina, session.Dexterity,
             session.Intelligence, session.Magic,
             session.StatPoints, session.MaxHp, session.MaxMp,
             (short)session.Stats.TotalHit, session.Stats.TotalAc,
-            session.Money, session.SkillPoints, ClassOptionsFor(session));
+            session.Money, session.SkillPoints, ClassOptionsFor(session),
+            session.Face, session.Hair);
 
         await session.Client.SendPacket(AdminPanelPacketWriter.StateGranted(AckState, state));
+    }
+
+    public static bool IsValidRaceForClassAndNation(short targetClass, byte race, AccountNation nation)
+    {
+        bool isKarus = nation == AccountNation.Karus || targetClass < 200;
+        if (isKarus)
+        {
+            if (targetClass is 113 or 114 or 115) return race == 6; // Kurian
+            if (targetClass is 101 or 105 or 106) return race == 1; // Ark Tuarek
+            if (targetClass is 102 or 107 or 108) return race == 2; // Tuarek
+            if (targetClass is 103 or 109 or 110) return race is 3 or 4; // Wrinkle or Pury Tuarek
+            if (targetClass is 104 or 111 or 112) return race is 2 or 4; // Tuarek or Pury Tuarek
+            return false;
+        }
+        else
+        {
+            if (targetClass is 213 or 214 or 215) return race == 14; // Porutu
+            if (targetClass is 201 or 205 or 206) return race is 11 or 12 or 13; // Barbarian, El Morad Man, El Morad Woman
+            if (targetClass is 202 or 207 or 208 or 203 or 209 or 210 or 204 or 211 or 212)
+                return race is 12 or 13; // El Morad Man, El Morad Woman
+            return false;
+        }
+    }
+
+    public static byte ResolveRaceForClass(short targetClass, byte currentRace, AccountNation nation)
+    {
+        bool isKarus = nation == AccountNation.Karus || targetClass < 200;
+        if (isKarus)
+        {
+            if (targetClass is 101 or 105 or 106)
+                return 1; // KarusBig (Warrior)
+            if (targetClass is 102 or 107 or 108)
+                return 2; // KarusMiddle (Rogue)
+            if (targetClass is 103 or 109 or 110)
+                return currentRace == 4 ? (byte)4 : (byte)3; // KarusWoman or KarusSmall (Mage)
+            if (targetClass is 104 or 111 or 112)
+                return currentRace == 4 ? (byte)4 : (byte)2; // KarusWoman or KarusMiddle (Priest)
+            if (targetClass is 113 or 114 or 115)
+                return 6; // Kurian
+            return currentRace > 0 ? currentRace : (byte)1;
+        }
+        else
+        {
+            if (targetClass is 201 or 205 or 206) // Warrior
+                return currentRace is 11 or 12 or 13 ? currentRace : (byte)11;
+            if (targetClass is 202 or 207 or 208 or 203 or 209 or 210 or 204 or 211 or 212) // Rogue, Mage, Priest
+                return currentRace == 13 ? (byte)13 : (byte)12;
+            if (targetClass is 213 or 214 or 215) // Porutu
+                return 14;
+            return currentRace > 0 ? currentRace : (byte)11;
+        }
     }
 
     private static async Task SendResultAsync(UserSession session, bool ok, string message)
@@ -374,6 +474,9 @@ public class AdminPanelPacketCoordinator(
                 return;
 
             character.Class = session.Class;
+            character.Race = session.Race;
+            character.Face = session.Face;
+            character.Hair = session.Hair;
             character.Strength = session.Strength;
             character.Stamina = session.Stamina;
             character.Dexterity = session.Dexterity;
@@ -382,11 +485,31 @@ public class AdminPanelPacketCoordinator(
             character.StatPoints = session.StatPoints;
             character.Money = session.Money;
             character.SkillPointData = session.SkillPoints;
+            character.Items = session.SerializeItems();
             await characters.UpdateAsync(character);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Admin-panel persist failed for {Name}", session.Name);
+        }
+    }
+
+    private async Task PersistAccountNationAsync(int accountId, AccountNation nation)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var accounts = scope.ServiceProvider.GetRequiredService<IAccountRepository>();
+            var account = await accounts.GetById(accountId);
+            if (account != null)
+            {
+                account.Nation = nation;
+                await accounts.UpdateAsync(account);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to persist account nation for account {AccountId}", accountId);
         }
     }
 }

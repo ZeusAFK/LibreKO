@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -165,6 +165,72 @@ public partial class World
         }
         _playerSceneCache[race] = result;
         return result;
+    }
+
+    private void RebuildSelfVisual()
+    {
+        if (_selfBody == null || !GodotObject.IsInstanceValid(_selfBody)) return;
+
+        if (_selfVisual != null && GodotObject.IsInstanceValid(_selfVisual))
+        {
+            _selfBody.RemoveChild(_selfVisual);
+            _selfVisual.QueueFree();
+            _selfVisual = null!;
+        }
+
+        foreach (var child in _selfBody.GetChildren())
+        {
+            if (child is WeaponTrail wt)
+            {
+                _selfBody.RemoveChild(wt);
+                wt.QueueFree();
+            }
+        }
+
+        _selfRigAnim = null;
+        _selfAnim = null;
+        _selfFlinch = null;
+        _selfClip = null;
+        _selfNameTag = null;
+        _selfPlate = null;
+
+        string selfName = Net.I.LastEnter.Name is { Length: > 0 } n ? n : "You";
+        PackedScene? selfScene = ResolvePlayerScene(_selfRace);
+        Node3D selfVisual;
+        int[] gear = SelfGear();
+
+        if (selfScene != null)
+        {
+            (selfVisual, _selfAnim) = MakeAnimatedEntity(selfScene, selfName, 1f);
+            _selfFlinch = Flinch.Attach(selfVisual);
+            CaptureSelfDefaults(selfVisual);
+            GraftEquipment(selfVisual, _selfRace, _selfFace, gear, _selfHair, Net.I.HelmetHidden);
+        }
+        else
+        {
+            selfVisual = MakeEntity(new Color(1f, 0.82f, 0.3f), selfName);
+            selfVisual.Position = new Vector3(0, CapsuleHalf, 0);
+        }
+
+        _selfBody.AddChild(selfVisual);
+        _selfVisual = selfVisual;
+        _selfStandingVisualTransform = selfVisual.Transform;
+
+        if (selfScene != null)
+        {
+            AttachWeapons(_self, gear);
+            AttachClanGauntlet(_self, _selfRace, _myClan.InClan ? _myClan.Grade : 0);
+            _selfWingAnims = AttachWings(_self, gear, _selfRace, _zone);
+            System.Array.Clear(_selfWingClips);
+            AttachHandFx(_self, gear, _selfRace, _zone);
+            DressSelfCape();
+
+            if (_selfAnim != null)
+            {
+                PlayClipOn(_selfAnim, ref _selfClip, "idle");
+                _selfAnim.Advance(0.0);
+            }
+        }
     }
 
     private sealed class PartsIndex

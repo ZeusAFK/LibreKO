@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -90,8 +90,11 @@ public class AdminPacketCoordinator(
         }
     }
 
-    public bool IsOpenToEveryone(string command) =>
-        CommandWord(command) == "setlevel" && settings.Value.PublicDemo.GrantSetLevelToEveryone;
+    public bool IsOpenToEveryone(string command)
+    {
+        var cmd = CommandWord(command);
+        return (cmd is "setlevel" or "level" or "lvl") && settings.Value.PublicDemo.GrantSetLevelToEveryone;
+    }
 
     private static string CommandWord(string command)
     {
@@ -168,6 +171,8 @@ public class AdminPacketCoordinator(
                 break;
 
             case "setlevel":
+            case "level":
+            case "lvl":
                 await HandleSetLevelAsync(session, arg);
                 break;
 
@@ -223,6 +228,13 @@ public class AdminPacketCoordinator(
                 {
                     await SendNoticeAsync(session, "No temple event is currently active.");
                 }
+                break;
+
+            case "gm":
+            case "admin":
+            case "panel":
+                await serviceProvider.GetRequiredService<IAdminPanelPacketCoordinator>().SendGrantAsync(session);
+                await SendNoticeAsync(session, "GM Panel toggled. (Press F9, ScrollLock, or type /gm)");
                 break;
 
             case "?":
@@ -307,6 +319,8 @@ public class AdminPacketCoordinator(
                 break;
 
             case "goto":
+            case "tp":
+            case "warp":
                 await HandleGotoAsync(session, arg);
                 break;
 
@@ -336,6 +350,7 @@ public class AdminPacketCoordinator(
                 break;
 
             case "summonuser":
+            case "summon":
                 await HandleSummonUserAsync(session, arg);
                 break;
 
@@ -364,6 +379,7 @@ public class AdminPacketCoordinator(
 
             case "mon":
             case "monster":
+            case "spawn":
                 await HandleSummonMonsterAsync(session, arg);
                 break;
 
@@ -396,6 +412,7 @@ public class AdminPacketCoordinator(
         }
 
         await playerProgressionService.ResetToLevelAsync(session, level);
+        await serviceProvider.GetRequiredService<IAdminPanelPacketCoordinator>().SendStateAsync(session, granted: true);
 
         var mastery = session.SkillPoints[ProgressionTable.MasteryPoolSlot];
         await SendNoticeAsync(session,

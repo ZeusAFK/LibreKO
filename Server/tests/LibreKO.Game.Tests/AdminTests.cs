@@ -379,4 +379,91 @@ public class AdminTests : GameTestBase
         sentPacket.ReadString().Should().Be("Usage: +setlevel <1-83>");
     }
 
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_TimeAndWeatherCommandsWork()
+    {
+        using var provider = CreateProvider(_ => { });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 402, accountId: 412);
+        session.Name = "GM";
+        session.IsGM = true;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(session, "+time 12:00");
+        await coordinator.HandleGmCommandAsync(session, "+weather clear 0");
+        await coordinator.HandleGmCommandAsync(session, "+hp");
+
+        session.Hp.Should().Be(session.MaxHp);
+        session.Mp.Should().Be(session.MaxMp);
+    }
+
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_TpAndSummonAliasesRouteProperly()
+    {
+        using var provider = CreateProvider(_ => { });
+
+        var gmClient = Substitute.For<IClient>();
+        gmClient.Id.Returns(Guid.NewGuid());
+        Packet? sentPacket = null;
+        gmClient.SendPacket(Arg.Do<Packet>(p => sentPacket = p), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var gmSession = sessionManager.CreateSession(gmClient, characterId: 403, accountId: 413);
+        gmSession.Name = "GM";
+        gmSession.IsGM = true;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+
+        // When target is not found, +tp / +warp outputs "Player not found: Target"
+        await coordinator.HandleGmCommandAsync(gmSession, "+tp MissingPlayer");
+        sentPacket.Should().NotBeNull();
+        sentPacket!.ResetOffset();
+        sentPacket.GetOpcode().Should().Be((byte)GameOpcodes.GS_CHAT);
+        sentPacket.ReadByte();
+        sentPacket.ReadByte();
+        sentPacket.ReadInt();
+        sentPacket.ReadSByteString();
+        sentPacket.ReadString().Should().Be("Player not found: MissingPlayer");
+
+        // When target is not found, +summon outputs "Player not found: Target"
+        await coordinator.HandleGmCommandAsync(gmSession, "+summon MissingPlayer");
+        sentPacket.ResetOffset();
+        sentPacket.ReadByte();
+        sentPacket.ReadByte();
+        sentPacket.ReadInt();
+        sentPacket.ReadSByteString();
+        sentPacket.ReadString().Should().Be("Player not found: MissingPlayer");
+    }
+
+    [Fact]
+    public void AdminPacketCoordinator_RaceValidationAndResolution_WorksCorrectly()
+    {
+        // Karus Kurian
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(113, 6, AccountNation.Karus).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(113, 1, AccountNation.Karus).Should().BeFalse();
+        AdminPanelPacketCoordinator.ResolveRaceForClass(113, 1, AccountNation.Karus).Should().Be(6);
+
+        // El Morad Porutu
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(213, 14, AccountNation.ElMorad).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(213, 11, AccountNation.ElMorad).Should().BeFalse();
+        AdminPanelPacketCoordinator.ResolveRaceForClass(213, 11, AccountNation.ElMorad).Should().Be(14);
+
+        // Karus Mage - Male (3) and Female (4)
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(103, 3, AccountNation.Karus).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(103, 4, AccountNation.Karus).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(103, 1, AccountNation.Karus).Should().BeFalse();
+        AdminPanelPacketCoordinator.ResolveRaceForClass(103, 4, AccountNation.Karus).Should().Be(4); // Preserves female
+        AdminPanelPacketCoordinator.ResolveRaceForClass(103, 1, AccountNation.Karus).Should().Be(3); // Defaults to male
+
+        // El Morad Warrior - Barbarian (11), Man (12), Woman (13)
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(201, 11, AccountNation.ElMorad).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(201, 12, AccountNation.ElMorad).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(201, 13, AccountNation.ElMorad).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(201, 14, AccountNation.ElMorad).Should().BeFalse();
+    }
 }

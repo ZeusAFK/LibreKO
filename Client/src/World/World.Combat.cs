@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 
 namespace LibreKO;
@@ -392,9 +392,19 @@ public partial class World
                 }
                 if (!miss && s?.TargetFx != null)
                 {
-                    if (SpawnFxAtImpact(casterId, targetId, s.TargetFx, s.TargetPart, data)
+                    if (SpawnFxAtImpact(casterId, targetId, s, data)
                         && !(casterId == _myId && s.IsPotion))
-                        AudioFxAt(s.TargetFxId, targetId > 0 ? targetId : casterId);
+                    {
+                        if (targetId < 0 && data.Length > 2)
+                        {
+                            var pos = GroundPos(data[0], data[2], 0f, 0f) + new Vector3(0, 0.15f, 0);
+                            AudioFxAt(s.TargetFxId, pos);
+                        }
+                        else
+                        {
+                            AudioFxAt(s.TargetFxId, targetId > 0 ? targetId : casterId);
+                        }
+                    }
                 }
                 if (!miss && s != null && s.TargetAnim != 0 && targetId >= 0)
                     PlaySkillAction(affected, s.TargetAnim, StruckClips, ActionRankStruck);

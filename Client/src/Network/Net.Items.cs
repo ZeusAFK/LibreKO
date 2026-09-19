@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace LibreKO.Network;
 
@@ -72,9 +72,16 @@ public partial class Net
 
             int abs = InventoryConstants.InventoryStart + pos;
             var item = new ItemSlot { ItemId = itemId, Durability = dur, Count = count };
-            RaiseItemGained(abs, itemId, count);
             SetLastInventorySlot(abs, item);
             InventorySlotEvent?.Invoke(abs, item);
+            try
+            {
+                RaiseItemGained(abs, itemId, count);
+            }
+            catch (Exception ex)
+            {
+                Diag.Report("ItemGainedEvent", ex);
+            }
         }
     }
 
@@ -101,9 +108,16 @@ public partial class Net
             int abs = InventoryConstants.InventoryStart + pos;
             var item = new ItemSlot { ItemId = itemId, Count = count };
             PreserveLastDurability(abs, ref item);
-            RaiseItemGained(abs, itemId, count);
             SetLastInventorySlot(abs, item);
             InventorySlotEvent?.Invoke(abs, item);
+            try
+            {
+                RaiseItemGained(abs, itemId, count);
+            }
+            catch (Exception ex)
+            {
+                Diag.Report("ItemGainedEvent", ex);
+            }
         }
         LootTakenEvent?.Invoke(bundleId, bundleSlot, itemId);
     }

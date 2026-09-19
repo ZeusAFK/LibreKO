@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -10,6 +10,7 @@ public sealed class AdminPanelPacketWriter
 
     public readonly record struct State(
         short Class,
+        byte Race,
         byte Level,
         byte Strength,
         byte Stamina,
@@ -23,7 +24,9 @@ public sealed class AdminPanelPacketWriter
         short TotalAc,
         int Money,
         IReadOnlyList<byte> SkillPoints,
-        IReadOnlyList<short> ClassOptions);
+        IReadOnlyList<short> ClassOptions,
+        byte Face = 0,
+        int Hair = 0);
 
     public static Packet GmFx(int characterId, bool enabled)
     {
@@ -53,6 +56,7 @@ public sealed class AdminPanelPacketWriter
         var packet = Sub(sub);
         packet.WriteByte(Granted);
         packet.WriteShort(state.Class);
+        packet.WriteByte(state.Race);
         packet.WriteByte(state.Level);
         packet.WriteByte(state.Strength);
         packet.WriteByte(state.Stamina);
@@ -72,6 +76,9 @@ public sealed class AdminPanelPacketWriter
         packet.WriteByte((byte)state.ClassOptions.Count);
         foreach (var option in state.ClassOptions)
             packet.WriteShort(option);
+
+        packet.WriteByte(state.Face);
+        packet.WriteInt(state.Hair);
 
         return packet;
     }

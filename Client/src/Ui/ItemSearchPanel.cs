@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 using LibreKO.Domain;
@@ -23,6 +23,7 @@ public partial class ItemSearchPanel : VBoxContainer
 
     private LineEdit _query = null!;
     private OptionButton _pick = null!, _group = null!, _level = null!;
+    private OptionButton _catFilter = null!, _classFilter = null!, _gradeFilter = null!;
     private VBoxContainer _results = null!;
     private Label _summary = null!;
 
@@ -61,6 +62,35 @@ public partial class ItemSearchPanel : VBoxContainer
         var search = new Button { Text = "Search", FocusMode = FocusModeEnum.None };
         search.Pressed += Run;
         findRow.AddChild(search);
+        var clear = new Button { Text = "Clear", FocusMode = FocusModeEnum.None };
+        clear.Pressed += () => { _query.Text = ""; Run(); };
+        findRow.AddChild(clear);
+
+        // Multi-dimensional filters (Category, Class, Grade)
+        var filterRow = new HBoxContainer();
+        filterRow.AddThemeConstantOverride("separation", 5);
+        AddChild(filterRow);
+
+        _catFilter = UiTheme.Dropdown();
+        _catFilter.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        string[] catOptions = { "All Categories", "Weapons", "Armor", "Jewelry", "Scrolls & Potions", "Upgrade Items", "Gems & Fragments", "Quest & Misc" };
+        foreach (var opt in catOptions) _catFilter.AddItem(opt);
+        _catFilter.ItemSelected += _ => Run();
+        filterRow.AddChild(_catFilter);
+
+        _classFilter = UiTheme.Dropdown();
+        _classFilter.CustomMinimumSize = new Vector2(110, 0);
+        string[] classOptions = { "All Classes", "Warrior", "Rogue", "Mage", "Priest", "Kurian" };
+        foreach (var opt in classOptions) _classFilter.AddItem(opt);
+        _classFilter.ItemSelected += _ => Run();
+        filterRow.AddChild(_classFilter);
+
+        _gradeFilter = UiTheme.Dropdown();
+        _gradeFilter.CustomMinimumSize = new Vector2(100, 0);
+        string[] gradeOptions = { "All Grades", "Normal", "Magic", "Rare", "Unique", "Upgrade" };
+        foreach (var opt in gradeOptions) _gradeFilter.AddItem(opt);
+        _gradeFilter.ItemSelected += _ => Run();
+        filterRow.AddChild(_gradeFilter);
 
         var tabBar = new HBoxContainer();
         tabBar.AddThemeConstantOverride("separation", 4);
@@ -92,7 +122,7 @@ public partial class ItemSearchPanel : VBoxContainer
         _level.ItemSelected += _ => Refresh();
         pickRow.AddChild(_level);
 
-        _summary = UiTheme.Text("Type an item name and press Search.", 12, UiTheme.TextLo);
+        _summary = UiTheme.Text("Type an item name or pick filters to browse.", 12, UiTheme.TextLo);
         AddChild(_summary);
 
         var scroll = new ScrollContainer
@@ -110,7 +140,10 @@ public partial class ItemSearchPanel : VBoxContainer
 
     public void Run()
     {
-        ItemSearch.Match(_query.Text.Trim(), _tradeableOnly, _names, _hits);
+        int cat = _catFilter?.Selected ?? 0;
+        int cls = _classFilter?.Selected ?? 0;
+        int grd = _gradeFilter?.Selected ?? 0;
+        ItemSearch.Match(_query.Text.Trim(), _tradeableOnly, _names, _hits, cat, cls, grd);
 
         _pick.Clear();
         foreach (string name in _names) _pick.AddItem(name);
@@ -123,6 +156,15 @@ public partial class ItemSearchPanel : VBoxContainer
             break;
         }
         OnNamePicked();
+    }
+
+    public void ResetFilters()
+    {
+        _query.Text = "";
+        if (_catFilter != null) _catFilter.Selected = 0;
+        if (_classFilter != null) _classFilter.Selected = 0;
+        if (_gradeFilter != null) _gradeFilter.Selected = 0;
+        Run();
     }
 
     public void Refresh()

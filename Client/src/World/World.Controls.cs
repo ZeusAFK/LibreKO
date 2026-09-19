@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 
 namespace LibreKO;
 
@@ -40,13 +40,17 @@ public partial class World
     private void ToggleAutoRun()
     {
         _autoMoveForward = !_autoMoveForward;
+        Chat.Info(_autoMoveForward ? "Auto run enabled (Otomatik koşma)." : "Auto run disabled (Otomatik koşma durduruldu).");
         if (!_autoMoveForward) return;
         _hasMoveTarget = false;
         _terrainMoveHeld = false;
         StopAutoAttack();
     }
 
-    private void ToggleRunMode() => _running = !_running;
+    private void ToggleRunMode()
+    {
+        _running = !_running;
+    }
 
     private void TargetNearestHostile()
     {

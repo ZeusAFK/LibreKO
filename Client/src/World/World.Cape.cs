@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -212,7 +212,7 @@ public partial class World
             _capeR.Value = rr; _capeG.Value = gg; _capeB.Value = bb;
             OnCapeDyeChanged();
             var me = Net.I.LastEnter;
-            DressCape(_selfVisual, capeId >= 0 ? capeId : me.CapeId, rr, gg, bb, me.Authority == 0, me.Race);
+            DressCape(_selfVisual, capeId >= 0 ? capeId : me.CapeId, rr, gg, bb, me.Authority == 0, _selfRace);
             _capePreviewing = false;
             _capeCurrent = capeId >= 0 ? capeId : _capeCurrent;
             string what = capeId >= 0 ? $"cape #{capeId}" : "cape dye";
@@ -558,7 +558,7 @@ public partial class World
     {
         var me = Net.I.LastEnter;
         bool gm = me.Authority == 0;
-        DressCape(_selfVisual, me.CapeId, me.CapeR, me.CapeG, me.CapeB, gm, me.Race, highDetail: true);
+        DressCape(_selfVisual, me.CapeId, me.CapeR, me.CapeG, me.CapeB, gm, _selfRace, highDetail: true);
         var (id, _) = ResolveCape(me.CapeId, me.CapeR, me.CapeG, me.CapeB, gm);
         GD.Print($"[cape] self: sent={me.CapeId} worn={(Cape.IsRenderable(id) ? id : 0)} "
                + $"dye=({me.CapeR},{me.CapeG},{me.CapeB}) gm={gm} "
