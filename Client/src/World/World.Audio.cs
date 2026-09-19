@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 
 namespace LibreKO;
@@ -51,6 +51,13 @@ public partial class World
         if (sid == 0) return;
         var pos = WorldPosOf(entityId);
         Audio.Play(sid, pos ?? _self.GlobalPosition);
+    }
+
+    private void AudioFxAt(int fxId, Vector3 pos)
+    {
+        int sid = SoundCatalog.FxSound(fxId);
+        if (sid == 0) return;
+        Audio.Play(sid, pos);
     }
 
     private void AttachFxAmbience(Node3D node, string fxName)
