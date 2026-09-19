@@ -13,7 +13,7 @@ labels: enhancement
 
 ## How retail does it
 
-<!-- Retail behaviour is the specification. Describe how the original game handles this, as precisely as you can: which NPC, which window, what it costs, what the messages say. If this is not something retail had, say so, and say why it belongs in LibreKO anyway. -->
+<!-- Retail behavior is the specification. Describe how the original game handles this, as precisely as you can: which NPC, which window, what it costs, what the messages say. If this is not something retail had, say so, and say why it belongs in LibreKO anyway. -->
 
 ## Anything else
 

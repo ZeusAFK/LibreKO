@@ -2,7 +2,7 @@
 
 LibreKO is a from-scratch game server and client for a classic MMORPG: a .NET 10 server, a Godot 4
 client written in C#, and a small quest language shared by both. Everything here is licensed under
-the GNU Affero General Public License v3.0, and a contribution is offered under the same licence.
+the GNU Affero General Public License v3.0, and a contribution is offered under the same license.
 
 The project belongs to everyone who works on it. Nobody's name goes into the code, a banner or a
 screen; contributors are listed in `CONTRIBUTORS.md` at the repository root, with the contact
@@ -13,7 +13,7 @@ and how review works. Every line of new code is held to it.
 
 ## Reporting a problem
 
-Bugs, wrong behaviour and missing features are reported as
+Bugs, wrong behavior and missing features are reported as
 [GitHub issues](https://github.com/ZeusAFK/LibreKO/issues). The issue list is the single source of
 truth for what is broken and what is planned, so search it before filing.
 
@@ -25,7 +25,7 @@ the class, the zone or the steps waits until someone asks for them.
 State what you observed, not what you suspect. One problem per issue. Put the area in the title,
 as the templates show: the class, or `SYSTEM` for windows, items, quests, NPCs and the world.
 
-Retail behaviour is the specification. If the game behaves the way the original client and server
+Retail behavior is the specification. If the game behaves the way the original client and server
 do, it is not a bug, and the issue is closed as such with an explanation. If you believe retail did
 it differently, say what you observed and where.
 
@@ -59,7 +59,7 @@ The [README](README.md) has the full setup. In short:
 Every suite passes on Windows and on Linux, with case-sensitive paths and LF line endings. Run the
 tests on both platforms if you can; if you cannot, say which one you ran on in the pull request.
 
-A behaviour change comes with a test. A packet shape gets a test on the bytes; a rule gets a test on
+A behavior change comes with a test. A packet shape gets a test on the bytes; a rule gets a test on
 the rule; a quest gets a test that plays it.
 
 ## What a change has to satisfy
@@ -120,7 +120,7 @@ layout.
 locator. If injecting a dependency creates a cycle, raise it in the issue.
 
 **Seed data is hand-maintained.** The JSON under `Server/LibreKO.Game/Seed/Data` is edited directly.
-Keep the model normalised; where an old table layout has to survive, it survives in the packet
+Keep the model normalized; where an old table layout has to survive, it survives in the packet
 writer, not in the entities.
 
 ### Client
@@ -155,7 +155,7 @@ pre-rendered minimaps.
 ### Quests
 
 Quests are `.quest` files under `Server/LibreKO.Game/Quests`, in a small language with a versioned
-specification. A change to its syntax, routing, state semantics or reward behaviour updates the
+specification. A change to its syntax, routing, state semantics or reward behavior updates the
 specification, the compiler and the regression tests together. Files are named
 `<npc>_<zone>_<quest>.quest`, with `0_0_<quest>.quest` for a quest bound to several NPCs; includes
 come first and import names, locations and text, never handlers. `quest-manifest.json` lists what
