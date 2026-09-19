@@ -46,6 +46,7 @@ public sealed class Parser
         var rewards = new List<RewardDefinitionSyntax>();
         var bindings = new List<BindingSyntax>();
         bool autoAccept = false;
+        bool autoComplete = false;
         ConditionSyntax? requires = null;
         List<QuestRewardsSyntax>? questRewards = null;
 
@@ -166,6 +167,15 @@ public sealed class Parser
                 continue;
             }
 
+            if (line.StartsWith("auto", "complete"))
+            {
+                if (autoComplete || line.Tokens.Count != 2 || handlers.Count > 0)
+                    _diagnostics.Error(DiagnosticId.UnknownDirective, line.Span, "Write Auto complete once above the handlers.");
+                autoComplete = true;
+                _index++;
+                continue;
+            }
+
             if (line.StartsWith("rewards"))
             {
                 if (handlers.Count > 0)
@@ -241,7 +251,7 @@ public sealed class Parser
             : _lines[0].Span.Union(_lines[^1].Span);
         return new QuestFileSyntax(
             span, _source, declarations, handlers, directives, includes, objectiveBlocks, rewards, _hasBinding,
-            requires, questRewards, autoAccept, bindings);
+            requires, questRewards, autoAccept, autoComplete, bindings);
     }
 
     private void CheckIndentCharacters()

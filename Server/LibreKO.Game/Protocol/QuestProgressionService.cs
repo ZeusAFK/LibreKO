@@ -167,8 +167,7 @@ public class QuestProgressionService(
             || (session.X - npc.X) * (session.X - npc.X)
                 + (session.Z - npc.Z) * (session.Z - npc.Z) > GameConstants.MaxNpcInteractionRangeSq))
             npc = null;
-        if (role != QuestProgram.AbandonEvent && npc is null
-            && !(role == QuestProgram.FulfilEvent && objectives.IsAutoAccepted(questId)))
+        if (role != QuestProgram.AbandonEvent && npc is null)
             return;
 
         if (role == QuestProgram.FulfilEvent

@@ -121,6 +121,13 @@ public sealed class Binder
                 _diagnostics.Error(DiagnosticId.UnknownDirective, _file.Span, "Auto accept requires one quest bound only to a zone.");
             if (questRewards.Count == 0) questRewards = [new QuestRewards(_defaultQuest, [])];
         }
+        if (_file.AutoComplete)
+        {
+            if (!_file.AutoAccept)
+                _diagnostics.Error(DiagnosticId.UnknownDirective, _file.Span, "Auto complete requires Auto accept.");
+            if (questRewards.Any(r => r.Options.Count > 0))
+                _diagnostics.Error(DiagnosticId.UnknownDirective, _file.Span, "Auto complete cannot pay a 'Choose one' reward; the player picks at an NPC.");
+        }
         var automatic = questRewards.Count > 0 && !_file.Handlers.SelectMany(h => h.Events).Any(e =>
             new[] { "topics", "greeting", "accept", "fulfil" }.Contains(e.Name, StringComparer.OrdinalIgnoreCase));
         if (_file.Handlers.SelectMany(h => h.Events).Any(e => QuestProgram.StateEvents.Contains(e.Name)) && !automatic)
@@ -256,7 +263,7 @@ public sealed class Binder
             _defaultQuest,
             _file.HasBinding,
             _rewards) { Borrowed = _borrowed, QuestRewards = questRewards, Bindings = BindBindings(),
-                Flows = automatic ? [new QuestFlow(_defaultQuest, eligibility, _zoneId, _file.AutoAccept) { Bindings = BindBindings() }] : [] };
+                Flows = automatic ? [new QuestFlow(_defaultQuest, eligibility, _zoneId, _file.AutoAccept, _file.AutoComplete) { Bindings = BindBindings() }] : [] };
     }
 
     private IReadOnlyList<BoundStatement.Action> BindRewardChoice(IReadOnlyList<StatementSyntax.Choice> choices)

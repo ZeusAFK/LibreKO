@@ -150,7 +150,7 @@ public sealed record QuestRewards(int QuestId, IReadOnlyList<BoundStatement.Acti
     public IReadOnlyList<BoundStatement.Action> Options { get; init; } = [];
 }
 
-public sealed record QuestFlow(int QuestId, BoundCondition? Requires, int ZoneId, bool AutoAccept = false)
+public sealed record QuestFlow(int QuestId, BoundCondition? Requires, int ZoneId, bool AutoAccept = false, bool AutoComplete = false)
 {
     public IReadOnlyList<QuestBinding> Bindings { get; init; } = [];
 

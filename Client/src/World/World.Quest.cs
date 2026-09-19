@@ -532,7 +532,7 @@ public partial class World
         _questAbandonBtn.Disabled = state is not (QuestStateActive or QuestStateReadyToTurnIn)
             || _questViews.TryGetValue(questId, out var autoView) && autoView.AutoAccepted;
         _questCompleteBtn.Disabled = _questViews.TryGetValue(questId, out var actionView)
-            ? !(actionView.CanClaim || actionView.JournalClaim) || actionView.Options.Length > 0
+            ? !actionView.CanClaim || actionView.Options.Length > 0
             : state != QuestStateReadyToTurnIn;
     }
 

@@ -60,8 +60,7 @@ public sealed class QuestPacketWriter
         packet.WriteByte((byte)((open ? 1 : 0)
             | (controls && view.State == QuestViewState.Available ? 2 : 0)
             | (controls && view.State == QuestViewState.Claimable ? 4 : 0)
-            | (view.Text.Daily ? 8 : 0) | (notification ? 16 : 0) | (view.AutoAccepted ? 32 : 0)
-            | (view.AutoAccepted && view.State == QuestViewState.Claimable && view.Rewards.Options.Count == 0 ? 64 : 0)));
+            | (view.Text.Daily ? 8 : 0) | (notification ? 16 : 0) | (view.AutoAccepted ? 32 : 0)));
         packet.WriteByte((byte)view.State);
         packet.WriteByte((byte)view.Page);
         packet.WriteLong(nextReset);

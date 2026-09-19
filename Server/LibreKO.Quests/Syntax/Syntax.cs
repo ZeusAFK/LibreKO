@@ -171,5 +171,5 @@ public sealed record QuestFileSyntax(
     IReadOnlyList<RewardDefinitionSyntax> Rewards,
     bool HasBinding = false,
     ConditionSyntax? Requires = null,
-    IReadOnlyList<QuestRewardsSyntax>? QuestRewards = null, bool AutoAccept = false,
+    IReadOnlyList<QuestRewardsSyntax>? QuestRewards = null, bool AutoAccept = false, bool AutoComplete = false,
     IReadOnlyList<BindingSyntax>? Bindings = null) : SyntaxNode(Span);

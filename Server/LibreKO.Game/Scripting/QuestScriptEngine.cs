@@ -256,6 +256,14 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                     }
                     if (flow.AutoAccept && view.State == QuestViewState.InProgress)
                         Notify(session, context, program, id, "started", true, session.Quest.StartedNotifications);
+                    if (flow.AutoComplete && view.State == QuestViewState.Claimable && session.Hp > 0
+                        && flow.Matches((int)session.Nation, session.ZoneId, ClassIdHelper.GroupOf(session.Class)))
+                    {
+                        Notify(session, context, program, id, QuestProgram.ReadyEvent, true, session.Quest.ReadyNotifications);
+                        if (program.TryGetEntry(QuestProgram.FulfilEvent, id, out var fulfil))
+                            new QuestInterpreter(program, host).Run(fulfil);
+                        view = interpreter.BuildView(id);
+                    }
                     var version = new QuestState.ViewVersion(program, (byte)view.State, session.ZoneId, session.LanguageCode,
                         DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime).DayNumber, string.Join(',', view.Counts));
                     if (!changesOnly || !session.Quest.ViewVersions.TryGetValue(id, out var previous) || previous != version)
