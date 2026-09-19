@@ -74,94 +74,13 @@ public partial class World
 
         box.AddChild(new HSeparator());
 
-        // 2. Quick Presets Shelf (Knight Online Staples)
-        box.AddChild(UiTheme.SectionTitle("Quick Consumables & Essentials", UiIcons.Get("game/chest")));
-
-        var shelfFlow = new HFlowContainer();
-        shelfFlow.AddThemeConstantOverride("h_separation", 4);
-        shelfFlow.AddThemeConstantOverride("v_separation", 4);
-        box.AddChild(shelfFlow);
-
-        (string name, int itemId, int defaultQty)[] quickItems =
-        {
-            ("BUS (+0)", 379021000, 10),
-            ("BES (+0)", 379025000, 10),
-            ("Trina", 700002000, 1),
-            ("1500 HP Scroll", 800013000, 10),
-            ("300 AC Scroll", 800010000, 10),
-            ("Speed Potion", 379129000, 20),
-            ("HP Pot (Water of Life)", 389011000, 100),
-            ("MP Pot (Potion of Soul)", 389020000, 100),
-            ("Monster Stone", 900144000, 1),
-            ("Blue Gem", 389199000, 5),
-            ("Green Gem", 389201000, 5),
-            ("Red Gem", 389197000, 5),
-        };
-
-        foreach (var (qName, qId, qDefQty) in quickItems)
-        {
-            int itmId = qId;
-            int itmQty = qDefQty;
-            var btn = new Button
-            {
-                Text = $"{qName} x{itmQty}",
-                FocusMode = Control.FocusModeEnum.None,
-                TooltipText = $"Click to spawn {qName} (ID: {itmId})",
-            };
-            btn.AddThemeFontSizeOverride("font_size", 11);
-            btn.Pressed += () => OnAdminGiveItem(itmId, itmQty);
-            btn.MouseEntered += () => ShowItemTooltip(-1, TooltipItem(itmId));
-            btn.MouseExited += HideItemTooltip;
-            shelfFlow.AddChild(btn);
-        }
-
-        box.AddChild(new HSeparator());
-
-        // 3. Quick Search Chips & Full Search Panel
-        var chipsRow = new HFlowContainer();
-        chipsRow.AddThemeConstantOverride("h_separation", 4);
-        chipsRow.AddThemeConstantOverride("v_separation", 4);
-        box.AddChild(chipsRow);
-        chipsRow.AddChild(UiTheme.Text("Quick Search:", 11, UiTheme.TextLo));
-
-        (string chipLabel, string searchQuery, int targetPlus)[] searchChips =
-        {
-            ("Raptor (+8)", "Raptor", 8),
-            ("Shard (+8)", "Shard", 8),
-            ("Iron Impact (+8)", "Iron Impact", 8),
-            ("Mirage Dagger (+8)", "Mirage Dagger", 8),
-            ("Elixir Staff (+8)", "Elixir Staff", 8),
-            ("Chitin Bow (+8)", "Chitin Bow", 8),
-            ("Hell Breaker (+8)", "Hell Breaker", 8),
-            ("Iron Necklace", "Iron Necklace", 0),
-            ("Iron Belt", "Iron Belt", 0),
-            ("Ring of Felankor", "Ring of the Felankor", 0),
-            ("Chitin (+8)", "Chitin", 8),
-            ("Chitin Shell (+8)", "Chitin Shell", 8),
-        };
-
-        foreach (var (cLabel, cQuery, cPlus) in searchChips)
-        {
-            string query = cQuery;
-            int plus = cPlus;
-            var chipBtn = new Button { Text = cLabel, FocusMode = Control.FocusModeEnum.None };
-            chipBtn.AddThemeFontSizeOverride("font_size", 11);
-            chipBtn.Pressed += () =>
-            {
-                _admItemSearch.SetQuery(query);
-                _admItemSearch.Run();
-                if (plus > 0) _admItemSearch.SelectPlus(plus);
-            };
-            chipsRow.AddChild(chipBtn);
-        }
-
         _admItemSearch = new ItemSearchPanel(
             tradeableOnly: false,
             actionText: "Add",
             onAction: (hit, count) => OnAdminGiveItem(hit.Id, count),
             showTooltip: itemId => ShowItemTooltip(-1, TooltipItem(itemId)),
             hideTooltip: HideItemTooltip,
-            resultsSize: new Vector2(640, 220));
+            resultsSize: new Vector2(640, 310));
         box.AddChild(_admItemSearch);
 
         return box;

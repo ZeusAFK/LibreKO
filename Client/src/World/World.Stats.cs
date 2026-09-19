@@ -77,12 +77,49 @@ public partial class World : Node3D
         Chat.Info($"You are now a {CharacterClassCatalog.SpecializationName(newClass)}!");
     }
 
-    private void ApplyClassChange(int newClass)
+    private void ApplyClassChange(int newClass, int newRace = 0)
     {
+        if (newRace <= 0)
+            newRace = ResolveRaceForClass(newClass, _selfRace, Net.I.LastEnter.Nation);
+
+        bool visualNeedsRebuild = _selfRace != newRace || _selfClass != newClass;
         _selfClass = newClass;
+        _selfRace = newRace;
+        Net.I.ApplyOwnClass(newClass);
+        Net.I.ApplyOwnRace(newRace);
+
+        if (visualNeedsRebuild)
+        {
+            RebuildSelfVisual();
+        }
+
         RefreshStatsUI();
         RebuildSkillWindow();
         ClearHotbar();
+    }
+
+    public static int ResolveRaceForClass(int targetClass, int currentRace, int nation)
+    {
+        bool isKarus = nation == Nations.Karus || targetClass < 200;
+        if (isKarus)
+        {
+            if (targetClass is 101 or 105 or 106) return 1; // KarusBig (Warrior)
+            if (targetClass is 102 or 107 or 108) return 2; // KarusMiddle (Rogue)
+            if (targetClass is 103 or 109 or 110) return 3; // KarusSmall (Mage)
+            if (targetClass is 104 or 111 or 112) return currentRace == 4 ? 4 : 2; // KarusWoman or KarusMiddle (Priest)
+            if (targetClass is 113 or 114 or 115) return 6; // Kurian
+            return currentRace > 0 ? currentRace : 1;
+        }
+        else
+        {
+            if (targetClass is 201 or 205 or 206) // Warrior
+                return currentRace is 11 or 12 or 13 ? currentRace : 11;
+            if (targetClass is 202 or 207 or 208 or 203 or 209 or 210 or 204 or 211 or 212) // Rogue, Mage, Priest
+                return currentRace == 13 ? 13 : 12;
+            if (targetClass is 213 or 214 or 215) // Porutu
+                return 14;
+            return currentRace > 0 ? currentRace : 11;
+        }
     }
 
     private void OnJobChangeResult(int code)
@@ -515,6 +552,10 @@ public partial class World : Node3D
         _mpBar?.Set(Vitals.Mp, Vitals.MaxMp);
         SyncMasteryPool(skillPool);
         RefreshStatsUI();
+        UpdateLevelOrb();
+        _admState.Level = level;
+        _admState.StatPoints = statPoints;
+        RefreshAdminCharacterTab();
         if (dingedUp)
         {
             PlayLevelUp(_myId, Net.I.LastEnter.Nation);

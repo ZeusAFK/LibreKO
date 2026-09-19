@@ -52,7 +52,7 @@ public partial class World
         _admState = new AdminState
         {
             Granted = true,
-            Class = info.Class, Level = Sheet.Level,
+            Class = info.Class, Race = (byte)info.Race, Level = Sheet.Level,
             Str = Sheet.Str, Sta = Sheet.Sta, Dex = Sheet.Dex,
             Intel = Sheet.Intel, MagicStat = Sheet.Mag,
             StatPoints = Sheet.Points,
@@ -242,7 +242,6 @@ public partial class World
             int lvl = (int)_admLevelSpin.Value;
             Net.I.SendGmCommand($"setlevel {lvl}");
             SetAdminStatus($"Setting level to {lvl}…", false);
-            Callable.From(Net.I.SendAdminStateRequest).CallDeferred();
         };
         lvlRow.AddChild(setLvlBtn);
 
@@ -264,7 +263,6 @@ public partial class World
                 _admLevelSpin.Value = lvl;
                 Net.I.SendGmCommand($"setlevel {lvl}");
                 SetAdminStatus($"Setting level to {lvl}…", false);
-                Callable.From(Net.I.SendAdminStateRequest).CallDeferred();
             };
             qkLvlRow.AddChild(btn);
         }
@@ -516,6 +514,7 @@ public partial class World
         }
 
         int previousClass = _admState.Class;
+        int previousRace = _admState.Race;
         _admState = state;
 
         Sheet.ApplyLevel(state.Level, state.StatPoints, Sheet.Exp, Sheet.MaxExp);
@@ -527,8 +526,17 @@ public partial class World
         _hpBar?.Set(Vitals.Hp, Vitals.MaxHp);
         _mpBar?.Set(Vitals.Mp, Vitals.MaxMp);
         SyncMasteryPoints(state.SkillPoints);
-        if (state.Class != previousClass) ApplyClassChange(state.Class);
-        else { _selfClass = state.Class; RefreshStatsUI(); }
+        UpdateLevelOrb();
+
+        if (state.Class != previousClass || (state.Race > 0 && state.Race != _selfRace))
+        {
+            ApplyClassChange(state.Class, state.Race);
+        }
+        else
+        {
+            _selfClass = state.Class;
+            RefreshStatsUI();
+        }
 
         LoadAdminStatSpins();
         RefreshAdminCharacterTab();

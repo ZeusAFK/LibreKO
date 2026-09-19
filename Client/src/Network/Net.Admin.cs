@@ -69,6 +69,7 @@ public partial class Net
         }
 
         state.Class = p.ReadShort();
+        state.Race = p.ReadByte();
         state.Level = p.ReadByte();
         state.Str = p.ReadByte();
         state.Sta = p.ReadByte();
@@ -91,6 +92,7 @@ public partial class Net
         state.ClassOptions = options;
 
         if (state.Class != 0) ApplyOwnClass(state.Class);
+        if (state.Race != 0) ApplyOwnRace(state.Race);
 
         AdminStateEvent?.Invoke(state);
     }

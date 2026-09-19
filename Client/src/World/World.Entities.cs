@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -83,6 +83,14 @@ public partial class World
 
         if (_ents.TryGetValue(info.Id, out var existing))
         {
+            if (!info.IsNpc && existing.Race != info.Race)
+            {
+                OnOut(info.Id);
+                _pendingSpawns[info.Id] = info;
+                _pendingOrder.Enqueue(info.Id);
+                return;
+            }
+
             var rp = EntityGroundPos(info.X, info.Z, info.Y, existing.Lift);
             float jump = existing.Body.Position.DistanceTo(rp);
             if (existing.Dead || info.Dead || jump > TeleportSnap || jump < MoveArriveEps)

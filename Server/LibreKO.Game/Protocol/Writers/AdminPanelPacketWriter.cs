@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -10,6 +10,7 @@ public sealed class AdminPanelPacketWriter
 
     public readonly record struct State(
         short Class,
+        byte Race,
         byte Level,
         byte Strength,
         byte Stamina,
@@ -53,6 +54,7 @@ public sealed class AdminPanelPacketWriter
         var packet = Sub(sub);
         packet.WriteByte(Granted);
         packet.WriteShort(state.Class);
+        packet.WriteByte(state.Race);
         packet.WriteByte(state.Level);
         packet.WriteByte(state.Strength);
         packet.WriteByte(state.Stamina);

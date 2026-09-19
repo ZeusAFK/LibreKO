@@ -90,8 +90,11 @@ public class AdminPacketCoordinator(
         }
     }
 
-    public bool IsOpenToEveryone(string command) =>
-        CommandWord(command) == "setlevel" && settings.Value.PublicDemo.GrantSetLevelToEveryone;
+    public bool IsOpenToEveryone(string command)
+    {
+        var cmd = CommandWord(command);
+        return (cmd is "setlevel" or "level" or "lvl") && settings.Value.PublicDemo.GrantSetLevelToEveryone;
+    }
 
     private static string CommandWord(string command)
     {
@@ -168,6 +171,8 @@ public class AdminPacketCoordinator(
                 break;
 
             case "setlevel":
+            case "level":
+            case "lvl":
                 await HandleSetLevelAsync(session, arg);
                 break;
 
@@ -407,6 +412,7 @@ public class AdminPacketCoordinator(
         }
 
         await playerProgressionService.ResetToLevelAsync(session, level);
+        await serviceProvider.GetRequiredService<IAdminPanelPacketCoordinator>().SendStateAsync(session, granted: true);
 
         var mastery = session.SkillPoints[ProgressionTable.MasteryPoolSlot];
         await SendNoticeAsync(session,

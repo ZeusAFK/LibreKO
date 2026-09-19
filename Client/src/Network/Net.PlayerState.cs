@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace LibreKO.Network;
 
@@ -26,11 +26,19 @@ public partial class Net
         else _openWindows.Remove(key);
     }
 
-    private void ApplyOwnClass(int newClass)
+    internal void ApplyOwnClass(int newClass)
     {
         if (newClass == 0 || newClass == LastEnter.Class) return;
         var info = LastEnter;
         info.Class = newClass;
+        LastEnter = info;
+    }
+
+    internal void ApplyOwnRace(int newRace)
+    {
+        if (newRace == 0 || newRace == LastEnter.Race) return;
+        var info = LastEnter;
+        info.Race = (byte)newRace;
         LastEnter = info;
     }
 

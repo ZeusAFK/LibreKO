@@ -14,6 +14,7 @@ public interface IAdminPanelPacketCoordinator
 {
     Task HandleAsync(IClient client, Packet packet);
     Task SendGrantAsync(UserSession session);
+    Task SendStateAsync(UserSession session, bool granted);
 }
 
 public class AdminPanelPacketCoordinator(
@@ -22,6 +23,7 @@ public class AdminPanelPacketCoordinator(
     IUserNotificationService userNotificationService,
     ICombatNotificationService combatNotificationService,
     IZoneTransitionService zoneTransitionService,
+    IWorldVisibilityService worldVisibilityService,
     IServiceScopeFactory scopeFactory,
     IOptions<GameServerSettings> settings,
     ILogger<AdminPanelPacketCoordinator> logger) : IAdminPanelPacketCoordinator
@@ -214,7 +216,9 @@ public class AdminPanelPacketCoordinator(
         }
 
         var previous = session.Class;
+        var previousRace = session.Race;
         session.Class = target;
+        session.Race = ResolveRaceForClass(target, session.Race, session.Nation);
 
         session.ResetMasteryPoints();
 
@@ -223,10 +227,12 @@ public class AdminPanelPacketCoordinator(
 
         PersistInBackground(session);
         await combatNotificationService.SendPartyClassUpdateAsync(session);
+        await worldVisibilityService.BroadcastUserInOutAsync(session, InOutType.In);
         await SendStateAsync(session, granted: true);
         await SendResultAsync(session, true,
-            $"Class {previous} → {target}. Mastery points refunded and the skill bar cleared.");
-        logger.LogInformation("GM {Name} changed own class {Previous} → {Target}", session.Name, previous, target);
+            $"Class {previous} → {target} (Race {previousRace} → {session.Race}). Model & appearance updated, mastery refunded.");
+        logger.LogInformation("GM {Name} changed own class {Previous} → {Target}, race {PreviousRace} → {NewRace}",
+            session.Name, previous, target, previousRace, session.Race);
     }
 
     private async Task HandleZoneAsync(UserSession session, Packet packet)
@@ -337,7 +343,7 @@ public class AdminPanelPacketCoordinator(
     private bool SpeedGrantedFor(UserSession session) =>
         session.IsGM || settings.Value.PublicDemo.GrantGameMasterSpeedToEveryone;
 
-    private async Task SendStateAsync(UserSession session, bool granted)
+    public async Task SendStateAsync(UserSession session, bool granted)
     {
         if (!granted)
         {
@@ -346,7 +352,7 @@ public class AdminPanelPacketCoordinator(
         }
 
         var state = new AdminPanelPacketWriter.State(
-            session.Class, session.Level,
+            session.Class, session.Race, session.Level,
             session.Strength, session.Stamina, session.Dexterity,
             session.Intelligence, session.Magic,
             session.StatPoints, session.MaxHp, session.MaxMp,
@@ -354,6 +360,35 @@ public class AdminPanelPacketCoordinator(
             session.Money, session.SkillPoints, ClassOptionsFor(session));
 
         await session.Client.SendPacket(AdminPanelPacketWriter.StateGranted(AckState, state));
+    }
+
+    public static byte ResolveRaceForClass(short targetClass, byte currentRace, AccountNation nation)
+    {
+        bool isKarus = nation == AccountNation.Karus || targetClass < 200;
+        if (isKarus)
+        {
+            if (targetClass is 101 or 105 or 106)
+                return 1; // KarusBig (Warrior)
+            if (targetClass is 102 or 107 or 108)
+                return 2; // KarusMiddle (Rogue)
+            if (targetClass is 103 or 109 or 110)
+                return 3; // KarusSmall (Mage)
+            if (targetClass is 104 or 111 or 112)
+                return currentRace == 4 ? (byte)4 : (byte)2; // KarusWoman or KarusMiddle (Priest)
+            if (targetClass is 113 or 114 or 115)
+                return 6; // Kurian
+            return currentRace > 0 ? currentRace : (byte)1;
+        }
+        else
+        {
+            if (targetClass is 201 or 205 or 206) // Warrior
+                return currentRace is 11 or 12 or 13 ? currentRace : (byte)11;
+            if (targetClass is 202 or 207 or 208 or 203 or 209 or 210 or 204 or 211 or 212) // Rogue, Mage, Priest
+                return currentRace == 13 ? (byte)13 : (byte)12;
+            if (targetClass is 213 or 214 or 215) // Porutu
+                return 14;
+            return currentRace > 0 ? currentRace : (byte)11;
+        }
     }
 
     private static async Task SendResultAsync(UserSession session, bool ok, string message)
@@ -391,6 +426,7 @@ public class AdminPanelPacketCoordinator(
                 return;
 
             character.Class = session.Class;
+            character.Race = session.Race;
             character.Strength = session.Strength;
             character.Stamina = session.Stamina;
             character.Dexterity = session.Dexterity;
