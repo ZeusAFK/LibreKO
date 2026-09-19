@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace LibreKO.Domain;
 
@@ -61,35 +61,53 @@ public static class StarterStats
         2 => "Tuarek",
         3 => "Wrinkle Tuarek",
         4 => "Pury Tuarek",
-        6 or 14 => "Kurian",
+        6 => "Kurian",
+        14 => "Porutu",
         11 => "Barbarian",
         12 => "El Morad Man",
         13 => "El Morad Woman",
         _ => $"Race {race}",
     };
 
-    public static string ClassName(int cls) => (cls % 100) switch
+    public static string RaceGender(int race) => race switch
     {
-        1 => "Warrior",
-        2 => "Rogue",
-        3 => "Mage",
-        4 => "Priest",
-        13 => "Kurian",
-        _ => $"Class {cls}",
+        1 or 2 or 3 or 11 or 12 => "Male",
+        4 or 13 => "Female",
+        6 or 14 => "Beast",
+        _ => "Unknown",
     };
 
-    public static string Blurb(int cls) => (cls % 100) switch
+    public static string ClassName(int cls) => cls switch
     {
-        1 => "Front-line fighter. Becomes a Blade for critical damage, or a Protector "
-             + "who shields the party's casters.",
-        2 => "Ranged specialist. Becomes a Hunter with the bow, or an Assassin who "
-             + "strikes from stealth.",
-        3 => "Elemental caster. Becomes a Mage of raw destruction, or an Enchanter who "
-             + "weakens and controls the enemy.",
-        4 => "Support caster. Becomes a Priest who heals and resurrects, or a Pikeman "
-             + "who fights with the spear.",
-        13 => "Close-quarters summoner. Fights with clawed gauntlets and calls on the "
+        213 or 214 or 215 => "Porutu",
+        _ => (cls % 100) switch
+        {
+            1 => "Warrior",
+            2 => "Rogue",
+            3 => "Mage",
+            4 => "Priest",
+            13 => "Kurian",
+            _ => $"Class {cls}",
+        }
+    };
+
+    public static string Blurb(int cls) => cls switch
+    {
+        213 or 214 or 215 => "Close-quarters summoner of El Morad. Fights with clawed gauntlets and calls on the "
               + "spirits that bind them.",
-        _ => "",
+        _ => (cls % 100) switch
+        {
+            1 => "Front-line fighter. Becomes a Blade for critical damage, or a Protector "
+                 + "who shields the party's casters.",
+            2 => "Ranged specialist. Becomes a Hunter with the bow, or an Assassin who "
+                 + "strikes from stealth.",
+            3 => "Elemental caster. Becomes a Mage of raw destruction, or an Enchanter who "
+                 + "weakens and controls the enemy.",
+            4 => "Support caster. Becomes a Priest who heals and resurrects, or a Pikeman "
+                 + "who fights with the spear.",
+            13 => "Close-quarters summoner of Karus. Fights with clawed gauntlets and calls on the "
+                  + "spirits that bind them.",
+            _ => "",
+        }
     };
 }

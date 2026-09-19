@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 using LibreKO.Domain;
 
@@ -287,7 +287,8 @@ public partial class CharSelect : Node3D
         int[] races = StarterStats.RacesFor(nation);
         foreach (int r in races)
         {
-            var b = Ui.MenuButton(StarterStats.RaceName(r), 27, 14);
+            string gender = StarterStats.RaceGender(r);
+            var b = Ui.MenuButton($"{StarterStats.RaceName(r)}  [{gender}]", 27, 14);
             int captured = r;
             b.Pressed += () => PickRace(captured);
             b.SetMeta("race", r);
@@ -302,6 +303,14 @@ public partial class CharSelect : Node3D
         foreach (Node c in _raceBox.GetChildren())
             if (c is Button b && b.HasMeta("race"))
                 Ui.MarkSelected(b, b.GetMeta("race").AsInt32() == race);
+
+        bool isBeast = race is 6 or 14;
+        if (_faceLbl != null && _faceLbl.GetParent() is Control faceRow)
+            faceRow.Visible = !isBeast;
+        if (_hairLbl != null && _hairLbl.GetParent() is Control hairRow)
+            hairRow.Visible = !isBeast;
+        if (_hairColour != null && _hairColour.GetParent() is Control colorRow)
+            colorRow.Visible = !isBeast;
 
         foreach (Node c in _jobBox.GetChildren()) c.QueueFree();
         int[] classes = StarterStats.ClassesFor(race);
