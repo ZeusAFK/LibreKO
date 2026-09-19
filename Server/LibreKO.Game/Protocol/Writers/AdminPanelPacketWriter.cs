@@ -24,7 +24,9 @@ public sealed class AdminPanelPacketWriter
         short TotalAc,
         int Money,
         IReadOnlyList<byte> SkillPoints,
-        IReadOnlyList<short> ClassOptions);
+        IReadOnlyList<short> ClassOptions,
+        byte Face = 0,
+        int Hair = 0);
 
     public static Packet GmFx(int characterId, bool enabled)
     {
@@ -74,6 +76,9 @@ public sealed class AdminPanelPacketWriter
         packet.WriteByte((byte)state.ClassOptions.Count);
         foreach (var option in state.ClassOptions)
             packet.WriteShort(option);
+
+        packet.WriteByte(state.Face);
+        packet.WriteInt(state.Hair);
 
         return packet;
     }

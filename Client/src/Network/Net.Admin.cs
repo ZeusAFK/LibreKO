@@ -91,7 +91,14 @@ public partial class Net
             options[i] = p.ReadShort();
         state.ClassOptions = options;
 
-        if (state.Class != 0) ApplyOwnClass(state.Class);
+        if (p.RemainingBytes >= 1) state.Face = p.ReadByte();
+        if (p.RemainingBytes >= 4) state.Hair = p.ReadInt();
+
+        if (state.Class != 0)
+        {
+            ApplyOwnClass(state.Class);
+            ApplyOwnNation(state.Class < 200 ? Nations.Karus : Nations.ElMorad);
+        }
         if (state.Race != 0) ApplyOwnRace(state.Race);
 
         AdminStateEvent?.Invoke(state);
@@ -129,11 +136,14 @@ public partial class Net
         _conn.Send(p);
     }
 
-    public void SendAdminSetClass(int classId)
+    public void SendAdminSetClass(int classId, int race = 0, int face = -1, int hair = -1)
     {
         var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
         p.WriteByte(AdminReqSetClass);
         p.WriteShort(IntToShort(classId));
+        p.WriteByte((byte)Math.Max(0, race));
+        p.WriteByte(face >= 0 ? (byte)face : (byte)255);
+        p.WriteInt(hair);
         _conn.Send(p);
     }
 

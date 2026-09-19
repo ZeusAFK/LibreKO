@@ -439,4 +439,31 @@ public class AdminTests : GameTestBase
         sentPacket.ReadSByteString();
         sentPacket.ReadString().Should().Be("Player not found: MissingPlayer");
     }
+
+    [Fact]
+    public void AdminPacketCoordinator_RaceValidationAndResolution_WorksCorrectly()
+    {
+        // Karus Kurian
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(113, 6, AccountNation.Karus).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(113, 1, AccountNation.Karus).Should().BeFalse();
+        AdminPanelPacketCoordinator.ResolveRaceForClass(113, 1, AccountNation.Karus).Should().Be(6);
+
+        // El Morad Porutu
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(213, 14, AccountNation.ElMorad).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(213, 11, AccountNation.ElMorad).Should().BeFalse();
+        AdminPanelPacketCoordinator.ResolveRaceForClass(213, 11, AccountNation.ElMorad).Should().Be(14);
+
+        // Karus Mage - Male (3) and Female (4)
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(103, 3, AccountNation.Karus).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(103, 4, AccountNation.Karus).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(103, 1, AccountNation.Karus).Should().BeFalse();
+        AdminPanelPacketCoordinator.ResolveRaceForClass(103, 4, AccountNation.Karus).Should().Be(4); // Preserves female
+        AdminPanelPacketCoordinator.ResolveRaceForClass(103, 1, AccountNation.Karus).Should().Be(3); // Defaults to male
+
+        // El Morad Warrior - Barbarian (11), Man (12), Woman (13)
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(201, 11, AccountNation.ElMorad).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(201, 12, AccountNation.ElMorad).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(201, 13, AccountNation.ElMorad).Should().BeTrue();
+        AdminPanelPacketCoordinator.IsValidRaceForClassAndNation(201, 14, AccountNation.ElMorad).Should().BeFalse();
+    }
 }

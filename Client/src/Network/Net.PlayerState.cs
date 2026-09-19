@@ -42,6 +42,14 @@ public partial class Net
         LastEnter = info;
     }
 
+    internal void ApplyOwnNation(int newNation)
+    {
+        if (newNation == 0 || newNation == LastEnter.Nation) return;
+        var info = LastEnter;
+        info.Nation = (byte)newNation;
+        LastEnter = info;
+    }
+
     private void SeedPlayerState(
         int level, long exp, long maxExp,
         int hp, int maxHp, int mp, int maxMp,
