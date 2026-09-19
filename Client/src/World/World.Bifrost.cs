@@ -74,13 +74,13 @@ public partial class World
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0, AnchorBottom = 0,
             GrowHorizontal = Control.GrowDirection.Both,
-            OffsetTop = 140,
+            OffsetTop = 80,
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Stop,
             MouseDefaultCursorShape = Control.CursorShape.PointingHand,
             TooltipText = "Click to open registration window",
         };
-        _bifrostBanner.AddThemeStyleboxOverride("panel", UiTheme.Panel(7, true));
+        _bifrostBanner.AddThemeStyleboxOverride("panel", UiTheme.Panel(5, true));
         _bifrostBanner.GuiInput += ev =>
         {
             if (ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
@@ -89,25 +89,25 @@ public partial class World
         _bifrostLayer.AddChild(_bifrostBanner);
 
         var m = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        UiTheme.Margins(m, 22, 9, 22, 10);
+        UiTheme.Margins(m, 10, 4, 10, 5);
         _bifrostBanner.AddChild(m);
 
-        var col = new VBoxContainer { CustomMinimumSize = new Vector2(240, 0), MouseFilter = Control.MouseFilterEnum.Ignore };
-        col.AddThemeConstantOverride("separation", 4);
+        var col = new VBoxContainer { CustomMinimumSize = new Vector2(160, 0), MouseFilter = Control.MouseFilterEnum.Ignore };
+        col.AddThemeConstantOverride("separation", 2);
         m.AddChild(col);
 
         var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        head.AddThemeConstantOverride("separation", 12);
+        head.AddThemeConstantOverride("separation", 8);
         col.AddChild(head);
 
-        _bifrostTitleLbl = UiTheme.Text(_eventTitle, 16, UiTheme.GoldBright);
-        _bifrostTitleLbl.AddThemeConstantOverride("outline_size", 4);
+        _bifrostTitleLbl = UiTheme.Text(_eventTitle, 12, UiTheme.GoldBright);
+        _bifrostTitleLbl.AddThemeConstantOverride("outline_size", 2);
         _bifrostTitleLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _bifrostTitleLbl.MouseFilter = Control.MouseFilterEnum.Ignore;
         head.AddChild(_bifrostTitleLbl);
 
-        _bifrostTimerLbl = UiTheme.Text("--:--", 18, UiTheme.TextHi, HorizontalAlignment.Right);
-        _bifrostTimerLbl.AddThemeConstantOverride("outline_size", 4);
+        _bifrostTimerLbl = UiTheme.Text("--:--", 12, UiTheme.TextHi, HorizontalAlignment.Right);
+        _bifrostTimerLbl.AddThemeConstantOverride("outline_size", 2);
         _bifrostTimerLbl.MouseFilter = Control.MouseFilterEnum.Ignore;
         head.AddChild(_bifrostTimerLbl);
 
@@ -115,13 +115,13 @@ public partial class World
         {
             MinValue = 0, MaxValue = 1, Value = 1,
             ShowPercentage = false,
-            CustomMinimumSize = new Vector2(0, 6),
+            CustomMinimumSize = new Vector2(0, 3),
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         var track = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.45f) };
-        track.SetCornerRadiusAll(3);
+        track.SetCornerRadiusAll(2);
         _bifrostBarFill = new StyleBoxFlat { BgColor = BifrostCalmCol };
-        _bifrostBarFill.SetCornerRadiusAll(3);
+        _bifrostBarFill.SetCornerRadiusAll(2);
         _bifrostBar.AddThemeStyleboxOverride("background", track);
         _bifrostBar.AddThemeStyleboxOverride("fill", _bifrostBarFill);
         col.AddChild(_bifrostBar);
@@ -148,34 +148,34 @@ public partial class World
 
         var panel = new PanelContainer
         {
-            CustomMinimumSize = new Vector2(270, 0),
+            CustomMinimumSize = new Vector2(220, 0),
             MouseFilter = Control.MouseFilterEnum.Stop,
         };
-        panel.AddThemeStyleboxOverride("panel", UiTheme.Panel(7, true));
+        panel.AddThemeStyleboxOverride("panel", UiTheme.Panel(6, true));
         center.AddChild(panel);
 
         var m = new MarginContainer();
-        UiTheme.Margins(m, 14, 8, 14, 10);
+        UiTheme.Margins(m, 10, 6, 10, 8);
         panel.AddChild(m);
 
         var vb = new VBoxContainer();
-        vb.AddThemeConstantOverride("separation", 6);
+        vb.AddThemeConstantOverride("separation", 4);
         m.AddChild(vb);
 
         // Header Bar (Title & Close Button)
         var headerRow = new HBoxContainer();
-        headerRow.AddThemeConstantOverride("separation", 6);
+        headerRow.AddThemeConstantOverride("separation", 4);
         vb.AddChild(headerRow);
 
-        _joinModalTitle = UiTheme.Text($"#  {_eventTitle.ToUpper()}  #", 13, UiTheme.GoldBright, HorizontalAlignment.Center);
-        _joinModalTitle.AddThemeConstantOverride("outline_size", 3);
+        _joinModalTitle = UiTheme.Text($"#  {_eventTitle.ToUpper()}  #", 11, UiTheme.GoldBright, HorizontalAlignment.Center);
+        _joinModalTitle.AddThemeConstantOverride("outline_size", 2);
         _joinModalTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         headerRow.AddChild(_joinModalTitle);
 
         var xBtn = new Button
         {
             Text = "✕",
-            CustomMinimumSize = new Vector2(20, 20),
+            CustomMinimumSize = new Vector2(16, 16),
             FocusMode = Control.FocusModeEnum.None,
         };
         xBtn.AddThemeColorOverride("font_color", UiTheme.TextDim);
@@ -188,18 +188,18 @@ public partial class World
 
         // Timer & Mini Progress Bar
         var timerBox = new VBoxContainer();
-        timerBox.AddThemeConstantOverride("separation", 4);
+        timerBox.AddThemeConstantOverride("separation", 3);
         vb.AddChild(timerBox);
 
-        _joinModalTimer = UiTheme.Text("--:--", 22, UiTheme.GoldBright, HorizontalAlignment.Center);
-        _joinModalTimer.AddThemeConstantOverride("outline_size", 3);
+        _joinModalTimer = UiTheme.Text("--:--", 16, UiTheme.GoldBright, HorizontalAlignment.Center);
+        _joinModalTimer.AddThemeConstantOverride("outline_size", 2);
         timerBox.AddChild(_joinModalTimer);
 
         _joinModalBar = new ProgressBar
         {
             MinValue = 0, MaxValue = 1, Value = 1,
             ShowPercentage = false,
-            CustomMinimumSize = new Vector2(0, 4),
+            CustomMinimumSize = new Vector2(0, 3),
         };
         var modalTrack = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.45f) };
         modalTrack.SetCornerRadiusAll(2);
@@ -210,21 +210,21 @@ public partial class World
         timerBox.AddChild(_joinModalBar);
 
         // Status text
-        _joinModalStatus = UiTheme.Text("Registration is OPEN! Click [Join] to participate.", 11, UiTheme.TextHi, HorizontalAlignment.Center);
+        _joinModalStatus = UiTheme.Text("Registration is OPEN! Click [Join] to participate.", 10, UiTheme.TextHi, HorizontalAlignment.Center);
         _joinModalStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         vb.AddChild(_joinModalStatus);
 
         // Action Buttons KO Theme
         var btnRow = new HBoxContainer();
-        btnRow.AddThemeConstantOverride("separation", 8);
+        btnRow.AddThemeConstantOverride("separation", 6);
         vb.AddChild(btnRow);
 
-        _joinModalBtn = Ui.MenuButton("Join", height: 28, fontSize: 11);
+        _joinModalBtn = Ui.MenuButton("Join", height: 24, fontSize: 10);
         _joinModalBtn.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _joinModalBtn.Pressed += OnJoinModalToggle;
         btnRow.AddChild(_joinModalBtn);
 
-        _joinModalCloseBtn = Ui.MenuButton("Close", height: 28, fontSize: 11);
+        _joinModalCloseBtn = Ui.MenuButton("Close", height: 24, fontSize: 10);
         _joinModalCloseBtn.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _joinModalCloseBtn.Pressed += CloseJoinModal;
         btnRow.AddChild(_joinModalCloseBtn);
