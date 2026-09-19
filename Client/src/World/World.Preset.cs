@@ -264,11 +264,14 @@ public partial class World
             _presetTreePointsLbl.Text = $"Planned {treeSpent} of {Mastery.PointsForLevel} mastery point(s)";
     }
 
+    private const string RedistributeAtKaishan =
+        "Your points are already spent. [Grand Merchant] Kaishan in Moradon redistributes them.";
+
     private void ApplyStatPreset()
     {
         if (!Sheet.AtBaseStats)
         {
-            RequestReset(Net.ResetKindStat, thenApplyPlan: true);
+            CombatNotice(RedistributeAtKaishan);
             return;
         }
         SendStatPlan();
@@ -291,7 +294,7 @@ public partial class World
     {
         if (Mastery.Pool < Mastery.PointsForLevel)
         {
-            RequestReset(Net.ResetKindSkill, thenApplyPlan: true);
+            CombatNotice(RedistributeAtKaishan);
             return;
         }
         SendSkillPlan();

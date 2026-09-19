@@ -1,0 +1,39 @@
+Bind Npc 24440 Zone 1 for karus
+Bind Npc 14440 Zone 2 for elmorad
+Quest 169 "[Party/Repeatable]Reinforcement Interception"
+    Repeat always
+    Journal for karus "The quest to eradicate the Dragon Tooth Commander is repeatable from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Journal for elmorad "The quest to eradicate the Dragon Tooth Commander is repeatable from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Kill 20 of 8053, 8003
+
+Requires player level >= 45
+
+Rewards
+    Give 1750000 experience or 3500000 with premium
+
+direction_586 = location "Dragon Tooth Commander" about "Dragon Tooth Commander\nA monster created by Pathos in the Great War of Evil; possesses a conscience which is rare for an undead" found "El Morad" at 866 1752 in zone 2
+direction_587 = location "Dragon Tooth Commander" about "Dragon Tooth Commander\nA monster created by Pathos in the Great War of Evil; possesses a conscience which is rare for an undead" found "Karus" at 1131 462 in zone 1
+
+On offer
+    If player is karus
+        Say "[The Dragon Tooth Soldiers who have been plundering the Dark Lands, and  the Dragon Tooth Skeleton's Squad Leader, are planning to get together...]"
+        Topic "Tell me more..." do
+            Show quest "It's rumored they're planning to join a  Dragon Tooth Skeleton Squad Leader to replenish the men they lost plundering the Dark Lands. If they do get together, innocent deaths will sky rocket... Linnart Village's warriors must unite to stop the soldiers and protect the Dark Lands!!\n\n            - Sentinel Hashan."
+    If player is elmorad
+        Say "[The Dragon Tooth Soldiers who have been plundering the Blue Feather Valley, and  the Dragon Tooth Skeleton's Squad Leader, are planning to get together...]"
+        Topic "Tell me more..." do
+            Show quest "It's rumored they're planning to join a  Dragon Tooth Commander to replenish the men they lost plundering the Dark Lands. If they do get together, innocent deaths will sky rocket... Laiva Village's warriors must unite to stop the soldiers and protect the Dark Lands!!\n\n            - Sentinel Hashan."
+
+On in_progress
+    If player is karus
+        Say "(Monologue) The Dragon Tooth Skeleton Squad Leader's reinforcements will be going past... round about here. Hmmm... not long now."
+        Topic "Where can I find it?" do
+            Map direction_587
+    If player is elmorad
+        Say "(Monologue) The Dragon Tooth Commander's reinforcements will be going past... round about here. Hmmm... not long now."
+        Topic "Where can I find it?" do
+            Map direction_586
+
+On ready
+    Say "Wow, you even creamed the Dragon Knight Squad Leader! It's only a matter of time before the whole lot crumbles!"
+    Topic "Confirm" goto close

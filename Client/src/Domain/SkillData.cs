@@ -5,6 +5,17 @@ namespace LibreKO.Domain;
 
 public static class SkillData
 {
+    private const int MasterSkillLevel = 2;
+    private const int FirstMasterScroll = 379063000;
+    private const int LastMasterScroll = 379066000;
+    private const int MasterScrollToStoneOffset = 4000;
+
+    public static bool IsMasterScrollSkill(int level, int useItem) =>
+        level == MasterSkillLevel && useItem >= FirstMasterScroll && useItem <= LastMasterScroll;
+
+    public static int ConsumedItemFor(int level, int useItem) =>
+        IsMasterScrollSkill(level, useItem) ? useItem - MasterScrollToStoneOffset : useItem;
+
     public sealed class Skill
     {
         public int Id;
@@ -66,6 +77,10 @@ public static class SkillData
         public bool IsPotion =>
             UseItem != 0 && ItemGroup == PotionItemGroup && Moral == SkillTarget.Self
             && Type1 == MagicType.DotHeal && Cast == 0 && Recast == 0;
+
+        public bool IsMasterScrollSkill => SkillData.IsMasterScrollSkill(Level, UseItem);
+
+        public int ConsumedItem => SkillData.ConsumedItemFor(Level, UseItem);
 
         public bool HasCastPhase => Cast > 0;
 

@@ -229,8 +229,8 @@ public partial class World
         _skillItem1Lbl.Text = s.NeedItem != 0
             ? $"Required item : {ItemData.DisplayName(s.NeedItem)}"
             : "No required item";
-        _skillItem2Lbl.Text = s.UseItem != 0 && s.UseItem != s.NeedItem
-            ? $"Item consumed : {ItemData.DisplayName(s.UseItem)}"
+        _skillItem2Lbl.Text = s.ConsumedItem != 0 && s.ConsumedItem != s.NeedItem
+            ? $"Item consumed : {ItemData.DisplayName(s.ConsumedItem)}"
             : "No item consumed";
     }
 
@@ -274,10 +274,6 @@ public partial class World
             _masteryBtns[idx].Pressed += () => OnMasterySpend(t);
             grid.AddChild(_masteryBtns[idx]);
         }
-        var resetSkills = new Button { Text = "Reset skills", FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Refund all mastery points for gold" };
-        resetSkills.Pressed += () => RequestReset(Net.ResetKindSkill);
-        root.AddChild(resetSkills);
         root.AddChild(new HSeparator());
         RefreshMasteryUI();
     }

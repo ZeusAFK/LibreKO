@@ -26,13 +26,6 @@ public sealed class PreGamePacketWriter
         short ZoneId,
         IReadOnlyList<CharSelectItem> Equipment);
 
-    public static Packet StatSkillDistribute(byte listOpcode)
-    {
-        var packet = new Packet(GameOpcodes.GS_ALLCHAR_INFO_REQ);
-        packet.WriteByte(listOpcode);
-        return packet;
-    }
-
     public static Packet NationSelect(byte nation)
     {
         var packet = new Packet(GameOpcodes.GS_NATION_SELECT);

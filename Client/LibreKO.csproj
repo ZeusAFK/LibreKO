@@ -27,4 +27,8 @@
   <ItemGroup Condition="'$(Configuration)' == 'ExportRelease'">
     <Compile Remove="src/Tools/**/*.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
 </Project>

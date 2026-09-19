@@ -41,12 +41,12 @@ public class MagicOverTimeService(
         if (magic.UseItem != 0)
         {
             if ((magic.ItemGroup == PotionItemGroup && !caster.CanUsePotions)
-                || !magicItemUsageService.CanUseItem(caster, magic.UseItem))
+                || !magicItemUsageService.CanUseSkillItems(caster, magic))
             {
                 logger.LogWarning(
                     "Skill {SkillId} refused for {Name}: item {ItemId} is {Reason} (class {Class}, level {Level})",
-                    skillId, caster.Name, magic.UseItem,
-                    magicItemUsageService.CheckItem(caster, magic.UseItem), caster.Class, caster.Level);
+                    skillId, caster.Name, magic.ConsumedItem,
+                    magicItemUsageService.CheckItem(caster, magic.ConsumedItem), caster.Class, caster.Level);
                 await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
                 return;
             }
@@ -89,7 +89,7 @@ public class MagicOverTimeService(
             actualTargetIds.Add(npcTarget.UniqueId);
         }
 
-        if (magic.UseItem != 0 && !await magicItemUsageService.TryConsumeItemAsync(caster, magic.UseItem))
+        if (!await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
         {
             await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
             return;

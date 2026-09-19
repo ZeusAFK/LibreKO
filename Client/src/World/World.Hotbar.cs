@@ -331,7 +331,7 @@ public partial class World
             if (i < TouchControls.ActionSlots) _touchActions?.SetCooldown(i, cd);
             cell.SetDim(s != null && cd <= 0f && (!SkillReady(s, now) || !SkillRequirementMet(s)));
 
-            int needId = SkillData.IsSkill(id) ? s?.UseItem ?? 0 : id;
+            int needId = SkillData.IsSkill(id) ? s?.ConsumedItem ?? 0 : id;
             if (needId != 0 && ItemData.Get(needId) != null)
             {
                 int need = s is { IsRanged: true } ? Mathf.Max(1, s.NeedArrow) : 1;

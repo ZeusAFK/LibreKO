@@ -689,6 +689,7 @@ public sealed class Parser
         var grants = new List<GrantSyntax>();
         Token? journal = null;
         var journals = new List<NationTextSyntax>();
+        var titles = new List<NationTextSyntax>();
         var daily = false;
         var repeat = false;
         while (!AtEnd && Current.Indent > indent)
@@ -711,6 +712,22 @@ public sealed class Parser
                     _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
                         "This quest already has a repetition declaration.");
                 repeat = true;
+                _index++;
+                continue;
+            }
+            if (Current.StartsWith("title"))
+            {
+                if (Current.Tokens.Count != 4 || !Current.Tokens[1].IsWord("for")
+                    || Current.Tokens[3].Kind != TokenKind.String)
+                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                        "A 'Title' line names a nation or class and its title in quotes, "
+                        + "like: Title for karus \"Marauders of Darkland\"");
+                else if (titles.Any(entry => entry.Nation.Text.Equals(Current.Tokens[2].Text,
+                             StringComparison.OrdinalIgnoreCase)))
+                    _diagnostics.Error(DiagnosticId.DuplicateObjectives, Current.Span,
+                        "This quest already has a Title line for that nation.");
+                else
+                    titles.Add(new NationTextSyntax(Current.Tokens[2], Current.Tokens[3]));
                 _index++;
                 continue;
             }
@@ -759,14 +776,17 @@ public sealed class Parser
         if (journal is not null && journals.Count > 0)
             _diagnostics.Error(DiagnosticId.DuplicateObjectives, opener.Span,
                 "Write Journal once, or once per nation, not both.");
+        if (title is not null && titles.Count > 0)
+            _diagnostics.Error(DiagnosticId.DuplicateObjectives, opener.Span,
+                "Write the title on the Quest line, or a Title line per nation, not both.");
         if (!_hasBinding && groups.Count == 0 && collects.Count == 0 && title is null
-            && journal is null && journals.Count == 0)
+            && titles.Count == 0 && journal is null && journals.Count == 0)
             _diagnostics.Error(DiagnosticId.EmptyBlock, opener.Span,
                 "A 'Quest' block needs a title, a 'Journal' line, a 'Kill' line or a 'Collect' line.");
 
         return new QuestObjectivesSyntax(
             opener.Span, questId, questSpan, groups, anyWillDo, title, journal, daily, journals,
-            collects, grants, repeat);
+            collects, grants, repeat, titles);
     }
 
     private Token? ParseJournal(Line line, Token? already)
@@ -836,7 +856,7 @@ public sealed class Parser
             || !line.Tokens[2].IsWord("of"))
         {
             _diagnostics.Error(DiagnosticId.UnknownAction, line.Span,
-                "A 'Quest' block takes 'Daily', 'Repeat always', 'Journal', 'Kill', 'Collect' or 'Give .. on accept' lines.");
+                "A 'Quest' block takes 'Daily', 'Repeat always', 'Title for', 'Journal', 'Kill', 'Collect' or 'Give .. on accept' lines.");
             return null;
         }
 

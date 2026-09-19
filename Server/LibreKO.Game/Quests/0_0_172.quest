@@ -1,0 +1,35 @@
+Bind Npc 24440 Zone 1 for karus
+Bind Npc 14440 Zone 2 for elmorad
+Quest 172 "[Party/Repeatable]Recover the Ruins II"
+    Repeat always
+    Journal for karus "The quest to eradicate Apostle is a repeatable mission from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Journal for elmorad "The quest to eradicate Apostle is a repeatable mission from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Kill 20 of 2152, 2102
+
+Requires player level >= 45
+
+Rewards
+    Give 1750000 experience or 3500000 with premium
+
+direction_552 = location "Apostle" about "Apostle\nMonks a grade above Deruvish who do not level attacks first at warrior passersby but turn into savage mages of darkness at night" found "El Morad" at 517 1245 in zone 2
+direction_553 = location "Apostle" about "Apostle\nMonks a grade above Deruvish who do not level attacks first at warrior passersby but turn into savage mages of darkness at night" found "Karus" at 1529 833 in zone 1
+
+On offer
+    If player is karus
+        Say "[Karus' legacy, Linnart Village's precious possession the Berubasi Relic Site, has been over-run by Esoteric Buddhist priests..."
+        Topic "Tell me more..." do
+            Show quest "God is angry with us. Karus' legacy, and Linnart Village's precious possession, the  Berubasi Relic Site, has been taken by a sect of Esoteric Buddhist priests. Would someone please drive them out, thus sparing us all from god's wrath. Thankyou. ? Grand Celebrant Murca."
+    If player is elmorad
+        Say "[El Morad's legacy, Laiva Village's precious possession the Relic Site of Temple, is swarming with Esoteric Buddhist priests."
+        Topic "Tell me more..." do
+            Show quest "God is angry with us. El Morad's legacy, and Laiva Village's precious possession, the  Relic Site of Temple, has been taken by a sect of Esoteric Buddhist priests. Please, somebody, drive them out and save El Morad from god's wrath. ? Grand Celebrant Helena."
+
+On in_progress
+    If player is karus
+        Say "(Monologue) Were the Esoteric Buddhist priests called Apostle?"
+        Topic "Where can I find it?" do
+            Map direction_553
+    If player is elmorad
+        Say "(Monologue) Were the Esoteric Buddhist priests called Apostle?"
+        Topic "Where can I find it?" do
+            Map direction_552

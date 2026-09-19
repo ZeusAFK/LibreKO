@@ -30,8 +30,7 @@ public class ScriptDialogService(
 
     public void SendStatSkillDistribute()
     {
-        queuedPackets.Add(PreGamePacketWriter.StatSkillDistribute(
-            (byte)AllCharacterInfoOpcode.CharacterList));
+        queuedPackets.Add(ClassChangePacketWriter.OpenJobChangePanel());
     }
 
     public void SendNameChange()

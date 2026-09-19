@@ -94,8 +94,10 @@ public partial class World
         }
         if (s.UseItem != 0 && !s.IsResurrect && ItemData.Get(s.UseItem) != null)
         {
+            if (CountInBackpack(s.UseItem) < 1)
+                return false;
             int need = s.IsRanged ? Mathf.Max(1, s.NeedArrow) : 1;
-            if (CountInBackpack(s.UseItem) < need)
+            if (CountInBackpack(s.ConsumedItem) < need)
                 return false;
         }
         return true;
@@ -285,6 +287,8 @@ public partial class World
 
         if (s.IsResurrect && s.NeedStone > 0 && s.UseItem != 0)
             lines.Add($"Costs the target {s.NeedStone} × {ItemData.DisplayName(s.UseItem)}");
+        if (s.IsMasterScrollSkill)
+            lines.Add($"Consumes 1 × {ItemData.DisplayName(s.ConsumedItem)}");
 
         var timing = new List<string>();
         if (s.Cast > 0) timing.Add($"Cast {s.CastSeconds:0.#}s");

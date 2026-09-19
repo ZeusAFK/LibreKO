@@ -1,0 +1,45 @@
+Bind Npc 24440 Zone 1 for karus
+Bind Npc 14440 Zone 2 for elmorad
+Quest 168
+    Title for karus "[Party/Repeatable]Marauders of Darkland II"
+    Title for elmorad "[Party/Repeatable]Marauders of Blue Feather Valley II"
+    Repeat always
+    Journal for karus "The quest to eradicate the Dragon Tooth Soldier is repeatable from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Journal for elmorad "The quest to eradicate the Dragon Tooth Soldier is repeatable from Level 45 to Level 62. \n※  Premium account users will receive additional experience."
+    Kill 20 of 1164, 1114
+
+Requires player level >= 45
+
+Rewards
+    Give 1125000 experience or 2250000 with premium
+
+direction_29 = location "Dragon Tooth Knight" about "Dragon Tooth Knight\nAn undead monster created during the Great War of Evil; possesses a conscience rare for the undead" found "El Morad" elmorad at 500 930 in zone 2
+direction_519 = location "Dragon Tooth Knight" about "Dragon Tooth Knight\nA monster created by Pathos in the Great War of Evil; possesses a conscience which is rare for an undead" found "Karus" karus at 930 426 in zone 1
+
+On offer
+    If player is karus
+        Say "[Recently, more Dragon Tooth Soldiers have been seen west of Linnart Village in the Dark Lands]"
+        Topic "Tell me more..." do
+            Show quest "Recently, in the Dark Land west of Linnart Village, vast numbers of  Dragon Tooth Soldiers have been sighted. They've been attacking and plundering the merchants coming from Moradon. Travellers are advised to avoid the Dark Lands untill the rest of the Dragon Tooth Sodlers have been cleared out.\n\n- Sentinel Hassan."
+    If player is elmorad
+        Say "[Recently, more Dragon Tooth Soldiers have been appearing southeast of Laiva Village in Blue Feather  Valley]"
+        Topic "Tell me more..." do
+            Show quest "Recently, in Blue Feather's Valley, southeast of Laiva Village, vast numbers of  Dragon Tooth Solders have been sighted. They've been attacking and plundering the merchants coming from Moradon. Travellers are warned to steer clear of Blue Feather's Valley untill the rest of the Dragon Tooth Soldiers have been dealt with.\n\n                  - Sentinel Beth."
+
+On in_progress
+    If player is karus
+        Say "(Monologue) Hmmm... are the Dark Lands west from here?"
+        Topic "Where can I find it?" do
+            Map direction_519
+    If player is elmorad
+        Say "(Monologue) Hmm... is Blue Feather Valley southeast from here?"
+        Topic "Where can I find it?" do
+            Map direction_29
+
+On ready
+    If player is karus
+        Say "Hopefully the Dark Lands will quite-down for awhile. Master, you tried incredibly hard."
+        Topic "Confirm" goto close
+    If player is elmorad
+        Say "Blue Feather's Valley will become quite for some time? Master, you tried hard."
+        Topic "Confirm" goto close

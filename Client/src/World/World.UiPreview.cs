@@ -898,10 +898,6 @@ public partial class World
 
     internal Control BuildClassChangeUiPreview()
     {
-        ItemData.EnsureLoaded();
-        _selfClass = 106;
-        Inv.EnsureLength(GridStart + GridCount);
-        Inv[GridStart] = PreviewItem(JobChangeScroll, 1, 0);
         BuildClassChangePanel();
         _vendorNpcName = "Captain Kaishan";
         OnClassChangeNpc();

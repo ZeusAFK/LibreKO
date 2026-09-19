@@ -1,0 +1,22 @@
+include locations/global
+include locations/moradon
+include translations/18004_kaisan
+
+Bind Npc 18004 Zone 21
+
+Quest 72 "Redistributions"
+    Journal "[Grand Merchant] Kaishan performs redistributions."
+
+On topics
+    If player level >= 10
+        Topic "Redistributions" goto event_407
+
+On accept
+    If player level >= 10
+        Goto event_407
+
+On event_407
+    Say "Would you like to redistribute?"
+    Topic "Redistribution will take place." do
+        Open stats panel
+    Topic "Close" goto close

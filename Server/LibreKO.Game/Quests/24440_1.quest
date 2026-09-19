@@ -1,0 +1,7 @@
+Bind Npc 24440 Zone 1
+
+On greeting
+    Say "[You found the Linnart Village Notice Board. Would you like to read it?}"
+    If no topic fits
+        Say "[No more new notices.]"
+        Topic "Close" goto close

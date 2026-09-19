@@ -1,0 +1,28 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Server tests
+        run: dotnet test Server/LibreKO.sln --nologo
+
+      - name: Client tests
+        run: dotnet test Client/tests/LibreKO.Tests/LibreKO.Tests.csproj --nologo

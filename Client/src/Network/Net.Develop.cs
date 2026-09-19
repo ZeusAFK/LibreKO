@@ -117,15 +117,6 @@ public partial class Net
 
     public void SendClassEligibilityQuery() => SendClassByte(GameOpcodes.GS_CLASS_CHANGE, 1);
 
-    public void SendJobChange(byte changeType, byte newJob)
-    {
-        var p = new Packet(GameOpcodes.GS_CLASS_CHANGE);
-        p.WriteByte(6);
-        p.WriteByte(changeType);
-        p.WriteByte(newJob);
-        _conn.Send(p);
-    }
-
     private void SendClassByte(GameOpcodes opcode, byte sub)
     {
         var p = new Packet(opcode);

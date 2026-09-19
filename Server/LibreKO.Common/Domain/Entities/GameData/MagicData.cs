@@ -41,6 +41,18 @@ public class MagicData
 
     [NotMapped]
     public int CastTimeMs => CastTime * MillisecondsPerTenth;
+
+    private const int MasterSkillLevel = 2;
+    private const int FirstMasterScroll = 379063000;
+    private const int LastMasterScroll = 379066000;
+    private const int MasterScrollToStoneOffset = 4000;
+
+    [NotMapped]
+    public bool IsMasterScrollSkill =>
+        SkillLevel == MasterSkillLevel && UseItem >= FirstMasterScroll && UseItem <= LastMasterScroll;
+
+    [NotMapped]
+    public int ConsumedItem => IsMasterScrollSkill ? UseItem - MasterScrollToStoneOffset : UseItem;
     public short Range { get; set; }
     public short Etc { get; set; }
     public short UseStanding { get; set; }
