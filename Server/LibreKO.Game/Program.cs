@@ -17,27 +17,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 
-TranceConsoleUi.Initialize("Libre ● Game Server", 110, 38);
-TranceConsoleUi.PrintBanner("GAME SERVER", "v2.6.19", "By Zeus x Design by Ahmad");
-TranceConsoleUi.PrintDualCards(
-    "SYSTEM METRICS",
-    [
-        ("Host", "0.0.0.0"),
-        ("Port", "15001"),
-        ("Database", "MariaDB (XAMPP 3306)"),
-        ("Environment", "Production")
-    ],
-    "WORLD ARCHITECTURE",
-    [
-        ("Zone Maps", "66 Zones Active"),
-        ("Total Items", "263,700 Entries"),
-        ("Upgrade Recipes", "351,404 Entries"),
-        ("Status", "INITIALIZING...")
-    ]
-);
-TranceConsoleUi.PrintSectionHeader("INITIALIZATION & LOADING PIPELINE", 88);
-TranceConsoleUi.PrintStatusLine("BOOT", ConsoleColor.Cyan, "Validating database, maps & spawning NPCs (silent mode: only errors displayed)...");
-
 var environmentName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
     ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
     ?? Environments.Production;
@@ -123,21 +102,6 @@ using (var scope = builder.Services.CreateScope())
     var bootstrapper = scope.ServiceProvider.GetRequiredService<IGameServerBootstrapper>();
     await bootstrapper.InitializeAsync();
 }
-
-var socketServer = builder.Services.GetRequiredService<SocketServer>();
-socketServer.OnReady = () =>
-{
-    TranceConsoleUi.PrintServerReadyBadge(
-        "GAME SERVER",
-        [
-            ("Status", "ONLINE & ACCEPTING CONNECTIONS"),
-            ("Network", "TCP Port 15001 (0.0.0.0:15001)"),
-            ("World Engine", "66 Active Zones  •  14,999 Monsters & NPCs  •  263,700 Items"),
-            ("Engine", "Libre Core v2.6.19  •  By Zeus x Design by Ahmad")
-        ]
-    );
-    TranceConsoleUi.PrintSectionHeader("LIVE IN-GAME CONNECTION & EVENT STREAM", 88);
-};
 
 try
 {

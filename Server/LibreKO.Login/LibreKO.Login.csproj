@@ -4,9 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>LoginServer</AssemblyName>
-    <UseAppHost>true</UseAppHost>
-    <ApplicationIcon>login.ico</ApplicationIcon>
+    <AssemblyName>LibreKO.Login</AssemblyName>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>

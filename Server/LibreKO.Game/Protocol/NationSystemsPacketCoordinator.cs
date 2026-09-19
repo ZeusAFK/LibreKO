@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
@@ -24,6 +24,7 @@ public class NationSystemsPacketCoordinator(
     IKingElectionPacketService kingElectionPacketService,
     IKingGovernancePacketService kingGovernancePacketService,
     IBifrostEventService bifrostEventService,
+    EventSchedulerService eventSchedulerService,
     ILogger<NationSystemsPacketCoordinator> logger) : INationSystemsPacketCoordinator
 {
 
@@ -49,11 +50,10 @@ public class NationSystemsPacketCoordinator(
 
         int remaining = 0;
         byte eventType = 0;
-        var scheduler = serviceProvider.GetService<EventSchedulerService>();
-        if (scheduler != null && scheduler.IsTempleEventJoinOpen)
+        if (eventSchedulerService.IsTempleEventJoinOpen)
         {
-            remaining = scheduler.TempleRemainingJoinSeconds;
-            eventType = (byte)scheduler.CurrentTempleEvent;
+            remaining = eventSchedulerService.TempleRemainingJoinSeconds;
+            eventType = (byte)eventSchedulerService.CurrentTempleEvent;
         }
         else
         {

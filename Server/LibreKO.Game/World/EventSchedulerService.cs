@@ -1,7 +1,6 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,21 +12,20 @@ namespace LibreKO.Game.World;
 public class EventSchedulerService(
     SessionManager sessionManager,
     IOptions<GameServerSettings> settings,
-    IServiceProvider serviceProvider,
+    IZoneTransitionService zoneTransitionService,
     ILogger<EventSchedulerService> logger) : BackgroundService
 {
     private DateTime _lastWarOpen = DateTime.MinValue;
     private bool _banishPending;
     private DateTime _banishTime;
 
-    // Temple event state
     private TempleEvent _templeEvent;
     private byte _templeEventZone;
     private bool _templeEventJoinOpen;
     private DateTime _templeEventStart;
     private DateTime _templeEventEnd;
     private DateTime _lastTempleEventCall = DateTime.MinValue;
-    private readonly HashSet<int> _templeParticipants = []; // CharacterIds
+    private readonly HashSet<int> _templeParticipants = [];
 
     public bool IsTempleEventJoinOpen => _templeEventJoinOpen;
     public TempleEvent CurrentTempleEvent => _templeEvent;
@@ -252,9 +250,6 @@ public class EventSchedulerService(
 
     private async Task WarpParticipantsToEventAsync()
     {
-        var zoneTransitionService = serviceProvider.GetService<IZoneTransitionService>();
-        if (zoneTransitionService == null) return;
-
         logger.LogInformation("Warping {Count} participants to zone {Zone} for {Contest}",
             _templeParticipants.Count, _templeEventZone, _templeEvent);
 
@@ -283,9 +278,6 @@ public class EventSchedulerService(
 
     private async Task WarpParticipantsOutAsync(byte zoneId)
     {
-        var zoneTransitionService = serviceProvider.GetService<IZoneTransitionService>();
-        if (zoneTransitionService == null) return;
-
         var playersInZone = sessionManager.GetAll().Where(s => s.ZoneId == zoneId).ToList();
         logger.LogInformation("Warping {Count} players out of event zone {Zone} back to Moradon",
             playersInZone.Count, zoneId);
@@ -326,17 +318,16 @@ public class EventSchedulerService(
 
     public bool TempleEventAcceptingEntries => _templeEventJoinOpen;
 
-    public void CallTempleEvent(TempleEvent contest, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds, UserSession? autoJoinSession = null)
+    public async Task CallTempleEventAsync(TempleEvent contest, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds, UserSession? autoJoinSession = null)
     {
         if (contest == TempleEvent.None)
             return;
 
-        _ = StartTempleEventAsync(contest, DateTime.UtcNow, joinWindowSeconds, autoJoinSession);
+        await StartTempleEventAsync(contest, DateTime.UtcNow, joinWindowSeconds, autoJoinSession);
     }
 
     public async Task CancelTempleEventAsync()
     {
-        var zoneTransitionService = serviceProvider.GetService<IZoneTransitionService>();
         var closeBifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, 0);
         await sessionManager.BroadcastToAll(closeBifrostPkt);
 
@@ -363,23 +354,19 @@ public class EventSchedulerService(
             }
         }
 
-        // Always check and warp players in all temple event zones back to Moradon
         byte[] eventZones = [(byte)ZoneId.JuradMountain, (byte)ZoneId.BorderDefenseWar, (byte)ZoneId.ChaosDungeon];
         foreach (var ez in eventZones)
         {
             var playersInZone = sessionManager.GetAll().Where(s => s.ZoneId == ez).ToList();
             foreach (var s in playersInZone)
             {
-                if (zoneTransitionService != null)
+                try
                 {
-                    try
-                    {
-                        await zoneTransitionService.ChangeZoneAsync(s, (byte)ZoneId.Moradon, 0f, 0f);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Failed to warp player {Name} out of event zone {Zone}", s.Name, ez);
-                    }
+                    await zoneTransitionService.ChangeZoneAsync(s, (byte)ZoneId.Moradon, 0f, 0f);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to warp player {Name} out of event zone {Zone}", s.Name, ez);
                 }
             }
         }

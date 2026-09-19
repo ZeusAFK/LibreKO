@@ -9,8 +9,7 @@ public sealed class BifrostPacketWriter
         var packet = new Packet(GameOpcodes.GS_BIFROST);
         packet.WriteByte((byte)sub);
         packet.WriteInt(secondsRemaining);
-        if (eventType != 0)
-            packet.WriteByte(eventType);
+        packet.WriteByte(eventType);
         return packet;
     }
 }

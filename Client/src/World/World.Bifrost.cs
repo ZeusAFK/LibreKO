@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -40,7 +40,6 @@ public partial class World
         Net.I.BifrostTimeEvent    += OnBifrostTime;
         Net.I.BifrostJoinEvent    += OnBifrostJoinResult;
         Net.I.BifrostDisbandEvent += OnBifrostDisband;
-        Net.I.NoticeEvent         += OnBifrostNotice;
 
         if (_worldReady) Net.I.SendBifrostTimeRequest();
     }
@@ -50,7 +49,6 @@ public partial class World
         Net.I.BifrostTimeEvent    -= OnBifrostTime;
         Net.I.BifrostJoinEvent    -= OnBifrostJoinResult;
         Net.I.BifrostDisbandEvent -= OnBifrostDisband;
-        Net.I.NoticeEvent         -= OnBifrostNotice;
     }
 
     private void BifrostRequestTime() => Net.I.SendBifrostTimeRequest();
@@ -162,7 +160,6 @@ public partial class World
         vb.AddThemeConstantOverride("separation", 4);
         m.AddChild(vb);
 
-        // Header Bar (Title & Close Button)
         var headerRow = new HBoxContainer();
         headerRow.AddThemeConstantOverride("separation", 4);
         vb.AddChild(headerRow);
@@ -186,7 +183,6 @@ public partial class World
         xBtn.Pressed += CloseJoinModal;
         headerRow.AddChild(xBtn);
 
-        // Timer & Mini Progress Bar
         var timerBox = new VBoxContainer();
         timerBox.AddThemeConstantOverride("separation", 3);
         vb.AddChild(timerBox);
@@ -209,12 +205,10 @@ public partial class World
         _joinModalBar.AddThemeStyleboxOverride("fill", _joinModalBarFill);
         timerBox.AddChild(_joinModalBar);
 
-        // Status text
         _joinModalStatus = UiTheme.Text("Registration is OPEN! Click [Join] to participate.", 10, UiTheme.TextHi, HorizontalAlignment.Center);
         _joinModalStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         vb.AddChild(_joinModalStatus);
 
-        // Action Buttons KO Theme
         var btnRow = new HBoxContainer();
         btnRow.AddThemeConstantOverride("separation", 6);
         vb.AddChild(btnRow);
@@ -241,24 +235,6 @@ public partial class World
         }
     }
 
-    private void OnBifrostNotice(string msg)
-    {
-        if (string.IsNullOrWhiteSpace(msg)) return;
-        if (msg.Contains("Juraid", System.StringComparison.OrdinalIgnoreCase) || msg.Contains("JR", System.StringComparison.OrdinalIgnoreCase))
-            _eventTitle = "Juraid Mountain";
-        else if (msg.Contains("Border Defense War", System.StringComparison.OrdinalIgnoreCase) || msg.Contains("BDW", System.StringComparison.OrdinalIgnoreCase))
-            _eventTitle = "Border Defense War";
-        else if (msg.Contains("Chaos", System.StringComparison.OrdinalIgnoreCase))
-            _eventTitle = "Chaos Dungeon";
-        else if (msg.Contains("Bifrost", System.StringComparison.OrdinalIgnoreCase))
-            _eventTitle = "Bifrost";
-
-        if (_bifrostTitleLbl != null && IsInstanceValid(_bifrostTitleLbl))
-            _bifrostTitleLbl.Text = _eventTitle;
-        if (_joinModalTitle != null && IsInstanceValid(_joinModalTitle))
-            _joinModalTitle.Text = $"#  {_eventTitle.ToUpper()}  #";
-    }
-
     private void OnBifrostTime(int remaining, byte eventType)
     {
         if (remaining <= 0)
@@ -267,9 +243,13 @@ public partial class World
             return;
         }
 
-        if (eventType == 1) _eventTitle = "Chaos Dungeon";
-        else if (eventType == 2) _eventTitle = "Border Defense War";
-        else if (eventType == 3) _eventTitle = "Juraid Mountain";
+        _eventTitle = eventType switch
+        {
+            1 => "Chaos Dungeon",
+            2 => "Border Defense War",
+            3 => "Juraid Mountain",
+            _ => "Bifrost"
+        };
 
         if (_bifrostTitleLbl != null && IsInstanceValid(_bifrostTitleLbl))
             _bifrostTitleLbl.Text = _eventTitle;

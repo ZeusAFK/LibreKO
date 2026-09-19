@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 using LibreKO.Network;
@@ -271,7 +271,6 @@ internal sealed class ChatSystem
 
     private void OnNotice(string msg)
     {
-        GD.Print($"[ChatSystem] OnNotice received: {msg}");
         Info(msg);
         _noticeLabel.Text = msg;
         _noticeLayer.Visible = true;
