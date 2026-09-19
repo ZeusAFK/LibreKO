@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -26,6 +27,20 @@ public partial class World
     private SpinBox _admPointsSpin = null!, _admLevelSpin = null!;
     private Label _admClassLbl = null!;
     private VBoxContainer _admClassList = null!;
+    private int _admSelectedNation;
+    private int _admSelectedClass;
+    private int _admSelectedRace;
+    private int _admSelectedFace;
+    private int _admSelectedHairStyle;
+    private Color _admSelectedHairColour = new Color(0.35f, 0.22f, 0.10f);
+    private int _admClassFilterFamily;
+    private HBoxContainer _admNationBtnsBox = null!;
+    private HFlowContainer _admRaceBtnsBox = null!;
+    private HFlowContainer _admClassFilterBar = null!;
+    private Control _admAppearanceBox = null!;
+    private Label _admFaceValLbl = null!, _admHairValLbl = null!;
+    private ColorPickerButton _admHairColourBtn = null!;
+    private Label _admBeastNoteLbl = null!;
 
     private void AdminPanelInit()
     {
@@ -49,6 +64,12 @@ public partial class World
     private void SeedAdminState()
     {
         var info = Net.I.LastEnter;
+        _admSelectedNation = info.Nation != 0 ? info.Nation : (info.Class < 200 ? Nations.Karus : Nations.ElMorad);
+        _admSelectedRace = info.Race;
+        _admSelectedClass = info.Class;
+        _admSelectedFace = _selfFace;
+        _admSelectedHairStyle = HairCode.StyleOf(_selfHair);
+        _admSelectedHairColour = HairCode.ColourOf(_selfHair);
         _admState = new AdminState
         {
             Granted = true,
@@ -430,11 +451,18 @@ public partial class World
 
     private Control BuildAdminClassTab()
     {
-        var box = new VBoxContainer { CustomMinimumSize = new Vector2(640, 0) };
-        box.AddThemeConstantOverride("separation", 7);
+        var scroll = new ScrollContainer
+        {
+            CustomMinimumSize = new Vector2(640, 420),
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+        };
 
-        box.AddChild(UiTheme.SectionTitle("Current Specialization", UiIcons.Get("game/main-hand")));
+        var box = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        box.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(box);
 
+        // Header: Current Identity Card
+        box.AddChild(UiTheme.SectionTitle("Current Status", UiIcons.Get("game/main-hand")));
         var currentCard = UiTheme.RowPanel();
         var cardLine = new HBoxContainer();
         cardLine.AddThemeConstantOverride("separation", 8);
@@ -443,32 +471,133 @@ public partial class World
         _admClassLbl = UiTheme.Text("", 13, UiTheme.GoldBright);
         _admClassLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         cardLine.AddChild(_admClassLbl);
-
         cardLine.AddChild(UiTheme.Pill("Active", UiTheme.Gold));
         box.AddChild(currentCard);
 
         box.AddChild(new HSeparator());
-        box.AddChild(UiTheme.SectionTitle("Available Class Specializations"));
 
-        var scroll = new ScrollContainer
-        {
-            CustomMinimumSize = new Vector2(640, 340),
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-        };
-        box.AddChild(scroll);
+        // Step 1: Nation Selection
+        box.AddChild(UiTheme.SectionTitle("1. Nation Selection"));
+        _admNationBtnsBox = new HBoxContainer();
+        _admNationBtnsBox.AddThemeConstantOverride("separation", 8);
+        box.AddChild(_admNationBtnsBox);
+
+        box.AddChild(new HSeparator());
+
+        // Step 2: Race & Gender Selection
+        box.AddChild(UiTheme.SectionTitle("2. Race & Gender Selection"));
+        _admRaceBtnsBox = new HFlowContainer();
+        _admRaceBtnsBox.AddThemeConstantOverride("h_separation", 6);
+        _admRaceBtnsBox.AddThemeConstantOverride("v_separation", 6);
+        box.AddChild(_admRaceBtnsBox);
+
+        box.AddChild(new HSeparator());
+
+        // Step 3: Class & Specialization
+        box.AddChild(UiTheme.SectionTitle("3. Class & Specialization"));
+
+        _admClassFilterBar = new HFlowContainer();
+        _admClassFilterBar.AddThemeConstantOverride("h_separation", 4);
+        _admClassFilterBar.AddThemeConstantOverride("v_separation", 4);
+        box.AddChild(_admClassFilterBar);
 
         _admClassList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _admClassList.AddThemeConstantOverride("separation", 6);
-        scroll.AddChild(_admClassList);
+        _admClassList.AddThemeConstantOverride("separation", 4);
+        box.AddChild(_admClassList);
+
+        box.AddChild(new HSeparator());
+
+        // Step 4: Appearance Selection
+        box.AddChild(UiTheme.SectionTitle("4. Appearance (Face, Hair & Colour)"));
+
+        _admBeastNoteLbl = UiTheme.Text(
+            "Kurian and Porutu are beast models without face or hair variations.", 12, UiTheme.TextLo);
+        _admBeastNoteLbl.Visible = false;
+        box.AddChild(_admBeastNoteLbl);
+
+        _admAppearanceBox = new VBoxContainer();
+        _admAppearanceBox.AddThemeConstantOverride("separation", 6);
+        box.AddChild(_admAppearanceBox);
+
+        var faceHairRow = new HBoxContainer();
+        faceHairRow.AddThemeConstantOverride("separation", 16);
+        _admAppearanceBox.AddChild(faceHairRow);
+
+        // Face stepper
+        var faceBox = new HBoxContainer();
+        faceBox.AddThemeConstantOverride("separation", 4);
+        faceHairRow.AddChild(faceBox);
+        faceBox.AddChild(UiTheme.Text("Face:", 12, UiTheme.TextHi));
+        var prevFace = Ui.MenuButton("◀", 24, 12);
+        prevFace.Pressed += () => StepAdminFace(-1);
+        faceBox.AddChild(prevFace);
+        _admFaceValLbl = UiTheme.Text("0", 13, UiTheme.Gold);
+        _admFaceValLbl.CustomMinimumSize = new Vector2(30, 0);
+        _admFaceValLbl.HorizontalAlignment = HorizontalAlignment.Center;
+        faceBox.AddChild(_admFaceValLbl);
+        var nextFace = Ui.MenuButton("▶", 24, 12);
+        nextFace.Pressed += () => StepAdminFace(1);
+        faceBox.AddChild(nextFace);
+
+        // Hair stepper
+        var hairBox = new HBoxContainer();
+        hairBox.AddThemeConstantOverride("separation", 4);
+        faceHairRow.AddChild(hairBox);
+        hairBox.AddChild(UiTheme.Text("Hair Style:", 12, UiTheme.TextHi));
+        var prevHair = Ui.MenuButton("◀", 24, 12);
+        prevHair.Pressed += () => StepAdminHair(-1);
+        hairBox.AddChild(prevHair);
+        _admHairValLbl = UiTheme.Text("0", 13, UiTheme.Gold);
+        _admHairValLbl.CustomMinimumSize = new Vector2(30, 0);
+        _admHairValLbl.HorizontalAlignment = HorizontalAlignment.Center;
+        hairBox.AddChild(_admHairValLbl);
+        var nextHair = Ui.MenuButton("▶", 24, 12);
+        nextHair.Pressed += () => StepAdminHair(1);
+        faceBox.AddChild(nextHair);
+
+        // Hair Colour & Randomize
+        var colorRow = new HBoxContainer();
+        colorRow.AddThemeConstantOverride("separation", 8);
+        _admAppearanceBox.AddChild(colorRow);
+        colorRow.AddChild(UiTheme.Text("Hair Colour:", 12, UiTheme.TextHi));
+
+        _admHairColourBtn = new ColorPickerButton
+        {
+            Color = _admSelectedHairColour,
+            CustomMinimumSize = new Vector2(80, 26),
+            EditAlpha = false,
+        };
+        _admHairColourBtn.ColorChanged += col => _admSelectedHairColour = col;
+        colorRow.AddChild(_admHairColourBtn);
+
+        var randBtn = Ui.MenuButton("Randomize Look", 26, 12);
+        randBtn.Pressed += RandomizeAdminAppearance;
+        colorRow.AddChild(randBtn);
+
+        box.AddChild(new HSeparator());
+
+        // Step 5: Actions
+        var actionsRow = new HBoxContainer();
+        actionsRow.AddThemeConstantOverride("separation", 8);
+        box.AddChild(actionsRow);
+
+        var applyBothBtn = new Button
+        {
+            Text = "Apply Class & Appearance",
+            FocusMode = Control.FocusModeEnum.None,
+        };
+        applyBothBtn.AddThemeFontSizeOverride("font_size", 13);
+        applyBothBtn.Pressed += OnAdminApplyClassAndAppearance;
+        actionsRow.AddChild(applyBothBtn);
 
         var note = UiTheme.Text(
-            "Changing class refunds every mastery point, resets stats according to class base, clears skill branches and empties the skill bar.",
+            "Class change: resets mastery points, updates starter stat rolls, and clears hotbars.",
             11, UiTheme.Warning);
         note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         note.CustomMinimumSize = new Vector2(640, 0);
         box.AddChild(note);
 
-        return box;
+        return scroll;
     }
 
     private static SpinBox MakeAdminSpin(int min, int max, int step) =>
@@ -515,7 +644,17 @@ public partial class World
 
         int previousClass = _admState.Class;
         int previousRace = _admState.Race;
+        int previousFace = _admState.Face;
+        int previousHair = _admState.Hair;
         _admState = state;
+        int nation = state.Class < 200 ? Nations.Karus : Nations.ElMorad;
+        _admSelectedNation = nation;
+        _admSelectedClass = state.Class;
+        _admSelectedRace = state.Race > 0 ? state.Race : _selfRace;
+        _admSelectedFace = state.Face > 0 ? state.Face : _selfFace;
+        _admSelectedHairStyle = HairCode.StyleOf(state.Hair);
+        _admSelectedHairColour = HairCode.ColourOf(state.Hair);
+        Net.I.ApplyOwnNation(nation);
 
         Sheet.ApplyLevel(state.Level, state.StatPoints, Sheet.Exp, Sheet.MaxExp);
         Sheet.ApplyReset(
@@ -528,13 +667,24 @@ public partial class World
         SyncMasteryPoints(state.SkillPoints);
         UpdateLevelOrb();
 
-        if (state.Class != previousClass || (state.Race > 0 && state.Race != _selfRace))
+        bool visualChanged = (state.Class != _selfClass)
+            || (state.Race > 0 && state.Race != _selfRace)
+            || (state.Face != _selfFace)
+            || (state.Hair != _selfHair);
+
+        if (state.Class != _selfClass || (state.Race > 0 && state.Race != _selfRace))
         {
-            ApplyClassChange(state.Class, state.Race);
+            ApplyClassChange(state.Class, state.Race, state.Face, state.Hair, forceRebuildVisual: true);
         }
         else
         {
-            _selfClass = state.Class;
+            if (state.Face > 0 || CharacterClassCatalog.IsBeastRace(state.Race)) _selfFace = state.Face;
+            if (state.Hair >= 0) _selfHair = state.Hair;
+
+            if (visualChanged)
+            {
+                RebuildSelfVisual();
+            }
             RefreshStatsUI();
         }
 
@@ -548,7 +698,7 @@ public partial class World
     {
         if (!_admEnabled) return;
         SetAdminStatus(message, !ok);
-        if (!ok) Chat.Info(message);
+        Chat.Info($"[GM] {message}");
     }
 
     private void RefreshAdminCharacterTab()
@@ -566,42 +716,216 @@ public partial class World
     private void RefreshAdminClassTab()
     {
         if (_admClassLbl == null) return;
-        _admClassLbl.Text =
-            $"{CharacterClassCatalog.SpecializationName(_admState.Class)}  (ID: {_admState.Class})" +
-            $"   ·   {CharacterClassCatalog.TierName(_admState.Class)}" +
-            $"   ·   {Nations.Name(Net.I.LastEnter.Nation)}";
 
+        int currentNation = Net.I.LastEnter.Nation != 0
+            ? Net.I.LastEnter.Nation
+            : (_admState.Class < 200 ? Nations.Karus : Nations.ElMorad);
+        string currentRaceName = StarterStats.RaceName(_selfRace);
+        string currentGender = StarterStats.RaceGender(_selfRace);
+        _admClassLbl.Text =
+            $"{CharacterClassCatalog.SpecializationName(_admState.Class)} (ID: {_admState.Class})" +
+            $"   ·   {CharacterClassCatalog.TierName(_admState.Class)}" +
+            $"   ·   {Nations.Name(currentNation)}" +
+            $"   ·   {currentRaceName} [{currentGender}]" +
+            (CharacterClassCatalog.IsBeastRace(_selfRace) ? "" : $"   ·   Face: {_selfFace}, Hair: {HairCode.StyleOf(_selfHair)}");
+
+        if (_admSelectedNation == 0)
+            _admSelectedNation = currentNation;
+        if (_admSelectedRace == 0)
+            _admSelectedRace = _admState.Race > 0 ? _admState.Race : _selfRace;
+        if (_admSelectedClass == 0)
+            _admSelectedClass = _admState.Class;
+
+        int[] validRaces = StarterStats.RacesFor(_admSelectedNation);
+        if (System.Array.IndexOf(validRaces, _admSelectedRace) < 0 && validRaces.Length > 0)
+            _admSelectedRace = validRaces[0];
+
+        int[] validClasses = CharacterClassCatalog.ValidClassesForRace(_admSelectedRace);
+        if (System.Array.IndexOf(validClasses, _admSelectedClass) < 0 && validClasses.Length > 0)
+            _admSelectedClass = validClasses[0];
+
+        if (_admSelectedFace == 0 && _selfFace > 0)
+            _admSelectedFace = _selfFace;
+        if (_admSelectedHairStyle == 0 && _selfHair > 0)
+        {
+            _admSelectedHairStyle = HairCode.StyleOf(_selfHair);
+            _admSelectedHairColour = HairCode.ColourOf(_selfHair);
+            if (_admHairColourBtn != null) _admHairColourBtn.Color = _admSelectedHairColour;
+        }
+
+        RefreshAdminNationButtons();
+        RefreshAdminRaceButtons();
+        RefreshAdminClassList();
+        RefreshAdminAppearanceControls();
+    }
+
+    private void RefreshAdminNationButtons()
+    {
+        if (_admNationBtnsBox == null) return;
+        foreach (Node child in _admNationBtnsBox.GetChildren()) child.QueueFree();
+
+        (int Id, string Name)[] nations =
+        {
+            (Nations.Karus, "Karus"),
+            (Nations.ElMorad, "El Morad"),
+        };
+
+        foreach (var (natId, natName) in nations)
+        {
+            bool isSelected = natId == _admSelectedNation;
+            var btn = Ui.MenuButton(isSelected ? $"{natName}  [Selected]" : natName, 28, 13);
+            btn.ToggleMode = true;
+            btn.ButtonPressed = isSelected;
+            if (isSelected)
+                btn.Modulate = UiTheme.GoldBright;
+
+            int capturedNat = natId;
+            btn.Pressed += () =>
+            {
+                if (_admSelectedNation == capturedNat) return;
+                _admSelectedNation = capturedNat;
+
+                int[] races = StarterStats.RacesFor(_admSelectedNation);
+                if (CharacterClassCatalog.IsBeastRace(_admSelectedRace))
+                    _admSelectedRace = _admSelectedNation == Nations.Karus ? 6 : 14;
+                else if (System.Array.IndexOf(races, _admSelectedRace) < 0 && races.Length > 0)
+                    _admSelectedRace = races[0];
+
+                int[] classes = CharacterClassCatalog.ValidClassesForRace(_admSelectedRace);
+                if (System.Array.IndexOf(classes, _admSelectedClass) < 0 && classes.Length > 0)
+                    _admSelectedClass = classes[0];
+
+                _admClassFilterFamily = 0;
+                RefreshAdminClassTab();
+            };
+            _admNationBtnsBox.AddChild(btn);
+        }
+    }
+
+    private void RefreshAdminRaceButtons()
+    {
+        if (_admRaceBtnsBox == null) return;
+        foreach (Node child in _admRaceBtnsBox.GetChildren()) child.QueueFree();
+
+        int[] validRaces = StarterStats.RacesFor(_admSelectedNation);
+        if (System.Array.IndexOf(validRaces, _admSelectedRace) < 0 && validRaces.Length > 0)
+            _admSelectedRace = validRaces[0];
+
+        foreach (int r in validRaces)
+        {
+            string rName = StarterStats.RaceName(r);
+            string rGender = StarterStats.RaceGender(r);
+            bool isSelected = r == _admSelectedRace;
+
+            var btn = Ui.MenuButton(isSelected ? $"{rName}  [{rGender}]  [Selected]" : $"{rName}  [{rGender}]", 27, 12);
+            btn.ToggleMode = true;
+            btn.ButtonPressed = isSelected;
+            if (isSelected)
+                btn.Modulate = UiTheme.GoldBright;
+
+            int capturedRace = r;
+            btn.Pressed += () =>
+            {
+                if (_admSelectedRace == capturedRace) return;
+                _admSelectedRace = capturedRace;
+
+                int[] classes = CharacterClassCatalog.ValidClassesForRace(_admSelectedRace);
+                if (System.Array.IndexOf(classes, _admSelectedClass) < 0 && classes.Length > 0)
+                    _admSelectedClass = classes[0];
+
+                _admClassFilterFamily = 0;
+                RefreshAdminClassTab();
+            };
+            _admRaceBtnsBox.AddChild(btn);
+        }
+    }
+
+    private void RefreshAdminClassList()
+    {
+        if (_admClassList == null) return;
         foreach (Node child in _admClassList.GetChildren()) child.QueueFree();
 
-        if (_admState.ClassOptions is not { Length: > 0 })
+        int[] validClasses = CharacterClassCatalog.ValidClassesForRace(_admSelectedRace);
+        if (validClasses.Length == 0) return;
+
+        var distinctFamilies = new HashSet<int>();
+        foreach (int c in validClasses)
+            distinctFamilies.Add(CharacterClassCatalog.Family(c));
+
+        if (_admClassFilterBar != null)
         {
-            _admClassList.AddChild(UiTheme.Text(
-                "The server offers no alternate specialization for this class.", 12, UiTheme.TextLo));
-            return;
+            foreach (Node child in _admClassFilterBar.GetChildren()) child.QueueFree();
+
+            if (distinctFamilies.Count > 1)
+            {
+                var allBtn = Ui.MenuButton("All", 24, 11);
+                allBtn.ToggleMode = true;
+                allBtn.ButtonPressed = _admClassFilterFamily == 0;
+                if (_admClassFilterFamily == 0) allBtn.Modulate = UiTheme.GoldBright;
+                allBtn.Pressed += () =>
+                {
+                    _admClassFilterFamily = 0;
+                    RefreshAdminClassList();
+                };
+                _admClassFilterBar.AddChild(allBtn);
+
+                foreach (int famId in distinctFamilies)
+                {
+                    string famName = famId switch
+                    {
+                        1 => "Warrior",
+                        2 => "Rogue",
+                        3 => "Magician",
+                        4 => "Priest",
+                        5 => _admSelectedNation == Nations.ElMorad ? "Porutu" : "Kurian",
+                        _ => $"Family {famId}",
+                    };
+
+                    int f = famId;
+                    var btn = Ui.MenuButton(famName, 24, 11);
+                    btn.ToggleMode = true;
+                    btn.ButtonPressed = _admClassFilterFamily == f;
+                    if (_admClassFilterFamily == f) btn.Modulate = UiTheme.GoldBright;
+                    btn.Pressed += () =>
+                    {
+                        _admClassFilterFamily = f;
+                        RefreshAdminClassList();
+                    };
+                    _admClassFilterBar.AddChild(btn);
+                }
+                _admClassFilterBar.Visible = true;
+            }
+            else
+            {
+                _admClassFilterBar.Visible = false;
+            }
         }
 
-        var families = new Dictionary<int, List<int>>();
-        foreach (int opt in _admState.ClassOptions)
+        var grouped = new Dictionary<int, List<int>>();
+        foreach (int c in validClasses)
         {
-            int fam = CharacterClassCatalog.Family(opt);
-            if (!families.TryGetValue(fam, out var list))
+            int fam = CharacterClassCatalog.Family(c);
+            if (!grouped.TryGetValue(fam, out var list))
             {
                 list = new List<int>();
-                families[fam] = list;
+                grouped[fam] = list;
             }
-            list.Add(opt);
+            list.Add(c);
         }
 
-        foreach (var (famId, members) in families)
+        foreach (var (famId, members) in grouped)
         {
+            if (_admClassFilterFamily != 0 && _admClassFilterFamily != famId)
+                continue;
+
             string famName = famId switch
             {
-                1 => "Warrior Specializations",
-                2 => "Rogue Specializations",
-                3 => "Magician Specializations",
-                4 => "Priest Specializations",
-                5 => "Kurian / Porutu Specializations",
-                _ => $"Class Family {famId}",
+                1 => "Warrior",
+                2 => "Rogue",
+                3 => "Magician",
+                4 => "Priest",
+                5 => _admSelectedNation == Nations.ElMorad ? "Porutu" : "Kurian",
+                _ => $"Family {famId}",
             };
 
             var header = UiTheme.SectionTitle(famName, UiIcons.Get("game/main-hand"));
@@ -609,9 +933,8 @@ public partial class World
 
             members.Sort((a, b) => CharacterClassCatalog.Tier(a).CompareTo(CharacterClassCatalog.Tier(b)));
 
-            foreach (int option in members)
+            foreach (int target in members)
             {
-                int target = option;
                 var row = UiTheme.RowPanel();
                 var line = new HBoxContainer();
                 line.AddThemeConstantOverride("separation", 8);
@@ -635,21 +958,93 @@ public partial class World
                 {
                     line.AddChild(UiTheme.Pill("Current", UiTheme.GoldBright));
                 }
-                else
+
+                bool isSelected = target == _admSelectedClass;
+                var selectBtn = new Button
                 {
-                    var change = new Button { Text = "Switch Class", FocusMode = Control.FocusModeEnum.None };
-                    change.AddThemeFontSizeOverride("font_size", 12);
-                    change.Pressed += () =>
-                    {
-                        Net.I.SendAdminSetClass(target);
-                        SetAdminStatus($"Switching class to {CharacterClassCatalog.SpecializationName(target)}…", false);
-                    };
-                    line.AddChild(change);
-                }
+                    Text = isSelected ? "Selected" : "Select",
+                    FocusMode = Control.FocusModeEnum.None,
+                };
+                selectBtn.AddThemeFontSizeOverride("font_size", 12);
+                if (isSelected)
+                    selectBtn.Modulate = UiTheme.GoldBright;
+
+                int capturedTarget = target;
+                selectBtn.Pressed += () =>
+                {
+                    _admSelectedClass = capturedTarget;
+                    RefreshAdminClassList();
+                };
+                line.AddChild(selectBtn);
 
                 _admClassList.AddChild(row);
             }
         }
+    }
+
+    private void RefreshAdminAppearanceControls()
+    {
+        bool isBeast = CharacterClassCatalog.IsBeastRace(_admSelectedRace);
+        if (_admBeastNoteLbl != null) _admBeastNoteLbl.Visible = isBeast;
+        if (_admAppearanceBox != null) _admAppearanceBox.Visible = !isBeast;
+
+        if (isBeast) return;
+
+        int faceCount = Mathf.Max(1, CharacterPreview.FaceCount(_admSelectedRace));
+        int hairCount = Mathf.Max(1, CharacterPreview.HairCount(_admSelectedRace));
+
+        _admSelectedFace = Mathf.Clamp(_admSelectedFace, 0, faceCount - 1);
+        _admSelectedHairStyle = Mathf.Clamp(_admSelectedHairStyle, 0, hairCount - 1);
+
+        if (_admFaceValLbl != null) _admFaceValLbl.Text = _admSelectedFace.ToString();
+        if (_admHairValLbl != null) _admHairValLbl.Text = _admSelectedHairStyle.ToString();
+        if (_admHairColourBtn != null) _admHairColourBtn.Color = _admSelectedHairColour;
+    }
+
+    private void StepAdminFace(int dir)
+    {
+        int count = Mathf.Max(1, CharacterPreview.FaceCount(_admSelectedRace));
+        _admSelectedFace = (_admSelectedFace + dir + count) % count;
+        if (_admFaceValLbl != null) _admFaceValLbl.Text = _admSelectedFace.ToString();
+    }
+
+    private void StepAdminHair(int dir)
+    {
+        int count = Mathf.Max(1, CharacterPreview.HairCount(_admSelectedRace));
+        _admSelectedHairStyle = (_admSelectedHairStyle + dir + count) % count;
+        if (_admHairValLbl != null) _admHairValLbl.Text = _admSelectedHairStyle.ToString();
+    }
+
+    private void RandomizeAdminAppearance()
+    {
+        if (CharacterClassCatalog.IsBeastRace(_admSelectedRace)) return;
+        int maxFace = Mathf.Max(1, CharacterPreview.FaceCount(_admSelectedRace));
+        int maxHair = Mathf.Max(1, CharacterPreview.HairCount(_admSelectedRace));
+        _admSelectedFace = (int)(GD.Randi() % (uint)maxFace);
+        _admSelectedHairStyle = (int)(GD.Randi() % (uint)maxHair);
+        _admSelectedHairColour = new Color(
+            (float)GD.RandRange(0.1, 0.9),
+            (float)GD.RandRange(0.1, 0.9),
+            (float)GD.RandRange(0.1, 0.9));
+        RefreshAdminAppearanceControls();
+    }
+
+    private void OnAdminApplyClassAndAppearance()
+    {
+        bool isBeast = CharacterClassCatalog.IsBeastRace(_admSelectedRace);
+        int packedHair = isBeast ? 0 : HairCode.Pack(_admSelectedHairStyle, _admSelectedHairColour);
+        int face = isBeast ? 0 : _admSelectedFace;
+
+        Net.I.SendAdminSetClass(_admSelectedClass, _admSelectedRace, face, packedHair);
+        SetAdminStatus($"Switching class to {CharacterClassCatalog.SpecializationName(_admSelectedClass)} ({StarterStats.RaceName(_admSelectedRace)})…", false);
+
+        if (_admSelectedNation != 0 && _admSelectedNation != Net.I.LastEnter.Nation)
+        {
+            Net.I.ApplyOwnNation(_admSelectedNation);
+        }
+
+        ApplyClassChange(_admSelectedClass, _admSelectedRace, face, packedHair, forceRebuildVisual: true);
+        RefreshAdminClassTab();
     }
 
     private void LoadAdminStatSpins()
