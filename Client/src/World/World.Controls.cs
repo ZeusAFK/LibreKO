@@ -50,7 +50,6 @@ public partial class World
     private void ToggleRunMode()
     {
         _running = !_running;
-        Chat.Info(_running ? "Run mode enabled (Koşma modu)." : "Walk mode enabled (Yürüme modu).");
     }
 
     private void TargetNearestHostile()

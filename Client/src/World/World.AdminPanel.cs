@@ -23,7 +23,7 @@ public partial class World
     private Label _admCoinsLbl = null!, _admDerivedLbl = null!;
     private LineEdit _admCoinsInput = null!;
     private readonly SpinBox[] _admStatSpins = new SpinBox[CharacterSheet.StatCount];
-    private SpinBox _admPointsSpin = null!;
+    private SpinBox _admPointsSpin = null!, _admLevelSpin = null!;
     private Label _admClassLbl = null!;
     private VBoxContainer _admClassList = null!;
 
@@ -190,9 +190,200 @@ public partial class World
     private Control BuildAdminCharacterTab()
     {
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(640, 0) };
-        box.AddThemeConstantOverride("separation", 7);
+        box.AddThemeConstantOverride("separation", 8);
 
-        box.AddChild(UiTheme.SectionTitle("Coins", UiIcons.Get("system/coins")));
+        // 1. Character Identity & Vitals Overview Card
+        var card = UiTheme.RowPanel();
+        var cardBox = new VBoxContainer();
+        cardBox.AddThemeConstantOverride("separation", 4);
+        card.AddChild(cardBox);
+
+        var vitalsHeader = new HBoxContainer();
+        vitalsHeader.AddThemeConstantOverride("separation", 8);
+        cardBox.AddChild(vitalsHeader);
+
+        _admDerivedLbl = UiTheme.Text("", 13, UiTheme.GoldBright);
+        _admDerivedLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        vitalsHeader.AddChild(_admDerivedLbl);
+
+        var fullHpBtn = new Button { Text = "Full HP/MP", FocusMode = Control.FocusModeEnum.None };
+        fullHpBtn.AddThemeFontSizeOverride("font_size", 12);
+        fullHpBtn.TooltipText = "Restore HP and MP to maximum (+hp)";
+        fullHpBtn.Pressed += () =>
+        {
+            Net.I.SendGmCommand("hp");
+            SetAdminStatus("Restoring HP/MP…", false);
+            Callable.From(Net.I.SendAdminStateRequest).CallDeferred();
+        };
+        vitalsHeader.AddChild(fullHpBtn);
+
+        var refreshBtn = UiTheme.IconButton(UiIcons.Get("system/refresh"), "Refresh state from server");
+        refreshBtn.Pressed += () => Net.I.SendAdminStateRequest();
+        vitalsHeader.AddChild(refreshBtn);
+
+        box.AddChild(card);
+
+        // 2. Level & Experience Section
+        box.AddChild(UiTheme.SectionTitle("Level & Progression", UiIcons.Get("system/trophy")));
+
+        var lvlRow = new HBoxContainer();
+        lvlRow.AddThemeConstantOverride("separation", 6);
+        box.AddChild(lvlRow);
+
+        lvlRow.AddChild(UiTheme.Text("Level:", 13, UiTheme.TextHi));
+        _admLevelSpin = MakeAdminSpin(1, 83, 1);
+        _admLevelSpin.Value = Sheet.Level > 0 ? Sheet.Level : 83;
+        lvlRow.AddChild(_admLevelSpin);
+
+        var setLvlBtn = new Button { Text = "Set Level", FocusMode = Control.FocusModeEnum.None };
+        setLvlBtn.AddThemeFontSizeOverride("font_size", 12);
+        setLvlBtn.Pressed += () =>
+        {
+            int lvl = (int)_admLevelSpin.Value;
+            Net.I.SendGmCommand($"setlevel {lvl}");
+            SetAdminStatus($"Setting level to {lvl}…", false);
+            Callable.From(Net.I.SendAdminStateRequest).CallDeferred();
+        };
+        lvlRow.AddChild(setLvlBtn);
+
+        // Quick Level Presets
+        var qkLvlRow = new HBoxContainer();
+        qkLvlRow.AddThemeConstantOverride("separation", 5);
+        box.AddChild(qkLvlRow);
+        qkLvlRow.AddChild(UiTheme.Text("Quick Level:", 12, UiTheme.TextLo));
+
+        int[] levelPresets = { 1, 60, 70, 80, 83 };
+        foreach (int targetLvl in levelPresets)
+        {
+            int lvl = targetLvl;
+            string lbl = lvl == 83 ? "Lv 83 (Max)" : $"Lv {lvl}";
+            var btn = new Button { Text = lbl, FocusMode = Control.FocusModeEnum.None };
+            btn.AddThemeFontSizeOverride("font_size", 12);
+            btn.Pressed += () =>
+            {
+                _admLevelSpin.Value = lvl;
+                Net.I.SendGmCommand($"setlevel {lvl}");
+                SetAdminStatus($"Setting level to {lvl}…", false);
+                Callable.From(Net.I.SendAdminStateRequest).CallDeferred();
+            };
+            qkLvlRow.AddChild(btn);
+        }
+
+        // Experience Boost Presets
+        var expRow = new HBoxContainer();
+        expRow.AddThemeConstantOverride("separation", 5);
+        box.AddChild(expRow);
+        expRow.AddChild(UiTheme.Text("Add EXP:", 12, UiTheme.TextLo));
+
+        (string expLabel, long expAmount)[] expPresets =
+        {
+            ("+100K", 100_000L),
+            ("+1M", 1_000_000L),
+            ("+10M", 10_000_000L),
+            ("+100M", 100_000_000L),
+        };
+        foreach (var (expText, amt) in expPresets)
+        {
+            long award = amt;
+            var btn = new Button { Text = expText, FocusMode = Control.FocusModeEnum.None };
+            btn.AddThemeFontSizeOverride("font_size", 12);
+            btn.Pressed += () =>
+            {
+                Net.I.SendGmCommand($"exp {award}");
+                SetAdminStatus($"Adding {award:n0} EXP…", false);
+                Callable.From(Net.I.SendAdminStateRequest).CallDeferred();
+            };
+            expRow.AddChild(btn);
+        }
+
+        box.AddChild(new HSeparator());
+
+        // 3. Stats & Free Points Section
+        box.AddChild(UiTheme.SectionTitle("Attributes & Stat Points", UiIcons.Get("game/chest")));
+
+        var grid = new GridContainer { Columns = 2 };
+        grid.AddThemeConstantOverride("h_separation", 10);
+        grid.AddThemeConstantOverride("v_separation", 3);
+        box.AddChild(grid);
+        for (int i = 0; i < CharacterSheet.StatCount; i++)
+        {
+            var name = UiTheme.Text(StatLabels[i], 13, UiTheme.TextHi);
+            name.CustomMinimumSize = new Vector2(52, 0);
+            grid.AddChild(name);
+            _admStatSpins[i] = MakeAdminSpin(1, 255, 1);
+            grid.AddChild(_admStatSpins[i]);
+        }
+        grid.AddChild(UiTheme.Text("Free", 13, UiTheme.TextHi));
+        _admPointsSpin = MakeAdminSpin(0, 10_000, 1);
+        grid.AddChild(_admPointsSpin);
+
+        // Stat Quick Modifiers
+        var batchRow1 = new HBoxContainer();
+        batchRow1.AddThemeConstantOverride("separation", 5);
+        box.AddChild(batchRow1);
+        batchRow1.AddChild(UiTheme.Text("Stat Presets:", 12, UiTheme.TextLo));
+
+        var maxStatsBtn = new Button { Text = "Max All (255)", FocusMode = Control.FocusModeEnum.None };
+        maxStatsBtn.AddThemeFontSizeOverride("font_size", 12);
+        maxStatsBtn.Pressed += () =>
+        {
+            for (int i = 0; i < CharacterSheet.StatCount; i++) _admStatSpins[i].Value = 255;
+        };
+        batchRow1.AddChild(maxStatsBtn);
+
+        var baseStatsBtn = new Button { Text = "Base Stats (50)", FocusMode = Control.FocusModeEnum.None };
+        baseStatsBtn.AddThemeFontSizeOverride("font_size", 12);
+        baseStatsBtn.Pressed += () =>
+        {
+            for (int i = 0; i < CharacterSheet.StatCount; i++) _admStatSpins[i].Value = 50;
+        };
+        batchRow1.AddChild(baseStatsBtn);
+
+        var add10Btn = new Button { Text = "+10 All", FocusMode = Control.FocusModeEnum.None };
+        add10Btn.AddThemeFontSizeOverride("font_size", 12);
+        add10Btn.Pressed += () =>
+        {
+            for (int i = 0; i < CharacterSheet.StatCount; i++)
+                _admStatSpins[i].Value = Mathf.Clamp((int)_admStatSpins[i].Value + 10, 1, 255);
+        };
+        batchRow1.AddChild(add10Btn);
+
+        var batchRow2 = new HBoxContainer();
+        batchRow2.AddThemeConstantOverride("separation", 5);
+        box.AddChild(batchRow2);
+        batchRow2.AddChild(UiTheme.Text("Free Points:", 12, UiTheme.TextLo));
+
+        var p100Btn = new Button { Text = "+100 Free", FocusMode = Control.FocusModeEnum.None };
+        p100Btn.AddThemeFontSizeOverride("font_size", 12);
+        p100Btn.Pressed += () => _admPointsSpin.Value = Mathf.Clamp((int)_admPointsSpin.Value + 100, 0, 10_000);
+        batchRow2.AddChild(p100Btn);
+
+        var p500Btn = new Button { Text = "+500 Free", FocusMode = Control.FocusModeEnum.None };
+        p500Btn.AddThemeFontSizeOverride("font_size", 12);
+        p500Btn.Pressed += () => _admPointsSpin.Value = Mathf.Clamp((int)_admPointsSpin.Value + 500, 0, 10_000);
+        batchRow2.AddChild(p500Btn);
+
+        var clearFreeBtn = new Button { Text = "Clear Free (0)", FocusMode = Control.FocusModeEnum.None };
+        clearFreeBtn.AddThemeFontSizeOverride("font_size", 12);
+        clearFreeBtn.Pressed += () => _admPointsSpin.Value = 0;
+        batchRow2.AddChild(clearFreeBtn);
+
+        var statActionRow = new HBoxContainer();
+        statActionRow.AddThemeConstantOverride("separation", 6);
+        box.AddChild(statActionRow);
+
+        var applyStats = new Button { Text = "Apply Stats", FocusMode = Control.FocusModeEnum.None };
+        applyStats.Pressed += OnAdminApplyStats;
+        statActionRow.AddChild(applyStats);
+
+        var revertStats = new Button { Text = "Revert", FocusMode = Control.FocusModeEnum.None };
+        revertStats.Pressed += LoadAdminStatSpins;
+        statActionRow.AddChild(revertStats);
+
+        box.AddChild(new HSeparator());
+
+        // 4. Noah / Gold Section
+        box.AddChild(UiTheme.SectionTitle("Noah / Gold", UiIcons.Get("system/coins")));
         _admCoinsLbl = UiTheme.Text("", 13, UiTheme.GoldBright);
         box.AddChild(_admCoinsLbl);
 
@@ -226,40 +417,15 @@ public partial class World
             presetRow.AddChild(button);
         }
 
-        box.AddChild(new HSeparator());
-        box.AddChild(UiTheme.SectionTitle("Stats", UiIcons.Get("game/chest")));
+        var maxGoldBtn = new Button { Text = "Max Gold (2.1B)", FocusMode = Control.FocusModeEnum.None };
+        maxGoldBtn.AddThemeFontSizeOverride("font_size", 12);
+        maxGoldBtn.Pressed += () => Net.I.SendAdminCoins(int.MaxValue);
+        presetRow.AddChild(maxGoldBtn);
 
-        var grid = new GridContainer { Columns = 2 };
-        grid.AddThemeConstantOverride("h_separation", 10);
-        grid.AddThemeConstantOverride("v_separation", 3);
-        box.AddChild(grid);
-        for (int i = 0; i < CharacterSheet.StatCount; i++)
-        {
-            var name = UiTheme.Text(StatLabels[i], 13, UiTheme.TextHi);
-            name.CustomMinimumSize = new Vector2(52, 0);
-            grid.AddChild(name);
-            _admStatSpins[i] = MakeAdminSpin(1, 255, 1);
-            grid.AddChild(_admStatSpins[i]);
-        }
-        grid.AddChild(UiTheme.Text("Free", 13, UiTheme.TextHi));
-        _admPointsSpin = MakeAdminSpin(0, 10_000, 1);
-        grid.AddChild(_admPointsSpin);
-
-        _admDerivedLbl = UiTheme.Text("", 12, UiTheme.TextLo);
-        box.AddChild(_admDerivedLbl);
-
-        var statRow = new HBoxContainer();
-        statRow.AddThemeConstantOverride("separation", 5);
-        box.AddChild(statRow);
-        var applyStats = new Button { Text = "Apply stats", FocusMode = Control.FocusModeEnum.None };
-        applyStats.Pressed += OnAdminApplyStats;
-        statRow.AddChild(applyStats);
-        var revertStats = new Button { Text = "Revert", FocusMode = Control.FocusModeEnum.None };
-        revertStats.Pressed += LoadAdminStatSpins;
-        statRow.AddChild(revertStats);
-        var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), "Re-read state from the server");
-        refresh.Pressed += () => Net.I.SendAdminStateRequest();
-        statRow.AddChild(refresh);
+        var zeroGoldBtn = new Button { Text = "Zero Gold (0)", FocusMode = Control.FocusModeEnum.None };
+        zeroGoldBtn.AddThemeFontSizeOverride("font_size", 12);
+        zeroGoldBtn.Pressed += () => Net.I.SendAdminCoins(-int.MaxValue);
+        presetRow.AddChild(zeroGoldBtn);
 
         return box;
     }
@@ -269,21 +435,39 @@ public partial class World
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(640, 0) };
         box.AddThemeConstantOverride("separation", 7);
 
-        box.AddChild(UiTheme.SectionTitle("Specialization", UiIcons.Get("game/main-hand")));
-        _admClassLbl = UiTheme.Text("", 14, UiTheme.GoldBright);
-        box.AddChild(_admClassLbl);
+        box.AddChild(UiTheme.SectionTitle("Current Specialization", UiIcons.Get("game/main-hand")));
+
+        var currentCard = UiTheme.RowPanel();
+        var cardLine = new HBoxContainer();
+        cardLine.AddThemeConstantOverride("separation", 8);
+        currentCard.AddChild(cardLine);
+
+        _admClassLbl = UiTheme.Text("", 13, UiTheme.GoldBright);
+        _admClassLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        cardLine.AddChild(_admClassLbl);
+
+        cardLine.AddChild(UiTheme.Pill("Active", UiTheme.Gold));
+        box.AddChild(currentCard);
 
         box.AddChild(new HSeparator());
-        box.AddChild(UiTheme.SectionTitle("Valid changes for this class"));
-        _admClassList = new VBoxContainer();
-        _admClassList.AddThemeConstantOverride("separation", 4);
-        box.AddChild(_admClassList);
+        box.AddChild(UiTheme.SectionTitle("Available Class Specializations"));
+
+        var scroll = new ScrollContainer
+        {
+            CustomMinimumSize = new Vector2(640, 340),
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+        };
+        box.AddChild(scroll);
+
+        _admClassList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        _admClassList.AddThemeConstantOverride("separation", 6);
+        scroll.AddChild(_admClassList);
 
         var note = UiTheme.Text(
-            "A change refunds every mastery point, clears the branches and empties the skill bar.",
+            "Changing class refunds every mastery point, resets stats according to class base, clears skill branches and empties the skill bar.",
             11, UiTheme.Warning);
         note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        note.CustomMinimumSize = new Vector2(340, 0);
+        note.CustomMinimumSize = new Vector2(640, 0);
         box.AddChild(note);
 
         return box;
@@ -363,16 +547,19 @@ public partial class World
     {
         if (_admCoinsLbl == null) return;
         _admCoinsLbl.Text = $"{_admState.Gold:n0} coins";
+        string who = Net.I.LastEnter.Name is { Length: > 0 } name ? name : "GM";
+        string spec = CharacterClassCatalog.SpecializationName(_admState.Class);
+        string nat = Nations.Name(Net.I.LastEnter.Nation);
         _admDerivedLbl.Text =
-            $"HP {_admState.MaxHp:n0}   MP {_admState.MaxMp:n0}   AP {_admState.Ap:n0}   AC {_admState.Ac:n0}" +
-            $"   ·   Lv {_admState.Level}";
+            $"{who} · Lv {_admState.Level} {spec} ({nat})   |   HP {_admState.MaxHp:n0}   MP {_admState.MaxMp:n0}   AP {_admState.Ap:n0}   AC {_admState.Ac:n0}";
+        if (_admLevelSpin != null) _admLevelSpin.Value = _admState.Level;
     }
 
     private void RefreshAdminClassTab()
     {
         if (_admClassLbl == null) return;
         _admClassLbl.Text =
-            $"{CharacterClassCatalog.SpecializationName(_admState.Class)}  ({_admState.Class})" +
+            $"{CharacterClassCatalog.SpecializationName(_admState.Class)}  (ID: {_admState.Class})" +
             $"   ·   {CharacterClassCatalog.TierName(_admState.Class)}" +
             $"   ·   {Nations.Name(Net.I.LastEnter.Nation)}";
 
@@ -385,26 +572,75 @@ public partial class World
             return;
         }
 
-        foreach (int option in _admState.ClassOptions)
+        var families = new Dictionary<int, List<int>>();
+        foreach (int opt in _admState.ClassOptions)
         {
-            int target = option;
-            var row = UiTheme.RowPanel();
-            var line = new HBoxContainer();
-            line.AddThemeConstantOverride("separation", 8);
-            row.AddChild(line);
+            int fam = CharacterClassCatalog.Family(opt);
+            if (!families.TryGetValue(fam, out var list))
+            {
+                list = new List<int>();
+                families[fam] = list;
+            }
+            list.Add(opt);
+        }
 
-            var name = UiTheme.Text(
-                $"{CharacterClassCatalog.SpecializationName(target)}  ({target})", 13, UiTheme.TextHi);
-            name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-            line.AddChild(name);
-            line.AddChild(UiTheme.Pill(CharacterClassCatalog.TierName(target), UiTheme.Gold));
+        foreach (var (famId, members) in families)
+        {
+            string famName = famId switch
+            {
+                1 => "Warrior Specializations",
+                2 => "Rogue Specializations",
+                3 => "Magician Specializations",
+                4 => "Priest Specializations",
+                5 => "Kurian / Porutu Specializations",
+                _ => $"Class Family {famId}",
+            };
 
-            var change = new Button { Text = "Change", FocusMode = Control.FocusModeEnum.None };
-            change.AddThemeFontSizeOverride("font_size", 12);
-            change.Pressed += () => Net.I.SendAdminSetClass(target);
-            line.AddChild(change);
+            var header = UiTheme.SectionTitle(famName, UiIcons.Get("game/main-hand"));
+            _admClassList.AddChild(header);
 
-            _admClassList.AddChild(row);
+            members.Sort((a, b) => CharacterClassCatalog.Tier(a).CompareTo(CharacterClassCatalog.Tier(b)));
+
+            foreach (int option in members)
+            {
+                int target = option;
+                var row = UiTheme.RowPanel();
+                var line = new HBoxContainer();
+                line.AddThemeConstantOverride("separation", 8);
+                row.AddChild(line);
+
+                var name = UiTheme.Text(
+                    $"{CharacterClassCatalog.SpecializationName(target)}  (ID: {target})", 13, UiTheme.TextHi);
+                name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+                line.AddChild(name);
+
+                int tier = CharacterClassCatalog.Tier(target);
+                Color tierColor = tier switch
+                {
+                    CharacterClassCatalog.TierMaster => UiTheme.Gold,
+                    CharacterClassCatalog.TierNovice => UiTheme.TextHi,
+                    _ => UiTheme.TextLo,
+                };
+                line.AddChild(UiTheme.Pill(CharacterClassCatalog.TierName(target), tierColor));
+
+                if (target == _admState.Class)
+                {
+                    line.AddChild(UiTheme.Pill("Current", UiTheme.GoldBright));
+                }
+                else
+                {
+                    var change = new Button { Text = "Switch Class", FocusMode = Control.FocusModeEnum.None };
+                    change.AddThemeFontSizeOverride("font_size", 12);
+                    change.Pressed += () =>
+                    {
+                        Net.I.SendAdminSetClass(target);
+                        SetAdminStatus($"Switching class to {CharacterClassCatalog.SpecializationName(target)}…", false);
+                    };
+                    line.AddChild(change);
+                }
+
+                _admClassList.AddChild(row);
+            }
         }
     }
 

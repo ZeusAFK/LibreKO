@@ -215,6 +215,12 @@ public partial class World : Node3D, IWorldContext
                 GetViewport().SetInputAsHandled();
                 return;
             }
+            if (_invDelPanel != null && _invDelPanel.Visible && k.Keycode is Key.Escape or Key.Enter or Key.KpEnter)
+            {
+                if (k.Keycode == Key.Escape) HideDeletePrompt(); else ConfirmDeleteItem();
+                GetViewport().SetInputAsHandled();
+                return;
+            }
             if (k.Keycode == Key.Escape && TryMinimizeFocusedWhisper())
             { GetViewport().SetInputAsHandled(); return; }
             if (GetViewport().GuiGetFocusOwner() is LineEdit or TextEdit or SpinBox) return;

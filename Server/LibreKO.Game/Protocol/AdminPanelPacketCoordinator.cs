@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
@@ -269,6 +269,23 @@ public class AdminPanelPacketCoordinator(
         var nationBase = (short)(session.Class / 100 * 100);
         if (nationBase <= 0)
             return options;
+
+        if (session.IsGM)
+        {
+            foreach (var family in JobFamilies)
+            {
+                foreach (var member in family)
+                {
+                    var candidate = (short)(nationBase + member);
+                    if (candidate == session.Class)
+                        continue;
+                    if (gameDataService.GetCoefficient(candidate) == null)
+                        continue;
+                    options.Add(candidate);
+                }
+            }
+            return options;
+        }
 
         var subtype = (short)ClassIdHelper.GetSubtype(session.Class);
         foreach (var family in JobFamilies)

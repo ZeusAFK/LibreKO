@@ -1,4 +1,4 @@
-﻿namespace LibreKO.Domain;
+namespace LibreKO.Domain;
 
 public static class CharacterClassCatalog
 {
@@ -50,10 +50,12 @@ public static class CharacterClassCatalog
         102 => "Rogue",     107 => "Hunter",    108 => "Penetrator",
         103 => "Wizard",    109 => "Sorcerer",  110 => "Necromancer",
         104 => "Priest",    111 => "Shaman",    112 => "Dark Priest",
+        113 => "Kurian",    114 => "Novice Kurian", 115 => "Master Kurian",
         201 => "Warrior",   205 => "Blade",     206 => "Protector",
         202 => "Rogue",     207 => "Ranger",    208 => "Assassin",
         203 => "Wizard",    209 => "Mage",      210 => "Enchanter",
         204 => "Priest",    211 => "Cleric",    212 => "Druid",
+        213 => "Porutu",    214 => "Novice Porutu", 215 => "Master Porutu",
         _ => DisplayName(classCode),
     };
 }
