@@ -28,6 +28,7 @@ public class SocketServer(
     private readonly List<TcpListener> _listeners = [];
     private readonly List<Task> _acceptTasks = [];
     private readonly ConcurrentDictionary<Guid, IClient> _clients = new();
+    public Action? OnReady { get; set; }
     private CancellationTokenSource _cts = new();
     private Task? _sweepTask;
 
@@ -81,6 +82,8 @@ public class SocketServer(
             }
 
             logger.LogInformation("Accepting connections on {BindHost}:{StartPort}{Range}", bindHost, _startPort, actualEnd == _startPort ? string.Empty : $"-{actualEnd}");
+
+            OnReady?.Invoke();
 
             await Task.WhenAll(_acceptTasks);
 

@@ -50,7 +50,7 @@ public static class SerilogHostLogging
             .Enrich.With<ShortSourceContextEnricher>()
             .WriteTo.Logger(lc => lc
                 .Filter.ByIncludingOnly(e => ShouldWriteToConsole(e, consolePrefixes, consoleLevel))
-                .WriteTo.Console(outputTemplate: ConsoleTemplate));
+                .WriteTo.Sink(new TranceConsoleSink()));
 
         if (errorTracking is not null)
         {

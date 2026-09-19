@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -199,6 +199,63 @@ public class AdminPacketCoordinator(
                 await BroadcastNoticeAsync("Snow battle zone opened!");
                 break;
 
+            case "juraid":
+            case "jr":
+                var schedulerJr = serviceProvider.GetService<EventSchedulerService>();
+                if (schedulerJr != null)
+                {
+                    int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : TempleEventRules.JoinWindowSeconds;
+                    schedulerJr.CallTempleEvent(TempleEvent.JuraidMountain, joinSec);
+                }
+                break;
+
+            case "bdw":
+                var schedulerBdw = serviceProvider.GetService<EventSchedulerService>();
+                if (schedulerBdw != null)
+                {
+                    int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : TempleEventRules.JoinWindowSeconds;
+                    schedulerBdw.CallTempleEvent(TempleEvent.BorderDefenseWar, joinSec);
+                }
+                break;
+
+            case "chaos":
+                var schedulerChaos = serviceProvider.GetService<EventSchedulerService>();
+                if (schedulerChaos != null)
+                {
+                    int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : TempleEventRules.JoinWindowSeconds;
+                    schedulerChaos.CallTempleEvent(TempleEvent.Chaos, joinSec);
+                }
+                break;
+
+            case "templeclose":
+            case "jrclose":
+            case "jrcancel":
+            case "jrcansel":
+            case "canceljr":
+            case "canseljr":
+            case "bdwcancel":
+            case "bdwcansel":
+            case "chaoscancel":
+            case "chaoscansel":
+            case "templecancel":
+            case "templecansel":
+            case "cancel":
+            case "cansel":
+            case "cancelevent":
+            case "canselevent":
+            case "eventcancel":
+            case "eventcansel":
+            case "batal":
+            case "batalevent":
+            case "eventbatal":
+                var schedulerClose = serviceProvider.GetService<EventSchedulerService>();
+                if (schedulerClose != null)
+                {
+                    await schedulerClose.CancelTempleEventAsync();
+                    await SendNoticeAsync(session, "Event pendaftaran/pertempuran telah dibatalkan.");
+                }
+                break;
+
             case "?":
             case "help":
                 await SendNoticeAsync(session, "GM Commands:");
@@ -218,6 +275,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+santa/+angel/+offsanta - Santa/Angel");
                 await SendNoticeAsync(session, "+waropen <zoneId>/+warclose/+snowwar");
                 await SendNoticeAsync(session, "+bifroststart [min] / +bifrostclose - Bifrost event");
+                await SendNoticeAsync(session, "+jr [sec] / +bdw [sec] / +chaos [sec] / +cancel - Temple Events");
                 await SendNoticeAsync(session, "+zone | +zone <id> - List zones / teleport to zone home");
                 await SendNoticeAsync(session, "+reloadscripts - Reload quest scripts without restart");
                 await SendNoticeAsync(session, "+reseed - Seed JSON to DB + reload (drops/NPCs/items)");

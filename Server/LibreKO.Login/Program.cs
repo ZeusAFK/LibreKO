@@ -15,6 +15,27 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 
+TranceConsoleUi.Initialize("Libre ● Login Server", 110, 36);
+TranceConsoleUi.PrintBanner("LOGIN SERVER", "v2.6.19", "By Zeus x Design by Ahmad");
+TranceConsoleUi.PrintDualCards(
+    "SYSTEM METRICS",
+    [
+        ("Host", "0.0.0.0"),
+        ("Port", "15100 (+10)"),
+        ("Database", "MariaDB (XAMPP 3306)"),
+        ("Environment", "Production")
+    ],
+    "AUTHENTICATION CONFIG",
+    [
+        ("Version", "2619"),
+        ("Auto-Create Account", "ENABLED"),
+        ("Max Connections / IP", "10"),
+        ("Status", "ONLINE (Ready)")
+    ]
+);
+TranceConsoleUi.PrintSectionHeader("INITIALIZATION & AUTH PIPELINE", 88);
+TranceConsoleUi.PrintStatusLine("BOOT", ConsoleColor.Cyan, "Initializing database & auth services (silent mode: only errors displayed)...");
+
 var environmentName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
     ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
     ?? Environments.Production;
@@ -86,6 +107,7 @@ var builder = Host.CreateDefaultBuilder(args)
         });
 
         services.AddScoped<IDataSeeder, DataSeeder>();
+        services.AddHostedService<PatchHttpServer>();
         services.AddHostedService(sp => sp.GetRequiredService<SocketServer>());
     })
     .Build();
@@ -100,6 +122,22 @@ using (var scope = builder.Services.CreateScope())
     await seeder.SeedEntityAsync(new ServerGroupSeed());
     await seeder.SeedEntityAsync(new ServerSeed());
 }
+
+var socketServer = builder.Services.GetRequiredService<SocketServer>();
+socketServer.OnReady = () =>
+{
+    TranceConsoleUi.PrintServerReadyBadge(
+        "LOGIN SERVER",
+        [
+            ("Status", "ONLINE & ACCEPTING CONNECTIONS"),
+            ("Network", "TCP Port 15100 - 15110 (Auth Sockets Active)"),
+            ("Patch Server", "HTTP Port 15150 (Mobile Auto-Patch Active)"),
+            ("Version", "Client v2619 Accepted  •  Auto-Registration ON"),
+            ("Engine", "Libre Core v2.6.19  •  By Zeus x Design by Ahmad")
+        ]
+    );
+    TranceConsoleUi.PrintSectionHeader("LIVE AUTHENTICATION LOG STREAM", 88);
+};
 
 try
 {
