@@ -77,14 +77,22 @@ public partial class World : Node3D
         Chat.Info($"You are now a {CharacterClassCatalog.SpecializationName(newClass)}!");
     }
 
-    private void ApplyClassChange(int newClass, int newRace = 0)
+    private void ApplyClassChange(int newClass, int newRace = 0, int face = -1, int hair = -1, bool forceRebuildVisual = false)
     {
         if (newRace <= 0)
             newRace = ResolveRaceForClass(newClass, _selfRace, Net.I.LastEnter.Nation);
 
-        bool visualNeedsRebuild = _selfRace != newRace || _selfClass != newClass;
+        bool visualNeedsRebuild = forceRebuildVisual
+            || _selfRace != newRace
+            || _selfClass != newClass
+            || (face >= 0 && face != _selfFace)
+            || (hair >= 0 && hair != _selfHair);
+
         _selfClass = newClass;
         _selfRace = newRace;
+        if (face >= 0) _selfFace = face;
+        if (hair >= 0) _selfHair = hair;
+
         Net.I.ApplyOwnClass(newClass);
         Net.I.ApplyOwnRace(newRace);
 
@@ -105,7 +113,7 @@ public partial class World : Node3D
         {
             if (targetClass is 101 or 105 or 106) return 1; // KarusBig (Warrior)
             if (targetClass is 102 or 107 or 108) return 2; // KarusMiddle (Rogue)
-            if (targetClass is 103 or 109 or 110) return 3; // KarusSmall (Mage)
+            if (targetClass is 103 or 109 or 110) return currentRace == 4 ? 4 : 3; // KarusWoman or KarusSmall (Mage)
             if (targetClass is 104 or 111 or 112) return currentRace == 4 ? 4 : 2; // KarusWoman or KarusMiddle (Priest)
             if (targetClass is 113 or 114 or 115) return 6; // Kurian
             return currentRace > 0 ? currentRace : 1;

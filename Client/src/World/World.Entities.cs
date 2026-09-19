@@ -552,15 +552,13 @@ public partial class World
 
     private PlateStack? SelfPlate()
     {
-        if (_selfPlate != null) return _selfPlate;
-        if (_self == null) return null;
+        if (_selfPlate != null && _selfNameTag != null && GodotObject.IsInstanceValid(_selfNameTag))
+            return _selfPlate;
 
-        if (!_selfNameTagFound)
-        {
-            _selfNameTagFound = true;
-            _selfNameTag = FindFirst<Label3D>(_self);
-        }
+        _selfPlate = null;
+        if (_self == null || !GodotObject.IsInstanceValid(_self)) return null;
 
+        _selfNameTag = FindFirst<Label3D>(_self);
         if (_selfNameTag == null || !GodotObject.IsInstanceValid(_selfNameTag)) return null;
         return _selfPlate = new PlateStack(_selfNameTag);
     }
@@ -568,20 +566,24 @@ public partial class World
     private void ApplySelfClan(string clanName) => SelfPlate()?.SetClan(clanName);
 
     private Label3D? _selfNameTag;
-    private bool _selfNameTagFound;
 
     private float HeadHeightOf(int charId)
     {
         if (charId != _myId)
-            return _ents.TryGetValue(charId, out var e) && e.NameTag is { } tag
+            return _ents.TryGetValue(charId, out var e) && e.NameTag is { } tag && GodotObject.IsInstanceValid(tag)
                 ? Mathf.Max(0.4f, tag.Position.Y)
                 : 1.7f;
-        if (!_selfNameTagFound)
+
+        if (_selfNameTag == null || !GodotObject.IsInstanceValid(_selfNameTag))
         {
-            _selfNameTagFound = true;
-            _selfNameTag = _self != null ? FindFirst<Label3D>(_self) : null;
+            _selfNameTag = _self != null && GodotObject.IsInstanceValid(_self)
+                ? FindFirst<Label3D>(_self)
+                : null;
         }
-        return Mathf.Max(0.4f, _selfNameTag?.Position.Y ?? 1.9f);
+
+        return Mathf.Max(0.4f, (_selfNameTag != null && GodotObject.IsInstanceValid(_selfNameTag))
+            ? _selfNameTag.Position.Y
+            : 1.9f);
     }
 
     private void OnEntityHp(int id, int hp, int maxHp, int damage)

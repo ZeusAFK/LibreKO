@@ -191,6 +191,8 @@ public partial class World
         _selfAnim = null;
         _selfFlinch = null;
         _selfClip = null;
+        _selfNameTag = null;
+        _selfPlate = null;
 
         string selfName = Net.I.LastEnter.Name is { Length: > 0 } n ? n : "You";
         PackedScene? selfScene = ResolvePlayerScene(_selfRace);
