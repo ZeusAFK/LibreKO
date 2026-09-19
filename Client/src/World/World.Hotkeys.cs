@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -117,6 +117,7 @@ public partial class World : Node3D
         Bound(KeyAction.Rentals, () => ToggleRental());
         Bound(KeyAction.TownRecall, () => TownRecallTryOpen());
         Bound(KeyAction.GmPanel, ToggleAdminPanel);
+        DevHotkey(Key.F9, ToggleAdminPanel);
 
         if (Config.Development)
         {

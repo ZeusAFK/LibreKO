@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -219,6 +219,12 @@ public partial class World : Node3D, IWorldContext
             { GetViewport().SetInputAsHandled(); return; }
             if (GetViewport().GuiGetFocusOwner() is LineEdit or TextEdit or SpinBox) return;
             if (k.Keycode is Key.Enter or Key.KpEnter) { Chat.Open(); GetViewport().SetInputAsHandled(); return; }
+            if (k.Keycode is Key.Capslock || k.PhysicalKeycode is Key.Capslock)
+            {
+                ToggleRunMode();
+                GetViewport().SetInputAsHandled();
+                return;
+            }
             NoteMoveKey(k);
             if (_hotkeys.TryGetValue(KeyChord.From(k), out var press))
             { press(); GetViewport().SetInputAsHandled(); return; }

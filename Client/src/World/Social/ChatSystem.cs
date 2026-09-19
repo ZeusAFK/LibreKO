@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 using LibreKO.Network;
@@ -350,7 +350,7 @@ internal sealed class ChatSystem
         text = text.TrimEnd();
         if (text.Length == 0) { Close(); return; }
 
-        if (text[0] == '/' && LocalCommand?.Invoke(text.Substring(1).Trim()) == true) { Close(); return; }
+        if ((text[0] == '/' || text[0] == '+') && LocalCommand?.Invoke(text.Substring(1).Trim()) == true) { Close(); return; }
 
         var (chan, body, target) = Parse(text);
 

@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -223,6 +223,13 @@ public class AdminPacketCoordinator(
                 {
                     await SendNoticeAsync(session, "No temple event is currently active.");
                 }
+                break;
+
+            case "gm":
+            case "admin":
+            case "panel":
+                await serviceProvider.GetRequiredService<IAdminPanelPacketCoordinator>().SendGrantAsync(session);
+                await SendNoticeAsync(session, "GM Panel toggled. (Press F9, ScrollLock, or type /gm)");
                 break;
 
             case "?":

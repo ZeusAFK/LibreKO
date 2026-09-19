@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 using LibreKO.Network;
 
@@ -286,7 +286,17 @@ public partial class World
 
     private void ToggleAdminPanel()
     {
-        if (!_admEnabled) return;
+        if (!_admEnabled)
+        {
+            if (_isGm || Net.I.PanelGrant != AdminPanelGrant.None)
+                EnableAdminPanel(_isGm ? AdminPanelGrant.GameMaster : Net.I.PanelGrant);
+
+            if (!_admEnabled)
+            {
+                Chat.Info("GM Panel is not available for this account (Authority required).");
+                return;
+            }
+        }
         if (_admShown) { CloseAdminPanel(); return; }
         _admShown = true;
         _admPanel.Visible = true;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -214,13 +214,25 @@ public partial class World
     private bool RunLocalCommand(string command)
     {
         string[] parts = command.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0 || !parts[0].Equals("collision", System.StringComparison.OrdinalIgnoreCase))
-            return false;
-        if (!_isGm) return false;
-        bool on = parts.Length < 2
-            ? _collisionsOff
-            : parts[1].Equals("on", System.StringComparison.OrdinalIgnoreCase);
-        SetCollisions(on);
-        return true;
+        if (parts.Length == 0) return false;
+
+        var cmd = parts[0].ToLowerInvariant();
+        if (cmd is "gm" or "admin" or "panel")
+        {
+            ToggleAdminPanel();
+            return true;
+        }
+
+        if (cmd == "collision")
+        {
+            if (!_isGm) return false;
+            bool on = parts.Length < 2
+                ? _collisionsOff
+                : parts[1].Equals("on", System.StringComparison.OrdinalIgnoreCase);
+            SetCollisions(on);
+            return true;
+        }
+
+        return false;
     }
 }
