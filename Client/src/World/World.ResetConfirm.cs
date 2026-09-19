@@ -6,7 +6,6 @@ namespace LibreKO;
 public partial class World
 {
     private byte _resetKind;
-    private bool _resetThenApplyPlan;
     private Notice? _resetConfirm;
 
     private void ResetConfirmInit()
@@ -24,10 +23,9 @@ public partial class World
         DismissResetConfirm();
     }
 
-    private void RequestReset(byte kind, bool thenApplyPlan = false)
+    private void RequestReset(byte kind)
     {
         _resetKind = kind;
-        _resetThenApplyPlan = thenApplyPlan;
         Net.I.SendResetCostQuery(kind);
     }
 
@@ -40,15 +38,13 @@ public partial class World
         string what = stat ? "stat points" : "mastery points";
         string body = $"Every one of your {what} goes back into the pool, and it costs "
                       + $"{cost:n0} gold.";
-        if (_resetThenApplyPlan)
-            body += " Your saved plan is applied straight afterwards.";
         if (stat)
             body += "\n\nYour inventory must be empty.";
 
         _resetConfirm = Notice.Confirm(
             this,
             body,
-            _resetThenApplyPlan ? "Redistribute and apply" : "Redistribute",
+            "Redistribute",
             "Cancel",
             ConfirmReset,
             CancelReset,
@@ -66,7 +62,6 @@ public partial class World
     {
         _resetConfirm = null;
         _resetKind = 0;
-        _resetThenApplyPlan = false;
     }
 
     private void DismissResetConfirm()
@@ -88,9 +83,7 @@ public partial class World
             return;
         }
 
-        bool apply = _resetThenApplyPlan && _resetKind == Net.ResetKindStat;
         CancelReset();
-        if (apply) Callable.From(SendStatPlan).CallDeferred();
     }
 
     private void OnSkillResetFinished(bool ok, int money, int pool)
@@ -104,8 +97,6 @@ public partial class World
             return;
         }
 
-        bool apply = _resetThenApplyPlan && _resetKind == Net.ResetKindSkill;
         CancelReset();
-        if (apply) Callable.From(SendSkillPlan).CallDeferred();
     }
 }

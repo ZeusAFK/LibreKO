@@ -99,8 +99,9 @@ public partial class World : Node3D
     private void OnRebirthResult(int sub, int code) =>
         Chat.Info(code == 1 ? "Rebirth successful!" : "Rebirth failed.");
 
-    private const int StatsPanelWidth = 384;
+    private const int StatsPanelWidth = 560;
     private const int StatsCombatColumn = 132;
+    private const int StatsResistColumn = 172;
     private const int StatsIconSize = 22;
     private const int StatsResistIconSize = 20;
 
@@ -152,7 +153,14 @@ public partial class World : Node3D
         BuildStatsCombat(middle);
         BuildStatsAttributes(middle);
 
-        BuildStatsResistance(root);
+        var right = new VBoxContainer
+        {
+            CustomMinimumSize = new Vector2(StatsResistColumn, 0),
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        right.AddThemeConstantOverride("separation", 8);
+        middle.AddChild(right);
+        BuildStatsResistance(right);
     }
 
     private void BuildStatsHeader(VBoxContainer root)
@@ -319,40 +327,19 @@ public partial class World : Node3D
             line.AddChild(btn);
         }
 
-        var resetBtn = new Button
-        {
-            Text = "Redistribute",
-            FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Redistribute all stat points for gold",
-        };
-        resetBtn.Pressed += () => RequestReset(Net.ResetKindStat);
-        section.AddChild(resetBtn);
     }
 
-    private void BuildStatsResistance(VBoxContainer root)
+    private void BuildStatsResistance(VBoxContainer parent)
     {
-        var section = StatsSection(root, "Resistance", out _);
-        var grid = new GridContainer { Columns = 3 };
-        grid.AddThemeConstantOverride("h_separation", 12);
-        grid.AddThemeConstantOverride("v_separation", 6);
-        section.AddChild(grid);
-
-        int half = CharacterSheet.ResistCount / 2;
-        for (int pair = 0; pair < half; pair++)
+        var section = StatsSection(parent, "Resistance", out _, fill: true);
+        for (int index = 0; index < CharacterSheet.ResistCount; index++)
         {
-            if (pair > 0)
-            {
-                grid.AddChild(StatsRule());
-                grid.AddChild(new Control());
-                grid.AddChild(StatsRule());
-            }
-            AddResistEntry(grid, pair);
-            grid.AddChild(new VSeparator());
-            AddResistEntry(grid, pair + half);
+            if (index > 0) section.AddChild(StatsRule());
+            AddResistEntry(section, index);
         }
     }
 
-    private void AddResistEntry(GridContainer grid, int index)
+    private void AddResistEntry(VBoxContainer column, int index)
     {
         var line = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         line.AddThemeConstantOverride("separation", 8);
@@ -363,7 +350,7 @@ public partial class World : Node3D
         _resistLbls[index] = UiTheme.Text("0", 13, UiTheme.TextHi, HorizontalAlignment.Right);
         _resistLbls[index].SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         line.AddChild(_resistLbls[index]);
-        grid.AddChild(line);
+        column.AddChild(line);
     }
 
     private static VBoxContainer StatsSection(

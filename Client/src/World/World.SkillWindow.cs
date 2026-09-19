@@ -274,10 +274,6 @@ public partial class World
             _masteryBtns[idx].Pressed += () => OnMasterySpend(t);
             grid.AddChild(_masteryBtns[idx]);
         }
-        var resetSkills = new Button { Text = "Reset skills", FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Refund all mastery points for gold" };
-        resetSkills.Pressed += () => RequestReset(Net.ResetKindSkill);
-        root.AddChild(resetSkills);
         root.AddChild(new HSeparator());
         RefreshMasteryUI();
     }
