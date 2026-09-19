@@ -4,6 +4,7 @@ using LibreKO.Game.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 
 namespace LibreKO.Game.World;
@@ -11,26 +12,30 @@ namespace LibreKO.Game.World;
 public class EventSchedulerService(
     SessionManager sessionManager,
     IOptions<GameServerSettings> settings,
+    IZoneTransitionService zoneTransitionService,
     ILogger<EventSchedulerService> logger) : BackgroundService
 {
     private DateTime _lastWarOpen = DateTime.MinValue;
     private bool _banishPending;
     private DateTime _banishTime;
 
-    // Temple event state
     private TempleEvent _templeEvent;
     private byte _templeEventZone;
     private bool _templeEventJoinOpen;
     private DateTime _templeEventStart;
     private DateTime _templeEventEnd;
     private DateTime _lastTempleEventCall = DateTime.MinValue;
-    private readonly HashSet<int> _templeParticipants = []; // CharacterIds
+    private readonly HashSet<int> _templeParticipants = [];
+
+    public bool IsTempleEventJoinOpen => _templeEventJoinOpen;
+    public TempleEvent CurrentTempleEvent => _templeEvent;
+    public int TempleRemainingJoinSeconds => _templeEventJoinOpen ? (int)Math.Max(0, (_templeEventStart - DateTime.UtcNow).TotalSeconds) : 0;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Event scheduler service started");
 
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
@@ -156,7 +161,7 @@ public class EventSchedulerService(
         }
     }
 
-    private Task TickTempleEvent()
+    private async Task TickTempleEvent()
     {
         var now = DateTime.UtcNow;
 
@@ -164,8 +169,8 @@ public class EventSchedulerService(
         {
             var due = DueTempleEvent(now);
             if (due != TempleEvent.None && now - _lastTempleEventCall >= TimeSpan.FromHours(1))
-                StartTempleEvent(due, now);
-            return Task.CompletedTask;
+                await StartTempleEventAsync(due, now);
+            return;
         }
 
         if (_templeEventJoinOpen && now >= _templeEventStart)
@@ -174,18 +179,19 @@ public class EventSchedulerService(
             logger.LogInformation(
                 "{Contest} closed for entries with {Count} player(s) and runs for {Duration}",
                 _templeEvent, _templeParticipants.Count, _templeEventEnd - _templeEventStart);
+
+            await WarpParticipantsToEventAsync();
         }
 
         if (now >= _templeEventEnd)
         {
             logger.LogInformation("{Contest} in zone {Zone} ended", _templeEvent, _templeEventZone);
+            await WarpParticipantsOutAsync(_templeEventZone);
             _templeEvent = TempleEvent.None;
             _templeEventZone = 0;
             _templeEventJoinOpen = false;
             _templeParticipants.Clear();
         }
-
-        return Task.CompletedTask;
     }
 
     private TempleEvent DueTempleEvent(DateTime now)
@@ -204,20 +210,86 @@ public class EventSchedulerService(
         return TempleEvent.None;
     }
 
-    private void StartTempleEvent(TempleEvent contest, DateTime now)
+    private async Task StartTempleEventAsync(TempleEvent contest, DateTime now, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds, UserSession? autoJoinSession = null)
     {
         _templeEvent = contest;
         _templeEventZone = TempleEventRules.ZoneFor(contest);
         _templeEventJoinOpen = true;
-        _templeEventStart = now.AddSeconds(TempleEventRules.JoinWindowSeconds);
+        _templeEventStart = now.AddSeconds(joinWindowSeconds);
         _templeEventEnd = _templeEventStart
             .AddSeconds(TempleEventRules.DurationSecondsFor(contest));
         _lastTempleEventCall = now;
         _templeParticipants.Clear();
+        if (autoJoinSession != null)
+        {
+            _templeParticipants.Add(autoJoinSession.CharacterId);
+        }
 
         logger.LogInformation(
             "{Contest} called in zone {Zone}; entries are open for {Window}",
-            contest, _templeEventZone, TimeSpan.FromSeconds(TempleEventRules.JoinWindowSeconds));
+            contest, _templeEventZone, TimeSpan.FromSeconds(joinWindowSeconds));
+
+        string contestName = TempleEventRules.NameFor(contest);
+
+        string timeStr = joinWindowSeconds >= 60
+            ? (joinWindowSeconds / 60 == 1 ? "1 Minute" : $"{joinWindowSeconds / 60} Minutes")
+            : $"{joinWindowSeconds} Seconds";
+
+        var noticePkt = NoticePacketWriter.Broadcast($"### [EVENT] {contestName} registration is now OPEN ({timeStr})! ###");
+        await sessionManager.BroadcastToAll(noticePkt);
+
+        var bifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, joinWindowSeconds, (byte)contest);
+        await sessionManager.BroadcastToAll(bifrostPkt);
+    }
+
+    private async Task WarpParticipantsToEventAsync()
+    {
+        logger.LogInformation("Warping {Count} participants to zone {Zone} for {Contest}",
+            _templeParticipants.Count, _templeEventZone, _templeEvent);
+
+        var closeBifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, 0);
+        await sessionManager.BroadcastToAll(closeBifrostPkt);
+
+        var startPkt = NoticePacketWriter.Broadcast($"### [EVENT] {TempleEventRules.NameFor(_templeEvent)} has started! Teleporting registered players... ###");
+        await sessionManager.BroadcastToAll(startPkt);
+
+        foreach (var charId in _templeParticipants)
+        {
+            var session = sessionManager.GetByCharacterId(charId);
+            if (session != null && session.ZoneId != _templeEventZone)
+            {
+                try
+                {
+                    await zoneTransitionService.ChangeZoneAsync(session, _templeEventZone, 0f, 0f);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to warp player {CharId} to temple event zone {Zone}", charId, _templeEventZone);
+                }
+            }
+        }
+    }
+
+    private async Task WarpParticipantsOutAsync(byte zoneId)
+    {
+        var playersInZone = sessionManager.GetAll().Where(s => s.ZoneId == zoneId).ToList();
+        logger.LogInformation("Warping {Count} players out of event zone {Zone} back to Moradon",
+            playersInZone.Count, zoneId);
+
+        var endPkt = NoticePacketWriter.Broadcast($"### [EVENT] {TempleEventRules.NameFor(_templeEvent)} has ended! Returning participants to Moradon... ###");
+        await sessionManager.BroadcastToAll(endPkt);
+
+        foreach (var session in playersInZone)
+        {
+            try
+            {
+                await zoneTransitionService.ChangeZoneAsync(session, (byte)ZoneId.Moradon, 0f, 0f);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to warp player {Name} out of event zone {Zone}", session.Name, zoneId);
+            }
+        }
     }
 
     public bool TryJoinTempleEvent(UserSession session)
@@ -240,11 +312,62 @@ public class EventSchedulerService(
 
     public bool TempleEventAcceptingEntries => _templeEventJoinOpen;
 
-    public void CallTempleEvent(TempleEvent contest)
+    public async Task CallTempleEventAsync(TempleEvent contest, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds, UserSession? autoJoinSession = null)
     {
         if (contest == TempleEvent.None)
             return;
 
-        StartTempleEvent(contest, DateTime.UtcNow);
+        await StartTempleEventAsync(contest, DateTime.UtcNow, joinWindowSeconds, autoJoinSession);
+    }
+
+    public async Task<bool> CancelTempleEventAsync()
+    {
+        if (_templeEvent == TempleEvent.None)
+        {
+            return false;
+        }
+
+        var closeBifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, 0);
+        await sessionManager.BroadcastToAll(closeBifrostPkt);
+
+        var contestName = TempleEventRules.NameFor(_templeEvent);
+
+        if (_templeEventJoinOpen)
+        {
+            var cancelNotice = NoticePacketWriter.Broadcast($"### [EVENT] {contestName} registration has been CANCELLED! ###");
+            await sessionManager.BroadcastToAll(cancelNotice);
+        }
+        else
+        {
+            var cancelNotice = NoticePacketWriter.Broadcast($"### [EVENT] {contestName} has been CANCELLED! Returning players to Moradon... ###");
+            await sessionManager.BroadcastToAll(cancelNotice);
+            if (_templeEventZone != 0)
+            {
+                await WarpParticipantsOutAsync(_templeEventZone);
+            }
+        }
+
+        byte[] eventZones = [(byte)ZoneId.JuradMountain, (byte)ZoneId.BorderDefenseWar, (byte)ZoneId.ChaosDungeon];
+        foreach (var ez in eventZones)
+        {
+            var playersInZone = sessionManager.GetAll().Where(s => s.ZoneId == ez).ToList();
+            foreach (var s in playersInZone)
+            {
+                try
+                {
+                    await zoneTransitionService.ChangeZoneAsync(s, (byte)ZoneId.Moradon, 0f, 0f);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to warp player {Name} out of event zone {Zone}", s.Name, ez);
+                }
+            }
+        }
+
+        _templeEvent = TempleEvent.None;
+        _templeEventZone = 0;
+        _templeEventJoinOpen = false;
+        _templeParticipants.Clear();
+        return true;
     }
 }

@@ -2,6 +2,14 @@
 
 namespace LibreKO.Network;
 
+public enum TempleEventType : byte
+{
+    None = 0,
+    Chaos = 1,
+    BorderDefenseWar = 2,
+    JuraidMountain = 3,
+}
+
 public partial class Net
 {
     private const byte BifrostEventSub = 2;
@@ -9,7 +17,7 @@ public partial class Net
     private const byte BifrostJoinSub    = 8;
     private const byte BifrostDisbandSub = 9;
 
-    public event Action<int>? BifrostTimeEvent;
+    public event Action<int, TempleEventType>? BifrostTimeEvent;
 
     public event Action<bool, int>? BifrostJoinEvent;
 
@@ -23,7 +31,8 @@ public partial class Net
 
         int remaining = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
         if (remaining < 0) remaining = 0;
-        BifrostTimeEvent?.Invoke(remaining);
+        var eventType = p.RemainingBytes >= 1 ? (TempleEventType)p.ReadByte() : TempleEventType.None;
+        BifrostTimeEvent?.Invoke(remaining, eventType);
     }
 
     private void HandleBifrostEvent(Packet p)

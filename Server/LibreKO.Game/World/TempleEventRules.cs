@@ -35,4 +35,12 @@ public static class TempleEventRules
         TempleEvent.JuraidMountain => JuraidMountainDurationSeconds,
         _ => 0,
     };
+
+    public static string NameFor(TempleEvent contest) => contest switch
+    {
+        TempleEvent.Chaos => "Chaos Dungeon",
+        TempleEvent.BorderDefenseWar => "Border Defense War",
+        TempleEvent.JuraidMountain => "Juraid Mountain",
+        _ => "Event",
+    };
 }

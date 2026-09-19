@@ -276,7 +276,10 @@ internal sealed class ChatSystem
         _noticeLayer.Visible = true;
         int token = ++_noticeToken;
         double secs = Mathf.Clamp(3.5 + msg.Length * 0.04, 4.0, 12.0);
-        _ctx.Root.GetTree().CreateTimer(secs).Timeout += () => { if (_noticeToken == token) _noticeLayer.Visible = false; };
+        _ctx.Root.GetTree().CreateTimer(secs).Timeout += () => { 
+            if (_noticeToken == token && _noticeLayer != null && GodotObject.IsInstanceValid(_noticeLayer)) 
+                _noticeLayer.Visible = false; 
+        };
     }
 
     internal void Open()

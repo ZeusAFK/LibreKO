@@ -24,6 +24,7 @@ public class NationSystemsPacketCoordinator(
     IKingElectionPacketService kingElectionPacketService,
     IKingGovernancePacketService kingGovernancePacketService,
     IBifrostEventService bifrostEventService,
+    EventSchedulerService eventSchedulerService,
     ILogger<NationSystemsPacketCoordinator> logger) : INationSystemsPacketCoordinator
 {
 
@@ -47,11 +48,20 @@ public class NationSystemsPacketCoordinator(
         if (sub != (byte)TempleSubOpcode.BifrostRemaining)
             return;
 
-        // Remaining-secs comes from the live Bifrost lifecycle service; clients
-        // read 0 as "event inactive" and show the right UI state.
-        var remaining = bifrostEventService.RemainingSecs;
+        int remaining = 0;
+        byte eventType = 0;
+        if (eventSchedulerService.IsTempleEventJoinOpen)
+        {
+            remaining = eventSchedulerService.TempleRemainingJoinSeconds;
+            eventType = (byte)eventSchedulerService.CurrentTempleEvent;
+        }
+        else
+        {
+            remaining = (int)Math.Min(bifrostEventService.RemainingSecs, int.MaxValue);
+        }
+
         var response = BifrostPacketWriter.Remaining(
-            TempleSubOpcode.BifrostRemaining, (int)Math.Min(remaining, int.MaxValue));
+            TempleSubOpcode.BifrostRemaining, remaining, eventType);
         await session.Client.SendPacket(response);
     }
 

@@ -38,6 +38,7 @@ public class AdminPacketCoordinator(
     TimeWeatherBroadcastService timeWeather,
     IBifrostEventService bifrostEventService,
     IMonsterAggressionPolicy monsterAggressionPolicy,
+    EventSchedulerService eventSchedulerService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
     public async Task HandleOperatorAsync(IClient client, Packet packet)
@@ -199,6 +200,31 @@ public class AdminPacketCoordinator(
                 await BroadcastNoticeAsync("Snow battle zone opened!");
                 break;
 
+            case "jr":
+            case "juraid":
+                await HandleTempleEventCommandAsync(session, TempleEvent.JuraidMountain, ZoneId.JuradMountain, "Juraid Mountain", arg);
+                break;
+
+            case "bdw":
+                await HandleTempleEventCommandAsync(session, TempleEvent.BorderDefenseWar, ZoneId.BorderDefenseWar, "Border Defense War", arg);
+                break;
+
+            case "chaos":
+                await HandleTempleEventCommandAsync(session, TempleEvent.Chaos, ZoneId.ChaosDungeon, "Chaos Dungeon", arg);
+                break;
+
+            case "templecancel":
+            case "cancelevent":
+                if (await eventSchedulerService.CancelTempleEventAsync())
+                {
+                    await SendNoticeAsync(session, "Temple event cancelled.");
+                }
+                else
+                {
+                    await SendNoticeAsync(session, "No temple event is currently active.");
+                }
+                break;
+
             case "?":
             case "help":
                 await SendNoticeAsync(session, "GM Commands:");
@@ -218,6 +244,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+santa/+angel/+offsanta - Santa/Angel");
                 await SendNoticeAsync(session, "+waropen <zoneId>/+warclose/+snowwar");
                 await SendNoticeAsync(session, "+bifroststart [min] / +bifrostclose - Bifrost event");
+                await SendNoticeAsync(session, "+jr [sec] / +bdw [sec] / +chaos [sec] / +templecancel - Temple Events");
                 await SendNoticeAsync(session, "+zone | +zone <id> - List zones / teleport to zone home");
                 await SendNoticeAsync(session, "+reloadscripts - Reload quest scripts without restart");
                 await SendNoticeAsync(session, "+reseed - Seed JSON to DB + reload (drops/NPCs/items)");
@@ -1162,7 +1189,6 @@ public class AdminPacketCoordinator(
 
     private static async Task SendNoticeAsync(UserSession session, string message)
     {
-        // Send as WAR_SYSTEM_CHAT (type 8) — shows as yellow text in main chat window
         var packet = ChatPacketWriter.SystemNotice((byte)session.Nation, message);
         await session.Client.SendPacket(packet);
     }
@@ -1172,4 +1198,21 @@ public class AdminPacketCoordinator(
         await sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast(message));
     }
 
+    private const int DefaultJoinWindowSeconds = 30;
+
+    private async Task HandleTempleEventCommandAsync(UserSession session, TempleEvent contest, ZoneId zoneId, string eventName, string arg)
+    {
+        if (arg is "0" or "now")
+        {
+            await zoneTransitionService.ChangeZoneAsync(session, (byte)zoneId, 0f, 0f);
+            await SendNoticeAsync(session, $"[{eventName}] Teleported directly to event map!");
+            return;
+        }
+
+        int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : DefaultJoinWindowSeconds;
+        await eventSchedulerService.CallTempleEventAsync(contest, joinSec, session);
+        var confirmPkt = EventPacketWriter.TempleEvent((byte)TempleSubOpcode.TempleEventJoin, 1, (short)zoneId);
+        await session.Client.SendPacket(confirmPkt);
+        await SendNoticeAsync(session, $"[{eventName}] Registration open ({joinSec}s). You are registered and will teleport automatically!");
+    }
 }
