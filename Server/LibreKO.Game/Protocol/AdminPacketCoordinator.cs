@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -215,8 +215,14 @@ public class AdminPacketCoordinator(
 
             case "templecancel":
             case "cancelevent":
-                await eventSchedulerService.CancelTempleEventAsync();
-                await SendNoticeAsync(session, "Temple event cancelled.");
+                if (await eventSchedulerService.CancelTempleEventAsync())
+                {
+                    await SendNoticeAsync(session, "Temple event cancelled.");
+                }
+                else
+                {
+                    await SendNoticeAsync(session, "No temple event is currently active.");
+                }
                 break;
 
             case "?":
@@ -1183,7 +1189,6 @@ public class AdminPacketCoordinator(
 
     private static async Task SendNoticeAsync(UserSession session, string message)
     {
-        // Send as WAR_SYSTEM_CHAT (type 8) — shows as yellow text in main chat window
         var packet = ChatPacketWriter.SystemNotice((byte)session.Nation, message);
         await session.Client.SendPacket(packet);
     }
@@ -1192,6 +1197,8 @@ public class AdminPacketCoordinator(
     {
         await sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast(message));
     }
+
+    private const int DefaultJoinWindowSeconds = 30;
 
     private async Task HandleTempleEventCommandAsync(UserSession session, TempleEvent contest, ZoneId zoneId, string eventName, string arg)
     {
@@ -1202,9 +1209,9 @@ public class AdminPacketCoordinator(
             return;
         }
 
-        int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : 30;
+        int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : DefaultJoinWindowSeconds;
         await eventSchedulerService.CallTempleEventAsync(contest, joinSec, session);
-        var confirmPkt = EventPacketWriter.TempleEvent(8, 1, (short)zoneId);
+        var confirmPkt = EventPacketWriter.TempleEvent((byte)TempleSubOpcode.TempleEventJoin, 1, (short)zoneId);
         await session.Client.SendPacket(confirmPkt);
         await SendNoticeAsync(session, $"[{eventName}] Registration open ({joinSec}s). You are registered and will teleport automatically!");
     }

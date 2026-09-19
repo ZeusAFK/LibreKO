@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Enums;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -229,13 +229,7 @@ public class EventSchedulerService(
             "{Contest} called in zone {Zone}; entries are open for {Window}",
             contest, _templeEventZone, TimeSpan.FromSeconds(joinWindowSeconds));
 
-        string contestName = contest switch
-        {
-            TempleEvent.JuraidMountain => "Juraid Mountain",
-            TempleEvent.BorderDefenseWar => "Border Defense War",
-            TempleEvent.Chaos => "Chaos Dungeon",
-            _ => contest.ToString()
-        };
+        string contestName = TempleEventRules.NameFor(contest);
 
         string timeStr = joinWindowSeconds >= 60
             ? (joinWindowSeconds / 60 == 1 ? "1 Minute" : $"{joinWindowSeconds / 60} Minutes")
@@ -256,7 +250,7 @@ public class EventSchedulerService(
         var closeBifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, 0);
         await sessionManager.BroadcastToAll(closeBifrostPkt);
 
-        var startPkt = NoticePacketWriter.Broadcast($"### [EVENT] {_templeEvent} has started! Teleporting registered players... ###");
+        var startPkt = NoticePacketWriter.Broadcast($"### [EVENT] {TempleEventRules.NameFor(_templeEvent)} has started! Teleporting registered players... ###");
         await sessionManager.BroadcastToAll(startPkt);
 
         foreach (var charId in _templeParticipants)
@@ -282,7 +276,7 @@ public class EventSchedulerService(
         logger.LogInformation("Warping {Count} players out of event zone {Zone} back to Moradon",
             playersInZone.Count, zoneId);
 
-        var endPkt = NoticePacketWriter.Broadcast($"### [EVENT] {_templeEvent} has ended! Returning participants to Moradon... ###");
+        var endPkt = NoticePacketWriter.Broadcast($"### [EVENT] {TempleEventRules.NameFor(_templeEvent)} has ended! Returning participants to Moradon... ###");
         await sessionManager.BroadcastToAll(endPkt);
 
         foreach (var session in playersInZone)
@@ -326,18 +320,17 @@ public class EventSchedulerService(
         await StartTempleEventAsync(contest, DateTime.UtcNow, joinWindowSeconds, autoJoinSession);
     }
 
-    public async Task CancelTempleEventAsync()
+    public async Task<bool> CancelTempleEventAsync()
     {
+        if (_templeEvent == TempleEvent.None)
+        {
+            return false;
+        }
+
         var closeBifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, 0);
         await sessionManager.BroadcastToAll(closeBifrostPkt);
 
-        var contestName = _templeEvent switch
-        {
-            TempleEvent.JuraidMountain => "Juraid Mountain",
-            TempleEvent.BorderDefenseWar => "Border Defense War",
-            TempleEvent.Chaos => "Chaos Dungeon",
-            _ => "Event"
-        };
+        var contestName = TempleEventRules.NameFor(_templeEvent);
 
         if (_templeEventJoinOpen)
         {
@@ -375,5 +368,6 @@ public class EventSchedulerService(
         _templeEventZone = 0;
         _templeEventJoinOpen = false;
         _templeParticipants.Clear();
+        return true;
     }
 }

@@ -164,7 +164,7 @@ public partial class World
         headerRow.AddThemeConstantOverride("separation", 4);
         vb.AddChild(headerRow);
 
-        _joinModalTitle = UiTheme.Text($"#  {_eventTitle.ToUpper()}  #", 11, UiTheme.GoldBright, HorizontalAlignment.Center);
+        _joinModalTitle = UiTheme.Text(FormatModalTitle(_eventTitle), 11, UiTheme.GoldBright, HorizontalAlignment.Center);
         _joinModalTitle.AddThemeConstantOverride("outline_size", 2);
         _joinModalTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         headerRow.AddChild(_joinModalTitle);
@@ -235,7 +235,9 @@ public partial class World
         }
     }
 
-    private void OnBifrostTime(int remaining, byte eventType)
+    private static string FormatModalTitle(string title) => $"#  {title.ToUpper()}  #";
+
+    private void OnBifrostTime(int remaining, TempleEventType eventType)
     {
         if (remaining <= 0)
         {
@@ -245,16 +247,16 @@ public partial class World
 
         _eventTitle = eventType switch
         {
-            1 => "Chaos Dungeon",
-            2 => "Border Defense War",
-            3 => "Juraid Mountain",
+            TempleEventType.Chaos => "Chaos Dungeon",
+            TempleEventType.BorderDefenseWar => "Border Defense War",
+            TempleEventType.JuraidMountain => "Juraid Mountain",
             _ => "Bifrost"
         };
 
         if (_bifrostTitleLbl != null && IsInstanceValid(_bifrostTitleLbl))
             _bifrostTitleLbl.Text = _eventTitle;
         if (_joinModalTitle != null && IsInstanceValid(_joinModalTitle))
-            _joinModalTitle.Text = $"#  {_eventTitle.ToUpper()}  #";
+            _joinModalTitle.Text = FormatModalTitle(_eventTitle);
 
         bool wasActive = _bifrostActive;
         _bifrostActive = true;
@@ -406,7 +408,7 @@ public partial class World
     {
         if (!_bifrostActive) return;
         if (_joinModalTitle != null && IsInstanceValid(_joinModalTitle))
-            _joinModalTitle.Text = $"#  {_eventTitle.ToUpper()}  #";
+            _joinModalTitle.Text = FormatModalTitle(_eventTitle);
         if (_bifrostTitleLbl != null && IsInstanceValid(_bifrostTitleLbl))
             _bifrostTitleLbl.Text = _eventTitle;
         _joinModal.Visible = true;
