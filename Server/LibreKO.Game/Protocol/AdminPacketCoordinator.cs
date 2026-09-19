@@ -314,6 +314,8 @@ public class AdminPacketCoordinator(
                 break;
 
             case "goto":
+            case "tp":
+            case "warp":
                 await HandleGotoAsync(session, arg);
                 break;
 
@@ -343,6 +345,7 @@ public class AdminPacketCoordinator(
                 break;
 
             case "summonuser":
+            case "summon":
                 await HandleSummonUserAsync(session, arg);
                 break;
 
@@ -371,6 +374,7 @@ public class AdminPacketCoordinator(
 
             case "mon":
             case "monster":
+            case "spawn":
                 await HandleSummonMonsterAsync(session, arg);
                 break;
 

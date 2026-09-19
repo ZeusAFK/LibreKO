@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace LibreKO.Network;
@@ -147,6 +147,22 @@ public partial class Net
     {
         var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
         p.WriteByte(sub);
+        _conn.Send(p);
+    }
+
+    public void SendGmCommand(string command)
+    {
+        if (string.IsNullOrWhiteSpace(command)) return;
+        var msg = command.Trim();
+        if (!msg.StartsWith('+')) msg = "+" + msg;
+        SendChat(msg);
+    }
+
+    public void SendOperatorCommand(byte opcode, string targetName)
+    {
+        var p = new Packet(GameOpcodes.GS_OPERATOR);
+        p.WriteByte(opcode);
+        p.WriteSByteString(targetName ?? string.Empty);
         _conn.Send(p);
     }
 

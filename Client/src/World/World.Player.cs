@@ -8,7 +8,9 @@ public partial class World
 {
     private const float WalkSpeed = 1.5f;
     private const float RunSpeed = 6.0f;
-    private const float GmSpeedMult = 5.0f;
+    private const float DefaultGmSpeedMult = 5.0f;
+    private float _gmSpeedMultiplier = DefaultGmSpeedMult;
+    private bool _gmSpeedAlwaysOn;
     private const float SendHz = 10.0f;
 
     private const float CapsuleHalf = 1.0f;
@@ -48,7 +50,7 @@ public partial class World
     private bool _collisionsOff;
     private bool NoClip => _isGm && _collisionsOff;
 
-    private bool GmSpeedHeld => (_isGm || Net.I.GmSpeedGranted) && Held(KeyAction.GmSpeed);
+    private bool GmSpeedActive => (_isGm || Net.I.GmSpeedGranted) && (Held(KeyAction.GmSpeed) || _gmSpeedAlwaysOn);
     private Vector3 _moveWish;
     private Vector3 _faceDir = Vector3.Forward;
     private Vector3 _attackLungeDir;
@@ -85,8 +87,8 @@ public partial class World
         wish = _moveWish;
         float speed = _selfMovingBackward ? WalkSpeed : _running ? RunSpeed : WalkSpeed;
         speed *= MoveSpeedMultiplier();
-        if (GmSpeedHeld)
-            speed *= GmSpeedMult;
+        if (GmSpeedActive)
+            speed *= _gmSpeedMultiplier;
         if (IsRootedByCast()) speed = 0f;
 
         var wasAt = _self.Position;

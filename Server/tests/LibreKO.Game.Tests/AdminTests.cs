@@ -379,4 +379,64 @@ public class AdminTests : GameTestBase
         sentPacket.ReadString().Should().Be("Usage: +setlevel <1-83>");
     }
 
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_TimeAndWeatherCommandsWork()
+    {
+        using var provider = CreateProvider(_ => { });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 402, accountId: 412);
+        session.Name = "GM";
+        session.IsGM = true;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(session, "+time 12:00");
+        await coordinator.HandleGmCommandAsync(session, "+weather clear 0");
+        await coordinator.HandleGmCommandAsync(session, "+hp");
+
+        session.Hp.Should().Be(session.MaxHp);
+        session.Mp.Should().Be(session.MaxMp);
+    }
+
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_TpAndSummonAliasesRouteProperly()
+    {
+        using var provider = CreateProvider(_ => { });
+
+        var gmClient = Substitute.For<IClient>();
+        gmClient.Id.Returns(Guid.NewGuid());
+        Packet? sentPacket = null;
+        gmClient.SendPacket(Arg.Do<Packet>(p => sentPacket = p), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var gmSession = sessionManager.CreateSession(gmClient, characterId: 403, accountId: 413);
+        gmSession.Name = "GM";
+        gmSession.IsGM = true;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+
+        // When target is not found, +tp / +warp outputs "Player not found: Target"
+        await coordinator.HandleGmCommandAsync(gmSession, "+tp MissingPlayer");
+        sentPacket.Should().NotBeNull();
+        sentPacket!.ResetOffset();
+        sentPacket.GetOpcode().Should().Be((byte)GameOpcodes.GS_CHAT);
+        sentPacket.ReadByte();
+        sentPacket.ReadByte();
+        sentPacket.ReadInt();
+        sentPacket.ReadSByteString();
+        sentPacket.ReadString().Should().Be("Player not found: MissingPlayer");
+
+        // When target is not found, +summon outputs "Player not found: Target"
+        await coordinator.HandleGmCommandAsync(gmSession, "+summon MissingPlayer");
+        sentPacket.ResetOffset();
+        sentPacket.ReadByte();
+        sentPacket.ReadByte();
+        sentPacket.ReadInt();
+        sentPacket.ReadSByteString();
+        sentPacket.ReadString().Should().Be("Player not found: MissingPlayer");
+    }
 }

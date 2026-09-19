@@ -93,8 +93,10 @@ public partial class World
 
         if (_isGm) root.AddChild(BuildAdminCollisionRow());
 
-        var tabBar = new HBoxContainer();
-        tabBar.AddThemeConstantOverride("separation", 4);
+        var tabBar = new HFlowContainer();
+        tabBar.AddThemeConstantOverride("h_separation", 4);
+        tabBar.AddThemeConstantOverride("v_separation", 4);
+        tabBar.CustomMinimumSize = new Vector2(640, 0);
         root.AddChild(tabBar);
 
         _admTabHost = new MarginContainer();
@@ -106,6 +108,11 @@ public partial class World
         AddAdminTab(tabBar, "Items", BuildAdminItemsTab());
         AddAdminTab(tabBar, "Class", BuildAdminClassTab());
         AddAdminTab(tabBar, "Zones", BuildAdminZonesTab());
+        AddAdminTab(tabBar, "World", BuildAdminWorldTab());
+        AddAdminTab(tabBar, "Events", BuildAdminEventsTab());
+        AddAdminTab(tabBar, "Players", BuildAdminPlayersTab());
+        AddAdminTab(tabBar, "Spawns", BuildAdminSpawnsTab());
+        AddAdminTab(tabBar, "Tools", BuildAdminToolsTab());
 
         root.AddChild(new HSeparator());
         _admStatusLbl = UiTheme.Text("", 12, UiTheme.TextLo);
@@ -150,7 +157,7 @@ public partial class World
             _admCollisionSwitch.SetPressedNoSignal(!_collisionsOff);
     }
 
-    private void AddAdminTab(HBoxContainer tabBar, string label, Control body)
+    private void AddAdminTab(Container tabBar, string label, Control body)
     {
         _admTabPark.AddChild(body);
         _admTabs[label] = body;
@@ -173,6 +180,7 @@ public partial class World
         Callable.From(_admPanel.ResetSize).CallDeferred();
 
         if (label == "Zones") RefreshAdminZonesTab();
+        if (label == "Spawns") RefreshAdminBossList();
         if (label != "Items") { HideItemTooltip(); return; }
         if (_admItemsLoaded) return;
         _admItemsLoaded = true;
