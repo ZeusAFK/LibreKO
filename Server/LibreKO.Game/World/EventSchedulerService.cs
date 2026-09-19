@@ -29,6 +29,10 @@ public class EventSchedulerService(
     private DateTime _lastTempleEventCall = DateTime.MinValue;
     private readonly HashSet<int> _templeParticipants = []; // CharacterIds
 
+    public bool IsTempleEventJoinOpen => _templeEventJoinOpen;
+    public TempleEvent CurrentTempleEvent => _templeEvent;
+    public int TempleRemainingJoinSeconds => _templeEventJoinOpen ? (int)Math.Max(0, (_templeEventStart - DateTime.UtcNow).TotalSeconds) : 0;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Event scheduler service started");
@@ -238,7 +242,7 @@ public class EventSchedulerService(
         var noticePkt = NoticePacketWriter.Broadcast($"### [EVENT] {contestName} registration is now OPEN ({timeStr})! ###");
         await sessionManager.BroadcastToAll(noticePkt);
 
-        var bifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, joinWindowSeconds);
+        var bifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, joinWindowSeconds, (byte)contest);
         await sessionManager.BroadcastToAll(bifrostPkt);
     }
 

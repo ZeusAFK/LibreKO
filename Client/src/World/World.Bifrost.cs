@@ -259,13 +259,22 @@ public partial class World
             _joinModalTitle.Text = $"#  {_eventTitle.ToUpper()}  #";
     }
 
-    private void OnBifrostTime(int remaining)
+    private void OnBifrostTime(int remaining, byte eventType)
     {
         if (remaining <= 0)
         {
             EndBifrostEvent();
             return;
         }
+
+        if (eventType == 1) _eventTitle = "Chaos Dungeon";
+        else if (eventType == 2) _eventTitle = "Border Defense War";
+        else if (eventType == 3) _eventTitle = "Juraid Mountain";
+
+        if (_bifrostTitleLbl != null && IsInstanceValid(_bifrostTitleLbl))
+            _bifrostTitleLbl.Text = _eventTitle;
+        if (_joinModalTitle != null && IsInstanceValid(_joinModalTitle))
+            _joinModalTitle.Text = $"#  {_eventTitle.ToUpper()}  #";
 
         bool wasActive = _bifrostActive;
         _bifrostActive = true;

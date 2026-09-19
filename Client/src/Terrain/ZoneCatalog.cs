@@ -1,4 +1,4 @@
-﻿namespace LibreKO;
+namespace LibreKO;
 
 public static class ZoneCatalog
 {
@@ -42,7 +42,7 @@ public static class ZoneCatalog
         new(81, "in_dungeon01", "Monster Suppression 1"),
         new(82, "in_dungeon02", "Monster Suppression 2"),
         new(83, "in_dungeon03", "Monster Suppression 3"),
-        new(84, "in_dungeon05", "Border War Defence"),
+        new(84, "in_dungeon04", "Border Defense War"),
         new(85, "sky_war_2009", "Chaos Dungeon"),
         new(86, "bossmode", "Under The Castle"),
         new(87, "in_dungeon05", "Juraid Mountain"),

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace LibreKO.Network;
 
@@ -9,7 +9,7 @@ public partial class Net
     private const byte BifrostJoinSub    = 8;
     private const byte BifrostDisbandSub = 9;
 
-    public event Action<int>? BifrostTimeEvent;
+    public event Action<int, byte>? BifrostTimeEvent;
 
     public event Action<bool, int>? BifrostJoinEvent;
 
@@ -23,7 +23,8 @@ public partial class Net
 
         int remaining = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
         if (remaining < 0) remaining = 0;
-        BifrostTimeEvent?.Invoke(remaining);
+        byte eventType = p.RemainingBytes >= 1 ? p.ReadByte() : (byte)0;
+        BifrostTimeEvent?.Invoke(remaining, eventType);
     }
 
     private void HandleBifrostEvent(Packet p)

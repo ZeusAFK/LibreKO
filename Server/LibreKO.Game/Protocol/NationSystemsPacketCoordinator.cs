@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
@@ -47,11 +47,21 @@ public class NationSystemsPacketCoordinator(
         if (sub != (byte)TempleSubOpcode.BifrostRemaining)
             return;
 
-        // Remaining-secs comes from the live Bifrost lifecycle service; clients
-        // read 0 as "event inactive" and show the right UI state.
-        var remaining = bifrostEventService.RemainingSecs;
+        int remaining = 0;
+        byte eventType = 0;
+        var scheduler = serviceProvider.GetService<EventSchedulerService>();
+        if (scheduler != null && scheduler.IsTempleEventJoinOpen)
+        {
+            remaining = scheduler.TempleRemainingJoinSeconds;
+            eventType = (byte)scheduler.CurrentTempleEvent;
+        }
+        else
+        {
+            remaining = (int)Math.Min(bifrostEventService.RemainingSecs, int.MaxValue);
+        }
+
         var response = BifrostPacketWriter.Remaining(
-            TempleSubOpcode.BifrostRemaining, (int)Math.Min(remaining, int.MaxValue));
+            TempleSubOpcode.BifrostRemaining, remaining, eventType);
         await session.Client.SendPacket(response);
     }
 
