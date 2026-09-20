@@ -31,7 +31,7 @@ public partial class Net
     public event Action<short, short>? ShoppingMallOpenEvent;
     public event Action<List<ShoppingMallCatalogEntry>>? ShoppingMallCatalogEvent;
     public event Action<List<ShoppingMallCategory>>? ShoppingMallCategoriesEvent;
-    public event Action<int>? ShoppingMallBalanceEvent;
+    public event Action<int, int>? ShoppingMallBalanceEvent;
 
     public event Action<int>? ShoppingMallUnreadEvent;
 
@@ -45,7 +45,7 @@ public partial class Net
 
     public event Action<List<int>, bool>? ShoppingMallDeleteEvent;
 
-    public event Action<bool, int>? ShoppingMallBuyResultEvent;
+        public event Action<bool, int, int>? ShoppingMallBuyResultEvent;
 
     private int _smPendingGiftLetterId;
 
@@ -83,7 +83,7 @@ public partial class Net
                 return;
             case SmStoreBalance:
                 if (p.RemainingBytes >= 4)
-                    ShoppingMallBalanceEvent?.Invoke(p.ReadInt());
+                    ShoppingMallBalanceEvent?.Invoke(p.ReadInt(), p.ReadInt());
                 return;
         }
 
@@ -102,8 +102,9 @@ public partial class Net
         if (sub != SmBuyItemSubcommand || p.RemainingBytes < 1) return;
 
         int result = p.ReadByte();
-        int balance = p.RemainingBytes >= 4 ? p.ReadInt() : -1;
-        ShoppingMallBuyResultEvent?.Invoke(result == 1, balance);
+        int knightCash = p.RemainingBytes >= 4 ? p.ReadInt() : -1;
+        int usdBalance = p.RemainingBytes >= 4 ? p.ReadInt() : -1;
+        ShoppingMallBuyResultEvent?.Invoke(result == 1, knightCash, usdBalance);
     }
 
     private void HandleShoppingMallCatalog(Packet p)

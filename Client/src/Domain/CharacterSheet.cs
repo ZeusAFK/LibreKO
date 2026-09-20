@@ -27,6 +27,7 @@ public sealed class CharacterSheet
     public int Level { get; private set; }
     public int Gold { get; private set; }
     public int KnightCash { get; private set; }
+    public int UsdBalance { get; private set; }
     public int MaxWeight { get; private set; }
     public long Exp { get; private set; }
     public long MaxExp { get; private set; }
@@ -74,6 +75,7 @@ public sealed class CharacterSheet
     public void SeedWealth(int gold, int np) { Gold = Math.Max(0, gold); Np = np; }
 
     public void SetKnightCash(int total) => KnightCash = Math.Max(0, total);
+    public void SetUsdBalance(int total) => UsdBalance = Math.Max(0, total);
 
     public void AdjustKnightCash(int delta)
     {

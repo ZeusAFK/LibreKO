@@ -485,12 +485,12 @@ public partial class World
         }, true);
     }
 
-    private void OnShoppingMallBuyResult(bool ok, int balance)
+    private void OnShoppingMallBuyResult(bool ok, int knightCash, int usdBalance)
     {
         if (ok)
         {
-            if (balance >= 0)
-                OnShoppingMallBalance(balance);
+            if (knightCash >= 0 && usdBalance >= 0)
+                OnShoppingMallBalance(knightCash, usdBalance);
 
             _pusBasketStatus.Text = "Purchase complete.";
             _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
@@ -535,7 +535,7 @@ public partial class World
         var basketPanel = new VBoxContainer { CustomMinimumSize = new Vector2(150, 220) };
         basketPanel.AddThemeConstantOverride("separation", 6);
         basketPanel.AddChild(UiTheme.Text("Basket", 12, UiTheme.TextHi));
-        _pusWallet = UiTheme.Text("KC Balance 0", 12, UiTheme.GoldBright);
+        _pusWallet = UiTheme.Text("KC 0 | USD 0", 12, UiTheme.GoldBright);
         basketPanel.AddChild(_pusWallet);
         _pusBasketList = new VBoxContainer();
         _pusBasketList.AddThemeConstantOverride("separation", 4);
@@ -593,18 +593,16 @@ public partial class World
                 info.AddThemeConstantOverride("separation", -2);
                 info.AddChild(UiTheme.Text(item.Name, 12, UiTheme.TextHi));
                 info.AddChild(UiTheme.Text(item.Description, 11, UiTheme.TextLo));
-                bool purchasable = item.PriceType == 0;
+                bool purchasable = item.PriceType is 0 or 1;
                 info.AddChild(UiTheme.Text(
                     $"{item.Price:n0} {(purchasable ? "Knight Cash" : "USD")}",
                     11,
-                    purchasable ? UiTheme.GoldBright : UiTheme.TextDim));
+                    UiTheme.GoldBright));
                 hb.AddChild(info);
 
                 var add = new Button { Text = "+", FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(28, 28) };
                 add.Pressed += () => AddToPusBasket(item);
                 add.Disabled = !purchasable;
-                if (!purchasable)
-                    add.TooltipText = "USD items cannot be purchased in-game.";
                 hb.AddChild(add);
 
                 _pusItemList.AddChild(row);
@@ -646,7 +644,7 @@ public partial class World
     private void UpdatePusWallet()
     {
         if (_pusWallet == null || !IsInstanceValid(_pusWallet)) return;
-        _pusWallet.Text = $"KC Balance {Sheet.KnightCash:n0}";
+        _pusWallet.Text = $"KC {Sheet.KnightCash:n0} | USD {Sheet.UsdBalance:n0}";
     }
 
     private void OnShoppingMallCatalog(List<ShoppingMallCatalogEntry> entries)
@@ -690,9 +688,10 @@ public partial class World
         RefreshPusView();
     }
 
-    private void OnShoppingMallBalance(int balance)
+    private void OnShoppingMallBalance(int knightCash, int usdBalance)
     {
-        Sheet.SetKnightCash(balance);
+        Sheet.SetKnightCash(knightCash);
+        Sheet.SetUsdBalance(usdBalance);
         UpdateStatusHud();
         UpdatePusWallet();
     }
@@ -740,13 +739,6 @@ public partial class World
                 _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
                 return;
             }
-        }
-
-        if (item.PriceType == 1)
-        {
-            _pusBasketStatus.Text = "USD PUS items cannot be purchased in-game.";
-            _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
-            return;
         }
 
         foreach (var entry in _pusBasket)

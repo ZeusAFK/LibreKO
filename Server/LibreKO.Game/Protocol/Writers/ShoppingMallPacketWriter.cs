@@ -129,17 +129,19 @@ public sealed class ShoppingMallPacketWriter
         return packet;
     }
 
-    public static Packet Balance(byte storeOpcode, byte sub, int knightCash)
+    public static Packet Balance(byte storeOpcode, byte sub, int knightCash, int usdBalance)
     {
         var packet = Sub(storeOpcode, sub);
         packet.WriteInt(knightCash);
+        packet.WriteInt(usdBalance);
         return packet;
     }
 
-    public static Packet PurchaseResult(byte storeOpcode, byte sub, byte result, int knightCash)
+    public static Packet PurchaseResult(byte storeOpcode, byte sub, byte result, int knightCash, int usdBalance)
     {
         var packet = Result(storeOpcode, sub, result);
         packet.WriteInt(knightCash);
+        packet.WriteInt(usdBalance);
         return packet;
     }
 

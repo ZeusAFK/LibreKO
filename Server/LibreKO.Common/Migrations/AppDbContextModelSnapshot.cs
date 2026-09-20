@@ -43,6 +43,9 @@ namespace LibreKO.Common.Migrations
                     b.Property<int>("KnightCash")
                         .HasColumnType("int");
 
+                    b.Property<int>("UsdBalance")
+                        .HasColumnType("int");
+
                     b.Property<string>("Language")
                         .IsRequired()
                         .HasMaxLength(16)

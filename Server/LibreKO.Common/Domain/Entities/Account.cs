@@ -16,6 +16,7 @@ public class Account : Entity
     public DateTime? AccessDate { get; set; }
 
     public int KnightCash { get; set; }
+    public int UsdBalance { get; set; }
 
     public byte[] VipWarehouseItems { get; set; } = [];
 
@@ -59,6 +60,7 @@ public class Account : Entity
             builder.Property(a => a.PremiumDate);
             builder.Property(a => a.PremiumType);
             builder.Property(a => a.KnightCash);
+            builder.Property(a => a.UsdBalance);
             builder.Property(a => a.VipWarehouseItems);
             builder.Property(a => a.VipVaultExpiry);
             builder.Property(a => a.VipPassword).HasMaxLength(4);

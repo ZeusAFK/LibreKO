@@ -28,6 +28,7 @@ public class ShoppingMallStoreService(
     private const byte StoreCategories = 4;
     private const byte StoreBalance = 5;
     private const byte KnightCashPriceType = 0;
+    private const byte UsdPriceType = 1;
     private const int BuyRequestSize = 7;
 
     public async Task HandleOpenAsync(UserSession session)
@@ -89,7 +90,8 @@ public class ShoppingMallStoreService(
 
         await session.Client.SendPacket(ShoppingMallPacketWriter.Catalog(StoreOpen, StoreCatalog, catalog));
         await session.Client.SendPacket(ShoppingMallPacketWriter.Categories(StoreOpen, StoreCategories, categories));
-        await session.Client.SendPacket(ShoppingMallPacketWriter.Balance(StoreOpen, StoreBalance, session.KnightCash));
+        await session.Client.SendPacket(ShoppingMallPacketWriter.Balance(
+            StoreOpen, StoreBalance, session.KnightCash, session.UsdBalance));
     }
 
     public async Task HandleBuyAsync(UserSession session, Packet packet)
@@ -141,10 +143,12 @@ public class ShoppingMallStoreService(
             }
 
             var totalCost = pusItem.Price.Value * count;
-            if (pusItem.PriceType != KnightCashPriceType
-                || priceType != KnightCashPriceType
+            if (pusItem.PriceType != priceType
+                || priceType is not (KnightCashPriceType or UsdPriceType)
                 || totalCost <= 0
-                || session.KnightCash < totalCost)
+                || (priceType == KnightCashPriceType
+                    ? session.KnightCash < totalCost
+                    : session.UsdBalance < totalCost))
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
                 return;
@@ -157,7 +161,10 @@ public class ShoppingMallStoreService(
                 return;
             }
 
-            session.KnightCash -= totalCost;
+            if (priceType == KnightCashPriceType)
+                session.KnightCash -= totalCost;
+            else
+                session.UsdBalance -= totalCost;
 
             var inventorySlot = session.Inventory[slot];
             var isNewItem = inventorySlot.IsEmpty;
@@ -177,7 +184,7 @@ public class ShoppingMallStoreService(
                 .Add((byte)slot, itemId, inventorySlot.Count, inventorySlot.Durability, isNewItem)
                 .Build());
             await session.Client.SendPacket(ShoppingMallPacketWriter.PurchaseResult(
-                StoreBuy, sub, ShoppingMallPacketWriter.Succeeded, session.KnightCash));
+                StoreBuy, sub, ShoppingMallPacketWriter.Succeeded, session.KnightCash, session.UsdBalance));
         }
     }
 
