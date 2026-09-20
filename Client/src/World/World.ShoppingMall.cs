@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json;
 using Godot;
 using LibreKO.Network;
 using LibreKO.Domain;
@@ -29,6 +30,34 @@ public partial class World
     private OptionButton _shoppingmallGiftPick = null!;
     private Label _shoppingmallStatus = null!;
 
+    private readonly List<PusCatalogEntry> _pusCatalog = new();
+    private readonly List<PusBasketEntry> _pusBasket = new();
+    private byte _pusSelectedCategory = 1;
+    private VBoxContainer _pusItemList = null!;
+    private VBoxContainer _pusBasketList = null!;
+    private Label _pusSummary = null!;
+    private Label _pusWallet = null!;
+    private Label _pusBasketStatus = null!;
+    private Button _pusBuyButton = null!;
+    private Button _pusClearButton = null!;
+
+    private sealed class PusCatalogEntry
+    {
+        public int Id;
+        public int ItemId;
+        public string Name = "";
+        public string Description = "";
+        public int Category;
+        public int Price;
+        public int PriceType;
+    }
+
+    private sealed class PusBasketEntry
+    {
+        public PusCatalogEntry Item = null!;
+        public int Count;
+    }
+
     private void ShoppingMallInit()
     {
         BuildShoppingMallPanel();
@@ -39,6 +68,7 @@ public partial class World
         Net.I.ShoppingMallGiftResultEvent += OnShoppingMallGiftResult;
         Net.I.ShoppingMallSendResultEvent += OnShoppingMallSendResult;
         Net.I.ShoppingMallDeleteEvent += OnShoppingMallDelete;
+        Net.I.ShoppingMallBuyResultEvent += OnShoppingMallBuyResult;
     }
 
     private void ShoppingMallDispose()
@@ -50,6 +80,7 @@ public partial class World
         Net.I.ShoppingMallGiftResultEvent -= OnShoppingMallGiftResult;
         Net.I.ShoppingMallSendResultEvent -= OnShoppingMallSendResult;
         Net.I.ShoppingMallDeleteEvent -= OnShoppingMallDelete;
+        Net.I.ShoppingMallBuyResultEvent -= OnShoppingMallBuyResult;
     }
 
     private void BuildShoppingMallPanel()
@@ -76,6 +107,10 @@ public partial class World
         openBtn.Pressed += () => Net.I.SendShoppingMallOpen();
         storeRow.AddChild(openBtn);
         root.AddChild(storeRow);
+
+        root.AddChild(new HSeparator());
+
+        BuildPusSection(root);
 
         root.AddChild(new HSeparator());
 
@@ -180,13 +215,15 @@ public partial class World
         else OpenShoppingMall();
     }
 
+    public void OpenPowerUpStore() => OpenShoppingMall();
+
     public void OpenShoppingMall()
     {
         if (_shoppingmallShown) return;
         _shoppingmallShown = true;
         _shoppingmallPanel.Visible = true;
-
-        SwitchLetterView(_shoppingmallHistoryView);
+        BootstrapPusCatalog();
+        RefreshPusView();        SwitchLetterView(_shoppingmallHistoryView);
         RebuildGiftPicker();
         RequestLetterList();
         Net.I.SendShoppingMallUnread();
@@ -441,9 +478,299 @@ public partial class World
         }, true);
     }
 
+    private void OnShoppingMallBuyResult(bool ok, int totalCost)
+    {
+        if (ok)
+        {
+            if (totalCost > 0)
+                Sheet.AdjustKnightCash(-totalCost);
+
+            UpdateStatusHud();
+            UpdatePusWallet();
+            _pusBasketStatus.Text = $"Purchase complete: {totalCost:n0} KC spent.";
+            _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
+            Chat.Info($"Power-Up Store purchase complete: {totalCost:n0} KC.");
+            return;
+        }
+
+        _pusBasketStatus.Text = "Purchase failed. Check your KC balance and try again.";
+        _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
+    }
+
     private void SetShoppingMallStatus(string text, bool warn)
     {
         _shoppingmallStatus.Text = text;
         _shoppingmallStatus.AddThemeColorOverride("font_color", warn ? UiTheme.Bad : UiTheme.Good);
+    }
+
+    private void BuildPusSection(VBoxContainer root)
+    {
+        var pusRoot = new VBoxContainer { CustomMinimumSize = new Vector2(420, 0) };
+        pusRoot.AddThemeConstantOverride("separation", 8);
+        root.AddChild(pusRoot);
+
+        var tabs = new HBoxContainer();
+        tabs.AddThemeConstantOverride("separation", 6);
+        var categories = new[]
+        {
+            new { Id = (byte)1, Name = "Items" },
+            new { Id = (byte)2, Name = "Premium" },
+            new { Id = (byte)3, Name = "Utility" },
+            new { Id = (byte)4, Name = "Gear" },
+            new { Id = (byte)5, Name = "KC" },
+        };
+
+        foreach (var cat in categories)
+        {
+            var tab = new Button { Text = cat.Name, ToggleMode = true, FocusMode = Control.FocusModeEnum.None };
+            tab.Pressed += () =>
+            {
+                _pusSelectedCategory = cat.Id;
+                RefreshPusView();
+            };
+            tabs.AddChild(tab);
+        }
+        pusRoot.AddChild(tabs);
+
+        var content = new HBoxContainer();
+        content.AddThemeConstantOverride("separation", 10);
+        pusRoot.AddChild(content);
+
+        var listScroll = new ScrollContainer
+        {
+            CustomMinimumSize = new Vector2(260, 220),
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+        };
+        _pusItemList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        _pusItemList.AddThemeConstantOverride("separation", 4);
+        listScroll.AddChild(_pusItemList);
+        content.AddChild(listScroll);
+
+        var basketPanel = new VBoxContainer { CustomMinimumSize = new Vector2(150, 220) };
+        basketPanel.AddThemeConstantOverride("separation", 6);
+        basketPanel.AddChild(UiTheme.Text("Basket", 12, UiTheme.TextHi));
+        _pusWallet = UiTheme.Text("KC Balance 0", 12, UiTheme.GoldBright);
+        basketPanel.AddChild(_pusWallet);
+        _pusBasketList = new VBoxContainer();
+        _pusBasketList.AddThemeConstantOverride("separation", 4);
+        basketPanel.AddChild(_pusBasketList);
+
+        _pusSummary = UiTheme.Text("Total 0 KC", 12, UiTheme.GoldBright);
+        basketPanel.AddChild(_pusSummary);
+        _pusBasketStatus = UiTheme.Text("", 11, UiTheme.TextLo);
+        _pusBasketStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        basketPanel.AddChild(_pusBasketStatus);
+
+        var basketButtons = new HBoxContainer();
+        basketButtons.AddThemeConstantOverride("separation", 6);
+        _pusClearButton = new Button { Text = "Clear", FocusMode = Control.FocusModeEnum.None };
+        _pusClearButton.Pressed += ClearPusBasket;
+        basketButtons.AddChild(_pusClearButton);
+        _pusBuyButton = new Button { Text = "Buy", FocusMode = Control.FocusModeEnum.None };
+        _pusBuyButton.Pressed += BuyPusBasket;
+        basketButtons.AddChild(_pusBuyButton);
+        basketPanel.AddChild(basketButtons);
+
+        content.AddChild(basketPanel);
+    }
+
+    private sealed class PusSeedItem
+    {
+        public int Id { get; set; }
+        public int ItemId { get; set; }
+        public string ItemName { get; set; } = "";
+        public string ItemTitle { get; set; } = "";
+        public int Price { get; set; }
+        public int SendType { get; set; }
+        public int BuyCount { get; set; }
+        public string ItemDesc { get; set; } = "";
+        public int Category { get; set; }
+        public int PriceType { get; set; }
+    }
+
+    private void BootstrapPusCatalog()
+    {
+        if (_pusCatalog.Count > 0) return;
+
+        var seedPath = ProjectSettings.GlobalizePath("res://../Server/LibreKO.Game/Seed/Data/PusItems.json");
+        using var file = Godot.FileAccess.Open(seedPath, Godot.FileAccess.ModeFlags.Read);
+
+        if (file != null)
+        {
+            var json = file.GetAsText();
+            var rows = JsonSerializer.Deserialize<List<PusSeedItem>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+            });
+
+            if (rows != null)
+            {
+                foreach (var row in rows)
+                {
+                    _pusCatalog.Add(new PusCatalogEntry
+                    {
+                        Id = row.Id,
+                        ItemId = row.ItemId,
+                        Name = row.ItemName,
+                        Description = string.IsNullOrWhiteSpace(row.ItemDesc) ? row.ItemTitle : row.ItemDesc,
+                        Category = row.Category,
+                        Price = row.Price,
+                        PriceType = row.PriceType,
+                    });
+                }
+                return;
+            }
+        }
+
+        _pusCatalog.Add(new PusCatalogEntry
+        {
+            Id = 1, ItemId = 800079000, Name = "HP Scroll 60%", Description = "HP recovery", Category = 1, Price = 499, PriceType = 0,
+        });
+    }
+
+    private void RefreshPusView()
+    {
+        UpdatePusWallet();
+        foreach (var node in _pusItemList.GetChildren()) node.QueueFree();
+        foreach (var node in _pusBasketList.GetChildren()) node.QueueFree();
+
+        var rows = _pusCatalog.Where(i => i.Category == _pusSelectedCategory).ToList();
+        if (rows.Count == 0)
+        {
+            _pusItemList.AddChild(UiTheme.Text("No items in this category.", 12, UiTheme.TextLo));
+        }
+        else
+        {
+            foreach (var item in rows)
+            {
+                var row = UiTheme.RowPanel();
+                var hb = new HBoxContainer(); hb.AddThemeConstantOverride("separation", 8); row.AddChild(hb);
+
+                var icon = new TextureRect
+                {
+                    Texture = ItemData.Icon(item.ItemId),
+                    CustomMinimumSize = new Vector2(30, 30),
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                };
+                hb.AddChild(icon);
+
+                var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+                info.AddThemeConstantOverride("separation", -2);
+                info.AddChild(UiTheme.Text(item.Name, 12, UiTheme.TextHi));
+                info.AddChild(UiTheme.Text(item.Description, 11, UiTheme.TextLo));
+                info.AddChild(UiTheme.Text($"{item.Price:n0} {(item.PriceType == 1 ? "TL" : "KC")}", 11, UiTheme.GoldBright));
+                hb.AddChild(info);
+
+                var add = new Button { Text = "+", FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(28, 28) };
+                add.Pressed += () => AddToPusBasket(item);
+                hb.AddChild(add);
+
+                _pusItemList.AddChild(row);
+            }
+        }
+
+        if (_pusBasket.Count == 0)
+        {
+            _pusBasketStatus.Text = "Basket empty.";
+            _pusSummary.Text = "Total 0 KC";
+        }
+        else
+        {
+            int total = 0;
+            foreach (var basket in _pusBasket)
+            {
+                total += basket.Item.Price * basket.Count;
+                var row = UiTheme.RowPanel();
+                var hb = new HBoxContainer(); hb.AddThemeConstantOverride("separation", 6); row.AddChild(hb);
+                hb.AddChild(UiTheme.Text(basket.Item.Name, 11, UiTheme.TextHi));
+                var qty = UiTheme.Text($"x{basket.Count}", 11, UiTheme.TextLo);
+                qty.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+                hb.AddChild(qty);
+                var remove = new Button { Text = "-", FocusMode = Control.FocusModeEnum.None };
+                remove.Pressed += () => RemoveFromPusBasket(basket.Item);
+                hb.AddChild(remove);
+                _pusBasketList.AddChild(row);
+            }
+            _pusSummary.Text = $"Total {total:n0} {( _pusBasket[0].Item.PriceType == 1 ? "TL" : "KC")}";
+            _pusBasketStatus.Text = "Ready to buy.";
+        }
+
+        _pusBuyButton.Disabled = _pusBasket.Count == 0;
+        _pusClearButton.Disabled = _pusBasket.Count == 0;
+    }
+
+    private void UpdatePusWallet()
+    {
+        if (_pusWallet == null || !IsInstanceValid(_pusWallet)) return;
+        _pusWallet.Text = $"KC Balance {Sheet.KnightCash:n0}";
+    }
+
+    private void AddToPusBasket(PusCatalogEntry item)
+    {
+        var existing = _pusBasket.FirstOrDefault(x => x.Item.Id == item.Id);
+        if (existing != null) existing.Count++;
+        else _pusBasket.Add(new PusBasketEntry { Item = item, Count = 1 });
+        RefreshPusView();
+    }
+
+    private void RemoveFromPusBasket(PusCatalogEntry item)
+    {
+        var existing = _pusBasket.FirstOrDefault(x => x.Item.Id == item.Id);
+        if (existing == null) return;
+        if (existing.Count > 1) existing.Count--;
+        else _pusBasket.Remove(existing);
+        RefreshPusView();
+    }
+
+    private void ClearPusBasket()
+    {
+        _pusBasket.Clear();
+        RefreshPusView();
+    }
+
+    private void BuyPusBasket()
+    {
+        if (_pusBasket.Count == 0)
+        {
+            _pusBasketStatus.Text = "Basket is empty.";
+            _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
+            return;
+        }
+
+        var item = _pusBasket[0].Item;
+        int total = 0;
+        foreach (var entry in _pusBasket)
+        {
+            total += entry.Item.Price * entry.Count;
+            if (entry.Item.PriceType != item.PriceType)
+            {
+                _pusBasketStatus.Text = "Basket mixes KC and TL items. Split purchases by currency type.";
+                _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
+                return;
+            }
+        }
+
+        if (item.PriceType == 1)
+        {
+            _pusBasketStatus.Text = "TL-based PUS items are not purchased from this client flow yet.";
+            _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
+            return;
+        }
+
+        var sent = new List<(int itemId, int count, int priceType, int totalCost)>();
+        foreach (var entry in _pusBasket)
+        {
+            int lineTotal = entry.Item.Price * entry.Count;
+            sent.Add((entry.Item.ItemId, entry.Count, entry.Item.PriceType, lineTotal));
+            Net.I.SendPowerUpStoreBuy(entry.Item.ItemId, entry.Count, entry.Item.PriceType, lineTotal);
+        }
+
+        _pusBasketStatus.Text = $"Purchase request sent for {total:n0} KC. Server validation pending.";
+        _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
+        Chat.Info($"Power-Up Store purchase request sent: {total:n0} KC.");
+        _pusBasket.Clear();
+        RefreshPusView();
     }
 }

@@ -7,7 +7,10 @@ public partial class Net
 {
     private const byte SmStoreOpen = 1;
     private const byte SmStoreClose = 2;
+    private const byte SmStoreBuy = 8;
     private const byte SmStoreLetter = 6;
+
+    private const byte SmBuyItem = 1;
 
     private const byte SmLetterUnread = 1;
     private const byte SmLetterList = 2;
@@ -34,7 +37,10 @@ public partial class Net
 
     public event Action<List<int>, bool>? ShoppingMallDeleteEvent;
 
+    public event Action<bool, int>? ShoppingMallBuyResultEvent;
+
     private int _smPendingGiftLetterId;
+    private readonly Queue<int> _smPendingBuyCosts = new();
 
     private void HandleShoppingMall(Packet p)
     {
@@ -49,10 +55,25 @@ public partial class Net
                 ShoppingMallOpenEvent?.Invoke(error, freeSlot);
                 break;
             }
+            case SmStoreBuy:
+                HandleShoppingMallBuy(p);
+                break;
             case SmStoreLetter:
                 HandleShoppingMallLetter(p);
                 break;
         }
+    }
+
+    private void HandleShoppingMallBuy(Packet p)
+    {
+        if (p.RemainingBytes < 1) return;
+
+        byte sub = (byte)p.ReadByte();
+        if (sub != SmBuyItem || p.RemainingBytes < 1) return;
+
+        int result = p.ReadByte();
+        int pendingCost = _smPendingBuyCosts.Count > 0 ? _smPendingBuyCosts.Dequeue() : 0;
+        ShoppingMallBuyResultEvent?.Invoke(result == 1, pendingCost);
     }
 
     private void HandleShoppingMallLetter(Packet p)
@@ -199,6 +220,19 @@ public partial class Net
         p.WriteByte(srcPos);
         p.WriteInt(0);
         p.WriteString(message);
+        _conn.Send(p);
+    }
+
+    public void SendPowerUpStoreBuy(int itemId, int count, int priceType, int totalCost)
+    {
+        var p = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        p.WriteByte(SmStoreBuy);
+        p.WriteByte(SmBuyItem);
+        p.WriteByte(SmBuyItem);
+        p.WriteInt(itemId);
+        p.WriteByte((byte)Math.Clamp(count, 1, 255));
+        p.WriteByte((byte)Math.Clamp(priceType, 0, 1));
+        _smPendingBuyCosts.Enqueue(Math.Max(0, totalCost));
         _conn.Send(p);
     }
 

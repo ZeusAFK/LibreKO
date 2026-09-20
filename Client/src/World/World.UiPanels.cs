@@ -29,6 +29,7 @@ public partial class World
     private MiniMap _miniMap = null!;
     private readonly List<MiniMap.Blip> _blipScratch = new();
     private const float QuestTargetBlipRadius = 4.5f;
+    private Label _kcLabel = null!;
 
     private static readonly Vector2 StatusHudPos = new(HudAnchor.Edge, 10f);
     private static readonly Vector2 StatusHudSize = new(362f, 104f);
@@ -78,6 +79,13 @@ public partial class World
             Position = touch ? TouchMpBarPos : MpBarPos,
         };
         status.AddChild(_mpBar);
+
+        _kcLabel = HudStyle.Label(11, HorizontalAlignment.Right);
+        _kcLabel.Position = new Vector2(228f, 11f);
+        _kcLabel.AddThemeColorOverride("font_color", new Color(0.87f, 0.76f, 0.33f, 1f));
+        _kcLabel.AddThemeColorOverride("font_outline_color", Colors.Black);
+        _kcLabel.AddThemeConstantOverride("outline_size", 2);
+        status.AddChild(_kcLabel);
 
         _orb = new LevelOrb(92f) { Position = new Vector2(8f, 7f), Visible = !touch };
         status.AddChild(_orb);
@@ -148,7 +156,11 @@ public partial class World
         _miniMap.UpdateView(_myKoX, _myKoZ, heading, _blipScratch);
     }
 
-    private static void UpdateStatusHud() { }
+    private void UpdateStatusHud()
+    {
+        if (_kcLabel == null || !IsInstanceValid(_kcLabel)) return;
+        _kcLabel.Text = $"KC {Sheet.KnightCash:n0}";
+    }
 
     private static string MapName(int zone) => ZoneCatalog.Name(zone);
 

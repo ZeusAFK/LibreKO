@@ -2204,6 +2204,80 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("PremiumItemExps", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PusCategoryData", b =>
+                {
+                    b.Property<byte>("Id")
+                        .HasColumnName("ID")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("CategoryId")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<string>("CategoryName")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnName("Categoryname")
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PUS_CATEGORY", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PusItemData", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnName("ID")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Category")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int>("BuyCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnName("ItemID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ItemDesc")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnName("strItemDesc")
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<string>("ItemName")
+                        .HasMaxLength(150)
+                        .HasColumnName("strItemName")
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("ItemTitle")
+                        .HasMaxLength(1000)
+                        .HasColumnName("strItemTitle")
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<int?>("Price")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("PriceType")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int?>("SendType")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PUS_ITEMS", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ServerResourceData", b =>
                 {
                     b.Property<int>("ResourceId")

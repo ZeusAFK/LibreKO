@@ -366,6 +366,7 @@ public partial class World : Node3D, IWorldContext
         Floaters?.Tick(nowSec);
         CursorTick(delta);
         UpdateStatusHud();
+        UpdatePusWallet();
         _mapHudAccum += delta;
         if (_mapHudAccum >= MapHudInterval) { _mapHudAccum = 0; UpdateMiniMap(); UpdateFullMap(); }
         UpdateInventoryTooltip();
