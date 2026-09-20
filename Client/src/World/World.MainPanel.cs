@@ -78,7 +78,7 @@ public partial class World
             BuildCharacterPages(), CharacterPageWidth, UiIcons.Get("game/helmet"));
         AddMainWindow(
             "Inventory", "inventory", "INVENTORY", new Vector2(334, 66),
-            _invContent, 0, UiIcons.Get("system/bag"));
+            _invContent, 0, UiIcons.Get("system/bag")).SetBackgroundAlpha(InventoryWindowAlpha);
         AddMainWindow(
             "Skills", "skills", "Skills", new Vector2(120, 84),
             _skillsContent, 330, UiIcons.Get("game/main-hand"));
@@ -103,7 +103,9 @@ public partial class World
         SyncMainWindowState();
     }
 
-    private void AddMainWindow(
+    private const float InventoryWindowAlpha = 0.86f;
+
+    private HudWindow AddMainWindow(
         string key,
         string layoutId,
         string title,
@@ -127,6 +129,7 @@ public partial class World
         _mainLayer.AddChild(window);
         Callable.From(window.ResetSize).CallDeferred();
         _mainWindows[key] = window;
+        return window;
     }
 
     public bool MainWindowOpen(string key) =>

@@ -34,6 +34,11 @@ public partial class World : Node3D
         var region = ItemMove.RegionOf(absSlot);
         if (region != ItemMove.Region.Grid)
         {
+            if (region == ItemMove.Region.BagSlot && MagicBagHasItems(absSlot))
+            {
+                CombatNotice(BagStillHoldsItems);
+                return;
+            }
             int free = Inv.FirstFreeGridSlot();
             if (free < 0) return;
             byte back = ItemMove.DirectionFor(region, ItemMove.Region.Grid);
@@ -75,6 +80,7 @@ public partial class World : Node3D
     }
 
     private const int ItemSlotCodeBag = 25;
+    private const string BagStillHoldsItems = "Empty the bag before taking it off.";
     private const int CospreCodeBase = 100;
 
     private static bool IsVisualSlot(int abs)
@@ -128,6 +134,11 @@ public partial class World : Node3D
         var toRegion = ItemMove.RegionOf(to);
         byte dir = ItemMove.DirectionFor(fromRegion, toRegion);
         if (dir == ItemMove.None) return;
+        if (fromRegion == ItemMove.Region.BagSlot && MagicBagHasItems(from))
+        {
+            CombatNotice(BagStillHoldsItems);
+            return;
+        }
 
         if (toRegion == ItemMove.Region.Equip)
         {
@@ -149,16 +160,6 @@ public partial class World : Node3D
                 (byte)ItemMove.PositionIn(fromRegion, from),
                 (byte)ItemMove.PositionIn(toRegion, to),
                 from, to);
-    }
-
-    private int CompareArrangeSlots(int a, int b)
-    {
-        var left = ItemData.Get(Inv[a].ItemId);
-        var right = ItemData.Get(Inv[b].ItemId);
-        int byKind = (left?.Kind ?? int.MaxValue).CompareTo(right?.Kind ?? int.MaxValue);
-        if (byKind != 0) return byKind;
-        int byItem = Inv[a].ItemId.CompareTo(Inv[b].ItemId);
-        return byItem != 0 ? byItem : a.CompareTo(b);
     }
 
     private void Enqueue(byte dir, int itemId, byte src, byte dst, int from, int to)

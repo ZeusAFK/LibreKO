@@ -14,11 +14,14 @@ public partial class World : Node3D
     private readonly Dictionary<int, (Mesh? Mesh, Skin? Skin)> _selfDefaultParts = new();
 
     private const int InvCols = 7;
-    private const float InvCellSize = 50f;
-    private const float InvCellGap = 5f;
-    private const string InvTabGeneral = "General";
-    private const string InvTabQuest = "Quest";
-    private const string InvTabBag = "Bag";
+    private const int InvMinVisibleRows = 4;
+    private const float InvWindowFixedHeight = 540f;
+    private const int ArrangeIconSize = 16;
+    private const float InvCellSize = 40f;
+    private const float InvCellGap = 4f;
+    private const float InvScrollbarWidth = 12f;
+    private const float BagCellSize = 36f;
+    private static readonly Color[] BagFrameColors = { UiTheme.Bad, UiTheme.Warning, UiTheme.Good };
 
     private CanvasLayer _invLayer = null!;
     private Control _invContent = null!;
@@ -27,19 +30,14 @@ public partial class World : Node3D
     private ItemCell? _hoverCell;
     private readonly Dictionary<int, ItemCell> _invCells = new();
     private readonly List<ItemCell> _invBagCells = new();
-    private readonly List<ItemCell> _invQuestCells = new();
     private readonly List<ItemCell> _invMagicBagCells = new();
-    private readonly List<Button> _invBagButtons = new();
-    private Label? _invBagEmptyHint;
-    private int _invSelectedBag;
+    private readonly bool[] _bagCollapsed = new bool[InventoryConstants.BagSlotMax];
+    private VBoxContainer _invLower = null!;
+    private ScrollContainer _invScroll = null!;
+    private int _invRowsShown;
     private Label? _invGoldLbl, _invWeightLbl, _invSlotLbl;
-    private Control _invBag = null!;
-    private LineEdit _invSearch = null!;
     private ProgressBar _invWeightBar = null!, _invSlotBar = null!;
     private TrashSlot _invTrash = null!;
-    private readonly Dictionary<string, Control> _invTabPages = new();
-    private readonly Dictionary<string, Button> _invTabBtns = new();
-    private string _invTab = InvTabGeneral;
 
     private PanelContainer _invDelPanel = null!;
     private TextureRect _invDelIcon = null!;
@@ -47,42 +45,39 @@ public partial class World : Node3D
     private int _invDelSlot = -1;
     private int _invDelItemId;
 
-    private const int NoSlot = -1;
-
-    private static readonly (int Slot, string Label)[] DollLeftColumn =
+    private static readonly (int Slot, string Label, float Angle)[] DollOuterRing =
     {
-        (InventoryConstants.CosEmblem, "Emblem"),
-        (InventoryConstants.CosWing, "Wings"),
-        (InventoryConstants.CosGloveRight, "Glv R"),
-        (InventoryConstants.CosGloveLeft, "Glv L"),
-        (InventoryConstants.Pet, "Pet"),
+        (InventoryConstants.Head, "Helmet", 90f),
+        (InventoryConstants.Leg, "Pants", 56f),
+        (InventoryConstants.RightRing, "Ring", 29f),
+        (InventoryConstants.LeftRing, "Ring", 5f),
+        (InventoryConstants.Waist, "Belt", -17f),
+        (InventoryConstants.Foot, "Boots", -41f),
+        (InventoryConstants.LeftHand, "L hand", -75f),
+        (InventoryConstants.RightHand, "R hand", -105f),
+        (InventoryConstants.Glove, "Gloves", -139f),
+        (InventoryConstants.Neck, "Neck", -163f),
+        (InventoryConstants.LeftEar, "Ear", 175f),
+        (InventoryConstants.RightEar, "Ear", 151f),
+        (InventoryConstants.Breast, "Pauldron", 124f),
+    };
+
+    private static readonly (int Slot, string Label, float Angle)[] DollInnerRing =
+    {
+        (InventoryConstants.CosEmblem, "Emblem", 22.5f),
+        (InventoryConstants.CosPauldron, "Top", 67.5f),
+        (InventoryConstants.CosHelmet, "Mask", 112.5f),
+        (InventoryConstants.CosWing, "Wings", 157.5f),
+        (InventoryConstants.CosTattoo, "Tattoo", -157.5f),
+        (InventoryConstants.CosGloveLeft, "Pathos", -112.5f),
+        (InventoryConstants.CosGloveRight, "Pathos", -67.5f),
+        (InventoryConstants.CosTalisman, "Talis", -22.5f),
+    };
+
+    private static readonly (int Slot, string Label)[] DollCenter =
+    {
         (InventoryConstants.CosFairy, "Fairy"),
-    };
-
-    private static readonly (int Slot, string Label)[] DollArmourGrid =
-    {
-        (NoSlot, ""), (InventoryConstants.Head, "Head"), (NoSlot, ""),
-        (InventoryConstants.Glove, "Glove"), (InventoryConstants.Breast, "Chest"), (InventoryConstants.Foot, "Boot"),
-        (NoSlot, ""), (InventoryConstants.Leg, "Leg"), (NoSlot, ""),
-        (InventoryConstants.RightHand, "Main"), (NoSlot, ""), (InventoryConstants.LeftHand, "Off"),
-    };
-
-    private static readonly (int Slot, string Label)[] DollRightColumn =
-    {
-        (InventoryConstants.RightEar, "Ear"),
-        (InventoryConstants.LeftEar, "Ear"),
-        (InventoryConstants.Neck, "Neck"),
-        (InventoryConstants.Waist, "Belt"),
-        (InventoryConstants.RightRing, "Ring"),
-        (InventoryConstants.LeftRing, "Ring"),
-    };
-
-    private static readonly (int Slot, string Label)[] DollBottomRow =
-    {
-        (InventoryConstants.CosPauldron, "Top"),
-        (InventoryConstants.CosHelmet, "Mask"),
-        (InventoryConstants.CosTattoo, "Tattoo"),
-        (InventoryConstants.CosTalisman, "Talis"),
+        (InventoryConstants.Pet, "Pet"),
     };
 
     private static int TooltipFontHeight => Config.TooltipHeight;
@@ -153,6 +148,7 @@ public partial class World : Node3D
         Inv.Reset(info.Inventory);
         BuildInventoryPanel();
         RefreshInventoryUI();
+        GetViewport().SizeChanged += RefreshInventoryUI;
         Net.I.ItemMoveResultEvent += OnItemMoveResult;
         Net.I.ItemRemoveResultEvent += OnItemRemoveResult;
         Net.I.InventorySlotEvent += OnInventorySlotUpdate;
@@ -171,70 +167,129 @@ public partial class World : Node3D
         }
         _invCells.Clear();
         _invBagCells.Clear();
-        _invQuestCells.Clear();
         _invMagicBagCells.Clear();
-        _invTabPages.Clear();
-        _invTabBtns.Clear();
 
         _invLayer = new CanvasLayer { Layer = 76 };
         AddChild(_invLayer);
 
-        var body = new HBoxContainer();
-        body.AddThemeConstantOverride("separation", 12);
+        var body = new VBoxContainer();
+        body.AddThemeConstantOverride("separation", 8);
         _invContent = body;
 
-        var gearPanel = UiTheme.Section();
-        body.AddChild(gearPanel);
-        var gearBox = new VBoxContainer();
-        gearBox.AddThemeConstantOverride("separation", 6);
-        gearPanel.AddChild(gearBox);
-        gearBox.AddChild(UiTheme.SectionTitle("Equipment", UiIcons.Get("game/chest")));
-        gearBox.AddChild(BuildEquipDoll());
-        gearBox.AddChild(BuildCospreRow());
-        gearBox.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill });
-
-        var bagPanel = UiTheme.Section();
-        body.AddChild(bagPanel);
-        _invBag = bagPanel;
-        var bag = new VBoxContainer();
-        bag.AddThemeConstantOverride("separation", 6);
-        bagPanel.AddChild(bag);
-
-        bag.AddChild(BuildInventoryTabBar());
-        bag.AddChild(BuildInventoryToolRow());
-
-        var pages = new MarginContainer();
-        bag.AddChild(pages);
-        pages.AddChild(BuildInventoryGridPage(InvTabGeneral, _invBagCells, GridCount));
-        pages.AddChild(BuildInventoryGridPage(InvTabQuest, _invQuestCells, GridCount));
-        pages.AddChild(BuildMagicBagPage());
-        SelectInventoryTab(InvTabGeneral);
-
-        bag.AddChild(new HSeparator());
-        var footer = new HBoxContainer();
-        footer.AddThemeConstantOverride("separation", 5);
-        footer.AddChild(UiIcons.Image(
-            "system/coins",
-            new Vector2(15, 15),
-            new Color(UiTheme.Gold, 0.9f),
-            "Noah"));
-        _invGoldLbl = UiTheme.Text("", 13, UiTheme.Gold);
-        _invGoldLbl.AddThemeColorOverride("font_color", UiTheme.Gold);
-        footer.AddChild(_invGoldLbl);
-        footer.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
-        bag.AddChild(footer);
-
-        bag.AddChild(BuildMeterRow("system/bag", "Inventory Slot", out _invSlotLbl, out _invSlotBar));
-        bag.AddChild(BuildMeterRow("system/weight", "Weight", out _invWeightLbl, out _invWeightBar));
-
-        var bottom = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
-        bag.AddChild(bottom);
-        _invTrash = new TrashSlot { OnDropItem = AskDeleteItem };
-        bottom.AddChild(_invTrash);
+        body.AddChild(BuildEquipDoll());
+        _invLower = new VBoxContainer
+        {
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+            CustomMinimumSize = new Vector2(InvGridWidth + InvScrollbarWidth, 0),
+        };
+        _invLower.AddThemeConstantOverride("separation", 8);
+        body.AddChild(_invLower);
+        _invLower.AddChild(BuildBagRow());
+        _invLower.AddChild(BuildInventoryGrid());
+        _invLower.AddChild(BuildInventoryFooter());
 
         BuildItemTooltip();
         BuildDeletePrompt();
         RefreshInventoryFooter();
+    }
+
+    private Control BuildBagRow()
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 8);
+        for (int i = 0; i < InventoryConstants.BagSlotMax; i++)
+        {
+            int abs = InventoryConstants.BagSlotFor(i);
+            var cell = new ItemCell(abs, BagCellSize)
+            {
+                OnContext = InventoryContext,
+                OnClick = ToggleBag,
+                OnHoverChanged = InventoryHover,
+                OnDropItem = MoveBetween,
+                EmptyHint = "Bag",
+            };
+            _invCells[abs] = cell;
+            row.AddChild(cell);
+        }
+
+        var pack = UiTheme.IconButton(UiIcons.Get("system/arrange"), "Arrange: sort the bag and close up the gaps");
+        pack.CustomMinimumSize = new Vector2(BagCellSize, BagCellSize);
+        pack.AddThemeConstantOverride("icon_max_width", ArrangeIconSize);
+        pack.Pressed += () => Net.I.SendInventoryArrange();
+        row.AddChild(pack);
+
+        row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
+        row.AddChild(UiIcons.Image("system/coins", new Vector2(15, 15), new Color(UiTheme.Gold, 0.9f), "Noah"));
+        _invGoldLbl = UiTheme.Text("", 13, UiTheme.Gold, HorizontalAlignment.Right);
+        _invGoldLbl.AddThemeColorOverride("font_color", UiTheme.Gold);
+        row.AddChild(_invGoldLbl);
+        return row;
+    }
+
+    private static float InvGridWidth => InvCols * (InvCellSize + InvCellGap) - InvCellGap;
+
+    private int InvVisibleRows()
+    {
+        float pitch = InvCellSize + InvCellGap;
+        float height = IsInsideTree() ? GetViewport().GetVisibleRect().Size.Y : DisplayServer.WindowGetSize().Y;
+        int totalRows = Mathf.CeilToInt((GridCount + InventoryConstants.MagicBagTotal) / (float)InvCols);
+        return Mathf.Clamp(Mathf.FloorToInt((height - InvWindowFixedHeight) / pitch), InvMinVisibleRows, totalRows);
+    }
+
+    private Control BuildInventoryGrid()
+    {
+        float pitch = InvCellSize + InvCellGap;
+        _invRowsShown = InvVisibleRows();
+        _invScroll = new ScrollContainer
+        {
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            CustomMinimumSize = new Vector2(InvGridWidth + InvScrollbarWidth, _invRowsShown * pitch - InvCellGap),
+        };
+        var scroll = _invScroll;
+        var grid = new GridContainer { Columns = InvCols };
+        grid.AddThemeConstantOverride("h_separation", (int)InvCellGap);
+        grid.AddThemeConstantOverride("v_separation", (int)InvCellGap);
+        scroll.AddChild(grid);
+
+        for (int i = 0; i < GridCount; i++)
+        {
+            var cell = new ItemCell(GridStart + i, InvCellSize)
+            {
+                OnContext = InventoryContext,
+                OnHoverChanged = InventoryHover,
+                OnDropItem = MoveBetween,
+            };
+            _invBagCells.Add(cell);
+            grid.AddChild(cell);
+        }
+        for (int i = 0; i < InventoryConstants.MagicBagTotal; i++)
+        {
+            var cell = new ItemCell(InventoryConstants.MagicBagStart + i, InvCellSize)
+            {
+                OnContext = InventoryContext,
+                OnHoverChanged = InventoryHover,
+                OnDropItem = MoveBetween,
+                Frame = BagFrameColors[InventoryConstants.BagIndexForMagicBagPosition(i)],
+                Visible = false,
+            };
+            _invMagicBagCells.Add(cell);
+            grid.AddChild(cell);
+        }
+        return scroll;
+    }
+
+    private Control BuildInventoryFooter()
+    {
+        var footer = new HBoxContainer();
+        footer.AddThemeConstantOverride("separation", 10);
+        var meters = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        meters.AddThemeConstantOverride("separation", 4);
+        meters.AddChild(BuildMeterRow("system/weight", "Weight", out _invWeightLbl, out _invWeightBar));
+        meters.AddChild(BuildMeterRow("system/bag", "Inventory Slot", out _invSlotLbl, out _invSlotBar));
+        footer.AddChild(meters);
+        _invTrash = new TrashSlot { OnDropItem = AskDeleteItem };
+        footer.AddChild(_invTrash);
+        return footer;
     }
 
     private static Control BuildMeterRow(string icon, string caption, out Label value, out ProgressBar bar)
@@ -269,233 +324,44 @@ public partial class World : Node3D
     private static Color MeterTint(float load) =>
         load >= 0.95f ? UiTheme.Bad : load >= 0.8f ? UiTheme.Warning : UiTheme.Gold;
 
-    private Control BuildInventoryTabBar()
-    {
-        var bar = new HBoxContainer();
-        bar.AddThemeConstantOverride("separation", 1);
-        var group = new ButtonGroup();
-        foreach (string tab in new[] { InvTabGeneral, InvTabQuest, InvTabBag })
-        {
-            string name = tab;
-            var button = UiTheme.TopTabButton(name, 13);
-            button.ButtonGroup = group;
-            button.Pressed += () => SelectInventoryTab(name);
-            _invTabBtns[name] = button;
-            bar.AddChild(button);
-        }
-        return bar;
-    }
-
-    private Control BuildInventoryToolRow()
-    {
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 8);
-
-        var pack = UiTheme.SmallButton("Arrange", "Sort the bag and close up the gaps.");
-        pack.Pressed += () => Net.I.SendInventoryArrange();
-        row.AddChild(pack);
-
-        row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
-
-        var field = new PanelContainer { CustomMinimumSize = new Vector2(152, 26) };
-        field.AddThemeStyleboxOverride("panel", InvSearchStyle(false));
-        var fieldRow = new HBoxContainer();
-        fieldRow.AddThemeConstantOverride("separation", 4);
-        field.AddChild(fieldRow);
-
-        _invSearch = new LineEdit
-        {
-            PlaceholderText = "Search",
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
-        };
-        _invSearch.AddThemeFontSizeOverride("font_size", 12);
-        _invSearch.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
-        _invSearch.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
-        _invSearch.TextChanged += _ => RefreshInventoryUI();
-        fieldRow.AddChild(_invSearch);
-
-        fieldRow.AddChild(UiIcons.Image(
-            "system/search", new Vector2(13, 13), new Color(UiTheme.TextLo, 0.75f)));
-        row.AddChild(field);
-        return row;
-    }
-
-    private static StyleBoxFlat InvSearchStyle(bool focused)
-    {
-        var sb = new StyleBoxFlat
-        {
-            BgColor = new Color(0.043f, 0.045f, 0.055f, 0.96f),
-            BorderColor = focused ? new Color(UiTheme.Gold, 0.75f) : new Color(UiTheme.EdgeSoft, 0.55f),
-        };
-        sb.SetBorderWidthAll(1);
-        sb.SetCornerRadiusAll(3);
-        sb.ContentMarginLeft = 8;
-        sb.ContentMarginRight = 6;
-        sb.ContentMarginTop = sb.ContentMarginBottom = 3;
-        return sb;
-    }
-
-    private static Vector2 InvPageSize(int cellCount)
-    {
-        int rows = Mathf.CeilToInt(cellCount / (float)InvCols);
-        return new Vector2(InvCols * (InvCellSize + InvCellGap), rows * (InvCellSize + InvCellGap));
-    }
-
-    private GridContainer NewInventoryGrid(string tab, int cellCount)
-    {
-        var grid = new GridContainer
-        {
-            Columns = InvCols,
-            Visible = false,
-            CustomMinimumSize = InvPageSize(cellCount),
-        };
-        grid.AddThemeConstantOverride("h_separation", (int)InvCellGap);
-        grid.AddThemeConstantOverride("v_separation", (int)InvCellGap);
-        _invTabPages[tab] = grid;
-        return grid;
-    }
-
-    private Control BuildInventoryGridPage(string tab, List<ItemCell> cells, int cellCount)
-    {
-        var grid = NewInventoryGrid(tab, cellCount);
-        for (int i = 0; i < cellCount; i++)
-        {
-            var cell = new ItemCell(GridStart + i, InvCellSize)
-            {
-                OnContext = InventoryContext,
-                OnHoverChanged = InventoryHover,
-                OnDropItem = MoveBetween,
-            };
-            cells.Add(cell);
-            grid.AddChild(cell);
-        }
-        return grid;
-    }
-
-    private Control BuildMagicBagPage()
-    {
-        var page = new VBoxContainer { Visible = false, CustomMinimumSize = InvPageSize(GridCount) };
-        page.AddThemeConstantOverride("separation", 8);
-        _invTabPages[InvTabBag] = page;
-
-        var worn = new HBoxContainer();
-        worn.AddThemeConstantOverride("separation", 6);
-        page.AddChild(worn);
-        worn.AddChild(UiTheme.Text("Worn bags", 12, UiTheme.TextLo));
-        for (int i = 0; i < InventoryConstants.BagSlotMax; i++)
-        {
-            int abs = InventoryConstants.BagSlotFor(i);
-            var cell = new ItemCell(abs, 44f)
-            {
-                OnContext = InventoryContext,
-                OnHoverChanged = InventoryHover,
-                OnDropItem = MoveBetween,
-                EmptyHint = "Bag",
-            };
-            _invCells[abs] = cell;
-            worn.AddChild(cell);
-        }
-
-        page.AddChild(new HSeparator());
-
-        var grid = new GridContainer { Columns = InvCols };
-        grid.AddThemeConstantOverride("h_separation", (int)InvCellGap);
-        grid.AddThemeConstantOverride("v_separation", (int)InvCellGap);
-        page.AddChild(grid);
-        for (int i = 0; i < InventoryConstants.MagicBagTotal; i++)
-        {
-            var cell = new ItemCell(-1, InvCellSize)
-            {
-                OnContext = InventoryContext,
-                OnHoverChanged = InventoryHover,
-                OnDropItem = MoveBetween,
-            };
-            _invMagicBagCells.Add(cell);
-            grid.AddChild(cell);
-        }
-        return page;
-    }
-
-    private List<int> InventoryDisplayOrder(bool questOnly)
-    {
-        var order = new List<int>(GridCount);
-        AppendRegionOrder(order, GridStart, GridCount, questOnly);
-        return order;
-    }
-
-    private List<int> MagicBagDisplayOrder()
-    {
-        var order = new List<int>(InventoryConstants.MagicBagTotal);
-        for (int bag = 0; bag < InventoryConstants.BagSlotMax; bag++)
-            AppendRegionOrder(order, InventoryConstants.MagicBagPageStart(bag),
-                              InventoryConstants.MagicBagMax, false);
-        return order;
-    }
-
-    private void AppendRegionOrder(List<int> into, int start, int count, bool questOnly)
-    {
-        if (!questOnly)
-        {
-            for (int i = 0; i < count; i++) into.Add(start + i);
-            return;
-        }
-
-        var filled = new List<int>(count);
-        for (int i = 0; i < count; i++)
-        {
-            int abs = start + i;
-            if (abs >= Inv.Length || Inv[abs].IsEmpty) continue;
-            if (!QuestData.IsQuestItem(Inv[abs].ItemId)) continue;
-            filled.Add(abs);
-        }
-        filled.Sort(CompareArrangeSlots);
-        into.AddRange(filled);
-    }
-
-    private void SelectInventoryTab(string tab)
-    {
-        _invTab = tab;
-        foreach (var (key, page) in _invTabPages) page.Visible = key == tab;
-        if (_invTabBtns.TryGetValue(tab, out var button)) button.ButtonPressed = true;
-        HideDeletePrompt();
-        RefreshInventoryUI();
-    }
-
-    private const float DollCell = 52f;
+    private const float DollCell = 42f;
+    private const float DollOuterRadius = 146f;
+    private const float DollInnerRadius = 77f;
+    private const float DollCenterOffset = 25f;
+    private const float DollRingWidth = 1f;
+    private const int DollRingSegments = 128;
+    private static readonly Color DollRingColor = new(UiTheme.Gold, 0.4f);
 
     private Control BuildEquipDoll()
     {
-        var board = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        board.AddThemeConstantOverride("separation", 36);
+        float span = 2f * (DollOuterRadius + DollCell / 2f) + 4f;
+        var board = new DollBoard { CustomMinimumSize = new Vector2(span, span), SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
+        var center = new Vector2(span / 2f, span / 2f);
 
-        board.AddChild(DollColumn(DollLeftColumn));
-
-        var armour = new GridContainer { Columns = 3, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
-        armour.AddThemeConstantOverride("h_separation", 26);
-        armour.AddThemeConstantOverride("v_separation", 16);
-        foreach (var (slot, label) in DollArmourGrid)
+        foreach (var (slot, label, angle) in DollOuterRing)
+            board.AddChild(DollCellAt(slot, label, center + DollOffset(DollOuterRadius, angle)));
+        foreach (var (slot, label, angle) in DollInnerRing)
+            board.AddChild(DollCellAt(slot, label, center + DollOffset(DollInnerRadius, angle)));
+        for (int i = 0; i < DollCenter.Length; i++)
         {
-            if (slot == NoSlot)
-            {
-                armour.AddChild(new Control { CustomMinimumSize = new Vector2(DollCell, DollCell) });
-                continue;
-            }
-            armour.AddChild(DollCellFor(slot, label));
+            var (slot, label) = DollCenter[i];
+            float x = (i - (DollCenter.Length - 1) / 2f) * 2f * DollCenterOffset;
+            board.AddChild(DollCellAt(slot, label, center + new Vector2(x, 0f)));
         }
-        board.AddChild(armour);
-
-        board.AddChild(DollColumn(DollRightColumn));
         return board;
     }
 
-    private Control DollColumn((int Slot, string Label)[] slots)
+    private static Vector2 DollOffset(float radius, float degrees)
     {
-        var column = new VBoxContainer { SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
-        column.AddThemeConstantOverride("separation", 8);
-        foreach (var (slot, label) in slots)
-            column.AddChild(DollCellFor(slot, label));
-        return column;
+        float radians = Mathf.DegToRad(degrees);
+        return new Vector2(radius * Mathf.Cos(radians), -radius * Mathf.Sin(radians));
+    }
+
+    private ItemCell DollCellAt(int slot, string label, Vector2 at)
+    {
+        var cell = DollCellFor(slot, label);
+        cell.Position = at - new Vector2(DollCell / 2f, DollCell / 2f);
+        return cell;
     }
 
     private ItemCell DollCellFor(int slot, string label)
@@ -511,13 +377,14 @@ public partial class World : Node3D
         return cell;
     }
 
-    private Control BuildCospreRow()
+    private sealed partial class DollBoard : Control
     {
-        var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        row.AddThemeConstantOverride("separation", 8);
-        foreach (var (slot, label) in DollBottomRow)
-            row.AddChild(DollCellFor(slot, label));
-        return row;
+        public override void _Draw()
+        {
+            var center = Size / 2f;
+            DrawArc(center, DollOuterRadius, 0f, Mathf.Tau, DollRingSegments, DollRingColor, DollRingWidth, true);
+            DrawArc(center, DollInnerRadius, 0f, Mathf.Tau, DollRingSegments, DollRingColor, DollRingWidth, true);
+        }
     }
 
     private void RefreshInventoryFooter()
@@ -594,15 +461,30 @@ public partial class World : Node3D
 
     private void RefreshInventoryUI()
     {
-        string needle = GodotObject.IsInstanceValid(_invSearch) ? _invSearch.Text.Trim() : "";
         foreach (var (slot, cell) in _invCells)
+            cell.Bind(slot, SlotAt(slot));
+        GhostOtherHand(InventoryConstants.RightHand, InventoryConstants.LeftHand);
+        GhostOtherHand(InventoryConstants.LeftHand, InventoryConstants.RightHand);
+        for (int i = 0; i < _invBagCells.Count; i++)
+            _invBagCells[i].Bind(GridStart + i, SlotAt(GridStart + i));
+        for (int i = 0; i < InventoryConstants.BagSlotMax; i++)
+            _invCells[InventoryConstants.BagSlotFor(i)].Frame = BagShown(i) ? BagFrameColors[i] : null;
+        int shownCells = GridCount;
+        for (int i = 0; i < _invMagicBagCells.Count; i++)
         {
-            cell.Bind(slot, slot < Inv.Length ? Inv[slot] : default);
-            cell.SetMatch(needle.Length == 0 || MatchesInventorySearch(cell.Current, needle));
+            int slot = InventoryConstants.MagicBagStart + i;
+            bool open = BagShown(InventoryConstants.BagIndexForMagicBagPosition(i));
+            _invMagicBagCells[i].Visible = open;
+            _invMagicBagCells[i].Bind(open ? slot : -1, open ? SlotAt(slot) : default);
+            if (open) shownCells++;
         }
-        BindBagCells(_invBagCells, InventoryDisplayOrder(questOnly: false), needle);
-        BindBagCells(_invQuestCells, InventoryDisplayOrder(questOnly: true), needle);
-        BindBagCells(_invMagicBagCells, MagicBagDisplayOrder(), needle);
+        int contentRows = Mathf.CeilToInt(shownCells / (float)InvCols);
+        _invRowsShown = InvVisibleRows();
+        bool scrollbar = contentRows > _invRowsShown;
+        float lowerWidth = InvGridWidth + (scrollbar ? InvScrollbarWidth : 0f);
+        float gridHeight = Mathf.Min(contentRows, _invRowsShown) * (InvCellSize + InvCellGap) - InvCellGap;
+        _invScroll.CustomMinimumSize = new Vector2(lowerWidth, gridHeight);
+        _invLower.CustomMinimumSize = new Vector2(lowerWidth, 0f);
         RefreshInventoryFooter();
         RefreshTracker();
 
@@ -617,35 +499,35 @@ public partial class World : Node3D
             else
                 ShowItemTooltip(_hoverCell.Slot, _hoverCell.Current);
         }
-
     }
 
     private ItemSlot SlotAt(int abs) => abs >= 0 && abs < Inv.Length ? Inv[abs] : default;
 
-    private bool IsMagicBagSlotUnlocked(int abs)
+    private void GhostOtherHand(int held, int other)
     {
-        if (!InventoryConstants.IsMagicBagSlot(abs)) return true;
-        int bag = InventoryConstants.BagIndexForMagicBagPosition(abs - InventoryConstants.MagicBagStart);
-        return !SlotAt(InventoryConstants.BagSlotFor(bag)).IsEmpty;
+        var weapon = SlotAt(held);
+        if (weapon.IsEmpty || !IsTwoHanded(weapon.ItemId) || !SlotAt(other).IsEmpty) return;
+        if (_invCells.TryGetValue(other, out var cell)) cell.ShowGhost(weapon.ItemId);
     }
 
-    private void BindBagCells(List<ItemCell> cells, List<int> order, string needle)
+    private bool BagShown(int bagIndex) =>
+        !_bagCollapsed[bagIndex] && !SlotAt(InventoryConstants.BagSlotFor(bagIndex)).IsEmpty;
+
+    private void ToggleBag(int bagSlotAbs)
     {
-        for (int i = 0; i < cells.Count; i++)
-        {
-            int slot = i < order.Count ? order[i] : -1;
-            var item = SlotAt(slot);
-            bool locked = slot >= 0 && !IsMagicBagSlotUnlocked(slot);
-            cells[i].Locked = locked;
-            cells[i].Bind(locked ? -1 : slot, locked ? default : item);
-            cells[i].SetMatch(needle.Length == 0 || MatchesInventorySearch(cells[i].Current, needle));
-        }
+        if (SlotAt(bagSlotAbs).IsEmpty) return;
+        int bag = bagSlotAbs - InventoryConstants.BagSlotStart;
+        _bagCollapsed[bag] = !_bagCollapsed[bag];
+        RefreshInventoryUI();
     }
 
-    private static bool MatchesInventorySearch(ItemSlot item, string needle) =>
-        !item.IsEmpty
-        && ItemData.DisplayName(item.ItemId)
-            .Contains(needle, System.StringComparison.OrdinalIgnoreCase);
+    private bool MagicBagHasItems(int bagSlotAbs)
+    {
+        int start = InventoryConstants.MagicBagPageStart(bagSlotAbs - InventoryConstants.BagSlotStart);
+        for (int i = 0; i < InventoryConstants.MagicBagMax; i++)
+            if (!SlotAt(start + i).IsEmpty) return true;
+        return false;
+    }
 
     private void BuildDeletePrompt()
     {
@@ -738,7 +620,7 @@ public partial class World : Node3D
         if (GetViewport() is not { } vp) return;
         var size = _invDelPanel.Size;
         if (size.X <= 1 || size.Y <= 1) size = _invDelPanel.GetCombinedMinimumSize();
-        var bag = _invBag.GetGlobalRect();
+        var bag = _invContent.GetGlobalRect();
         var trash = _invTrash.GetGlobalRect();
         var viewport = vp.GetVisibleRect().Size;
         var p = new Vector2(
@@ -816,6 +698,7 @@ public partial class World : Node3D
     {
         public int Slot { get; private set; }
         public System.Action<int>? OnContext;
+        public System.Action<int>? OnClick;
         public System.Action<ItemCell, bool>? OnHoverChanged;
         public System.Action<int, int>? OnDropItem;
         public ItemSlot Current { get; private set; }
@@ -839,8 +722,8 @@ public partial class World : Node3D
         private readonly Label _hint;
         private readonly UpgradeBadge _plus;
         private string _emptyHint = "";
-        private readonly StyleBoxFlat _normal;
-        private readonly StyleBoxFlat _hover;
+        private StyleBoxFlat _normal;
+        private StyleBoxFlat _hover;
         private readonly StyleBoxFlat _lockedStyle = LockedStyle();
 
         public ItemCell(int slot, float size = 46f)
@@ -940,6 +823,16 @@ public partial class World : Node3D
             return sb;
         }
 
+        public Color? Frame
+        {
+            set
+            {
+                _normal = UiTheme.Slot(value);
+                _hover = UiTheme.Slot(value, hover: true);
+                AddThemeStyleboxOverride("panel", _locked ? _lockedStyle : _normal);
+            }
+        }
+
         public string EmptyHint
         {
             set
@@ -959,6 +852,17 @@ public partial class World : Node3D
             Slot = slot;
             Set(it);
         }
+
+        public void ShowGhost(int itemId)
+        {
+            if (!Current.IsEmpty) return;
+            _icon.Texture = ItemData.Icon(itemId);
+            _icon.SelfModulate = GhostTint;
+            _emptyIcon.Visible = false;
+            _hint.Visible = false;
+        }
+
+        private static readonly Color GhostTint = new(1f, 1f, 1f, 0.32f);
 
         public void Set(ItemSlot it)
         {
@@ -984,20 +888,17 @@ public partial class World : Node3D
             if (!_locked) SealLook.Apply(it.State, _icon, this, _normal);
         }
 
-        public void SetMatch(bool match)
-        {
-            var wanted = match ? Colors.White : DimmedBySearch;
-            if (Modulate != wanted) Modulate = wanted;
-        }
-
-        private static readonly Color DimmedBySearch = new(0.42f, 0.42f, 0.45f, 0.85f);
-
         public override void _GuiInput(InputEvent ev)
         {
             if (Locked) return;
             if (ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right })
             {
                 OnContext?.Invoke(Slot);
+                AcceptEvent();
+            }
+            else if (OnClick != null && ev is InputEventMouseButton { Pressed: false, ButtonIndex: MouseButton.Left })
+            {
+                OnClick(Slot);
                 AcceptEvent();
             }
         }
@@ -1038,46 +939,56 @@ public partial class World : Node3D
         }
     }
 
-    private partial class TrashSlot : PanelContainer
+    private partial class TrashSlot : Control
     {
         public System.Action<int>? OnDropItem;
-        private readonly StyleBoxFlat _normal;
-        private readonly StyleBoxFlat _hover;
+        private bool _hot;
+        private static readonly Color Fill = new(0.42f, 0.11f, 0.09f, 0.16f);
+        private static readonly Color FillHot = new(0.55f, 0.15f, 0.12f, 0.38f);
+        private static readonly Color Edge = new(0.78f, 0.30f, 0.25f, 0.75f);
+        private static readonly Color EdgeHot = new(1f, 0.45f, 0.38f, 1f);
+        private const float DashLength = 5f;
+        private const float TrashIconInsetX = 22f;
+        private const float TrashIconInsetY = 17f;
 
         public TrashSlot()
         {
-            CustomMinimumSize = new Vector2(62, 40);
-            TooltipText = "Drag an item here to destroy it";
+            CustomMinimumSize = new Vector2(64, 52);
+            TooltipText = "Drop an item here to destroy it";
             MouseFilter = MouseFilterEnum.Stop;
-
-            _normal = TrashStyle(new Color(0.36f, 0.11f, 0.10f, 0.94f), new Color(0.55f, 0.19f, 0.16f));
-            _hover = TrashStyle(new Color(0.54f, 0.15f, 0.13f, 0.97f), new Color(0.86f, 0.33f, 0.27f));
-            AddThemeStyleboxOverride("panel", _normal);
 
             var icon = new TextureRect
             {
                 Texture = UiIcons.Get("system/trash"),
-                CustomMinimumSize = new Vector2(17, 17),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
                 MouseFilter = MouseFilterEnum.Ignore,
-                SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
-                SizeFlagsVertical = SizeFlags.ShrinkCenter,
-                SelfModulate = new Color(0.97f, 0.91f, 0.89f),
+                SelfModulate = new Color(0.97f, 0.78f, 0.74f, 0.85f),
             };
+            icon.SetAnchorsPreset(LayoutPreset.FullRect);
+            icon.OffsetLeft = TrashIconInsetX;
+            icon.OffsetTop = TrashIconInsetY;
+            icon.OffsetRight = -TrashIconInsetX;
+            icon.OffsetBottom = -TrashIconInsetY;
             AddChild(icon);
 
-            MouseEntered += () => AddThemeStyleboxOverride("panel", _hover);
-            MouseExited += () => AddThemeStyleboxOverride("panel", _normal);
+            MouseEntered += () => { _hot = true; QueueRedraw(); };
+            MouseExited += () => { _hot = false; QueueRedraw(); };
         }
 
-        private static StyleBoxFlat TrashStyle(Color bg, Color border)
+        public override void _Draw()
         {
-            var sb = new StyleBoxFlat { BgColor = bg, BorderColor = border };
-            sb.SetBorderWidthAll(1);
-            sb.SetCornerRadiusAll(4);
-            sb.SetContentMarginAll(0);
-            return sb;
+            var rect = new Rect2(Vector2.Zero, Size).Grow(-1f);
+            DrawRect(rect, _hot ? FillHot : Fill);
+            var edge = _hot ? EdgeHot : Edge;
+            var tl = rect.Position;
+            var tr = rect.Position + new Vector2(rect.Size.X, 0f);
+            var bl = rect.Position + new Vector2(0f, rect.Size.Y);
+            var br = rect.End;
+            DrawDashedLine(tl, tr, edge, 1f, DashLength);
+            DrawDashedLine(tr, br, edge, 1f, DashLength);
+            DrawDashedLine(br, bl, edge, 1f, DashLength);
+            DrawDashedLine(bl, tl, edge, 1f, DashLength);
         }
 
         public override bool _CanDropData(Vector2 atPosition, Variant data) =>
@@ -1085,7 +996,8 @@ public partial class World : Node3D
 
         public override void _DropData(Vector2 atPosition, Variant data)
         {
-            AddThemeStyleboxOverride("panel", _normal);
+            _hot = false;
+            QueueRedraw();
             OnDropItem?.Invoke(data.AsGodotDictionary()["invFrom"].AsInt32());
         }
     }

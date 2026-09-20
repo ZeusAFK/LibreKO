@@ -6,6 +6,8 @@ public partial class HudWindow : PanelContainer
 {
     public VBoxContainer Body { get; }
 
+    public void SetBackgroundAlpha(float alpha) => AddThemeStyleboxOverride("panel", UiTheme.WindowPanel(alpha: alpha));
+
     public event System.Action? Closed;
 
     private static Vector2 HeaderButtonSize => Platform.Pick(new Vector2(20, 20), new Vector2(46, 46));

@@ -406,6 +406,7 @@ public partial class World : Node3D, IWorldContext
         Net.I.SelfHpEvent -= OnSelfHp;
         Net.I.SelfMpEvent -= OnSelfMp;
         Net.I.RegeneEvent -= OnRegene;
+        GetViewport().SizeChanged -= RefreshInventoryUI;
         Net.I.ItemMoveResultEvent -= OnItemMoveResult;
         Net.I.ItemRemoveResultEvent -= OnItemRemoveResult;
         Net.I.ItemStatsEvent -= OnItemStats;

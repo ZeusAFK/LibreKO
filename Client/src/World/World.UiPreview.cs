@@ -308,8 +308,6 @@ public partial class World
         return DetachPreviewControl(window);
     }
 
-    internal void SelectInventoryTabUiPreview(string tab) => SelectInventoryTab(tab);
-
     internal void SelectAdminItemTabUiPreview(string tab) => _admItemSearch.SelectTab(tab);
 
     internal void SetAdminZoneFilterUiPreview(string filter)
@@ -319,6 +317,8 @@ public partial class World
     }
 
     internal void SelectSkillTabUiPreview(int tab) => SelectSkillTab(tab);
+
+    internal void ToggleBagUiPreview(int bagIndex) => ToggleBag(InventoryConstants.BagSlotFor(bagIndex));
 
     internal Control BuildInventoryDeleteUiPreview()
     {

@@ -37,11 +37,13 @@ public static class UiTheme
     public static readonly Color Mp         = new("3a6bbf");
     public static readonly Color Warning    = new("d9a441");
 
-    public static StyleBoxFlat WindowPanel(int radius = 2)
+    public const float WindowPanelAlpha = 0.965f;
+
+    public static StyleBoxFlat WindowPanel(int radius = 2, float alpha = WindowPanelAlpha)
     {
         var sb = new StyleBoxFlat
         {
-            BgColor = new Color(0.105f, 0.108f, 0.116f, 0.965f),
+            BgColor = new Color(0.105f, 0.108f, 0.116f, alpha),
             BorderColor = new Color(0.34f, 0.31f, 0.22f, 0.90f),
             ShadowColor = new Color(0, 0, 0, 0.58f),
             ShadowSize = 6,
@@ -307,6 +309,7 @@ public static class UiTheme
         var b = IconButton("", tooltip);
         b.Icon = icon;
         b.ExpandIcon = true;
+        b.IconAlignment = HorizontalAlignment.Center;
         b.AddThemeConstantOverride("icon_max_width", 15);
         b.AddThemeColorOverride("icon_normal_color", Gold);
         b.AddThemeColorOverride("icon_hover_color", GoldBright);
