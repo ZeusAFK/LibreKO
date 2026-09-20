@@ -72,6 +72,7 @@ public partial class World
     private void BeginCast(SkillData.Skill s)
     {
         if (!s.RootsCaster) return;
+        _hasMoveTarget = false;
         if (_castingSkillId == s.Id && Now() < _castingUntil) return;
         _castingSkillId = s.Id;
         _castingUntil = Now() + s.CastSeconds;
