@@ -1,0 +1,20 @@
+Bind Npc 24422 Zone 11
+
+On greeting
+    If quest 317 is started and player has 910132000
+        Say "I am Jerain, the sixth [Poet of Suffering]! You have the [Fifth Certificate of Suffering] hence you are eligible to answer the question. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "There are two different exploration territories in the Adonis continent. Of the two, what is the name of the region used by novice knights which high-level knights above Level 60 are prohibited from entering?"
+            Topic "Arrdream" do
+                Transaction
+                    Take 1 of 910132000
+                    Give 1 of 910133000
+            Topic "Ronark Land" do
+                Transaction
+                    Take 1 of 910132000
+                    Say "Your answer is incorrect. Your [Fifth Certificate of Suffering] has been consumed as penalty. It is time for me to leave now."
+        Topic "Rejected" goto close
+    Else if quest 317 is started
+        Say "I am Jerain, the sixth [Poet of Suffering]! I only pose the question to those who bring the [Fifth Certificate of Suffering]."
+    Else
+        Say ""

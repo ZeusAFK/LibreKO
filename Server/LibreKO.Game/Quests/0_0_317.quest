@@ -1,0 +1,54 @@
+Bind Npc 24424 Zone 11 for karus
+Bind Npc 14424 Zone 12 for elmorad
+Quest 317 "Ascetic"
+    Journal for karus "I promised to bring the Eslant [Ascetic] the 7th voucher of asceticism."
+    Journal for elmorad "I promised to bring the Eslant [Ascetic] the 7th voucher of asceticism."
+    Give 1 of 910127000 on accept
+    Collect 1 of 910134000
+
+Requires player level >= 62
+
+Rewards
+    Give 1 of 910139000
+    Give 1 of 910140000
+    Give 1 of 910141000
+    Give 1 of 910142000
+
+direction_454 = location "[Watchman of Suffering] Chatsra" about "[Watchman of Suffering] Chatsra\nUndertaker of the first suffering" found "Eslant" at 100 100 in zone 11
+direction_461 = location "[Watchman of Suffering] Teppa" about "[Watchman of Suffering] Teppa\nUndertaker of the first suffering" found "Eslant" at 100 100 in zone 12
+
+On available
+    Say "Master! Let's go to find the Undertaker of Suffering~"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "I express my respect to you who have come far and wide after great adversity \n You still have a long way to go but I will give you the item below if you collect the certificates of the sufferings you've underwent \nWill you proceed?"
+
+On in_progress
+    If player is karus
+        If player lacks 910127000 and player lacks 910134000
+            Say "I will give you another written order. Bring me the seventh certificate of suffering"
+            Topic "Confirm" do
+                Transaction
+                    Give 1 of 910127000
+            Topic "Where can I find it?" do
+                Map direction_454
+        Else
+            Say "Brave warrior!! Where is the seventh certificate of suffering? You must bring the seventh certificate of suffering in order to complete the mission."
+            Topic "Where can I find it?" do
+                Map direction_454
+    If player is elmorad
+        If player lacks 910127000 and player lacks 910134000
+            Say "I will give you another written order. Bring me the seventh certificate of suffering"
+            Topic "Confirm" do
+                Transaction
+                    Give 1 of 910127000
+            Topic "Where can I find it?" do
+                Map direction_461
+        Else
+            Say "Brave warrior!! Where is the seventh certificate of suffering? You must bring the seventh certificate of suffering in order to complete the mission."
+            Topic "Where can I find it?" do
+                Map direction_461
+
+On claimable
+    Show quest "Did you bring the seventh certificate of suffering? I will award you the item below if you give it to me."

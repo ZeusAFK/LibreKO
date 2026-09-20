@@ -1,0 +1,35 @@
+Bind Npc 24425 Zone 72 for karus
+Bind Npc 14425 Zone 72 for elmorad
+Quest 271 "Hunting the Atros & Riote"
+    Journal for karus "You have been asked by [Search Captain] Zamed to hunt one Atros and one Riote."
+    Journal for elmorad "You have been asked by [Search Captain] Laek to hunt one Atros and one Riote."
+    Kill 1 of 6920
+    Kill 1 of 6914
+
+Requires player level >= 59
+
+Rewards
+    Give 37500000 experience
+
+On available
+    If player is karus
+        Say "Master, Zamed the Search Captain is looking for you... I wonder why?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, Laek the Search Captain is looking for you... I wonder why?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Ah, I was looking for you. Your reputation is known even here in Ardream. I contacted you because I have a special favor to ask."
+    Topic "Tell me more..." do
+        Show quest "There are two particular monsters here in Ardream, Atros and Riote. Atros was active in Pathos' Darkness Army's Raiders unit. Recently, these two monsters joined forces and now present an overwhelming threat that must be dealt with immediately and violently. From what I've heard, you're the ideal candidate for the job. Can you do it?"
+
+On in_progress
+    Say "Hmm ? Are you still hunting? I doubt your reputation is exaggerated."
+
+On ready
+    Say "Phew! Atros is strong enough, eh? The upside is, your skills got a great workout there!"
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You're every bit as good as they say you are. Thank you so much."

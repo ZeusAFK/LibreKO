@@ -1,0 +1,20 @@
+Bind Npc 24417 Zone 11
+
+On greeting
+    If quest 317 is started and player has 910127000
+        Say "I am Chatsra, the first [Watchman of Suffering]! You have the [Written Order] hence you are eligible to answer the question. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "What is the name of the village in Karus mainland where plain-faced and malicious monsters who dwell in herds in caves or under the mines?"
+            Topic "Goblin Village" do
+                Transaction
+                    Take 1 of 910127000
+                    Give 1 of 910128000
+            Topic "Gavolt Village" do
+                Transaction
+                    Take 1 of 910127000
+                    Say "Your answer is incorrect. Your [Written Order] has been consumed as penalty. It is time for me to leave now."
+        Topic "Rejected" goto close
+    Else if quest 317 is started
+        Say "I am Chatsra, the first [Watchman of Suffering]! I only pose the question to those who bring the [Written Order]."
+    Else
+        Say ""

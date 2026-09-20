@@ -1,0 +1,20 @@
+Bind Npc 14419 Zone 12
+
+On greeting
+    If quest 317 is started and player has 910129000
+        Say "I am Kasi, the third [Undertaker of Suffering]! You have the [Second Certificate of Suffering] hence you are eligible to answer the question. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "[Captain] Falkwine from El Morad Castle has many duties, including [Monster Annihilation II]. Which of these monsters leads the most powerful horde?"
+            Topic "Grave Reaper" do
+                Transaction
+                    Take 1 of 910129000
+                    Give 1 of 910130000
+            Topic "Great Wafer" do
+                Transaction
+                    Take 1 of 910129000
+                    Say "Your answer is incorrect. Your [Second Certificate of Suffering] has been consumed as penalty. It is time for me to leave now."
+        Topic "Rejected" goto close
+    Else if quest 317 is started
+        Say "I am Kasi, the third [Undertaker of Suffering]! I only pose the question to those who bring the [Second Certificate of Suffering]."
+    Else
+        Say ""

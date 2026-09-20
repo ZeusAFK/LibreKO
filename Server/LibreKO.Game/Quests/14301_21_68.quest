@@ -1,0 +1,49 @@
+Bind Npc 14301 Zone 21 for warrior
+Bind Npc 14301 Zone 21 for rogue
+Bind Npc 14301 Zone 21 for mage
+Bind Npc 14301 Zone 21 for priest
+Quest 68 "Upgrade to strengthen weapons"
+    Journal "If you make and bring the dagger (+2) using the low grade strengthening order of Dagger (+1) Department, [Blacksmith Hepa] will exchange it with +7 weapon appropriate for your job as a compensation."
+    Collect 1 of 110110002
+
+Requires player level >= 9
+
+Rewards for warrior
+    Give 1 of 971770453
+
+Rewards for rogue
+    Choose one
+        Give 1 of 971730490
+        Give 1 of 971760917
+
+Rewards for mage
+    Choose one
+        Give 1 of 971740362
+        Give 1 of 971740370
+        Give 1 of 971740378
+
+Rewards for priest
+    Give 1 of 971750759
+
+direction_349 = location "[Weapon Merchant] Gargameth" about "[Weapon Merchant]Gargameth" found "Moradon Castle interior " at 766 589 in zone 21
+
+On available
+    Say "Master Blacksmith Hepa is about to talk about the strengthening of weapon! Go there quickly!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "The strengthening of weapon is a fundamental basis! First as practice, go up the stairs with me, purchase a dagger (+1) from the [Arms Dealer] Gargameth, and then purchase the [Upgrade Scroll (Low Class Item)] from the [Scroll Merchant] Charon and strengthen the dagger (+2)! And then I will exchange it with a weapon that is suitable for your job!"
+    Topic "Confirm" do
+        Show quest "I say this one more time. The dagger (+1) can be purchased from the [Arms Dealer] Gargameth and the [Upgrade Scroll (Low Class Item)] from the [Scroll Merchant] Charon."
+
+On in_progress
+    Say "Haven't you had the strengthening yet? You have to strengthen the dagger (+2) and come back!"
+    Topic "Where can I find it?" do
+        Map direction_349
+
+On ready
+    Say "I succeeded in the refining! Hurry up and bring this to [Blacksmith] Hepa."
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "You were successful, weren't you! Let me see. # Please select the weapon that you want to receive as a reward"

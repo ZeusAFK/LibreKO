@@ -1,0 +1,20 @@
+Bind Npc 14418 Zone 12
+
+On greeting
+    If quest 317 is started and player has 910128000
+        Say "I am Charre, the second [Apostle of Suffering]Charre! You have the [First Certificate of Suffering] hence you are eligible to answer the question. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "The Abyss Dungeon is located in Delos Castle famous for siege wars. What is the name of the dungeon lodged even deeper than the Abyss of Despair?"
+            Topic "Abyss of Hell" do
+                Transaction
+                    Take 1 of 910128000
+                    Give 1 of 910129000
+            Topic "Abyss of the Underworld " do
+                Transaction
+                    Take 1 of 910128000
+                    Say "Your answer is incorrect. Pathos is the god of change and confusion, the antithesis of Logos.\nYour [First Certificate of Suffering] has been consumed as penalty. It is time for me to leave now."
+        Topic "Rejected" goto close
+    Else if quest 317 is started
+        Say "I am Charre, the second [Apostle of Suffering]Charre! I only pose the question to those who bring the [First Certificate of Suffering]."
+    Else
+        Say ""

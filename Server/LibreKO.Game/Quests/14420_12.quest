@@ -1,0 +1,20 @@
+Bind Npc 14420 Zone 12
+
+On greeting
+    If quest 317 is started and player has 910130000
+        Say "I am Pathu, the fourth [Alternate of Suffering]! You have the [Third Certificate of Suffering] hence you are eligible to answer the question. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "What is the name of an expansive prairie war zone which is one of the primary sites of Lunar War?"
+            Topic "Nirdth Triangle" do
+                Transaction
+                    Take 1 of 910130000
+                    Give 1 of 910131000
+            Topic "Alseids Plateau" do
+                Transaction
+                    Take 1 of 910130000
+                    Say "Your answer is incorrect. Your [Third Certificate of Suffering] has been consumed as penalty. It is time for me to leave now."
+        Topic "Rejected" goto close
+    Else if quest 317 is started
+        Say "I am Pathu, the fourth [Alternate of Suffering]! I only pose the question to those who bring the [Third Certificate of Suffering]."
+    Else
+        Say ""

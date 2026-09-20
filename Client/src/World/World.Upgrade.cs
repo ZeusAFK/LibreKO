@@ -36,8 +36,10 @@ public partial class World
     private const int TrinaPiece = 700002000;
     private const int RebirthRestorationScroll = 810322000;
     private const int BlessingLogos = 890092000;
-    private const int EquipSlotFirst = 1;
+    private const int EquipSlotFirst = 0;
     private const int EquipSlotLast = 14;
+    private const int EtcKindFirst = 95;
+    private const int EtcKindLast = 99;
 
     private CanvasLayer _upgradeLayer = null!;
     private HudWindow _upgradePanel = null!;
@@ -418,7 +420,8 @@ public partial class World
         if (IsUpgradeMaterial(itemId)) return false;
         var def = ItemData.Get(itemId);
         return def != null && def.Countable == 0
-               && def.Slot >= EquipSlotFirst && def.Slot <= EquipSlotLast;
+               && def.Slot >= EquipSlotFirst && def.Slot <= EquipSlotLast
+               && (def.Kind < EtcKindFirst || def.Kind > EtcKindLast);
     }
 
     public string UpgradePlacementReport(params int[] itemIds)

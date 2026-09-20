@@ -1,0 +1,29 @@
+Bind Npc 24201 Zone 1 for karus warrior
+Bind Npc 14201 Zone 2 for elmorad warrior
+Quest 304 "Scream"
+    Journal for karus "[Warrior Master] Skaki will give you the Scroll of Scream if you achieve 7 victories in the National Defence Combat (the upper reaches of the Kalluga Valley)."
+    Journal for elmorad "[Warrior Master] Skaki will give you the Scroll of Scream if you achieve 7 victories in the National Defence Combat (the upper reaches of the Kalluga Valley)."
+    Collect 7 of 900017000
+
+Requires player level >= 61
+
+Rewards
+    Give 1 of 379063000
+
+On offer
+    Say "It is now time for me to teach you the most powerful secret weapon. The name of that secret weapon is Scream..."
+    Topic "Tell me more..." do
+        Show quest "It has such a name because it makes an enormous sound like the scream of Lucifer when you use the skill.  Show me whether you are qualified to deal with the secret scroll of this skill.  Win seven victories at the National Defence Combat at the upper reaches of the Kalluga Valley and bring me the Symbol of Victory. Then I will acknowledge your ability and give you this secret scroll."
+
+On in_progress
+    Say "The border defending battle is held every day at 10 AM and 1, 3, 5 and 10 PM and 1 AM. And it is held additionally at 8 PM on Tuesday, Friday, Saturday and Sunday when there is no war. When the relevant time comes, the announcement for recruitment will be aired automatically so that application for participation can be made"
+
+On ready
+    Say "Master, all the objects needed for obtaining the Scream Secret Scroll have been collected. Go see [Warrior Master] Skaki."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Um~ You've won seven victories as I told you.  Great job, here~ I will hand this scream secret scroll to you.  Make good use of this."
+
+On completed
+    Say "You are now fast approaching the ultimate warrior level."
