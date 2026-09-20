@@ -1,0 +1,27 @@
+Bind Npc 14301 Zone 21 for warrior
+Bind Npc 14301 Zone 21 for rogue
+Bind Npc 14301 Zone 21 for mage
+Bind Npc 14301 Zone 21 for priest
+Quest 196 "Armor of Destruction - boots"
+    Repeat always
+    Journal "I must bring [Blacksmith] Heppa 3 Amulets of Destruction, 3 iron bar, and 500,000 Noahs and make Armor of Destruction - boots."
+    Collect 3 of 379071000
+    Collect 3 of 379076000
+    Collect 500000 coins
+
+Requires player level >= 46
+
+Rewards for warrior
+    Give 1 of 203015301
+
+Rewards for rogue
+    Give 1 of 243015302
+
+Rewards for mage
+    Give 1 of 263015303
+
+Rewards for priest
+    Give 1 of 283015304
+
+On offer
+    Show quest "To make Body Armor of Destruction boots, you must take 3 Amulets of Destruction, 3 iron bar, and 500,000 Noahs to [Blacksmith] Heppa."

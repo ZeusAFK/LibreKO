@@ -38,6 +38,10 @@ public class QuestScriptContext
 
     public void RequestNpcDespawn() => DespawnEventNpc = true;
 
+    public List<(int NpcId, int Count, int X, int Z)> PendingSummons { get; } = [];
+
+    public void RequestSummon(int npcId, int count, int x, int z) => PendingSummons.Add((npcId, count, x, z));
+
     public void RequestZoneChange(int zoneId, float x, float z) => PendingZoneChange = (zoneId, x, z);
 
     public void FailAction(string reason)

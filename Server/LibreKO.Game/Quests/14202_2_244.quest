@@ -1,0 +1,25 @@
+Bind Npc 14202 Zone 2
+Quest 244 "[Repeatable] Fruit of Asga"
+    Repeat always
+    Journal "[Secret Agent] Clarence has commissioned you to recover the Fruit of Asga that has been stolen by the Cardinals."
+    Collect 1 of 910082000
+
+Requires player level >= 55 and player is elmorad
+
+Rewards
+    Give 10000 coins
+
+On offer
+    Say "For a long time, us rogues have been offering the valuable berries to the Imperial Family."
+    Topic "Tell me more..." do
+        Show quest "But cardinals living in the vicinity stole all the Asga berries and there's nothing to present to the Imperial Family. Please help us and retrieve the berries."
+
+On in_progress
+    Say "Asga berries can be obtained by hunting cardinals."
+
+On ready
+    Say "Master, the Asga berries have been retrieved. Go back to [Secret Agent] Clarence now."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You brought Asga berries? I will give you a small gift for them."

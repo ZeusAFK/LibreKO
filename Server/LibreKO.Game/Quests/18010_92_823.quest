@@ -1,0 +1,29 @@
+Bind Npc 18010 Zone 92
+Quest 823 "[Guard]Cabal's very irritating punishment"
+    Journal "You are sinful. You need to get punished by [Guard] Cabal."
+    Kill 50 of 9318 at direction_1073
+    Kill 50 of 9319 at direction_1074
+    Kill 50 of 9320 at direction_1075
+    Kill 50 of 9321 at direction_1076
+
+Requires player level >= 1 and quest 822 is completed
+
+Rewards none
+
+direction_1073 = location "Werewolf" about "Werewolf\nCursed people from Pathos' War who inherited the evil blood and transformed to Werewolves." found "Prison" at 0 0 in zone 92
+direction_1074 = location "Silan" about "Silan\nBulkan type monster with strong vitality and their bones can be used to craft armors." found "Prison" at 0 0 in zone 92
+direction_1075 = location "Gloomwing" about "Gloomwing\nBird type monster which transformed by Pathos' evil power." found "Prison" at 0 0 in zone 92
+direction_1076 = location "Scorpion" about "Scorpion\nThe poison in its tail is dangerous but also used for herbicide." found "Prison" at 0 0 in zone 92
+
+On offer
+    Say "You have been brought to the jail for using [Hack Tool]. You can go back to Moradon when you have completed the punishments here."
+    Topic "Confirm" do
+        Show quest "Follow [Guard] Cabal's order and catch  [Werewolf], [Cylan], [Gloomwing], [Scorpion]."
+
+On in_progress
+    Say "Please thoroughly complete the mission to leave the jail."
+
+On completed
+    Say "Mission completed. If you even come back here again, you will get harsher punishment. Keep in mind and try not to come back here ever again."
+    Topic "Oh, right." do
+        Teleport 21 at 817 448

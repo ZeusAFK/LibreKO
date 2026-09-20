@@ -593,6 +593,10 @@ public sealed class QuestInterpreter
                 _host.DespawnNpc();
                 break;
 
+            case QuestActionKind.Summon:
+                _host.SummonNpc(args.GetInt("npc"), args.GetInt("count", 1), args.GetInt("x", 0), args.GetInt("z", 0));
+                break;
+
             case QuestActionKind.NpcEffect:
                 _host.PlayNpcEffect(args.GetInt("effect"));
                 break;

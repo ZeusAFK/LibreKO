@@ -1,0 +1,19 @@
+RewardPool quest_15_draw
+    111110001 weight 2500
+    205001001 weight 3000
+    206001001 weight 1500
+    111210001 weight 2900
+    119101101 weight 100
+
+Bind Npc 16047 Zone 21
+
+On topics
+    Topic "Red Treasure Chest" do
+        If player has >= 1 of 379154000
+            Say "Would you like to exchange the Red Treasure Chest?"
+            Topic "Confirm" do
+                Transaction
+                    Take 1 of 379154000
+                    Give random from quest_15_draw
+        Else
+            Say "You need a Red Treasure Chest to make the exchange.\nThey can be earned in National Defence Combat."

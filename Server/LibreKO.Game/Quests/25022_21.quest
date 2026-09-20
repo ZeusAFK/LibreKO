@@ -1,0 +1,28 @@
+Bind Npc 25022 Zone 21
+
+On greeting
+    If quest 1211 is started
+        Say "I sell unique items from all over the world~ Would you like to take a look? \nOh, don't tell nobody I merchant here."
+        Topic "Suspicious amsangin" do
+            Say "Try this~ It's a medicine to cure everything~ Would you like to buy one?"
+            Topic "Shows the secret book." do
+                Effect 300435
+                Say "Wow! How did you?!"
+                Topic "Were pirates and pestle?" do
+                    Say "I'm well prepared to deal with a situation like this. Guys! Come out!"
+                    Topic "No. - By pirates they beggar! Have to be Where. Be the first?]" do
+                        Effect 300438
+                        Summon 1 of 9666 at 467 519
+                        Summon 1 of 9666 at 469 523
+    Else if quest 1214 is started and player lacks 900632000 and player lacks 900631000
+        Say "<selfname> What made you come here? Heh~ Heh~"
+        Topic "Mora, near the island of pirates these days you know?" do
+            Say "Pirates? Hm... I haven't heard anything like that."
+            Topic "Torture as long as you do not die." do
+                Say "Oh~ <selfname>. Please stop..  I get it. I'll tell you everything I know."
+                Topic "Not stimulate it." do
+                    Transaction
+                        Give 1 of 900632000
+                        Give 1 of 900631000
+    Else
+        Say "I sell unique items from all over the world~ Would you like to take a look? \nOh, don't tell nobody I merchant here."

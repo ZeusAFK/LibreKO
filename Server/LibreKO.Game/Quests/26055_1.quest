@@ -1,0 +1,20 @@
+Bind Npc 26055 Zone 1
+
+On greeting
+    If quest 220 is started and player has 910054000
+        Say "I am the Patroller, the Guardian of the Fifth Key! You possess the [Fourth Key], so you are qualified to hear the question. Will you accept the challenge?"
+        Topic "Accepted" do
+            Say "Is it Logos who created mankind?"
+            Topic "No, that's incorrect" do
+                Transaction
+                    Take 1 of 910054000
+                    Give 1 of 910055000
+            Topic "Yes, that's correct" do
+                Transaction
+                    Take 1 of 910054000
+                    Say "Your answer is incorrect. As a penalty, the [Fourth Key] you possessed has been destroyed. Now, I will leave to search for the secret of the keys elsewhere."
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I am the Patroller, the Guardian of the Fifth Key! I only pose questions to those who bring the [Fourth Key]."
+    Else
+        Say ""

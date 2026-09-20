@@ -1,0 +1,51 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 220 "Guardian of 7 Keys"
+    Journal for karus "I promised the Captain to bring the 7th key."
+    Journal for elmorad "I promised the Captain to bring the 7th key."
+    Give 1 of 910050000 on accept
+    Collect 1 of 910057000
+
+Requires player level >= 60
+
+Rewards
+    Give 38047370 experience
+
+direction_432 = location "[Gatekeeper of the Key]" about "[Gatekeeper of the Key]\nGuardian of the seventh key" found "El Morad mainland" at 100 100 in zone 1
+direction_439 = location "[Gatekeeper of the Key]" about "[Gatekeeper of the Key]\nGuardian of the seventh key" found "Karus mainland" at 100 100 in zone 2
+
+On available
+    Say "Master! Let's go see the Guardian of the Seven Keys~"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "Seven keys to the Land of the Hidden Truth were made according to ancient records discovered near the Land of the Fairies but they were entrusted to different guardians who all went their separate ways. Will you go retrieve the seven keys?"
+
+On in_progress
+    If player is karus
+        If player lacks 910050000 and player lacks 910057000
+            Say "Please retrieve the seventh key for me. I will give you another written order."
+            Topic "Confirm" do
+                Transaction
+                    Give 1 of 910050000
+            Topic "Where can I find it?" do
+                Map direction_432
+        Else
+            Say "Brave warrior!! Where is the seventh key? You must retrieve the seventh key in order to complete your mission."
+            Topic "Where can I find it?" do
+                Map direction_432
+    If player is elmorad
+        If player lacks 910050000 and player lacks 910057000
+            Say "Please retrieve the seventh key for me. I will give you another written order."
+            Topic "Confirm" do
+                Transaction
+                    Give 1 of 910050000
+            Topic "Where can I find it?" do
+                Map direction_439
+        Else
+            Say "Brave warrior!! Where is the seventh key? You must retrieve the seventh key in order to complete your mission."
+            Topic "Where can I find it?" do
+                Map direction_439
+
+On claimable
+    Show quest "Did you retrieve the seventh key? If you give me the seventh key I will award you EXP in return."

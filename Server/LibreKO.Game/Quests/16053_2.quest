@@ -1,0 +1,20 @@
+Bind Npc 16053 Zone 2
+
+On greeting
+    If quest 220 is started and player has 910052000
+        Say "I am the Protector, the Guardian of the Third Key!  You are qualified to answer the question since you possess the [Second Key]. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "What is in the box Logos hid in the Land of Fairies?"
+            Topic "Crystal Ball of the Spirit " do
+                Transaction
+                    Take 1 of 910052000
+                    Say "Your answer is incorrect. Logos hid a box containing Cypher's severed head in the Land of Fairies. As a penalty, your [Second Key] has been destroyed. Now, I will leave to search for the secret of the keys."
+            Topic "Cypher's head" do
+                Transaction
+                    Take 1 of 910052000
+                    Give 1 of 910053000
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I am the Protector, the Guardian of the Third Key! I only pose the question to those who bring the [Second Key]."
+    Else
+        Say ""

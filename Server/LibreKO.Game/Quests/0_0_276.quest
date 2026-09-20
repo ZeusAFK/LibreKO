@@ -1,0 +1,29 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 276 "The Ominous Force"
+    Repeat always
+    Journal for karus "You will receive 2,500,000 EXP for hunting 20 Troll Magicians, and 5,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 2,500,000 EXP for hunting 100 Troll Magicians, and 5,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 8054, 8004
+
+Requires player level >= 60 and player level <= 74
+
+Rewards
+    Give 2500000 experience or 5500000 with premium
+
+On offer
+    If player is karus
+        Say "Such an ominous and heavy force...? It's them... It must be them."
+        Topic "Tell me more..." do
+            Show quest "The power of their sorcery... As this evil energy melts into your body, it drags your soul down into an endless hell."
+    If player is elmorad
+        Say "Such an ominous and heavy force...? It's them... It must be them."
+        Topic "Tell me more..." do
+            Show quest "It's the power of their sorcery... As the evil energy melts into your body, it drags your soul down into an endless hell.\n\nIt's a Troll Shaman\nNobody emits evil force like they do! If the evil force is allowed to spread, all Eslant will be hell-bound to damnation. But why do I feel such peace as soon as I see you??"
+
+On ready
+    Say "It was a hard fight, Master-"
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Have I ever told you that I found peace because of you? Hmm..."

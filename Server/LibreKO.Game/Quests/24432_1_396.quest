@@ -1,0 +1,28 @@
+Bind Npc 24432 Zone 1
+Quest 396 "[Repeatable] Legendary Belt"
+    Repeat always
+    Journal "You have promised [Guard] Keife to hunt Blood Don."
+    Kill 20 of 8060, 8010 at direction_623
+
+Requires player level >= 51 and player is karus and quest 227 is completed
+
+Rewards
+    Give 1 of 910160118
+
+direction_623 = location "Bloodon" about "Bloodon\nA monster originally raised in Moradon for security purposes, they are now incorporated in mercenary training due to their violent nature. " found "Karus" at 296 442 in zone 1
+
+On available
+    Say "Master, How about earning the last Belt of Legend from Cape?"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Do you want the Belt of Legend? Okay, you can have it if you can complete the mission I'm about to give you."
+    Topic "Tell me more..." do
+        Show quest "Blood Don is a type of Smirdon monster. I will reward you with this belt when you complete the Blood Don hunt. Would you like to give it a shot?"
+
+On ready
+    Say "Phew~ Good effort master. Go and find Cape now~"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "I knew you could do it. Here's the Belt of Legend, as promised."

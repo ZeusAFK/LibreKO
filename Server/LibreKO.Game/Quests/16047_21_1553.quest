@@ -1,0 +1,19 @@
+RewardPool quest_1553_draw
+    111110002 weight 2300
+    205001003 weight 2000
+    206001001 weight 2500
+    111210001 weight 2400
+    1111310001 weight 800
+
+Bind Npc 16047 Zone 21
+
+On topics
+    Topic "Draki Supply Box Exchange" do
+        If player has >= 1 of 810596000
+            Say "[Superior Draki Supply Box] Exchange"
+            Topic "Confirm" do
+                Transaction
+                    Take 1 of 810596000
+                    Give random from quest_1553_draw
+        Else
+            Say "You do no have [Draki Supply Box]. Please use <Draki Rift> located at each nation's castle to obtain [Draki Supply Box] at Draki's Tower."

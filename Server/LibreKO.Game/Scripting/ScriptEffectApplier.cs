@@ -1,4 +1,5 @@
 ﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,7 @@ public sealed class ScriptEffectApplier(
         await ApplyPendingLevelAsync(session, context, scriptName);
 
         await ApplyPendingNpcDespawnAsync(session, context, scriptName);
+        await ApplyPendingSummonsAsync(session, context, scriptName);
         await ApplyPendingZoneChangeAsync(session, context, scriptName);
 
         if (context.ActionFailed && context.FailureReason is { } reason)
@@ -103,6 +105,60 @@ public sealed class ScriptEffectApplier(
 
         await serviceProvider.GetRequiredService<IPlayerProgressionService>()
             .SetLevelAsync(session, (byte)context.PendingLevel);
+    }
+
+    private const int MaxSummonCount = 20;
+    private const int SummonSpreadRange = 3;
+
+    private async Task ApplyPendingSummonsAsync(UserSession session, QuestScriptContext context, string scriptName)
+    {
+        if (context.PendingSummons.Count == 0)
+            return;
+
+        if (context.ActionFailed)
+        {
+            logger.LogInformation(
+                "Script {Script}: summon skipped for {Name} — the script's action failed",
+                scriptName, session.Name);
+            return;
+        }
+
+        var sessions = serviceProvider.GetRequiredService<SessionManager>();
+        var aggression = serviceProvider.GetRequiredService<IMonsterAggressionPolicy>();
+        var lifecycle = serviceProvider.GetRequiredService<INpcLifecycleService>();
+        foreach (var (npcId, count, x, z) in context.PendingSummons)
+        {
+            var npcData = gameData.GetNpc(npcId);
+            if (npcData == null)
+            {
+                logger.LogWarning("Script {Script}: cannot summon NPC {NpcId} for {Name} — not in the NPC table",
+                    scriptName, npcId, session.Name);
+                continue;
+            }
+
+            var pos = new Common.Domain.Entities.GameData.NpcPosData
+            {
+                NpcId = npcId,
+                ZoneId = session.ZoneId,
+                LeftX = x > 0 ? x : (int)session.X,
+                TopZ = z > 0 ? z : (int)session.Z,
+                SpawnRange = SummonSpreadRange,
+                ActType = npcData.ActType,
+                NumNPC = (byte)Math.Clamp(count, 1, MaxSummonCount),
+            };
+            for (var i = 0; i < pos.NumNPC; i++)
+            {
+                var npc = NpcInstance.FromData(npcData, pos, 0);
+                npc.RespawnType = NpcRespawnType.Never;
+                aggression.Apply(npc);
+                npc.Y = sessions.Maps?.GetHeight(session.ZoneId, npc.X, npc.Z) ?? session.Y;
+                npc.SpawnY = npc.Y;
+                await lifecycle.SpawnAsync(npc);
+            }
+
+            logger.LogInformation("Script {Script}: {Name} summoned {Count} of NPC {NpcId} in zone {Zone} at {X},{Z}",
+                scriptName, session.Name, pos.NumNPC, npcId, session.ZoneId, pos.LeftX, pos.TopZ);
+        }
     }
 
     private async Task ApplyPendingNpcDespawnAsync(

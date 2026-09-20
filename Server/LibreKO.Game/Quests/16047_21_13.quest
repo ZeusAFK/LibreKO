@@ -1,0 +1,19 @@
+RewardPool quest_13_draw
+    156210001 weight 10
+    156110001 weight 50
+    205001001 weight 500
+    204001001 weight 2000
+    389020000 weight 7440
+
+Bind Npc 16047 Zone 21
+
+On topics
+    Topic "Abyss Gemstone" do
+        If player has >= 1 of 379106000
+            Say "What would you like to trade?"
+            Topic "Confirm" do
+                Transaction
+                    Take 1 of 379106000
+                    Give random from quest_13_draw
+        Else
+            Say "There's no items to trade."

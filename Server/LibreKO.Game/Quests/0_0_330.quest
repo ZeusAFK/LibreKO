@@ -1,0 +1,28 @@
+Bind Npc 24201 Zone 1 for karus warrior
+Bind Npc 14201 Zone 2 for elmorad warrior
+Quest 330 "Nostrum of Constitution"
+    Journal for karus "A Nostrum of Constitution is required for learning 70Lv and 75Lv skills, and [Warrior Master] Skaki will make it for you if you bring him 1 Robo's Pendant, 1 Lupus Pendant and 1 Silver Bar, which are the ingredients of Nostrum of Constitution."
+    Journal for elmorad "A Nostrum of Constitution is required for learning 70Lv and 75Lv skills, and [Warrior Master] Skaki will make it for you if you bring him 1 Robo's Pendant, 1 Lupus Pendant and 1 Silver Bar, which are the ingredients of Nostrum of Constitution."
+    Collect 1 of 320410011
+    Collect 1 of 320410012
+    Collect 1 of 379067000
+
+Requires player level >= 69
+
+Rewards
+    Give 1 of 379244000
+
+On offer
+    Say "The skill practiced in the ultimate warrior level not only requires ultimate power but also ultimate constitution."
+    Topic "Tell me more..." do
+        Show quest "For that reason, you need an item called the Nostrum of Constitution along with the Stamp of Strength.  To make Nostrum of Constitution, you need 1 Lupus Pendant, 1 Robo's Pendant, and one Silver Bar. If you have the Stamp of Strength, then you can complete the final skill of warriors with the Nostrum of Constitution.  What do you say, are you going to bring those?"
+
+On in_progress
+    Say "To make the Nostrum of Constitution, you must have all of 1 Lupus Pendant, 1 Robo's Pendant, and 1 Silver Bar."
+
+On ready
+    Say "Master, all the Nostrum of Constitution ingredients have been gathered. I want to witness the final secret weapon of the warrior."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You've gathered all the Nostrum of Constitution ingredients. I will make it for you right away. This is Nostrum of Constitution. It isn't long till you complete the final skill now."

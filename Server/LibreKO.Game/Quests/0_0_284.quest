@@ -1,0 +1,22 @@
+Bind Npc 24426 Zone 71 for karus
+Bind Npc 14426 Zone 71 for elmorad
+Quest 284 "Threatening Elements"
+    Journal for karus "You will receive1,500,000 EXP for hunting 20 Apostles of Flames, and 3,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 1,500,000 EXP for hunting 20 Apostles of Flames, and 3,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 8016
+
+Requires player level >= 60 and player level <= 73
+
+Rewards
+    Give 1500000 experience or 3500000 with premium
+
+On offer
+    Say "(From reading the letter, you learn that) the   Apostles of Flames are gathering on the northwest plains. The Apostles of Piercing Cold are joining them! The numbers are only an estimate, but even so... Damn! The news just gets better and better..."
+    Topic "Tell me more..." do
+        Show quest "Well at least now we know what's going on, we have an advantage. After all, knowledge is half the battle. We must stop them before they grow too large."
+
+On in_progress
+    Say "This needs to be a surgical strike - fast and precise."
+
+On claimable
+    Show quest "We could be facing great numbers, so be prepared. We need to do a good job here. But don't think this will solve all our problems. New threats can appear from anywhere at anytime."

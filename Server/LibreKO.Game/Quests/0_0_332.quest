@@ -1,0 +1,28 @@
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 14202 Zone 2 for elmorad rogue
+Quest 332 "Stamp of Agility"
+    Journal for karus "A Stamp of Agility is required for learning 72Lv and 75Lv skills, and [Secret Agent] Clarence will make it for you if you bring him 1 Robo's Pendant, 1 Lupus Pendant and 1 Silver Bar, which are the required materials for Stamp of Agility."
+    Journal for elmorad "A Stamp of Agility is required for learning 72Lv and 75Lv skills, and [Secret Agent] Clarence will make it for you if you bring him 1 Robo's Pendant, 1 Lupus Pendant and 1 Silver Bar, which are the required materials for Stamp of Agility."
+    Collect 1 of 320410011
+    Collect 1 of 320410012
+    Collect 1 of 379067000
+
+Requires player level >= 69
+
+Rewards
+    Give 1 of 379246000
+
+On offer
+    Say "The two most important rogue traits speed and dexterity... The Stamp of Dexterity is the symbol of the most accomplished dexterity."
+    Topic "Tell me more..." do
+        Show quest "You need this along with the Nostrum of Speed to learn the ultimate secret art, and it also requires several special ingredients to make.  To complete the Stamp of Agility, you need 1 Lupus Pendant, 1 Robo's Pendant, and one Silver Bar. Are you going to bring those?"
+
+On in_progress
+    Say "I already told you that to make the Stamp of Agility, you need 1 Lupus Pendant, 1 Robo's Pendant, and 1 Slver Bar."
+
+On ready
+    Say "Master, you've collected all the Stamp of Dexterity ingredients. Now it's just a matter of time till you learn the ultimate secret technique."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You've collected all the Stamp of Dexterity ingredients. This is the Stamp of Dexterity, an object needed to master the final secret technique of the rogue."

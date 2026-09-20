@@ -1,0 +1,20 @@
+Bind Npc 16052 Zone 2
+
+On greeting
+    If quest 220 is started and player has 910051000
+        Say "I am the Watcher, the Guardian of the Second Key!  You are qualified to answer the question since you possess the [First Key]. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "What did the god Pathos originally govern?"
+            Topic "The God of Change" do
+                Transaction
+                    Take 1 of 910051000
+                    Give 1 of 910052000
+            Topic "The God of Creation" do
+                Transaction
+                    Take 1 of 910051000
+                    Say "Your answer is incorrect. Pathos is the god of change and chaos, opposite to Logos. As a penalty, the [First Key] you possessed has been destroyed. Now, I will leave to search for the secret of the keys elsewhere."
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I am the Watcher, the Guardian of the Second Key! I only pose the question to those who bring the [First Key]."
+    Else
+        Say ""

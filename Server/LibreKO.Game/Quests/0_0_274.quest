@@ -1,0 +1,42 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 274 "Two Faces of Monks I"
+    Repeat always
+    Journal for karus "You will receive 1,375,000 EXP for hunting 20 Paramoons, and 2,750,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 1,375,000 EXP for hunting 20 Paramoons, and 2,750,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 2154, 2104
+
+Requires player level >= 60 and player level <= 74
+
+Rewards
+    Give 1375000 experience or 2750000 with premium
+
+On available
+    If player is karus
+        Say "Pablo's an odd one for sure... But I'm still curious about his identity."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "For some reason Pablo is scary or mentally strange... but I'm more curious about Pablo's identity."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Dark Forces are coming over the hill...\n\n<selfname>... hmmm~ not a bad name."
+        Topic "Tell me more..." do
+            Show quest "The two faces of the monk. Beware the darkness!\nThe soulless monks attack from the dark behind your eyes.\n\nHe seems to be a nomad monk of the Esoteric Buddhist order... but at night does he change into a savage mage of the darkness? Here, I'm also known as  Paramoon. Cute name, eh? MUAHAHAHA-"
+    If player is elmorad
+        Say "Dark Forces are coming over the hill...\n\n<selfname>... hmmm~ not a bad name."
+        Topic "Tell me more..." do
+            Show quest "The two faces of the monk... Beware of the darkness!\nThe soulless monks attack from the dark behind your eyes...\n\nHe seems to be a nomad monk of the Esoteric Buddhist order... but at night does he change into a savage mage of the darkness? Here, I'm also known as  Paramun. Isn't it a cute name? HAHAHA-"
+
+On in_progress
+    If player is karus
+        Say "Careful... Careful... Darkness is falling... The darkness..."
+    If player is elmorad
+        Say "Careful... Careful... Darkness is spreading... The darkness."
+
+On claimable
+    If player is karus
+        Show quest "Did you wrestle with Paramun? HAHA- Don't make a face for that! Wasn't it a good experience?"
+    If player is elmorad
+        Show quest "Did you wrestle with Paramun? HAHA- Don't make that look. Don't you think it was good experience?"

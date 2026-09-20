@@ -1,0 +1,27 @@
+Bind Npc 14301 Zone 21 for warrior
+Bind Npc 14301 Zone 21 for rogue
+Bind Npc 14301 Zone 21 for mage
+Bind Npc 14301 Zone 21 for priest
+Quest 192 "Armor of Destruction"
+    Repeat always
+    Journal "I must bring [Blacksmith] Heppa 7 Amulets of Destruction, 15 iron bar, and 500,000 Noahs 7 Amulets of Destruction, 10 iron bar, and 500,000 Noahs and make Armor of Destruction - top. "
+    Collect 7 of 379071000
+    Collect 15 of 379076000
+    Collect 500000 coins
+
+Requires player level >= 46
+
+Rewards for warrior
+    Give 1 of 203011337
+
+Rewards for rogue
+    Give 1 of 243011338
+
+Rewards for mage
+    Give 1 of 263011339
+
+Rewards for priest
+    Give 1 of 283011340
+
+On offer
+    Show quest "To make Body Armor of Destruction top, you must take 7 Amulets of Destruction, 15 iron bar, and 500,000 Noahs to [Blacksmith] Heppa."

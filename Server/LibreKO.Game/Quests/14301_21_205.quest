@@ -1,0 +1,61 @@
+RewardPool quest_205_draw_warrior
+    203021301 weight 2000
+    203021302 weight 2000
+    203021303 weight 2000
+    203021304 weight 2000
+    203021309 weight 2000
+
+RewardPool quest_205_draw_rogue
+    243021310 weight 2000
+    243021311 weight 2000
+    243021312 weight 2000
+    243021313 weight 2000
+    243021318 weight 2000
+
+RewardPool quest_205_draw_mage
+    263021319 weight 2000
+    263021320 weight 2000
+    263021321 weight 2000
+    263021322 weight 2000
+    263021327 weight 2000
+
+RewardPool quest_205_draw_priest
+    283021328 weight 2000
+    283021329 weight 2000
+    283021330 weight 2000
+    283021331 weight 2000
+    283021336 weight 2000
+
+Bind Npc 14301 Zone 21
+
+On topics
+    Topic "Talia armor" do
+        Say "If you bring Blacksmith Heppa the Body Armor of Destruction top, 5 Talisman of Talia, and 1 crystal, he will make you Talia Body Armor endowed with one trait out of many."
+        Topic "Confirm" do
+            By player class
+                For warrior
+                    Transaction
+                        Take 1 of 203011337
+                        Take 1 of 389075000
+                        Take 5 of 379072000
+                        Give random from quest_205_draw_warrior
+                For rogue
+                    Transaction
+                        Take 1 of 243011338
+                        Take 1 of 389075000
+                        Take 5 of 379072000
+                        Give random from quest_205_draw_rogue
+                For mage
+                    Transaction
+                        Take 1 of 263011339
+                        Take 1 of 389075000
+                        Take 5 of 379072000
+                        Give random from quest_205_draw_mage
+                For priest
+                    Transaction
+                        Take 1 of 283011340
+                        Take 1 of 389075000
+                        Take 5 of 379072000
+                        Give random from quest_205_draw_priest
+                Else
+                    Do nothing

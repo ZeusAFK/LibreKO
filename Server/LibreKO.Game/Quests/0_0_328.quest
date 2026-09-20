@@ -1,0 +1,28 @@
+Bind Npc 24204 Zone 1 for karus priest
+Bind Npc 14204 Zone 2 for elmorad priest
+Quest 328 "Stamp of Intelligence"
+    Journal for karus "A Stamp of Intelligence is required for learning 70Lv, 72Lv, 75Lv and 78Lv skills, and [Priest] Minerva will make it for you if you bring her 1 Lycaon Pendant, 1 Robo's Pendant and 1 Silver Bar, which are the required materials for Stamp of Intelligence."
+    Journal for elmorad "A Stamp of Intelligence is required for learning 70Lv, 72Lv, 75Lv and 78Lv skills, and [Priest] Minerva will make it for you if you bring her 1 Lycaon Pendant, 1 Robo's Pendant and 1 Silver Bar, which are the required materials for Stamp of Intelligence."
+    Collect 1 of 320410013
+    Collect 1 of 320410011
+    Collect 1 of 379067000
+
+Requires player level >= 69
+
+Rewards
+    Give 1 of 379250000
+
+On offer
+    Say "Priest, you who will undertake the final stage of training, you will need two objects to practice the ability which the gods will confer on you should you complete the final stage of your training."
+    Topic "Tell me more..." do
+        Show quest "They are the Nostrum of Wisdom and Stamp of Intelligence.  The god's ability will not be endowed on you even if one of them is insufficient.  Stamp of Intelligence can be made with 1 Lycaon's Pendant, 1 Robo's Pendant, and 1 Silver Bar.  Can you find them?"
+
+On in_progress
+    Say "To make a Stamp of Intelligence, you need 1 Lycaon's Pendant,  1 Robo's Pendant, and one Silver Bar. What you brought isn't enough."
+
+On ready
+    Say "Master, you have collected 1 Lycaon's Pendant, 1 Robo's Pendant, and one Silver Bar. Now you can make the stamp of intelligence with these."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "The ingredients for making the Stamp of Intelligence have all been collected. This is the Stamp of Intelligence. It is an essential item for the final stage of your training."

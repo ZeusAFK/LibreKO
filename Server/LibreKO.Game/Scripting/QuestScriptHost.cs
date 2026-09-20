@@ -290,6 +290,7 @@ public sealed class QuestScriptHost(
             context.FailAction("The skill could not be cast.");
     }
     public void DespawnNpc() => context.RequestNpcDespawn();
+    public void SummonNpc(int npcId, int count, int x, int z) => context.RequestSummon(npcId, count, x, z);
 
     public void PlayEffect(int effectId) => context.Dialog.ShowEffect(effectId);
     public void PlayNpcEffect(int effectId) => context.Dialog.ShowNpcEffect(effectId);

@@ -6,6 +6,7 @@ namespace LibreKO.Game.World;
 
 public interface INpcLifecycleService
 {
+    Task SpawnAsync(NpcInstance npc);
     Task DespawnAsync(NpcInstance npc);
 }
 
@@ -13,6 +14,12 @@ public sealed class NpcLifecycleService(
     SessionManager sessionManager,
     ILogger<NpcLifecycleService> logger) : INpcLifecycleService
 {
+    public Task SpawnAsync(NpcInstance npc)
+    {
+        sessionManager.Regions.SpawnNpc(npc);
+        return sessionManager.Regions.BroadcastFromNpc(npc, Protocol.NpcPacketMapper.BuildInOutPacket(npc, InOutType.In));
+    }
+
     public async Task DespawnAsync(NpcInstance npc)
     {
         if (npc.IsDead)

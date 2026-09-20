@@ -631,13 +631,14 @@ public class AdminPacketCoordinator(
             NumNPC = (byte)Math.Min(count, byte.MaxValue),
         };
 
+        var lifecycle = serviceProvider.GetRequiredService<INpcLifecycleService>();
         for (int i = 0; i < count; i++)
         {
             var npc = NpcInstance.FromData(npcData, pos, 0);
             monsterAggressionPolicy.Apply(npc);
             npc.Y = sessionManager.Maps?.GetHeight(session.ZoneId, npc.X, npc.Z) ?? session.Y;
             npc.SpawnY = npc.Y;
-            sessionManager.Regions.SpawnNpc(npc);
+            await lifecycle.SpawnAsync(npc);
         }
 
         await SendNoticeAsync(session, $"Spawned {count} × {npcData.Name} (id {npcId}) at your position.");

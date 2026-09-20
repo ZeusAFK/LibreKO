@@ -1,0 +1,19 @@
+RewardPool quest_17_draw
+    340110101 weight 2000
+    340310102 weight 2000
+    340310103 weight 2000
+    340410104 weight 2000
+    340510105 weight 2000
+
+Bind Npc 16047 Zone 21
+
+On topics
+    Topic "Exchanging accessory box" do
+        If player has >= 1 of 508194000
+            Say "You brought [Accessory Box]. You can get it randomly now. Would you like to exchange it?"
+            Topic "Confirm" do
+                Transaction
+                    Take 1 of 508194000
+                    Give random from quest_17_draw
+        Else
+            Say "You do not have the [Accessory Box]. Bring it to exchange it with the item."

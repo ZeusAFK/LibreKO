@@ -5,14 +5,14 @@ On greeting
         Say "I am Vecha, the seventh [Restless Sufferer]! You have the [Sixth Certificate of Suffering] hence you are eligible to answer the question. Do you want to hear it?"
         Topic "Accepted" do
             Say "In the Bifrost Dungeon, which can be accessed via Ronark Land gate, what is the name of the final boss monster players must thwart?"
-            Topic "Ultima" do
-                Transaction
-                    Take 1 of 910133000
-                    Give 1 of 910134000
             Topic "Balrog" do
                 Transaction
                     Take 1 of 910133000
                     Say "Your answer is incorrect. Your [Sixth Certificate of Suffering] has been consumed as penalty. It is time for me to leave now."
+            Topic "Ultima" do
+                Transaction
+                    Take 1 of 910133000
+                    Give 1 of 910134000
         Topic "Rejected" goto close
     Else if quest 317 is started
         Say "I am Vecha, the seventh [Restless Sufferer]! I only pose the question to those who bring the [Sixth Certificate of Suffering]."

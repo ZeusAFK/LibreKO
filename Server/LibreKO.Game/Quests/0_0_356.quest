@@ -1,0 +1,36 @@
+Bind Npc 24426 Zone 71 for karus
+Bind Npc 14426 Zone 71 for elmorad
+Quest 356 "Patriarch's Followers"
+    Journal for karus "The 4 Patriarchs are the biggest threats in Ronark Land! Get rid of their followers!!"
+    Journal for elmorad "The 4 Patriarchs are the biggest threats in Ronark Land! Get rid of their followers!!"
+    Kill 40 of 8407
+    Kill 40 of 8405
+    Kill 40 of 8406
+
+Requires player level >= 74
+
+Rewards
+    Give 250000000 experience
+
+On available
+    If player is karus
+        Say "Master, Ronark Land seems to have many enemies posing threat. Let's look for [Outpost Captain] Elrod."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Master, Ronark Land seems to have many enemies posing threat. Let's look for [Outpost Captain] Della."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "It feels as if I am sitting on a bed of nails, with all these enemies suddenly appearing from nowhere to threaten Ronark Land and there is not one we can take lightly..."
+    Topic "Tell me more..." do
+        Show quest "The biggest threats to Ronark Land are the four Patriarchs, and their followers..."
+
+On ready
+    Say "I think we've more or less completed the expedition mission, with this."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Have you dealt with all those followers of Patriarchs?! Wow~"
+
+On completed
+    Say "Since we lack the strength to defeat them ourselves, I am thinking of requesting for reinforcements. What do you think? Well.."

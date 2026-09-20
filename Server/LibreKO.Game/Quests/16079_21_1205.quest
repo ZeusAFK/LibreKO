@@ -1,0 +1,14 @@
+Bind Npc 16079 Zone 21
+Quest 1205 "Menissiah's trust"
+    Journal "Complete Menissiah's request to gain her trust"
+
+Requires player level >= 4 and (quest 66 is completed or quest 82 is completed)
+
+Rewards
+    Give 1 of 900601000
+
+On offer
+    Show quest "You want to gain my trust? Then come to me after clearing the quest.\n1. Making Bezoar\n2. Making a movement speed potion"
+
+On claimable
+    Show quest "Thank you for completing my request. I've heard that you are trying to get townspeople's trust? This will help you then. This is a token of my trust."

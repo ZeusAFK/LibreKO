@@ -1,0 +1,38 @@
+Bind Npc 24426 Zone 71 for karus
+Bind Npc 14426 Zone 71 for elmorad
+Quest 280 "Hidden Truth"
+    Journal for karus "You will receive 1,250,000 EXP for hunting 20 Darkness Knights, and 3,000,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 1,250,000 EXP for hunting 20 Darkness Knights, and 3,000,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 8013
+
+Requires player level >= 60 and player level <= 73
+
+Rewards
+    Give 1250000 experience or 3000000 with premium
+
+On available
+    If player is karus
+        Say "Will there be some hidden truth, as Elrod expects?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Will there be something hidden as Della expected?"
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Darn it! How did this happen? Our base was infiltrated during the night and our supplies set on fire. Luckily a guard survived and saw the culprit at work, so we know who it is. Still, something isn't right here..."
+        Topic "Tell me more..." do
+            Show quest "It was a Dark Knight who did it. But why? There must've had a specific motive. But what, we don't know. We'll just have to capture one of the Knights."
+    If player is elmorad
+        Say "Darn it! How did this happen? Our base was infiltrated during the night and our supplies set on fire. Luckily a guard survived and saw the culprit at work, so we know who it is. Still, something isn't right here..."
+        Topic "Tell me more..." do
+            Show quest "It was a  Dark Knight who did it. But why? There must've had a specific motive. But what, we don't know. We'll just have to capture one of the Knights."
+
+On in_progress
+    Say "No... it doesn't fit. Darkness Knights don't go randomly doing stuff like this. We'll capture one and interrogate it."
+
+On claimable
+    If player is karus
+        Show quest "Darkness conceals the truth, but it cannot destroy it. Ha, just as expected, El Morad was behind this one. They paid the Darkness Knights to make it look like a random attack. The El Moradians had only recently attacked, so we weren't expecting them back again so soon."
+    If player is elmorad
+        Show quest "Darkness conceals the truth, but it cannot destroy it. Ha, just as expected, Karus was behind this one. They paid the Dark Knights to make it look like a random attack. Karus had only recently attacked, so we weren't expecting them back again so soon."

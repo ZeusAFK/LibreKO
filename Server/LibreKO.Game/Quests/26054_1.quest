@@ -1,0 +1,20 @@
+Bind Npc 26054 Zone 1
+
+On greeting
+    If quest 220 is started and player has 910053000
+        Say "I'm the Sentinel of Keys, the guardian of the fourth key!  You are qualified to answer the question since you possess the [Third Key]. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "Who is the son of the emperor of El Morad abandoned in the wilderness?"
+            Topic "Manes" do
+                Transaction
+                    Take 1 of 910053000
+                    Say "Your answer is incorrect. Your [Third Key] has been consumed as penalty. I will leave now in search of the secret of the keys."
+            Topic "Xigenon" do
+                Transaction
+                    Take 1 of 910053000
+                    Give 1 of 910054000
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I'm the Sentinel of Keys, the guardian of the fourth key! I only pose the question to those who bring the [Third Key]."
+    Else
+        Say ""

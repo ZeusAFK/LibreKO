@@ -1,0 +1,57 @@
+RewardPool quest_158_draw_warrior
+    201005261 weight 2000
+    202005265 weight 6000
+    203005269 weight 1800
+    204005273 weight 180
+    205005277 weight 20
+
+RewardPool quest_158_draw_rogue
+    241005262 weight 2000
+    242005266 weight 6000
+    243005270 weight 1800
+    244005274 weight 180
+    245005278 weight 20
+
+RewardPool quest_158_draw_mage
+    261005263 weight 2000
+    262005267 weight 6000
+    263005271 weight 1800
+    264005275 weight 180
+    265005279 weight 20
+
+RewardPool quest_158_draw_priest
+    281005264 weight 2000
+    282005268 weight 6000
+    283005272 weight 1800
+    284005276 weight 180
+    285005280 weight 20
+
+Bind Npc 14301 Zone 21
+
+On topics
+    Topic "Goblin armor - boots" do
+        Say "[Blacksmith Heppa] will make you Goblin Body Armor boots for 5 Goblin Armor boots and 30,000 Noahs."
+        Topic "Confirm" do
+            By player class
+                For warrior
+                    Transaction
+                        Take 5 of 379053000
+                        Take 30000 coins
+                        Give random from quest_158_draw_warrior
+                For rogue
+                    Transaction
+                        Take 5 of 379053000
+                        Take 30000 coins
+                        Give random from quest_158_draw_rogue
+                For mage
+                    Transaction
+                        Take 5 of 379053000
+                        Take 30000 coins
+                        Give random from quest_158_draw_mage
+                For priest
+                    Transaction
+                        Take 5 of 379053000
+                        Take 30000 coins
+                        Give random from quest_158_draw_priest
+                Else
+                    Do nothing

@@ -1,0 +1,57 @@
+RewardPool quest_154_draw_warrior
+    201001261 weight 2000
+    202001265 weight 6000
+    203001269 weight 1800
+    204001273 weight 180
+    205001277 weight 20
+
+RewardPool quest_154_draw_rogue
+    241001262 weight 2000
+    242001266 weight 6000
+    243001270 weight 1800
+    244001274 weight 180
+    245001278 weight 20
+
+RewardPool quest_154_draw_mage
+    261001263 weight 2000
+    262001267 weight 6000
+    263001271 weight 1800
+    264001275 weight 180
+    265001279 weight 20
+
+RewardPool quest_154_draw_priest
+    281001264 weight 2000
+    282001268 weight 6000
+    283001272 weight 1800
+    284001276 weight 180
+    285001280 weight 20
+
+Bind Npc 14301 Zone 21
+
+On topics
+    Topic "Goblin armor" do
+        Say "[Blacksmith Heppa] will make you Goblin Body Armor top for 5 Goblin Armor top and 100,000 Noahs."
+        Topic "Confirm" do
+            By player class
+                For warrior
+                    Transaction
+                        Take 5 of 379049000
+                        Take 100000 coins
+                        Give random from quest_154_draw_warrior
+                For rogue
+                    Transaction
+                        Take 5 of 379049000
+                        Take 100000 coins
+                        Give random from quest_154_draw_rogue
+                For mage
+                    Transaction
+                        Take 5 of 379049000
+                        Take 100000 coins
+                        Give random from quest_154_draw_mage
+                For priest
+                    Transaction
+                        Take 5 of 379049000
+                        Take 100000 coins
+                        Give random from quest_154_draw_priest
+                Else
+                    Do nothing

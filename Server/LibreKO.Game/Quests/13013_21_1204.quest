@@ -1,0 +1,14 @@
+Bind Npc 13013 Zone 21
+Quest 1204 "Patrick's trust"
+    Journal "Complete Patrick's mission to gain his trust"
+
+Requires player level >= 4 and (quest 60 is completed or quest 62 is completed or quest 65 is completed or quest 67 is completed)
+
+Rewards
+    Give 1 of 900600000
+
+On offer
+    Show quest "Welcome. You want to earn my trust? Come back after clearing the next quest. \n1. Worm Hunt\n2. Bandicoot Hunt\n 3. Kecoon Hunt \n4. Bulcan Hunt \n5. Wild Bulcan Hunt"
+
+On claimable
+    Show quest "Potrang has told me what's happened and as I observe what you've done, I can tell that you can be trustworthy. I'll give you this. This is the proof of our trust in you."

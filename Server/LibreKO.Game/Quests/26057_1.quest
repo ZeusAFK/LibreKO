@@ -1,0 +1,20 @@
+Bind Npc 26057 Zone 1
+
+On greeting
+    If quest 220 is started and player has 910056000
+        Say "I am the Keeper, the guardian of the Seventh key! You possess the [Sixth Key], so you are qualified to hear the question. Will you accept the challenge?"
+        Topic "Accepted" do
+            Say "What is the name of the mountain range that Xigenon crossed with his men?"
+            Topic "Eslant Mountain Range" do
+                Transaction
+                    Take 1 of 910056000
+                    Say "Your answer is incorrect. As a penalty, the [Sixth Key] you possessed has been destroyed. Now, I will leave to search for the secret of the keys elsewhere."
+            Topic "Iskant Mountain Range" do
+                Transaction
+                    Take 1 of 910056000
+                    Give 1 of 910057000
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I am the Keeper, the Guardian of the Seventh Key! I only pose questions to those who bring the [Sixth Key]"
+    Else
+        Say ""

@@ -1,0 +1,42 @@
+Bind Npc 14430 Zone 2 for warrior
+Bind Npc 14430 Zone 2 for rogue
+Bind Npc 14430 Zone 2 for mage
+Bind Npc 14430 Zone 2 for priest
+Quest 399 "[Repeatable] Legendary Pendant"
+    Repeat always
+    Journal "You have promised [Mercenary] Tales to hunt Garuna."
+    Kill 20 of 1302, 1352 at direction_626
+
+Requires player level >= 52 and player is elmorad and quest 232 is completed
+
+Rewards for warrior
+    Give 1 of 910157137
+
+Rewards for rogue
+    Give 1 of 910157137
+
+Rewards for mage
+    Give 1 of 910158138
+
+Rewards for priest
+    Choose one
+        Give 1 of 910159139
+        Give 1 of 910157137
+
+direction_626 = location "Garuna" about "Garuna\nStrong monsters equipped with a powerful defense ability, Garunas were employed by Atilla in the Legion of Darkness attack squad. " found "El Morad" at 441 419 in zone 2
+
+On available
+    Say "Master, Found it~! The Pendant that holds the Strength of Legend!! Russel is rumored to have it. Please, let it be true..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "...... How did you know I have the Pendant of Legend? This is the last little treasure I have."
+    Topic "Tell me more..." do
+        Show quest "What? You think people are earning money by digging-up the ground? You're so shameless as to say you want this precious thing - for nothing! Bloody well go and do something amazing, then I might consider giving it up. Cheek!"
+
+On ready
+    Say "(~grin~) Tales would give it to me if he sees the amount of hunting I've done, wouldn't he?"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "What? Did you really hunt them? I really should know the extent of your stubbornness by now. Still, my mouth never seems to learn. Oh well, here it is then. It's yours now too."

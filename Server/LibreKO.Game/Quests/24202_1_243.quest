@@ -1,0 +1,25 @@
+Bind Npc 24202 Zone 1
+Quest 243 "[Repeatable] Gem of Cardinal"
+    Repeat always
+    Journal "[Secret Agent] Clarence has commissioned you to acquire the Gem of Cardinal that is in possession of the Cardinals."
+    Collect 1 of 910083000
+
+Requires player level >= 55 and player is karus
+
+Rewards
+    Give 10000 coins
+
+On offer
+    Say "Belua's peal is immensely beautiful but it is sacred enough to resurrect a dying plant."
+    Topic "Tell me more..." do
+        Show quest "We were waiting for a true knight who will give us a chance to hear it. Please defeat the cardinals which are threatening this village and seize their jewels and show it in front of the Belua Bell. The bell will toll then."
+
+On in_progress
+    Say "Cardinal's jewels can be obtained by hunting cardinals."
+
+On ready
+    Say "Master, Cardinal's jewels have been gathered. Now we can hear the peal of the Belua Bell."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Thanks to you, we are able to listen to the beautiful peal. Thank you."

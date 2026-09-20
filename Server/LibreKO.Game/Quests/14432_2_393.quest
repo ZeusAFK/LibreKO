@@ -1,0 +1,47 @@
+Bind Npc 14432 Zone 2 for warrior
+Bind Npc 14432 Zone 2 for rogue
+Bind Npc 14432 Zone 2 for mage
+Bind Npc 14432 Zone 2 for priest
+Quest 393 "[Repeatable] Legendary Ring"
+    Repeat always
+    Journal "You have promised [Guard] Chayna to hunt Machirodus."
+    Kill 20 of 604, 654 at direction_620
+
+Requires player level >= 47 and player is elmorad and quest 207 is completed
+
+Rewards for warrior
+    Give 1 of 910162272
+
+Rewards for rogue
+    Give 1 of 910163273
+
+Rewards for mage
+    Give 1 of 910161271
+
+Rewards for priest
+    Choose one
+        Give 1 of 910164274
+        Give 1 of 910162272
+
+direction_620 = location "Machirodus" about "Machirodus\nA Smirdon monster representative of Adonis, its body is wrapped in sturdy armor and is noted for speedy attack ability. " found "El Morad" at 1753 1129 in zone 2
+
+On available
+    Say "Master, Perhaps you've heard of the personal accessories that hold the Strength of Legends? Cheina might know something..."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Hmm. I have 2 Legendary Accessories. I will reward you with the first of 2 rings when you complete the Machirodus hunt."
+    Topic "Tell me more..." do
+        Show quest "The Machirodus is a kind of  Smirdon. Remember them? He's got hard skin and a quick attack, so don't treat him lightly. Would you like to try?"
+
+On in_progress
+    Say "If you can't take down the Machiroduses, you certainly ain't deserving of this ring!"
+    Topic "Where can I find it?" do
+        Map direction_620
+
+On ready
+    Say "This hunt is over! Woo, now you're going to become the proud owner of a Ring of Legend!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Well done. You are the true owner of the ring."

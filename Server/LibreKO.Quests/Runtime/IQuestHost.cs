@@ -72,6 +72,7 @@ public interface IQuestHost
     void TeleportToZone(int zoneId, int x, int z);
     void CastSkill(int skillId);
     void DespawnNpc();
+    void SummonNpc(int npcId, int count, int x, int z);
     void PlayEffect(int effectId);
     void PlayNpcEffect(int effectId);
     void PromotePlayer();

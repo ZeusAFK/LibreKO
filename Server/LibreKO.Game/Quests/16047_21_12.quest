@@ -1,0 +1,19 @@
+RewardPool quest_12_draw
+    111110002 weight 2500
+    205001003 weight 2500
+    206001001 weight 2000
+    111210001 weight 2500
+    119101101 weight 500
+
+Bind Npc 16047 Zone 21
+
+On topics
+    Topic "Trade 2nd grade treasure chest" do
+        If player has >= 1 of 379155000
+            Say "What would you like to trade?"
+            Topic "Confirm" do
+                Transaction
+                    Take 1 of 379155000
+                    Give random from quest_12_draw
+        Else
+            Say "You don't have the treasure chest in the Forgotten Temple\n It is a precious box which can be obtained only by destroying the Army of Darkness in the Kelino Temple."

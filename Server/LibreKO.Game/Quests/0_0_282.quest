@@ -1,0 +1,35 @@
+Bind Npc 24426 Zone 71 for karus
+Bind Npc 14426 Zone 71 for elmorad
+Quest 282 "Secure a Strategic Point!"
+    Journal for karus "You will receive 2,500,000 EXP for hunting 20 Falcons and 250 Crimson Wings, and 5,000,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 2,500,000 EXP for hunting 20 Falcons and 250 Crimson Wings, and 5,000,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 2256
+    Kill 20 of 2223
+
+Requires player level >= 60 and player level <= 73
+
+Rewards
+    Give 2500000 experience or 5000000 with premium
+
+On offer
+    If player is karus
+        Say "Hey, <selfname>!! We're going against El Morad again shortly. But there's something I want you to take care of first. (Indicating the map) Here, and here... These are important strategic sites, and we need to take and hold them. One is a supply route; the other can be used to hit the enemy from the rear and cut-off their frontal assault."
+        Topic "Tell me more..." do
+            Show quest "No doubt El Morad has the same idea, so it's vital that you get on this immediately.  Before you can secure these points fully, you'll first have to eliminate  Falcon and the  Crimson Wing"
+    If player is elmorad
+        Say "Hey, <selfname>!! We're going against Karus again shortly. But there's something I want you to take care of first. (Indicating the map) Here, and here... These are important strategic sites, and we need to take and hold them. One is a supply route; the other can be used to hit the enemy from the rear and cut-off their frontal assault."
+        Topic "Tell me more..." do
+            Show quest "No doubt Karus has the same idea, so it's vital that you get on this immediately.  Before you can secure these points fully, you'll first have to eliminate  Falcon and the  Crimson Wing"
+
+On in_progress
+    Say "Falcon and Crimson Wing are Harpys. Take 'em out by using their low intelligence against them."
+
+On ready
+    Say "Brilliant work Master, you've secured both areas. Time to report back to base I think."
+    Topic "Confirm" goto close
+
+On claimable
+    If player is karus
+        Show quest "Nicely done! Great! We claim these strategic points in the name of Karus!"
+    If player is elmorad
+        Show quest "Nicely done! Great! We claim these strategic points in the name of El Morad!"

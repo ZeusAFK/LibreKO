@@ -1,0 +1,28 @@
+Bind Npc 24201 Zone 1 for karus warrior
+Bind Npc 14201 Zone 2 for elmorad warrior
+Quest 329 "Stamp of Strength"
+    Journal for karus "A Stamp of Strength is required for learning 70Lv and 80Lv skills, and [Warrior Master] Skaki will make it for you if you bring him 5 Fangs of Bakirra, 5 Venomous Tails of Shaula and 2 packs of Magic Powder, which are the required materials for Stamp of Strength."
+    Journal for elmorad "A Stamp of Strength is required for learning 70Lv and 80Lv skills, and [Warrior Master] Skaki will make it for you if you bring him 5 Fangs of Bakirra, 5 Venomous Tails of Shaula and 2 packs of Magic Powder, which are the required materials for Stamp of Strength."
+    Collect 1 of 379042000
+    Collect 1 of 379040000
+    Collect 2 of 379236000
+
+Requires player level >= 69
+
+Rewards
+    Give 1 of 379243000
+
+On offer
+    Say "You are now fast approaching the ultimate warrior level."
+    Topic "Tell me more..." do
+        Show quest "We warriors have been thinking for a long time on the limit of our abilities. And as a result, we discovered the special skill filled with the last of our spirit and strength, and we recognized it as our final limit. And it is time for you to be handed down with that last secret skill. Since it is the last secret skill, the process of making it is also very complex. First, you need a Stamp of Strength and Nostrum of Constitution.  But these two items cannot be obtained from somewhere straightaway.  Such"
+
+On in_progress
+    Say "To make a Stamp of Strength, you need  1 Fangs of Bakirra, 1 Venomous Tails of Shaula, 2 Magic Powders and you can't afford to miss any one of them."
+
+On ready
+    Say "Master, all the ingredients needed to make the Stamp of Power have been amassed. The ultimate secret weapon of the warrior... I can't wait to witness it."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Wow... every single ingredient is here. The Stamp of Power will soon be completed. Please wait. This is the Stamp of Power. It is an essential object for completing the ultimate skill of the warrior."

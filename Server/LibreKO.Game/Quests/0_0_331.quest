@@ -1,0 +1,28 @@
+Bind Npc 24202 Zone 1 for karus rogue
+Bind Npc 14202 Zone 2 for elmorad rogue
+Quest 331 "Nostrum of Speed"
+    Journal for karus "A Nostrum of Speed is required for learning 70Lv and 80Lv skills, and [Secret Agent] Clarence will make it for you if you bring him 5 Bracelets of Orc Bandit, 5 Venomous Tails of Shaula and 2 packs of Magic Powder, which are the required materials for Nostrum of Speed."
+    Journal for elmorad "A Nostrum of Speed is required for learning 70Lv and 80Lv skills, and [Secret Agent] Clarence will make it for you if you bring him 5 Bracelets of Orc Bandit, 5 Venomous Tails of Shaula and 2 packs of Magic Powder, which are the required materials for Nostrum of Speed."
+    Collect 5 of 910042000
+    Collect 1 of 379040000
+    Collect 2 of 379236000
+
+Requires player level >= 69
+
+Rewards
+    Give 1 of 379245000
+
+On offer
+    Say "What do you think is the most important thing for rogues?"
+    Topic "Tell me more..." do
+        Show quest "The most important things for us Rogues would obviously be speed and agility.  And when these elements reach the maximum, that rogue can be called to have reached the highest status.  The highest status... Of course it is easy to speak about it, but it requires great persistence and effort to reach that status, of course.  To respond to your such great effort, I will hand you down  the last secret art of us Rogues.  To complete the last secret art of Rogues, as I said before, the Rogue"
+
+On in_progress
+    Say "To make the Nostrum of Speed, you need 5 Bracelets of Orc Bandit, 5 Venomous Tails of Shaula, and 2 Magic Powders, and you don't have all of them yet."
+
+On ready
+    Say "Master, the Nostrum of Speed ingredients have all been acquired. You are now one step closer to being the greatest rogue."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You have collected all the ingredients needed to make the Nostrum of Speed. This is the Nostrum of Speed. It is one of the items you will need to unleash your latent ultimate ability."

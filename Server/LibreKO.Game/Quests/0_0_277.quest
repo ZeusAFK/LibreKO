@@ -1,0 +1,32 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 277 "Rage of the Piercing Cold"
+    Repeat always
+    Journal for karus "You will receive 1,500,000 EXP for hunting 20 Apostles of Piercing Cold, and 3,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 1,500,000 EXP for hunting 20 Apostles of Piercing Cold, and 3,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 8055, 8005
+
+Requires player level >= 60 and player level <= 74
+
+Rewards
+    Give 1500000 experience or 3500000 with premium
+
+On offer
+    If player is karus
+        Say "What's it like? When the coldness eats into your bones? Do you know? There've been a lot of miserable fellas suffering from the pain lately... Seems someone's been provoking the Apostle of Piercing Cold's anger... Heh."
+        Topic "Tell me more..." do
+            Show quest "If your bones start to freeze under their Glacier Spells... How would you counter it? Well, it's not easy~\n\nBecause of those guys trying to steal the Apostle of Piercing Cold's high quality Pet Transformation Scroll, they're just making the Apostle more fuious. Tut Tut~ It's not even worth trying... it'll only end with more souls floating up to heaven."
+    If player is elmorad
+        Say "What's it like? When the coldness eats into your bones? Do you know? There've been a lot of miserable fellas suffering from the pain lately... Seems someone's been   provoking the Apostle of Piercing Cold's anger... Heh."
+        Topic "Tell me more..." do
+            Show quest "If your bones start to freeze under their Glacier Spells... How would you counter it? Well, it's not easy~\n\nBecause of those guys trying to steal the Apostle of Piercing Cold's high quality Pet Transformation Scroll, they're just making the Apostle more fuious. Tut Tut~ It's not even worth trying... it'll only end with more souls floating up to heaven."
+
+On ready
+    Say "Master, you tried hard and fought well. How good is this high quality Pet Transformation Scroll the Apostle of Piercing Cold owns?"
+    Topic "Confirm" goto close
+
+On claimable
+    If player is karus
+        Show quest "you're still standing on your own two feet, so obviously it wasn't that bad. You know, you're quite a strange guy. Ha!~"
+    If player is elmorad
+        Show quest "So, what do you think? Was it a good experience? Well you're still standing on your own two feet, so obviously it wasn't that bad. You know, you're quite a strange guy. Ha!~"

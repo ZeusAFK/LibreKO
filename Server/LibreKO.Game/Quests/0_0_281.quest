@@ -1,0 +1,42 @@
+Bind Npc 24426 Zone 71 for karus
+Bind Npc 14426 Zone 71 for elmorad
+Quest 281
+    Title for karus "Karus' Warriors"
+    Title for elmorad "El Morad's Warriors"
+    Journal for karus "You will receive 2,500,000 EXP for hunting 20 Troll Shamans, and 5,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 2,500,000 EXP for hunting 20 Troll Shamans, and 5,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 8015
+
+Requires player level >= 60 and player level <= 73
+
+Rewards
+    Give 2500000 experience or 5500000 with premium
+
+On offer
+    If player is karus
+        Say "It's 'do' or 'die' here! And 'here' is Ronark Land, if you didn't know. The battles against El Morad here rage ever on. There'll be no peace until the day Karus' flag is raised over the whole territory."
+        Topic "Tell me more..." do
+            Show quest "Don't think, though, that El Morad is our only enemy here. Eveyone and everything here is our enemy! Remember that, and you might stand a chance. Of all our enemies here, the  Troll Shamanhas unrivaled strength and Darkness Spells. Wouldn't you like to give 'em a kicking? It'd be a good measure of your skills..."
+    If player is elmorad
+        Say "It's 'do' or 'die' here! And 'here' is Ronark Land, if you didn't know. The battles against Karus here rage ever on. There'll be no peace until the day El Morad's flag is raised over the whole territory."
+        Topic "Tell me more..." do
+            Show quest "Don't think, though, that Karus is our only enemy here. Eveyone and everything here is our enemy! Remember that, and you might stand a chance. Of all our enemies here, the  Troll Shamanhas unrivaled strength and Darkness Spells. Wouldn't you like to give 'em a kicking? It'd be a good measure of your skills..."
+
+On in_progress
+    Say "No one can match the Troll Shaman's strength and Darkness Spells."
+
+On ready
+    Say "Master, you really gave it some out there! With your skills, you could be the next Outpost Captain! KeKe~"
+    Topic "Confirm" goto close
+
+On claimable
+    If player is karus
+        Show quest "Not just anyone could do that. But you managed, and magnificently so. <selfname>!! You are truly one of the finest of Karus's Warriors, stopping at nothing to paint the wind with the blood of your enemies and raise our flag over Ronark Land!!"
+    If player is elmorad
+        Show quest "Not just anyone could do that. But you managed, and magnificently so. <selfname>!! You are truly one of the finest of El Morad's Warriors, stopping at nothing to paint the wind with the blood of your enemies and raise our flag over Ronark Land!!"
+
+On completed
+    If player is karus
+        Say "(Feels like he's going to be Top Dog in Karus...)"
+    If player is elmorad
+        Say "(Feels like he's going to be Top Dog in El Morad...)"

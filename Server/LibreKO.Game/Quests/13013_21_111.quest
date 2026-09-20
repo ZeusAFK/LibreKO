@@ -1,0 +1,48 @@
+Bind Npc 13013 Zone 21 for warrior
+Bind Npc 13013 Zone 21 for rogue
+Bind Npc 13013 Zone 21 for mage
+Bind Npc 13013 Zone 21 for priest
+Quest 111 "Orc Watcher hunting"
+    Journal "[Sentinel] Patrick asked me to hunt Orc Watcher for him."
+    Kill 10 of 1671 at direction_597
+
+Requires player level >= 23
+
+Rewards for warrior
+    Give 150000 experience
+    Choose one
+        Give 1 of 971880792
+        Give 1 of 971920820
+        Give 1 of 971910732
+
+Rewards for rogue
+    Give 150000 experience
+    Choose one
+        Give 1 of 971850494
+        Give 1 of 971850494
+        Give 1 of 971890916
+
+Rewards for mage
+    Give 150000 experience
+    Choose one
+        Give 1 of 971860356
+        Give 1 of 971860364
+        Give 1 of 971860372
+
+Rewards for priest
+    Give 150000 experience
+    Choose one
+        Give 1 of 971930764
+        Give 1 of 971870764
+        Give 1 of 971900445
+
+direction_597 = location "Orc Watcher" about "Orc Watcher\nAn Orc race inhabiting Adonis equipped with high-level attack ability. " found "Moradon" at 328 687 in zone 21
+
+On available
+    Say "Mr. Patrick is looking for you Master!"
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Long time no see. I called you for no ther reason than to ask a favor of you. Nowadays, they say Orcs are stationed on the outskirts of Folk Village. The timing is not good. If they invade us during these troubled times, we will certainly lose as there are only new recruits available to defend..."
+    Topic "Tell me more..." do
+        Show quest "How is it? If you take care of Orc Watchers, I will give a corresponding reward"

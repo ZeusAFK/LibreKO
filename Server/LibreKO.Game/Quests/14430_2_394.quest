@@ -1,0 +1,47 @@
+Bind Npc 14430 Zone 2 for warrior
+Bind Npc 14430 Zone 2 for rogue
+Bind Npc 14430 Zone 2 for mage
+Bind Npc 14430 Zone 2 for priest
+Quest 394 "[Repeatable] Legendary Earring"
+    Repeat always
+    Journal "You have promised [Mercenary] Tales to hunt Sheriff."
+    Kill 20 of 1201, 1251 at direction_622
+
+Requires player level >= 50 and player is elmorad and quest 222 is completed
+
+Rewards for warrior
+    Give 1 of 910154112
+
+Rewards for rogue
+    Give 1 of 910155113
+
+Rewards for mage
+    Give 1 of 910153111
+
+Rewards for priest
+    Choose one
+        Give 1 of 910156114
+        Give 1 of 910154112
+
+direction_622 = location "Sheriff" about "Sheriff\nA scolar monster Pathos created by casting a curse on a scarecrow. Levels long-distance curse on all humans who approach. " found "El Morad" at 789 646 in zone 2
+
+On available
+    Say "Master, Finding the last Earring of Legend would be a good experience. I reckon Russel would know where to start."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "What? Yeah? You wanted to see me? What about this Earring that holds the strength of Legend?"
+    Topic "Tell me more..." do
+        Show quest "Hmm. This is no ordinary earring. The earring will only shine with true power for those worthy to wear it. I have it but can't wear it myself. I'll give it to you if you'll hunt the Sheriff. What do you say?"
+
+On in_progress
+    Say "Stop wandering around and just go and hunt quickly!"
+    Topic "Where can I find it?" do
+        Map direction_622
+
+On ready
+    Say "Well, well. The last Strength of Legends ring is yours now, master. Congratulations!"
+    Topic "All right, I'll swing by" goto close
+
+On claimable
+    Show quest "Hmm... Did you catch them all, already? Well, a promise is a promise, here you go. I hope you are the true owner of this earring."

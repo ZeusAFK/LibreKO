@@ -1,0 +1,20 @@
+Bind Npc 16056 Zone 2
+
+On greeting
+    If quest 220 is started and player has 910055000
+        Say "I'm the Searcher of Keys, the guardian of the sixth key! You are qualified to answer the question since you possess the [Fifth Key]. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "Who was created out of confusion?"
+            Topic "Cypher " do
+                Transaction
+                    Take 1 of 910055000
+                    Say "Your answer is incorrect. Your [Fifth Key] has been consumed as penalty. I will leave now in search of the secret of the keys."
+            Topic "Logos" do
+                Transaction
+                    Take 1 of 910055000
+                    Give 1 of 910056000
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I'm the Searcher of Keys, the guardian of the sixth key! I only pose the question to those who bring the [Fifth Key]."
+    Else
+        Say ""

@@ -1,0 +1,29 @@
+Bind Npc 18010 Zone 92
+Quest 815 "[Warden]Kabal's easy punishment"
+    Journal "You are sinful. You need to get punished by [Guard] Cabal."
+    Kill 10 of 9314 at direction_1069
+    Kill 10 of 9315 at direction_1070
+    Kill 10 of 9316 at direction_1071
+    Kill 10 of 9317 at direction_1072
+
+Requires player level >= 1 and quest 814 is completed
+
+Rewards none
+
+direction_1069 = location "Kecoon" about "Kecoon\nA reptile, walking on two feet from the War with Pathos." found "Prison" at 0 0 in zone 92
+direction_1070 = location "Bulcan" about "Bulcan\nMonster of Moradon which creates Iron Ore from earth in its stomach. " found "Prison" at 0 0 in zone 92
+direction_1071 = location "Gavolt" about "Gavolt\nBird type monster that transformed by Pathos' evil power." found "Prison" at 0 0 in zone 92
+direction_1072 = location "Bulture" about "Bulture\nBulkan type monster. Their horns are strong and sharp hence used for weapon materials." found "Prison" at 0 0 in zone 92
+
+On offer
+    Say "You have been brought to the jail for using [Hack Tool]. You can go back to Moradon when you have completed the punishments here."
+    Topic "Confirm" do
+        Show quest "Follow [Guard] Cabal's order and catch  [Vulkan], [Gabolt],[Volteur], [Werewolf]."
+
+On in_progress
+    Say "Please thoroughly complete the mission to leave the jail."
+
+On completed
+    Say "Mission completed. If you even come back here again, you will get harsher punishment. Keep in mind and try not to come back here ever again."
+    Topic "Oh, right." do
+        Teleport 21 at 817 448

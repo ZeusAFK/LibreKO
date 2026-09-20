@@ -1,0 +1,28 @@
+Bind Npc 24204 Zone 1 for karus priest
+Bind Npc 14204 Zone 2 for elmorad priest
+Quest 327 "Nostrum of Wisdom"
+    Journal for karus "A Nostrum of Wisdom is required for learning 70Lv, 74Lv, 76Lv, and 80Lv skills, and [Priest] Minerva will make it for you if you bring her 5 Holy Water of Temple, 5 Venomous Tails of Lesath, and 2 packs of Magic Powder, which are the ingredients of Nostrum of Wisdom."
+    Journal for elmorad "A Nostrum of Wisdom is required for learning 70Lv, 74Lv, 76Lv, and 80Lv skills, and [Priest] Minerva will make it for you if you bring her 5 Holy Water of Temple, 5 Venomous Tails of Lesath, and 2 packs of Magic Powder, which are the ingredients of Nostrum of Wisdom."
+    Collect 5 of 379047000
+    Collect 1 of 379041000
+    Collect 2 of 379236000
+
+Requires player level >= 69
+
+Rewards
+    Give 1 of 379249000
+
+On offer
+    Say "Whoa... You are beginning to emit the aura of the gods. That indicates that you have reached the final stage of priest training."
+    Topic "Tell me more..." do
+        Show quest "The priest who completes the final training earns the right to receive the pure ability that the god grants directly to the priests.  But. To be endowed with the ability, there are two things that you need.  They are the Nostrum of Wisdom and Stamp of Intelligence.  I will make the Nostrum of Wisdom for you if you bring me 5 Holy Water of Temple, 5 Venomous Tails of Lesath, and 2 Magic Powders. Do you want to do it?"
+
+On in_progress
+    Say "Making a Nostrum of Wisdom requires ,5 Holy Water of Life, 5 Venomous Tails of Lesath, and 2 Magic Powders."
+
+On ready
+    Say "Master, all the materials needed for making the Nostrum of Wisdom have been collected. My heart's going ballistic to think that you will be conferred infinite ability by the gods."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "You have accumulated all the ingredients required for making Nostrum of Wisdom. Please wait. Here's the Nostrum of Wisdom. I hope you will be bestowed with the ability of the gods and realize your dream."

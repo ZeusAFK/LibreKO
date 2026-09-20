@@ -1,0 +1,24 @@
+Bind Npc 18005 Zone 21
+Quest 1207 "Billbor's trust"
+    Journal "Defeat the looter and bring the secret ledger to Billbor"
+    Collect 1 of 900605000
+
+Requires player level >= 4
+
+Rewards
+    Give 1 of 900603000
+
+On available
+    Say "Master! Mr. Bilbor is looking for you."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Welcome. I have a request for you."
+    Topic "Tell me more..." do
+        Show quest "Looters have been showing up near Moradon harbor and bothering the townspeople. Could you please go find them and defeat them?"
+
+On in_progress
+    Say "I'm so anxiously waiting now...  those Looters need to be gotten rid of ASAP!"
+
+On claimable
+    Show quest "Thank you. I heard that you are trying to get the townspeople's trust. This will help you."

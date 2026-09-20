@@ -1,0 +1,29 @@
+Bind Npc 18010 Zone 92
+Quest 813 "[Guard]Cabal's very easy punishment"
+    Journal "You are sinful. You need to get punished by [Guard] Cabal."
+    Kill 10 of 9312 at direction_1067
+    Kill 10 of 9313 at direction_1068
+    Kill 10 of 9314 at direction_1069
+    Kill 10 of 9315 at direction_1070
+
+Requires player level >= 1
+
+Rewards none
+
+direction_1067 = location "Worm" about "Worm\nHuge worm monster which attacks with its long tentacles and body." found "Prison" at 0 0 in zone 92
+direction_1068 = location "Bandicoot" about "Bandicoot\nA rodent which grew abnormally by feeding on corpses of people from the War with Pathos." found "Prison" at 0 0 in zone 92
+direction_1069 = location "Kecoon" about "Kecoon\nA reptile, walking on two feet from the War with Pathos." found "Prison" at 0 0 in zone 92
+direction_1070 = location "Bulcan" about "Bulcan\nMonster of Moradon which creates Iron Ore from earth in its stomach. " found "Prison" at 0 0 in zone 92
+
+On offer
+    Say "You have been brought to the jail for using [Hack Tool]. You can go back to Moradon when you have completed the punishments here."
+    Topic "Confirm" do
+        Show quest "Follow [Guard] Cabal's order and catch [Worm], [Bandikut], [Caegoon] and [Vulkan]."
+
+On in_progress
+    Say "Please thoroughly complete the mission to leave the jail."
+
+On completed
+    Say "Mission completed. If you even come back here again, you will get harsher punishment. Keep in mind and try not to come back here ever again."
+    Topic "Oh, right." do
+        Teleport 21 at 817 448

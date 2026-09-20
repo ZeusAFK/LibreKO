@@ -1,0 +1,26 @@
+Bind Npc 14203 Zone 2 for mage
+Quest 326 "Stamp of Magic Power"
+    Journal "A Stamp of Magic Power is required for learning 70Lv, 72Lv and 75Lv skills, and [Archmage] Drake will make it for you if you bring him 1 Lupus Pendant, 1 Lycaon Pendant and 1 Silver Bar, which are the required materials for Stamp of Magic Power."
+    Collect 1 of 320410012
+    Collect 1 of 320410013
+    Collect 1 of 379067000
+
+Requires player level >= 69 and player is elmorad
+
+Rewards
+    Give 1 of 379248000
+
+On offer
+    Say "Besides the Nostrum of Magic, you also need a Stamp of Magic Power to complete the ultimate magic. What a Stamp of Magic Power does is, that it continuously replenishes the magic power of the caster using the ultimate magic, which consumes magic power infinitely.\nUsing the ultimate magic is that dangerous. But as someone who has committed himself to the study of magic, don't you think it worth the challenge?"
+    Topic "Tell me more..." do
+        Show quest "To make a Stamp of Magic Power, you need 1 Lupus Pendant,  1 Lycaon's Pendant, and one Silver Bar. So. Do you feel like bringing them here?\n\nYou are able to master Ultimate Magic when you reach the highest mage level(70Lv). Magic Nostrum and the Stamp of Magic Power is required to complete Ultimate Magic. [Archmage] Drake awards the Stamp of Magic Power 30 Dragon Teeth Soldier bones, 30 sapphires, and Silver Bar."
+
+On in_progress
+    Say "To make a Stamp of Magic Power, you need 1 Lupus Pendant,  1 Lycaon's Pendant, and one Silver Bar."
+
+On ready
+    Say "Master, you've collected all the ingredients needed for making the Stamp of Magic Power. I can't believe this is all it takes to make it."
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Here, this is the Stamp of Magic Power. It possesses unlimited magic power but it's useless in any task other than completing Ultimate Magic."

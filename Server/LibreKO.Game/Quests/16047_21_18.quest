@@ -1,0 +1,19 @@
+RewardPool quest_18_draw
+    156210001 weight 10
+    156110001 weight 50
+    205001001 weight 500
+    204001001 weight 2000
+    389020000 weight 7440
+
+Bind Npc 16047 Zone 21
+
+On topics
+    Topic "Premium lottery ticket" do
+        If player has >= 1 of 379166000
+            Say "You've brought the premium lottery ticket. Would you like a prize?"
+            Topic "Confirm" do
+                Transaction
+                    Take 1 of 379166000
+                    Give random from quest_18_draw
+        Else
+            Say "You don't have the premium lottery ticket. You can only obtain it in the PC room."

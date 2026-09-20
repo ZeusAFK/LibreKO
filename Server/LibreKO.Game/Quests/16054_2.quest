@@ -1,0 +1,20 @@
+Bind Npc 16054 Zone 2
+
+On greeting
+    If quest 220 is started and player has 910053000
+        Say "I am the Ranger of the Fourth Key! You possess the [Third Key], so you are qualified to hear the question. Will you accept the challenge?"
+        Topic "Accepted" do
+            Say "Who is the son of the emperor El Morad abandoned in the wilderness?"
+            Topic "Manes" do
+                Transaction
+                    Take 1 of 910053000
+                    Say "Your answer is incorrect. As a penalty, the [Third Key] you possessed has been destroyed. Now, I will leave to search for the secret of the keys elsewhere."
+            Topic "Xigenon" do
+                Transaction
+                    Take 1 of 910053000
+                    Give 1 of 910054000
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I am the Ranger of the Fourth Key! I only pose questions to those who bring the [Third Key]."
+    Else
+        Say ""

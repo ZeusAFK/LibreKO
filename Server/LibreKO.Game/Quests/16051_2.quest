@@ -1,0 +1,20 @@
+Bind Npc 16051 Zone 2
+
+On greeting
+    If quest 220 is started and player has 910050000
+        Say "I'm the Guard of the First Key! You are qualified to answer the question since you possess the [Written Order of Seven Keys]. Do you want to hear it?"
+        Topic "Accepted" do
+            Say "What kind of power does Cypher have?"
+            Topic "Power that makes everything vanish" do
+                Transaction
+                    Take 1 of 910050000
+                    Give 1 of 910051000
+            Topic "Power that creates everything" do
+                Transaction
+                    Take 1 of 910050000
+                    Say "Your answer is incorrect. As a penalty, the [Written Order of the Seven Keys] you possessed has been destroyed. Now, I will leave to search for the secret of the keys elsewhere."
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I'm the Guard of the First Key! I only pose the question to those who bring the [Written Order of Seven Keys]."
+    Else
+        Say ""

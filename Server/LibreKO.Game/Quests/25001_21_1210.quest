@@ -1,0 +1,19 @@
+Bind Npc 25001 Zone 21
+Quest 1210 "Aiding Fork Town"
+    Journal "Potrang asked to aid Jed in Fork Town"
+    Collect 1 of 900599000
+
+Requires player level >= 20 and quest 1203 is completed
+
+Rewards
+    Give 50000 experience
+
+On available
+    Say "Master~ Mr. Jed is looking for you."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Show quest "I'm the Captain of the guard, Jed. What do you need to tell me?"
+
+On claimable
+    Show quest "You came because Potrang told you. What is this? Decrypted Secret Ledger? Wait here."

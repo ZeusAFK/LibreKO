@@ -1,0 +1,26 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 275 "Two Faces of Monks II"
+    Repeat always
+    Journal for karus "You will receive 1,375,000 EXP for hunting 20 Brahmans, and 2,750,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 1,375,000 EXP for hunting 20 Brahmans, and 2,750,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 2153, 2103
+
+Requires player level >= 60 and player level <= 74
+
+Rewards
+    Give 1375000 experience or 2750000 with premium
+
+On available
+    Say "Those soulless monks... for some reason I pity them."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Why so busy? Come here and let's dicuss about how the world is going around."
+        Topic "Tell me more..." do
+            Show quest "Do you know how it feels to lose your soul? It sure is terrible to become a mindless beast every night.\n\nHe is a nomad monk of the Esoteric Buddhist order... but is his real identity a savage mage of darkness at night? Here I'm also called  Brahman. I have a feeling this is the start of a beautiful friendship... KeKe~"
+    If player is elmorad
+        Say "Why so busy? Come here and let's shoot the breeze a while."
+        Topic "Tell me more..." do
+            Show quest "Do you know how it feels to lose your soul? It sure is terrible to become a mindless beast every night.\n\nHe seems to be a nomad monk of the Esoteric Buddhist order... but at night does he change into a savage mage of the darkness? Here, I'm also known as  Brahman. I have a feeling this is the start of a beautiful friendship... KeKe~"

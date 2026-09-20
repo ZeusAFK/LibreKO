@@ -1,0 +1,50 @@
+Bind Npc 24426 Zone 71 for warrior
+Bind Npc 24426 Zone 71 for rogue
+Bind Npc 24426 Zone 71 for mage
+Bind Npc 24426 Zone 71 for priest
+Quest 369 "Danger from Monster II"
+    Journal "Get rid of Hell Fire and Havoc!"
+    Kill 1 of 8401 at direction_162
+    Kill 1 of 8403 at direction_164
+
+Requires player level >= 80 and player is karus
+
+Rewards for warrior
+    Choose one
+        Give 1 of 910120350
+        Give 1 of 910121300
+        Give 1 of 910126544
+
+Rewards for rogue
+    Choose one
+        Give 1 of 910119300
+        Give 1 of 910122350
+
+Rewards for mage
+    Choose one
+        Give 1 of 910123355
+        Give 1 of 910124351
+
+Rewards for priest
+    Choose one
+        Give 1 of 910125324
+        Give 1 of 910126544
+        Give 1 of 910120350
+
+direction_162 = location "Hellfire" about "Hell Fire" found "Ronark Land" at 0 0 in zone 71
+direction_164 = location "Havoc" found "Ronark Land" at 0 0 in zone 71
+
+On offer
+    Say "The word is that both Hell Fire and Havoc are in the outskirts of Ronark Land. There is no great danger now as they are quite far from here, but we might have a huge disaster in our hands if even just one of them was to make a move..."
+    Topic "Tell me more..." do
+        Show quest "If you could take care of them both, I will give you a weapon made just for you. So what do you think?"
+
+On in_progress
+    Say "Getting rid of their followers first could be a way. I heard that some of followers cast HP restoring spells."
+
+On ready
+    Say "They were quite strong, weren't they, Master? Good job!"
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "Did you get rid of them? (Perhaps they weren't that strong after all... I got scared for nothing...)\nHm~ well done. So, what equipment would you like?"

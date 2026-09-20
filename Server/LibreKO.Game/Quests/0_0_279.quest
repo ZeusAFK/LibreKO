@@ -1,0 +1,32 @@
+Bind Npc 24426 Zone 71 for karus
+Bind Npc 14426 Zone 71 for elmorad
+Quest 279 "The Knights of Darkness"
+    Journal for karus "You will receive 1,500,000 EXP for hunting 20 Doom Soldiers, and 3,500,000 EXP if you have Premium (But, the reward will not be given to those who are 75Lv or higher)."
+    Journal for elmorad "You will receive 1,500,000 EXP for hunting 20 Doom Soldiers, and 3,500,000 EXP if you have Premium (But, the reward will not be given to those who are 75Lv or higher)."
+    Kill 20 of 8012
+
+Requires player level >= 60 and player level <= 73
+
+Rewards
+    Give 1500000 experience or 3500000 with premium
+
+On offer
+    If player is karus
+        Say "I have felt their burning gaze... Their bloodthirsty rage is matched only by their incredible stamina... they're unbearable to be near, let alone fight. Even if you defeat them you'll only do so at great loss..."
+        Topic "Tell me more..." do
+            Show quest "It's the  Doom SoldierArmy... The resurrection of these guys ain't good news right now, what with us fighting the El Morad Army too. If they hit us from behind... Ah~ isn't there anywhere to make a stand for Karus in Ronark Land...\n\nAhh, that baleful red gaze, dripping with evil bloodthirtyness... It's the Doom Soldiers alright. They're knights too. Darkness Knights..."
+    If player is elmorad
+        Say "I have felt their burning gaze... Their bloodthirsty rage is matched only by their incredible stamina... they're unbearable to be near, let alone fight. Even if you defeat them you'll only do so at great loss..."
+        Topic "Tell me more..." do
+            Show quest "It's the Doom Soldier Army... The resurrection of these guys ain't good news right now, what with us fighting the Karus too. If they hit us from behind... Ah~ isn't there anywhere for El Morad to make a stand in Ronark Land...\n\nAhh, that baleful red gaze, dripping with evil bloodthirtyness... It's the Doom Soldiers alright. They're knights too. Darkness Knights..."
+
+On ready
+    If player is karus
+        Say "Well Master, nice job easing Elrod's mind a little."
+        Topic "Confirm" goto close
+    If player is elmorad
+        Say "Well Master, nice job easing Della's mind a little."
+        Topic "Confirm" goto close
+
+On claimable
+    Show quest "Is it you that confounded the Doom Soldier Armies and drove them back? I never would've guessed you'd become so talented. You're a real asset ...  Your services are most appreciated."

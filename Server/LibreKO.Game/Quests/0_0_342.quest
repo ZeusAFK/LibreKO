@@ -1,0 +1,21 @@
+Bind Npc 24426 Zone 71 for karus
+Bind Npc 14426 Zone 71 for elmorad
+Quest 342 "Legen's Resurrection"
+    Journal for karus "Protect Ronark Land from the death magician!"
+    Journal for elmorad "Protect Ronark Land from the death magician!"
+    Kill 120 of 8017
+
+Requires player level >= 70
+
+Rewards
+    Give 115000000 experience
+
+On available
+    If player is elmorad
+        Say "I hear that the Death Magician has appeared in Ronark Land.. Do you think it is true? Let's go and ask [Outpost Captain] Della about it."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "They used to be part of the Death Magicians and were a terror to everyone, but then they disappeared without any trace, as if they vanished into thin air. And now they are back. The ones who made everyone quiver in fear..."
+    Topic "Tell me more..." do
+        Show quest "What about you... How good are you?? Ah~am I thinking too recklessly..."

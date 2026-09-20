@@ -1,0 +1,27 @@
+Bind Npc 24439 Zone 11 for karus
+Bind Npc 14439 Zone 12 for elmorad
+Quest 278 "Madness"
+    Repeat always
+    Journal for karus "You will receive 400,000 EXP for hunting 200 Troll Warriors, and 1,000,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 400,000 EXP for hunting 200 Troll Warriors, and 1,000,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 1772, 1722
+
+Requires player level >= 60 and player level <= 74
+
+Rewards
+    Give 1000000 experience or 2500000 with premium
+
+On offer
+    Say "One caught by madness cannot see beyond one's own nose... And the madness can drag you even deeper into the depth of darkness..."
+    Topic "Tell me more..." do
+        Show quest "Those ones seized with madness might be running around and causing trouble somewhere here in Eslant right now... Shall we go and have a look? Troll Warriors seized with madness, huh... Kuku~"
+
+On in_progress
+    Say "Won't you come with me to watch those seized with madness? Kuku~"
+
+On ready
+    Say "Master, nice shot~!!"
+    Topic "Confirm" goto close
+
+On claimable
+    Show quest "I watched you crushing those seized with madness.. But this wind of madness will not be stopped that easily~"

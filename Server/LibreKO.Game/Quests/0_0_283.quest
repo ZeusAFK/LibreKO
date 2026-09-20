@@ -1,0 +1,33 @@
+Bind Npc 24426 Zone 71 for karus
+Bind Npc 14426 Zone 71 for elmorad
+Quest 283 "Betrayal"
+    Journal for karus "You will receive 1,500,000 EXP for hunting 20 Apostles of Piercing Cold, and 3,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Journal for elmorad "You will receive 1,500,000 EXP for hunting 20 Apostles of Piercing Cold, and 3,500,000 EXP if you have Premium (But, the reward will not be given if you are 75Lv or higher)."
+    Kill 20 of 8014
+
+Requires player level >= 60 and player level <= 73
+
+Rewards
+    Give 1500000 experience or 3500000 with premium
+
+On offer
+    Say "Blast. Why did I believe him?. Everything was running smoothly... But now we're facing the enemy front and back. Biiig trouble."
+    Topic "Tell me more..." do
+        Show quest "Betrayal!!  Apostle of Piercing Cold has betrayed us! He promised to cover our flanks while we took El Morad's front lines. But now they've come around and are attacking our rear!. We're caught like a rat in a trap... damn!!"
+
+On in_progress
+    If player is karus
+        Say "Blast, my calculations were all wrong. I trusted the Apostles too much. Now they must be stopped, whatever the cost. For Karuusss!!"
+    If player is elmorad
+        Say "Blast, my calculations were all wrong. I trusted the Apostles too much. Now they must be stopped, whatever the cost. For El Morraaadd!!"
+
+On ready
+    If player is karus
+        Say "Now that the traitors have been dealt with, we must see to the El Moradian scum!"
+        Topic "Confirm" goto close
+    If player is elmorad
+        Say "Now that the traitors have been dealt with, we must see to the Karusian scum!"
+        Topic "Confirm" goto close
+
+On claimable
+    Show quest "You've made a quite an impression! I can't tell you how inspiring it was having you fighting for us out there. So how did you do it? You brushed them aside like crumbs! You didn't do it all single-handedly, did you?"

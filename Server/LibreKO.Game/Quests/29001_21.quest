@@ -1,0 +1,7 @@
+Bind Npc 29001 Zone 21
+
+On greeting
+    Say "Pirates have appeared at Mora Island.\nIt's very suspicious.\nIt's also dangerous, but I'll take you there if you want."
+    Topic "Move to the island!" do
+        Teleport 21 at 780 52
+    Topic "No" goto close

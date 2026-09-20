@@ -1,0 +1,20 @@
+Bind Npc 26056 Zone 1
+
+On greeting
+    If quest 220 is started and player has 910055000
+        Say "I am the Seeker, the guardian of the Sixth key! You possess the [Fifth Key], so you are qualified to hear the question. Will you accept the challenge?"
+        Topic "Accepted" do
+            Say "Who was created out of confusion?"
+            Topic "Cypher " do
+                Transaction
+                    Take 1 of 910055000
+                    Say "Your answer is incorrect. As a penalty, the [Fifth Key] you possessed has been destroyed. Now, I will leave to search for the secret of the keys elsewhere."
+            Topic "Logos" do
+                Transaction
+                    Take 1 of 910055000
+                    Give 1 of 910056000
+        Topic "Rejected" goto close
+    Else if quest 220 is started
+        Say "I am the Seeker, the Guardian of the Sixth Key! I only pose questions to those who bring the [Fifth Key]"
+    Else
+        Say ""
