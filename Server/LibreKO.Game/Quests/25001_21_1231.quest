@@ -1,18 +1,17 @@
 Bind Npc 25001 Zone 21
 Quest 1231 "Sharine?"
     Journal "Hand [Amelie's soul stone] to Sharine"
-    Collect 1 of 900614000
 
 Requires player level >= 26 and quest 1230 is completed
 
-Rewards
-    Give 25000 experience
-
-On available
-    Say "did you come <selfname>?"
+Rewards none
 
 On offer
-    Show quest "Never thought she was such a monster .... He blood formed this stone could be an evidence in some way...\n\nBy the way, why she had the last chapter of the Sharine's journal? Everything is riddled with doubt. First of all can you ask Sharine about this stone? Sharine seems to know something.."
+    Say "did you come <selfname>?"
+    Topic "Come on, please." do
+        Say "Never thought she was such a monster .... He blood formed this stone could be an evidence in some way..."
+        Topic "(Often stone of light flashes.)" do
+            Show quest "By the way, why she had the last chapter of the Sharine's journal? Everything is riddled with doubt. First of all can you ask Sharine about this stone? Sharine seems to know something.."
 
 On in_progress
     Say "Have you met Sharine? The journal tells she might be at Teil village.."

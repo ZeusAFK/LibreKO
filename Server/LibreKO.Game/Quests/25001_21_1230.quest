@@ -1,0 +1,15 @@
+Bind Npc 25001 Zone 21
+Quest 1230 "Left behind"
+    Journal "Talk with Jed"
+
+Requires player level >= 26 and quest 1229 is completed
+
+Rewards
+    Give 1 of 900613881
+    Give 25000 experience
+
+On offer
+    Show quest "<selfname>... How could this be? She became a monster..\n Please do me this favor.\n <selfname> can you keep this ring with you? When you see her someday I want you to give this to her. I need to protect this village."
+
+On claimable
+    Show quest "(Jed has a serious look. Not a word spoken.)"

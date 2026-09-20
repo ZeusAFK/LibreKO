@@ -1,0 +1,13 @@
+Bind Npc 25047 Zone 21
+
+On greeting
+    If quest 1235 is started
+        Say "It is ordinary worm. (What is this for..)"
+        Topic "Next " do
+            Say "Insert the Spiritual Stone and Amelie's blood."
+            Topic "Next " do
+                Say "Kuoooooooooooooo.(Worm's getting bigger)"
+                Topic "Next " do
+                    Summon 1 of 9663
+    Else
+        Say ""

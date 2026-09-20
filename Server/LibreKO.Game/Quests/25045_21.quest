@@ -1,0 +1,11 @@
+Bind Npc 25045 Zone 21
+
+On greeting
+    If quest 1229 is started
+        Say "Kyaaaak!!Kyak! Kak! (Amelie is out of control!) Yumyum.(Amelie is eating human flesh.)"
+        Topic "Amelie How do you ..." do
+            Say "(Amelie's senses return)..Jed..Je..Jed..No!! Don't look..Please.. Don't LooooooooooooooK~!!!"
+            Topic "The Amelie's look turned to go." do
+                Summon 1 of 9662 at 310 940
+    Else
+        Say ""

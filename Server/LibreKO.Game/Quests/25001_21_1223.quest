@@ -1,0 +1,20 @@
+Bind Npc 25001 Zone 21
+Quest 1223 "Big and Shiny"
+    Fulfil elsewhere
+    Journal "Give the proposal ring to Amelie"
+
+Requires player level >= 24 and quest 1222 is completed
+
+Rewards
+    Give 50000 experience
+
+On offer
+    Say "(Jed is looking nervously)<selfname>..oh What should I do?"
+    Topic "What's going on?" do
+        Show quest "(Holding the ring) I gotta give this to her, but I can't even move one step forward..\n Perhaps if <selfname> can deliver this to her? Please! I'm begging you!!"
+
+On in_progress
+    Say "Did you go yet? Please hurry!"
+
+On claimable
+    Show quest "Oh! Thank you <selfname>. I really appreciate it."

@@ -1,0 +1,20 @@
+Bind Npc 25001 Zone 21
+Quest 1228 "Amelie's truth"
+    Fulfil elsewhere
+    Journal "Talk with Amelie"
+
+Requires player level >= 26 and quest 1227 is completed
+
+Rewards
+    Give 25000 experience
+
+On offer
+    Say "Hmm.. Although she's my love...I cannot overlook this. <selfname> can you ask Amelie about the ring found at the graveyard?"
+    Topic "You got it." do
+        Show quest "I can't believe it. Just lost it there?"
+
+On in_progress
+    Say "I can't believe it. Just lost it there?"
+
+On claimable
+    Show quest "Ha... Good. She just lost it there."

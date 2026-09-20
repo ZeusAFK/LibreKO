@@ -762,11 +762,11 @@ public sealed class Binder
                             $"\"{entry.Nation.Text}\" has a Journal line but no Title line; give every nation a title, or write it on the Quest line.");
                 foreach (var (scope, text) in scoped)
                     _questTexts.Add(new QuestText((int)block.QuestId, text.Title ?? title,
-                        text.Journal ?? journal, block.Daily, scope.Nation, scope.ClassGroup, block.Repeat));
+                        text.Journal ?? journal, block.Daily, scope.Nation, scope.ClassGroup, block.Repeat, block.FulfilElsewhere));
             }
-            else if (title is not null || journal is not null || block.Daily || block.Repeat)
+            else if (title is not null || journal is not null || block.Daily || block.Repeat || block.FulfilElsewhere)
             {
-                _questTexts.Add(new QuestText((int)block.QuestId, title, journal, block.Daily, 0, 0, block.Repeat));
+                _questTexts.Add(new QuestText((int)block.QuestId, title, journal, block.Daily, 0, 0, block.Repeat, block.FulfilElsewhere));
             }
 
             if (groups.Count > 0)
@@ -873,7 +873,8 @@ public sealed class Binder
     {
         if (token.Kind == TokenKind.Number)
         {
-            CheckCatalog(SlotKind.NpcId, token.Value, token.Span);
+            if (!QuestVocabulary.IsNationKillTarget(token.Value))
+                CheckCatalog(SlotKind.NpcId, token.Value, token.Span);
             return (int)token.Value;
         }
 

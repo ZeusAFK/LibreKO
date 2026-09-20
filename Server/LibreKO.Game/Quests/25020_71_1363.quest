@@ -1,0 +1,20 @@
+Bind Npc 25020 Zone 71
+Quest 1363 "The night before Storm"
+    Journal "Drakey tries to take over Adonis continent"
+
+Requires player level >= 80 and player is karus and quest 1357 is completed
+
+Rewards
+    Give 25000 experience
+
+On offer
+    Show quest "Found Draki's invasion planning document. Block Draki's invasion and let all the continents know of this."
+
+On in_progress
+    Say "Found Draki's invasion planning document. Block Draki's invasion and let all the continents know of this."
+
+On claimable
+    Show quest "Found Draki's invasion planning document. Block Draki's invasion and let all the continents know of this."
+
+On completed
+    Say "Haha. Thank you!"

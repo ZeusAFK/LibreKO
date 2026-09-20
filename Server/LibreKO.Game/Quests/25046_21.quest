@@ -1,0 +1,10 @@
+Bind Npc 25046 Zone 21
+
+On greeting
+    If quest 1234 is started and player lacks 900649000
+        Say "Amelie's buried here"
+        Topic "Confirm" do
+            Transaction
+                Give 1 of 900649000
+    Else
+        Say ""

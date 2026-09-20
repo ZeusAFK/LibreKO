@@ -142,7 +142,7 @@ public sealed record QuestObjectives(
 public sealed record QuestBinding(int NpcId, int ZoneId, int Nation, int ClassGroup = 0);
 
 public sealed record QuestText(int QuestId, string? Title, string? Journal, bool Daily = false,
-    int Nation = 0, int ClassGroup = 0, bool Repeat = false);
+    int Nation = 0, int ClassGroup = 0, bool Repeat = false, bool FulfilElsewhere = false);
 
 public sealed record QuestRewards(int QuestId, IReadOnlyList<BoundStatement.Action> Transfers,
     int ClassGroup = 0)

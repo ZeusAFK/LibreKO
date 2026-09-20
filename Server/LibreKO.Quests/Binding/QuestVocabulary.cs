@@ -140,6 +140,10 @@ public static class QuestVocabulary
     public const string OperatorArgument = "$op";
     public const string NegatedArgument = "$negated";
     public const string CloseTarget = "close";
+    public const int KarusKillTarget = 1;
+    public const int ElMoradKillTarget = 2;
+
+    public static bool IsNationKillTarget(long id) => id is KarusKillTarget or ElMoradKillTarget;
 
     public static IReadOnlyList<ActionSignature> Actions { get; } = BuildActions();
 

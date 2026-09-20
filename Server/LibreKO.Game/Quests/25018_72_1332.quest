@@ -1,0 +1,20 @@
+Bind Npc 25018 Zone 72
+Quest 1332 "Angered Monsters 2"
+    Journal "Defeat 20 Trents"
+    Kill 20 of 8851 at direction_1412
+
+Requires player level >= 50 and player is karus and quest 1330 is completed
+
+Rewards
+    Give 1250000 experience
+
+direction_1412 = location "Treant" about "Treant\nUses it's branches to attack the enemy. Has good defense skills" found "Ardream" at 767 560 in zone 72
+
+On offer
+    Show quest "Existing Monsters become more violent with an effect of red spiritual stone. Kill the 20 violent(Trents)."
+
+On in_progress
+    Say "Will you help me?"
+
+On claimable
+    Show quest "Existing Monsters become more violent with an effect of red spiritual stone. Kill the 20 violent(Trents)."

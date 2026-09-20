@@ -1,0 +1,23 @@
+Bind Npc 25020 Zone 71
+Quest 1348 "Darkness dwelled in the heart"
+    Journal "Defeat enemy nation users and bring back 50 soul stones"
+    Kill 30 of 2 at direction_489
+
+Requires player level >= 70 and player is karus and quest 1347 is completed
+
+Rewards
+    Give 6250000 experience
+
+direction_489 = location "El Morad" about "El Morad\nKill and bring an El Morad user" found "El Morad " at 100 100
+
+On offer
+    Show quest "Enemy's attack has been getting stronger. Need to defeat and see the cause of this."
+
+On in_progress
+    Say "Enemy's attack has been getting stronger. Need to defeat and see the cause of this."
+
+On claimable
+    Show quest "Enemy's attack has been getting stronger. Need to defeat and see the cause of this."
+
+On completed
+    Say "Haha. Thank you!"

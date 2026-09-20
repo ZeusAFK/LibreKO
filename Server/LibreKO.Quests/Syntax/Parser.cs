@@ -692,8 +692,21 @@ public sealed class Parser
         var titles = new List<NationTextSyntax>();
         var daily = false;
         var repeat = false;
+        var fulfilElsewhere = false;
         while (!AtEnd && Current.Indent > indent)
         {
+            if (Current.StartsWith("fulfil"))
+            {
+                if (Current.Tokens.Count != 2 || !Current.Tokens[1].IsWord("elsewhere"))
+                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                        "'Fulfil' in a Quest block takes 'elsewhere', as in 'Fulfil elsewhere'.");
+                else if (fulfilElsewhere)
+                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                        "This quest already has a Fulfil elsewhere declaration.");
+                fulfilElsewhere = true;
+                _index++;
+                continue;
+            }
             if (Current.StartsWith("daily") && Current.Tokens.Count == 1)
             {
                 if (daily)
@@ -786,7 +799,7 @@ public sealed class Parser
 
         return new QuestObjectivesSyntax(
             opener.Span, questId, questSpan, groups, anyWillDo, title, journal, daily, journals,
-            collects, grants, repeat, titles);
+            collects, grants, repeat, titles, fulfilElsewhere);
     }
 
     private Token? ParseJournal(Line line, Token? already)
@@ -856,7 +869,7 @@ public sealed class Parser
             || !line.Tokens[2].IsWord("of"))
         {
             _diagnostics.Error(DiagnosticId.UnknownAction, line.Span,
-                "A 'Quest' block takes 'Daily', 'Repeat always', 'Title for', 'Journal', 'Kill', 'Collect' or 'Give .. on accept' lines.");
+                "A 'Quest' block takes 'Daily', 'Repeat always', 'Fulfil elsewhere', 'Title for', 'Journal', 'Kill', 'Collect' or 'Give .. on accept' lines.");
             return null;
         }
 

@@ -1,0 +1,21 @@
+Bind Npc 25006 Zone 71
+Quest 1287 "Soul Stone of Darkness"
+    Journal "Talk to Uranus"
+    Collect 10 of 900687000
+
+Requires player level >= 70 and player is elmorad and quest 1285 is completed
+
+Rewards
+    Give 6250000 experience
+
+On offer
+    Show quest "(Contaminated Karus Warrior) or (Contaminated Elmorad Warrior) need to be defeated to collect improved darkness stones x 10."
+
+On in_progress
+    Say "(Contaminated Karus Warrior) or (Contaminated Elmorad Warrior) need to be defeated to collect improved darkness stones x 10."
+
+On claimable
+    Show quest "(Contaminated Karus Warrior) or (Contaminated Elmorad Warrior) need to be defeated to collect improved darkness stones x 10."
+
+On completed
+    Say "Haha. Thank you!"

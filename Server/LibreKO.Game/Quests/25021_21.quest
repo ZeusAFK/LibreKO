@@ -1,0 +1,50 @@
+Bind Npc 25021 Zone 21
+
+On greeting
+    If quest 1223 is started
+        Say "It's been too hard to come here crossing the continent. But did you see it too? There's a guy named Jed who's so handsome!"
+        Topic "Big, shiny" do
+            Say "(The ring sparkles radiantly when she opens the box) Wow...This is so beautiful... From Jed?"
+            Topic "YesThe mind wants to convey." do
+                Say "Oh...Thank you...but I need a man with courage. Tell him to bring this to me himself."
+                Topic "(Suddenly appeared Jigsaw)" do
+                    Say "Excuse me. Miss Amelie ... (clears throat)"
+                    Topic "Next " do
+                        Say "(Amelie's cheek turns in red) Oh. Jed!\nThank you for saving me from the monsters last time."
+                        Topic "Next " do
+                            Say "It was nothing. Well, I will be thankful if you accept this ring."
+                            Topic "Next " do
+                                Say "Why do I need to accept this ring?\n(Amelie being haughty)"
+                                Topic "Next " do
+                                    Say "B...Because. To get rid of those monsters...\n(Jed is bewildered)"
+                                    Topic "Next " do
+                                        Say "I...I lo..ve you! Since the first time I saw you."
+                                        Topic "Next " do
+                                            Say "Wh..what..(Amelie being shy)\nI will accept the ring...but first I will think about it."
+                                            Topic "Next " do
+                                                Say "Don't you need to go to Jed? *^^*"
+                                                Topic "I got in the end! What is this girl?" do
+                                                    Fulfil 1223
+    Else if quest 1226 is started and player lacks 900609000
+        Say "It's been too hard to come here crossing the continent. But did you see it too? There's a guy named Jed who's so handsome!"
+        Topic "Amelie said yes" do
+            Say "Oh. Welcome <selfname>. Jed is troubled? Haha He's waited long enough. Here. This is my response. Can you deliver it please?"
+            Topic "I'll pass soon." do
+                Transaction
+                    Give 1 of 900609000
+    Else if quest 1228 is started
+        Say "It's been too hard to come here crossing the continent. But did you see it too? There's a guy named Jed who's so handsome!"
+        Topic "The truth about Amelie" do
+            Say "What brings you here today <selfname>?"
+            Topic "I have undertaken to ask you something." do
+                Say "What's the matter ^^? I will answer you to the best of my ability."
+                Topic "I have undertaken to ask you something." do
+                    Say "(Embarrassed) R.Right. I lost it the other day, Where did you find it?"
+                    Topic "(At the burial ground)" do
+                        Say "!!!!! \nI...I probably lost it when I went there to visit my father's grave. Thank God you found this for me..I was really sad about this."
+                        Topic "(I'm right here.)" do
+                            Say "(Amelie looks suspicious...That will do it for today)"
+                            Topic "Confirm" do
+                                Fulfil 1228
+    Else
+        Say "It's been too hard to come here crossing the continent. But did you see it too? There's a guy named Jed who's so handsome!"

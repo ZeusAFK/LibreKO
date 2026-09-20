@@ -1,0 +1,17 @@
+Bind Npc 25018 Zone 72
+Quest 1335 "Status of Ardream"
+    Journal "Deliver Mercury's mail to Morbor"
+
+Requires player level >= 50 and player is karus and quest 1334 is completed
+
+Rewards
+    Give 125000 experience
+
+On offer
+    Show quest "The reason Ardream monsters bocome more violent is a contamination of red spiritual stone. Other areas may have same effect too, so I have to report this to Eslant."
+
+On in_progress
+    Say "Will you help me?"
+
+On claimable
+    Show quest "The reason Ardream monsters bocome more violent is a contamination of red spiritual stone. Other areas may have same effect too, so I have to report this to Eslant."

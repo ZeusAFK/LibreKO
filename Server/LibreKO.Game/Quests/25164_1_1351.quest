@@ -1,0 +1,17 @@
+Bind Npc 25164 Zone 1
+Quest 1351 "Unable to heal? Analysis"
+    Journal "Give the Hole of purification and the soul stone of darkness to Sharine"
+
+Requires player level >= 70 and player is karus and quest 1350 is completed
+
+Rewards
+    Give 625000 experience
+
+On offer
+    Show quest "Find out what to do to purify darkness stone from Fina."
+
+On in_progress
+    Say "Find out what to do to purify darkness stone from Fina."
+
+On claimable
+    Show quest "Find out what to do to purify darkness stone from Fina."

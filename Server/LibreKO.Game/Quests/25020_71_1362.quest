@@ -1,0 +1,21 @@
+Bind Npc 25020 Zone 71
+Quest 1362 "Revenge of 2nd Squad"
+    Journal "Kill 20 Yonga Knight squad"
+    Kill 20 of 8011, 9680
+
+Requires player level >= 80 and player is karus and quest 1353 is completed
+
+Rewards
+    Give 8375000 experience
+
+On offer
+    Show quest "The reason for the disappearance of inspection team 2 was because of Dragon Knights. Defeat 20 dragon knights."
+
+On in_progress
+    Say "The reason for the disappearance of inspection team 2 was because of Dragon Knights. Defeat 20 dragon knights."
+
+On claimable
+    Show quest "The reason for the disappearance of inspection team 2 was because of Dragon Knights. Defeat 20 dragon knights."
+
+On completed
+    Say "Haha. Thank you!"

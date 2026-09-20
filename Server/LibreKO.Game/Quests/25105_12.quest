@@ -1,0 +1,17 @@
+Bind Npc 25105 Zone 12
+
+On greeting
+    If quest 1277 is started
+        Say "Help me~~!! Oh!! You have a key~ Please help me out of here."
+        Topic "Save it." do
+            Transaction
+                Give 1 of 900684000
+            Say "Thank you. Thank you. Take us to the village please.\n\nOh yea. We don't need this. Please take it with you."
+    Else if quest 1339 is started
+        Say "Help me~~!! Oh!! You have a key~ Please help me out of here."
+        Topic "Save it." do
+            Transaction
+                Give 1 of 900684000
+            Say "Thank you. Thank you. Take us to the village please.\n\nOh yea. We don't need this. Please take it with you."
+    Else
+        Say ""

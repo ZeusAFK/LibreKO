@@ -1,0 +1,19 @@
+Bind Npc 25066 Zone 2
+Quest 1293 "Hole of Life"
+    Journal "Create a hole of life"
+    Collect 1 of 900638000
+
+Requires player level >= 70 and player is elmorad and quest 1292 is completed
+
+Rewards
+    Give 8375000 experience
+    Give 1 of 900620000
+
+On offer
+    Show quest "Conversation with Spirit King Lifte"
+
+On in_progress
+    Say "Conversation with Spirit King Lifte"
+
+On claimable
+    Show quest "Conversation with Spirit King Lifte"

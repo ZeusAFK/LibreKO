@@ -10,5 +10,13 @@ On greeting
                 Take 200000 coins
                 Give 1 of 900218000
             Say "Here, it's finished. Piece of a cake. Please come back to me if you need anything else."
+    Else if quest 1222 is started and player has 810418000
+        Say "Of course! Heh heh, but nothing comes for free!  If you give me the Apple of Moradon and only 100,000 Noah I'll make a ring for her."
+        Topic "Apple of Moradon? Hmm .... okay." do
+            Transaction
+                Take 1 of 810418000
+                Take 100000 coins
+                Give 1 of 900608000
+            Say "Good Choice! Here~ I wish you success and much love."
     Else
         Say ""

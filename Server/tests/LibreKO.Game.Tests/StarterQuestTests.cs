@@ -103,6 +103,15 @@ public class StarterSeedQuestTests
         await service.AwardNpcKillAsync(npc, killer);
 
         await questPacketCoordinator.Received(1).CheckQuestKillAsync(killer, 750);
+
+        var victim = new UserSession(Substitute.For<IClient>(), 2, 2) { Nation = AccountNation.ElMorad };
+        killer.Nation = AccountNation.Karus;
+        await service.AwardPlayerKillAsync(victim, killer);
+        await questPacketCoordinator.Received(1).CheckQuestKillAsync(killer, (int)AccountNation.ElMorad);
+
+        var ally = new UserSession(Substitute.For<IClient>(), 3, 3) { Nation = AccountNation.Karus };
+        await service.AwardPlayerKillAsync(ally, killer);
+        await questPacketCoordinator.DidNotReceive().CheckQuestKillAsync(killer, (int)AccountNation.Karus);
     }
 
     [Fact]

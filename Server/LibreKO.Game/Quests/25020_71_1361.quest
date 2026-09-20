@@ -1,0 +1,21 @@
+Bind Npc 25020 Zone 71
+Quest 1361 "Revenge of 1st Squad"
+    Journal "Kill 20 Fossil Guards"
+    Kill 20 of 8410, 9682
+
+Requires player level >= 80 and player is karus and quest 1353 is completed
+
+Rewards
+    Give 8375000 experience
+
+On offer
+    Show quest "The reason for the disappearance of Inspection team 1 was because of Fossil Guards. Take revenge now. Defeat 20 fossil guards."
+
+On in_progress
+    Say "The reason for the disappearance of Inspection team 1 was because of Fossil Guards. Take revenge now. Defeat 20 fossil guards."
+
+On claimable
+    Show quest "The reason for the disappearance of Inspection team 1 was because of Fossil Guards. Take revenge now. Defeat 20 fossil guards."
+
+On completed
+    Say "Haha. Thank you!"

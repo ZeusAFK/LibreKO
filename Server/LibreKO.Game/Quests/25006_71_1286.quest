@@ -1,0 +1,23 @@
+Bind Npc 25006 Zone 71
+Quest 1286 "Darkness dwelled in the heart"
+    Journal "Defeat enemy nation users and bring back 50 soul stones"
+    Kill 30 of 1 at direction_488
+
+Requires player level >= 70 and player is elmorad and quest 1285 is completed
+
+Rewards
+    Give 6250000 experience
+
+direction_488 = location "Karus" about "Karus\nKill and bring a Karus user" found "Karus" at 100 100
+
+On offer
+    Show quest "Enemy's attack has been getting stronger. Need to defeat and see the cause of this."
+
+On in_progress
+    Say "Enemy's attack has been getting stronger. Need to defeat and see the cause of this."
+
+On claimable
+    Show quest "Enemy's attack has been getting stronger. Need to defeat and see the cause of this."
+
+On completed
+    Say "Haha. Thank you!"

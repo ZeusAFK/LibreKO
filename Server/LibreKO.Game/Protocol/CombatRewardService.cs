@@ -33,6 +33,7 @@ public class CombatRewardService(
             return;
 
         killer.PlayersDefeated++;
+        await questPacketCoordinator.CheckQuestKillAsync(killer, (int)victim.Nation);
         await achievementProgressService.ReportPlayerKillAsync(killer);
     }
 

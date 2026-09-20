@@ -1,0 +1,20 @@
+Bind Npc 25006 Zone 71
+Quest 1288 "Unable to heal?"
+    Journal "Use the purification hole to the fallen warriors 10 times"
+
+Requires player level >= 70 and player is elmorad and quest 1287 is completed
+
+Rewards
+    Give 625000 experience
+
+On offer
+    Show quest "Need to see how we can purify the darkness stone. Spirit Fina might know."
+
+On in_progress
+    Say "Need to see how we can purify the darkness stone. Spirit Fina might know."
+
+On claimable
+    Show quest "Need to see how we can purify the darkness stone. Spirit Fina might know."
+
+On completed
+    Say "Haha. Thank you!"

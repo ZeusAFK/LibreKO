@@ -1,0 +1,21 @@
+Bind Npc 25020 Zone 71
+Quest 1356 "The missing  1st division"
+    Journal "Defeat 30 fossil guards, summon the chaos fossil guard and defeat him."
+    Kill 1 of 9655, 9685
+
+Requires player level >= 80 and player is karus and quest 1353 is completed
+
+Rewards
+    Give 8375000 experience
+
+On offer
+    Show quest "Inspection team 1 has been disappeared at where fossil guards are. Find out the reason for this. Accrording to the recent news, Chaos Fossil guards were the ones who did this. Find Chaos Fossil Guards."
+
+On in_progress
+    Say "Inspection team 1 has been disappeared at where fossil guards are. Find out the reason for this. Accrording to the recent news, Chaos Fossil guards were the ones who did this. Find Chaos Fossil Guards."
+
+On claimable
+    Show quest "Inspection team 1 has been disappeared at where fossil guards are. Find out the reason for this. Accrording to the recent news, Chaos Fossil guards were the ones who did this. Find Chaos Fossil Guards."
+
+On completed
+    Say "Haha. Thank you!"

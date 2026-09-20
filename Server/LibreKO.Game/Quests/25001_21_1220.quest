@@ -1,0 +1,27 @@
+Bind Npc 25001 Zone 21
+Quest 1220 "Safe emigration path"
+    Journal "Defeat 3 Scorpions, 3 Lycans, 3 Gloomwing, 3 Ferrelizer"
+    Kill 3 of 1056, 1052
+    Kill 3 of 1057 at direction_576
+    Kill 3 of 652 at direction_572
+    Kill 3 of 555 at direction_523
+
+Requires player level >= 24 and quest 1218 is completed
+
+Rewards
+    Give 125000 experience
+
+direction_523 = location "Dire Wolf" about "Dire Wolf\nMonster which evolved in the war with Pathos by a curse which turned man into wolfman" found "Moradon" at 522 803 in zone 21
+direction_572 = location "Wild Smilodon" about "Wild Smilodon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "Moradon" at 452 879 in zone 21
+direction_576 = location "Rotten Eyes" about "Rotten Eyes\nCorpse which has lost volition due to evil energy; undead monster exclusively harboring a hostility against all life forms" found "Moradon" at 348 949 in zone 21
+
+On offer
+    Say "Welcome in! Since Portu and Human have united together, many of them heve been immigrating to Moradon recently. With those monsters moving in there have been so many issues. Can you help?"
+    Topic "Of course you are." do
+        Show quest "First of all, kill 10 each of Battalion, Rotten Eyes,Wild Smilodon, and Direwolf."
+
+On in_progress
+    Say "There are still many monsters left."
+
+On claimable
+    Show quest "Thanks! Many refugees can now travel comfortably because of you!"

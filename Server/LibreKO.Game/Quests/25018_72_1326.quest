@@ -1,0 +1,17 @@
+Bind Npc 25018 Zone 72
+Quest 1326 "The Kidnapped"
+    Journal "Talk to Mercury"
+
+Requires player level >= 50 and player is karus
+
+Rewards
+    Give 125000 experience
+
+On offer
+    Show quest "Adream's Oaks kidnap the refugees and make them as their servants. Save the people and get rid of the Oaks."
+
+On in_progress
+    Say "Will you help me?"
+
+On claimable
+    Show quest "Adream's Oaks kidnap the refugees and make them as their servants. Save the people and get rid of the Oaks."

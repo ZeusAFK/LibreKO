@@ -132,6 +132,43 @@ public class QuestSummonTests
     }
 
     [Fact]
+    public void AmeliesSceneFulfilsJedsErrandAndJedWaitsUntilThen()
+    {
+        const int BigAndShiny = 1223;
+        var amelie = QuestCompilation.CreateFromFile(BakedQuestPath("25021_21.quest"));
+        amelie.Succeeded.Should().BeTrue(amelie.RenderDiagnostics());
+        var scene = QuestProgramComposer.Compose("amelie", 25021, 21, [amelie.Program]);
+        var host = Substitute.For<IQuestHost>();
+        host.PlayerZone.Returns(21);
+        host.PlayerNation.Returns(1);
+        host.QuestStatus(BigAndShiny).Returns(1);
+        scene.TryGetEntry(QuestProgram.GreetingEvent, 0, out var greeting).Should().BeTrue();
+        Run(scene, host, greeting);
+        var replies = new[] { "Big, shiny", "YesThe mind wants to convey.", "(Suddenly appeared Jigsaw)",
+            "Next ", "Next ", "Next ", "Next ", "Next ", "Next ", "Next ", "I got in the end! What is this girl?" };
+        foreach (var label in replies)
+            Run(scene, host, Shown(host).Single(b => b.Label.Text == label).TargetEvent);
+        host.Received(1).SetQuestState(BigAndShiny, 3);
+
+        var jed = QuestCompilation.CreateFromFile(BakedQuestPath("25001_21_1223.quest"));
+        jed.Succeeded.Should().BeTrue(jed.RenderDiagnostics());
+        var errand = QuestProgramComposer.Compose("jed", 25001, 21, [jed.Program]);
+        errand.TryGetEntry(QuestProgram.ViewEvent, BigAndShiny, out var view).Should().BeTrue();
+        foreach (var (status, expected) in new[] { (1, QuestViewState.InProgress), (3, QuestViewState.Claimable) })
+        {
+            var player = Substitute.For<IQuestHost>();
+            player.PlayerZone.Returns(21);
+            player.PlayerNation.Returns(1);
+            player.PlayerLevel.Returns(24);
+            player.QuestStatus(BigAndShiny).Returns(status);
+            player.QuestStatus(1222).Returns(2);
+            Run(errand, player, view);
+            var page = (QuestView)player.ReceivedCalls().Single(c => c.GetMethodInfo().Name == "ShowQuestView").GetArguments()[0]!;
+            page.State.Should().Be(expected, $"status {status}: Jed turns the errand in only once Amelie has taken the ring");
+        }
+    }
+
+    [Fact]
     public void AFinishedPunishmentReleasesThePrisonerToMoradonFromItsCompletedPage()
     {
         var compilation = QuestCompilation.CreateFromFile(BakedQuestPath("18010_92_813.quest"));

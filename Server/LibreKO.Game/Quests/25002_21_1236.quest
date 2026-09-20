@@ -1,0 +1,15 @@
+Bind Npc 25002 Zone 21
+Quest 1236 "Sharine's message"
+    Journal "Talk with the high priest"
+
+Requires player level >= 26
+
+Rewards
+    Give 25000 experience
+    Give 1 of 900650000
+
+On offer
+    Show quest "Thanks! This is my written letter to Great Elder in the castle. If you take it, you will get more information about the Spiritual Stone"
+
+On claimable
+    Show quest "Go ahead. I have more researches."

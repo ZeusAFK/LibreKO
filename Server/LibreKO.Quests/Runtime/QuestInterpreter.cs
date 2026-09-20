@@ -148,7 +148,7 @@ public sealed class QuestInterpreter
         var rewards = _program.RewardsFor(choice.QuestId, _host.PlayerClassGroup);
         var measurable = goals is { Groups.Count: > 0 } || rewards is not null;
         var ready = measurable && ObjectivesComplete(choice.QuestId)
-                    && (rewards is null || CostsAvailable(rewards));
+                    && (rewards is null || CostsAvailable(rewards)) && !WaitsOnFulfilment(choice.QuestId);
         var label = DialogLine.FromText((ready ? ReadyTag : InProgressTag) + choice.Button.Label.Text);
         return choice with { Button = choice.Button with { Label = label } };
     }
@@ -208,6 +208,10 @@ public sealed class QuestInterpreter
         return true;
     }
 
+    private bool WaitsOnFulfilment(int questId) =>
+        _host.QuestStatus(questId) == 1
+        && (_program.TextFor(questId, _host.PlayerNation, _host.PlayerClassGroup)?.FulfilElsewhere ?? false);
+
     private bool ObjectivesComplete(int questId)
     {
         var goals = _program.Objectives.FirstOrDefault(o => o.QuestId == questId);
@@ -252,6 +256,7 @@ public sealed class QuestInterpreter
             ?? throw new InvalidOperationException($"Quest {questId} has no text.");
         var state = _host.QuestStatus(questId) switch
         {
+            1 when text.FulfilElsewhere => QuestViewState.InProgress,
             1 or 3 => ObjectivesComplete(questId) && CostsAvailable(rewards)
                 ? QuestViewState.Claimable : QuestViewState.InProgress,
             2 => QuestViewState.Completed,
@@ -430,7 +435,7 @@ public sealed class QuestInterpreter
 
     private void ClaimQuest(int questId)
     {
-        if (_host.ActionFailed || _host.QuestStatus(questId) is not (1 or 3))
+        if (_host.ActionFailed || _host.QuestStatus(questId) is not (1 or 3) || WaitsOnFulfilment(questId))
             return;
         var rewards = _program.QuestRewards.FirstOrDefault(r => r.QuestId == questId);
         if (rewards is null)

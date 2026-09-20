@@ -1,0 +1,20 @@
+Bind Npc 25005 Zone 12
+Quest 1284 "Eslant's state"
+    Journal "Give the report of Eslant to Morbor"
+
+Requires player level >= 60 and player is elmorad and quest 1282 is completed
+
+Rewards
+    Give 25000 experience
+
+On offer
+    Show quest "Go tell in Ronarkland about Eslant issue."
+
+On in_progress
+    Say "Go tell in Ronarkland about Eslant issue."
+
+On claimable
+    Show quest "Go tell in Ronarkland about Eslant issue."
+
+On completed
+    Say "Haha. Thank you!"

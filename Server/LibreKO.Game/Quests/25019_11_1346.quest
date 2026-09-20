@@ -1,0 +1,20 @@
+Bind Npc 25019 Zone 11
+Quest 1346 "Eslant's state"
+    Journal "Give the report of Eslant to Morbor"
+
+Requires player level >= 60 and player is karus and quest 1345 is completed
+
+Rewards
+    Give 25000 experience
+
+On offer
+    Show quest "Go tell in Ronarkland about Eslant issue."
+
+On in_progress
+    Say "Go tell in Ronarkland about Eslant issue."
+
+On claimable
+    Show quest "Go tell in Ronarkland about Eslant issue."
+
+On completed
+    Say "Haha. Thank you!"

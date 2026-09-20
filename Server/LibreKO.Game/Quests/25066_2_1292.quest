@@ -1,0 +1,21 @@
+Bind Npc 25066 Zone 2
+Quest 1292 "Gathering spirits"
+    Journal "Defeat 50 water spirits (Phase mode), Gather 50 water spirit souls."
+    Kill 50 of 1 at direction_488
+
+Requires player level >= 70 and player is elmorad and quest 1289 is completed
+
+Rewards
+    Give 6250000 experience
+    Give 1 of 900638000
+
+direction_488 = location "Karus" about "Karus\nKill and bring a Karus user" found "Karus" at 100 100
+
+On offer
+    Show quest "In order to meet Spirit King Lifte, need Soul of spirit. Soul of spirits can be found among humans. Defeat 30 enemies now."
+
+On in_progress
+    Say "In order to meet Spirit King Lifte, need Soul of spirit. Soul of spirits can be found among humans. Defeat 30 enemies now."
+
+On claimable
+    Show quest "In order to meet Spirit King Lifte, need Soul of spirit. Soul of spirits can be found among humans. Defeat 30 enemies now."

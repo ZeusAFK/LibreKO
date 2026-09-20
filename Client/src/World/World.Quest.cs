@@ -871,7 +871,9 @@ public partial class World
             int target = groups[g].Count;
             int firstNpc = groups[g].Npcs[0];
             string mob = _questObjectives.TryGetValue(questId, out var goals) && goals.Groups[g].Name is { } named
-                ? named : GameData.I != null ? GameData.I.NpcName(firstNpc, true) : $"#{firstNpc}";
+                ? named
+                : firstNpc is Nations.Karus or Nations.ElMorad ? $"{Nations.Name(firstNpc)} players"
+                : GameData.I != null ? GameData.I.NpcName(firstNpc, true) : $"#{firstNpc}";
             lines.Add($"{mob} {Mathf.Min(cur, target)}/{target}");
         }
         return lines;
@@ -1065,7 +1067,9 @@ public partial class World
         {
             int firstNpc = groups[g].Npcs[0];
             string mob = _questObjectives.TryGetValue(questId, out var goals) && goals.Groups[g].Name is { } named
-                ? named : GameData.I != null ? GameData.I.NpcName(firstNpc, true) : $"#{firstNpc}";
+                ? named
+                : firstNpc is Nations.Karus or Nations.ElMorad ? $"{Nations.Name(firstNpc)} players"
+                : GameData.I != null ? GameData.I.NpcName(firstNpc, true) : $"#{firstNpc}";
             int cur = counts != null && g < counts.Length ? counts[g] : 0;
             yield return (mob, Mathf.Min(cur, groups[g].Count), groups[g].Count);
         }

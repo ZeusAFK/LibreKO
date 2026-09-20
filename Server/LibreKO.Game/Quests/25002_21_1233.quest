@@ -1,0 +1,18 @@
+Bind Npc 25002 Zone 21
+Quest 1233 "Drakees' heart"
+    Journal "Talk with Sharine"
+
+Requires player level >= 26 and quest 1232 is completed
+
+Rewards
+    Give 50000 experience
+
+On offer
+    Say "<Draki's Heart> I believe you know this as well, there was species called Draki in this continent before our kind. Very strong tribe but with God's anger, their kind almost disappeared or few survivors hid themselves somewhere deep and secret. On their chest there was a Spiritual Stone which creates a great power which was their primary energy source.."
+    Topic "So what?" do
+        Say "Based on my research, the pieces of Spiritual Stone are found at different places in the world. And people who are contaminated with, makes them struggle, and..become a monster."
+        Topic "It can purify any contamination?" do
+            Show quest "It is not accurate yet! But, my research can be more improved. It seems to be possible from my perspective. I gotta observe more."
+
+On claimable
+    Show quest "Aren't you curious of ability of the stone? Here I will show you."
