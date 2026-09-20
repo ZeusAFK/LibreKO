@@ -1,0 +1,7 @@
+[
+  { "Id": 1, "CategoryName": "Power-Up", "Description": "Power-Up", "CategoryId": 1, "Status": 1 },
+  { "Id": 2, "CategoryName": "Special (TL OnIy)", "Description": "Special (TL OnIy)", "CategoryId": 2, "Status": 1 },
+  { "Id": 3, "CategoryName": "On sale", "Description": "On sale", "CategoryId": 3, "Status": 1 },
+  { "Id": 4, "CategoryName": "Exchange or Voucher", "Description": "Exchange or Voucher", "CategoryId": 4, "Status": 1 },
+  { "Id": 5, "CategoryName": "TL To Knight Cash", "Description": "TL To Knight Cash", "CategoryId": 5, "Status": 1 }
+]

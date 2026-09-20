@@ -237,6 +237,104 @@ public class AdminTests : GameTestBase
     }
 
     [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_TlCommandAdjustsTargetKnightCash()
+    {
+        using var provider = CreateProvider(
+            db =>
+            {
+                db.Accounts.AddRange(
+                    new Account
+                    {
+                        Login = "gm-tl-user",
+                        Password = "pw",
+                        Nation = AccountNation.Karus,
+                        Authority = AccountAuthority.GameMaster
+                    },
+                    new Account
+                    {
+                        Login = "tl-target-user",
+                        Password = "pw",
+                        Nation = AccountNation.Karus,
+                        Authority = AccountAuthority.Normal,
+                        KnightCash = 1000
+                    });
+                db.SaveChanges();
+
+                var gmAccountId = db.Accounts.Single(a => a.Login == "gm-tl-user").Id;
+                var targetAccountId = db.Accounts.Single(a => a.Login == "tl-target-user").Id;
+                db.Characters.AddRange(
+                    new Character
+                    {
+                        AccountId = gmAccountId,
+                        Slot = 0,
+                        Name = "GMTL",
+                        Race = 1,
+                        Class = 101,
+                        Face = 1,
+                        Hair = 1,
+                        Level = 10,
+                        Hp = 100,
+                        Mp = 100,
+                        MapId = 1,
+                        IsOnline = true,
+                        Items = new byte[InventoryConstants.InventoryTotal * 8],
+                        SkillPointData = new byte[9]
+                    },
+                    new Character
+                    {
+                        AccountId = targetAccountId,
+                        Slot = 0,
+                        Name = "TLTarget",
+                        Race = 1,
+                        Class = 101,
+                        Face = 1,
+                        Hair = 1,
+                        Level = 10,
+                        Hp = 100,
+                        Mp = 100,
+                        MapId = 1,
+                        IsOnline = true,
+                        Items = new byte[InventoryConstants.InventoryTotal * 8],
+                        SkillPointData = new byte[9]
+                    });
+            });
+
+        var gmAccountId = await GetAccountIdAsync(provider, "gm-tl-user");
+        var targetAccountId = await GetAccountIdAsync(provider, "tl-target-user");
+        var gmCharacterId = await GetCharacterIdAsync(provider, "GMTL");
+        var targetCharacterId = await GetCharacterIdAsync(provider, "TLTarget");
+
+        var gmClient = Substitute.For<IClient>();
+        gmClient.Id.Returns(Guid.NewGuid());
+        gmClient.CharacterId = gmCharacterId;
+        gmClient.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var targetClient = Substitute.For<IClient>();
+        targetClient.Id.Returns(Guid.NewGuid());
+        targetClient.CharacterId = targetCharacterId;
+        targetClient.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var gmSession = sessionManager.CreateSession(gmClient, gmCharacterId, gmAccountId);
+        gmSession.Name = "GMTL";
+        gmSession.IsGM = true;
+
+        var targetSession = sessionManager.CreateSession(targetClient, targetCharacterId, targetAccountId);
+        targetSession.Name = "TLTarget";
+        targetSession.KnightCash = 1000;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(gmSession, "+tl TLTarget 250");
+
+        targetSession.KnightCash.Should().Be(1250);
+
+        await using var scope = provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var account = await db.Accounts.SingleAsync(a => a.Login == "tl-target-user");
+        account.KnightCash.Should().Be(1250);
+    }
+
+    [Fact]
     public async Task PublicDemoSetLevelGrant_LetsANormalPlayerSetTheirOwnLevelOnly()
     {
         using var provider = CreateProvider(

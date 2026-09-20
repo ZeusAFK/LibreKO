@@ -120,7 +120,7 @@ public partial class Net
         int level = 0, maxHp = 0, hp = 0, maxMp = 0, mp = 0;
         long exp = 0, maxExp = 0;
         int nation = 0, race = 0, cls = 0, face = 0, hair = 0;
-        int statPoints = 0, np = 0, gold = 0, maxWeight = 0;
+        int statPoints = 0, np = 0, gold = 0, knightCash = 0, maxWeight = 0;
         int str = 0, sta = 0, dex = 0, intel = 0, magicStat = 0;
         int strB = 0, staB = 0, dexB = 0, intelB = 0, magicB = 0;
         const int MyInfoSlotBytes = 19;
@@ -175,6 +175,7 @@ public partial class Net
             fr = p.ReadByte(); cr = p.ReadByte(); lr = p.ReadByte();
             mr = p.ReadByte(); dr = p.ReadByte(); pr = p.ReadByte();
             gold = p.ReadInt();
+            knightCash = p.ReadInt();
             authority = p.ReadByte();
             p.ReadByte(); p.ReadByte();
             skillPoints = new byte[9];
@@ -219,7 +220,7 @@ public partial class Net
             level, exp, maxExp, hp, maxHp, mp, maxMp,
             str, sta, dex, intel, magicStat, statPoints,
             strB, staB, dexB, intelB, magicB,
-            ap, ac, gold, np, maxWeight,
+            ap, ac, gold, np, knightCash, maxWeight,
             fr, cr, lr, mr, dr, pr, skillPoints);
         _known.Clear();
         _gmFxStates.Clear();

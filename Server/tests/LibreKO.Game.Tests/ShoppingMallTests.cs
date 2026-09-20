@@ -107,6 +107,75 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyUsesAccountCurrencyAndGivesItem()
+    {
+        const int itemId = 800079000;
+
+        using var provider = CreateProvider(
+            db =>
+            {
+                db.PusItems.Add(new PusItemData
+                {
+                    Id = 1,
+                    ItemId = itemId,
+                    ItemName = "HP Scroll 60%",
+                    ItemTitle = "HP Scroll 60%",
+                    Price = 500,
+                    PriceType = 0,
+                    BuyCount = 1,
+                    ItemDesc = "HP recovery",
+                    Category = 1,
+                    SendType = 0,
+                });
+            },
+            gameData =>
+            {
+                gameData.GetItem(itemId).Returns(new ItemData
+                {
+                    Num = itemId,
+                    Race = 1,
+                    Countable = 1,
+                    Duration = 0,
+                    Kind = 1,
+                });
+            });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 27, accountId: 37);
+        session.Name = "Buyer";
+        session.KnightCash = 1000;
+
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(8);
+        request.WriteByte(1);
+        request.WriteByte(1);
+        request.WriteInt(itemId);
+        request.WriteByte(1);
+        request.WriteByte(0);
+
+        var coordinator = provider.GetRequiredService<IShoppingMallPacketCoordinator>();
+        await coordinator.HandleAsync(client, request);
+
+        session.KnightCash.Should().Be(500);
+        var index = Array.FindIndex(session.Inventory, slot => slot.ItemId == itemId);
+        index.Should().BeGreaterThanOrEqualTo(InventoryConstants.SlotMax);
+        session.Inventory[index].Count.Should().Be(1);
+
+        sentPackets.Should().HaveCount(2);
+        var sentPacket = sentPackets.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_SHOPPING_MALL);
+        sentPacket.ResetOffset();
+        sentPacket.ReadByte().Should().Be(8);
+        sentPacket.ReadByte().Should().Be(1);
+        sentPacket.ReadByte().Should().Be(1);
+    }
+
+    [Fact]
     public async Task ShoppingMallPacketCoordinator_HandleAsync_LetterSendUsesInventoryRelativeSlot()
     {
         const int itemId = 910001000;

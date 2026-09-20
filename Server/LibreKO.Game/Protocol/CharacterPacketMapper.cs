@@ -117,6 +117,7 @@ public class CharacterPacketMapper
             TotalHit = (short)context.Stats.TotalHit,
             TotalAc = context.Stats.TotalAc,
             Money = context.Character.Money,
+                KnightCash = context.Account.KnightCash,
             Authority = (byte)context.Account.Authority,
             NoClanCapeId = GetNoClanMyInfoCapeId(context.Account),
             HasPremium = context.PremiumHours > 0,

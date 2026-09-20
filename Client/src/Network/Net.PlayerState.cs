@@ -55,7 +55,7 @@ public partial class Net
         int hp, int maxHp, int mp, int maxMp,
         int str, int sta, int dex, int intel, int magicStat, int statPoints,
         int strBonus, int staBonus, int dexBonus, int intelBonus, int magicBonus,
-        int ap, int ac, int gold, int np, int maxWeight,
+        int ap, int ac, int gold, int np, int knightCash, int maxWeight,
         int fireR, int coldR, int lightningR, int magicR, int diseaseR, int poisonR,
         byte[] skillPoints)
     {
@@ -66,6 +66,7 @@ public partial class Net
         Sheet.SeedStatBonuses(strBonus, staBonus, dexBonus, intelBonus, magicBonus);
         Sheet.SeedCombat(ap, ac);
         Sheet.SeedWealth(gold, np);
+        Sheet.SetKnightCash(knightCash);
         Sheet.SeedResists(fireR, coldR, lightningR, magicR, diseaseR, poisonR);
         Sheet.SeedProgress(level, exp, maxExp);
         Sheet.SetMaxWeight(maxWeight);

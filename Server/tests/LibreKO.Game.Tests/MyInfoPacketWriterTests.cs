@@ -18,6 +18,8 @@ public class MyInfoPacketWriterTests
             CharacterId = 7,
             Name = "Tester",
             Level = 40,
+            Money = 1234,
+            KnightCash = 5678,
             KarusMilitary = 1,
             HumanMilitary = 2,
             KarusEslantMilitary = 3,
@@ -35,23 +37,55 @@ public class MyInfoPacketWriterTests
 
     private static void SkipHeader(Packet packet)
     {
+        SkipToWallet(packet);
+        packet.ReadInt();
+        packet.ReadInt();
+        packet.ReadByte();
+        packet.ReadByte();
+        packet.ReadByte();
+        packet.ReadBytes(9);
+    }
+
+    private static void SkipToWallet(Packet packet)
+    {
         packet.ReadInt();
         packet.ReadSByteString();
-        packet.ReadBytes(6);
-        packet.ReadBytes(9);
-        packet.ReadBytes(4);
-        packet.ReadBytes(3);
-        packet.ReadBytes(16);
-        packet.ReadBytes(8);
-        packet.ReadBytes(3);
-        packet.ReadBytes(14);
-        packet.ReadBytes(8);
-        packet.ReadBytes(16);
-        packet.ReadBytes(10);
-        packet.ReadBytes(4);
-        packet.ReadBytes(6);
-        packet.ReadBytes(7);
-        packet.ReadBytes(9);
+        packet.ReadShort();
+        packet.ReadShort();
+        packet.ReadShort();
+        packet.ReadByte();
+        packet.ReadByte();
+        packet.ReadShort();
+        packet.ReadByte();
+        packet.ReadInt();
+        packet.ReadByte();
+        packet.ReadByte();
+        packet.ReadByte();
+        packet.ReadByte();
+        packet.ReadByte();
+        packet.ReadShort();
+        packet.ReadLong();
+        packet.ReadLong();
+        packet.ReadInt();
+        packet.ReadInt();
+        packet.ReadShort();
+        packet.ReadByte();
+        packet.ReadLong();
+        packet.ReadUShort();
+        packet.ReadInt();
+        packet.ReadLong();
+        packet.ReadShort();
+        packet.ReadShort();
+        packet.ReadShort();
+        packet.ReadShort();
+        packet.ReadInt();
+        packet.ReadInt();
+        for (var i = 0; i < 10; i++)
+            packet.ReadByte();
+        packet.ReadShort();
+        packet.ReadShort();
+        for (var i = 0; i < 6; i++)
+            packet.ReadByte();
     }
 
     [Fact]
@@ -97,5 +131,15 @@ public class MyInfoPacketWriterTests
         packet.ReadByte().Should().Be(0);
         packet.ReadShort().Should().Be(0);
         packet.RemainingBytes.Should().Be(0);
+    }
+
+    [Fact]
+    public void Build_IncludesTheLiveKnightCashBalanceAfterMoney()
+    {
+        var packet = BuildMinimal();
+        SkipToWallet(packet);
+
+        packet.ReadInt().Should().Be(1234, "money is written before the live KC wallet");
+        packet.ReadInt().Should().Be(5678, "the live KC balance follows the gold balance in my-info");
     }
 }
