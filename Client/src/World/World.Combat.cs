@@ -19,6 +19,7 @@ public partial class World
     internal Vitals Vitals => Net.I.Vitals;
     private bool _autoAttack;
     private int _autoTargetId = -1;
+    private readonly HashSet<int> _castLogged = new();
     private double _nextSwing;
     private int _swingTarget = -1;
     private double _swingCommitAt;
@@ -141,10 +142,12 @@ public partial class World
         _autoTargetId = targetId;
         _hasMoveTarget = false;
         _terrainMoveHeld = false;
+        CombatLogAdd(SystemText(TextBeginAttack, "Beginning attack on %s", CombatEntityName(targetId)), CombatLogKind.Status);
     }
 
     private void StopAutoAttack()
     {
+        if (_autoAttack) CombatLogAdd(SystemText(TextStopAttack, "Stop Attack"), CombatLogKind.Status);
         _autoAttack = false;
         _autoTargetId = -1;
         CancelSwing();
@@ -345,6 +348,7 @@ public partial class World
                 {
                     EnsureSkillCooldown(s);
                     BeginCast(s);
+                    LogSkillUse(s);
                 }
                 if (s != null)
                 {
@@ -402,10 +406,8 @@ public partial class World
                 {
                     bool requested = ResolvePendingReply(skillId);
                     if (!HasPendingCast(skillId)) EndCast(skillId);
-                    if (requested && s != null && !HasPendingCast(skillId) && BasicRangedAttackSkill()?.Id != skillId)
-                        CombatLogAdd(s.IsPotion
-                            ? $"You used {ItemData.DisplayName(s.UseItem)}."
-                            : $"You used {s.Name}.", CombatLogKind.Status);
+                    if (requested && s != null && !HasPendingCast(skillId))
+                        LogSkillOutcome(s, miss);
                     if (s != null)
                     {
                         if (requested) EnsureSkillCooldown(s);
@@ -426,13 +428,43 @@ public partial class World
                     ClearPendingCast(skillId);
                     EndCast(skillId);
                     if (s != null) CancelSkillCooldown(s);   // a refused cast must not eat the cooldown
-                    if (sub == 4 && awaited && s is { UseItem: not 0, IsRanged: false })
-                        CombatNotice($"You couldn't use {ItemData.DisplayName(s.ConsumedItem)} right now.");
-                    else if (sub == 4 && awaited && s != null && ConflictingBuff(s) is { } blocker)
-                        CombatNotice($"{blocker.Name} is already active.");
+                    if (awaited && s != null) LogSkillRefused(s, sub);
+                    _castLogged.Remove(skillId);
                 }
                 break;
         }
+    }
+
+    private void LogSkillUse(SkillData.Skill s)
+    {
+        if (BasicRangedAttackSkill()?.Id == s.Id || !_castLogged.Add(s.Id)) return;
+        CombatLogAdd(s.IsPotion
+            ? $"You used {ItemData.DisplayName(s.UseItem)}."
+            : $"You used {s.Name}.", CombatLogKind.Status);
+    }
+
+    private void LogSkillOutcome(SkillData.Skill s, bool miss)
+    {
+        LogSkillUse(s);
+        _castLogged.Remove(s.Id);
+        if (BasicRangedAttackSkill()?.Id == s.Id || s.IsPotion) return;
+        if (miss) CombatLogAdd(SystemText(TextMissed, "%s Missed.", s.Name), CombatLogKind.Incoming);
+        else CombatLogAdd($"{s.Name} succeeded.", CombatLogKind.Outgoing);
+    }
+
+    private void LogSkillRefused(SkillData.Skill s, int sub)
+    {
+        if (sub == MagicSub.Cancel)
+        {
+            if (_castLogged.Contains(s.Id)) CombatLogAdd($"{s.Name} was cancelled.", CombatLogKind.Status);
+            return;
+        }
+        if (s is { UseItem: not 0, IsRanged: false })
+            CombatNotice($"You couldn't use {ItemData.DisplayName(s.ConsumedItem)} right now.");
+        else if (ConflictingBuff(s) is { } blocker)
+            CombatNotice($"{blocker.Name} is already active.");
+        else
+            CombatLogAdd($"{s.Name} failed.", CombatLogKind.Incoming);
     }
 
     private static int BuffSeconds(SkillData.Skill s, short[] data) =>

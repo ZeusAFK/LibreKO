@@ -13,6 +13,10 @@ public partial class World
     private StyleBoxFlat _combatLogPanelStyle = null!;
     private readonly Queue<string> _combatLogLines = new();
     private const int CombatLogMaxLines = 120;
+    private const int TextBeginAttack = 3002;
+    private const int TextStopAttack = 3003;
+    private const int TextMissed = 3015;
+    private const int TextOverweight = 2601;
 
     private void BuildCombatLog()
     {
@@ -115,6 +119,12 @@ public partial class World
         if (string.IsNullOrWhiteSpace(message)) return;
         Floaters?.Notice(message);
         CombatLogAdd(message, CombatLogKind.Status);
+    }
+
+    private static string SystemText(int id, string fallback, string? arg = null)
+    {
+        string text = ItemData.Text(id, fallback).Trim();
+        return arg == null ? text : text.Replace("%s", arg);
     }
 
     private string CombatEntityName(int id)

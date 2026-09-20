@@ -35,6 +35,7 @@ public partial class World : Node3D
     private VBoxContainer _invLower = null!;
     private ScrollContainer _invScroll = null!;
     private int _invRowsShown;
+    private bool _overweightWarned;
     private Label? _invGoldLbl, _invWeightLbl, _invSlotLbl;
     private ProgressBar _invWeightBar = null!, _invSlotBar = null!;
     private TrashSlot _invTrash = null!;
@@ -403,6 +404,7 @@ public partial class World : Node3D
 
         float load = Sheet.MaxWeight > 0 ? Mathf.Clamp((float)wt / Sheet.MaxWeight, 0f, 1f) : 0f;
         SetMeter(_invWeightBar, load);
+        WarnOverweight(load);
 
         (int used, int total) = InventorySlotUsage();
         if (GodotObject.IsInstanceValid(_invSlotLbl)) _invSlotLbl!.Text = $"{used}/{total}";
@@ -435,6 +437,14 @@ public partial class World : Node3D
             }
         }
         return (used, total);
+    }
+
+    private void WarnOverweight(float load)
+    {
+        bool over = load >= 1f;
+        if (over && !_overweightWarned)
+            CombatNotice(SystemText(TextOverweight, "You've exceeded your possible carrying weight."));
+        _overweightWarned = over;
     }
 
     private int CarriedWeight()
