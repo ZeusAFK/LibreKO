@@ -19,7 +19,6 @@ public class MyInfoPacketWriterTests
             Name = "Tester",
             Level = 40,
             Money = 1234,
-            KnightCash = 5678,
             KarusMilitary = 1,
             HumanMilitary = 2,
             KarusEslantMilitary = 3,
@@ -38,7 +37,6 @@ public class MyInfoPacketWriterTests
     private static void SkipHeader(Packet packet)
     {
         SkipToWallet(packet);
-        packet.ReadInt();
         packet.ReadInt();
         packet.ReadByte();
         packet.ReadByte();
@@ -134,12 +132,12 @@ public class MyInfoPacketWriterTests
     }
 
     [Fact]
-    public void Build_IncludesTheLiveKnightCashBalanceAfterMoney()
+    public void Build_WritesAuthorityImmediatelyAfterMoney()
     {
         var packet = BuildMinimal();
         SkipToWallet(packet);
 
-        packet.ReadInt().Should().Be(1234, "money is written before the live KC wallet");
-        packet.ReadInt().Should().Be(5678, "the live KC balance follows the gold balance in my-info");
+        packet.ReadInt().Should().Be(1234);
+        packet.ReadByte().Should().Be(0, "the MyInfo layout has no Knight Cash field");
     }
 }

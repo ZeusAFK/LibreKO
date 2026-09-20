@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Text.Json;
 using Godot;
 using LibreKO.Network;
 using LibreKO.Domain;
@@ -31,8 +30,10 @@ public partial class World
     private Label _shoppingmallStatus = null!;
 
     private readonly List<PusCatalogEntry> _pusCatalog = new();
+    private readonly List<ShoppingMallCategory> _pusCategories = new();
     private readonly List<PusBasketEntry> _pusBasket = new();
-    private byte _pusSelectedCategory = 1;
+    private byte _pusSelectedCategory;
+    private HBoxContainer _pusCategoryTabs = null!;
     private VBoxContainer _pusItemList = null!;
     private VBoxContainer _pusBasketList = null!;
     private Label _pusSummary = null!;
@@ -62,6 +63,9 @@ public partial class World
     {
         BuildShoppingMallPanel();
         Net.I.ShoppingMallOpenEvent += OnShoppingMallOpen;
+        Net.I.ShoppingMallCatalogEvent += OnShoppingMallCatalog;
+        Net.I.ShoppingMallCategoriesEvent += OnShoppingMallCategories;
+        Net.I.ShoppingMallBalanceEvent += OnShoppingMallBalance;
         Net.I.ShoppingMallUnreadEvent += OnShoppingMallUnread;
         Net.I.ShoppingMallLetterListEvent += OnShoppingMallLetterList;
         Net.I.ShoppingMallLetterReadEvent += OnShoppingMallLetterRead;
@@ -74,6 +78,9 @@ public partial class World
     private void ShoppingMallDispose()
     {
         Net.I.ShoppingMallOpenEvent -= OnShoppingMallOpen;
+        Net.I.ShoppingMallCatalogEvent -= OnShoppingMallCatalog;
+        Net.I.ShoppingMallCategoriesEvent -= OnShoppingMallCategories;
+        Net.I.ShoppingMallBalanceEvent -= OnShoppingMallBalance;
         Net.I.ShoppingMallUnreadEvent -= OnShoppingMallUnread;
         Net.I.ShoppingMallLetterListEvent -= OnShoppingMallLetterList;
         Net.I.ShoppingMallLetterReadEvent -= OnShoppingMallLetterRead;
@@ -222,8 +229,8 @@ public partial class World
         if (_shoppingmallShown) return;
         _shoppingmallShown = true;
         _shoppingmallPanel.Visible = true;
-        BootstrapPusCatalog();
-        RefreshPusView();        SwitchLetterView(_shoppingmallHistoryView);
+        RefreshPusView();
+        SwitchLetterView(_shoppingmallHistoryView);
         RebuildGiftPicker();
         RequestLetterList();
         Net.I.SendShoppingMallUnread();
@@ -392,7 +399,7 @@ public partial class World
     {
         if (error == 1)
         {
-            _shoppingmallStoreStatus.Text = "Store open — browse cash items on the website.";
+            _shoppingmallStoreStatus.Text = "Store open — catalogue loaded from the server.";
             _shoppingmallStoreStatus.AddThemeColorOverride("font_color", UiTheme.Good);
         }
         else
@@ -478,18 +485,16 @@ public partial class World
         }, true);
     }
 
-    private void OnShoppingMallBuyResult(bool ok, int totalCost)
+    private void OnShoppingMallBuyResult(bool ok, int balance)
     {
         if (ok)
         {
-            if (totalCost > 0)
-                Sheet.AdjustKnightCash(-totalCost);
+            if (balance >= 0)
+                OnShoppingMallBalance(balance);
 
-            UpdateStatusHud();
-            UpdatePusWallet();
-            _pusBasketStatus.Text = $"Purchase complete: {totalCost:n0} KC spent.";
+            _pusBasketStatus.Text = "Purchase complete.";
             _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-            Chat.Info($"Power-Up Store purchase complete: {totalCost:n0} KC.");
+            Chat.Info("Power-Up Store purchase complete.");
             return;
         }
 
@@ -509,28 +514,9 @@ public partial class World
         pusRoot.AddThemeConstantOverride("separation", 8);
         root.AddChild(pusRoot);
 
-        var tabs = new HBoxContainer();
-        tabs.AddThemeConstantOverride("separation", 6);
-        var categories = new[]
-        {
-            new { Id = (byte)1, Name = "Items" },
-            new { Id = (byte)2, Name = "Premium" },
-            new { Id = (byte)3, Name = "Utility" },
-            new { Id = (byte)4, Name = "Gear" },
-            new { Id = (byte)5, Name = "KC" },
-        };
-
-        foreach (var cat in categories)
-        {
-            var tab = new Button { Text = cat.Name, ToggleMode = true, FocusMode = Control.FocusModeEnum.None };
-            tab.Pressed += () =>
-            {
-                _pusSelectedCategory = cat.Id;
-                RefreshPusView();
-            };
-            tabs.AddChild(tab);
-        }
-        pusRoot.AddChild(tabs);
+        _pusCategoryTabs = new HBoxContainer();
+        _pusCategoryTabs.AddThemeConstantOverride("separation", 6);
+        pusRoot.AddChild(_pusCategoryTabs);
 
         var content = new HBoxContainer();
         content.AddThemeConstantOverride("separation", 10);
@@ -574,63 +560,8 @@ public partial class World
         content.AddChild(basketPanel);
     }
 
-    private sealed class PusSeedItem
-    {
-        public int Id { get; set; }
-        public int ItemId { get; set; }
-        public string ItemName { get; set; } = "";
-        public string ItemTitle { get; set; } = "";
-        public int Price { get; set; }
-        public int SendType { get; set; }
-        public int BuyCount { get; set; }
-        public string ItemDesc { get; set; } = "";
-        public int Category { get; set; }
-        public int PriceType { get; set; }
-    }
-
-    private void BootstrapPusCatalog()
-    {
-        if (_pusCatalog.Count > 0) return;
-
-        var seedPath = ProjectSettings.GlobalizePath("res://../Server/LibreKO.Game/Seed/Data/PusItems.json");
-        using var file = Godot.FileAccess.Open(seedPath, Godot.FileAccess.ModeFlags.Read);
-
-        if (file != null)
-        {
-            var json = file.GetAsText();
-            var rows = JsonSerializer.Deserialize<List<PusSeedItem>>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-            });
-
-            if (rows != null)
-            {
-                foreach (var row in rows)
-                {
-                    _pusCatalog.Add(new PusCatalogEntry
-                    {
-                        Id = row.Id,
-                        ItemId = row.ItemId,
-                        Name = row.ItemName,
-                        Description = string.IsNullOrWhiteSpace(row.ItemDesc) ? row.ItemTitle : row.ItemDesc,
-                        Category = row.Category,
-                        Price = row.Price,
-                        PriceType = row.PriceType,
-                    });
-                }
-                return;
-            }
-        }
-
-        _pusCatalog.Add(new PusCatalogEntry
-        {
-            Id = 1, ItemId = 800079000, Name = "HP Scroll 60%", Description = "HP recovery", Category = 1, Price = 499, PriceType = 0,
-        });
-    }
-
     private void RefreshPusView()
     {
-        UpdatePusWallet();
         foreach (var node in _pusItemList.GetChildren()) node.QueueFree();
         foreach (var node in _pusBasketList.GetChildren()) node.QueueFree();
 
@@ -644,7 +575,9 @@ public partial class World
             foreach (var item in rows)
             {
                 var row = UiTheme.RowPanel();
-                var hb = new HBoxContainer(); hb.AddThemeConstantOverride("separation", 8); row.AddChild(hb);
+                var hb = new HBoxContainer();
+                hb.AddThemeConstantOverride("separation", 8);
+                row.AddChild(hb);
 
                 var icon = new TextureRect
                 {
@@ -660,11 +593,18 @@ public partial class World
                 info.AddThemeConstantOverride("separation", -2);
                 info.AddChild(UiTheme.Text(item.Name, 12, UiTheme.TextHi));
                 info.AddChild(UiTheme.Text(item.Description, 11, UiTheme.TextLo));
-                info.AddChild(UiTheme.Text($"{item.Price:n0} {(item.PriceType == 1 ? "TL" : "KC")}", 11, UiTheme.GoldBright));
+                bool purchasable = item.PriceType == 0;
+                info.AddChild(UiTheme.Text(
+                    $"{item.Price:n0} {(purchasable ? "Knight Cash" : "USD")}",
+                    11,
+                    purchasable ? UiTheme.GoldBright : UiTheme.TextDim));
                 hb.AddChild(info);
 
                 var add = new Button { Text = "+", FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(28, 28) };
                 add.Pressed += () => AddToPusBasket(item);
+                add.Disabled = !purchasable;
+                if (!purchasable)
+                    add.TooltipText = "USD items cannot be purchased in-game.";
                 hb.AddChild(add);
 
                 _pusItemList.AddChild(row);
@@ -683,7 +623,9 @@ public partial class World
             {
                 total += basket.Item.Price * basket.Count;
                 var row = UiTheme.RowPanel();
-                var hb = new HBoxContainer(); hb.AddThemeConstantOverride("separation", 6); row.AddChild(hb);
+                var hb = new HBoxContainer();
+                hb.AddThemeConstantOverride("separation", 6);
+                row.AddChild(hb);
                 hb.AddChild(UiTheme.Text(basket.Item.Name, 11, UiTheme.TextHi));
                 var qty = UiTheme.Text($"x{basket.Count}", 11, UiTheme.TextLo);
                 qty.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
@@ -693,7 +635,7 @@ public partial class World
                 hb.AddChild(remove);
                 _pusBasketList.AddChild(row);
             }
-            _pusSummary.Text = $"Total {total:n0} {( _pusBasket[0].Item.PriceType == 1 ? "TL" : "KC")}";
+            _pusSummary.Text = $"Total {total:n0} Knight Cash";
             _pusBasketStatus.Text = "Ready to buy.";
         }
 
@@ -705,6 +647,54 @@ public partial class World
     {
         if (_pusWallet == null || !IsInstanceValid(_pusWallet)) return;
         _pusWallet.Text = $"KC Balance {Sheet.KnightCash:n0}";
+    }
+
+    private void OnShoppingMallCatalog(List<ShoppingMallCatalogEntry> entries)
+    {
+        _pusCatalog.Clear();
+        foreach (var entry in entries)
+        {
+            _pusCatalog.Add(new PusCatalogEntry
+            {
+                Id = entry.Id,
+                ItemId = entry.ItemId,
+                Name = entry.Name,
+                Description = entry.Description,
+                Category = entry.Category,
+                Price = entry.Price,
+                PriceType = entry.PriceType,
+            });
+        }
+
+        RefreshPusView();
+    }
+
+    private void OnShoppingMallCategories(List<ShoppingMallCategory> categories)
+    {
+        _pusCategories.Clear();
+        _pusCategories.AddRange(categories);
+        _pusSelectedCategory = _pusCategories.FirstOrDefault().Id;
+        foreach (var node in _pusCategoryTabs.GetChildren())
+            node.QueueFree();
+        foreach (var category in _pusCategories)
+        {
+            var tab = new Button { Text = category.Name, ToggleMode = true, FocusMode = Control.FocusModeEnum.None };
+            tab.Pressed += () =>
+            {
+                _pusSelectedCategory = category.Id;
+                RefreshPusView();
+            };
+            _pusCategoryTabs.AddChild(tab);
+        }
+
+        RefreshPusView();
+    }
+
+    private void OnShoppingMallBalance(int balance)
+    {
+        Sheet.SetKnightCash(balance);
+        UpdateStatusHud();
+        UpdatePusWallet();
     }
 
     private void AddToPusBasket(PusCatalogEntry item)
@@ -746,7 +736,7 @@ public partial class World
             total += entry.Item.Price * entry.Count;
             if (entry.Item.PriceType != item.PriceType)
             {
-                _pusBasketStatus.Text = "Basket mixes KC and TL items. Split purchases by currency type.";
+                _pusBasketStatus.Text = "Basket mixes Knight Cash and USD items. Split purchases by currency type.";
                 _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
                 return;
             }
@@ -754,17 +744,14 @@ public partial class World
 
         if (item.PriceType == 1)
         {
-            _pusBasketStatus.Text = "TL-based PUS items are not purchased from this client flow yet.";
+            _pusBasketStatus.Text = "USD PUS items cannot be purchased in-game.";
             _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
             return;
         }
 
-        var sent = new List<(int itemId, int count, int priceType, int totalCost)>();
         foreach (var entry in _pusBasket)
         {
-            int lineTotal = entry.Item.Price * entry.Count;
-            sent.Add((entry.Item.ItemId, entry.Count, entry.Item.PriceType, lineTotal));
-            Net.I.SendPowerUpStoreBuy(entry.Item.ItemId, entry.Count, entry.Item.PriceType, lineTotal);
+            Net.I.SendPowerUpStoreBuy(entry.Item.ItemId, entry.Count, entry.Item.PriceType);
         }
 
         _pusBasketStatus.Text = $"Purchase request sent for {total:n0} KC. Server validation pending.";

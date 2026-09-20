@@ -35,7 +35,7 @@ public partial class World
         _hudLauncher.AddChild(LauncherButton(
             "system/bag", "Inventory", () => ToggleMainWindow("Inventory")));
         _hudLauncher.AddChild(LauncherButton(
-            "system/pus", "Power-Up Store", OpenPowerUpStore, compactP: false));
+            "system/pus", "Power-Up Store", OpenPowerUpStore));
         _hudLauncher.AddChild(LauncherButton(
             "system/users-three", "Party", ToggleParty));
 
@@ -70,8 +70,7 @@ public partial class World
         string iconId,
         string tooltip,
         Action action,
-        bool town = false,
-        bool compactP = false)
+        bool town = false)
     {
         var button = new Button
         {
@@ -99,38 +98,18 @@ public partial class World
         var hoverIcon = new Color(0.94f, 0.95f, 0.96f);
 
         // Button draws an expand_icon a few px off-centre; a full-rect child centres it exactly.
-        Control glyph;
-        if (compactP)
+        var glyph = new TextureRect
         {
-            var pGlyph = new Label
-            {
-                Text = "P",
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-                Modulate = normalIcon,
-            };
-            pGlyph.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-            pGlyph.AddThemeFontSizeOverride("font_size", (int)Mathf.Round(LauncherButtonSize * 0.52f));
-            glyph = pGlyph;
-        }
-        else
-        {
-            var iconGlyph = new TextureRect
-            {
-                Texture = UiIcons.Get(iconId),
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-                SelfModulate = normalIcon,
-            };
-            iconGlyph.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-            float inset = LauncherButtonSize
-                          * (town ? HudPlacement.LauncherGlyphInset : 0.19f);
-            iconGlyph.OffsetLeft = iconGlyph.OffsetTop = inset;
-            iconGlyph.OffsetRight = iconGlyph.OffsetBottom = -inset;
-            glyph = iconGlyph;
-        }
+            Texture = UiIcons.Get(iconId),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            SelfModulate = normalIcon,
+        };
+        glyph.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        float inset = LauncherButtonSize * (town ? HudPlacement.LauncherGlyphInset : 0.19f);
+        glyph.OffsetLeft = glyph.OffsetTop = inset;
+        glyph.OffsetRight = glyph.OffsetBottom = -inset;
 
         button.AddChild(glyph);
         button.MouseEntered += () => { if (disc != null) disc.Hover = true; glyph.Modulate = hoverIcon; };

@@ -231,7 +231,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+give <itemId> [count] - Give item");
                 await SendNoticeAsync(session, "+item <name> - Search items by name");
                 await SendNoticeAsync(session, "+gold <amount> - Give/take gold");
-                await SendNoticeAsync(session, "+kc <name> <amount> / +tl <name> <amount> - Give/take KC/TL");
+                await SendNoticeAsync(session, "+kc <name> <amount> - Give/take Knight Cash");
                 await SendNoticeAsync(session,
                     "+setlevel <1-83> - Set level; resets stats + mastery, clears the skill bar");
                 await SendNoticeAsync(session, "+hp - Restore HP/MP");
@@ -369,7 +369,6 @@ public class AdminPacketCoordinator(
                 break;
 
             case "kc":
-            case "tl":
             case "knightcash":
                 await HandleKnightCashAsync(session, arg);
                 break;
@@ -539,7 +538,7 @@ public class AdminPacketCoordinator(
         var parts = arg.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 2 || !int.TryParse(parts[1], out var amount))
         {
-            await SendNoticeAsync(session, "Usage: +kc <name> <amount> | +tl <name> <amount>");
+            await SendNoticeAsync(session, "Usage: +kc <name> <amount>");
             return;
         }
 

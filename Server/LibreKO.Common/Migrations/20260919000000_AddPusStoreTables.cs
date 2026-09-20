@@ -30,16 +30,6 @@ public partial class AddPusStoreTables : Migration
             })
             .Annotation("MySql:CharSet", "utf8mb4");
 
-        migrationBuilder.Sql("""
-            INSERT INTO `PUS_CATEGORY` (`ID`, `Categoryname`, `Description`, `CategoryID`, `status`)
-            VALUES
-                (1, 'Power-Up', 'Power-Up', 1, 1),
-                (2, 'Special (TL OnIy)', 'Special (TL OnIy)', 2, 1),
-                (3, 'On sale', 'On sale', 3, 1),
-                (4, 'Exchange or Voucher', 'Exchange or Voucher', 4, 1),
-                (5, 'TL To Knight Cash', 'TL To Knight Cash', 5, 1);
-            """);
-
         migrationBuilder.CreateTable(
             name: "PUS_ITEMS",
             columns: table => new

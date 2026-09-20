@@ -107,6 +107,35 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ShoppingMallPacketCoordinator_HandleAsync_StoreOpenSendsCatalogCategoriesAndBalance()
+    {
+        using var provider = CreateProvider(_ => { });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, 30, 40);
+        session.Hp = 100;
+        session.KnightCash = 250;
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(1);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        sentPackets.Should().HaveCount(4);
+        foreach (var packet in sentPackets)
+            packet.ResetOffset();
+        sentPackets.Select(packet => packet.ReadByte()).Should().Equal(1, 1, 1, 1);
+        sentPackets[1].ReadByte().Should().Be(3);
+        sentPackets[2].ReadByte().Should().Be(4);
+        sentPackets[3].ReadByte().Should().Be(5);
+        sentPackets[3].ReadInt().Should().Be(250);
+    }
+
+    [Fact]
     public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyUsesAccountCurrencyAndGivesItem()
     {
         const int itemId = 800079000;
@@ -173,6 +202,53 @@ public class ShoppingMallTests : GameTestBase
         sentPacket.ReadByte().Should().Be(8);
         sentPacket.ReadByte().Should().Be(1);
         sentPacket.ReadByte().Should().Be(1);
+        sentPacket.ReadInt().Should().Be(500);
+    }
+
+    [Fact]
+    public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyRejectsUsdItems()
+    {
+        const int itemId = 800079001;
+
+        using var provider = CreateProvider(
+            db => db.PusItems.Add(new PusItemData
+            {
+                Id = 2,
+                ItemId = itemId,
+                ItemName = "USD item",
+                ItemTitle = "USD item",
+                Price = 10,
+                PriceType = 1,
+                BuyCount = 1,
+                ItemDesc = "USD item",
+                Category = 2,
+            }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Duration = 1 }));
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, 29, 39);
+        session.KnightCash = 1000;
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(8);
+        request.WriteByte(1);
+        request.WriteByte(1);
+        request.WriteInt(itemId);
+        request.WriteByte(1);
+        request.WriteByte(1);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        session.KnightCash.Should().Be(1000);
+        sentPackets.Should().ContainSingle();
+        sentPackets[0].ResetOffset();
+        sentPackets[0].ReadByte().Should().Be(8);
+        sentPackets[0].ReadByte().Should().Be(1);
+        sentPackets[0].ReadByte().Should().Be(0);
     }
 
     [Fact]

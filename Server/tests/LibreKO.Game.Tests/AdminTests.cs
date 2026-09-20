@@ -237,7 +237,7 @@ public class AdminTests : GameTestBase
     }
 
     [Fact]
-    public async Task AdminPacketCoordinator_HandleGmCommandAsync_TlCommandAdjustsTargetKnightCash()
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_KcCommandAdjustsTargetKnightCash()
     {
         using var provider = CreateProvider(
             db =>
@@ -324,7 +324,7 @@ public class AdminTests : GameTestBase
         targetSession.KnightCash = 1000;
 
         var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
-        await coordinator.HandleGmCommandAsync(gmSession, "+tl TLTarget 250");
+        await coordinator.HandleGmCommandAsync(gmSession, "+kc TLTarget 250");
 
         targetSession.KnightCash.Should().Be(1250);
 

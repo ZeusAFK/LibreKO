@@ -6,6 +6,7 @@ namespace LibreKO;
 
 public partial class World
 {
+    private static readonly Vector2 KnightCashHudPosition = new(228f, 11f);
     private PanelContainer _infoPanel = null!;
     private HFlowContainer _infoTabButtons = null!;
     private MarginContainer _infoTabContent = null!;
@@ -81,8 +82,8 @@ public partial class World
         status.AddChild(_mpBar);
 
         _kcLabel = HudStyle.Label(11, HorizontalAlignment.Right);
-        _kcLabel.Position = new Vector2(228f, 11f);
-        _kcLabel.AddThemeColorOverride("font_color", new Color(0.87f, 0.76f, 0.33f, 1f));
+        _kcLabel.Position = KnightCashHudPosition;
+        _kcLabel.AddThemeColorOverride("font_color", UiTheme.GoldBright);
         _kcLabel.AddThemeColorOverride("font_outline_color", Colors.Black);
         _kcLabel.AddThemeConstantOverride("outline_size", 2);
         status.AddChild(_kcLabel);
@@ -167,4 +168,3 @@ public partial class World
     private static Label3D NameLabel(string name, float y) => NamePlate.Make(name, y);
 
 }
-

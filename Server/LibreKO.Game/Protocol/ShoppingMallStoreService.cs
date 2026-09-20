@@ -24,6 +24,11 @@ public class ShoppingMallStoreService(
     private const byte StoreOpen = 1;
     private const byte StoreBuy = 8;
     private const byte StoreBuyItem = 1;
+    private const byte StoreCatalog = 3;
+    private const byte StoreCategories = 4;
+    private const byte StoreBalance = 5;
+    private const byte KnightCashPriceType = 0;
+    private const int BuyRequestSize = 7;
 
     public async Task HandleOpenAsync(UserSession session)
     {
@@ -63,6 +68,28 @@ public class ShoppingMallStoreService(
 
         await session.Client.SendPacket(
             ShoppingMallPacketWriter.StoreOpened(StoreOpen, errorCode, freeSlot));
+
+        if (errorCode != 1)
+            return;
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var categories = await db.PusCategories.AsNoTracking()
+            .Where(x => x.Status != 0)
+            .OrderBy(x => x.Id)
+            .Select(x => new ShoppingMallPacketWriter.Category(x.CategoryId, x.CategoryName, x.Description))
+            .ToListAsync();
+        var catalog = await db.PusItems.AsNoTracking()
+            .Where(x => x.Price != null && x.Price > 0)
+            .OrderBy(x => x.Id)
+            .Select(x => new ShoppingMallPacketWriter.CatalogEntry(
+                x.Id, x.ItemId, x.ItemName ?? x.ItemTitle ?? string.Empty, x.ItemDesc,
+                x.Category, x.Price!.Value, x.PriceType))
+            .ToListAsync();
+
+        await session.Client.SendPacket(ShoppingMallPacketWriter.Catalog(StoreOpen, StoreCatalog, catalog));
+        await session.Client.SendPacket(ShoppingMallPacketWriter.Categories(StoreOpen, StoreCategories, categories));
+        await session.Client.SendPacket(ShoppingMallPacketWriter.Balance(StoreOpen, StoreBalance, session.KnightCash));
     }
 
     public async Task HandleBuyAsync(UserSession session, Packet packet)
@@ -80,7 +107,7 @@ public class ShoppingMallStoreService(
             return;
         }
 
-        if (packet.RemainingBytes < 1 + 4 + 1 + 1)
+        if (packet.RemainingBytes < BuyRequestSize)
         {
             await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
             return;
@@ -114,7 +141,10 @@ public class ShoppingMallStoreService(
             }
 
             var totalCost = pusItem.Price.Value * count;
-            if ((byte)priceType != pusItem.PriceType || totalCost <= 0 || session.KnightCash < totalCost)
+            if (pusItem.PriceType != KnightCashPriceType
+                || priceType != KnightCashPriceType
+                || totalCost <= 0
+                || session.KnightCash < totalCost)
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
                 return;
@@ -140,14 +170,14 @@ public class ShoppingMallStoreService(
                 inventorySlot.ExpiresAt = 0;
             }
 
-            inventorySlot.Count = (ushort)Math.Min(9999, inventorySlot.Count + count);
-            inventorySlot.Durability = itemData.Duration;
+            inventorySlot.Count = (ushort)Math.Min(InventoryConstants.MaxStackCount, inventorySlot.Count + count);
 
             await characterStatePersister.SaveAsync(session);
             await session.Client.SendPacket(new ItemCountChangePacketWriter()
                 .Add((byte)slot, itemId, inventorySlot.Count, inventorySlot.Durability, isNewItem)
                 .Build());
-            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 1));
+            await session.Client.SendPacket(ShoppingMallPacketWriter.PurchaseResult(
+                StoreBuy, sub, ShoppingMallPacketWriter.Succeeded, session.KnightCash));
         }
     }
 

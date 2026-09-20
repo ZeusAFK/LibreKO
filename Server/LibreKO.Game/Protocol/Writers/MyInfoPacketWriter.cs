@@ -79,7 +79,6 @@ public sealed class MyInfoPacketWriter
     public byte PoisonResistance { get; set; }
 
     public int Money { get; set; }
-    public int KnightCash { get; set; }
     public byte Authority { get; set; }
 
     public bool HasPremium { get; set; }
@@ -269,7 +268,6 @@ public sealed class MyInfoPacketWriter
         packet.WriteByte(PoisonResistance);
 
         packet.WriteInt(Money);
-        packet.WriteInt(KnightCash);
         packet.WriteByte(Authority);
         packet.WriteByte(AuthorityTrailer);
         packet.WriteByte(AuthorityTrailer);

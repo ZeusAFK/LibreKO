@@ -20,6 +20,20 @@ public sealed class ShoppingMallPacketWriter
         int DateStamp,
         ushort DaysRemaining);
 
+    public readonly record struct CatalogEntry(
+        int Id,
+        int ItemId,
+        string Name,
+        string Description,
+        byte Category,
+        int Price,
+        byte PriceType);
+
+    public readonly record struct Category(
+        byte Id,
+        string Name,
+        string Description);
+
     public static Packet Result(byte storeOpcode, byte sub, byte result)
     {
         var packet = Sub(storeOpcode, sub);
@@ -80,6 +94,52 @@ public sealed class ShoppingMallPacketWriter
         packet.WriteByte(storeOpcode);
         packet.WriteShort(errorCode);
         packet.WriteShort(freeSlot);
+        return packet;
+    }
+
+    public static Packet Catalog(byte storeOpcode, byte sub, IReadOnlyCollection<CatalogEntry> entries)
+    {
+        var packet = Sub(storeOpcode, sub);
+        packet.WriteUShort((ushort)entries.Count);
+        foreach (var entry in entries)
+        {
+            packet.WriteInt(entry.Id);
+            packet.WriteInt(entry.ItemId);
+            packet.WriteSByteString(entry.Name);
+            packet.WriteSByteString(entry.Description);
+            packet.WriteByte(entry.Category);
+            packet.WriteInt(entry.Price);
+            packet.WriteByte(entry.PriceType);
+        }
+
+        return packet;
+    }
+
+    public static Packet Categories(byte storeOpcode, byte sub, IReadOnlyCollection<Category> categories)
+    {
+        var packet = Sub(storeOpcode, sub);
+        packet.WriteByte((byte)categories.Count);
+        foreach (var category in categories)
+        {
+            packet.WriteByte(category.Id);
+            packet.WriteSByteString(category.Name);
+            packet.WriteSByteString(category.Description);
+        }
+
+        return packet;
+    }
+
+    public static Packet Balance(byte storeOpcode, byte sub, int knightCash)
+    {
+        var packet = Sub(storeOpcode, sub);
+        packet.WriteInt(knightCash);
+        return packet;
+    }
+
+    public static Packet PurchaseResult(byte storeOpcode, byte sub, byte result, int knightCash)
+    {
+        var packet = Result(storeOpcode, sub, result);
+        packet.WriteInt(knightCash);
         return packet;
     }
 
