@@ -147,13 +147,10 @@ public class ShoppingMallTests : GameTestBase
                 {
                     Id = 1,
                     ItemId = itemId,
-                    ItemName = "HP Scroll 60%",
-                    ItemTitle = "HP Scroll 60%",
+                    Name = "HP Scroll 60%",
                     Price = 500,
-                    BuyCount = 1,
-                    ItemDesc = "HP recovery",
                     Category = 1,
-                    SendType = 0,
+                    Description = "HP recovery",
                 });
             },
             gameData =>
@@ -214,23 +211,19 @@ public class ShoppingMallTests : GameTestBase
                 {
                     Id = 2,
                     ItemId = itemId,
-                    ItemName = "Standard listing",
-                    ItemTitle = "Standard listing",
+                    Name = "Standard listing",
                     Price = 1000,
-                    BuyCount = 1,
-                    ItemDesc = "Standard listing",
                     Category = 1,
+                    Description = "Standard listing",
                 },
                 new PusItemData
                 {
                     Id = 3,
                     ItemId = itemId,
-                    ItemName = "Sale listing",
-                    ItemTitle = "Sale listing",
+                    Name = "Sale listing",
                     Price = 100,
-                    BuyCount = 1,
-                    ItemDesc = "Sale listing",
                     Category = 3,
+                    Description = "Sale listing",
                 }),
             gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1, Duration = 1 }));
 
@@ -265,12 +258,10 @@ public class ShoppingMallTests : GameTestBase
             {
                 Id = 4,
                 ItemId = itemId,
-                ItemName = "Non-countable item",
-                ItemTitle = "Non-countable item",
+                Name = "Non-countable item",
                 Price = 100,
-                BuyCount = 1,
-                ItemDesc = "Non-countable item",
                 Category = 1,
+                Description = "Non-countable item",
             }),
             gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 0, Duration = 1 }));
 

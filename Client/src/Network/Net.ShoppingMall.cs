@@ -15,7 +15,7 @@ public partial class Net
 
     private const byte SmBuyItemSubcommand = 1;
     private const byte SmBuyItemKind = 1;
-    private const int SmBuyRequestSize = 6;
+    private const int SmCatalogEntryMinimumSize = sizeof(int) + sizeof(int) + sizeof(byte) + sizeof(int);
 
     private const byte SmLetterUnread = 1;
     private const byte SmLetterList = 2;
@@ -110,7 +110,7 @@ public partial class Net
     {
         var entries = new List<ShoppingMallCatalogEntry>();
         int count = p.RemainingBytes >= 2 ? p.ReadUShort() : 0;
-        for (var i = 0; i < count && p.RemainingBytes >= 13; i++)
+        for (var i = 0; i < count && p.RemainingBytes >= SmCatalogEntryMinimumSize; i++)
         {
             entries.Add(new ShoppingMallCatalogEntry(
                 p.ReadInt(),
@@ -292,7 +292,6 @@ public partial class Net
         p.WriteByte(SmStoreBuy);
         p.WriteByte(SmBuyItemSubcommand);
         p.WriteByte(SmBuyItemKind);
-        System.Diagnostics.Debug.Assert(SmBuyRequestSize == sizeof(byte) + sizeof(int) + sizeof(byte));
         p.WriteInt(catalogEntryId);
         p.WriteByte((byte)Math.Clamp(count, 1, 255));
         _conn.Send(p);

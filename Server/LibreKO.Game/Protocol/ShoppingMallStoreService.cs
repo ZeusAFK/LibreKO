@@ -76,13 +76,13 @@ public class ShoppingMallStoreService(
         var categories = await db.PusCategories.AsNoTracking()
             .Where(x => x.Status != 0)
             .OrderBy(x => x.Id)
-            .Select(x => new ShoppingMallPacketWriter.Category(x.CategoryId, x.CategoryName, x.Description))
+            .Select(x => new ShoppingMallPacketWriter.Category(x.Id, x.Name, x.Description))
             .ToListAsync();
         var catalog = await db.PusItems.AsNoTracking()
             .Where(x => x.Price > 0)
             .OrderBy(x => x.Id)
             .Select(x => new ShoppingMallPacketWriter.CatalogEntry(
-                x.Id, x.ItemId, x.ItemName ?? x.ItemTitle ?? string.Empty, x.ItemDesc,
+                x.Id, x.ItemId, x.Name, x.Description,
                 x.Category, x.Price))
             .ToListAsync();
 

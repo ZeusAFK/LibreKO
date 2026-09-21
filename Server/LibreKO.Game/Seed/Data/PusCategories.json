@@ -1,7 +1,7 @@
 [
-  { "Id": 1, "CategoryName": "Power-Up", "Description": "Combat consumables", "CategoryId": 1, "Status": 1 },
-  { "Id": 2, "CategoryName": "Premium", "Description": "Premium account items", "CategoryId": 2, "Status": 1 },
-  { "Id": 3, "CategoryName": "Featured", "Description": "Featured services", "CategoryId": 3, "Status": 1 },
-  { "Id": 4, "CategoryName": "Vouchers", "Description": "Exchange vouchers", "CategoryId": 4, "Status": 1 },
-  { "Id": 5, "CategoryName": "Services", "Description": "Character services", "CategoryId": 5, "Status": 1 }
+  { "Id": 1, "Name": "Power-Up", "Description": "Combat consumables", "Status": 1 },
+  { "Id": 2, "Name": "Premium", "Description": "Premium account items", "Status": 1 },
+  { "Id": 3, "Name": "Featured", "Description": "Featured services", "Status": 1 },
+  { "Id": 4, "Name": "Vouchers", "Description": "Exchange vouchers", "Status": 1 },
+  { "Id": 5, "Name": "Services", "Description": "Character services", "Status": 1 }
 ]
