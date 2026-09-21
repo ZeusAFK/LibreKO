@@ -1,4 +1,4 @@
-﻿namespace LibreKO.Common.Infrastructure.Network;
+namespace LibreKO.Common.Infrastructure.Network;
 
 public enum GameOpcodes : byte
 {
@@ -179,4 +179,5 @@ public enum GameOpcodes : byte
     GS_NATION_TRANSFER = 0x82,
     GS_DAILY_QUEST = 0xC7,
     GS_VIP_WAREHOUSE = 0x8B,
+    GS_COLLECTION_RACE = 0xEF,
 }

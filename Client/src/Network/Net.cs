@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -398,6 +398,7 @@ public partial class Net : Node
             case GameOpcodes.GS_DAILY_QUEST:       HandleDailyQuest(p); break;
             case GameOpcodes.GS_RENTAL:            HandleRental(p); break;
             case GameOpcodes.GS_ADMIN_PANEL:       HandleAdminPanel(p); break;
+            case GameOpcodes.GS_COLLECTION_RACE:   HandleCollectionRace(p); break;
         }
     }
 

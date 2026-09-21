@@ -351,3 +351,13 @@ public class SiegeWarfareSeed : JsonEntitySeed<SiegeWarfareData>
 {
     protected override string JsonFileName => "SiegeWarfare.json";
 }
+
+public class CollectionRaceSettingsSeed : SnapshotJsonSeed<CollectionRaceSettingsData>
+{
+    protected override string JsonFileName => "CollectionRaceSettings.json";
+}
+
+public class CollectionRaceRewardSeed : SnapshotJsonSeed<CollectionRaceRewardData>
+{
+    protected override string JsonFileName => "CollectionRaceRewards.json";
+}

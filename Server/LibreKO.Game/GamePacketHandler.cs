@@ -26,6 +26,7 @@ public class GamePacketHandler(
     IShoppingMallPacketCoordinator shoppingMallPacketCoordinator,
     ISavedMagicService savedMagicService,
     IInGameOpcodeRouter opcodeRouter,
+    ICollectionRaceService collectionRaceService,
     ILogger<GamePacketHandler> logger) : IPacketHandler
 {
     private const byte LoginFollowUpOpcode = 0xC0;
@@ -273,6 +274,7 @@ public class GamePacketHandler(
             await worldPacketCoordinator.BroadcastUserInOutAsync(session, InOutType.Respawn);
             await shoppingMallPacketCoordinator.SendUnreadAsync(session);
             await savedMagicService.RecastAsync(session);
+            await collectionRaceService.SyncPlayerAsync(session);
 
             if (session.Hp <= 0)
                 await SendReconnectDeathStateAsync(session);

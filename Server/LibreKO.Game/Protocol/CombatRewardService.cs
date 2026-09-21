@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
 using LibreKO.Game.World;
@@ -25,6 +25,7 @@ public class CombatRewardService(
     IQuestPacketCoordinator questPacketCoordinator,
     IAchievementProgressService achievementProgressService,
     IUserNotificationService userNotificationService,
+    ICollectionRaceService collectionRaceService,
     ILogger<CombatRewardService> logger) : ICombatRewardService
 {
     public async Task AwardPlayerKillAsync(UserSession victim, UserSession? killer)
@@ -35,6 +36,7 @@ public class CombatRewardService(
         killer.PlayersDefeated++;
         await questPacketCoordinator.CheckQuestKillAsync(killer, (int)victim.Nation);
         await achievementProgressService.ReportPlayerKillAsync(killer);
+        await collectionRaceService.HandlePlayerKillAsync(victim, killer);
     }
 
     public async Task AwardNpcKillAsync(NpcInstance npc, UserSession killer)
@@ -57,6 +59,7 @@ public class CombatRewardService(
         await questPacketCoordinator.CheckQuestKillAsync(rewardRecipient, npc.NpcId);
         rewardRecipient.MonstersDefeated++;
         await achievementProgressService.ReportMonsterKillAsync(rewardRecipient, npc.NpcId);
+        await collectionRaceService.HandleNpcKillAsync(npc, rewardRecipient);
 
         var damagerIds = npc.WithLock(n => n.DamageMap.Keys.ToArray());
         foreach (var charId in damagerIds)

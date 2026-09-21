@@ -65,6 +65,8 @@ internal static class ModelBuilderExtensions
         Configure<StartPositionData>(modelBuilder, "StartPositions");
         Configure<WarpData>(modelBuilder, "Warps");
         Configure<ZoneInfoData>(modelBuilder, "ZoneInfos");
+        Configure<CollectionRaceSettingsData>(modelBuilder, "CollectionRaceSettings");
+        Configure<CollectionRaceRewardData>(modelBuilder, "CollectionRaceRewards");
 
         Configure<Patch>(modelBuilder, "Patches");
         Configure<SeedState>(modelBuilder, "SeedStates");

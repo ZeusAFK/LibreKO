@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
@@ -94,6 +94,7 @@ public abstract class GameTestBase
         services.AddSingleton<TimeWeatherBroadcastService>();
         services.AddSingleton<BifrostEventService>();
         services.AddSingleton<IBifrostEventService>(sp => sp.GetRequiredService<BifrostEventService>());
+        services.AddSingleton<ICollectionRaceService, CollectionRaceService>();
         services.AddSingleton<IAchievementProgressService, AchievementProgressService>();
         services.AddSingleton<ILoyaltyService, LoyaltyService>();
         services.AddSingleton<IPlayerProgressionService, PlayerProgressionService>();

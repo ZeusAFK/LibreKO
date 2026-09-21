@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -39,6 +39,7 @@ public class AdminPacketCoordinator(
     IBifrostEventService bifrostEventService,
     IMonsterAggressionPolicy monsterAggressionPolicy,
     EventSchedulerService eventSchedulerService,
+    ICollectionRaceService collectionRaceService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
     public async Task HandleOperatorAsync(IClient client, Packet packet)
@@ -137,6 +138,36 @@ public class AdminPacketCoordinator(
             case "notice":
                 if (!string.IsNullOrEmpty(arg))
                     await BroadcastNoticeAsync(arg);
+                break;
+
+            case "cropen":
+                if (!session.IsGM) return;
+                if (int.TryParse(arg, out var crIndex))
+                {
+                    await collectionRaceService.StartEventAsync(crIndex, session);
+                }
+                else
+                {
+                    await SendNoticeAsync(session, "Usage: +cropen <eventIndex>");
+                }
+                break;
+
+            case "crclose":
+                if (!session.IsGM) return;
+                await collectionRaceService.EndEventAsync(forced: true, session);
+                break;
+
+            case "crstatus":
+                if (!session.IsGM) return;
+                if (collectionRaceService.ActiveEvent != null)
+                {
+                    await SendNoticeAsync(session,
+                        $"Active CR: '{collectionRaceService.ActiveEvent.EventName}' (ID {collectionRaceService.ActiveEvent.EventIndex}) in Zone {collectionRaceService.ActiveEvent.ZoneId}. Remaining: {collectionRaceService.RemainingSeconds}s.");
+                }
+                else
+                {
+                    await SendNoticeAsync(session, "No active Collection Race event.");
+                }
                 break;
 
             case "time":

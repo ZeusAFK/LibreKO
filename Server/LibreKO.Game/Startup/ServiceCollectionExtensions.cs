@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
@@ -208,6 +208,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INpcAiTargetingService, NpcAiTargetingService>();
 
         services.AddSingleton<EventSchedulerService>();
+        services.AddSingleton<ICollectionRaceService, CollectionRaceService>();
         services.AddSingleton<IScriptEffectApplier, ScriptEffectApplier>();
         services.AddSingleton<LibreKO.Quests.Localization.IQuestTranslations>(provider =>
             QuestTranslationLoader.Load(provider));

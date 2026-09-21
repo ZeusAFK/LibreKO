@@ -42,6 +42,7 @@ public class WorldMovementService(
     IWorldVisibilityService worldVisibilityService,
     IMiningPacketCoordinator miningPacketCoordinator,
     IStealthService stealthService,
+    ICollectionRaceService collectionRaceService,
     ILogger<WorldMovementService> logger) : IWorldMovementService
 {
     private const byte MoveEchoFinish = 0;
@@ -372,6 +373,7 @@ public class WorldMovementService(
         {
             session.IsWarping = false;
             await worldVisibilityService.BroadcastUserInOutAsync(session, InOutType.Warp);
+            await collectionRaceService.SyncPlayerAsync(session);
         }
     }
 

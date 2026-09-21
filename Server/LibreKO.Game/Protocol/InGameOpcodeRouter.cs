@@ -1,4 +1,4 @@
-﻿using System.Collections.Frozen;
+using System.Collections.Frozen;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
@@ -70,6 +70,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         IGeniePacketCoordinator genie,
         IGenieSystemPacketCoordinator genieSystem,
         IDailyQuestPacketCoordinator dailyQuest,
+        ICollectionRaceService collectionRace,
         SessionManager sessionManager,
         ISessionTerminationService sessionTermination,
         ILogger<InGameOpcodeRouter> logger)
@@ -232,6 +233,12 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             // the C2S to suppress unhandled-opcode warnings; S2C builders land when the
             // table does.
             [GameOpcodes.GS_DAILY_QUEST] = dailyQuest.HandleAsync,
+            [GameOpcodes.GS_COLLECTION_RACE] = async (c, _) =>
+            {
+                var s = sessionManager.GetByClientId(c.Id);
+                if (s != null)
+                    await collectionRace.SyncPlayerAsync(s);
+            },
             [GameOpcodes.GS_HACKTOOL] = NoOp,
             [GameOpcodes.GS_PROGRAMCHECK] = NoOp,
             [GameOpcodes.GS_REPORT_BUG] = NoOp,
