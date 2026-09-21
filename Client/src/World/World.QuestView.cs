@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
 
@@ -197,11 +197,13 @@ public partial class World
             Mathf.Clamp(_npcPanel.Position.Y, 0, Mathf.Max(0, viewport.Y - _npcPanel.Size.Y)));
     }
 
-    private VBoxContainer QuestSection(string title)
+    private VBoxContainer QuestSection(string title) => QuestSection(_npcQuestContent, title);
+
+    private static VBoxContainer QuestSection(Control parent, string title)
     {
-        _npcQuestContent.AddChild(UiTheme.Text(title, 13, UiTheme.Gold));
+        parent.AddChild(UiTheme.Text(title, 13, UiTheme.Gold));
         var panel = UiTheme.Section();
-        _npcQuestContent.AddChild(panel);
+        parent.AddChild(panel);
         var body = new VBoxContainer();
         body.AddThemeConstantOverride("separation", 8);
         panel.AddChild(body);
@@ -300,12 +302,17 @@ public partial class World
 
     private static string QuestTransferName(QuestTransfer transfer) => transfer.Kind switch
     {
-        1 => "Coins",
-        2 => "Experience",
-        3 => "Ladder points",
         4 => "First job change",
         5 => "Second job change",
-        _ => ItemData.DisplayName(transfer.ItemId)
+        _ => QuestRewardName(transfer.DisplayItemId)
+    };
+
+    private static string QuestRewardName(int displayItemId) => displayItemId switch
+    {
+        QuestData.CoinItemId => "Coins",
+        QuestData.ExpItemId => "Experience",
+        QuestData.LadderPointItemId => "Ladder points",
+        _ => ItemData.DisplayName(displayItemId)
     };
 
     private IEnumerable<(int ItemId, int Count)> QuestHandIns(int questId) =>

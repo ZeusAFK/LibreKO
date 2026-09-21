@@ -38,6 +38,7 @@ public static class UiTheme
     public static readonly Color Warning    = new("d9a441");
 
     public const float WindowPanelAlpha = 0.965f;
+    public const float TranslucentWindowAlpha = 0.86f;
 
     public static StyleBoxFlat WindowPanel(int radius = 2, float alpha = WindowPanelAlpha)
     {

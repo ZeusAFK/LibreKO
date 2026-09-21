@@ -801,6 +801,28 @@ public partial class World
         return DetachPreviewControl(_questToastPanel!);
     }
 
+    internal Control BuildCollectionRaceUiPreview(bool completed)
+    {
+        ItemData.EnsureLoaded();
+        BuildCollectionRaceWindow();
+        ShowCollectionRace(new CollectionRaceState
+        {
+            EventName = "Moradon Morning Hunt",
+            RemainingSeconds = 56 * 60,
+            Target1 = new CollectionRaceTarget { ProtoId = 100, Name = "Kecoon", TargetCount = 10, CurrentCount = completed ? 10 : 4 },
+            Target2 = new CollectionRaceTarget { ProtoId = 101, Name = "Kecoon Warrior", TargetCount = 5, CurrentCount = 5 },
+            IsCompleted = completed,
+            Rewards =
+            [
+                new CollectionRaceReward { ItemId = QuestData.CoinItemId, ItemCount = 500_000, Rate = 100 },
+                new CollectionRaceReward { ItemId = QuestData.ExpItemId, ItemCount = 250_000, Rate = 100 },
+                new CollectionRaceReward { ItemId = QuestData.LadderPointItemId, ItemCount = 100, Rate = 100 },
+                new CollectionRaceReward { ItemId = 379154000, ItemCount = 1, Rate = 35 },
+            ],
+        });
+        return DetachPreviewControl(_crWindow);
+    }
+
     internal Control BuildQuestNotificationUiPreview(int count = 3)
     {
         QuestText.EnsureLoaded();
