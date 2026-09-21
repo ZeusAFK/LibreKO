@@ -1,0 +1,22 @@
+Bind Npc 25279 Zone 71
+Quest 1789 "[Ronark Land ] Defeat 100 Enemies"
+    Daily
+    Journal "Defeat 100 enemies in the central area of Ronarkland"
+    Kill 100 of 1 at direction_488 in zone 71
+    Collect 1 of 999920000
+
+Requires player level >= 45 and player is elmorad
+
+Rewards
+    Give 1 of 810596000
+
+direction_488 = location "Karus" about "Karus\nKill and bring a Karus user" found "Karus" at 100 100
+
+On offer
+    Show quest "Please defeat 100 enemies in the central area of Ronarkland.*You must kill them inside the Ronarkland Monument"
+
+On in_progress
+    Say "Please defeat 100 enemies in the central area of Ronarkland.*You must kill them inside the Ronarkland Monument"
+
+On claimable
+    Show quest "Please defeat 100 enemies in the central area of Ronarkland.*You must kill them inside the Ronarkland Monument"

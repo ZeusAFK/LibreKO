@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Scripting;
@@ -88,12 +88,15 @@ public class QuestProgressionService(
             if (!TryGetKillObjectives(questId, out var groups, out var counts))
                 continue;
 
+            var zones = KillZones(questId);
             var step = killer.WithLock(s =>
             {
                 var killCounts = s.Quest.GetOrCreateQuestKillCounts(questId);
                 for (var groupIndex = 0; groupIndex < 4; groupIndex++)
                 {
                     if (counts[groupIndex] <= 0 || killCounts[groupIndex] >= counts[groupIndex])
+                        continue;
+                    if (zones[groupIndex] > 0 && s.ZoneId != zones[groupIndex])
                         continue;
 
                     foreach (var monsterId in groups[groupIndex])
@@ -306,6 +309,15 @@ public class QuestProgressionService(
         groups = [];
         counts = [];
         return false;
+    }
+
+    private int[] KillZones(short questId)
+    {
+        var zones = new int[4];
+        var declared = objectives.ObjectivesFor(questId);
+        for (var index = 0; declared is not null && index < Math.Min(4, declared.Groups.Count); index++)
+            zones[index] = declared.Groups[index].Zone;
+        return zones;
     }
 
     internal static bool AreKillObjectivesComplete(

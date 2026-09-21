@@ -1,4 +1,4 @@
-using LibreKO.Quests.Binding;
+﻿using LibreKO.Quests.Binding;
 using LibreKO.Quests.Text;
 
 namespace LibreKO.Quests.Syntax;
@@ -109,7 +109,8 @@ public sealed record KillGroupSyntax(
     long Count,
     TextSpan CountSpan,
     IReadOnlyList<Token> Monsters,
-    Token? Target = null) : SyntaxNode(Span);
+    Token? Target = null,
+    Token? Zone = null) : SyntaxNode(Span);
 
 public sealed record CollectSyntax(
     TextSpan Span,

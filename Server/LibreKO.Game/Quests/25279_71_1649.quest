@@ -1,0 +1,22 @@
+Bind Npc 25279 Zone 71
+Quest 1649 "[Daily] Green Mithril Piece"
+    Daily
+    Journal "Will you join us to defeat Karus and defend the guard tower? \n Note: Only enemies who are near  the pillars within the guard tower area will count towards kills."
+    Kill 15 of 1 at direction_488 in zone 71
+
+Requires player level >= 1 and player is elmorad
+
+Rewards
+    Give 12000000 experience
+    Give 1 of 931741000
+
+direction_488 = location "Karus" about "Karus\nKill and bring a Karus user" found "Karus" at 100 100
+
+On offer
+    Show quest "Will you join us to defeat Karus and defend the guard tower? | Note: Only enemies who are near  the pillars within the guard tower area will count towards kills."
+
+On in_progress
+    Say "Will you join us to defeat Karus and defend the guard tower? | Note: Only enemies who are near  the pillars within the guard tower area will count towards kills."
+
+On claimable
+    Show quest "Will you join us to defeat Karus and defend the guard tower? | Note: Only enemies who are near  the pillars within the guard tower area will count towards kills."

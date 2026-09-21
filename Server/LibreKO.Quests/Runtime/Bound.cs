@@ -1,4 +1,4 @@
-using LibreKO.Quests.Binding;
+﻿using LibreKO.Quests.Binding;
 using LibreKO.Quests.Text;
 
 namespace LibreKO.Quests.Runtime;
@@ -126,7 +126,7 @@ public sealed record RewardDefinition(string Name, IReadOnlyList<IReadOnlyList<R
 
 public sealed record TranslatableText(TextSpan Span, string Text, Binding.SlotKind Kind);
 
-public sealed record KillObjective(int Count, IReadOnlyList<int> Monsters, int Target = -1);
+public sealed record KillObjective(int Count, IReadOnlyList<int> Monsters, int Target = -1, int Zone = 0);
 
 public enum ObjectiveRule
 {

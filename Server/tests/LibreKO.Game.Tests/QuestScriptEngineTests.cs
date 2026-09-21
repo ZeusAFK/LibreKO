@@ -1,4 +1,5 @@
 using FluentAssertions;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
@@ -866,5 +867,13 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
         engine.TryGetEntry(NpcId, 1, QuestProgram.FulfilEvent, 777, out var script, out var fulfil);
         await engine.ExecuteAsync(session, null, fulfil, -1, script);
         session.Quest.QuestMap[777].Should().Be(3);
+    }
+    [Fact]
+    public void AKillTargetThatNamesANationIsShownAsThatNationsPlayers()
+    {
+        var (engine, _, _) = CreateHarness();
+        engine.MonsterName((int)AccountNation.Karus).Should().Be("Karus players");
+        engine.MonsterName((int)AccountNation.ElMorad).Should().Be("El Morad players");
+        engine.MonsterName(750).Should().Be("Creature");
     }
 }

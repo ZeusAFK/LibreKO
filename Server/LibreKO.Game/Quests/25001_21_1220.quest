@@ -1,7 +1,7 @@
 Bind Npc 25001 Zone 21
 Quest 1220 "Safe emigration path"
     Journal "Defeat 3 Scorpions, 3 Lycans, 3 Gloomwing, 3 Ferrelizer"
-    Kill 3 of 1056, 1052
+    Kill 3 of 1052, 1056
     Kill 3 of 1057 at direction_576
     Kill 3 of 652 at direction_572
     Kill 3 of 555 at direction_523

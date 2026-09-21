@@ -252,4 +252,22 @@ public class QuestScriptProtocolTests : GameTestBase
 
         await _runner.DidNotReceiveWithAnyArgs().RunAsync(default!, default, default, default, default!);
     }
+
+    [Fact]
+    public async Task AZoneScopedObjectiveCountsOnlyKillsMadeInsideThatZone()
+    {
+        _objectives.ObjectivesFor(777).Returns(new QuestObjectives(777, [new KillObjective(2, [1], Zone: 71)]));
+        _session.Quest.QuestMap[777] = 1;
+
+        _session.ZoneId = 72;
+        await _service.CheckQuestKillAsync(_session, 1);
+        _session.Quest.GetOrCreateQuestKillCounts(777)[0].Should().Be(0);
+        _session.Quest.QuestMap[777].Should().Be(1);
+
+        _session.ZoneId = 71;
+        await _service.CheckQuestKillAsync(_session, 1);
+        _session.Quest.GetOrCreateQuestKillCounts(777)[0].Should().Be(1);
+        await _service.CheckQuestKillAsync(_session, 1);
+        _session.Quest.QuestMap[777].Should().Be(3);
+    }
 }

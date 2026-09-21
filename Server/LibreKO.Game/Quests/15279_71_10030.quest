@@ -1,0 +1,15 @@
+Bind Npc 15279 Zone 71
+Quest 10030 "[Daily Account] Preceding with Defeat 50 Enemies"
+    Daily
+    Journal "Defeat 50 Enemies Preceding Quest"
+
+Requires player level >= 45 and player is karus
+
+Rewards
+    Give 1 of 978022000
+
+On offer
+    Show quest "In order to complete Defeat 50 Enemies quest, you will need to receive a Battle Order from me. *Battle Order expires in 12 hrs, so you will need to complete the quest within 12 hrs. "
+
+On claimable
+    Show quest "In order to complete Defeat 50 Enemies quest, you will need to receive a Battle Order from me. *Battle Order expires in 12 hrs, so you will need to complete the quest within 12 hrs. "

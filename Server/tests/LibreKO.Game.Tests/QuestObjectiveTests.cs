@@ -325,4 +325,55 @@ public class QuestObjectiveTests
         ServiceWith(source, data).TryGetKillObjectives(111, out _, out _)
             .Should().BeFalse();
     }
+
+    [Fact]
+    public void AKillLineMayScopeItsKillsToOneZone()
+    {
+        var compilation = Compile("""
+            Bind Npc 25279 Zone 71
+
+            Quest 1726
+                Kill 50 of 1 at karus in zone 71
+
+            karus = location "Karus" found "Karus" at 100 100
+
+            On greeting
+                Say "Defeat them inside Ronark Land."
+                Topic "Nothing" goto close
+            """);
+
+        compilation.Diagnostics
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .Should().BeEmpty(compilation.RenderDiagnostics());
+        var objectives = compilation.Program.Objectives.Should().ContainSingle().Subject;
+        objectives.Groups[0].Zone.Should().Be(71);
+        objectives.Groups[0].Monsters.Should().Equal(1);
+        objectives.Groups[0].Count.Should().Be(50);
+
+        Compile(Hunt).Program.Objectives.Single().Groups[0].Zone.Should().Be(0);
+
+        var twice = Compile("""
+            Bind Npc 25279 Zone 71
+
+            Quest 1726
+                Kill 50 of 1 in zone 71 in zone 72
+
+            On greeting
+                Say "Defeat them."
+                Topic "Nothing" goto close
+            """);
+        twice.Diagnostics.Should().Contain(d => d.Id == DiagnosticId.UnexpectedToken);
+
+        var zero = Compile("""
+            Bind Npc 25279 Zone 71
+
+            Quest 1726
+                Kill 50 of 1 in zone 0
+
+            On greeting
+                Say "Defeat them."
+                Topic "Nothing" goto close
+            """);
+        zero.Diagnostics.Should().Contain(d => d.Id == DiagnosticId.BadArgumentCount);
+    }
 }

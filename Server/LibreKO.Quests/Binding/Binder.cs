@@ -1,4 +1,4 @@
-using LibreKO.Quests.Catalog;
+﻿using LibreKO.Quests.Catalog;
 using LibreKO.Quests.Runtime;
 using LibreKO.Quests.Syntax;
 using LibreKO.Quests.Text;
@@ -736,7 +736,17 @@ public sealed class Binder
                     _diagnostics.Error(DiagnosticId.BadArgumentCount, group.Span,
                         "An objective can name at most four monsters.");
                 var target = group.Target is { } named ? (int)ResolveNamed(SlotKind.MapId, named, -1) : -1;
-                groups.Add(new KillObjective((int)group.Count, monsters, target));
+                var zone = 0;
+                if (group.Zone is { } zoneToken)
+                {
+                    if (zoneToken.Value is <= 0 or > short.MaxValue)
+                        _diagnostics.Error(DiagnosticId.BadArgumentCount, zoneToken.Span,
+                            $"A zone id must be between 1 and {short.MaxValue}.");
+                    else
+                        CheckCatalog(SlotKind.ZoneId, zoneToken.Value, zoneToken.Span);
+                    zone = (int)zoneToken.Value;
+                }
+                groups.Add(new KillObjective((int)group.Count, monsters, target, zone));
             }
 
             if (block.AnyWillDo && groups.Count < 2)

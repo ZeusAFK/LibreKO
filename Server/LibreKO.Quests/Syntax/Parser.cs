@@ -1,4 +1,4 @@
-using LibreKO.Quests.Binding;
+﻿using LibreKO.Quests.Binding;
 using LibreKO.Quests.Text;
 
 namespace LibreKO.Quests.Syntax;
@@ -875,11 +875,23 @@ public sealed class Parser
 
         var monsters = new List<Token>();
         Token? target = null;
+        Token? zone = null;
         for (var position = 3; position < line.Tokens.Count; position++)
         {
             var token = line.Tokens[position];
             if (token.Kind == TokenKind.Comma)
                 continue;
+            if (token.IsWord("in") && position + 2 < line.Tokens.Count
+                && line.Tokens[position + 1].IsWord("zone")
+                && line.Tokens[position + 2].Kind == TokenKind.Number)
+            {
+                if (zone is not null)
+                    _diagnostics.Error(DiagnosticId.UnexpectedToken, token.Span,
+                        "A 'Kill' line names one zone.");
+                zone = line.Tokens[position + 2];
+                position += 2;
+                continue;
+            }
             if (token.IsWord("at") && position + 1 < line.Tokens.Count
                 && line.Tokens[position + 1].Kind == TokenKind.Word)
             {
@@ -900,7 +912,7 @@ public sealed class Parser
             _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "This 'Kill' line names no monster.");
 
-        return new KillGroupSyntax(line.Span, line.Tokens[1].Value, line.Tokens[1].Span, monsters, target);
+        return new KillGroupSyntax(line.Span, line.Tokens[1].Value, line.Tokens[1].Span, monsters, target, zone);
     }
 
     private EventHandlerSyntax ParseHandler()

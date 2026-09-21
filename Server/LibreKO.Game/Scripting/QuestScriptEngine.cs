@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using System.Text.Json;
 using LibreKO.Game.Configuration;
 using LibreKO.Game.World;
@@ -82,6 +83,13 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
             _fileStamps = null;
         }
     }
+
+    internal string MonsterName(int monster) => monster switch
+    {
+        (int)AccountNation.Karus => "Karus players",
+        (int)AccountNation.ElMorad => "El Morad players",
+        _ => _gameData.GetNpc(monster)?.Name ?? "Creature",
+    };
 
     public QuestObjectives? ObjectivesFor(int questId) =>
         ObjectiveIndex().GetValueOrDefault(questId);
@@ -176,6 +184,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         && kept.Groups.Count == found.Groups.Count
         && kept.Groups.Zip(found.Groups).All(pair =>
             pair.First.Count == pair.Second.Count
+            && pair.First.Zone == pair.Second.Zone
             && pair.First.Monsters.SequenceEqual(pair.Second.Monsters));
 
     private Dictionary<(int Quest, int Nation, int ClassGroup), QuestText> TextIndex()
@@ -242,7 +251,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                 var context = new QuestScriptContext(session, null, _gameData, _sessionManager, _logger,
                     Math.Max(1, _settings.Global.ExpMultiplier));
                 var host = new QuestScriptHost(session, context, _translations, _logger, program.FileName, this, _clock,
-                    monster => _gameData.GetNpc(monster)?.Name ?? "Creature");
+                    MonsterName);
                 session.WithLock(_ =>
                 {
                     var interpreter = new QuestInterpreter(program, host);
@@ -299,7 +308,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         if (!seen.Add(questId) || !program.TryGetEntry(role, questId, out var entry))
             return;
         var host = new QuestScriptHost(session, context, _translations, _logger, program.FileName,
-            this, _clock, monster => _gameData.GetNpc(monster)?.Name ?? "Creature", program);
+            this, _clock, MonsterName, program);
         new QuestInterpreter(program, host).Run(entry);
     }
 
@@ -313,7 +322,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         var context = new QuestScriptContext(session, null, _gameData, _sessionManager, _logger,
             Math.Max(1, _settings.Global.ExpMultiplier));
         new QuestScriptHost(session, context, _translations, _logger, program.FileName, this, _clock,
-            monster => _gameData.GetNpc(monster)?.Name ?? "Creature").ShowLocation(location, questId);
+            MonsterName).ShowLocation(location, questId);
         await _effects.ApplyAsync(session, context, program.FileName);
     }
 
@@ -324,7 +333,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         var context = new QuestScriptContext(session, null, _gameData, _sessionManager, _logger,
             Math.Max(1, _settings.Global.ExpMultiplier));
         var host = new QuestScriptHost(session, context, _translations, _logger, program.FileName, this, _clock,
-            monster => _gameData.GetNpc(monster)?.Name ?? "Creature", program);
+            MonsterName, program);
         session.WithLock(_ =>
         {
             if (!session.Quest.NotificationReplies.Remove(questId, out var reply)
@@ -510,7 +519,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
             Math.Max(1, _settings.Global.ExpMultiplier));
 
         var host = new QuestScriptHost(session, context, _translations, _logger, cached.Program.FileName, this, _clock,
-            monster => _gameData.GetNpc(monster)?.Name ?? "Creature");
+            MonsterName);
         var result = cached.Program.Flows.Count > 0
             ? session.WithLock(_ => new QuestInterpreter(cached.Program, host, selectedReward).Run(eventId))
             : new QuestInterpreter(cached.Program, host, selectedReward).Run(eventId);

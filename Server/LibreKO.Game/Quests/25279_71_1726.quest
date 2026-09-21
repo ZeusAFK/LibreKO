@@ -1,0 +1,24 @@
+Bind Npc 25279 Zone 71
+Quest 1726 "[Ronark Land ] Defeat 50 Enemies"
+    Daily
+    Journal "Defeat 50 enemies in the central area of Ronarkland"
+    Kill 50 of 1 at direction_488 in zone 71
+    Collect 1 of 978022000
+
+Requires player level >= 45 and player is elmorad
+
+Rewards
+    Choose one
+        Give 1 of 810678000
+        Give 1 of 978036000
+
+direction_488 = location "Karus" about "Karus\nKill and bring a Karus user" found "Karus" at 100 100
+
+On offer
+    Show quest "Please defeat 50 enemies in the central area of Ronarkland.*You must kill them inside the Ronarkland Monument, and it is not possible to continue with the Mithril Quest at the same time. You will also need to have the Battle Order in order to complete the quest. "
+
+On in_progress
+    Say "Please defeat 50 enemies in the central area of Ronarkland.*You must kill them inside the Ronarkland Monument, and it is not possible to continue with the Mithril Quest at the same time. You will also need to have the Battle Order in order to complete the quest. "
+
+On claimable
+    Show quest "Please defeat 50 enemies in the central area of Ronarkland.*You must kill them inside the Ronarkland Monument, and it is not possible to continue with the Mithril Quest at the same time. You will also need to have the Battle Order in order to complete the quest. "

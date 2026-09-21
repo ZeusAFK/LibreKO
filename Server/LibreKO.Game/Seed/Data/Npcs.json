@@ -120202,7 +120202,7 @@
   {
     "Id": 15279,
     "Name": "[Reserve Knight] Hill",
-    "NpcType": 21,
+    "NpcType": 64,
     "IsMonster": false,
     "IsBoss": false,
     "Group": 3,
@@ -149252,7 +149252,7 @@
   {
     "Id": 25279,
     "Name": "[Reserve Knight] Lily",
-    "NpcType": 21,
+    "NpcType": 64,
     "IsMonster": false,
     "IsBoss": false,
     "Group": 3,
@@ -149279,7 +149279,7 @@
     "MagicR": 250,
     "PoisonR": 250,
     "CurseR": 250,
-    "SellingGroup": 265000,
+    "SellingGroup": 0,
     "ItemGroup": 25279,
     "ActType": 0,
     "AttackDelay": 1500,
