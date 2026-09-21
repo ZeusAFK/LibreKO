@@ -140,7 +140,7 @@ public class WorldMovementService(
                 break;
 
             case 3:
-                session.Hp -= (short)Math.Min(DamageZoneHp, session.Hp);
+                session.Hp -= (short)Math.Min(GmMode.Taken(session, DamageZoneHp), session.Hp);
                 await combatNotificationService.SendHpChangeAsync(session);
                 if (session.Hp <= 0)
                     await combatLifecycleService.HandlePlayerDeathAsync(session, killer: null);

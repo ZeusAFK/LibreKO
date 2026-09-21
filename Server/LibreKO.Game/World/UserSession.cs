@@ -64,7 +64,7 @@ public class UserSession
         PlayMinutes + (int)Math.Max(0, (DateTime.UtcNow - SessionStartedAt).TotalMinutes);
     public int DailyLoyalty { get; set; }
     public bool IsGM { get; set; }
-    public bool GmFxEnabled { get; set; } = true;
+    public bool GmModeEnabled { get; set; } = true;
 
     // Knight Cash (account-scoped premium currency).
     public int KnightCash { get; set; }

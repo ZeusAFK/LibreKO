@@ -158,7 +158,7 @@ public class NpcAiCombatService(
                         if (damage > damageCap)
                             damage = damageCap;
 
-                        damage = Math.Clamp(damage, 0, CombatUtils.MaxDamage);
+                        damage = GmMode.Taken(target, Math.Clamp(damage, 0, CombatUtils.MaxDamage));
                         if (damage > 0)
                         {
                             target.Hp = (short)Math.Max(0, target.Hp - damage);

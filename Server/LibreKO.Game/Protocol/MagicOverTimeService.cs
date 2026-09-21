@@ -247,7 +247,8 @@ public class MagicOverTimeService(
             }
             else
             {
-                var immediateDamage = CalculateImmediateDamageForPlayer(caster, target, skillId, type3Data, directType);
+                var immediateDamage = GmMode.Taken(target, GmMode.Dealt(caster, target.Hp,
+                    CalculateImmediateDamageForPlayer(caster, target, skillId, type3Data, directType)));
                 if (immediateDamage > 0)
                 {
                     target.Hp = (short)Math.Max(0, target.Hp - immediateDamage);
@@ -311,6 +312,7 @@ public class MagicOverTimeService(
                 var damage = ScalesWithMagicAttack(directType, skillId)
                     ? MagicCombatHelper.GetMagicDamage(caster, npc, -delta, type3Data.Attribute, gameDataService)
                     : -delta;
+                damage = GmMode.Dealt(caster, npc.Hp, damage);
                 npc.Hp = Math.Max(0, npc.Hp - damage);
                 npc.RecordDamage(caster.CharacterId, damage, caster, id => sessionManager.GetByCharacterId(id));
                 await combatLifecycleService.SendNpcTargetHpAsync(caster, npc, damage);

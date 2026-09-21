@@ -130,7 +130,8 @@ public class MagicMeleeService(
         if (!target.BlockPhysical)
             finalDamage += PlayerBonusDamage(type1Data.AddDamage, caster.ZoneId);
 
-        finalDamage = Math.Min(finalDamage, CombatUtils.MaxDamage);
+        finalDamage = GmMode.Taken(target, GmMode.Dealt(caster, target.Hp,
+            Math.Min(finalDamage, CombatUtils.MaxDamage)));
         if (finalDamage > 0)
         {
             target.Hp = (short)Math.Max(0, target.Hp - finalDamage);
@@ -153,7 +154,7 @@ public class MagicMeleeService(
             Math.Max(1f, npcTarget.EvadeRate),
             isPlayerTarget: false);
         finalDamage += type1Data.AddDamage;
-        finalDamage = Math.Min(finalDamage, CombatUtils.MaxDamage);
+        finalDamage = GmMode.Dealt(caster, npcTarget.Hp, Math.Min(finalDamage, CombatUtils.MaxDamage));
         if (finalDamage > 0)
         {
             npcTarget.Hp = Math.Max(0, npcTarget.Hp - finalDamage);

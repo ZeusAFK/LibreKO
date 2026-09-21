@@ -160,7 +160,7 @@ public class NpcAiMagicService(
             npc.Attack1,
             npc.Attack2);
 
-        damage = Math.Clamp(damage, 0, 32000);
+        damage = GmMode.Taken(target, Math.Clamp(damage, 0, CombatUtils.MaxDamage));
         if (damage > 0)
             target.Hp = (short)Math.Max(0, target.Hp - damage);
 

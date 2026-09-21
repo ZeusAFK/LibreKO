@@ -300,7 +300,7 @@ public class AdminPanelPacketCoordinator(
         await session.Client.SendPacket(
             AdminPanelPacketWriter.Grant(AckGrant, (byte)grant, speedGranted));
         if (session.IsGM)
-            await session.Client.SendPacket(AdminPanelPacketWriter.GmFx(session.CharacterId, session.GmFxEnabled));
+            await session.Client.SendPacket(AdminPanelPacketWriter.GmFx(session.CharacterId, session.GmModeEnabled));
 
         if (!session.IsGM)
             logger.LogInformation(

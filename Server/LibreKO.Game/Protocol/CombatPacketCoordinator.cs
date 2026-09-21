@@ -84,7 +84,8 @@ public class CombatPacketCoordinator(
         {
             var mayAttack = target.Hp > 0 && PvpRules.CanAttackPlayer(session, target);
             var damage = mayAttack
-                ? PhysicalDamageCalculator.Calculate(session, PhysicalDefender.Of(target), gameDataService)
+                ? GmMode.Taken(target, GmMode.Dealt(session, target.Hp,
+                    PhysicalDamageCalculator.Calculate(session, PhysicalDefender.Of(target), gameDataService)))
                 : 0;
             if (damage <= 0)
             {
@@ -118,8 +119,8 @@ public class CombatPacketCoordinator(
             {
                 combatLifecycleService.SetNpcAggro(npcTarget, session);
 
-                var damage = PhysicalDamageCalculator.Calculate(
-                    session, PhysicalDefender.Of(npcTarget), gameDataService);
+                var damage = GmMode.Dealt(session, npcTarget.Hp, PhysicalDamageCalculator.Calculate(
+                    session, PhysicalDefender.Of(npcTarget), gameDataService));
                 if (damage > 0)
                 {
                     npcTarget.Hp = Math.Max(0, npcTarget.Hp - damage);

@@ -40,7 +40,7 @@ public class MagicAreaService(
             if (type7Data.Damage == 0)
                 continue;
 
-            int damage = type7Data.Damage;
+            var damage = GmMode.Dealt(caster, npc.Hp, type7Data.Damage);
             npc.Hp = Math.Max(0, npc.Hp - damage);
             npc.RecordDamage(caster.CharacterId, damage, caster, id => sessionManager.GetByCharacterId(id));
             await combatLifecycleService.SendNpcTargetHpAsync(caster, npc, damage);

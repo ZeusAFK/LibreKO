@@ -114,12 +114,12 @@ public class AdminPacketCoordinator(
 
         switch (cmd)
         {
-            case "gmfx":
+            case "gm":
                 if (!session.IsGM) return;
-                session.GmFxEnabled = !session.GmFxEnabled;
+                session.GmModeEnabled = !session.GmModeEnabled;
                 await sessionManager.Regions.SendToRegion(session,
-                    AdminPanelPacketWriter.GmFx(session.CharacterId, session.GmFxEnabled), excludeSender: false);
-                await SendNoticeAsync(session, session.GmFxEnabled ? "GM effect enabled." : "GM effect disabled.");
+                    AdminPanelPacketWriter.GmFx(session.CharacterId, session.GmModeEnabled), excludeSender: false);
+                await SendNoticeAsync(session, session.GmModeEnabled ? "GM mode enabled." : "GM mode disabled.");
                 break;
 
             case "santa":
@@ -262,7 +262,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session,
                     "+setlevel <1-83> - Set level; resets stats + mastery, clears the skill bar");
                 await SendNoticeAsync(session, "+hp - Restore HP/MP");
-                await SendNoticeAsync(session, "+gmfx - Toggle the GM effect for everyone");
+                await SendNoticeAsync(session, "+gm - Toggle GM mode: the GM aura, one-hit kills, 1 damage taken");
                 await SendNoticeAsync(session, "+exp <amount> - Give experience");
                 await SendNoticeAsync(session, "+notice <text> - Server notice");
                 await SendNoticeAsync(session, "+time <hh[:mm]> - Set the game time for everyone");

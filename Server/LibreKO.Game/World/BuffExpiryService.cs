@@ -70,7 +70,10 @@ public class BuffExpiryService(
                 if (effect.TickAmount < 0)
                 {
                     var killer = sessionManager.GetByCharacterId(effect.CasterId);
-                    session.Hp = (short)Math.Max(0, session.Hp + effect.TickAmount);
+                    var damage = killer != null
+                        ? GmMode.Dealt(killer, session.Hp, -effect.TickAmount)
+                        : -effect.TickAmount;
+                    session.Hp = (short)Math.Max(0, session.Hp - GmMode.Taken(session, damage));
                     await combatLifecycleService.SendHpChangeAsync(
                         session,
                         killer?.CharacterId ?? -1);
@@ -140,11 +143,12 @@ public class BuffExpiryService(
             {
                 if (effect.TickAmount < 0)
                 {
-                    var damage = -effect.TickAmount;
-                    npc.Hp = Math.Max(0, npc.Hp + effect.TickAmount);
-
                     var killer = sessionManager.GetByCharacterId(effect.CasterId)
                         ?? (npc.TopDamagerCharId > 0 ? sessionManager.GetByCharacterId(npc.TopDamagerCharId) : null);
+                    var damage = killer != null
+                        ? GmMode.Dealt(killer, npc.Hp, -effect.TickAmount)
+                        : -effect.TickAmount;
+                    npc.Hp = Math.Max(0, npc.Hp - damage);
 
                     if (killer != null)
                     {

@@ -348,7 +348,7 @@ public class WorldVisibilityService(
 
         if (type != InOutType.Out && session.IsGM)
             await sessionManager.Regions.SendToRegion(session,
-                AdminPanelPacketWriter.GmFx(session.CharacterId, session.GmFxEnabled));
+                AdminPanelPacketWriter.GmFx(session.CharacterId, session.GmModeEnabled));
         if (type != InOutType.Out && session.InCombatStance)
             await sessionManager.Regions.SendToRegion(session, BuildCombatStancePacket(session));
     }
@@ -376,7 +376,7 @@ public class WorldVisibilityService(
             await Task.WhenAll(gainedSight.Select(u => u.Client.SendPacket(inPacket)));
             if (session.IsGM)
             {
-                var gmFx = AdminPanelPacketWriter.GmFx(session.CharacterId, session.GmFxEnabled);
+                var gmFx = AdminPanelPacketWriter.GmFx(session.CharacterId, session.GmModeEnabled);
                 await Task.WhenAll(gainedSight.Select(u => u.Client.SendPacket(gmFx)));
             }
             if (session.InCombatStance)
@@ -422,7 +422,7 @@ public class WorldVisibilityService(
             if (user.InCombatStance)
                 await session.Client.SendPacket(BuildCombatStancePacket(user));
             if (user.IsGM)
-                await session.Client.SendPacket(AdminPanelPacketWriter.GmFx(user.CharacterId, user.GmFxEnabled));
+                await session.Client.SendPacket(AdminPanelPacketWriter.GmFx(user.CharacterId, user.GmModeEnabled));
         }
 
         await SendStallsInViewAsync(session, users);

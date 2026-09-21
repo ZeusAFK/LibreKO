@@ -38,7 +38,8 @@ public class MagicRangedService(
             if (finalDamage > 0)
                 finalDamage = CombatUtils.ApplyWeaponTypeResistance(finalDamage, caster, target, gameDataService);
 
-            finalDamage = Math.Min(finalDamage, CombatUtils.MaxDamage);
+            finalDamage = GmMode.Taken(target, GmMode.Dealt(caster, target.Hp,
+                Math.Min(finalDamage, CombatUtils.MaxDamage)));
             if (finalDamage > 0)
             {
                 target.Hp = (short)Math.Max(0, target.Hp - finalDamage);
@@ -70,7 +71,7 @@ public class MagicRangedService(
                 npcTarget.Ac,
                 Math.Max(1f, npcTarget.EvadeRate),
                 isPlayerTarget: false);
-            finalDamage = Math.Min(finalDamage, CombatUtils.MaxDamage);
+            finalDamage = GmMode.Dealt(caster, npcTarget.Hp, Math.Min(finalDamage, CombatUtils.MaxDamage));
             if (finalDamage > 0)
             {
                 npcTarget.Hp = Math.Max(0, npcTarget.Hp - finalDamage);
