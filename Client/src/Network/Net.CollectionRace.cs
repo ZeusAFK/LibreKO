@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace LibreKO.Network;
@@ -10,15 +10,24 @@ public partial class Net
     public event Action<string>? CollectionRaceCompletedEvent;
     public event Action? CollectionRaceCloseEvent;
 
+    public const byte SubState = 1;
+    public const byte SubProgress = 2;
+    public const byte SubCompleted = 3;
+    public const byte SubClose = 4;
+
+    private const int MinStateBytes = 9;
+    private const int MinProgressBytes = 16;
+    private const int MinRewardEntryBytes = 8;
+
     private void HandleCollectionRace(Packet p)
     {
         if (p.RemainingBytes < 1) return;
         var sub = p.ReadByte();
         switch (sub)
         {
-            case 1: // State
+            case SubState:
             {
-                if (p.RemainingBytes < 9) return;
+                if (p.RemainingBytes < MinStateBytes) return;
                 var state = new CollectionRaceState
                 {
                     EventIndex = p.ReadInt(),
@@ -54,7 +63,7 @@ public partial class Net
                 if (p.RemainingBytes >= 1)
                 {
                     int rewardCount = p.ReadByte();
-                    for (int i = 0; i < rewardCount && p.RemainingBytes >= 8; i++)
+                    for (int i = 0; i < rewardCount && p.RemainingBytes >= MinRewardEntryBytes; i++)
                     {
                         var itemId = p.ReadInt();
                         var count = p.ReadInt();
@@ -74,9 +83,9 @@ public partial class Net
                 break;
             }
 
-            case 2: // Progress
+            case SubProgress:
             {
-                if (p.RemainingBytes < 16) return;
+                if (p.RemainingBytes < MinProgressBytes) return;
                 int t1 = p.ReadInt();
                 int t2 = p.ReadInt();
                 int t3 = p.ReadInt();
@@ -85,14 +94,14 @@ public partial class Net
                 break;
             }
 
-            case 3: // Completed
+            case SubCompleted:
             {
                 var msg = p.ReadSByteString();
                 CollectionRaceCompletedEvent?.Invoke(msg);
                 break;
             }
 
-            case 4: // Close
+            case SubClose:
             {
                 CollectionRaceCloseEvent?.Invoke();
                 break;

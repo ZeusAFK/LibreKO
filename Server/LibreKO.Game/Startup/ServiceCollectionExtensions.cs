@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
@@ -92,6 +92,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGeniePacketCoordinator, GeniePacketCoordinator>();
         services.AddSingleton<IGenieSystemPacketCoordinator, GenieSystemPacketCoordinator>();
         services.AddSingleton<IDailyQuestPacketCoordinator, DailyQuestPacketCoordinator>();
+        services.AddSingleton<ICollectionRacePacketCoordinator, CollectionRacePacketCoordinator>();
         services.AddSingleton<INationSystemsPacketCoordinator, NationSystemsPacketCoordinator>();
         services.AddSingleton<IQuestPacketCoordinator, QuestPacketCoordinator>();
         services.AddSingleton<IWarehousePacketCoordinator, WarehousePacketCoordinator>();

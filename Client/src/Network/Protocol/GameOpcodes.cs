@@ -1,4 +1,4 @@
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public enum GameOpcodes : byte
 {

@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
+﻿using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 

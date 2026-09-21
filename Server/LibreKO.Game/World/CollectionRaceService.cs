@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -28,6 +28,7 @@ public class CollectionRaceService(
     IGameDataService gameDataService,
     IUserNotificationService userNotificationService,
     IPlayerProgressionService playerProgressionService,
+    ILoyaltyService loyaltyService,
     ILogger<CollectionRaceService> logger) : ICollectionRaceService
 {
     public class PlayerProgress
@@ -100,29 +101,28 @@ public class CollectionRaceService(
 
     public async Task TickAsync()
     {
-        var utcNow = DateTime.UtcNow;
-        var localNow = DateTime.Now;
+        var now = DateTime.UtcNow;
 
         if (ActiveEvent != null)
         {
-            if (utcNow >= EndTime)
+            if (now >= EndTime)
             {
                 await EndEventAsync();
             }
             return;
         }
 
-        // Automatic scheduling check once per minute (aligned to local server time)
-        if (localNow.Minute != _lastAutoCheckMinute)
+        // Automatic scheduling check once per minute (UTC)
+        if (now.Minute != _lastAutoCheckMinute)
         {
-            _lastAutoCheckMinute = localNow.Minute;
+            _lastAutoCheckMinute = now.Minute;
 
             foreach (var settings in gameDataService.CollectionRaceSettingsTable.Values)
             {
                 if (!settings.AutoStart)
                     continue;
 
-                if (!IsScheduledNow(settings, localNow))
+                if (!IsScheduledNow(settings, now))
                     continue;
 
                 await StartEventAsync(settings.EventIndex);
@@ -319,8 +319,11 @@ public class CollectionRaceService(
 
             if (reward.ItemId == InventoryConstants.ItemGold)
             {
-                session.Money += reward.ItemCount;
-                await userNotificationService.SendGoldGainAsync(session, reward.ItemCount);
+                long newMoney = Math.Min((long)session.Money + reward.ItemCount, (long)int.MaxValue);
+                int delta = (int)(newMoney - session.Money);
+                session.Money = (int)newMoney;
+                if (delta > 0)
+                    await userNotificationService.SendGoldGainAsync(session, delta);
             }
             else if (reward.ItemId == InventoryConstants.ItemExperience)
             {
@@ -328,31 +331,58 @@ public class CollectionRaceService(
             }
             else if (reward.ItemId == InventoryConstants.ItemLadderPoint)
             {
-                session.Loyalty += reward.ItemCount;
-                session.MonthlyLoyalty += reward.ItemCount;
-                await session.Client.SendPacket(LoyaltyChangePacketWriter.Totals(session.Loyalty, session.MonthlyLoyalty));
+                await loyaltyService.ChangeAsync(session, reward.ItemCount);
             }
             else
             {
-                var slot = session.FindSlotForItem(reward.ItemId, gameDataService, (ushort)reward.ItemCount);
-                if (slot >= 0)
+                var itemData = gameDataService.GetItem(reward.ItemId);
+                if (itemData == null)
+                    continue;
+
+                if (itemData.Countable == 0)
                 {
-                    var isNew = session.Inventory[slot].IsEmpty;
-                    session.Inventory[slot].ItemId = reward.ItemId;
-                    session.Inventory[slot].Count += (ushort)reward.ItemCount;
+                    for (int i = 0; i < reward.ItemCount; i++)
+                    {
+                        var slot = session.FindSlotForItem(reward.ItemId, gameDataService, 1);
+                        if (slot >= 0)
+                        {
+                            var isNew = session.Inventory[slot].IsEmpty;
+                            session.Inventory[slot].ItemId = reward.ItemId;
+                            session.Inventory[slot].Count = 1;
+                            session.Inventory[slot].Durability = itemData.Duration;
 
-                    var itemData = gameDataService.GetItem(reward.ItemId);
-                    if (isNew && itemData != null)
-                        session.Inventory[slot].Durability = itemData.Duration;
-
-                    await userNotificationService.SendStackChangeAsync(
-                        session, (byte)slot, reward.ItemId, session.Inventory[slot].Count, session.Inventory[slot].Durability, isNew);
-                    session.RecalculateStatsWithBuffs(gameDataService);
-                    await userNotificationService.SendWeightChangeAsync(session);
+                            await userNotificationService.SendStackChangeAsync(
+                                session, (byte)slot, reward.ItemId, 1, session.Inventory[slot].Durability, isNew);
+                            session.RecalculateStatsWithBuffs(gameDataService);
+                            await userNotificationService.SendWeightChangeAsync(session);
+                        }
+                        else
+                        {
+                            await SendNoticeAsync(session, "Inventory is full! Some Collection Race rewards could not be delivered.");
+                            break;
+                        }
+                    }
                 }
                 else
                 {
-                    await SendNoticeAsync(session, "Inventory is full! Some Collection Race rewards could not be delivered.");
+                    var slot = session.FindSlotForItem(reward.ItemId, gameDataService, (ushort)reward.ItemCount);
+                    if (slot >= 0)
+                    {
+                        var isNew = session.Inventory[slot].IsEmpty;
+                        session.Inventory[slot].ItemId = reward.ItemId;
+                        session.Inventory[slot].Count += (ushort)reward.ItemCount;
+                        if (isNew)
+                            session.Inventory[slot].Durability = itemData.Duration;
+
+                        await userNotificationService.SendStackChangeAsync(
+                            session, (byte)slot, reward.ItemId, session.Inventory[slot].Count, session.Inventory[slot].Durability, isNew);
+                        session.RecalculateStatsWithBuffs(gameDataService);
+                        await userNotificationService.SendWeightChangeAsync(session);
+                    }
+                    else
+                    {
+                        await SendNoticeAsync(session, "Inventory is full! Some Collection Race rewards could not be delivered.");
+                    }
                 }
             }
         }
@@ -421,13 +451,13 @@ public class CollectionRaceService(
 
     private static async Task SendNoticeAsync(UserSession session, string message)
     {
-        var pkt = ChatPacketWriter.Say((byte)ChatType.WarSystem, 0, 0, "[Server]", message, false);
+        var pkt = ChatPacketWriter.SystemNotice((byte)session.Nation, message);
         await session.Client.SendPacket(pkt);
     }
 
     private async Task BroadcastNoticeAsync(string message)
     {
-        var pkt = ChatPacketWriter.Say((byte)ChatType.WarSystem, 0, 0, "[Server]", message, false);
+        var pkt = NoticePacketWriter.Broadcast(message);
         await sessionManager.BroadcastToAll(pkt);
     }
 }

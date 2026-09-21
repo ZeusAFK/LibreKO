@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;

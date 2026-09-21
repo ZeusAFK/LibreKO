@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 
 namespace LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 

@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -141,7 +141,6 @@ public class AdminPacketCoordinator(
                 break;
 
             case "cropen":
-                if (!session.IsGM) return;
                 if (int.TryParse(arg, out var crIndex))
                 {
                     await collectionRaceService.StartEventAsync(crIndex, session);
@@ -153,12 +152,10 @@ public class AdminPacketCoordinator(
                 break;
 
             case "crclose":
-                if (!session.IsGM) return;
                 await collectionRaceService.EndEventAsync(forced: true, session);
                 break;
 
             case "crstatus":
-                if (!session.IsGM) return;
                 if (collectionRaceService.ActiveEvent != null)
                 {
                     await SendNoticeAsync(session,
@@ -276,6 +273,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+waropen <zoneId>/+warclose/+snowwar");
                 await SendNoticeAsync(session, "+bifroststart [min] / +bifrostclose - Bifrost event");
                 await SendNoticeAsync(session, "+jr [sec] / +bdw [sec] / +chaos [sec] / +templecancel - Temple Events");
+                await SendNoticeAsync(session, "+cropen <eventIndex> / +crclose / +crstatus - Collection Race");
                 await SendNoticeAsync(session, "+zone | +zone <id> - List zones / teleport to zone home");
                 await SendNoticeAsync(session, "+reloadscripts - Reload quest scripts without restart");
                 await SendNoticeAsync(session, "+reseed - Seed JSON to DB + reload (drops/NPCs/items)");
