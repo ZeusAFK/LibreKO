@@ -36,7 +36,6 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         session.Name = character.Name;
         session.Nation = account.Nation;
         session.KnightCash = account.KnightCash;
-        session.UsdBalance = account.UsdBalance;
         session.Language = account.Language;
         session.LoadVipWarehouse(account.VipWarehouseItems);
         session.VipVaultExpiry = account.VipVaultExpiry;
@@ -225,7 +224,6 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
     {
         // Account-scoped mutable state — propagated back on every persist tick.
         account.KnightCash = session.KnightCash;
-        account.UsdBalance = session.UsdBalance;
         account.PremiumDate = session.PremiumExpiry;
         account.PremiumType = session.PremiumService;
         account.Language = session.Language;

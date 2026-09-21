@@ -15,7 +15,7 @@ public partial class Net
 
     private const byte SmBuyItemSubcommand = 1;
     private const byte SmBuyItemKind = 1;
-    private const int SmBuyRequestSize = 7;
+    private const int SmBuyRequestSize = 6;
 
     private const byte SmLetterUnread = 1;
     private const byte SmLetterList = 2;
@@ -31,7 +31,7 @@ public partial class Net
     public event Action<short, short>? ShoppingMallOpenEvent;
     public event Action<List<ShoppingMallCatalogEntry>>? ShoppingMallCatalogEvent;
     public event Action<List<ShoppingMallCategory>>? ShoppingMallCategoriesEvent;
-    public event Action<int, int>? ShoppingMallBalanceEvent;
+    public event Action<int>? ShoppingMallBalanceEvent;
 
     public event Action<int>? ShoppingMallUnreadEvent;
 
@@ -45,7 +45,7 @@ public partial class Net
 
     public event Action<List<int>, bool>? ShoppingMallDeleteEvent;
 
-        public event Action<bool, int, int>? ShoppingMallBuyResultEvent;
+    public event Action<bool, int>? ShoppingMallBuyResultEvent;
 
     private int _smPendingGiftLetterId;
 
@@ -83,7 +83,7 @@ public partial class Net
                 return;
             case SmStoreBalance:
                 if (p.RemainingBytes >= 4)
-                    ShoppingMallBalanceEvent?.Invoke(p.ReadInt(), p.ReadInt());
+                    ShoppingMallBalanceEvent?.Invoke(p.ReadInt());
                 return;
         }
 
@@ -103,15 +103,14 @@ public partial class Net
 
         int result = p.ReadByte();
         int knightCash = p.RemainingBytes >= 4 ? p.ReadInt() : -1;
-        int usdBalance = p.RemainingBytes >= 4 ? p.ReadInt() : -1;
-        ShoppingMallBuyResultEvent?.Invoke(result == 1, knightCash, usdBalance);
+        ShoppingMallBuyResultEvent?.Invoke(result == 1, knightCash);
     }
 
     private void HandleShoppingMallCatalog(Packet p)
     {
         var entries = new List<ShoppingMallCatalogEntry>();
         int count = p.RemainingBytes >= 2 ? p.ReadUShort() : 0;
-        for (var i = 0; i < count && p.RemainingBytes >= 14; i++)
+        for (var i = 0; i < count && p.RemainingBytes >= 13; i++)
         {
             entries.Add(new ShoppingMallCatalogEntry(
                 p.ReadInt(),
@@ -119,8 +118,7 @@ public partial class Net
                 p.ReadSByteString(),
                 p.ReadSByteString(),
                 (byte)p.ReadByte(),
-                p.ReadInt(),
-                (byte)p.ReadByte()));
+                p.ReadInt()));
         }
 
         ShoppingMallCatalogEvent?.Invoke(entries);
@@ -288,16 +286,15 @@ public partial class Net
         _conn.Send(p);
     }
 
-    public void SendPowerUpStoreBuy(int itemId, int count, int priceType)
+    public void SendPowerUpStoreBuy(int catalogEntryId, int count)
     {
         var p = new Packet(GameOpcodes.GS_SHOPPING_MALL);
         p.WriteByte(SmStoreBuy);
         p.WriteByte(SmBuyItemSubcommand);
         p.WriteByte(SmBuyItemKind);
         System.Diagnostics.Debug.Assert(SmBuyRequestSize == 7);
-        p.WriteInt(itemId);
+        p.WriteInt(catalogEntryId);
         p.WriteByte((byte)Math.Clamp(count, 1, 255));
-        p.WriteByte((byte)Math.Clamp(priceType, 0, 1));
         _conn.Send(p);
     }
 
@@ -329,7 +326,6 @@ public readonly record struct ShoppingMallCatalogEntry(
     string Name,
     string Description,
     byte Category,
-    int Price,
-    byte PriceType);
+    int Price);
 
 public readonly record struct ShoppingMallCategory(byte Id, string Name, string Description);

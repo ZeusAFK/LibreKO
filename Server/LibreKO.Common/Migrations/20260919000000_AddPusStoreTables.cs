@@ -40,13 +40,12 @@ public partial class AddPusStoreTables : Migration
                     .Annotation("MySql:CharSet", "utf8mb4"),
                 strItemTitle = table.Column<string>(type: "varchar(1000)", maxLength: 1000, nullable: true)
                     .Annotation("MySql:CharSet", "utf8mb4"),
-                Price = table.Column<int>(type: "int", nullable: true),
-                SendType = table.Column<int>(type: "int", nullable: true),
+                Price = table.Column<int>(type: "int", nullable: false),
+                SendType = table.Column<int>(type: "int", nullable: false),
                 BuyCount = table.Column<int>(type: "int", nullable: false),
                 strItemDesc = table.Column<string>(type: "varchar(1000)", maxLength: 1000, nullable: false)
                     .Annotation("MySql:CharSet", "utf8mb4"),
-                Category = table.Column<byte>(type: "tinyint unsigned", nullable: false),
-                PriceType = table.Column<byte>(type: "tinyint unsigned", nullable: false)
+                Category = table.Column<byte>(type: "tinyint unsigned", nullable: false)
             },
             constraints: table =>
             {

@@ -1,7 +1,7 @@
 [
-  { "Id": 1, "CategoryName": "Power-Up", "Description": "Power-Up", "CategoryId": 1, "Status": 1 },
-  { "Id": 2, "CategoryName": "Special (USD Only)", "Description": "Special (USD Only)", "CategoryId": 2, "Status": 1 },
-  { "Id": 3, "CategoryName": "On sale", "Description": "On sale", "CategoryId": 3, "Status": 1 },
-  { "Id": 4, "CategoryName": "Exchange or Voucher", "Description": "Exchange or Voucher", "CategoryId": 4, "Status": 1 },
-  { "Id": 5, "CategoryName": "USD to Knight Cash", "Description": "USD to Knight Cash", "CategoryId": 5, "Status": 1 }
+  { "Id": 1, "CategoryName": "Power-Up", "Description": "Combat consumables", "CategoryId": 1, "Status": 1 },
+  { "Id": 2, "CategoryName": "Premium", "Description": "Premium account items", "CategoryId": 2, "Status": 1 },
+  { "Id": 3, "CategoryName": "Featured", "Description": "Featured services", "CategoryId": 3, "Status": 1 },
+  { "Id": 4, "CategoryName": "Vouchers", "Description": "Exchange vouchers", "CategoryId": 4, "Status": 1 },
+  { "Id": 5, "CategoryName": "Services", "Description": "Character services", "CategoryId": 5, "Status": 1 }
 ]

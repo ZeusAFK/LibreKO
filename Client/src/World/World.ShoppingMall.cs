@@ -50,7 +50,6 @@ public partial class World
         public string Description = "";
         public int Category;
         public int Price;
-        public int PriceType;
     }
 
     private sealed class PusBasketEntry
@@ -485,12 +484,12 @@ public partial class World
         }, true);
     }
 
-    private void OnShoppingMallBuyResult(bool ok, int knightCash, int usdBalance)
+    private void OnShoppingMallBuyResult(bool ok, int knightCash)
     {
         if (ok)
         {
-            if (knightCash >= 0 && usdBalance >= 0)
-                OnShoppingMallBalance(knightCash, usdBalance);
+            if (knightCash >= 0)
+                OnShoppingMallBalance(knightCash);
 
             _pusBasketStatus.Text = "Purchase complete.";
             _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
@@ -535,7 +534,7 @@ public partial class World
         var basketPanel = new VBoxContainer { CustomMinimumSize = new Vector2(150, 220) };
         basketPanel.AddThemeConstantOverride("separation", 6);
         basketPanel.AddChild(UiTheme.Text("Basket", 12, UiTheme.TextHi));
-        _pusWallet = UiTheme.Text("KC 0 | USD 0", 12, UiTheme.GoldBright);
+        _pusWallet = UiTheme.Text("KC 0", 12, UiTheme.GoldBright);
         basketPanel.AddChild(_pusWallet);
         _pusBasketList = new VBoxContainer();
         _pusBasketList.AddThemeConstantOverride("separation", 4);
@@ -593,16 +592,14 @@ public partial class World
                 info.AddThemeConstantOverride("separation", -2);
                 info.AddChild(UiTheme.Text(item.Name, 12, UiTheme.TextHi));
                 info.AddChild(UiTheme.Text(item.Description, 11, UiTheme.TextLo));
-                bool purchasable = item.PriceType is 0 or 1;
                 info.AddChild(UiTheme.Text(
-                    $"{item.Price:n0} {(purchasable ? "Knight Cash" : "USD")}",
+                    $"{item.Price:n0} Knight Cash",
                     11,
                     UiTheme.GoldBright));
                 hb.AddChild(info);
 
                 var add = new Button { Text = "+", FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(28, 28) };
                 add.Pressed += () => AddToPusBasket(item);
-                add.Disabled = !purchasable;
                 hb.AddChild(add);
 
                 _pusItemList.AddChild(row);
@@ -644,7 +641,7 @@ public partial class World
     private void UpdatePusWallet()
     {
         if (_pusWallet == null || !IsInstanceValid(_pusWallet)) return;
-        _pusWallet.Text = $"KC {Sheet.KnightCash:n0} | USD {Sheet.UsdBalance:n0}";
+        _pusWallet.Text = $"KC {Sheet.KnightCash:n0}";
     }
 
     private void OnShoppingMallCatalog(List<ShoppingMallCatalogEntry> entries)
@@ -660,7 +657,6 @@ public partial class World
                 Description = entry.Description,
                 Category = entry.Category,
                 Price = entry.Price,
-                PriceType = entry.PriceType,
             });
         }
 
@@ -677,6 +673,7 @@ public partial class World
         foreach (var category in _pusCategories)
         {
             var tab = new Button { Text = category.Name, ToggleMode = true, FocusMode = Control.FocusModeEnum.None };
+            tab.ButtonPressed = category.Id == _pusSelectedCategory;
             tab.Pressed += () =>
             {
                 _pusSelectedCategory = category.Id;
@@ -688,10 +685,9 @@ public partial class World
         RefreshPusView();
     }
 
-    private void OnShoppingMallBalance(int knightCash, int usdBalance)
+    private void OnShoppingMallBalance(int knightCash)
     {
         Sheet.SetKnightCash(knightCash);
-        Sheet.SetUsdBalance(usdBalance);
         UpdateStatusHud();
         UpdatePusWallet();
     }
@@ -699,7 +695,9 @@ public partial class World
     private void AddToPusBasket(PusCatalogEntry item)
     {
         var existing = _pusBasket.FirstOrDefault(x => x.Item.Id == item.Id);
-        if (existing != null) existing.Count++;
+        var itemData = ItemData.Get(item.ItemId);
+        if (existing != null && itemData?.Countable != 0)
+            existing.Count++;
         else _pusBasket.Add(new PusBasketEntry { Item = item, Count = 1 });
         RefreshPusView();
     }
@@ -728,22 +726,15 @@ public partial class World
             return;
         }
 
-        var item = _pusBasket[0].Item;
         int total = 0;
         foreach (var entry in _pusBasket)
         {
             total += entry.Item.Price * entry.Count;
-            if (entry.Item.PriceType != item.PriceType)
-            {
-                _pusBasketStatus.Text = "Basket mixes Knight Cash and USD items. Split purchases by currency type.";
-                _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
-                return;
-            }
         }
 
         foreach (var entry in _pusBasket)
         {
-            Net.I.SendPowerUpStoreBuy(entry.Item.ItemId, entry.Count, entry.Item.PriceType);
+            Net.I.SendPowerUpStoreBuy(entry.Item.Id, entry.Count);
         }
 
         _pusBasketStatus.Text = $"Purchase request sent for {total:n0} KC. Server validation pending.";

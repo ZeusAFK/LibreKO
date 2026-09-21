@@ -232,7 +232,6 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+item <name> - Search items by name");
                 await SendNoticeAsync(session, "+gold <amount> - Give/take gold");
                 await SendNoticeAsync(session, "+kc <name> <amount> - Give/take Knight Cash");
-                await SendNoticeAsync(session, "+usd <name> <amount> - Give/take USD");
                 await SendNoticeAsync(session,
                     "+setlevel <1-83> - Set level; resets stats + mastery, clears the skill bar");
                 await SendNoticeAsync(session, "+hp - Restore HP/MP");
@@ -372,10 +371,6 @@ public class AdminPacketCoordinator(
             case "kc":
             case "knightcash":
                 await HandleKnightCashAsync(session, arg);
-                break;
-
-            case "usd":
-                await HandleUsdAsync(session, arg);
                 break;
 
             case "bifroststart":
@@ -580,39 +575,6 @@ public class AdminPacketCoordinator(
 
         await SendNoticeAsync(session, $"Account {account.Login} KC {(amount >= 0 ? "+" : "")}{amount} (now {account.KnightCash})");
         logger.LogInformation("GM {Gm} adjusted KC of {Login} by {Amount}", session.Name, account.Login, amount);
-    }
-
-    private async Task HandleUsdAsync(UserSession session, string arg)
-    {
-        var parts = arg.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 2 || !int.TryParse(parts[1], out var amount))
-        {
-            await SendNoticeAsync(session, "Usage: +usd <name> <amount>");
-            return;
-        }
-
-        var target = sessionManager.GetByName(parts[0]);
-        if (target != null)
-            target.UsdBalance = (int)Math.Clamp((long)target.UsdBalance + amount, 0L, int.MaxValue);
-
-        using var scope = serviceProvider.CreateScope();
-        var accountRepo = scope.ServiceProvider.GetRequiredService<IAccountRepository>();
-        var characterRepo = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-        var account = target != null
-            ? await accountRepo.GetById(target.AccountId)
-            : (await characterRepo.GetByName(parts[0])) is { } character
-                ? await accountRepo.GetById(character.AccountId)
-                : null;
-        if (account == null)
-        {
-            await SendNoticeAsync(session, $"Account not found for: {parts[0]}");
-            return;
-        }
-
-        account.UsdBalance = (int)Math.Clamp((long)account.UsdBalance + amount, 0L, int.MaxValue);
-        await accountRepo.UpdateAsync(account);
-        await SendNoticeAsync(session, $"Account {account.Login} USD {(amount >= 0 ? "+" : "")}{amount} (now {account.UsdBalance})");
-        logger.LogInformation("GM {Gm} adjusted USD of {Login} by {Amount}", session.Name, account.Login, amount);
     }
 
     private async Task HandleBifrostStartAsync(UserSession session, string arg)

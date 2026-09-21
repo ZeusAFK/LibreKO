@@ -68,7 +68,6 @@ public class UserSession
 
     // Knight Cash (account-scoped premium currency).
     public int KnightCash { get; set; }
-    public int UsdBalance { get; set; }
     public GameLanguage Language { get; set; } = GameLanguage.English;
 
     public string LanguageCode => Language switch

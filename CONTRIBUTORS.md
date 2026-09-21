@@ -5,3 +5,4 @@ pull request that lands your first change, with whatever contact you want to giv
 
 - ZeusAFK (maintainer) — https://github.com/ZeusAFK
 - d4ywalker — https://github.com/d4ywalker
+- Copilot App — https://github.com/apps/copilot

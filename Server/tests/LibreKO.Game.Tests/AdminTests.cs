@@ -245,14 +245,14 @@ public class AdminTests : GameTestBase
                 db.Accounts.AddRange(
                     new Account
                     {
-                        Login = "gm-tl-user",
+                        Login = "gm-kc-user",
                         Password = "pw",
                         Nation = AccountNation.Karus,
                         Authority = AccountAuthority.GameMaster
                     },
                     new Account
                     {
-                        Login = "tl-target-user",
+                        Login = "kc-target-user",
                         Password = "pw",
                         Nation = AccountNation.Karus,
                         Authority = AccountAuthority.Normal,
@@ -260,14 +260,14 @@ public class AdminTests : GameTestBase
                     });
                 db.SaveChanges();
 
-                var gmAccountId = db.Accounts.Single(a => a.Login == "gm-tl-user").Id;
-                var targetAccountId = db.Accounts.Single(a => a.Login == "tl-target-user").Id;
+                var gmAccountId = db.Accounts.Single(a => a.Login == "gm-kc-user").Id;
+                var targetAccountId = db.Accounts.Single(a => a.Login == "kc-target-user").Id;
                 db.Characters.AddRange(
                     new Character
                     {
                         AccountId = gmAccountId,
                         Slot = 0,
-                        Name = "GMTL",
+                        Name = "GMKC",
                         Race = 1,
                         Class = 101,
                         Face = 1,
@@ -284,7 +284,7 @@ public class AdminTests : GameTestBase
                     {
                         AccountId = targetAccountId,
                         Slot = 0,
-                        Name = "TLTarget",
+                        Name = "KCTarget",
                         Race = 1,
                         Class = 101,
                         Face = 1,
@@ -299,10 +299,10 @@ public class AdminTests : GameTestBase
                     });
             });
 
-        var gmAccountId = await GetAccountIdAsync(provider, "gm-tl-user");
-        var targetAccountId = await GetAccountIdAsync(provider, "tl-target-user");
-        var gmCharacterId = await GetCharacterIdAsync(provider, "GMTL");
-        var targetCharacterId = await GetCharacterIdAsync(provider, "TLTarget");
+        var gmAccountId = await GetAccountIdAsync(provider, "gm-kc-user");
+        var targetAccountId = await GetAccountIdAsync(provider, "kc-target-user");
+        var gmCharacterId = await GetCharacterIdAsync(provider, "GMKC");
+        var targetCharacterId = await GetCharacterIdAsync(provider, "KCTarget");
 
         var gmClient = Substitute.For<IClient>();
         gmClient.Id.Returns(Guid.NewGuid());
@@ -316,21 +316,21 @@ public class AdminTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var gmSession = sessionManager.CreateSession(gmClient, gmCharacterId, gmAccountId);
-        gmSession.Name = "GMTL";
+        gmSession.Name = "GMKC";
         gmSession.IsGM = true;
 
         var targetSession = sessionManager.CreateSession(targetClient, targetCharacterId, targetAccountId);
-        targetSession.Name = "TLTarget";
+        targetSession.Name = "KCTarget";
         targetSession.KnightCash = 1000;
 
         var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
-        await coordinator.HandleGmCommandAsync(gmSession, "+kc TLTarget 250");
+        await coordinator.HandleGmCommandAsync(gmSession, "+kc KCTarget 250");
 
         targetSession.KnightCash.Should().Be(1250);
 
         await using var scope = provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var account = await db.Accounts.SingleAsync(a => a.Login == "tl-target-user");
+        var account = await db.Accounts.SingleAsync(a => a.Login == "kc-target-user");
         account.KnightCash.Should().Be(1250);
     }
 

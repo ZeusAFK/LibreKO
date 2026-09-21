@@ -9,12 +9,11 @@ public class PusItemData
     public int ItemId { get; set; }
     public string? ItemName { get; set; }
     public string? ItemTitle { get; set; }
-    public int? Price { get; set; }
-    public int? SendType { get; set; }
+    public int Price { get; set; }
+    public int SendType { get; set; }
     public int BuyCount { get; set; }
     public string ItemDesc { get; set; } = "";
     public byte Category { get; set; }
-    public byte PriceType { get; set; }
 
     internal class EntityConfiguration : IEntityTypeConfiguration<PusItemData>
     {
@@ -26,11 +25,11 @@ public class PusItemData
             builder.Property(p => p.ItemId).HasColumnName("ItemID");
             builder.Property(p => p.ItemName).HasColumnName("strItemName").HasMaxLength(150);
             builder.Property(p => p.ItemTitle).HasColumnName("strItemTitle").HasMaxLength(1000);
+            builder.Property(p => p.Price).IsRequired();
             builder.Property(p => p.SendType).HasColumnName("SendType");
             builder.Property(p => p.BuyCount).HasColumnName("BuyCount");
             builder.Property(p => p.ItemDesc).HasColumnName("strItemDesc").HasMaxLength(1000).IsRequired();
             builder.Property(p => p.Category).HasColumnType("tinyint");
-            builder.Property(p => p.PriceType).HasColumnType("tinyint");
         }
     }
 }

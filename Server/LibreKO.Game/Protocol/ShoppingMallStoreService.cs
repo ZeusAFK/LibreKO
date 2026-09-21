@@ -27,9 +27,7 @@ public class ShoppingMallStoreService(
     private const byte StoreCatalog = 3;
     private const byte StoreCategories = 4;
     private const byte StoreBalance = 5;
-    private const byte KnightCashPriceType = 0;
-    private const byte UsdPriceType = 1;
-    private const int BuyRequestSize = 7;
+    private const int BuyRequestSize = 6;
 
     public async Task HandleOpenAsync(UserSession session)
     {
@@ -81,17 +79,17 @@ public class ShoppingMallStoreService(
             .Select(x => new ShoppingMallPacketWriter.Category(x.CategoryId, x.CategoryName, x.Description))
             .ToListAsync();
         var catalog = await db.PusItems.AsNoTracking()
-            .Where(x => x.Price != null && x.Price > 0)
+            .Where(x => x.Price > 0)
             .OrderBy(x => x.Id)
             .Select(x => new ShoppingMallPacketWriter.CatalogEntry(
                 x.Id, x.ItemId, x.ItemName ?? x.ItemTitle ?? string.Empty, x.ItemDesc,
-                x.Category, x.Price!.Value, x.PriceType))
+                x.Category, x.Price))
             .ToListAsync();
 
         await session.Client.SendPacket(ShoppingMallPacketWriter.Catalog(StoreOpen, StoreCatalog, catalog));
         await session.Client.SendPacket(ShoppingMallPacketWriter.Categories(StoreOpen, StoreCategories, categories));
         await session.Client.SendPacket(ShoppingMallPacketWriter.Balance(
-            StoreOpen, StoreBalance, session.KnightCash, session.UsdBalance));
+            StoreOpen, StoreBalance, session.KnightCash));
     }
 
     public async Task HandleBuyAsync(UserSession session, Packet packet)
@@ -116,17 +114,9 @@ public class ShoppingMallStoreService(
         }
 
         var buyKind = packet.ReadByte();
-        var itemId = packet.ReadInt();
+        var catalogEntryId = packet.ReadInt();
         var count = packet.ReadByte();
-        var priceType = packet.ReadByte();
-        if (buyKind != StoreBuyItem || itemId <= 0 || count <= 0)
-        {
-            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
-            return;
-        }
-
-        var itemData = gameData.GetItem(itemId);
-        if (itemData == null)
+        if (buyKind != StoreBuyItem || catalogEntryId <= 0 || count <= 0)
         {
             await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
             return;
@@ -135,42 +125,43 @@ public class ShoppingMallStoreService(
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var pusItem = await db.PusItems.AsNoTracking().FirstOrDefaultAsync(x => x.ItemId == itemId);
-            if (pusItem == null || pusItem.Price is null)
+            var pusItem = await db.PusItems.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == catalogEntryId);
+            if (pusItem == null)
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
                 return;
             }
 
-            var totalCost = pusItem.Price.Value * count;
-            if (pusItem.PriceType != priceType
-                || priceType is not (KnightCashPriceType or UsdPriceType)
-                || totalCost <= 0
-                || (priceType == KnightCashPriceType
-                    ? session.KnightCash < totalCost
-                    : session.UsdBalance < totalCost))
+            var itemData = gameData.GetItem(pusItem.ItemId);
+            if (itemData == null
+                || itemData.Countable == 0 && count > 1)
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
                 return;
             }
 
-            var slot = session.FindSlotForItem(itemId, gameData, (ushort)Math.Min(count, ushort.MaxValue));
+            var totalCost = pusItem.Price * count;
+            if (totalCost <= 0 || session.KnightCash < totalCost)
+            {
+                await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
+                return;
+            }
+
+            var slot = session.FindSlotForItem(pusItem.ItemId, gameData, count);
             if (slot < 0)
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
                 return;
             }
 
-            if (priceType == KnightCashPriceType)
-                session.KnightCash -= totalCost;
-            else
-                session.UsdBalance -= totalCost;
+            session.KnightCash -= totalCost;
 
             var inventorySlot = session.Inventory[slot];
             var isNewItem = inventorySlot.IsEmpty;
             if (isNewItem)
             {
-                inventorySlot.ItemId = itemId;
+                inventorySlot.ItemId = pusItem.ItemId;
                 inventorySlot.Durability = itemData.Duration;
                 inventorySlot.Count = 0;
                 inventorySlot.Flag = 0;
@@ -181,10 +172,10 @@ public class ShoppingMallStoreService(
 
             await characterStatePersister.SaveAsync(session);
             await session.Client.SendPacket(new ItemCountChangePacketWriter()
-                .Add((byte)slot, itemId, inventorySlot.Count, inventorySlot.Durability, isNewItem)
+                .Add((byte)slot, pusItem.ItemId, inventorySlot.Count, inventorySlot.Durability, isNewItem)
                 .Build());
             await session.Client.SendPacket(ShoppingMallPacketWriter.PurchaseResult(
-                StoreBuy, sub, ShoppingMallPacketWriter.Succeeded, session.KnightCash, session.UsdBalance));
+                StoreBuy, sub, ShoppingMallPacketWriter.Succeeded, session.KnightCash));
         }
     }
 

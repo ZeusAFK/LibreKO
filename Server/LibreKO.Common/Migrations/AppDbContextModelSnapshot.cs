@@ -43,9 +43,6 @@ namespace LibreKO.Common.Migrations
                     b.Property<int>("KnightCash")
                         .HasColumnType("int");
 
-                    b.Property<int>("UsdBalance")
-                        .HasColumnType("int");
-
                     b.Property<string>("Language")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -2267,13 +2264,10 @@ namespace LibreKO.Common.Migrations
                         .HasColumnName("strItemTitle")
                         .HasColumnType("varchar(1000)");
 
-                    b.Property<int?>("Price")
+                    b.Property<int>("Price")
                         .HasColumnType("int");
 
-                    b.Property<byte>("PriceType")
-                        .HasColumnType("tinyint");
-
-                    b.Property<int?>("SendType")
+                    b.Property<int>("SendType")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

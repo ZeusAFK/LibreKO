@@ -150,7 +150,6 @@ public class ShoppingMallTests : GameTestBase
                     ItemName = "HP Scroll 60%",
                     ItemTitle = "HP Scroll 60%",
                     Price = 500,
-                    PriceType = 0,
                     BuyCount = 1,
                     ItemDesc = "HP recovery",
                     Category = 1,
@@ -184,9 +183,8 @@ public class ShoppingMallTests : GameTestBase
         request.WriteByte(8);
         request.WriteByte(1);
         request.WriteByte(1);
-        request.WriteInt(itemId);
+        request.WriteInt(1);
         request.WriteByte(1);
-        request.WriteByte(0);
 
         var coordinator = provider.GetRequiredService<IShoppingMallPacketCoordinator>();
         await coordinator.HandleAsync(client, request);
@@ -206,24 +204,35 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
-    public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyRejectsUsdItems()
+    public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyUsesRequestedCatalogEntry()
     {
-        const int itemId = 800079001;
+        const int itemId = 800079000;
 
         using var provider = CreateProvider(
-            db => db.PusItems.Add(new PusItemData
-            {
-                Id = 2,
-                ItemId = itemId,
-                ItemName = "USD item",
-                ItemTitle = "USD item",
-                Price = 10,
-                PriceType = 1,
-                BuyCount = 1,
-                ItemDesc = "USD item",
-                Category = 2,
-            }),
-            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Duration = 1 }));
+            db => db.PusItems.AddRange(
+                new PusItemData
+                {
+                    Id = 2,
+                    ItemId = itemId,
+                    ItemName = "Standard listing",
+                    ItemTitle = "Standard listing",
+                    Price = 1000,
+                    BuyCount = 1,
+                    ItemDesc = "Standard listing",
+                    Category = 1,
+                },
+                new PusItemData
+                {
+                    Id = 3,
+                    ItemId = itemId,
+                    ItemName = "Sale listing",
+                    ItemTitle = "Sale listing",
+                    Price = 100,
+                    BuyCount = 1,
+                    ItemDesc = "Sale listing",
+                    Category = 3,
+                }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1, Duration = 1 }));
 
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
@@ -237,18 +246,54 @@ public class ShoppingMallTests : GameTestBase
         request.WriteByte(8);
         request.WriteByte(1);
         request.WriteByte(1);
-        request.WriteInt(itemId);
-        request.WriteByte(1);
+        request.WriteInt(2);
         request.WriteByte(1);
 
         await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
 
+        session.KnightCash.Should().Be(0);
+        sentPackets.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyRejectsMultipleNonCountableItems()
+    {
+        const int itemId = 800079000;
+
+        using var provider = CreateProvider(
+            db => db.PusItems.Add(new PusItemData
+            {
+                Id = 4,
+                ItemId = itemId,
+                ItemName = "Non-countable item",
+                ItemTitle = "Non-countable item",
+                Price = 100,
+                BuyCount = 1,
+                ItemDesc = "Non-countable item",
+                Category = 1,
+            }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 0, Duration = 1 }));
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, 29, 39);
+        session.KnightCash = 1000;
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(8);
+        request.WriteByte(1);
+        request.WriteByte(1);
+        request.WriteInt(4);
+        request.WriteByte(2);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
         session.KnightCash.Should().Be(1000);
+        session.Inventory.Should().OnlyContain(slot => slot.IsEmpty);
         sentPackets.Should().ContainSingle();
-        sentPackets[0].ResetOffset();
-        sentPackets[0].ReadByte().Should().Be(8);
-        sentPackets[0].ReadByte().Should().Be(1);
-        sentPackets[0].ReadByte().Should().Be(0);
     }
 
     [Fact]

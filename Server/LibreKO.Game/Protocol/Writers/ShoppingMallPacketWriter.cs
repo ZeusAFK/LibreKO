@@ -26,8 +26,7 @@ public sealed class ShoppingMallPacketWriter
         string Name,
         string Description,
         byte Category,
-        int Price,
-        byte PriceType);
+        int Price);
 
     public readonly record struct Category(
         byte Id,
@@ -109,7 +108,6 @@ public sealed class ShoppingMallPacketWriter
             packet.WriteSByteString(entry.Description);
             packet.WriteByte(entry.Category);
             packet.WriteInt(entry.Price);
-            packet.WriteByte(entry.PriceType);
         }
 
         return packet;
@@ -129,19 +127,17 @@ public sealed class ShoppingMallPacketWriter
         return packet;
     }
 
-    public static Packet Balance(byte storeOpcode, byte sub, int knightCash, int usdBalance)
+    public static Packet Balance(byte storeOpcode, byte sub, int knightCash)
     {
         var packet = Sub(storeOpcode, sub);
         packet.WriteInt(knightCash);
-        packet.WriteInt(usdBalance);
         return packet;
     }
 
-    public static Packet PurchaseResult(byte storeOpcode, byte sub, byte result, int knightCash, int usdBalance)
+    public static Packet PurchaseResult(byte storeOpcode, byte sub, byte result, int knightCash)
     {
         var packet = Result(storeOpcode, sub, result);
         packet.WriteInt(knightCash);
-        packet.WriteInt(usdBalance);
         return packet;
     }
 

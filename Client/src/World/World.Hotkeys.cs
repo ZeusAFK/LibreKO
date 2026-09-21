@@ -83,7 +83,7 @@ public partial class World : Node3D
         Bound(KeyAction.Interact, () => TryStartGather());
         Bound(KeyAction.MyShop, () => ToggleMerchantMenu());
         Bound(KeyAction.Pet, () => TogglePet());
-        Bound(KeyAction.PowerUpStore, OpenPowerUpStore);
+        Bound(KeyAction.PowerUpStore, ToggleShoppingMall);
         Bound(KeyAction.Rebirth, () => ToggleRebirth());
         Bound(KeyAction.King, () => ToggleKing());
         Bound(KeyAction.Siege, () => ToggleSiege());
