@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -66,6 +66,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ZoneInfoData> ZoneInfos { get; set; }
     public DbSet<GameEventData> GameEvents { get; set; }
     public DbSet<SiegeWarfareData> SiegeWarfare { get; set; }
+    public DbSet<CollectionRaceSettingsData> CollectionRaceSettings { get; set; }
+    public DbSet<CollectionRaceRewardData> CollectionRaceRewards { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

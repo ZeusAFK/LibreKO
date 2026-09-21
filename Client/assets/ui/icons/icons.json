@@ -27,6 +27,8 @@
     "scroll": "system/scroll.svg",
     "users-three": "system/users-three.svg",
     "home": "system/home.svg",
-    "gift": "system/gift.svg"
+    "gift": "system/gift.svg",
+    "sparkle": "system/sparkle.svg",
+    "medal": "system/medal.svg"
   }
 }

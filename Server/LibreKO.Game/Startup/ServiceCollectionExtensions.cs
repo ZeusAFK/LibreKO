@@ -92,6 +92,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGeniePacketCoordinator, GeniePacketCoordinator>();
         services.AddSingleton<IGenieSystemPacketCoordinator, GenieSystemPacketCoordinator>();
         services.AddSingleton<IDailyQuestPacketCoordinator, DailyQuestPacketCoordinator>();
+        services.AddSingleton<ICollectionRacePacketCoordinator, CollectionRacePacketCoordinator>();
         services.AddSingleton<INationSystemsPacketCoordinator, NationSystemsPacketCoordinator>();
         services.AddSingleton<IQuestPacketCoordinator, QuestPacketCoordinator>();
         services.AddSingleton<IWarehousePacketCoordinator, WarehousePacketCoordinator>();
@@ -208,6 +209,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INpcAiTargetingService, NpcAiTargetingService>();
 
         services.AddSingleton<EventSchedulerService>();
+        services.AddSingleton<ICollectionRaceService, CollectionRaceService>();
         services.AddSingleton<IScriptEffectApplier, ScriptEffectApplier>();
         services.AddSingleton<LibreKO.Quests.Localization.IQuestTranslations>(provider =>
             QuestTranslationLoader.Load(provider));

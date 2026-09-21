@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 
 namespace LibreKO.Common.Domain.Services;
@@ -45,6 +45,8 @@ public interface IGameDataService
     IReadOnlyDictionary<int, AttendanceRewardData> AttendanceRewardTable { get; }
     IReadOnlyDictionary<int, AchievementData> AchievementTable { get; }
     IReadOnlyDictionary<int, AchievementTitleData> AchievementTitleTable { get; }
+    IReadOnlyDictionary<int, CollectionRaceSettingsData> CollectionRaceSettingsTable { get; }
+    ILookup<int, CollectionRaceRewardData> CollectionRaceRewardsByEventIndex { get; }
     SiegeWarfareData? SiegeWarfare { get; }
     bool IsLoaded { get; }
 

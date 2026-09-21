@@ -94,6 +94,7 @@ public abstract class GameTestBase
         services.AddSingleton<TimeWeatherBroadcastService>();
         services.AddSingleton<BifrostEventService>();
         services.AddSingleton<IBifrostEventService>(sp => sp.GetRequiredService<BifrostEventService>());
+        services.AddSingleton<ICollectionRaceService, CollectionRaceService>();
         services.AddSingleton<IAchievementProgressService, AchievementProgressService>();
         services.AddSingleton<ILoyaltyService, LoyaltyService>();
         services.AddSingleton<IPlayerProgressionService, PlayerProgressionService>();

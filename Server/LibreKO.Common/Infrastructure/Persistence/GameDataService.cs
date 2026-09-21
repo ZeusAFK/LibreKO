@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
@@ -47,6 +47,8 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
     public IReadOnlyDictionary<int, AttendanceRewardData> AttendanceRewardTable { get; private set; } = new Dictionary<int, AttendanceRewardData>();
     public IReadOnlyDictionary<int, AchievementData> AchievementTable { get; private set; } = new Dictionary<int, AchievementData>();
     public IReadOnlyDictionary<int, AchievementTitleData> AchievementTitleTable { get; private set; } = new Dictionary<int, AchievementTitleData>();
+    public IReadOnlyDictionary<int, CollectionRaceSettingsData> CollectionRaceSettingsTable { get; private set; } = new Dictionary<int, CollectionRaceSettingsData>();
+    public ILookup<int, CollectionRaceRewardData> CollectionRaceRewardsByEventIndex { get; private set; } = Enumerable.Empty<CollectionRaceRewardData>().ToLookup(x => x.EventIndex);
     public ILookup<int, ItemOpData> ItemOpsByItemId { get; private set; } = Enumerable.Empty<ItemOpData>().ToLookup(x => x.ItemId);
     public IReadOnlyDictionary<int, string> ServerResourceTable { get; private set; } = new Dictionary<int, string>();
     public IReadOnlyDictionary<byte, PremiumItemData> PremiumItemTable { get; private set; } = new Dictionary<byte, PremiumItemData>();
@@ -300,6 +302,8 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
                 cancellationToken);
             ZoneInfoTable = await LoadDictionaryAsync(db.ZoneInfos, x => x.ZoneNo, "zone info entries", cancellationToken);
             GameEventsByZone = await LoadLookupAsync(db.GameEvents, x => x.ZoneNum, "game events", cancellationToken);
+            CollectionRaceSettingsTable = await LoadDictionaryAsync(db.CollectionRaceSettings, x => x.EventIndex, "collection race settings", cancellationToken);
+            CollectionRaceRewardsByEventIndex = await LoadLookupAsync(db.CollectionRaceRewards, x => x.EventIndex, "collection race rewards", cancellationToken);
             SiegeWarfare = await db.SiegeWarfare.AsNoTracking().OrderBy(x => x.CastleIndex).FirstOrDefaultAsync(cancellationToken);
             if (SiegeWarfare != null)
                 logger.LogInformation("Loaded siege warfare data (castle owner: clan {ClanId})", SiegeWarfare.MasterKnights);

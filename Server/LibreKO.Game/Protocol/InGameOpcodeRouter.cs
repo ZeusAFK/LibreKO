@@ -70,6 +70,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         IGeniePacketCoordinator genie,
         IGenieSystemPacketCoordinator genieSystem,
         IDailyQuestPacketCoordinator dailyQuest,
+        ICollectionRacePacketCoordinator collectionRace,
         SessionManager sessionManager,
         ISessionTerminationService sessionTermination,
         ILogger<InGameOpcodeRouter> logger)
@@ -232,6 +233,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             // the C2S to suppress unhandled-opcode warnings; S2C builders land when the
             // table does.
             [GameOpcodes.GS_DAILY_QUEST] = dailyQuest.HandleAsync,
+            [GameOpcodes.GS_COLLECTION_RACE] = collectionRace.HandleAsync,
             [GameOpcodes.GS_HACKTOOL] = NoOp,
             [GameOpcodes.GS_PROGRAMCHECK] = NoOp,
             [GameOpcodes.GS_REPORT_BUG] = NoOp,

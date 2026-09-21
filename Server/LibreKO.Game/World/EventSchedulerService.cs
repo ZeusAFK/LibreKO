@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -13,6 +13,7 @@ public class EventSchedulerService(
     SessionManager sessionManager,
     IOptions<GameServerSettings> settings,
     IZoneTransitionService zoneTransitionService,
+    ICollectionRaceService collectionRaceService,
     ILogger<EventSchedulerService> logger) : BackgroundService
 {
     private DateTime _lastWarOpen = DateTime.MinValue;
@@ -43,6 +44,7 @@ public class EventSchedulerService(
                 await TickBattleZone();
                 await TickTempleEvent();
                 await TickBanish();
+                await collectionRaceService.TickAsync();
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

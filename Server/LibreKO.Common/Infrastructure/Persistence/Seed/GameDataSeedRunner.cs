@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
+﻿using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -60,6 +60,8 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         await Seed(new ZoneInfoSeed());
         await Seed(new GameEventSeed());
         await Seed(new SiegeWarfareSeed());
+        await Seed(new CollectionRaceSettingsSeed());
+        await Seed(new CollectionRaceRewardSeed());
 
         logger.LogInformation(
             "Game data seeding completed: {Applied} of {Total} seeds applied, {Skipped} unchanged, in {Elapsed}ms.",
