@@ -292,7 +292,7 @@ public partial class Net
         p.WriteByte(SmStoreBuy);
         p.WriteByte(SmBuyItemSubcommand);
         p.WriteByte(SmBuyItemKind);
-        System.Diagnostics.Debug.Assert(SmBuyRequestSize == 7);
+        System.Diagnostics.Debug.Assert(SmBuyRequestSize == sizeof(byte) + sizeof(int) + sizeof(byte));
         p.WriteInt(catalogEntryId);
         p.WriteByte((byte)Math.Clamp(count, 1, 255));
         _conn.Send(p);
