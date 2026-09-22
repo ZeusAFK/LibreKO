@@ -1,0 +1,524 @@
+[
+  {
+    "Id": 1,
+    "Name": "Moradon Rookie Roundup",
+    "ZoneId": 21,
+    "MinLevel": 1,
+    "MaxLevel": 35,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 2,
+    "Name": "Moradon Apple Harvest",
+    "ZoneId": 21,
+    "MinLevel": 1,
+    "MaxLevel": 35,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 3,
+    "Name": "Moradon Sabertooth Season",
+    "ZoneId": 21,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 4,
+    "Name": "Moradon Silver Feathers",
+    "ZoneId": 21,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 5,
+    "Name": "Wolves of Moradon",
+    "ZoneId": 21,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 6,
+    "Name": "Moradon Fangs and Blood",
+    "ZoneId": 21,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 7,
+    "Name": "El Morad Graveyard Patrol",
+    "ZoneId": 2,
+    "MinLevel": 1,
+    "MaxLevel": 35,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 8,
+    "Name": "El Morad Rotten Harvest",
+    "ZoneId": 2,
+    "MinLevel": 1,
+    "MaxLevel": 35,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 9,
+    "Name": "El Morad Ape and Hornet Hunt",
+    "ZoneId": 2,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 10,
+    "Name": "El Morad Honey and Stings",
+    "ZoneId": 2,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 11,
+    "Name": "El Morad Dragon Tooth Offensive",
+    "ZoneId": 2,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 12,
+    "Name": "El Morad Bones of the Dragon Tooth",
+    "ZoneId": 2,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 13,
+    "Name": "El Morad Troll Country",
+    "ZoneId": 2,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 14,
+    "Name": "El Morad Troll Bones",
+    "ZoneId": 2,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 15,
+    "Name": "El Morad Knights of the Dead",
+    "ZoneId": 2,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 16,
+    "Name": "El Morad Talismans of Destruction",
+    "ZoneId": 2,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 17,
+    "Name": "Luferson Graveyard Patrol",
+    "ZoneId": 1,
+    "MinLevel": 1,
+    "MaxLevel": 35,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 18,
+    "Name": "Luferson Rotten Harvest",
+    "ZoneId": 1,
+    "MinLevel": 1,
+    "MaxLevel": 35,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 19,
+    "Name": "Luferson Ape and Hornet Hunt",
+    "ZoneId": 1,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 20,
+    "Name": "Luferson Honey and Stings",
+    "ZoneId": 1,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 21,
+    "Name": "Luferson Dragon Tooth Offensive",
+    "ZoneId": 1,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 22,
+    "Name": "Luferson Bones of the Dragon Tooth",
+    "ZoneId": 1,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 23,
+    "Name": "Luferson Troll Country",
+    "ZoneId": 1,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 24,
+    "Name": "Luferson Troll Bones",
+    "ZoneId": 1,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 25,
+    "Name": "Luferson Knights of the Dead",
+    "ZoneId": 1,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 26,
+    "Name": "Luferson Talismans of Destruction",
+    "ZoneId": 1,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 27,
+    "Name": "Ronark Frontier Foothold",
+    "ZoneId": 71,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 28,
+    "Name": "Ronark Enchanters' Cache",
+    "ZoneId": 71,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 29,
+    "Name": "Ronark Apostles of Flame",
+    "ZoneId": 71,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 30,
+    "Name": "Ronark Staff of the Disciple",
+    "ZoneId": 71,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 31,
+    "Name": "Ronark Evil Wizards' Coven",
+    "ZoneId": 71,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 32,
+    "Name": "Ronark Bitter Mana",
+    "ZoneId": 71,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 33,
+    "Name": "Colony Zone Dominance",
+    "ZoneId": 71,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 34,
+    "Name": "Colony Zone Plunder",
+    "ZoneId": 71,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 35,
+    "Name": "Ardream Skirmish",
+    "ZoneId": 72,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 36,
+    "Name": "Ardream Bandit Bracelets",
+    "ZoneId": 72,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 37,
+    "Name": "Ardream Dominance",
+    "ZoneId": 72,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 38,
+    "Name": "Ardream Cache",
+    "ZoneId": 72,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 39,
+    "Name": "Base Foothold",
+    "ZoneId": 73,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 40,
+    "Name": "Base Enchanters",
+    "ZoneId": 73,
+    "MinLevel": 36,
+    "MaxLevel": 60,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 41,
+    "Name": "Base Defense",
+    "ZoneId": 73,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 42,
+    "Name": "Base Soul Potions",
+    "ZoneId": 73,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 43,
+    "Name": "Forwird Vanguard",
+    "ZoneId": 73,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 44,
+    "Name": "Base Bitter Mana",
+    "ZoneId": 73,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 45,
+    "Name": "Base Dominance",
+    "ZoneId": 73,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 46,
+    "Name": "Base Supplies",
+    "ZoneId": 73,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 47,
+    "Name": "Eslant Legions of the Dark",
+    "ZoneId": 11,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 48,
+    "Name": "Eslant Gargoyle Skins",
+    "ZoneId": 11,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 49,
+    "Name": "Eslant Harpy Roost",
+    "ZoneId": 11,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 50,
+    "Name": "Eslant Wings of Harpy",
+    "ZoneId": 11,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 51,
+    "Name": "Eslant Minions of the Barbarian King",
+    "ZoneId": 11,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 52,
+    "Name": "Eslant Half Troll Trophies",
+    "ZoneId": 11,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 53,
+    "Name": "Eslant II Legions of the Dark",
+    "ZoneId": 12,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 54,
+    "Name": "Eslant II Gargoyle Skins",
+    "ZoneId": 12,
+    "MinLevel": 61,
+    "MaxLevel": 70,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 55,
+    "Name": "Eslant II Harpy Roost",
+    "ZoneId": 12,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 56,
+    "Name": "Eslant II Wings of Harpy",
+    "ZoneId": 12,
+    "MinLevel": 71,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 57,
+    "Name": "Eslant II Minions of the Barbarian King",
+    "ZoneId": 12,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  },
+  {
+    "Id": 58,
+    "Name": "Eslant II Half Troll Trophies",
+    "ZoneId": 12,
+    "MinLevel": 1,
+    "MaxLevel": 83,
+    "DurationMinutes": 60,
+    "AutoStart": true
+  }
+]

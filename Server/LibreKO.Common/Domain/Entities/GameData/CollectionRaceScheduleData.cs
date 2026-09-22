@@ -3,19 +3,20 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LibreKO.Common.Domain.Entities.GameData;
 
-public class CollectionRaceRewardData
+public class CollectionRaceScheduleData
 {
-    public const byte CertainRate = 100;
-
     public int Id { get; set; }
     public int RaceId { get; set; }
-    public int ItemId { get; set; }
-    public int ItemCount { get; set; }
-    public byte Rate { get; set; } = CertainRate;
+    public DayOfWeek? Day { get; set; }
+    public byte Hour { get; set; }
+    public byte Minute { get; set; }
 
-    internal class EntityConfiguration : IEntityTypeConfiguration<CollectionRaceRewardData>
+    public bool Matches(DateTime utcNow) =>
+        (Day == null || Day == utcNow.DayOfWeek) && Hour == utcNow.Hour && Minute == utcNow.Minute;
+
+    internal class EntityConfiguration : IEntityTypeConfiguration<CollectionRaceScheduleData>
     {
-        public void Configure(EntityTypeBuilder<CollectionRaceRewardData> builder)
+        public void Configure(EntityTypeBuilder<CollectionRaceScheduleData> builder)
         {
             builder.HasKey(p => p.Id);
             builder.Property(p => p.Id).ValueGeneratedNever();

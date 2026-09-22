@@ -206,10 +206,11 @@ public class NationTests : GameTestBase
         session.Z.Should().Be(115.0f);
         session.Quest.BindPoint.Should().Be(-1);
 
-        sentPackets.Should().HaveCount(3);
+        sentPackets.Should().HaveCount(4);
         sentPackets[0].GetOpcode().Should().Be((byte)GameOpcodes.GS_ZONE_CHANGE);
         sentPackets[1].GetOpcode().Should().Be((byte)GameOpcodes.GS_ZONEABILITY);
         sentPackets[2].GetOpcode().Should().Be((byte)GameOpcodes.GS_WEATHER);
+        sentPackets[3].GetOpcode().Should().Be((byte)GameOpcodes.GS_COLLECTION_RACE);
 
         sentPackets[0].ResetOffset();
         sentPackets[0].ReadByte().Should().Be(3);

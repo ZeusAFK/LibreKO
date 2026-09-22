@@ -45,8 +45,10 @@ public interface IGameDataService
     IReadOnlyDictionary<int, AttendanceRewardData> AttendanceRewardTable { get; }
     IReadOnlyDictionary<int, AchievementData> AchievementTable { get; }
     IReadOnlyDictionary<int, AchievementTitleData> AchievementTitleTable { get; }
-    IReadOnlyDictionary<int, CollectionRaceSettingsData> CollectionRaceSettingsTable { get; }
-    ILookup<int, CollectionRaceRewardData> CollectionRaceRewardsByEventIndex { get; }
+    IReadOnlyDictionary<int, CollectionRaceData> CollectionRaceTable { get; }
+    ILookup<int, CollectionRaceObjectiveData> CollectionRaceObjectivesByRace { get; }
+    ILookup<int, CollectionRaceRewardData> CollectionRaceRewardsByRace { get; }
+    ILookup<int, CollectionRaceScheduleData> CollectionRaceSchedulesByRace { get; }
     SiegeWarfareData? SiegeWarfare { get; }
     bool IsLoaded { get; }
 

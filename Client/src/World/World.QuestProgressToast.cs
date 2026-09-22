@@ -65,7 +65,7 @@ public partial class World
         _questToastPanel.Resized += CentreQuestToast;
     }
 
-    private static StyleBoxTexture QuestToastStyle()
+    internal static StyleBoxTexture QuestToastStyle()
     {
         var ink = new Color(0.035f, 0.035f, 0.042f);
         var ramp = new Gradient
@@ -92,7 +92,7 @@ public partial class World
         };
     }
 
-    private static TextureRect QuestToastRule()
+    internal static TextureRect QuestToastRule()
     {
         var ramp = new Gradient
         {

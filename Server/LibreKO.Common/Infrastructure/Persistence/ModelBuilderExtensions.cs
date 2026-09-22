@@ -13,6 +13,8 @@ internal static class ModelBuilderExtensions
         Configure<Character>(modelBuilder, "Characters");
         Configure<Friendship>(modelBuilder, "Friendships");
         Configure<MailBox>(modelBuilder, "MailBoxes");
+        Configure<Mail>(modelBuilder, "Mails");
+        Configure<MailAttachment>(modelBuilder, "MailAttachments");
         Configure<UserDailyOp>(modelBuilder, "UserDailyOps");
         Configure<Warehouse>(modelBuilder, "Warehouses");
 
@@ -67,8 +69,10 @@ internal static class ModelBuilderExtensions
         Configure<StartPositionData>(modelBuilder, "StartPositions");
         Configure<WarpData>(modelBuilder, "Warps");
         Configure<ZoneInfoData>(modelBuilder, "ZoneInfos");
-        Configure<CollectionRaceSettingsData>(modelBuilder, "CollectionRaceSettings");
+        Configure<CollectionRaceData>(modelBuilder, "CollectionRaces");
+        Configure<CollectionRaceObjectiveData>(modelBuilder, "CollectionRaceObjectives");
         Configure<CollectionRaceRewardData>(modelBuilder, "CollectionRaceRewards");
+        Configure<CollectionRaceScheduleData>(modelBuilder, "CollectionRaceSchedules");
 
         Configure<Patch>(modelBuilder, "Patches");
         Configure<SeedState>(modelBuilder, "SeedStates");

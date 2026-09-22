@@ -28,6 +28,7 @@ internal sealed class ChatSystem
     private HudLayout _layout = null!;
     private bool _active;
     private const float RestAlpha = 0.50f;
+    private const int NoticeTop = 60;
     private float _backgroundAlpha = RestAlpha;
 
     private CanvasLayer _noticeLayer = null!;
@@ -256,18 +257,31 @@ internal sealed class ChatSystem
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0, AnchorBottom = 0,
             GrowHorizontal = Control.GrowDirection.Both,
-            OffsetTop = 96,
+            OffsetTop = NoticeTop,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        panel.AddThemeStyleboxOverride("panel", UiTheme.Panel(7, true));
+        panel.AddThemeStyleboxOverride("panel", World.QuestToastStyle());
         _noticeLayer.AddChild(panel);
+        NoticePanel = panel;
 
-        var m = new MarginContainer();
-        UiTheme.Margins(m, 18, 9, 18, 9);
-        panel.AddChild(m);
+        var rows = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        rows.AddThemeConstantOverride("separation", 6);
+        panel.AddChild(rows);
+        rows.AddChild(World.QuestToastRule());
+        var m = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        UiTheme.Margins(m, 58, 3, 58, 3);
+        rows.AddChild(m);
         _noticeLabel = UiTheme.Text("", 16, UiTheme.GoldBright, HorizontalAlignment.Center);
-        _noticeLabel.AddThemeConstantOverride("outline_size", 5);
+        _noticeLabel.AddThemeConstantOverride("font_embolden", 1);
+        _noticeLabel.AddThemeConstantOverride("outline_size", 4);
+        _noticeLabel.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.85f));
         m.AddChild(_noticeLabel);
+        rows.AddChild(World.QuestToastRule());
     }
+
+    internal Control NoticePanel { get; private set; } = null!;
+
+    internal void ShowNoticePreview(string msg) => OnNotice(msg);
 
     private void OnNotice(string msg)
     {
@@ -276,9 +290,11 @@ internal sealed class ChatSystem
         _noticeLayer.Visible = true;
         int token = ++_noticeToken;
         double secs = Mathf.Clamp(3.5 + msg.Length * 0.04, 4.0, 12.0);
-        _ctx.Root.GetTree().CreateTimer(secs).Timeout += () => { 
-            if (_noticeToken == token && _noticeLayer != null && GodotObject.IsInstanceValid(_noticeLayer)) 
-                _noticeLayer.Visible = false; 
+        var tree = _ctx.Root.GetTree();
+        if (tree == null) return;
+        tree.CreateTimer(secs).Timeout += () => {
+            if (_noticeToken == token && _noticeLayer != null && GodotObject.IsInstanceValid(_noticeLayer))
+                _noticeLayer.Visible = false;
         };
     }
 

@@ -11,195 +11,203 @@ namespace LibreKO.Game.World;
 
 public interface ICollectionRaceService
 {
-    CollectionRaceSettingsData? ActiveEvent { get; }
-    DateTime EndTime { get; }
-    int RemainingSeconds { get; }
+    IReadOnlyCollection<ActiveCollectionRace> ActiveRaces { get; }
+    ActiveCollectionRace? GetActive(byte zoneId);
 
-    Task StartEventAsync(int eventIndex, UserSession? gm = null);
-    Task EndEventAsync(bool forced = false, UserSession? gm = null);
+    Task StartRaceAsync(int raceId, UserSession? gm = null);
+    Task EndRaceAsync(int raceId, bool forced = false, UserSession? gm = null);
+    Task EndAllAsync(UserSession? gm = null);
     Task HandleNpcKillAsync(NpcInstance npc, UserSession killer);
     Task HandlePlayerKillAsync(UserSession victim, UserSession killer);
+    Task HandleItemGainAsync(UserSession player, int itemId);
     Task SyncPlayerAsync(UserSession player);
     Task TickAsync();
 }
 
-public class CollectionRaceService(
-    SessionManager sessionManager,
-    IGameDataService gameDataService,
-    IUserNotificationService userNotificationService,
-    IPlayerProgressionService playerProgressionService,
-    ILoyaltyService loyaltyService,
-    ILogger<CollectionRaceService> logger) : ICollectionRaceService
+public sealed class ActiveCollectionRace(CollectionRaceData race, IReadOnlyList<CollectionRaceObjectiveData> objectives, DateTime endTime)
 {
-    public class PlayerProgress
-    {
-        public int Target1Current { get; set; }
-        public int Target2Current { get; set; }
-        public int Target3Current { get; set; }
-        public int EnemyCurrent { get; set; }
-        public bool IsCompleted { get; set; }
-    }
+    public CollectionRaceData Race { get; } = race;
+    public IReadOnlyList<CollectionRaceObjectiveData> Objectives { get; } = objectives;
+    public DateTime EndTime { get; } = endTime;
+    public int RemainingSeconds => (int)Math.Max(0, (EndTime - DateTime.UtcNow).TotalSeconds);
+    public ConcurrentDictionary<int, CollectionRaceProgress> Progress { get; } = new();
 
-    private readonly ConcurrentDictionary<int, PlayerProgress> _progress = new();
+    public bool IsEligible(UserSession player) =>
+        player.ZoneId == Race.ZoneId && player.Level >= Race.MinLevel && player.Level <= Race.MaxLevel;
+
+    public CollectionRaceProgress ProgressOf(UserSession player) =>
+        Progress.GetOrAdd(player.CharacterId, _ => new CollectionRaceProgress(Objectives.Count));
+}
+
+public sealed class CollectionRaceProgress(int objectiveCount)
+{
+    public int[] Current { get; } = new int[objectiveCount];
+    public bool IsCompleted { get; set; }
+}
+
+public class CollectionRaceService : ICollectionRaceService
+{
+    private const string EnemyPlayersObjectiveName = "Enemy players";
+
+    private readonly SessionManager sessionManager;
+    private readonly IGameDataService gameDataService;
+    private readonly IUserNotificationService userNotificationService;
+    private readonly IMailService mailService;
+    private readonly ILogger<CollectionRaceService> logger;
+
+    private readonly ConcurrentDictionary<byte, ActiveCollectionRace> _activeByZone = new();
     private int _lastAutoCheckMinute = -1;
 
-    public CollectionRaceSettingsData? ActiveEvent { get; private set; }
-    public DateTime EndTime { get; private set; } = DateTime.MinValue;
-    public int RemainingSeconds => ActiveEvent != null ? (int)Math.Max(0, (EndTime - DateTime.UtcNow).TotalSeconds) : 0;
-
-    public async Task StartEventAsync(int eventIndex, UserSession? gm = null)
+    public CollectionRaceService(
+        SessionManager sessionManager,
+        IGameDataService gameDataService,
+        IUserNotificationService userNotificationService,
+        IPlayerProgressionService playerProgressionService,
+        IMailService mailService,
+        ILogger<CollectionRaceService> logger)
     {
-        if (!gameDataService.CollectionRaceSettingsTable.TryGetValue(eventIndex, out var settings))
+        this.sessionManager = sessionManager;
+        this.gameDataService = gameDataService;
+        this.userNotificationService = userNotificationService;
+        this.mailService = mailService;
+        this.logger = logger;
+        playerProgressionService.LevelChanged += SyncPlayerAsync;
+    }
+
+    public IReadOnlyCollection<ActiveCollectionRace> ActiveRaces => _activeByZone.Values.ToArray();
+
+    public ActiveCollectionRace? GetActive(byte zoneId) => _activeByZone.GetValueOrDefault(zoneId);
+
+    public async Task StartRaceAsync(int raceId, UserSession? gm = null)
+    {
+        if (!gameDataService.CollectionRaceTable.TryGetValue(raceId, out var race))
         {
             if (gm != null)
-                await SendNoticeAsync(gm, $"Collection Race event index {eventIndex} not found in database.");
+                await SendNoticeAsync(gm, $"Collection Race {raceId} not found in database.");
             return;
         }
 
-        ActiveEvent = settings;
-        var duration = settings.DurationMinutes > 0 ? settings.DurationMinutes : 60;
-        EndTime = DateTime.UtcNow.AddMinutes(duration);
-        _progress.Clear();
+        var objectives = gameDataService.CollectionRaceObjectivesByRace[raceId].OrderBy(o => o.Ordinal).ToList();
+        if (objectives.Count == 0)
+        {
+            if (gm != null)
+                await SendNoticeAsync(gm, $"Collection Race {raceId} has no objectives.");
+            return;
+        }
+
+        var duration = race.DurationMinutes > 0 ? race.DurationMinutes : CollectionRaceData.DefaultDurationMinutes;
+        var now = DateTime.UtcNow;
+        var startedAt = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
+        var active = new ActiveCollectionRace(race, objectives, startedAt.AddMinutes(duration));
+        if (!_activeByZone.TryAdd(race.ZoneId, active))
+        {
+            if (gm != null)
+                await SendNoticeAsync(gm, $"Zone {race.ZoneId} already has an active Collection Race ('{_activeByZone[race.ZoneId].Race.Name}').");
+            return;
+        }
 
         logger.LogInformation("Collection Race '{Name}' (ID {Id}) started in zone {Zone} for {Duration} minutes.",
-            settings.EventName, settings.EventIndex, settings.ZoneId, duration);
+            race.Name, race.Id, race.ZoneId, duration);
 
-        var noticeMsg = $"[Collection Race] '{settings.EventName}' has begun in zone {settings.ZoneId}! Level {settings.MinLevel}-{settings.MaxLevel}. Duration: {duration} mins.";
-        await BroadcastNoticeAsync(noticeMsg);
+        await BroadcastNoticeAsync($"[Collection Race] '{race.Name}' has begun in zone {race.ZoneId}! Level {race.MinLevel}-{race.MaxLevel}. Duration: {duration} mins.");
 
         foreach (var player in sessionManager.GetAll())
         {
-            if (player.ZoneId == settings.ZoneId && player.Level >= settings.MinLevel && player.Level <= settings.MaxLevel)
-            {
+            if (active.IsEligible(player))
                 await SyncPlayerAsync(player);
-            }
         }
     }
 
-    public async Task EndEventAsync(bool forced = false, UserSession? gm = null)
+    public async Task EndRaceAsync(int raceId, bool forced = false, UserSession? gm = null)
     {
-        if (ActiveEvent == null)
+        var active = _activeByZone.Values.FirstOrDefault(a => a.Race.Id == raceId);
+        if (active == null)
+        {
+            if (gm != null)
+                await SendNoticeAsync(gm, $"Collection Race {raceId} is not active.");
+            return;
+        }
+
+        await EndAsync(active, forced);
+    }
+
+    public async Task EndAllAsync(UserSession? gm = null)
+    {
+        var races = ActiveRaces;
+        if (races.Count == 0)
         {
             if (gm != null)
                 await SendNoticeAsync(gm, "No Collection Race is currently active.");
             return;
         }
 
-        var name = ActiveEvent.EventName;
-        ActiveEvent = null;
-        EndTime = DateTime.MinValue;
-        _progress.Clear();
+        foreach (var active in races)
+            await EndAsync(active, forced: true);
+    }
 
-        logger.LogInformation("Collection Race '{Name}' ended. Forced: {Forced}", name, forced);
+    private async Task EndAsync(ActiveCollectionRace active, bool forced)
+    {
+        if (!_activeByZone.TryRemove(new KeyValuePair<byte, ActiveCollectionRace>(active.Race.ZoneId, active)))
+            return;
 
-        var noticeMsg = $"[Collection Race] '{name}' has ended.";
-        await BroadcastNoticeAsync(noticeMsg);
+        logger.LogInformation("Collection Race '{Name}' ended. Forced: {Forced}", active.Race.Name, forced);
+        await BroadcastNoticeAsync($"[Collection Race] '{active.Race.Name}' has ended.");
+        await MailRewardsAsync(active);
 
         var closePkt = CollectionRacePacketWriter.Close();
-        await sessionManager.BroadcastToAll(closePkt);
+        foreach (var player in sessionManager.GetAll())
+        {
+            if (player.ZoneId == active.Race.ZoneId)
+                await player.Client.SendPacket(closePkt);
+        }
     }
 
     public async Task TickAsync()
     {
         var now = DateTime.UtcNow;
 
-        if (ActiveEvent != null)
+        foreach (var active in ActiveRaces)
         {
-            if (now >= EndTime)
-            {
-                await EndEventAsync();
-            }
+            if (now >= active.EndTime)
+                await EndAsync(active, forced: false);
+        }
+
+        if (now.Minute == _lastAutoCheckMinute)
             return;
-        }
 
-        // Automatic scheduling check once per minute (UTC)
-        if (now.Minute != _lastAutoCheckMinute)
+        _lastAutoCheckMinute = now.Minute;
+
+        foreach (var race in gameDataService.CollectionRaceTable.Values)
         {
-            _lastAutoCheckMinute = now.Minute;
+            if (!race.AutoStart || _activeByZone.ContainsKey(race.ZoneId))
+                continue;
 
-            foreach (var settings in gameDataService.CollectionRaceSettingsTable.Values)
-            {
-                if (!settings.AutoStart)
-                    continue;
-
-                if (!IsScheduledNow(settings, now))
-                    continue;
-
-                await StartEventAsync(settings.EventIndex);
-                break;
-            }
+            if (gameDataService.CollectionRaceSchedulesByRace[race.Id].Any(s => s.Matches(now)))
+                await StartRaceAsync(race.Id);
         }
     }
 
-    private static bool IsScheduledNow(CollectionRaceSettingsData settings, DateTime now)
+    private bool IsTargetMatch(int targetId, NpcInstance npc)
     {
-        if (string.IsNullOrWhiteSpace(settings.AutoHours))
+        if (targetId <= 0)
             return false;
 
-        var days = settings.AutoDays.Trim();
-        if (!string.Equals(days, "All", StringComparison.OrdinalIgnoreCase))
-        {
-            var dayNum = ((int)now.DayOfWeek).ToString();
-            var dayList = days.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (!dayList.Contains(dayNum))
-                return false;
-        }
-
-        var hours = settings.AutoHours.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        foreach (var hStr in hours)
-        {
-            if (hStr.Contains(':'))
-            {
-                var parts = hStr.Split(':');
-                if (int.TryParse(parts[0], out var h) && int.TryParse(parts[1], out var m))
-                {
-                    if (h == now.Hour && m == now.Minute)
-                        return true;
-                }
-            }
-            else if (int.TryParse(hStr, out var h))
-            {
-                if (h == now.Hour && now.Minute == 0)
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    private bool IsTargetMatch(int targetProtoId, NpcInstance npc)
-    {
-        if (targetProtoId <= 0)
-            return false;
-
-        if (npc.NpcId == targetProtoId)
+        if (npc.NpcId == targetId)
             return true;
 
-        if (gameDataService.NpcTable.TryGetValue(targetProtoId, out var targetNpc))
-        {
-            if (string.Equals(targetNpc.Name, npc.Name, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-
-        return false;
+        return gameDataService.NpcTable.TryGetValue(targetId, out var targetNpc)
+            && string.Equals(targetNpc.Name, npc.Name, StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task HandleNpcKillAsync(NpcInstance npc, UserSession killer)
     {
-        if (ActiveEvent == null || killer.ZoneId != ActiveEvent.ZoneId)
+        var active = GetActive(killer.ZoneId);
+        if (active == null || !active.IsEligible(killer))
             return;
 
-        if (killer.Level < ActiveEvent.MinLevel || killer.Level > ActiveEvent.MaxLevel)
+        if (!active.Objectives.Any(o => o.Kind == CollectionRaceObjectiveKind.Monster && IsTargetMatch(o.TargetId, npc)))
             return;
 
-        var t1 = ActiveEvent.Target1ProtoId;
-        var t2 = ActiveEvent.Target2ProtoId;
-        var t3 = ActiveEvent.Target3ProtoId;
-
-        if (!IsTargetMatch(t1, npc) && !IsTargetMatch(t2, npc) && !IsTargetMatch(t3, npc))
-            return;
-
-        // Collect party members or killer
         var recipients = new List<UserSession> { killer };
         if (killer.IsInParty)
         {
@@ -208,234 +216,260 @@ public class CollectionRaceService(
             {
                 foreach (var memberId in party.MemberIds)
                 {
-                    if (memberId <= 0 || memberId == killer.CharacterId) continue;
+                    if (memberId <= 0 || memberId == killer.CharacterId)
+                        continue;
                     var member = sessionManager.GetByCharacterId(memberId);
-                    if (member != null && member.ZoneId == ActiveEvent.ZoneId &&
-                        member.Level >= ActiveEvent.MinLevel && member.Level <= ActiveEvent.MaxLevel)
-                    {
+                    if (member != null && active.IsEligible(member))
                         recipients.Add(member);
-                    }
                 }
             }
         }
 
         foreach (var player in recipients)
         {
-            var progress = _progress.GetOrAdd(player.CharacterId, _ => new PlayerProgress());
+            var progress = active.ProgressOf(player);
             if (progress.IsCompleted)
                 continue;
 
             var changed = false;
-            if (t1 > 0 && IsTargetMatch(t1, npc) && progress.Target1Current < ActiveEvent.Target1Count)
+            for (var i = 0; i < active.Objectives.Count; i++)
             {
-                progress.Target1Current++;
+                var objective = active.Objectives[i];
+                if (objective.Kind != CollectionRaceObjectiveKind.Monster || progress.Current[i] >= objective.Count || !IsTargetMatch(objective.TargetId, npc))
+                    continue;
+
+                progress.Current[i]++;
                 changed = true;
-            }
-            else if (t2 > 0 && IsTargetMatch(t2, npc) && progress.Target2Current < ActiveEvent.Target2Count)
-            {
-                progress.Target2Current++;
-                changed = true;
-            }
-            else if (t3 > 0 && IsTargetMatch(t3, npc) && progress.Target3Current < ActiveEvent.Target3Count)
-            {
-                progress.Target3Current++;
-                changed = true;
+                break;
             }
 
             if (!changed)
                 continue;
 
-            await player.Client.SendPacket(CollectionRacePacketWriter.Progress(
-                progress.Target1Current, progress.Target2Current, progress.Target3Current, progress.EnemyCurrent));
-
-            await CheckCompletionAsync(player, progress);
+            await SendProgressAsync(player, active, progress);
+            await CheckCompletionAsync(player, active, progress);
         }
     }
 
     public async Task HandlePlayerKillAsync(UserSession victim, UserSession killer)
     {
-        if (ActiveEvent == null || killer.ZoneId != ActiveEvent.ZoneId)
+        var active = GetActive(killer.ZoneId);
+        if (active == null || !active.IsEligible(killer) || killer.Nation == victim.Nation)
             return;
 
-        if (killer.Nation == victim.Nation)
+        var progress = active.ProgressOf(killer);
+        if (progress.IsCompleted)
             return;
 
-        if (killer.Level < ActiveEvent.MinLevel || killer.Level > ActiveEvent.MaxLevel)
+        var changed = false;
+        for (var i = 0; i < active.Objectives.Count; i++)
+        {
+            var objective = active.Objectives[i];
+            if (objective.Kind != CollectionRaceObjectiveKind.EnemyPlayer || progress.Current[i] >= objective.Count)
+                continue;
+
+            progress.Current[i]++;
+            changed = true;
+            break;
+        }
+
+        if (!changed)
             return;
 
-        if (ActiveEvent.EnemyKillCount <= 0)
-            return;
-
-        var progress = _progress.GetOrAdd(killer.CharacterId, _ => new PlayerProgress());
-        if (progress.IsCompleted || progress.EnemyCurrent >= ActiveEvent.EnemyKillCount)
-            return;
-
-        progress.EnemyCurrent++;
-        await killer.Client.SendPacket(CollectionRacePacketWriter.Progress(
-            progress.Target1Current, progress.Target2Current, progress.Target3Current, progress.EnemyCurrent));
-
-        await CheckCompletionAsync(killer, progress);
+        await SendProgressAsync(killer, active, progress);
+        await CheckCompletionAsync(killer, active, progress);
     }
 
-    private async Task CheckCompletionAsync(UserSession player, PlayerProgress progress)
+    public async Task HandleItemGainAsync(UserSession player, int itemId)
     {
-        if (ActiveEvent == null || progress.IsCompleted)
+        var active = GetActive(player.ZoneId);
+        if (active == null || !active.IsEligible(player))
             return;
 
-        var ok1 = ActiveEvent.Target1ProtoId <= 0 || progress.Target1Current >= ActiveEvent.Target1Count;
-        var ok2 = ActiveEvent.Target2ProtoId <= 0 || progress.Target2Current >= ActiveEvent.Target2Count;
-        var ok3 = ActiveEvent.Target3ProtoId <= 0 || progress.Target3Current >= ActiveEvent.Target3Count;
-        var okEnemy = ActiveEvent.EnemyKillCount <= 0 || progress.EnemyCurrent >= ActiveEvent.EnemyKillCount;
+        if (!active.Objectives.Any(o => o.Kind == CollectionRaceObjectiveKind.Item && o.TargetId == itemId))
+            return;
 
-        if (ok1 && ok2 && ok3 && okEnemy)
+        var progress = active.ProgressOf(player);
+        if (progress.IsCompleted || !RefreshItemProgress(player, active, progress))
+            return;
+
+        await SendProgressAsync(player, active, progress);
+        await CheckCompletionAsync(player, active, progress);
+    }
+
+    private static bool RefreshItemProgress(UserSession player, ActiveCollectionRace active, CollectionRaceProgress progress)
+    {
+        var changed = false;
+        for (var i = 0; i < active.Objectives.Count; i++)
         {
-            progress.IsCompleted = true;
-            logger.LogInformation("Player {Name} completed Collection Race '{Event}'.", player.Name, ActiveEvent.EventName);
+            var objective = active.Objectives[i];
+            if (objective.Kind != CollectionRaceObjectiveKind.Item)
+                continue;
 
-            await AwardRewardsAsync(player);
-            await player.Client.SendPacket(CollectionRacePacketWriter.Completed("Collection Race Complete!"));
-            await SendNoticeAsync(player, "[Collection Race] Congratulations! You have completed the Collection Race!");
+            var current = Math.Min(objective.Count, CountItem(player, objective.TargetId));
+            if (current == progress.Current[i])
+                continue;
 
-            // Zone announcement
-            var announce = $"[Collection Race] Player {player.Name} has completed the Collection Race!";
-            foreach (var s in sessionManager.GetAll())
-            {
-                if (s.ZoneId == ActiveEvent.ZoneId)
-                    await SendNoticeAsync(s, announce);
-            }
+            progress.Current[i] = current;
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private static int CountItem(UserSession player, int itemId)
+    {
+        var total = 0;
+        for (var index = InventoryConstants.InventoryStart; index < player.Inventory.Length; index++)
+        {
+            if (player.Inventory[index].ItemId == itemId)
+                total += player.Inventory[index].Count;
+        }
+
+        return total;
+    }
+
+    private async Task RemoveItemsAsync(UserSession player, int itemId, int count)
+    {
+        var remaining = count;
+        for (var index = InventoryConstants.InventoryStart; index < player.Inventory.Length && remaining > 0; index++)
+        {
+            var slot = player.Inventory[index];
+            if (slot.ItemId != itemId)
+                continue;
+
+            var taken = Math.Min((int)slot.Count, remaining);
+            slot.Count -= (ushort)taken;
+            remaining -= taken;
+            if (slot.Count == 0)
+                slot.Clear();
+
+            await userNotificationService.SendStackChangeAsync(player, (byte)index, slot.ItemId, slot.Count, slot.Durability);
+        }
+
+        player.RecalculateStatsWithBuffs(gameDataService);
+        await userNotificationService.SendWeightChangeAsync(player);
+    }
+
+    private static Task SendProgressAsync(UserSession player, ActiveCollectionRace active, CollectionRaceProgress progress) =>
+        player.Client.SendPacket(CollectionRacePacketWriter.Progress(active.Race.Id, progress.Current));
+
+    private async Task CheckCompletionAsync(UserSession player, ActiveCollectionRace active, CollectionRaceProgress progress)
+    {
+        if (progress.IsCompleted)
+            return;
+
+        for (var i = 0; i < active.Objectives.Count; i++)
+        {
+            if (progress.Current[i] < active.Objectives[i].Count)
+                return;
+        }
+
+        progress.IsCompleted = true;
+        logger.LogInformation("Player {Name} completed Collection Race '{Race}'.", player.Name, active.Race.Name);
+
+        foreach (var objective in active.Objectives)
+        {
+            if (objective.Kind == CollectionRaceObjectiveKind.Item)
+                await RemoveItemsAsync(player, objective.TargetId, objective.Count);
+        }
+
+        await player.Client.SendPacket(CollectionRacePacketWriter.Completed("Collection Race Complete!"));
+        await SendNoticeAsync(player, "[Collection Race] Congratulations! Your rewards arrive by mail when the race ends.");
+
+        var announce = $"[Collection Race] Player {player.Name} has completed the Collection Race!";
+        foreach (var s in sessionManager.GetAll())
+        {
+            if (s.ZoneId == active.Race.ZoneId)
+                await SendNoticeAsync(s, announce);
         }
     }
 
-    private async Task AwardRewardsAsync(UserSession session)
+    private async Task MailRewardsAsync(ActiveCollectionRace active)
     {
-        if (ActiveEvent == null)
-            return;
+        var rewards = gameDataService.CollectionRaceRewardsByRace[active.Race.Id].ToList();
+        var zoneName = gameDataService.ZoneInfoTable.TryGetValue(active.Race.ZoneId, out var zone) && !string.IsNullOrWhiteSpace(zone.MapName)
+            ? zone.MapName
+            : $"zone {active.Race.ZoneId}";
 
-        var rewards = gameDataService.CollectionRaceRewardsByEventIndex[ActiveEvent.EventIndex];
-        foreach (var reward in rewards)
+        foreach (var (characterId, progress) in active.Progress)
         {
-            if (reward.Rate < 100 && Random.Shared.Next(100) >= reward.Rate)
+            if (!progress.IsCompleted)
                 continue;
 
-            if (reward.ItemId == InventoryConstants.ItemGold)
+            var attachments = new List<MailAttachmentDraft>();
+            foreach (var reward in rewards)
             {
-                long newMoney = Math.Min((long)session.Money + reward.ItemCount, (long)int.MaxValue);
-                int delta = (int)(newMoney - session.Money);
-                session.Money = (int)newMoney;
-                if (delta > 0)
-                    await userNotificationService.SendGoldGainAsync(session, delta);
-            }
-            else if (reward.ItemId == InventoryConstants.ItemExperience)
-            {
-                await playerProgressionService.AwardExperienceAsync(session, reward.ItemCount);
-            }
-            else if (reward.ItemId == InventoryConstants.ItemLadderPoint)
-            {
-                await loyaltyService.ChangeAsync(session, reward.ItemCount);
-            }
-            else
-            {
-                var itemData = gameDataService.GetItem(reward.ItemId);
-                if (itemData == null)
+                if (reward.Rate < CollectionRaceRewardData.CertainRate && Random.Shared.Next(CollectionRaceRewardData.CertainRate) >= reward.Rate)
                     continue;
 
-                if (itemData.Countable == 0)
+                attachments.Add(reward.ItemId switch
                 {
-                    for (int i = 0; i < reward.ItemCount; i++)
-                    {
-                        var slot = session.FindSlotForItem(reward.ItemId, gameDataService, 1);
-                        if (slot >= 0)
-                        {
-                            var isNew = session.Inventory[slot].IsEmpty;
-                            session.Inventory[slot].ItemId = reward.ItemId;
-                            session.Inventory[slot].Count = 1;
-                            session.Inventory[slot].Durability = itemData.Duration;
-
-                            await userNotificationService.SendStackChangeAsync(
-                                session, (byte)slot, reward.ItemId, 1, session.Inventory[slot].Durability, isNew);
-                            session.RecalculateStatsWithBuffs(gameDataService);
-                            await userNotificationService.SendWeightChangeAsync(session);
-                        }
-                        else
-                        {
-                            await SendNoticeAsync(session, "Inventory is full! Some Collection Race rewards could not be delivered.");
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    var slot = session.FindSlotForItem(reward.ItemId, gameDataService, (ushort)reward.ItemCount);
-                    if (slot >= 0)
-                    {
-                        var isNew = session.Inventory[slot].IsEmpty;
-                        session.Inventory[slot].ItemId = reward.ItemId;
-                        session.Inventory[slot].Count += (ushort)reward.ItemCount;
-                        if (isNew)
-                            session.Inventory[slot].Durability = itemData.Duration;
-
-                        await userNotificationService.SendStackChangeAsync(
-                            session, (byte)slot, reward.ItemId, session.Inventory[slot].Count, session.Inventory[slot].Durability, isNew);
-                        session.RecalculateStatsWithBuffs(gameDataService);
-                        await userNotificationService.SendWeightChangeAsync(session);
-                    }
-                    else
-                    {
-                        await SendNoticeAsync(session, "Inventory is full! Some Collection Race rewards could not be delivered.");
-                    }
-                }
+                    InventoryConstants.ItemGold => new MailAttachmentDraft(MailAttachmentKind.Gold, reward.ItemId, reward.ItemCount),
+                    InventoryConstants.ItemExperience => new MailAttachmentDraft(MailAttachmentKind.Experience, reward.ItemId, reward.ItemCount),
+                    InventoryConstants.ItemLadderPoint => new MailAttachmentDraft(MailAttachmentKind.NationalPoints, reward.ItemId, reward.ItemCount),
+                    _ => new MailAttachmentDraft(MailAttachmentKind.Item, reward.ItemId, reward.ItemCount, gameDataService.GetItem(reward.ItemId)?.Duration ?? 0),
+                });
             }
+
+            await mailService.SendSystemMailAsync(
+                characterId,
+                $"Collection Race: {active.Race.Name}",
+                $"You completed the Collection Race '{active.Race.Name}' in {zoneName}. Your rewards are attached to this mail.",
+                attachments);
         }
     }
 
     public async Task SyncPlayerAsync(UserSession player)
     {
-        if (ActiveEvent == null || player.ZoneId != ActiveEvent.ZoneId ||
-            player.Level < ActiveEvent.MinLevel || player.Level > ActiveEvent.MaxLevel)
+        var active = GetActive(player.ZoneId);
+        if (active == null || !active.IsEligible(player))
         {
             await player.Client.SendPacket(CollectionRacePacketWriter.Close());
             return;
         }
 
-        var progress = _progress.GetOrAdd(player.CharacterId, _ => new PlayerProgress());
+        var progress = active.ProgressOf(player);
+        if (!progress.IsCompleted && RefreshItemProgress(player, active, progress))
+            await CheckCompletionAsync(player, active, progress);
 
-        var t1Name = GetTargetName(ActiveEvent.Target1ProtoId);
-        var t2Name = GetTargetName(ActiveEvent.Target2ProtoId);
-        var t3Name = GetTargetName(ActiveEvent.Target3ProtoId);
-
-        var t1 = new CollectionRacePacketWriter.TargetInfo(ActiveEvent.Target1ProtoId, ActiveEvent.Target1Count, progress.Target1Current, t1Name);
-        var t2 = new CollectionRacePacketWriter.TargetInfo(ActiveEvent.Target2ProtoId, ActiveEvent.Target2Count, progress.Target2Current, t2Name);
-        var t3 = new CollectionRacePacketWriter.TargetInfo(ActiveEvent.Target3ProtoId, ActiveEvent.Target3Count, progress.Target3Current, t3Name);
-
-        var rewardList = new List<CollectionRacePacketWriter.RewardInfo>();
-        var rewards = gameDataService.CollectionRaceRewardsByEventIndex[ActiveEvent.EventIndex];
-        foreach (var r in rewards)
+        var objectives = new List<CollectionRacePacketWriter.ObjectiveInfo>(active.Objectives.Count);
+        for (var i = 0; i < active.Objectives.Count; i++)
         {
-            rewardList.Add(new CollectionRacePacketWriter.RewardInfo(r.ItemId, r.ItemCount, GetRewardName(r.ItemId), r.Rate));
+            var o = active.Objectives[i];
+            objectives.Add(new CollectionRacePacketWriter.ObjectiveInfo(o.Kind, o.TargetId, o.Count, progress.Current[i], ObjectiveName(o)));
         }
 
+        var rewards = gameDataService.CollectionRaceRewardsByRace[active.Race.Id]
+            .Select(r => new CollectionRacePacketWriter.RewardInfo(r.ItemId, r.ItemCount, GetRewardName(r.ItemId), r.Rate))
+            .ToList();
+
         var pkt = CollectionRacePacketWriter.State(
-            ActiveEvent.EventIndex,
-            ActiveEvent.EventName,
-            ActiveEvent.ZoneId,
-            RemainingSeconds,
-            t1, t2, t3,
-            ActiveEvent.EnemyKillCount,
-            progress.EnemyCurrent,
+            active.Race.Id,
+            active.Race.Name,
+            active.Race.ZoneId,
+            active.RemainingSeconds,
             progress.IsCompleted,
-            rewardList);
+            objectives,
+            rewards);
 
         await player.Client.SendPacket(pkt);
     }
 
-    private string GetTargetName(int protoId)
+    private string ObjectiveName(CollectionRaceObjectiveData objective) => objective.Kind switch
     {
-        if (protoId <= 0) return string.Empty;
-        if (gameDataService.MonsterTable.TryGetValue(protoId, out var monster))
+        CollectionRaceObjectiveKind.EnemyPlayer => EnemyPlayersObjectiveName,
+        CollectionRaceObjectiveKind.Item => gameDataService.GetItem(objective.TargetId)?.Name ?? $"Item {objective.TargetId}",
+        _ => GetTargetName(objective.TargetId),
+    };
+
+    private string GetTargetName(int npcId)
+    {
+        if (gameDataService.MonsterTable.TryGetValue(npcId, out var monster))
             return monster.Name;
-        if (gameDataService.NpcTable.TryGetValue(protoId, out var npc))
+        if (gameDataService.NpcTable.TryGetValue(npcId, out var npc))
             return npc.Name;
-        return $"Target {protoId}";
+        return $"Target {npcId}";
     }
 
     private string GetRewardName(int itemId)

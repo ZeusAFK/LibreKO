@@ -76,6 +76,43 @@ public sealed class AdminPanelPacketWriter
         return packet;
     }
 
+    public readonly record struct CollectionRaceRow(
+        int Id,
+        string Name,
+        byte ZoneId,
+        byte MinLevel,
+        byte MaxLevel,
+        int DurationMinutes,
+        bool AutoStart,
+        bool Active,
+        int RemainingSeconds,
+        int Completions,
+        string Schedule,
+        string Objectives);
+
+    public static Packet CollectionRaces(byte sub, IReadOnlyList<CollectionRaceRow> rows)
+    {
+        var packet = Sub(sub);
+        packet.WriteUShort((ushort)rows.Count);
+        foreach (var row in rows)
+        {
+            packet.WriteInt(row.Id);
+            packet.WriteSByteString(row.Name);
+            packet.WriteByte(row.ZoneId);
+            packet.WriteByte(row.MinLevel);
+            packet.WriteByte(row.MaxLevel);
+            packet.WriteInt(row.DurationMinutes);
+            packet.WriteByte(row.AutoStart ? Granted : Denied);
+            packet.WriteByte(row.Active ? Granted : Denied);
+            packet.WriteInt(row.RemainingSeconds);
+            packet.WriteInt(row.Completions);
+            packet.WriteSByteString(row.Schedule);
+            packet.WriteSByteString(row.Objectives);
+        }
+
+        return packet;
+    }
+
     public static Packet Result(byte sub, bool ok, string message)
     {
         var packet = Sub(sub);

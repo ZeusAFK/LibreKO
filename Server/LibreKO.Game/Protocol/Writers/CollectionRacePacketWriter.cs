@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
@@ -10,48 +10,35 @@ public sealed class CollectionRacePacketWriter
     public const byte SubCompleted = 3;
     public const byte SubClose = 4;
 
-    public readonly record struct TargetInfo(int ProtoId, int TargetCount, int CurrentCount, string Name);
-    public readonly record struct RewardInfo(int ItemId, int ItemCount, string Name, byte Rate = 100);
+    public readonly record struct ObjectiveInfo(CollectionRaceObjectiveKind Kind, int TargetId, int Count, int Current, string Name);
+    public readonly record struct RewardInfo(int ItemId, int ItemCount, string Name, byte Rate);
 
     public static Packet State(
-        int eventIndex,
-        string eventName,
+        int raceId,
+        string name,
         byte zoneId,
         int remainingSeconds,
-        TargetInfo t1,
-        TargetInfo t2,
-        TargetInfo t3,
-        int enemyTarget,
-        int enemyCurrent,
         bool isCompleted,
+        IReadOnlyList<ObjectiveInfo> objectives,
         IReadOnlyList<RewardInfo> rewards)
     {
         var packet = new Packet(GameOpcodes.GS_COLLECTION_RACE);
         packet.WriteByte(SubState);
-        packet.WriteInt(eventIndex);
-        packet.WriteSByteString(eventName);
+        packet.WriteInt(raceId);
+        packet.WriteSByteString(name);
         packet.WriteByte(zoneId);
         packet.WriteInt(remainingSeconds);
-
-        packet.WriteInt(t1.ProtoId);
-        packet.WriteInt(t1.TargetCount);
-        packet.WriteInt(t1.CurrentCount);
-        packet.WriteSByteString(t1.Name);
-
-        packet.WriteInt(t2.ProtoId);
-        packet.WriteInt(t2.TargetCount);
-        packet.WriteInt(t2.CurrentCount);
-        packet.WriteSByteString(t2.Name);
-
-        packet.WriteInt(t3.ProtoId);
-        packet.WriteInt(t3.TargetCount);
-        packet.WriteInt(t3.CurrentCount);
-        packet.WriteSByteString(t3.Name);
-
-        packet.WriteInt(enemyTarget);
-        packet.WriteInt(enemyCurrent);
-
         packet.WriteByte((byte)(isCompleted ? 1 : 0));
+
+        packet.WriteByte((byte)objectives.Count);
+        foreach (var o in objectives)
+        {
+            packet.WriteByte((byte)o.Kind);
+            packet.WriteInt(o.TargetId);
+            packet.WriteInt(o.Count);
+            packet.WriteInt(o.Current);
+            packet.WriteSByteString(o.Name);
+        }
 
         packet.WriteByte((byte)rewards.Count);
         foreach (var r in rewards)
@@ -65,14 +52,14 @@ public sealed class CollectionRacePacketWriter
         return packet;
     }
 
-    public static Packet Progress(int t1Current, int t2Current, int t3Current, int enemyCurrent)
+    public static Packet Progress(int raceId, IReadOnlyList<int> currents)
     {
         var packet = new Packet(GameOpcodes.GS_COLLECTION_RACE);
         packet.WriteByte(SubProgress);
-        packet.WriteInt(t1Current);
-        packet.WriteInt(t2Current);
-        packet.WriteInt(t3Current);
-        packet.WriteInt(enemyCurrent);
+        packet.WriteInt(raceId);
+        packet.WriteByte((byte)currents.Count);
+        foreach (var current in currents)
+            packet.WriteInt(current);
         return packet;
     }
 

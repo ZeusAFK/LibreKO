@@ -9,6 +9,8 @@ namespace LibreKO.Game.World;
 
 public interface IPlayerProgressionService
 {
+    event Func<UserSession, Task>? LevelChanged;
+
     Task AwardExperienceAsync(UserSession session, long baseExp);
     Task ChangeExperienceAsync(UserSession session, long expAmount);
     Task ResetToLevelAsync(UserSession session, byte level);
@@ -27,6 +29,8 @@ public class PlayerProgressionService(
     SessionManager sessionManager,
     LibreKO.Game.Scripting.IQuestDefinitionSource? quests = null) : IPlayerProgressionService
 {
+    public event Func<UserSession, Task>? LevelChanged;
+
     public async Task AwardExperienceAsync(UserSession session, long baseExp)
     {
         if (baseExp <= 0)
@@ -182,6 +186,12 @@ public class PlayerProgressionService(
             await BroadcastLevelChangeAsync(session);
         if (quests is not null && session.Quest.ViewZone == session.ZoneId)
             await quests.SendViewsAsync(session, changesOnly: true);
+
+        if (LevelChanged is { } levelChanged)
+        {
+            foreach (var handler in levelChanged.GetInvocationList().Cast<Func<UserSession, Task>>())
+                await handler(session);
+        }
     }
 
     private async Task BroadcastLevelChangeAsync(UserSession session)

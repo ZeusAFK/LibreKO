@@ -1,4 +1,6 @@
-﻿using Godot;
+﻿using System;
+using System.Collections.Generic;
+using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
 
@@ -348,6 +350,16 @@ public partial class World
         _zone = 21;
         BuildAdminPanel();
         SelectAdminTab(tab);
+        if (tab == "Races")
+        {
+            OnAdminCollectionRaces(
+            [
+                new AdminCollectionRace { Id = 1, Name = "Moradon Rookie Roundup", ZoneId = 21, MinLevel = 1, MaxLevel = 35, DurationMinutes = 60, AutoStart = true, Active = true, RemainingSeconds = 41 * 60 + 12, Completions = 3, Schedule = "Sun 10:00, Wed 15:00", Objectives = "15 x Kecoon, 10 x Bulcan, 10 x Werewolf" },
+                new AdminCollectionRace { Id = 2, Name = "Moradon Apple Harvest", ZoneId = 21, MinLevel = 1, MaxLevel = 35, DurationMinutes = 60, AutoStart = true, Schedule = "Mon 11:00, Thu 16:00", Objectives = "15 x Apples of Moradon, 5 x Teeth of Bandicoot, 5 x Silk bundle" },
+                new AdminCollectionRace { Id = 5, Name = "Wolves of Moradon", ZoneId = 21, MinLevel = 1, MaxLevel = 83, DurationMinutes = 60, AutoStart = true, Schedule = "Daily 12:00", Objectives = "15 x Werewolf, 10 x Dark Eyes, 10 x Dire Wolf" },
+                new AdminCollectionRace { Id = 21, Name = "Ronark Apostles of Flame", ZoneId = 71, MinLevel = 61, MaxLevel = 70, DurationMinutes = 60, AutoStart = false, Schedule = "manual", Objectives = "15 x Apostle of Flame, 10 x Doom Soldier, 10 x Troll, 2 enemy players" },
+            ]);
+        }
         if (tab == "Items")
         {
             _admItemSearch.SetQuery(itemQuery);
@@ -801,16 +813,160 @@ public partial class World
         return DetachPreviewControl(_questToastPanel!);
     }
 
+    internal Control ShowNoticeUiPreview(string text)
+    {
+        Chat.ShowNoticePreview(text);
+        return DetachPreviewControl(Chat.NoticePanel);
+    }
+
+    private static List<MailEntry> MailUiPreviewEntries() =>
+    [
+        new MailEntry
+        {
+            Id = 3, Sender = "LibreKO", Subject = "Collection Race: Moradon Rookie Roundup", Read = false,
+            Attachments = MailAttachmentState.Pending, SentAt = DateTime.UtcNow.AddMinutes(-12),
+            Items =
+            [
+                new MailAttachment { Kind = MailAttachmentKind.Gold, ItemId = QuestData.CoinItemId, Count = 300_000 },
+                new MailAttachment { Kind = MailAttachmentKind.Experience, ItemId = QuestData.ExpItemId, Count = 150_000 },
+                new MailAttachment { Kind = MailAttachmentKind.Item, ItemId = 379154000, Count = 1 },
+            ],
+        },
+        new MailEntry
+        {
+            Id = 2, Sender = "Rikka", Subject = "Apples for the raid", Read = false,
+            Attachments = MailAttachmentState.Pending, SentAt = DateTime.UtcNow.AddHours(-5),
+            Items = [new MailAttachment { Kind = MailAttachmentKind.Item, ItemId = 810418000, Count = 20 }],
+        },
+        new MailEntry
+        {
+            Id = 1, Sender = "Zeus", Subject = "Welcome to the clan", Read = true,
+            Attachments = MailAttachmentState.None, SentAt = DateTime.UtcNow.AddDays(-3),
+        },
+    ];
+
+    internal (Control Inventory, CanvasLayer MailLayer) BuildMailDragUiPreview()
+    {
+        var inventory = BuildPrimaryWindowUiPreview("Inventory");
+        _mailDragSeedSlot = Inv.FirstFreeGridSlot();
+        if (_mailDragSeedSlot >= 0)
+        {
+            Inv[_mailDragSeedSlot] = new ItemSlot { ItemId = 389018000, Count = 5, Durability = 1 };
+            Inv[_mailDragSeedSlot + 1] = new ItemSlot { ItemId = 379154000, Count = 1, Durability = 1 };
+            RefreshInventoryUI();
+        }
+        BuildMailWindow();
+        BuildMailComposeWindow();
+        _mailContacts.UnionWith(["Rikka"]);
+        _mailComposeShown = true;
+        _mailComposeWindow.Visible = true;
+        _mailTo.Text = "Rikka";
+        _mailSubject.Text = "Drag test";
+        OnMailBodyChanged();
+        RenderMailAttachments();
+        RemoveChild(_mailLayer);
+        return (inventory, _mailLayer);
+    }
+
+    private int _mailDragSeedSlot = -1;
+
+    internal (Vector2 From, Vector2 To)? MailDragPointsUiPreview(int offset)
+    {
+        var abs = _mailDragSeedSlot + offset;
+        var cell = _mailDragSeedSlot < 0 ? null : _invBagCells.FirstOrDefault(c => c.Slot == abs);
+        if (cell == null || !cell.IsInsideTree())
+            return null;
+        return (cell.GetGlobalRect().GetCenter(), _mailDropZone.GetGlobalRect().GetCenter());
+    }
+
+    internal string MailDragDebugUiPreview()
+    {
+        var has = _invCells.TryGetValue(_mailDragSeedSlot, out var cell);
+        return $"seed={_mailDragSeedSlot} len={Inv.Length} cells={_invCells.Count} has={has} inTree={(has && cell!.IsInsideTree())} keys={string.Join(',', _invCells.Keys.OrderBy(k => k))}";
+    }
+
+    internal string MailComposeSizeUiPreview() =>
+        $"window size={_mailComposeWindow.Size} min={_mailComposeWindow.GetCombinedMinimumSize()} attachments={_mailAttachments.Count} body={_mailComposeWindow.Body.Size}";
+
+    internal Control BuildMailUiPreview()
+    {
+        ItemData.EnsureLoaded();
+        BuildMailWindow();
+        BuildMailComposeWindow();
+        _mailShown = true;
+        _mailWindow.Visible = true;
+        OnMailUnread(2);
+        OnMailList(MailUiPreviewEntries());
+        return DetachPreviewControl(_mailWindow);
+    }
+
+    internal Control BuildMailReadUiPreview()
+    {
+        ItemData.EnsureLoaded();
+        BuildMailWindow();
+        BuildMailComposeWindow();
+        OnMailList(MailUiPreviewEntries());
+        SelectMail(3);
+        OnMailRead(3, true, "You completed the Collection Race 'Moradon Rookie Roundup' in Moradon. Your rewards are attached to this mail.");
+        return DetachPreviewControl(_mailReadWindow);
+    }
+
+    internal Control BuildMailComposeUiPreview(bool lateAttach = false)
+    {
+        var window = BuildMailComposeUiPreviewNow();
+        if (!lateAttach) return window;
+        _mailAttachments.RemoveAt(1);
+        RenderMailAttachments();
+        var later = new Godot.Timer { WaitTime = 1.0, OneShot = true, Autostart = true };
+        later.Timeout += () =>
+        {
+            var data = new Godot.Collections.Dictionary { { "id", Inv[Inventory.GridStart + 1].ItemId }, { "invFrom", Inventory.GridStart + 1 } };
+            _mailDropZone._CanDropData(Vector2.Zero, data);
+            _mailDropZone._DropData(Vector2.Zero, data);
+            BuildInventoryTooltipHostUiPreview();
+            ShowItemTooltip(Inventory.GridStart + 1, Inv[Inventory.GridStart + 1]);
+        };
+        window.AddChild(later);
+        return window;
+    }
+
+    private Control BuildMailComposeUiPreviewNow()
+    {
+        ItemData.EnsureLoaded();
+        BuildMailWindow();
+        BuildMailComposeWindow();
+        Inv.EnsureLength(InventoryConstants.InventoryTotal);
+        Inv[Inventory.GridStart] = new ItemSlot { ItemId = 810418000, Count = 20, Durability = 1 };
+        Inv[Inventory.GridStart + 1] = new ItemSlot { ItemId = 379154000, Count = 1, Durability = 1 };
+        Inv[Inventory.GridStart + 2] = new ItemSlot { ItemId = 389018000, Count = 5, Durability = 1 };
+        _mailContacts.UnionWith(["Rikka", "Zeus", "Ariel", "Marduk"]);
+        _mailComposeShown = true;
+        _mailComposeWindow.Visible = true;
+        _mailTo.Text = "Rikka";
+        _mailSubject.Text = "Apples for the raid";
+        _mailBody.Text = "Here are the apples you asked for. Good hunting!";
+        _mailGold.Value = 25_000;
+        _mailAttachments.Add((Inventory.GridStart, 20));
+        _mailAttachments.Add((Inventory.GridStart + 1, 1));
+        OnMailBodyChanged();
+        RenderMailAttachments();
+        return DetachPreviewControl(_mailComposeWindow);
+    }
+
     internal Control BuildCollectionRaceUiPreview(bool completed)
     {
         ItemData.EnsureLoaded();
         BuildCollectionRaceWindow();
         ShowCollectionRace(new CollectionRaceState
         {
-            EventName = "Moradon Morning Hunt",
+            Name = "Moradon Rookie Roundup",
             RemainingSeconds = 56 * 60,
-            Target1 = new CollectionRaceTarget { ProtoId = 100, Name = "Kecoon", TargetCount = 10, CurrentCount = completed ? 10 : 4 },
-            Target2 = new CollectionRaceTarget { ProtoId = 101, Name = "Kecoon Warrior", TargetCount = 5, CurrentCount = 5 },
+            Objectives =
+            [
+                new CollectionRaceObjective { Kind = CollectionRaceObjectiveKind.Monster, TargetId = 150, Name = "Kecoon", Count = 15, Current = completed ? 15 : 4 },
+                new CollectionRaceObjective { Kind = CollectionRaceObjectiveKind.Monster, TargetId = 250, Name = "Bulcan", Count = 10, Current = 10 },
+                new CollectionRaceObjective { Kind = CollectionRaceObjectiveKind.Item, TargetId = 810418000, Name = "Apples of Moradon", Count = 15, Current = completed ? 15 : 7 },
+            ],
             IsCompleted = completed,
             Rewards =
             [

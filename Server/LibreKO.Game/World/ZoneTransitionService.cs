@@ -17,6 +17,7 @@ public class ZoneTransitionService(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     TimeWeatherBroadcastService timeWeather,
+    ICollectionRaceService collectionRaceService,
     ILogger<ZoneTransitionService> logger) : IZoneTransitionService
 {
     private const byte ZoneAbilityUpdate = 1;
@@ -61,6 +62,7 @@ public class ZoneTransitionService(
 
         await SendZoneAbilityAsync(session);
         await session.Client.SendPacket(timeWeather.BuildWeatherPacketFor(session.ZoneId));
+        await collectionRaceService.SyncPlayerAsync(session);
     }
 
     public Task RefreshArenaAsync(UserSession session)

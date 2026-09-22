@@ -6,7 +6,7 @@ namespace LibreKO.Network;
 public partial class Net
 {
     public event Action<CollectionRaceState>? CollectionRaceStateEvent;
-    public event Action<int, int, int, int>? CollectionRaceProgressEvent;
+    public event Action<int, int[]>? CollectionRaceProgressEvent;
     public event Action<string>? CollectionRaceCompletedEvent;
     public event Action? CollectionRaceCloseEvent;
 
@@ -15,9 +15,9 @@ public partial class Net
     public const byte SubCompleted = 3;
     public const byte SubClose = 4;
 
-    private const int MinStateBytes = 9;
-    private const int MinProgressBytes = 16;
-    private const int MinRewardEntryBytes = 8;
+    private const int MinStateBytes = 12;
+    private const int MinObjectiveEntryBytes = 14;
+    private const int MinRewardEntryBytes = 10;
 
     private void HandleCollectionRace(Packet p)
     {
@@ -30,51 +30,37 @@ public partial class Net
                 if (p.RemainingBytes < MinStateBytes) return;
                 var state = new CollectionRaceState
                 {
-                    EventIndex = p.ReadInt(),
-                    EventName = p.ReadSByteString(),
+                    RaceId = p.ReadInt(),
+                    Name = p.ReadSByteString(),
                     ZoneId = p.ReadByte(),
                     RemainingSeconds = p.ReadInt(),
-                    Target1 = new CollectionRaceTarget
-                    {
-                        ProtoId = p.ReadInt(),
-                        TargetCount = p.ReadInt(),
-                        CurrentCount = p.ReadInt(),
-                        Name = p.ReadSByteString()
-                    },
-                    Target2 = new CollectionRaceTarget
-                    {
-                        ProtoId = p.ReadInt(),
-                        TargetCount = p.ReadInt(),
-                        CurrentCount = p.ReadInt(),
-                        Name = p.ReadSByteString()
-                    },
-                    Target3 = new CollectionRaceTarget
-                    {
-                        ProtoId = p.ReadInt(),
-                        TargetCount = p.ReadInt(),
-                        CurrentCount = p.ReadInt(),
-                        Name = p.ReadSByteString()
-                    },
-                    EnemyTarget = p.ReadInt(),
-                    EnemyCurrent = p.ReadInt(),
                     IsCompleted = p.ReadByte() != 0
                 };
+
+                int objectiveCount = p.ReadByte();
+                for (int i = 0; i < objectiveCount && p.RemainingBytes >= MinObjectiveEntryBytes; i++)
+                {
+                    state.Objectives.Add(new CollectionRaceObjective
+                    {
+                        Kind = (CollectionRaceObjectiveKind)p.ReadByte(),
+                        TargetId = p.ReadInt(),
+                        Count = p.ReadInt(),
+                        Current = p.ReadInt(),
+                        Name = p.ReadSByteString()
+                    });
+                }
 
                 if (p.RemainingBytes >= 1)
                 {
                     int rewardCount = p.ReadByte();
                     for (int i = 0; i < rewardCount && p.RemainingBytes >= MinRewardEntryBytes; i++)
                     {
-                        var itemId = p.ReadInt();
-                        var count = p.ReadInt();
-                        var name = p.ReadSByteString();
-                        byte rate = p.RemainingBytes >= 1 ? p.ReadByte() : (byte)100;
                         state.Rewards.Add(new CollectionRaceReward
                         {
-                            ItemId = itemId,
-                            ItemCount = count,
-                            Name = name,
-                            Rate = rate
+                            ItemId = p.ReadInt(),
+                            ItemCount = p.ReadInt(),
+                            Name = p.ReadSByteString(),
+                            Rate = p.ReadByte()
                         });
                     }
                 }
@@ -85,12 +71,14 @@ public partial class Net
 
             case SubProgress:
             {
-                if (p.RemainingBytes < MinProgressBytes) return;
-                int t1 = p.ReadInt();
-                int t2 = p.ReadInt();
-                int t3 = p.ReadInt();
-                int enemy = p.ReadInt();
-                CollectionRaceProgressEvent?.Invoke(t1, t2, t3, enemy);
+                if (p.RemainingBytes < 5) return;
+                var raceId = p.ReadInt();
+                int count = p.ReadByte();
+                if (p.RemainingBytes < count * 4) return;
+                var currents = new int[count];
+                for (int i = 0; i < count; i++)
+                    currents[i] = p.ReadInt();
+                CollectionRaceProgressEvent?.Invoke(raceId, currents);
                 break;
             }
 
@@ -116,12 +104,20 @@ public partial class Net
     }
 }
 
-public struct CollectionRaceTarget
+public enum CollectionRaceObjectiveKind : byte
 {
-    public int ProtoId;
-    public int TargetCount;
-    public int CurrentCount;
-    public string Name;
+    Monster = 0,
+    EnemyPlayer = 1,
+    Item = 2,
+}
+
+public class CollectionRaceObjective
+{
+    public CollectionRaceObjectiveKind Kind;
+    public int TargetId;
+    public int Count;
+    public int Current;
+    public string Name = string.Empty;
 }
 
 public struct CollectionRaceReward
@@ -134,15 +130,11 @@ public struct CollectionRaceReward
 
 public class CollectionRaceState
 {
-    public int EventIndex;
-    public string EventName = string.Empty;
+    public int RaceId;
+    public string Name = string.Empty;
     public byte ZoneId;
     public int RemainingSeconds;
-    public CollectionRaceTarget Target1;
-    public CollectionRaceTarget Target2;
-    public CollectionRaceTarget Target3;
-    public int EnemyTarget;
-    public int EnemyCurrent;
     public bool IsCompleted;
+    public List<CollectionRaceObjective> Objectives = [];
     public List<CollectionRaceReward> Rewards = [];
 }

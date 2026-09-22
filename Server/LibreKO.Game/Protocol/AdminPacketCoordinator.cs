@@ -141,29 +141,35 @@ public class AdminPacketCoordinator(
                 break;
 
             case "cropen":
-                if (int.TryParse(arg, out var crIndex))
+                if (int.TryParse(arg, out var crId))
                 {
-                    await collectionRaceService.StartEventAsync(crIndex, session);
+                    await collectionRaceService.StartRaceAsync(crId, session);
                 }
                 else
                 {
-                    await SendNoticeAsync(session, "Usage: +cropen <eventIndex>");
+                    await SendNoticeAsync(session, "Usage: +cropen <raceId>");
                 }
                 break;
 
             case "crclose":
-                await collectionRaceService.EndEventAsync(forced: true, session);
+                if (int.TryParse(arg, out var crCloseId))
+                    await collectionRaceService.EndRaceAsync(crCloseId, forced: true, session);
+                else
+                    await collectionRaceService.EndAllAsync(session);
                 break;
 
             case "crstatus":
-                if (collectionRaceService.ActiveEvent != null)
+                var activeRaces = collectionRaceService.ActiveRaces;
+                if (activeRaces.Count == 0)
+                {
+                    await SendNoticeAsync(session, "No active Collection Race.");
+                    break;
+                }
+
+                foreach (var active in activeRaces)
                 {
                     await SendNoticeAsync(session,
-                        $"Active CR: '{collectionRaceService.ActiveEvent.EventName}' (ID {collectionRaceService.ActiveEvent.EventIndex}) in Zone {collectionRaceService.ActiveEvent.ZoneId}. Remaining: {collectionRaceService.RemainingSeconds}s.");
-                }
-                else
-                {
-                    await SendNoticeAsync(session, "No active Collection Race event.");
+                        $"Active CR: '{active.Race.Name}' (ID {active.Race.Id}) in Zone {active.Race.ZoneId}. Remaining: {active.RemainingSeconds}s.");
                 }
                 break;
 

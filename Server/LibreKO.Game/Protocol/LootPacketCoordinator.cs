@@ -19,6 +19,7 @@ public class LootPacketCoordinator(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IUserNotificationService userNotificationService,
+    ICollectionRaceService collectionRaceService,
     ILogger<LootPacketCoordinator> logger) : ILootPacketCoordinator
 {
     private const byte LootSuccess = 1;
@@ -203,6 +204,7 @@ public class LootPacketCoordinator(
         await session.Client.SendPacket(success);
 
         await userNotificationService.SendWeightChangeAsync(session);
+        await collectionRaceService.HandleItemGainAsync(session, itemId);
     }
 
     private static async Task SendItemGetErrorAsync(UserSession session)

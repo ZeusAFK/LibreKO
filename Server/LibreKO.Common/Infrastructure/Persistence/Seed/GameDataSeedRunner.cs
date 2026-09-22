@@ -62,8 +62,10 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         await Seed(new ZoneInfoSeed());
         await Seed(new GameEventSeed());
         await Seed(new SiegeWarfareSeed());
-        await Seed(new CollectionRaceSettingsSeed());
+        await Seed(new CollectionRaceSeed());
+        await Seed(new CollectionRaceObjectiveSeed());
         await Seed(new CollectionRaceRewardSeed());
+        await Seed(new CollectionRaceScheduleSeed());
 
         logger.LogInformation(
             "Game data seeding completed: {Applied} of {Total} seeds applied, {Skipped} unchanged, in {Elapsed}ms.",

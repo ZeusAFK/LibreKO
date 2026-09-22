@@ -1,4 +1,5 @@
-﻿using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
@@ -22,6 +23,7 @@ public class AdminPanelPacketCoordinator(
     IUserNotificationService userNotificationService,
     ICombatNotificationService combatNotificationService,
     IZoneTransitionService zoneTransitionService,
+    ICollectionRaceService collectionRaceService,
     IServiceScopeFactory scopeFactory,
     IOptions<GameServerSettings> settings,
     ILogger<AdminPanelPacketCoordinator> logger) : IAdminPanelPacketCoordinator
@@ -33,10 +35,14 @@ public class AdminPanelPacketCoordinator(
     private const byte ReqSetClass = 5;
     private const byte ReqZone = 6;
     private const byte ReqItemSearch = 7;
+    private const byte ReqCollectionRaces = 8;
+    private const byte ReqCollectionRaceStart = 9;
+    private const byte ReqCollectionRaceClose = 10;
 
     private const byte AckState = 0x10;
     private const byte AckResult = 0x11;
     private const byte AckGrant = 0x12;
+    private const byte AckCollectionRaces = 0x14;
 
     private const byte StatFloor = 1;
     private const byte StatCeiling = 255;
@@ -93,6 +99,20 @@ public class AdminPanelPacketCoordinator(
 
             case ReqZone:
                 await HandleZoneAsync(session, packet);
+                break;
+
+            case ReqCollectionRaces:
+                await SendCollectionRacesAsync(session);
+                break;
+
+            case ReqCollectionRaceStart when packet.RemainingBytes >= 4:
+                await collectionRaceService.StartRaceAsync(packet.ReadInt(), session);
+                await SendCollectionRacesAsync(session);
+                break;
+
+            case ReqCollectionRaceClose when packet.RemainingBytes >= 4:
+                await collectionRaceService.EndRaceAsync(packet.ReadInt(), forced: true, session);
+                await SendCollectionRacesAsync(session);
                 break;
 
             default:
@@ -261,6 +281,53 @@ public class AdminPanelPacketCoordinator(
         await zoneTransitionService.ChangeZoneAsync(session, (byte)target, 0f, 0f);
         logger.LogInformation(
             "GM {Name} used the panel to change zone {From} -> {To}", session.Name, from, target);
+    }
+
+    private async Task SendCollectionRacesAsync(UserSession session)
+    {
+        var active = collectionRaceService.ActiveRaces.ToDictionary(a => a.Race.Id);
+        var rows = new List<AdminPanelPacketWriter.CollectionRaceRow>();
+        foreach (var race in gameDataService.CollectionRaceTable.Values.OrderBy(r => r.ZoneId).ThenBy(r => r.Id))
+        {
+            active.TryGetValue(race.Id, out var running);
+            rows.Add(new AdminPanelPacketWriter.CollectionRaceRow(
+                race.Id,
+                race.Name,
+                race.ZoneId,
+                race.MinLevel,
+                race.MaxLevel,
+                race.DurationMinutes,
+                race.AutoStart,
+                running != null,
+                running?.RemainingSeconds ?? 0,
+                running?.Progress.Values.Count(p => p.IsCompleted) ?? 0,
+                DescribeSchedule(gameDataService.CollectionRaceSchedulesByRace[race.Id]),
+                DescribeObjectives(gameDataService.CollectionRaceObjectivesByRace[race.Id])));
+        }
+
+        await session.Client.SendPacket(AdminPanelPacketWriter.CollectionRaces(AckCollectionRaces, rows));
+    }
+
+    private static string DescribeSchedule(IEnumerable<CollectionRaceScheduleData> schedules)
+    {
+        var parts = schedules
+            .OrderBy(s => s.Day.HasValue ? (int)s.Day.Value : -1)
+            .ThenBy(s => s.Hour)
+            .ThenBy(s => s.Minute)
+            .Select(s => $"{(s.Day.HasValue ? s.Day.Value.ToString()[..3] : "Daily")} {s.Hour:D2}:{s.Minute:D2}")
+            .ToList();
+        return parts.Count == 0 ? "manual" : string.Join(", ", parts);
+    }
+
+    private string DescribeObjectives(IEnumerable<CollectionRaceObjectiveData> objectives)
+    {
+        var parts = objectives.OrderBy(o => o.Ordinal).Select(o => o.Kind switch
+        {
+            CollectionRaceObjectiveKind.EnemyPlayer => $"{o.Count} enemy players",
+            CollectionRaceObjectiveKind.Item => $"{o.Count} x {gameDataService.GetItem(o.TargetId)?.Name ?? $"item {o.TargetId}"}",
+            _ => $"{o.Count} x {(gameDataService.NpcTable.TryGetValue(o.TargetId, out var npc) ? npc.Name : $"monster {o.TargetId}")}",
+        });
+        return string.Join(", ", parts);
     }
 
     private List<short> ClassOptionsFor(UserSession session)

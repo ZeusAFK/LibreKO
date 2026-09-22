@@ -20,6 +20,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Friendship> Friendships { get; set; }
     public DbSet<UserDailyOp> UserDailyOps { get; set; }
     public DbSet<MailBox> MailBoxes { get; set; }
+    public DbSet<Mail> Mails { get; set; }
+    public DbSet<MailAttachment> MailAttachments { get; set; }
     public DbSet<KingElectionList> KingElectionList { get; set; }
     public DbSet<KingCandidacyNoticeBoard> KingCandidacyNoticeBoard { get; set; }
     public DbSet<KingBallotBox> KingBallotBox { get; set; }
@@ -68,8 +70,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ZoneInfoData> ZoneInfos { get; set; }
     public DbSet<GameEventData> GameEvents { get; set; }
     public DbSet<SiegeWarfareData> SiegeWarfare { get; set; }
-    public DbSet<CollectionRaceSettingsData> CollectionRaceSettings { get; set; }
+    public DbSet<CollectionRaceData> CollectionRaces { get; set; }
+    public DbSet<CollectionRaceObjectiveData> CollectionRaceObjectives { get; set; }
     public DbSet<CollectionRaceRewardData> CollectionRaceRewards { get; set; }
+    public DbSet<CollectionRaceScheduleData> CollectionRaceSchedules { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

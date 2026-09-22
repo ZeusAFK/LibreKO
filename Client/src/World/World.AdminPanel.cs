@@ -106,6 +106,7 @@ public partial class World
         AddAdminTab(tabBar, "Items", BuildAdminItemsTab());
         AddAdminTab(tabBar, "Class", BuildAdminClassTab());
         AddAdminTab(tabBar, "Zones", BuildAdminZonesTab());
+        AddAdminTab(tabBar, "Races", BuildAdminCollectionRaceTab());
 
         root.AddChild(new HSeparator());
         _admStatusLbl = UiTheme.Text("", 12, UiTheme.TextLo);
@@ -173,6 +174,7 @@ public partial class World
         Callable.From(_admPanel.ResetSize).CallDeferred();
 
         if (label == "Zones") RefreshAdminZonesTab();
+        if (label == "Races") Net.I?.SendAdminCollectionRacesRequest();
         if (label != "Items") { HideItemTooltip(); return; }
         if (_admItemsLoaded) return;
         _admItemsLoaded = true;

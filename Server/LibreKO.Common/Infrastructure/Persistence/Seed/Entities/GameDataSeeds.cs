@@ -362,12 +362,22 @@ public class SiegeWarfareSeed : JsonEntitySeed<SiegeWarfareData>
     protected override string JsonFileName => "SiegeWarfare.json";
 }
 
-public class CollectionRaceSettingsSeed : SnapshotJsonSeed<CollectionRaceSettingsData>
+public class CollectionRaceSeed : SnapshotJsonSeed<CollectionRaceData>
 {
-    protected override string JsonFileName => "CollectionRaceSettings.json";
+    protected override string JsonFileName => "CollectionRaces.json";
+}
+
+public class CollectionRaceObjectiveSeed : SnapshotJsonSeed<CollectionRaceObjectiveData>
+{
+    protected override string JsonFileName => "CollectionRaceObjectives.json";
 }
 
 public class CollectionRaceRewardSeed : SnapshotJsonSeed<CollectionRaceRewardData>
 {
     protected override string JsonFileName => "CollectionRaceRewards.json";
+}
+
+public class CollectionRaceScheduleSeed : SnapshotJsonSeed<CollectionRaceScheduleData>
+{
+    protected override string JsonFileName => "CollectionRaceSchedules.json";
 }

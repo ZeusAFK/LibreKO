@@ -300,7 +300,7 @@ public class ExchangeTransferService(
         }
     }
 
-    private static bool IsTradableItem(ItemData? itemData, int itemId, byte pos)
+    internal static bool IsTradableItem(ItemData? itemData, int itemId, byte pos)
         => itemData != null
         && pos < InventoryConstants.HaveMax
         && itemData.Race != ExchangePacketConstants.RaceUntradeable

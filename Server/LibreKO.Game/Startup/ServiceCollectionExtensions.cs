@@ -66,6 +66,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAchievementProgressService, AchievementProgressService>();
         services.AddSingleton<ILoyaltyService, LoyaltyService>();
         services.AddSingleton<IMailPacketCoordinator, MailPacketCoordinator>();
+        services.AddSingleton<IMailService, MailService>();
         services.AddSingleton<IAuctionPacketCoordinator, AuctionPacketCoordinator>();
         services.AddSingleton<IAttendancePacketCoordinator, AttendancePacketCoordinator>();
         services.AddSingleton<IBountyPacketCoordinator, BountyPacketCoordinator>();

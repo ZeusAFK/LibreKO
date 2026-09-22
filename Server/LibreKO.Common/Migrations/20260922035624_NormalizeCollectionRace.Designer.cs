@@ -4,6 +4,7 @@ using LibreKO.Common.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibreKO.Common.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922035624_NormalizeCollectionRace")]
+    partial class NormalizeCollectionRace
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2312,54 +2315,6 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("PremiumItemExps", (string)null);
                 });
 
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PusCategoryData", b =>
-                {
-                    b.Property<byte>("Id")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<byte>("Status")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PusCategories", (string)null);
-                });
-
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PusItemData", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("Category")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("Price")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PusItems", (string)null);
-                });
-
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ServerResourceData", b =>
                 {
                     b.Property<int>("ResourceId")
@@ -2903,84 +2858,6 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("Knights", (string)null);
                 });
 
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.Mail", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("varchar(512)");
-
-                    b.Property<DateTime?>("ClaimedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<DateTime?>("ReadAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("RecipientCharacterId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SenderCharacterId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SenderName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<DateTime>("SentAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RecipientCharacterId", "Deleted");
-
-                    b.ToTable("Mails", (string)null);
-                });
-
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.MailAttachment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Count")
-                        .HasColumnType("int");
-
-                    b.Property<short>("Durability")
-                        .HasColumnType("smallint");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("Kind")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<int>("MailId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MailId");
-
-                    b.ToTable("MailAttachments", (string)null);
-                });
-
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.MailBox", b =>
                 {
                     b.Property<int>("LetterId")
@@ -3400,15 +3277,6 @@ namespace LibreKO.Common.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.MailAttachment", b =>
-                {
-                    b.HasOne("LibreKO.Common.Domain.Entities.Mail", null)
-                        .WithMany("Attachments")
-                        .HasForeignKey("MailId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Server", b =>
                 {
                     b.HasOne("LibreKO.Common.Domain.Entities.ServerGroup", "Group")
@@ -3426,11 +3294,6 @@ namespace LibreKO.Common.Migrations
                         .HasForeignKey("LibreKO.Common.Domain.Entities.Warehouse", "AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.Mail", b =>
-                {
-                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.ServerGroup", b =>

@@ -280,6 +280,24 @@ public static class UiTheme
         return b;
     }
 
+    public static Button ActionButton(string text, string tooltip)
+    {
+        var b = SmallButton(text, tooltip);
+        b.AddThemeColorOverride("font_color", Ink);
+        b.AddThemeColorOverride("font_hover_color", Ink);
+        b.AddThemeColorOverride("font_pressed_color", GoldDark);
+        var normal = new StyleBoxFlat { BgColor = Gold, BorderColor = new Color(GoldBright, 0.85f) };
+        normal.SetBorderWidthAll(1);
+        normal.SetCornerRadiusAll(5);
+        normal.ContentMarginLeft = normal.ContentMarginRight = 14;
+        var hover = (StyleBoxFlat)normal.Duplicate();
+        hover.BgColor = GoldBright;
+        b.AddThemeStyleboxOverride("normal", normal);
+        b.AddThemeStyleboxOverride("hover", hover);
+        b.AddThemeStyleboxOverride("pressed", normal);
+        return b;
+    }
+
     public static Button IconButton(string glyph, string tooltip)
     {
         var b = new Button

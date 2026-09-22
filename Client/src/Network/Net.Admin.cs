@@ -3,6 +3,22 @@ using System.Collections.Generic;
 
 namespace LibreKO.Network;
 
+public class AdminCollectionRace
+{
+    public int Id;
+    public string Name = string.Empty;
+    public byte ZoneId;
+    public byte MinLevel;
+    public byte MaxLevel;
+    public int DurationMinutes;
+    public bool AutoStart;
+    public bool Active;
+    public int RemainingSeconds;
+    public int Completions;
+    public string Schedule = string.Empty;
+    public string Objectives = string.Empty;
+}
+
 public enum AdminPanelGrant : byte
 {
     None = 0,
@@ -22,6 +38,12 @@ public partial class Net
     private const byte AdminAckState = 0x10;
     private const byte AdminAckResult = 0x11;
     private const byte AdminAckGrant = 0x12;
+    private const byte AdminReqCollectionRaces = 8;
+    private const byte AdminReqCollectionRaceStart = 9;
+    private const byte AdminReqCollectionRaceClose = 10;
+    private const byte AdminAckCollectionRaces = 0x14;
+
+    public event Action<List<AdminCollectionRace>>? AdminCollectionRacesEvent;
 
     public event Action<AdminState>? AdminStateEvent;
 
@@ -40,6 +62,7 @@ public partial class Net
         switch (sub)
         {
             case AdminAckState: ParseAdminState(p); break;
+            case AdminAckCollectionRaces: ParseAdminCollectionRaces(p); break;
             case 0x13: HandleGmFx(p); break;
             case AdminAckResult:
                 bool ok = p.RemainingBytes >= 1 && p.ReadByte() == 1;
@@ -140,6 +163,46 @@ public partial class Net
         var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
         p.WriteByte(AdminReqZone);
         p.WriteShort(IntToShort(zoneId));
+        _conn.Send(p);
+    }
+
+    private void ParseAdminCollectionRaces(Packet p)
+    {
+        if (p.RemainingBytes < 2) return;
+        int count = p.ReadUShort();
+        var rows = new List<AdminCollectionRace>(count);
+        for (int i = 0; i < count && p.RemainingBytes >= 22; i++)
+        {
+            rows.Add(new AdminCollectionRace
+            {
+                Id = p.ReadInt(),
+                Name = p.ReadSByteString(),
+                ZoneId = p.ReadByte(),
+                MinLevel = p.ReadByte(),
+                MaxLevel = p.ReadByte(),
+                DurationMinutes = p.ReadInt(),
+                AutoStart = p.ReadByte() == 1,
+                Active = p.ReadByte() == 1,
+                RemainingSeconds = p.ReadInt(),
+                Completions = p.ReadInt(),
+                Schedule = p.ReadSByteString(),
+                Objectives = p.ReadSByteString(),
+            });
+        }
+        AdminCollectionRacesEvent?.Invoke(rows);
+    }
+
+    public void SendAdminCollectionRacesRequest() => SendAdminByte(AdminReqCollectionRaces);
+
+    public void SendAdminCollectionRaceStart(int raceId) => SendAdminInt(AdminReqCollectionRaceStart, raceId);
+
+    public void SendAdminCollectionRaceClose(int raceId) => SendAdminInt(AdminReqCollectionRaceClose, raceId);
+
+    private void SendAdminInt(byte sub, int value)
+    {
+        var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+        p.WriteByte(sub);
+        p.WriteInt(value);
         _conn.Send(p);
     }
 

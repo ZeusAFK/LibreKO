@@ -82,7 +82,8 @@ public partial class HudWindow : PanelContainer
         Vector2 minimumSize = default,
         bool persistLayout = true,
         Texture2D? titleIcon = null,
-        bool minimizable = false)
+        bool minimizable = false,
+        bool closable = true)
     {
         AddThemeStyleboxOverride("panel", UiTheme.WindowPanel());
         GrowHorizontal = GrowDirection.End;
@@ -174,16 +175,19 @@ public partial class HudWindow : PanelContainer
             bar.AddChild(_minimizeBtn);
         }
 
-        var close = UiTheme.IconButton(UiIcons.Get("system/close"), "Close");
-        close.CustomMinimumSize = HeaderButtonSize;
-        close.AddThemeConstantOverride("icon_max_width", Platform.Pick(12, 22));
-        close.AddThemeColorOverride("icon_normal_color", new Color(UiTheme.TextHi, 0.82f));
-        close.AddThemeColorOverride("icon_hover_color", UiTheme.TextHi);
-        close.AddThemeStyleboxOverride("normal", closeNormal);
-        close.AddThemeStyleboxOverride("hover", closeHover);
-        close.AddThemeStyleboxOverride("pressed", closeHover);
-        close.Pressed += () => { Visible = false; Closed?.Invoke(); Audio.PlayUi(Sfx.InventoryClose); };
-        bar.AddChild(close);
+        if (closable)
+        {
+            var close = UiTheme.IconButton(UiIcons.Get("system/close"), "Close");
+            close.CustomMinimumSize = HeaderButtonSize;
+            close.AddThemeConstantOverride("icon_max_width", Platform.Pick(12, 22));
+            close.AddThemeColorOverride("icon_normal_color", new Color(UiTheme.TextHi, 0.82f));
+            close.AddThemeColorOverride("icon_hover_color", UiTheme.TextHi);
+            close.AddThemeStyleboxOverride("normal", closeNormal);
+            close.AddThemeStyleboxOverride("hover", closeHover);
+            close.AddThemeStyleboxOverride("pressed", closeHover);
+            close.Pressed += () => { Visible = false; Closed?.Invoke(); Audio.PlayUi(Sfx.InventoryClose); };
+            bar.AddChild(close);
+        }
 
         var content = new MarginContainer();
         _content = content;
