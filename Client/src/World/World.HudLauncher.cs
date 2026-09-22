@@ -35,6 +35,8 @@ public partial class World
         _hudLauncher.AddChild(LauncherButton(
             "system/bag", "Inventory", () => ToggleMainWindow("Inventory")));
         _hudLauncher.AddChild(LauncherButton(
+            "system/pus", "Power-Up Store", OpenPowerUpStore));
+        _hudLauncher.AddChild(LauncherButton(
             "system/users-three", "Party", ToggleParty));
 
         if (Platform.TouchUi)
@@ -105,13 +107,13 @@ public partial class World
             SelfModulate = normalIcon,
         };
         glyph.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        float inset = LauncherButtonSize
-                      * (town ? HudPlacement.LauncherGlyphInset : 0.19f);
+        float inset = LauncherButtonSize * (town ? HudPlacement.LauncherGlyphInset : 0.19f);
         glyph.OffsetLeft = glyph.OffsetTop = inset;
         glyph.OffsetRight = glyph.OffsetBottom = -inset;
+
         button.AddChild(glyph);
-        button.MouseEntered += () => { if (disc != null) disc.Hover = true; glyph.SelfModulate = hoverIcon; };
-        button.MouseExited += () => { if (disc != null) disc.Hover = false; glyph.SelfModulate = normalIcon; };
+        button.MouseEntered += () => { if (disc != null) disc.Hover = true; glyph.Modulate = hoverIcon; };
+        button.MouseExited += () => { if (disc != null) disc.Hover = false; glyph.Modulate = normalIcon; };
         button.ButtonDown += () => { if (disc != null) disc.Held = true; };
         button.ButtonUp += () => { if (disc != null) disc.Held = false; };
 

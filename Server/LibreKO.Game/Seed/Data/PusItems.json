@@ -1,0 +1,10 @@
+[
+  { "Id": 1, "ItemId": 800079000, "Name": "HP Scroll 60%", "Price": 100, "Description": "Restores health.", "Category": 1 },
+  { "Id": 2, "ItemId": 800077000, "Name": "Scroll of Armor 400", "Price": 100, "Description": "Increases armor class.", "Category": 1 },
+  { "Id": 3, "ItemId": 810039000, "Name": "VIP Package", "Price": 100, "Description": "A premium starter package.", "Category": 2 },
+  { "Id": 4, "ItemId": 810192000, "Name": "Potion of Crisis", "Price": 100, "Description": "A limited-edition potion.", "Category": 3 },
+  { "Id": 5, "ItemId": 800032000, "Name": "Name Change Scroll", "Price": 100, "Description": "Changes a character name.", "Category": 3 },
+  { "Id": 6, "ItemId": 800387000, "Name": "Alseids Coupon", "Price": 100, "Description": "Exchanges for an Alseids item.", "Category": 4 },
+  { "Id": 7, "ItemId": 508114000, "Name": "Pathos Gloves Package", "Price": 100, "Description": "Exchanges for Pathos gloves.", "Category": 4 },
+  { "Id": 8, "ItemId": 800111000, "Name": "Character Seal Scroll", "Price": 100, "Description": "Seals a character item.", "Category": 5 }
+]

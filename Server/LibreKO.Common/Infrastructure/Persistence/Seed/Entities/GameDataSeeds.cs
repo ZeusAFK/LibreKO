@@ -64,6 +64,16 @@ public class ItemSeed : LegacyInsertOnlyJsonSeed<ItemData, int>
     protected override int GetKey(ItemData entity) => entity.Num;
 }
 
+public class PusItemSeed : SnapshotJsonSeed<PusItemData>
+{
+    protected override string JsonFileName => "PusItems.json";
+}
+
+public class PusCategorySeed : SnapshotJsonSeed<PusCategoryData>
+{
+    protected override string JsonFileName => "PusCategories.json";
+}
+
 public class WarpSeed : JsonEntitySeed<WarpData>
 {
     protected override string JsonFileName => "Warps.json";

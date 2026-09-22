@@ -30,6 +30,7 @@ public static class InventoryConstants
     public const int CospreMax = 15;
     public const int BagSlotMax = 3;
     public const int MagicBagMax = 12;
+    public const ushort MaxStackCount = 9999;
 
     public const int InventoryStart = SlotMax;
     public const int CospreStart = SlotMax + HaveMax;
