@@ -259,6 +259,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+give <itemId> [count] - Give item");
                 await SendNoticeAsync(session, "+item <name> - Search items by name");
                 await SendNoticeAsync(session, "+gold <amount> - Give/take gold");
+                await SendNoticeAsync(session, "+kc <name> <amount> - Give/take Knight Cash");
                 await SendNoticeAsync(session,
                     "+setlevel <1-83> - Set level; resets stats + mastery, clears the skill bar");
                 await SendNoticeAsync(session, "+hp - Restore HP/MP");

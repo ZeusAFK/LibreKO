@@ -1,0 +1,5 @@
+congratulations_your_knight_squad = text "Congratulations!|Your Knight Squad class has been raised a level. Well done indeed!"
+please_relay_to_your = text "Please relay to your clan leader that this mission can only be completed by him..."
+talk_to_your_knight = text "Talk to your Knight Squad Leader. This mission can only be executed by them..."
+would_you_like_to = text "Would you like to raise your Knight Squad's class?|You need 45,000 Knight Squad saving points to be promoted to 1st Class Royal Knight Squad."
+your_knight_squad_must = text "Your Knight Squad must do more service to the nation. A 1st Class Knight Squad can earn the right to be promoted as a Formal Knight Squad."

@@ -38,6 +38,8 @@ internal static class ModelBuilderExtensions
         Configure<ItemUpgradeRecipeData>(modelBuilder, "ItemUpgradeRecipes");
         Configure<PremiumItemData>(modelBuilder, "PremiumItems");
         Configure<PremiumItemExpData>(modelBuilder, "PremiumItemExps");
+        Configure<PusItemData>(modelBuilder, "PusItems");
+        Configure<PusCategoryData>(modelBuilder, "PusCategories");
         Configure<SetItemData>(modelBuilder, "SetItems");
 
         Configure<MagicData>(modelBuilder, "Magic");

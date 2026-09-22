@@ -168,6 +168,7 @@ public class ShoppingMallLetterMutationService(
             else
             {
                 itemCount = (short)itemSlot.Count;
+                itemSlot.Count = 0;
             }
         }
 
@@ -176,7 +177,7 @@ public class ShoppingMallLetterMutationService(
 
         if (itemSlot != null)
         {
-            if (requestedCount > 0 && itemSlot.Count > 0)
+            if (itemSlot.Count > 0)
             {
                 await userNotificationService.SendStackChangeAsync(session, sourcePosition, itemSlot.ItemId, itemSlot.Count, itemSlot.Durability);
             }

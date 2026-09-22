@@ -4,6 +4,7 @@ using LibreKO.Common.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibreKO.Common.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922034523_AddPusStoreTables")]
+    partial class AddPusStoreTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -555,91 +558,6 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("ClassId");
 
                     b.ToTable("Coefficients", (string)null);
-                });
-
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.CollectionRaceRewardData", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EventIndex")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ItemCount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("Rate")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EventIndex");
-
-                    b.ToTable("CollectionRaceRewards", (string)null);
-                });
-
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.CollectionRaceSettingsData", b =>
-                {
-                    b.Property<int>("EventIndex")
-                        .HasColumnType("int");
-
-                    b.Property<string>("AutoDays")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
-
-                    b.Property<string>("AutoHours")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
-
-                    b.Property<bool>("AutoStart")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<int>("DurationMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EnemyKillCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("EventName")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<byte>("MaxLevel")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<byte>("MinLevel")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<int>("Target1Count")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Target1ProtoId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Target2Count")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Target2ProtoId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Target3Count")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Target3ProtoId")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("ZoneId")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.HasKey("EventIndex");
-
-                    b.ToTable("CollectionRaceSettings", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.EventTriggerData", b =>
