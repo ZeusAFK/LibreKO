@@ -1,0 +1,21 @@
+Bind Npc 32557 Zone 71
+Quest 1770 "Event EXP Quest - Falcon"
+    Daily
+    Journal "Welcome! If you hunt 50 Falcons in Ronarkland, you will receive 12 million EXP. Will you accept the challenge?"
+    Kill 50 of 2256 at direction_2118
+
+Requires player level >= 45 and player is karus
+
+Rewards
+    Give 12000000 experience
+
+direction_2118 = location "Falcon" about "Falcon\nA type of a Harpy. They also have low intelligence but are aggrestive and attacks anyone who comes into their territories.." found "Ronak Land" at 569 1558 in zone 71
+
+On offer
+    Show quest "Welcome! If you hunt 50 Falcons in Ronarkland, you will receive 12 million EXP. Will you accept the challenge?"
+
+On in_progress
+    Say "Welcome! If you hunt 50 Falcons in Ronarkland, you will receive 12 million EXP. Will you accept the challenge?"
+
+On claimable
+    Show quest "Welcome! If you hunt 50 Falcons in Ronarkland, you will receive 12 million EXP. Will you accept the challenge?"

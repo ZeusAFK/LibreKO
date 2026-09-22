@@ -145,7 +145,7 @@ public sealed record QuestText(int QuestId, string? Title, string? Journal, bool
     int Nation = 0, int ClassGroup = 0, bool Repeat = false, bool FulfilElsewhere = false);
 
 public sealed record QuestRewards(int QuestId, IReadOnlyList<BoundStatement.Action> Transfers,
-    int ClassGroup = 0)
+    int ClassGroup = 0, int Nation = 0)
 {
     public IReadOnlyList<BoundStatement.Action> Options { get; init; } = [];
 }
@@ -293,12 +293,16 @@ public sealed class QuestProgram
             ?? Texts.FirstOrDefault(t => t.QuestId == questId);
     }
 
-    public QuestRewards? RewardsFor(int questId, int classGroup = 0)
+    public QuestRewards? RewardsFor(int questId, int classGroup = 0, int nation = 0)
     {
-        var candidates = QuestRewards.Where(r => r.QuestId == questId).ToList();
-        return candidates.FirstOrDefault(r => r.ClassGroup == classGroup && classGroup != 0)
-            ?? candidates.FirstOrDefault(r => r.ClassGroup == 0)
-            ?? candidates.FirstOrDefault();
+        var candidates = QuestRewards.Where(r => r.QuestId == questId
+            && (r.Nation == 0 || nation == 0 || r.Nation == nation)).ToList();
+        return candidates.FirstOrDefault(r => r.ClassGroup == classGroup && classGroup != 0 && r.Nation == nation && nation != 0)
+            ?? candidates.FirstOrDefault(r => r.ClassGroup == classGroup && classGroup != 0 && r.Nation == 0)
+            ?? candidates.FirstOrDefault(r => r.ClassGroup == 0 && r.Nation == nation && nation != 0)
+            ?? candidates.FirstOrDefault(r => r.ClassGroup == 0 && r.Nation == 0)
+            ?? candidates.FirstOrDefault()
+            ?? QuestRewards.FirstOrDefault(r => r.QuestId == questId);
     }
 
     public bool TryGetReward(int index, out RewardDefinition reward)

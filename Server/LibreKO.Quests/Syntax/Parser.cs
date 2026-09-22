@@ -181,15 +181,15 @@ public sealed class Parser
                 if (handlers.Count > 0)
                     _diagnostics.Error(DiagnosticId.DeclarationAfterHandler, line.Span,
                         "Rewards belongs above the first On handler.");
-                Token? rewardClass = null;
-                if (line.Tokens.Count >= 3 && line.Tokens[1].IsWord("for")
-                    && Binding.QuestVocabulary.ClassGroups.ContainsKey(line.Tokens[2].Text))
-                    rewardClass = line.Tokens[2];
-                if (questRewards is not null
-                    && (rewardClass is not { } wanted || questRewards.Any(r => r.ClassGroup is not { } had
-                        || had.Text.Equals(wanted.Text, StringComparison.OrdinalIgnoreCase))))
+                var position = 1;
+                var (rewardNation, rewardClass) = line.Tokens.Count > 1 && line.Tokens[1].IsWord("for")
+                    ? ParseScope(line, ref position)
+                    : (null, null);
+                if (questRewards is not null && questRewards.Any(r =>
+                        (r.Nation is null) != (rewardNation is null) || (r.ClassGroup is null) != (rewardClass is null)
+                        || (SameWord(r.Nation, rewardNation) && SameWord(r.ClassGroup, rewardClass))))
                     _diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
-                        "This quest already has Rewards for that class.");
+                        "This quest already has Rewards for that nation or class; every Rewards block names the same kind of scope, once.");
                 questRewards ??= [];
                 if (line.StartsWith("rewards", "none"))
                 {
@@ -199,9 +199,8 @@ public sealed class Parser
                 }
                 else
                 {
-                    var position = rewardClass is null ? 1 : 3;
                     questRewards.Add(new QuestRewardsSyntax(line.Span,
-                        ParseIndentedBlock(line, ref position), rewardClass));
+                        ParseIndentedBlock(line, ref position), rewardClass, rewardNation));
                 }
                 continue;
             }
@@ -841,11 +840,13 @@ public sealed class Parser
     {
         IReadOnlyList<Token> tokens = line.Tokens;
         Token? group = null;
-        if (tokens.Count >= 3 && tokens[tokens.Count - 2].IsWord("for")
-            && Binding.QuestVocabulary.ClassGroups.ContainsKey(tokens[tokens.Count - 1].Text))
+        Token? nation = null;
+        var scopeAt = tokens.Select((t, i) => (t, i)).Where(p => p.i > 0 && p.t.IsWord("for")).Select(p => p.i).FirstOrDefault(-1);
+        if (scopeAt > 0)
         {
-            group = tokens[tokens.Count - 1];
-            tokens = tokens.Take(tokens.Count - 2).ToList();
+            var position = scopeAt;
+            (nation, group) = ParseScope(line, ref position);
+            tokens = tokens.Take(scopeAt).ToList();
         }
         var coins = tokens.Count == 3 && tokens[2].IsWord("coins");
         if (tokens.Count < 2 || tokens[1].Kind != TokenKind.Number
@@ -854,13 +855,39 @@ public sealed class Parser
         {
             _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "A 'Collect' line names what the quest hands in, like: Collect 3 of 810418000, "
-                + "Collect 3000 coins, or Collect 1 of 810090000 for warrior");
+                + "Collect 3000 coins, Collect 1 of 810090000 for warrior, or Collect 3 of 910091000 for elmorad");
             return null;
         }
 
         return new CollectSyntax(line.Span, tokens[1].Value, tokens[1].Span,
-            coins ? null : tokens[3], group);
+            coins ? null : tokens[3], group, nation);
     }
+
+    private (Token? Nation, Token? ClassGroup) ParseScope(Line line, ref int position)
+    {
+        Token? nation = null;
+        Token? group = null;
+        position++;
+        var start = position;
+        while (position < line.Tokens.Count && line.Tokens[position].Kind == TokenKind.Word)
+        {
+            var word = line.Tokens[position];
+            if (Binding.QuestVocabulary.ClassGroups.ContainsKey(word.Text) && group is null)
+                group = word;
+            else if (Binding.QuestVocabulary.Nations.ContainsKey(word.Text) && nation is null)
+                nation = word;
+            else
+                break;
+            position++;
+        }
+        if (position == start || position != line.Tokens.Count)
+            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+                "\"for\" takes a nation, a class, or a nation and a class, and ends the line.");
+        return (nation, group);
+    }
+
+    private static bool SameWord(Token? left, Token? right) =>
+        left is { } l ? right is { } r && l.Text.Equals(r.Text, StringComparison.OrdinalIgnoreCase) : right is null;
 
     private KillGroupSyntax? ParseKillGroup(Line line)
     {

@@ -82,11 +82,15 @@ public sealed class Binder
 
         _scopeQuest = _defaultQuest;
         IReadOnlyList<QuestRewards> questRewards = [];
-        var collectedByClass = BindCollectedByClass();
-        var collected = collectedByClass.Where(c => c.ClassGroup == 0).Select(c => c.Take).ToList();
+        var collectedByScope = BindCollectedByScope();
+        var collected = collectedByScope.Where(c => c.ClassGroup == 0 && c.Nation == 0).Select(c => c.Take).ToList();
 
-        IReadOnlyList<BoundStatement.Action> CollectedFor(int group) =>
-            [.. collectedByClass.Where(c => c.ClassGroup == 0 || c.ClassGroup == group).Select(c => c.Take)];
+        IReadOnlyList<BoundStatement.Action> CollectedFor(int nation, int group) =>
+            [.. collectedByScope.Where(c => (c.ClassGroup == 0 || c.ClassGroup == group)
+                                            && (c.Nation == 0 || c.Nation == nation)).Select(c => c.Take)];
+        IReadOnlyList<int> NationsFor(int nation, int group) => nation != 0 ? [nation]
+            : collectedByScope.Where(c => c.Nation != 0 && (c.ClassGroup == 0 || c.ClassGroup == group))
+                .Select(c => c.Nation).Distinct().DefaultIfEmpty(0).ToList();
         if (_file.QuestRewards is { Count: > 0 } rewardBlocks)
         {
             var built = new List<QuestRewards>();
@@ -104,16 +108,17 @@ public sealed class Binder
                 }
                 var options = BindRewardChoice(choices);
                 var group = ResolveClassGroup(block.ClassGroup);
-                built.Add(new QuestRewards(_defaultQuest,
-                    [.. CollectedFor(group), .. transfers.Cast<BoundStatement.Action>()], group)
-                    { Options = options });
+                foreach (var nation in NationsFor(ResolveNation(block.Nation), group))
+                    built.Add(new QuestRewards(_defaultQuest,
+                        [.. CollectedFor(nation, group), .. transfers.Cast<BoundStatement.Action>()], group, nation)
+                        { Options = options });
             }
             if (built.Count > 0)
                 questRewards = built;
         }
-        else if (collected.Count > 0)
+        else if (collected.Count > 0 || collectedByScope.Any(c => c.Nation != 0 && c.ClassGroup == 0))
         {
-            questRewards = [new QuestRewards(_defaultQuest, collected)];
+            questRewards = [.. NationsFor(0, 0).Select(nation => new QuestRewards(_defaultQuest, CollectedFor(nation, 0), 0, nation))];
         }
         if (_file.AutoAccept)
         {
@@ -296,6 +301,16 @@ public sealed class Binder
         return 0;
     }
 
+    private int ResolveNation(Token? token)
+    {
+        if (token is not { } named)
+            return 0;
+        if (QuestVocabulary.Nations.TryGetValue(named.Text, out var nation))
+            return nation;
+        _diagnostics.Error(DiagnosticId.UnknownDirective, named.Span, $"\"{named.Text}\" is not a nation.");
+        return 0;
+    }
+
     private IReadOnlyList<QuestBinding> BindBindings()
     {
         var bound = new List<QuestBinding>();
@@ -387,10 +402,30 @@ public sealed class Binder
         Add(QuestProgram.FulfilEvent, [.. Guard([claim], zone, span), sync]);
         if (!_questTexts.Any(t => t.QuestId == _defaultQuest))
             _questTexts.Add(new QuestText(_defaultQuest, $"Quest {_defaultQuest}", null));
-        var title = _questTexts.First(t => t.QuestId == _defaultQuest).Title ?? $"Quest {_defaultQuest}";
         var visible = new BoundCondition.Or(StatusIn(1, 3), Both(StatusIn(0, 4), eligibility)!);
-        Add(QuestProgram.TopicsEvent, [new BoundStatement.Dialog(span, DialogStyle.Talk, -1, DialogLine.None,
-            [new DialogChoice(Both(visible, zone), new DialogButton(DialogLine.FromText(title), viewId))])]);
+        var texts = _questTexts.Where(t => t.QuestId == _defaultQuest && t.Title is { Length: > 0 }).ToList();
+        var choices = new List<DialogChoice>();
+        if (texts.Select(t => t.Title).Distinct().Count() <= 1)
+        {
+            var title = texts.FirstOrDefault()?.Title ?? $"Quest {_defaultQuest}";
+            choices.Add(new DialogChoice(Both(visible, zone), new DialogButton(DialogLine.FromText(title), viewId)));
+        }
+        else
+        {
+            foreach (var text in texts.Where(t => t.Nation > 0 || t.ClassGroup > 0))
+            {
+                BoundCondition? scope = null;
+                if (text.Nation > 0)
+                    scope = new BoundCondition.Predicate(QuestConditionKind.PlayerNation, CompareOperator.Equal,
+                        new ArgumentSet(new Dictionary<string, long> { ["nation"] = text.Nation }), span);
+                if (text.ClassGroup > 0)
+                    scope = Both(scope, new BoundCondition.Predicate(QuestConditionKind.PlayerClass, CompareOperator.Equal,
+                        new ArgumentSet(new Dictionary<string, long> { ["class"] = text.ClassGroup }), span));
+                choices.Add(new DialogChoice(Both(Both(visible, zone), scope),
+                    new DialogButton(DialogLine.FromText(text.Title!), viewId)));
+            }
+        }
+        Add(QuestProgram.TopicsEvent, [new BoundStatement.Dialog(span, DialogStyle.Talk, -1, DialogLine.None, choices)]);
     }
 
     private void ReadDirectives()
@@ -805,9 +840,9 @@ public sealed class Binder
         BindQuestItems(block => block.Collects?.Select(c => (c.Span, c.Count, c.CountSpan, c.Item)),
             QuestActionKind.TakeItem, "Collect");
 
-    private IReadOnlyList<(int ClassGroup, BoundStatement.Action Take)> BindCollectedByClass()
+    private IReadOnlyList<(int Nation, int ClassGroup, BoundStatement.Action Take)> BindCollectedByScope()
     {
-        var byClass = new List<(int, BoundStatement.Action)>();
+        var byScope = new List<(int, int, BoundStatement.Action)>();
         foreach (var block in _file.Objectives)
         {
             foreach (var entry in block.Collects ?? [])
@@ -816,10 +851,10 @@ public sealed class Binder
                         ? [(entry.Span, entry.Count, entry.CountSpan, entry.Item)] : null,
                     QuestActionKind.TakeItem, "Collect");
                 foreach (var take in one)
-                    byClass.Add((ResolveClassGroup(entry.ClassGroup), take));
+                    byScope.Add((ResolveNation(entry.Nation), ResolveClassGroup(entry.ClassGroup), take));
             }
         }
-        return byClass;
+        return byScope;
     }
 
     private IReadOnlyList<BoundStatement.Action> BindQuestItems(

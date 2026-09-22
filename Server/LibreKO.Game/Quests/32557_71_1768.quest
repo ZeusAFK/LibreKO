@@ -1,0 +1,21 @@
+Bind Npc 32557 Zone 71
+Quest 1768 "Event EXP Quest - Crimson Wing"
+    Daily
+    Journal "Welcome! If you hunt 50 Crimson Wings in Ronarkland, you will receive 12 million EXP. Will you accept the challenge?"
+    Kill 50 of 2223 at direction_83
+
+Requires player level >= 45 and player is karus
+
+Rewards
+    Give 12000000 experience
+
+direction_83 = location "Crimson Wing" about "Crimson Wing\nCrimson Wings are part of the Harpy family, and are noted for their ferocity. The viciousness of their attacks is balanced by their utter stupidity, blindly attacking anything that comes too near them." found "Ronark Land" karus at 852 1577 elmorad at 1165 381 in zone 71
+
+On offer
+    Show quest "Welcome! If you hunt 50 Crimson Wings in Ronarkland, you will receive 12 million EXP. Will you accept the challenge?"
+
+On in_progress
+    Say "Welcome! If you hunt 50 Crimson Wings in Ronarkland, you will receive 12 million EXP. Will you accept the challenge?"
+
+On claimable
+    Show quest "Welcome! If you hunt 50 Crimson Wings in Ronarkland, you will receive 12 million EXP. Will you accept the challenge?"

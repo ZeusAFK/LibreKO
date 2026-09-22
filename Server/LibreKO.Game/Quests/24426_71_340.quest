@@ -1,0 +1,20 @@
+Bind Npc 24426 Zone 71
+Quest 340 "Peace in Ronark Land"
+    Journal "You swore that you would take the lives of 100 enemy Knights."
+    Kill 100 of 2 at direction_489 in zone 71
+
+Requires player level >= 70 and player is karus
+
+Rewards
+    Give 50000000 experience
+
+direction_489 = location "El Morad" about "El Morad\nKill and bring an El Morad user" found "El Morad " at 100 100
+
+On offer
+    Show quest "Are you ready to sacrifice your life for your nation?\nLead the party to that battlefield and return with 100 lives of our enemy."
+
+On in_progress
+    Say "Are you ready to sacrifice your life for your nation?\nLead the party to that battlefield and return with 100 lives of our enemy."
+
+On claimable
+    Show quest "Are you ready to sacrifice your life for your nation?\nLead the party to that battlefield and return with 100 lives of our enemy."

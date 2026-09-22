@@ -1,0 +1,23 @@
+Bind Npc 21510 Zone 1 for karus
+Bind Npc 11510 Zone 2 for elmorad
+Quest 438 "The Beginning of a New Adventure 1"
+    Journal for karus "Find Luperson Castle's [Captain] Fargo."
+    Journal for elmorad "Find El Morad Castle's [Captain] Polkwein."
+    Collect 1 of 910181000 for karus
+    Collect 1 of 910180000 for elmorad
+
+Requires player level >= 35
+
+Rewards none
+
+On offer
+    Show quest "Cougar? He's an old friend. We've seen a few wars together."
+
+On in_progress
+    Say "Cougar? He's an old friend. We've seen a few wars together."
+
+On claimable
+    If player is karus
+        Show quest "Erm... Well, if Cougar recommended you, then that's fine with me. This is a small token of your formal entry to Karus Castle. Let me briefly explain some stuff about the Karus."
+    If player is elmorad
+        Show quest "Erm... Well, if Cougar recommended you, then that's fine with me. This is a small token of your formal entry to El Morad Castle. Let me briefly explain some stuff about El Morad."

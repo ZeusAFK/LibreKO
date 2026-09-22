@@ -1,0 +1,21 @@
+Bind Npc 32557 Zone 71
+Quest 1772 "Event EXP Quest - Dark Stone"
+    Daily
+    Journal "Welcome! If you hunt 50 Dark Stones in Ronarkland, you will receive 18 million EXP. Will you accept the challenge?"
+    Kill 50 of 2423 at direction_2116
+
+Requires player level >= 45 and player is karus
+
+Rewards
+    Give 18000000 experience
+
+direction_2116 = location "Dark Stone" found "Ronak Land" at 1372 575 in zone 71
+
+On offer
+    Show quest "Welcome! If you hunt 50 Dark Stones in Ronarkland, you will receive 18 million EXP. Will you accept the challenge?"
+
+On in_progress
+    Say "Welcome! If you hunt 50 Dark Stones in Ronarkland, you will receive 18 million EXP. Will you accept the challenge?"
+
+On claimable
+    Show quest "Welcome! If you hunt 50 Dark Stones in Ronarkland, you will receive 18 million EXP. Will you accept the challenge?"

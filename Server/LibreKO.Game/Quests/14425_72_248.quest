@@ -1,0 +1,20 @@
+Bind Npc 14425 Zone 72
+Quest 248 "Peace of Ardream"
+    Journal "You must triumph over 10 knights from a Hostile Nation in Ardream."
+    Kill 10 of 1 at direction_488 in zone 72
+
+Requires player level >= 59 and player is elmorad
+
+Rewards
+    Give 35000000 experience
+
+direction_488 = location "Karus" about "Karus\nKill and bring a Karus user" found "Karus" at 100 100
+
+On offer
+    Show quest "Are you ready to put your life on the line for your country?\nIf so, let me first tell you about the Ardream stand-off"
+
+On in_progress
+    Say "Hmm? Never heard of <selfname>. Have you fought 10 enemy combatants yet?"
+
+On claimable
+    Show quest "Incredible! <selfname>, your fame will spread throughout the Ardream continent! Even the cruel men of Karus will quiver in fear!"

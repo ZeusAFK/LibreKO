@@ -4,6 +4,7 @@ using LibreKO.Quests.Binding;
 using LibreKO.Quests.Catalog;
 using LibreKO.Quests.Runtime;
 using LibreKO.Quests.Text;
+using NSubstitute;
 using Xunit;
 
 namespace LibreKO.Game.Tests;
@@ -162,6 +163,42 @@ public class QuestTextTests
         program.TextFor(167, 2)!.Title.Should().Be("Marauders of Blue Feather Valley I");
         program.TextFor(167, 2)!.Journal.Should().Be("The hunt is repeatable.");
         program.Texts.Should().HaveCount(2);
+    }
+
+    [Theory]
+    [InlineData(1, 24440, 1, "Marauders of Darkland I")]
+    [InlineData(2, 14440, 2, "Marauders of Blue Feather Valley I")]
+    public void TheNpcMenuListsTheQuestUnderThePlayersOwnTitle(int nation, int npc, int zone, string title)
+    {
+        var compilation = Compile("""
+            Bind Npc 24440 Zone 1 for karus
+            Bind Npc 14440 Zone 2 for elmorad
+
+            Quest 167
+                Title for karus "Marauders of Darkland I"
+                Title for elmorad "Marauders of Blue Feather Valley I"
+                Journal "The hunt is repeatable."
+                Kill 20 of 8002
+
+            Requires player level >= 45
+
+            Rewards
+                Give 1000 experience
+            """);
+        var program = QuestProgramComposer.Compose("board", npc, zone, [compilation.Program]);
+        var host = Substitute.For<IQuestHost>();
+        host.PlayerZone.Returns(zone);
+        host.PlayerNation.Returns(nation);
+        host.PlayerLevel.Returns(50);
+        IReadOnlyList<DialogButton> shown = [];
+        host.When(h => h.ShowDialog(Arg.Any<DialogStyle>(), Arg.Any<int>(), Arg.Any<DialogLine>(),
+                Arg.Any<IReadOnlyList<DialogButton>>()))
+            .Do(c => shown = c.ArgAt<IReadOnlyList<DialogButton>>(3));
+
+        program.TryGetEntry(QuestProgram.TopicsEvent, 0, out var topics).Should().BeTrue();
+        new QuestInterpreter(program, host).Run(topics).Failure.Should().BeNull();
+
+        shown.Select(b => b.Label.Text).Should().Equal(title);
     }
 
     [Theory]

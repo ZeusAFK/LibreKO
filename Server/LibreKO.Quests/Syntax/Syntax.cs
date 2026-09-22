@@ -117,7 +117,8 @@ public sealed record CollectSyntax(
     long Count,
     TextSpan CountSpan,
     Token? Item,
-    Token? ClassGroup = null) : SyntaxNode(Span);
+    Token? ClassGroup = null,
+    Token? Nation = null) : SyntaxNode(Span);
 
 public sealed record GrantSyntax(
     TextSpan Span,
@@ -161,7 +162,8 @@ public sealed record BindingSyntax(TextSpan Span, IReadOnlyList<Token> Npcs, Tok
 public sealed record QuestRewardsSyntax(
     TextSpan Span,
     IReadOnlyList<StatementSyntax> Body,
-    Token? ClassGroup = null);
+    Token? ClassGroup = null,
+    Token? Nation = null);
 
 public sealed record QuestFileSyntax(
     TextSpan Span,

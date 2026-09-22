@@ -1,0 +1,17 @@
+Bind Npc 13009 Zone 21
+Quest 437 "The Beginning of a New Adventure 1"
+    Journal "Seek out [Mercenary Adjutant] Rage."
+
+Requires player level >= 35
+
+Rewards for karus
+    Give 1 of 910181000
+
+Rewards for elmorad
+    Give 1 of 910180000
+
+On offer
+    Show quest "You ought to get out there, look around and learn and feel some new things."
+
+On claimable
+    Show quest "You ought to get out there, look around and learn and feel some new things."

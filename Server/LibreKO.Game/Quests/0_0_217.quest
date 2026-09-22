@@ -1,0 +1,23 @@
+Bind Npc 24203 Zone 1 for karus
+Bind Npc 14203 Zone 2 for elmorad
+Quest 217 "Collect Enemy Emblem"
+    Journal for karus "There was an order to capture the Lunar Lich at the entrance to Lunar Valley and bring the emblem to Drake."
+    Journal for elmorad "There was an order to capture the Lunar Lich at the entrance to Lunar Valley and bring the emblem to Drake."
+    Collect 3 of 910090000 for karus
+    Collect 3 of 910091000 for elmorad
+
+Requires player level >= 68
+
+Rewards
+    Give 50000000 experience
+
+On offer
+    Say "His Royal Highness has personally assigned a mission to me for the first time in a long while. A war against the enemy should ensue shortly..."
+    Topic "Tell me more..." do
+        Show quest "You will be able to find Luna Liches at the entrance to Lunar Valley. The Lunalichs are those who maintain a close relationship with the upper powers of the enemy nation. The purpose of this mission is to seize the emblem of Karus and bring it back \n The emblem of Karus uses an ancient spell that I developed myself, and is used by the enemy nation. It is an important item that is absolutely necessary for magic techniques that bring disaster to people.\n\nIf you catch Luna Lich at the entrance to Lunar Valley and obtain the Emblem of Karus, you can get 50 million EXP points as a reward."
+
+On in_progress
+    Say "Didn't I tell you bring the Emblem of Karus?"
+
+On claimable
+    Show quest "Wow, you have safely collected the Emblem of Karus.. Good work. Your honor will increase accordingly as a result."
