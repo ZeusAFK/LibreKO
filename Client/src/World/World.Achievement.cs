@@ -21,8 +21,8 @@ public partial class World
         Platform.TouchUi ? TrophyTouchBadgeSize : TrophyBadgeSize;
 
     private static Color TrophyIconColor(bool waiting) => Platform.TouchUi
-        ? (waiting ? UiTheme.GoldBright : UiTheme.TextLo)
-        : (waiting ? UiTheme.GoldBright : UiTheme.TextDim);
+        ? (waiting ? UiTheme.GoldBright : UiTheme.Gold)
+        : (waiting ? UiTheme.GoldBright : UiTheme.Gold);
 
     private CanvasLayer _trophyLayer = null!;
     private Button _trophy = null!;
@@ -596,6 +596,8 @@ public partial class World
         _trophy.AddThemeStyleboxOverride("hover", flat);
         _trophy.AddThemeStyleboxOverride("pressed", flat);
         _trophy.Pressed += ToggleAchievements;
+        _trophy.MouseEntered += () => _trophyIcon.SelfModulate = UiTheme.GoldBright;
+        _trophy.MouseExited += () => _trophyIcon.SelfModulate = TrophyIconColor(_trophyBadge?.Visible == true);
         _trophyLayer.AddChild(_trophy);
 
         _trophyIcon = UiIcons.Image("system/trophy",
@@ -651,6 +653,7 @@ public partial class World
             HudAnchor.Edge + MiniMap.SquareSize + StatusHudGap
                 + _premiumChip.Size.X + TrophyGap + giftWidth + TrophyGap,
             HudAnchor.Edge));
+        PlaceTopRightMailbox();
     }
 
     private void RefreshTrophy(int claimable)

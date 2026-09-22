@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
 
@@ -28,8 +28,8 @@ public partial class World
         Platform.TouchUi ? AttendanceGiftTouchBadgeSize : AttendanceGiftBadgeSize;
 
     private static Color GiftIconColor(bool waiting) => Platform.TouchUi
-        ? new Color(1f, 1f, 1f, waiting ? 0.96f : 0.55f)
-        : waiting ? UiTheme.GoldBright : UiTheme.TextDim;
+        ? (waiting ? UiTheme.GoldBright : UiTheme.Gold)
+        : (waiting ? UiTheme.GoldBright : UiTheme.Gold);
     private const float AttendanceGiftGap = 6f;
     private const float AttendanceGiftPadX = 9f;
     private const float AttendanceGiftBlinkDim = 0.3f;
@@ -89,6 +89,8 @@ public partial class World
         _attendanceGift.AddThemeStyleboxOverride("hover", flat);
         _attendanceGift.AddThemeStyleboxOverride("pressed", flat);
         _attendanceGift.Pressed += OpenAttendance;
+        _attendanceGift.MouseEntered += () => _attendanceGiftIcon.SelfModulate = UiTheme.GoldBright;
+        _attendanceGift.MouseExited += () => _attendanceGiftIcon.SelfModulate = GiftIconColor(_attendanceGiftBadge?.Visible == true);
         _attendanceGiftLayer.AddChild(_attendanceGift);
 
         _attendanceGiftIcon = UiIcons.Image("system/gift",
@@ -140,6 +142,8 @@ public partial class World
             HudAnchor.Edge + MiniMap.SquareSize + StatusHudGap
                 + _premiumChip.Size.X + AttendanceGiftGap,
             HudAnchor.Edge));
+        PlaceTrophy();
+        PlaceTopRightMailbox();
     }
 
     private void SetAttendanceGift(int claimable)

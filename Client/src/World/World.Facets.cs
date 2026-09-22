@@ -65,7 +65,6 @@ public partial class World : Node3D
         Facet(RankInit, RankDispose);
         Facet(ChallengeInit, ChallengeDispose);
         Facet(WarpInit, WarpDispose);
-        Facet(ShoppingMallInit, ShoppingMallDispose);
         Facet(BattleEventInit, BattleEventDispose);
         Facet(PetInit, PetDispose);
         Facet(RebirthInit, RebirthDispose);
@@ -93,6 +92,7 @@ public partial class World : Node3D
         Facet(AuctionInit, AuctionDispose);
         Facet(AttendanceInit, AttendanceDispose);
         Facet(AchievementInit, AchievementDispose);
+        Facet(ShoppingMallInit, ShoppingMallDispose);
         Facet(BountyInit, BountyDispose);
         Facet(TournamentInit, TournamentDispose);
         Facet(DisguiseInit, DisguiseDispose);

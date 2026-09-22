@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -69,6 +69,8 @@ public class ShoppingMallLetterMutationService(
         byte sourcePosition = 0;
         var coins = 0;
 
+        var requestedCount = 0;
+
         if (letterType == 2)
         {
             if (packet.RemainingBytes < 9)
@@ -80,7 +82,7 @@ public class ShoppingMallLetterMutationService(
 
             itemId = packet.ReadInt();
             sourcePosition = packet.ReadByte();
-            _ = packet.ReadInt(); // Coins are part of the wire format but disabled for this protocol branch.
+            requestedCount = packet.ReadInt(); // Can specify partial stack count
             cost = ShoppingMallLetterProtocol.LetterSendItemCost;
         }
 
@@ -158,7 +160,15 @@ public class ShoppingMallLetterMutationService(
             }
 
             itemDurability = itemSlot.Durability;
-            itemCount = (short)itemSlot.Count;
+            if (requestedCount > 0 && requestedCount < itemSlot.Count)
+            {
+                itemCount = (short)requestedCount;
+                itemSlot.Count -= (ushort)requestedCount;
+            }
+            else
+            {
+                itemCount = (short)itemSlot.Count;
+            }
         }
 
         session.Money -= cost;
@@ -166,8 +176,15 @@ public class ShoppingMallLetterMutationService(
 
         if (itemSlot != null)
         {
-            itemSlot.Clear();
-            await userNotificationService.SendStackChangeAsync(session, sourcePosition, 0, 0, 0);
+            if (requestedCount > 0 && itemSlot.Count > 0)
+            {
+                await userNotificationService.SendStackChangeAsync(session, sourcePosition, itemSlot.ItemId, itemSlot.Count, itemSlot.Durability);
+            }
+            else
+            {
+                itemSlot.Clear();
+                await userNotificationService.SendStackChangeAsync(session, sourcePosition, 0, 0, 0);
+            }
         }
 
         db.MailBoxes.Add(new MailBox

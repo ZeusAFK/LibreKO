@@ -68,7 +68,8 @@ public partial class World
         string iconId,
         string tooltip,
         Action action,
-        bool town = false)
+        bool town = false,
+        bool gold = false)
     {
         var button = new Button
         {
@@ -90,7 +91,7 @@ public partial class World
 
         Color normalIcon = Platform.TouchUi
             ? new Color(1f, 1f, 1f, 0.96f)
-            : town
+            : (town || gold)
                 ? new Color(0.82f, 0.72f, 0.43f, 0.90f)
                 : new Color(0.79f, 0.80f, 0.78f, 0.88f);
         var hoverIcon = new Color(0.94f, 0.95f, 0.96f);

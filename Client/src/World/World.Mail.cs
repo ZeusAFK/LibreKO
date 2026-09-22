@@ -95,18 +95,12 @@ public partial class World
 
     private void ToggleMail()
     {
-        if (_mailShown) { CloseMail(); return; }
-        _mailPanel.Visible = true;
-        _mailShown = true;
-        SetMailStatus("", false);
-        Net.I.SendMailList();
+        ToggleShoppingMall();
     }
 
     private void CloseMail()
     {
-        if (!_mailShown) return;
-        _mailShown = false;
-        _mailPanel.Visible = false;
+        CloseShoppingMall();
     }
 
     private void OnMailSendPressed()

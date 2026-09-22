@@ -189,7 +189,7 @@ public partial class Net
         _conn.Send(p);
     }
 
-    public void SendShoppingMallGiftLetter(string recipient, string subject, string message, int itemId, byte srcPos)
+    public void SendShoppingMallGiftLetter(string recipient, string subject, string message, int itemId, byte srcPos, int count = 0)
     {
         var p = NewLetterPacket(SmLetterSend);
         p.WriteSByteString(recipient);
@@ -197,7 +197,7 @@ public partial class Net
         p.WriteByte(2);
         p.WriteInt(itemId);
         p.WriteByte(srcPos);
-        p.WriteInt(0);
+        p.WriteInt(count);
         p.WriteString(message);
         _conn.Send(p);
     }
