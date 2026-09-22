@@ -220,6 +220,20 @@ public partial class World
         return DetachPreviewControl(_attendanceGift);
     }
 
+    internal Control BuildTrophyUiPreview()
+    {
+        BuildTrophy();
+        RefreshTrophy(1);
+        return DetachPreviewControl(_trophy);
+    }
+
+    internal Control BuildMailIconUiPreview(int unread = 3)
+    {
+        BuildMailIcon();
+        RefreshMailIcon(unread);
+        return DetachPreviewControl(_mailIconButton);
+    }
+
     internal Control BuildClockUiPreview()
     {
         BuildClockHud();

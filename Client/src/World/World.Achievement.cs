@@ -7,7 +7,7 @@ namespace LibreKO;
 
 public partial class World
 {
-    private const float TrophyIconSize = 20f;
+    private const float TrophyIconSize = 24f;
     private const float TrophyBadgeSize = 13f;
     private const float TrophyTouchBadgeSize = 30f;
     private const int TrophyTouchCountFont = 17;

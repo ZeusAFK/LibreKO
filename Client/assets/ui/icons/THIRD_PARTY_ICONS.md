@@ -59,6 +59,9 @@ size, so it is left out.
 `system/trophy.svg` is an original cup silhouette drawn for GKO on the same grid, for the achievement
 window and its HUD button.
 
+`system/envelope.svg` is an original envelope silhouette drawn for GKO on the same grid, for the mail
+HUD button: a rounded body with the flap cut as a single V so it still reads at HUD icon size.
+
 The character-sheet icon set is original, drawn for GKO on the same grid and tinted per stat at
 runtime: `system/stat-str` (fist), `stat-hp` (heart), `stat-dex` (reticle), `stat-mp` (droplet),
 `stat-int` (open book), `combat-attack` (upright sword), `combat-defence` (shield), and the six

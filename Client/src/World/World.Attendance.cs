@@ -18,7 +18,7 @@ public partial class World
     private const int TextAttendanceNoNoahItem = 33623;
     private const int TextAttendanceClaimFailedCode = 33624;
 
-    private const float AttendanceGiftIconSize = 20f;
+    private const float AttendanceGiftIconSize = 24f;
     private const float AttendanceGiftBadgeSize = 13f;
     private const float AttendanceGiftTouchBadgeSize = 30f;
     private const int AttendanceGiftTouchCountFont = 17;

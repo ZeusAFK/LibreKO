@@ -38,6 +38,11 @@ public static class HudPlacement
         new Vector2(SideIconLeft, TouchEdge + (LauncherButtonSize + TouchEdge) * 2f),
         Vector2.Zero);
 
+    public static Slot MailIcon => new(
+        HudAnchor.Spot.TopLeft,
+        new Vector2(SideIconLeft, TouchEdge + (LauncherButtonSize + TouchEdge) * 3f),
+        Vector2.Zero);
+
     public static Slot TownButton => new(
         HudAnchor.Spot.TopLeft,
         new Vector2(SideIconLeft, TouchEdge),
