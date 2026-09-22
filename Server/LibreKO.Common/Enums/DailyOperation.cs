@@ -11,4 +11,7 @@ public enum DailyOperation
     KeeperKillerWing = 7,
     LoyaltyWingReward = 8,
     LadderReward = 9,
+    SpiritGuardianRed = 10,
+    SpiritGuardianBlue = 11,
+    SpiritGuardianBlack = 12,
 }

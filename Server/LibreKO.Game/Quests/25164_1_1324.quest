@@ -1,0 +1,21 @@
+Bind Npc 25164 Zone 1
+Quest 1324 "To find Pina"
+    Journal "Deliver a Spiritual bracelet to Pina"
+    Collect 1 of 900654000
+
+Requires player level >= 35 and player is karus and quest 1315 is completed
+
+Rewards
+    Give 30000 experience
+
+On offer
+    Show quest "(Bracelet of Spirit is flashing) ...... Oh that bracelet ..."
+
+On in_progress
+    Say "(Bracelet of Spirit is flashing) ...... Oh that bracelet ..."
+
+On claimable
+    Show quest "(The bracelet starts to glow once it goes to Pina)\n\n(Pina is shining in blue with the bracelet) You came to see me..\n\nLeia.. My sister still alive..Thank you Warrior. Let's go see my sister."
+
+On completed
+    Say "See you at Jeras Temple.<selfname>"

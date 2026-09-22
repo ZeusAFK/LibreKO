@@ -1,0 +1,26 @@
+Bind Npc 25173 Zone 1
+Quest 1360 "Black Onix"
+    Journal "Kill DeathReverse"
+    Kill 1 of 9691, 9688 at direction_1347
+
+Requires player level >= 35 and player is karus and quest 1315 is completed
+
+Rewards
+    Give 25000 experience
+    Give 1 of 900630000
+
+direction_1347 = location "Death Rebirth" about "Guardian of Black Onyx. This Dragon volunteered to guard the Onyx. He always keeps the black onyx within him." found "Karus" karus at 1812 397 in zone 1
+
+On offer
+    Show quest "In order to make Purified Pole, need Black Onyx. Leia should be able to summon Death Rebirth who will summon Black Onyx. Defeat Death Rebirth."
+
+On in_progress
+    Say "Brave <selfname>. When you are ready, just tell us to unseal the onyx."
+    Topic "Unseal" do
+        If daily 12 available
+            Summon 1 of 9691 at 1812 397
+        Else
+            Say "Able to summon DeathReverse once per day. Can obtain a black Onix when defeating DeathReverse."
+
+On claimable
+    Show quest "Here's Red Onyx. You are so brave <selfname>."

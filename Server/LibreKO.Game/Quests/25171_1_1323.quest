@@ -1,0 +1,26 @@
+Bind Npc 25171 Zone 1
+Quest 1323 "The Mastermind in the shadows"
+    Journal "Leia's has defeated Dryden but its massive power has killed her as well. He has escaped with just his life. You have obtained the soul stone from the healed people"
+    Kill 1 of 9664 at direction_1329
+
+Requires player level >= 35 and player is karus and quest 1322 is completed
+
+Rewards
+    Give 300000 experience
+
+direction_1329 = location "Draiden" about "Lives in the dark. Not known if it's human or Devil. But it's lived ever since the world has created.In All of wars, there were Draiden." found "Kale B?lgesi" at 0 0 in zone 1
+
+On offer
+    Say "Ah..It hurts...Help me..it's like my chest is burning.\n\nAaah!! Help me. Ou! Ch! Ah! (Chest is dyed in dark and purification pole does not work.)"
+    Topic "Next " do
+        Say "Ha.. Thought you could purify me..?\n\nO my. It's Draiden!!..Spiritual Stone was Draiden's plot"
+        Topic "Next " do
+            Show quest "Warrior, this is dangerous here. Move to a different place first."
+
+On in_progress
+    Say "Warrior, this is dangerous here. Move to a different place first."
+    Topic "Wait!" do
+        Summon 1 of 9664 at 1812 397
+
+On claimable
+    Show quest "Draiden is an evil that lives in darkness.\n\nSobbing...We can't keep being sad like this.. Once Draiden appears, Spiritual Stone's contamination will continue.\n\nI have to get rid of Draiden."

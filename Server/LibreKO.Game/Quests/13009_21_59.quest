@@ -1,0 +1,15 @@
+Bind Npc 13009 Zone 21
+Quest 59 "Moradon Intro"
+    Journal "Before the journey to Moradon, [Mercenary Captain] Cougar will explain the situation."
+
+Requires player level >= 1
+
+Rewards none
+
+On offer
+    Say "You must be new to Moradon.\nThis is a neutral area where citizens of both Karus and El Morad may mix freely. It's the only place on the continent where the two peoples coexist peacefully. Follow me, there's more to tell."
+    Topic "Next " do
+        Show quest "Moradon is also the center of Commerce on the Adonisian Continent, and again, the only neutral city not belonging solely to either Karus or El Morad."
+
+On claimable
+    Show quest "Moradon is also the center of Commerce on the Adonisian Continent, and again, the only neutral city not belonging solely to either Karus or El Morad."

@@ -1,0 +1,21 @@
+Bind Npc 25165 Zone 1
+Quest 1325 "To find Sera"
+    Journal "Delivers a Spiritual earring to Sera"
+    Collect 1 of 900655000
+
+Requires player level >= 35 and player is karus and quest 1315 is completed
+
+Rewards
+    Give 30000 experience
+
+On offer
+    Show quest "(Earrings of Spirit are flashing) ...... Oh those earrings ..."
+
+On in_progress
+    Say "(Earrings of Spirit are flashing) ...... Oh those earrings ..."
+
+On claimable
+    Show quest "(The earring starts to glow once it goes to Sara)\n\n(Sara is shining in blue with the earring.) You came to see me..\n\nLeia.. My sister is still alive..Thank you Warrior. Let's go see my sister."
+
+On completed
+    Say "See you at Jeras Temple.<selfname>"

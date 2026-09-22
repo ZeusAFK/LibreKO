@@ -6,7 +6,7 @@ namespace LibreKO.Common.Domain.Entities;
 
 public class UserDailyOp
 {
-    public const int Count = (int)DailyOperation.LadderReward + 1;
+    public const int Count = (int)DailyOperation.SpiritGuardianBlack + 1;
 
     public int CharacterId { get; set; }
     public int ChaosMapTime { get; set; }
@@ -18,6 +18,9 @@ public class UserDailyOp
     public int KeeperKillerTime { get; set; }
     public int UserLoyaltyWingRewardTime { get; set; }
     public int LadderRewardTime { get; set; }
+    public int SpiritGuardianRedTime { get; set; }
+    public int SpiritGuardianBlueTime { get; set; }
+    public int SpiritGuardianBlackTime { get; set; }
 
     public int[] ToTimestamps() =>
     [
@@ -31,6 +34,9 @@ public class UserDailyOp
         KeeperKillerTime,
         UserLoyaltyWingRewardTime,
         LadderRewardTime,
+        SpiritGuardianRedTime,
+        SpiritGuardianBlueTime,
+        SpiritGuardianBlackTime,
     ];
 
     public void FromTimestamps(int[] timestamps)
@@ -47,6 +53,9 @@ public class UserDailyOp
         KeeperKillerTime = timestamps[(int)DailyOperation.KeeperKillerWing];
         UserLoyaltyWingRewardTime = timestamps[(int)DailyOperation.LoyaltyWingReward];
         LadderRewardTime = timestamps[(int)DailyOperation.LadderReward];
+        SpiritGuardianRedTime = timestamps[(int)DailyOperation.SpiritGuardianRed];
+        SpiritGuardianBlueTime = timestamps[(int)DailyOperation.SpiritGuardianBlue];
+        SpiritGuardianBlackTime = timestamps[(int)DailyOperation.SpiritGuardianBlack];
     }
 
     internal class EntityConfiguration : IEntityTypeConfiguration<UserDailyOp>

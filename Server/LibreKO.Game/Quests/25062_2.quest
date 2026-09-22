@@ -1,0 +1,10 @@
+Bind Npc 25062 Zone 2
+
+On greeting
+    If quest 1253 is started
+        Say "Ah..It hurts...Help me..it's like my chest is burning."
+        Topic "Use a pole of purification" do
+            Transaction
+                Give 1 of 900616000
+    Else
+        Say "Ah..It hurts...Help me..it's like my chest is burning."

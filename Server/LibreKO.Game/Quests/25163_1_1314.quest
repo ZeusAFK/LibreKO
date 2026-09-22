@@ -1,0 +1,18 @@
+Bind Npc 25163 Zone 1
+Quest 1314 "Spirit's ring"
+    Journal "Acquire a Spirit's ring"
+    Collect 1 of 900653000
+
+Requires player level >= 35 and player is karus and quest 1312 is completed
+
+Rewards
+    Give 300000 experience
+
+On offer
+    Show quest "According to father's letter, it tells me to find a ring of Spirit from king Aif. Can you get it from King Aif?"
+
+On in_progress
+    Say "According to father's letter, it tells me to find a ring of Spirit from king Aif. Can you get it from King Aif?"
+
+On claimable
+    Show quest "(When Leia receives the Ring of Spirit, Leia floats in the air with blue lights.)\n\nAh..I..I was a Spirit...Father...Thank you..<selfname>. Thank you for my father...and bring my memory back...I'm an envoy of King Spirit. King Spirt ordered me to purify the Spiritual Stones in worldwide."

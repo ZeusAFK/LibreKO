@@ -1,0 +1,17 @@
+Bind Npc 25136 Zone 71
+
+On greeting
+    If quest 1295 is started
+        Say "Kill me..   It's so painful I can't handle it."
+        Topic "Use a pole of Life" do
+            Transaction
+                Give 1 of 900657000
+            Say "Thank you. Thank you so much! I'll be your help now."
+    Else if quest 1355 is started
+        Say "Kill me..   It's so painful I can't handle it."
+        Topic "Use a pole of Life" do
+            Transaction
+                Give 1 of 900657000
+            Say "Thank you. Thank you so much! I'll be your help now."
+    Else
+        Say "Kill me..   It's so painful I can't handle it."

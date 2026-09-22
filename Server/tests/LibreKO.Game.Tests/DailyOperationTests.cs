@@ -87,7 +87,7 @@ public class DailyOperationTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    [InlineData(10)]
+    [InlineData(13)]
     [InlineData(255)]
     public void UnknownOperationTypesAreRefused(int opType)
     {
@@ -101,7 +101,7 @@ public class DailyOperationTests
     {
         var (lua, _) = CreateService();
 
-        foreach (var op in new[] { 1, 4, 5, 7, 9 })
+        foreach (var op in new[] { 1, 4, 5, 7, 9, 10, 11, 12 })
             lua.GetUserDailyOp(Uid, op).Should().Be(1, "quest scripts call op type {0}", op);
     }
 

@@ -1,7 +1,7 @@
 Bind Npc 25163 Zone 1
 Quest 1319 "Into the forest…"
     Journal "Defeat 20 Ancients"
-    Kill 20 of 5301, 9668, 5351 at direction_547
+    Kill 20 of 5301, 9668, 5351, 8855 at direction_547
 
 Requires player level >= 35 and player is karus and quest 1314 is completed
 

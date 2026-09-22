@@ -1,0 +1,16 @@
+Bind Npc 25065 Zone 2
+Quest 1251 "Follow the spirits.."
+    Journal "Meet with Fina and Sara"
+
+Requires player level >= 35 and player is elmorad and quest 1246 is completed
+
+Rewards
+    Give 300000 experience
+    Give 1 of 900654000
+    Give 1 of 900655000
+
+On offer
+    Show quest "You finally brought them all. The location where earring and bracelet respond is inside of the local villages. Once you go there, find Pina and Sara and give them these eaaring and bracelet. \n I will prepare for ceremony of Pole of Purification at Jeras temple. I will see you there with the sisters."
+
+On claimable
+    Show quest "You finally brought them all. The location where earring and bracelet respond is inside of the local villages. Once you go there, find Pina and Sara and give them these eaaring and bracelet. \n I will prepare for ceremony of Pole of Purification at Jeras temple. I will see you there with the sisters."

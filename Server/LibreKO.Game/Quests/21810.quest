@@ -1,0 +1,100 @@
+Bind Npc 21810
+
+On greeting
+    If player is priest and player skill points in tree 5 > 29
+        Say "What kind of holy water do you wish to obtain?"
+        Topic "Holy Water of Life" goto life
+        If player skill points in tree 5 > 39
+            Topic "Holy Water of Love" goto love
+        If player skill points in tree 5 > 49
+            Topic "Holy Water of Grace" goto grace
+        If player skill points in tree 5 > 59
+            Topic "Holy Water of Favors" goto favors
+        Topic "No, I'll just go." goto close
+    Else
+        Say "Only priests possessing the holy healing skill above 30 can learn holy water production. "
+        Topic "Confirm" goto close
+
+On life
+    If player lacks 389010000
+        Say "You don't have enough holy water."
+        Topic "Confirm" goto close
+    Else if player lacks 379001000
+        Say "You don't have enough prayers."
+        Topic "Confirm" goto close
+    Else if player can receive 1 of 389011000
+        Say "Are you ready to learn the secrets of holy water production?"
+        Topic "Production " do
+            Transaction
+                Take 1 of 389010000
+                Take 1 of 379001000
+                Give 1 of 389011000
+            If quest 159 is unstarted
+                Complete 159
+        Topic "Cancel" goto close
+    Else
+        Say "You have exceeded the weight limit. You cannot produce holy water."
+        Topic "Confirm" goto close
+
+On love
+    If player lacks 389010000
+        Say "You don't have enough holy water."
+        Topic "Confirm" goto close
+    Else if player lacks 379002000
+        Say "You don't have enough prayers."
+        Topic "Confirm" goto close
+    Else if player can receive 1 of 389012000
+        Say "Are you ready to learn the secrets of holy water production?"
+        Topic "Production " do
+            Transaction
+                Take 1 of 389010000
+                Take 1 of 379002000
+                Give 1 of 389012000
+            If quest 160 is unstarted
+                Complete 160
+        Topic "Cancel" goto close
+    Else
+        Say "You have exceeded the weight limit. You cannot produce holy water."
+        Topic "Confirm" goto close
+
+On grace
+    If player lacks 389010000
+        Say "You don't have enough holy water."
+        Topic "Confirm" goto close
+    Else if player lacks 379003000
+        Say "You don't have enough prayers."
+        Topic "Confirm" goto close
+    Else if player can receive 1 of 389013000
+        Say "Are you ready to learn the secrets of holy water production?"
+        Topic "Production " do
+            Transaction
+                Take 1 of 389010000
+                Take 1 of 379003000
+                Give 1 of 389013000
+            If quest 161 is unstarted
+                Complete 161
+        Topic "Cancel" goto close
+    Else
+        Say "You have exceeded the weight limit. You cannot produce holy water."
+        Topic "Confirm" goto close
+
+On favors
+    If player lacks 389010000
+        Say "You don't have enough holy water."
+        Topic "Confirm" goto close
+    Else if player lacks 379004000
+        Say "You don't have enough prayers."
+        Topic "Confirm" goto close
+    Else if player can receive 1 of 389014000
+        Say "Are you ready to learn the secrets of holy water production?"
+        Topic "Production " do
+            Transaction
+                Take 1 of 389010000
+                Take 1 of 379004000
+                Give 1 of 389014000
+            If quest 162 is unstarted
+                Complete 162
+        Topic "Cancel" goto close
+    Else
+        Say "You have exceeded the weight limit. You cannot produce holy water."
+        Topic "Confirm" goto close
