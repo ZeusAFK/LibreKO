@@ -60,6 +60,7 @@ public partial class World
             Ap = Sheet.Ap, Ac = Sheet.Ac, Gold = Sheet.Gold,
             SkillPoints = Mastery.ToArray(),
             ClassOptions = System.Array.Empty<int>(),
+            Nation = info.Nation, Race = info.Race,
         };
     }
 
@@ -105,6 +106,7 @@ public partial class World
         AddAdminTab(tabBar, "Character", BuildAdminCharacterTab());
         AddAdminTab(tabBar, "Items", BuildAdminItemsTab());
         AddAdminTab(tabBar, "Class", BuildAdminClassTab());
+        AddAdminTab(tabBar, "Skills", BuildAdminSkillsTab());
         AddAdminTab(tabBar, "Zones", BuildAdminZonesTab());
         AddAdminTab(tabBar, "Races", BuildAdminCollectionRaceTab());
 
@@ -115,6 +117,7 @@ public partial class World
         root.AddChild(_admStatusLbl);
 
         LoadAdminStatSpins();
+        LoadAdminSkillSpins();
         RefreshAdminCharacterTab();
         RefreshAdminClassTab();
         RefreshAdminZonesTab();
@@ -174,6 +177,7 @@ public partial class World
         Callable.From(_admPanel.ResetSize).CallDeferred();
 
         if (label == "Zones") RefreshAdminZonesTab();
+        if (label == "Skills") LoadAdminSkillSpins();
         if (label == "Races") Net.I?.SendAdminCollectionRacesRequest();
         if (label != "Items") { HideItemTooltip(); return; }
         if (_admItemsLoaded) return;
@@ -255,6 +259,8 @@ public partial class World
         refresh.Pressed += () => Net.I.SendAdminStateRequest();
         statRow.AddChild(refresh);
 
+        box.AddChild(BuildAdminLevelSection());
+
         return box;
     }
 
@@ -266,6 +272,8 @@ public partial class World
         box.AddChild(UiTheme.SectionTitle("Specialization", UiIcons.Get("game/main-hand")));
         _admClassLbl = UiTheme.Text("", 14, UiTheme.GoldBright);
         box.AddChild(_admClassLbl);
+
+        box.AddChild(BuildAdminTransformSection());
 
         box.AddChild(new HSeparator());
         box.AddChild(UiTheme.SectionTitle("Valid changes for this class"));
@@ -331,6 +339,8 @@ public partial class World
         else { _selfClass = state.Class; RefreshStatsUI(); }
 
         LoadAdminStatSpins();
+        LoadAdminSkillSpins();
+        RefreshAdminLevelSpin();
         RefreshAdminCharacterTab();
         RefreshAdminClassTab();
         if (state.Class != previousClass && _admItemsLoaded) _admItemSearch.Refresh();
@@ -358,7 +368,9 @@ public partial class World
         _admClassLbl.Text =
             $"{CharacterClassCatalog.SpecializationName(_admState.Class)}  ({_admState.Class})" +
             $"   ·   {CharacterClassCatalog.TierName(_admState.Class)}" +
-            $"   ·   {Nations.Name(Net.I.LastEnter.Nation)}";
+            $"   ·   {Nations.Name(_admState.Nation)}";
+
+        SyncAdminLookPicks();
 
         foreach (Node child in _admClassList.GetChildren()) child.QueueFree();
 

@@ -24,6 +24,7 @@ public class AdminPanelPacketCoordinator(
     ICombatNotificationService combatNotificationService,
     IZoneTransitionService zoneTransitionService,
     ICollectionRaceService collectionRaceService,
+    IPlayerProgressionService playerProgressionService,
     IServiceScopeFactory scopeFactory,
     IOptions<GameServerSettings> settings,
     ILogger<AdminPanelPacketCoordinator> logger) : IAdminPanelPacketCoordinator
@@ -38,6 +39,9 @@ public class AdminPanelPacketCoordinator(
     private const byte ReqCollectionRaces = 8;
     private const byte ReqCollectionRaceStart = 9;
     private const byte ReqCollectionRaceClose = 10;
+    private const byte ReqSetLevel = 11;
+    private const byte ReqSetSkill = 12;
+    private const byte ReqSetLook = 13;
 
     private const byte AckState = 0x10;
     private const byte AckResult = 0x11;
@@ -95,6 +99,18 @@ public class AdminPanelPacketCoordinator(
 
             case ReqSetClass:
                 await HandleSetClassAsync(session, packet);
+                break;
+
+            case ReqSetLevel:
+                await HandleSetLevelAsync(session, packet);
+                break;
+
+            case ReqSetSkill:
+                await HandleSetSkillAsync(session, packet);
+                break;
+
+            case ReqSetLook:
+                await HandleSetLookAsync(session, packet);
                 break;
 
             case ReqZone:
@@ -227,9 +243,11 @@ public class AdminPanelPacketCoordinator(
             return;
 
         var target = packet.ReadShort();
-        if (!ClassOptionsFor(session).Contains(target))
+        // GM panel allows switching to ANY class the server has a coefficient for
+        // (cross-nation and cross-job), not just the same-family promotions.
+        if (gameDataService.GetCoefficient(target) == null)
         {
-            await SendResultAsync(session, false, $"Class {target} is not a valid change for class {session.Class}.");
+            await SendResultAsync(session, false, $"Class {target} has no coefficient on this server.");
             return;
         }
 
@@ -247,6 +265,136 @@ public class AdminPanelPacketCoordinator(
         await SendResultAsync(session, true,
             $"Class {previous} → {target}. Mastery points refunded and the skill bar cleared.");
         logger.LogInformation("GM {Name} changed own class {Previous} → {Target}", session.Name, previous, target);
+    }
+
+    private async Task HandleSetLevelAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 2)
+            return;
+
+        var level = packet.ReadByte();
+        var reset = packet.ReadByte() == 1; // 0 = keep stats/skills, 1 = full reset
+
+        if (!ProgressionTable.IsValidLevel(level))
+        {
+            await SendResultAsync(session, false,
+                $"Level must be {ProgressionTable.MinLevel}-{ProgressionTable.MaxLevel}.");
+            return;
+        }
+
+        if (reset)
+            await playerProgressionService.ResetToLevelAsync(session, level);
+        else
+            await playerProgressionService.SetLevelAsync(session, level);
+
+        await SendStateAsync(session, granted: true);
+        await SendResultAsync(session, true, reset
+            ? $"Level {level} — stats, mastery and skill bar reset."
+            : $"Level set to {level}.");
+        logger.LogInformation("GM {Name} set own level to {Level} (reset={Reset})",
+            session.Name, level, reset);
+    }
+
+    private async Task HandleSetSkillAsync(UserSession session, Packet packet)
+    {
+        // byte pool, byte tree5, byte tree6, byte tree7, byte tree8, byte resetFlag
+        if (packet.RemainingBytes < 6)
+            return;
+
+        var pool = packet.ReadByte();
+        var tree5 = packet.ReadByte();
+        var tree6 = packet.ReadByte();
+        var tree7 = packet.ReadByte();
+        var tree8 = packet.ReadByte();
+        var reset = packet.ReadByte() == 1;
+
+        if (reset)
+        {
+            // Clear learned skills and refund the full mastery pool for the current level.
+            session.SkillData = [];
+            session.ResetMasteryPoints();
+        }
+        else
+        {
+            session.SkillPoints[ProgressionTable.MasteryPoolSlot] = pool;
+            session.SkillPoints[5] = tree5;
+            session.SkillPoints[6] = tree6;
+            session.SkillPoints[7] = tree7;
+            session.SkillPoints[8] = tree8;
+        }
+
+        Recalculate(session);
+        await RefillVitalsAsync(session);
+        PersistInBackground(session);
+
+        if (reset)
+        {
+            await session.Client.SendPacket(CharacterDevelopmentPacketMapper.CreateSkillResetSuccess(session));
+            await session.Client.SendPacket(SkillDataPacketWriter.Cleared());
+        }
+
+        await userNotificationService.SendStatUpdateAsync(session);
+        await SendStateAsync(session, granted: true);
+        await SendResultAsync(session, true, reset
+            ? $"Skills reset — {session.SkillPoints[ProgressionTable.MasteryPoolSlot]} mastery points in the pool."
+            : $"Skill points updated (pool {pool}, trees {tree5}/{tree6}/{tree7}/{tree8}).");
+        logger.LogInformation(
+            "GM {Name} edited skill points (reset={Reset}): pool={Pool} trees={T5}/{T6}/{T7}/{T8}",
+            session.Name, reset, session.SkillPoints[ProgressionTable.MasteryPoolSlot],
+            session.SkillPoints[5], session.SkillPoints[6], session.SkillPoints[7], session.SkillPoints[8]);
+    }
+
+    private async Task HandleSetLookAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 2)
+            return;
+
+        var nationByte = packet.ReadByte();
+        var race = packet.ReadByte();
+
+        if (nationByte != (byte)AccountNation.Karus && nationByte != (byte)AccountNation.ElMorad)
+        {
+            await SendResultAsync(session, false, "Nation must be Karus or El Morad.");
+            return;
+        }
+
+        var nation = (AccountNation)nationByte;
+        session.Nation = nation;
+        session.Race = race;
+        await PersistLookAsync(session, nation, race);
+
+        await SendStateAsync(session, granted: true);
+        await SendResultAsync(session, true,
+            $"Nation → {nation}, appearance {race}. Log out to the character screen and back in to load the new body model.");
+        logger.LogInformation("GM {Name} set nation={Nation} race={Race}", session.Name, nation, race);
+    }
+
+    private async Task PersistLookAsync(UserSession session, AccountNation nation, byte race)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var accounts = scope.ServiceProvider.GetRequiredService<IAccountRepository>();
+            var characters = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
+
+            var account = await accounts.GetById(session.AccountId);
+            if (account != null)
+            {
+                account.Nation = nation;
+                await accounts.UpdateAsync(account);
+            }
+
+            var character = await characters.GetById(session.CharacterId);
+            if (character != null)
+            {
+                character.Race = race;
+                await characters.UpdateAsync(character);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Admin-panel look persist failed for {Name}", session.Name);
+        }
     }
 
     private async Task HandleZoneAsync(UserSession session, Packet packet)
@@ -401,7 +549,8 @@ public class AdminPanelPacketCoordinator(
             session.Intelligence, session.Magic,
             session.StatPoints, session.MaxHp, session.MaxMp,
             (short)session.Stats.TotalHit, session.Stats.TotalAc,
-            session.Money, session.SkillPoints, ClassOptionsFor(session));
+            session.Money, session.SkillPoints, ClassOptionsFor(session),
+            (byte)session.Nation, session.Race);
 
         await session.Client.SendPacket(AdminPanelPacketWriter.StateGranted(AckState, state));
     }

@@ -12,4 +12,6 @@ public struct AdminState
     public int Gold;
     public byte[] SkillPoints;
     public int[] ClassOptions;
+    public int Nation;
+    public int Race;
 }
