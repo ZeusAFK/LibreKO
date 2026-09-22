@@ -2222,16 +2222,13 @@ namespace LibreKO.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PusCategories");
+                    b.ToTable("PusCategories", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PusItemData", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<byte>("Category")
                         .HasColumnType("tinyint unsigned");
@@ -2252,7 +2249,7 @@ namespace LibreKO.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PusItems");
+                    b.ToTable("PusItems", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ServerResourceData", b =>

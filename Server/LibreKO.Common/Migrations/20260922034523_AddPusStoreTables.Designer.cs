@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibreKO.Common.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260921095334_SimplifyPusStoreSchema")]
-    partial class SimplifyPusStoreSchema
+    [Migration("20260922034523_AddPusStoreTables")]
+    partial class AddPusStoreTables
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -2225,16 +2225,13 @@ namespace LibreKO.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PusCategories");
+                    b.ToTable("PusCategories", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PusItemData", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<byte>("Category")
                         .HasColumnType("tinyint unsigned");
@@ -2255,7 +2252,7 @@ namespace LibreKO.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PusItems");
+                    b.ToTable("PusItems", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ServerResourceData", b =>
