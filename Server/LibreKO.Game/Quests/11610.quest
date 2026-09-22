@@ -1,0 +1,390 @@
+include locations/global
+include translations/11610_charel
+
+Bind Npc 11610
+
+On greeting
+    Goto event_240
+
+On event_240
+    Say "I'm in charge of the knight squad and knight ranking. What piques your interest?"
+    Topic "I want to earn knight privileges." goto event_100
+    Topic "I want to earn basic country contribution." goto event_360
+    Topic "No, I'll just go." goto close
+
+On event_100
+    Say "Select the challenge <selfname> wants to attempt."
+    Topic "Training Knight Squad promotion test" goto event_280
+    Topic "Accredited Knight Squad promotion test" goto event_110
+    Topic "Royal Knight Squad promotion test" goto event_120
+    Topic "I'd like to promote the Knight Squad's class." goto event_350
+    Topic "No, I'll just go." goto close
+
+On event_110
+    If player clan is Promoted
+        If player clan grade == 1
+            If player leads a clan
+                Say "Come to me for anything related to the Knight Squad. What can I help you with today?"
+                Topic "I'll listen to your story further." goto event_111
+                Topic "I brought what you asked for." goto event_114
+            Else
+                Say please_relay_to_your
+                Topic "Confirm" goto close
+        Else
+            Say your_knight_squad_must
+            Topic "Confirm" goto close
+    Else
+        Say "Sorry, but this test can only be attempted by a 1st Class Formal Knight Squad. It's a useless test to you, <selfname>."
+        Topic "Confirm" goto close
+
+On event_111
+    Say "The Abyss of Hell consists of many trials. As soon as you enter for your Knight Squad test, everyone else in your clan will be summoned to your side. There is no distinction down there between enemy and ally. Anyone can attack anyone else, friend or foe. This is what makes it so challenging. Only the best and strongest combatant will earn the [Emblem of Honor]."
+    Topic "Next" goto event_112
+    Topic "Close" goto close
+
+On event_112
+    Say "Consequences include the loss of EXP, becoming trapped temporarily, or losing the contest to another Knight Squad, in which case the [Emblem of Honor] goes with them, of course."
+    Topic "Next" goto event_113
+    Topic "Close" goto close
+
+On event_113
+    Say "Despite all of this, you must focus on one thing-|You, <selfname>, Knight Squad Leader, must physically get the [Emblem Royal] yourself! By which I mean, your allies can help you to defeat Isiloon in combat, but they won't be able to loot the emblem. That's up to you. Bear it in mind, anyway. I wish you luck."
+    Topic "Close" goto close
+
+On event_114 for quest 22
+    Say "Did you bring everything required for promotion to Formal Knight Squad?"
+    Topic "Yes" goto event_116
+    Topic "No" goto close
+
+On event_116
+    If player gold < 10000000
+        Say "Hmm, you have insufficient Noah. You need 10 million Noah for your Formal Knight Squad registration fee."
+        Topic "Confirm" goto close
+    Else if player lacks 389221000
+        Say "You need the [Emblem of Honor] from Isiloon to be promoted to Formal Knight Squad."
+        Topic "Where can I find it?" goto event_244
+    Else
+        Effect 300391
+        Take 1 of 389221000
+        Take 10000000 coins
+        Promote clan to Accredited5
+        Say "Congratulations on your promotion to Formal Knight Squad! I hope you accomplish many honorable deeds for the nation now that you are a Formal Knight Squad."
+        Topic "Confirm" goto close
+
+On event_244
+    Map isiloon
+
+On event_120
+    If player clan is Accredited1
+        If player leads a clan
+            Say "The Imperial Knight Squad is the nation's elite Combat Unit. To become a member, you must hold 1st Class qualifications as a Formal Knight Squad. <selfname> must also demonstrate great loyalty to the nation. Right now, Red Dragon is waiting to test you in the Cave of the Fire Dragon. You must fight Red Dragon and retrieve the [Emblem Royal], along with your Knight Squad promotion dues of 100 million Noah, and 25,000 Knight Squad saving points."
+            Topic "I'll listen to your story further." goto event_121
+            Topic "I brought what you asked for." goto event_124
+        Else
+            Say please_relay_to_your
+            Topic "Confirm" goto close
+    Else
+        Say "Your Knight Squad must do more service to the nation. A 1st Class Knight Squad can earn the right to be promoted as a Royal Knight Squad."
+        Topic "Confirm" goto close
+
+On event_121
+    Say "There are many trials in the Cave of the Red Dragon. As soon as you enter for your Knight Squad test, everyone else in your clan will be summoned to your side. There is no distinction down there between enemy and ally. Anyone can attack anyone else, friend or foe. This is what makes it so challenging. Only the best and strongest combatant will earn the [Emblem Royal]."
+    Topic "Next" goto event_122
+    Topic "Close" goto close
+
+On event_122
+    Say "Consequences include the loss of EXP, becoming trapped temporarily, or losing the contest to another Knight Squad, in which case the [Emblem Royal] goes with them, of course."
+    Topic "Next" goto event_123
+    Topic "Close" goto close
+
+On event_123
+    Say "Despite all of this, you must focus on one thing-|You, <selfname>, Knight Squad Leader, must physically get the [Emblem Royal] yourself! By which I mean, your allies can help you to defeat Red Dragon in combat, but they won't be able to loot the emblem. That's up to you. Bear it in mind, anyway. I wish you luck."
+    Topic "Close" goto close
+
+On event_124 for quest 23
+    Say "Did you bring everything required for promotion to Royal Knight Squad?"
+    Topic "Yes" goto event_126
+    Topic "No" goto close
+
+On event_126
+    If player gold < 100000000
+        Say "Hmm, you have insufficient Noah. You need 100 million Noah for your Formal Night Squad registration fee."
+        Topic "Confirm" goto close
+    Else if player lacks 389222000
+        Say "You need the [Emblem Royal] from Red Dragon to be promoted to Royal Knight Squad."
+        Topic "Where can I find it?" goto event_245
+    Else
+        Effect 300391
+        Take 1 of 389222000
+        Take 100000000 coins
+        Promote clan to Royal5
+        Say "Congratulations on your promotion to Royal Knight Squad! Show us you're worthy of the title!"
+        Topic "Confirm" goto close
+
+On event_245
+    Map felankor
+
+On event_280
+    If player clan is Training
+        If player clan grade < 4
+            If player leads a clan
+                Say "The knight squad is a combat unit certified by the emperor. As proof of serving your country, only clans above class 3 are eligible to become knight squads. And you must prove your valor and ability. Caitharos is waiting to test you at the coliseum. After defeating Caitharos bring back the [Key of Honor] and 10 million Noahs."
+                Topic "I'll listen to your story further." goto event_281
+                Topic "I brought what you asked for." goto event_286
+            Else
+                Say please_relay_to_your
+                Topic "Confirm" goto close
+        Else
+            Say "Your clan has to serve your country more. Only clans above class 3 are eligible to become knight squads."
+            Topic "Confirm" goto close
+    Else
+        Say "Sorry, but this test can only be attempted by a 1st Class training Knight Squad. It's a useless test to you, <selfname>."
+        Topic "Confirm" goto close
+
+On event_281
+    Say "The coliseum is home to many trials. The moment you enter the coliseum to undergo the knight squad test, all clan members in the mainland will be transported there. There is no distinction between enemy and friendly forces at the coliseum. Your friend can attack you as well as your opponent. Only the strong will emerge with the [Key of Honor]."
+    Topic "Next" goto event_282
+    Topic "Close" goto close
+
+On event_282
+    Say "You may lose valuable EXP in the coliseum. And you may be detained there. Or you may be defeated by other clan members and lose the [Key of Honor]."
+    Topic "Next" goto event_283
+    Topic "Close" goto close
+
+On event_283
+    Say "And the most important of all is that you, the clan leader, has to personally acquire the [Key of Honor]. Your friends aid in your combat against Caitharos but they cannot help you to acquire the key. Do not forget. I bid you good luck."
+    Topic "Close" goto close
+
+On event_286 for quest 21
+    Say "Did you bring the ingredients below needed for the knight squad promotion?"
+    Topic "Yes" goto event_287
+    Topic "No" goto close
+
+On event_287
+    If player gold < 10000000
+        Say "You don't have enough Noahs. You need 10 million Noahs for the knight squad registration fee."
+        Topic "Confirm" goto close
+    Else if player lacks 910045000
+        Say "To be eligible to join the knight squad you must seize the [Key of Honor] from Caitharos."
+        Topic "Where can I find it?" goto event_242
+    Else
+        Effect 300391
+        Take 1 of 910045000
+        Take 10000000 coins
+        Promote clan to Promoted
+
+On event_242
+    Map caitharos
+
+On event_360
+    If player np > 100
+        Say "Thanks to the legacy of the warriors who wage battle against the enemy, our land has remained safe and intact. For a fee, I raise the country CONT of warriors who have country CONT below 100."
+        Topic "Confirm" goto close
+    Else
+        Say "The fee for acquiring 500 country CONT is 1.5 million Noahs, and 350, 000 Noahs for 100 country CONT."
+        Topic "500 contribution points will be charged." goto event_361
+        Topic "100 contribution points will be charged." goto event_363
+        Topic "No, I'll just go." goto close
+
+On event_361 for quest 19
+    If player gold < 1500000
+        Say "You don't have enough Noahs. You must pay a fee of 1.5 million Noahs to obtain 500 country CONT."
+        Topic "Confirm" goto close
+    Else
+        Say "Do you want to receive 500 country CONT?"
+        Topic "Accepted" goto event_362
+        Topic "Rejected" goto close
+
+On event_362
+    Transaction
+        Take 1500000 coins
+        Give 500 np
+
+On event_363 for quest 20
+    If player gold < 350000
+        Say "You don't have enough Noahs. You must pay a fee of 350,000 Noahs to obtain 100 country CONT."
+        Topic "Confirm" goto close
+    Else
+        Say "Do you want to receive 100 country CONT?"
+        Topic "Accepted" goto event_364
+        Topic "Rejected" goto close
+
+On event_364
+    Transaction
+        Take 350000 coins
+        Give 100 np
+
+On event_350
+    If player clan is Accredited5
+        If player leads a clan
+            Say "Would you like to raise your Knight Squad's class?|You need 7,000 Knight Squad saving points to be promoted to 4th Class Formal Knight Squad."
+            Topic "I'll use the Knight's storage." goto event_371
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Accredited4
+        If player leads a clan
+            Say "Would you like to raise your Knight Squad's class?|You need 10,000 Knight Squad saving points to be promoted to 3rd Class Formal Knight Squad."
+            Topic "I'll use the Knight's storage." goto event_372
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Accredited3
+        If player leads a clan
+            Say "Would you like to raise your Knight Squad's class?|You need 15,000 Knight Squad saving points to be promoted to 2nd Class Formal Knight Squad."
+            Topic "I'll use the Knight's storage." goto event_368
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Accredited2
+        If player leads a clan
+            Say "Would you like to raise your Knight Squad's class?|You need 20,000 Knight Squad saving points to be promoted to 1st Class Formal Knight Squad."
+            Topic "I'll use the Knight's storage." goto event_373
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Accredited1
+        If player leads a clan
+            Say "Sorry, but to get your Knight Squad to the next class, you must undergo the Royal Knight Squad promotion test. Would you like to give it a shot?"
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Royal5
+        If player leads a clan
+            Say "Would you like to raise your Knight Squad's class?|You need 30,000 Knight Squad saving points to be promoted to 4th Class Royal Knight Squad."
+            Topic "I'll use the Knight's storage." goto event_369
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Royal4
+        If player leads a clan
+            Say "Would you like to raise your Knight Squad's class?|You need 35,000 Knight Squad saving points to be promoted to 3rd Class Royal Knight Squad."
+            Topic "I'll use the Knight's storage." goto event_365
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Royal3
+        If player leads a clan
+            Say "Would you like to raise your Knight Squad's class?|You need 40,000 Knight Squad saving points to be promoted to 2nd Class Royal Knight Squad."
+            Topic "I'll use the Knight's storage." goto event_366
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Royal2
+        If player leads a clan
+            Say "Would you like to raise your Knight Squad's class?|You need 45,000 Knight Squad saving points to be promoted to 1st Class Royal Knight Squad."
+            Topic "I'll use the Knight's storage." goto event_367
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan is Royal1
+        If player leads a clan
+            Say "You are already the highest-class Knight Squad."
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+    Else if player clan rank < Accredited5
+        If player leads a clan
+            Say your_knight_squad_must
+            Topic "Close" goto close
+        Else
+            Say talk_to_your_knight
+            Topic "Close" goto close
+
+On event_371
+    If player clan points < 252000
+        Say "Sorry, but your Knight Squad's saving points are insufficient. You need 7,000 points to rise to the next class."
+        Topic "Close" goto close
+    Else
+        Effect 300391
+        Take 252000 clan points
+        Promote clan to Accredited4
+        Say congratulations_your_knight_squad
+        Topic "Close" goto close
+
+On event_372
+    If player clan points < 360000
+        Say "Sorry, but your Knight Squad's saving points are insufficient. You need 10,000 points to rise to the next class."
+        Topic "Close" goto close
+    Else
+        Effect 300391
+        Take 360000 clan points
+        Promote clan to Accredited3
+        Say congratulations_your_knight_squad
+        Topic "Close" goto close
+
+On event_368
+    If player clan points < 540000
+        Say "Sorry, but your Knight Squad's saving points are insufficient. You need 15,000 points to rise to the next class."
+        Topic "Close" goto close
+    Else
+        Effect 300391
+        Take 540000 clan points
+        Promote clan to Accredited2
+        Say congratulations_your_knight_squad
+        Topic "Close" goto close
+
+On event_373
+    If player clan points < 720000
+        Say "Sorry, but your Knight Squad's saving points are insufficient. You need 20,000 points to rise to the next class."
+        Topic "Close" goto close
+    Else
+        Effect 300391
+        Take 720000 clan points
+        Promote clan to Accredited1
+        Say congratulations_your_knight_squad
+        Topic "Close" goto close
+
+On event_369
+    If player clan points < 1080000
+        Say "Sorry, but your Knight Squad's saving points are insufficient. You need 30,000 points to rise to the next class."
+        Topic "Close" goto close
+    Else
+        Effect 300391
+        Take 1080000 clan points
+        Promote clan to Royal4
+        Say congratulations_your_knight_squad
+        Topic "Close" goto close
+
+On event_365
+    If player clan points < 1260000
+        Say "Sorry, but your Knight Squad's saving points are insufficient. You need 35,000 points to rise to the next class."
+        Topic "Close" goto close
+    Else
+        Effect 300391
+        Take 1260000 clan points
+        Promote clan to Royal3
+        Say congratulations_your_knight_squad
+        Topic "Close" goto close
+
+On event_366
+    If player clan points < 1440000
+        Say "Sorry, but your Knight Squad's saving points are insufficient. You need 40,000 points to rise to the next class."
+        Topic "Close" goto close
+    Else
+        Effect 300391
+        Take 1440000 clan points
+        Promote clan to Royal2
+        Say congratulations_your_knight_squad
+        Topic "Close" goto close
+
+On event_367
+    If player clan points < 1620000
+        Say "Sorry, but your Knight Squad's saving points are insufficient. You need 45,000 points to rise to the next class."
+        Topic "Close" goto close
+    Else
+        Effect 300391
+        Take 1620000 clan points
+        Promote clan to Royal1
+        Say congratulations_your_knight_squad
+        Topic "Close" goto close
