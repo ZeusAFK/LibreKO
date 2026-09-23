@@ -37,6 +37,8 @@ public partial class Net
     private const byte AdminReqSetLevel = 11;
     private const byte AdminReqSetSkill = 12;
     private const byte AdminReqSetLook = 13;
+    private const byte AdminKeepProgress = 0;
+    private const byte AdminResetProgress = 1;
 
     private const byte AdminAckState = 0x10;
     private const byte AdminAckResult = 0x11;
@@ -121,7 +123,6 @@ public partial class Net
 
         if (state.Class != 0) ApplyOwnClass(state.Class);
 
-        // Keep the identity blob in sync so panel labels reflect the new nation/race.
         // The 3D body model is only rebuilt on world-enter, so it needs a relog to change.
         var info = LastEnter;
         info.Nation = state.Nation;
@@ -183,21 +184,22 @@ public partial class Net
     {
         var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
         p.WriteByte(AdminReqSetLevel);
-        p.WriteByte((byte)Math.Clamp(level, 1, 83));
-        p.WriteByte((byte)(reset ? 1 : 0));
+        p.WriteByte((byte)Math.Clamp(level, CharacterSheet.MinLevel, CharacterSheet.MaxLevel));
+        p.WriteByte(reset ? AdminResetProgress : AdminKeepProgress);
         _conn.Send(p);
     }
 
-    public void SendAdminSetSkill(int pool, int tree5, int tree6, int tree7, int tree8, bool reset)
+    public void SendAdminSetSkill(int pool, IReadOnlyList<int> trees, bool reset)
     {
         var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
         p.WriteByte(AdminReqSetSkill);
         p.WriteByte(ClampByte(pool));
-        p.WriteByte(ClampByte(tree5));
-        p.WriteByte(ClampByte(tree6));
-        p.WriteByte(ClampByte(tree7));
-        p.WriteByte(ClampByte(tree8));
-        p.WriteByte((byte)(reset ? 1 : 0));
+        for (int tree = MasteryPoints.FirstTree; tree <= MasteryPoints.LastTree; tree++)
+        {
+            int index = tree - MasteryPoints.FirstTree;
+            p.WriteByte(ClampByte(index < trees.Count ? trees[index] : 0));
+        }
+        p.WriteByte(reset ? AdminResetProgress : AdminKeepProgress);
         _conn.Send(p);
     }
 
@@ -205,8 +207,8 @@ public partial class Net
     {
         var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
         p.WriteByte(AdminReqSetLook);
-        p.WriteByte((byte)Math.Clamp(nation, 0, 255));
-        p.WriteByte((byte)Math.Clamp(race, 0, 255));
+        p.WriteByte(ClampByte(nation));
+        p.WriteByte(ClampByte(race));
         _conn.Send(p);
     }
 
@@ -259,5 +261,5 @@ public partial class Net
 
     private static byte ClampStatByte(int value) => (byte)Math.Clamp(value, 1, 255);
 
-    private static byte ClampByte(int value) => (byte)Math.Clamp(value, 0, 255);
+    private static byte ClampByte(int value) => (byte)Math.Clamp(value, byte.MinValue, byte.MaxValue);
 }

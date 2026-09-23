@@ -23,10 +23,5 @@ Client/builds/
 *.aab
 *.exe
 
-# Local dev tooling — not part of the project
-/scripts/
-/*.bat
-docker-compose.override.yml
-
 # Local project rules / assistant config
 /CLAUDE.md

@@ -4,6 +4,9 @@ namespace LibreKO.Domain;
 
 public sealed class CharacterSheet
 {
+    public const int MinLevel = 1;
+    public const int MaxLevel = 83;
+
     public const int StatCount = 5;
     public const int StatMax = 255;
     public const int BaseStatTotal = 290;

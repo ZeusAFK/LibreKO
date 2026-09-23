@@ -120,6 +120,7 @@ public partial class World
         LoadAdminSkillSpins();
         RefreshAdminCharacterTab();
         RefreshAdminClassTab();
+        SyncAdminLookPicks();
         RefreshAdminZonesTab();
         SelectAdminTab("Character");
         Callable.From(_admPanel.ResetSize).CallDeferred();
@@ -178,6 +179,7 @@ public partial class World
 
         if (label == "Zones") RefreshAdminZonesTab();
         if (label == "Skills") LoadAdminSkillSpins();
+        if (label == "Class") SyncAdminLookPicks();
         if (label == "Races") Net.I?.SendAdminCollectionRacesRequest();
         if (label != "Items") { HideItemTooltip(); return; }
         if (_admItemsLoaded) return;
@@ -369,8 +371,6 @@ public partial class World
             $"{CharacterClassCatalog.SpecializationName(_admState.Class)}  ({_admState.Class})" +
             $"   ·   {CharacterClassCatalog.TierName(_admState.Class)}" +
             $"   ·   {Nations.Name(_admState.Nation)}";
-
-        SyncAdminLookPicks();
 
         foreach (Node child in _admClassList.GetChildren()) child.QueueFree();
 

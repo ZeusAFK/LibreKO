@@ -1,23 +1,18 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Network;
 
 namespace LibreKO;
 
-// GM panel test tools: level set/reset, skill-point editor, and a nation/body/class
-// "Transform" block. Class, level, stats and skill points apply live; nation and the
-// body model only take effect after a relog (the 3D rig is built once on world-enter).
 public partial class World
 {
-    // Level (added into the Character tab)
+    private const int AdminSkillTreeCount = MasteryPoints.LastTree - MasteryPoints.FirstTree + 1;
+
     private SpinBox _admLevelSpin = null!;
 
-    // Skill points (its own tab)
     private SpinBox _admSkillPool = null!;
-    private readonly SpinBox[] _admSkillTrees = new SpinBox[4];
+    private readonly SpinBox[] _admSkillTrees = new SpinBox[AdminSkillTreeCount];
     private Label _admSkillLbl = null!;
-    private static readonly int[] AdminSkillTreeSlots = { 5, 6, 7, 8 };
 
-    // Transform: nation / body / class (added into the Class tab)
     private OptionButton _admNationPick = null!;
     private OptionButton _admRacePick = null!;
     private OptionButton _admClassPick = null!;
@@ -26,8 +21,6 @@ public partial class World
 
     private static readonly int[] AdminClassSubtypes =
         { 1, 5, 6, 2, 7, 8, 3, 9, 10, 4, 11, 12, 13, 14, 15 };
-
-    // ---- Level ----
 
     private Control BuildAdminLevelSection()
     {
@@ -45,7 +38,7 @@ public partial class World
         label.CustomMinimumSize = new Vector2(52, 0);
         row.AddChild(label);
 
-        _admLevelSpin = MakeAdminSpin(1, 83, 1);
+        _admLevelSpin = MakeAdminSpin(CharacterSheet.MinLevel, CharacterSheet.MaxLevel, 1);
         row.AddChild(_admLevelSpin);
 
         var set = new Button { Text = "Set", FocusMode = Control.FocusModeEnum.None };
@@ -70,10 +63,8 @@ public partial class World
     private void RefreshAdminLevelSpin()
     {
         if (_admLevelSpin == null) return;
-        _admLevelSpin.Value = Mathf.Clamp(_admState.Level, 1, 83);
+        _admLevelSpin.Value = Mathf.Clamp(_admState.Level, CharacterSheet.MinLevel, CharacterSheet.MaxLevel);
     }
-
-    // ---- Skill points ----
 
     private Control BuildAdminSkillsTab()
     {
@@ -90,14 +81,14 @@ public partial class World
         box.AddChild(grid);
 
         grid.AddChild(UiTheme.Text("Pool (free)", 13, UiTheme.TextHi));
-        _admSkillPool = MakeAdminSpin(0, 255, 1);
+        _admSkillPool = MakeAdminSpin(0, byte.MaxValue, 1);
         grid.AddChild(_admSkillPool);
 
         string[] treeNames = { "Tree 1", "Tree 2", "Tree 3", "Master" };
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < AdminSkillTreeCount; i++)
         {
             grid.AddChild(UiTheme.Text(treeNames[i], 13, UiTheme.TextHi));
-            _admSkillTrees[i] = MakeAdminSpin(0, 255, 1);
+            _admSkillTrees[i] = MakeAdminSpin(0, byte.MaxValue, 1);
             grid.AddChild(_admSkillTrees[i]);
         }
 
@@ -124,7 +115,7 @@ public partial class World
         var reset = new Button { Text = "Reset skills", FocusMode = Control.FocusModeEnum.None };
         reset.Pressed += () =>
         {
-            Net.I.SendAdminSetSkill(0, 0, 0, 0, 0, reset: true);
+            Net.I.SendAdminSetSkill(0, System.Array.Empty<int>(), reset: true);
             SetAdminStatus("Resetting skills…", false);
         };
         row.AddChild(reset);
@@ -137,36 +128,29 @@ public partial class World
         if (_admSkillPool == null) return;
         // Read the LIVE mastery object, not the last admin-state snapshot, so the pool
         // reflects points spent in the normal Skills window in real time.
-        var sp = Mastery?.ToArray() ?? _admState.SkillPoints ?? new byte[9];
-        _admSkillPool.Value = sp.Length > 0 ? sp[0] : 0;
-        for (int i = 0; i < 4; i++)
+        var sp = Mastery?.ToArray() ?? _admState.SkillPoints ?? new byte[MasteryPoints.SlotCount];
+        int pool = sp.Length > MasteryPoints.PoolSlot ? sp[MasteryPoints.PoolSlot] : 0;
+        _admSkillPool.Value = pool;
+        int spent = 0;
+        for (int i = 0; i < AdminSkillTreeCount; i++)
         {
-            int slot = AdminSkillTreeSlots[i];
-            _admSkillTrees[i].Value = sp.Length > slot ? sp[slot] : 0;
+            int slot = MasteryPoints.FirstTree + i;
+            int points = sp.Length > slot ? sp[slot] : 0;
+            _admSkillTrees[i].Value = points;
+            spent += points;
         }
         if (_admSkillLbl != null)
-        {
-            int spent = 0;
-            for (int i = 0; i < 4; i++)
-            {
-                int slot = AdminSkillTreeSlots[i];
-                if (sp.Length > slot) spent += sp[slot];
-            }
-            _admSkillLbl.Text = $"Pool {(sp.Length > 0 ? sp[0] : 0)}   ·   spent {spent}";
-        }
+            _admSkillLbl.Text = $"Pool {pool}   ·   spent {spent}";
     }
 
     private void OnAdminApplySkills()
     {
-        Net.I.SendAdminSetSkill(
-            (int)_admSkillPool.Value,
-            (int)_admSkillTrees[0].Value, (int)_admSkillTrees[1].Value,
-            (int)_admSkillTrees[2].Value, (int)_admSkillTrees[3].Value,
-            reset: false);
+        var trees = new int[AdminSkillTreeCount];
+        for (int i = 0; i < trees.Length; i++)
+            trees[i] = (int)_admSkillTrees[i].Value;
+        Net.I.SendAdminSetSkill((int)_admSkillPool.Value, trees, reset: false);
         SetAdminStatus("Applying skill points…", false);
     }
-
-    // ---- Transform: nation / body / class ----
 
     private Control BuildAdminTransformSection()
     {
@@ -223,7 +207,7 @@ public partial class World
         if (_admNationPick == null) return;
 
         int nation = _admNationPick.Selected == 0 ? Nations.Karus : Nations.ElMorad;
-        int classBase = nation == Nations.Karus ? 100 : 200;
+        int classBase = Nations.ClassBase(nation);
 
         _admRacePick.Clear();
         _admRacePickIds = StarterStats.RacesFor(nation);
@@ -242,7 +226,6 @@ public partial class World
         if (ids.Length > 0) _admClassPick.Selected = 0;
     }
 
-    // Sync the Transform dropdowns to the live nation/race/class from the server state.
     private void SyncAdminLookPicks()
     {
         if (_admNationPick == null) return;

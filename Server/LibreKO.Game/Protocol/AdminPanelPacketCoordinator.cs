@@ -43,6 +43,10 @@ public class AdminPanelPacketCoordinator(
     private const byte ReqSetSkill = 12;
     private const byte ReqSetLook = 13;
 
+    private const byte KeepProgress = 0;
+    private const byte ResetProgress = 1;
+    private const int SkillEditBodySize = 2 + ProgressionTable.MasteryClassSlotCount;
+
     private const byte AckState = 0x10;
     private const byte AckResult = 0x11;
     private const byte AckGrant = 0x12;
@@ -243,8 +247,6 @@ public class AdminPanelPacketCoordinator(
             return;
 
         var target = packet.ReadShort();
-        // GM panel allows switching to ANY class the server has a coefficient for
-        // (cross-nation and cross-job), not just the same-family promotions.
         if (gameDataService.GetCoefficient(target) == null)
         {
             await SendResultAsync(session, false, $"Class {target} has no coefficient on this server.");
@@ -273,7 +275,7 @@ public class AdminPanelPacketCoordinator(
             return;
 
         var level = packet.ReadByte();
-        var reset = packet.ReadByte() == 1; // 0 = keep stats/skills, 1 = full reset
+        var reset = packet.ReadByte() == ResetProgress;
 
         if (!ProgressionTable.IsValidLevel(level))
         {
@@ -297,30 +299,25 @@ public class AdminPanelPacketCoordinator(
 
     private async Task HandleSetSkillAsync(UserSession session, Packet packet)
     {
-        // byte pool, byte tree5, byte tree6, byte tree7, byte tree8, byte resetFlag
-        if (packet.RemainingBytes < 6)
+        if (packet.RemainingBytes < SkillEditBodySize)
             return;
 
         var pool = packet.ReadByte();
-        var tree5 = packet.ReadByte();
-        var tree6 = packet.ReadByte();
-        var tree7 = packet.ReadByte();
-        var tree8 = packet.ReadByte();
-        var reset = packet.ReadByte() == 1;
+        var trees = new byte[ProgressionTable.MasteryClassSlotCount];
+        for (var tree = 0; tree < trees.Length; tree++)
+            trees[tree] = packet.ReadByte();
+        var reset = packet.ReadByte() == ResetProgress;
 
         if (reset)
         {
-            // Clear learned skills and refund the full mastery pool for the current level.
             session.SkillData = [];
             session.ResetMasteryPoints();
         }
         else
         {
             session.SkillPoints[ProgressionTable.MasteryPoolSlot] = pool;
-            session.SkillPoints[5] = tree5;
-            session.SkillPoints[6] = tree6;
-            session.SkillPoints[7] = tree7;
-            session.SkillPoints[8] = tree8;
+            for (var tree = 0; tree < trees.Length; tree++)
+                session.SkillPoints[ProgressionTable.MasteryClassFirstSlot + tree] = trees[tree];
         }
 
         Recalculate(session);
@@ -337,12 +334,16 @@ public class AdminPanelPacketCoordinator(
         await SendStateAsync(session, granted: true);
         await SendResultAsync(session, true, reset
             ? $"Skills reset — {session.SkillPoints[ProgressionTable.MasteryPoolSlot]} mastery points in the pool."
-            : $"Skill points updated (pool {pool}, trees {tree5}/{tree6}/{tree7}/{tree8}).");
+            : $"Skill points updated (pool {pool}, trees {MasteryTrees(session)}).");
         logger.LogInformation(
-            "GM {Name} edited skill points (reset={Reset}): pool={Pool} trees={T5}/{T6}/{T7}/{T8}",
-            session.Name, reset, session.SkillPoints[ProgressionTable.MasteryPoolSlot],
-            session.SkillPoints[5], session.SkillPoints[6], session.SkillPoints[7], session.SkillPoints[8]);
+            "GM {Name} edited skill points (reset={Reset}): pool={Pool} trees={Trees}",
+            session.Name, reset, session.SkillPoints[ProgressionTable.MasteryPoolSlot], MasteryTrees(session));
     }
+
+    private static string MasteryTrees(UserSession session) =>
+        string.Join('/', session.SkillPoints
+            .Skip(ProgressionTable.MasteryClassFirstSlot)
+            .Take(ProgressionTable.MasteryClassSlotCount));
 
     private async Task HandleSetLookAsync(UserSession session, Packet packet)
     {
@@ -359,6 +360,12 @@ public class AdminPanelPacketCoordinator(
         }
 
         var nation = (AccountNation)nationByte;
+        if (!CharacterRaceNations.BelongsTo(race, nation))
+        {
+            await SendResultAsync(session, false, $"Appearance {race} is not a {nation} body.");
+            return;
+        }
+
         session.Nation = nation;
         session.Race = race;
         await PersistLookAsync(session, nation, race);

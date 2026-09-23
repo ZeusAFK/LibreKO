@@ -136,7 +136,7 @@ public class PreGameService(
         if (existingCharacters.Any(character => character.Slot == slot))
             return CreateCharacterPacket(CreateCharacterResult.SlotFull);
 
-        if (!IsValidStarterRace(race, account.Nation))
+        if (!CharacterRaceNations.BelongsTo(race, account.Nation))
             return CreateCharacterPacket(CreateCharacterResult.InvalidRace);
 
         if (!IsValidStarterClass(@class, account.Nation) || gameData.GetCoefficient(@class) == null)
@@ -452,18 +452,6 @@ public class PreGameService(
         {
             AccountNation.Karus => classId is >= 101 and <= 104 or KarusKurianClass,
             AccountNation.ElMorad => classId is >= 201 and <= 204 or ElMoradPorutuClass,
-            _ => false,
-        };
-
-    private static bool IsValidStarterRace(byte race, AccountNation nation) =>
-        (CharacterRace)race switch
-        {
-            CharacterRace.KarusArchTuarek or CharacterRace.KarusTuarek
-                or CharacterRace.KarusWrinkleTuarek or CharacterRace.KarusPuriTuarek
-                or CharacterRace.KarusKurian => nation == AccountNation.Karus,
-            CharacterRace.ElMoradBarbarian or CharacterRace.ElMoradMale
-                or CharacterRace.ElMoradFemale
-                or CharacterRace.ElMoradPorutu => nation == AccountNation.ElMorad,
             _ => false,
         };
 
