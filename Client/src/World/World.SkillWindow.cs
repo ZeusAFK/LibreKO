@@ -343,6 +343,9 @@ public partial class World
             _masteryBtns[idx].Disabled = !CanSpendMastery(type);
             _masteryBtns[idx].TooltipText = MasteryHint(type);
         }
+
+        // Keep the GM panel's Skills tab in sync with points spent here.
+        LoadAdminSkillSpins();
     }
 
     private partial class SkillCell : PanelContainer

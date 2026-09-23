@@ -24,6 +24,7 @@ public class AdminPanelPacketCoordinator(
     ICombatNotificationService combatNotificationService,
     IZoneTransitionService zoneTransitionService,
     ICollectionRaceService collectionRaceService,
+    IPlayerProgressionService playerProgressionService,
     IServiceScopeFactory scopeFactory,
     IOptions<GameServerSettings> settings,
     ILogger<AdminPanelPacketCoordinator> logger) : IAdminPanelPacketCoordinator
@@ -38,6 +39,13 @@ public class AdminPanelPacketCoordinator(
     private const byte ReqCollectionRaces = 8;
     private const byte ReqCollectionRaceStart = 9;
     private const byte ReqCollectionRaceClose = 10;
+    private const byte ReqSetLevel = 11;
+    private const byte ReqSetSkill = 12;
+    private const byte ReqSetLook = 13;
+
+    private const byte KeepProgress = 0;
+    private const byte ResetProgress = 1;
+    private const int SkillEditBodySize = 2 + ProgressionTable.MasteryClassSlotCount;
 
     private const byte AckState = 0x10;
     private const byte AckResult = 0x11;
@@ -95,6 +103,18 @@ public class AdminPanelPacketCoordinator(
 
             case ReqSetClass:
                 await HandleSetClassAsync(session, packet);
+                break;
+
+            case ReqSetLevel:
+                await HandleSetLevelAsync(session, packet);
+                break;
+
+            case ReqSetSkill:
+                await HandleSetSkillAsync(session, packet);
+                break;
+
+            case ReqSetLook:
+                await HandleSetLookAsync(session, packet);
                 break;
 
             case ReqZone:
@@ -227,9 +247,9 @@ public class AdminPanelPacketCoordinator(
             return;
 
         var target = packet.ReadShort();
-        if (!ClassOptionsFor(session).Contains(target))
+        if (gameDataService.GetCoefficient(target) == null)
         {
-            await SendResultAsync(session, false, $"Class {target} is not a valid change for class {session.Class}.");
+            await SendResultAsync(session, false, $"Class {target} has no coefficient on this server.");
             return;
         }
 
@@ -247,6 +267,141 @@ public class AdminPanelPacketCoordinator(
         await SendResultAsync(session, true,
             $"Class {previous} → {target}. Mastery points refunded and the skill bar cleared.");
         logger.LogInformation("GM {Name} changed own class {Previous} → {Target}", session.Name, previous, target);
+    }
+
+    private async Task HandleSetLevelAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 2)
+            return;
+
+        var level = packet.ReadByte();
+        var reset = packet.ReadByte() == ResetProgress;
+
+        if (!ProgressionTable.IsValidLevel(level))
+        {
+            await SendResultAsync(session, false,
+                $"Level must be {ProgressionTable.MinLevel}-{ProgressionTable.MaxLevel}.");
+            return;
+        }
+
+        if (reset)
+            await playerProgressionService.ResetToLevelAsync(session, level);
+        else
+            await playerProgressionService.SetLevelAsync(session, level);
+
+        await SendStateAsync(session, granted: true);
+        await SendResultAsync(session, true, reset
+            ? $"Level {level} — stats, mastery and skill bar reset."
+            : $"Level set to {level}.");
+        logger.LogInformation("GM {Name} set own level to {Level} (reset={Reset})",
+            session.Name, level, reset);
+    }
+
+    private async Task HandleSetSkillAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < SkillEditBodySize)
+            return;
+
+        var pool = packet.ReadByte();
+        var trees = new byte[ProgressionTable.MasteryClassSlotCount];
+        for (var tree = 0; tree < trees.Length; tree++)
+            trees[tree] = packet.ReadByte();
+        var reset = packet.ReadByte() == ResetProgress;
+
+        if (reset)
+        {
+            session.SkillData = [];
+            session.ResetMasteryPoints();
+        }
+        else
+        {
+            session.SkillPoints[ProgressionTable.MasteryPoolSlot] = pool;
+            for (var tree = 0; tree < trees.Length; tree++)
+                session.SkillPoints[ProgressionTable.MasteryClassFirstSlot + tree] = trees[tree];
+        }
+
+        Recalculate(session);
+        await RefillVitalsAsync(session);
+        PersistInBackground(session);
+
+        if (reset)
+        {
+            await session.Client.SendPacket(CharacterDevelopmentPacketMapper.CreateSkillResetSuccess(session));
+            await session.Client.SendPacket(SkillDataPacketWriter.Cleared());
+        }
+
+        await userNotificationService.SendStatUpdateAsync(session);
+        await SendStateAsync(session, granted: true);
+        await SendResultAsync(session, true, reset
+            ? $"Skills reset — {session.SkillPoints[ProgressionTable.MasteryPoolSlot]} mastery points in the pool."
+            : $"Skill points updated (pool {pool}, trees {MasteryTrees(session)}).");
+        logger.LogInformation(
+            "GM {Name} edited skill points (reset={Reset}): pool={Pool} trees={Trees}",
+            session.Name, reset, session.SkillPoints[ProgressionTable.MasteryPoolSlot], MasteryTrees(session));
+    }
+
+    private static string MasteryTrees(UserSession session) =>
+        string.Join('/', session.SkillPoints
+            .Skip(ProgressionTable.MasteryClassFirstSlot)
+            .Take(ProgressionTable.MasteryClassSlotCount));
+
+    private async Task HandleSetLookAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 2)
+            return;
+
+        var nationByte = packet.ReadByte();
+        var race = packet.ReadByte();
+
+        if (nationByte != (byte)AccountNation.Karus && nationByte != (byte)AccountNation.ElMorad)
+        {
+            await SendResultAsync(session, false, "Nation must be Karus or El Morad.");
+            return;
+        }
+
+        var nation = (AccountNation)nationByte;
+        if (!CharacterRaceNations.BelongsTo(race, nation))
+        {
+            await SendResultAsync(session, false, $"Appearance {race} is not a {nation} body.");
+            return;
+        }
+
+        session.Nation = nation;
+        session.Race = race;
+        await PersistLookAsync(session, nation, race);
+
+        await SendStateAsync(session, granted: true);
+        await SendResultAsync(session, true,
+            $"Nation → {nation}, appearance {race}. Log out to the character screen and back in to load the new body model.");
+        logger.LogInformation("GM {Name} set nation={Nation} race={Race}", session.Name, nation, race);
+    }
+
+    private async Task PersistLookAsync(UserSession session, AccountNation nation, byte race)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var accounts = scope.ServiceProvider.GetRequiredService<IAccountRepository>();
+            var characters = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
+
+            var account = await accounts.GetById(session.AccountId);
+            if (account != null)
+            {
+                account.Nation = nation;
+                await accounts.UpdateAsync(account);
+            }
+
+            var character = await characters.GetById(session.CharacterId);
+            if (character != null)
+            {
+                character.Race = race;
+                await characters.UpdateAsync(character);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Admin-panel look persist failed for {Name}", session.Name);
+        }
     }
 
     private async Task HandleZoneAsync(UserSession session, Packet packet)
@@ -401,7 +556,8 @@ public class AdminPanelPacketCoordinator(
             session.Intelligence, session.Magic,
             session.StatPoints, session.MaxHp, session.MaxMp,
             (short)session.Stats.TotalHit, session.Stats.TotalAc,
-            session.Money, session.SkillPoints, ClassOptionsFor(session));
+            session.Money, session.SkillPoints, ClassOptionsFor(session),
+            (byte)session.Nation, session.Race);
 
         await session.Client.SendPacket(AdminPanelPacketWriter.StateGranted(AckState, state));
     }

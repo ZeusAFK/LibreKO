@@ -34,6 +34,11 @@ public partial class Net
     private const byte AdminReqGiveItem = 4;
     private const byte AdminReqSetClass = 5;
     private const byte AdminReqZone = 6;
+    private const byte AdminReqSetLevel = 11;
+    private const byte AdminReqSetSkill = 12;
+    private const byte AdminReqSetLook = 13;
+    private const byte AdminKeepProgress = 0;
+    private const byte AdminResetProgress = 1;
 
     private const byte AdminAckState = 0x10;
     private const byte AdminAckResult = 0x11;
@@ -113,7 +118,16 @@ public partial class Net
             options[i] = p.ReadShort();
         state.ClassOptions = options;
 
+        state.Nation = p.RemainingBytes >= 1 ? p.ReadByte() : LastEnter.Nation;
+        state.Race = p.RemainingBytes >= 1 ? p.ReadByte() : LastEnter.Race;
+
         if (state.Class != 0) ApplyOwnClass(state.Class);
+
+        // The 3D body model is only rebuilt on world-enter, so it needs a relog to change.
+        var info = LastEnter;
+        info.Nation = state.Nation;
+        info.Race = state.Race;
+        LastEnter = info;
 
         AdminStateEvent?.Invoke(state);
     }
@@ -166,6 +180,38 @@ public partial class Net
         _conn.Send(p);
     }
 
+    public void SendAdminSetLevel(int level, bool reset)
+    {
+        var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+        p.WriteByte(AdminReqSetLevel);
+        p.WriteByte((byte)Math.Clamp(level, CharacterSheet.MinLevel, CharacterSheet.MaxLevel));
+        p.WriteByte(reset ? AdminResetProgress : AdminKeepProgress);
+        _conn.Send(p);
+    }
+
+    public void SendAdminSetSkill(int pool, IReadOnlyList<int> trees, bool reset)
+    {
+        var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+        p.WriteByte(AdminReqSetSkill);
+        p.WriteByte(ClampByte(pool));
+        for (int tree = MasteryPoints.FirstTree; tree <= MasteryPoints.LastTree; tree++)
+        {
+            int index = tree - MasteryPoints.FirstTree;
+            p.WriteByte(ClampByte(index < trees.Count ? trees[index] : 0));
+        }
+        p.WriteByte(reset ? AdminResetProgress : AdminKeepProgress);
+        _conn.Send(p);
+    }
+
+    public void SendAdminSetLook(int nation, int race)
+    {
+        var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+        p.WriteByte(AdminReqSetLook);
+        p.WriteByte(ClampByte(nation));
+        p.WriteByte(ClampByte(race));
+        _conn.Send(p);
+    }
+
     private void ParseAdminCollectionRaces(Packet p)
     {
         if (p.RemainingBytes < 2) return;
@@ -214,4 +260,6 @@ public partial class Net
     }
 
     private static byte ClampStatByte(int value) => (byte)Math.Clamp(value, 1, 255);
+
+    private static byte ClampByte(int value) => (byte)Math.Clamp(value, byte.MinValue, byte.MaxValue);
 }

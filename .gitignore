@@ -22,3 +22,6 @@ Client/builds/
 *.apk
 *.aab
 *.exe
+
+# Local project rules / assistant config
+/CLAUDE.md
