@@ -399,6 +399,7 @@ public partial class Net : Node
             case GameOpcodes.GS_RENTAL:            HandleRental(p); break;
             case GameOpcodes.GS_ADMIN_PANEL:       HandleAdminPanel(p); break;
             case GameOpcodes.GS_COLLECTION_RACE:   HandleCollectionRace(p); break;
+            case GameOpcodes.GS_LOTTERY:           HandleLottery(p); break;
         }
     }
 

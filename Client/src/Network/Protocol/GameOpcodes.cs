@@ -179,4 +179,5 @@ public enum GameOpcodes : byte
     GS_DAILY_QUEST = 0xC7,
     GS_VIP_WAREHOUSE = 0x8B,
     GS_COLLECTION_RACE = 0xEF,
+    GS_LOTTERY = 0xF0,
 }

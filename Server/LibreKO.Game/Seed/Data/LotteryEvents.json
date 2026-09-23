@@ -1,0 +1,20 @@
+[
+  {
+    "Id": 1,
+    "Name": "Moradon Grand Lottery",
+    "DurationMinutes": 15,
+    "UserLimit": 100,
+    "ReqItemId": 900000000,
+    "ReqItemCount": 100000,
+    "AutoStart": true
+  },
+  {
+    "Id": 2,
+    "Name": "El Morad & Karus Royal Lottery",
+    "DurationMinutes": 30,
+    "UserLimit": 200,
+    "ReqItemId": 900000000,
+    "ReqItemCount": 250000,
+    "AutoStart": true
+  }
+]

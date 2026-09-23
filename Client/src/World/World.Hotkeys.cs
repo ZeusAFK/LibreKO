@@ -93,6 +93,7 @@ public partial class World : Node3D
         Bound(KeyAction.Report, () => ToggleReport());
         Bound(KeyAction.Achievements, () => ToggleAchievements());
         Bound(KeyAction.Mail, () => ToggleMail());
+        Bound(KeyAction.Lottery, () => ToggleLottery());
         Bound(KeyAction.Auction, () => ToggleAuction());
         Bound(KeyAction.Attendance, () => ToggleAttendance());
         Bound(KeyAction.Bounty, () => ToggleBounty());

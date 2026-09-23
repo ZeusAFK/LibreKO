@@ -51,6 +51,9 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
     public ILookup<int, CollectionRaceObjectiveData> CollectionRaceObjectivesByRace { get; private set; } = Enumerable.Empty<CollectionRaceObjectiveData>().ToLookup(x => x.RaceId);
     public ILookup<int, CollectionRaceRewardData> CollectionRaceRewardsByRace { get; private set; } = Enumerable.Empty<CollectionRaceRewardData>().ToLookup(x => x.RaceId);
     public ILookup<int, CollectionRaceScheduleData> CollectionRaceSchedulesByRace { get; private set; } = Enumerable.Empty<CollectionRaceScheduleData>().ToLookup(x => x.RaceId);
+    public IReadOnlyDictionary<int, LotteryEventData> LotteryEventTable { get; private set; } = new Dictionary<int, LotteryEventData>();
+    public ILookup<int, LotteryRewardData> LotteryRewardsByEvent { get; private set; } = Enumerable.Empty<LotteryRewardData>().ToLookup(x => x.LotteryId);
+    public ILookup<int, LotteryScheduleData> LotterySchedulesByEvent { get; private set; } = Enumerable.Empty<LotteryScheduleData>().ToLookup(x => x.LotteryId);
     public ILookup<int, ItemOpData> ItemOpsByItemId { get; private set; } = Enumerable.Empty<ItemOpData>().ToLookup(x => x.ItemId);
     public IReadOnlyDictionary<int, string> ServerResourceTable { get; private set; } = new Dictionary<int, string>();
     public IReadOnlyDictionary<byte, PremiumItemData> PremiumItemTable { get; private set; } = new Dictionary<byte, PremiumItemData>();
@@ -308,6 +311,9 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
             CollectionRaceObjectivesByRace = await LoadLookupAsync(db.CollectionRaceObjectives.OrderBy(x => x.Ordinal), x => x.RaceId, "collection race objectives", cancellationToken);
             CollectionRaceRewardsByRace = await LoadLookupAsync(db.CollectionRaceRewards, x => x.RaceId, "collection race rewards", cancellationToken);
             CollectionRaceSchedulesByRace = await LoadLookupAsync(db.CollectionRaceSchedules, x => x.RaceId, "collection race schedules", cancellationToken);
+            LotteryEventTable = await LoadDictionaryAsync(db.LotteryEvents, x => x.Id, "lottery events", cancellationToken);
+            LotteryRewardsByEvent = await LoadLookupAsync(db.LotteryRewards.OrderBy(x => x.Place), x => x.LotteryId, "lottery rewards", cancellationToken);
+            LotterySchedulesByEvent = await LoadLookupAsync(db.LotterySchedules, x => x.LotteryId, "lottery schedules", cancellationToken);
             SiegeWarfare = await db.SiegeWarfare.AsNoTracking().OrderBy(x => x.CastleIndex).FirstOrDefaultAsync(cancellationToken);
             if (SiegeWarfare != null)
                 logger.LogInformation("Loaded siege warfare data (castle owner: clan {ClanId})", SiegeWarfare.MasterKnights);

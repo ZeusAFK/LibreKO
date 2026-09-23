@@ -37,6 +37,8 @@ public partial class World
         _hudLauncher.AddChild(LauncherButton(
             "system/pus", "Power-Up Store", OpenPowerUpStore));
         _hudLauncher.AddChild(LauncherButton(
+            "system/gift", "Lottery Event", ToggleLottery));
+        _hudLauncher.AddChild(LauncherButton(
             "system/users-three", "Party", ToggleParty));
 
         if (Platform.TouchUi)

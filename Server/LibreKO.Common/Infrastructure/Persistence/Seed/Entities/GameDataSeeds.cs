@@ -381,3 +381,19 @@ public class CollectionRaceScheduleSeed : SnapshotJsonSeed<CollectionRaceSchedul
 {
     protected override string JsonFileName => "CollectionRaceSchedules.json";
 }
+
+public class LotteryEventSeed : SnapshotJsonSeed<LotteryEventData>
+{
+    protected override string JsonFileName => "LotteryEvents.json";
+}
+
+public class LotteryRewardSeed : SnapshotJsonSeed<LotteryRewardData>
+{
+    protected override string JsonFileName => "LotteryRewards.json";
+}
+
+public class LotteryScheduleSeed : SnapshotJsonSeed<LotteryScheduleData>
+{
+    protected override string JsonFileName => "LotterySchedules.json";
+}
+

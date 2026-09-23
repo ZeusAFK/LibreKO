@@ -96,6 +96,7 @@ public abstract class GameTestBase
         services.AddSingleton<IBifrostEventService>(sp => sp.GetRequiredService<BifrostEventService>());
         services.AddSingleton<ICollectionRaceService, CollectionRaceService>();
         services.AddSingleton<IMailService, MailService>();
+        services.AddSingleton<ILotteryService, LotteryService>();
         services.AddSingleton<IAchievementProgressService, AchievementProgressService>();
         services.AddSingleton<ILoyaltyService, LoyaltyService>();
         services.AddSingleton<IPlayerProgressionService, PlayerProgressionService>();
