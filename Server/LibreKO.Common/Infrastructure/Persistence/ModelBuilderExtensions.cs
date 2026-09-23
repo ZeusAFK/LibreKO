@@ -76,6 +76,8 @@ internal static class ModelBuilderExtensions
         Configure<LotteryEventData>(modelBuilder, "LotteryEvents");
         Configure<LotteryRewardData>(modelBuilder, "LotteryRewards");
         Configure<LotteryScheduleData>(modelBuilder, "LotterySchedules");
+        Configure<BotMerchantData>(modelBuilder, "BotMerchants");
+        Configure<UserBotData>(modelBuilder, "UserBots");
 
         Configure<Patch>(modelBuilder, "Patches");
         Configure<SeedState>(modelBuilder, "SeedStates");

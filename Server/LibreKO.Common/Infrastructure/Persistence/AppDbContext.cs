@@ -77,6 +77,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LotteryEventData> LotteryEvents { get; set; }
     public DbSet<LotteryRewardData> LotteryRewards { get; set; }
     public DbSet<LotteryScheduleData> LotterySchedules { get; set; }
+    public DbSet<BotMerchantData> BotMerchants { get; set; }
+    public DbSet<UserBotData> UserBots { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

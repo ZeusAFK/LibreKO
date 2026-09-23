@@ -15,6 +15,11 @@ public partial class World
     private const float StallFacing = 180f;
     private const int StallSignCell = 36;
     private const float StallSignLift = 0.62f;
+    private const float SittingNameTagHeight = 0.92f;
+    private const float StandingNameTagHeight = 1.70f;
+    private const float StandingSelfNameTagHeight = 1.90f;
+    private const float HpBarLiftOverTag = 0.16f;
+    private const float SittingStallSignHeight = 1.10f;
     private const float StallSignRange = 34f;
     private const int StallSignLayerIndex = 55;
 
@@ -216,8 +221,23 @@ public partial class World
             return;
         }
 
-        var head = body.GlobalPosition + new Vector3(0, HeadHeightOf(charId) + StallSignLift, 0);
-        if (_camera.IsPositionBehind(head)
+        Vector3 anchor;
+        if (stall.Node != null && GodotObject.IsInstanceValid(stall.Node))
+        {
+            anchor = (body.GlobalPosition + stall.Node.GlobalPosition) * 0.5f;
+            anchor.Y = body.GlobalPosition.Y + SittingStallSignHeight;
+        }
+        else
+        {
+            bool isSitting = charId == _myId
+                ? (_selfSitting || _stalls.ContainsKey(charId))
+                : (_ents.TryGetValue(charId, out var entCheck) && (entCheck.Sitting || _stalls.ContainsKey(charId)));
+
+            float headY = isSitting ? SittingStallSignHeight : (HeadHeightOf(charId) + StallSignLift);
+            anchor = body.GlobalPosition + new Vector3(0, headY, 0);
+        }
+
+        if (_camera.IsPositionBehind(anchor)
             || (_self != null && body.GlobalPosition.DistanceTo(_self.Position) > StallSignRange))
         {
             stall.Sign.Visible = false;
@@ -226,7 +246,7 @@ public partial class World
 
         var size = stall.Sign.Size;
         if (size.X <= 1) size = stall.Sign.GetCombinedMinimumSize();
-        stall.Sign.Position = _camera.UnprojectPosition(head) - new Vector2(size.X * 0.5f, size.Y);
+        stall.Sign.Position = _camera.UnprojectPosition(anchor) - new Vector2(size.X * 0.5f, size.Y);
         stall.Sign.Visible = true;
     }
 

@@ -42,6 +42,7 @@ public class AdminPacketCoordinator(
     ICollectionRaceService collectionRaceService,
     INpcSummonService npcSummonService,
     ILotteryService lotteryService,
+    IMerchantBotService merchantBotService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
     private const int MaxGmSummonCount = 50;
@@ -316,9 +317,27 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+jr [sec] / +bdw [sec] / +chaos [sec] / +templecancel - Temple Events");
                 await SendNoticeAsync(session, "+cropen <eventIndex> / +crclose / +crstatus - Collection Race");
                 await SendNoticeAsync(session, "+lottery start [id] / +lottery close / +lottery cancel - Lottery Event");
+                await SendNoticeAsync(session, "+savemerchantbots - Save active merchant bots to DB");
+                await SendNoticeAsync(session, "+loadbotmerchant - Load and spawn merchant bots from DB");
+                await SendNoticeAsync(session, "+clearmerchantbots - Clear all active merchant bots");
                 await SendNoticeAsync(session, "+zone | +zone <id> - List zones / teleport to zone home");
                 await SendNoticeAsync(session, "+reloadscripts - Reload quest scripts without restart");
                 await SendNoticeAsync(session, "+reseed - Seed JSON to DB + reload (drops/NPCs/items)");
+                break;
+
+            case "savemerchantbots":
+            case "savebotmerchant":
+                await merchantBotService.SaveActiveBotsAsync(session);
+                break;
+
+            case "loadbotmerchant":
+            case "loadmerchantbots":
+                await merchantBotService.LoadAllBotsAsync(session);
+                break;
+
+            case "clearmerchantbots":
+            case "clearbotmerchants":
+                await merchantBotService.ClearAllBotsAsync(session);
                 break;
 
             case "give":

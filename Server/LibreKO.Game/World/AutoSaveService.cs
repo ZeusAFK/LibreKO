@@ -1,4 +1,4 @@
-using LibreKO.Game.Configuration;
+﻿using LibreKO.Game.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -27,7 +27,7 @@ public class AutoSaveService(
         {
             try
             {
-                var sessions = sessionManager.GetAll().Where(s => s.Hp > 0).ToList(); // skip dead players
+                var sessions = sessionManager.GetAll().Where(s => !s.IsBot && s.Hp > 0).ToList(); // skip dead players and bots
                 if (sessions.Count == 0) continue;
 
                 var saved = 0;

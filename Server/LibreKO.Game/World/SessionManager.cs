@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.World;
@@ -31,6 +31,12 @@ public class SessionManager
         _sessionsByCharacterId[characterId] = session;
         _sessionsByClientId[client.Id] = session;
         return session;
+    }
+
+    public void RegisterSession(UserSession session)
+    {
+        _sessionsByCharacterId[session.CharacterId] = session;
+        _sessionsByClientId[session.Client.Id] = session;
     }
 
     public void RemoveSession(UserSession session)

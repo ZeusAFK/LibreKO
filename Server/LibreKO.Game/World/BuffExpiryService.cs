@@ -1,4 +1,4 @@
-using LibreKO.Game.Protocol;
+﻿using LibreKO.Game.Protocol;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +33,9 @@ public class BuffExpiryService(
     {
         foreach (var session in sessionManager.GetAll())
         {
+            if (session.IsBot)
+                continue;
+
             await ProcessOverTimeEffectsAsync(session, nowTicks);
 
             if (session.ActiveBuffs.Count == 0)

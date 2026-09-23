@@ -20,7 +20,7 @@ public sealed class QuestAvailabilityService(
     {
         foreach (var session in sessions.GetAll())
         {
-            if (session.Quest.ViewZone != session.ZoneId || session.Hp <= 0)
+            if (session.IsBot || session.Quest.ViewZone != session.ZoneId || session.Hp <= 0)
                 continue;
             try
             {

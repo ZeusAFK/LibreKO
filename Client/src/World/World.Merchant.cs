@@ -168,7 +168,7 @@ public partial class World
         root.AddThemeConstantOverride("separation", 8);
 
         root.AddChild(UiTheme.SectionTitle("For sale"));
-        _shopCells = BuildMerchantGrid(root, StallSlots, StallColumns, null,
+        _shopCells = BuildMerchantGrid(root, StallSlots, StallColumns, BuyFromStall,
             dragKey: "shopFrom");
 
         var money = UiTheme.Section();
@@ -263,6 +263,9 @@ public partial class World
         foreach (var slot in _myStall) if (!slot.IsEmpty) staged++;
         if (staged == 0) { SetSellStatus("Put at least one item on the stall.", true); return; }
 
+        _sellStallShown = false;
+        _sellStallPanel.Visible = false;
+        HideItemTooltip();
         Net.I.SendMerchantBeginSell(_sellAdvert.Text.Trim());
     }
 
@@ -354,6 +357,8 @@ public partial class World
         if (!ok)
         {
             SetSellStatus("The shop could not be opened.", true);
+            _sellStallShown = true;
+            _sellStallPanel.Visible = true;
             return;
         }
 
@@ -379,7 +384,17 @@ public partial class World
         _merchantAdverts.Remove(charId);
         RemoveStall(charId);
         if (_shopShown && _shopTargetId == charId) CloseShop();
-        if (charId == _myId) SetMerchantLock(false);
+        if (charId == _myId)
+        {
+            SetMerchantLock(false);
+            if (_sellStallShown)
+            {
+                _sellStallShown = false;
+                _sellStallPanel.Visible = false;
+                HideItemTooltip();
+            }
+            for (int i = 0; i < _myStall.Length; i++) { _myStall[i] = default; _myStallSrc[i] = -1; }
+        }
     }
 
     private bool TryBrowseNearestMerchant()
@@ -458,7 +473,12 @@ public partial class World
         var def = ItemData.Get(item.ItemId);
         bool countable = def != null && def.Countable != 0 && most > 1;
 
-        AskTrade(StallSlot(item), "Buy from this shop", item.Price, most, countable,
+        string itemName = ItemData.DisplayName(item.ItemId);
+        string hint = countable
+            ? $"Buy {itemName} for {Money(item.Price)} each?"
+            : $"Buy {itemName} for {Money(item.Price)}?";
+
+        AskTrade(StallSlot(item), hint, item.Price, most, countable,
             (count, _) =>
             {
                 int buyerSlot = Inv.FirstFreeGridSlot();

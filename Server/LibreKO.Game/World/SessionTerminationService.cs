@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using Microsoft.Extensions.Logging;
@@ -33,6 +33,9 @@ public class SessionTerminationService(
 
     public async Task SaveAsync(UserSession session, CancellationToken cancellationToken = default)
     {
+        if (session.IsBot)
+            return;
+
         await characterStatePersister.SaveAsync(session, cancellationToken);
     }
 
@@ -71,6 +74,25 @@ public class SessionTerminationService(
         {
             await MarkOfflineAsync(client.CharacterId, cancellationToken);
             client.CharacterId = 0;
+            return;
+        }
+
+        if (session.IsBot)
+        {
+            await RemoveFromWorldAsync(session);
+            try
+            {
+                await ReleaseWorldStateAsync(session);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Error releasing world state for bot {Name}", session.Name);
+            }
+            finally
+            {
+                sessionManager.RemoveSession(session);
+                client.CharacterId = 0;
+            }
             return;
         }
 

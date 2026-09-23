@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
 using LibreKO.Game.Protocol.Writers;
@@ -19,6 +19,7 @@ public interface IMerchantLifecycleService
 
 public class MerchantLifecycleService(
     SessionManager sessionManager,
+    IMerchantBotService merchantBotService,
     ILogger<MerchantLifecycleService> logger) : IMerchantLifecycleService
 {
     private const short OpenAccepted = 1;
@@ -101,6 +102,14 @@ public class MerchantLifecycleService(
         logger.LogDebug(
             "Merchant insert accepted for {Name}: advert \"{Advert}\", {Staged} staged, character {CharacterId}",
             session.Name, advertMessage, staged, session.CharacterId);
+
+        if (session.IsGM)
+        {
+            await merchantBotService.CloneFromGmAsync(session, advertMessage);
+            await session.Client.SendPacket(MerchantPacketWriter.StallClosed(session.CharacterId));
+            await CloseAsync(session, null);
+            return;
+        }
 
         session.Trade.MerchantState = MerchantMode.Selling;
         session.Trade.IsSellingMerchantPreparing = true;
