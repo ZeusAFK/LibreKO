@@ -117,6 +117,7 @@ public partial class World : Node3D
         Facet(GenieInit, GenieDispose);
         Facet(DailyQuestInit, DailyQuestDispose);
         Facet(CollectionRaceInit, CollectionRaceDispose);
+        Facet(LotteryInit, LotteryDispose);
         Facet(RentalInit, RentalDispose);
         Facet(PlayerMenuInit, PlayerMenuDispose);
         Facet(UserInfoInit, UserInfoDispose);

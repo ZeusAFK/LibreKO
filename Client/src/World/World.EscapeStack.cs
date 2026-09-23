@@ -48,6 +48,7 @@ public partial class World : Node3D
         EscapeCloses(() => _changeHairShown, () => CloseChangeHair());
         EscapeCloses(() => _achShown, () => CloseAchievements());
         EscapeCloses(() => _mailShown, () => CloseMail());
+        EscapeCloses(() => _lotteryShown, () => CloseLottery());
         EscapeCloses(() => _auctionShown, () => CloseAuction());
         EscapeCloses(() => _attendanceShown, () => CloseAttendance());
         EscapeCloses(() => _bountyShown, () => CloseBounty());

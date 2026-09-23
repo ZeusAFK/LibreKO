@@ -41,6 +41,7 @@ public class AdminPacketCoordinator(
     EventSchedulerService eventSchedulerService,
     ICollectionRaceService collectionRaceService,
     INpcSummonService npcSummonService,
+    ILotteryService lotteryService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
     private const int MaxGmSummonCount = 50;
@@ -159,6 +160,35 @@ public class AdminPacketCoordinator(
                     await collectionRaceService.EndRaceAsync(crCloseId, forced: true, session);
                 else
                     await collectionRaceService.EndAllAsync(session);
+                break;
+
+            case "lottery":
+                if (arg.StartsWith("start", StringComparison.OrdinalIgnoreCase))
+                {
+                    var idPart = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    int lotId = idPart.Length > 1 && int.TryParse(idPart[1], out var parsedId) ? parsedId : 1;
+                    await lotteryService.StartAsync(lotId);
+                    await SendNoticeAsync(session, $"Lottery {lotId} started.");
+                }
+                else if (arg.StartsWith("close", StringComparison.OrdinalIgnoreCase))
+                {
+                    await lotteryService.CloseAsync(cancelWithoutWinners: false);
+                    await SendNoticeAsync(session, "Lottery closed and rewards mailed.");
+                }
+                else if (arg.StartsWith("cancel", StringComparison.OrdinalIgnoreCase))
+                {
+                    await lotteryService.CloseAsync(cancelWithoutWinners: true);
+                    await SendNoticeAsync(session, "Lottery cancelled without winners.");
+                }
+                else if (int.TryParse(arg, out var directId))
+                {
+                    await lotteryService.StartAsync(directId);
+                    await SendNoticeAsync(session, $"Lottery {directId} started.");
+                }
+                else
+                {
+                    await SendNoticeAsync(session, "Usage: +lottery start [id] | +lottery close | +lottery cancel");
+                }
                 break;
 
             case "crstatus":
@@ -285,6 +315,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+bifroststart [min] / +bifrostclose - Bifrost event");
                 await SendNoticeAsync(session, "+jr [sec] / +bdw [sec] / +chaos [sec] / +templecancel - Temple Events");
                 await SendNoticeAsync(session, "+cropen <eventIndex> / +crclose / +crstatus - Collection Race");
+                await SendNoticeAsync(session, "+lottery start [id] / +lottery close / +lottery cancel - Lottery Event");
                 await SendNoticeAsync(session, "+zone | +zone <id> - List zones / teleport to zone home");
                 await SendNoticeAsync(session, "+reloadscripts - Reload quest scripts without restart");
                 await SendNoticeAsync(session, "+reseed - Seed JSON to DB + reload (drops/NPCs/items)");

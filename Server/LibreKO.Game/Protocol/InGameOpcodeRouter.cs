@@ -71,6 +71,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         IGenieSystemPacketCoordinator genieSystem,
         IDailyQuestPacketCoordinator dailyQuest,
         ICollectionRacePacketCoordinator collectionRace,
+        ILotteryPacketCoordinator lottery,
         SessionManager sessionManager,
         ISessionTerminationService sessionTermination,
         ILogger<InGameOpcodeRouter> logger)
@@ -234,6 +235,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             // table does.
             [GameOpcodes.GS_DAILY_QUEST] = dailyQuest.HandleAsync,
             [GameOpcodes.GS_COLLECTION_RACE] = collectionRace.HandleAsync,
+            [GameOpcodes.GS_LOTTERY] = lottery.HandleAsync,
             [GameOpcodes.GS_HACKTOOL] = NoOp,
             [GameOpcodes.GS_PROGRAMCHECK] = NoOp,
             [GameOpcodes.GS_REPORT_BUG] = NoOp,

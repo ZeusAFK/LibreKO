@@ -73,6 +73,9 @@ internal static class ModelBuilderExtensions
         Configure<CollectionRaceObjectiveData>(modelBuilder, "CollectionRaceObjectives");
         Configure<CollectionRaceRewardData>(modelBuilder, "CollectionRaceRewards");
         Configure<CollectionRaceScheduleData>(modelBuilder, "CollectionRaceSchedules");
+        Configure<LotteryEventData>(modelBuilder, "LotteryEvents");
+        Configure<LotteryRewardData>(modelBuilder, "LotteryRewards");
+        Configure<LotteryScheduleData>(modelBuilder, "LotterySchedules");
 
         Configure<Patch>(modelBuilder, "Patches");
         Configure<SeedState>(modelBuilder, "SeedStates");

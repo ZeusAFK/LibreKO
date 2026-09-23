@@ -14,6 +14,7 @@ public class EventSchedulerService(
     IOptions<GameServerSettings> settings,
     IZoneTransitionService zoneTransitionService,
     ICollectionRaceService collectionRaceService,
+    ILotteryService lotteryService,
     ILogger<EventSchedulerService> logger) : BackgroundService
 {
     private DateTime _lastWarOpen = DateTime.MinValue;
@@ -45,6 +46,7 @@ public class EventSchedulerService(
                 await TickTempleEvent();
                 await TickBanish();
                 await collectionRaceService.TickAsync();
+                await lotteryService.TickAsync();
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

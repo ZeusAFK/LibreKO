@@ -1,0 +1,58 @@
+[
+  {
+    "Id": 1,
+    "LotteryId": 1,
+    "Place": 1,
+    "ItemId": 379068000,
+    "Count": 1
+  },
+  {
+    "Id": 2,
+    "LotteryId": 1,
+    "Place": 2,
+    "ItemId": 700002000,
+    "Count": 1
+  },
+  {
+    "Id": 3,
+    "LotteryId": 1,
+    "Place": 3,
+    "ItemId": 379067000,
+    "Count": 2
+  },
+  {
+    "Id": 4,
+    "LotteryId": 1,
+    "Place": 4,
+    "ItemId": 379067000,
+    "Count": 1
+  },
+  {
+    "Id": 5,
+    "LotteryId": 2,
+    "Place": 1,
+    "ItemId": 379068000,
+    "Count": 2
+  },
+  {
+    "Id": 6,
+    "LotteryId": 2,
+    "Place": 2,
+    "ItemId": 700002000,
+    "Count": 2
+  },
+  {
+    "Id": 7,
+    "LotteryId": 2,
+    "Place": 3,
+    "ItemId": 379258000,
+    "Count": 1
+  },
+  {
+    "Id": 8,
+    "LotteryId": 2,
+    "Place": 4,
+    "ItemId": 379067000,
+    "Count": 3
+  }
+]

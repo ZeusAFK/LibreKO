@@ -49,6 +49,9 @@ public interface IGameDataService
     ILookup<int, CollectionRaceObjectiveData> CollectionRaceObjectivesByRace { get; }
     ILookup<int, CollectionRaceRewardData> CollectionRaceRewardsByRace { get; }
     ILookup<int, CollectionRaceScheduleData> CollectionRaceSchedulesByRace { get; }
+    IReadOnlyDictionary<int, LotteryEventData> LotteryEventTable { get; }
+    ILookup<int, LotteryRewardData> LotteryRewardsByEvent { get; }
+    ILookup<int, LotteryScheduleData> LotterySchedulesByEvent { get; }
     SiegeWarfareData? SiegeWarfare { get; }
     bool IsLoaded { get; }
 
