@@ -82,6 +82,7 @@ public class LotteryService : ILotteryService
     public async Task CloseAsync(bool cancelWithoutWinners = false)
     {
         ActiveLottery? current;
+        Dictionary<int, int>? refundSnapshot = null;
         lock (_stateLock)
         {
             current = _active;
@@ -94,6 +95,12 @@ public class LotteryService : ILotteryService
 
         if (cancelWithoutWinners)
         {
+            lock (current.Lock)
+            {
+                current.Closed = true;
+                refundSnapshot = new Dictionary<int, int>(current.PlayerTicketCounts);
+            }
+
             _logger.LogInformation("Lottery event '{Name}' was cancelled without drawing winners", current.EventData.Name);
             await BroadcastNoticeAsync($"[Lottery Event] '{current.EventData.Name}' was cancelled by GM.");
             await BroadcastPacketAsync(LotteryPacketWriter.Close());
@@ -101,7 +108,7 @@ public class LotteryService : ILotteryService
             var reqItemId = current.EventData.ReqItemId;
             var reqCost = current.EventData.ReqItemCount;
 
-            foreach (var (charId, ticketCount) in current.PlayerTicketCounts)
+            foreach (var (charId, ticketCount) in refundSnapshot)
             {
                 if (ticketCount <= 0) continue;
                 long totalRefund = (long)ticketCount * reqCost;
@@ -146,6 +153,9 @@ public class LotteryService : ILotteryService
 
         lock (active.Lock)
         {
+            if (active.Closed || active.RemainingSeconds <= 0)
+                return (false, "No lottery event is currently active.", active.TicketsFor(player.CharacterId), active.TotalTickets);
+
             if (active.TicketsFor(player.CharacterId) >= active.EventData.UserLimit)
                 return (false, "You have reached your maximum ticket limit for this lottery.", active.TicketsFor(player.CharacterId), active.TotalTickets);
 
@@ -282,10 +292,17 @@ public class LotteryService : ILotteryService
             if (_active == active) _active = null;
         }
 
-        _logger.LogInformation("Lottery event '{Name}' finished with {Count} total tickets",
-            active.EventData.Name, active.TotalTickets);
+        List<(int CharacterId, string CharacterName)> ticketSnapshot;
+        lock (active.Lock)
+        {
+            active.Closed = true;
+            ticketSnapshot = new List<(int CharacterId, string CharacterName)>(active.Tickets);
+        }
 
-        if (active.Tickets.Count == 0)
+        _logger.LogInformation("Lottery event '{Name}' finished with {Count} total tickets",
+            active.EventData.Name, ticketSnapshot.Count);
+
+        if (ticketSnapshot.Count == 0)
         {
             await BroadcastNoticeAsync($"[Lottery Event] '{active.EventData.Name}' ended with no participants.");
             await BroadcastPacketAsync(LotteryPacketWriter.Ended("Lottery ended with no participants.", []));
@@ -297,7 +314,7 @@ public class LotteryService : ILotteryService
             .ToList();
 
         var targetWinnersCount = rewards.Count;
-        var shuffled = active.Tickets.OrderBy(_ => Random.Shared.Next()).ToList();
+        var shuffled = ticketSnapshot.OrderBy(_ => Random.Shared.Next()).ToList();
         var winners = new List<(int CharacterId, string CharacterName)>();
         foreach (var ticket in shuffled)
         {

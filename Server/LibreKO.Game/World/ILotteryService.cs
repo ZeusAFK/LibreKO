@@ -9,6 +9,7 @@ public sealed class ActiveLottery
     public DateTime EndTime { get; }
     public List<(int CharacterId, string CharacterName)> Tickets { get; } = [];
     public Dictionary<int, int> PlayerTicketCounts { get; } = [];
+    public bool Closed { get; set; }
     public object Lock { get; } = new();
 
     public ActiveLottery(LotteryEventData data, DateTime endTime)
