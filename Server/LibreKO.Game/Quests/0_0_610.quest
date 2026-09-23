@@ -1,0 +1,29 @@
+Bind Npc 18004 Zone 21 for karus
+Bind Npc 18004 Zone 21 for elmorad
+Quest 610 "[New Hero] Mysterious Singing Voice"
+    Journal for karus "You must collect information about the accident after talking with the people of Moradon and Falk Village."
+    Journal for elmorad "You must collect information about the accident after talking with the people from Moradon and Falk Village."
+    Collect 1 of 910218000
+    Collect 1 of 910242000
+    Collect 1 of 910243000
+
+Requires player level >= 69 and quest 609 is completed
+
+Rewards
+    Give 2500000 experience
+    Give 30000 coins
+
+On available
+    Say "What harmony? Catching fire in the town in the middle of the night? I feel vaguely creepy."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "To help us do it. Thank you."
+    Topic "Tell me more..." do
+        Show quest "Just yesterday had the same thing happens. Perhaps at that time patrols of prison [Guard] or villagers treating the witness. It seems to be a good idea to have heard the story of the first residents of Moradon. Please bring me to collect their testimony.\n\nMoradon, talk to people in the Folk Village, you will need to gather information about the incident."
+
+On in_progress
+    Say "I'm still a lack of information. Ones a little more effort would be appreciated."
+
+On claimable
+    Show quest "I've collected all the testimony. Thank you. Now, this testimony will have to collect and analyze."

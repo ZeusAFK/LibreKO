@@ -100,6 +100,10 @@ public abstract class GameTestBase
         services.AddSingleton<ILoyaltyService, LoyaltyService>();
         services.AddSingleton<IPlayerProgressionService, PlayerProgressionService>();
         services.AddSingleton<IZoneTransitionService, ZoneTransitionService>();
+        services.AddSingleton<InstanceRoomRegistry>();
+        services.AddSingleton<IInstanceEntryService, InstanceEntryService>();
+        services.AddSingleton<INpcLifecycleService, NpcLifecycleService>();
+        services.AddSingleton<INpcSummonService, NpcSummonService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();
         services.AddSingleton(CreateServerRepositoryStub());
         services.AddSingleton<IAccountLockService, AccountLockService>();

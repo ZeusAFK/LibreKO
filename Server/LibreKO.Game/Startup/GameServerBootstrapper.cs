@@ -117,6 +117,9 @@ public class GameServerBootstrapper(
             var sourceZone = ResolveSharedMapNpcZone(gameData, sessionManager.Maps, zoneId, positionsByZone);
             foreach (var sourcePosition in positionsByZone[sourceZone])
             {
+                if (sourcePosition.Room != 0)
+                    continue;
+
                 var pos = sourcePosition.ZoneId == zoneId
                     ? sourcePosition
                     : ClonePositionForZone(sourcePosition, zoneId);

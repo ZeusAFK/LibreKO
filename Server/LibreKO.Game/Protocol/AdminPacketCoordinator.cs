@@ -40,8 +40,11 @@ public class AdminPacketCoordinator(
     IMonsterAggressionPolicy monsterAggressionPolicy,
     EventSchedulerService eventSchedulerService,
     ICollectionRaceService collectionRaceService,
+    INpcSummonService npcSummonService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
+    private const int MaxGmSummonCount = 50;
+
     public async Task HandleOperatorAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
@@ -263,6 +266,7 @@ public class AdminPacketCoordinator(
             case "help":
                 await SendNoticeAsync(session, "GM Commands:");
                 await SendNoticeAsync(session, "+give <itemId> [count] - Give item");
+                await SendNoticeAsync(session, "+monsummon <npcId> [count] - Spawn monsters here once; they never respawn");
                 await SendNoticeAsync(session, "+item <name> - Search items by name");
                 await SendNoticeAsync(session, "+gold <amount> - Give/take gold");
                 await SendNoticeAsync(session, "+kc <name> <amount> - Give/take Knight Cash");
@@ -373,6 +377,10 @@ public class AdminPacketCoordinator(
 
             case "summonuser":
                 await HandleSummonUserAsync(session, arg);
+                break;
+
+            case "monsummon":
+                await HandleMonsterSummonAsync(session, arg);
                 break;
 
             case "kill_all":
@@ -1130,6 +1138,33 @@ public class AdminPacketCoordinator(
 
         await SendNoticeAsync(session, $"{character.Name} is now {(mute ? "muted" : "unmuted")}.");
         logger.LogInformation("GM {Gm} {Action} {Target}", session.Name, mute ? "muted" : "unmuted", character.Name);
+    }
+
+    private async Task HandleMonsterSummonAsync(UserSession session, string arg)
+    {
+        var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0 || !int.TryParse(parts[0], out var npcId))
+        {
+            await SendNoticeAsync(session, "Usage: +monsummon <npcId> [count]");
+            return;
+        }
+
+        var count = 1;
+        if (parts.Length > 1 && int.TryParse(parts[1], out var requested))
+            count = Math.Clamp(requested, 1, MaxGmSummonCount);
+
+        var npcData = gameDataService.GetNpc(npcId);
+        if (npcData == null)
+        {
+            await SendNoticeAsync(session, $"NPC {npcId} not found");
+            return;
+        }
+
+        var spawned = await npcSummonService.SummonAsync(
+            npcId, session.ZoneId, session.Room, (int)session.X, (int)session.Z, count, session.Y);
+        await SendNoticeAsync(session, $"Summoned {spawned.Count} x {npcData.Name} ({npcId}); they will not respawn");
+        logger.LogInformation("GM {Name} summoned {Count} of NPC {NpcId} in zone {Zone} room {Room} at {X},{Z}",
+            session.Name, spawned.Count, npcId, session.ZoneId, session.Room, (int)session.X, (int)session.Z);
     }
 
     private async Task HandleGiveItemAsync(UserSession session, string arg)

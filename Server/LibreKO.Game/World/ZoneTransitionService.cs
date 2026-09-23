@@ -18,6 +18,7 @@ public class ZoneTransitionService(
     IGameDataService gameDataService,
     TimeWeatherBroadcastService timeWeather,
     ICollectionRaceService collectionRaceService,
+    InstanceRoomRegistry instanceRooms,
     ILogger<ZoneTransitionService> logger) : IZoneTransitionService
 {
     private const byte ZoneAbilityUpdate = 1;
@@ -41,6 +42,8 @@ public class ZoneTransitionService(
 
         sessionManager.Regions.RemoveFromRegion(session);
         sessionManager.Regions.DropAggroOn(session.CharacterId);
+        if (session.Room != 0 && !instanceRooms.Holds(session.Room, newZone))
+            instanceRooms.Leave(session);
 
         session.ZoneId = newZone;
         session.X = x;

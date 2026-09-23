@@ -1,0 +1,29 @@
+Bind Npc 14407 Zone 2
+Quest 794 "[Crack of All Means] Appropriate Prescription"
+    Journal "You must follow [Advisor] Nez's order."
+    Kill 30 of 4301, 4351 at direction_14
+
+Requires player level >= 55 and player is elmorad and quest 792 is completed
+
+Rewards
+    Give 20000000 experience
+
+direction_14 = location "Tyon" about "Tyon\nBoar monster evolved by Pathos' evil power" found "El Morad " at 1684 779 in zone 2
+
+On available
+    Say "Antibiotics has been developed! Now we just have to use it! Go visit [Advisor] Nez. He'll give you a mission."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "We have the antibiotics now."
+    Topic "Tell me more..." do
+        Show quest "First, get this [Timing Flow (Taion)]. Equip this and vaccinate [Taion]. It'll only work on [Taion].\n\nUse [Timing Flow] (Taion) to [Taion], following the order of Nez. \n※ [Timing Flow] (Taion) can be equipped like a weapon. Only when you are conducting the related quest you'll be able to use it."
+
+On in_progress
+    Say "Are we done with the vaccination yet? Cheer up."
+
+On ready
+    Say "I'm not sure if it got applied. Are we done?"
+
+On claimable
+    Show quest "Come back when you are level 56 for the next mission."

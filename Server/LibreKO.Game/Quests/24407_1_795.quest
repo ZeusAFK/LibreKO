@@ -1,0 +1,26 @@
+Bind Npc 24407 Zone 1
+Quest 795 "[Crack of All Means] Appropriate Prescription II"
+    Journal "You must follow [Advisor] Herga's order."
+    Kill 30 of 655, 605 at direction_111
+
+Requires player level >= 56 and player is karus and quest 793 is completed
+
+Rewards
+    Give 20000000 experience
+
+direction_111 = location "Megantereon" about "Megantereon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "Karus" karus at 169 1045 in zone 1
+
+On available
+    Say "[Timing Flow? That's a weird name.[Advisor] Herga's reputation considering naming some sense ... Anyway, I re-call should go shinny ... Again seems to give a similar mission."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Again, I think I will need a proper prescription. I gotta get some trouble."
+    Topic "Tell me more..." do
+        Show quest "First, get this [Timing Flow (Megatereon)]. Equip this and vaccinate [Megatereon]. It'll only work on [Megatereon].\n\nUse [Timing Flow] (MeganTaion) to [MeganTaion], following the order of Herga. \n※ [Timing Flow] (MeganTaion) can be equipped like a weapon. Only when you are conducting the related quest you'll be able to use it."
+
+On in_progress
+    Say "Are we done yet? We have no time!"
+
+On claimable
+    Show quest "It seems that the vaccine is working!\n\nWe are out of antibiotics now. Please bring [100000 Noah], [Curse Antidote] to [Order of the Sorcery] Gator. He'll need this to make additional antibiotics."

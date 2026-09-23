@@ -43,6 +43,7 @@ public sealed class ScriptEffectApplier(
 
         await ApplyPendingNpcDespawnAsync(session, context, scriptName);
         await ApplyPendingSummonsAsync(session, context, scriptName);
+        await ApplyPendingInstanceAsync(session, context, scriptName);
         await ApplyPendingZoneChangeAsync(session, context, scriptName);
 
         if (context.ActionFailed && context.FailureReason is { } reason)
@@ -108,7 +109,6 @@ public sealed class ScriptEffectApplier(
     }
 
     private const int MaxSummonCount = 20;
-    private const int SummonSpreadRange = 3;
 
     private async Task ApplyPendingSummonsAsync(UserSession session, QuestScriptContext context, string scriptName)
     {
@@ -123,41 +123,22 @@ public sealed class ScriptEffectApplier(
             return;
         }
 
-        var sessions = serviceProvider.GetRequiredService<SessionManager>();
-        var aggression = serviceProvider.GetRequiredService<IMonsterAggressionPolicy>();
-        var lifecycle = serviceProvider.GetRequiredService<INpcLifecycleService>();
+        var summons = serviceProvider.GetRequiredService<INpcSummonService>();
         foreach (var (npcId, count, x, z) in context.PendingSummons)
         {
-            var npcData = gameData.GetNpc(npcId);
-            if (npcData == null)
+            var spawnX = x > 0 ? x : (int)session.X;
+            var spawnZ = z > 0 ? z : (int)session.Z;
+            var spawned = await summons.SummonAsync(
+                npcId, session.ZoneId, session.Room, spawnX, spawnZ, Math.Clamp(count, 1, MaxSummonCount), session.Y);
+            if (spawned.Count == 0)
             {
                 logger.LogWarning("Script {Script}: cannot summon NPC {NpcId} for {Name} — not in the NPC table",
                     scriptName, npcId, session.Name);
                 continue;
             }
 
-            var pos = new Common.Domain.Entities.GameData.NpcPosData
-            {
-                NpcId = npcId,
-                ZoneId = session.ZoneId,
-                LeftX = x > 0 ? x : (int)session.X,
-                TopZ = z > 0 ? z : (int)session.Z,
-                SpawnRange = SummonSpreadRange,
-                ActType = npcData.ActType,
-                NumNPC = (byte)Math.Clamp(count, 1, MaxSummonCount),
-            };
-            for (var i = 0; i < pos.NumNPC; i++)
-            {
-                var npc = NpcInstance.FromData(npcData, pos, 0);
-                npc.RespawnType = NpcRespawnType.Never;
-                aggression.Apply(npc);
-                npc.Y = sessions.Maps?.GetHeight(session.ZoneId, npc.X, npc.Z) ?? session.Y;
-                npc.SpawnY = npc.Y;
-                await lifecycle.SpawnAsync(npc);
-            }
-
             logger.LogInformation("Script {Script}: {Name} summoned {Count} of NPC {NpcId} in zone {Zone} at {X},{Z}",
-                scriptName, session.Name, pos.NumNPC, npcId, session.ZoneId, pos.LeftX, pos.TopZ);
+                scriptName, session.Name, spawned.Count, npcId, session.ZoneId, spawnX, spawnZ);
         }
     }
 
@@ -187,6 +168,32 @@ public sealed class ScriptEffectApplier(
             return;
 
         await serviceProvider.GetRequiredService<INpcLifecycleService>().DespawnAsync(npc);
+    }
+
+    private async Task ApplyPendingInstanceAsync(UserSession session, QuestScriptContext context, string scriptName)
+    {
+        if (context.PendingInstance is not { } entry)
+            return;
+
+        if (context.ActionFailed)
+        {
+            logger.LogInformation(
+                "Script {Script}: instance entry to {Zone} skipped for {Name} — the script's action failed",
+                scriptName, entry.ZoneId, session.Name);
+            return;
+        }
+
+        if (entry.ZoneId is <= 0 or > byte.MaxValue || !gameData.ZoneInfoTable.ContainsKey((short)entry.ZoneId))
+        {
+            logger.LogWarning(
+                "Script {Script}: zone {Zone} is not on this server, ignoring the instance entry for {Name}",
+                scriptName, entry.ZoneId, session.Name);
+            return;
+        }
+
+        var (x, z) = ResolveWarpTarget(session, (entry.ZoneId, entry.X, entry.Z));
+        await serviceProvider.GetRequiredService<IInstanceEntryService>()
+            .EnterAsync(session, (byte)entry.ZoneId, (short)entry.Set, x, z);
     }
 
     private async Task ApplyPendingZoneChangeAsync(UserSession session, QuestScriptContext context, string scriptName)

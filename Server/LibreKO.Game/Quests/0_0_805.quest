@@ -1,0 +1,35 @@
+Bind Npc 29072 Zone 71 for karus
+Bind Npc 29073 Zone 71 for elmorad
+Quest 805 "[Crack of All Means] Finding the Crack"
+    Journal for karus "You must follow [Advisor] Herga's order."
+    Journal for elmorad "You must follow [Advisor] Nez's order."
+    Collect 1 of 900334000
+
+Requires player level >= 59 and quest 804 is completed
+
+Rewards
+    Give 250000 experience
+
+On available
+    If player is karus
+        Say "Oh no! Master! It was worse than what we had imagined. Let's go meet Harrigon at [Ronarkland]."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Oh no! Master! It was worse than what we had imagined. Let's go meet Marcus at [Ronarkland]."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Hello~ You're back! You seem tired."
+        Topic "Tell me more..." do
+            Show quest "[Cracking Experiment Report]? That was the issue. But a crack?  Something must have had happened.\n\nFollowing the order from Herga, deliver [Cracking Test Report] to Harrigon."
+    If player is elmorad
+        Say "Hello~ You're back! You seem tired."
+        Topic "Tell me more..." do
+            Show quest "[Cracking Experiment Report]? That was the issue. But a crack?  Something must have had happened.\n\nFollowing the order from Nez, deliver [Cracking Test Report] to Marcus."
+
+On in_progress
+    Say "So where is it?"
+
+On claimable
+    Show quest "Hm... I see.. That's why.\n\nThe answer is to get rid of the main culprit. I'm asking you to do this, <selfname>. Destroy [Crack] and it's main culprit. And come back."

@@ -586,6 +586,10 @@ public sealed class QuestInterpreter
                 _host.TeleportToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
                 break;
 
+            case QuestActionKind.EnterInstance:
+                _host.EnterInstance(args.GetInt("zone"), args.GetInt("set"), args.GetInt("x"), args.GetInt("z"));
+                break;
+
             case QuestActionKind.Cast:
                 _host.CastSkill(args.GetInt("skill"));
                 break;

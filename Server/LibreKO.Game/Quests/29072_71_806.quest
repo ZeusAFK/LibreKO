@@ -1,0 +1,28 @@
+Bind Npc 29072 Zone 71
+Quest 806 "[Crack of All Means] StopCrack of All Means"
+    Journal "You must accept the request of the [Chief of Order of the Sorcery] Harrigan."
+    Kill 1 of 9276 at direction_1035
+
+Requires player level >= 59 and player is karus and quest 805 is completed
+
+Rewards
+    Give 25000000 experience
+
+direction_1035 = location "[Field Boss] Shadow of Krowaz " about "Defeat ringleader of crevice" found "Crevice of resources(Instance Dungeon)" at 0 0
+
+On available
+    Say "Huff Huff ... This must be the final battle. But we don't even know whom we need to fight! I'm kinda scared. Let's visit Harrigon."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "ah you are here. We're at the final stage."
+    Topic "Tell me more..." do
+        Show quest "The answer is to get rid of the main culprit. I'm asking you to do this, <selfname>. Destroy [Crack] and it's main culprit. And come back.\n\nMove to where the cracking happened and destruct the crack. \n※ Tip: Once you start attacking there, there might be monsters."
+
+On in_progress
+    Say "You haven't destroyed the main culprit?"
+    Topic "[Enter Dungeon]" do
+        Enter instance 81 set 2 at 204 197
+
+On claimable
+    Show quest "Oh you are done! [Krowaz Shadow].. Finally Krowaz has been awaken.\n\nGood job. But now you'll need to defeat Krowaz. We'll do our best as well."

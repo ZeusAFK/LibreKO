@@ -1,0 +1,20 @@
+Bind Npc 9260 Zone 81
+Quest 789 "[Crack of All Means] Experiment Needed"
+    Journal "You must deliver an item to [Biologist] Lamark."
+    Collect 1 of 900327000
+
+Requires player level >= 54 and quest 788 is completed
+
+Rewards
+    Give 125000 experience
+
+On offer
+    Say "Who are you ...? The gift in your hand?"
+    Topic "Tell me more..." do
+        Show quest "ah.. It wasn't.l.  It's [Shiny fruit juice Sample]...\n\nDeliver [Shiny Fruit Juice Sample] to [Palentology Research Associate] Ramark. \n※ [Palentology Research Associate] Ramark lives in the instant Dungeon and you can enter the Instant Dungeon through Elmorad's Nez, Karus, or Herga."
+
+On in_progress
+    Say "Where is the [Shiny Fruit Juice Sample]?"
+
+On claimable
+    Show quest "This is ... It's more than expected ... I think we need to experiment more."

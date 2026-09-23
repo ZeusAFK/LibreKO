@@ -22,6 +22,7 @@ public class SessionTerminationService(
     IMerchantPacketCoordinator merchantPacketCoordinator,
     IPartyPacketCoordinator partyPacketCoordinator,
     IWorldPacketCoordinator worldPacketCoordinator,
+    InstanceRoomRegistry instanceRooms,
     ILogger<SessionTerminationService> logger) : ISessionTerminationService
 {
     // Cap concurrent disconnect-time DB work so a mass disconnect (thousands of bots
@@ -99,6 +100,7 @@ public class SessionTerminationService(
     {
         session.MovePending = false;
         sessionManager.Regions.RemoveFromRegion(session);
+        instanceRooms.Leave(session);
 
         try
         {

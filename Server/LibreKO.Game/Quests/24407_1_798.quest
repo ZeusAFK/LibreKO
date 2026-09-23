@@ -1,0 +1,26 @@
+Bind Npc 24407 Zone 1
+Quest 798 "[Crack of All Means] Appropriate Prescription III"
+    Journal "You must follow [Advisor] Herga's order."
+    Kill 30 of 666, 616 at direction_37
+
+Requires player level >= 57 and player is karus and quest 797 is completed
+
+Rewards
+    Give 22500000 experience
+
+direction_37 = location "Hell Hound" about "Hell Hound\nGatekeeper of hell, a monster summoned from hell by Pathos' it's entire body is red" found "Karus" at 114 365 in zone 1
+
+On available
+    Say "It's so tiring... Let's go visit Herga to get the next person we need to vaccinate."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "Let's hurry now."
+    Topic "Tell me more..." do
+        Show quest "Here take the [Timing Flow (Hellhound)]. With this [Hell Hound] should be vaccinated. Just like [Megatereon], it'll only work on [Hellhound].\n\nUse [Timing Flow] (Helhound) to [Helhound], following the order of Herga. \n※ [Timing Flow] (Helhound) can be equipped like a weapon. Only when you are conducting the related quest you'll be able to use it."
+
+On in_progress
+    Say "It's not done yet?"
+
+On claimable
+    Show quest "Now I'm less worried."

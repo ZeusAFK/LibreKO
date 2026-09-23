@@ -1,0 +1,30 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 800 "[Crack of All Means] The worst is over, but . . ."
+    Journal for karus "You must talk to [Advisor] Herga."
+    Journal for elmorad "You must talk to [Advisor] Nez."
+
+Requires (player level >= 57 and player is karus and quest 798 is completed) or (player level >= 57 and player is elmorad and quest 799 is completed)
+
+Rewards none
+
+On available
+    If player is karus
+        Say "Go talk to Herga. He has something important to say."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Go talk to Nez. He has something important to say."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "You came. Let's talk now."
+        Topic "Tell me more..." do
+            Show quest "Good job. But this isn't the end. For now we've stopped it but we have to be careful. We really have to find out what caused this.\n\nSo again, we've decided to ask [Order of the Sorcery]'s ability. Go meet [Associate of Magic Advisor] Harrigon located at [Ronarkland]. He'll be able to help us find out the cause of this.\n\nTalk to Luferson Castle's [Advisor] Herga."
+    If player is elmorad
+        Say "You came. Let's talk now."
+        Topic "Tell me more..." do
+            Show quest "Good job. But this isn't the end. For now we've stopped it but we have to be careful. We really have to find out what caused this.\n\nSo again, we've decided to ask [Order of the Sorcery]'s ability. Go meet [Associate of Magic Advisor] Marcus located at [Ronarkland]. He'll be able to help us find out the cause of this.\n\nTalk to Elmorad Castle's [Advisor] Nez."
+
+On claimable
+    Show quest "Go meet [Associate of Magic Advisor] Harrigon. We have no time."

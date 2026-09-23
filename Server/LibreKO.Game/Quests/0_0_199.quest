@@ -1,0 +1,69 @@
+Bind Npc 21510 Zone 1 for karus warrior
+Bind Npc 21510 Zone 1 for karus rogue
+Bind Npc 21510 Zone 1 for karus mage
+Bind Npc 21510 Zone 1 for karus priest
+Bind Npc 11510 Zone 2 for elmorad warrior
+Bind Npc 11510 Zone 2 for elmorad rogue
+Bind Npc 11510 Zone 2 for elmorad mage
+Bind Npc 11510 Zone 2 for elmorad priest
+Quest 199 "Monster Suppression Squad (II)"
+    Journal for karus "The orders for the Monster Suppression Squad has been received."
+    Journal for elmorad "I was assigned a Monster Suppression Squad task."
+    Collect 3 of 910138000
+    Collect 1 of 910135000
+
+Requires player level >= 46
+
+Rewards for warrior
+    Give 3750000 experience
+    Choose one
+        Give 1 of 972190733
+        Give 1 of 972230788
+        Give 1 of 972260823
+        Give 1 of 972270431
+
+Rewards for rogue
+    Give 1 of 972200491
+    Give 3750000 experience
+    Choose one
+        Give 1 of 972200491
+        Give 1 of 972240919
+
+Rewards for mage
+    Give 3750000 experience
+    Choose one
+        Give 1 of 972210359
+        Give 1 of 972210367
+        Give 1 of 972210375
+
+Rewards for priest
+    Give 1 of 972220761
+    Give 1 of 972250765
+    Give 3750000 experience
+
+On offer
+    If player is karus
+        Say "Monsters have grown brave and are increasingly attacking merchants and civilian residents so we're trying to locate their hide out and wipe them out. I can only send you as a party no matter how strong you are. It's for your own good. Don't object."
+        Topic "Tell me more..." do
+            Show quest "I hear the monsters have taken refuge in the Delok Creek in Kartia Desert. If you kill Ripper, their leader, and bring me the proof, you don't have to worry about going. I've already pulled some strings.\n\nGet Captain Fargo's monster suppression squad request, join the squad, kill their leader Ripper and bring the captain the proof."
+    If player is elmorad
+        Say "Monsters have grown brave and are increasingly attacking merchants and civilian residents so we're trying to locate their hide out and wipe them out. I can only send you as a party no matter how strong you are. It's for your own good. Don't object."
+        Topic "Tell me more..." do
+            Show quest "I hear the monsters have taken refuge in the Delok Creek in Kartia Desert. If you kill Ripper, their leader, and bring me the proof, you don't have to worry about going. I've already pulled some strings.\n\nGet Captain Falkwine's monster suppression squad request, join the squad, kill their leader Ripper and bring the captain the proof."
+
+On in_progress
+    Say "You have to kill Monster Leader Ripper and bring back proof. Don't tell me you still haven't even gone near him.\n\nAre you joining the monster suppression squad?"
+    Topic "[Enter Dungeon]" do
+        Enter instance 82 set 1 at 204 197
+
+On ready
+    If player is karus
+        Say "This is the proof. If we take this to Fargo, he will give a reward."
+    If player is elmorad
+        Say "This is the proof. If we take this to Falkwine, he will give a reward."
+
+On claimable
+    If player is karus
+        Show quest "Great. Here's your reward. Knew you'd be able to do it."
+    If player is elmorad
+        Show quest "All right. Here's the reward. Knew you could do it."

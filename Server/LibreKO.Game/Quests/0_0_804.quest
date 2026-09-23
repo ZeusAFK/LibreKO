@@ -1,0 +1,34 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 804 "[Crack of All Means] Yielding an outcome"
+    Journal for karus "You must talk to [Advisor] Herga."
+    Journal for elmorad "You must talk to [Advisor] Nez."
+
+Requires player level >= 59 and quest 803 is completed
+
+Rewards
+    Give 1 of 900334000
+
+On available
+    If player is karus
+        Say "Something seems very serious. Should we go talk to Herga?"
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Something must be serious. Talk to Nez."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "well..  I see..  It was you.."
+        Topic "Tell me more..." do
+            Show quest "This isn't normal..  It's very serious.\n\nSomething was leaking and was contaminating..\n\nFor now, bring this [Cracking Report] to [Associate of Magic Advisor] Harrigon. And following his order, you'll need to take care of something. Hurry!\n\nTalk to Herga about the result of the study."
+    If player is elmorad
+        Say "Oh no...  Ah you are back."
+        Topic "Tell me more..." do
+            Show quest "This isn't normal..  It's very serious.\n\nSomething was leaking and was contaminating..\n\nFor now, bring this [Cracking Experiement Report] to [Associate of Magic Advisor] Marcus. And following his order, you'll need to take care of something. Hurry!\n\nTalk to Nez about the result of the study."
+
+On claimable
+    If player is karus
+        Show quest "For now, bring this [Cracking Report] to [Associate of Magic Advisor] Harrigon. And following his order, you'll need to take care of something. Hurry!"
+    If player is elmorad
+        Show quest "For now, bring this [Cracking Experiement Report] to [Associate of Magic Advisor] Marcus. And following his order, you'll need to take care of something. Hurry!"

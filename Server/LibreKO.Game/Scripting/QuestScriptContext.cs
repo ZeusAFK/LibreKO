@@ -44,6 +44,10 @@ public class QuestScriptContext
 
     public void RequestZoneChange(int zoneId, float x, float z) => PendingZoneChange = (zoneId, x, z);
 
+    public (int ZoneId, int Set, float X, float Z)? PendingInstance { get; private set; }
+
+    public void RequestInstance(int zoneId, int set, float x, float z) => PendingInstance = (zoneId, set, x, z);
+
     public void FailAction(string reason)
     {
         ActionFailed = true;

@@ -97,8 +97,10 @@ public class QuestSummonTests
         context.RequestSummon(GuardOfBlackMarketer, 1, 467, 519);
         var provider = new ServiceCollection()
             .AddSingleton(sessions)
+            .AddSingleton(gameData)
             .AddSingleton(Substitute.For<IMonsterAggressionPolicy>())
             .AddSingleton<INpcLifecycleService>(new NpcLifecycleService(sessions, Substitute.For<ILogger<NpcLifecycleService>>()))
+            .AddSingleton<INpcSummonService, NpcSummonService>()
             .BuildServiceProvider();
 
         await new ScriptEffectApplier(gameData, Substitute.For<ICharacterStatePersister>(), provider,

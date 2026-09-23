@@ -1,0 +1,41 @@
+Bind Npc 24407 Zone 1 for karus
+Bind Npc 14407 Zone 2 for elmorad
+Quest 803 "[Crack of All Means] Deliver it carefully."
+    Journal for karus "You must accept the request of the [Chief of Order of the Sorcery] Harrigan."
+    Journal for elmorad "You must accept the request of the [Chief of Order of the Sorcery] Marcus."
+    Collect 1 of 900333000
+
+Requires player level >= 58 and quest 802 is completed
+
+Rewards
+    Give 250000 experience
+
+On available
+    If player is karus
+        Say "Bring [Mana remains sample] to Herga."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Bring [Mana remains sample] to Nez."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Did you visit him? What did he say?"
+        Topic "Tell me more..." do
+            Show quest "[Mana remains sample]? Hm...\n\nDeliver [Mana remains sample] to Luferson Castle's [Advisor] Herga following Harrigon's request."
+    If player is elmorad
+        Say "Ah you came back! What did he say?"
+        Topic "Tell me more..." do
+            Show quest "[Mana remains sample]? Hm...\n\nDeliver [Mana remains sample] to El Morad Castle's [Advisor] Nez following Marcus's request."
+
+On in_progress
+    If player is karus
+        Say "So where is it?"
+    If player is elmorad
+        Say "So where is this [Mana remains sample]?"
+
+On claimable
+    If player is karus
+        Show quest "OH no...\n\nI'll need to analyze this. Talk to me again a bit later."
+    If player is elmorad
+        Show quest "oh no...\n\nI'll need to analyze this. Talk to me again a bit later."

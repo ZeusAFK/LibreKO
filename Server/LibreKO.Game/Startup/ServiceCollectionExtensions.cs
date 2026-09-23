@@ -116,6 +116,8 @@ public static class ServiceCollectionExtensions
         // Core services
         services.AddSingleton<IKingEventState, KingEventState>();
         services.AddSingleton<IZoneTransitionService, ZoneTransitionService>();
+        services.AddSingleton<InstanceRoomRegistry>();
+        services.AddSingleton<IInstanceEntryService, InstanceEntryService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();
         services.AddSingleton<IAccountLockService, AccountLockService>();
         services.AddSingleton<IUserNotificationService, UserNotificationService>();
@@ -215,6 +217,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<LibreKO.Quests.Localization.IQuestTranslations>(provider =>
             QuestTranslationLoader.Load(provider));
         services.AddSingleton<INpcLifecycleService, NpcLifecycleService>();
+        services.AddSingleton<INpcSummonService, NpcSummonService>();
         services.AddSingleton<QuestScriptEngine>();
         services.AddSingleton<IQuestDefinitionSource>(p => p.GetRequiredService<QuestScriptEngine>());
         services.AddSingleton<IQuestDialogRunner, QuestDialogRunner>();
@@ -229,6 +232,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<BifrostEventService>();
         services.AddSingleton<IBifrostEventService>(sp => sp.GetRequiredService<BifrostEventService>());
         services.AddHostedService<NpcRespawnService>();
+        services.AddHostedService<InstanceRoomExpiryService>();
         services.AddHostedService<NpcAiService>();
         services.AddHostedService<MovementBroadcastService>();
         services.AddHostedService<BuffExpiryService>();

@@ -57,6 +57,7 @@ public class NpcInstance
     public float Y { get; set; }
     public float Z { get; set; }
     public byte ZoneId { get; set; }
+    public ushort Room { get; set; }
 
     // Spawn (home) position for returning after combat or patrol
     public float SpawnX { get; set; }

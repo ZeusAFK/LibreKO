@@ -1,0 +1,42 @@
+Bind Npc 29072 Zone 71 for karus
+Bind Npc 29073 Zone 71 for elmorad
+Quest 802 "[Crack of All Means] Uncontrollable Mana"
+    Journal for karus "You must help with the experiment of [Chief of Order of the Sorcery] Harrigan."
+    Journal for elmorad "You must help with the experiment of [Chief of Order of the Sorcery] Marcus."
+    Collect 10 of 900331000
+    Collect 1 of 900332000
+
+Requires player level >= 58 and quest 801 is completed
+
+Rewards
+    Give 22500000 experience
+    Give 1 of 900333000
+
+On available
+    If player is karus
+        Say "Harrigon's a bit weird... Talk to him again."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Marcus seems a bit weird. Talk to him again."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "Could you help?"
+        Topic "Tell me more..." do
+            Show quest "Please obtain [Polluted mana remains] and [Pure mana remains]. You'll be able to collect them from where I send you.\n\nCollect [Polluted mana remains] and [Pure mana remains] from the place [Chief of Order of the Sorcery] Harrigon sends you."
+    If player is elmorad
+        Say "Could you help?"
+        Topic "Tell me more..." do
+            Show quest "Please obtain [Polluted mana remains] and [Pure mana remains]. You'll be able to collect them from where I send you.\n\nCollect [Polluted mana remains] and [Pure mana remains] from the place [Chief of Order of the Sorcery] Marcus sends you."
+
+On in_progress
+    Say "I don't think you have enough.?"
+    Topic "[Enter Dungeon]" do
+        Enter instance 81 set 2 at 204 197
+
+On claimable
+    If player is karus
+        Show quest "Sure. This is enough.\n\nBring this [Mana remains sample] to Herga."
+    If player is elmorad
+        Show quest "Sure. This is enough.\n\nBring this [Mana remains sample] to Nez."

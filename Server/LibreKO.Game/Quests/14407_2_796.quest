@@ -1,0 +1,26 @@
+Bind Npc 14407 Zone 2
+Quest 796 "[Crack of All Means] Appropriate Prescription II"
+    Journal "You must follow [Advisor] Nez's order."
+    Kill 30 of 605, 655 at direction_112
+
+Requires player level >= 56 and player is elmorad and quest 794 is completed
+
+Rewards
+    Give 20000000 experience
+
+direction_112 = location "Megantereon" about "Megantereon\nThe representative carnivore of the Adonis Continent, entire body is shrouded by a protective armor, levels rapid attack" found "El Morad" elmorad at 1914 1040 in zone 2
+
+On available
+    Say "[Timing Flow]? Funny name. Since he's calling you, go visit Nez. You'll have another mission."
+    Topic "All right, I'll swing by" goto close
+
+On offer
+    Say "We'll need you again this time."
+    Topic "Tell me more..." do
+        Show quest "First, get this [Timing Flow (Megatereon)]. Equip this and vaccinate [Megatereon]. It'll only work on [Megatereon].\n\nUse [Timing Flow] (MeganTaion) to [MeganTaion], following the order of Nez. \n※ [Timing Flow] (MeganTaion) can be equipped like a weapon. Only when you are conducting the related quest you'll be able to use it."
+
+On in_progress
+    Say "Can you hurry up please?"
+
+On claimable
+    Show quest "It seems that the vaccine is working!\n\nWe are out of antibiotics now. Please bring [100000 Noah], [Curse Antidote] to [Order of the Sorcery] Noker. He'll need this to make additional antibiotics."

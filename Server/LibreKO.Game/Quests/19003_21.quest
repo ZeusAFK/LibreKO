@@ -1,0 +1,10 @@
+Bind Npc 19003 Zone 21
+
+On greeting
+    If quest 610 is started and player lacks 910243000
+        Say "I do not know ...  Stars - strangely nowadays, you do not hear any sound also. Terrible these days, thanks to young mess."
+        Topic "What happened?" do
+            Transaction
+                Give 1 of 910243000
+    Else
+        Say ""

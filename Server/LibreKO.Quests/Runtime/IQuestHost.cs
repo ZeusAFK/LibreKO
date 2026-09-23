@@ -70,6 +70,7 @@ public interface IQuestHost
     void RunGenieExchange(int itemId, int hours);
     void ShowLocation(QuestLocation location, int questId);
     void TeleportToZone(int zoneId, int x, int z);
+    void EnterInstance(int zoneId, int set, int x, int z);
     void CastSkill(int skillId);
     void DespawnNpc();
     void SummonNpc(int npcId, int count, int x, int z);

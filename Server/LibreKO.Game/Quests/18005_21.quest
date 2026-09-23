@@ -6,5 +6,10 @@ On greeting
         Topic "Confirm" do
             Transaction
                 Give 1 of 910217000
+    Else if quest 610 is started and player lacks 910218000
+        Say "It was on the night. Somewhere on the way back home from work overtime, heard faintly hear the sound of the harp. Them asleep and went into the house and shoot me down."
+        Topic "What happened?" do
+            Transaction
+                Give 1 of 910218000
     Else
         Say ""

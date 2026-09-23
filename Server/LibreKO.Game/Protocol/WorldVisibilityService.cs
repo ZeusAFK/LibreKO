@@ -356,7 +356,7 @@ public class WorldVisibilityService(
     public async Task BroadcastRegionTransitionAsync(UserSession session, int oldRegionX, int oldRegionZ)
     {
         var oldNearby = sessionManager.Regions
-            .GetNearbyUsersAt(session.ZoneId, oldRegionX, oldRegionZ, session.CharacterId)
+            .GetNearbyUsersAt(session.Room, session.ZoneId, oldRegionX, oldRegionZ, session.CharacterId)
             .ToHashSet();
         var newNearby = sessionManager.Regions.GetNearbyUsers(session).ToHashSet();
 

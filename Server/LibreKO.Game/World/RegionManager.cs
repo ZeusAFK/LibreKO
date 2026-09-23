@@ -24,12 +24,12 @@ public class RegionManager
     private readonly ConcurrentDictionary<int, LootBundle> _bundles = new();
     private int _nextBundleId = 1;
 
-    private static long RegionKey(byte zoneId, int rx, int rz) =>
-        ((long)zoneId << 32) | ((long)(rx & 0xFFFF) << 16) | (long)(rz & 0xFFFF);
+    private static long RegionKey(ushort room, byte zoneId, int rx, int rz) =>
+        ((long)room << 40) | ((long)zoneId << 32) | ((long)(rx & 0xFFFF) << 16) | (long)(rz & 0xFFFF);
 
     public void AddToRegion(UserSession session)
     {
-        var key = RegionKey(session.ZoneId, session.NewRegionX, session.NewRegionZ);
+        var key = RegionKey(session.Room, session.ZoneId, session.NewRegionX, session.NewRegionZ);
         var region = _regions.GetOrAdd(key, _ => new ConcurrentDictionary<int, UserSession>());
         region[session.CharacterId] = session;
         session.RegionX = session.NewRegionX;
@@ -61,15 +61,15 @@ public class RegionManager
     }
 
     public IEnumerable<UserSession> GetNearbyUsers(UserSession session)
-        => GetNearbyUsersAt(session.ZoneId, session.RegionX, session.RegionZ, session.CharacterId);
+        => GetNearbyUsersAt(session.Room, session.ZoneId, session.RegionX, session.RegionZ, session.CharacterId);
 
-    public IEnumerable<UserSession> GetNearbyUsersAt(byte zoneId, int regionX, int regionZ, int excludeCharacterId)
+    public IEnumerable<UserSession> GetNearbyUsersAt(ushort room, byte zoneId, int regionX, int regionZ, int excludeCharacterId)
     {
         for (var dx = -ViewDistance; dx <= ViewDistance; dx++)
         {
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
-                var key = RegionKey(zoneId, regionX + dx, regionZ + dz);
+                var key = RegionKey(room, zoneId, regionX + dx, regionZ + dz);
                 if (_regions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
@@ -109,11 +109,19 @@ public class RegionManager
 
     private void AddNpcToRegion(NpcInstance npc)
     {
-        var key = RegionKey(npc.ZoneId, npc.NewRegionX, npc.NewRegionZ);
+        var key = RegionKey(npc.Room, npc.ZoneId, npc.NewRegionX, npc.NewRegionZ);
         var region = _npcRegions.GetOrAdd(key, _ => new ConcurrentDictionary<int, NpcInstance>());
         region[npc.UniqueId] = npc;
         npc.RegionX = npc.NewRegionX;
         npc.RegionZ = npc.NewRegionZ;
+    }
+
+    public void RemoveNpc(NpcInstance npc)
+    {
+        _npcs.TryRemove(npc.UniqueId, out _);
+        _engagedNpcs.TryRemove(npc.UniqueId, out _);
+        if (_npcRegions.TryGetValue(RegionKey(npc.Room, npc.ZoneId, npc.RegionX, npc.RegionZ), out var region))
+            region.TryRemove(npc.UniqueId, out _);
     }
 
     public NpcInstance? GetNpc(int uniqueId)
@@ -138,7 +146,7 @@ public class RegionManager
         {
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
-                var key = RegionKey(session.ZoneId, session.RegionX + dx, session.RegionZ + dz);
+                var key = RegionKey(session.Room, session.ZoneId, session.RegionX + dx, session.RegionZ + dz);
                 if (_npcRegions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
@@ -154,7 +162,7 @@ public class RegionManager
         {
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
-                var key = RegionKey(npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
+                var key = RegionKey(npc.Room, npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
                 if (_regions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
@@ -170,7 +178,7 @@ public class RegionManager
         {
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
-                var key = RegionKey(npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
+                var key = RegionKey(npc.Room, npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
                 if (_regions.TryGetValue(key, out var region) && !region.IsEmpty)
                     return true;
             }
@@ -186,7 +194,7 @@ public class RegionManager
         {
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
-                var key = RegionKey(npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
+                var key = RegionKey(npc.Room, npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
                 if (_regions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
@@ -204,7 +212,7 @@ public class RegionManager
             return;
 
         // Remove from old region
-        var oldKey = RegionKey(npc.ZoneId, npc.RegionX, npc.RegionZ);
+        var oldKey = RegionKey(npc.Room, npc.ZoneId, npc.RegionX, npc.RegionZ);
         if (_npcRegions.TryGetValue(oldKey, out var oldRegion))
             oldRegion.TryRemove(npc.UniqueId, out _);
 
@@ -218,7 +226,7 @@ public class RegionManager
         {
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
-                var key = RegionKey(npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
+                var key = RegionKey(npc.Room, npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
                 if (_npcRegions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)

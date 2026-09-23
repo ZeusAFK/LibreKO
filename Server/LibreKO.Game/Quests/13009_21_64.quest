@@ -1,0 +1,25 @@
+Bind Npc 13009 Zone 21
+Quest 64 "Monster Suppression Squad (I)"
+    Journal "Obtain orders for the Bandit Suppression Squad from [Mercenary Captain] Cougar."
+    Collect 1 of 910117000
+
+Requires player level >= 5
+
+Rewards
+    Give 5 of 910115000
+    Give 5 of 910116000
+    Give 1250 experience
+    Give 2000 coins
+
+On offer
+    Say "Infiltrate the bandit base, eliminate their leader, and bring back the proof. Simple enough, no?"
+    Topic "Tell me more..." do
+        Show quest "After wiping out the bandits and their boss Labuma, take his proof to Mercenary Captain Cougar for a reward."
+
+On in_progress
+    Say "You don't have the proof. Proof of the bandit leader is necklace worn by their boss Labuma. Kill him and bring me his necklace.\n\nDo you want to form a bandit suppression squad?"
+    Topic "[Enter Dungeon]" do
+        Enter instance 81 set 1 at 204 197
+
+On claimable
+    Show quest "The proof is authentic. Here, it should come into good use."

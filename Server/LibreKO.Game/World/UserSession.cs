@@ -87,6 +87,8 @@ public class UserSession
     public float Y { get; set; }
     public float Z { get; set; }
     public byte ZoneId { get; set; }
+    public ushort Room { get; set; }
+    public (byte ZoneId, float X, float Z)? InstanceReturn { get; set; }
     public short Direction { get; set; }
 
     // ArenaZones.NoArena unless standing inside a free-for-all arena region of the current zone.

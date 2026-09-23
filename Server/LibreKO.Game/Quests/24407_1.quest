@@ -6,5 +6,13 @@ On greeting
         Topic "Confirm" do
             Transaction
                 Give 1 of 910233000
+    Else if quest 789 is started
+        Say "In order to meet Ramark, you have to go through Herga. Herga will lead the way."
+        Topic "[Enter Dungeon]" do
+            Enter instance 81 set 2 at 204 197
+    Else if quest 790 is started
+        Say "In order to meet Ramark, you have to go through Herga. Herga will lead the way."
+        Topic "[Enter Dungeon]" do
+            Enter instance 81 set 2 at 204 197
     Else
         Say ""

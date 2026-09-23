@@ -1,0 +1,36 @@
+Bind Npc 29070 Zone 1 for karus
+Bind Npc 29071 Zone 2 for elmorad
+Quest 797 "[Crack of All Means] We need more antibiotics."
+    Journal for karus "You must accept the request of [Order of the Sorcery] Gater."
+    Journal for elmorad "You must accept the request of [Order of the Sorcery] Knocker."
+    Collect 20 of 370005000
+    Collect 100000 coins
+
+Requires (player level >= 56 and player is karus and quest 795 is completed) or (player level >= 56 and player is elmorad and quest 796 is completed)
+
+Rewards
+    Give 250000 experience
+
+On available
+    If player is karus
+        Say "Aren't we out of the antibiotics? For now let's go visit gator."
+        Topic "All right, I'll swing by" goto close
+    If player is elmorad
+        Say "Antibiotics might be out. Let's visit Noker."
+        Topic "All right, I'll swing by" goto close
+
+On offer
+    If player is karus
+        Say "How is your mission going?"
+        Topic "Tell me more..." do
+            Show quest "You are out of all the antibiotics? Bring me [100000 Noah] and [Curse Antidote] for me to make more of the antibiotics.\n\nDeliver [100000 Noah] and [Curse Detox] to Gator to help improve antibiotic study following the order of Herga."
+    If player is elmorad
+        Say "How's your mission going?"
+        Topic "Tell me more..." do
+            Show quest "You are out of all the antibiotics? Bring me [100000 Noah] and [Curse Antidote] for me to make more of the antibiotics.\n\nDeliver [100000 Noah] and [Curse Detox] to Gator to help improve antibiotic study following the order of Nez."
+
+On in_progress
+    Say "We need [100000 Noah] and [Curse Antidote]. [Curse Antidote] can be found at the merchant."
+
+On claimable
+    Show quest "You have it. Let's hurry.\n\nYou'll need to be level 57 for the next mission. Go find Herga.\n\nHere, I'll give you [Timing Flow (Hell Hound)].Vaccinate [Helhound] with this and go back to Herga. Thank you."

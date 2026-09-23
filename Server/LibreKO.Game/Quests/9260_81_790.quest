@@ -1,0 +1,19 @@
+Bind Npc 9260 Zone 81
+Quest 790 "[Crack of All Means] Additional material"
+    Journal "You must accept the request of [Biologist] Lamark."
+    Collect 5 of 900328000
+    Collect 1 of 900329000
+
+Requires player level >= 54 and quest 789 is completed
+
+Rewards
+    Give 12500000 experience
+
+On offer
+    Show quest "This isn't enough. I'll tell you what we need now. [Clean Old Tree Sap]. [1st Class Old Tree Sap]. You can get it from [Ancient Aishunt] and [Ancient Trezonz]. I'll wait for you over there.\n\nYou have to collect [Clear Sap of Old Tree] and [First Grade Sap of Old Tree] by [Biologist] Lamark's request. \n※ [Biologist] Lamark resides in the Instant Dungeon. You can enter the Instant Dungeon via [Advisor] Nez of El Morad or [Advisor] Herga, of Karus."
+
+On in_progress
+    Say "You still haven't collected all?"
+
+On claimable
+    Show quest "Cor, really ... This long enough, we'll be fine."

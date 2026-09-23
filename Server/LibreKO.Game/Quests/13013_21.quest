@@ -6,6 +6,11 @@ On greeting
         Topic "Confirm" do
             Transaction
                 Give 1 of 910220000
+    Else if quest 610 is started and player lacks 910242000
+        Say "Lots of buildings are burned in a day. No one knows where the fire starts or what causes it. The only thing that people are aware of is that the fire usually breaks out at night, but nobody has seen the fire started. These days, no one knows what people are thinking because all the people are mentally hazed . . . ."
+        Topic "What happened?" do
+            Transaction
+                Give 1 of 910242000
     Else
         Say "What mission are you going to undertake?"
         If no topic fits

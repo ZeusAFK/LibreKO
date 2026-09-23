@@ -31,6 +31,8 @@ On offer
 
 On in_progress
     Say "What's the problem? I don't think you have enough."
+    Topic "[Enter Dungeon]" do
+        Enter instance 81 set 2 at 204 197
 
 On claimable
     If player is karus

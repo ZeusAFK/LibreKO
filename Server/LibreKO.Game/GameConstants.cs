@@ -3,6 +3,7 @@
 public static class GameConstants
 {
     public const int DailyOperationWindowMinutes = 1440;
+    public const int InstanceRoomMinutes = 30;
 
     public static readonly int MaxAccountCharacters = 4;
 
