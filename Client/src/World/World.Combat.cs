@@ -396,7 +396,7 @@ public partial class World
                 }
                 if (!miss && s?.TargetFx != null)
                 {
-                    if (SpawnFxAtImpact(casterId, targetId, s.TargetFx, s.TargetPart, data)
+                    if (SpawnFxAtImpact(casterId, targetId, s.TargetFx, s.TargetPart, data, s.IsAreaCast)
                         && !(casterId == _myId && s.IsPotion))
                         AudioFxAt(s.TargetFxId, targetId > 0 ? targetId : casterId);
                 }

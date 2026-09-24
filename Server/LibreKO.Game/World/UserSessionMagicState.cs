@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Game.Protocol;
@@ -174,7 +174,6 @@ internal static class UserSessionMagicState
 
         dropped += session.ActiveOverTimeEffects.Count;
         session.ActiveOverTimeEffects.Clear();
-        session.PendingOverTimeExecution = null;
         session.CastingSkillId = 0;
         session.CastReadyTicks = 0;
         session.CastCommitTicks = 0;
@@ -225,7 +224,6 @@ internal static class UserSessionMagicState
     {
         session.ActiveBuffs.Clear();
         session.ActiveOverTimeEffects.Clear();
-        session.PendingOverTimeExecution = null;
         session.Invisibility = InvisibilityType.None;
         session.TransformId = 0;
 

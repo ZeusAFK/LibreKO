@@ -95,31 +95,27 @@ public partial class World
         flight.GlobalBasis = FxInstance.AimBasis(end - start);
     }
 
-    private bool SpawnFxAtImpact(int casterId, int targetId, string fxName, int targetPart, short[] data)
+    private bool SpawnFxAtImpact(int casterId, int targetId, string fxName, int targetPart, short[] data,
+        bool areaCast)
     {
-        if (targetId >= 0 && SkillFxTarget.IsTerrain(targetPart))
+        int entityId = targetId == 0 ? casterId : targetId;
+        switch (SkillFxTarget.Placement(targetPart, targetId, areaCast))
         {
-            int entityId = targetId == 0 ? casterId : targetId;
-            Node3D? body = entityId == _myId ? _self : (_ents.TryGetValue(entityId, out var e) ? e.Body : null);
-            if (body == null) return false;
-            Fx.Spawn(fxName, this, body.GlobalPosition + new Vector3(0, 0.15f, 0), oneShot: true);
-            return true;
+            case ImpactFxPlacement.UnderEntity:
+                Node3D? body = entityId == _myId ? _self : (_ents.TryGetValue(entityId, out var e) ? e.Body : null);
+                if (body == null) return false;
+                Fx.Spawn(fxName, this, body.GlobalPosition + new Vector3(0, 0.15f, 0), oneShot: true);
+                return true;
+            case ImpactFxPlacement.OnEntity:
+                SpawnOwnedFx(entityId, 0, 3, fxName, targetPart, oneShot: true);
+                return true;
+            case ImpactFxPlacement.AtImpactPoint when data.Length > 2:
+                var pos = GroundPos(data[0], data[2], 0f, 0f) + new Vector3(0, 0.15f, 0);
+                Fx.Spawn(fxName, this, pos, oneShot: true);
+                return true;
+            default:
+                return false;
         }
-        if (!SkillFxTarget.MatchesPacket(targetPart, targetId)) return false;
-        if (targetId >= 0)
-        {
-            SpawnOwnedFx(targetId == 0 ? casterId : targetId, 0, 3, fxName, targetPart, oneShot: true);
-            return true;
-        }
-
-        if (data.Length > 2)
-        {
-            var pos = GroundPos(data[0], data[2], 0f, 0f) + new Vector3(0, 0.15f, 0);
-            Fx.Spawn(fxName, this, pos, oneShot: true);
-            return true;
-        }
-
-        return false;
     }
 
     private void SpawnOwnedFx(int entityId, int skillId, int phase, string fxName, int encodedPart,

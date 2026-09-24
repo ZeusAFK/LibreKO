@@ -68,6 +68,8 @@ public static class SkillData
 
         public bool IsCasterArea => IsArea && (IsCasterAreaMoral || (IsAreaMoral && !HasCastPhase));
 
+        public bool IsAreaCast => IsGroundArea || IsCasterArea;
+
         public bool IsMelee => Type1 == MagicType.Melee || Type2 == MagicType.Melee;
 
         public bool IsRanged => Type1 == MagicType.Ranged || Type2 == MagicType.Ranged;

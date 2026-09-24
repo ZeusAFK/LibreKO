@@ -191,6 +191,9 @@ public class CombatLifecycleService(
 
     public async Task HandlePlayerDeathAsync(UserSession victim, UserSession? killer)
     {
+        if (killer?.CharacterId == victim.CharacterId)
+            killer = null;
+
         if (victim.Trade.IsTrading)
             await exchangePacketCoordinator.CancelAsync(victim, isOnDeath: true);
 

@@ -22,8 +22,6 @@ public class MagicPacketCoordinator(
     IMagicTimingService magicTimingService,
     ILogger<MagicPacketCoordinator> logger) : IMagicPacketCoordinator
 {
-    private const int OverTimeFinalizeDelayMs = 120;
-
     public async Task HandleAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
@@ -124,14 +122,11 @@ public class MagicPacketCoordinator(
                     return;
                 }
 
-                await HandleClientExecutionAsync(session, magic, skillId, targetId, data, magicOpcode);
-                break;
-            case MagicProcessOpcode.Fail when magic.PrimaryType == MagicSkillType.OverTime
-                && session.CastingSkillId != skillId:
-                await HandleClientExecutionAsync(session, magic, skillId, targetId, data, magicOpcode);
+                await HandleClientExecutionAsync(session, magic, skillId, targetId, data);
                 break;
             case MagicProcessOpcode.Fail:
-                magicTimingService.OnCastAborted(session, skillId);
+                if (session.CastingSkillId == skillId)
+                    magicTimingService.OnCastAborted(session, skillId);
                 await sessionManager.Regions.SendToRegion(
                     session,
                     MagicProcessPacketWriter.Create(MagicProcessOpcode.Fail, magic.Id, (short)session.CharacterId, targetId, data),
@@ -202,8 +197,7 @@ public class MagicPacketCoordinator(
         MagicData magic,
         int skillId,
         int targetId,
-        int[] data,
-        byte magicOpcode)
+        int[] data)
     {
         if (magic.PrimaryType == MagicSkillType.Melee)
             return ExecuteMeleeWithManaCostAsync(session, magic, skillId, targetId, data);
@@ -211,73 +205,8 @@ public class MagicPacketCoordinator(
         if (magic.PrimaryType != MagicSkillType.OverTime)
             return ExecuteOtherWithManaCostAsync(session, magic, skillId, targetId, data);
 
-        if (magicOpcode == (byte)MagicProcessOpcode.Fail)
-        {
-            if (session.PendingOverTimeExecution?.SkillId == skillId)
-                session.PendingOverTimeExecution = null;
-
-            if (IsClientReportedMiss(session, targetId, data))
-                return Task.CompletedTask;
-
-            return ExecuteOverTimeWithManaCostAsync(session, magic, skillId, targetId, data);
-        }
-
-        if (!ShouldDelayOverTimeExecution(skillId))
-            return ExecuteOverTimeWithManaCostAsync(session, magic, skillId, targetId, data);
-
-        var token = ++session.PendingOverTimeToken;
-        var pendingExecution = new PendingMagicExecution
-        {
-            Token = token,
-            SkillId = skillId,
-            TargetId = targetId,
-            Data = [.. data]
-        };
-
-        session.PendingOverTimeExecution = pendingExecution;
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(OverTimeFinalizeDelayMs);
-                if (session.PendingOverTimeExecution?.Token != token)
-                    return;
-
-                session.PendingOverTimeExecution = null;
-                await ExecuteOverTimeWithManaCostAsync(
-                    session,
-                    magic,
-                    pendingExecution.SkillId,
-                    pendingExecution.TargetId,
-                    pendingExecution.Data);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(
-                    ex,
-                    "Deferred type-3 execution failed for {Name} skill={SkillId}",
-                    session.Name,
-                    skillId);
-            }
-        });
-
-        return Task.CompletedTask;
+        return ExecuteOverTimeWithManaCostAsync(session, magic, skillId, targetId, data);
     }
-
-    private bool ShouldDelayOverTimeExecution(int skillId) =>
-        gameDataService.MagicType3Table.TryGetValue(skillId, out var type3Data)
-        && type3Data.Radius > 0;
-
-    private static bool IsClientReportedMiss(UserSession session, int targetId, int[] data) =>
-        targetId == session.CharacterId
-        && data.Length > 3
-        && data[3] <= -100
-        && !HasAreaCoordinates(data);
-
-    private static bool HasAreaCoordinates(int[] data) =>
-        (data.Length > 0 && data[0] != 0)
-        || (data.Length > 2 && data[2] != 0);
 
     private async Task HandleCastingAsync(UserSession session, MagicData magic, int targetId, int[] data)
     {

@@ -234,8 +234,6 @@ public class UserSession
     // Active buffs: magicId -> ActiveBuff
     public ConcurrentDictionary<int, ActiveBuff> ActiveBuffs { get; } = new();
     public ConcurrentDictionary<int, ActiveOverTimeEffect> ActiveOverTimeEffects { get; } = new();
-    public PendingMagicExecution? PendingOverTimeExecution { get; set; }
-    public long PendingOverTimeToken { get; set; }
 
     public ConcurrentDictionary<int, long> SkillCooldowns { get; } = new();
     public int CastingSkillId { get; set; }

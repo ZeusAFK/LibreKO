@@ -118,11 +118,13 @@ public partial class World
         int skillId = _castingSkillId;
         if (skillId == 0) return;
         var s = SkillData.Get(skillId);
-        if (s is not { HasCastPhase: true }) return;
-        if (s.NeedsFlying && Now() >= _castingUntil - s.CastSeconds + RangedCommitSeconds)
-            ReleaseSelfCastEarly(skillId);
-        else
-            CancelSelfCast(skillId);
+        if (s == null) return;
+        bool pastCommit = Now() >= _castingUntil - s.CastSeconds + RangedCommitSeconds;
+        switch (CastInterrupt.OnMove(s.HasCastPhase, !PendingCastPreEffect(skillId), s.NeedsFlying, pastCommit))
+        {
+            case CastInterruptAction.ReleaseEarly: ReleaseSelfCastEarly(skillId); break;
+            case CastInterruptAction.Cancel: CancelSelfCast(skillId); break;
+        }
     }
 
     private void ReleaseSelfCastEarly(int skillId)

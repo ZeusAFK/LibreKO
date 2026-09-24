@@ -121,6 +121,19 @@ public class PvpRulesTests : GameTestBase
     }
 
     [Fact]
+    public async Task DyingToYourOwnSkillMakesNobodyYourRival()
+    {
+        using var provider = CreateProvider(_ => { });
+        var victim = CreatePlayer(provider, 812, BattleZoneManager.ZONE_RONARK_LAND, AccountNation.Karus);
+        var loyalty = victim.Loyalty;
+
+        await KillAsync(provider, victim, victim);
+
+        victim.RivalId.Should().Be(-1, "a player can never be their own rival");
+        victim.Loyalty.Should().Be(loyalty);
+    }
+
+    [Fact]
     public async Task TakingRevengeEndsTheRivalry()
     {
         using var provider = CreateProvider(_ => { });

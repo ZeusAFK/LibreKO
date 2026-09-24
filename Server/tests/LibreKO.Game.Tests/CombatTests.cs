@@ -2406,7 +2406,7 @@ public class CombatTests : GameTestBase
     }
 
     [Fact]
-    public async Task MagicPacketCoordinator_HandleAsync_Type3Subtype4SchedulesBlazeDotOnNpc()
+    public async Task MagicPacketCoordinator_HandleAsync_Type3EffectingSchedulesBlazeDotOnNpc()
     {
         const int skillId = 209509;
 
@@ -2469,7 +2469,7 @@ public class CombatTests : GameTestBase
         });
 
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
-        packet.WriteByte((byte)MagicProcessOpcode.Fail);
+        packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);
         packet.WriteInt(mage.CharacterId);
         packet.WriteInt(worm.UniqueId);
@@ -2496,7 +2496,7 @@ public class CombatTests : GameTestBase
     }
 
     [Fact]
-    public async Task MagicPacketCoordinator_HandleAsync_Type3Subtype4OverridesQueuedAreaExecution()
+    public async Task MagicPacketCoordinator_HandleAsync_Type3FailAfterAnAreaReleaseKeepsTheHitAndSparesTheCaster()
     {
         const int skillId = 209533;
 
@@ -2597,31 +2597,29 @@ public class CombatTests : GameTestBase
         effectingPacket.WriteByte((byte)MagicProcessOpcode.Effecting);
         effectingPacket.WriteInt(skillId);
         effectingPacket.WriteInt(mage.CharacterId);
-        effectingPacket.WriteInt(primaryWorm.UniqueId);
-        for (var i = 0; i < 7; i++)
+        effectingPacket.WriteInt(-1);
+        effectingPacket.WriteInt((short)primaryWorm.X);
+        effectingPacket.WriteInt(5);
+        effectingPacket.WriteInt((short)primaryWorm.Z);
+        for (var i = 0; i < 4; i++)
             effectingPacket.WriteInt(0);
 
-        var finalizePacket = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
-        finalizePacket.WriteByte((byte)MagicProcessOpcode.Fail);
-        finalizePacket.WriteInt(skillId);
-        finalizePacket.WriteInt(mage.CharacterId);
-        finalizePacket.WriteInt(primaryWorm.UniqueId);
-        finalizePacket.WriteInt((short)primaryWorm.X);
-        finalizePacket.WriteInt(5);
-        finalizePacket.WriteInt((short)primaryWorm.Z);
-        finalizePacket.WriteInt(-101);
-        finalizePacket.WriteInt(1);
-        finalizePacket.WriteInt(0);
-        finalizePacket.WriteInt(0);
+        var failPacket = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
+        failPacket.WriteByte((byte)MagicProcessOpcode.Fail);
+        failPacket.WriteInt(skillId);
+        failPacket.WriteInt(mage.CharacterId);
+        failPacket.WriteInt(mage.CharacterId);
+        for (var i = 0; i < 7; i++)
+            failPacket.WriteInt(0);
 
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
         await coordinator.HandleAsync(client, effectingPacket);
-        await coordinator.HandleAsync(client, finalizePacket);
-        await Task.Delay(250);
+        await coordinator.HandleAsync(client, failPacket);
 
         primaryWorm.Hp.Should().BeLessThan(1000);
         nearbyWorm.Hp.Should().BeLessThan(1000);
         farWorm.Hp.Should().Be(1000);
+        mage.Hp.Should().Be(100, "a fail sent after the release must not turn the spell on its caster");
     }
 
     [Fact]
@@ -2691,21 +2689,19 @@ public class CombatTests : GameTestBase
             EvadeRate = 1
         });
 
-        var finalizePacket = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
-        finalizePacket.WriteByte((byte)MagicProcessOpcode.Fail);
-        finalizePacket.WriteInt(skillId);
-        finalizePacket.WriteInt(mage.CharacterId);
-        finalizePacket.WriteInt(doomedWorm.UniqueId);
-        finalizePacket.WriteInt((short)doomedWorm.X);
-        finalizePacket.WriteInt(5);
-        finalizePacket.WriteInt((short)doomedWorm.Z);
-        finalizePacket.WriteInt(-101);
-        finalizePacket.WriteInt(1);
-        finalizePacket.WriteInt(0);
-        finalizePacket.WriteInt(0);
+        var effectingPacket = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
+        effectingPacket.WriteByte((byte)MagicProcessOpcode.Effecting);
+        effectingPacket.WriteInt(skillId);
+        effectingPacket.WriteInt(mage.CharacterId);
+        effectingPacket.WriteInt(-1);
+        effectingPacket.WriteInt((short)doomedWorm.X);
+        effectingPacket.WriteInt(5);
+        effectingPacket.WriteInt((short)doomedWorm.Z);
+        for (var i = 0; i < 4; i++)
+            effectingPacket.WriteInt(0);
 
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
-        await coordinator.HandleAsync(client, finalizePacket);
+        await coordinator.HandleAsync(client, effectingPacket);
 
         doomedWorm.Hp.Should().Be(0);
 
