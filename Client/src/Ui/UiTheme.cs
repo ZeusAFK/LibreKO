@@ -15,6 +15,7 @@ public static class UiTheme
 
     public static readonly Color Gold       = new("c8a45a");
     public static readonly Color GoldBright = new("ecd9a6");
+    public static readonly Color GoldVivid  = new("e4b552");
     public static readonly Color GoldDark   = new("5a5038");
     public static readonly Color Bronze     = new("8a6d3c");
     public static readonly Color BronzeDark = new("3f3325");
@@ -149,6 +150,73 @@ public static class UiTheme
         b.AddThemeColorOverride("font_hover_pressed_color", GoldBright);
         return b;
     }
+
+    public static StyleBoxFlat UnderlineTab(bool selected, bool hover = false)
+    {
+        var sb = new StyleBoxFlat
+        {
+            BgColor = selected ? new Color("24221d") : hover ? new Color("1c1d21") : new Color("151718"),
+            BorderColor = selected ? GoldDark : hover ? new Color(Gold, 0.55f) : new Color(Edge, 0.6f),
+        };
+        sb.SetBorderWidthAll(1);
+        sb.SetCornerRadiusAll(4);
+        sb.ContentMarginLeft = sb.ContentMarginRight = 10;
+        sb.ContentMarginTop = sb.ContentMarginBottom = 6;
+        return sb;
+    }
+
+    public static Button UnderlineTabButton(string text, int fontSize = 14)
+    {
+        var b = new Button
+        {
+            Text = text,
+            ToggleMode = true,
+            FocusMode = Control.FocusModeEnum.None,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
+        b.AddThemeFontSizeOverride("font_size", fontSize);
+        b.AddThemeStyleboxOverride("normal", UnderlineTab(false));
+        b.AddThemeStyleboxOverride("hover", UnderlineTab(false, hover: true));
+        b.AddThemeStyleboxOverride("pressed", UnderlineTab(true));
+        b.AddThemeStyleboxOverride("hover_pressed", UnderlineTab(true));
+        b.AddThemeColorOverride("font_color", TextHi);
+        b.AddThemeColorOverride("font_hover_color", GoldBright);
+        b.AddThemeColorOverride("font_pressed_color", GoldVivid);
+        b.AddThemeColorOverride("font_hover_pressed_color", GoldVivid);
+
+        var underline = new ColorRect
+        {
+            Color = GoldVivid,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Visible = false,
+            AnchorLeft = 0, AnchorRight = 1, AnchorTop = 1, AnchorBottom = 1,
+            OffsetLeft = 2, OffsetRight = -2, OffsetTop = -3, OffsetBottom = 0,
+        };
+        b.AddChild(underline);
+        b.Toggled += on => underline.Visible = on;
+        return b;
+    }
+
+    public static Separator Rule(bool vertical = false)
+    {
+        Separator rule = vertical ? new VSeparator() : new HSeparator();
+        rule.AddThemeStyleboxOverride("separator", new StyleBoxLine
+        {
+            Color = new Color(Edge, 0.45f),
+            Thickness = 1,
+            Vertical = vertical,
+        });
+        rule.AddThemeConstantOverride("separation", 1);
+        return rule;
+    }
+
+    private static FontVariation? _strong;
+
+    public static Font Strong => _strong ??= new FontVariation
+    {
+        BaseFont = ThemeDB.FallbackFont,
+        VariationEmbolden = 0.3f,
+    };
 
     public static StyleBoxFlat ListRow(bool selected)
     {

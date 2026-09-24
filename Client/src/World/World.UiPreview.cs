@@ -360,6 +360,7 @@ public partial class World
             StatPoints = 12,
             MaxHp = 3_284, MaxMp = 812, Ap = 517, Ac = 936,
             Gold = 1_180_000,
+            Loyalty = 18_450,
             SkillPoints = new byte[] { 6, 0, 0, 0, 0, 63, 42, 21, 0 },
             ClassOptions = new[] { 101, 106 },
         };

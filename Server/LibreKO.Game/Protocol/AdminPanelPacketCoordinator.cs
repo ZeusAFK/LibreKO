@@ -25,6 +25,7 @@ public class AdminPanelPacketCoordinator(
     IZoneTransitionService zoneTransitionService,
     ICollectionRaceService collectionRaceService,
     IPlayerProgressionService playerProgressionService,
+    ILoyaltyService loyaltyService,
     IServiceScopeFactory scopeFactory,
     IOptions<GameServerSettings> settings,
     ILogger<AdminPanelPacketCoordinator> logger) : IAdminPanelPacketCoordinator
@@ -176,6 +177,8 @@ public class AdminPanelPacketCoordinator(
         session.Intelligence = ClampStat(packet.ReadByte());
         session.Magic = ClampStat(packet.ReadByte());
         session.StatPoints = Math.Clamp(packet.ReadShort(), (short)0, StatPointsCeiling);
+        if (packet.RemainingBytes >= sizeof(int))
+            await loyaltyService.SetAsync(session, packet.ReadInt());
 
         Recalculate(session);
         await RefillVitalsAsync(session);
@@ -185,11 +188,11 @@ public class AdminPanelPacketCoordinator(
         await SendStateAsync(session, granted: true);
         await SendResultAsync(session, true,
             $"Stats set — STR {session.Strength} STA {session.Stamina} DEX {session.Dexterity} " +
-            $"INT {session.Intelligence} MP {session.Magic}, {session.StatPoints} free.");
+            $"INT {session.Intelligence} MP {session.Magic}, {session.StatPoints} free, NP {session.Loyalty:n0}.");
         logger.LogInformation(
-            "GM {Name} set own stats: str={Str} sta={Sta} dex={Dex} int={Int} mag={Mag} points={Points}",
+            "GM {Name} set own stats: str={Str} sta={Sta} dex={Dex} int={Int} mag={Mag} points={Points} np={Np}",
             session.Name, session.Strength, session.Stamina, session.Dexterity,
-            session.Intelligence, session.Magic, session.StatPoints);
+            session.Intelligence, session.Magic, session.StatPoints, session.Loyalty);
     }
 
     private async Task HandleGiveItemAsync(UserSession session, Packet packet)
@@ -560,7 +563,7 @@ public class AdminPanelPacketCoordinator(
             session.StatPoints, session.MaxHp, session.MaxMp,
             (short)session.Stats.TotalHit, session.Stats.TotalAc,
             session.Money, session.SkillPoints, ClassOptionsFor(session),
-            (byte)session.Nation, session.Race);
+            (byte)session.Nation, session.Race, session.Loyalty);
 
         await session.Client.SendPacket(AdminPanelPacketWriter.StateGranted(AckState, state));
     }
@@ -607,6 +610,7 @@ public class AdminPanelPacketCoordinator(
             character.Magic = session.Magic;
             character.StatPoints = session.StatPoints;
             character.Money = session.Money;
+            character.Loyalty = session.Loyalty;
             character.SkillPointData = session.SkillPoints;
             await characters.UpdateAsync(character);
         }

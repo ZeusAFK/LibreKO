@@ -14,4 +14,5 @@ public struct AdminState
     public int[] ClassOptions;
     public int Nation;
     public int Race;
+    public int Loyalty;
 }

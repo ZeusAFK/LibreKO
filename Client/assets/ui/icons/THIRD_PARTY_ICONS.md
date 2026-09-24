@@ -67,3 +67,6 @@ runtime: `system/stat-str` (fist), `stat-hp` (heart), `stat-dex` (reticle), `sta
 `stat-int` (open book), `combat-attack` (upright sword), `combat-defence` (shield), and the six
 resistances `res-fire`, `res-ice`, `res-lightning`, `res-magic`, `res-curse`, `res-poison`. Each is
 drawn as a single filled silhouette so it survives being tinted and scaled to 20-22 px.
+
+`system/level.svg` is an original bar chart drawn for GKO on the same grid, for the GM panel's Level
+section: three rounded bars rising left to right.

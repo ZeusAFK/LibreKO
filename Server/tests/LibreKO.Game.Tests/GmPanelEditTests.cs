@@ -11,6 +11,7 @@ namespace LibreKO.Game.Tests;
 
 public class GmPanelEditTests : GameTestBase
 {
+    private const byte ReqStats = 3;
     private const byte ReqSetClass = 5;
     private const byte ReqSetLevel = 11;
     private const byte ReqSetSkill = 12;
@@ -119,6 +120,45 @@ public class GmPanelEditTests : GameTestBase
 
             session.Nation.Should().Be(AccountNation.Karus);
             session.Race.Should().Be((byte)CharacterRace.KarusArchTuarek);
+        }
+    }
+
+    [Theory]
+    [InlineData(250_000, 250_000)]
+    [InlineData(-5, 0)]
+    public async Task StatsEditSetsTheNationalPoints(int requested, int expected)
+    {
+        var (provider, client, session) = Arrange();
+        using (provider)
+        {
+            session.Loyalty = 1_200;
+
+            var packet = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+            packet.WriteByte(ReqStats);
+            foreach (byte stat in new byte[] { 90, 80, 70, 60, 50 })
+                packet.WriteByte(stat);
+            packet.WriteShort(12);
+            packet.WriteInt(requested);
+            await provider.GetRequiredService<IAdminPanelPacketCoordinator>().HandleAsync(client, packet);
+
+            session.Strength.Should().Be(90);
+            session.StatPoints.Should().Be(12);
+            session.Loyalty.Should().Be(expected);
+        }
+    }
+
+    [Fact]
+    public async Task StatsEditWithoutNationalPointsKeepsThem()
+    {
+        var (provider, client, session) = Arrange();
+        using (provider)
+        {
+            session.Loyalty = 1_200;
+
+            await Send(provider, client, ReqStats, 90, 80, 70, 60, 50, 12, 0);
+
+            session.Strength.Should().Be(90);
+            session.Loyalty.Should().Be(1_200);
         }
     }
 

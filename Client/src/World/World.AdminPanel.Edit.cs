@@ -25,37 +25,41 @@ public partial class World
     private Control BuildAdminLevelSection()
     {
         var box = new VBoxContainer();
-        box.AddThemeConstantOverride("separation", 4);
-
-        box.AddChild(new HSeparator());
-        box.AddChild(UiTheme.SectionTitle("Level"));
+        box.AddThemeConstantOverride("separation", 7);
+        box.AddChild(AdminHeading("Level", "system/level"));
 
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 5);
+        row.AddThemeConstantOverride("separation", 0);
         box.AddChild(row);
-
-        var label = UiTheme.Text("Level", 13, UiTheme.TextHi);
-        label.CustomMinimumSize = new Vector2(52, 0);
-        row.AddChild(label);
-
-        _admLevelSpin = MakeAdminSpin(CharacterSheet.MinLevel, CharacterSheet.MaxLevel, 1);
+        row.AddChild(AdminFieldLabel("Level", 66));
+        _admLevelSpin = AdminSpin(CharacterSheet.MinLevel, CharacterSheet.MaxLevel, 135);
         row.AddChild(_admLevelSpin);
 
-        var set = new Button { Text = "Set", FocusMode = Control.FocusModeEnum.None };
+        var actions = new HBoxContainer();
+        actions.AddThemeConstantOverride("separation", 8);
+        box.AddChild(actions);
+
+        var set = AdminButton("Set", 56);
         set.Pressed += () =>
         {
             Net.I.SendAdminSetLevel((int)_admLevelSpin.Value, reset: false);
             SetAdminStatus("Setting level…", false);
         };
-        row.AddChild(set);
+        actions.AddChild(set);
 
-        var reset = new Button { Text = "Reset to level", FocusMode = Control.FocusModeEnum.None };
+        var reset = AdminButton("Reset to level");
         reset.Pressed += () =>
         {
             Net.I.SendAdminSetLevel((int)_admLevelSpin.Value, reset: true);
             SetAdminStatus("Resetting to level…", false);
         };
-        row.AddChild(reset);
+        actions.AddChild(reset);
+
+        if (_isGm)
+        {
+            box.AddChild(new Control { CustomMinimumSize = new Vector2(0, 12) });
+            box.AddChild(BuildAdminCollisionRow());
+        }
 
         return box;
     }

@@ -120,6 +120,7 @@ public partial class Net
 
         state.Nation = p.RemainingBytes >= 1 ? p.ReadByte() : LastEnter.Nation;
         state.Race = p.RemainingBytes >= 1 ? p.ReadByte() : LastEnter.Race;
+        state.Loyalty = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
 
         if (state.Class != 0) ApplyOwnClass(state.Class);
 
@@ -142,7 +143,7 @@ public partial class Net
         _conn.Send(p);
     }
 
-    public void SendAdminStats(int str, int sta, int dex, int intel, int magic, int statPoints)
+    public void SendAdminStats(int str, int sta, int dex, int intel, int magic, int statPoints, int loyalty)
     {
         var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
         p.WriteByte(AdminReqStats);
@@ -152,6 +153,7 @@ public partial class Net
         p.WriteByte(ClampStatByte(intel));
         p.WriteByte(ClampStatByte(magic));
         p.WriteShort(IntToShort(Math.Max(0, statPoints)));
+        p.WriteInt(Math.Max(0, loyalty));
         _conn.Send(p);
     }
 

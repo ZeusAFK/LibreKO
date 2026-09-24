@@ -8,10 +8,14 @@ public partial class World
 {
     private static readonly int[] AdminCoinPresets = { 1_000_000, 10_000_000, 100_000_000 };
 
+    private const float AdminLabelWidth = 58;
+    private const float AdminSpinWidth = 110;
+    private const float AdminColumnGap = 32;
+    private const float AdminControlHeight = 30;
+
     private CanvasLayer _admLayer = null!;
     private HudWindow _admPanel = null!;
     private bool _admEnabled, _admShown;
-    private AdminPanelGrant _admGrant;
     private AdminState _admState;
 
     private readonly Dictionary<string, Control> _admTabs = new();
@@ -20,10 +24,11 @@ public partial class World
     private Control _admTabPark = null!;
 
     private Label _admStatusLbl = null!;
-    private Label _admCoinsLbl = null!, _admDerivedLbl = null!;
+    private Label _admCoinsLbl = null!;
     private LineEdit _admCoinsInput = null!;
     private readonly SpinBox[] _admStatSpins = new SpinBox[CharacterSheet.StatCount];
     private SpinBox _admPointsSpin = null!;
+    private SpinBox _admNpSpin = null!;
     private Label _admClassLbl = null!;
     private VBoxContainer _admClassList = null!;
 
@@ -40,7 +45,6 @@ public partial class World
     private void EnableAdminPanel(AdminPanelGrant grant)
     {
         if (_admEnabled || grant == AdminPanelGrant.None) return;
-        _admGrant = grant;
         _admEnabled = true;
         SeedAdminState();
         BuildAdminPanel();
@@ -58,6 +62,7 @@ public partial class World
             StatPoints = Sheet.Points,
             MaxHp = Vitals.MaxHp, MaxMp = Vitals.MaxMp,
             Ap = Sheet.Ap, Ac = Sheet.Ac, Gold = Sheet.Gold,
+            Loyalty = Sheet.Np,
             SkillPoints = Mastery.ToArray(),
             ClassOptions = System.Array.Empty<int>(),
             Nation = info.Nation, Race = info.Race,
@@ -83,20 +88,12 @@ public partial class World
         _admLayer.AddChild(_admPanel);
 
         var root = _admPanel.Body;
-        root.AddThemeConstantOverride("separation", 7);
-
-        string who = Net.I.LastEnter.Name is { Length: > 0 } name ? name : "GM";
-        string how = _admGrant == AdminPanelGrant.PublicDemo
-            ? "public demo grant"
-            : "authority 0";
-        root.AddChild(UiTheme.Text(
-            $"{who} · {how} · every action is re-checked by the server", 11, UiTheme.TextDim));
-
-        if (_isGm) root.AddChild(BuildAdminCollisionRow());
+        root.AddThemeConstantOverride("separation", 9);
 
         var tabBar = new HBoxContainer();
-        tabBar.AddThemeConstantOverride("separation", 4);
+        tabBar.AddThemeConstantOverride("separation", 5);
         root.AddChild(tabBar);
+        root.AddChild(UiTheme.Rule());
 
         _admTabHost = new MarginContainer();
         root.AddChild(_admTabHost);
@@ -110,7 +107,6 @@ public partial class World
         AddAdminTab(tabBar, "Zones", BuildAdminZonesTab());
         AddAdminTab(tabBar, "Races", BuildAdminCollectionRaceTab());
 
-        root.AddChild(new HSeparator());
         _admStatusLbl = UiTheme.Text("", 12, UiTheme.TextLo);
         _admStatusLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         _admStatusLbl.CustomMinimumSize = new Vector2(640, 0);
@@ -118,6 +114,7 @@ public partial class World
 
         LoadAdminStatSpins();
         LoadAdminSkillSpins();
+        RefreshAdminLevelSpin();
         RefreshAdminCharacterTab();
         RefreshAdminClassTab();
         SyncAdminLookPicks();
@@ -131,11 +128,8 @@ public partial class World
     private Control BuildAdminCollisionRow()
     {
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 8);
-
-        var label = UiTheme.Text("Collision", 12, UiTheme.TextLo);
-        label.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        row.AddChild(label);
+        row.AddThemeConstantOverride("separation", 10);
+        row.AddChild(AdminFieldLabel("Collision", 0));
 
         _admCollisionSwitch = new CheckButton
         {
@@ -159,7 +153,10 @@ public partial class World
     {
         _admTabPark.AddChild(body);
         _admTabs[label] = body;
-        tabBar.AddChild(MakeSubTabButton(label, label, () => SelectAdminTab(label), _admTabBtns));
+        var button = UiTheme.UnderlineTabButton(label);
+        button.Pressed += () => SelectAdminTab(label);
+        _admTabBtns[label] = button;
+        tabBar.AddChild(button);
     }
 
     private void SelectAdminTab(string label)
@@ -190,80 +187,150 @@ public partial class World
     private Control BuildAdminCharacterTab()
     {
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(640, 0) };
-        box.AddThemeConstantOverride("separation", 7);
+        box.AddThemeConstantOverride("separation", 10);
 
-        box.AddChild(UiTheme.SectionTitle("Coins", UiIcons.Get("system/coins")));
-        _admCoinsLbl = UiTheme.Text("", 13, UiTheme.GoldBright);
-        box.AddChild(_admCoinsLbl);
+        box.AddChild(BuildAdminCoinRow());
+        box.AddChild(UiTheme.Rule());
 
-        var coinRow = new HBoxContainer();
-        coinRow.AddThemeConstantOverride("separation", 5);
-        box.AddChild(coinRow);
+        var columns = new HBoxContainer();
+        columns.AddThemeConstantOverride("separation", 14);
+        box.AddChild(columns);
+        columns.AddChild(BuildAdminStatsSection());
+        columns.AddChild(UiTheme.Rule(vertical: true));
+        var level = BuildAdminLevelSection();
+        level.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        columns.AddChild(level);
+
+        return box;
+    }
+
+    private Control BuildAdminCoinRow()
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 7);
+
+        row.AddChild(AdminHeading("Coins", "system/coins"));
+        _admCoinsLbl = UiTheme.Text("", 15, UiTheme.TextHi);
+        _admCoinsLbl.VerticalAlignment = VerticalAlignment.Center;
+        row.AddChild(_admCoinsLbl);
+        row.AddChild(new Control { CustomMinimumSize = new Vector2(4, 0) });
+
+        foreach (int preset in AdminCoinPresets)
+        {
+            int amount = preset;
+            var button = AdminButton($"+{FormatCoinShort(amount)}");
+            button.Pressed += () => Net.I.SendAdminCoins(amount);
+            row.AddChild(button);
+        }
+
         _admCoinsInput = new LineEdit
         {
             PlaceholderText = "amount",
             Text = "1000000",
-            CustomMinimumSize = new Vector2(112, 0),
+            CustomMinimumSize = new Vector2(96, AdminControlHeight),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
-        coinRow.AddChild(_admCoinsInput);
-        var giveCoins = new Button { Text = "Give", FocusMode = Control.FocusModeEnum.None };
-        giveCoins.Pressed += () => SendAdminCoinDelta(1);
-        coinRow.AddChild(giveCoins);
-        var takeCoins = new Button { Text = "Take", FocusMode = Control.FocusModeEnum.None };
-        takeCoins.Pressed += () => SendAdminCoinDelta(-1);
-        coinRow.AddChild(takeCoins);
+        _admCoinsInput.AddThemeFontSizeOverride("font_size", 14);
+        row.AddChild(_admCoinsInput);
 
-        var presetRow = new HBoxContainer();
-        presetRow.AddThemeConstantOverride("separation", 5);
-        box.AddChild(presetRow);
-        foreach (int preset in AdminCoinPresets)
-        {
-            int amount = preset;
-            var button = new Button { Text = $"+{FormatCoinShort(amount)}", FocusMode = Control.FocusModeEnum.None };
-            button.AddThemeFontSizeOverride("font_size", 12);
-            button.Pressed += () => Net.I.SendAdminCoins(amount);
-            presetRow.AddChild(button);
-        }
+        var give = AdminButton("Give", 60);
+        give.Pressed += () => SendAdminCoinDelta(1);
+        row.AddChild(give);
+        var take = AdminButton("Take", 60);
+        take.Pressed += () => SendAdminCoinDelta(-1);
+        row.AddChild(take);
+        return row;
+    }
 
-        box.AddChild(new HSeparator());
-        box.AddChild(UiTheme.SectionTitle("Stats", UiIcons.Get("game/chest")));
+    private Control BuildAdminStatsSection()
+    {
+        var box = new VBoxContainer();
+        box.AddThemeConstantOverride("separation", 7);
+        box.AddChild(AdminHeading("Stats", "game/chest"));
 
-        var grid = new GridContainer { Columns = 2 };
-        grid.AddThemeConstantOverride("h_separation", 10);
-        grid.AddThemeConstantOverride("v_separation", 3);
-        box.AddChild(grid);
         for (int i = 0; i < CharacterSheet.StatCount; i++)
+            _admStatSpins[i] = AdminSpin(1, 255, AdminSpinWidth);
+        _admPointsSpin = AdminSpin(0, 10_000, AdminSpinWidth);
+
+        int rows = (CharacterSheet.StatCount + 1) / 2;
+        for (int i = 0; i < rows; i++)
         {
-            var name = UiTheme.Text(StatLabels[i], 13, UiTheme.TextHi);
-            name.CustomMinimumSize = new Vector2(52, 0);
-            grid.AddChild(name);
-            _admStatSpins[i] = MakeAdminSpin(1, 255, 1);
-            grid.AddChild(_admStatSpins[i]);
+            int right = i + rows;
+            box.AddChild(right < CharacterSheet.StatCount
+                ? AdminStatRow(StatLabels[i], _admStatSpins[i], StatLabels[right], _admStatSpins[right])
+                : AdminStatRow(StatLabels[i], _admStatSpins[i], "Free", _admPointsSpin));
         }
-        grid.AddChild(UiTheme.Text("Free", 13, UiTheme.TextHi));
-        _admPointsSpin = MakeAdminSpin(0, 10_000, 1);
-        grid.AddChild(_admPointsSpin);
 
-        _admDerivedLbl = UiTheme.Text("", 12, UiTheme.TextLo);
-        box.AddChild(_admDerivedLbl);
+        var npRow = new HBoxContainer();
+        npRow.AddThemeConstantOverride("separation", 0);
+        npRow.AddChild(AdminFieldLabel("NP"));
+        _admNpSpin = AdminSpin(0, int.MaxValue, AdminSpinWidth * 2 + AdminColumnGap + AdminLabelWidth);
+        _admNpSpin.TooltipText = "National points";
+        npRow.AddChild(_admNpSpin);
+        box.AddChild(npRow);
 
-        var statRow = new HBoxContainer();
-        statRow.AddThemeConstantOverride("separation", 5);
-        box.AddChild(statRow);
-        var applyStats = new Button { Text = "Apply stats", FocusMode = Control.FocusModeEnum.None };
-        applyStats.Pressed += OnAdminApplyStats;
-        statRow.AddChild(applyStats);
-        var revertStats = new Button { Text = "Revert", FocusMode = Control.FocusModeEnum.None };
-        revertStats.Pressed += LoadAdminStatSpins;
-        statRow.AddChild(revertStats);
+        var actions = new HBoxContainer();
+        actions.AddThemeConstantOverride("separation", 7);
+        box.AddChild(actions);
+        var apply = AdminButton("Apply stats", 108);
+        apply.Pressed += OnAdminApplyStats;
+        actions.AddChild(apply);
+        var revert = AdminButton("Revert", 76);
+        revert.Pressed += LoadAdminStatSpins;
+        actions.AddChild(revert);
         var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), "Re-read state from the server");
+        refresh.CustomMinimumSize = new Vector2(36, AdminControlHeight);
         refresh.Pressed += () => Net.I.SendAdminStateRequest();
-        statRow.AddChild(refresh);
-
-        box.AddChild(BuildAdminLevelSection());
+        actions.AddChild(refresh);
 
         return box;
+    }
+
+    private static HBoxContainer AdminStatRow(string leftName, SpinBox left, string rightName, SpinBox right)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 0);
+        row.AddChild(AdminFieldLabel(leftName));
+        row.AddChild(left);
+        row.AddChild(new Control { CustomMinimumSize = new Vector2(AdminColumnGap, 0) });
+        row.AddChild(AdminFieldLabel(rightName));
+        row.AddChild(right);
+        return row;
+    }
+
+    private static HBoxContainer AdminHeading(string text, string icon, int size = 15)
+    {
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 7);
+        row.AddChild(UiIcons.Image(icon, new Vector2(size + 3, size + 3), UiTheme.GoldVivid));
+        var label = UiTheme.Text(text, size, UiTheme.GoldVivid);
+        label.AddThemeFontOverride("font", UiTheme.Strong);
+        label.VerticalAlignment = VerticalAlignment.Center;
+        row.AddChild(label);
+        return row;
+    }
+
+    private static Label AdminFieldLabel(string text, float width = AdminLabelWidth)
+    {
+        var label = UiTheme.Text(text, 15, UiTheme.TextHi);
+        label.CustomMinimumSize = new Vector2(width, 0);
+        label.VerticalAlignment = VerticalAlignment.Center;
+        return label;
+    }
+
+    private static SpinBox AdminSpin(int min, int max, float width) =>
+        UiTheme.NumberBox(min, max, 1, width, 14);
+
+    private static Button AdminButton(string text, float minWidth = 0)
+    {
+        var button = new Button
+        {
+            Text = text,
+            FocusMode = Control.FocusModeEnum.None,
+            CustomMinimumSize = new Vector2(minWidth, AdminControlHeight),
+        };
+        button.AddThemeFontSizeOverride("font_size", 15);
+        return button;
     }
 
     private Control BuildAdminClassTab()
@@ -358,10 +425,7 @@ public partial class World
     private void RefreshAdminCharacterTab()
     {
         if (_admCoinsLbl == null) return;
-        _admCoinsLbl.Text = $"{_admState.Gold:n0} coins";
-        _admDerivedLbl.Text =
-            $"HP {_admState.MaxHp:n0}   MP {_admState.MaxMp:n0}   AP {_admState.Ap:n0}   AC {_admState.Ac:n0}" +
-            $"   ·   Lv {_admState.Level}";
+        _admCoinsLbl.Text = $"{_admState.Gold:n0}";
     }
 
     private void RefreshAdminClassTab()
@@ -411,13 +475,15 @@ public partial class World
         for (int i = 0; i < CharacterSheet.StatCount; i++)
             _admStatSpins[i].Value = Mathf.Clamp(values[i], 1, 255);
         _admPointsSpin.Value = Mathf.Clamp(_admState.StatPoints, 0, 10_000);
+        _admNpSpin.Value = System.Math.Max(0, _admState.Loyalty);
     }
 
     private void OnAdminApplyStats()
     {
         Net.I.SendAdminStats(
             (int)_admStatSpins[0].Value, (int)_admStatSpins[1].Value, (int)_admStatSpins[2].Value,
-            (int)_admStatSpins[3].Value, (int)_admStatSpins[4].Value, (int)_admPointsSpin.Value);
+            (int)_admStatSpins[3].Value, (int)_admStatSpins[4].Value, (int)_admPointsSpin.Value,
+            (int)_admNpSpin.Value);
         SetAdminStatus("Applying stats…", false);
     }
 

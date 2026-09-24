@@ -25,7 +25,8 @@ public sealed class AdminPanelPacketWriter
         IReadOnlyList<byte> SkillPoints,
         IReadOnlyList<short> ClassOptions,
         byte Nation,
-        byte Race);
+        byte Race,
+        int Loyalty);
 
     public static Packet GmFx(int characterId, bool enabled)
     {
@@ -77,6 +78,7 @@ public sealed class AdminPanelPacketWriter
 
         packet.WriteByte(state.Nation);
         packet.WriteByte(state.Race);
+        packet.WriteInt(state.Loyalty);
 
         return packet;
     }
