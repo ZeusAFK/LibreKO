@@ -15,6 +15,8 @@ public partial class World
     private Vector2 _rightPressPos;
     private bool _rightClickPending;
     private const float RightClickSlop = 5f;
+    private const float TargetDragSlop = 5f;
+    private HeldSteer _steerFromTarget;
     private const float TurnSpeed = 2.2f;
     private const float PadTurnSpeed = 7.0f;
     private const double TerrainMoveRetargetInterval = 1.0 / 30.0;
@@ -71,6 +73,7 @@ public partial class World
         {
             bool wasTerrainMove = _terrainMoveHeld;
             _terrainMoveHeld = false;
+            _steerFromTarget.Disarm();
             return wasTerrainMove;
         }
 
@@ -121,11 +124,15 @@ public partial class World
             } mouseButton && !overUi)
         {
             _terrainMoveHeld = false;
+            _steerFromTarget.Disarm();
             if (TryClickLootBox(mouseButton.Position))
                 return true;
-            if (!TryPickAt(mouseButton.Position)
-                && !TouchControls.Available
-                && TrySetTerrainMoveTarget(mouseButton.Position))
+            if (TryPickAt(mouseButton.Position))
+            {
+                if (!TouchControls.Available)
+                    _steerFromTarget.ArmAt(mouseButton.Position.X, mouseButton.Position.Y);
+            }
+            else if (!TouchControls.Available && TrySetTerrainMoveTarget(mouseButton.Position))
             {
                 _terrainMoveHeld = true;
                 _terrainMovePointer = mouseButton.Position;
@@ -148,6 +155,17 @@ public partial class World
                     OrbitCamera(motion.Relative);
                     handled = true;
                 }
+            }
+
+            if (!_terrainMoveHeld && !overUi
+                && _steerFromTarget.TryStart(Input.IsMouseButtonPressed(MouseButton.Left),
+                    motion.Position.X, motion.Position.Y, TargetDragSlop)
+                && TrySetTerrainMoveTarget(motion.Position))
+            {
+                _terrainMoveHeld = true;
+                _terrainMovePointer = motion.Position;
+                _terrainMoveRetargetAccum = 0.0;
+                handled = true;
             }
 
             if (_terrainMoveHeld)

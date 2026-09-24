@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -700,11 +700,63 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
         await engine.SendViewsAsync(session, changesOnly: true);
         session.ZoneId = 21;
         await engine.SendViewsAsync(session, changesOnly: true);
-        Notices().Should().Be(2);
+        Notices().Should().Be(1, "a quest already announced is not announced again for a zone round trip");
+        session.Hp = 0;
+        await engine.SendViewsAsync(session, changesOnly: true);
+        session.Hp = 100;
+        await engine.SendViewsAsync(session, changesOnly: true);
+        session.Level = 4;
+        await engine.SendViewsAsync(session, changesOnly: true);
+        Notices().Should().Be(1, "dying or levelling again does not re-announce a quest that stayed available");
         session.ZoneId = 22;
         count = sent.Count;
         await engine.ReplyToNotificationAsync(session, 62, 0);
         sent.Count.Should().Be(count);
+    }
+
+    [Fact]
+    public async Task ALevelUpAnnouncesOnlyTheQuestsItUnlocks()
+    {
+        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+            Bind Npc 16079 Zone 21
+            Quest 62 "A new hunt"
+            Requires player level >= 3
+            Rewards
+                Give 1 coins
+            On available
+                Say "Patrick is looking for you."
+            On offer
+                Show quest "Will you help with the hunt?"
+            """);
+        File.WriteAllText(Path.Combine(_directory, "bigger-hunt.quest"), """
+            Bind Npc 16079 Zone 21
+            Quest 63 "A bigger hunt"
+            Requires player level >= 5
+            Rewards
+                Give 1 coins
+            On available
+                Say "Patrick has a harder task."
+            On offer
+                Show quest "Will you take the harder task?"
+            """);
+        var (engine, session, sent) = CreateHarness();
+        session.Hp = 100;
+        session.ZoneId = 21;
+        session.Level = 3;
+        List<int> Announced() => sent.Select(packet =>
+        {
+            var p = ClonePacket(packet);
+            if (p.ReadByte() != (byte)QuestSubOpcode.View) return 0;
+            p.ReadByte(); var questId = p.ReadShort(); p.ReadInt(); p.ReadInt();
+            return (p.ReadByte() & 16) != 0 ? (int)questId : 0;
+        }).Where(id => id != 0).ToList();
+
+        await engine.SendViewsAsync(session);
+        Announced().Should().Equal(62);
+
+        session.Level = 5;
+        await engine.SendViewsAsync(session, changesOnly: true);
+        Announced().Should().Equal([62, 63], "the level-up announces the quest it unlocked and nothing it had already announced");
     }
 
     [Fact]

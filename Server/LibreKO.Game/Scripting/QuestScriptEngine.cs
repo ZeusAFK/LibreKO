@@ -297,14 +297,15 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
     private void Notify(UserSession session, QuestScriptContext context, QuestProgram program, int questId,
         string role, bool eligible, HashSet<int> seen)
     {
-        var fires = eligible && session.Hp > 0
-            && program.Flows.Single(f => f.QuestId == questId).Matches((int)session.Nation, session.ZoneId);
-        if (!fires)
+        if (!eligible)
         {
             if (seen.Remove(questId))
                 session.Quest.NotificationReplies.Remove(questId);
             return;
         }
+        if (session.Hp <= 0
+            || !program.Flows.Single(f => f.QuestId == questId).Matches((int)session.Nation, session.ZoneId))
+            return;
         if (!seen.Add(questId) || !program.TryGetEntry(role, questId, out var entry))
             return;
         var host = new QuestScriptHost(session, context, _translations, _logger, program.FileName,

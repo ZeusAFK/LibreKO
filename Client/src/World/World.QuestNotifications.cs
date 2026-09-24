@@ -23,9 +23,7 @@ public partial class World
     private void ShowQuestNotification(QuestView view)
     {
         EnsureQuestNotificationWindow();
-        var index = _questNotifications.FindIndex(q => q.QuestId == view.QuestId);
-        if (index < 0) _questNotifications.Add(view);
-        else _questNotifications[index] = view;
+        if (NewestFirst.Upsert(_questNotifications, view, q => q.QuestId)) _questNotificationIndex = 0;
         RefreshQuestNotification();
     }
 
