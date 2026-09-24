@@ -344,6 +344,7 @@ public class MagicPacketCoordinator(
             magicTimingService.OnVolleyAccepted(session, magic, requiredArrowCount);
         }
 
+        magicTimingService.OnFlightLaunched(session, magic);
         await sessionManager.Regions.SendToRegion(
             session,
             MagicProcessPacketWriter.Create(

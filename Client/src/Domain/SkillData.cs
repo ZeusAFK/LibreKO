@@ -16,6 +16,9 @@ public static class SkillData
     public static int ConsumedItemFor(int level, int useItem) =>
         IsMasterScrollSkill(level, useItem) ? useItem - MasterScrollToStoneOffset : useItem;
 
+    public static bool FlyingStageFor(int type1, bool hasFlyingFx, bool hasCastPhase) =>
+        type1 == MagicType.Ranged || (hasFlyingFx && hasCastPhase && type1 != MagicType.Melee);
+
     public sealed class Skill
     {
         public int Id;
@@ -57,6 +60,8 @@ public static class SkillData
         public bool IsFriendly => SkillTarget.IsFriendly(Moral);
         public bool IsDeadFriend => SkillTarget.IsDeadFriend(Moral);
         public bool NeedsFlying => Type1 == MagicType.Ranged;
+
+        public bool HasFlyingStage => FlyingStageFor(Type1, FlyingFx != null, HasCastPhase);
 
         public bool IsAreaMoral => SkillTarget.IsGroundArea(Moral);
 

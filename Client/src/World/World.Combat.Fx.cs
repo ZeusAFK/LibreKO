@@ -57,18 +57,21 @@ public partial class World
     private static float ProjectileSpeedFor(string? fxName) =>
         Mathf.Max(fxName != null ? Fx.AuthoredVelocity(fxName) : 0f, ProjectileFxSpeed);
 
-    private double ProjectileTravelTime(int casterId, int targetId, string? fxName)
+    private Vector3? AreaImpactPoint(short[] data) =>
+        data.Length > 2 ? GroundPos(data[0], data[2], 0f, 0f) : null;
+
+    private double ProjectileTravelTime(int casterId, int targetId, string? fxName, Vector3? impact = null)
     {
         var from = WorldPosOf(casterId);
-        var to = WorldPosOf(targetId);
+        var to = impact ?? WorldPosOf(targetId);
         if (from == null || to == null) return 0.2;
         return Mathf.Clamp(from.Value.DistanceTo(to.Value) / ProjectileSpeedFor(fxName), 0.08f, 1.5f);
     }
 
-    private void SpawnFxProjectile(int casterId, int targetId, string fxName, float lateral = 0f)
+    private void SpawnFxProjectile(int casterId, int targetId, string fxName, float lateral = 0f, Vector3? impact = null)
     {
         var from = WorldPosOf(casterId);
-        var to = WorldPosOf(targetId);
+        var to = impact ?? WorldPosOf(targetId);
         if (from == null || to == null)
         {
             SpawnFxOn(targetId == 0 ? casterId : targetId, fxName, 1.2f);
@@ -109,9 +112,8 @@ public partial class World
             case ImpactFxPlacement.OnEntity:
                 SpawnOwnedFx(entityId, 0, 3, fxName, targetPart, oneShot: true);
                 return true;
-            case ImpactFxPlacement.AtImpactPoint when data.Length > 2:
-                var pos = GroundPos(data[0], data[2], 0f, 0f) + new Vector3(0, 0.15f, 0);
-                Fx.Spawn(fxName, this, pos, oneShot: true);
+            case ImpactFxPlacement.AtImpactPoint when AreaImpactPoint(data) is { } point:
+                Fx.Spawn(fxName, this, point + new Vector3(0, 0.15f, 0), oneShot: true);
                 return true;
             default:
                 return false;

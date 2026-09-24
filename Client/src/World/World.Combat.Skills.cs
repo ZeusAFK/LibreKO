@@ -62,7 +62,7 @@ public partial class World
         }
 
         Net.I.SendMagic(1, id, target);
-        QueuePendingStage(id, target, s.NeedsFlying ? PendingFlying : PendingEffecting, CastDelay(s));
+        QueuePendingStage(id, target, s.HasFlyingStage ? PendingFlying : PendingEffecting, CastDelay(s));
         BeginLocalCast(s);
     }
 

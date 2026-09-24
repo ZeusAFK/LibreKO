@@ -120,7 +120,8 @@ public partial class World
         var s = SkillData.Get(skillId);
         if (s == null) return;
         bool pastCommit = Now() >= _castingUntil - s.CastSeconds + RangedCommitSeconds;
-        switch (CastInterrupt.OnMove(s.HasCastPhase, !PendingCastPreEffect(skillId), s.NeedsFlying, pastCommit))
+        bool released = CastInterrupt.IsReleased(Now(), _castingUntil, PendingCastPreEffect(skillId));
+        switch (CastInterrupt.OnMove(s.HasCastPhase, released, s.NeedsFlying, pastCommit))
         {
             case CastInterruptAction.ReleaseEarly: ReleaseSelfCastEarly(skillId); break;
             case CastInterruptAction.Cancel: CancelSelfCast(skillId); break;

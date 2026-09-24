@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 using LibreKO.Game.World;
 
@@ -22,6 +22,7 @@ public interface IMagicTimingService
     void OnCastAccepted(UserSession session, MagicData magic);
 
     void OnVolleyAccepted(UserSession session, MagicData magic, int arrows);
+    void OnFlightLaunched(UserSession session, MagicData magic);
     void OnReleaseAccepted(UserSession session, MagicData magic);
 
     void OnCastAborted(UserSession session, int skillId);
@@ -115,6 +116,14 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
             session.PendingArrowHits[magic.Id] = arrows;
     }
 
+    public void OnFlightLaunched(UserSession session, MagicData magic)
+    {
+        if (magic.PrimaryType == MagicSkillType.Ranged || session.CastingSkillId != magic.Id)
+            return;
+
+        ClearCast(session);
+    }
+
     public void OnReleaseAccepted(UserSession session, MagicData magic)
     {
         if (session.PendingArrowHits.TryGetValue(magic.Id, out var arrows) && arrows > 1)
@@ -124,10 +133,10 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
         }
 
         session.PendingArrowHits.TryRemove(magic.Id, out _);
-        session.AcceptedCasts.TryRemove(magic.Id, out _);
+        var releasesAnAcceptedCast = session.AcceptedCasts.TryRemove(magic.Id, out _);
         if (session.CastingSkillId == magic.Id)
             ClearCast(session);
-        else
+        else if (!releasesAnAcceptedCast)
             ArmCooldown(session, magic, _time.GetUtcNow().UtcTicks);
     }
 

@@ -9,6 +9,9 @@ public enum CastInterruptAction
 
 public static class CastInterrupt
 {
+    public static bool IsReleased(double now, double castEndsAt, bool stagePending) =>
+        now >= castEndsAt || !stagePending;
+
     public static CastInterruptAction OnMove(bool hasCastPhase, bool released, bool rangedDraw, bool pastRangedCommit)
     {
         if (!hasCastPhase || released) return CastInterruptAction.Ignore;

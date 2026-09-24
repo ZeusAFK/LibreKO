@@ -10,7 +10,6 @@ public partial class World
     private const float AreaRingSpinDeg = 50f;
     private const float AreaRingInset = 1f;
     private const double AreaAimRepickInterval = 1.0 / 30.0;
-    private const double AreaFlashLinger = 0.45;
     private const string AreaRingFx = "zone_pointer";
     private const string AreaMarkerFxKarus = "region_target_ka_wizard";
     private const string AreaMarkerFxElMorad = "region_target_el_wizard";
@@ -23,7 +22,6 @@ public partial class World
         public float Radius;
         public float Grown;
         public float Spin;
-        public double ExpireAt;
     }
 
     private int _areaSkillId = -1;
@@ -31,7 +29,6 @@ public partial class World
     private Vector3 _areaAimPoint;
     private bool _areaAimValid;
     private double _areaRepickAccum;
-    private readonly List<AreaRing> _areaFlashes = new();
 
     private bool AimingAreaSkill => _areaSkillId >= 0;
 
@@ -84,20 +81,11 @@ public partial class World
 
         FaceNodeToward(_self, _self.Position, impact);
         Net.I.SendMagic(1, s.Id, -1, data);
-        QueuePendingStage(s.Id, -1, PendingEffecting, CastDelay(s), data);
+        QueuePendingStage(s.Id, -1, s.HasFlyingStage ? PendingFlying : PendingEffecting, CastDelay(s), data);
         BeginLocalCast(s);
-        FlashAreaRing(impact, AreaRingRadius(s), CastDelay(s) + AreaFlashLinger);
     }
 
     private static float AreaRingRadius(SkillData.Skill s) => Mathf.Max(1f, s.Radius - AreaRingInset);
-
-    private void FlashAreaRing(Vector3 centre, float radius, double seconds)
-    {
-        var ring = NewAreaRing(centre, radius, marker: false);
-        if (ring == null) return;
-        ring.ExpireAt = Now() + seconds;
-        _areaFlashes.Add(ring);
-    }
 
     private void AreaCastTick(double delta, double now)
     {
@@ -117,13 +105,6 @@ public partial class World
         }
 
         if (_areaAim != null) AnimateAreaRing(_areaAim, delta);
-
-        for (int i = _areaFlashes.Count - 1; i >= 0; i--)
-        {
-            var ring = _areaFlashes[i];
-            AnimateAreaRing(ring, delta);
-            if (now >= ring.ExpireAt) { FreeAreaRing(ring); _areaFlashes.RemoveAt(i); }
-        }
     }
 
     private void UpdateAreaAim(Vector2 screenPosition)

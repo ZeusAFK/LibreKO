@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
@@ -247,6 +247,50 @@ public class MagicTimingTests
         clock.Advance(TimeSpan.FromMilliseconds(100));
         timing.CheckRelease(session, arcShot).Should().Be(MagicTimingVerdict.Allowed,
             "the arrow leaves the bow 400 ms into the draw; moving after that only cuts the animation");
+    }
+
+    [Fact]
+    public void ALaunchedSpellFreesTheCastSlotAndStillLandsOnItsOwnCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var fireBall = Magic(110515, castTenths: 15, recastTenths: 30);
+        fireBall.Type1 = 3;
+        var fireBlast = Magic(110535, castTenths: 15, recastTenths: 50);
+        fireBlast.Type1 = 3;
+
+        timing.OnCastAccepted(session, fireBall);
+        var cooldownFromTheCast = session.SkillCooldowns[fireBall.Id];
+        clock.Advance(TimeSpan.FromSeconds(1.5));
+        timing.CheckRelease(session, fireBall).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnFlightLaunched(session, fireBall);
+
+        clock.Advance(TimeSpan.FromMilliseconds(300));
+        timing.CheckCasting(session, fireBlast).Should().Be(MagicTimingVerdict.Allowed,
+            "the fireball has left the caster, the next spell may start while it flies");
+        timing.OnCastAccepted(session, fireBlast);
+
+        clock.Advance(TimeSpan.FromMilliseconds(500));
+        timing.CheckRelease(session, fireBall).Should().Be(MagicTimingVerdict.Allowed, "the fireball lands");
+        timing.OnReleaseAccepted(session, fireBall);
+        session.CastingSkillId.Should().Be(fireBlast.Id, "the fireball's landing must not end the next cast");
+        session.SkillCooldowns[fireBall.Id].Should().Be(cooldownFromTheCast,
+            "the cooldown runs from the cast, the landing must not re-arm it");
+    }
+
+    [Fact]
+    public void ALaunchedArrowKeepsTheDrawTiming()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var arcShot = Magic(102010, castTenths: 13, recastTenths: 30);
+        arcShot.Type1 = 2;
+
+        timing.OnCastAccepted(session, arcShot);
+        clock.Advance(TimeSpan.FromSeconds(1.3));
+        timing.OnFlightLaunched(session, arcShot);
+
+        session.CastingSkillId.Should().Be(arcShot.Id);
     }
 
     [Fact]

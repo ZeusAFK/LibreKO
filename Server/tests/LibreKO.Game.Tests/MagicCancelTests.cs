@@ -114,6 +114,49 @@ public class MagicCancelTests : GameTestBase
         caster.SkillCooldowns.Should().ContainKey(FireBlast, "a fail after the release must not refund the cooldown");
     }
 
+    [Fact]
+    public async Task ASpellInFlightLandsAndDoesNotBlockTheNextCast()
+    {
+        const int fireBall = 110515;
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetMagic(fireBall).Returns(new MagicData
+                {
+                    Id = fireBall, Type1 = 3, Moral = 7, Range = 35, CastTime = 2, ReCastTime = 0,
+                });
+                gameData.GetMagic(FireBlast).Returns(new MagicData
+                {
+                    Id = FireBlast, Type1 = 3, Moral = 7, Range = 35, CastTime = 2, ReCastTime = 50,
+                });
+                gameData.MagicType3Table.Returns(new Dictionary<int, MagicType3Data>
+                {
+                    [fireBall] = new() { Id = fireBall, DirectType = 1, FirstDamage = -120, Attribute = 1 },
+                    [FireBlast] = new() { Id = FireBlast, DirectType = 1, FirstDamage = -120, Attribute = 1 },
+                });
+            });
+        var (caster, client, sent) = CreateArcher(provider);
+        var worm = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
+        {
+            IsMonster = true, NpcId = 750, Name = "Worm", ZoneId = 21, X = 104, Z = 100, SpawnX = 104,
+            SpawnZ = 100, Hp = 5000, MaxHp = 5000, Ac = 5, EvadeRate = 1,
+        });
+        var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
+
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Casting, fireBall, caster, worm.UniqueId));
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Flying, fireBall, caster, worm.UniqueId));
+        await Task.Delay(300);
+        sent.Clear();
+
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Casting, FireBlast, caster, worm.UniqueId));
+        Replies(sent).Should().Equal(new[] { (MagicProcessOpcode.Casting, FireBlast) },
+            "the fireball has left the caster, the next spell may start while it flies");
+
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Effecting, fireBall, caster, worm.UniqueId));
+        worm.Hp.Should().BeLessThan(5000, "the fireball lands when it arrives");
+    }
+
     private static MagicData Ranged(int id, int castTenths) => new()
     {
         Id = id,

@@ -363,19 +363,21 @@ public partial class World
                 break;
 
             case 2:
-                if (s?.NeedsFlying == true) StopSkillFx(casterId, skillId, 1);
+                if (s?.HasFlyingStage == true) StopSkillFx(casterId, skillId, 1);
                 int arrows = s is { NeedsFlying: true } ? Mathf.Max(1, s.NeedArrow) : 1;
+                Vector3? impact = targetId < 0 ? AreaImpactPoint(data) : null;
                 if (s?.FlyingFx != null)
                 {
                     for (int k = 0; k < arrows; k++)
-                        SpawnFxProjectile(casterId, targetId, s.FlyingFx, (k - (arrows - 1) * 0.5f) * VolleyLateralSpacing);
+                        SpawnFxProjectile(casterId, targetId, s.FlyingFx, (k - (arrows - 1) * 0.5f) * VolleyLateralSpacing, impact);
                     AudioFxAt(s.FlyingFxId, casterId);
                 }
-                if (casterId == _myId && s?.NeedsFlying == true)
+                if (casterId == _myId && s?.HasFlyingStage == true)
                 {
-                    double travel = ProjectileTravelTime(casterId, targetId, s.FlyingFx);
+                    double travel = ProjectileTravelTime(casterId, targetId, s.FlyingFx, impact);
+                    short[]? landing = targetId < 0 ? data : null;
                     for (int k = 0; k < arrows; k++)
-                        QueuePendingStage(skillId, targetId, PendingEffecting, travel + k * VolleyHitGapSeconds, replace: k == 0);
+                        QueuePendingStage(skillId, targetId, PendingEffecting, travel + k * VolleyHitGapSeconds, landing, replace: k == 0);
                 }
                 break;
 
