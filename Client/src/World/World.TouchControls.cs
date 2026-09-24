@@ -31,7 +31,8 @@ public partial class World : Node3D
             () => OpenNearestAnvil(),
             () => OpenNearestWarpGate(),
             OpenNearestPlayerMenu,
-            () => TryBrowseNearestMerchant());
+            () => TryBrowseNearestMerchant(),
+            ToggleMerchantMenu);
         _hotbarBox.Visible = false;
 
         GD.Print($"[touch] on-screen controls built: sticks {TouchControls.StickSize:F0}px, "

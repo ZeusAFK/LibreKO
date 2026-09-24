@@ -29,6 +29,7 @@ public static class TouchControls
     public const float TeleportButtonAngle = 250f;
     public const float UserButtonAngle = 190f;
     public const float MarketButtonAngle = 170f;
+    public const float MarketSetupButtonAngle = 150f;
     public const float PrimarySize = 78f;
     public const float PrimaryAngle = 136f;
     public const float PrimaryOrbit = 194f;
@@ -120,9 +121,10 @@ public static class TouchControls
                                               Action? onAnvilOpen = null,
                                               Action? onTeleportOpen = null,
                                               Action? onUserOpen = null,
-                                              Action? onMarketBrowse = null)
+                                              Action? onMarketBrowse = null,
+                                              Action? onMarketSetup = null)
     {
-        var orbs = new Orb[ActionSlots + 10 + PotionAngles.Length];
+        var orbs = new Orb[ActionSlots + 11 + PotionAngles.Length];
         orbs[0] = new Orb(0f, 0f, LookStickSize);
         for (int i = 0; i < ActionSlots; i++)
             orbs[i + 1] = new Orb(SlotAngles[i], Orbit, ActionSize);
@@ -135,8 +137,9 @@ public static class TouchControls
         orbs[ActionSlots + 7] = new Orb(TeleportButtonAngle, Orbit * InteractButtonOrbit, InteractButtonSize);
         orbs[ActionSlots + 8] = new Orb(UserButtonAngle, Orbit * InteractButtonOrbit, InteractButtonSize);
         orbs[ActionSlots + 9] = new Orb(MarketButtonAngle, Orbit * InteractButtonOrbit, InteractButtonSize);
+        orbs[ActionSlots + 10] = new Orb(MarketSetupButtonAngle, Orbit * InteractButtonOrbit, InteractButtonSize);
         for (int i = 0; i < PotionAngles.Length; i++)
-            orbs[ActionSlots + 10 + i] =
+            orbs[ActionSlots + 11 + i] =
                 new Orb(PotionAngles[i], Orbit * PotionOrbit, PotionSize);
 
         Vector2 min = Vector2.Inf, max = -Vector2.Inf;
@@ -271,6 +274,14 @@ public static class TouchControls
         marketButton.Pressed += () => onMarketBrowse?.Invoke();
         marketButton.Visible = false;
         cluster.AddChild(marketButton);
+
+        var marketSetupButton = Button("KUR", Px(InteractButtonSize), UiTheme.Gold);
+        marketSetupButton.TooltipText = "Set up a merchant";
+        Place(marketSetupButton, hub, MarketSetupButtonAngle,
+              Orbit * InteractButtonOrbit, InteractButtonSize);
+        AddOuterRing(marketSetupButton);
+        marketSetupButton.Pressed += () => onMarketSetup?.Invoke();
+        cluster.AddChild(marketSetupButton);
 
         var bar = new TouchActionBar(cluster, slots, iconFor, BuildPageIndicator(parent),
                                     attack, attackGlyph, hub, npcButton, lootButton,
