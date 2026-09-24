@@ -65,6 +65,7 @@ public partial class World : Node3D
 
         int eq = Inv.ResolveEquipDest(def.Slot, ItemData.EquipSlotFor(def));
         if (eq < 0) return;
+        if (!CanEquipOrNotice(def)) return;
 
         var preClear = Inv.HandsToClear(eq, def.Slot, IsTwoHanded);
         var free2 = Inv.FreeGridSlots();
@@ -80,6 +81,35 @@ public partial class World : Node3D
     }
 
     private const int ItemSlotCodeBag = 25;
+    private const int TextEquipRace = 3018;
+    private const int TextEquipClass = 3028;
+    private const int TextEquipLevelTooLow = 3022;
+    private const int TextEquipLevelTooHigh = 3032;
+    private const int TextEquipStrength = 3023;
+    private const int TextEquipStamina = 3025;
+    private const int TextEquipDexterity = 3020;
+    private const int TextEquipIntelligence = 3021;
+    private const int TextEquipCharisma = 3019;
+
+    private bool CanEquipOrNotice(ItemData.Item def)
+    {
+        var who = new EquipStats(_selfClass, _selfRace, Sheet.Level, Sheet.Str, Sheet.Sta, Sheet.Dex, Sheet.Intel, Sheet.Mag);
+        var refusal = EquipRules.Check(who, def);
+        if (refusal == EquipRefusal.None) return true;
+        CombatNotice(refusal switch
+        {
+            EquipRefusal.Race => SystemText(TextEquipRace, "You cannot equip this item.  This item is designed for a different race."),
+            EquipRefusal.Class => SystemText(TextEquipClass, "You cannot equip this item.  This item is not designed for your character's specialty."),
+            EquipRefusal.LevelTooLow => SystemText(TextEquipLevelTooLow, "You cannot equip this item because your level is too low"),
+            EquipRefusal.LevelTooHigh => SystemText(TextEquipLevelTooHigh, "Cannot equip because of your high level"),
+            EquipRefusal.Strength => SystemText(TextEquipStrength, "You cannot equip this item because you don't have enough Strength stat points."),
+            EquipRefusal.Stamina => SystemText(TextEquipStamina, "You cannot equip this item because you don't have enough Health stat points."),
+            EquipRefusal.Dexterity => SystemText(TextEquipDexterity, "You cannot equip this item because you don't have enough Dexterity stat point"),
+            EquipRefusal.Intelligence => SystemText(TextEquipIntelligence, "You cannot equip this item because you don't have enough Intelligence stat point"),
+            _ => SystemText(TextEquipCharisma, "You cannot equip this item because you don't have enough Magic Power stat point"),
+        });
+        return false;
+    }
     private const string BagStillHoldsItems = "Empty the bag before taking it off.";
     private const int CospreCodeBase = 100;
 
@@ -144,6 +174,7 @@ public partial class World : Node3D
         {
             var def = ItemData.Get(Inv[from].ItemId);
             if (def == null) return;
+            if (!CanEquipOrNotice(def)) return;
             var preClear = Inv.HandsToClear(to, def.Slot, IsTwoHanded);
             var free = Inv.FreeGridSlots();
             free.Remove(from);

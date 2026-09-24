@@ -22,6 +22,24 @@ public static class ClassIdHelper
     public static bool IsPriest(short classId) => GetSubtype(classId) is 4 or 11 or 12;
     public static bool IsPortuKurian(short classId) => GetSubtype(classId) is 13 or 14 or 15;
 
+    public static bool CanWear(short classId, short itemClass)
+    {
+        var job = GetSubtype(classId);
+        return itemClass switch
+        {
+            ItemClassAnyone or ItemClassUnrestricted => true,
+            1 => IsWarrior(classId) || IsPortuKurian(classId),
+            2 => IsRogue(classId),
+            3 => IsMage(classId),
+            4 => IsPriest(classId),
+            5 => job is 5 or 14,
+            6 => job is 6 or 15,
+            13 => IsPortuKurian(classId),
+            ItemClassMasters => IsMastered(classId),
+            _ => job == itemClass,
+        };
+    }
+
     public static bool IsBeginner(short classId) => GetSubtype(classId) is 1 or 2 or 3 or 4 or 13;
 
     public static bool IsNovice(short classId) => GetSubtype(classId) is 5 or 7 or 9 or 11 or 14;
@@ -43,6 +61,9 @@ public static class ClassIdHelper
     public const short JobGroupMage = 3;
     public const short JobGroupPriest = 4;
     public const short JobGroupPortuKurian = 13;
+    private const short ItemClassAnyone = 0;
+    private const short ItemClassMasters = 21;
+    private const short ItemClassUnrestricted = 255;
 
     public static bool MatchesJobGroup(short classId, short jobGroup) => jobGroup switch
     {

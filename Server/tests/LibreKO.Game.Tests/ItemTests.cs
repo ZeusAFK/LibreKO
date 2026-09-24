@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -64,6 +64,106 @@ public class ItemTests : GameTestBase
         itemMovePacket.ResetOffset();
         itemMovePacket.ReadByte().Should().Be(1);
         itemMovePacket.ReadByte().Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData(110, 6, false)]
+    [InlineData(110, 10, true)]
+    [InlineData(109, 10, false)]
+    [InlineData(103, 3, true)]
+    [InlineData(209, 3, true)]
+    [InlineData(206, 6, true)]
+    [InlineData(205, 6, false)]
+    [InlineData(205, 1, true)]
+    [InlineData(213, 1, true)]
+    [InlineData(215, 6, true)]
+    [InlineData(214, 5, true)]
+    [InlineData(106, 15, false)]
+    [InlineData(208, 12, false)]
+    [InlineData(110, 21, true)]
+    [InlineData(109, 21, false)]
+    [InlineData(112, 0, true)]
+    [InlineData(112, 255, true)]
+    public void ClassIdHelper_CanWear_FollowsTheClientsClassTable(short classId, short itemClass, bool expected)
+    {
+        ClassIdHelper.CanWear(classId, itemClass).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(110, 70, true)]
+    [InlineData(108, 70, false)]
+    [InlineData(106, 230, true)]
+    [InlineData(110, 230, false)]
+    [InlineData(215, 11, true)]
+    [InlineData(215, 210, false)]
+    public void EquipRequirements_ForbidsKind_FollowsTheClientsKindTable(short classId, byte kind, bool expected)
+    {
+        EquipRequirements.ForbidsKind(classId, kind).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(0, 12, true)]
+    [InlineData(20, 12, true)]
+    [InlineData(73, 12, true)]
+    [InlineData(72, 12, false)]
+    [InlineData(150, 12, true)]
+    [InlineData(1, 12, false)]
+    [InlineData(12, 12, true)]
+    public void EquipRequirements_RaceAllows_FollowsTheClientsRaceRule(byte itemRace, byte playerRace, bool expected)
+    {
+        EquipRequirements.RaceAllows(itemRace, playerRace).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(110, 6, 0, 0, 0, false)]
+    [InlineData(106, 6, 0, 0, 0, true)]
+    [InlineData(106, 6, 230, 0, 0, false)]
+    [InlineData(106, 6, 0, 61, 0, false)]
+    [InlineData(106, 6, 0, 0, 120, false)]
+    [InlineData(110, 0, 0, 0, 0, true)]
+    public async Task ItemPacketCoordinator_HandleMoveAsync_EquipsOnlyWhatTheCharacterMayWear(
+        short classId, byte itemClass, byte kind, byte reqLevel, short reqStr, bool equips)
+    {
+        const int itemId = 600200;
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData => gameData.GetItem(itemId).Returns(new ItemData
+            {
+                Num = itemId,
+                Slot = 1,
+                Kind = kind == 0 ? (byte)21 : kind,
+                Duration = 30,
+                Class = itemClass,
+                ReqLevel = reqLevel,
+                ReqStr = reqStr,
+            }));
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 402, accountId: 412);
+        session.Class = classId;
+        session.Level = 60;
+        session.Strength = 100;
+        session.ZoneId = 1;
+        session.Inventory[InventoryConstants.InventoryStart].ItemId = itemId;
+        session.Inventory[InventoryConstants.InventoryStart].Durability = 30;
+        session.Inventory[InventoryConstants.InventoryStart].Count = 1;
+        sessionManager.Regions.AddToRegion(session);
+
+        var packet = new Packet(GameOpcodes.GS_ITEM_MOVE);
+        packet.WriteByte(1);
+        packet.WriteByte((byte)ItemMoveDirection.InventoryToSlot);
+        packet.WriteInt(itemId);
+        packet.WriteByte(0);
+        packet.WriteByte((byte)InventoryConstants.RightHand);
+        await provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(client, packet);
+
+        session.Inventory[InventoryConstants.RightHand].ItemId.Should().Be(equips ? itemId : 0);
+        session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(equips ? 0 : itemId);
     }
 
     [Fact]

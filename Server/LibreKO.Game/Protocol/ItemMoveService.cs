@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -110,6 +110,14 @@ public class ItemMoveService(
         if (itemData == null)
         {
             logger.LogDebug("Rejected item move for {Name}: item {ItemId} not found", session.Name, itemId);
+            await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
+        if (direction is ItemMoveDirection.InventoryToSlot or ItemMoveDirection.SlotToSlot
+            && EquipRequirements.Check(session, itemData) is var refusal and not EquipRefusal.None)
+        {
+            logger.LogDebug("Rejected equip for {Name}: item {ItemId} refused ({Refusal})", session.Name, itemId, refusal);
             await SendItemMoveResponseAsync(session, 0);
             return;
         }

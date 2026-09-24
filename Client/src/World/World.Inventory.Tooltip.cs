@@ -230,6 +230,9 @@ public partial class World : Node3D
         if (item.Count > 1)
             lines.Add(new TooltipLine($"Count {item.Count}", 0));
 
+        if (def.ReqCls > 0)
+            lines.Add(new TooltipLine(" -" + ItemData.Text(EquipRules.ClassNameTextId(def.ReqCls), UnknownClassName),
+                RequirementClassFailed(def.ReqCls) ? 13 : 0));
         if (def.ReqLevel > 0)
         {
             int color = Sheet.Level > 0 && Sheet.Level < def.ReqLevel ? 13 : 0;
@@ -238,9 +241,6 @@ public partial class World : Node3D
                 : FormatIntText(4541, "Required Level", def.ReqLevel);
             lines.Add(new TooltipLine(text, color));
         }
-        if (def.ReqCls > 0)
-            lines.Add(new TooltipLine(FormatIntText(4542, "Required Class", def.ReqCls),
-                RequirementClassFailed(def.ReqCls) ? 13 : 0));
         AddRequirement(lines, 4544, "Required Strength", def.ReqStr + (ext?.ReqStrBonus ?? 0), Sheet.Str);
         AddRequirement(lines, 4543, "Required Health", def.ReqSta, Sheet.Sta);
         AddRequirement(lines, 4538, "Required Dexterity", def.ReqDex, Sheet.Dex);
@@ -402,25 +402,10 @@ public partial class World : Node3D
         return value > other ? 1 : 2;
     }
 
-    private bool RequirementClassFailed(int reqCls)
-    {
-        if (reqCls <= 0 || _selfClass <= 0) return false;
-        if (reqCls == _selfClass) return false;
-        int reqFamily = ClassFamily(reqCls);
-        int selfFamily = ClassFamily(_selfClass);
-        if (reqFamily > 0 && selfFamily > 0) return reqFamily != selfFamily;
-        int reqBase = reqCls / 10, selfBase = _selfClass / 10;
-        return reqBase > 0 && selfBase > 0 && reqBase != selfBase;
-    }
+    private const string UnknownClassName = "Unknown Class";
 
-    private static int ClassFamily(int cls) => cls switch
-    {
-        1 or 5 or 6 or 13 or 14 or 15 => 1,
-        2 or 7 or 8 => 2,
-        3 or 9 or 10 => 3,
-        4 or 11 or 12 => 4,
-        _ => cls >= 100 ? ClassFamily(cls % 100) : 0,
-    };
+    private bool RequirementClassFailed(int reqCls) =>
+        reqCls > 0 && _selfClass > 0 && !EquipRules.ClassAllows(_selfClass, reqCls);
 
     private static IEnumerable<string> SplitDescription(string desc)
     {
