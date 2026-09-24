@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -349,6 +349,7 @@ public partial class World : Node3D, IWorldContext
         StallSignTick();
         GatherTick(nowSec);
         NpcTick(delta);
+        UpdateTouchInteractionVisibility();
         PvpTick(nowSec);
         Chat.TickBubbles(nowSec);
 

@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
 
@@ -70,6 +70,18 @@ public partial class World
         return true;
     }
 
+    private bool HasNearbyNpc()
+    {
+        if (!_worldReady || _self == null || _selfDead) return false;
+        foreach (var (_, e) in _ents)
+        {
+            if (!e.IsNpc || e.Dead || e.Attackable) continue;
+            if (FlatDistance(_self.Position, e.Body.Position) <= NpcInteractRange)
+                return true;
+        }
+        return false;
+    }
+
     public bool TalkToNearestNpc(string nameFragment)
     {
         if (!_worldReady || _self == null) return false;
@@ -81,6 +93,7 @@ public partial class World
             if (nameFragment.Length > 0
                 && !e.Name.Contains(nameFragment, System.StringComparison.OrdinalIgnoreCase)) continue;
             float d = FlatDistance(_self.Position, e.Body.Position);
+            if (d > NpcInteractRange) continue;
             if (d < bestDist) { bestDist = d; bestId = id; }
         }
         if (bestId < 0) return false;

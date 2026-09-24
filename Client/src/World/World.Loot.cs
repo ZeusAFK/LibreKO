@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 using LibreKO.Network;
 
@@ -150,6 +150,37 @@ public partial class World
         }
         if (best < 0)
             return false;
+        _openBundleId = best;
+        Net.I.SendBundleOpen(best);
+        return true;
+    }
+
+    private bool HasNearbyLootBox()
+    {
+        if (_self == null || _selfDead || _boxes.Count == 0) return false;
+        Vector3 me = _self.Position;
+        foreach (var (_, box) in _boxes)
+            if (box.BasePos.DistanceSquaredTo(me) <= LootRangeSq)
+                return true;
+        return false;
+    }
+
+    public bool OpenNearestLootBox()
+    {
+        if (_self == null || _selfDead || _boxes.Count == 0) return false;
+        Vector3 me = _self.Position;
+        int best = -1;
+        float bestDistSq = LootRangeSq;
+        foreach (var (id, box) in _boxes)
+        {
+            float d = box.BasePos.DistanceSquaredTo(me);
+            if (d <= bestDistSq)
+            {
+                bestDistSq = d;
+                best = id;
+            }
+        }
+        if (best < 0) return false;
         _openBundleId = best;
         Net.I.SendBundleOpen(best);
         return true;

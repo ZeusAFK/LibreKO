@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
@@ -202,6 +202,30 @@ public partial class World
         _openGate = gate;
         _warpSourceId = gate.Obj.NpcId;
         TryOperateObject((short)gate.Obj.EventId, (short)gate.Obj.NpcId);
+    }
+
+    private bool HasNearbyWarpGate()
+    {
+        if (!_worldReady || _self == null || _selfDead) return false;
+        foreach (var gate in _warpGates)
+            if (FlatDistance(_self.Position, gate.Tag.GlobalPosition) <= WarpGateInteractRange)
+                return true;
+        return false;
+    }
+
+    public bool OpenNearestWarpGate()
+    {
+        if (!_worldReady || _self == null || _selfDead) return false;
+        WarpGate? best = null;
+        float bestDist = WarpGateInteractRange;
+        foreach (var gate in _warpGates)
+        {
+            float d = FlatDistance(_self.Position, gate.Tag.GlobalPosition);
+            if (d <= bestDist) { bestDist = d; best = gate; }
+        }
+        if (best == null) return false;
+        OpenWarpGate(best);
+        return true;
     }
 
     private void BuildWarpPanel()
