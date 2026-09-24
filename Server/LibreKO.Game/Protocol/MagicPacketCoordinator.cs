@@ -22,6 +22,9 @@ public class MagicPacketCoordinator(
     IMagicTimingService magicTimingService,
     ILogger<MagicPacketCoordinator> logger) : IMagicPacketCoordinator
 {
+    private const int ArrowMissedMarker = -101;
+    private const int MissMarkerSlot = 3;
+
     public async Task HandleAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
@@ -125,7 +128,9 @@ public class MagicPacketCoordinator(
                 await HandleClientExecutionAsync(session, magic, skillId, targetId, data);
                 break;
             case MagicProcessOpcode.Fail:
-                if (session.CastingSkillId == skillId)
+                if (magic.PrimaryType == MagicSkillType.Ranged && data[MissMarkerSlot] == ArrowMissedMarker)
+                    magicTimingService.OnReleaseAccepted(session, magic);
+                else if (session.CastingSkillId == skillId)
                     magicTimingService.OnCastAborted(session, skillId);
                 await sessionManager.Regions.SendToRegion(
                     session,

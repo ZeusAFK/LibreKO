@@ -157,6 +157,46 @@ public class MagicCancelTests : GameTestBase
         worm.Hp.Should().BeLessThan(5000, "the fireball lands when it arrives");
     }
 
+    [Fact]
+    public async Task MissedVolleyArrowsReleaseTheDrawWithoutRefundingIt()
+    {
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetMagic(MultipleShot).Returns(Ranged(MultipleShot, castTenths: 2));
+                gameData.MagicType2Table.Returns(new Dictionary<int, MagicType2Data>
+                {
+                    [MultipleShot] = new() { Id = MultipleShot, NeedArrow = 3, HitRate = 100, AddDamage = 100 },
+                });
+            });
+        var (caster, client, _) = CreateArcher(provider);
+        var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
+
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Casting, MultipleShot, caster, 0));
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Flying, MultipleShot, caster, 0));
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Effecting, MultipleShot, caster, 0));
+        caster.CastingSkillId.Should().Be(MultipleShot, "two arrows of the volley are still in the air");
+
+        await coordinator.HandleAsync(client, ArrowMissed(MultipleShot, caster));
+        await coordinator.HandleAsync(client, ArrowMissed(MultipleShot, caster));
+
+        caster.CastingSkillId.Should().Be(0, "every arrow has landed or missed, the draw is over");
+        caster.SkillCooldowns.Should().ContainKey(MultipleShot, "a missed arrow is not a cancelled cast");
+    }
+
+    private static Packet ArrowMissed(int skillId, UserSession caster)
+    {
+        var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
+        packet.WriteByte((byte)MagicProcessOpcode.Fail);
+        packet.WriteInt(skillId);
+        packet.WriteInt(caster.CharacterId);
+        packet.WriteInt(-1);
+        for (var i = 0; i < 7; i++)
+            packet.WriteInt(i == 3 ? -101 : 0);
+        return packet;
+    }
+
     private static MagicData Ranged(int id, int castTenths) => new()
     {
         Id = id,

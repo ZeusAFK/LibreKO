@@ -15,6 +15,15 @@ public partial class World
     private const int PendingFlying = 2;
     private const int PendingEffecting = 3;
     private const double PendingReplyTimeout = 5.0;
+    private const short ArrowMissedMarker = -101;
+    private const int MissMarkerSlot = 3;
+
+    private static short[] ArrowMissedData()
+    {
+        var data = new short[7];
+        data[MissMarkerSlot] = ArrowMissedMarker;
+        return data;
+    }
 
     internal Vitals Vitals => Net.I.Vitals;
     private bool _autoAttack;
@@ -26,7 +35,6 @@ public partial class World
     private double _nextSwingIfCancelled;
 
     private const double VolleyHitGapSeconds = 0.12;
-    private const float VolleyLateralSpacing = 0.35f;
     private const double ComboLen = 1.0;
     private const double ComboGrace = 1.0;
     private double _comboStepLen = ComboLen;
@@ -42,8 +50,11 @@ public partial class World
         public double EffectTime, ReplyDeadline;
         public int SkillId, TargetId, Stage;
         public short[]? Data;
+        public bool Straight;
+        public Vector3 From, To;
     }
     private readonly List<PendingCast> _pendingCasts = new();
+    private readonly List<PendingCast> _launches = new();
     private readonly Dictionary<(int Caster, int Skill, int Phase), List<Node3D>> _skillFx = new();
 
     private static double Now() => Time.GetTicksMsec() / 1000.0;
@@ -61,6 +72,7 @@ public partial class World
     {
         if (!_selfDead && Vitals.Known && Vitals.Hp <= 0) EnterSelfDeath();
 
+        _launches.Clear();
         for (int i = _pendingCasts.Count - 1; i >= 0; i--)
         {
             var pc = _pendingCasts[i];
@@ -73,14 +85,33 @@ public partial class World
             }
             if (now < pc.EffectTime) continue;
             if (pc.Stage == PendingFlying)
+            {
                 Net.I.SendMagic(2, pc.SkillId, pc.TargetId, pc.Data);
+                _launches.Add(pc);
+            }
             else
+            {
+                if (pc.Straight)
+                {
+                    pc.TargetId = FirstHostileAlong(pc.From, pc.To);
+                    if (pc.TargetId < 0)
+                    {
+                        Net.I.SendMagic(4, pc.SkillId, AreaImpactTarget, ArrowMissedData());
+                        _pendingCasts.RemoveAt(i);
+                        if (!HasPendingCast(pc.SkillId)) EndCast(pc.SkillId);
+                        continue;
+                    }
+                }
                 Net.I.SendMagic(3, pc.SkillId, pc.TargetId, pc.Data);
+            }
             pc.Stage = PendingAwaitServer;
             pc.EffectTime = double.PositiveInfinity;
             pc.ReplyDeadline = now + PendingReplyTimeout;
             _pendingCasts[i] = pc;
         }
+        foreach (var launch in _launches)
+            if (SkillData.Get(launch.SkillId) is { } launched)
+                LaunchFlight(_myId, launch.TargetId, launched, launch.Data ?? new short[7], own: true);
 
         if (_comboBuffered && !_selfDead && now >= _comboPlayingUntil) ComboHit(now);
         TickSwingCommit(now);
@@ -363,22 +394,7 @@ public partial class World
                 break;
 
             case 2:
-                if (s?.HasFlyingStage == true) StopSkillFx(casterId, skillId, 1);
-                int arrows = s is { NeedsFlying: true } ? Mathf.Max(1, s.NeedArrow) : 1;
-                Vector3? impact = targetId < 0 ? AreaImpactPoint(data) : null;
-                if (s?.FlyingFx != null)
-                {
-                    for (int k = 0; k < arrows; k++)
-                        SpawnFxProjectile(casterId, targetId, s.FlyingFx, (k - (arrows - 1) * 0.5f) * VolleyLateralSpacing, impact);
-                    AudioFxAt(s.FlyingFxId, casterId);
-                }
-                if (casterId == _myId && s?.HasFlyingStage == true)
-                {
-                    double travel = ProjectileTravelTime(casterId, targetId, s.FlyingFx, impact);
-                    short[]? landing = targetId < 0 ? data : null;
-                    for (int k = 0; k < arrows; k++)
-                        QueuePendingStage(skillId, targetId, PendingEffecting, travel + k * VolleyHitGapSeconds, landing, replace: k == 0);
-                }
+                if (casterId != _myId && s != null) LaunchFlight(casterId, targetId, s, data, own: false);
                 break;
 
             case 3:
@@ -386,7 +402,7 @@ public partial class World
                 int affected = targetId == 0 ? casterId : targetId;
                 if (Diag.SlowLog) GD.Print($"[fx] effecting skill={skillId} caster={casterId} target={targetId} miss={miss} targetFx={s?.TargetFx} part={s?.TargetPart} data3={(data.Length > 3 ? data[3] : 0)}");
                 StopSkillFx(casterId, skillId, 1);
-                if (s != null && (s.IsMelee || s.SelfAnim2 != 0))
+                if (s != null && !s.HasFlyingStage && (s.IsMelee || s.SelfAnim2 != 0))
                 {
                     PlaySkillAction(casterId, SkillAnim(casterId, s, true), ClipsForCast(s), ActionRankSkill);
                     LatchStrikeTarget(casterId, !miss && s.IsMelee ? targetId : -1);

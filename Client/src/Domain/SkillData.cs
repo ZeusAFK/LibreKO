@@ -19,6 +19,8 @@ public static class SkillData
     public static bool FlyingStageFor(int type1, bool hasFlyingFx, bool hasCastPhase) =>
         type1 == MagicType.Ranged || (hasFlyingFx && hasCastPhase && type1 != MagicType.Melee);
 
+    public static bool FlightHomesFor(int type1, int hitType) => type1 != MagicType.Ranged || hitType != 0;
+
     public sealed class Skill
     {
         public int Id;
@@ -62,6 +64,8 @@ public static class SkillData
         public bool NeedsFlying => Type1 == MagicType.Ranged;
 
         public bool HasFlyingStage => FlyingStageFor(Type1, FlyingFx != null, HasCastPhase);
+
+        public bool FlightHomes => FlightHomesFor(Type1, HitType);
 
         public bool IsAreaMoral => SkillTarget.IsGroundArea(Moral);
 

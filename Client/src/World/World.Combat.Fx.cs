@@ -57,6 +57,61 @@ public partial class World
     private static float ProjectileSpeedFor(string? fxName) =>
         Mathf.Max(fxName != null ? Fx.AuthoredVelocity(fxName) : 0f, ProjectileFxSpeed);
 
+    private void LaunchFlight(int casterId, int targetId, SkillData.Skill s, short[] data, bool own)
+    {
+        StopSkillFx(casterId, s.Id, 1);
+        if (s.IsMelee || s.SelfAnim2 != 0)
+            PlaySkillAction(casterId, SkillAnim(casterId, s, true), ClipsForCast(s), ActionRankSkill);
+        var from = WorldPosOf(casterId);
+        Vector3? impact = targetId < 0 ? AreaImpactPoint(data) : null;
+        var aim = impact ?? WorldPosOf(targetId);
+        if (own) ClearPendingCast(s.Id);
+        if (from == null || aim == null)
+        {
+            if (own) EndCast(s.Id);
+            return;
+        }
+        if (s.FlyingFx != null) AudioFxAt(s.FlyingFxId, casterId);
+
+        bool area = targetId < 0;
+        var offsets = Volley.Offsets(s.NeedsFlying ? s.NeedArrow : 1);
+        var reach = new Vector3(aim.Value.X - from.Value.X, 0f, aim.Value.Z - from.Value.Z);
+        float rise = aim.Value.Y - from.Value.Y;
+        for (int k = 0; k < offsets.Length; k++)
+        {
+            bool guided = k == 0 && !area && s.FlightHomes;
+            Vector3 end = area || guided ? aim.Value : from.Value + reach.Rotated(Vector3.Up, offsets[k]) + new Vector3(0f, rise, 0f);
+            if (!area && !guided && own && WorldPosOf(FirstHostileAlong(from.Value, end)) is { } struck) end = struck;
+            if (s.FlyingFx != null)
+                SpawnFxProjectile(casterId, guided ? targetId : AreaImpactTarget, s.FlyingFx, 0f, guided ? null : end);
+            if (!own) continue;
+            double travel = ProjectileTravelTime(casterId, guided ? targetId : AreaImpactTarget, s.FlyingFx, guided ? null : end);
+            _pendingCasts.Add(new PendingCast
+            {
+                EffectTime = Now() + travel + k * VolleyHitGapSeconds,
+                SkillId = s.Id,
+                TargetId = area || guided ? targetId : AreaImpactTarget,
+                Stage = PendingEffecting,
+                Data = area ? data : null,
+                Straight = !area && !guided,
+                From = from.Value,
+                To = end,
+            });
+        }
+    }
+
+    private const int AreaImpactTarget = SkillFxTarget.AreaImpactTarget;
+    private const float StraightArrowReachSlack = 0.5f;
+
+    private int FirstHostileAlong(Vector3 from, Vector3 to)
+    {
+        var candidates = new List<VolleyCandidate>();
+        foreach (var (id, e) in _ents)
+            if (e.Attackable && !e.Dead)
+                candidates.Add(new VolleyCandidate(id, e.Body.Position.X, e.Body.Position.Z, e.Radius + StraightArrowReachSlack));
+        return Volley.FirstAlong(from.X, from.Z, to.X, to.Z, candidates);
+    }
+
     private Vector3? AreaImpactPoint(short[] data) =>
         data.Length > 2 ? GroundPos(data[0], data[2], 0f, 0f) : null;
 
