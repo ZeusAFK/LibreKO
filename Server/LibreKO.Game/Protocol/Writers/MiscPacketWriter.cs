@@ -14,6 +14,18 @@ public sealed class MiscPacketWriter
         return packet;
     }
 
+    public static Packet ObjectGateFlag(byte objectType, int uniqueId, bool open)
+    {
+        var packet = new Packet(GameOpcodes.GS_OBJECT_EVENT);
+        packet.WriteByte(objectType);
+        packet.WriteByte(GateFlagChanged);
+        packet.WriteInt(uniqueId);
+        packet.WriteByte((byte)(open ? 1 : 0));
+        return packet;
+    }
+
+    private const byte GateFlagChanged = 1;
+
     public static Packet ObjectEvent(byte objectType, byte result, int objectId)
     {
         var packet = new Packet(GameOpcodes.GS_OBJECT_EVENT);

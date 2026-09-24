@@ -82,6 +82,7 @@ public partial class World
     {
         if (info.Id == _myId)
             return;
+        if (info.IsNpc && info.ObjectType != 0) NoteGateState(info.X, info.Z, info.GateOpen);
 
         if (_ents.TryGetValue(info.Id, out var existing))
         {

@@ -74,20 +74,6 @@ public sealed class NpcSpawnPacketWriter
         return packet;
     }
 
-    public static Packet GateFlag(
-        byte inOutType, int uniqueId, short npcId, byte npcType, int maxHp, int hp, bool gateOpen)
-    {
-        var packet = new Packet(GameOpcodes.GS_NPC_INOUT);
-        packet.WriteByte(inOutType);
-        packet.WriteInt(uniqueId);
-        packet.WriteShort(npcId);
-        packet.WriteByte(npcType);
-        packet.WriteInt(maxHp);
-        packet.WriteInt(hp);
-        packet.WriteByte((byte)(gateOpen ? 1 : 0));
-        return packet;
-    }
-
     public static void WriteRecord(Packet packet, NpcState npc)
     {
         packet.WriteShort(npc.NpcId);

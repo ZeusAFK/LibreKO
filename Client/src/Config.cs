@@ -60,7 +60,7 @@ public static class Config
     public static bool VolumetricFog { get; private set; } = false;
     public static bool Bloom { get; private set; } = true;
     public static bool Clouds { get; private set; } = true;
-    public static bool Capes { get; private set; } = false;
+    public static bool Capes { get; private set; } = true;
 
     public const float ViewDistanceMin = 0.35f;
     public const float ViewDistanceMax = 1f;

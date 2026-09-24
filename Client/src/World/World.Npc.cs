@@ -95,6 +95,12 @@ public partial class World
 
         if (FlatDistance(_self.Position, e.Body.Position) > NpcInteractRange) return;
 
+        if (e.NpcType == NpcTypes.Lever)
+        {
+            TryOperateObject((short)e.NpcId, npcUniqueId);
+            return;
+        }
+
         StopForNpcTalk(e);
 
         _npcTalkId = npcUniqueId;

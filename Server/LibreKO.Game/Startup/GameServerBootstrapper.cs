@@ -29,7 +29,7 @@ public class GameServerBootstrapper(
 {
     private const short ObjectBind = 0;
     private const short ObjectGate = 1;
-    private const short ObjectGateLever = 2;
+    private const short ObjectGateLever = 3;
     private const short ObjectRemoveBind = 7;
 
     private readonly SemaphoreSlim _initializeLock = new(1, 1);

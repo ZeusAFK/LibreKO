@@ -378,6 +378,7 @@ public partial class World
         AddChild(_objRoot);
         _objects.Clear();
         _objBuckets.Clear();
+        _gateColliders.Clear();
         _objInstRoot = null;
         KoTextureAnim.Reset();
         _pickedObject = null; ClearPickCandidates();
@@ -429,6 +430,7 @@ public partial class World
             }
             _objRoot.AddChild(instance);
             o.Mi = FindFirst<MeshInstance3D>(instance);
+            AddGateCollider(o, instance);
             return;
         }
 
@@ -478,6 +480,7 @@ public partial class World
         o.InstMesh = null;
         o.Mi = mi;
         _objRoot!.AddChild(mi);
+        AddGateCollider(o, mi);
     }
 
     private async System.Threading.Tasks.Task BuildObjectInstances()

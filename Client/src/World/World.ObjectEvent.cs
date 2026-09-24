@@ -27,8 +27,17 @@ public partial class World
         return true;
     }
 
+    private const int TextGateClosed = 1801;
+    private const int TextGateOpened = 1802;
+    private const int TextLeverFailed = 1005;
+
     private void OnObjectEventResult(byte type, bool success, int objectId)
     {
+        if (!success && type is Net.ObjectEventGateLever or Net.ObjectEventFlagLever)
+        {
+            CombatNotice(SystemText(TextLeverFailed, "Failed turning the lever"));
+            return;
+        }
         if (type == Net.ObjectEventAnvil)
         {
             SpawnAnvilFx(objectId, success ? AnvilSuccessFx : AnvilFailFx);
@@ -51,9 +60,13 @@ public partial class World
         if (anchor != null) Fx.Spawn(fx, anchor, Vector3.Zero, oneShot: true);
     }
 
-    private void OnObjectGateState(int uniqueId, int npcId, byte npcType, int maxHp, int hp, bool gateOpen)
+    private void OnObjectGateState(int uniqueId, bool gateOpen)
     {
-        string label = _ents.TryGetValue(uniqueId, out var ent) && ent.Name.Length > 0 ? ent.Name : "The gate";
-        Chat.Info($"{label} {(gateOpen ? "opens" : "closes")}.");
+        if (!_ents.TryGetValue(uniqueId, out var ent)) return;
+        NoteGateState(ent.KoX, ent.KoZ, gateOpen);
+        if (ent.NpcType == NpcTypes.Lever) return;
+        CombatNotice(gateOpen
+            ? SystemText(TextGateOpened, "The Castle Gate has opened")
+            : SystemText(TextGateClosed, "The Castle Gate has been closed"));
     }
 }

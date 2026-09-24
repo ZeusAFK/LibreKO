@@ -17,6 +17,7 @@ public interface IWorldObjectEventService
 public class WorldObjectEventService(
     SessionManager sessionManager,
     IWorldMovementService worldMovementService,
+    IGameDataService gameDataService,
     ILogger<WorldObjectEventService> logger) : IWorldObjectEventService
 {
     private const byte ObjectEventFailed = 0;
@@ -26,8 +27,9 @@ public class WorldObjectEventService(
 
     private const byte ObjectBind = 0;
     private const byte ObjectGate = 1;
-    private const byte ObjectGateLever = 2;
-    private const byte ObjectFlagLever = 3;
+    private const byte ObjectGateLever = 3;
+    private const byte ObjectFlagLever = 4;
+    private const short NoCastleOwner = 0;
     private const byte ObjectWarpGate = 5;
     private const byte ObjectRemoveBind = 7;
     private const byte ObjectAnvil = 8;
@@ -74,7 +76,7 @@ public class WorldObjectEventService(
                         if (gateNpc != null && (byte)gateNpc.Nation == (byte)session.Nation)
                         {
                             gateNpc.GateOpen = !gateNpc.GateOpen;
-                            await BroadcastGateFlagAsync(gateNpc);
+                            await BroadcastGateFlagAsync(gateNpc, ObjectGate);
                             success = true;
                         }
                         break;
@@ -86,11 +88,19 @@ public class WorldObjectEventService(
                         if (objectEvent.Belong != 0 && objectEvent.Belong != (int)session.Nation)
                             break;
 
+                        if (!MayWorkDelosLever(session))
+                            break;
+
                         var gateNpc = sessionManager.Regions.GetNpcByProtoId(session.ZoneId, objectEvent.ControlNpcId);
                         if (gateNpc != null)
                         {
+                            if (sessionManager.Regions.GetNpc(npcId) is { } leverNpc && leverNpc.UniqueId != gateNpc.UniqueId)
+                            {
+                                leverNpc.GateOpen = !leverNpc.GateOpen;
+                                await BroadcastGateFlagAsync(leverNpc, (byte)objectEvent.Type);
+                            }
                             gateNpc.GateOpen = !gateNpc.GateOpen;
-                            await BroadcastGateFlagAsync(gateNpc);
+                            await BroadcastGateFlagAsync(gateNpc, ObjectGate);
                             success = true;
                         }
                         break;
@@ -114,6 +124,15 @@ public class WorldObjectEventService(
 
         await client.SendPacket(MiscPacketWriter.ObjectEventResult(
             objectEvent != null ? (byte)objectEvent.Type : (byte)0, ObjectEventFailed));
+    }
+
+    private bool MayWorkDelosLever(UserSession session)
+    {
+        if (session.ZoneId != (short)ZoneId.Delos || session.IsGM)
+            return true;
+
+        var owner = gameDataService.SiegeWarfare?.MasterKnights ?? NoCastleOwner;
+        return owner != NoCastleOwner && session.KnightsId == owner;
     }
 
     private async Task<bool> HandleBindObjectEventAsync(UserSession session, ObjectEvent objectEvent)
@@ -155,11 +174,9 @@ public class WorldObjectEventService(
         return true;
     }
 
-    private async Task BroadcastGateFlagAsync(NpcInstance npc)
+    private async Task BroadcastGateFlagAsync(NpcInstance npc, byte objectType)
     {
-        var packet = NpcSpawnPacketWriter.GateFlag(
-            NpcSpawnPacketWriter.InOutIn, npc.UniqueId, (short)npc.NpcId, npc.NpcType,
-            npc.MaxHp, npc.Hp, npc.GateOpen);
+        var packet = MiscPacketWriter.ObjectGateFlag(objectType, npc.UniqueId, npc.GateOpen);
         await sessionManager.Regions.BroadcastFromNpc(npc, packet);
     }
 

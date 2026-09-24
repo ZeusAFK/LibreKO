@@ -105,7 +105,7 @@ public partial class World
         if (objY > grounded.Y) grounded.Y = objY + _selfLift;
         _self.Position = grounded;
 
-        if (CapsuleOverlaps())
+        if (CapsuleOverlaps() && !StepOffLedge(grounded, resolved.Y))
             _self.Position = _lastFreePos;
         else
             _lastFreePos = _self.Position;
@@ -130,6 +130,13 @@ public partial class World
             _lastKoX = koX; _lastKoZ = koZ;
             SendHeadingIfChanged(koX, koZ);
         }
+    }
+
+    private bool StepOffLedge(Vector3 below, float edgeY)
+    {
+        if (edgeY <= below.Y + StepUp) return false;
+        _self.Position = new Vector3(below.X, edgeY, below.Z);
+        return !CapsuleOverlaps();
     }
 
     private bool TrackBlockedProgress(Vector3 wasAt, float speed, double delta)

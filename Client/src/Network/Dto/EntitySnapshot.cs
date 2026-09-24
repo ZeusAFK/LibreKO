@@ -12,6 +12,7 @@ public sealed class EntitySnapshot
     public int NpcId;
     public int NpcType;
     public int ObjectType;
+    public bool GateOpen;
     public int ModelId;
     public int Size;
     public int Race, Class, Face, Hair;
