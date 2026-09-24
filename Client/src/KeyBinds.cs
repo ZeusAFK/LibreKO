@@ -20,7 +20,7 @@ public enum KeyAction
     AutoAttack,
     StealthCancel,
 
-    HotSlot1, HotSlot2, HotSlot3, HotSlot4, HotSlot5, HotSlot6, HotSlot7, HotSlot8,
+    HotSlot1, HotSlot2, HotSlot3, HotSlot4, HotSlot5, HotSlot6, HotSlot7, HotSlot8, HotSlot9, HotSlot10,
     HotPage1, HotPage2, HotPage3, HotPage4, HotPage5, HotPage6, HotPage7, HotPage8,
 
     Character,
@@ -175,6 +175,8 @@ public static partial class KeyBinds
         new(KeyAction.HotSlot6, BindGroup.Hotbar, "Slot 6", Chord(Key.Key6)),
         new(KeyAction.HotSlot7, BindGroup.Hotbar, "Slot 7", Chord(Key.Key7)),
         new(KeyAction.HotSlot8, BindGroup.Hotbar, "Slot 8", Chord(Key.Key8)),
+        new(KeyAction.HotSlot9, BindGroup.Hotbar, "Slot 9", Chord(Key.Key9)),
+        new(KeyAction.HotSlot10, BindGroup.Hotbar, "Slot 10", Chord(Key.Key0)),
         new(KeyAction.HotPageNext, BindGroup.Hotbar, "Next Page", Chord(Key.None)),
         new(KeyAction.HotPage1, BindGroup.Hotbar, "Page 1", Chord(Key.F1)),
         new(KeyAction.HotPage2, BindGroup.Hotbar, "Page 2", Chord(Key.F2)),

@@ -1,3 +1,4 @@
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
@@ -98,7 +99,7 @@ public sealed class NpcSpawnPacketWriter
         packet.WriteShort(npc.Size);
         packet.WriteInt(npc.WeaponRight);
         packet.WriteInt(npc.WeaponLeft);
-        packet.WriteByte(npc.IsMonster ? (byte)0 : npc.Nation);
+        packet.WriteByte(npc.IsMonster && npc.NpcType != NpcData.TypeGuardSummon ? (byte)0 : npc.Nation);
         packet.WriteByte(npc.Level);
         packet.WriteShort(npc.X);
         packet.WriteShort(npc.Z);

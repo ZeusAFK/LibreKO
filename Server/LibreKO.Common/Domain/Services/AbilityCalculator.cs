@@ -62,7 +62,7 @@ public static class AbilityCalculator
         byte level, byte strength, byte stamina, byte dexterity, byte intelligence,
         short classId, CoefficientData coefficient, ItemSlot[] inventory, IGameDataService gameData,
         byte[]? skillPoints = null, AchievementTitleData? title = null,
-        RebirthBonus? rebirth = null)
+        RebirthBonus? rebirth = null, StatBonus? buffs = null)
     {
         var stats = new DerivedStats();
 
@@ -88,6 +88,14 @@ public static class AbilityCalculator
             itemIntB += rebirth.Intelligence;
             itemChaB += rebirth.Magic;
         }
+        if (buffs != null)
+        {
+            itemStrB += buffs.Strength;
+            itemStaB += buffs.Stamina;
+            itemDexB += buffs.Dexterity;
+            itemIntB += buffs.Intelligence;
+            itemChaB += buffs.Magic;
+        }
         short fireR = 0, coldR = 0, lightningR = 0, magicR = 0, poisonR = 0, curseR = 0;
         short daggerR = 0, jamadarR = 0, swordR = 0, axeR = 0, maceR = 0, spearR = 0, bowR = 0;
         int totalWeight = 0;
@@ -105,7 +113,7 @@ public static class AbilityCalculator
             if (itemProto == null) continue;
 
             // Weight: all items contribute to weight
-            totalWeight += itemProto.Weight * slot.Count;
+            totalWeight += itemProto.Weight * itemProto.CarriedUnits(slot.Count);
 
             // Only equipped items (slots 0-13) and cospre (42-46) apply stat bonuses
             if (i >= InventoryConstants.SlotMax && i < InventoryConstants.CospreStart)

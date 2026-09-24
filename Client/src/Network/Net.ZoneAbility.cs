@@ -34,11 +34,5 @@ public partial class Net
         && CurrentZoneAbility.IsHostilePlayer(Nation, e.Nation);
 
     public bool IsHostileNpc(EntitySnapshot e) =>
-        e.IsNpc
-        && e.ObjectType != NpcTypes.ObjectType.MapObject
-        && (e.IsMonster
-            || e.NpcType == NpcTypes.Scarecrow
-            || (e.Nation is Nations.Karus or Nations.ElMorad
-                && e.Nation != Nation
-                && CurrentZoneAbility.NpcsAreTargets));
+        NpcHostility.IsHostile(e, Nation, CurrentZoneAbility.NpcsAreTargets);
 }

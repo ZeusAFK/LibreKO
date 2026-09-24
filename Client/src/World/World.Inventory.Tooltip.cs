@@ -164,7 +164,7 @@ public partial class World : Node3D
         lines.Add(TooltipLine.Rule());
 
         int maxDurability = def.Duration + (ext?.DurationBonus ?? 0);
-        if (maxDurability > 1)
+        if (maxDurability > 1 && !def.IsChargeItem)
         {
             int current = item.Durability;
             int percent = current * 100 / maxDurability;
@@ -227,8 +227,9 @@ public partial class World : Node3D
             lines.Add(new TooltipLine(
                 FormatMoneyText(4552, "Selling Price", ItemData.SellPrice(item.ItemId)), 0));
 
-        if (item.Count > 1)
-            lines.Add(new TooltipLine($"Count {item.Count}", 0));
+        int shownCount = ItemData.ShownCount(def, item);
+        if (shownCount > 1)
+            lines.Add(new TooltipLine($"Count {shownCount}", 0));
 
         if (def.ReqCls > 0)
             lines.Add(new TooltipLine(" -" + ItemData.Text(EquipRules.ClassNameTextId(def.ReqCls), UnknownClassName),

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LibreKO.Common.Domain.Entities.GameData;
@@ -24,6 +24,7 @@ public class NpcData
     public const byte TypeObjectWood = 54;
     public const byte TypeChaoticGenerator = 162;
     public const byte TypeScarecrow = 171;
+    public const byte TypeGuardSummon = 255;
 
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;

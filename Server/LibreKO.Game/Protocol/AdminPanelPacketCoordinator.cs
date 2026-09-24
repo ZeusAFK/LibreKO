@@ -207,6 +207,9 @@ public class AdminPanelPacketCoordinator(
             return;
         }
 
+        if (itemData.Countable == 0)
+            count = 1;
+
         var outcome = session.WithLock(s =>
         {
             var slotIndex = s.FindSlotForItem(itemId, gameDataService, (ushort)count);

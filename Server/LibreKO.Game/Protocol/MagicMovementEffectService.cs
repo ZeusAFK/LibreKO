@@ -33,6 +33,7 @@ public class MagicMovementEffectService(
             MagicWarpType.BindPoint => await WarpToBindPointAsync(caster, magic),
             MagicWarpType.SummonInZone => await SummonToCasterAsync(caster, targetId),
             MagicWarpType.MoveToTarget => await MoveToTargetAsync(caster, magic, targetId),
+            MagicWarpType.Blink => await BlinkAsync(caster, type8Data, data),
             _ => Unhandled(warpType, skillId, caster),
         };
 
@@ -135,6 +136,31 @@ public class MagicMovementEffectService(
         await worldMovementService.WarpAsync(caster, (ushort)target.GetPosX, (ushort)target.GetPosZ);
         return true;
     }
+
+    private async Task<bool> BlinkAsync(UserSession caster, MagicType8Data type8Data, int[] data)
+    {
+        if (data.Length <= BlinkZSlot)
+            return false;
+
+        var tenthsX = unchecked((ushort)data[BlinkXSlot]);
+        var tenthsZ = unchecked((ushort)data[BlinkZSlot]);
+        float x = tenthsX / TenthsPerMetre, z = tenthsZ / TenthsPerMetre;
+        float dx = x - caster.X, dz = z - caster.Z;
+        float reach = type8Data.Radius + BlinkReachSlack;
+        if (dx * dx + dz * dz > reach * reach)
+            return false;
+
+        if (sessionManager.Maps?.IsValidPosition(caster.ZoneId, x, z) == false)
+            return false;
+
+        await worldMovementService.WarpAsync(caster, tenthsX, tenthsZ);
+        return true;
+    }
+
+    private const int BlinkXSlot = 0;
+    private const int BlinkZSlot = 2;
+    private const float BlinkReachSlack = 2f;
+    private const float TenthsPerMetre = 10f;
 
     private const byte ObjectEventAlive = 1;
 

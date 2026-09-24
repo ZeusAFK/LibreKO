@@ -454,7 +454,7 @@ public partial class World : Node3D
         {
             if (Inv[abs].IsEmpty) continue;
             var d = ItemData.Get(Inv[abs].ItemId);
-            if (d != null) wt += d.Weight * Inv[abs].Count;
+            if (d != null) wt += d.Weight * ItemData.CarriedUnits(d, Inv[abs]);
         }
         return wt;
     }
@@ -892,7 +892,8 @@ public partial class World : Node3D
             _hint.Visible = false;
             _emptyIcon.Visible = false;
             _icon.Texture = ItemData.Icon(it.ItemId);
-            _count.Text = it.Count > 1 ? it.Count.ToString() : "";
+            int shown = ItemData.ShownCount(ItemData.Get(it.ItemId), it);
+            _count.Text = shown > 1 ? shown.ToString() : "";
             TooltipText = "";
             _plus.Set(it.ItemId);
             if (!_locked) SealLook.Apply(it.State, _icon, this, _normal);

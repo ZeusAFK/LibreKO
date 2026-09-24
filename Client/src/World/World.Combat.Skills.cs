@@ -16,6 +16,11 @@ public partial class World
             CombatNotice($"You have not learned {s.Name}. {SkillRequirementText(s)}.");
             return;
         }
+        if (!SkillData.IsGranted(s.Tree, SelfTransformModel()))
+        {
+            CombatNotice($"You cannot use {s.Name}.");
+            return;
+        }
 
         double now = Now();
         if (SkillOnCooldown(s, now)) return;
@@ -33,8 +38,14 @@ public partial class World
         }
         if (!CanCastWithGear(s)) return;
 
+        if (s.IsMeleeArea)
+        {
+            if (MeleeAreaCentre(s) is { } centre) SendAreaCast(s, centre);
+            return;
+        }
         if (s.IsGroundArea && BeginAreaCast(s)) return;
         if (s.IsCasterArea) { SendAreaCast(s, _self.GlobalPosition); return; }
+        if (s.IsBlink) { CastBlink(s); return; }
 
         int target;
         if (s.IsEnemy)
@@ -61,9 +72,54 @@ public partial class World
             if (target != _myId) FaceToward(_myId, target);
         }
 
+        bool instant = SpendInstantMagic(s);
         Net.I.SendMagic(1, id, target);
-        QueuePendingStage(id, target, s.HasFlyingStage ? PendingFlying : PendingEffecting, CastDelay(s));
-        BeginLocalCast(s);
+        QueuePendingStage(id, target, s.HasFlyingStage ? PendingFlying : PendingEffecting, instant ? 0 : CastDelay(s));
+        BeginLocalCast(s, instant);
+    }
+
+    private const int InstantMagicBuffType = 23;
+
+    private bool SpendInstantMagic(SkillData.Skill s)
+    {
+        if (s is { Type1: MagicType.Buff, BuffType: InstantMagicBuffType }) return false;
+        double now = Now();
+        foreach (var (buffSkillId, end) in Net.I.BuffEnds)
+        {
+            if (end <= now || SkillData.Get(buffSkillId) is not { Type1: MagicType.Buff, BuffType: InstantMagicBuffType }) continue;
+            DropBuffChip(buffSkillId);
+            Net.I.BuffEnds.Remove(buffSkillId);
+            return true;
+        }
+        return false;
+    }
+
+    private const string TransformModelKey = "TransformId";
+
+    private int SelfTransformModel() =>
+        SkillData.Get(_selfTransformSkill) is { } form && form.Effect.TryGetValue(TransformModelKey, out var model)
+            ? model.AsInt32() : 0;
+
+    private const int TextSkillTooFar = 4009;
+    private const int TextSkillNoItem = 4007;
+    private const int TextNoClassStoneFirst = 7606;
+    private const int FirstStoneFamily = 1;
+    private const int LastStoneFamily = 4;
+
+    private Vector3? MeleeAreaCentre(SkillData.Skill s)
+    {
+        if (_selectedId < 0 || !_ents.TryGetValue(_selectedId, out var target) || !target.Attackable || target.Dead)
+        {
+            CombatNotice("Select a target first.");
+            return null;
+        }
+        if (!InSkillRange(_selectedId, s))
+        {
+            CombatNotice(SystemText(TextSkillTooFar, "Skill failed - Too far"));
+            return null;
+        }
+        FaceToward(_myId, _selectedId);
+        return target.Body.GlobalPosition;
     }
 
     private int FriendlyCastTarget(SkillData.Skill s)
@@ -95,10 +151,19 @@ public partial class World
         if (s.UseItem != 0 && !s.IsResurrect && ItemData.Get(s.UseItem) != null)
         {
             if (CountInBackpack(s.UseItem) < 1)
+            {
+                CombatNotice(SystemText(TextSkillNoItem, "Skill failed - Not enough item"));
                 return false;
+            }
             int need = s.IsRanged ? Mathf.Max(1, s.NeedArrow) : 1;
             if (CountInBackpack(s.ConsumedItem) < need)
+            {
+                int family = CharacterClassCatalog.Family(_selfClass);
+                CombatNotice(SystemText(s.IsMasterScrollSkill && family is >= FirstStoneFamily and <= LastStoneFamily
+                    ? TextNoClassStoneFirst + family - FirstStoneFamily
+                    : TextSkillNoItem, "Skill failed - Not enough item"));
                 return false;
+            }
         }
         return true;
     }
@@ -107,7 +172,7 @@ public partial class World
     {
         int n = 0;
         for (int abs = GridStart; abs < Inv.Length; abs++)
-            if (Inv[abs].ItemId == itemId) n += Mathf.Max((int)Inv[abs].Count, 1);
+            if (Inv[abs].ItemId == itemId) n += Mathf.Max(ItemData.ShownCount(ItemData.Get(itemId), Inv[abs]), 1);
         return n;
     }
 
@@ -188,14 +253,23 @@ public partial class World
                 _pendingCasts.RemoveAt(i);
     }
 
-    private void BeginLocalCast(SkillData.Skill s)
+    private void StartCastFx(int casterId, SkillData.Skill s)
     {
-        StartSkillCooldown(s);
+        StopSkillFx(casterId, s.Id);
+        if (s.SelfFx1 == null) return;
+        SpawnOwnedFx(casterId, s.Id, 1, s.SelfFx1, s.SelfPart1);
+        if (s.HasCastPhase) AudioFxAt(s.SelfFx1Id, casterId);
+    }
+
+    private void BeginLocalCast(SkillData.Skill s, bool instant = false)
+    {
+        if (!instant) StartSkillCooldown(s);
+        StartCastFx(_myId, s);
         if (s.IsPotion) AudioFxAt(s.TargetFxId, _myId);
-        BeginCast(s);
+        if (!instant) BeginCast(s);
         if (s.IsNonAction) return;
         PlaySkillAction(_myId, SkillAnim(_myId, s, false), ClipsForCast(s), ActionRankSkill);
-        StretchCastAnimation(s);
+        if (!instant) StretchCastAnimation(s);
     }
 
     private bool SelfCasting(double now) =>

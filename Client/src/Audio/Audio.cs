@@ -9,6 +9,7 @@ public partial class Audio : Node
     public const string BusSfx = "Sfx";
     public const string BusUi = "Ui";
     public const string BusVoice = "Voice";
+    public const string BusMaster = "Master";
 
     public const float MaxAudible = 60f;
     private const float UnitSize = 7f;
@@ -63,12 +64,15 @@ public partial class Audio : Node
 
     public static void ApplyVolumes()
     {
-        SetBus("Master", Config.MasterVolume, Config.AudioMuted || !Config.AudioEnabled);
+        SetBus(BusMaster, Config.MasterVolume, Config.AudioMuted || !Config.AudioEnabled);
         SetBus(BusMusic, Config.MusicVolume, false);
         SetBus(BusSfx, Config.SfxVolume, false);
         SetBus(BusUi, Config.UiVolume, false);
         SetBus(BusVoice, Config.VoiceVolume, false);
     }
+
+    public static void PreviewVolume(string bus, float linear) =>
+        SetBus(bus, linear, bus == BusMaster && (Config.AudioMuted || !Config.AudioEnabled));
 
     public static void SetListener(Node3D? node) { if (I != null) I._listener = node; }
 
@@ -85,6 +89,12 @@ public partial class Audio : Node
     {
         if (I == null || !Config.AudioEnabled) return;
         if (SoundCatalog.TryGet(soundId, out var e)) I.Play2DInternal(soundId, e, BusUi);
+    }
+
+    public static void PlayUiFile(string file)
+    {
+        if (I == null || !Config.AudioEnabled) return;
+        I.Play2DFile(file, BusUi);
     }
 
     public static void PlayVoice(int soundId)
@@ -129,6 +139,7 @@ public partial class Audio : Node
         var stream = I.Stream(e.File, looping: true);
         if (stream == null) { I._ambience.Stop(); return; }
         I._ambience.Stream = stream;
+        I._ambience.VolumeDb = e.GainDb;
         I._ambience.Play();
     }
 
@@ -142,6 +153,7 @@ public partial class Audio : Node
         {
             Stream = stream,
             Bus = BusSfx,
+            VolumeDb = e.GainDb,
             MaxDistance = MaxAudible,
             UnitSize = UnitSize,
             AttenuationModel = AudioStreamPlayer3D.AttenuationModelEnum.InverseDistance,
@@ -197,6 +209,7 @@ public partial class Audio : Node
         var stream = Stream(e.File, looping: false);
         if (stream == null) { Release(soundId); return; }
         p.Stream = stream;
+        p.VolumeDb = e.GainDb;
         p.GlobalPosition = pos;
         p.SetMeta("snd", soundId);
         p.Play();
@@ -211,7 +224,20 @@ public partial class Audio : Node
         if (stream == null) { Release(soundId); return; }
         p.Stream = stream;
         p.Bus = bus;
+        p.VolumeDb = e.GainDb;
         p.SetMeta("snd", soundId);
+        p.Play();
+    }
+
+    private void Play2DFile(string file, string bus)
+    {
+        var p = Take2D();
+        if (p == null) return;
+        var stream = Stream(file, looping: false);
+        if (stream == null) return;
+        p.Stream = stream;
+        p.Bus = bus;
+        p.VolumeDb = 0f;
         p.Play();
     }
 
@@ -306,7 +332,7 @@ public partial class Audio : Node
             int idx = AudioServer.BusCount;
             AudioServer.AddBus(idx);
             AudioServer.SetBusName(idx, name);
-            AudioServer.SetBusSend(idx, "Master");
+            AudioServer.SetBusSend(idx, BusMaster);
         }
     }
 

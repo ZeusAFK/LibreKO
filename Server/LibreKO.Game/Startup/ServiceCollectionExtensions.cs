@@ -206,6 +206,7 @@ public static class ServiceCollectionExtensions
         // NPC AI
         services.AddSingleton<INpcAiBehaviorService, NpcAiBehaviorService>();
         services.AddSingleton<INpcAiCombatService, NpcAiCombatService>();
+        services.AddSingleton<IGuardSummonAiService, GuardSummonAiService>();
         services.AddSingleton<INpcAiDeathService, NpcAiDeathService>();
         services.AddSingleton<INpcAiMagicService, NpcAiMagicService>();
         services.AddSingleton<INpcAiMovementService, NpcAiMovementService>();

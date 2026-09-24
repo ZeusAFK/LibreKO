@@ -21,6 +21,27 @@ public static class SkillData
 
     public static bool FlightHomesFor(int type1, int hitType) => type1 != MagicType.Ranged || hitType != 0;
 
+    public const int NoNationRole = 0;
+    private const int NationRoleFirstBand = 1;
+    private const int NationBuffBand = 1000;
+    private const int FirstNationBuffLine = 1;
+    private const int LastNationBuffLine = 5;
+    private const int CommandTreeDigit = 9;
+    private static readonly HashSet<int> CommandForms = new() { 20007, 20008, 31501, 31502, 31503, 31504, 31505, 31506, 31507 };
+
+    public static bool IsGranted(int tree, int transformId, int nationRole = NoNationRole, int nationLine = 0)
+    {
+        if (tree >= SkillPage.NationBuffFirstTree && tree < SkillPage.NationBuffEndTree)
+        {
+            if (nationRole == NoNationRole) return false;
+            if (nationRole == NationRoleFirstBand) return tree < SkillPage.NationBuffFirstTree + NationBuffBand;
+            if (nationLine < FirstNationBuffLine || nationLine > LastNationBuffLine) return true;
+            int band = SkillPage.NationBuffFirstTree + nationLine * NationBuffBand;
+            return tree >= band && tree < band + NationBuffBand;
+        }
+        return tree % 10 != CommandTreeDigit || CommandForms.Contains(transformId);
+    }
+
     public sealed class Skill
     {
         public int Id;
@@ -79,6 +100,8 @@ public static class SkillData
 
         public bool IsAreaCast => IsGroundArea || IsCasterArea;
 
+        public bool IsMeleeArea => IsArea && Type1 == MagicType.Melee && IsAreaMoral;
+
         public bool IsMelee => Type1 == MagicType.Melee || Type2 == MagicType.Melee;
 
         public bool IsRanged => Type1 == MagicType.Ranged || Type2 == MagicType.Ranged;
@@ -118,6 +141,9 @@ public static class SkillData
             Effect.TryGetValue("Size", out var v) && (int)v > 0 ? (int)v / 100f : 1f;
 
         public bool IsResurrect => SpecialKind == SpecialMagic.Resurrect;
+
+        public bool IsBlink =>
+            Type1 == MagicType.Warp && Effect.TryGetValue("WarpType", out var v) && (int)v == WarpType.Blink;
 
         public float CastSeconds => Cast / 10f;
         public float RecastSeconds => Recast / 10f;
@@ -208,12 +234,13 @@ public static class SkillData
 
     public readonly record struct Page(int Category, string Label, List<Skill> Skills);
 
-    public static List<Page> Pages(int classCode)
+    public static List<Page> Pages(int classCode, int transformId = 0)
     {
         var byPage = new Dictionary<int, List<Skill>>();
         foreach (var s in ForClass(classCode))
         {
             if (s.Id >= SkillPage.UsableItemFirstId) continue;
+            if (!IsGranted(s.Tree, transformId)) continue;
             int page = PageOf(s.Tree);
             if (page == SkillPage.Hidden) continue;
             if (!byPage.TryGetValue(page, out var l)) byPage[page] = l = new List<Skill>();

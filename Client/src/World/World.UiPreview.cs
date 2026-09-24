@@ -137,13 +137,13 @@ public partial class World
     internal void AttachCombatLogUiPreviewLayout(Control combatLog, Vector2 position) =>
         AttachCombatLogLayout(combatLog, () => position, persist: false);
 
-    internal Control BuildHotbarUiPreview()
+    internal Control BuildHotbarUiPreview(bool vertical = false, int extraBars = 0)
     {
         SkillData.EnsureLoaded();
         ItemData.EnsureLoaded();
         Inv.EnsureLength(GridStart + GridCount);
         Inv[GridStart] = PreviewItem(PreviewPotion, 12, 1);
-        BuildHotbar();
+        BuildHotbar(vertical, extraBars);
         int filled = 0;
         foreach (var s in SkillData.ForClass(_selfClass != 0 ? _selfClass : 205))
         {
@@ -162,7 +162,9 @@ public partial class World
             if (i is 5 or 6) _hotCells[i].SetCount(i == 5 ? 248 : 0, i == 5);
         }
         _hotCells[HotSlotsPerPage - 1].SetCount(12, true);
-        return DetachPreviewControl(_hotbarBox);
+        var hotbar = DetachPreviewControl(_hotbarBox);
+        HudAnchor.Pin(hotbar, HudAnchor.Spot.BottomCenter);
+        return hotbar;
     }
 
     internal void BuildInventoryTooltipHostUiPreview() => BuildInventoryPanel();

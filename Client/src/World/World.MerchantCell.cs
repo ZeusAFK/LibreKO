@@ -61,7 +61,8 @@ public partial class World
             else
             {
                 _icon.Texture = ItemData.Icon(item.ItemId);
-                _count.Text = item.Count > 1 ? item.Count.ToString() : "";
+                int shown = ItemData.ShownCount(ItemData.Get(item.ItemId), item);
+                _count.Text = shown > 1 ? shown.ToString() : "";
                 _plus.Set(item.ItemId);
             }
             Notify();

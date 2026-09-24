@@ -6,7 +6,8 @@ namespace LibreKO.Game.World;
 
 public interface INpcSummonService
 {
-    Task<IReadOnlyList<NpcInstance>> SummonAsync(int npcId, byte zoneId, ushort room, int x, int z, int count, float fallbackY);
+    Task<IReadOnlyList<NpcInstance>> SummonAsync(
+        int npcId, byte zoneId, ushort room, int x, int z, int count, float fallbackY, Action<NpcInstance>? configure = null);
 }
 
 public sealed class NpcSummonService(
@@ -17,7 +18,8 @@ public sealed class NpcSummonService(
 {
     public const int SpreadRange = 3;
 
-    public async Task<IReadOnlyList<NpcInstance>> SummonAsync(int npcId, byte zoneId, ushort room, int x, int z, int count, float fallbackY)
+    public async Task<IReadOnlyList<NpcInstance>> SummonAsync(
+        int npcId, byte zoneId, ushort room, int x, int z, int count, float fallbackY, Action<NpcInstance>? configure = null)
     {
         var npcData = gameData.GetNpc(npcId);
         if (npcData == null)
@@ -42,6 +44,7 @@ public sealed class NpcSummonService(
             aggression.Apply(npc);
             npc.Y = sessionManager.Maps?.GetHeight(zoneId, npc.X, npc.Z) ?? fallbackY;
             npc.SpawnY = npc.Y;
+            configure?.Invoke(npc);
             await lifecycle.SpawnAsync(npc);
             spawned.Add(npc);
         }

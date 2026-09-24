@@ -45,7 +45,17 @@ public static class ItemData
         public int Notice;
         public int Icon;
         public int Duration;
+
+        public bool IsChargeItem => Kind == ChargeItemKind && Countable == 0;
     }
+
+    private const int ChargeItemKind = 255;
+
+    public static int ShownCount(Item? def, ItemSlot slot) =>
+        def is { IsChargeItem: true } ? slot.Durability : slot.Count;
+
+    public static int CarriedUnits(Item? def, ItemSlot slot) =>
+        def is { IsChargeItem: true } ? 1 : slot.Count;
 
     public sealed class Ext
     {

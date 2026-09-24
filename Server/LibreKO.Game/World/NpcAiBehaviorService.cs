@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Game.Protocol.Writers;
 
 namespace LibreKO.Game.World;
@@ -12,10 +12,17 @@ public class NpcAiBehaviorService(
     SessionManager sessionManager,
     INpcAiTargetingService npcAiTargetingService,
     INpcAiMovementService npcAiMovementService,
-    INpcAiCombatService npcAiCombatService) : INpcAiBehaviorService
+    INpcAiCombatService npcAiCombatService,
+    IGuardSummonAiService guardSummonAiService) : INpcAiBehaviorService
 {
     public async Task ProcessNpcAsync(NpcInstance npc, long nowTicks)
     {
+        if (npc.IsGuardSummon)
+        {
+            await guardSummonAiService.TickAsync(npc, nowTicks);
+            return;
+        }
+
         switch (npc.State)
         {
             case NpcState.Standing:

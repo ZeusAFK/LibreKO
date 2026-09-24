@@ -66,7 +66,7 @@ public class MagicItemUsageService(
         if (itemData.ReqLevelMax > 0 && session.Level > itemData.ReqLevelMax)
             return ItemUsability.LevelTooHigh;
 
-        return CountItem(session, itemId, itemData.Category == ItemKind.PowerUpStore) >= count
+        return CountItem(session, itemId, itemData.IsChargeItem) >= count
             ? ItemUsability.Usable
             : ItemUsability.NotCarryingEnough;
     }
@@ -88,7 +88,7 @@ public class MagicItemUsageService(
         if (itemData == null)
             return false;
 
-        var spendsDurability = itemData.Category == ItemKind.PowerUpStore;
+        var spendsDurability = itemData.IsChargeItem;
         var remaining = count;
         for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length && remaining > 0; index++)
         {
@@ -100,7 +100,6 @@ public class MagicItemUsageService(
             {
                 var taken = Math.Min(slot.Durability, remaining);
                 slot.Durability -= (short)taken;
-                slot.Count = (ushort)Math.Max(0, (int)slot.Durability);
                 remaining -= taken;
 
                 if (slot.Durability <= 0)
@@ -207,7 +206,7 @@ public class MagicItemUsageService(
             if (session.Inventory[index].ItemId == itemId)
             {
                 total += useDurability
-                    ? Math.Max(session.Inventory[index].Count, (ushort)Math.Max(0, (int)session.Inventory[index].Durability))
+                    ? Math.Max(0, (int)session.Inventory[index].Durability)
                     : session.Inventory[index].Count;
             }
         }

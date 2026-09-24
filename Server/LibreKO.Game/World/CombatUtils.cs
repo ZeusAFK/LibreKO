@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 
@@ -7,6 +7,32 @@ namespace LibreKO.Game.World;
 public static class CombatUtils
 {
     public const int MaxDamage = 32000;
+
+    private const int NpcHitScale = 200;
+    private const int NpcAcOffset = 240;
+    private const float NpcDamageBase = 0.85f;
+    private const float NpcDamageSpread = 0.3f;
+    private const float NpcDamageCeiling = 2.6f;
+
+    public static int NpcStrikeDamage(int totalHit, int defenderAc, float hitRate, float evadeRate)
+    {
+        if (totalHit <= 0)
+            return 0;
+
+        var hitBase = totalHit * NpcHitScale / (Math.Max(0, defenderAc) + NpcAcOffset);
+        if (hitBase <= 0)
+            return 0;
+
+        var hit = GetHitRate(Math.Max(1f, hitRate) / Math.Max(1f, evadeRate));
+        if (hit == AttackHitResult.Fail)
+            return 0;
+
+        var damage = (int)(NpcDamageBase * hitBase + NpcDamageSpread * Random.Shared.Next(0, Math.Max(1, hitBase)));
+        if (hit == AttackHitResult.GreatSuccess)
+            damage = damage * 3 / 2;
+
+        return Math.Clamp(Math.Min(damage, (int)(NpcDamageCeiling * totalHit)), 0, MaxDamage);
+    }
 
     private static readonly byte[] WeaponSlots =
         [InventoryConstants.LeftHand, InventoryConstants.RightHand];

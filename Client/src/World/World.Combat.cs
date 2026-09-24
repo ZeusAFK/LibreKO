@@ -118,6 +118,7 @@ public partial class World
         TickAutoAttack(now);
 
         ReapCorpses(now);
+        CueReadySkills(now);
         UpdateHotbarReady(now);
         BuffBarTick(now);
         PotionBarTick(now);
@@ -374,7 +375,7 @@ public partial class World
                 if (Diag.SlowLog) GD.Print($"[fx] casting skill={skillId} caster={casterId} selfFx1={s?.SelfFx1} part={s?.SelfPart1}");
                 if (targetId < 0) FaceTowardImpact(casterId, data);
                 else FaceToward(casterId, targetId);
-                StopSkillFx(casterId, skillId);
+                if (casterId != _myId) StopSkillFx(casterId, skillId);
                 if (casterId == _myId && s != null)
                 {
                     EnsureSkillCooldown(s);
@@ -386,11 +387,7 @@ public partial class World
                     PlaySkillAction(casterId, SkillAnim(casterId, s, false), ClipsForCast(s), ActionRankSkill);
                     LatchStrikeTarget(casterId, s.IsMelee ? targetId : -1);
                 }
-                if (s?.SelfFx1 != null)
-                {
-                    SpawnOwnedFx(casterId, skillId, 1, s.SelfFx1, s.SelfPart1);
-                    if (s.HasCastPhase) AudioFxAt(s.SelfFx1Id, casterId);
-                }
+                if (casterId != _myId && s != null) StartCastFx(casterId, s);
                 break;
 
             case 2:

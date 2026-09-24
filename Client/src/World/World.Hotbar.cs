@@ -6,9 +6,17 @@ namespace LibreKO;
 
 public partial class World
 {
-    private const int HotPages = 8;
-    private const int HotSlotsPerPage = 8;
-    private const int HotTotal = HotPages * HotSlotsPerPage;
+    private const int HotPages = HotbarLayout.Pages;
+    private const int HotSlotsPerPage = HotbarLayout.SlotsPerPage;
+    private const int HotTotal = HotbarLayout.Total;
+    private const int HotToolSize = 21;
+    private const int HotBarGap = 4;
+    private const int HotVerticalGap = 3;
+    private const int HotGripThickness = 10;
+    private const int HotPageArrowWidth = 11;
+    private const int HotPageArrowGap = 1;
+    private const string HotbarLayoutId = "hotbar";
+    private const string HotbarVerticalLayoutId = "hotbar_vertical";
     private const int HotSlotSize = 46;
     private const int HotPageBtnGap = 2;
     private const int HotPageLblHeight = 14;
@@ -19,9 +27,19 @@ public partial class World
     private int _hotSelected = -1;
     private bool _hotLoadedFromServer;
 
+    private CanvasLayer _hotbarLayer = null!;
     private Control _hotbarBox = null!;
     private readonly List<HotSlotCell> _hotCells = new();
     private Label _hotPageLbl = null!;
+    private readonly List<HotStrip> _extraBars = new();
+
+    private sealed class HotStrip
+    {
+        public int Extra;
+        public int Page;
+        public Label PageLbl = null!;
+        public readonly List<HotSlotCell> Cells = new();
+    }
 
     private void HotbarInit()
     {
@@ -41,54 +59,196 @@ public partial class World
         Net.I.SkillBarClearEvent -= OnSkillBarClear;
     }
 
-    private void BuildHotbar()
+    private void BuildHotbar() => BuildHotbar(Config.HotbarVertical, Config.HotbarExtraBars);
+
+    private void BuildHotbar(bool vertical, int extraBars)
     {
-        var layer = new CanvasLayer { Layer = 64 };
-        AddChild(layer);
+        _hotbarLayer = new CanvasLayer { Layer = 64 };
+        AddChild(_hotbarLayer);
+        LayoutHotbars(vertical, extraBars);
+    }
 
-        var col = new VBoxContainer();
-        col.AddThemeConstantOverride("separation", 4);
-        layer.AddChild(col);
-        _hotbarBox = col;
+    private void LayoutHotbars() => LayoutHotbars(Config.HotbarVertical, Config.HotbarExtraBars);
 
-        var row = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
-        row.AddThemeConstantOverride("separation", 6);
-        col.AddChild(row);
+    private void LayoutHotbars(bool vertical, int extraBars)
+    {
+        bool hidden = false;
+        if (_hotbarBox != null && GodotObject.IsInstanceValid(_hotbarBox))
+        {
+            hidden = !_hotbarBox.Visible;
+            _hotbarBox.QueueFree();
+        }
+        _hotCells.Clear();
+        _extraBars.Clear();
 
-        _hotPageLbl = HudStyle.Label(11, HorizontalAlignment.Center);
-        _hotPageLbl.CustomMinimumSize = new Vector2(22, HotPageLblHeight);
+        var stack = new BoxContainer { Vertical = !vertical, Visible = !hidden };
+        stack.AddThemeConstantOverride("separation", HotBarGap);
+        _hotbarLayer.AddChild(stack);
+        _hotbarBox = stack;
 
-        var pageBox = new VBoxContainer { SizeFlagsVertical = Control.SizeFlags.ShrinkEnd };
-        pageBox.AddThemeConstantOverride("separation", HotPageBtnGap);
-        pageBox.AddChild(MakeHotPageButton("▲", -1));
-        pageBox.AddChild(_hotPageLbl);
-        pageBox.AddChild(MakeHotPageButton("▼", 1));
+        var extras = new List<Control>();
+        for (int extra = 0; extra < extraBars; extra++)
+        {
+            var strip = new HotStrip { Extra = extra, Page = Config.HotbarExtraPage(extra) };
+            _extraBars.Add(strip);
+            extras.Add(BuildHotStrip(strip, vertical, extraBars));
+        }
+        if (!vertical) foreach (var strip in extras) stack.AddChild(strip);
+        var grip = new HotGrip
+        {
+            Vertical = vertical,
+            TooltipText = "Drag to move the skill bar",
+            CustomMinimumSize = HotGripSize(vertical),
+            SizeFlagsVertical = Control.SizeFlags.ShrinkEnd,
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+        };
+        var main = BuildHotStrip(null, vertical, extraBars, grip);
+        stack.AddChild(main);
+        if (vertical) foreach (var strip in extras) stack.AddChild(strip);
+
+        HudLayout.Attach(stack, HotbarLayoutIdFor(vertical), grip,
+            () => HotbarDefaultPosition(stack, main));
+    }
+
+    private static Vector2 HotGripSize(bool vertical) =>
+        vertical ? new Vector2(HotSlotSize, HotGripThickness) : new Vector2(HotGripThickness, HotSlotSize);
+
+    private static string HotbarLayoutIdFor(bool vertical) => vertical ? HotbarVerticalLayoutId : HotbarLayoutId;
+
+    private Vector2 HotbarDefaultPosition(Control stack, Control main)
+    {
+        var viewport = GetViewport().GetVisibleRect().Size;
+        return new Vector2((viewport.X - main.GetCombinedMinimumSize().X) * 0.5f,
+            viewport.Y - stack.GetCombinedMinimumSize().Y);
+    }
+
+    private void KeepMainBarInPlace(Vector2 sizeBefore)
+    {
+        string id = HotbarLayoutIdFor(Config.HotbarVertical);
+        if (Config.HotbarVertical || !GodotObject.IsInstanceValid(_hotbarBox) || !Config.HasWindowPos(id)) return;
+
+        var grown = _hotbarBox.GetCombinedMinimumSize() - sizeBefore;
+        var pos = Config.GetWindowPos(id, _hotbarBox.Position) - new Vector2(0f, grown.Y);
+        var room = GetViewport().GetVisibleRect().Size - _hotbarBox.GetCombinedMinimumSize();
+        pos = new Vector2(Mathf.Clamp(pos.X, 0f, Mathf.Max(0f, room.X)), Mathf.Clamp(pos.Y, 0f, Mathf.Max(0f, room.Y)));
+        _hotbarBox.Position = pos;
+        Config.SaveWindowPos(id, pos);
+    }
+
+    private Control BuildHotStrip(HotStrip? strip, bool vertical, int extraBars, Control? grip = null)
+    {
+        var row = new BoxContainer
+        {
+            Vertical = vertical,
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin,
+            SizeFlagsVertical = Control.SizeFlags.ShrinkBegin,
+        };
+        row.AddThemeConstantOverride("separation", vertical ? HotVerticalGap : 6);
+
+        var pageLbl = HudStyle.Label(11, HorizontalAlignment.Center);
+        pageLbl.CustomMinimumSize = new Vector2(22, HotPageLblHeight);
+        if (strip == null) _hotPageLbl = pageLbl;
+        else strip.PageLbl = pageLbl;
+
+        var pageBox = new BoxContainer
+        {
+            Vertical = !vertical,
+            SizeFlagsVertical = vertical ? Control.SizeFlags.ShrinkCenter : Control.SizeFlags.ShrinkEnd,
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+        };
+        pageBox.AddThemeConstantOverride("separation", vertical ? HotPageArrowGap : HotPageBtnGap);
+        var arrowSize = vertical ? new Vector2(HotPageArrowWidth, HotPageLblHeight) : new Vector2(22, HotPageBtnHeight);
+        pageBox.AddChild(MakeHotPageButton(vertical ? "◀" : "▲", -1, strip, arrowSize));
+        pageBox.AddChild(pageLbl);
+        pageBox.AddChild(MakeHotPageButton(vertical ? "▶" : "▼", 1, strip, arrowSize));
         row.AddChild(pageBox);
 
+        var cells = strip == null ? _hotCells : strip.Cells;
         for (int i = 0; i < HotSlotsPerPage; i++)
         {
-            var cell = new HotSlotCell(i)
+            var cell = new HotSlotCell(i, showKey: strip == null, keyInside: vertical)
             {
-                OnActivate = ActivateHotSlot,
-                OnSelect = SelectHotSlot,
-                OnClear = ClearHotSlotInPage,
-                OnDrop = DropOntoHotSlot,
-                OnHover = HotSlotHover,
+                PageOf = strip == null ? () => _hotPage : () => strip.Page,
+                OnActivate = abs => FireHotSlot(abs),
+                OnSelect = SelectHotAbs,
+                OnClear = ClearHotAbs,
+                OnDrop = DropOntoHotAbs,
+                OnHover = HotAbsHover,
             };
-            _hotCells.Add(cell);
+            cells.Add(cell);
             row.AddChild(cell);
         }
 
-        HudAnchor.Pin(col, HudAnchor.Spot.BottomCenter);
+        if (strip == null) row.AddChild(BuildHotTools(vertical, extraBars));
+        if (grip != null) row.AddChild(grip);
+        return row;
+    }
+
+    private Control BuildHotTools(bool vertical, int extraBars)
+    {
+        var grid = new GridContainer
+        {
+            Columns = 2,
+            SizeFlagsVertical = Control.SizeFlags.ShrinkEnd,
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+        };
+        grid.AddThemeConstantOverride("h_separation", HotPageBtnGap);
+        grid.AddThemeConstantOverride("v_separation", HotPageBtnGap);
+
+        var lockBtn = MakeHotTool(Config.HotbarLocked ? HotToolGlyph.Locked : HotToolGlyph.Unlocked,
+            Config.HotbarLocked ? "Unlock the skill bar" : "Lock the skill bar");
+        lockBtn.Pressed += () => ApplyHotbarLayout(!Config.HotbarLocked, vertical, extraBars);
+        grid.AddChild(lockBtn);
+
+        var turn = MakeHotTool(HotToolGlyph.Turn, vertical ? "Lay the skill bar flat" : "Stand the skill bar up");
+        turn.Pressed += () => ApplyHotbarLayout(Config.HotbarLocked, !vertical, extraBars);
+        grid.AddChild(turn);
+
+        var add = MakeHotTool(HotToolGlyph.Add, "Add a skill bar");
+        add.Disabled = extraBars >= HotbarLayout.MaxBars - 1;
+        add.Pressed += () => ApplyHotbarLayout(Config.HotbarLocked, vertical, extraBars + 1);
+        grid.AddChild(add);
+
+        var remove = MakeHotTool(HotToolGlyph.Remove, "Remove a skill bar");
+        remove.Disabled = extraBars <= 0;
+        remove.Pressed += () => ApplyHotbarLayout(Config.HotbarLocked, vertical, extraBars - 1);
+        grid.AddChild(remove);
+        return grid;
+    }
+
+    private HotToolButton MakeHotTool(HotToolGlyph glyph, string tip)
+    {
+        var b = new HotToolButton
+        {
+            Glyph = glyph,
+            TooltipText = tip,
+            CustomMinimumSize = new Vector2(HotToolSize, HotToolSize),
+            FocusMode = Control.FocusModeEnum.None,
+        };
+        b.AddThemeStyleboxOverride("normal", HotPageBtnStyle(UiTheme.Glass, new Color(UiTheme.Edge, 0.85f)));
+        b.AddThemeStyleboxOverride("hover", HotPageBtnStyle(UiTheme.GlassLight, new Color(UiTheme.Gold, 0.9f)));
+        b.AddThemeStyleboxOverride("pressed", HotPageBtnStyle(new Color(0.05f, 0.05f, 0.06f, 0.97f), new Color(UiTheme.GoldDark, 0.95f)));
+        b.AddThemeStyleboxOverride("disabled", HotPageBtnStyle(new Color(UiTheme.Glass, 0.5f), new Color(UiTheme.Edge, 0.35f)));
+        return b;
+    }
+
+    private void ApplyHotbarLayout(bool locked, bool vertical, int extraBars)
+    {
+        bool regrow = vertical == Config.HotbarVertical && extraBars != Config.HotbarExtraBars;
+        var sizeBefore = GodotObject.IsInstanceValid(_hotbarBox) ? _hotbarBox.GetCombinedMinimumSize() : Vector2.Zero;
+        Config.SetHotbarLayout(locked, vertical, extraBars);
+        LayoutHotbars();
+        RefreshHotbar();
+        if (regrow) Callable.From(() => KeepMainBarInPlace(sizeBefore)).CallDeferred();
     }
 
     // HudTheme's Button pads 5px top/bottom, so only a compact stylebox lets CustomMinimumSize govern.
-    private Button MakeHotPageButton(string glyph, int delta)
+    private Button MakeHotPageButton(string glyph, int delta, HotStrip? strip, Vector2 size)
     {
         var b = new Button
         {
             Text = glyph,
-            CustomMinimumSize = new Vector2(22, HotPageBtnHeight),
+            CustomMinimumSize = size,
             FocusMode = Control.FocusModeEnum.None,
             ClipContents = true,
         };
@@ -96,7 +256,11 @@ public partial class World
         b.AddThemeStyleboxOverride("normal", HotPageBtnStyle(UiTheme.Glass, new Color(UiTheme.Edge, 0.85f)));
         b.AddThemeStyleboxOverride("hover", HotPageBtnStyle(UiTheme.GlassLight, new Color(UiTheme.Gold, 0.9f)));
         b.AddThemeStyleboxOverride("pressed", HotPageBtnStyle(new Color(0.05f, 0.05f, 0.06f, 0.97f), new Color(UiTheme.GoldDark, 0.95f)));
-        b.Pressed += () => ChangeHotPage(delta);
+        b.Pressed += () =>
+        {
+            if (strip == null) ChangeHotPage(delta);
+            else ChangeStripPage(strip, delta);
+        };
         return b;
     }
 
@@ -119,6 +283,13 @@ public partial class World
         RefreshHotbar();
     }
 
+    private void ChangeStripPage(HotStrip strip, int delta)
+    {
+        strip.Page = ((strip.Page + delta) % HotPages + HotPages) % HotPages;
+        Config.SetHotbarExtraPage(strip.Extra, strip.Page);
+        RefreshHotbar();
+    }
+
     private void SetHotPage(int page)
     {
         _hotPage = Mathf.Clamp(page, 0, ReachablePages - 1);
@@ -137,9 +308,8 @@ public partial class World
         return true;
     }
 
-    private void SelectHotSlot(int slotInPage)
+    private void SelectHotAbs(int abs)
     {
-        int abs = _hotPage * HotSlotsPerPage + slotInPage;
         if (abs < 0 || abs >= HotTotal) return;
         _hotSelected = _hotSelected == abs || _hotbar[abs] == 0 ? -1 : abs;
         RefreshHotbar();
@@ -147,14 +317,13 @@ public partial class World
 
     private bool CastSelectedHotSlot() => FireHotSlot(_hotSelected);
 
-    private void HotSlotHover(int slotInPage, bool entered)
+    private void HotAbsHover(int abs, bool entered)
     {
         if (!entered)
         {
             HideItemTooltip();
             return;
         }
-        int abs = _hotPage * HotSlotsPerPage + slotInPage;
         if (abs < 0 || abs >= HotTotal) return;
         int id = _hotbar[abs];
         if (id == 0 || SkillData.IsSkill(id) || ItemData.Get(id) == null) return;
@@ -231,7 +400,27 @@ public partial class World
         return false;
     }
 
-    private void ClearHotSlotInPage(int slotInPage) => SetHotSlot(_hotPage * HotSlotsPerPage + slotInPage, 0);
+    private void ClearHotAbs(int abs)
+    {
+        if (!Config.HotbarLocked) SetHotSlot(abs, 0);
+    }
+
+    private void DropOntoHotAbs(int dest, int id, int fromAbs)
+    {
+        if (dest < 0 || dest >= HotTotal) return;
+        if (fromAbs >= 0 && fromAbs < HotTotal)
+        {
+            if (Config.HotbarLocked) return;
+            (_hotbar[fromAbs], _hotbar[dest]) = (_hotbar[dest], _hotbar[fromAbs]);
+        }
+        else
+        {
+            if (!SkillAssignable(id)) return;
+            _hotbar[dest] = id;
+        }
+        RefreshHotbar();
+        SaveHotbar();
+    }
 
     private void DropOntoHotSlot(int slotInPage, int id, int fromSlotInPage)
     {
@@ -310,17 +499,60 @@ public partial class World
             }
         if (_hotPageLbl != null && GodotObject.IsInstanceValid(_hotPageLbl))
             _hotPageLbl.Text = $"{_hotPage + 1}/{HotPages}";
+
+        foreach (var strip in _extraBars)
+        {
+            int first = strip.Page * HotSlotsPerPage;
+            for (int i = 0; i < strip.Cells.Count; i++)
+                if (GodotObject.IsInstanceValid(strip.Cells[i]))
+                {
+                    strip.Cells[i].Set(_hotbar[first + i]);
+                    strip.Cells[i].SetSelected(_hotSelected == first + i);
+                }
+            if (GodotObject.IsInstanceValid(strip.PageLbl))
+                strip.PageLbl.Text = $"{strip.Page + 1}/{HotPages}";
+        }
+    }
+
+    private double _readyCueCheckedAt;
+    private readonly List<int> _readyCued = new();
+
+    private void CueReadySkills(double now)
+    {
+        double since = _readyCueCheckedAt;
+        _readyCueCheckedAt = now;
+        CooldownCue.Collect(_skillReady, since, now, _hotbar,
+            id => SkillData.Get(id)?.RecastSeconds ?? 0f, _readyCued);
+        if (_readyCued.Count == 0) return;
+
+        Audio.PlayUiFile(Sfx.SkillReadyFile);
+        FlashReady(_hotCells, _hotPage);
+        foreach (var strip in _extraBars) FlashReady(strip.Cells, strip.Page);
+    }
+
+    private void FlashReady(List<HotSlotCell> cells, int page)
+    {
+        int first = page * HotSlotsPerPage;
+        for (int i = 0; i < cells.Count; i++)
+            if (GodotObject.IsInstanceValid(cells[i]) && _readyCued.Contains(_hotbar[first + i]))
+                cells[i].Flash();
     }
 
     private void UpdateHotbarReady(double now)
     {
         if (_hotbarBox == null) return;
 
-        for (int i = 0; i < _hotCells.Count; i++)
+        UpdateStripReady(_hotCells, _hotPage, now, touch: true);
+        foreach (var strip in _extraBars) UpdateStripReady(strip.Cells, strip.Page, now, touch: false);
+    }
+
+    private void UpdateStripReady(List<HotSlotCell> cells, int page, double now, bool touch)
+    {
+        for (int i = 0; i < cells.Count; i++)
         {
-            var cell = _hotCells[i];
+            var cell = cells[i];
             if (!GodotObject.IsInstanceValid(cell)) continue;
-            int id = _hotbar[_hotPage * HotSlotsPerPage + i];
+            int id = _hotbar[page * HotSlotsPerPage + i];
             if (id == 0) { cell.SetDim(false); cell.SetCooldown(0f); cell.SetCount(-1, true); continue; }
 
             var s = SkillData.Get(id);
@@ -328,7 +560,7 @@ public partial class World
 
             float cd = s == null ? 0f : SkillCooldown(s, now);
             cell.SetCooldown(cd);
-            if (i < TouchControls.ActionSlots) _touchActions?.SetCooldown(i, cd);
+            if (touch && i < TouchControls.ActionSlots) _touchActions?.SetCooldown(i, cd);
             cell.SetDim(s != null && cd <= 0f && (!SkillReady(s, now) || !SkillRequirementMet(s)));
 
             int needId = SkillData.IsSkill(id) ? s?.ConsumedItem ?? 0 : id;
@@ -361,15 +593,16 @@ public partial class World
         }
 
         System.Array.Clear(_hotbar, 0, HotTotal);
-        bool dropped = false;
-        for (int i = 0; i < ids.Length && i < HotTotal; i++)
+        bool dropped = ids.Length == HotbarLayout.LegacyTotal;
+        var slots = HotbarLayout.Normalize(ids);
+        for (int i = 0; i < HotTotal; i++)
         {
-            if (ids[i] != 0 && !SkillData.IsSkill(ids[i]) && ItemData.Get(ids[i]) == null)
+            if (slots[i] != 0 && !SkillData.IsSkill(slots[i]) && ItemData.Get(slots[i]) == null)
             {
                 dropped = true;
                 continue;
             }
-            _hotbar[i] = ids[i];
+            _hotbar[i] = slots[i];
         }
         _hotLoadedFromServer = true;
         RefreshHotbar();
@@ -400,10 +633,13 @@ public partial class World
         var parsed = Json.ParseString(f.GetAsText());
         if (parsed.VariantType != Variant.Type.Array) return false;
         var arr = parsed.AsGodotArray();
+        var saved = new int[arr.Count];
+        for (int i = 0; i < arr.Count; i++) saved[i] = arr[i].AsInt32();
+        var slots = HotbarLayout.Normalize(saved);
         bool any = false;
-        for (int i = 0; i < arr.Count && i < HotTotal; i++)
+        for (int i = 0; i < HotTotal; i++)
         {
-            _hotbar[i] = arr[i].AsInt32();
+            _hotbar[i] = slots[i];
             if (_hotbar[i] != 0) any = true;
         }
         return any;
@@ -412,6 +648,7 @@ public partial class World
     private partial class HotSlotCell : VBoxContainer
     {
         public readonly int SlotInPage;
+        public System.Func<int>? PageOf;
         public System.Action<int>? OnActivate;
         public System.Action<int>? OnSelect;
         public System.Action<int>? OnClear;
@@ -434,17 +671,19 @@ public partial class World
         private bool _pressed;
         private bool _dragging;
 
-        public HotSlotCell(int slotInPage)
+        private int Abs => (PageOf?.Invoke() ?? 0) * HotSlotsPerPage + SlotInPage;
+
+        public HotSlotCell(int slotInPage, bool showKey = true, bool keyInside = false)
         {
             SlotInPage = slotInPage;
             MouseFilter = MouseFilterEnum.Stop;
             AddThemeConstantOverride("separation", 1);
 
             var key = HudStyle.Label(10, HorizontalAlignment.Center);
-            key.Text = (slotInPage + 1).ToString(CultureInfo.InvariantCulture);
+            key.Text = showKey ? HotbarLayout.KeyLabel(slotInPage) : "";
             key.AddThemeColorOverride("font_color", KeyColor);
             key.MouseFilter = MouseFilterEnum.Ignore;
-            AddChild(key);
+            if (!keyInside) AddChild(key);
 
             _slot = new PanelContainer
             {
@@ -489,8 +728,19 @@ public partial class World
 
             _plus = UpgradeBadge.Attach(_slot);
 
-            MouseEntered += () => OnHover?.Invoke(SlotInPage, true);
-            MouseExited += () => OnHover?.Invoke(SlotInPage, false);
+            if (keyInside && showKey)
+            {
+                key.HorizontalAlignment = HorizontalAlignment.Left;
+                key.VerticalAlignment = VerticalAlignment.Top;
+                key.SizeFlagsVertical = key.SizeFlagsHorizontal = SizeFlags.Fill;
+                key.AddThemeColorOverride("font_outline_color", Colors.Black);
+                key.AddThemeConstantOverride("outline_size", 3);
+                key.AddThemeStyleboxOverride("normal", new StyleBoxEmpty { ContentMarginLeft = 3, ContentMarginTop = 1 });
+                _slot.AddChild(key);
+            }
+
+            MouseEntered += () => OnHover?.Invoke(Abs, true);
+            MouseExited += () => OnHover?.Invoke(Abs, false);
         }
 
         private static readonly Color EmptyColor = new(0.07f, 0.08f, 0.10f, 0.28f);
@@ -532,6 +782,21 @@ public partial class World
                 _coolMat.SetShaderParameter("remain", frac);
                 _coolShown = frac;
             }
+        }
+
+        private static readonly Color FlashColor = new(1.9f, 1.9f, 1.6f);
+        private const double FlashStep = 0.12;
+        private Tween? _flash;
+
+        public void Flash()
+        {
+            if (!GodotObject.IsInstanceValid(_slot)) return;
+            _flash?.Kill();
+            _slot.Modulate = FlashColor;
+            _flash = CreateTween();
+            _flash.TweenProperty(_slot, "modulate", Colors.White, FlashStep);
+            _flash.TweenProperty(_slot, "modulate", FlashColor, FlashStep);
+            _flash.TweenProperty(_slot, "modulate", Colors.White, FlashStep);
         }
 
         public void SetCount(int have, bool enough)
@@ -581,7 +846,7 @@ public partial class World
 
         public override Variant _GetDragData(Vector2 atPosition)
         {
-            if (_id == 0) return default;
+            if (_id == 0 || Config.HotbarLocked) return default;
             _pressed = false;
             _dragging = true;
             var preview = new PanelContainer { CustomMinimumSize = new Vector2(48, 40) };
@@ -590,8 +855,7 @@ public partial class World
                 preview.AddChild(new TextureRect { Texture = icon, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered });
             else { var lbl = HudStyle.Label(11, HorizontalAlignment.Center); lbl.Text = _name.Text; preview.AddChild(lbl); }
             SetDragPreview(preview);
-            // "barFrom" = this bar cell's page-relative slot; the world resolves it against the active page.
-            return new Godot.Collections.Dictionary { { "id", _id }, { "barFrom", SlotInPage } };
+            return new Godot.Collections.Dictionary { { "id", _id }, { "barAbs", Abs } };
         }
 
         public override bool _CanDropData(Vector2 atPosition, Variant data) =>
@@ -601,8 +865,8 @@ public partial class World
         {
             var d = data.AsGodotDictionary();
             int id = d["id"].AsInt32();
-            int fromSlotInPage = d.ContainsKey("barFrom") ? d["barFrom"].AsInt32() : -1;
-            OnDrop?.Invoke(SlotInPage, id, fromSlotInPage);
+            int fromAbs = d.ContainsKey("barAbs") ? d["barAbs"].AsInt32() : -1;
+            OnDrop?.Invoke(Abs, id, fromAbs);
         }
 
         public override void _Notification(int what)
@@ -612,7 +876,7 @@ public partial class World
                 case NotificationDragEnd:
                     if (!_dragging) return;
                     _dragging = false;
-                    if (!IsDragSuccessful()) OnClear?.Invoke(SlotInPage);
+                    if (!IsDragSuccessful()) OnClear?.Invoke(Abs);
                     return;
                 case NotificationMouseExit:
                     _pressed = false;
@@ -625,13 +889,80 @@ public partial class World
             if (ev is not InputEventMouseButton mb) return;
             if (mb.ButtonIndex == MouseButton.Right)
             {
-                if (mb.Pressed) OnSelect?.Invoke(SlotInPage);
+                if (mb.Pressed) OnSelect?.Invoke(Abs);
                 AcceptEvent();
                 return;
             }
             if (mb.ButtonIndex != MouseButton.Left) return;
             if (mb.Pressed) _pressed = true;
-            else if (_pressed) { _pressed = false; OnActivate?.Invoke(SlotInPage); }
+            else if (_pressed) { _pressed = false; OnActivate?.Invoke(Abs); }
+        }
+    }
+
+    private enum HotToolGlyph { Locked, Unlocked, Turn, Add, Remove }
+
+    private sealed partial class HotGrip : Control
+    {
+        public bool Vertical;
+        private static readonly Color Dot = new(UiTheme.TextLo, 0.75f);
+        private const float DotStep = 6f;
+        private const float DotRadius = 1.2f;
+
+        public override void _Draw()
+        {
+            var style = new StyleBoxFlat { BgColor = new Color(UiTheme.Glass, 0.6f) };
+            style.SetCornerRadiusAll(3);
+            DrawStyleBox(style, new Rect2(Vector2.Zero, Size));
+            float along = Vertical ? Size.X : Size.Y;
+            float across = (Vertical ? Size.Y : Size.X) * 0.5f;
+            for (float t = DotStep; t < along - DotStep * 0.5f; t += DotStep)
+                DrawCircle(Vertical ? new Vector2(t, across) : new Vector2(across, t), DotRadius, Dot);
+        }
+    }
+
+    private sealed partial class HotToolButton : Button
+    {
+        public HotToolGlyph Glyph;
+
+        public override void _Draw()
+        {
+            var tint = Disabled ? new Color(UiTheme.TextLo, 0.4f)
+                : Glyph == HotToolGlyph.Locked ? UiTheme.Bad
+                : Glyph == HotToolGlyph.Unlocked ? UiTheme.Good
+                : UiTheme.GoldBright;
+            float w = Size.X, h = Size.Y, cx = w * 0.5f, cy = h * 0.5f;
+            switch (Glyph)
+            {
+                case HotToolGlyph.Locked:
+                case HotToolGlyph.Unlocked:
+                {
+                    var body = new Rect2(w * 0.28f, h * 0.48f, w * 0.44f, h * 0.30f);
+                    DrawRect(body, tint, Glyph == HotToolGlyph.Locked);
+                    if (Glyph == HotToolGlyph.Unlocked) DrawRect(body, tint, false, 1f);
+                    float r = w * 0.15f, arcCy = h * 0.40f;
+                    float lift = Glyph == HotToolGlyph.Unlocked ? h * 0.08f : 0f;
+                    DrawArc(new Vector2(cx, arcCy - lift), r, Mathf.Pi, Mathf.Tau, 12, tint, 1.5f);
+                    DrawLine(new Vector2(cx - r, arcCy - lift), new Vector2(cx - r, body.Position.Y - lift), tint, 1.5f);
+                    DrawLine(new Vector2(cx + r, arcCy), new Vector2(cx + r, body.Position.Y), tint, 1.5f);
+                    break;
+                }
+                case HotToolGlyph.Turn:
+                {
+                    float r = w * 0.26f;
+                    DrawArc(new Vector2(cx, cy), r, -Mathf.Pi * 0.9f, Mathf.Pi * 0.4f, 16, tint, 1.5f);
+                    var tip = new Vector2(cx + r * Mathf.Cos(Mathf.Pi * 0.4f), cy + r * Mathf.Sin(Mathf.Pi * 0.4f));
+                    DrawLine(tip, tip + new Vector2(w * 0.14f, 0f), tint, 1.5f);
+                    DrawLine(tip, tip + new Vector2(0f, -h * 0.14f), tint, 1.5f);
+                    break;
+                }
+                case HotToolGlyph.Add:
+                    DrawLine(new Vector2(w * 0.28f, cy), new Vector2(w * 0.72f, cy), tint, 2f);
+                    DrawLine(new Vector2(cx, h * 0.28f), new Vector2(cx, h * 0.72f), tint, 2f);
+                    break;
+                case HotToolGlyph.Remove:
+                    DrawLine(new Vector2(w * 0.28f, cy), new Vector2(w * 0.72f, cy), tint, 2f);
+                    break;
+            }
         }
     }
 }

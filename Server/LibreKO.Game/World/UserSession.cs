@@ -139,6 +139,7 @@ public class UserSession
     public bool IsInCombat =>
         LastCombatTicks != 0 && Environment.TickCount64 - LastCombatTicks < GameConstants.CombatStateSeconds * 1000L;
     public short TransformId { get; set; } // 0=none, NPC model ID when transformed
+    public NpcInstance? SummonedGuard { get; set; }
     public bool IsTransformed => TransformId > 0;
 
     // Clan/Knights
@@ -337,7 +338,8 @@ public class UserSession
         Stats = AbilityCalculator.Calculate(
             Level, Strength, Stamina, Dexterity, Intelligence,
             Class, coefficient, Inventory, gameData, SkillPoints, TitleBonuses(gameData),
-            new RebirthBonus(RebStr, RebSta, RebDex, RebIntel, RebMagic));
+            new RebirthBonus(RebStr, RebSta, RebDex, RebIntel, RebMagic),
+            UserSessionMagicState.BuffStatBonus(this));
         UserSessionMagicState.ApplyBuffBonuses(this, gameData, coefficient);
         MaxHp = Stats.MaxHp;
         MaxMp = Stats.MaxMp;

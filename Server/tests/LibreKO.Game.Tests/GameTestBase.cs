@@ -160,6 +160,7 @@ public abstract class GameTestBase
         services.AddScoped<IPreGamePacketCoordinator, PreGamePacketCoordinator>();
         services.AddSingleton<INpcAiBehaviorService, NpcAiBehaviorService>();
         services.AddSingleton<INpcAiCombatService, NpcAiCombatService>();
+        services.AddSingleton<IGuardSummonAiService, GuardSummonAiService>();
         services.AddSingleton<INpcAiDeathService, NpcAiDeathService>();
         services.AddSingleton<INpcAiMagicService, NpcAiMagicService>();
         services.AddSingleton<INpcAiMovementService, NpcAiMovementService>();

@@ -177,6 +177,11 @@ public partial class World
         _lastFreePos = pos;
         _lastKoX = koX; _lastKoZ = koZ;
         _myKoX = koX; _myKoZ = koZ; _myKoY = pos.Y - _selfLift;
+        if (Now() < _blinkWarpUntil)
+        {
+            _blinkWarpUntil = 0;
+            return;
+        }
         Fx.Spawn(Net.I.LastEnter.Nation == Nations.Karus ? "warp_ka" : "warp_el", _self, Vector3.Zero,
             oneShot: true);
         Audio.Play(Sfx.WarpZone, pos);

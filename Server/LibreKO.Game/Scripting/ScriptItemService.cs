@@ -145,9 +145,6 @@ public class ScriptItemService(
         slot.Durability = itemData.Duration;
         slot.ExpireInHours(rentalHours, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
-        if (itemData.Kind == 255)
-            slot.Count = (ushort)Math.Min(MaxItemCount, itemData.Duration);
-
         QueueStackChange((byte)slotIndex, slot.ItemId, slot.Count, slot.Durability, isNewItem);
         QueueWeightChange();
         return true;
@@ -193,12 +190,13 @@ public class ScriptItemService(
             if (slot.ItemId != itemId)
                 continue;
 
-            if (itemData.Kind == 255 && slot.Durability > 0)
+            if (itemData.IsChargeItem && slot.Durability > 0)
             {
                 var taken = Math.Min(slot.Durability, remaining);
                 slot.Durability -= (short)taken;
-                slot.Count = (ushort)Math.Max(0, (int)slot.Durability);
                 remaining -= taken;
+                if (slot.Durability <= 0)
+                    slot.Count = 0;
             }
             else
             {
@@ -324,7 +322,7 @@ public class ScriptItemService(
                 InventoryConstants.ItemQuestCount or InventoryConstants.ItemLadderPoint => session.Loyalty,
                 _ => session.Inventory.Skip(InventoryConstants.InventoryStart)
                     .Where(slot => slot.ItemId == group.Key)
-                    .Sum(slot => gameData.GetItem(group.Key)?.Kind == 255 && slot.Durability > 0
+                    .Sum(slot => gameData.GetItem(group.Key) is { IsChargeItem: true } && slot.Durability > 0
                         ? (long)slot.Durability : slot.Count)
             };
             if (available < total || (group.Key is not (InventoryConstants.ItemGold

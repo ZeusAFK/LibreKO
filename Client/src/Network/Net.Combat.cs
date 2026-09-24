@@ -10,7 +10,7 @@ public partial class Net
 
     public const byte SkillBarSave = 1;
     public const byte SkillBarLoad = 2;
-    public const int SkillBarMaxSlots = 64;
+    public const int SkillBarMaxSlots = HotbarLayout.Total;
 
     private void HandleTargetHp(Packet p)
     {

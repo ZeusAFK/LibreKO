@@ -80,9 +80,10 @@ public partial class World
         data[2] = (short)Mathf.RoundToInt(koZ);
 
         FaceNodeToward(_self, _self.Position, impact);
+        bool instant = SpendInstantMagic(s);
         Net.I.SendMagic(1, s.Id, -1, data);
-        QueuePendingStage(s.Id, -1, s.HasFlyingStage ? PendingFlying : PendingEffecting, CastDelay(s), data);
-        BeginLocalCast(s);
+        QueuePendingStage(s.Id, -1, s.HasFlyingStage ? PendingFlying : PendingEffecting, instant ? 0 : CastDelay(s), data);
+        BeginLocalCast(s, instant);
     }
 
     private static float AreaRingRadius(SkillData.Skill s) => Mathf.Max(1f, s.Radius - AreaRingInset);

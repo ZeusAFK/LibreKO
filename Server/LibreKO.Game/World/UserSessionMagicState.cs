@@ -15,6 +15,22 @@ internal static class UserSessionMagicState
         magicId >= SavedMagicIdMin
         || ((gameData.GetMagic(magicId)?.UseItem ?? 0) != 0 && buff.CasterId == session.CharacterId);
 
+    public static StatBonus BuffStatBonus(UserSession session)
+    {
+        short str = 0, sta = 0, dex = 0, intel = 0, cha = 0;
+        foreach (var buff in session.ActiveBuffs.Values)
+        {
+            if (buff.IsExpired)
+                continue;
+            str += buff.BonusStr;
+            sta += buff.BonusSta;
+            dex += buff.BonusDex;
+            intel += buff.BonusIntel;
+            cha += buff.BonusCha;
+        }
+        return new StatBonus(str, sta, dex, intel, cha);
+    }
+
     public static void ApplyBuffBonuses(UserSession session, IGameDataService gameData, CoefficientData coefficient)
     {
         ResetBuffFlags(session);

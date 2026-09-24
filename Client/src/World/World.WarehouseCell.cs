@@ -75,7 +75,8 @@ public partial class World
             else
             {
                 _icon.Texture = ItemData.Icon(it.ItemId);
-                _count.Text = it.Count > 1 ? it.Count.ToString() : "";
+                int shown = ItemData.ShownCount(ItemData.Get(it.ItemId), it);
+                _count.Text = shown > 1 ? shown.ToString() : "";
                 _plus.Set(it.ItemId);
                 SealLook.Apply(it.State, _icon, this, _normal);
             }

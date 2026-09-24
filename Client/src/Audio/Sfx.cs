@@ -30,6 +30,7 @@ public static class Sfx
     public const int Upgrade = 340105;
     public const int StorageOn = 340107;
     public const int QuestComplete = 340109;
+    public const string SkillReadyFile = "ui_button1.ogg";
 
     public const int GetItem = 340070;
     public const int GetUniqueItem = 340071;

@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Entities.GameData;
 
 using LibreKO.Common.Enums;
@@ -305,7 +305,9 @@ public class NpcInstance
     public bool IsNpc => !IsMonster;
     public bool IsBoss => NpcType == NpcData.TypeBoss;
     public bool IsScarecrow => NpcType == NpcData.TypeScarecrow;
-    public bool IsAttackable => IsMonster || IsScarecrow; // Anything players can hit
+    public bool IsGuardSummon => NpcType == NpcData.TypeGuardSummon;
+    public int OwnerCharId { get; set; }
+    public bool IsAttackable => (IsMonster && !IsGuardSummon) || IsScarecrow; // Anything players can hit
     public bool IsGuard => NpcType is >= NpcData.TypeGuard and <= NpcData.TypeWarGuard;
     public bool IsNationOwned => Nation is EntityNation.Karus or EntityNation.ElMorad;
     public bool HasAi => IsMonster || IsGuard || IsScarecrow || IsNationOwned || FollowsAPath(MoveType);

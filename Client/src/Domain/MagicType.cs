@@ -14,6 +14,11 @@ public static class MagicType
     public const int Stealth = 9;
 }
 
+public static class WarpType
+{
+    public const int Blink = 20;
+}
+
 public static class MagicSub
 {
     public const int Casting = 1;

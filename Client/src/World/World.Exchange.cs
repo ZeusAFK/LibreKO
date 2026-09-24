@@ -386,7 +386,7 @@ public partial class World
             var slot = Inv[abs];
             int absSlot = abs;
             var def = ItemData.Get(slot.ItemId);
-            string sub = def != null && def.Weight > 0 ? $"{def.Weight * slot.Count} wt" : "";
+            string sub = def != null && def.Weight > 0 ? $"{def.Weight * ItemData.CarriedUnits(def, slot)} wt" : "";
             _exBagList.AddChild(BuildTradeRow(
                 slot.ItemId, sub, "Offer",
                 () => OfferSlot(absSlot), () => OfferSlot(absSlot), absSlot, slot, slot.Count));

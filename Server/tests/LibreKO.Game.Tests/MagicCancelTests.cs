@@ -197,6 +197,126 @@ public class MagicCancelTests : GameTestBase
         return packet;
     }
 
+    [Fact]
+    public async Task AResistanceBuffOnYourselfIsAnnouncedWithItsDuration()
+    {
+        const int resistFire = 110506;
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetMagic(resistFire).Returns(new MagicData
+                {
+                    Id = resistFire, Type1 = 4, Moral = 2, Range = 20, CastTime = 2, ReCastTime = 0,
+                });
+                gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
+                {
+                    [resistFire] = new()
+                    {
+                        Id = resistFire, BuffType = 8, Duration = 300, AttackSpeed = 100, Speed = 100, AcPct = 100,
+                        Attack = 100, MagicAttack = 100, MaxHPPct = 100, MaxMPPct = 100, HitRate = 100, AvoidRate = 100,
+                        FireR = 20, ExpPct = 100,
+                    },
+                });
+            });
+        var (caster, client, sent) = CreateArcher(provider);
+        var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
+
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Casting, resistFire, caster, caster.CharacterId));
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Effecting, resistFire, caster, caster.CharacterId));
+
+        caster.ActiveBuffs.Should().ContainKey(resistFire);
+        var effecting = sent.Select(p => { p.ResetOffset(); return p; })
+            .Where(p => p.GetOpcode() == (byte)GameOpcodes.GS_MAGIC_PROCESS)
+            .Select(p => (Sub: p.ReadByte(), Skill: p.ReadInt(), Caster: p.ReadInt(), Target: p.ReadInt(),
+                D0: p.ReadInt(), D1: p.ReadInt(), D2: p.ReadInt(), Duration: p.ReadInt()))
+            .Where(x => x.Sub == (byte)MagicProcessOpcode.Effecting)
+            .ToList();
+        effecting.Should().ContainSingle();
+        effecting[0].Target.Should().Be(caster.CharacterId);
+        effecting[0].Duration.Should().Be(300);
+    }
+
+    [Fact]
+    public async Task GuardSummonRaisesAGuardOfTheCastersNationThatLeavesWithTheBuff()
+    {
+        const int guardSummon = 110826;
+        const int guardNpc = 8850;
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetMagic(guardSummon).Returns(new MagicData
+                {
+                    Id = guardSummon, Type1 = 9, Moral = 1, CastTime = 0, ReCastTime = 0,
+                });
+                gameData.MagicType9Table.Returns(new Dictionary<int, MagicType9Data>
+                {
+                    [guardSummon] = new() { Id = guardSummon, MonsterNum = guardNpc, StateChange = 9, Duration = 50 },
+                });
+                gameData.GetNpc(guardNpc).Returns(new NpcData { Id = guardNpc, Name = "Guard Summon", IsMonster = true, Hp = 30000 });
+            });
+        var (caster, client, _) = CreateArcher(provider);
+        var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
+
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Effecting, guardSummon, caster, caster.CharacterId));
+
+        var guard = caster.SummonedGuard;
+        guard.Should().NotBeNull();
+        guard!.IsGuardSummon.Should().BeTrue();
+        guard.OwnerCharId.Should().Be(caster.CharacterId);
+        guard.Nation.Should().Be((EntityNation)caster.Nation);
+        NpcHostility.IsAttackableBy(guard, caster).Should().BeFalse("the caster's own nation cannot strike its guard");
+        caster.ActiveBuffs.Should().ContainKey(guardSummon);
+
+        await provider.GetRequiredService<IMagicStatusEffectService>().CancelAsync(caster, guardSummon);
+
+        caster.SummonedGuard.Should().BeNull("the guard leaves when the summon ends");
+    }
+
+    [Fact]
+    public async Task InstantMagicSpendsItselfOnTheNextSpellWhichGetsNoCooldown()
+    {
+        const int instantMagic = 110820;
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetMagic(instantMagic).Returns(new MagicData { Id = instantMagic, Type1 = 4, Moral = 1 });
+                gameData.GetMagic(FireBlast).Returns(new MagicData
+                {
+                    Id = FireBlast, Type1 = 3, Moral = 7, Range = 35, CastTime = 2, ReCastTime = 50,
+                });
+                gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
+                {
+                    [instantMagic] = new() { Id = instantMagic, BuffType = (byte)BuffType.InstantMagic, Duration = 180 },
+                });
+                gameData.MagicType3Table.Returns(new Dictionary<int, MagicType3Data>
+                {
+                    [FireBlast] = new() { Id = FireBlast, DirectType = 1, FirstDamage = -120, Attribute = 1 },
+                });
+            });
+        var (caster, client, _) = CreateArcher(provider);
+        caster.ActiveBuffs[instantMagic] = new ActiveBuff
+        {
+            MagicId = instantMagic, BuffType = BuffType.InstantMagic, Duration = 180,
+            ExpireTicks = DateTime.UtcNow.AddMinutes(3).Ticks,
+        };
+        var worm = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
+        {
+            IsMonster = true, NpcId = 750, Name = "Worm", ZoneId = 21, X = 104, Z = 100, SpawnX = 104,
+            SpawnZ = 100, Hp = 5000, MaxHp = 5000, Ac = 5, EvadeRate = 1,
+        });
+        var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
+
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Casting, FireBlast, caster, worm.UniqueId));
+        await coordinator.HandleAsync(client, Magic(MagicProcessOpcode.Effecting, FireBlast, caster, worm.UniqueId));
+
+        worm.Hp.Should().BeLessThan(5000);
+        caster.SkillCooldowns.Should().NotContainKey(FireBlast, "the spell cast under instant magic goes on no cooldown");
+        caster.ActiveBuffs.Should().NotContainKey(instantMagic, "instant magic is spent on that spell");
+    }
+
     private static MagicData Ranged(int id, int castTenths) => new()
     {
         Id = id,

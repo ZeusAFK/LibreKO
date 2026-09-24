@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -96,6 +96,10 @@ public class ItemData
         is ItemKind.Bow or ItemKind.Crossbow or ItemKind.LongBow or ItemKind.Launcher;
 
     public bool IsShield() => Category == ItemKind.Shield;
+
+    public bool IsChargeItem => Category == ItemKind.PowerUpStore && Countable == 0;
+
+    public int CarriedUnits(ushort count) => IsChargeItem ? Math.Min((int)count, 1) : count;
 
     internal class EntityConfiguration : IEntityTypeConfiguration<ItemData>
     {

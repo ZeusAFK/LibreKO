@@ -596,6 +596,30 @@ public class CombatTests : GameTestBase
     }
 
     [Fact]
+    public async Task CombatPacketCoordinator_HandleSkillDataAsync_KeepsEightPagesOfTenSlots()
+    {
+        const int fullBar = 80;
+        using var provider = CreateProvider(_ => { });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 502, accountId: 602);
+
+        var savePacket = new Packet(GameOpcodes.GS_SKILLDATA);
+        savePacket.WriteByte(1);
+        savePacket.WriteShort(fullBar);
+        for (var slot = 0; slot < fullBar; slot++)
+            savePacket.WriteInt(slot == fullBar - 1 ? 110560 : 0);
+        await provider.GetRequiredService<ICombatPacketCoordinator>().HandleSkillDataAsync(client, savePacket);
+
+        session.SkillData.Should().HaveCount(fullBar * sizeof(int), "the tenth slot of the eighth page is kept");
+        BitConverter.ToInt32(session.SkillData, (fullBar - 1) * sizeof(int)).Should().Be(110560);
+    }
+
+    [Fact]
     public async Task CombatPacketCoordinator_HandleRegeneAsync_RestoresHpAndDropsVolatileBuffsButKeepsScrolls()
     {
         using var provider = CreateProvider(
@@ -1802,6 +1826,40 @@ public class CombatTests : GameTestBase
         buffed.Stats.TotalAc.Should().Be((short)(baseline.Stats.TotalAc + 50));
         buffed.Stats.MaxHp.Should().Be(baseline.Stats.MaxHp);
         buffed.Stats.MaxMp.Should().Be(baseline.Stats.MaxMp);
+    }
+
+    [Fact]
+    public void UserSession_RecalculateStats_StatBuffRaisesEveryStatBonus()
+    {
+        var gameData = Substitute.For<IGameDataService>();
+        var coefficient = CreateBasicCoefficient(106);
+        UserSession Warrior(int id)
+        {
+            var client = Substitute.For<IClient>();
+            client.Id.Returns(Guid.NewGuid());
+            return new UserSession(client, id, id)
+            {
+                Class = 106, Level = 83, Strength = 90, Stamina = 60, Dexterity = 40, Intelligence = 30, Magic = 30,
+            };
+        }
+
+        var baseline = Warrior(1);
+        baseline.RecalculateStats(coefficient, gameData);
+        var buffed = Warrior(2);
+        buffed.ActiveBuffs[106781] = new ActiveBuff
+        {
+            MagicId = 106781,
+            BuffType = BuffType.Stats,
+            BonusStr = 15, BonusSta = 15, BonusDex = 15, BonusIntel = 15, BonusCha = 15,
+            BonusAcPct = 100, BonusMaxHpPct = 100, BonusMaxMpPct = 100,
+            ExpireTicks = DateTime.UtcNow.AddMinutes(1).Ticks
+        };
+        buffed.RecalculateStats(coefficient, gameData);
+
+        buffed.Stats.StrBonus.Should().Be((short)(baseline.Stats.StrBonus + 15));
+        buffed.Stats.StaBonus.Should().Be((short)(baseline.Stats.StaBonus + 15));
+        buffed.Stats.DexBonus.Should().Be((short)(baseline.Stats.DexBonus + 15));
+        buffed.Stats.TotalHit.Should().BeGreaterThan(baseline.Stats.TotalHit, "the extra strength raises the attack");
     }
 
     [Fact]

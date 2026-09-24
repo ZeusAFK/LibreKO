@@ -17,6 +17,7 @@ public partial class World
     private const float BuffChipPointerSize = 32f;
     private const double BuffTickStep = 0.2;
     private const int BuffLongSeconds = 60;
+    private const int BuffTooltipWidth = 44;
     private static readonly Vector2 BuffPanelFromCenter = new(-300f, 56f);
 
     private readonly List<ActiveBuff> _buffs = new();
@@ -134,8 +135,8 @@ public partial class World
             CustomMinimumSize = new Vector2(BuffChipSize, BuffChipSize),
             MouseFilter = Control.MouseFilterEnum.Pass,
             TooltipText = harmful
-                ? $"{s.Name}\n{s.Desc}"
-                : $"{s.Name}\n{s.Desc}\nDouble-click to remove.",
+                ? $"{s.Name}\n{TextWrap.Wrap(s.Desc, BuffTooltipWidth)}"
+                : $"{s.Name}\n{TextWrap.Wrap(s.Desc, BuffTooltipWidth)}\nDouble-click to remove.",
         };
         if (!harmful)
         {

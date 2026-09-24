@@ -26,8 +26,10 @@ public static class NpcTypes
     public const int Warehouse = 31;
     public const int Captain = 35;
     public const int Gate = 50;
+    public const int Lever = 55;
 
     public const int Scarecrow = 171;
+    public const int GuardSummon = 255;
 
     public const int FixedPose = 178;
 

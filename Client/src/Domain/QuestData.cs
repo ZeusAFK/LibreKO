@@ -39,6 +39,8 @@ public static class QuestData
     private const int QuestStateRunning = 3;
     private const int QuestTypeStartedIsEnough = 5;
 
+    public readonly record struct ClassReward(int HelperClass, ItemStack[] Give);
+
     public readonly record struct Facts(
         int Level, int Class, int Nation, int Zone, int Exp, int Exchange, Kind Kind);
 
@@ -50,14 +52,18 @@ public static class QuestData
         public readonly ItemStack[] Give, Need;
         public readonly Dictionary<int, int[]> Npcs;
         public readonly Dictionary<int, Dictionary<int, int>> Helpers;
+        public readonly int[] Classes;
+        public readonly ClassReward[] GiveByClass;
         public Info(int talk, int level, int cls, int nation, int zone,
             int exp, int exchange, ItemStack[] give, ItemStack[] need,
-            KillGroup[] groups, Dictionary<int, int[]> npcs, Dictionary<int, Dictionary<int, int>> helpers)
+            KillGroup[] groups, Dictionary<int, int[]> npcs, Dictionary<int, Dictionary<int, int>> helpers,
+            int[] classes, ClassReward[] giveByClass)
         {
             Talk = talk;
             Level = level; Class = cls; Nation = nation; Zone = zone;
             Exp = exp; Exchange = exchange; Give = give; Need = need;
             Groups = groups; Npcs = npcs; Helpers = helpers;
+            Classes = classes; GiveByClass = giveByClass;
         }
 
         public Kind Kind => Groups.Length > 0 ? Kind.Hunt : Exchange != 0 ? Kind.Delivery : Kind.Story;
@@ -103,7 +109,8 @@ public static class QuestData
                     Int(q, "level"), Int(q, "class"), Int(q, "nation"), Int(q, "zone"),
                     Int(q, "exp"), Int(q, "exchange"),
                     ParseStacks(q, "give"), ParseStacks(q, "need"),
-                    ParseGroups(q), ParseNpcs(q), ParseHelpers(q));
+                    ParseGroups(q), ParseNpcs(q), ParseHelpers(q),
+                    ParseClasses(q), ParseClassRewards(q));
             }
         }
 
@@ -152,6 +159,32 @@ public static class QuestData
 
     private static int Int(Godot.Collections.Dictionary q, string key) =>
         q.TryGetValue(key, out var v) ? v.AsInt32() : 0;
+
+    private static int[] ParseClasses(Godot.Collections.Dictionary q)
+    {
+        if (!q.TryGetValue("classes", out var v) || v.VariantType != Variant.Type.Array)
+            return System.Array.Empty<int>();
+        var arr = v.AsGodotArray();
+        var classes = new int[arr.Count];
+        for (int i = 0; i < arr.Count; i++) classes[i] = arr[i].AsInt32();
+        return classes;
+    }
+
+    private static ClassReward[] ParseClassRewards(Godot.Collections.Dictionary q)
+    {
+        if (!q.TryGetValue("giveByClass", out var v) || v.VariantType != Variant.Type.Dictionary)
+            return System.Array.Empty<ClassReward>();
+        var result = new List<ClassReward>();
+        var byClass = v.AsGodotDictionary();
+        foreach (var key in byClass.Keys)
+        {
+            if (!int.TryParse(key.AsString(), out int helperClass)) continue;
+            var holder = new Godot.Collections.Dictionary { ["give"] = byClass[key] };
+            result.Add(new ClassReward(helperClass, ParseStacks(holder, "give")));
+        }
+        result.Sort((a, b) => a.HelperClass.CompareTo(b.HelperClass));
+        return result.ToArray();
+    }
 
     private static Dictionary<int, Dictionary<int, int>> ParseHelpers(Godot.Collections.Dictionary q)
     {
@@ -242,10 +275,29 @@ public static class QuestData
         return new Facts(i.Level, i.Class, i.Nation, i.Zone, i.Exp, i.Exchange, i.Kind);
     }
 
-    public static ItemStack[] Rewards(int questId)
+    public static ItemStack[] Rewards(int questId, int classId)
     {
         EnsureLoaded();
-        return _quests.TryGetValue(questId, out var i) ? i.Give : System.Array.Empty<ItemStack>();
+        return _quests.TryGetValue(questId, out var i)
+            ? RewardsForClass(i.GiveByClass, i.Give, classId)
+            : System.Array.Empty<ItemStack>();
+    }
+
+    public static ItemStack[] RewardsForClass(ClassReward[] byClass, ItemStack[] fallback, int classId)
+    {
+        foreach (var reward in byClass)
+            if (MatchesHelperClass(classId, reward.HelperClass))
+                return reward.Give;
+        return fallback;
+    }
+
+    public static bool OfferedToClass(int[] helperClasses, int primaryClass, int classId)
+    {
+        if (helperClasses.Length == 0) return MatchesHelperClass(classId, primaryClass);
+        foreach (int helperClass in helperClasses)
+            if (MatchesHelperClass(classId, helperClass))
+                return true;
+        return false;
     }
 
     public static ItemStack[] HandIns(int questId)
@@ -286,7 +338,7 @@ public static class QuestData
             if (stateOf(questId) != 0) continue;
             if (!info.Npcs.TryGetValue(0, out var npcs) || npcs.Length == 0) continue;
             if (info.Level > 0 && level < info.Level) continue;
-            if (!MatchesHelperClass(classId, info.Class)) continue;
+            if (!OfferedToClass(info.Classes, info.Class, classId)) continue;
             if (info.Nation is not (0 or 3) && info.Nation != nation) continue;
             result.Add(questId);
         }

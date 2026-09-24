@@ -75,6 +75,15 @@ public class MagicPacketCoordinator(
         }
 
         if (RequiresLearnedSkill((MagicProcessOpcode)magicOpcode)
+            && !MagicSkillRequirement.IsGranted(magic, session.TransformId))
+        {
+            logger.LogWarning("Refusing skill {SkillId} from {Name}: tree {Tree} needs a nation role or a command form (transform {TransformId})",
+                skillId, session.Name, magic.Skill, session.TransformId);
+            await SendMagicFailAsync(session, skillId);
+            return;
+        }
+
+        if (RequiresLearnedSkill((MagicProcessOpcode)magicOpcode)
             && !MagicSkillRequirement.IsMet(magic, session.Level, session.SkillPoints))
         {
             logger.LogWarning(
@@ -97,7 +106,8 @@ public class MagicPacketCoordinator(
                     return;
                 }
 
-                magicTimingService.OnCastAccepted(session, magic);
+                if (InstantMagicBuffOf(session, magic) is null)
+                    magicTimingService.OnCastAccepted(session, magic);
                 await HandleCastingAsync(session, magic, targetId, data);
                 break;
             case MagicProcessOpcode.Flying:
@@ -116,7 +126,9 @@ public class MagicPacketCoordinator(
                     return;
                 }
 
-                magicTimingService.OnReleaseAccepted(session, magic);
+                var instantMagic = InstantMagicBuffOf(session, magic);
+                if (instantMagic is null)
+                    magicTimingService.OnReleaseAccepted(session, magic);
 
                 if (OpensTransformationList(session, magic))
                 {
@@ -126,6 +138,8 @@ public class MagicPacketCoordinator(
                 }
 
                 await HandleClientExecutionAsync(session, magic, skillId, targetId, data);
+                if (instantMagic is { } spent)
+                    await magicExecutionService.CancelAsync(session, spent);
                 break;
             case MagicProcessOpcode.Fail:
                 if (magic.PrimaryType == MagicSkillType.Ranged && data[MissMarkerSlot] == ArrowMissedMarker)
@@ -150,6 +164,22 @@ public class MagicPacketCoordinator(
                 break;
         }
     }
+
+    private int? InstantMagicBuffOf(UserSession session, MagicData magic)
+    {
+        if (IsInstantMagic(magic))
+            return null;
+
+        foreach (var (buffSkillId, buff) in session.ActiveBuffs)
+            if (buff.BuffType == BuffType.InstantMagic && !buff.IsExpired)
+                return buffSkillId;
+        return null;
+    }
+
+    private bool IsInstantMagic(MagicData magic) =>
+        magic.PrimaryType == MagicSkillType.Buff
+        && MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, magic.Id, out var type4Data)
+        && (BuffType)type4Data.BuffType == BuffType.InstantMagic;
 
     private bool OpensTransformationList(UserSession session, MagicData magic) =>
         magic.PrimaryType == MagicSkillType.None

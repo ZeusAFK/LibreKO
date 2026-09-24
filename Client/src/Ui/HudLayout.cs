@@ -121,7 +121,15 @@ public sealed partial class HudLayout : Node
     private void KeepOnScreen()
     {
         if (!GodotObject.IsInstanceValid(_target) || !_target.IsVisibleInTree()) return;
-        Callable.From(ClampOnScreen).CallDeferred();
+        Callable.From(FollowDefaultOnScreen).CallDeferred();
+    }
+
+    private void FollowDefaultOnScreen()
+    {
+        if (!GodotObject.IsInstanceValid(_target)) return;
+        if (_anchor == null && _persist && _defaultPosition != null && !_dragging && !Config.HasWindowPos(_id))
+            _target.Position = _defaultPosition();
+        ClampOnScreen();
     }
 
     private void InstallOverlays()

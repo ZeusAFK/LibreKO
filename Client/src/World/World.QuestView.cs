@@ -323,5 +323,5 @@ public partial class World
     private IEnumerable<(int ItemId, int Count)> QuestRewards(int questId) =>
         _questViews.TryGetValue(questId, out var view)
             ? view.Transfers.Where(t => !t.Take).Concat(view.Options).Select(t => (t.DisplayItemId, t.Count))
-            : QuestData.Rewards(questId).Select(t => (t.ItemId, t.Count));
+            : QuestData.Rewards(questId, _selfClass).Select(t => (t.ItemId, t.Count));
 }

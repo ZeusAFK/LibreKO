@@ -74,7 +74,7 @@ public partial class World
         tabBar.AddThemeConstantOverride("separation", 4);
         root.AddChild(tabBar);
 
-        _skillPages = SkillData.Pages(_selfClass);
+        _skillPages = SkillData.Pages(_selfClass, SelfTransformModel());
         foreach (var page in _skillPages)
         {
             int tab = page.Category;

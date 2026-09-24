@@ -22,6 +22,7 @@ public class SessionTerminationService(
     IMerchantPacketCoordinator merchantPacketCoordinator,
     IPartyPacketCoordinator partyPacketCoordinator,
     IWorldPacketCoordinator worldPacketCoordinator,
+    INpcLifecycleService npcLifecycleService,
     InstanceRoomRegistry instanceRooms,
     ILogger<SessionTerminationService> logger) : ISessionTerminationService
 {
@@ -161,6 +162,12 @@ public class SessionTerminationService(
             await merchantPacketCoordinator.HandleSessionEndedAsync(session);
         if (session.IsInParty)
             await partyPacketCoordinator.RemoveMemberAsync(session, (short)session.CharacterId);
+
+        if (session.SummonedGuard is { } guard)
+        {
+            session.SummonedGuard = null;
+            await npcLifecycleService.DespawnAsync(guard);
+        }
 
         session.IsMining = false;
         session.IsFishing = false;

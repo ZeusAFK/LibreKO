@@ -309,6 +309,8 @@ public partial class SettingsPanel : CanvasLayer
 
     public static void Open(Node parent) => parent.AddChild(new SettingsPanel { Layer = 200 });
 
+    public override void _ExitTree() => Audio.ApplyVolumes();
+
     public override void _Ready()
     {
         var dim = new ColorRect { Color = new Color(0, 0, 0, 0.45f) };
@@ -648,11 +650,11 @@ public partial class SettingsPanel : CanvasLayer
     private void BuildSoundTab(VBoxContainer vb)
     {
         vb.AddChild(Row("Enabled", _sndOn = new CheckButton { ButtonPressed = Config.AudioEnabled }));
-        vb.AddChild(VolumeRow("Master", out _volMaster, Config.MasterVolume));
-        vb.AddChild(VolumeRow("Music", out _volMusic, Config.MusicVolume));
-        vb.AddChild(VolumeRow("Effects", out _volSfx, Config.SfxVolume));
-        vb.AddChild(VolumeRow("Interface", out _volUi, Config.UiVolume));
-        vb.AddChild(VolumeRow("Voice", out _volVoice, Config.VoiceVolume));
+        vb.AddChild(VolumeRow("Master", Audio.BusMaster, out _volMaster, Config.MasterVolume));
+        vb.AddChild(VolumeRow("Music", Audio.BusMusic, out _volMusic, Config.MusicVolume));
+        vb.AddChild(VolumeRow("Sound effects", Audio.BusSfx, out _volSfx, Config.SfxVolume));
+        vb.AddChild(VolumeRow("Interface sounds", Audio.BusUi, out _volUi, Config.UiVolume));
+        vb.AddChild(VolumeRow("Voice", Audio.BusVoice, out _volVoice, Config.VoiceVolume));
     }
 
     public override void _Input(InputEvent ev)
@@ -683,7 +685,7 @@ public partial class SettingsPanel : CanvasLayer
         return vb;
     }
 
-    private static HBoxContainer VolumeRow(string label, out HSlider slider, float value)
+    private static HBoxContainer VolumeRow(string label, string bus, out HSlider slider, float value)
     {
         slider = new HSlider
         {
@@ -691,7 +693,11 @@ public partial class SettingsPanel : CanvasLayer
             CustomMinimumSize = new Vector2(0, 18),
         };
         var pct = new Label { Text = $"{value * 100:0}%", CustomMinimumSize = new Vector2(52, 0) };
-        slider.ValueChanged += v => pct.Text = $"{v * 100:0}%";
+        slider.ValueChanged += v =>
+        {
+            pct.Text = $"{v * 100:0}%";
+            Audio.PreviewVolume(bus, (float)v);
+        };
         var row = Row(label, slider);
         row.AddChild(pct);
         return row;

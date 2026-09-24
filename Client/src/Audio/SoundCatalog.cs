@@ -7,7 +7,7 @@ public static class SoundCatalog
 {
     public enum Kind { TwoD = 0, ThreeD = 1, Stream = 2 }
 
-    public readonly record struct Entry(string File, Kind Type, int Instances);
+    public readonly record struct Entry(string File, Kind Type, int Instances, float GainDb = 0f);
 
     public readonly record struct LooksSounds(
         int Move, int Attack0, int Attack1, int Struck0, int Struck1,
@@ -49,7 +49,8 @@ public static class SoundCatalog
         {
             if (!int.TryParse(key, out int id)) continue;
             var o = val.AsGodotDictionary();
-            _sounds[id] = new Entry(Str(o, "file"), (Kind)Int(o, "type"), Mathf.Max(1, Int(o, "inst")));
+            float gain = o.TryGetValue("gain", out var g) ? (float)g.AsDouble() : 0f;
+            _sounds[id] = new Entry(Str(o, "file"), (Kind)Int(o, "type"), Mathf.Max(1, Int(o, "inst")), gain);
         }
 
         foreach (var (key, val) in Each(root, "looks"))

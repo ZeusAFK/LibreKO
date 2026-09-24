@@ -18,6 +18,8 @@ public class MagicWarpTests : GameTestBase
     private const int SummonFriendId = 209004;
     private const int DescentId = 205650;
     private const int WildAdventId = 208770;
+    private const int BlinkId = 210774;
+    private const short BlinkRadius = 20;
     private const byte Moradon = 21;
     private const short BindEventIndex = 7;
 
@@ -159,7 +161,63 @@ public class MagicWarpTests : GameTestBase
         caster.X.Should().BeApproximately(640, 0.5f);
     }
 
-    private static void Warp(IGameDataService gameData, int skillId, SkillMoral moral, MagicWarpType warpType)
+    [Fact]
+    public async Task BlinkMovesTheCasterToThePointItSentAhead()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, BlinkId, SkillMoral.Self, MagicWarpType.Blink, BlinkRadius));
+
+        var (_, caster, client) = CreateCaster(provider);
+
+        await Cast(provider, client, BlinkId, caster, caster.CharacterId, [1180, 0, 1060, 0, 0, 0, 0]);
+
+        caster.X.Should().BeApproximately(118, 0.5f);
+        caster.Z.Should().BeApproximately(106, 0.5f);
+    }
+
+    [Fact]
+    public async Task BlinkRefusesAPointBeyondItsRadius()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, BlinkId, SkillMoral.Self, MagicWarpType.Blink, BlinkRadius));
+
+        var (_, caster, client) = CreateCaster(provider);
+
+        await Cast(provider, client, BlinkId, caster, caster.CharacterId, [4000, 0, 1000, 0, 0, 0, 0]);
+
+        caster.X.Should().BeApproximately(100, 0.5f, "a blink reaches only its radius");
+        caster.Z.Should().BeApproximately(100, 0.5f);
+    }
+
+    [Fact]
+    public async Task BlinkRefusesAPointOffTheMap()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, BlinkId, SkillMoral.Self, MagicWarpType.Blink, BlinkRadius));
+
+        var (_, caster, client) = CreateCaster(provider);
+
+        await Cast(provider, client, BlinkId, caster, caster.CharacterId, [-50, 0, 1000, 0, 0, 0, 0]);
+
+        caster.X.Should().BeApproximately(100, 0.5f);
+    }
+
+    [Fact]
+    public async Task BlinkReadsACoordinateBeyondAShortAsItsLowSixteenBits()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, BlinkId, SkillMoral.Self, MagicWarpType.Blink, BlinkRadius));
+
+        var (_, caster, client) = CreateCaster(provider);
+        caster.X = 3300;
+
+        await Cast(provider, client, BlinkId, caster, caster.CharacterId, [unchecked((short)33150), 0, 1000, 0, 0, 0, 0]);
+
+        caster.X.Should().BeApproximately(3315, 0.5f, "the client sends each coordinate as a sign-extended short");
+    }
+
+    private static void Warp(
+        IGameDataService gameData, int skillId, SkillMoral moral, MagicWarpType warpType, short radius = 0)
     {
         gameData.GetMagic(skillId).Returns(new MagicData
         {
@@ -172,7 +230,7 @@ public class MagicWarpTests : GameTestBase
         var rows = new Dictionary<int, MagicType8Data>(
             gameData.MagicType8Table ?? new Dictionary<int, MagicType8Data>())
         {
-            [skillId] = new MagicType8Data { Id = skillId, WarpType = (byte)warpType }
+            [skillId] = new MagicType8Data { Id = skillId, WarpType = (byte)warpType, Radius = radius }
         };
         gameData.MagicType8Table.Returns(rows);
     }

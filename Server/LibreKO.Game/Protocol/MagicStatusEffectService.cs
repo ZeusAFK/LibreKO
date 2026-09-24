@@ -26,6 +26,8 @@ public class MagicStatusEffectService(
     IUserNotificationService userNotificationService,
     IPlayerProgressionService playerProgressionService,
     IStealthService stealthService,
+    INpcSummonService npcSummonService,
+    INpcLifecycleService npcLifecycleService,
     ILogger<MagicStatusEffectService> logger) : IMagicStatusEffectService
 {
     private const int SkillSucceeded = 1;
@@ -59,6 +61,8 @@ public class MagicStatusEffectService(
             && MagicTypeLookup.TryResolve(
                 gameDataService.MagicType9Table, magicRow, skillId, out var expiredType9))
         {
+            if ((MagicStealthType)expiredType9.StateChange == MagicStealthType.GuardSummon)
+                await DismissGuardAsync(session);
             await stealthService.EndAsync(session, (MagicStealthType)expiredType9.StateChange);
             if (magicRow.PrimaryType == MagicSkillType.Stealth)
                 return;
@@ -528,6 +532,7 @@ public class MagicStatusEffectService(
                 await HideAsync(caster, target, stealthType, skillId, type9Data),
             MagicStealthType.SeeInvisible or MagicStealthType.SeeInvisibleParty =>
                 await GrantSightAsync(caster, stealthType, skillId, type9Data, data),
+            MagicStealthType.GuardSummon => await SummonGuardAsync(caster, skillId, type9Data, data),
             _ => UnhandledStealth(caster, stealthType, skillId),
         };
 
@@ -592,6 +597,42 @@ public class MagicStatusEffectService(
         }
 
         return granted;
+    }
+
+    private const int GuardCount = 1;
+
+    private async Task<bool> SummonGuardAsync(UserSession caster, int skillId, MagicType9Data type9Data, int[] data)
+    {
+        if (type9Data.MonsterNum <= 0)
+            return false;
+
+        await DismissGuardAsync(caster);
+        var guards = await npcSummonService.SummonAsync(
+            type9Data.MonsterNum, caster.ZoneId, caster.Room, (int)caster.X, (int)caster.Z, GuardCount, caster.Y,
+            guard =>
+            {
+                guard.NpcType = NpcData.TypeGuardSummon;
+                guard.Nation = (EntityNation)caster.Nation;
+                guard.OwnerCharId = caster.CharacterId;
+                guard.IsAggressive = false;
+            });
+        if (guards.Count == 0)
+            return false;
+
+        caster.SummonedGuard = guards[0];
+
+        AddStealthBuff(caster, caster, skillId, type9Data);
+        await AnnounceStealthAsync(caster, caster, skillId, type9Data, data);
+        return true;
+    }
+
+    public async Task DismissGuardAsync(UserSession session)
+    {
+        if (session.SummonedGuard is not { } guard)
+            return;
+
+        session.SummonedGuard = null;
+        await npcLifecycleService.DespawnAsync(guard);
     }
 
     private bool UnhandledStealth(UserSession caster, MagicStealthType stealthType, int skillId)

@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 
 namespace LibreKO.Game.Protocol;
 
@@ -10,6 +10,15 @@ public static class MagicSkillRequirement
     private const int NationBuffEndTree = 10000;
     private const int FirstMasteryTree = 5;
     private const int LastMasteryTree = 8;
+    private const int CommandTreeDigit = 9;
+    private const int NationBuffBand = 1000;
+    private const int FirstNationBuffLine = 1;
+    private const int LastNationBuffLine = 5;
+
+    public const int NoNationRole = 0;
+    public const int NationRoleFirstBand = 1;
+
+    private static readonly HashSet<int> CommandForms = [20007, 20008, 31501, 31502, 31503, 31504, 31505, 31506, 31507];
 
     public static int MasteryTreeOf(int skillTree)
     {
@@ -30,6 +39,24 @@ public static class MagicSkillRequirement
             return level >= magic.SkillLevel;
 
         return tree < skillPoints.Length && skillPoints[tree] >= magic.SkillLevel;
+    }
+
+    public static bool IsGranted(MagicData magic, int transformId, int nationRole = NoNationRole, int nationLine = 0)
+    {
+        var tree = magic.Skill;
+        if (tree is >= NationBuffFirstTree and < NationBuffEndTree)
+        {
+            if (nationRole == NoNationRole)
+                return false;
+            if (nationRole == NationRoleFirstBand)
+                return tree < NationBuffFirstTree + NationBuffBand;
+            if (nationLine is < FirstNationBuffLine or > LastNationBuffLine)
+                return true;
+            var band = NationBuffFirstTree + nationLine * NationBuffBand;
+            return tree >= band && tree < band + NationBuffBand;
+        }
+
+        return tree % 10 != CommandTreeDigit || CommandForms.Contains(transformId);
     }
 
     public static string Describe(MagicData magic)

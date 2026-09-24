@@ -113,6 +113,14 @@ public static class Config
     public static float UiVolume { get; private set; } = 0.7f;
     public static float VoiceVolume { get; private set; } = 0.9f;
 
+    public static bool HotbarLocked { get; private set; } = false;
+    public static bool HotbarVertical { get; private set; } = false;
+    public static int HotbarExtraBars { get; private set; } = 0;
+    private static readonly int[] _hotbarExtraPages = { 1, 2 };
+
+    public static int HotbarExtraPage(int extraBar) =>
+        extraBar >= 0 && extraBar < _hotbarExtraPages.Length ? _hotbarExtraPages[extraBar] : 0;
+
     public static int TooltipHeight { get; private set; } = 11;
     public static bool TooltipBold { get; private set; } = false;
     public static bool TooltipBack { get; private set; } = false;
@@ -250,6 +258,13 @@ public static class Config
         SfxVolume = Vol(cfg, "sfx", SfxVolume);
         UiVolume = Vol(cfg, "ui", UiVolume);
         VoiceVolume = Vol(cfg, "voice", VoiceVolume);
+        HotbarLocked = cfg.GetValue("hotbar", "locked", HotbarLocked).AsBool();
+        HotbarVertical = cfg.GetValue("hotbar", "vertical", HotbarVertical).AsBool();
+        HotbarExtraBars = Mathf.Clamp(cfg.GetValue("hotbar", "extra_bars", HotbarExtraBars).AsInt32(),
+                                      0, HotbarLayout.MaxBars - 1);
+        for (int i = 0; i < _hotbarExtraPages.Length; i++)
+            _hotbarExtraPages[i] = Mathf.Clamp(cfg.GetValue("hotbar", $"extra_page_{i}", _hotbarExtraPages[i]).AsInt32(),
+                                               0, HotbarLayout.Pages - 1);
         TooltipHeight = Mathf.Max(1, cfg.GetValue("fontstate", "tooltipheight", TooltipHeight).AsInt32());
         TooltipBold = cfg.GetValue("fontstate", "tooltipbold", TooltipBold).AsBool();
         TooltipBack = cfg.GetValue("fontstate", "tooltipback", TooltipBack).AsBool();
@@ -292,6 +307,11 @@ public static class Config
         cfg.SetValue("video", "vsync", VSync);
         cfg.SetValue("graphics", "fps_limit", (int)FpsLimit);
         cfg.SetValue("hud", "show_stats", ShowStats);
+        cfg.SetValue("hotbar", "locked", HotbarLocked);
+        cfg.SetValue("hotbar", "vertical", HotbarVertical);
+        cfg.SetValue("hotbar", "extra_bars", HotbarExtraBars);
+        for (int i = 0; i < _hotbarExtraPages.Length; i++)
+            cfg.SetValue("hotbar", $"extra_page_{i}", _hotbarExtraPages[i]);
         cfg.SetValue("controls", "move_stick", MoveStickSensitivity);
         cfg.SetValue("controls", "look_stick", LookStickSensitivity);
         cfg.SetValue("controls", "cam_turn_speed", CamTurnSpeed);
@@ -380,6 +400,21 @@ public static class Config
     {
         if (ShowStats == show) return;
         ShowStats = show;
+        Save();
+    }
+
+    public static void SetHotbarLayout(bool locked, bool vertical, int extraBars)
+    {
+        HotbarLocked = locked;
+        HotbarVertical = vertical;
+        HotbarExtraBars = Mathf.Clamp(extraBars, 0, HotbarLayout.MaxBars - 1);
+        Save();
+    }
+
+    public static void SetHotbarExtraPage(int extraBar, int page)
+    {
+        if (extraBar < 0 || extraBar >= _hotbarExtraPages.Length) return;
+        _hotbarExtraPages[extraBar] = Mathf.Clamp(page, 0, HotbarLayout.Pages - 1);
         Save();
     }
 
