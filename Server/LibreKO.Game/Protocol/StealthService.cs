@@ -83,7 +83,7 @@ public class StealthService(
     private MagicStealthType StealthTypeOf(int skillId)
     {
         var magic = gameDataService.GetMagic(skillId);
-        if (magic?.PrimaryType != MagicSkillType.Stealth
+        if (magic?.HasType(MagicSkillType.Stealth) != true
             || !MagicTypeLookup.TryResolve(gameDataService.MagicType9Table, magic, skillId, out var type9Data))
             return MagicStealthType.None;
 

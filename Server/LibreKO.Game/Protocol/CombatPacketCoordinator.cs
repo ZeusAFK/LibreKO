@@ -47,6 +47,7 @@ public class CombatPacketCoordinator(
             return;
 
         await stealthService.RevealAsync(session, InvisibilityType.None);
+        session.MarkCombat();
 
         var equippedWeapon = session.GetEquippedItem(InventoryConstants.RightHand);
         if (equippedWeapon.IsEmpty)
@@ -97,6 +98,7 @@ public class CombatPacketCoordinator(
             if (damage > 0)
             {
                 target.Hp -= (short)Math.Min(damage, target.Hp);
+                target.MarkCombat();
                 await combatLifecycleService.SendHpChangeAsync(target, session.CharacterId);
                 await combatLifecycleService.SendPlayerTargetHpAsync(session, target, damage);
 

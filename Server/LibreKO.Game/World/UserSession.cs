@@ -131,6 +131,12 @@ public class UserSession
     public bool IsHidingHelmet { get; set; }
     public InvisibilityType Invisibility { get; set; }
     public bool IsInvisible => Invisibility != InvisibilityType.None;
+    public bool IsInfiltrating => Invisibility == InvisibilityType.Infiltration;
+
+    public long LastCombatTicks { get; set; }
+    public void MarkCombat() => LastCombatTicks = Environment.TickCount64;
+    public bool IsInCombat =>
+        LastCombatTicks != 0 && Environment.TickCount64 - LastCombatTicks < GameConstants.CombatStateSeconds * 1000L;
     public short TransformId { get; set; } // 0=none, NPC model ID when transformed
     public bool IsTransformed => TransformId > 0;
 

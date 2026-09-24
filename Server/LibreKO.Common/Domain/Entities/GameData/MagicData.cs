@@ -37,6 +37,8 @@ public class MagicData
     [NotMapped]
     public MagicSkillType SecondaryType => (MagicSkillType)Type2;
 
+    public bool HasType(MagicSkillType type) => PrimaryType == type || SecondaryType == type;
+
     private const int MillisecondsPerTenth = 100;
 
     [NotMapped]

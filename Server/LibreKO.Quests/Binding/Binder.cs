@@ -1767,6 +1767,17 @@ public sealed class Binder
                 continue;
             }
 
+            if (slot.Kind == SlotKind.Weekday)
+            {
+                if (QuestVocabulary.Weekdays.TryGetValue(token.Text, out var dayValue))
+                    values[slot.Name] = dayValue;
+                else
+                    _diagnostics.Error(DiagnosticId.UnknownEnumMember, token.Span,
+                        $"'{token.Text}' is not a day of the week.",
+                        $"The days are: {string.Join(", ", QuestVocabulary.WeekdayNames)}.");
+                continue;
+            }
+
             if (slot.Kind == SlotKind.PremiumType)
             {
                 if (QuestVocabulary.PremiumTypes.TryGetValue(token.Text, out var premiumValue))

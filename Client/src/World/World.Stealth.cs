@@ -8,6 +8,7 @@ public partial class World
 {
     private readonly HashSet<int> _stealthIds = new();
     private readonly HashSet<int> _stealthDetected = new();
+    private readonly HashSet<int> _infiltratingIds = new();
     private float _sightRadius;
 
     private const float StealthSelfAlpha = 0.40f;
@@ -46,7 +47,7 @@ public partial class World
         float radiusSq = _sightRadius * _sightRadius;
         foreach (int id in _stealthIds)
         {
-            if (id == _myId) continue;
+            if (id == _myId || _infiltratingIds.Contains(id)) continue;
 
             var body = StealthBodyOf(id);
             bool seen = _sightRadius > 0f && body != null
@@ -66,23 +67,37 @@ public partial class World
         CombatNotice("Cancelling stealth.");
     }
 
-    private void StealthOnSpawn(int charId)
+    private void StealthOnSpawn(int charId, int invisibility)
     {
+        SetInfiltrating(charId, invisibility == Net.InvisibilityInfiltration);
         if (!_stealthIds.Add(charId)) return;
         ApplyStealthFade(charId, stealthed: true);
+    }
+
+    private void SetInfiltrating(int charId, bool on)
+    {
+        if (on) _infiltratingIds.Add(charId); else _infiltratingIds.Remove(charId);
+        if (charId != _myId && _ents.TryGetValue(charId, out var ent)) ent.Infiltrating = on;
     }
 
     private void StealthForgetEntity(int charId)
     {
         _stealthIds.Remove(charId);
         _stealthDetected.Remove(charId);
+        _infiltratingIds.Remove(charId);
     }
 
-    private void OnStealth(int charId, bool on)
+    private void OnStealth(int charId, int value)
     {
+        bool on = value != 0;
         if (on)
         {
-            if (!_stealthIds.Add(charId)) return;
+            SetInfiltrating(charId, value == Net.InvisibilityInfiltration);
+            if (!_stealthIds.Add(charId))
+            {
+                ApplyStealthFade(charId, stealthed: true);
+                return;
+            }
             ApplyStealthFade(charId, stealthed: true);
             StealthSpawnFx(charId);
 
@@ -93,6 +108,7 @@ public partial class World
         }
         else
         {
+            SetInfiltrating(charId, false);
             if (!_stealthIds.Remove(charId)) return;
             _stealthDetected.Remove(charId);
             ApplyStealthFade(charId, stealthed: false);
@@ -110,6 +126,7 @@ public partial class World
         float alpha;
         if (!stealthed) alpha = 1f;
         else if (charId == _myId) alpha = StealthSelfAlpha;
+        else if (_infiltratingIds.Contains(charId)) alpha = 0f;
         else alpha = _stealthDetected.Contains(charId) ? StealthSeenAlpha : StealthHideAlpha;
 
         StealthSetBodyAlpha(body, alpha);

@@ -18,6 +18,7 @@ public class StealthTests : GameTestBase
     private const int CatsEyes = 107715;
     private const int LupineEyes = 107735;
     private const int Inferno = 107646;
+    private const int UnidentifiedPotion = 490119;
 
     private const byte Moradon = 21;
     private const short SightRadius = 25;
@@ -152,6 +153,55 @@ public class StealthTests : GameTestBase
     }
 
     [Fact]
+    public async Task APotionWhoseSecondTypeIsStealthRevealsThePlayerWhenItExpires()
+    {
+        using var provider = CreateStealthProvider();
+        var (session, client) = CreateRogue(provider, 710);
+        var sent = Capture(client);
+
+        await CastAsync(provider, session, UnidentifiedPotion);
+        session.Invisibility.Should().Be(InvisibilityType.Infiltration);
+        StealthStatesIn(sent).Should().Equal((byte)InvisibilityType.Infiltration);
+
+        await provider.GetRequiredService<IMagicExecutionService>().CancelAsync(session, UnidentifiedPotion);
+
+        session.Invisibility.Should().Be(InvisibilityType.None);
+        StealthStatesIn(sent).Should().Equal((byte)InvisibilityType.Infiltration, (byte)InvisibilityType.None);
+    }
+
+    [Fact]
+    public async Task AnInfiltratorCannotBeAttackedAndWalksWithoutBreakingCover()
+    {
+        using var provider = CreateStealthProvider();
+        var (infiltrator, _) = CreateRogue(provider, 711);
+        var (enemy, _) = CreateRogue(provider, 712);
+        enemy.Nation = AccountNation.ElMorad;
+        var attackableBefore = PvpRules.CanAttackPlayer(enemy, infiltrator);
+
+        await CastAsync(provider, infiltrator, UnidentifiedPotion);
+        PvpRules.CanAttackPlayer(enemy, infiltrator).Should().BeFalse();
+
+        var stealth = provider.GetRequiredService<IStealthService>();
+        await stealth.RevealAsync(infiltrator, InvisibilityType.DispelOnMove);
+        infiltrator.Invisibility.Should().Be(InvisibilityType.Infiltration);
+
+        await stealth.RevealAsync(infiltrator, InvisibilityType.None);
+        infiltrator.Invisibility.Should().Be(InvisibilityType.None);
+        PvpRules.CanAttackPlayer(enemy, infiltrator).Should().Be(attackableBefore);
+    }
+
+    [Fact]
+    public void CombatLastsTheConfiguredWindowAfterTheLastBlow()
+    {
+        var session = new SessionManager().CreateSession(Substitute.For<IClient>(), 713, 813);
+        session.IsInCombat.Should().BeFalse();
+        session.MarkCombat();
+        session.IsInCombat.Should().BeTrue();
+        session.LastCombatTicks -= GameConstants.CombatStateSeconds * 1000L;
+        session.IsInCombat.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task SightEndsByClearingTheRadiusItGranted()
     {
         using var provider = CreateStealthProvider();
@@ -180,8 +230,20 @@ public class StealthTests : GameTestBase
                 Moral = (byte)SkillMoral.Enemy,
             });
 
+            gameData.GetMagic(UnidentifiedPotion).Returns(new MagicData
+            {
+                Id = UnidentifiedPotion,
+                Type1 = (byte)MagicSkillType.Buff,
+                Type2 = (byte)MagicSkillType.Stealth,
+                Moral = (byte)SkillMoral.Self,
+            });
+            gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
+            {
+                [UnidentifiedPotion] = new() { Id = UnidentifiedPotion, BuffType = 163, Duration = 60 },
+            });
             gameData.MagicType9Table.Returns(new Dictionary<int, MagicType9Data>
             {
+                [UnidentifiedPotion] = Type9(UnidentifiedPotion, MagicStealthType.DispelOnAttack, radius: 0, duration: 80),
                 [Hide] = Type9(Hide, MagicStealthType.DispelOnMove, radius: 0, duration: 40),
                 [Stealth] = Type9(Stealth, MagicStealthType.DispelOnAttack, radius: 0, duration: 80),
                 [CatsEyes] = Type9(CatsEyes, MagicStealthType.SeeInvisible, SightRadius, duration: 50),

@@ -91,6 +91,8 @@ public enum QuestConditionKind
     ClanPoints,
     SkillPoints,
     NoTopicFits,
+    Weekday,
+    HasEffect,
 }
 
 public enum SwitchSelectorKind
@@ -187,6 +189,21 @@ public static class QuestVocabulary
         ["Warrior", "Rogue", "Mage", "Priest", "Kurian"];
 
     public static IReadOnlyList<string> NationNames { get; } = ["Karus", "ElMorad"];
+
+    public static IReadOnlyDictionary<string, int> Weekdays { get; } =
+        new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["sunday"] = (int)DayOfWeek.Sunday,
+            ["monday"] = (int)DayOfWeek.Monday,
+            ["tuesday"] = (int)DayOfWeek.Tuesday,
+            ["wednesday"] = (int)DayOfWeek.Wednesday,
+            ["thursday"] = (int)DayOfWeek.Thursday,
+            ["friday"] = (int)DayOfWeek.Friday,
+            ["saturday"] = (int)DayOfWeek.Saturday,
+        };
+
+    public static IReadOnlyList<string> WeekdayNames { get; } =
+        ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     public static IReadOnlyDictionary<string, int> ClanRanks { get; } =
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
@@ -355,6 +372,10 @@ public static class QuestVocabulary
         Condition(QuestConditionKind.LeadsParty, "player leads a party"),
         Condition(QuestConditionKind.IsKing, "player is king"),
         Condition(QuestConditionKind.DailyAvailable, "daily {slot:Count} available"),
+        Condition(QuestConditionKind.Weekday, "today is {day:Weekday}"),
+        Condition(QuestConditionKind.Weekday, "today is not {day:Weekday}", Negated()),
+        Condition(QuestConditionKind.HasEffect, "player has effect {skill:SkillId}"),
+        Condition(QuestConditionKind.HasEffect, "player lacks effect {skill:SkillId}", Negated()),
         Condition(QuestConditionKind.Chance, "chance {percent:Count}"),
         Condition(QuestConditionKind.RollUnder, "roll of {max:Count} {op:CompareOp} {value:Count}"),
         Condition(QuestConditionKind.ReachedLevel,

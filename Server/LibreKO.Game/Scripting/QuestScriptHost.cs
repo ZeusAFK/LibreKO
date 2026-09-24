@@ -64,6 +64,8 @@ public sealed class QuestScriptHost(
     }
 
     private DateOnly Today => DateOnly.FromDateTime((clock ?? TimeProvider.System).GetUtcNow().UtcDateTime);
+    public int Weekday => (int)Today.DayOfWeek;
+    public bool HasEffect(int skillId) => session.ActiveBuffs.ContainsKey(skillId);
     public int KillCount(int questId, int group) => context.Quest.CountMonsterQuestSub(0, questId, group);
 
     public int SkillPoints(int tree) => context.Character.CheckSkillPoint(0, tree);

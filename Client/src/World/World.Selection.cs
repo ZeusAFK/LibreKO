@@ -164,7 +164,7 @@ public partial class World
         return st.Commit();
     }
 
-    private static bool Selectable(Ent e) => !e.Dead || !e.IsNpc;
+    private static bool Selectable(Ent e) => (!e.Dead || !e.IsNpc) && !e.Infiltrating;
 
     private void UpdateSelectionRing()
     {

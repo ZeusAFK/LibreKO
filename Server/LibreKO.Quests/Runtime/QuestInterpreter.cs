@@ -709,6 +709,8 @@ public sealed class QuestInterpreter
             QuestConditionKind.LeadsParty => _host.IsPartyLeader,
             QuestConditionKind.IsKing => _host.IsKing,
             QuestConditionKind.DailyAvailable => _host.DailyRewardAvailable(args.GetInt("slot")),
+            QuestConditionKind.Weekday => _host.Weekday == args.GetInt("day"),
+            QuestConditionKind.HasEffect => _host.HasEffect(args.GetInt("skill")),
             QuestConditionKind.HasPremium => Compare(_host.PremiumType, node.Operator, args.GetInt("value")),
             QuestConditionKind.LastStepFailed => _host.ActionFailed,
             QuestConditionKind.PlayerZone => _host.PlayerZone == args.GetInt("zone"),

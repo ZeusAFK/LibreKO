@@ -1,0 +1,51 @@
+Bind Npc 32557 Zone 71 for karus
+Bind Npc 32558 Zone 71 for elmorad
+Quest 295 "Capture the Classified Document."
+    Daily
+    Journal for karus "Hide into the enemy nation..capture the Classified Document, and come back!!"
+    Journal for elmorad "Hide into the enemy nation..capture the Classified Document, and come back!!"
+    Collect 1 of 900068000
+
+Requires player level >= 61 and today is monday
+
+Rewards
+    Give 5000000 experience
+    Give 150 np
+
+On available
+    If player is karus
+        Say "Master, do you know of [Analyst] Caesar in Ronark Land ?"
+    If player is elmorad
+        Say "Master, do you know of [Analyst] Julius in Ronark Land ?"
+
+On offer
+    If player is karus
+        Say "First of all, you should know the location of El Morad Military HQ in advance.  Return with a classified document from the El Morad Military HQ, but remember that each document has different grade.  The higher grade the classified document is, the higher your reward will be, and one more thing..."
+        Topic "Take the Secret Document of enemies?" do
+            Show quest "You will need this potion.  To open that classified document box, you will need the power of this potion.  Not only it makes your body invisible for 1 minute so you can evade the detection by the enemy's guard tower, you need the power of this potion to open that document box.  But, remember that you cannot evade the eyes of the enemy rogues and general magic of the magicians.  This potion is extremely difficult to make, so it will cost you 1 million Noahs. What would you like to do?\n\nSteal the enemy's classified document!\n- the potion you are given is for one-use only, and the stealth skill comes into effect for one minute (If you don't have the potion, then you can get it from NPC again)\n- Keep it mind that the stealth skill of the potion you received is not effective against the general magic of magicians and the eyes of the enemy's rogues."
+        Topic "Rejected" goto close
+    If player is elmorad
+        Say "First of all, you should know the location of Karus Military HQ in advance.  Return with a classified document from the Karus Military HQ, but remember that each document has different grade.  The higher grade the classified document is, the higher your reward will be, and one more thing..."
+        Topic "Take the Secret Document of enemies?" do
+            Show quest "You will need this potion.  To open that classified document box, you will need the power of this potion.  Not only it makes your body invisible for 1 minute so you can evade the detection by the enemy's guard tower, you need the power of this potion to open that document box.  But, remember that you cannot evade the eyes of the enemy rogues and general magic of the magicians.  This potion is extremely difficult to make, so it will cost you 1 million Noahs. What would you like to do?\n\nSteal the enemy's classified document!\n- the potion you are given is for one-use only, and the stealth skill comes into effect for one minute (If you don't have the potion, then you can get it from NPC again)\n- Keep it mind that the stealth skill of the potion you received is not effective against the general magic of magicians and the eyes of the enemy's rogues."
+        Topic "Rejected" goto close
+
+On in_progress
+    If player lacks 900067000
+        Say "You will need this potion.  To open that classified document box, you will need the power of this potion.  Not only it makes your body invisible for 1 minute so you can evade the detection by the enemy's guard tower, you need the power of this potion to open that document box.  But, remember that you cannot evade the eyes of the enemy rogues and general magic of the magicians.  This potion is extremely difficult to make, so it will cost you 1 million Noahs. What would you like to do?"
+        Topic "Yes" do
+            Transaction
+                Take 1000000 coins
+                Give 1 of 900067000
+        Topic "No" goto close
+    Else
+        Say "Return with the classified document from the enemy's military HQ. And you must never lose the potion I gave to you."
+
+On ready
+    Say "Master, you have seized the enemy's classified document."
+
+On claimable
+    Show quest "Wow.. This mission wasn't easy at all but you managed to complete it successfully.  Hand it over to me now."
+
+On completed
+    Say "You have already carried out today's mission.  Hey, you know how to have a kick -"

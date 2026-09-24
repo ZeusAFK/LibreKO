@@ -266,7 +266,7 @@ public class MerchantBuyingService(
         if (sellerItem.IsEmpty || sellerItem.ItemId != wantedItem.ItemId || sellerItem.Count < stackSize)
             return BuyingMerchantResult.NoSuchItemWanted;
 
-        if (!sellerItem.IsTradable)
+        if (!sellerItem.IsTradable || gameDataService.GetItem(sellerItem.ItemId)?.IsUntradeable == true)
             return BuyingMerchantResult.ItemNotSellable;
 
         if (IsNoTradeItem(sellerItem.ItemId))

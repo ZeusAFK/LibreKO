@@ -162,6 +162,7 @@ public class NpcAiCombatService(
                         if (damage > 0)
                         {
                             target.Hp = (short)Math.Max(0, target.Hp - damage);
+                            target.MarkCombat();
                             attackResult = target.Hp > 0 ? AttackResult.Succeeded : AttackResult.TargetDead;
 
                             logger.LogDebug(

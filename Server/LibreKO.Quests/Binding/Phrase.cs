@@ -24,6 +24,7 @@ public enum SlotKind
     EventRef,
     NpcId,
     RewardId,
+    Weekday,
 }
 
 public abstract record PhrasePart
@@ -197,7 +198,7 @@ public static class PhraseMatcher
     private static bool SlotAccepts(SlotKind kind, Token token) => kind switch
     {
         SlotKind.CompareOp => token.Kind == TokenKind.Operator,
-        SlotKind.ClassGroup or SlotKind.Nation or SlotKind.PremiumType => token.Kind == TokenKind.Word,
+        SlotKind.ClassGroup or SlotKind.Nation or SlotKind.PremiumType or SlotKind.Weekday => token.Kind == TokenKind.Word,
         SlotKind.EventRef => token.Kind is TokenKind.String or TokenKind.Word,
         SlotKind.Int or SlotKind.Count or SlotKind.KillGroup => token.Kind == TokenKind.Number,
         SlotKind.MapId => token.Kind == TokenKind.Word,

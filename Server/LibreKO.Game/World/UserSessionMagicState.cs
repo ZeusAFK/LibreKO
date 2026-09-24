@@ -206,14 +206,14 @@ internal static class UserSessionMagicState
                         transformId = type6Data.TransformId;
                     break;
 
-                case MagicSkillType.Stealth
-                    when MagicTypeLookup.TryResolve(gameData.MagicType9Table, magic, magicId, out var type9Data):
-                    if ((MagicStealthType)type9Data.StateChange
-                        is MagicStealthType.DispelOnMove or MagicStealthType.DispelOnAttack)
-                    {
-                        invisibility = (InvisibilityType)type9Data.StateChange;
-                    }
-                    break;
+            }
+
+            if (magic.HasType(MagicSkillType.Stealth)
+                && MagicTypeLookup.TryResolve(gameData.MagicType9Table, magic, magicId, out var type9Data)
+                && (MagicStealthType)type9Data.StateChange
+                    is MagicStealthType.DispelOnMove or MagicStealthType.DispelOnAttack)
+            {
+                invisibility = StealthRules.InvisibilityOf(gameData, magicId, (MagicStealthType)type9Data.StateChange);
             }
         }
 

@@ -248,7 +248,8 @@ public partial class Net
         p.ReadByte();
         e.IsGm = p.ReadByte() == 0;
         p.ReadByte();
-        e.Invisible = p.ReadByte() != 0;
+        e.Invisibility = p.ReadByte();
+        e.Invisible = e.Invisibility != 0;
         p.ReadByte();
         p.ReadByte();
         p.ReadByte();

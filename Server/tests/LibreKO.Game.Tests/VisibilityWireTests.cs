@@ -62,7 +62,7 @@ public class VisibilityWireTests
             NoClanNationCode: 93, Level: 62, Race: 1, Class: 105,
             X: 5430, Z: 3770, Y: 120, Face: 2, Hair: 7,
             Pose: (byte)UserPoseState.Standing,
-            NeedParty: false, IsGameMaster: false, IsPartyLeader: false, IsInvisible: false,
+            NeedParty: false, IsGameMaster: false, IsPartyLeader: false, Invisibility: 0,
             Direction: 90, ZoneId: 21, IsHidingHelmet: false, DisplayTitleId: 0, Visuals: visuals));
 
         packet.ResetOffset();

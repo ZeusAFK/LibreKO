@@ -1,0 +1,41 @@
+Bind Npc 32556 Zone 71
+
+On greeting
+    If quest 296 is started and player lacks 900071000 and player is karus
+        Say "[You found the dead body of a Karus warrior who seems to be killed while fighting bravely..]"
+        Topic "Sealing the soul" do
+            Transaction
+                Give 1 of 900071000
+            Say "[The soul who hasn't left the battlefield is staying in the dead body]"
+    Else if quest 296 is started and player lacks 900071000 and player is elmorad
+        Say "[You found the dead body of an El Morad warrior who seems to be killed while fighting bravely..]"
+        Topic "Sealing the soul" do
+            Transaction
+                Give 1 of 900071000
+            Say "[The soul who hasn't left the battlefield is staying in the dead body]"
+    Else if quest 298 is started and player lacks 900071000 and player is karus
+        Say "[You found the dead body of a Karus warrior who seems to be killed while fighting bravely..]"
+        Topic "Sealing the soul" do
+            Transaction
+                Give 1 of 900071000
+            Say "[The soul who hasn't left the battlefield is staying in the dead body]"
+    Else if quest 298 is started and player lacks 900071000 and player is elmorad
+        Say "[You found the dead body of an El Morad warrior who seems to be killed while fighting bravely..]"
+        Topic "Sealing the soul" do
+            Transaction
+                Give 1 of 900071000
+            Say "[The soul who hasn't left the battlefield is staying in the dead body]"
+    Else if quest 300 is started and player lacks 900071000 and player is karus
+        Say "[You found the dead body of a Karus warrior who seems to be killed while fighting bravely..]"
+        Topic "Sealing the soul" do
+            Transaction
+                Give 1 of 900071000
+            Say "[The soul who hasn't left the battlefield is staying in the dead body]"
+    Else if quest 300 is started and player lacks 900071000 and player is elmorad
+        Say "[You found the dead body of an El Morad warrior who seems to be killed while fighting bravely..]"
+        Topic "Sealing the soul" do
+            Transaction
+                Give 1 of 900071000
+            Say "[The soul who hasn't left the battlefield is staying in the dead body]"
+    Else
+        Say "[You didn't find anything new.]"

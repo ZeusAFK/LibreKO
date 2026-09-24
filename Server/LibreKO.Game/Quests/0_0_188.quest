@@ -1,0 +1,65 @@
+Bind Npc 31700 Zone 1 for karus
+Bind Npc 31701 Zone 2 for elmorad
+Quest 188 "[Daily Mission] Harass Hostile Nation"
+    Daily
+    Journal for karus "[Advisor] Helga from Karus Castle commissions assignments to harass a Hostile Nation."
+    Journal for elmorad "[Advisor] Nez from El Morad Castle commissions assignments to harass a Hostile Nation."
+    Give 1 of 900074000 on accept
+    Collect 1 of 900035000
+
+Requires player level >= 45 and today is sunday
+
+Rewards
+    Give 1 of 900076000
+
+On offer
+    If player is karus
+        Say "You came on time, good. El Morad is showing some suspicious activities, and I want to know what is happening there but I have no one to spare as all the spies are doing their mission in Ronark Land. So would you sneak into the El Morad castle and return with the classified document?"
+        Topic "Yes" do
+            Show quest "Are you taking this mission!? Great, then I will give you the [Enemy State Moving Scroll] and the [Scroll] which you can copy the information on. You just need to copy the information in the enemy's classified document box on this [Scroll].\n\nDisturbing the Enemy\n- You have to make the [Scroll] into [Copy of Information Paper] from the classified document box in the El Morad Castle.  \n- You have to sneak into the castle when the enemy's defense is loose, and when you get killed by users of the enemy nation then your quest becomes initialized.  \n-During the quest, the summon related skills are not available and when you acquire [Copy of Information Paper] you can escape to the entrance of Lunar Gate with [/Village] command. \n-[Infiltration Scroll] can be place in the skill shortcut window for use.\n\n[Advisor] Herga is looking for someone who could infilterate the enemy nation in order to disturb them."
+        Topic "No" goto close
+    If player is elmorad
+        Say "Karus is showing some suspicious activities. I want to know what is happening there but I have no one to spare as all the spies are doing their mission in Ronark Land.  So could you sneak into the Luferson Castle instead and return with the classified document?"
+        Topic "Yes" do
+            Show quest "Are you taking the mission!? Great, then I will give you this [Enemy Nation Moving Scroll] and the [Scroll] on which you can copy the information. You can copy the information in the enemy's classified document box on this [Scroll].\n\nDisturbing the Enemy\n- You have to make the [Scroll] into [Copy of Information Paper] from the classified document box in the El Morad Castle.  \n- You have to sneak into the castle when the enemy's defense is loose, and when you get killed by users of the enemy nation then your quest becomes initialized.  \n-During the quest, the summon related skills are not available and when you acquire [Copy of Information Paper] you can escape to the entrance of Lunar Gate with [/Village] command. \n-[Infiltration Scroll] can be place in the skill shortcut window for use.\n\n[Advisor] Nez is looking for someone who could infilterate the enemy nation in order to disturb them."
+        Topic "No" goto close
+
+On in_progress
+    If player is karus
+        If player lacks 900074000 and player lacks 900035000
+            Say "You lost the [Scroll]? What a clumsy fellow you are. I will give you another one, so complete the mission without making any mistake this time."
+            Topic "Confirm" do
+                Transaction
+                    Give 1 of 900074000
+        Else
+            Say "You still haven't left yet? Infiltrate the El Morad castle and make [Scroll] into [Copy of Information Paper] and then come back."
+            Topic "Let infiltrate." do
+                Teleport 2 at 1726 300
+    If player is elmorad
+        If player lacks 900074000 and player lacks 900035000
+            Say "You lost the [Scroll]? I will give you another scroll, so don't lose it again."
+            Topic "Confirm" do
+                Transaction
+                    Give 1 of 900074000
+        Else
+            Say "Is there any misunderstanding? Hurry and infiltrate the Luferson Castle, and make the [Scroll] into [Copy of Information Paper] and then come back."
+            Topic "Let infiltrate." do
+                Teleport 1 at 329 1763
+
+On ready
+    If player is karus
+        Say "Master! You have successfully seized the classified document! Hurry back to [Advisor] Herga!"
+    If player is elmorad
+        Say "Master! You have successfully seized the classified document! Hurry back to [Advisor] Nez!"
+
+On claimable
+    If player is karus
+        Show quest "Oh, this is definitely a [Copy of Information Paper], let me see... Right! So they were planning something like this! You will have to take the next mission, too!"
+    If player is elmorad
+        Show quest "Oh, this is definitely a [Copy of Information Paper]! Um,um, I see! So they were planning something like this! Could you take the next mission, too?"
+
+On completed
+    If player is karus
+        Say "According to the [Copy of Information Paper] you brought, the enemy is planning to confuse our force in each of the war bases. So we decided to take the initiative this time and disrupt their information instead. Now, take this [Fake Information Paper] and go to the person in charge of each base.  We already got in touch with them, so you have to go to each base and help the person in charge to disrupt the enemy's plan.\n\nDisrupting the Enemy Base\n- You have to receive Disrupt the Enemy Information mission from the people in charge of  [Arrdream], [Ronark Base], and [Ronark Land].\n- People in charge of each mission area are as follows. \n- [Arrdream] - [Search Captain] Zamed \n- [Ronark Base] - [Base Spearhead] Cruzed \n- [Ronark Land] - [Analyst] Caesar"
+    If player is elmorad
+        Say "Accordnig to the [Copy of Information Paper] you brought, the enemy is planning to confuse our force at each of the war bases. So those above as decided to take the initiative this time and disrupt their information instead.  Take the [Fake Information Paper] to the person in charge of each base. We already got in touch with them, so you have to go to each base and help the person in charge to disrupt the enemy's plan.\n\nDisrupting the Enemy Base\n- You have to receive Disrupt the Enemy Information mission from the people in charge of  [Arrdream], [Ronark Base], and [Ronark Land].\n- People in charge of each mission area are as follows. \n- [Arrdream] - [Search Captain] Laek \n- [Ronark Base] - [Base Spearhead] Krable \n- [Ronark Land] - [Analyst] Julius"

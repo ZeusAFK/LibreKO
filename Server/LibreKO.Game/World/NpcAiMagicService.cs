@@ -162,7 +162,10 @@ public class NpcAiMagicService(
 
         damage = GmMode.Taken(target, Math.Clamp(damage, 0, CombatUtils.MaxDamage));
         if (damage > 0)
+        {
             target.Hp = (short)Math.Max(0, target.Hp - damage);
+            target.MarkCombat();
+        }
 
         var effectPacket = CreateMagicProcessPacket(MagicEffecting, magic.Id, npc.UniqueId, target.CharacterId);
         await sessionManager.Regions.SendToRegion(target, effectPacket, excludeSender: false);

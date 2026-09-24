@@ -497,7 +497,7 @@ public class WorldVisibilityService(
             NeedParty: false,
             session.IsGM,
             session.IsPartyLeader,
-            session.IsInvisible,
+            (byte)session.Invisibility,
             session.Direction,
             session.ZoneId,
             session.IsHidingHelmet,

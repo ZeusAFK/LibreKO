@@ -71,6 +71,24 @@ public class QuestDailyTests
     }
 
     [Fact]
+    public void TheHostReadsTheWeekdayFromItsClockInUtc()
+    {
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sessions = new SessionManager();
+        var session = sessions.CreateSession(client, 1, 1);
+        var context = new QuestScriptContext(session, null, Substitute.For<IGameDataService>(), sessions,
+            Substitute.For<ILogger>(), 1);
+        var clock = new Clock { Now = new DateTimeOffset(2026, 9, 14, 23, 30, 0, TimeSpan.Zero) };
+        var host = new QuestScriptHost(session, context, QuestTranslations.Empty,
+            Substitute.For<ILogger>(), "daily.quest", null, clock);
+
+        host.Weekday.Should().Be((int)DayOfWeek.Monday);
+        clock.Now = clock.Now.AddHours(1);
+        host.Weekday.Should().Be((int)DayOfWeek.Tuesday);
+    }
+
+    [Fact]
     public void DailyIsScriptMetadataAndSurvivesComposition()
     {
         var compilation = QuestCompilation.Create("""

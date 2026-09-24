@@ -21,6 +21,8 @@ public class ItemData
     public byte Kind { get; set; }
     public byte Slot { get; set; }
     public byte Race { get; set; }
+    public bool IsUntradeable => Race == UntradeableRace;
+    private const byte UntradeableRace = 20;
     public byte Class { get; set; }
     public short Damage { get; set; }
     public short MinDamage { get; set; }

@@ -307,6 +307,13 @@ public class MagicPacketCoordinator(
             return;
         }
 
+        if (session.IsInCombat && StealthRules.IsInfiltrationPotion(gameDataService, skillId))
+        {
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, StealthRules.InCombatRefusal));
+            await SendMagicFailAsync(session, skillId);
+            return;
+        }
+
         if (magic.Msp > 0)
         {
             if (session.Mp < magic.Msp)

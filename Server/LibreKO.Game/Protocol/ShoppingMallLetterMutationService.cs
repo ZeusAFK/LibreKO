@@ -149,6 +149,7 @@ public class ShoppingMallLetterMutationService(
             var itemData = gameDataService.GetItem(itemId);
             if (itemData == null
                 || itemData.Race == 7
+                || itemData.IsUntradeable
                 || itemId >= InventoryConstants.ItemGold
                 || !itemSlot.IsTradable)
             {

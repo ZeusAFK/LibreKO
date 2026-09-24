@@ -1,0 +1,31 @@
+Bind Npc 32531 Zone 73 for karus
+Bind Npc 32532 Zone 73 for elmorad
+Quest 318 "Cursed Monster hunt"
+    Journal for karus "[Outpost Captain] Elrod asked me to hunt Bishop. Bach and Duke."
+    Journal for elmorad "[Outpost Captain] Dela asked me to hunt Bishop. Bach and Duke."
+    Kill 1 of 1205
+    Kill 1 of 1206
+    Kill 1 of 1207
+
+Requires player level >= 66
+
+Rewards
+    Give 52500000 experience
+
+On offer
+    If player is karus
+        Show quest "You'll earn 21 million EXP if you complete the mission after listening to the story about Cursed Monsters from [Forward-base Captain] Elrod."
+    If player is elmorad
+        Show quest "You'll earn 21 million EXP if you complete the mission after listening to the story about Cursed Monsters from [Forward-base Captain] Della."
+
+On in_progress
+    If player is karus
+        Say "You'll earn 21 million EXP if you complete the mission after listening to the story about Cursed Monsters from [Forward-base Captain] Elrod."
+    If player is elmorad
+        Say "You'll earn 21 million EXP if you complete the mission after listening to the story about Cursed Monsters from [Forward-base Captain] Della."
+
+On claimable
+    If player is karus
+        Show quest "You'll earn 21 million EXP if you complete the mission after listening to the story about Cursed Monsters from [Forward-base Captain] Elrod."
+    If player is elmorad
+        Show quest "You'll earn 21 million EXP if you complete the mission after listening to the story about Cursed Monsters from [Forward-base Captain] Della."

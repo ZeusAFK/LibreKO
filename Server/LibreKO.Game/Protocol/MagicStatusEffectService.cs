@@ -55,12 +55,13 @@ public class MagicStatusEffectService(
         session.RecalculateStatsWithBuffs(gameDataService);
         await userNotificationService.SendStatUpdateAsync(session);
 
-        if (magicRow?.PrimaryType == MagicSkillType.Stealth
+        if (magicRow?.HasType(MagicSkillType.Stealth) == true
             && MagicTypeLookup.TryResolve(
                 gameDataService.MagicType9Table, magicRow, skillId, out var expiredType9))
         {
             await stealthService.EndAsync(session, (MagicStealthType)expiredType9.StateChange);
-            return;
+            if (magicRow.PrimaryType == MagicSkillType.Stealth)
+                return;
         }
 
         var magic = gameDataService.GetMagic(skillId);
@@ -550,7 +551,7 @@ public class MagicStatusEffectService(
         if (target.StealthProhibited || target.IsInvisible)
             return false;
 
-        await stealthService.HideAsync(target, (InvisibilityType)stealthType);
+        await stealthService.HideAsync(target, StealthRules.InvisibilityOf(gameDataService, skillId, stealthType));
         AddStealthBuff(target, caster, skillId, type9Data);
         return true;
     }

@@ -173,6 +173,7 @@ public static class QuestClassifier
                 if (QuestVocabulary.ClassGroups.ContainsKey(token.Text)
                     || QuestVocabulary.Nations.ContainsKey(token.Text)
                     || QuestVocabulary.ClanRanks.ContainsKey(token.Text)
+                    || QuestVocabulary.Weekdays.ContainsKey(token.Text)
                     || Status.Contains(token.Text))
                     return QuestTokenKind.Domain;
                 if (EventWord.Equals(token.Text, StringComparison.OrdinalIgnoreCase))

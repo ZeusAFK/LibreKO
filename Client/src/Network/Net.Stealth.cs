@@ -4,7 +4,9 @@ namespace LibreKO.Network;
 
 public partial class Net
 {
-    public event Action<int, bool>? StealthEvent;
+    public const int InvisibilityInfiltration = 3;
+
+    public event Action<int, int>? StealthEvent;
     public event Action<float>? SightEvent;
 
     private bool _stealthHooked;
@@ -25,7 +27,7 @@ public partial class Net
 
     private void OnStealthStateChange(int charId, int type, int value)
     {
-        if (type == StateChange.Stealth) StealthEvent?.Invoke(charId, value != 0);
+        if (type == StateChange.Stealth) StealthEvent?.Invoke(charId, value);
     }
 
     private void HandleStealth(Packet p)

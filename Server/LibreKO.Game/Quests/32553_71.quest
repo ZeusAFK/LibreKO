@@ -1,0 +1,37 @@
+Bind Npc 32553 Zone 71
+
+On greeting
+    If quest 295 is started and player lacks 900068000 and player has effect 490119 and player is elmorad
+        Say "[We haven't found anything]"
+        Topic "Open" do
+            Transaction
+                Give 1 of 900068000
+            Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+    Else if quest 297 is started and player lacks 900068000 and player has effect 490119 and player is elmorad
+        Say "[We haven't found anything]"
+        Topic "Open" do
+            Transaction
+                Give 1 of 900068000
+            Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+    Else if quest 299 is started and player lacks 900068000 and player has effect 490119 and player is elmorad
+        Say "[We haven't found anything]"
+        Topic "Open" do
+            Transaction
+                Give 1 of 900068000
+            Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+    Else if quest 301 is started and player lacks 900068000 and player has effect 490119 and player is elmorad
+        Say "[We haven't found anything]"
+        Topic "Open" do
+            Transaction
+                Give 1 of 900068000
+            Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+    Else if quest 295 is started and player is elmorad
+        Say "[You can't open the classified document box]"
+    Else if quest 297 is started and player is elmorad
+        Say "[You can't open the classified document box]"
+    Else if quest 299 is started and player is elmorad
+        Say "[You can't open the classified document box]"
+    Else if quest 301 is started and player is elmorad
+        Say "[You can't open the classified document box]"
+    Else
+        Say "[The classified documents box of our force is well kept right now]"

@@ -50,7 +50,7 @@ public partial class World
                 break;
             case StateChange.Abnormal: ApplyTransformState(charId, value); break;
             case StateChange.Transformation: ApplyTransformState(charId, value); break;
-            case StateChange.Stealth: ApplyStealthState(charId, value != 0); break;
+            case StateChange.Stealth: ApplyStealthState(charId, value); break;
             case StateChange.CombatStance: ApplyCombatStanceState(charId, value != StateChange.StanceRelaxed); break;
         }
     }
@@ -295,9 +295,12 @@ public partial class World
 
 
 
-    private void ApplyStealthState(int charId, bool stealth)
+    private void ApplyStealthState(int charId, int value)
     {
+        bool stealth = value != 0;
         if (stealth ? !_stealthedIds.Add(charId) : !_stealthedIds.Remove(charId))
+            return;
+        if (value == Net.InvisibilityInfiltration)
             return;
 
         if (charId == _myId)

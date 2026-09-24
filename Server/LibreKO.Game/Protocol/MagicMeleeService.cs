@@ -135,6 +135,7 @@ public class MagicMeleeService(
         if (finalDamage > 0)
         {
             target.Hp = (short)Math.Max(0, target.Hp - finalDamage);
+            target.MarkCombat();
             await combatLifecycleService.SendHpChangeAsync(target);
             await combatLifecycleService.SendPlayerTargetHpAsync(caster, target, finalDamage);
             if (target.Hp <= 0)

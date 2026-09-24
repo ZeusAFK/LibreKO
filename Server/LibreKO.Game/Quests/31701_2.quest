@@ -1,0 +1,4 @@
+Bind Npc 31701 Zone 2
+
+On greeting
+    Say "What kind of mission do you want?"

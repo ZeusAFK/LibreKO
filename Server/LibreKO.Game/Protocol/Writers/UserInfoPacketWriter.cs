@@ -54,7 +54,7 @@ public sealed class UserInfoPacketWriter
         bool NeedParty,
         bool IsGameMaster,
         bool IsPartyLeader,
-        bool IsInvisible,
+        byte Invisibility,
         short Direction,
         ushort ZoneId,
         bool IsHidingHelmet,
@@ -109,7 +109,7 @@ public sealed class UserInfoPacketWriter
         packet.WriteByte(user.NeedParty ? (byte)1 : (byte)0);
         packet.WriteByte(user.IsGameMaster ? AuthorityGameMaster : AuthorityPlayer);
         packet.WriteByte(user.IsPartyLeader ? (byte)1 : (byte)0);
-        packet.WriteByte(user.IsInvisible ? (byte)1 : (byte)0);
+        packet.WriteByte(user.Invisibility);
         packet.WriteByte(0);
         packet.WriteByte(0);
         packet.WriteByte(0);

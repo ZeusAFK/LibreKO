@@ -14,6 +14,7 @@ public partial class World
     private sealed class Ent
     {
         public Node3D Body = null!;
+        public bool Infiltrating;
         public StaticBody3D? Collider;
         public Label3D? NameTag;
         public PlateStack? Plate;
@@ -248,7 +249,7 @@ public partial class World
             ent.Plate.SetTitle(TitleTextOf(info.TitleId));
         }
         ent.RoleFx = SpawnNpcRoleFx(ent);
-        if (info.Invisible) StealthOnSpawn(info.Id);
+        if (info.Invisible) StealthOnSpawn(info.Id, info.Invisibility);
         if (info.Dead) LayOutCorpse(ent);
         else PlayClip(ent, "idle");
         if (ent.Gathering && !info.Dead) BeginRemoteGather(info.Id, ent.GatherFishing);

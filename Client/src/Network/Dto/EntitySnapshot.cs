@@ -24,6 +24,7 @@ public sealed class EntitySnapshot
     public int TitleId;
     public bool IsGm;
     public bool Invisible;
+    public int Invisibility;
     public bool HelmetHidden;
     public bool Sitting;
     public bool Dead;

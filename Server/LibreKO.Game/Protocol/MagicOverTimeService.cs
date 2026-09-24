@@ -252,6 +252,7 @@ public class MagicOverTimeService(
                 if (immediateDamage > 0)
                 {
                     target.Hp = (short)Math.Max(0, target.Hp - immediateDamage);
+                    target.MarkCombat();
                     await combatLifecycleService.SendHpChangeAsync(target, caster.CharacterId);
                     await combatLifecycleService.SendPlayerTargetHpAsync(caster, target, immediateDamage);
 

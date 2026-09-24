@@ -1,0 +1,43 @@
+Bind Npc 32557 Zone 71 for karus
+Bind Npc 32558 Zone 71 for elmorad
+Quest 298 "To find the lost soul.."
+    Daily
+    Journal for karus "You got the information on an unidentified dead body somewhere in Ronark Land. Who might be that...?"
+    Journal for elmorad "You got the information on an unidentified dead body somewhere in Ronark Land. Who might be that...?"
+    Collect 1 of 900071000
+
+Requires player level >= 61 and today is thursday
+
+Rewards
+    Give 2500000 experience
+    Give 200 np
+
+On offer
+    If player is karus
+        Say "There have been so many battles here in Ronark Land, and many Karus knights were killed in battle.  It is their effort that did not let El Morad to take over this place.\n\nAccording to the information that just came in, an unidentified corpse has been found near the central area of Ronark.  I am guessing that it could be the body of our Karus warrior... I want you to go there and confirm it.\n\nBut, you will have to hurry as I heard that El Morad is also looking for that corpse.  It will be for naught If they get the body before us."
+        Topic "To find the lost soul" do
+            Show quest "Okay - then go to the central area by this way.  You will have to search the central area very thoroughly.\n\nSearchng for the Lost Soul.. \n- The limit time for the mission is 10 minutes \n- You can find the dead body in the central area of Ronark Land \n- After accepting the quest, for 10 minutes, you can not use summon skill and the village (But, if you get reward, the ban is canceled)."
+        Topic "Rejected" goto close
+    If player is elmorad
+        Say "There have been so many battles here in Ronark Land, and many El Morad knights were killed in battle.  It is their effort that did not let Karus to take over this place.\n\nAccording to the information that just came in, an unidentified corpse has been found near the central area of Ronark.  I am guessing that it could be the body of our Karus warrior... I want you to go there and confirm it.\n\nBut, you will have to hurry as I heard that Karus is also looking for that corpse.  It will be for naught If they get the body before us."
+        Topic "To find the lost soul" do
+            Show quest "Okay - then go to the central area by this way.  You will have to search the central area very thoroughly.\n\nSearchng for the Lost Soul.. \n- The limit time for the mission is 10 minutes \n- You can find the dead body in the central area of Ronark Land \n- After accepting the quest, for 10 minutes, you can not use summon skill and the village (But, if you get reward, the ban is canceled)."
+        Topic "Rejected" goto close
+
+On in_progress
+    Say "Do you know that  you are given 10 minutes??"
+
+On ready
+    If player is karus
+        Say "Master, I think this is what Caesar wanted, so let's hurry back and report to him."
+    If player is elmorad
+        Say "Master, I think this is what Julius wanted, so let's hurry back and report to him."
+
+On claimable
+    If player is karus
+        Show quest "Huh!! That.. That is... The dead soul didn't find the right way- Is this what we say we were lucky that this happened. If he was in the hands of El Morad he wouldn't have been able to rest even after his death... Well done, <selfname>..."
+    If player is elmorad
+        Show quest "Huh!! That.. That is... The dead soul didn't find the right way- Is this what we say we were lucky that this happened. If he was in the hands of Karus he wouldn't have been able to rest even after his death... Well done, <selfname>..."
+
+On completed
+    Say "The location of another sealed soul should be found by tomorrow... Would you like to come back tomorrow?"

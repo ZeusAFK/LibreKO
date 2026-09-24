@@ -1,0 +1,4 @@
+Bind Npc 32558 Zone 71
+
+On greeting
+    Say "I am analyst Julius \n What kind of mission do you want?\n\n- Spy Rescue Mission :  Available once a day \n- Seize the Enemy's Classified Document  mission: Available only on Mondays, Wednesdays, Fridays and Sundays \n- Searching for the Lost Soul Mission : Available only on Tuesdays, Thursdays, and Saturdays"

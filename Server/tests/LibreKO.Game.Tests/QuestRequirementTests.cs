@@ -135,6 +135,59 @@ public class QuestRequirementTests
     }
 
     [Theory]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(0, false)]
+    public void AWeekdayRequirementOpensTheQuestOnThatDayOnly(int weekday, bool allowed)
+    {
+        var program = Compile("""
+            Bind Npc 100 Zone 71
+            Quest 1
+            Requires player level >= 45 and today is monday
+            On accept
+                If quest is available
+                    Start quest
+            """).Program;
+        program.TryGetEntry(QuestProgram.AcceptEvent, 1, out var accept).Should().BeTrue();
+        var host = Substitute.For<IQuestHost>();
+        host.PlayerLevel.Returns(45);
+        host.PlayerZone.Returns(71);
+        host.Weekday.Returns(weekday);
+        new QuestInterpreter(program, host).Run(accept).Failure.Should().BeNull();
+        host.Received(allowed ? 1 : 0).SetQuestState(1, 1);
+    }
+
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(false, 0)]
+    public void ARunningEffectCanGateAReply(bool active, int started)
+    {
+        var program = Compile("""
+            Bind Npc 100
+            Quest 1
+            On greeting
+                If quest is available and player has effect 490119
+                    Say "The box is open."
+                    Topic "Open" do
+                        Start quest
+            """).Program;
+        var host = Substitute.For<IQuestHost>();
+        host.HasEffect(490119).Returns(active);
+        var reply = program.Events.Values.Single(e => e.Name is null).Id;
+        new QuestInterpreter(program, host).Run(reply).Failure.Should().BeNull();
+        host.Received(started).SetQuestState(1, 1);
+    }
+
+    [Fact]
+    public void AWeekdayMustBeANamedDay()
+    {
+        QuestCompilation.Create("Bind Npc 100\nQuest 1\nRequires today is someday\n", "bad.quest")
+            .Succeeded.Should().BeFalse();
+        QuestCompilation.Create("Bind Npc 100\nQuest 1\nRequires today is not sunday\n", "ok.quest")
+            .Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
     [InlineData("Bind Npc 100\nQuest 1\nRequires\n")]
     [InlineData("Bind Npc 100\nQuest 1\nRequires player level >= 2\nRequires player is karus\n")]
     [InlineData("Bind Npc 100\nRequires player level >= 2\n")]

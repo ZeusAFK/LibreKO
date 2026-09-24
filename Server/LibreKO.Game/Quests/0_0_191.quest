@@ -1,0 +1,41 @@
+Bind Npc 32557 Zone 71 for karus
+Bind Npc 32558 Zone 71 for elmorad
+Quest 191 "[Mission] Ronark Land: Harass Enemy Stronghold"
+    Daily
+    Journal for karus "Bring [False Information Scroll] to [Information Analyst] Caesar."
+    Journal for elmorad "Bring [False Information Scroll] to [Information Analyst] Julius."
+    Collect 1 of 900038000
+
+Requires player level >= 70 and player has 900076000
+
+Rewards
+    Give 1 of 399113000
+
+On offer
+    If player is karus
+        Say "Did [Advisor] Herga send you? Since the situation is urgent, you should hurry.  Take the [Fake Information Paper], infiltrate the enemy's base and switch it with the [Ronark Land Information Paper].  Will you carry out the mission?"
+        Topic "Accepted" do
+            Show quest "Disrupting the Ronark Land Base\n- Only users of [70Lv or higher] can carry out the mission.  \n- You have to change the [Ronark Land Information Paper] with [Fake Information Paper] from the [Information Paper Box] deep inside [Ronark Land] enemy base.  \n- You can get the information paper only when you approach the box while using [Unidentified Potion]. \n- If you fail the quest in the middle, you have to buy [Unidentified Potion] again with 1 million Noahs. \n- During the mission, [ /Village ] command is unavailable.\n\nYou can get a mission to disturb the enemy nation when you go to [Analyst] Caesar in Karus Base of Ronark Land with the [False Information Paper]."
+        Topic "Rejected" goto close
+    If player is elmorad
+        Say "Did [Advisor] Nez send you? Since the situation is urgent, you should hurry.  Take the [Fake Information Paper], infiltrate the enemy's base and switch it with the [Ronark Land Information Paper].  Will you carry out the mission?"
+        Topic "Accepted" do
+            Show quest "Disrupting the Ronark Land Base\n- Only users of [70Lv or higher] can carry out the mission.  \n- You have to change the [Ronark Land Information Paper] with [Fake Information Paper] from the [Information Paper Box] deep inside [Ronark Land] enemy base.  \n- You can get the information paper only when you approach the box while using [Unidentified Potion]. \n- If you fail the quest in the middle, you have to buy [Unidentified Potion] again with 1 million Noahs. \n- During the mission, [ /Village ] command is unavailable.\n\nYou can get a mission to disturb the enemy nation when you go to [Analyst] Julius in El Morad Base of Ronark Land with the [False Information Paper]."
+        Topic "Rejected" goto close
+
+On in_progress
+    If player lacks 900067000
+        Say "You will need this potion.  You have to open the information paper box after drinking this potion.   Not only it makes your body invisible for 1 minute so you can evade the detection by the enemy's guard tower, you need the power of this potion to open that document box.  But, remember that you cannot evade the eyes of the enemy rogues and general magic of the magicians.  But, this potion is extremely difficult to make, so it will cost you 1 million Noahs. Would you like to have it made?"
+        Topic "Yes" do
+            Transaction
+                Take 1000000 coins
+                Give 1 of 900067000
+        Topic "No" goto close
+    Else
+        Say "This is the mission objective.  You must switch the [Fake Information Paper] with [Ronark Land Information paper]. Have you verified it?"
+
+On ready
+    Say "Master! It was a clean switch! Let's hurry back to the base!"
+
+On claimable
+    Show quest "This is definitely the [Ronark Land Information Paper], and the fact that it is here means that you have succeeded in switching it! This is the reward for the success of the mission."

@@ -34,6 +34,8 @@ public interface IQuestHost
     int KillCount(int questId, int group);
     bool HasActiveKillQuest();
     bool DailyRewardAvailable(int slot);
+    int Weekday => (int)DateTime.UtcNow.DayOfWeek;
+    bool HasEffect(int skillId) => false;
     bool RollChance(int percent);
     bool ReachedLevel(int level, int expPercent);
     int RollDice(int max);

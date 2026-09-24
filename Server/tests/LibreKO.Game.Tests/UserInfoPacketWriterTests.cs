@@ -20,7 +20,7 @@ public class UserInfoPacketWriterTests
         Name: "Aurelia", Nation: 1, KnightsId: 0, KnightsFame: 0, Clan: null,
         NoClanNationCode: 93, Level: 62, Race: 1, Class: 105,
         X: 5430, Z: 3770, Y: 120, Face: 2, Hair: 7, Pose: 1,
-        NeedParty: false, IsGameMaster: false, IsPartyLeader: false, IsInvisible: false,
+        NeedParty: false, IsGameMaster: false, IsPartyLeader: false, Invisibility: 0,
         Direction: 90, ZoneId: 21, IsHidingHelmet: false, DisplayTitleId: 0, Visuals: Visuals);
 
     private static Packet Record(UserInfoPacketWriter.UserState state)

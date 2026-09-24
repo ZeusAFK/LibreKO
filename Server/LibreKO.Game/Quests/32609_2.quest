@@ -1,0 +1,75 @@
+Bind Npc 32609 Zone 2
+
+On greeting
+    If quest 182 is started and player has 900074000 and player is karus
+        Say "[We haven't found anything]"
+        Topic "Thank you.Get a copy." do
+            Transaction
+                Take 1 of 900074000
+                Give 1 of 900035000
+                Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+                Teleport 1 at 335 1740
+    Else if quest 183 is started and player has 900074000 and player is karus
+        Say "[We haven't found anything]"
+        Topic "Thank you.Get a copy." do
+            Transaction
+                Take 1 of 900074000
+                Give 1 of 900035000
+                Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+                Teleport 1 at 335 1740
+    Else if quest 184 is started and player has 900074000 and player is karus
+        Say "[We haven't found anything]"
+        Topic "Thank you.Get a copy." do
+            Transaction
+                Take 1 of 900074000
+                Give 1 of 900035000
+                Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+                Teleport 1 at 335 1740
+    Else if quest 185 is started and player has 900074000 and player is karus
+        Say "[We haven't found anything]"
+        Topic "Thank you.Get a copy." do
+            Transaction
+                Take 1 of 900074000
+                Give 1 of 900035000
+                Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+                Teleport 1 at 335 1740
+    Else if quest 186 is started and player has 900074000 and player is karus
+        Say "[We haven't found anything]"
+        Topic "Thank you.Get a copy." do
+            Transaction
+                Take 1 of 900074000
+                Give 1 of 900035000
+                Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+                Teleport 1 at 335 1740
+    Else if quest 187 is started and player has 900074000 and player is karus
+        Say "[We haven't found anything]"
+        Topic "Thank you.Get a copy." do
+            Transaction
+                Take 1 of 900074000
+                Give 1 of 900035000
+                Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+                Teleport 1 at 335 1740
+    Else if quest 188 is started and player has 900074000 and player is karus
+        Say "[We haven't found anything]"
+        Topic "Thank you.Get a copy." do
+            Transaction
+                Take 1 of 900074000
+                Give 1 of 900035000
+                Say "[You have succeeded in seizing the document from the Classified Documents Box]"
+                Teleport 1 at 335 1740
+    Else if quest 182 is started and player is karus
+        Say "[You can't open the classified document box]"
+    Else if quest 183 is started and player is karus
+        Say "[You can't open the classified document box]"
+    Else if quest 184 is started and player is karus
+        Say "[You can't open the classified document box]"
+    Else if quest 185 is started and player is karus
+        Say "[You can't open the classified document box]"
+    Else if quest 186 is started and player is karus
+        Say "[You can't open the classified document box]"
+    Else if quest 187 is started and player is karus
+        Say "[You can't open the classified document box]"
+    Else if quest 188 is started and player is karus
+        Say "[You can't open the classified document box]"
+    Else
+        Say "[The classified documents box of our force is well kept right now]"

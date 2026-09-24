@@ -1410,6 +1410,9 @@ public sealed class Parser
             if (slot.Kind == SlotKind.Nation
                 && !QuestVocabulary.Nations.ContainsKey(token.Text))
                 return false;
+            if (slot.Kind == SlotKind.Weekday
+                && !QuestVocabulary.Weekdays.ContainsKey(token.Text))
+                return false;
             if (slot.Kind == SlotKind.ClanRank
                 && !QuestVocabulary.ClanRanks.ContainsKey(token.Text))
                 return false;
@@ -1508,7 +1511,7 @@ public sealed class Parser
             var span = TextSpan.FromBounds(token.Span.Start, end);
             _diagnostics.Error(DiagnosticId.UnknownCondition, span,
                 $"'{_source.GetText(span)}' is not something this language can test.",
-                "Conditions start with 'player', 'quest', 'daily' or 'chance'.");
+                "Conditions start with 'player', 'quest', 'daily', 'today' or 'chance'.");
             while (position < line.Tokens.Count && line.Tokens[position].Kind != TokenKind.Colon)
                 position++;
             return new ConditionSyntax.Invalid(span);
