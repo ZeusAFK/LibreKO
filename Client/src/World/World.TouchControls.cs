@@ -29,7 +29,9 @@ public partial class World : Node3D
             () => TalkToNearestNpc(""),
             () => OpenNearestLootBox(),
             () => OpenNearestAnvil(),
-            () => OpenNearestWarpGate());
+            () => OpenNearestWarpGate(),
+            OpenNearestPlayerMenu,
+            () => TryBrowseNearestMerchant());
         _hotbarBox.Visible = false;
 
         GD.Print($"[touch] on-screen controls built: sticks {TouchControls.StickSize:F0}px, "
@@ -51,7 +53,9 @@ public partial class World : Node3D
             HasNearbyNpc(),
             HasNearbyLootBox(),
             HasNearbyAnvil(),
-            HasNearbyWarpGate());
+            HasNearbyWarpGate(),
+            HasNearbyPlayerForUserInfo(),
+            HasNearbyMerchantStall());
     }
 
     private void TouchControlsDispose()
