@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.World;
@@ -13,7 +13,7 @@ public sealed class GracefulShutdownService(
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        var sessions = sessionManager.GetAll().ToArray();
+        var sessions = sessionManager.GetAll().Where(s => !s.IsBot).ToArray();
         if (sessions.Length > 0)
         {
             logger.LogInformation("Graceful shutdown: logging out {SessionCount} active session(s)", sessions.Length);

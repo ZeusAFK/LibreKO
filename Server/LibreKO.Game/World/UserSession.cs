@@ -65,6 +65,7 @@ public class UserSession
     public int DailyLoyalty { get; set; }
     public bool IsGM { get; set; }
     public bool GmModeEnabled { get; set; } = true;
+    public virtual bool IsBot => false;
 
     // Knight Cash (account-scoped premium currency).
     public int KnightCash { get; set; }

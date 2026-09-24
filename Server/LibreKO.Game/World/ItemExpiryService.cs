@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Game.Protocol.Writers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -33,6 +33,9 @@ public class ItemExpiryService(
     {
         foreach (var session in sessionManager.GetAll())
         {
+            if (session.IsBot)
+                continue;
+
             ItemExpiry.Sweep(session.Warehouse, nowUnixSeconds);
             ItemExpiry.Sweep(session.VipWarehouse, nowUnixSeconds);
 

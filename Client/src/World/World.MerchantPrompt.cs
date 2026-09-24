@@ -84,10 +84,10 @@ public partial class World
         footer.AddThemeConstantOverride("separation", 8);
         footer.Alignment = BoxContainer.AlignmentMode.Center;
         root.AddChild(footer);
-        var ok = new Button { Text = "O  K", FocusMode = Control.FocusModeEnum.None };
-        ok.CustomMinimumSize = new Vector2(104, 28);
-        ok.Pressed += AcceptAmount;
-        footer.AddChild(ok);
+        _amountConfirmBtn = new Button { Text = "Yes", FocusMode = Control.FocusModeEnum.None };
+        _amountConfirmBtn.CustomMinimumSize = new Vector2(104, 28);
+        _amountConfirmBtn.Pressed += AcceptAmount;
+        footer.AddChild(_amountConfirmBtn);
         var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
         cancel.CustomMinimumSize = new Vector2(104, 28);
         cancel.Pressed += CloseAmountPrompt;
@@ -135,6 +135,7 @@ public partial class World
         _amountPriceFixed.Text = Money(price);
 
         RefreshAmountTotal();
+        _amountConfirmBtn.Text = priceEditable ? "Confirm" : "Yes";
         _amountLayer.Visible = true;
     }
 

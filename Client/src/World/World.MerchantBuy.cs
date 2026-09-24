@@ -38,6 +38,7 @@ public partial class World
     private HBoxContainer _amountPriceRow = null!, _amountCountRow = null!;
     private PanelContainer _amountTotalRow = null!;
     private Label _amountPriceLabel = null!;
+    private Button _amountConfirmBtn = null!;
     private System.Action<int, int>? _amountAccept;
 
     private void BuyMerchantInit()

@@ -49,6 +49,7 @@ public partial class World
         public float TargetYaw;
         public bool Backwards;
         public bool Sitting;
+        public float OriginalTagY;
         public Aabb? HitFxBox;
         public float Radius = 0.9f;
         public float BoundRadius = 1.0f;
@@ -243,6 +244,11 @@ public partial class World
         {
             nameLabel.Modulate = NameColor(info);
             nameLabel.Visible = false;
+            ent.OriginalTagY = nameLabel.Position.Y;
+            if (ent.Sitting || _stalls.ContainsKey(info.Id))
+            {
+                nameLabel.Position = new Vector3(nameLabel.Position.X, SittingNameTagHeight, nameLabel.Position.Z);
+            }
             ent.NameTag = nameLabel;
             ent.Plate = new PlateStack(nameLabel);
             ent.Plate.SetClan(info.ClanName);
@@ -565,16 +571,24 @@ public partial class World
 
     private float HeadHeightOf(int charId)
     {
+        bool sitting = charId == _myId
+            ? (_selfSitting || _stalls.ContainsKey(charId))
+            : (_ents.TryGetValue(charId, out var sitEnt) && (sitEnt.Sitting || _stalls.ContainsKey(charId)));
+
         if (charId != _myId)
-            return _ents.TryGetValue(charId, out var e) && e.NameTag is { } tag
+        {
+            float baseH = _ents.TryGetValue(charId, out var tagEnt) && tagEnt.NameTag is { } tag
                 ? Mathf.Max(0.4f, tag.Position.Y)
-                : 1.7f;
+                : StandingNameTagHeight;
+            return sitting ? Mathf.Min(baseH, SittingNameTagHeight) : baseH;
+        }
         if (!_selfNameTagFound)
         {
             _selfNameTagFound = true;
             _selfNameTag = _self != null ? FindFirst<Label3D>(_self) : null;
         }
-        return Mathf.Max(0.4f, _selfNameTag?.Position.Y ?? 1.9f);
+        float selfH = Mathf.Max(0.4f, _selfNameTag?.Position.Y ?? StandingSelfNameTagHeight);
+        return sitting ? Mathf.Min(selfH, SittingNameTagHeight) : selfH;
     }
 
     private void OnEntityHp(int id, int hp, int maxHp, int damage)

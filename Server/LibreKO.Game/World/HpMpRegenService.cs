@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -35,7 +35,7 @@ public class HpMpRegenService(
 
     private async Task RegenerateAsync(UserSession session, CancellationToken stoppingToken)
     {
-        if (session.Hp <= 0 || session.IsWarping)
+        if (session.IsBot || session.Hp <= 0 || session.IsWarping)
             return;
 
         var battle = sessionManager.Battle;

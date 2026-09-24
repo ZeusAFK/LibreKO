@@ -132,6 +132,17 @@ public partial class World
         e.Sitting = sitting;
         e.Clip = null;
 
+        if (e.NameTag != null && GodotObject.IsInstanceValid(e.NameTag))
+        {
+            var tagPos = e.NameTag.Position;
+            tagPos.Y = sitting ? SittingNameTagHeight : (e.OriginalTagY > 0 ? e.OriginalTagY : StandingNameTagHeight);
+            e.NameTag.Position = tagPos;
+            if (e.HpBar != null && GodotObject.IsInstanceValid(e.HpBar))
+            {
+                e.HpBar.Position = e.NameTag.Position + new Vector3(0, HpBarLiftOverTag, 0);
+            }
+        }
+
         if (e.Anim != null && Pick(e.Anim, sitting ? SitDownClips : StandUpClips) != null)
         {
             PlayEntityAction(e, sitting ? SitDownClips : StandUpClips, ActionRankPosture);
@@ -145,6 +156,19 @@ public partial class World
 
     private void ApplySelfSitVisual(bool sitting)
     {
+        if (_selfNameTag == null || !GodotObject.IsInstanceValid(_selfNameTag))
+        {
+            _selfNameTagFound = true;
+            _selfNameTag = _self != null ? FindFirst<Label3D>(_self) : null;
+        }
+
+        if (_selfNameTag != null && GodotObject.IsInstanceValid(_selfNameTag))
+        {
+            var tagPos = _selfNameTag.Position;
+            tagPos.Y = sitting ? SittingNameTagHeight : StandingSelfNameTagHeight;
+            _selfNameTag.Position = tagPos;
+        }
+
         if (!GodotObject.IsInstanceValid(_selfVisual)) return;
         if (_selfSitVisual == sitting) return;
         _selfSitVisual = sitting;

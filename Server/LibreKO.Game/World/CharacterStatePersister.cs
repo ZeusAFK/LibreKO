@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -37,6 +37,9 @@ public class CharacterStatePersister(
 
     public async Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default)
     {
+        if (session.IsBot)
+            return false;
+
         using var scope = _scopeFactory.CreateScope();
         var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
         var warehouseRepository = scope.ServiceProvider.GetRequiredService<IWarehouseRepository>();
@@ -81,6 +84,9 @@ public class CharacterStatePersister(
 
     public Task SaveQuestStateAsync(UserSession session, CancellationToken cancellationToken = default)
     {
+        if (session.IsBot)
+            return Task.CompletedTask;
+
         var slot = _questSaveSlots.GetOrAdd(session.CharacterId, static _ => new QuestSaveSlot());
         lock (slot)
         {
