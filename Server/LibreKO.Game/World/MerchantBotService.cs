@@ -155,6 +155,7 @@ public class MerchantBotService : IMerchantBotService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var count = 0;
+        var savedEntries = new List<(BotSession Bot, BotMerchantData Data)>();
 
         foreach (var bot in _activeBots.Values)
         {
@@ -232,22 +233,15 @@ public class MerchantBotService : IMerchantBotService
             data.EquipmentJson = eqJson;
             data.IsActive = true;
 
+            savedEntries.Add((bot, data));
             count++;
         }
 
         await db.SaveChangesAsync();
 
-        foreach (var bot in _activeBots.Values)
+        foreach (var (bot, data) in savedEntries)
         {
-            if (!bot.BotDatabaseId.HasValue)
-            {
-                var match = await db.BotMerchants
-                    .Where(b => b.BotName == bot.Name && b.IsActive)
-                    .OrderByDescending(b => b.Id)
-                    .FirstOrDefaultAsync();
-                if (match != null)
-                    bot.BotDatabaseId = match.Id;
-            }
+            bot.BotDatabaseId = data.Id;
         }
 
         if (gmSession != null)
@@ -446,7 +440,7 @@ public class MerchantBotService : IMerchantBotService
             NeedParty: false,
             session.IsGM,
             session.IsPartyLeader,
-            session.IsInvisible,
+            (byte)session.Invisibility,
             session.Direction,
             session.ZoneId,
             session.IsHidingHelmet,

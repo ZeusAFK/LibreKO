@@ -10,12 +10,12 @@ public class BotMerchantData
     public int Id { get; set; }
     public string BotName { get; set; } = string.Empty;
     public AccountNation Nation { get; set; } = AccountNation.Karus;
-    public byte Race { get; set; } = 1;
-    public short Class { get; set; } = 101;
-    public byte Face { get; set; } = 0;
-    public byte Hair { get; set; } = 0;
-    public byte Level { get; set; } = 83;
-    public byte ZoneId { get; set; } = 21; // Moradon
+    public byte Race { get; set; }
+    public short Class { get; set; }
+    public byte Face { get; set; }
+    public byte Hair { get; set; }
+    public byte Level { get; set; }
+    public byte ZoneId { get; set; }
     public float X { get; set; }
     public float Y { get; set; }
     public float Z { get; set; }
