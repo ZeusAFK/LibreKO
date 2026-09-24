@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using LibreKO.Domain;
 
 namespace LibreKO;
@@ -24,7 +24,12 @@ public partial class World : Node3D
         TouchControls.BuildStick(_touchLayer, StartCameraHalfTurn);
         _touchActions = TouchControls.BuildActions(_touchLayer, () => ToggleAutoAttack(),
             ActivateHotSlot, ChangeHotPage, TouchSlotIcon,
-            () => SelectNearest(hostile: true), DropOntoHotSlot);
+            () => SelectNearest(hostile: true),
+            DropOntoHotSlot,
+            () => TalkToNearestNpc(""),
+            () => OpenNearestLootBox(),
+            () => OpenNearestAnvil(),
+            () => OpenNearestWarpGate());
         _hotbarBox.Visible = false;
 
         GD.Print($"[touch] on-screen controls built: sticks {TouchControls.StickSize:F0}px, "
@@ -37,6 +42,16 @@ public partial class World : Node3D
         int id = _hotbar[_hotPage * HotSlotsPerPage + slotInPage];
         if (id == 0) return null;
         return SkillData.IsSkill(id) ? SkillData.Icon(id) : ItemData.Icon(id);
+    }
+
+    private void UpdateTouchInteractionVisibility()
+    {
+        if (_touchActions == null) return;
+        _touchActions.SetInteractionVisibility(
+            HasNearbyNpc(),
+            HasNearbyLootBox(),
+            HasNearbyAnvil(),
+            HasNearbyWarpGate());
     }
 
     private void TouchControlsDispose()
