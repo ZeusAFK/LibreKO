@@ -35,4 +35,6 @@ assets/terrain/*/*
 !assets/terrain/*/minimap.webp.import
 
 # Plugins are separate projects dropped in by hand
-/plugins/
+/plugins/*
+!/plugins/PUT_PLUGINS_HERE.txt
+!/plugins/.gdignore

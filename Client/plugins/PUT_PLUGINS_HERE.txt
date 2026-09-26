@@ -1,0 +1,6 @@
+Put plugins here.
+
+Extract a plugin's folder into this folder, so that plugins\<plugin>\plugin.json exists,
+then start the game and switch it on under Settings > Plugins.
+
+This folder is never touched by the patcher: what you put here stays through updates.
