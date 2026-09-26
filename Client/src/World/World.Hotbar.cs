@@ -65,6 +65,7 @@ public partial class World
     {
         _hotbarLayer = new CanvasLayer { Layer = 64 };
         AddChild(_hotbarLayer);
+        PluginHudSeam(_hotbarLayer, LibreKO.Plugins.HudPart.Hotbar);
         LayoutHotbars(vertical, extraBars);
     }
 
@@ -486,6 +487,7 @@ public partial class World
 
     private void RefreshHotbar()
     {
+        PluginNotifyHotbar();
         _touchActions?.Refresh(_hotPage);
         if (_hotbarBox == null || !GodotObject.IsInstanceValid(_hotbarBox)) return;
         HideItemTooltip();

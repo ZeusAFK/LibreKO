@@ -30,7 +30,13 @@ public partial class Notice : CanvasLayer
         return n;
     }
 
-    public void SetMessage(string message) => _message.Text = message;
+    private DialogRequest? _request;
+
+    public void SetMessage(string message)
+    {
+        if (_request != null) _request.SetMessage(message);
+        else _message.Text = message;
+    }
 
     public void Close()
     {
@@ -51,6 +57,14 @@ public partial class Notice : CanvasLayer
     private void Build(string message, string title, bool dismissable,
                        string? confirmText = null, string? cancelText = null)
     {
+        if (PluginHost.Ui.DialogBuilder is { } pluginDialog)
+        {
+            _request = new DialogRequest(title, message, confirmText ?? "OK",
+                confirmText == null ? null : cancelText ?? "Cancel", dismissable, Accept, Decline, Close);
+            AddChild(pluginDialog(_request));
+            return;
+        }
+
         var blocker = new ColorRect
         {
             Color = new Color(0, 0, 0, 0.55f),

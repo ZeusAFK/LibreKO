@@ -28,6 +28,7 @@ public partial class World : Node3D
     {
         _expBarLayer = new CanvasLayer { Layer = ExpBarLayerIndex };
         AddChild(_expBarLayer);
+        PluginHudSeam(_expBarLayer, HudPart.ExpBar);
 
         _expBarRoot = new Control
         {

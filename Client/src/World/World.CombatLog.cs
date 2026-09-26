@@ -22,6 +22,7 @@ public partial class World
     {
         var layer = new CanvasLayer { Layer = 66 };
         AddChild(layer);
+        PluginHudSeam(layer, LibreKO.Plugins.HudPart.CombatLog);
 
         _combatLogRoot = new PanelContainer
         {
@@ -112,6 +113,8 @@ public partial class World
             _combatLogLines.Dequeue();
         if (_combatLogText != null)
             _combatLogText.Text = string.Join("\n", _combatLogLines);
+        PluginLogAdd(kind == CombatLogKind.Resource ? LibreKO.Plugins.GameLogKind.Item : LibreKO.Plugins.GameLogKind.Status,
+            message, new Color("#" + color));
     }
 
     private void CombatNotice(string message)

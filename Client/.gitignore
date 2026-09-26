@@ -33,3 +33,6 @@ assets/terrain/*
 assets/terrain/*/*
 !assets/terrain/*/minimap.webp
 !assets/terrain/*/minimap.webp.import
+
+# Plugins are separate projects dropped in by hand
+/plugins/

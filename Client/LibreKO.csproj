@@ -11,6 +11,7 @@
   <ItemGroup>
     <Using Include="LibreKO.Network" />
     <Using Include="LibreKO.Domain" />
+    <Using Include="LibreKO.Plugins" />
   </ItemGroup>
 
   <!--
@@ -30,5 +31,10 @@
 
   <ItemGroup>
     <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="plugins/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="LibreKO.Tests" />
   </ItemGroup>
 </Project>

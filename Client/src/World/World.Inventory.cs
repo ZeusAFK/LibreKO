@@ -471,6 +471,7 @@ public partial class World : Node3D
 
     private void RefreshInventoryUI()
     {
+        PluginNotifyInventory();
         foreach (var (slot, cell) in _invCells)
             cell.Bind(slot, SlotAt(slot));
         GhostOtherHand(InventoryConstants.RightHand, InventoryConstants.LeftHand);
