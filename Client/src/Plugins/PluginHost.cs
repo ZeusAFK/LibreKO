@@ -8,6 +8,7 @@ public partial class PluginHost : Node
 {
     public const string FolderName = "plugins";
     public const string UserFolder = "user://plugins";
+    public const string ThemeArgPrefix = "theme=";
 
     public static PluginUi Ui { get; } = new();
     public static PluginGame Game { get; } = new();
@@ -105,12 +106,17 @@ public partial class PluginHost : Node
         return new PluginInfo(dir, manifest, PluginState.Disabled);
     }
 
+    public static string ThemeOverride() =>
+        OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith(ThemeArgPrefix, StringComparison.Ordinal))?[ThemeArgPrefix.Length..] ?? "";
+
     private static void ApplyEnableStates()
     {
         var exclusiveTaken = new Dictionary<PluginType, string>();
+        string themeOverride = ThemeOverride();
         foreach (var p in _all)
         {
-            p.Enabled = p.Manifest != null && Config.PluginEnabled(p.Id);
+            p.Enabled = p.Manifest != null
+                        && (themeOverride.Length > 0 && p.Manifest.Exclusive ? p.Id == themeOverride : Config.PluginEnabled(p.Id));
             if (!p.CanEnable || p.State == PluginState.Loaded || p.State == PluginState.Failed) continue;
             if (!p.Enabled)
             {
