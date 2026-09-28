@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -126,6 +126,7 @@ public partial class Net : Node
         Evicted = false;
         AutoReconnect = true;
         _reconnectKickSent = false;
+        ResetGenieSystem();
         MyCharId = 0;
         PingMs = -1;
         _pingOutstanding = false;
@@ -146,6 +147,7 @@ public partial class Net : Node
             logout.WriteByte(0);
             _conn.Send(logout);
         }
+        ResetGenieSystem();
         _conn.Close();
         PingMs = -1;
         _pingOutstanding = false;
@@ -160,6 +162,7 @@ public partial class Net : Node
             logout.WriteByte(0);
             _conn.Send(logout);
         }
+        ResetGenieSystem();
         MyCharId = 0;
     }
 
@@ -184,6 +187,7 @@ public partial class Net : Node
         }
         if (!_conn.Connected && _connectedFired)
         {
+            ResetGenieSystem();
             _connectedFired = false;
             PingMs = -1;
             _pingOutstanding = false;
@@ -393,6 +397,7 @@ public partial class Net : Node
             case GameOpcodes.GS_GUARD_PET:         HandleGuardPet(p); break;
             case GameOpcodes.GS_EVENT_QUEST:       HandleEventQuest(p); break;
             case GameOpcodes.GS_GLOBAL_MAP:        HandleGlobalMap(p); break;
+            case GameOpcodes.GS_GENIE_SYSTEM:      HandleGenieSystem(p); break;
             case GameOpcodes.GS_GENIE:             HandleGenie(p); break;
             case GameOpcodes.GS_CLIENT_SETTINGS:   HandleClientSettings(p); break;
             case GameOpcodes.GS_DAILY_QUEST:       HandleDailyQuest(p); break;

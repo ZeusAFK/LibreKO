@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -16,11 +16,12 @@ public partial class World
     {
         _genieLayer = new CanvasLayer { Layer = 61 };
         AddChild(_genieLayer);
-        _geniePanel = new HudWindow("genie", "Genie", new Vector2(220, 150)) { Visible = false };
+        _geniePanel = new HudWindow("genie", "Advanced Genie", new Vector2(220, 100), bodyMinWidth: 510) { Visible = false };
+        _geniePanel.SetHeaderAccent(new Color("10383b"), UiTheme.Gold, UiTheme.GoldBright);
         _geniePanel.Closed += CloseGenie;
         _genieLayer.AddChild(_geniePanel);
 
-        var root = _geniePanel.Body;
+        var root = BuildAdvancedGenie(_geniePanel.Body);
         root.AddThemeConstantOverride("separation", 8);
         root.AddChild(UiTheme.SectionTitle("Your Genie"));
 
@@ -42,6 +43,7 @@ public partial class World
 
     private void GenieDispose()
     {
+        AdvancedGenieDispose();
         Net.I.GenieStatusEvent -= OnGenieStatus;
         Net.I.GenieClaimEvent -= OnGenieClaim;
     }
@@ -49,9 +51,12 @@ public partial class World
     private void ToggleGenie()
     {
         if (_genieShown) { CloseGenie(); return; }
+        RefreshGenieScrolls();
+        RefreshGeniePotionSelectors();
         _geniePanel.Visible = true;
         _genieShown = true;
         Net.I.SendGenieStatus();
+        Net.I.SendGenieSystem(2);
     }
 
     private void CloseGenie()

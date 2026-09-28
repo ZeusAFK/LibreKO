@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 using LibreKO.Network;
 
@@ -271,6 +271,15 @@ public partial class World
 
     private void OnPartyInvite(int inviterId, string inviterName)
     {
+        _geniePendingInviterId = inviterId;
+        _geniePendingInviterName = inviterName;
+        if (GenieAcceptInvite(inviterId, inviterName))
+        {
+            _invitePending = false;
+            _inviteAskDialog.Hide();
+            Net.I.SendPartyAnswer(true);
+            return;
+        }
         _invitePending = true;
         _inviteAskDialog.DialogText = $"{inviterName} invites you to a party.\nJoin?";
         _inviteAskDialog.PopupCentered();
@@ -281,6 +290,8 @@ public partial class World
     {
         if (!_invitePending) return;
         _invitePending = false;
+        _geniePendingInviterId = -1;
+        _geniePendingInviterName = "";
         Net.I.SendPartyAnswer(accept);
     }
 

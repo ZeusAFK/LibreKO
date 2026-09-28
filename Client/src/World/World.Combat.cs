@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 
 namespace LibreKO;
@@ -72,6 +72,7 @@ public partial class World
     {
         if (!_selfDead && Vitals.Known && Vitals.Hp <= 0) EnterSelfDeath();
 
+        AdvancedGenieTick(now);
         _launches.Clear();
         for (int i = _pendingCasts.Count - 1; i >= 0; i--)
         {

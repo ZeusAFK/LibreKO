@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Enums;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using Microsoft.Extensions.Logging;
@@ -65,6 +65,8 @@ public class SessionTerminationService(
             logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
         }
 
+        if (!session.IsBot && !await characterStatePersister.SaveAsync(session))
+            throw new InvalidOperationException("Could not save character state during login takeover.");
         sessionManager.RemoveSession(session);
     }
 
@@ -121,6 +123,8 @@ public class SessionTerminationService(
     // Runs before cleanup: while the session sits in its region, visibility paths re-hand it out.
     private async Task RemoveFromWorldAsync(UserSession session)
     {
+        session.GenieTime.Pause();
+        session.GenieActive = false;
         session.MovePending = false;
         sessionManager.Regions.RemoveFromRegion(session);
         instanceRooms.Leave(session);

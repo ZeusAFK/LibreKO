@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -165,13 +165,30 @@ public class UserSession
     public const byte DrakiSubStageMin = 1;
     public const byte DrakiSubStageMax = 8;
 
-    public DateTime? GenieExpiry { get; set; }
+    public GenieTimeBalance GenieTime { get; } = new();
 
-    public short GenieHours => Character.RemainingGenieHours(GenieExpiry);
+    // Compatibility for legacy callers/tests. Persistent state uses seconds.
+    public DateTime? GenieExpiry
+    {
+        get { double seconds = GenieTime.RemainingSeconds; return seconds > 0 ? DateTime.UtcNow.AddSeconds(seconds) : null; }
+        set => GenieTime.Load(value.HasValue ? (value.Value - DateTime.UtcNow).TotalSeconds : 0);
+    }
 
-    public ushort GenieMinutes => Character.RemainingGenieMinutes(GenieExpiry);
+    public short GenieHours => (short)Math.Min(Math.Ceiling(GenieTime.RemainingSeconds / 3600), short.MaxValue);
 
-    public bool GenieActive { get; set; }
+    public ushort GenieMinutes => (ushort)Math.Min(Math.Ceiling(GenieTime.RemainingSeconds / 60), ushort.MaxValue);
+
+    private bool _genieActive;
+    public bool GenieActive
+    {
+        get { using var scope = _sync.EnterScope(); return _genieActive; }
+        set
+        {
+            using var scope = _sync.EnterScope();
+            if (value) GenieTime.Resume(); else GenieTime.Pause();
+            _genieActive = value;
+        }
+    }
 
     public byte[] GenieOptions { get; set; } = [];
 

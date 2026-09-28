@@ -1,4 +1,4 @@
-﻿namespace LibreKO.Network;
+namespace LibreKO.Network;
 
 public enum GameOpcodes : byte
 {
@@ -167,6 +167,7 @@ public enum GameOpcodes : byte
     GS_EVENT_QUEST = 0xEA,
     GS_GLOBAL_MAP = 0xEB,
     GS_GENIE = 0xEC,
+    GS_GENIE_SYSTEM = 0x97,
     GS_ADMIN_PANEL = 0xED,
     GS_CLIENT_SETTINGS = 0xEE,
     GS_GENDER_CHANGE = 0x8D,

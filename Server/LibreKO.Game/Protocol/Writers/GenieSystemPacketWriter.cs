@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -14,6 +14,7 @@ public sealed class GenieSystemPacketWriter
     public const byte Stop = 5;
     public const byte RemainingTime = 6;
     public const byte Activated = 7;
+    public const byte UseHammer = 8;
 
     public const byte Move = 1;
     public const byte Rotate = 2;

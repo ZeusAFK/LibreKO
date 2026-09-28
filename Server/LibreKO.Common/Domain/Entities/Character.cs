@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LibreKO.Common.Domain.Entities;
@@ -75,7 +75,13 @@ public class Character : Entity
 
     public DateTime? GenieExpiry { get; set; }
 
-    public short GenieHours => RemainingGenieHours(GenieExpiry);
+    // Null only for legacy records not yet converted by the migration.
+    public double? GenieRemainingSeconds { get; set; }
+
+    public double GenieCreditSeconds => Math.Max(0, GenieRemainingSeconds
+        ?? (GenieExpiry.HasValue ? (GenieExpiry.Value - DateTime.UtcNow).TotalSeconds : 0));
+
+    public short GenieHours => (short)Math.Min(Math.Ceiling(GenieCreditSeconds / 3600), short.MaxValue);
 
     public static short RemainingGenieHours(DateTime? expiry)
     {
@@ -90,7 +96,7 @@ public class Character : Entity
 
     public byte[] GenieOptions { get; set; } = [];
 
-    public ushort GenieMinutes => RemainingGenieMinutes(GenieExpiry);
+    public ushort GenieMinutes => (ushort)Math.Min(Math.Ceiling(GenieCreditSeconds / 60), ushort.MaxValue);
 
     public static ushort RemainingGenieMinutes(DateTime? expiry)
     {

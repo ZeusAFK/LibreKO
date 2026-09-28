@@ -88,7 +88,8 @@ public class QuestGenieTests
         var character = new Character();
         new UserSessionCharacterMapper().ApplyToCharacter(session, character);
 
-        character.GenieExpiry.Should().Be(session.GenieExpiry);
+        character.GenieExpiry.Should().BeNull();
+        character.GenieRemainingSeconds.GetValueOrDefault().Should().BeApproximately(session.GenieTime.RemainingSeconds, 0.1);
         character.GenieHours.Should().Be(12);
     }
 

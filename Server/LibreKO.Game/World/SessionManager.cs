@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.World;
@@ -41,6 +41,7 @@ public class SessionManager
 
     public void RemoveSession(UserSession session)
     {
+        session.GenieTime.Pause();
         Regions.RemoveFromRegion(session);
         // Compare-and-remove: only evict if this exact session is still registered, so a
         // lagging cleanup of an old session can't remove a newer one that took over the

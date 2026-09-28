@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
@@ -386,9 +386,7 @@ public class ScriptItemService(
         if (itemId <= 0 || hours <= 0 || !CheckExistItem(0, itemId, 1) || !RobItem(0, itemId, 1))
             return false;
 
-        var now = DateTime.UtcNow;
-        var standing = session.GenieExpiry > now ? session.GenieExpiry!.Value : now;
-        session.GenieExpiry = standing.AddHours(hours);
+        session.GenieTime.AddSeconds(hours * 3600.0);
         return true;
     }
 

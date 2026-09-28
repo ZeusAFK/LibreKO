@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
@@ -110,6 +110,7 @@ public class GenieSystemTests
         var combat = Substitute.For<ICombatPacketCoordinator>();
         var (coordinator, session, _) = Create(combat: combat);
         session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.GenieActive = true;
 
         coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack))
             .GetAwaiter().GetResult();
@@ -139,6 +140,7 @@ public class GenieSystemTests
         var world = Substitute.For<IWorldPacketCoordinator>();
         var (coordinator, session, _) = Create(magic: magic, world: world);
         session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.GenieActive = true;
 
         coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.Move))
             .GetAwaiter().GetResult();
@@ -150,6 +152,61 @@ public class GenieSystemTests
         world.Received(1).HandleMoveAsync(session.Client, Arg.Any<Packet>());
         world.Received(1).HandleRotateAsync(session.Client, Arg.Any<Packet>());
         magic.Received(1).HandleAsync(session.Client, Arg.Any<Packet>());
+    }
+
+    [Fact]
+    public void InactiveGenieCannotRelayActionsEvenWithRemainingTime()
+    {
+        var combat = Substitute.For<ICombatPacketCoordinator>();
+        var (coordinator, session, _) = Create(combat: combat);
+        session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack))
+            .GetAwaiter().GetResult();
+        combat.DidNotReceive().HandleAttackAsync(Arg.Any<IClient>(), Arg.Any<Packet>());
+        session.GenieActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RepeatedStartAcknowledgesAnAlreadyActiveSession()
+    {
+        var (coordinator, session, client) = Create();
+        session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.GenieActive = true;
+        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        var packet = Sent(client, 0);
+        packet.ReadByte().Should().Be(GenieSystemPacketWriter.InfoRequest);
+        packet.ReadByte().Should().Be(GenieSystemPacketWriter.Start);
+        packet.ReadUShort().Should().Be(GenieSystemPacketWriter.Acknowledged);
+    }
+
+    [Fact]
+    public void DeadCharacterCannotStartGenie()
+    {
+        var (coordinator, session, _) = Create();
+        session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.Hp = 0;
+        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        session.GenieActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void OnlyStartingGenieResumesTheTimerAndStoppingPausesIt()
+    {
+        var (coordinator, session, _) = Create();
+        session.GenieTime.Load(7200);
+        session.GenieTime.IsRunning.Should().BeFalse();
+        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        session.GenieTime.IsRunning.Should().BeTrue();
+        coordinator.StopAsync(session).GetAwaiter().GetResult();
+        session.GenieTime.IsRunning.Should().BeFalse();
+        double saved = session.GenieTime.RemainingSeconds;
+        session.GenieTime.AddSeconds(120);
+        session.GenieTime.IsRunning.Should().BeFalse();
+        session.GenieTime.RemainingSeconds.Should().Be(saved + 120);
+        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        session.GenieTime.IsRunning.Should().BeTrue();
+        session.GenieActive = false;
+        session.GenieTime.IsRunning.Should().BeFalse();
     }
 
     private static Packet Action(byte action)
@@ -181,13 +238,15 @@ public class GenieSystemTests
         client.Id.Returns(Guid.NewGuid());
         var sessionManager = new SessionManager();
         var session = sessionManager.CreateSession(client, characterId: 1, accountId: 1);
+        session.Hp = 100;
         var coordinator = new GenieSystemPacketCoordinator(
             sessionManager,
             Substitute.For<IMagicItemUsageService>(),
             combat ?? Substitute.For<ICombatPacketCoordinator>(),
             magic ?? Substitute.For<IMagicPacketCoordinator>(),
             world ?? Substitute.For<IWorldPacketCoordinator>(),
-            Substitute.For<ILogger<GenieSystemPacketCoordinator>>());
+            Substitute.For<ILogger<GenieSystemPacketCoordinator>>(),
+            Substitute.For<IGenieHammerService>());
         return (coordinator, session, client);
     }
 }
