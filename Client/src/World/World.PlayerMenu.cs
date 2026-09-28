@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 
 namespace LibreKO;
 
@@ -55,6 +55,59 @@ public partial class World
         _playerMenu.Position = (Vector2I)GetViewport().GetMousePosition();
         _playerMenu.Popup();
         return true;
+    }
+
+    private bool HasNearbyPlayerForUserInfo()
+    {
+        if (!_worldReady || _self == null || _selfDead) return false;
+        foreach (var (id, e) in _ents)
+        {
+            if (id == _myId || e.IsNpc || e.Dead) continue;
+            if (FlatDistance(_self.Position, e.Body.Position) <= TradeRange)
+                return true;
+        }
+        return false;
+    }
+
+    private void OpenNearestPlayerMenu()
+    {
+        if (!_worldReady || _self == null || _selfDead) return;
+
+        int bestId = -1;
+        Ent? best = null;
+        float bestDistance = TradeRange;
+        foreach (var (id, e) in _ents)
+        {
+            if (id == _myId || e.IsNpc || e.Dead) continue;
+            float d = FlatDistance(_self.Position, e.Body.Position);
+            if (d > bestDistance) continue;
+            bestDistance = d;
+            bestId = id;
+            best = e;
+        }
+
+        if (best == null) return;
+
+        Select(bestId, best);
+        _playerMenuId = bestId;
+        _playerMenuName = best.Name;
+
+        _playerMenu.Clear();
+        _playerMenu.AddItem("Request a party", (int)PlayerMenuAction.RequestParty);
+        _playerMenu.AddItem("Report", (int)PlayerMenuAction.Report);
+        _playerMenu.AddItem("User trade", (int)PlayerMenuAction.UserTrade);
+        _playerMenu.AddItem("Whisper", (int)PlayerMenuAction.Whisper);
+        _playerMenu.AddItem("Add friend", (int)PlayerMenuAction.AddFriend);
+        _playerMenu.AddItem("User Information", (int)PlayerMenuAction.UserInformation);
+        _playerMenu.AddItem("Duel", (int)PlayerMenuAction.Duel);
+        _playerMenu.AddItem("Equipment View", (int)PlayerMenuAction.EquipmentView);
+        _playerMenu.ResetSize();
+
+        Vector2 viewportSize = GetViewport().GetVisibleRect().Size;
+        _playerMenu.Position = new Vector2I(
+            (int)(viewportSize.X * 0.5f),
+            (int)(viewportSize.Y * 0.35f));
+        _playerMenu.Popup();
     }
 
     private void OnPlayerMenuAction(long actionId)

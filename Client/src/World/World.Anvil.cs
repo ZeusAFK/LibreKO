@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 using LibreKO.Network;
 
@@ -167,6 +167,31 @@ public partial class World
         if (_anvils.Count == 0) return "none";
         var box = AnvilVolume(_anvils[0]);
         return $"origin={_anvils[0].Obj.Origin} aabb pos={box.Position} size={box.Size}";
+    }
+
+    private bool HasNearbyAnvil()
+    {
+        if (!_worldReady || _self == null || _selfDead) return false;
+        foreach (var anvil in _anvils)
+            if (FlatDistance(_self.Position, anvil.Tag.GlobalPosition) <= AnvilInteractRange)
+                return true;
+        return false;
+    }
+
+    public bool OpenNearestAnvil()
+    {
+        if (!_worldReady || _self == null || _selfDead) return false;
+        Anvil? best = null;
+        float bestDist = AnvilInteractRange;
+        foreach (var anvil in _anvils)
+        {
+            float d = FlatDistance(_self.Position, anvil.Tag.GlobalPosition);
+            if (d <= bestDist) { bestDist = d; best = anvil; }
+        }
+        if (best == null) return false;
+        SelectAnvil(best);
+        OpenAnvil(best);
+        return true;
     }
 
     public bool OperateNearestAnvil()
