@@ -18,6 +18,7 @@ public partial class World
     {
         _hudLauncherLayer = new CanvasLayer { Layer = 67 };
         AddChild(_hudLauncherLayer);
+        PluginHudSeam(_hudLauncherLayer, HudPart.Launcher);
 
         _hudLauncher = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Stop };
         _hudLauncher.AddThemeConstantOverride("separation", (int)LauncherGap);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 using LibreKO.Domain;
@@ -600,6 +600,7 @@ public partial class World
     {
         _trackerLayer = new CanvasLayer { Layer = 65 };
         AddChild(_trackerLayer);
+        PluginHudSeam(_trackerLayer, LibreKO.Plugins.HudPart.QuestTracker);
         _trackerPanel = new PanelContainer
         {
             Visible = false,
@@ -620,12 +621,8 @@ public partial class World
         RefreshTracker();
     }
 
-    private void RefreshTracker()
+    private List<QuestEntry> TrackedQuests()
     {
-        if (_trackerBox == null) return;
-        foreach (var c in _trackerBox.GetChildren()) c.QueueFree();
-        string selfName = Net.I.LastEnter.Name ?? "";
-
         var active = new List<QuestEntry>();
         foreach (var q in _quests)
         {
@@ -634,6 +631,31 @@ public partial class World
             if (_questTracked.Count > 0 && !_questTracked.Contains(q.QuestId)) continue;
             active.Add(q);
         }
+        return active;
+    }
+
+    private List<LibreKO.Plugins.GameQuestTrack> TrackedQuestsForPlugins()
+    {
+        string selfName = Net.I.LastEnter.Name ?? "";
+        var list = new List<LibreKO.Plugins.GameQuestTrack>();
+        foreach (var q in TrackedQuests())
+        {
+            bool done = q.State == QuestStateReadyToTurnIn;
+            var lines = done ? new List<string> { "Ready to turn in" } : KillProgressLines(q.QuestId);
+            if (lines.Count == 0) lines.Add(ShortObjective(q.QuestId, selfName));
+            list.Add(new LibreKO.Plugins.GameQuestTrack(q.QuestId, QuestName(q.QuestId, selfName), done, lines));
+        }
+        return list;
+    }
+
+    private void RefreshTracker()
+    {
+        PluginNotifyQuests();
+        if (_trackerBox == null) return;
+        foreach (var c in _trackerBox.GetChildren()) c.QueueFree();
+        string selfName = Net.I.LastEnter.Name ?? "";
+
+        var active = TrackedQuests();
 
         ReportQuestProgress();
 

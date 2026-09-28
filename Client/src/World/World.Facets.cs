@@ -111,6 +111,7 @@ public partial class World : Node3D
         Facet(DuelInit, DuelDispose);
         Facet(ItemExchangeInit, ItemExchangeDispose);
         Facet(RingUpgradeInit, RingUpgradeDispose);
+        Facet(PluginBridgeInit, PluginBridgeDispose);
         Facet(InnInit, InnDispose);
         Facet(GuardPetInit, GuardPetDispose);
         Facet(EventQuestInit, EventQuestDispose);

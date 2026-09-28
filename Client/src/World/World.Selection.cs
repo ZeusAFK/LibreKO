@@ -567,6 +567,7 @@ public partial class World
     {
         var layer = new CanvasLayer { Layer = 64 };
         AddChild(layer);
+        PluginHudSeam(layer, LibreKO.Plugins.HudPart.TargetFrame);
         _targetBox = new VBoxContainer { Visible = false };
         _targetBox.AddThemeConstantOverride("separation", 3);
         layer.AddChild(_targetBox);
@@ -660,5 +661,6 @@ public partial class World
             _targetBox.Visible = true;
         }
         else _targetBox.Visible = false;
+        PluginNotifyTarget();
     }
 }

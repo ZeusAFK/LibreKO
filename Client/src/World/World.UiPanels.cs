@@ -52,10 +52,25 @@ public partial class World
 
     private Control _statusRoot = null!;
 
+    private readonly Dictionary<LibreKO.Plugins.HudPart, Control> _pluginHud = new();
+
+    private void PluginHudSeam(CanvasLayer nativeLayer, LibreKO.Plugins.HudPart part)
+    {
+        if (!PluginHost.Ui.HudHidden(part)) return;
+        nativeLayer.Visible = false;
+        if (PluginHost.Ui.HudReplacement(part) is not { } build) return;
+        var layer = new CanvasLayer { Layer = nativeLayer.Layer };
+        AddChild(layer);
+        var control = build();
+        layer.AddChild(control);
+        _pluginHud[part] = control;
+    }
+
     private void BuildStatusHud()
     {
         var layer = new CanvasLayer { Layer = HudLayerIndex };
         AddChild(layer);
+        PluginHudSeam(layer, LibreKO.Plugins.HudPart.StatusBars);
 
         var status = new Control
         {
@@ -117,6 +132,7 @@ public partial class World
     {
         var layer = new CanvasLayer { Layer = 64 };
         AddChild(layer);
+        PluginHudSeam(layer, LibreKO.Plugins.HudPart.MiniMap);
 
         _miniMap = new MiniMap { MouseFilter = Control.MouseFilterEnum.Stop };
         layer.AddChild(_miniMap);
@@ -128,6 +144,11 @@ public partial class World
 
     private void ToggleMiniMap()
     {
+        if (_pluginHud.TryGetValue(LibreKO.Plugins.HudPart.MiniMap, out var themed))
+        {
+            themed.Visible = !themed.Visible;
+            return;
+        }
         if (_miniMap != null) _miniMap.Visible = !_miniMap.Visible;
     }
 
@@ -155,6 +176,7 @@ public partial class World
         }
         float heading = Coord.KoHeading(Mathf.Sin(_camYaw), -Mathf.Cos(_camYaw));
         _miniMap.UpdateView(_myKoX, _myKoZ, heading, _blipScratch);
+        PluginNotifyMap(heading);
     }
 
     private void UpdateStatusHud()

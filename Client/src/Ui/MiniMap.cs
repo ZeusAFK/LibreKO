@@ -228,6 +228,10 @@ public partial class MiniMap : Control
         ApplyZoom();
     }
 
+    public float WorldExtent => _worldExtent;
+
+    internal static ImageTexture? LoadBaked(string stem) => LoadBakedMap(BakedMapPath(stem));
+
     private static string BakedMapPath(string stem) =>
         $"res://assets/terrain/{stem}/minimap.webp";
 

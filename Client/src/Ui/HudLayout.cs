@@ -8,6 +8,7 @@ public sealed partial class HudLayout : Node
     public enum Corner { TopLeft, TopRight, BottomLeft, BottomRight }
 
     public static bool EditMode { get; set; }
+    public static bool PersistLayouts { get; set; } = true;
 
     private readonly Control _target;
     private readonly Control? _dragHandle;
@@ -68,7 +69,7 @@ public sealed partial class HudLayout : Node
         _resizable = resizable;
         _defaultSize = defaultSize;
         _minimumSize = minimumSize;
-        _persist = persist;
+        _persist = persist && PersistLayouts;
         _resizeCorner = resizeCorner;
         _moveCorner = moveCorner;
         _moveGripAlwaysVisible = moveGripAlwaysVisible;

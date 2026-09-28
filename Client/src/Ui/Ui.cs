@@ -282,7 +282,7 @@ public partial class SettingsPanel : CanvasLayer
         new(1280, 720), new(1366, 768), new(1600, 900), new(1920, 1080), new(2560, 1440),
     };
 
-    private const int TabWidth = 560;
+    private const int TabWidth = 660;
     private const int TabHeight = 660;
     private const int TouchScreenMargin = 10;
 
@@ -371,6 +371,7 @@ public partial class SettingsPanel : CanvasLayer
         BuildKeysTab(Tab(tabs, "Keys"));
         BuildPadTab(Tab(tabs, "Joypad"));
         BuildSoundTab(Tab(tabs, "Sound"));
+        BuildPluginsTab(Tab(tabs, "Plugins"));
 
         var btns = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         btns.AddThemeConstantOverride("separation", 12);

@@ -52,7 +52,11 @@ internal sealed class ChatSystem
 
     internal Func<string, bool>? LocalCommand;
 
-    internal bool IsActive => _active;
+    internal bool IsActive => _active || PluginTyping;
+
+    internal bool PluginTyping { get; set; }
+
+    internal IReadOnlyList<string> History => _log.ToArray();
 
     internal Control Panel => _root;
 
@@ -83,10 +87,22 @@ internal sealed class ChatSystem
         13 => "Nation", 15 => "Alliance", 23 => "Officer", _ => "General",
     };
 
+    internal void SendText(string text) => Submit(text);
+
     internal void Build()
     {
         var layer = new CanvasLayer { Layer = 66 };
         _ctx.Root.AddChild(layer);
+        if (PluginHost.Ui.HudHidden(LibreKO.Plugins.HudPart.Chat))
+        {
+            layer.Visible = false;
+            if (PluginHost.Ui.HudReplacement(LibreKO.Plugins.HudPart.Chat) is { } build)
+            {
+                var pluginLayer = new CanvasLayer { Layer = 66 };
+                _ctx.Root.AddChild(pluginLayer);
+                pluginLayer.AddChild(build());
+            }
+        }
 
         _root = new VBoxContainer
         {
@@ -300,6 +316,11 @@ internal sealed class ChatSystem
 
     internal void Open()
     {
+        if (PluginHost.Ui.HudHidden(HudPart.Chat))
+        {
+            PluginHost.Game.RaiseChatInputRequested();
+            return;
+        }
         _active = true;
         SetInputRowActive(true);
         _panelStyle.BgColor = new Color(0, 0, 0, _backgroundAlpha);
@@ -714,6 +735,7 @@ internal sealed class ChatSystem
     internal void Append(string bbcode)
     {
         _log.Enqueue(bbcode);
+        PluginHost.Game.RaiseChatLine(bbcode);
         UpdateChatPeek(bbcode);
         if (_log.Count > LogMax)
         {

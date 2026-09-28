@@ -21,6 +21,17 @@ public static class Config
     public static bool Development { get; private set; }
     public static bool LegacyQuestFallback { get; private set; } = true;
 
+    public static string PluginDirs { get; private set; } = "";
+    private static readonly Dictionary<string, bool> _pluginEnabled = new(System.StringComparer.OrdinalIgnoreCase);
+
+    public static bool PluginEnabled(string id) => _pluginEnabled.TryGetValue(id, out bool on) && on;
+
+    public static void SetPluginEnabled(string id, bool enabled)
+    {
+        _pluginEnabled[id] = enabled;
+        Save();
+    }
+
     public static string GameHostFor(string advertisedIp) => Development ? "127.0.0.1" : advertisedIp;
 
     public enum VideoMode { Windowed, BorderlessFullscreen, Fullscreen }
@@ -210,6 +221,14 @@ public static class Config
         }
         PatchUrl = cfg.GetValue("patch", "url", PatchUrl).AsString();
         LegacyQuestFallback = cfg.GetValue("quests", "legacy_fallback", LegacyQuestFallback).AsBool();
+        if (cfg.HasSection("plugins"))
+        {
+            foreach (string key in cfg.GetSectionKeys("plugins"))
+            {
+                if (key == "dirs") PluginDirs = cfg.GetValue("plugins", key, PluginDirs).AsString();
+                else _pluginEnabled[key] = cfg.GetValue("plugins", key, false).AsBool();
+            }
+        }
         WindowMode = ReadEnum(cfg, "video", "mode", WindowMode);
         Language = ReadEnum(cfg, "game", "language", Language);
         WinWidth = cfg.GetValue("video", "width", WinWidth).AsInt32();
@@ -288,6 +307,8 @@ public static class Config
         cfg.SetValue("server", "ping_enabled", PingEnabled);
         cfg.SetValue("server", "development", Development);
         cfg.SetValue("quests", "legacy_fallback", LegacyQuestFallback);
+        if (PluginDirs.Length > 0) cfg.SetValue("plugins", "dirs", PluginDirs);
+        foreach (var (id, on) in _pluginEnabled) cfg.SetValue("plugins", id, on);
         cfg.SetValue("video", "mode", (int)WindowMode);
         cfg.SetValue("video", "width", WinWidth);
         cfg.SetValue("video", "height", WinHeight);

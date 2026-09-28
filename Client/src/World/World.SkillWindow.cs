@@ -81,9 +81,16 @@ public partial class World
             tabBar.AddChild(MakeSubTabButton(page.Label, tab, () => SelectSkillTab(tab), _skillTabBtns));
         }
 
-        var grid = new GridContainer { Columns = SkillPage.Columns };
+        var grid = new GridContainer { Columns = SkillPage.Columns, MouseFilter = Control.MouseFilterEnum.Pass };
         grid.AddThemeConstantOverride("h_separation", 6);
         grid.AddThemeConstantOverride("v_separation", 4);
+        grid.GuiInput += ev =>
+        {
+            if (ev is not InputEventMouseButton { Pressed: true } wheel) return;
+            if (wheel.ButtonIndex is not (MouseButton.WheelUp or MouseButton.WheelDown)) return;
+            TurnSkillPage(wheel.ButtonIndex == MouseButton.WheelUp ? -1 : 1);
+            grid.AcceptEvent();
+        };
         root.AddChild(grid);
         for (int i = 0; i < _skillCells.Length; i++)
         {
@@ -238,6 +245,7 @@ public partial class World
     {
         RefreshSkillPage();
         RefreshMasteryUI();
+        PluginNotifySkills();
     }
 
     private bool SkillRequirementMet(SkillData.Skill s)

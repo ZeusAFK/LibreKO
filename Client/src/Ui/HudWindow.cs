@@ -6,7 +6,49 @@ public partial class HudWindow : PanelContainer
 {
     public VBoxContainer Body { get; }
 
-    public void SetBackgroundAlpha(float alpha) => AddThemeStyleboxOverride("panel", UiTheme.WindowPanel(alpha: alpha));
+    public string Id { get; }
+
+    public bool PluginReplaced { get; }
+
+    private static readonly System.Collections.Generic.Dictionary<string, HudWindow> _byId =
+        new(System.StringComparer.OrdinalIgnoreCase);
+
+    internal static HudWindow? Find(string id) =>
+        _byId.TryGetValue(id, out var w) && GodotObject.IsInstanceValid(w) ? w : null;
+
+    private readonly bool _pluginHidden;
+    private readonly WindowHost? _host;
+
+    public override void _Notification(int what)
+    {
+        switch ((long)what)
+        {
+            case NotificationEnterTree:
+                _byId[Id] = this;
+                break;
+            case NotificationExitTree:
+                if (_byId.TryGetValue(Id, out var current) && current == this) _byId.Remove(Id);
+                break;
+            case NotificationVisibilityChanged:
+                if (_pluginHidden && Visible) { Visible = false; break; }
+                if (_host == null) break;
+                if (Visible) _host.RaiseShown(); else _host.RaiseHidden();
+                break;
+        }
+    }
+
+    private void CloseFromPlugin()
+    {
+        Visible = false;
+        Closed?.Invoke();
+        Audio.PlayUi(Sfx.InventoryClose);
+    }
+
+    public void SetBackgroundAlpha(float alpha)
+    {
+        if (PluginReplaced) return;
+        AddThemeStyleboxOverride("panel", UiTheme.WindowPanel(alpha: alpha));
+    }
 
     public event System.Action? Closed;
 
@@ -40,7 +82,7 @@ public partial class HudWindow : PanelContainer
 
     public void SetMinimized(bool minimized)
     {
-        if (_content == null || Minimized == minimized) return;
+        if (PluginReplaced || _content == null || Minimized == minimized) return;
         Minimized = minimized;
         _content.Visible = !minimized;
         if (_minimizeBtn != null)
@@ -85,6 +127,8 @@ public partial class HudWindow : PanelContainer
         bool minimizable = false,
         bool closable = true)
     {
+        Id = id;
+        var rule = PluginHost.Ui.RuleFor(id);
         AddThemeStyleboxOverride("panel", UiTheme.WindowPanel());
         GrowHorizontal = GrowDirection.End;
         GrowVertical = GrowDirection.End;
@@ -198,8 +242,30 @@ public partial class HudWindow : PanelContainer
         if (bodyMinWidth > 0) Body.CustomMinimumSize = new Vector2(bodyMinWidth, 0);
         content.AddChild(Body);
 
+        Control dragHandle = bar;
+        if (rule != null)
+        {
+            if (rule.Hidden)
+            {
+                _pluginHidden = true;
+                Visible = false;
+            }
+            else if (rule.Replacement != null)
+            {
+                PluginReplaced = true;
+                margin.Visible = false;
+                AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
+                _host = new WindowHost(id, title, this, CloseFromPlugin);
+                var replacement = rule.Replacement(_host);
+                AddChild(replacement);
+                dragHandle = _host.DragHandle ?? replacement;
+            }
+            if (!PluginReplaced)
+                foreach (var extend in rule.Extenders) extend(Body);
+        }
+
         HudLayout.Attach(
-            this, id, bar, () => defaultPos,
+            this, id, dragHandle, () => defaultPos,
             resizable: resizable,
             minimumSize: minimumSize,
             persist: persistLayout);
