@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
 
@@ -121,4 +121,6 @@ public class EventSettings
     public int[] BorderDefenseWarStartHours { get; set; } = [];
 
     public int[] JuraidMountainStartHours { get; set; } = [];
+
+    public bool UseLocalTimeForSchedules { get; set; } = false;
 }

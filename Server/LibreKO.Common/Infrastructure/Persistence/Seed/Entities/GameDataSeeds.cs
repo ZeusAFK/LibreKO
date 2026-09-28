@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 
 namespace LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 
@@ -394,6 +394,11 @@ public class LotteryRewardSeed : SnapshotJsonSeed<LotteryRewardData>
 public class LotteryScheduleSeed : SnapshotJsonSeed<LotteryScheduleData>
 {
     protected override string JsonFileName => "LotterySchedules.json";
+}
+
+public class JuraidMountainScheduleSeed : SnapshotJsonSeed<JuraidMountainScheduleData>
+{
+    protected override string JsonFileName => "JuraidMountainSchedules.json";
 }
 
 public class UserBotSeed : SnapshotJsonSeed<UserBotData>

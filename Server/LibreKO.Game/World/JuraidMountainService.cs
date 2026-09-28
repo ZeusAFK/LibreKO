@@ -16,7 +16,6 @@ public interface IJuraidMountainService
     Task StartMatchForCallerAsync(UserSession session, int durationSeconds = TempleEventRules.JuraidMountainDurationSeconds);
     Task OnNpcKilledAsync(NpcInstance npc, UserSession killer);
     Task CancelAllMatchesAsync();
-    Task<bool> UnlockBridgeForUserAsync(UserSession session, int trapNumber = 0);
 }
 
 public sealed class JuraidMatch
@@ -129,6 +128,17 @@ public sealed class JuraidMountainService(
 
     public async Task StartMatchForCallerAsync(UserSession session, int durationSeconds = TempleEventRules.JuraidMountainDurationSeconds)
     {
+        var minLevel = gameDataService.JuraidMountainSchedules?.Count > 0
+            ? gameDataService.JuraidMountainSchedules.Min(s => s.MinLevel)
+            : TempleEventRules.JuraidMountainDefaultMinLevel;
+
+        if (session.Level < minLevel)
+        {
+            var noticePkt = ChatPacketWriter.SystemNotice((byte)session.Nation, $"You must be at least level {minLevel} to enter Juraid Mountain.");
+            await session.Client.SendPacket(noticePkt);
+            return;
+        }
+
         logger.LogInformation("Launching instant test Juraid Mountain match for {Name} ({Nation})",
             session.Name, session.Nation);
 
@@ -412,31 +422,6 @@ public sealed class JuraidMountainService(
                 logger.LogWarning(ex, "Failed to unlock bridge trap {Trap} in room {Room}", trapNumber, match.RoomId);
             }
         }
-    }
-
-    public async Task<bool> UnlockBridgeForUserAsync(UserSession session, int trapNumber = 0)
-    {
-        if (session.ZoneId != JuraidZoneId || session.Room == 0)
-            return false;
-
-        if (!_activeMatches.TryGetValue(session.Room, out var match))
-            return false;
-
-        if (trapNumber > 0)
-        {
-            await UnlockBridgeAsync(match, trapNumber);
-            string side = trapNumber <= 3 ? "Karus" : "El Morad";
-            int stage = trapNumber <= 3 ? trapNumber : trapNumber - 3;
-            await SendNoticeToRoomAsync(match, $"### [Juraid Mountain] {side} has cleared Stage {stage}! Bridge {stage} is now OPEN! ###");
-            return true;
-        }
-
-        for (int t = 1; t <= 6; t++)
-        {
-            await UnlockBridgeAsync(match, t);
-        }
-        await SendNoticeToRoomAsync(match, "### [Juraid Mountain] All bridges have been OPENED by GM! ###");
-        return true;
     }
 
     private async Task HandleDevabirdKilledAsync(JuraidMatch match, UserSession killer)

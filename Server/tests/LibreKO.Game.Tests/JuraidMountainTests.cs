@@ -102,6 +102,7 @@ public class JuraidMountainTests
         var session = _sessionManager.CreateSession(client, characterId: charId, accountId: charId * 10);
         session.Name = $"Player_{charId}";
         session.Nation = nation;
+        session.Level = 70;
         session.ZoneId = 21; // Moradon
         return session;
     }
@@ -267,4 +268,115 @@ public class JuraidMountainTests
             _output.WriteLine($"  ({x:000}, 848): H={h}");
         }
     }
+
+    [Fact]
+    public void PrintCenterRoomDetails()
+    {
+        var smd = SmdFile.Load("D:/LibreKO/Server/LibreKO.Game/Map/In_dungeon05.smd");
+        smd.Should().NotBeNull();
+
+        _output.WriteLine("=== CENTER DEVA LINE (X=510, Z=200..800) ===");
+        for (float z = 200f; z <= 800f; z += 25f)
+        {
+            float h = smd!.GetHeight(510f, z);
+            _output.WriteLine($"  (510, {z}): H={h}");
+        }
+
+        _output.WriteLine("=== DEVA ROOM AREA (X=480..540, Z=480..540) ===");
+        for (float x = 480f; x <= 540f; x += 15f)
+        {
+            for (float z = 480f; z <= 540f; z += 15f)
+            {
+                float h = smd!.GetHeight(x, z);
+                _output.WriteLine($"  ({x}, {z}): H={h}");
+            }
+        }
+    }
+
+    [Fact]
+    public void JuraidMountainSchedule_DailySchedule_MatchesAfternoonAndNight()
+    {
+        var afternoon = new JuraidMountainScheduleData { Id = 1, Day = null, Hour = 13, Minute = 0 };
+        var night = new JuraidMountainScheduleData { Id = 2, Day = null, Hour = 21, Minute = 0 };
+
+        var matchAfternoon = new DateTime(2026, 9, 28, 13, 0, 0);
+        var matchNight = new DateTime(2026, 9, 28, 21, 0, 0);
+        var mismatchMinute = new DateTime(2026, 9, 28, 13, 1, 0);
+        var mismatchHour = new DateTime(2026, 9, 28, 14, 0, 0);
+
+        afternoon.Matches(matchAfternoon).Should().BeTrue();
+        afternoon.Matches(mismatchMinute).Should().BeFalse();
+        afternoon.Matches(mismatchHour).Should().BeFalse();
+
+        night.Matches(matchNight).Should().BeTrue();
+        night.Matches(matchAfternoon).Should().BeFalse();
+    }
+
+    [Fact]
+    public void JuraidMountainSchedule_SpecificDay_MatchesOnlyOnThatDay()
+    {
+        var sundaySchedule = new JuraidMountainScheduleData { Id = 3, Day = DayOfWeek.Sunday, Hour = 13, Minute = 0 };
+
+        var sunday = new DateTime(2026, 9, 27, 13, 0, 0); // Sunday
+        var monday = new DateTime(2026, 9, 28, 13, 0, 0); // Monday
+
+        sunday.DayOfWeek.Should().Be(DayOfWeek.Sunday);
+        monday.DayOfWeek.Should().Be(DayOfWeek.Monday);
+
+        sundaySchedule.Matches(sunday).Should().BeTrue();
+        sundaySchedule.Matches(monday).Should().BeFalse();
+    }
+
+    [Fact]
+    public void JuraidMountainSchedule_MinLevel_DefaultsTo40()
+    {
+        var schedule = new JuraidMountainScheduleData { Id = 1, Hour = 13, Minute = 0 };
+        schedule.MinLevel.Should().Be(40);
+        schedule.MaxLevel.Should().Be(83);
+        schedule.CountdownMinutes.Should().Be(10);
+    }
+
+    [Fact]
+    public void JuraidMountainSchedule_CountdownMinutes_CanBeConfigured()
+    {
+        var schedule = new JuraidMountainScheduleData { Id = 1, CountdownMinutes = 5 };
+        schedule.CountdownMinutes.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task JuraidMountainService_StartMatchForCaller_EnforcesMinLevel()
+    {
+        var service = new JuraidMountainService(
+            _sessionManager,
+            _gameDataService,
+            _aggressionPolicy,
+            _zoneTransitionService,
+            _instanceRooms,
+            _userNotificationService,
+            _loyaltyService,
+            _combatNotificationService,
+            _logger);
+
+        _gameDataService.JuraidMountainSchedules.Returns([
+            new JuraidMountainScheduleData { Id = 1, MinLevel = 40, MaxLevel = 83 }
+        ]);
+
+        var lowLevelCaller = CreateTestSession(101, AccountNation.Karus);
+        lowLevelCaller.Level = 35;
+
+        await service.StartMatchForCallerAsync(lowLevelCaller);
+
+        lowLevelCaller.ZoneId.Should().Be(21);
+        await _zoneTransitionService.DidNotReceiveWithAnyArgs()
+            .ChangeZoneAsync(lowLevelCaller, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
+
+        var highLevelCaller = CreateTestSession(102, AccountNation.Karus);
+        highLevelCaller.Level = 45;
+
+        await service.StartMatchForCallerAsync(highLevelCaller);
+
+        highLevelCaller.ZoneId.Should().Be((byte)ZoneId.JuradMountain);
+    }
 }
+
+

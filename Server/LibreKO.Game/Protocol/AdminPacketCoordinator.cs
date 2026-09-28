@@ -274,20 +274,6 @@ public class AdminPacketCoordinator(
                 await HandleTempleEventCommandAsync(session, TempleEvent.JuraidMountain, ZoneId.JuradMountain, "Juraid Mountain", arg);
                 break;
 
-            case "jropen":
-            case "openbridge":
-            case "bridgeopen":
-                int targetTrap = int.TryParse(arg, out var tr) ? tr : 0;
-                if (await juraidMountainService.UnlockBridgeForUserAsync(session, targetTrap))
-                {
-                    await SendNoticeAsync(session, targetTrap > 0 ? $"Bridge trap {targetTrap} unlocked!" : "All Juraid bridges unlocked!");
-                }
-                else
-                {
-                    await SendNoticeAsync(session, "Failed: You must be inside an active Juraid Mountain room instance.");
-                }
-                break;
-
             case "bdw":
                 await HandleTempleEventCommandAsync(session, TempleEvent.BorderDefenseWar, ZoneId.BorderDefenseWar, "Border Defense War", arg);
                 break;
@@ -296,6 +282,10 @@ public class AdminPacketCoordinator(
                 await HandleTempleEventCommandAsync(session, TempleEvent.Chaos, ZoneId.ChaosDungeon, "Chaos Dungeon", arg);
                 break;
 
+            case "jrclose":
+            case "jrcancel":
+            case "juraidclose":
+            case "juraidcancel":
             case "templecancel":
             case "cancelevent":
                 if (await eventSchedulerService.CancelTempleEventAsync())
@@ -329,7 +319,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+santa/+angel/+offsanta - Santa/Angel");
                 await SendNoticeAsync(session, "+waropen <zoneId>/+warclose/+snowwar");
                 await SendNoticeAsync(session, "+bifroststart [min] / +bifrostclose - Bifrost event");
-                await SendNoticeAsync(session, "+jr [sec] / +bdw [sec] / +chaos [sec] / +templecancel - Temple Events");
+                await SendNoticeAsync(session, "+jr [sec|min] / +jrclose / +bdw [sec] / +chaos [sec] / +templecancel - Temple Events");
                 await SendNoticeAsync(session, "+cropen <eventIndex> / +crclose / +crstatus - Collection Race");
                 await SendNoticeAsync(session, "+lottery start [id] / +lottery close / +lottery cancel - Lottery Event");
                 await SendNoticeAsync(session, "+savemerchantbots - Save active merchant bots to DB");
@@ -1353,10 +1343,46 @@ public class AdminPacketCoordinator(
             return;
         }
 
-        int joinSec = int.TryParse(arg, out var s) && s > 0 ? s : DefaultJoinWindowSeconds;
+        if (arg is "close" or "cancel" or "stop" or "end")
+        {
+            if (await eventSchedulerService.CancelTempleEventAsync())
+            {
+                await SendNoticeAsync(session, $"[{eventName}] Event cancelled and closed.");
+            }
+            else
+            {
+                await SendNoticeAsync(session, $"[{eventName}] No temple event is currently active.");
+            }
+            return;
+        }
+
+        int joinSec = DefaultJoinWindowSeconds;
+        if (!string.IsNullOrWhiteSpace(arg))
+        {
+            var trimmed = arg.Trim().ToLowerInvariant();
+            if (trimmed.EndsWith("m") && int.TryParse(trimmed[..^1], out var m) && m > 0)
+            {
+                joinSec = m * 60;
+            }
+            else if (trimmed.EndsWith("s") && int.TryParse(trimmed[..^1], out var sec) && sec > 0)
+            {
+                joinSec = sec;
+            }
+            else if (int.TryParse(trimmed, out var s) && s > 0)
+            {
+                joinSec = s;
+            }
+        }
+        else if (contest == TempleEvent.JuraidMountain)
+        {
+            var defaultMin = gameDataService.JuraidMountainSchedules?.FirstOrDefault()?.CountdownMinutes ?? TempleEventRules.DefaultCountdownMinutes;
+            joinSec = defaultMin > 0 ? defaultMin * 60 : TempleEventRules.JoinWindowSeconds;
+        }
+
         await eventSchedulerService.CallTempleEventAsync(contest, joinSec, session);
         var confirmPkt = EventPacketWriter.TempleEvent((byte)TempleSubOpcode.TempleEventJoin, 1, (short)zoneId);
         await session.Client.SendPacket(confirmPkt);
-        await SendNoticeAsync(session, $"[{eventName}] Registration open ({joinSec}s). You are registered and will teleport automatically!");
+        string formattedTime = joinSec >= 60 ? $"{joinSec / 60}m" : $"{joinSec}s";
+        await SendNoticeAsync(session, $"[{eventName}] Registration open ({formattedTime}). You are registered and will teleport automatically!");
     }
 }

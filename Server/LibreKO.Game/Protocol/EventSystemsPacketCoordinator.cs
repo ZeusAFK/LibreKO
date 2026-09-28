@@ -274,7 +274,7 @@ public class EventSystemsPacketCoordinator(
     {
         Packet packet;
 
-        if (eventSchedulerService.TryJoinTempleEvent(session))
+        if (eventSchedulerService.TryJoinTempleEvent(session, out var reason))
         {
             packet = EventPacketWriter.TempleEvent(
                 TempleEventJoin, 1, eventSchedulerService.TempleEventZone);
@@ -283,6 +283,11 @@ public class EventSystemsPacketCoordinator(
         else
         {
             packet = EventPacketWriter.TempleEvent(TempleEventJoin, 0, 0);
+            if (!string.IsNullOrEmpty(reason))
+            {
+                var noticePkt = ChatPacketWriter.SystemNotice((byte)session.Nation, reason);
+                await session.Client.SendPacket(noticePkt);
+            }
         }
 
         await session.Client.SendPacket(packet);

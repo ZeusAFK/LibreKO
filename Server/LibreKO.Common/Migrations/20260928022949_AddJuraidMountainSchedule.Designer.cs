@@ -4,6 +4,7 @@ using LibreKO.Common.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibreKO.Common.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260928022949_AddJuraidMountainSchedule")]
+    partial class AddJuraidMountainSchedule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1408,19 +1411,10 @@ namespace LibreKO.Common.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
-                    b.Property<byte>("CountdownMinutes")
-                        .HasColumnType("tinyint unsigned");
-
                     b.Property<int?>("Day")
                         .HasColumnType("int");
 
                     b.Property<byte>("Hour")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<byte>("MaxLevel")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<byte>("MinLevel")
                         .HasColumnType("tinyint unsigned");
 
                     b.Property<byte>("Minute")
