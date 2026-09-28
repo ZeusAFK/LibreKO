@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
@@ -103,6 +103,8 @@ public abstract class GameTestBase
         services.AddSingleton<IZoneTransitionService, ZoneTransitionService>();
         services.AddSingleton<InstanceRoomRegistry>();
         services.AddSingleton<IInstanceEntryService, InstanceEntryService>();
+        services.AddSingleton<IMonsterAggressionPolicy, MonsterAggressionPolicy>();
+        services.AddSingleton<IJuraidMountainService, JuraidMountainService>();
         services.AddSingleton<INpcLifecycleService, NpcLifecycleService>();
         services.AddSingleton<INpcSummonService, NpcSummonService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();

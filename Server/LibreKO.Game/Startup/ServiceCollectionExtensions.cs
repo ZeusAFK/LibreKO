@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
@@ -119,6 +119,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IZoneTransitionService, ZoneTransitionService>();
         services.AddSingleton<InstanceRoomRegistry>();
         services.AddSingleton<IInstanceEntryService, InstanceEntryService>();
+        services.AddSingleton<IJuraidMountainService, JuraidMountainService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();
         services.AddSingleton<IAccountLockService, AccountLockService>();
         services.AddSingleton<IUserNotificationService, UserNotificationService>();

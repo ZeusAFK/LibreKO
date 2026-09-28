@@ -1,4 +1,5 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
 using LibreKO.Game.World;
@@ -26,6 +27,7 @@ public class CombatRewardService(
     IAchievementProgressService achievementProgressService,
     IUserNotificationService userNotificationService,
     ICollectionRaceService collectionRaceService,
+    IJuraidMountainService juraidMountainService,
     ILogger<CombatRewardService> logger) : ICombatRewardService
 {
     public async Task AwardPlayerKillAsync(UserSession victim, UserSession? killer)
@@ -60,6 +62,9 @@ public class CombatRewardService(
         rewardRecipient.MonstersDefeated++;
         await achievementProgressService.ReportMonsterKillAsync(rewardRecipient, npc.NpcId);
         await collectionRaceService.HandleNpcKillAsync(npc, rewardRecipient);
+
+        if (npc.ZoneId == (byte)ZoneId.JuradMountain)
+            await juraidMountainService.OnNpcKilledAsync(npc, killer);
 
         var damagerIds = npc.WithLock(n => n.DamageMap.Keys.ToArray());
         foreach (var charId in damagerIds)

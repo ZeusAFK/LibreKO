@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -204,6 +204,14 @@ public class WorldMovementService(
         var session = sessionManager.GetByClientId(client.Id);
         if (session == null || session.Hp <= 0 || session.Hp < session.MaxHp / 2)
             return;
+
+        if (session.ZoneId == (byte)ZoneId.JuradMountain)
+        {
+            float startX = session.Nation == AccountNation.Karus ? JuraidMountainService.KarusStartX : JuraidMountainService.ElmoradStartX;
+            float startZ = session.Nation == AccountNation.Karus ? JuraidMountainService.KarusStartZ : JuraidMountainService.ElmoradStartZ;
+            await WarpAsync(session, (ushort)(startX * 10), (ushort)(startZ * 10));
+            return;
+        }
 
         var startPos = gameDataService.GetStartPosition(session.ZoneId);
         if (startPos == null)

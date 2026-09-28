@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -271,6 +271,19 @@ public partial class World : Node3D, IWorldContext
         StealthTick(selfPos);
         foreach (var e in _ents.Values)
         {
+            if (e.IsBridge)
+            {
+                int trap = TrapNumberForPosition(e.KoX, e.KoZ);
+                bool shouldOpen = e.GateOpen || _openedGateUniqueIds.Contains(e.Id)
+                    || (trap > 0 && _unlockedJuraidTraps.Contains(trap));
+                if (shouldOpen && e.BridgePitch > BridgeLoweredPitch + 0.5f && !e.BridgeLowering)
+                {
+                    StartLoweringBridge(e);
+                }
+                TickBridge(e, dt);
+                continue;
+            }
+
             if (e.HasTarget && e.Speed > 0f && !e.Dead)
                 e.Body.Position = e.Body.Position.MoveToward(e.Target, e.Speed * dt);
 
