@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
@@ -15,7 +16,12 @@ public class PartyDisconnectTests : GameTestBase
     [Fact]
     public async Task DroppingTheConnectionTakesThePlayerOutOfTheParty()
     {
-        using var provider = CreateProvider(_ => { });
+        using var provider = CreateProvider(db =>
+        {
+            db.Characters.AddRange(
+                new Character { Id = 400, AccountId = 500, Name = "Player400" },
+                new Character { Id = 401, AccountId = 501, Name = "Player401" });
+        });
         var sessionManager = provider.GetRequiredService<SessionManager>();
 
         var leaderPackets = new List<Packet>();
@@ -43,7 +49,12 @@ public class PartyDisconnectTests : GameTestBase
     [Fact]
     public async Task LoggingBackInTakesTheAbandonedSessionOutOfTheParty()
     {
-        using var provider = CreateProvider(_ => { });
+        using var provider = CreateProvider(db =>
+        {
+            db.Characters.AddRange(
+                new Character { Id = 400, AccountId = 500, Name = "Player400" },
+                new Character { Id = 401, AccountId = 501, Name = "Player401" });
+        });
         var sessionManager = provider.GetRequiredService<SessionManager>();
 
         var leaderPackets = new List<Packet>();
@@ -59,6 +70,7 @@ public class PartyDisconnectTests : GameTestBase
         await provider.GetRequiredService<ISessionTerminationService>()
             .EvictForTakeoverAsync(member);
 
+        sessionManager.GetByCharacterId(member.CharacterId).Should().BeNull();
         leader.PartyIndex.Should().Be(-1, "an evicted session must not leave a ghost in the party");
         sessionManager.Parties.GetParty(party.Index).Should().BeNull();
     }
