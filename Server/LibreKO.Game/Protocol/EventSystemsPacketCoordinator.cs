@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -291,6 +291,13 @@ public class EventSystemsPacketCoordinator(
     private async Task HandleTempleEventDisbandAsync(UserSession session)
     {
         eventSchedulerService.LeaveTempleEvent(session.CharacterId);
+
+        if (CharacterReconnectZoneRepair.IsEventZone(session.ZoneId))
+        {
+            logger.LogInformation("Player {Name} left event from zone {Zone}. Warping to Moradon",
+                session.Name, session.ZoneId);
+            await zoneTransitionService.ChangeZoneAsync(session, (byte)ZoneId.Moradon, 0f, 0f);
+        }
 
         var packet = EventPacketWriter.TempleEvent(TempleEventDisband, 1, 0);
         await session.Client.SendPacket(packet);

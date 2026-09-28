@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -54,6 +54,13 @@ public partial class World
         public float Radius = 0.9f;
         public float BoundRadius = 1.0f;
         public string Name = "";
+        public int Id;
+        public bool IsBridge;
+        public bool GateOpen;
+        public Node3D? BridgeVisual;
+        public float BridgePitch;
+        public bool BridgeLowering;
+        public StaticBody3D? BridgeFloor;
         public int Level;
         public int Hp, MaxHp;
         public int ModelId, Size, Nation, NpcId, NpcType;
@@ -86,6 +93,15 @@ public partial class World
 
         if (_ents.TryGetValue(info.Id, out var existing))
         {
+            if (existing.IsBridge)
+            {
+                int trap = TrapNumberForPosition(existing.KoX, existing.KoZ);
+                bool shouldOpen = info.GateOpen || info.Dead || _openedGateUniqueIds.Contains(existing.Id)
+                    || (trap > 0 && _unlockedJuraidTraps.Contains(trap));
+                if (shouldOpen && existing.BridgePitch > BridgeLoweredPitch + 0.5f && !existing.BridgeLowering)
+                    StartLoweringBridge(existing);
+                return;
+            }
             var rp = EntityGroundPos(info.X, info.Z, info.Y, existing.Lift);
             float jump = existing.Body.Position.DistanceTo(rp);
             if (existing.Dead || info.Dead || jump > TeleportSnap || jump < MoveArriveEps)
@@ -102,6 +118,7 @@ public partial class World
                 existing.Attackable = info.Attackable;
                 RefreshEntityCollision(existing);
             }
+
             if (!info.IsNpc)
             {
                 if (info.Sitting) _sittingIds.Add(info.Id); else _sittingIds.Remove(info.Id);
@@ -172,7 +189,10 @@ public partial class World
             body = MakeEntity(ColorFor(info), label);
 
         body.Position = pos;
-        float spawnYaw = info.Dir != 0 ? 180f - 2f * info.Dir : (info.Id * 137) % 360;
+        bool isBridge = info.ModelId == 6700 || info.NpcId == 8110 || (label != null && label.Contains("Bridge", System.StringComparison.OrdinalIgnoreCase));
+        float spawnYaw = isBridge
+            ? BridgeYawForPosition(info.X, info.Z)
+            : info.Dir != 0 ? 180f - 2f * info.Dir : (info.Id * 137) % 360;
         if (scene != null)
             body.RotationDegrees = new Vector3(0, spawnYaw, 0);
         _entities.AddChild(body);
@@ -211,6 +231,7 @@ public partial class World
         var radii = BodyRadii(body);
         var ent = new Ent
         {
+            Id = info.Id,
             Body = body, Anim = anim, WingAnims = wingAnims, Flinch = flinch,
             Target = pos, HasTarget = true, Speed = 0f, Lift = lift,
             KoX = info.X, KoZ = info.Z, KoY = info.Y,
@@ -228,8 +249,105 @@ public partial class World
         };
         _ents[info.Id] = ent;
         ApplyGmFx(info.Id, Net.I.GmFxVisible(info.Id, info.IsGm));
-        ent.Collider = AttachBodyCollider(body, info.IsNpc ? ent.Radius : PlayerCapsuleRadius, lift);
-        RefreshEntityCollision(ent);
+
+        if (isBridge)
+        {
+            ent.IsBridge = true;
+            int trap = TrapNumberForPosition(info.X, info.Z);
+            var hinge = BridgeHingeForTrap(trap);
+            if (hinge != Vector3.Zero)
+            {
+                body.Position = Coord.ToGodot(hinge.X, hinge.Y, hinge.Z);
+                ent.Target = body.Position;
+                ent.KoX = hinge.X;
+                ent.KoY = hinge.Y;
+                ent.KoZ = hinge.Z;
+            }
+
+            float yaw = BridgeYawForTrap(trap);
+            body.RotationDegrees = new Vector3(0, yaw, 0);
+            ent.TargetYaw = yaw;
+
+            var visual = body.GetNodeOrNull<Node3D>(ModelNodeName) ?? body.FindChild(ModelNodeName, true, false) as Node3D;
+            ent.BridgeVisual = visual;
+
+            bool shouldOpen = info.GateOpen || info.Dead || _openedGateUniqueIds.Contains(info.Id)
+                || (trap > 0 && _unlockedJuraidTraps.Contains(trap));
+
+            if (shouldOpen)
+            {
+                ent.BridgePitch = BridgeLoweredPitch;
+                ent.GateOpen = true;
+                if (visual != null)
+                    visual.RotationDegrees = new Vector3(BridgeLoweredPitch, 0, 0);
+            }
+            else
+            {
+                ent.GateOpen = false;
+                ent.BridgePitch = 0f;
+                if (visual != null)
+                    visual.RotationDegrees = Vector3.Zero;
+            }
+
+            var blocker = new StaticBody3D { CollisionMask = 0, Name = "BridgeBlocker" };
+            var colShape = new CollisionShape3D
+            {
+                Shape = new BoxShape3D { Size = new Vector3(12f, 24f, 2f) },
+                Position = new Vector3(0, 12f, 0)
+            };
+            blocker.AddChild(colShape);
+            body.AddChild(blocker);
+            ent.Collider = blocker;
+
+            var floor = new StaticBody3D { CollisionMask = 0, Name = "BridgeFloor" };
+
+            // Upper landing: Overlaps room platform across full corridor width (12.6m), floor sits inside/underneath
+            var upperLanding = new CollisionShape3D
+            {
+                Name = "UpperLanding",
+                Shape = new BoxShape3D { Size = new Vector3(12.6f, 0.6f, 5.0f) },
+                Position = new Vector3(0, -0.30f, 2.5f)
+            };
+            floor.AddChild(upperLanding);
+
+            // Hinge lip: Bridges seam between upper landing and ramp
+            var lipShape = new CollisionShape3D
+            {
+                Name = "HingeLip",
+                Shape = new BoxShape3D { Size = new Vector3(12.6f, 0.6f, 2.4f) },
+                Position = new Vector3(0, -0.30f, 0.0f)
+            };
+            floor.AddChild(lipShape);
+
+            // Main ramp: Slopes down from local Z = 0 (global Z = 374.8) to local Z = -22.5 (global Z = 397.3)
+            var floorShape = new CollisionShape3D
+            {
+                Name = "Ramp",
+                Shape = new BoxShape3D { Size = new Vector3(10.2f, 0.6f, 23.0f) },
+                Position = new Vector3(0, -4.18f, -11.2f),
+                RotationDegrees = new Vector3(-19.7f, 0, 0)
+            };
+            floor.AddChild(floorShape);
+
+            // Lower landing: Horizontal slab overlapping lower floor across the chasm at Y=10.84
+            var lowerLanding = new CollisionShape3D
+            {
+                Name = "LowerLanding",
+                Shape = new BoxShape3D { Size = new Vector3(10.2f, 0.6f, 3.0f) },
+                Position = new Vector3(0, -8.34f, -22.5f)
+            };
+            floor.AddChild(lowerLanding);
+
+            body.AddChild(floor);
+            ent.BridgeFloor = floor;
+
+            RefreshEntityCollision(ent);
+        }
+        else
+        {
+            ent.Collider = AttachBodyCollider(body, info.IsNpc ? ent.Radius : PlayerCapsuleRadius, lift);
+            RefreshEntityCollision(ent);
+        }
         if (!info.IsNpc)
         {
             ent.TargetYaw = 180f - info.Dir;
@@ -267,6 +385,12 @@ public partial class World
 
     private void LayOutCorpse(Ent e, bool settled = true)
     {
+        if (e.IsBridge)
+        {
+            StartLoweringBridge(e);
+            return;
+        }
+
         e.Dead = true;
         e.HasTarget = false;
         e.Speed = 0f;
@@ -303,11 +427,22 @@ public partial class World
         return lines;
     }
 
-    private static bool BlocksMovement(Ent e) =>
-        !e.Dead && (e.IsNpc ? e.NpcType == NpcTypes.Scarecrow : e.Attackable);
+    private static bool BlocksMovement(Ent e)
+    {
+        if (e.IsBridge) return !e.GateOpen;
+        return !e.Dead && (e.IsNpc ? e.NpcType == NpcTypes.Scarecrow : e.Attackable);
+    }
 
     private static void RefreshEntityCollision(Ent e)
     {
+        if (e.IsBridge)
+        {
+            if (GodotObject.IsInstanceValid(e.Collider))
+                e.Collider.CollisionLayer = e.GateOpen ? 0u : BlockerCollisionLayer;
+            if (e.BridgeFloor != null && GodotObject.IsInstanceValid(e.BridgeFloor))
+                e.BridgeFloor.CollisionLayer = e.GateOpen ? WorldCollisionLayer : 0u;
+            return;
+        }
         if (e.Collider == null || !GodotObject.IsInstanceValid(e.Collider)) return;
         e.Collider.CollisionLayer = BlocksMovement(e) ? BlockerCollisionLayer : 0u;
     }
@@ -338,6 +473,7 @@ public partial class World
 
     private static void TickEntityFacing(Ent e, float dt)
     {
+        if (e.IsBridge) return;
         float current = e.Body.RotationDegrees.Y;
         float delta = Mathf.RadToDeg(Mathf.AngleDifference(
             Mathf.DegToRad(current), Mathf.DegToRad(e.TargetYaw)));
@@ -355,7 +491,7 @@ public partial class World
     private void OnMove(int id, float x, float z, float y, float velHint, bool travelling)
     {
         if (id == _myId) return;
-        if (!_ents.TryGetValue(id, out var e)) return;
+        if (!_ents.TryGetValue(id, out var e) || e.IsBridge) return;
         if (e.Dead)
         {
             e.Dead = false; e.CorpseRemoveAt = 0; e.ActionUntil = 0; e.ActionClip = null; e.Clip = null;
@@ -443,7 +579,7 @@ public partial class World
     private void OnRotate(int id, float dir)
     {
         if (id == _myId) return;
-        if (!_ents.TryGetValue(id, out var e)) return;
+        if (!_ents.TryGetValue(id, out var e) || e.IsBridge) return;
         FaceEntity(e, 180f - dir, immediate: false);
     }
 
@@ -651,4 +787,83 @@ public partial class World
         if (d >= 0) return new Color(1f, 0.85f, 0.35f);
         return new Color(0.5f, 1f, 0.5f);
     }
+
+    private const float BridgeLoweredPitch = -110.0f;
+
+    private void StartLoweringBridge(Ent e)
+    {
+        if (!e.IsBridge || e.BridgeLowering || e.BridgePitch <= BridgeLoweredPitch + 0.5f) return;
+        e.GateOpen = false;
+        e.BridgeLowering = true;
+        if (e.BridgeVisual == null || !GodotObject.IsInstanceValid(e.BridgeVisual))
+            e.BridgeVisual = e.Body.GetNodeOrNull<Node3D>(ModelNodeName) ?? e.Body.FindChild(ModelNodeName, true, false) as Node3D;
+        Chat.Info("A bridge descends across the chasm!");
+    }
+
+    private void ResetBridge(Ent e)
+    {
+        if (!e.IsBridge) return;
+        e.GateOpen = false;
+        e.BridgeLowering = false;
+        e.BridgePitch = 0f;
+        if (e.BridgeVisual == null || !GodotObject.IsInstanceValid(e.BridgeVisual))
+            e.BridgeVisual = e.Body.GetNodeOrNull<Node3D>(ModelNodeName) ?? e.Body.FindChild(ModelNodeName, true, false) as Node3D;
+        if (e.BridgeVisual != null)
+            e.BridgeVisual.RotationDegrees = Vector3.Zero;
+        RefreshEntityCollision(e);
+    }
+
+    private void TickBridge(Ent e, float dt)
+    {
+        if (!e.IsBridge || !e.BridgeLowering) return;
+        e.BridgePitch = Mathf.MoveToward(e.BridgePitch, BridgeLoweredPitch, 45f * dt);
+        if (e.BridgeVisual == null || !GodotObject.IsInstanceValid(e.BridgeVisual))
+            e.BridgeVisual = e.Body.GetNodeOrNull<Node3D>(ModelNodeName) ?? e.Body.FindChild(ModelNodeName, true, false) as Node3D;
+        if (e.BridgeVisual != null)
+            e.BridgeVisual.RotationDegrees = new Vector3(e.BridgePitch, 0, 0);
+
+        if (e.BridgePitch <= BridgeLoweredPitch + 0.5f)
+        {
+            e.BridgePitch = BridgeLoweredPitch;
+            e.BridgeLowering = false;
+            e.GateOpen = true;
+            RefreshEntityCollision(e);
+        }
+    }
+
+    public static int TrapNumberForPosition(float koX, float koZ)
+    {
+        if (Mathf.Abs(koX - 224f) < 50f && (Mathf.Abs(koZ - 645f) < 50f || Mathf.Abs(koZ - 638f) < 50f)) return 1;
+        if ((Mathf.Abs(koX - 309f) < 50f || Mathf.Abs(koX - 301.5f) < 50f) && Mathf.Abs(koZ - 848f) < 50f) return 2;
+        if (Mathf.Abs(koX - 512f) < 50f && (Mathf.Abs(koZ - 767f) < 50f || Mathf.Abs(koZ - 775f) < 50f)) return 3;
+        if (Mathf.Abs(koX - 800f) < 50f && (Mathf.Abs(koZ - 375f) < 50f || Mathf.Abs(koZ - 382.6f) < 50f)) return 4;
+        if ((Mathf.Abs(koX - 715f) < 50f || Mathf.Abs(koX - 723f) < 50f || Mathf.Abs(koX - 700f) < 50f) && Mathf.Abs(koZ - 172f) < 50f) return 5;
+        if (Mathf.Abs(koX - 512f) < 50f && (Mathf.Abs(koZ - 257f) < 50f || Mathf.Abs(koZ - 249.2f) < 50f)) return 6;
+        return 0;
+    }
+
+    public static float BridgeYawForTrap(int trap) => trap switch
+    {
+        1 => 0f,
+        2 => -90f,
+        3 => 180f,
+        4 => 180f,
+        5 => 90f,
+        6 => 0f,
+        _ => 0f
+    };
+
+    public static float BridgeYawForPosition(float koX, float koZ) =>
+        BridgeYawForTrap(TrapNumberForPosition(koX, koZ));
+
+    public static Vector3 BridgeHingeForTrap(int trap) => trap switch
+    {
+        1 => new Vector3(224.0f, 18.88f, 645.0f),
+        2 => new Vector3(309.0f, 18.88f, 848.0f),
+        3 => new Vector3(512.0f, 18.88f, 767.0f),
+        4 => new Vector3(800.0f, 18.88f, 374.8f),
+        5 => new Vector3(714.8f, 18.88f, 172.0f),
+        6 => new Vector3(512.0f, 18.88f, 257.0f),
+        _ => Vector3.Zero
+    };
 }

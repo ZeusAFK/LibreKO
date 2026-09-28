@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Enums;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -15,6 +15,7 @@ public class EventSchedulerService(
     IZoneTransitionService zoneTransitionService,
     ICollectionRaceService collectionRaceService,
     ILotteryService lotteryService,
+    IJuraidMountainService juraidMountainService,
     ILogger<EventSchedulerService> logger) : BackgroundService
 {
     private DateTime _lastWarOpen = DateTime.MinValue;
@@ -257,6 +258,12 @@ public class EventSchedulerService(
         var startPkt = NoticePacketWriter.Broadcast($"### [EVENT] {TempleEventRules.NameFor(_templeEvent)} has started! Teleporting registered players... ###");
         await sessionManager.BroadcastToAll(startPkt);
 
+        if (_templeEvent == TempleEvent.JuraidMountain)
+        {
+            await juraidMountainService.StartMatchesAsync(_templeParticipants.ToList(), TempleEventRules.JuraidMountainDurationSeconds);
+            return;
+        }
+
         foreach (var charId in _templeParticipants)
         {
             var session = sessionManager.GetByCharacterId(charId);
@@ -276,14 +283,21 @@ public class EventSchedulerService(
 
     private async Task WarpParticipantsOutAsync(byte zoneId)
     {
-        var playersInZone = sessionManager.GetAll().Where(s => s.ZoneId == zoneId).ToList();
-        logger.LogInformation("Warping {Count} players out of event zone {Zone} back to Moradon",
-            playersInZone.Count, zoneId);
-
         var endPkt = NoticePacketWriter.Broadcast($"### [EVENT] {TempleEventRules.NameFor(_templeEvent)} has ended! Returning participants to Moradon... ###");
         await sessionManager.BroadcastToAll(endPkt);
 
-        foreach (var session in playersInZone)
+        if (_templeEvent == TempleEvent.JuraidMountain || juraidMountainService.HasActiveMatches)
+        {
+            await juraidMountainService.CancelAllMatchesAsync();
+        }
+
+        var playersInEvent = sessionManager.GetAll()
+            .Where(s => (zoneId != 0 && s.ZoneId == zoneId) || CharacterReconnectZoneRepair.IsEventZone(s.ZoneId))
+            .ToList();
+
+        logger.LogInformation("Warping {Count} players out of event zones back to Moradon", playersInEvent.Count);
+
+        foreach (var session in playersInEvent)
         {
             try
             {
@@ -291,7 +305,7 @@ public class EventSchedulerService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to warp player {Name} out of event zone {Zone}", session.Name, zoneId);
+                logger.LogError(ex, "Failed to warp player {Name} out of event zone {Zone}", session.Name, session.ZoneId);
             }
         }
     }
@@ -349,6 +363,11 @@ public class EventSchedulerService(
             {
                 await WarpParticipantsOutAsync(_templeEventZone);
             }
+        }
+
+        if (_templeEvent == TempleEvent.JuraidMountain || juraidMountainService.HasActiveMatches)
+        {
+            await juraidMountainService.CancelAllMatchesAsync();
         }
 
         byte[] eventZones = [(byte)ZoneId.JuradMountain, (byte)ZoneId.BorderDefenseWar, (byte)ZoneId.ChaosDungeon];

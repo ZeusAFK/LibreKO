@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -251,7 +251,7 @@ public partial class World
     {
         foreach (var e in _ents.Values)
         {
-            if (e.HasTarget) continue;
+            if (e.HasTarget || e.IsBridge) continue;
             e.Body.Position = EntityGroundPos(e.KoX, e.KoZ, e.KoY, e.Lift);
         }
     }
@@ -275,14 +275,58 @@ public partial class World
     {
         if (_selfBody == null || NoClip) return float.NegativeInfinity;
         var space = GetWorld3D().DirectSpaceState;
-        var from = new Vector3(atGodot.X, feetY + StepUp, atGodot.Z);
-        var to = new Vector3(atGodot.X, Mathf.Min(atGodot.Y, feetY) - 2f, atGodot.Z);
-        var q = PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer);
-        q.Exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
-        var hit = space.IntersectRay(q);
-        if (hit.Count == 0) return float.NegativeInfinity;
-        if (((Vector3)hit["normal"]).Y < 0.5f) return float.NegativeInfinity;
-        return ((Vector3)hit["position"]).Y;
+        var exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
+
+        // 1. High-to-low floor probe: search from above head level down to feetY - 0.8m.
+        // In dungeons, subfloors/basements exist 3-4m below. Starting high (and at least Y=21.0 in Juraid)
+        // guarantees that any top floor or bridge is ALWAYS prioritized over subfloors.
+        // It also rescues characters that have fallen into the subfloor.
+        float searchTop = Mathf.Max(feetY + 2.5f, 21.0f);
+        float searchBottom = feetY - 0.8f;
+        var curFrom = new Vector3(atGodot.X, searchTop, atGodot.Z);
+        var toLimit = new Vector3(atGodot.X, searchBottom, atGodot.Z);
+        for (int step = 0; step < 6; step++)
+        {
+            var q = PhysicsRayQueryParameters3D.Create(curFrom, toLimit, WorldCollisionLayer);
+            q.Exclude = exclude;
+            var hit = space.IntersectRay(q);
+            if (hit.Count == 0) break;
+            var normal = (Vector3)hit["normal"];
+            var pos = (Vector3)hit["position"];
+            if (normal.Y >= 0.5f)
+            {
+                // Verify clear headroom (1.8m) above the floor hit
+                var headQ = PhysicsRayQueryParameters3D.Create(
+                    pos + new Vector3(0, 0.1f, 0),
+                    pos + new Vector3(0, 1.8f, 0),
+                    WorldCollisionLayer);
+                headQ.Exclude = exclude;
+                if (space.IntersectRay(headQ).Count == 0)
+                    return pos.Y;
+            }
+            if (pos.Y - 0.02f <= toLimit.Y) break;
+            curFrom = new Vector3(curFrom.X, pos.Y - 0.02f, curFrom.Z);
+        }
+
+        // 2. Normal step-down probe: allows stepping down slopes/stairs up to 1.2m below feetY
+        var stepFrom = new Vector3(atGodot.X, feetY + 0.5f, atGodot.Z);
+        var stepTo = new Vector3(atGodot.X, feetY - 1.2f, atGodot.Z);
+        var stepQ = PhysicsRayQueryParameters3D.Create(stepFrom, stepTo, WorldCollisionLayer);
+        stepQ.Exclude = exclude;
+        var stepHit = space.IntersectRay(stepQ);
+        if (stepHit.Count > 0 && ((Vector3)stepHit["normal"]).Y >= 0.5f)
+        {
+            var pos = (Vector3)stepHit["position"];
+            var headQ = PhysicsRayQueryParameters3D.Create(
+                pos + new Vector3(0, 0.1f, 0),
+                pos + new Vector3(0, 1.8f, 0),
+                WorldCollisionLayer);
+            headQ.Exclude = exclude;
+            if (space.IntersectRay(headQ).Count == 0)
+                return pos.Y;
+        }
+
+        return float.NegativeInfinity;
     }
 
     private bool CapsuleOverlaps()

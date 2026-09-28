@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -88,6 +88,7 @@ public partial class World : Node3D
         Facet(AwakenInit, AwakenDispose);
         Facet(ChangeHairInit, ChangeHairDispose);
         Facet(TownRecallInit);
+        Facet(EventExitInit, EventExitDispose);
         Facet(UpgradeNoticeInit, UpgradeNoticeDispose);
         Facet(MailInit, MailDispose);
         Facet(AuctionInit, AuctionDispose);

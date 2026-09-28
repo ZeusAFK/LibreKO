@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -43,6 +43,7 @@ public class AdminPacketCoordinator(
     INpcSummonService npcSummonService,
     ILotteryService lotteryService,
     IMerchantBotService merchantBotService,
+    IJuraidMountainService juraidMountainService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
     private const int MaxGmSummonCount = 50;
@@ -271,6 +272,20 @@ public class AdminPacketCoordinator(
             case "jr":
             case "juraid":
                 await HandleTempleEventCommandAsync(session, TempleEvent.JuraidMountain, ZoneId.JuradMountain, "Juraid Mountain", arg);
+                break;
+
+            case "jropen":
+            case "openbridge":
+            case "bridgeopen":
+                int targetTrap = int.TryParse(arg, out var tr) ? tr : 0;
+                if (await juraidMountainService.UnlockBridgeForUserAsync(session, targetTrap))
+                {
+                    await SendNoticeAsync(session, targetTrap > 0 ? $"Bridge trap {targetTrap} unlocked!" : "All Juraid bridges unlocked!");
+                }
+                else
+                {
+                    await SendNoticeAsync(session, "Failed: You must be inside an active Juraid Mountain room instance.");
+                }
                 break;
 
             case "bdw":
@@ -1324,8 +1339,15 @@ public class AdminPacketCoordinator(
 
     private async Task HandleTempleEventCommandAsync(UserSession session, TempleEvent contest, ZoneId zoneId, string eventName, string arg)
     {
-        if (arg is "0" or "now")
+        if (arg is "0" or "now" or "start")
         {
+            if (contest == TempleEvent.JuraidMountain)
+            {
+                await juraidMountainService.StartMatchForCallerAsync(session);
+                await SendNoticeAsync(session, $"[{eventName}] Started instant Juraid Mountain room instance with monsters & bridges!");
+                return;
+            }
+
             await zoneTransitionService.ChangeZoneAsync(session, (byte)zoneId, 0f, 0f);
             await SendNoticeAsync(session, $"[{eventName}] Teleported directly to event map!");
             return;
