@@ -140,15 +140,20 @@ public class CollectionRaceTests
         await _service.HandlePlayerKillAsync(victim, player);
 
         progress.IsCompleted.Should().BeTrue();
-        await _mailService.DidNotReceive().SendSystemMailAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await _mailService.Received(1).SendSystemMailAsync(player.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
     }
 
     [Fact]
-    public async Task EndRaceAsync_MailsEveryRewardToEachCompleter_AndNobodyElse()
+    public async Task FinishingMailsEveryRewardAtOnce_AndTheEndMailsNothingMore()
     {
         await _service.StartRaceAsync(MoradonRace);
         var winner = CreatePlayer(1, Moradon);
         var partial = CreatePlayer(2, Moradon);
+
+        IReadOnlyList<MailAttachmentDraft>? mailed = null;
+        await _mailService.SendSystemMailAsync(winner.CharacterId, Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Do<IReadOnlyList<MailAttachmentDraft>>(a => mailed = a));
+        _mailService.ClearReceivedCalls();
 
         var kecoon = new NpcInstance { NpcId = Kecoon, ZoneId = Moradon };
         await _service.HandleNpcKillAsync(kecoon, winner);
@@ -158,13 +163,11 @@ public class CollectionRaceTests
         await _service.HandlePlayerKillAsync(victim, winner);
         await _service.HandleNpcKillAsync(kecoon, partial);
 
-        IReadOnlyList<MailAttachmentDraft>? mailed = null;
-        await _mailService.SendSystemMailAsync(winner.CharacterId, Arg.Any<string>(), Arg.Any<string>(),
-            Arg.Do<IReadOnlyList<MailAttachmentDraft>>(a => mailed = a));
+        await _mailService.Received(1).SendSystemMailAsync(winner.CharacterId, "Collection Race: Test Moradon Race", Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
 
         await _service.EndRaceAsync(MoradonRace);
 
-        await _mailService.Received(1).SendSystemMailAsync(winner.CharacterId, "Collection Race: Test Moradon Race", Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await _mailService.Received(1).SendSystemMailAsync(winner.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
         await _mailService.DidNotReceive().SendSystemMailAsync(partial.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
         mailed.Should().NotBeNull();
         mailed!.Select(a => (a.Kind, a.Count)).Should().Equal(
@@ -195,6 +198,45 @@ public class CollectionRaceTests
         await _mailService.Received(1).SendSystemMailAsync(leader.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
         await _mailService.Received(1).SendSystemMailAsync(member.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
         await _mailService.DidNotReceive().SendSystemMailAsync(elsewhere.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+    }
+
+    [Fact]
+    public async Task TheRaceClosesWhenTheLastWinnerPlaceIsTaken()
+    {
+        _races[LufersonRace].MaxWinners = 2;
+        await _service.StartRaceAsync(LufersonRace);
+        var first = CreatePlayer(11, Luferson);
+        var second = CreatePlayer(12, Luferson);
+        var late = CreatePlayer(13, Luferson);
+        var kecoon = new NpcInstance { NpcId = Kecoon, ZoneId = Luferson };
+
+        await _service.HandleNpcKillAsync(kecoon, first);
+        _service.GetActive(Luferson)!.Winners.Should().Be(1);
+        await _service.HandleNpcKillAsync(kecoon, second);
+
+        _service.GetActive(Luferson).Should().BeNull("both winner places are taken");
+        await _service.HandleNpcKillAsync(kecoon, late);
+
+        await _mailService.Received(1).SendSystemMailAsync(first.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await _mailService.Received(1).SendSystemMailAsync(second.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await _mailService.DidNotReceive().SendSystemMailAsync(late.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+    }
+
+    [Fact]
+    public void APlaceBeyondTheLimitIsRefused_AndARaceWithoutALimitNeverFills()
+    {
+        var limited = new ActiveCollectionRace(
+            new CollectionRaceData { Id = 90, MaxWinners = 1 }, _objectives, DateTime.UtcNow.AddMinutes(1));
+        limited.TryClaimPlace().Should().Be(1);
+        limited.TryClaimPlace().Should().Be(0);
+        limited.Winners.Should().Be(1);
+        limited.IsFull.Should().BeTrue();
+
+        var open = new ActiveCollectionRace(
+            new CollectionRaceData { Id = 91, MaxWinners = 0 }, _objectives, DateTime.UtcNow.AddMinutes(1));
+        open.TryClaimPlace().Should().Be(1);
+        open.TryClaimPlace().Should().Be(2);
+        open.IsFull.Should().BeFalse();
     }
 
     [Fact]

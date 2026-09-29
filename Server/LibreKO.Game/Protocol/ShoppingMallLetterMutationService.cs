@@ -168,7 +168,8 @@ public class ShoppingMallLetterMutationService(
         if (itemSlot != null)
         {
             itemSlot.Clear();
-            await userNotificationService.SendStackChangeAsync(session, sourcePosition, 0, 0, 0);
+            await userNotificationService.SendStackChangeAsync(
+                session, (byte)(InventoryConstants.InventoryStart + sourcePosition), 0, 0, 0);
         }
 
         db.MailBoxes.Add(new MailBox

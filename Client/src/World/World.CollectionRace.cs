@@ -15,6 +15,8 @@ public partial class World
     private CanvasLayer _crLayer = null!;
     private HudWindow _crWindow = null!;
     private Label _crCompletingLabel = null!;
+    private Control _crWinnersRow = null!;
+    private Label _crWinnersLabel = null!;
     private Label _crTimerDigits = null!;
     private VBoxContainer _crHuntBlock = null!;
     private VBoxContainer _crHuntBox = null!;
@@ -41,6 +43,7 @@ public partial class World
         Net.I.CollectionRaceProgressEvent += OnCollectionRaceProgress;
         Net.I.CollectionRaceCompletedEvent += OnCollectionRaceCompleted;
         Net.I.CollectionRaceCloseEvent += OnCollectionRaceClose;
+        Net.I.CollectionRaceWinnersEvent += OnCollectionRaceWinners;
 
         Net.I.SendCollectionRaceRequest();
     }
@@ -70,6 +73,9 @@ public partial class World
         var completing = QuestValueRow("Completing", "0", UiTheme.TextLo);
         _crCompletingLabel = completing.GetChild<Label>(completing.GetChildCount() - 1);
         infoBox.AddChild(completing);
+        _crWinnersRow = QuestValueRow("Winners", "0 / 0", UiTheme.TextHi);
+        _crWinnersLabel = _crWinnersRow.GetChild<Label>(_crWinnersRow.GetChildCount() - 1);
+        infoBox.AddChild(_crWinnersRow);
         var time = QuestValueRow("Event time", "00 : 00", UiTheme.GoldBright);
         _crTimerDigits = time.GetChild<Label>(time.GetChildCount() - 1);
         infoBox.AddChild(time);
@@ -102,6 +108,7 @@ public partial class World
         Net.I.CollectionRaceProgressEvent -= OnCollectionRaceProgress;
         Net.I.CollectionRaceCompletedEvent -= OnCollectionRaceCompleted;
         Net.I.CollectionRaceCloseEvent -= OnCollectionRaceClose;
+        Net.I.CollectionRaceWinnersEvent -= OnCollectionRaceWinners;
 
         if (IsInstanceValid(_crTimer))
             _crTimer.QueueFree();
@@ -146,8 +153,25 @@ public partial class World
 
         RenderObjectives();
         RenderRewards();
+        PaintCollectionRaceWinners();
 
         _crWindow.Visible = true;
+    }
+
+    private void OnCollectionRaceWinners(int raceId, int winners, int maxWinners)
+    {
+        if (_crState == null || _crState.RaceId != raceId) return;
+        _crState.Winners = winners;
+        _crState.MaxWinners = maxWinners;
+        PaintCollectionRaceWinners();
+    }
+
+    private void PaintCollectionRaceWinners()
+    {
+        bool limited = _crState is { MaxWinners: > 0 };
+        _crWinnersRow.Visible = limited;
+        if (limited)
+            _crWinnersLabel.Text = $"{_crState!.Winners} / {_crState.MaxWinners}";
     }
 
     private void OnCollectionRaceProgress(int raceId, int[] currents)

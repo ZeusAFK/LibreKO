@@ -16,8 +16,7 @@ public partial class World : Node3D
     {
         _touchZoneLayer = new CanvasLayer { Layer = TouchZoneLayerIndex };
         AddChild(_touchZoneLayer);
-        TouchControls.BuildCameraZone(_touchZoneLayer, OrbitCamera,
-            () => SelectNearest(hostile: true));
+        TouchControls.BuildCameraZone(_touchZoneLayer, OrbitCamera, TouchTapWorld);
 
         _touchLayer = new CanvasLayer { Layer = TouchLayerIndex };
         AddChild(_touchLayer);
@@ -38,6 +37,12 @@ public partial class World : Node3D
         GD.Print($"[touch] on-screen controls built: sticks {TouchControls.StickSize:F0}px, "
                  + $"{TouchControls.ActionSlots} action buttons, "
                  + $"auto-attack at {_touchActions.AutoAttackButtonForPreview.GetGlobalRect()}");
+    }
+
+    private void TouchTapWorld(Vector2 at)
+    {
+        if (TryClickLootBox(at)) return;
+        SelectNearest(hostile: true);
     }
 
     private Texture2D? TouchSlotIcon(int slotInPage)

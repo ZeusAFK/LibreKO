@@ -156,6 +156,14 @@ public partial class World
     {
         if (_miniMap == null) return;
         _blipScratch.Clear();
+        if (!_blind.HidesOthers(Now())) AddEntityBlips();
+        float heading = Coord.KoHeading(Mathf.Sin(_camYaw), -Mathf.Cos(_camYaw));
+        _miniMap.UpdateView(_myKoX, _myKoZ, heading, _blipScratch);
+        PluginNotifyMap(heading);
+    }
+
+    private void AddEntityBlips()
+    {
         foreach (var kv in _ents)
         {
             var e = kv.Value;
@@ -174,9 +182,6 @@ public partial class World
             if (kv.Key == _selectedId)
                 _blipScratch.Add(new MiniMap.Blip(kx, kz, UiTheme.TextHi, 5.5f, true));
         }
-        float heading = Coord.KoHeading(Mathf.Sin(_camYaw), -Mathf.Cos(_camYaw));
-        _miniMap.UpdateView(_myKoX, _myKoZ, heading, _blipScratch);
-        PluginNotifyMap(heading);
     }
 
     private void UpdateStatusHud()

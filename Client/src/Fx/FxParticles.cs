@@ -213,8 +213,8 @@ public partial class FxParticles : Node3D, IFxPooledPart, IFxPart
         var xform = Transform3D.Identity;
         for (int i = 0; i < want; i++)
         {
-            Vector3 local = template.BoxOffset + new Vector3(
-                Span(template.BoxExtent.X), Span(template.BoxExtent.Y), Span(template.BoxExtent.Z));
+            Vector3 local = template.BoxBasis * (template.BoxOffset + new Vector3(
+                Span(template.BoxExtent.X), Span(template.BoxExtent.Y), Span(template.BoxExtent.Z)));
             Vector3 pos = world * local;
             Vector3 velocity;
             if (template.Gather)

@@ -66,7 +66,7 @@ public class MagicExecutionService(
             case MagicSkillType.Special:
             case MagicSkillType.Transform:
             case MagicSkillType.Stealth:
-                await magicStatusEffectService.ExecuteAsync(session, magic, skillType, skillId, targetId, data);
+                await magicStatusEffectService.ExecuteAsync(session, magic, skillType, skillId, targetId, data, isPrimary);
                 break;
             case MagicSkillType.Warp:
                 await magicMovementEffectService.ExecuteAsync(session, magic, skillId, targetId, data);

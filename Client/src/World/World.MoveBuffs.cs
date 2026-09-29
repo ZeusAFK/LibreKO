@@ -1,5 +1,4 @@
-﻿using System;
-using Godot;
+﻿using Godot;
 
 namespace LibreKO;
 
@@ -12,19 +11,9 @@ public partial class World
     private double _castingUntil;
     private float _castAnimScale = 1f;
 
-    [Flags]
-    private enum MoveKeys
-    {
-        None = 0,
-        Forward = 1,
-        Backward = 2,
-        TurnLeft = 4,
-        TurnRight = 8,
-        Walk = Forward | Backward,
-    }
-
     private MoveKeys _movePrevMask;
     private bool _movePressedEdge;
+    private bool _walkPressedEdge;
     private bool _walkKeyHeld;
     private bool _moveInputHeld;
     private const double CastHoldCancelGraceSeconds = 0.15;

@@ -9,15 +9,19 @@ public partial class Net
     public event Action<int, int[]>? CollectionRaceProgressEvent;
     public event Action<string>? CollectionRaceCompletedEvent;
     public event Action? CollectionRaceCloseEvent;
+    public event Action<int, int, int>? CollectionRaceWinnersEvent;
 
     public const byte SubState = 1;
     public const byte SubProgress = 2;
     public const byte SubCompleted = 3;
     public const byte SubClose = 4;
+    public const byte SubWinners = 5;
 
     private const int MinStateBytes = 12;
     private const int MinObjectiveEntryBytes = 14;
     private const int MinRewardEntryBytes = 10;
+    private const int WinnersBytes = 8;
+    private const int WinnersUpdateBytes = 12;
 
     private void HandleCollectionRace(Packet p)
     {
@@ -65,7 +69,23 @@ public partial class Net
                     }
                 }
 
+                if (p.RemainingBytes >= WinnersBytes)
+                {
+                    state.Winners = p.ReadInt();
+                    state.MaxWinners = p.ReadInt();
+                }
+
                 CollectionRaceStateEvent?.Invoke(state);
+                break;
+            }
+
+            case SubWinners:
+            {
+                if (p.RemainingBytes < WinnersUpdateBytes) return;
+                int raceId = p.ReadInt();
+                int winners = p.ReadInt();
+                int maxWinners = p.ReadInt();
+                CollectionRaceWinnersEvent?.Invoke(raceId, winners, maxWinners);
                 break;
             }
 
@@ -135,6 +155,8 @@ public class CollectionRaceState
     public byte ZoneId;
     public int RemainingSeconds;
     public bool IsCompleted;
+    public int Winners;
+    public int MaxWinners;
     public List<CollectionRaceObjective> Objectives = [];
     public List<CollectionRaceReward> Rewards = [];
 }

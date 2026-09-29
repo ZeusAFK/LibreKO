@@ -718,7 +718,7 @@ public partial class World
     }
 
     private const float LargeObjectFootprint = 15f;
-    private const float LargeObjectLodBias = 4f;
+    private const float LargeObjectLodBias = 16f;
     private const float SmallObjectCullDist = 200f;
     private const float LargeObjectCullDist = 700f;
     private const float ObjectCullFade = 30f;

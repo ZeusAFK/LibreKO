@@ -140,6 +140,7 @@ public partial class World
         CueReadySkills(now);
         UpdateHotbarReady(now);
         BuffBarTick(now);
+        BlindTick(now);
         PotionBarTick(now);
         _touchActions?.SetAutoAttack(CanAutoAttack(), _autoAttack);
         ExpBarStatsTick(now);
@@ -414,6 +415,11 @@ public partial class World
                 break;
 
             case 3:
+                if (s != null && SecondaryBuff.IsEcho(s, data))
+                {
+                    OnSecondaryBuffLanded(s, targetId == 0 ? casterId : targetId, SecondaryBuff.Seconds(data));
+                    break;
+                }
                 bool miss = data.Length > 3 && data[3] <= -100;
                 int affected = targetId == 0 ? casterId : targetId;
                 if (Diag.SlowLog) GD.Print($"[fx] effecting skill={skillId} caster={casterId} target={targetId} miss={miss} targetFx={s?.TargetFx} part={s?.TargetPart} data3={(data.Length > 3 ? data[3] : 0)}");
@@ -452,7 +458,10 @@ public partial class World
                     }
                 }
                 if (!miss && s != null)
+                {
                     RegisterBuff(s, affected, BuffSeconds(s, data));
+                    if (affected == _myId && s.Type1 == MagicType.Buff) StartBlind(s.BuffType, BuffSeconds(s, data));
+                }
                 if (!miss && s?.IsResurrect == true) Revive(affected);
                 break;
 

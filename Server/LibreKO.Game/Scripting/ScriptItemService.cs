@@ -19,6 +19,7 @@ public class ScriptItemService(
     QuestScriptContext context)
 {
     private const ushort MaxItemCount = 9999;
+    public const string InventoryFullReason = "Your inventory is full.";
 
     public bool HasCoins(int _uid, int amount) => session.Money >= amount;
 
@@ -125,7 +126,7 @@ public class ScriptItemService(
         var slotIndex = session.FindSlotForItem(itemId, gameData, (ushort)Math.Min(count, ushort.MaxValue));
         if (slotIndex < 0)
         {
-            context.FailAction("You need a free inventory slot for the reward.");
+            context.FailAction(InventoryFullReason);
             return false;
         }
 
@@ -759,7 +760,11 @@ public class ScriptItemService(
         foreach (var (itemId, count) in rewards)
         {
             if (TryInsertItem(snapshot, itemId, count, applyChanges: true) < 0)
+            {
+                if (count > 0 && gameData.GetItem(itemId) is not null)
+                    context.FailAction(InventoryFullReason);
                 return false;
+            }
         }
 
         return true;
@@ -824,12 +829,8 @@ public class ScriptItemService(
 
     private void QueueStackChange(byte position, int itemId, ushort count, short durability, bool isNewItem = false)
     {
-        var normalizedPos = position >= InventoryConstants.InventoryStart
-            ? (byte)(position - InventoryConstants.InventoryStart)
-            : position;
-
         var packet = new ItemCountChangePacketWriter()
-            .Add(normalizedPos, itemId, count, durability, isNewItem)
+            .Add(position, itemId, count, durability, isNewItem)
             .Build();
         queuedPackets.Add(packet);
     }

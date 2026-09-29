@@ -15,6 +15,7 @@ public class AdminCollectionRace
     public bool Active;
     public int RemainingSeconds;
     public int Completions;
+    public int MaxWinners;
     public string Schedule = string.Empty;
     public string Objectives = string.Empty;
 }
@@ -214,12 +215,14 @@ public partial class Net
         _conn.Send(p);
     }
 
+    private const int AdminCollectionRaceRowMinBytes = 26;
+
     private void ParseAdminCollectionRaces(Packet p)
     {
         if (p.RemainingBytes < 2) return;
         int count = p.ReadUShort();
         var rows = new List<AdminCollectionRace>(count);
-        for (int i = 0; i < count && p.RemainingBytes >= 22; i++)
+        for (int i = 0; i < count && p.RemainingBytes >= AdminCollectionRaceRowMinBytes; i++)
         {
             rows.Add(new AdminCollectionRace
             {
@@ -233,6 +236,7 @@ public partial class Net
                 Active = p.ReadByte() == 1,
                 RemainingSeconds = p.ReadInt(),
                 Completions = p.ReadInt(),
+                MaxWinners = p.ReadInt(),
                 Schedule = p.ReadSByteString(),
                 Objectives = p.ReadSByteString(),
             });

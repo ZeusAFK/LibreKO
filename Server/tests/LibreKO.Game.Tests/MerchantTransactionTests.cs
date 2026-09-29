@@ -313,6 +313,34 @@ public class MerchantTransactionTests : GameTestBase
             .Should().Be((byte)BuyingMerchantResult.InventoryFull);
     }
 
+    [Fact]
+    public async Task ASaleFromTheBackHalfOfTheBagNamesTheSlotOnBothSides()
+    {
+        const byte backHalfSlot = 20;
+        using var provider = Provider();
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+
+        var owner = Player(sessionManager, 8418, 9418, money: 1_000_000, out var ownerSent);
+        owner.Trade.MerchantState = MerchantMode.Buying;
+        owner.Trade.BuyMerchantItems[0] = new MerchantItem
+        {
+            ItemId = StackableItem, Count = 5, Price = 1_000,
+        };
+        FillBags(owner, 700000000);
+        owner.Inventory[InventoryConstants.SlotMax + backHalfSlot].Clear();
+
+        var seller = Player(sessionManager, 8419, 9419, money: 0, out var sellerSent);
+        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Inventory[InventoryConstants.SlotMax + backHalfSlot].ItemId = StackableItem;
+        seller.Inventory[InventoryConstants.SlotMax + backHalfSlot].Count = 5;
+
+        await Sell(provider, seller, sellerSlot: backHalfSlot, wantedSlot: 0, count: 1);
+
+        owner.Inventory[InventoryConstants.SlotMax + backHalfSlot].ItemId.Should().Be(StackableItem);
+        CountChangePackets.Positions(sellerSent).Should().Equal(backHalfSlot);
+        CountChangePackets.Positions(ownerSent).Should().Equal(backHalfSlot);
+    }
+
     private static void FillBags(UserSession session, int filler)
     {
         for (var i = 0; i < InventoryConstants.HaveMax; i++)

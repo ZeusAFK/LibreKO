@@ -326,6 +326,9 @@ public static class Fx
         return gp;
     }
 
+    private const int SpreadEmitType = 1;
+    private const int GatherEmitType = 2;
+
     private static FxParticleTemplate BuildParticleTemplate(Godot.Collections.Dictionary p, FxPartKey key, Texture2D tex)
     {
         float lifeMin = ReadF(p, "lifeMin");
@@ -341,7 +344,9 @@ public static class Fx
         var lut = ColorRamp(p);
         Vector3 boxExtent = ReadVec3(p, "emitBoxExtent") * bundleScale;
         Vector3 boxCentre = ReadVec3(p, "emitBoxCentre") * bundleScale;
-        bool gather = p.ContainsKey("emitType") && p["emitType"].AsInt32() == 2;
+        int emitType = p.ContainsKey("emitType") ? p["emitType"].AsInt32() : 0;
+        bool gather = emitType == GatherEmitType;
+        var emitter = EmitterKeysFor(p);
         Vector3 gatherPoint = gather ? ReadVec3(p, "gatherPoint") : Vector3.Zero;
         Vector3 emitDir = ReadVec3(p, "emitDir");
         float sizeOff = ReadF(p, "sizeOffset");
@@ -364,7 +369,7 @@ public static class Fx
         {
             Process = pm,
             Material = material,
-            Emitter = EmitterKeysFor(p),
+            Emitter = emitter,
             Capacity = capacity,
             NumCreate = singleBurst ? Mathf.Clamp(numCreate, 1, capacity) : numCreate,
             EmitInterval = emitInterval,
@@ -378,6 +383,9 @@ public static class Fx
             EmitDir = emitDir.LengthSquared() > 1e-6f ? emitDir.Normalized() : Vector3.Up,
             BoxOffset = gather ? boxCentre - gatherPoint : boxCentre,
             BoxExtent = boxExtent,
+            BoxBasis = emitType == SpreadEmitType && emitter == null
+                ? FxSpawnBox.Orientation(emitDir)
+                : Basis.Identity,
             Start = ReadF(p, "startTime"),
             Life = ReadF(p, "life"),
             Origin = ReadVec3(p, "initPos") + gatherPoint,

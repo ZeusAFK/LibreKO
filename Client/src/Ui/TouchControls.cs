@@ -98,7 +98,7 @@ public static class TouchControls
         return stick;
     }
 
-    public static TouchCameraZone BuildCameraZone(Node parent, Action<Vector2> orbit, Action tapTarget)
+    public static TouchCameraZone BuildCameraZone(Node parent, Action<Vector2> orbit, Action<Vector2> tapTarget)
     {
         var zone = new TouchCameraZone
         {
@@ -765,7 +765,7 @@ public sealed class TouchActionBar
 public partial class TouchCameraZone : Control
 {
     public Action<Vector2>? Orbit;
-    public Action? TapTarget;
+    public Action<Vector2>? TapTarget;
 
     private bool _dragging;
     private float _travelled;
@@ -788,6 +788,8 @@ public partial class TouchCameraZone : Control
             }
             else
             {
+                if (_dragging && _travelled < TouchControls.TapSlop)
+                    TapTarget?.Invoke(GetGlobalTransformWithCanvas() * button.Position);
                 _dragging = false;
             }
             AcceptEvent();
@@ -814,6 +816,8 @@ public partial class TouchCameraZone : Control
             }
             else if (touch.Index == _finger)
             {
+                if (_travelled < TouchControls.TapSlop)
+                    TapTarget?.Invoke(GetGlobalTransformWithCanvas() * touch.Position);
                 _finger = -1;
             }
             AcceptEvent();

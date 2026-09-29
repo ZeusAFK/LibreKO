@@ -6,6 +6,7 @@
     "MinLevel": 1,
     "MaxLevel": 35,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -15,6 +16,7 @@
     "MinLevel": 1,
     "MaxLevel": 35,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -24,6 +26,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -33,6 +36,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -42,6 +46,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -51,6 +56,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -60,6 +66,7 @@
     "MinLevel": 1,
     "MaxLevel": 35,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -69,6 +76,7 @@
     "MinLevel": 1,
     "MaxLevel": 35,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -78,6 +86,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -87,6 +96,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -96,6 +106,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -105,6 +116,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -114,6 +126,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -123,6 +136,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -132,6 +146,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -141,6 +156,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -150,6 +166,7 @@
     "MinLevel": 1,
     "MaxLevel": 35,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -159,6 +176,7 @@
     "MinLevel": 1,
     "MaxLevel": 35,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -168,6 +186,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -177,6 +196,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -186,6 +206,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -195,6 +216,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -204,6 +226,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -213,6 +236,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -222,6 +246,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -231,6 +256,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -240,6 +266,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -249,6 +276,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -258,6 +286,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -267,6 +296,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -276,6 +306,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -285,6 +316,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -294,6 +326,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -303,6 +336,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -312,6 +346,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -321,6 +356,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -330,6 +366,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -339,6 +376,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -348,6 +386,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -357,6 +396,7 @@
     "MinLevel": 36,
     "MaxLevel": 60,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -366,6 +406,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -375,6 +416,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -384,6 +426,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -393,6 +436,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -402,6 +446,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -411,6 +456,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -420,6 +466,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -429,6 +476,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -438,6 +486,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -447,6 +496,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -456,6 +506,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -465,6 +516,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -474,6 +526,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -483,6 +536,7 @@
     "MinLevel": 61,
     "MaxLevel": 70,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -492,6 +546,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -501,6 +556,7 @@
     "MinLevel": 71,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -510,6 +566,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   },
   {
@@ -519,6 +576,7 @@
     "MinLevel": 1,
     "MaxLevel": 83,
     "DurationMinutes": 60,
+    "MaxWinners": 16,
     "AutoStart": true
   }
 ]

@@ -94,6 +94,7 @@ public sealed class AdminPanelPacketWriter
         bool Active,
         int RemainingSeconds,
         int Completions,
+        int MaxWinners,
         string Schedule,
         string Objectives);
 
@@ -113,6 +114,7 @@ public sealed class AdminPanelPacketWriter
             packet.WriteByte(row.Active ? Granted : Denied);
             packet.WriteInt(row.RemainingSeconds);
             packet.WriteInt(row.Completions);
+            packet.WriteInt(row.MaxWinners);
             packet.WriteSByteString(row.Schedule);
             packet.WriteSByteString(row.Objectives);
         }

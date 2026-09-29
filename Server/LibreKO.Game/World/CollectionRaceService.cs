@@ -37,6 +37,21 @@ public sealed class ActiveCollectionRace(CollectionRaceData race, IReadOnlyList<
 
     public CollectionRaceProgress ProgressOf(UserSession player) =>
         Progress.GetOrAdd(player.CharacterId, _ => new CollectionRaceProgress(Objectives.Count));
+
+    private int _winners;
+
+    public int Winners => Volatile.Read(ref _winners);
+    public int MaxWinners => Math.Max(0, Race.MaxWinners);
+    public bool IsFull => MaxWinners > 0 && Winners >= MaxWinners;
+
+    public int TryClaimPlace()
+    {
+        var place = Interlocked.Increment(ref _winners);
+        if (MaxWinners == 0 || place <= MaxWinners)
+            return place;
+        Interlocked.Decrement(ref _winners);
+        return 0;
+    }
 }
 
 public sealed class CollectionRaceProgress(int objectiveCount)
@@ -151,8 +166,9 @@ public class CollectionRaceService : ICollectionRaceService
             return;
 
         logger.LogInformation("Collection Race '{Name}' ended. Forced: {Forced}", active.Race.Name, forced);
-        await BroadcastNoticeAsync($"[Collection Race] '{active.Race.Name}' has ended.");
-        await MailRewardsAsync(active);
+        await BroadcastNoticeAsync(active.IsFull
+            ? $"[Collection Race] '{active.Race.Name}' is over: all {active.MaxWinners} winners have finished."
+            : $"[Collection Race] '{active.Race.Name}' has ended.");
 
         var closePkt = CollectionRacePacketWriter.Close();
         foreach (var player in sessionManager.GetAll())
@@ -365,8 +381,13 @@ public class CollectionRaceService : ICollectionRaceService
                 return;
         }
 
+        var place = active.TryClaimPlace();
+        if (place == 0)
+            return;
+
         progress.IsCompleted = true;
-        logger.LogInformation("Player {Name} completed Collection Race '{Race}'.", player.Name, active.Race.Name);
+        logger.LogInformation("Player {Name} completed Collection Race '{Race}' in place {Place}.",
+            player.Name, active.Race.Name, place);
 
         foreach (var objective in active.Objectives)
         {
@@ -374,50 +395,52 @@ public class CollectionRaceService : ICollectionRaceService
                 await RemoveItemsAsync(player, objective.TargetId, objective.Count);
         }
 
+        await MailRewardsAsync(active, player.CharacterId);
         await player.Client.SendPacket(CollectionRacePacketWriter.Completed("Collection Race Complete!"));
-        await SendNoticeAsync(player, "[Collection Race] Congratulations! Your rewards arrive by mail when the race ends.");
+        await SendNoticeAsync(player, "[Collection Race] Congratulations! Your rewards have been sent by mail.");
 
-        var announce = $"[Collection Race] Player {player.Name} has completed the Collection Race!";
+        var announce = active.MaxWinners > 0
+            ? $"[Collection Race] Player {player.Name} has finished, winner {place} of {active.MaxWinners}!"
+            : $"[Collection Race] Player {player.Name} has completed the Collection Race!";
+        var winners = CollectionRacePacketWriter.Winners(active.Race.Id, active.Winners, active.MaxWinners);
         foreach (var s in sessionManager.GetAll())
         {
-            if (s.ZoneId == active.Race.ZoneId)
-                await SendNoticeAsync(s, announce);
+            if (s.ZoneId != active.Race.ZoneId)
+                continue;
+            await SendNoticeAsync(s, announce);
+            await s.Client.SendPacket(winners);
         }
+
+        if (active.IsFull)
+            await EndAsync(active, forced: false);
     }
 
-    private async Task MailRewardsAsync(ActiveCollectionRace active)
+    private async Task MailRewardsAsync(ActiveCollectionRace active, int characterId)
     {
-        var rewards = gameDataService.CollectionRaceRewardsByRace[active.Race.Id].ToList();
         var zoneName = gameDataService.ZoneInfoTable.TryGetValue(active.Race.ZoneId, out var zone) && !string.IsNullOrWhiteSpace(zone.MapName)
             ? zone.MapName
             : $"zone {active.Race.ZoneId}";
 
-        foreach (var (characterId, progress) in active.Progress)
+        var attachments = new List<MailAttachmentDraft>();
+        foreach (var reward in gameDataService.CollectionRaceRewardsByRace[active.Race.Id])
         {
-            if (!progress.IsCompleted)
+            if (reward.Rate < CollectionRaceRewardData.CertainRate && Random.Shared.Next(CollectionRaceRewardData.CertainRate) >= reward.Rate)
                 continue;
 
-            var attachments = new List<MailAttachmentDraft>();
-            foreach (var reward in rewards)
+            attachments.Add(reward.ItemId switch
             {
-                if (reward.Rate < CollectionRaceRewardData.CertainRate && Random.Shared.Next(CollectionRaceRewardData.CertainRate) >= reward.Rate)
-                    continue;
-
-                attachments.Add(reward.ItemId switch
-                {
-                    InventoryConstants.ItemGold => new MailAttachmentDraft(MailAttachmentKind.Gold, reward.ItemId, reward.ItemCount),
-                    InventoryConstants.ItemExperience => new MailAttachmentDraft(MailAttachmentKind.Experience, reward.ItemId, reward.ItemCount),
-                    InventoryConstants.ItemLadderPoint => new MailAttachmentDraft(MailAttachmentKind.NationalPoints, reward.ItemId, reward.ItemCount),
-                    _ => new MailAttachmentDraft(MailAttachmentKind.Item, reward.ItemId, reward.ItemCount, gameDataService.GetItem(reward.ItemId)?.Duration ?? 0),
-                });
-            }
-
-            await mailService.SendSystemMailAsync(
-                characterId,
-                $"Collection Race: {active.Race.Name}",
-                $"You completed the Collection Race '{active.Race.Name}' in {zoneName}. Your rewards are attached to this mail.",
-                attachments);
+                InventoryConstants.ItemGold => new MailAttachmentDraft(MailAttachmentKind.Gold, reward.ItemId, reward.ItemCount),
+                InventoryConstants.ItemExperience => new MailAttachmentDraft(MailAttachmentKind.Experience, reward.ItemId, reward.ItemCount),
+                InventoryConstants.ItemLadderPoint => new MailAttachmentDraft(MailAttachmentKind.NationalPoints, reward.ItemId, reward.ItemCount),
+                _ => new MailAttachmentDraft(MailAttachmentKind.Item, reward.ItemId, reward.ItemCount, gameDataService.GetItem(reward.ItemId)?.Duration ?? 0),
+            });
         }
+
+        await mailService.SendSystemMailAsync(
+            characterId,
+            $"Collection Race: {active.Race.Name}",
+            $"You completed the Collection Race '{active.Race.Name}' in {zoneName}. Your rewards are attached to this mail.",
+            attachments);
     }
 
     public async Task SyncPlayerAsync(UserSession player)
@@ -451,7 +474,9 @@ public class CollectionRaceService : ICollectionRaceService
             active.RemainingSeconds,
             progress.IsCompleted,
             objectives,
-            rewards);
+            rewards,
+            active.Winners,
+            active.MaxWinners);
 
         await player.Client.SendPacket(pkt);
     }

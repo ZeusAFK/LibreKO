@@ -970,6 +970,8 @@ public partial class World
         return DetachPreviewControl(_mailComposeWindow);
     }
 
+    private const int CollectionRacePreviewWinners = 16;
+
     internal Control BuildCollectionRaceUiPreview(bool completed)
     {
         ItemData.EnsureLoaded();
@@ -978,6 +980,8 @@ public partial class World
         {
             Name = "Moradon Rookie Roundup",
             RemainingSeconds = 56 * 60,
+            Winners = completed ? 4 : 3,
+            MaxWinners = CollectionRacePreviewWinners,
             Objectives =
             [
                 new CollectionRaceObjective { Kind = CollectionRaceObjectiveKind.Monster, TargetId = 150, Name = "Kecoon", Count = 15, Current = completed ? 15 : 4 },

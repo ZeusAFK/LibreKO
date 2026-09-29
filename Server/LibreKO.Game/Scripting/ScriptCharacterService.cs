@@ -184,7 +184,7 @@ public class ScriptCharacterService(
                 slot.Clear();
 
             queuedPackets.Add(new ItemCountChangePacketWriter()
-                .Add((byte)(i - InventoryConstants.InventoryStart), itemId, slot.Count, slot.Durability)
+                .Add((byte)i, itemId, slot.Count, slot.Durability)
                 .Build());
             return true;
         }
