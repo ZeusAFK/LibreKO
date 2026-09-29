@@ -21,6 +21,7 @@ internal sealed class FxParticleTemplate
     public Vector3 EmitDir = Vector3.Up;
     public Vector3 BoxOffset;
     public Vector3 BoxExtent;
+    public Basis BoxBasis = Basis.Identity;
     public float Start, Life, FadeIn, FadeOut, HideTime, ShowTime;
     public Vector3 Origin, Velocity, Acceleration;
 }

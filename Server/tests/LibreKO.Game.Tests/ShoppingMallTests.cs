@@ -476,6 +476,73 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ShoppingMallPacketCoordinator_HandleAsync_LetterSendFromTheBackHalfOfTheBagNamesThatSlot()
+    {
+        const int itemId = 810002000;
+        const byte backHalfSlot = 20;
+
+        using var provider = CreateProvider(
+            db =>
+            {
+                db.Characters.Add(new Character
+                {
+                    AccountId = 1,
+                    Slot = 0,
+                    Name = "Recipient",
+                    Race = 1,
+                    Class = 101,
+                    Face = 1,
+                    Hair = 1,
+                    Level = 10,
+                    Hp = 100,
+                    Mp = 100,
+                    MapId = 1,
+                    Items = new byte[InventoryConstants.InventoryTotal * 8],
+                    SkillPointData = new byte[9]
+                });
+            },
+            gameData =>
+            {
+                gameData.GetItem(itemId).Returns(new ItemData
+                {
+                    Num = itemId,
+                    Race = 1
+                });
+            });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 27, accountId: 37);
+        session.Name = "Sender";
+        session.Money = 20000;
+        session.Inventory[InventoryConstants.InventoryStart + backHalfSlot].ItemId = itemId;
+        session.Inventory[InventoryConstants.InventoryStart + backHalfSlot].Durability = 25;
+        session.Inventory[InventoryConstants.InventoryStart + backHalfSlot].Count = 1;
+
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(6);
+        request.WriteByte(6);
+        request.WriteSByteString("Recipient");
+        request.WriteSByteString("Subject");
+        request.WriteByte(2);
+        request.WriteInt(itemId);
+        request.WriteByte(backHalfSlot);
+        request.WriteInt(0);
+        request.WriteString("Message");
+
+        var coordinator = provider.GetRequiredService<IShoppingMallPacketCoordinator>();
+        await coordinator.HandleAsync(client, request);
+
+        session.Inventory[InventoryConstants.InventoryStart + backHalfSlot].IsEmpty.Should().BeTrue();
+        CountChangePackets.Positions(sentPackets).Should().Equal(backHalfSlot);
+    }
+
+    [Fact]
     public async Task ShoppingMallPacketCoordinator_HandleAsync_LetterGetItemStacksExistingItemUsingRelativeSlot()
     {
         const int itemId = 810003000;

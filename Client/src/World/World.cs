@@ -371,7 +371,7 @@ public partial class World : Node3D, IWorldContext
             if (nowSec < _selfActionUntil
                 && _walkKeyHeld
                 && !IsRootedByCast()
-                && (_selfActionRank != ActionRankSkill || _movePressedEdge))
+                && (_selfActionRank != ActionRankSkill || _walkPressedEdge))
             {
                 _selfActionUntil = 0;
                 _selfClip = null;

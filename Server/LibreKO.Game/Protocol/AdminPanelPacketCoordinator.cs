@@ -461,7 +461,8 @@ public class AdminPanelPacketCoordinator(
                 race.AutoStart,
                 running != null,
                 running?.RemainingSeconds ?? 0,
-                running?.Progress.Values.Count(p => p.IsCompleted) ?? 0,
+                running?.Winners ?? 0,
+                race.MaxWinners,
                 DescribeSchedule(gameDataService.CollectionRaceSchedulesByRace[race.Id]),
                 DescribeObjectives(gameDataService.CollectionRaceObjectivesByRace[race.Id])));
         }

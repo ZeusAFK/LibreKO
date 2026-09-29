@@ -195,9 +195,10 @@ public class MerchantBuyingService(
         merchant.RecalculateStatsWithBuffs(gameDataService);
 
         await userNotificationService.SendStackChangeAsync(
-            session, sellerSlot, sellerItem.ItemId, sellerItem.Count, sellerItem.Durability);
+            session, (byte)(InventoryConstants.SlotMax + sellerSlot),
+            sellerItem.ItemId, sellerItem.Count, sellerItem.Durability);
         await userNotificationService.SendStackChangeAsync(
-            merchant, (byte)(merchantSlot - InventoryConstants.SlotMax),
+            merchant, (byte)merchantSlot,
             merchantItem.ItemId, merchantItem.Count, merchantItem.Durability, merchantItemIsNew);
 
         await session.Client.SendPacket(MerchantPacketWriter.WantedItemSold(

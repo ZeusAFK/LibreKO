@@ -13,7 +13,7 @@ public interface IMagicStatusEffectService
 {
     Task ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
-        int[] data);
+        int[] data, bool isPrimary = true);
     Task CancelAsync(UserSession session, int skillId);
 }
 
@@ -34,10 +34,10 @@ public class MagicStatusEffectService(
 
     public Task ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
-        int[] data) =>
+        int[] data, bool isPrimary = true) =>
         skillType switch
         {
-            MagicSkillType.Buff => ExecuteBuffAsync(caster, magic, skillId, targetId, data),
+            MagicSkillType.Buff => ExecuteBuffAsync(caster, magic, skillId, targetId, data, isPrimary),
             MagicSkillType.Special => ExecuteSpecialAsync(caster, magic, skillId, targetId),
             MagicSkillType.Transform => ExecuteTransformAsync(caster, magic, skillId, targetId),
             MagicSkillType.Stealth => ExecuteStealthAsync(caster, magic, skillId, targetId, data),
@@ -133,7 +133,8 @@ public class MagicStatusEffectService(
 
     private const int NotTransformed = 0;
 
-    private async Task ExecuteBuffAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    private async Task ExecuteBuffAsync(
+        UserSession caster, MagicData magic, int skillId, int targetId, int[] data, bool isPrimary)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, skillId, out var type4Data))
         {
@@ -141,7 +142,7 @@ public class MagicStatusEffectService(
             return;
         }
 
-        if (magic.UseItem != 0)
+        if (isPrimary && magic.UseItem != 0)
         {
             if ((magic.ItemGroup == PotionItemGroup && !caster.CanUsePotions)
                 || !magicItemUsageService.CanUseSkillItems(caster, magic))
@@ -241,7 +242,7 @@ public class MagicStatusEffectService(
         if (statusType > 0 && isDebuff)
             await combatNotificationService.SendPartyStatusUpdateAsync(target, statusType, applied: true);
 
-        if (!await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
+        if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
         {
             await SendMagicFailAsync(caster, skillId);
             return;

@@ -248,6 +248,7 @@ public partial class World
             _hasMoveTarget = false;
             _terrainMoveHeld = false;
             _movePressedEdge = _movePrevMask == MoveKeys.None;
+            _walkPressedEdge = _movePressedEdge;
             _movePrevMask = MoveKeys.Forward;
             _walkKeyHeld = false;
             _moveInputHeld = true;
@@ -270,7 +271,8 @@ public partial class World
                        | (moveBackward ? MoveKeys.Backward : MoveKeys.None)
                        | (turnLeft ? MoveKeys.TurnLeft : MoveKeys.None)
                        | (turnRight ? MoveKeys.TurnRight : MoveKeys.None);
-        _movePressedEdge = (moveMask & ~_movePrevMask) != MoveKeys.None;
+        _movePressedEdge = MoveInput.AnyKeyPressed(_movePrevMask, moveMask);
+        _walkPressedEdge = MoveInput.WalkKeyPressed(_movePrevMask, moveMask);
         _walkKeyHeld = (moveMask & MoveKeys.Walk) != MoveKeys.None;
         _moveInputHeld = keyboardControl;
         _movePrevMask = moveMask;

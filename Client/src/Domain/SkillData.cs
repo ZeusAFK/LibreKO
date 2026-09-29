@@ -21,6 +21,9 @@ public static class SkillData
 
     public static bool FlightHomesFor(int type1, int hitType) => type1 != MagicType.Ranged || hitType != 0;
 
+    public static bool HasSecondaryBuffFor(int type1, int type2, int buff2Type) =>
+        type2 == MagicType.Buff && type1 != MagicType.Buff && buff2Type != 0;
+
     public const int NoNationRole = 0;
     private const int NationRoleFirstBand = 1;
     private const int NationBuffBand = 1000;
@@ -74,6 +77,7 @@ public static class SkillData
         public int NeedArrow;
         public int DirectType, FirstDamage, EndDamage, TimeDamage, Duration, Attribute, Radius, Angle;
         public int BuffType;
+        public int Buff2Type, Buff2Duration;
         public int NeedWeapon, NeedItem;
         public int CooldownGroup;
         private const int PotionItemGroup = 9;
@@ -105,6 +109,8 @@ public static class SkillData
         public bool IsMelee => Type1 == MagicType.Melee || Type2 == MagicType.Melee;
 
         public bool IsRanged => Type1 == MagicType.Ranged || Type2 == MagicType.Ranged;
+
+        public bool HasSecondaryBuff => HasSecondaryBuffFor(Type1, Type2, Buff2Type);
 
         public bool IsNonAction => SelfAnim1 < 0;
 
@@ -329,6 +335,8 @@ public static class SkillData
                 Radius = Int(o, "radius"),
                 Angle = Int(o, "angle"),
                 BuffType = Int(o, "buffType"),
+                Buff2Type = Int(o, "buff2Type"),
+                Buff2Duration = Int(o, "buff2Duration"),
                 NeedWeapon = Int(o, "needWeapon"),
                 NeedItem = Int(o, "needItem"),
                 CooldownGroup = Int(o, "cooldownGroup"),

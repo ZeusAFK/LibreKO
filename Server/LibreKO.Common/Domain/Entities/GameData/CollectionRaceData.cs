@@ -6,6 +6,7 @@ namespace LibreKO.Common.Domain.Entities.GameData;
 public class CollectionRaceData
 {
     public const int DefaultDurationMinutes = 60;
+    public const int DefaultMaxWinners = 16;
 
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -13,6 +14,7 @@ public class CollectionRaceData
     public byte MinLevel { get; set; }
     public byte MaxLevel { get; set; }
     public int DurationMinutes { get; set; } = DefaultDurationMinutes;
+    public int MaxWinners { get; set; } = DefaultMaxWinners;
     public bool AutoStart { get; set; }
 
     internal class EntityConfiguration : IEntityTypeConfiguration<CollectionRaceData>

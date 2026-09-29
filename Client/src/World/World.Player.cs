@@ -56,6 +56,7 @@ public partial class World
     private void HandleInput(double delta)
     {
         _movePressedEdge = false;
+        _walkPressedEdge = false;
         _walkKeyHeld = false;
 
         if (_selfDead) { _selfMoving = false; return; }

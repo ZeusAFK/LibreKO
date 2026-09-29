@@ -9,6 +9,7 @@ public sealed class CollectionRacePacketWriter
     public const byte SubProgress = 2;
     public const byte SubCompleted = 3;
     public const byte SubClose = 4;
+    public const byte SubWinners = 5;
 
     public readonly record struct ObjectiveInfo(CollectionRaceObjectiveKind Kind, int TargetId, int Count, int Current, string Name);
     public readonly record struct RewardInfo(int ItemId, int ItemCount, string Name, byte Rate);
@@ -20,7 +21,9 @@ public sealed class CollectionRacePacketWriter
         int remainingSeconds,
         bool isCompleted,
         IReadOnlyList<ObjectiveInfo> objectives,
-        IReadOnlyList<RewardInfo> rewards)
+        IReadOnlyList<RewardInfo> rewards,
+        int winners,
+        int maxWinners)
     {
         var packet = new Packet(GameOpcodes.GS_COLLECTION_RACE);
         packet.WriteByte(SubState);
@@ -49,6 +52,18 @@ public sealed class CollectionRacePacketWriter
             packet.WriteByte(r.Rate);
         }
 
+        packet.WriteInt(winners);
+        packet.WriteInt(maxWinners);
+        return packet;
+    }
+
+    public static Packet Winners(int raceId, int winners, int maxWinners)
+    {
+        var packet = new Packet(GameOpcodes.GS_COLLECTION_RACE);
+        packet.WriteByte(SubWinners);
+        packet.WriteInt(raceId);
+        packet.WriteInt(winners);
+        packet.WriteInt(maxWinners);
         return packet;
     }
 

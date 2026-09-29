@@ -59,20 +59,23 @@ public static class SkillAnimation
     {
         if (s.IsNonAction) return None;
         if (!s.IsMelee && !release && !s.HasCastPhase) return None;
-        int anim;
-        bool perWeapon = s.IsMelee && !MainAnimMelee.Contains(s.Id);
-        if (perWeapon)
+        return WithForced(s.Id, ForSkill(s, rightKind, leftKind, release));
+    }
+
+    public static int WithForced(int skillId, int anim) =>
+        Forced.TryGetValue(skillId, out int forced) ? forced : anim;
+
+    private static int ForSkill(SkillData.Skill s, int rightKind, int leftKind, bool release)
+    {
+        if (s.IsMelee && !MainAnimMelee.Contains(s.Id))
         {
-            anim = ForWeapon(s, rightKind, leftKind);
-            if (anim < 0) return None;
+            int weaponAnim = ForWeapon(s, rightKind, leftKind);
+            return weaponAnim < 0 ? None : weaponAnim;
         }
-        else
-        {
-            bool second = release && !s.IsMelee;
-            anim = second ? s.SelfAnim2 : s.SelfAnim1;
-            if (s.IsRanged && (rightKind == ItemClassCrossbow || leftKind == ItemClassCrossbow))
-                anim = second ? ShootQuarrelB : ShootQuarrelA;
-        }
-        return Forced.TryGetValue(s.Id, out int forced) ? forced : anim;
+        bool second = release && !s.IsMelee;
+        int anim = second ? s.SelfAnim2 : s.SelfAnim1;
+        if (s.IsRanged && (rightKind == ItemClassCrossbow || leftKind == ItemClassCrossbow))
+            anim = second ? ShootQuarrelB : ShootQuarrelA;
+        return anim;
     }
 }

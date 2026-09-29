@@ -123,7 +123,8 @@ public partial class World
 
         var meta = UiTheme.Text(
             $"{ZoneCatalog.Name(race.ZoneId)} ({race.ZoneId})  ·  level {race.MinLevel}-{race.MaxLevel}  ·  {race.DurationMinutes} min" +
-            (race.Active ? $"  ·  {race.Completions} completed" : ""),
+            (race.MaxWinners > 0 ? $"  ·  {race.MaxWinners} winners" : "  ·  no winner limit") +
+            (race.Active ? $"  ·  {race.Completions} finished" : ""),
             12, UiTheme.TextLo);
         rows.AddChild(meta);
         var objectives = UiTheme.Text(race.Objectives, 12, UiTheme.TextHi);

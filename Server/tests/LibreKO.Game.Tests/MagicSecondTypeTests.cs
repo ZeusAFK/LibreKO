@@ -25,7 +25,7 @@ public class MagicSecondTypeTests
         await combat.Received(1).ExecuteAsync(
             Arg.Any<UserSession>(), magic, MagicSkillType.OverTime, SkillId, TargetId, Arg.Any<int[]>());
         await status.Received(1).ExecuteAsync(
-            Arg.Any<UserSession>(), magic, MagicSkillType.Buff, SkillId, TargetId, Arg.Any<int[]>());
+            Arg.Any<UserSession>(), magic, MagicSkillType.Buff, SkillId, TargetId, Arg.Any<int[]>(), false);
         await movement.DidNotReceiveWithAnyArgs().ExecuteAsync(default!, default!, 0, 0, default!);
     }
 
@@ -51,9 +51,9 @@ public class MagicSecondTypeTests
         await execution.ExecuteAsync(null!, magic, SkillId, TargetId, new int[7]);
 
         await status.Received(1).ExecuteAsync(
-            Arg.Any<UserSession>(), magic, MagicSkillType.Transform, SkillId, TargetId, Arg.Any<int[]>());
+            Arg.Any<UserSession>(), magic, MagicSkillType.Transform, SkillId, TargetId, Arg.Any<int[]>(), true);
         await status.Received(1).ExecuteAsync(
-            Arg.Any<UserSession>(), magic, MagicSkillType.Buff, SkillId, TargetId, Arg.Any<int[]>());
+            Arg.Any<UserSession>(), magic, MagicSkillType.Buff, SkillId, TargetId, Arg.Any<int[]>(), false);
         await combat.DidNotReceiveWithAnyArgs().ExecuteAsync(default!, default!, 0, 0, 0, default!);
     }
 
