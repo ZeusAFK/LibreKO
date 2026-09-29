@@ -18,12 +18,11 @@ public partial class World
         public StaticBody3D? Collider;
         public Label3D? NameTag;
         public PlateStack? Plate;
-        public Node3D? HpBar;
-        public MeshInstance3D? HpFill;
         public Node3D? IndicatorFx;
         public string IndicatorName = "";
         public Node3D? RoleFx;
         public AnimationPlayer? Anim;
+        public CrowdAnimator? Crowd;
         public AnimationPlayer? RigAnim;
         public Flinch? Flinch;
         public string? Clip;
@@ -67,6 +66,23 @@ public partial class World
         public string ModelStem = "";
         public bool AnimPaused;
         public bool AnimThrottled;
+        public double AnimStep;
+        public int AnimEvery = 1;
+        public int AnimFrames;
+        public int AnimRank;
+        public float CamDist2;
+        public bool Far;
+        public bool OnScreen = true;
+        public bool JustEntered;
+        public double FarAccum;
+        public bool ColliderNear;
+        public Vector3 ColliderAt;
+        public Node3D? PlateRoot;
+        public bool PlateNear = true;
+        public int MoveFrames;
+        public float MoveAccum;
+        public bool? AnimActive;
+        public float? Yaw;
         public string? StepClip;
         public double StepPos;
         public int StepPhase;
@@ -153,6 +169,7 @@ public partial class World
         var label = info.Name.Length > 0 ? info.Name : (info.IsNpc ? "NPC" : "Player");
 
         var watch = Diag.Watch();
+        var sceneScope = Perf.Measure(Perf.Section.BuildScene);
         bool mapObject = info.ObjectType == NpcTypes.ObjectType.MapObject;
         var loadWatch = Diag.Watch();
         PackedScene? scene = mapObject ? null
@@ -164,8 +181,13 @@ public partial class World
 
         Node3D body;
         AnimationPlayer? anim = null;
+        CrowdAnimator? crowd = null;
         if (scene != null)
+        {
             (body, anim) = MakeAnimatedEntity(scene, label, info.Size > 0 ? info.Size / 100f : 1f);
+            crowd = CrowdAnimator.Create(anim, body, scene.ResourcePath);
+            if (crowd != null) anim!.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
+        }
         else if (mapObject)
             body = MakeMapObjectEntity(label);
         else
@@ -175,34 +197,43 @@ public partial class World
         float spawnYaw = info.Dir != 0 ? 180f - 2f * info.Dir : (info.Id * 137) % 360;
         if (scene != null)
             body.RotationDegrees = new Vector3(0, spawnYaw, 0);
-        _entities.AddChild(body);
+        using (Perf.Measure(Perf.Section.BuildEnter)) _entities.AddChild(body);
+        sceneScope.Dispose();
         Dictionary<int, (Mesh? Mesh, Skin? Skin)> defaultParts = new();
         AnimationPlayer?[]? wingAnims = null;
         Flinch? flinch = null;
         if (scene != null)
         {
-            defaultParts = CapturePartDefaults(body);
-            if (!info.IsNpc)
+            using (Perf.Measure(Perf.Section.BuildGraft))
             {
-                flinch = Flinch.Attach(body);
-                GraftEquipment(body, info.Race, info.Face, info.Gear, info.Hair, info.HelmetHidden);
-                DressEntityCape(body, info);
+                defaultParts = CapturePartDefaults(body);
+                if (!info.IsNpc)
+                {
+                    flinch = Flinch.Attach(body);
+                    GraftEquipment(body, info.Race, info.Face, info.Gear, info.Hair, info.HelmetHidden);
+                    DressEntityCape(body, info);
+                }
             }
-            AttachWeapons(body, info.Gear, info.NpcType, info.NpcId);
-            if (!info.IsNpc) AttachClanGauntlet(body, info.Race, info.ClanGrade);
-            if (info.IsNpc)
+            using (Perf.Measure(Perf.Section.BuildGear))
             {
-                string fxStem = _mobIndex != null && _mobIndex.TryGetValue(info.ModelId, out var fs)
-                    ? fs : "";
-                AttachCharacterFxPlugs(body, fxStem);
-            }
-            else
-            {
-                wingAnims = AttachWings(body, info.Gear, info.Race, _zone);
-                AttachHandFx(body, info.Gear, info.Race, _zone);
+                AttachWeapons(body, info.Gear, info.NpcType, info.NpcId);
+                if (!info.IsNpc) AttachClanGauntlet(body, info.Race, info.ClanGrade);
+                if (info.IsNpc)
+                {
+                    string fxStem = _mobIndex != null && _mobIndex.TryGetValue(info.ModelId, out var fs)
+                        ? fs : "";
+                    AttachCharacterFxPlugs(body, fxStem);
+                }
+                else
+                {
+                    wingAnims = AttachWings(body, info.Gear, info.Race, _zone);
+                    AttachHandFx(body, info.Gear, info.Race, _zone);
+                }
             }
         }
+        using var restScope = Perf.Measure(Perf.Section.BuildRest);
         ApplyEntityRenderCost(body);
+        if (scene != null && Config.MergeCharacters) CharacterMerge.Apply(body);
 
         string modelStem = mapObject ? "(map object)"
             : scene == null ? "(capsule fallback)"
@@ -211,7 +242,7 @@ public partial class World
         var radii = BodyRadii(body);
         var ent = new Ent
         {
-            Body = body, Anim = anim, WingAnims = wingAnims, Flinch = flinch,
+            Body = body, Anim = anim, Crowd = crowd, WingAnims = wingAnims, Flinch = flinch,
             Target = pos, HasTarget = true, Speed = 0f, Lift = lift,
             KoX = info.X, KoZ = info.Z, KoY = info.Y,
             IsNpc = info.IsNpc, IsMonster = info.IsMonster, Attackable = info.Attackable,
@@ -251,14 +282,21 @@ public partial class World
                 nameLabel.Position = new Vector3(nameLabel.Position.X, SittingNameTagHeight, nameLabel.Position.Z);
             }
             ent.NameTag = nameLabel;
+            ent.PlateRoot = nameLabel.GetParent() as Node3D;
             ent.Plate = new PlateStack(nameLabel);
             ent.Plate.SetClan(info.ClanName);
             ent.Plate.SetTitle(TitleTextOf(info.TitleId));
         }
         ent.RoleFx = SpawnNpcRoleFx(ent);
         if (info.Invisible) StealthOnSpawn(info.Id, info.Invisibility);
+        if (crowd != null) ent.AnimActive = false;
         if (info.Dead) LayOutCorpse(ent);
         else PlayClip(ent, "idle");
+        if (crowd != null && !info.Dead)
+        {
+            crowd.TakeOver();
+            crowd.Step(0);
+        }
         if (ent.Gathering && !info.Dead) BeginRemoteGather(info.Id, ent.GatherFishing);
         RefreshNpcQuestMarker(ent);
         AttachPendingStall(info.Id);
@@ -281,12 +319,49 @@ public partial class World
         if (settled && e.Anim != null && len > 0) e.Anim.Advance(len);
     }
 
+    private const float ColliderSyncDist = 8f;
+    private const string PlateRootName = "plates";
+
+    private static Node3D AttachNameLabel(Node3D body, string name, float y)
+    {
+        var root = new Node3D { Name = PlateRootName };
+        body.AddChild(root);
+        root.AddChild(NameLabel(name, y));
+        return root;
+    }
+
+    private static void SyncEntityPlates(Ent e, bool near)
+    {
+        if (e.PlateRoot == null || near == e.PlateNear) return;
+        e.PlateNear = near;
+        e.PlateRoot.TopLevel = !near;
+        if (near) e.PlateRoot.Transform = Transform3D.Identity;
+    }
+
     private static StaticBody3D AttachBodyCollider(Node3D body, float radius, float lift)
     {
-        var collider = new StaticBody3D { CollisionMask = 0 };
+        var collider = new StaticBody3D { CollisionMask = 0, CollisionLayer = 0, TopLevel = true };
         collider.AddChild(BodyCapsule(radius, lift));
         body.AddChild(collider);
+        collider.Position = body.GlobalPosition;
         return collider;
+    }
+
+    private static void SyncEntityCollider(Ent e, Vector3 pos, Vector3 selfPos)
+    {
+        if (e.Collider == null) return;
+        bool near = pos.DistanceSquaredTo(selfPos) <= ColliderSyncDist * ColliderSyncDist;
+        if (near != e.ColliderNear)
+        {
+            e.ColliderNear = near;
+            if (near) { e.Collider.Position = pos; e.ColliderAt = pos; }
+            RefreshEntityCollision(e);
+        }
+        else if (near && pos != e.ColliderAt)
+        {
+            e.Collider.Position = pos;
+            e.ColliderAt = pos;
+        }
     }
 
     public System.Collections.Generic.List<string> MapObjectReport()
@@ -309,7 +384,7 @@ public partial class World
     private static void RefreshEntityCollision(Ent e)
     {
         if (e.Collider == null || !GodotObject.IsInstanceValid(e.Collider)) return;
-        e.Collider.CollisionLayer = BlocksMovement(e) ? BlockerCollisionLayer : 0u;
+        e.Collider.CollisionLayer = e.ColliderNear && BlocksMovement(e) ? BlockerCollisionLayer : 0u;
     }
 
     private const float MoveFacingEpsSq = 0.04f;
@@ -332,24 +407,29 @@ public partial class World
     private static void FaceEntity(Ent e, float yawDegrees, bool immediate)
     {
         e.TargetYaw = yawDegrees;
-        if (immediate)
-            e.Body.RotationDegrees = new Vector3(0, yawDegrees, 0);
+        if (immediate) SetEntityYaw(e, yawDegrees);
+    }
+
+    private static void SetEntityYaw(Ent e, float yawDegrees)
+    {
+        e.Yaw = yawDegrees;
+        e.Body.RotationDegrees = new Vector3(0, yawDegrees, 0);
     }
 
     private static void TickEntityFacing(Ent e, float dt)
     {
-        float current = e.Body.RotationDegrees.Y;
+        float current = e.Yaw ?? e.Body.RotationDegrees.Y;
+        if (current == e.TargetYaw) { e.Yaw = current; return; }
         float delta = Mathf.RadToDeg(Mathf.AngleDifference(
             Mathf.DegToRad(current), Mathf.DegToRad(e.TargetYaw)));
         if (Mathf.Abs(delta) < 0.5f)
         {
-            if (current != e.TargetYaw)
-                e.Body.RotationDegrees = new Vector3(0, e.TargetYaw, 0);
+            SetEntityYaw(e, e.TargetYaw);
             return;
         }
 
         float step = EntityTurnDegPerSec * dt;
-        e.Body.RotationDegrees = new Vector3(0, current + Mathf.Clamp(delta, -step, step), 0);
+        SetEntityYaw(e, current + Mathf.Clamp(delta, -step, step));
     }
 
     private void OnMove(int id, float x, float z, float y, float velHint, bool travelling)
@@ -362,7 +442,9 @@ public partial class World
             RefreshEntityCollision(e);
         }
 
-        var dest = EntityGroundPos(x, z, y, e.Lift);
+        var dest = e.Body.Position.DistanceSquaredTo(_self.Position) <= EntityProbeDist * EntityProbeDist
+            ? EntityGroundPos(x, z, y, e.Lift)
+            : GroundPos(x, z, y, e.Lift);
         float dxKo = x - e.KoX, dzKo = z - e.KoZ;
         float koMove2 = dxKo * dxKo + dzKo * dzKo;
         if (travelling && koMove2 > MoveFacingEpsSq)
@@ -407,12 +489,15 @@ public partial class World
         e.Speed = Mathf.Abs(velHint) > 0.01f ? playback : 0f;
     }
 
-    private static bool EntityMoving(Ent e) =>
+    private static bool EntityMoving(Ent e) => EntityMoving(e, e.Body.Position);
+
+    private static bool EntityMoving(Ent e, Vector3 pos) =>
         !e.Dead && e.HasTarget && e.Speed > 0.1f
-        && e.Body.Position.DistanceTo(e.Target) > MoveArriveEps;
+        && pos.DistanceTo(e.Target) > MoveArriveEps;
 
     private const float EntityRenderDist = 160f;
     private const float EntityRenderFade = 30f;
+    private const float EntityProbeDist = 64f;
 
     private static void ApplyEntityRenderCost(Node3D body)
     {
@@ -422,22 +507,87 @@ public partial class World
             mi.VisibilityRangeEnd = EntityRenderDist * Config.ViewDistance;
             mi.VisibilityRangeEndMargin = EntityRenderFade;
             mi.VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Self;
+            SkinShare.FixBounds(mi);
         }
     }
 
-    private const float EntityAnimFullDist = 45f;
-    private const double AnimLodStep = 0.1;
+    private const float AnimAlwaysDist = 22f;
+    private const int OffScreenMoveEvery = 6;
+    private const float AnimViewMargin = 4f;
+    private const double FarEntityInterval = 0.1;
+    private int _frustumCount;
+    private int _animFull, _animMid, _animFar, _animOff;
+    private int _closeEntities;
 
-    private void UpdateEntityAnimLod(Ent e, Vector3 camPos)
+    private void RefreshFrustum()
     {
-        if (e.Anim == null) return;
-        float d2 = e.Body.GlobalPosition.DistanceSquaredTo(camPos);
+        if (_camera == null) { _frustumCount = 0; return; }
+        var frustum = _camera.GetFrustum();
+        _frustumCount = Mathf.Min(frustum.Count, _frustumPlanes.Length);
+        for (int j = 0; j < _frustumCount; j++) _frustumPlanes[j] = frustum[j];
+    }
+
+    private bool InView(Vector3 pos)
+    {
+        for (int j = 0; j < _frustumCount; j++)
+            if (_frustumPlanes[j].DistanceTo(pos) > AnimViewMargin) return false;
+        return true;
+    }
+
+    private readonly List<Ent> _animRanking = new();
+    private static readonly System.Comparison<Ent> ByCamDist = (a, b) => a.CamDist2.CompareTo(b.CamDist2);
+
+    private void RankEntityAnimation()
+    {
+        _animRanking.Clear();
+        foreach (var e in _ents.Values)
+            if (e.Anim != null && !e.Far) _animRanking.Add(e);
+        _animRanking.Sort(ByCamDist);
+        for (int i = 0; i < _animRanking.Count; i++) _animRanking[i].AnimRank = i;
+    }
+
+    private void UpdateEntityAnimLod(Ent e, Vector3 camPos, Vector3 pos)
+    {
+        float d2 = pos.DistanceSquaredTo(camPos);
+        e.CamDist2 = d2;
+        if (d2 <= Perf.CloseEntityDist * Perf.CloseEntityDist) _closeEntities++;
         float pause2 = EntityRenderDist * EntityRenderDist;
         float resume2 = (EntityRenderDist - 12f) * (EntityRenderDist - 12f);
-        e.AnimPaused = e.AnimPaused ? d2 > resume2 : d2 > pause2;
-        e.AnimThrottled = !e.AnimPaused && d2 > EntityAnimFullDist * EntityAnimFullDist;
+        e.Far = e.Far ? d2 > resume2 : d2 > pause2;
+        bool inView = InView(pos);
+        e.JustEntered = inView && !e.OnScreen;
+        e.OnScreen = inView;
+        if (e.Anim == null) return;
+        bool offScreen = d2 > AnimAlwaysDist * AnimAlwaysDist && !inView;
+        e.AnimPaused = !Config.EntityAnim || Perf.SkipPoses || e.Far || offScreen;
+        double step = 0;
+        int every = 1;
+        if (!e.AnimPaused)
+        {
+            double mid = 1.0 / Config.AnimMidHz, far = 1.0 / Config.AnimThrottleHz;
+            if (d2 > Config.AnimMidDist * Config.AnimMidDist) step = far;
+            else if (d2 > Config.AnimFullDist * Config.AnimFullDist) step = mid;
+            if (e.AnimRank >= Config.AnimFullCount + Config.AnimMidCount) step = Mathf.Max(step, far);
+            else if (e.AnimRank >= Config.AnimFullCount) step = Mathf.Max(step, mid);
+            every = step == 0 ? 1 : step >= far ? Config.AnimFarEvery : Config.AnimMidEvery;
+        }
+        e.AnimStep = step;
+        e.AnimEvery = every;
+        e.AnimThrottled = !e.AnimPaused && (step > 0 || e.Crowd != null);
+        if (e.AnimPaused) _animOff++;
+        else if (step == 0) _animFull++;
+        else if (step <= 1.0 / Config.AnimMidHz) _animMid++;
+        else _animFar++;
         bool active = !e.AnimPaused && !e.AnimThrottled;
-        if (e.Anim.Active != active) e.Anim.Active = active;
+        if (e.AnimActive != active)
+        {
+            e.AnimActive = active;
+            e.Anim.CallbackModeProcess = active
+                ? AnimationMixer.AnimationCallbackModeProcess.Idle
+                : AnimationMixer.AnimationCallbackModeProcess.Manual;
+            if (!active) e.Crowd?.TakeOver();
+            else e.Crowd?.Resume();
+        }
     }
 
     private void OnRotate(int id, float dir)
@@ -465,6 +615,7 @@ public partial class World
     {
         if (e.Anim == null || e.DefaultParts.Count == 0)
             return;
+        CharacterMerge.Remove(e.Body);
         RestorePartDefaults(e.Body, e.DefaultParts);
         GraftEquipment(e.Body, e.Race, e.Face, e.Gear, e.Hair, e.HelmetHidden);
         AttachWeapons(e.Body, e.Gear);
@@ -473,6 +624,7 @@ public partial class World
         AttachHandFx(e.Body, e.Gear, e.Race, _zone);
         RearmWornLook(e.Body, e.Gear);
         ApplyEntityRenderCost(e.Body);
+        if (!e.IsNpc && Config.MergeCharacters) CharacterMerge.Apply(e.Body);
         e.HitFxBox = null;
     }
 
@@ -484,46 +636,14 @@ public partial class World
         _pendingSpawns.Remove(id);
         if (_ents.TryGetValue(id, out var e))
         {
+            e.Crowd?.Release();
             e.Body.QueueFree();
             _ents.Remove(id);
+            ForgetSkillFx(id);
             StateVisualForgetEntity(id);
             StealthForgetEntity(id);
             ForgetStall(id);
         }
-    }
-
-    private const float EntHpBarW = 0.9f, EntHpBarH = 0.075f;
-
-    private static MeshInstance3D HpBarQuad(Color c, float w, float z) => new()
-    {
-        Mesh = new QuadMesh { Size = new Vector2(w, EntHpBarH), CenterOffset = new Vector3(0, 0, z) },
-        MaterialOverride = new StandardMaterial3D
-        {
-            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-            AlbedoColor = c,
-            Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-            BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
-            NoDepthTest = true,
-        },
-    };
-
-    private void UpdateEntHpBar(Ent e)
-    {
-        if (e.NameTag == null || e.MaxHp <= 0) return;
-        if (e.IsNpc && !e.Attackable) return;
-        if (e.HpBar == null)
-        {
-            e.HpBar = new Node3D { Position = e.NameTag.Position + new Vector3(0, 0.18f, 0) };
-            e.HpBar.AddChild(HpBarQuad(new Color(0, 0, 0, 0.55f), EntHpBarW, 0));
-            e.HpFill = HpBarQuad(new Color(0.85f, 0.16f, 0.14f), EntHpBarW, 0.01f);
-            e.HpBar.AddChild(e.HpFill);
-            e.Body.AddChild(e.HpBar);
-        }
-        float frac = Mathf.Clamp(e.Hp / (float)e.MaxHp, 0f, 1f);
-        float w = Mathf.Max(0.001f, EntHpBarW * frac);
-        var q = (QuadMesh)e.HpFill!.Mesh;
-        q.Size = new Vector2(w, EntHpBarH);
-        q.CenterOffset = new Vector3((w - EntHpBarW) / 2, 0, 0.01f);
     }
 
     private void ApplyEntityTitle(Ent ent, int titleId)
@@ -597,7 +717,6 @@ public partial class World
         if (!_ents.TryGetValue(id, out var e)) return;
         int old = e.MaxHp > 0 ? e.Hp : hp;
         e.Hp = hp; e.MaxHp = maxHp;
-        UpdateEntHpBar(e);
         if (e.IsNpc || e.Attackable) { _lastHitId = id; _lastHitAt = Now(); }
         int shown = damage != 0 ? Mathf.Abs(damage) : Mathf.Max(0, old - hp);
         if (shown > 0)

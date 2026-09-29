@@ -28,6 +28,14 @@ internal sealed class FloaterSystem
     private const float RowGap = 3f;
     private const float CullDistance = 55f;
     private const int IconSize = 24;
+    private const float UiReferenceHeight = 1080f;
+    private const float UiScaleMin = 0.8f;
+    private const float UiScaleMax = 2f;
+    private const float NearScaleMin = 0.62f;
+    private const float NearScaleMax = 1f;
+    private const int MinFontPx = 9;
+    private const int MinOutlinePx = 4;
+    private const float OutlineRatio = 0.38f;
 
     private readonly IWorldContext _ctx;
     private readonly List<Floater> _live = new();
@@ -45,6 +53,33 @@ internal sealed class FloaterSystem
         _host.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         _layer.AddChild(_host);
     }
+
+    internal void WarmText()
+    {
+        if (_host == null || !GodotObject.IsInstanceValid(_host) || !GlyphWarmer.Unscaled(_host)) return;
+        var font = _host.GetThemeDefaultFont();
+        int shadowOutline = _host.GetThemeConstant("shadow_outline_size", "Label");
+        float ui = UiScaleFor(_host.GetViewportRect().Size.Y);
+        int smallest = int.MaxValue, largest = 0;
+        foreach (var kind in System.Enum.GetValues<Kind>())
+        {
+            int baseFont = Look(kind).Font;
+            smallest = Mathf.Min(smallest, FontPxFor(baseFont, ui, NearScaleMin));
+            largest = Mathf.Max(largest, FontPxFor(baseFont, ui, NearScaleMax));
+        }
+        for (int size = smallest; size <= largest; size++)
+        {
+            GlyphWarmer.Render(font, size, 0, GlyphWarmer.AsciiRange);
+            GlyphWarmer.Render(font, size, OutlineFor(size), GlyphWarmer.AsciiRange);
+            if (shadowOutline > 0) GlyphWarmer.Render(font, size, shadowOutline, GlyphWarmer.AsciiRange);
+        }
+    }
+
+    private static float UiScaleFor(float height) => Mathf.Clamp(height / UiReferenceHeight, UiScaleMin, UiScaleMax);
+
+    private static int FontPxFor(int baseFont, float ui, float near) => Mathf.Max(MinFontPx, Mathf.RoundToInt(baseFont * ui * near));
+
+    private static int OutlineFor(int fontSize) => Mathf.Max(MinOutlinePx, Mathf.RoundToInt(fontSize * OutlineRatio));
 
     internal void Dispose()
     {
@@ -119,9 +154,9 @@ internal sealed class FloaterSystem
         float distance = cam != null ? cam.GlobalPosition.DistanceTo(anchor) : 0f;
         if (distance > CullDistance) return;
 
-        float ui = Mathf.Clamp(ViewportSize().Y / 1080f, 0.8f, 2f);
-        float near = Mathf.Clamp(1.15f - distance * 0.022f, 0.62f, 1f);
-        int fontSize = Mathf.Max(9, Mathf.RoundToInt(font * ui * near));
+        float ui = UiScaleFor(ViewportSize().Y);
+        float near = Mathf.Clamp(1.15f - distance * 0.022f, NearScaleMin, NearScaleMax);
+        int fontSize = FontPxFor(font, ui, near);
 
         var node = BuildNode(text, icon, tint, fontSize, out var size);
         _host.AddChild(node);
@@ -187,7 +222,7 @@ internal sealed class FloaterSystem
 
     private Control BuildNode(string text, Texture2D? icon, Color tint, int fontSize, out Vector2 size)
     {
-        int outline = Mathf.Max(4, Mathf.RoundToInt(fontSize * 0.38f));
+        int outline = OutlineFor(fontSize);
         var label = new Label
         {
             Text = text,

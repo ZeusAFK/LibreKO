@@ -20,7 +20,9 @@ public partial class Boot : Control
 
         Config.ApplyVideo();
         GameCursor.Enable();
-        if (Platform.BundledContent && !Packs.ContentReady)
+        GlyphWarmer.Watch(GetTree());
+        GlyphWarmer.Warm(this);
+        if (Platform.BundledContent)
         {
             if (GetNodeOrNull<Control>("Center") is { } placeholder) placeholder.Visible = false;
             AddChild(new ContentDownloadScreen());

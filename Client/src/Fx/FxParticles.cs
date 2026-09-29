@@ -1,12 +1,33 @@
 ﻿using Godot;
-using System.Collections.Generic;
 
 namespace LibreKO;
 
-public partial class FxParticles : GpuParticles3D
+public partial class FxParticles : Node3D, IFxPooledPart, IFxPart
 {
+    private const uint EmitFlags = (uint)(GpuParticles3D.EmitFlags.Position | GpuParticles3D.EmitFlags.Velocity);
+    private const float SpreadFlatness = 0f;
+
     private float _age, _start, _life, _hideTime, _showTime;
     private Vector3 _origin, _velocity, _acceleration;
+    private Vector3 _lastPosition = new(float.NaN, float.NaN, float.NaN);
+    private FxInstance? _root;
+    private bool _suppressed, _done;
+
+    private FxSharedEmitter? _shared;
+    private double _emitClock;
+    private double[] _expiry = System.Array.Empty<double>();
+    private int _expiryHead, _alive;
+    private bool _burstDone;
+    private static readonly System.Random Rng = new();
+
+    public FxPartKey? PoolKey { get; set; }
+    internal FxParticleTemplate? Template;
+    internal float Fade;
+
+    internal static bool SkipPosition;
+    internal static bool SkipEmission;
+
+    internal void SetSuppressed(bool suppressed) => _suppressed = suppressed;
 
     private Vector3 _emitCentre;
     private Vector3[]? _emitPosKeys, _emitScaleKeys;
@@ -74,33 +95,162 @@ public partial class FxParticles : GpuParticles3D
         _origin = origin;
         _velocity = velocity;
         _acceleration = acceleration;
-        Position = origin;
-        Visible = false;
-        Emitting = false;
+        Reset();
     }
 
-    public override void _Process(double delta)
+    public void Reset()
     {
-        if (Fx.ShuttingDown || IsQueuedForDeletion()) return;
+        Position = _origin;
+        _lastPosition = _origin;
+        _age = 0f;
+        _suppressed = false;
+        _emitClock = 0;
+        _alive = 0;
+        _expiryHead = 0;
+        _burstDone = false;
+        Fade = 0f;
+        Visible = true;
+        _done = false;
+    }
+
+    internal void Park()
+    {
+        FxEmitterPool.Release(_shared);
+        _shared = null;
+    }
+
+    public override void _EnterTree()
+    {
+        _root = GetParent() as FxInstance;
+        if (_root == null) return;
+        _root.AddPart(this);
+        SetProcess(false);
+    }
+
+    public override void _Ready()
+    {
+        if (_root != null) SetProcess(false);
+    }
+
+    public override void _ExitTree()
+    {
+        _root?.RemovePart(this);
+        _root = null;
+    }
+
+    public override void _Process(double delta) => Tick(delta);
+
+    public void Tick(double delta)
+    {
+        using var scope = Perf.Measure(Perf.Section.FxPart);
+        if (_done || Fx.ShuttingDown) return;
         _age += (float)delta;
         float raw = _age - _start;
-        if (raw < 0f) { Visible = false; Emitting = false; return; }
+        if (raw < 0f) return;
 
         float t = raw;
         if (_life > 0.001f && raw >= _life)
         {
-            Emitting = false;
-            if (raw >= _life + Lifetime)
+            if (raw >= _life + (Template?.Lifetime ?? 0f))
             {
-                Visible = false;
-                SetProcess(false);
-                QueueFree();
+                _done = true;
+                if (_root == null) SetProcess(false);
+                Fx.RecyclePart(this);
             }
             return;
         }
-        if (Fx.PartHidden(raw, _hideTime, _showTime)) { Visible = false; return; }
-        Visible = true;
-        Emitting = true;
-        Position = _origin + _velocity * t + 0.5f * _acceleration * t * t + EmitterOffset(t);
+        if (Fx.PartHidden(raw, _hideTime, _showTime)) return;
+        Vector3 position = _origin + _velocity * t + 0.5f * _acceleration * t * t + EmitterOffset(t);
+        if (position != _lastPosition)
+        {
+            _lastPosition = position;
+            if (!SkipPosition) Position = position;
+        }
+        if (_suppressed || SkipEmission || Template == null) return;
+        Emit(Template, delta);
+    }
+
+    private void Emit(FxParticleTemplate template, double delta)
+    {
+        if (_expiry.Length < template.Capacity) _expiry = new double[template.Capacity];
+        int capacity = _expiry.Length;
+        while (_alive > 0 && _expiry[(_expiryHead - _alive + capacity) % capacity] <= _age) _alive--;
+
+        int want = 0;
+        if (template.SingleBurst)
+        {
+            if (!_burstDone) { want = template.NumCreate; _burstDone = true; }
+        }
+        else if (template.EmitInterval <= 0.001f)
+        {
+            _emitClock += delta * template.Capacity / Mathf.Max(0.01f, template.Lifetime);
+            want = (int)_emitClock;
+            _emitClock -= want;
+        }
+        else
+        {
+            _emitClock += delta;
+            while (_emitClock >= template.EmitInterval)
+            {
+                _emitClock -= template.EmitInterval;
+                want += template.NumCreate;
+            }
+        }
+        want = System.Math.Min(want, template.Capacity - _alive);
+        if (want <= 0) return;
+
+        _shared ??= FxEmitterPool.Acquire(this, PoolKey ?? default, template);
+        if (_shared == null) return;
+
+        Transform3D world;
+        if (_root != null)
+        {
+            _root.EnsureFrame();
+            world = _root.FrameXf * new Transform3D(Basis.Identity, _lastPosition);
+        }
+        else world = GlobalTransform;
+
+        var xform = Transform3D.Identity;
+        for (int i = 0; i < want; i++)
+        {
+            Vector3 local = template.BoxOffset + new Vector3(
+                Span(template.BoxExtent.X), Span(template.BoxExtent.Y), Span(template.BoxExtent.Z));
+            Vector3 pos = world * local;
+            Vector3 velocity;
+            if (template.Gather)
+            {
+                Vector3 radial = pos - world.Origin;
+                velocity = radial.LengthSquared() > 1e-8f
+                    ? radial.Normalized() * -template.Speed
+                    : world.Basis * (template.EmitDir * -template.Speed);
+            }
+            else
+                velocity = world.Basis * (SpreadDirection(template.EmitDir, template.Spread) * template.Speed);
+            xform.Origin = pos;
+            _shared.EmitParticle(xform, velocity, Colors.White, Colors.White, EmitFlags);
+            _expiry[_expiryHead] = _age + template.LifeMax;
+            _expiryHead = (_expiryHead + 1) % capacity;
+            _alive++;
+        }
+    }
+
+    private static float Span(float extent) => extent <= 0f ? 0f : (float)(Rng.NextDouble() * 2.0 - 1.0) * extent;
+
+    private static Vector3 SpreadDirection(Vector3 direction, float spreadDegrees)
+    {
+        if (spreadDegrees <= 0.001f) return direction.LengthSquared() > 0f ? direction.Normalized() : Vector3.Back;
+        float spreadRad = Mathf.Pi * spreadDegrees / 180f;
+        float angle1 = spreadRad * (float)(Rng.NextDouble() * 2.0 - 1.0);
+        float angle2 = spreadRad * (1f - SpreadFlatness) * (float)(Rng.NextDouble() * 2.0 - 1.0);
+        var directionXz = new Vector3(Mathf.Sin(angle1), 0f, Mathf.Cos(angle1));
+        var directionYz = new Vector3(0f, Mathf.Sin(angle2), Mathf.Cos(angle2));
+        directionYz.Z /= Mathf.Max(0.0001f, Mathf.Sqrt(Mathf.Abs(directionYz.Z)));
+        var spread = new Vector3(directionXz.X * directionYz.Z, directionYz.Y, directionXz.Z * directionYz.Z);
+        Vector3 forward = direction.LengthSquared() > 0f ? direction.Normalized() : Vector3.Back;
+        Vector3 binormal = Vector3.Up.Cross(forward);
+        if (binormal.LengthSquared() < 1e-8f) binormal = Vector3.Back;
+        binormal = binormal.Normalized();
+        Vector3 normal = binormal.Cross(forward);
+        return binormal * spread.X + normal * spread.Y + forward * spread.Z;
     }
 }

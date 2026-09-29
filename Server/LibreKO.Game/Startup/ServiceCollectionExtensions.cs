@@ -275,7 +275,8 @@ public static class ServiceCollectionExtensions
             return new SocketServer(settings.BindHost, settings.BindPort, extraPorts: 0, clientFactory, handler, logger,
                 maxConnectionsPerIp: settings.Connections.MaxConnectionsPerIp,
                 connectionRateWindowSeconds: settings.Connections.ConnectionRateWindowSeconds,
-                maxConnectionAttemptsPerWindow: settings.Connections.MaxConnectionAttemptsPerWindow);
+                maxConnectionAttemptsPerWindow: settings.Connections.MaxConnectionAttemptsPerWindow,
+                exemptLoopback: settings.Connections.ExemptLoopback);
         });
         return services;
     }

@@ -68,7 +68,7 @@ internal static class FxParticleMaterial
         for (int i = 0; i < count; i++)
         {
             var tex = Fx.TextureForBlend(Fx.FrameTexture(p, i) ?? first, add, Fx.SrcBlend(p), Fx.DestBlend(p));
-            var image = tex.GetImage();
+            var image = FxImages.Read(tex) ?? Image.CreateEmpty(first.GetWidth(), first.GetHeight(), false, Image.Format.Rgba8);
             if (image.IsCompressed()) image.Decompress();
             image.ClearMipmaps();
             image.Convert(Image.Format.Rgba8);

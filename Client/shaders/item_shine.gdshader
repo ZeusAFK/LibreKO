@@ -8,7 +8,17 @@ uniform vec3 uv_offset = vec3(0.0);
 uniform bool use_texture = false;
 uniform bool use_alpha = false;
 uniform float alpha_cutoff = 0.01;
-uniform float strength = 0.0;
+uniform float level_strength = 0.0;
+uniform float peak = 1.0;
+uniform bool pulses = false;
+uniform float blink_rate = 1.0;
+uniform float blink_floor = 0.0;
+uniform float pulse_top = 1.0;
+uniform float phase = 0.0;
+uniform float rise_seconds = 1.0;
+uniform float hold_seconds = 1.0;
+uniform float fall_seconds = 1.0;
+uniform float cycle_seconds = 1.0;
 
 varying vec3 surface_position;
 
@@ -16,7 +26,22 @@ void vertex() {
     surface_position = VERTEX;
 }
 
+float envelope() {
+    if (!pulses) return peak;
+    float cycle = cycle_seconds / blink_rate;
+    float rise = rise_seconds / blink_rate;
+    float hold = hold_seconds / blink_rate;
+    float fall = fall_seconds / blink_rate;
+    float t = mod(TIME + phase, cycle);
+    float v = t < rise ? mix(blink_floor, pulse_top, t / rise)
+        : t < rise + hold ? pulse_top
+        : t < rise + hold + fall ? mix(pulse_top, blink_floor, (t - rise - hold) / fall)
+        : blink_floor;
+    return v * peak;
+}
+
 void fragment() {
+    float strength = level_strength * envelope();
     vec2 uv = UV * uv_scale.xy + uv_offset.xy;
     vec4 texel = albedo_color;
     if (use_texture) texel *= texture(albedo_texture, uv);
@@ -43,5 +68,4 @@ void fragment() {
         + edge * (1.1 + filament * 0.6) + halo * 0.7) * strength;
     vec3 gold = mix(vec3(1.0, 0.65, 0.28), vec3(1.0, 0.94, 0.78), smoothstep(0.2, 1.2, energy));
     ALBEDO = gold * energy * pulse;
-    ALPHA = 1.0;
 }

@@ -82,7 +82,8 @@ var builder = Host.CreateDefaultBuilder(args)
             return new SocketServer(settings.BindHost, settings.BindPort, extraPorts: 10, clientFactory, handler, logger,
                 maxConnectionsPerIp: settings.Connections.MaxConnectionsPerIp,
                 connectionRateWindowSeconds: settings.Connections.ConnectionRateWindowSeconds,
-                maxConnectionAttemptsPerWindow: settings.Connections.MaxConnectionAttemptsPerWindow);
+                maxConnectionAttemptsPerWindow: settings.Connections.MaxConnectionAttemptsPerWindow,
+                exemptLoopback: settings.Connections.ExemptLoopback);
         });
 
         services.AddScoped<IDataSeeder, DataSeeder>();

@@ -113,6 +113,29 @@ public static class Config
 
     public static bool FxAmbient { get; private set; } = true;
     public static int FxDistance { get; private set; } = 180;
+
+    public const float AnimFullDistMin = 5f;
+    public const float AnimFullDistMax = 160f;
+    public const int AnimThrottleHzMin = 1;
+    public const int AnimThrottleHzMax = 60;
+    public static bool EntityAnim { get; private set; } = true;
+    public static float AnimFullDist { get; private set; } = 25f;
+    public static float AnimMidDist { get; private set; } = 60f;
+    public static int AnimMidHz { get; private set; } = 20;
+    public static int AnimThrottleHz { get; private set; } = 10;
+    public const int AnimCountMin = 1;
+    public const int AnimCountMax = 2000;
+    public static int AnimFullCount { get; private set; } = 48;
+    public static int AnimMidCount { get; private set; } = 96;
+    public const int AnimEveryMin = 1;
+    public const int AnimEveryMax = 16;
+    public static int AnimMidEvery { get; private set; } = 2;
+    public static int AnimFarEvery { get; private set; } = 4;
+    public static int MoveFarEvery { get; private set; } = 2;
+    public const int ShineLightBudgetMax = 500;
+    public static int ShineLightBudget { get; private set; } = 12;
+    public static int LampLightBudget { get; private set; } = 24;
+    public static bool MergeCharacters { get; private set; } = true;
     public static bool DamageNumbers { get; private set; } = true;
     public static bool CombatLog { get; private set; } = false;
 
@@ -204,11 +227,23 @@ public static class Config
         SavedAccount.Load();
     }
 
-    private static bool ReadLayer(string path, bool server, bool shipped = false)
+    private static ConfigFile? _shippedDefaults;
+
+    public static void PinShippedDefaults()
     {
         var cfg = new ConfigFile();
-        if (cfg.Load(path) != Error.Ok)
-            return false;
+        if (cfg.Load(DefaultsResPath) == Error.Ok) _shippedDefaults = cfg;
+    }
+
+    private static bool ReadLayer(string path, bool server, bool shipped = false)
+    {
+        var cfg = shipped ? _shippedDefaults : null;
+        if (cfg == null)
+        {
+            cfg = new ConfigFile();
+            if (cfg.Load(path) != Error.Ok)
+                return false;
+        }
 
         if (server)
         {
@@ -264,6 +299,30 @@ public static class Config
             CamEdgePanSpeedMin, CamEdgePanSpeedMax);
         FxAmbient = cfg.GetValue("effects", "ambient", FxAmbient).AsBool();
         FxDistance = Mathf.Clamp(cfg.GetValue("effects", "distance", FxDistance).AsInt32(), 40, 400);
+        EntityAnim = cfg.GetValue("debug", "entity_anim", EntityAnim).AsBool();
+        AnimFullDist = Mathf.Clamp((float)cfg.GetValue("debug", "anim_full_dist", AnimFullDist).AsDouble(),
+            AnimFullDistMin, AnimFullDistMax);
+        AnimThrottleHz = Mathf.Clamp(cfg.GetValue("debug", "anim_throttle_hz", AnimThrottleHz).AsInt32(),
+            AnimThrottleHzMin, AnimThrottleHzMax);
+        AnimMidDist = Mathf.Clamp((float)cfg.GetValue("debug", "anim_mid_dist", AnimMidDist).AsDouble(),
+            AnimFullDistMin, AnimFullDistMax);
+        AnimMidHz = Mathf.Clamp(cfg.GetValue("debug", "anim_mid_hz", AnimMidHz).AsInt32(),
+            AnimThrottleHzMin, AnimThrottleHzMax);
+        AnimFullCount = Mathf.Clamp(cfg.GetValue("debug", "anim_full_count", AnimFullCount).AsInt32(),
+            AnimCountMin, AnimCountMax);
+        AnimMidCount = Mathf.Clamp(cfg.GetValue("debug", "anim_mid_count", AnimMidCount).AsInt32(),
+            AnimCountMin, AnimCountMax);
+        AnimMidEvery = Mathf.Clamp(cfg.GetValue("debug", "anim_mid_every", AnimMidEvery).AsInt32(),
+            AnimEveryMin, AnimEveryMax);
+        AnimFarEvery = Mathf.Clamp(cfg.GetValue("debug", "anim_far_every", AnimFarEvery).AsInt32(),
+            AnimEveryMin, AnimEveryMax);
+        MoveFarEvery = Mathf.Clamp(cfg.GetValue("debug", "move_far_every", MoveFarEvery).AsInt32(),
+            AnimEveryMin, AnimEveryMax);
+        ShineLightBudget = Mathf.Clamp(cfg.GetValue("debug", "shine_light_budget", ShineLightBudget).AsInt32(),
+            0, ShineLightBudgetMax);
+        LampLightBudget = Mathf.Clamp(cfg.GetValue("debug", "lamp_light_budget", LampLightBudget).AsInt32(),
+            0, ShineLightBudgetMax);
+        MergeCharacters = cfg.GetValue("debug", "merge_characters", MergeCharacters).AsBool();
         TouchUi = ReadEnum(cfg, "video", "touch_ui", TouchUi);
         ViewDistance = Mathf.Clamp((float)cfg.GetValue("graphics", "view_distance",
             Platform.TouchUi ? ViewDistanceMobileDefault : ViewDistance).AsDouble(),

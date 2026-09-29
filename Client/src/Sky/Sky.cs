@@ -65,6 +65,18 @@ public partial class Sky : Node3D
 
     private const string MoonTexPath = "res://assets/sky/moon.png";
 
+    private static class Param
+    {
+        public static readonly StringName
+            MoonDir = "moon_dir", MoonDisc = "moon_disc", MoonTint = "moon_tint",
+            SkyTop = "sky_top", SkyHorizon = "sky_horizon", SkyEnergy = "sky_energy",
+            SunTint = "sun_tint", SunDisc = "sun_disc", SunDir = "sun_dir", StarAmount = "star_amount",
+            CloudTex = "cloud_tex", CloudPan = "cloud_pan", CirrusPan = "cirrus_pan",
+            CloudScale = "cloud_scale", CloudCover = "cloud_cover", CloudHeight = "cloud_height",
+            CloudDensity = "cloud_density", CloudLit = "cloud_lit", CloudDark = "cloud_dark",
+            CirrusAmount = "cirrus_amount";
+    }
+
     public override void _Ready()
     {
         _skyMat = Shaders.Material("sky");
@@ -151,8 +163,20 @@ public partial class Sky : Node3D
         ApplyGraphics();
     }
 
+    private bool _shadowsSkipped, _ssaoSkipped;
+
     public override void _Process(double delta)
     {
+        if (Perf.SkipShadows != _shadowsSkipped)
+        {
+            _shadowsSkipped = Perf.SkipShadows;
+            _sun.ShadowEnabled = Config.Shadows && !_shadowsSkipped;
+        }
+        if (Perf.SkipSsao != _ssaoSkipped && _env != null)
+        {
+            _ssaoSkipped = Perf.SkipSsao;
+            ApplyAmbientOcclusion();
+        }
         float dt = (float)delta;
         _t += dt;
         Wetness = Mathf.MoveToward(Wetness, _wetTarget, dt * 0.4f);
@@ -170,10 +194,19 @@ public partial class Sky : Node3D
         _flash = Mathf.MoveToward(_flash, 0f, dt * 4f);
     }
 
+    private const string DepthPrepassSetting = "rendering/driver/depth_prepass/enable";
+
+    private void ApplyAmbientOcclusion()
+    {
+        bool ssao = Config.Ssao && !Perf.SkipSsao;
+        _env.SsaoEnabled = ssao;
+        ProjectSettings.SetSetting(DepthPrepassSetting, ssao);
+    }
+
     public void ApplyGraphics()
     {
         if (_env == null) return;
-        _env.SsaoEnabled = Config.Ssao;
+        ApplyAmbientOcclusion();
         _env.GlowEnabled = Config.Bloom;
         _env.VolumetricFogEnabled = Config.VolumetricFog;
         CloudsEnabled = Config.Clouds;
@@ -256,16 +289,16 @@ public partial class Sky : Node3D
         _moon.LightColor = MoonLightLow.Lerp(MoonLightHigh, moonWarm);
         _moon.LightEnergy = _moonLit * NightMoonEnergy * (1f - (_storm ? 0.7f : 0.5f) * overcast)
                           * (1f - MoonCloudBlock * _moonBlock);
-        _skyMat.SetShaderParameter("moon_dir", _moonDir);
-        _skyMat.SetShaderParameter("moon_disc", _moonLit * (1f - MoonOvercastHaze * overcast));
-        _skyMat.SetShaderParameter("moon_tint", MoonDiscLow.Lerp(MoonDiscHigh, moonWarm));
+        _skyMat.SetShaderParameter(Param.MoonDir, _moonDir);
+        _skyMat.SetShaderParameter(Param.MoonDisc, _moonLit * (1f - MoonOvercastHaze * overcast));
+        _skyMat.SetShaderParameter(Param.MoonTint, MoonDiscLow.Lerp(MoonDiscHigh, moonWarm));
 
-        _skyMat.SetShaderParameter("sky_top", top);
-        _skyMat.SetShaderParameter("sky_horizon", hor);
-        _skyMat.SetShaderParameter("sky_energy", skyEnergy);
-        _skyMat.SetShaderParameter("sun_tint", sunLight);
-        _skyMat.SetShaderParameter("sun_disc", day * (1f - 0.95f * overcast));
-        _skyMat.SetShaderParameter("star_amount",
+        _skyMat.SetShaderParameter(Param.SkyTop, top);
+        _skyMat.SetShaderParameter(Param.SkyHorizon, hor);
+        _skyMat.SetShaderParameter(Param.SkyEnergy, skyEnergy);
+        _skyMat.SetShaderParameter(Param.SunTint, sunLight);
+        _skyMat.SetShaderParameter(Param.SunDisc, day * (1f - 0.95f * overcast));
+        _skyMat.SetShaderParameter(Param.StarAmount,
             StarsFor(sunAlt) * (1f - 0.8f * overcast) * (1f - _flash));
 
         _env.AmbientLightEnergy = ambient;

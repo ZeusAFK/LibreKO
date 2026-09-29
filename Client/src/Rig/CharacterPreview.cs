@@ -22,6 +22,7 @@ public static partial class CharacterPreview
         var scene = ResolveBody(race);
         if (scene == null) return null;
         var body = scene.Instantiate<Node3D>();
+        SkinShare.ShareUnder(body);
         Graft(body, race, face, gear, hair, hairColour, enableShine);
         AttachWeapons(body, gear, enableShine);
         foreach (var wingAnim in World.AttachWings(body, gear, race, 0, enableShine))
@@ -114,7 +115,14 @@ public static partial class CharacterPreview
         var inst = scene.Instantiate<Node3D>();
         var src = FindFirst<MeshInstance3D>(inst);
         bool ok = false;
-        if (src?.Mesh != null) { target.Mesh = src.Mesh; target.Skin = src.Skin; target.Visible = true; ok = true; }
+        if (src?.Mesh != null)
+        {
+            target.Mesh = src.Mesh;
+            target.Skin = SkinShare.Canonical(src.Skin);
+            SkinShare.FixBounds(target);
+            target.Visible = true;
+            ok = true;
+        }
         inst.QueueFree();
         return ok;
     }

@@ -20,6 +20,7 @@ public partial class World
     private HudWindow _mailWindow = null!;
     private VBoxContainer _mailList = null!;
     private Label _mailUnreadPill = null!;
+    private CheckButton _mailUnreadOnly = null!;
     private Label _mailStatus = null!;
     private HudWindow _mailReadWindow = null!;
     private Label _mailReadSubject = null!;
@@ -86,6 +87,14 @@ public partial class World
         var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), "Refresh the inbox");
         refresh.Pressed += () => Net.I.SendMailList();
         head.AddChild(refresh);
+        _mailUnreadOnly = new CheckButton { Text = "Unread", FocusMode = Control.FocusModeEnum.None };
+        _mailUnreadOnly.AddThemeFontSizeOverride("font_size", 12);
+        _mailUnreadOnly.Toggled += _ =>
+        {
+            RenderMailList();
+            Callable.From(_mailWindow.ResetSize).CallDeferred();
+        };
+        head.AddChild(_mailUnreadOnly);
         var spacer = new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         head.AddChild(spacer);
         _mailUnreadPill = UiTheme.Text("", 12, UiTheme.GoldBright);
@@ -191,8 +200,16 @@ public partial class World
             return;
         }
 
+        bool unreadOnly = _mailUnreadOnly.ButtonPressed;
+        int shown = 0;
         foreach (var mail in _mails)
+        {
+            if (unreadOnly && mail.Read) continue;
             _mailList.AddChild(BuildMailRow(mail));
+            shown++;
+        }
+        if (shown == 0)
+            _mailList.AddChild(UiTheme.Text("No unread mail.", 12, UiTheme.TextLo, HorizontalAlignment.Center));
     }
 
     private Control BuildMailRow(MailEntry mail)

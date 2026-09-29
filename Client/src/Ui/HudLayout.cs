@@ -238,6 +238,7 @@ public sealed partial class HudLayout : Node
 
     public override void _Process(double delta)
     {
+        using var scope = Perf.Measure(Perf.Section.Ui);
         if (_moveGrip != null)
         {
             _moveGrip.Visible = (_moveGripAlwaysVisible || EditMode) && _target.IsVisibleInTree();

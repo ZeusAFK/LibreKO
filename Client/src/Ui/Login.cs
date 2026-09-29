@@ -55,6 +55,7 @@ public partial class Login : Control
 
         BuildFooter();
 
+        Callable.From(() => GlyphWarmer.Warm(this)).CallDeferred();
         LoginNet.I.VersionEvent += OnVersion;
         LoginNet.I.LoginResultEvent += OnLoginResult;
         LoginNet.I.AccountInUseEvent += OnLoginServerAccountInUse;

@@ -157,7 +157,7 @@ public partial class World
         float transparency = Mathf.Clamp(1f - alpha, 0f, 1f);
         foreach (var node in StealthDescendants(body))
             if (node is GeometryInstance3D gi)
-                gi.Transparency = transparency;
+                Fx.SetTransparency(gi, transparency);
     }
 
     private static IEnumerable<Node> StealthDescendants(Node root)

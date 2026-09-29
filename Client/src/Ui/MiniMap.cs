@@ -423,34 +423,6 @@ public partial class MiniMap : Control
         }
     }
 
-    private void DrawBlips(Control c, Vector2 ctr, float radius)
-    {
-        float pxw = PxPerWorld;
-        float min = 7f, maxX = c.Size.X - 7f, maxY = c.Size.Y - 7f;
-        foreach (var b in _blips)
-        {
-            float dx = (b.X - _koX) * pxw;
-            float dy = -(b.Z - _koZ) * pxw;
-            var p = ctr + new Vector2(dx, dy);
-            bool clamped = p.X < min || p.X > maxX || p.Y < min || p.Y > maxY;
-            if (clamped)
-            {
-                p = new Vector2(Mathf.Clamp(p.X, min, maxX), Mathf.Clamp(p.Y, min, maxY));
-                c.DrawCircle(p, b.Radius * 0.8f, new Color(b.Color, 0.65f));
-                continue;
-            }
-            if (b.Hollow)
-            {
-                c.DrawArc(p, b.Radius + 1.5f, 0, Mathf.Tau, 20, b.Color, 2f, true);
-            }
-            else
-            {
-                c.DrawCircle(p, b.Radius + 1.2f, new Color(0, 0, 0, 0.7f));
-                c.DrawCircle(p, b.Radius, b.Color);
-            }
-        }
-    }
-
     private void DrawPlayer(Control c, Vector2 ctr)
     {
         float a = Mathf.DegToRad(_headingDeg);

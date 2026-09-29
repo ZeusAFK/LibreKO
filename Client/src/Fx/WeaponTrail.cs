@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 
 namespace LibreKO;
 
@@ -66,40 +66,59 @@ public partial class WeaponTrail : Node3D
         return t;
     }
 
+    private bool _shown;
+
+    private void SetShown(bool shown)
+    {
+        if (_shown == shown) return;
+        _shown = shown;
+        Visible = shown;
+    }
+
+    private const float TraceLeadFrames = 2f;
+
     public override void _Process(double delta)
     {
+        using var scope = Perf.Measure(Perf.Section.Gear);
         if (_anim == null || !GodotObject.IsInstanceValid(_anim)
-            || !GodotObject.IsInstanceValid(_skel) || !_skel.IsInsideTree())
+            || !GodotObject.IsInstanceValid(_skel) || !_skel.IsInsideTree() || !_anim.Active)
         {
-            Visible = false;
+            SetShown(false);
             return;
         }
 
-        string clip = _anim.CurrentAnimation.ToString();
+        if (!CrowdAnimator.Current(_anim, out string clip, out double pos))
+        {
+            clip = _anim.CurrentAnimation.ToString();
+            pos = clip.Length == 0 ? 0 : _anim.CurrentAnimationPosition;
+        }
         if (clip.Length == 0)
         {
             // CurrentAnimationPosition errors outright when nothing is playing, which happens
             // for the frames between an entity spawning and its first clip starting.
             _clip = "";
             _n = 0;
-            Visible = false;
+            SetShown(false);
             return;
         }
         if (clip != _clip) { _clip = clip; _n = 0; }
 
-        double pos = _anim.CurrentAnimationPosition;
+        if (!World.TraceWindow(_anim, clip, out float t0, out float t1, out float fps)
+            || pos < t0 - TraceLeadFrames / fps || pos > t1)
+        {
+            SetShown(false);
+            return;
+        }
         var edge = _skel.GlobalTransform * _skel.GetBoneGlobalPose(_bone) * _plug;
         Push(pos, edge * new Vector3(0f, _tr0, 0f), edge * new Vector3(0f, _tr1, 0f));
-
-        if (!World.TraceWindow(_anim, clip, out float t0, out float t1, out float fps)
-            || pos < t0 || pos > t1 || _n < 2)
+        if (pos < t0 || _n < 2)
         {
-            Visible = false;
+            SetShown(false);
             return;
         }
 
         Rebuild(pos, FrameStep / fps);
-        Visible = true;
+        SetShown(true);
     }
 
     private void Push(double at, Vector3 a, Vector3 b)

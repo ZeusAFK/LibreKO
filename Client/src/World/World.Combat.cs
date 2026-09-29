@@ -68,9 +68,27 @@ public partial class World
         RestoreBuffs();
     }
 
+    private readonly List<(double At, int Caster, int Skill, int Phase)> _skillFxStops = new();
+    private const double CastFxGraceSeconds = 3.0;
+
+    private void ScheduleSkillFxStop(int casterId, int skillId, int phase, double at) =>
+        _skillFxStops.Add((at, casterId, skillId, phase));
+
+    private void TickSkillFxStops(double now)
+    {
+        for (int i = _skillFxStops.Count - 1; i >= 0; i--)
+        {
+            var stop = _skillFxStops[i];
+            if (now < stop.At) continue;
+            _skillFxStops.RemoveAt(i);
+            StopSkillFx(stop.Caster, stop.Skill, stop.Phase);
+        }
+    }
+
     private void CombatTick(double now)
     {
         if (!_selfDead && Vitals.Known && Vitals.Hp <= 0) EnterSelfDeath();
+        TickSkillFxStops(now);
 
         AdvancedGenieTick(now);
         _launches.Clear();
@@ -407,7 +425,10 @@ public partial class World
                 }
                 if (s?.SelfFx2 != null)
                 {
-                    SpawnOwnedFx(casterId, skillId, 2, s.SelfFx2, s.SelfPart2);
+                    double buff = BuffSeconds(s, data);
+                    bool loops = Fx.LoopsForever(s.SelfFx2) && buff > 0;
+                    SpawnOwnedFx(casterId, skillId, 2, s.SelfFx2, s.SelfPart2, oneShot: !loops);
+                    if (loops) ScheduleSkillFxStop(casterId, skillId, 2, Now() + buff);
                     AudioFxAt(s.SelfFx2Id, casterId);
                 }
                 if (!miss && s?.TargetFx != null)

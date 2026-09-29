@@ -175,10 +175,30 @@ public static partial class KeyBinds
         }
     }
 
+    private static int _padDevice = int.MinValue;
+
     public static int PadDevice()
+    {
+        if (_padDevice == int.MinValue)
+        {
+            Input.Singleton.JoyConnectionChanged += (_, _) => _padDevice = FirstPad();
+            _padDevice = FirstPad();
+        }
+        return _padDevice;
+    }
+
+    private static int FirstPad()
     {
         var pads = Input.GetConnectedJoypads();
         return pads.Count > 0 ? pads[0] : -1;
+    }
+
+    private static class Actions
+    {
+        public static readonly StringName MoveLeft = TouchLeft, MoveRight = TouchRight,
+            MoveUp = TouchUp, MoveDown = TouchDown;
+        public static readonly StringName LookLeft = TouchLookLeft, LookRight = TouchLookRight,
+            LookUp = TouchLookUp, LookDown = TouchLookDown;
     }
 
     public static bool PadConnected => PadDevice() >= 0;
@@ -227,7 +247,7 @@ public static partial class KeyBinds
     {
         var pad = Stick(JoyAxis.LeftX, JoyAxis.LeftY);
         if (pad != Vector2.Zero) return pad;
-        return (Input.GetVector(TouchLeft, TouchRight, TouchUp, TouchDown)
+        return (Input.GetVector(Actions.MoveLeft, Actions.MoveRight, Actions.MoveUp, Actions.MoveDown)
                 * Config.MoveStickSensitivity).LimitLength(1f);
     }
 
@@ -235,7 +255,7 @@ public static partial class KeyBinds
     {
         var pad = Stick(JoyAxis.RightX, JoyAxis.RightY);
         if (pad != Vector2.Zero) return pad;
-        return Input.GetVector(TouchLookLeft, TouchLookRight, TouchLookUp, TouchLookDown)
+        return Input.GetVector(Actions.LookLeft, Actions.LookRight, Actions.LookUp, Actions.LookDown)
                * Config.LookStickSensitivity;
     }
 }

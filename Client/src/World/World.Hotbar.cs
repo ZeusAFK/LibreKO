@@ -540,15 +540,20 @@ public partial class World
                 cells[i].Flash();
     }
 
+    private const double HotbarCountInterval = 0.1;
+    private double _hotbarCountAt;
+
     private void UpdateHotbarReady(double now)
     {
         if (_hotbarBox == null) return;
 
-        UpdateStripReady(_hotCells, _hotPage, now, touch: true);
-        foreach (var strip in _extraBars) UpdateStripReady(strip.Cells, strip.Page, now, touch: false);
+        bool counts = now >= _hotbarCountAt;
+        if (counts) _hotbarCountAt = now + HotbarCountInterval;
+        UpdateStripReady(_hotCells, _hotPage, now, touch: true, counts);
+        foreach (var strip in _extraBars) UpdateStripReady(strip.Cells, strip.Page, now, touch: false, counts);
     }
 
-    private void UpdateStripReady(List<HotSlotCell> cells, int page, double now, bool touch)
+    private void UpdateStripReady(List<HotSlotCell> cells, int page, double now, bool touch, bool counts)
     {
         for (int i = 0; i < cells.Count; i++)
         {
@@ -565,6 +570,7 @@ public partial class World
             if (touch && i < TouchControls.ActionSlots) _touchActions?.SetCooldown(i, cd);
             cell.SetDim(s != null && cd <= 0f && (!SkillReady(s, now) || !SkillRequirementMet(s)));
 
+            if (!counts) continue;
             int needId = SkillData.IsSkill(id) ? s?.ConsumedItem ?? 0 : id;
             if (needId != 0 && ItemData.Get(needId) != null)
             {
@@ -774,14 +780,17 @@ public partial class World
             _bg.SetBorderWidthAll(_selected ? 2 : 1);
         }
 
+        private static readonly StringName RemainParam = "remain";
+        private bool _coolOn;
+
         public void SetCooldown(float frac)
         {
             if (!GodotObject.IsInstanceValid(_cool)) return;
             bool on = frac > 0.001f;
-            if (_cool.Visible != on) _cool.Visible = on;
+            if (_coolOn != on) { _coolOn = on; _cool.Visible = on; }
             if (on && Mathf.Abs(frac - _coolShown) > 0.002f)
             {
-                _coolMat.SetShaderParameter("remain", frac);
+                _coolMat.SetShaderParameter(RemainParam, frac);
                 _coolShown = frac;
             }
         }
