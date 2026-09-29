@@ -71,7 +71,7 @@ public partial class World
                 var src = FindFirst<MeshInstance3D>(inst);
                 if (src?.Mesh != null)
                 {
-                    m = src.Mesh; sk = src.Skin;
+                    m = src.Mesh; sk = SkinShare.Canonical(src.Skin);
                     target.Mesh = m; target.Skin = sk;
                     ForceDoubleSided(target);
                 }
@@ -84,6 +84,7 @@ public partial class World
         if (c.Mesh == null) return false;
         target.Mesh = c.Mesh;
         target.Skin = c.Skin;
+        SkinShare.FixBounds(target);
         target.Visible = true;
         target.MaterialOverlay = null;
         return true;

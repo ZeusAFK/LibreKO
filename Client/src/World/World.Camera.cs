@@ -92,9 +92,6 @@ public partial class World
             }
         }
 
-        _terrain?.SetDistanceCull(true);
-        _camera.Projection = Camera3D.ProjectionType.Perspective;
-
         float aimT = Mathf.Clamp((_camDist - MinDist) / (MaxDist - MinDist), 0f, 1f);
         float aimHeight = Mathf.Lerp(CamMinAimHeight, CamAimHeight, aimT);
         var target = _self.Position + Vector3.Up * aimHeight;
@@ -125,12 +122,20 @@ public partial class World
         return _camDist;
     }
 
+    private PhysicsRayQueryParameters3D? _camRay;
+    private bool _camRayExcludesSelf;
+
     private float ObstacleClearDist(Vector3 target, Vector3 dir, float dist)
     {
         if (NoClip) return dist;
-        var query = PhysicsRayQueryParameters3D.Create(target, target + dir * dist, WorldCollisionLayer);
-        if (_selfBody != null)
+        var query = _camRay ??= new PhysicsRayQueryParameters3D { CollisionMask = WorldCollisionLayer };
+        query.From = target;
+        query.To = target + dir * dist;
+        if (_selfBody != null && !_camRayExcludesSelf)
+        {
             query.Exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
+            _camRayExcludesSelf = true;
+        }
         var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
         if (hit.Count == 0) return dist;
         float atHit = target.DistanceTo((Vector3)hit["position"]);

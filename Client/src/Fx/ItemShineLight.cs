@@ -10,7 +10,29 @@ public partial class ItemShineLight : OmniLight3D
     private Vector3 _lastPosition = new(float.NaN, float.NaN, float.NaN);
     private float _lastRange = float.NaN, _lastEnergy = float.NaN;
 
-    public static void Refresh(Node3D body)
+    private static readonly List<ItemShineLight> _all = new();
+    private static readonly System.Comparison<ItemShineLight> ByCamDist = (a, b) => a._camDist2.CompareTo(b._camDist2);
+    private static ulong _rankFrame = ulong.MaxValue;
+    private float _camDist2;
+    private int _rank;
+
+    public override void _EnterTree() => _all.Add(this);
+
+    public override void _ExitTree() => _all.Remove(this);
+
+    private void RankAll()
+    {
+        ulong frame = Engine.GetProcessFrames();
+        if (frame == _rankFrame) return;
+        _rankFrame = frame;
+        Vector3 eye = Fx.FrameCamera(this, out var camera) ? camera.Origin : Vector3.Zero;
+        foreach (var light in _all)
+            light._camDist2 = float.IsNaN(light._lastPosition.X) ? float.MaxValue : light._lastPosition.DistanceSquaredTo(eye);
+        _all.Sort(ByCamDist);
+        for (int i = 0; i < _all.Count; i++) _all[i]._rank = i;
+    }
+
+    public static void Refresh(Node3D body, bool shadow = false)
     {
         ItemShineLight? light = null;
         foreach (var child in body.GetChildren())
@@ -32,7 +54,6 @@ public partial class ItemShineLight : OmniLight3D
                 LightSpecular = 0f,
                 LightCullMask = SceneryLayer,
                 ShadowCasterMask = SceneryLayer,
-                ShadowEnabled = Config.Shadows,
                 OmniAttenuation = 1.3f,
                 DistanceFadeEnabled = true,
                 DistanceFadeBegin = 24f,
@@ -41,6 +62,7 @@ public partial class ItemShineLight : OmniLight3D
             };
             body.AddChild(light);
         }
+        light.ShadowEnabled = shadow && Config.Shadows;
         light._sources.Clear();
         light._sources.AddRange(sources);
     }
@@ -59,20 +81,31 @@ public partial class ItemShineLight : OmniLight3D
     }
 
     public override void _Process(double delta)
-        => UpdateLight(Time.GetTicksMsec() * 0.001);
+    {
+        using var scope = Perf.Measure(Perf.Section.Shine);
+        UpdateLight(Time.GetTicksMsec() * 0.001);
+    }
 
     internal void UpdateLight(double seconds)
     {
         if (GetParent() is not Node3D body) return;
         Vector3 position = body.GlobalPosition + Vector3.Up * 1.6f;
         if (_lastPosition != position) { GlobalPosition = position; _lastPosition = position; }
+        RankAll();
+        if (_rank >= Config.ShineLightBudget)
+        {
+            if (Visible) Visible = false;
+            return;
+        }
         ItemShineDriver? strongest = null;
         float visibility = 0f;
         foreach (var source in _sources)
         {
             if (!IsInstanceValid(source) || source.IsQueuedForDeletion()
-                || source.GetParent() is not MeshInstance3D mesh || !mesh.IsVisibleInTree()) continue;
-            float alpha = 1f - mesh.Transparency;
+                || source.GetParent() is not MeshInstance3D part) continue;
+            var shown = CharacterMerge.ShownAs(part);
+            if (!shown.IsVisibleInTree()) continue;
+            float alpha = 1f - shown.Transparency;
             if (alpha <= 0f) continue;
             if (strongest == null || source.Level > strongest.Level
                 || (source.Level == strongest.Level && source.PartIndex < strongest.PartIndex))

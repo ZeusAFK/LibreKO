@@ -137,10 +137,6 @@ public partial class World
             var tagPos = e.NameTag.Position;
             tagPos.Y = sitting ? SittingNameTagHeight : (e.OriginalTagY > 0 ? e.OriginalTagY : StandingNameTagHeight);
             e.NameTag.Position = tagPos;
-            if (e.HpBar != null && GodotObject.IsInstanceValid(e.HpBar))
-            {
-                e.HpBar.Position = e.NameTag.Position + new Vector3(0, HpBarLiftOverTag, 0);
-            }
         }
 
         if (e.Anim != null && Pick(e.Anim, sitting ? SitDownClips : StandUpClips) != null)
@@ -339,7 +335,7 @@ public partial class World
         foreach (var node in Descendants(body))
         {
             if (node is not GeometryInstance3D gi) continue;
-            gi.Transparency = Mathf.Clamp(1f - alpha, 0f, 1f);
+            Fx.SetTransparency(gi, Mathf.Clamp(1f - alpha, 0f, 1f));
         }
     }
 

@@ -251,6 +251,15 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, $"Online players: {sessionManager.GetAll().Count()}");
                 break;
 
+            case "summon":
+                await HandleSummonAsync(session, arg);
+                break;
+
+            case "bots":
+            case "bot":
+                await HandleBotsAsync(session, arg);
+                break;
+
             case "waropen":
                 if (byte.TryParse(arg, out var zoneId) && BattleZoneManager.IsBattleZone(zoneId))
                 {
@@ -309,6 +318,8 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session,
                     "+setlevel <1-83> - Set level; resets stats + mastery, clears the skill bar");
                 await SendNoticeAsync(session, "+hp - Restore HP/MP");
+                await SendNoticeAsync(session, "+summon <name|pattern> - Bring a player, or everyone whose name matches (* = any text), to you");
+                await SendNoticeAsync(session, BotsUsage);
                 await SendNoticeAsync(session, "+gm - Toggle GM mode: the GM aura, one-hit kills, 1 damage taken");
                 await SendNoticeAsync(session, "+exp <amount> - Give experience");
                 await SendNoticeAsync(session, "+notice <text> - Server notice");
@@ -1300,6 +1311,97 @@ public class AdminPacketCoordinator(
 
         foreach (var item in results)
             await SendNoticeAsync(session, $"[{item.Num}] {item.Name} (K{item.Kind} D{item.Damage} AC{item.Ac})");
+    }
+
+    private const float SummonSpacing = 0.8f;
+    private const float SummonGoldenAngle = 2.399963f;
+    private const float PositionWireScale = 10f;
+
+    private async Task HandleSummonAsync(UserSession gm, string arg)
+    {
+        if (arg.Length == 0)
+        {
+            await SendNoticeAsync(gm, "+summon <name|pattern>, * matches any text");
+            return;
+        }
+
+        List<UserSession> targets;
+        if (arg.Contains(NameWildcard))
+        {
+            var pattern = NamePattern(arg);
+            targets = sessionManager.GetAll()
+                .Where(s => s.CharacterId != gm.CharacterId && !s.IsWarping && pattern.IsMatch(s.Name))
+                .ToList();
+            if (targets.Count == 0)
+            {
+                await SendNoticeAsync(gm, $"No one online matches '{arg}'");
+                return;
+            }
+        }
+        else
+        {
+            var one = sessionManager.GetByName(arg);
+            if (one == null)
+            {
+                await SendNoticeAsync(gm, $"'{arg}' is not online");
+                return;
+            }
+            if (one.CharacterId == gm.CharacterId)
+                return;
+            targets = [one];
+        }
+
+        var movement = serviceProvider.GetRequiredService<IWorldMovementService>();
+        float ring = SummonSpacing * MathF.Sqrt(targets.Count);
+        for (int i = 0; i < targets.Count; i++)
+        {
+            var target = targets[i];
+            float radius = ring * MathF.Sqrt((i + 1f) / targets.Count);
+            float angle = i * SummonGoldenAngle;
+            float x = MathF.Max(0f, gm.X + radius * MathF.Cos(angle));
+            float z = MathF.Max(0f, gm.Z + radius * MathF.Sin(angle));
+            if (target.ZoneId != gm.ZoneId)
+                await zoneTransitionService.ChangeZoneAsync(target, gm.ZoneId, x, z);
+            else
+                await movement.WarpAsync(target, (ushort)(x * PositionWireScale), (ushort)(z * PositionWireScale));
+        }
+        await SendNoticeAsync(gm, $"Summoned {targets.Count} player(s)");
+    }
+
+    private const char NameWildcard = '*';
+    private const string BotsUsage =
+        "+bots [status] | +bots <count> [minLevel maxLevel] | +bots stop - BotSim bots around you (count is the total)";
+
+    internal static System.Text.RegularExpressions.Regex NamePattern(string glob) =>
+        new("^" + System.Text.RegularExpressions.Regex.Escape(glob).Replace("\\*", ".*") + "$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    private async Task HandleBotsAsync(UserSession gm, string arg)
+    {
+        var words = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        string verb = words.Length > 0 ? words[0].ToLowerInvariant() : "status";
+        string? command = verb switch
+        {
+            "status" => "status",
+            "stop" or "off" => "stop",
+            _ when int.TryParse(verb, out int count) && count >= 0 => BotsSizeCommand(gm, count, words),
+            _ => null,
+        };
+        if (command == null)
+        {
+            await SendNoticeAsync(gm, BotsUsage);
+            return;
+        }
+        await SendNoticeAsync(gm, await BotSimControl.SendAsync(settings.Value.BotSimControlPort, command));
+    }
+
+    internal static string BotsSizeCommand(UserSession gm, int count, string[] words)
+    {
+        var command = new System.Text.StringBuilder($"size {count}");
+        if (words.Length >= 3 && int.TryParse(words[1], out int low) && int.TryParse(words[2], out int high))
+            command.Append($" lvl {low} {high}");
+        command.Append(string.Create(System.Globalization.CultureInfo.InvariantCulture, $" at {gm.ZoneId} {gm.X:0.#} {gm.Z:0.#}"));
+        return command.ToString();
     }
 
     private async Task WarpToPositionAsync(UserSession session, float x, float z)

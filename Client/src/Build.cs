@@ -15,6 +15,12 @@ public static class Build
 
     public static int ApkBuild => _apkBuild >= 0 ? _apkBuild : _apkBuild = ReadApkBuild();
 
+    public static void Pin()
+    {
+        _ = Version;
+        _ = ApkBuild;
+    }
+
     private static int ReadApkBuild()
     {
         using var f = FileAccess.Open(ApkBuildResPath, FileAccess.ModeFlags.Read);

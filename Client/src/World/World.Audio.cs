@@ -198,9 +198,12 @@ public partial class World
     private static AnimBeats AnimEventCrossings(AnimationPlayer? anim, ref string? clip, ref double prev)
     {
         if (anim == null) { clip = null; return default; }
-        string name = anim.CurrentAnimation.ToString();
+        if (!CrowdAnimator.Current(anim, out string name, out double pos))
+        {
+            name = anim.CurrentAnimation.ToString();
+            pos = name.Length == 0 ? 0 : anim.CurrentAnimationPosition;
+        }
         if (name.Length == 0) { clip = null; return default; }
-        double pos = anim.CurrentAnimationPosition;
         if (name != clip) { clip = name; prev = pos; return default; }
 
         double last = prev;
@@ -257,8 +260,11 @@ public partial class World
         return (phase % 3) switch { 0 => s.Run1, 1 => s.Run2, _ => s.Run3 };
     }
 
-    private void AudioEntityStepTick(Ent e, double now, Vector3 selfPos)
+    private void AudioEntityStepTick(Ent e, double now, Vector3 selfPos, Vector3 pos)
     {
+        if (e.AnimPaused) return;
+        bool striking = EntityStriking(e, now);
+        if (!striking && !e.Gathering && !EntityMoving(e, pos)) { e.StepClip = null; return; }
         if (!GodotObject.IsInstanceValid(e.Body)) return;
         var beats = AnimEventCrossings(e.Anim, ref e.StepClip, ref e.StepPos);
         if (beats.None) return;
@@ -269,7 +275,7 @@ public partial class World
             return;
         }
 
-        if (EntityStriking(e, now))
+        if (striking)
         {
             if (EntitySwinging(e, now))
                 for (int i = 0; i < beats.Swings; i++)
@@ -278,8 +284,8 @@ public partial class World
             return;
         }
 
-        if (!EntityMoving(e)) return;
-        if (e.Body.GlobalPosition.DistanceSquaredTo(selfPos) > FootstepEntityDist * FootstepEntityDist) return;
+        if (!EntityMoving(e, pos)) return;
+        if (pos.DistanceSquaredTo(selfPos) > FootstepEntityDist * FootstepEntityDist) return;
 
         bool running = e.Speed >= RunThreshold;
         for (int i = 0; i < beats.Swings; i++)

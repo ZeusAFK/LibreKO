@@ -167,6 +167,25 @@ public class SocketServerTests
     }
 
     [Fact]
+    public async Task LoopbackExemption_AdmitsLocalClientsBeyondThePerIpCap()
+    {
+        var port = FreePort();
+        var server = new SocketServer("127.0.0.1", port, 0, new RealClientFactory(), new NoopPacketHandler(),
+            NullLogger<SocketServer>.Instance, maxConnectionsPerIp: 1, maxConnectionAttemptsPerWindow: 1, exemptLoopback: true);
+
+        _ = server.StartAsync(CancellationToken.None);
+
+        var clients = new List<TcpClient>();
+        for (int i = 0; i < 3; i++) clients.Add(await ConnectWithRetry(port));
+
+        (await WaitFor(() => server.ConnectedClientCount == 3))
+            .Should().BeTrue("a loopback client is not held to the per-IP cap or the rate limit when exempted");
+
+        foreach (var c in clients) c.Dispose();
+        await server.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public async Task RateLimit_RejectsBurst_WithoutStoppingTheListener()
     {
         var port = FreePort();

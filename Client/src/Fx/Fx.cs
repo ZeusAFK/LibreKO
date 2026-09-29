@@ -9,10 +9,40 @@ public static class Fx
     private static Dictionary<int, string>? _idNames;
     internal static bool ShuttingDown { get; private set; }
 
+    private static ulong _cameraFrame = ulong.MaxValue;
+    private static Viewport? _cameraViewport;
+    private static Camera3D? _camera;
+    private static Transform3D _cameraTransform;
+
+    internal static bool FrameCamera(Node node, out Transform3D camera)
+    {
+        ulong frame = Engine.GetProcessFrames();
+        var viewport = node.GetViewport();
+        if (frame != _cameraFrame || viewport != _cameraViewport)
+        {
+            _cameraFrame = frame;
+            _cameraViewport = viewport;
+            _camera = viewport?.GetCamera3D();
+            if (_camera != null) _cameraTransform = _camera.GlobalTransform;
+        }
+        camera = _cameraTransform;
+        return _camera != null;
+    }
+
+    internal static void PrimeFrameCamera(Viewport viewport, Camera3D? camera, in Transform3D xf)
+    {
+        _cameraFrame = Engine.GetProcessFrames();
+        _cameraViewport = viewport;
+        _camera = camera;
+        _cameraTransform = xf;
+    }
+
     public static void BeginShutdown(Node? root)
     {
         ShuttingDown = true;
         FxRegistry.Clear();
+        ClearPartPool();
+        FxEmitterPool.Clear();
         if (root == null) return;
         StopFxUnder(root);
     }
@@ -23,6 +53,15 @@ public static class Fx
         return desc != null && desc.ContainsKey("velocity") ? (float)desc["velocity"].AsDouble() : 0f;
     }
 
+    public static bool LoopsForever(string name)
+    {
+        var desc = LoadDescriptor(name);
+        if (desc == null) return false;
+        foreach (var pv in desc["parts"].AsGodotArray())
+            if (PartEnd(pv.AsGodotDictionary()) <= 0.001f) return true;
+        return false;
+    }
+
     public static float AuthoredCentreY(string name)
     {
         var desc = LoadDescriptor(name);
@@ -30,15 +69,91 @@ public static class Fx
     }
 
     public static Node3D? Spawn(string name, Node parent, Vector3 pos, bool oneShot = false,
-        float sizeScale = 1f, bool forceAdditive = false)
+        float sizeScale = 1f, bool forceAdditive = false, bool deferParts = false)
     {
-        if (ShuttingDown) return null;
+        if (ShuttingDown || Perf.SkipFx) return null;
+        using var scope = Perf.Measure(Perf.Section.FxSpawn);
+        Perf.Tally(Perf.Counter.FxSpawned);
         return FxRegistry.Track(
-            SpawnBaked(name, parent, pos, oneShot, sizeScale, forceAdditive), name, "baked");
+            SpawnBaked(name, parent, pos, oneShot, sizeScale, forceAdditive, deferParts), name, "baked");
+    }
+
+    private const double PartBudgetMs = 4.0;
+    private const double MaxPartDelaySeconds = 0.3;
+
+    private readonly record struct PendingPart(FxInstance Root, Godot.Collections.Dictionary Part, FxPartKey Key,
+        int Index, long QueuedAt);
+
+    private static readonly Queue<PendingPart> _pendingParts = new();
+    private static ulong _budgetFrame = ulong.MaxValue;
+    private static long _budgetSpent;
+
+    internal static int PendingParts => _pendingParts.Count;
+
+    private static bool WithinPartBudget()
+    {
+        ulong frame = Engine.GetProcessFrames();
+        if (frame != _budgetFrame)
+        {
+            _budgetFrame = frame;
+            _budgetSpent = 0;
+        }
+        return _budgetSpent < PartBudgetMs * System.Diagnostics.Stopwatch.Frequency / 1000.0;
+    }
+
+    internal static void BuildPendingParts()
+    {
+        long overdue = (long)(MaxPartDelaySeconds * System.Diagnostics.Stopwatch.Frequency);
+        while (_pendingParts.Count > 0)
+        {
+            var next = _pendingParts.Peek();
+            bool late = System.Diagnostics.Stopwatch.GetTimestamp() - next.QueuedAt > overdue;
+            if (!late && !WithinPartBudget()) break;
+            _pendingParts.Dequeue();
+            if (!GodotObject.IsInstanceValid(next.Root) || next.Root.Released) continue;
+            next.Root.PendingParts--;
+            using var scope = Perf.Measure(Perf.Section.FxSpawn);
+            BuildPart(next.Root, next.Part, next.Key, next.Index);
+        }
+    }
+
+    private static void BuildPart(FxInstance root, Godot.Collections.Dictionary p, FxPartKey key, int partIndex)
+    {
+        long started = System.Diagnostics.Stopwatch.GetTimestamp();
+        Node3D? node = null;
+        try
+        {
+            string type = p["type"].AsString();
+            if (type == "Particles" && Perf.SkipEmitters) { }
+            else if (type == "Particles")
+            {
+                using var build = Perf.Measure(Perf.Section.SpawnParticles);
+                node = BuildParticles(p, key);
+            }
+            else if (type is "BillBoard" or "BottomBoard")
+            {
+                using var build = Perf.Measure(Perf.Section.SpawnBoard);
+                node = FxBillboard.Build(p, key);
+            }
+            else if (type == "Mesh")
+            {
+                using var build = Perf.Measure(Perf.Section.SpawnMesh);
+                node = FxMesh.Build(p, key);
+            }
+        }
+        catch (System.Exception e) { GD.PushWarning($"[fx] part build failed in '{key.Name}': {e.Message}"); }
+        if (node is GeometryInstance3D geometry
+            && geometry.MaterialOverride is Material partMaterial)
+        {
+            partMaterial.RenderPriority = partIndex;
+        }
+        if (node != null) root.AddChild(node);
+        WithinPartBudget();
+        _budgetSpent += System.Diagnostics.Stopwatch.GetTimestamp() - started;
     }
 
     private static Node3D? SpawnBaked(string name, Node parent, Vector3 pos, bool oneShot,
-        float sizeScale, bool forceAdditive = false)
+        float sizeScale, bool forceAdditive = false, bool deferParts = false)
     {
         var watch = Diag.Watch();
         var desc = LoadDescriptor(name);
@@ -55,9 +170,34 @@ public static class Fx
         root.AuthoredVelocity = desc.ContainsKey("velocity") ? (float)desc["velocity"].AsDouble() : 0f;
 
         int partIndex = -1;
-        foreach (var pv in desc["parts"].AsGodotArray())
+        foreach (var (p, partEnd) in PreparedParts(name, desc, sizeScale, forceAdditive))
         {
             partIndex++;
+            oneShotLife = Mathf.Max(oneShotLife, partEnd);
+            var key = new FxPartKey(name, partIndex, sizeScale, forceAdditive);
+            if (deferParts && (_pendingParts.Count > 0 || !WithinPartBudget()))
+            {
+                _pendingParts.Enqueue(new PendingPart(root, p, key, partIndex, System.Diagnostics.Stopwatch.GetTimestamp()));
+                root.PendingParts++;
+            }
+            else BuildPart(root, p, key, partIndex);
+        }
+
+        root.BundleLife = oneShot && life <= 0.001f ? Mathf.Max(0.05f, oneShotLife) : life;
+        Diag.Slow($"fx spawn {name}", watch);
+        return root;
+    }
+
+    private static readonly Dictionary<(string Name, float Scale, bool Additive), List<(Godot.Collections.Dictionary Part, float End)>> _preparedParts = new();
+
+    private static List<(Godot.Collections.Dictionary Part, float End)> PreparedParts(
+        string name, Godot.Collections.Dictionary desc, float sizeScale, bool forceAdditive)
+    {
+        var key = (name, sizeScale, forceAdditive);
+        if (_preparedParts.TryGetValue(key, out var prepared)) return prepared;
+        prepared = new List<(Godot.Collections.Dictionary, float)>();
+        foreach (var pv in desc["parts"].AsGodotArray())
+        {
             var p = pv.AsGodotDictionary().Duplicate();
             p["bundleScale"] = sizeScale;
             if (forceAdditive) p["blend"] = "add";
@@ -68,40 +208,19 @@ public static class Fx
                 int frames = p.ContainsKey("frameCount") ? Mathf.Max(1, p["frameCount"].AsInt32()) : 1;
                 partEnd = ReadF(p, "startTime") + (fps > 0.001f ? frames / fps : 0.05f);
             }
-            oneShotLife = Mathf.Max(oneShotLife, partEnd);
-            Node3D? node = null;
-            try
-            {
-                node = p["type"].AsString() switch
-                {
-                    "Particles" => BuildParticles(p),
-                    "BillBoard" => FxBillboard.Build(p),
-                    "BottomBoard" => FxBillboard.Build(p),
-                    "Mesh" => FxMesh.Build(p),
-                    _ => null,
-                };
-            }
-            catch (System.Exception e) { GD.PushWarning($"[fx] part build failed in '{name}': {e.Message}"); }
-            if (node is GeometryInstance3D geometry
-                && geometry.MaterialOverride is Material partMaterial)
-            {
-                partMaterial.RenderPriority = partIndex;
-            }
-            if (node != null) root.AddChild(node);
+            prepared.Add((p, partEnd));
         }
-
-        root.BundleLife = oneShot && life <= 0.001f ? Mathf.Max(0.05f, oneShotLife) : life;
-        Diag.Slow($"fx spawn {name}", watch);
-        return root;
+        _preparedParts[key] = prepared;
+        return prepared;
     }
 
     private static void StopFxUnder(Node node)
     {
-        if (node is GpuParticles3D particles)
-            particles.Emitting = false;
+        if (node is FxParticles particles)
+            particles.SetSuppressed(true);
         if (node.Name.ToString().StartsWith("fx_") && GodotObject.IsInstanceValid(node))
         {
-            node.QueueFree();
+            Free(node);
             return;
         }
         foreach (var child in node.GetChildren())
@@ -144,96 +263,168 @@ public static class Fx
         return end + (p["type"].AsString() == "Particles" ? ParticleLife(p) : ReadF(p, "fadeOut"));
     }
 
-    private static GpuParticles3D? BuildParticles(Godot.Collections.Dictionary p)
+    private const int PartPoolPerKey = 256;
+    private static readonly Dictionary<FxPartKey, FxParticleTemplate> _particleTemplates = new();
+    private static readonly Dictionary<FxPartKey, Stack<Node3D>> _partPool = new();
+
+    internal static int PooledParts { get; private set; }
+
+    internal static void RecyclePart(Node3D part)
     {
+        if (ShuttingDown || part.IsQueuedForDeletion() || part is not IFxPooledPart { PoolKey: { } key })
+        {
+            part.QueueFree();
+            return;
+        }
+        if (!_partPool.TryGetValue(key, out var stack)) _partPool[key] = stack = new Stack<Node3D>();
+        if (stack.Count >= PartPoolPerKey) { part.QueueFree(); return; }
+        part.GetParent()?.RemoveChild(part);
+        if (part is FxParticles particles) particles.Park();
+        stack.Push(part);
+        PooledParts++;
+    }
+
+    internal static Node3D? TakePooledPart(FxPartKey key)
+    {
+        if (!_partPool.TryGetValue(key, out var stack) || stack.Count == 0) return null;
+        var part = stack.Pop();
+        PooledParts--;
+        if (!GodotObject.IsInstanceValid(part)) return null;
+        ((IFxPooledPart)part).Reset();
+        return part;
+    }
+
+    private static void ClearPartPool()
+    {
+        foreach (var stack in _partPool.Values)
+            foreach (var part in stack)
+                if (GodotObject.IsInstanceValid(part)) part.QueueFree();
+        _partPool.Clear();
+        PooledParts = 0;
+    }
+
+    internal static void Free(Node? node)
+    {
+        if (node == null || !GodotObject.IsInstanceValid(node)) return;
+        if (node is FxInstance root) root.Release();
+        else node.QueueFree();
+    }
+
+    private static Node3D? BuildParticles(Godot.Collections.Dictionary p, FxPartKey key)
+    {
+        if (TakePooledPart(key) is FxParticles pooled) return pooled;
         var tex = FirstTexture(p);
         if (tex == null) return null;
+        if (!_particleTemplates.TryGetValue(key, out var template))
+            _particleTemplates[key] = template = BuildParticleTemplate(p, key, tex);
+        var gp = new FxParticles { PoolKey = key, Template = template };
+        gp.Configure(template.Start, template.Life, template.Origin, template.Velocity, template.Acceleration,
+            template.FadeIn, template.FadeOut);
+        gp.SetBlink(template.HideTime, template.ShowTime);
+        if (template.Emitter is { } em)
+            gp.SetEmitter(em.Centre, em.Pos, em.Rot, em.Scale, em.Fps, em.PosRate, em.RotRate, em.ScaleRate, em.WholeFrame);
+        return gp;
+    }
+
+    private static FxParticleTemplate BuildParticleTemplate(Godot.Collections.Dictionary p, FxPartKey key, Texture2D tex)
+    {
         float lifeMin = ReadF(p, "lifeMin");
         float lifeMax = Mathf.Max(0.01f, ReadF(p, "lifeMax", 1f));
         float bundleScale = ReadF(p, "bundleScale", 1f);
         float speed = ReadF(p, "speed") * bundleScale;
         float emitInterval = ReadF(p, "emitInterval");
-        float fadeIn = ReadF(p, "fadeIn");
-        float fadeOut = ReadF(p, "fadeOut");
-        var lut = ColorRamp(p);
         float particleLife = ParticleLife(p);
-        float explosiveness = particleLife > 0.01f
-            ? Mathf.Clamp(emitInterval / particleLife, 0f, 0.85f) : 0f;
-        int pool = Mathf.Max(1, p.ContainsKey("numParticles") ? p["numParticles"].AsInt32() : 16);
+        int capacity = Mathf.Max(1, p.ContainsKey("numParticles") ? p["numParticles"].AsInt32() : 16);
         int numCreate = Mathf.Max(1, p.ContainsKey("numCreate") ? p["numCreate"].AsInt32() : 1);
         float emitterLife = ReadF(p, "life");
         bool singleBurst = emitInterval > 0.001f && emitterLife > 0.001f && emitInterval >= emitterLife;
-        int amount = singleBurst
-            ? Mathf.Clamp(numCreate, 1, pool)
-            : emitInterval > 0.001f
-                ? Mathf.Clamp(Mathf.RoundToInt(particleLife * numCreate / emitInterval), 1, pool)
-                : pool;
-        var gp = new FxParticles
-        {
-            Amount = amount,
-            Lifetime = particleLife,
-            OneShot = singleBurst,
-            Explosiveness = explosiveness,
-            LocalCoords = false,
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-            VisibilityAabb = ParticleBounds(p, particleLife, speed, bundleScale),
-        };
+        var lut = ColorRamp(p);
         Vector3 boxExtent = ReadVec3(p, "emitBoxExtent") * bundleScale;
         Vector3 boxCentre = ReadVec3(p, "emitBoxCentre") * bundleScale;
         bool gather = p.ContainsKey("emitType") && p["emitType"].AsInt32() == 2;
         Vector3 gatherPoint = gather ? ReadVec3(p, "gatherPoint") : Vector3.Zero;
-        gp.Configure(
-            ReadF(p, "startTime"), ReadF(p, "life"),
-            ReadVec3(p, "initPos") + gatherPoint,
-            ReadVec3(p, "initVel"), ReadVec3(p, "accel"),
-            ReadF(p, "fadeIn"), ReadF(p, "fadeOut"));
-        gp.SetBlink(ReadF(p, "hideTime"), ReadF(p, "showTime"));
-        AttachEmitterShape(gp, p);
-
         Vector3 emitDir = ReadVec3(p, "emitDir");
         float sizeOff = ReadF(p, "sizeOffset");
         float sizeMin = (ReadF(p, "sizeMin", 1f) + sizeOff) * bundleScale;
-        float sizeMax2 = (ReadF(p, "sizeMax", 1f) + sizeOff) * bundleScale;
+        float sizeMax = (ReadF(p, "sizeMax", 1f) + sizeOff) * bundleScale;
         var pm = new ParticleProcessMaterial
         {
-            Direction = emitDir.LengthSquared() > 1e-6f ? emitDir.Normalized() : Vector3.Up,
-            Spread = ReadF(p, "spread"),
-            InitialVelocityMin = gather ? 0f : speed,
-            InitialVelocityMax = gather ? 0f : speed,
-            RadialVelocityMin = gather ? -speed : 0f,
-            RadialVelocityMax = gather ? -speed : 0f,
             Gravity = ReadVec3(p, "gravity"),
             ScaleMin = sizeMin,
-            ScaleMax = sizeMax2,
+            ScaleMax = sizeMax,
             AngularVelocityMin = Mathf.RadToDeg(ReadF(p, "rollRate")),
             AngularVelocityMax = Mathf.RadToDeg(ReadF(p, "rollRate")),
             LifetimeRandomness = Mathf.Clamp((lifeMax - lifeMin) / particleLife, 0f, 1f),
         };
-        if (boxExtent.LengthSquared() > 1e-8f || gather)
-        {
-            pm.EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Box;
-            pm.EmissionBoxExtents = boxExtent;
-            pm.EmissionShapeOffset = boxCentre - gatherPoint;
-        }
-        else if (boxCentre.LengthSquared() > 1e-8f)
-        {
-            pm.EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Box;
-            pm.EmissionBoxExtents = Vector3.Zero;
-            pm.EmissionShapeOffset = boxCentre;
-        }
         if (lut != null) pm.ColorRamp = lut;
-
-        gp.ProcessMaterial = pm;
-        gp.DrawPass1 = new QuadMesh { Size = Vector2.One };
-        gp.MaterialOverride = FxParticleMaterial.Build(p, tex, particleLife, lut != null);
-        return gp;
+        var material = FxParticleMaterial.Build(p, tex, particleLife, lut != null);
+        material.RenderPriority = key.Index;
+        bool add = p["blend"].AsString() == "add" || IsSrcColorOverInv(SrcBlend(p), DestBlend(p));
+        return new FxParticleTemplate
+        {
+            Process = pm,
+            Material = material,
+            Emitter = EmitterKeysFor(p),
+            Capacity = capacity,
+            NumCreate = singleBurst ? Mathf.Clamp(numCreate, 1, capacity) : numCreate,
+            EmitInterval = emitInterval,
+            Lifetime = particleLife,
+            LifeMax = lifeMax,
+            Speed = speed,
+            Spread = ReadF(p, "spread"),
+            Gather = gather,
+            SingleBurst = singleBurst,
+            Additive = add,
+            EmitDir = emitDir.LengthSquared() > 1e-6f ? emitDir.Normalized() : Vector3.Up,
+            BoxOffset = gather ? boxCentre - gatherPoint : boxCentre,
+            BoxExtent = boxExtent,
+            Start = ReadF(p, "startTime"),
+            Life = ReadF(p, "life"),
+            Origin = ReadVec3(p, "initPos") + gatherPoint,
+            Velocity = ReadVec3(p, "initVel"),
+            Acceleration = ReadVec3(p, "accel"),
+            FadeIn = ReadF(p, "fadeIn"),
+            FadeOut = ReadF(p, "fadeOut"),
+            HideTime = ReadF(p, "hideTime"),
+            ShowTime = ReadF(p, "showTime"),
+        };
     }
 
     internal const int RfDoubleSided = 0x004;
     internal const int RfNotZWrite   = 0x100;
     internal const int RfNotZBuffer  = 0x400;
 
-    private const int FxSiblingWinnerPriority = 1;
+    internal const int FxSiblingWinnerPriority = 1;
+
+    internal static void SetTransparency(GeometryInstance3D gi, float transparency)
+    {
+        if (gi is FxBillboard { Batched: true } board) board.Fade = transparency;
+        else gi.Transparency = transparency;
+    }
+
+    internal static void SetShown(Node node, bool shown)
+    {
+        switch (node)
+        {
+            case FxParticles particles:
+                particles.SetSuppressed(!shown);
+                break;
+            case FxMesh mesh:
+                mesh.Visible = shown;
+                mesh.ResetShown();
+                break;
+            case FxBillboard board:
+                board.Visible = shown;
+                board.ResetShown();
+                break;
+            case FxLampLight:
+                break;
+            case VisualInstance3D visual:
+                visual.Visible = shown;
+                break;
+        }
+        foreach (var child in node.GetChildren()) SetShown(child, shown);
+    }
 
     internal static void ApplyRenderFlags(StandardMaterial3D mat, Godot.Collections.Dictionary p)
     {
@@ -269,24 +460,26 @@ public static class Fx
         return mat;
     }
 
-    private static void AttachEmitterShape(FxParticles gp, Godot.Collections.Dictionary p)
+    private static FxEmitterKeys? EmitterKeysFor(Godot.Collections.Dictionary p)
     {
-        if (!p.ContainsKey("emitterRef") || p["emitterRef"].VariantType == Variant.Type.Nil) return;
-        if (!p.ContainsKey("emitCentre") || p["emitCentre"].VariantType == Variant.Type.Nil) return;
+        if (!p.ContainsKey("emitterRef") || p["emitterRef"].VariantType == Variant.Type.Nil) return null;
+        if (!p.ContainsKey("emitCentre") || p["emitCentre"].VariantType == Variant.Type.Nil) return null;
         var shape = FxMesh.LoadShapeJson(p["emitterRef"].AsString());
-        if (shape == null) return;
+        if (shape == null) return null;
         var c = p["emitCentre"].AsGodotArray();
-        if (c.Count != 3) return;
-        gp.SetEmitter(
-            new Vector3((float)c[0].AsDouble(), (float)c[1].AsDouble(), (float)c[2].AsDouble()),
-            FxMesh.VecKeys(shape, "posKeys"),
-            FxMesh.QuatKeys(shape, "rotKeys"),
-            FxMesh.VecKeys(shape, "scaleKeys"),
-            ReadF(p, "emitterFps", 30f),
-            FxMesh.Rate(shape, "posKeys", "posRate"),
-            FxMesh.Rate(shape, "rotKeys", "rotRate"),
-            FxMesh.Rate(shape, "scaleKeys", "scaleRate"),
-            (float)shape["wholeFrame"].AsDouble());
+        if (c.Count != 3) return null;
+        return new FxEmitterKeys
+        {
+            Centre = new Vector3((float)c[0].AsDouble(), (float)c[1].AsDouble(), (float)c[2].AsDouble()),
+            Pos = FxMesh.VecKeys(shape, "posKeys"),
+            Rot = FxMesh.QuatKeys(shape, "rotKeys"),
+            Scale = FxMesh.VecKeys(shape, "scaleKeys"),
+            Fps = ReadF(p, "emitterFps", 30f),
+            PosRate = FxMesh.Rate(shape, "posKeys", "posRate"),
+            RotRate = FxMesh.Rate(shape, "rotKeys", "rotRate"),
+            ScaleRate = FxMesh.Rate(shape, "scaleKeys", "scaleRate"),
+            WholeFrame = (float)shape["wholeFrame"].AsDouble(),
+        };
     }
 
     private static readonly Dictionary<ulong, Texture2D> _glowCache = new();
@@ -298,7 +491,7 @@ public static class Fx
     {
         ulong key = src.GetRid().Id;
         if (_glowCache.TryGetValue(key, out var cached)) return cached;
-        var img = src.GetImage();
+        var img = FxImages.Read(src);
         if (img == null) { _glowCache[key] = src; return src; }
         if (img.IsCompressed()) img.Decompress();
         if (img.GetFormat() != Image.Format.Rgba8) img.Convert(Image.Format.Rgba8);
@@ -324,6 +517,7 @@ public static class Fx
                     changed = true;
                 }
             result = changed ? ImageTexture.CreateFromImage(img) : src;
+            if (changed) FxImages.Remember(result, img);
         }
         else
         {
@@ -339,6 +533,7 @@ public static class Fx
                         Mathf.Min(1f, lum * GlowAlphaGain)));
                 }
             result = ImageTexture.CreateFromImage(img);
+            FxImages.Remember(result, img);
         }
         _glowCache[key] = result;
         return result;
@@ -350,7 +545,7 @@ public static class Fx
     {
         ulong key = src.GetRid().Id;
         if (_srcColorCache.TryGetValue(key, out var cached)) return cached;
-        var img = src.GetImage();
+        var img = FxImages.Read(src);
         if (img == null) { _srcColorCache[key] = src; return src; }
         if (img.IsCompressed()) img.Decompress();
         if (img.GetFormat() != Image.Format.Rgba8) img.Convert(Image.Format.Rgba8);
@@ -363,6 +558,7 @@ public static class Fx
                 img.SetPixel(x, y, new Color(r * r, g * g, b * b, 1f));
             }
         var result = ImageTexture.CreateFromImage(img);
+        FxImages.Remember(result, img);
         _srcColorCache[key] = result;
         return result;
     }
@@ -385,12 +581,19 @@ public static class Fx
 
     internal static Texture2D? FirstTexture(Godot.Collections.Dictionary p) => FrameTexture(p, 0);
 
+    private static readonly Dictionary<string, Texture2D?> _frameTextures = new();
+
     internal static Texture2D? FrameTexture(Godot.Collections.Dictionary p, int frame)
     {
         var arr = p["tex"].AsGodotArray();
         if (arr.Count == 0) return null;
-        string path = $"res://assets/fx/tex/{arr[Mathf.Clamp(frame, 0, arr.Count - 1)].AsString()}.png";
-        return ResourceLoader.Exists(path) ? ResourceLoader.Load<Texture2D>(path) : null;
+        string stem = arr[Mathf.Clamp(frame, 0, arr.Count - 1)].AsString();
+        if (_frameTextures.TryGetValue(stem, out var cached)) return cached;
+        using var scope = Perf.Measure(Perf.Section.FxLoadTexture);
+        string path = $"res://assets/fx/tex/{stem}.png";
+        var texture = ResourceLoader.Exists(path) ? ResourceLoader.Load<Texture2D>(path) : null;
+        _frameTextures[stem] = texture;
+        return texture;
     }
 
     private static GradientTexture1D? ColorRamp(Godot.Collections.Dictionary p)
@@ -507,6 +710,7 @@ public static class Fx
     {
         string stem = name.ToLowerInvariant();
         if (_cache.TryGetValue(stem, out var cached)) return cached;
+        using var scope = Perf.Measure(Perf.Section.FxLoadDescriptor);
         string path = $"res://assets/fx/{stem}.json";
         if (!Godot.FileAccess.FileExists(path)) { _cache[stem] = null!; return null; }
         using var f = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);

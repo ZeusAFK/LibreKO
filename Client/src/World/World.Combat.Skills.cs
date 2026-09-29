@@ -258,6 +258,7 @@ public partial class World
         StopSkillFx(casterId, s.Id);
         if (s.SelfFx1 == null) return;
         SpawnOwnedFx(casterId, s.Id, 1, s.SelfFx1, s.SelfPart1);
+        ScheduleSkillFxStop(casterId, s.Id, 1, Now() + s.CastSeconds + CastFxGraceSeconds);
         if (s.HasCastPhase) AudioFxAt(s.SelfFx1Id, casterId);
     }
 

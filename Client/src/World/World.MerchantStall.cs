@@ -18,7 +18,6 @@ public partial class World
     private const float SittingNameTagHeight = 0.92f;
     private const float StandingNameTagHeight = 1.70f;
     private const float StandingSelfNameTagHeight = 1.90f;
-    private const float HpBarLiftOverTag = 0.16f;
     private const float SittingStallSignHeight = 1.10f;
     private const float StallSignRange = 34f;
     private const int StallSignLayerIndex = 55;

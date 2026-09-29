@@ -403,7 +403,7 @@ public partial class World
             {
                 switch (child)
                 {
-                    case GpuParticles3D: particles++; break;
+                    case FxParticles or GpuParticles3D: particles++; break;
                     case FxBillboard: boards++; break;
                     case FxMesh or MeshInstance3D: meshes++; break;
                     case Light3D: lamps++; break;
@@ -439,7 +439,7 @@ public partial class World
         Row("parts", $"{particles} particles, {boards} billboards, {meshes} mesh, {lamps} light"
                      + (others > 0 ? $", {others} other" : ""));
         Row("state", !alive ? "[color=e88]freed[/color]"
-            : !fx.Node.Visible ? "asleep (culled)"
+            : isMap && !_mapFx[mapIdx].Awake ? "asleep (culled)"
             : isMap ? "awake (pinned by this pick)" : "awake");
         Row("dist", $"{camDist:F1}u from camera");
         Row("live", $"{copies} instance{(copies == 1 ? "" : "s")} of this effect");

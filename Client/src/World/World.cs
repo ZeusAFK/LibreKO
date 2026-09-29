@@ -45,6 +45,7 @@ public partial class World : Node3D, IWorldContext
 
         _loadStartedAt = Now();
         BuildLoading();
+        GlyphWarmer.Warm(this);
         if (!await LoadStep("Preparing…", 0.04f, "Lighting and sky")) return;
 
         BuildEnvironment();
@@ -120,7 +121,7 @@ public partial class World : Node3D, IWorldContext
         {
             AttachWeapons(_self, info.Gear);
             AttachClanGauntlet(_self, info.Race, _myClan.InClan ? _myClan.Grade : 0);
-            _selfWingAnims = AttachWings(_self, info.Gear, info.Race, _zone);
+            _selfWingAnims = AttachWings(_self, info.Gear, info.Race, _zone, shineShadow: true);
             System.Array.Clear(_selfWingClips);
             AttachHandFx(_self, info.Gear, info.Race, _zone);
         }
@@ -152,6 +153,8 @@ public partial class World : Node3D, IWorldContext
         BuildEscapeStack();
         BuildHotkeys();
         ApplyHudTheme();
+        GlyphWarmer.Warm(this);
+        Floaters?.WarmText();
 
         if (_selfAnim != null) { PlayClipOn(_selfAnim, ref _selfClip, "idle"); _selfAnim.Advance(0.0); }
         _worldReady = true;
@@ -259,16 +262,24 @@ public partial class World : Node3D, IWorldContext
     public override void _Process(double delta)
     {
         if (!_worldReady) return;
+        using var worldScope = Perf.Measure(Perf.Section.World);
 
-        ProcessSpawnQueue();
-        TickQuestToast(delta);
+        using (Perf.Measure(Perf.Section.Spawn))
+        {
+            ProcessSpawnQueue();
+            TickQuestToast(delta);
+        }
 
         float dt = (float)delta;
         double nowSec = Time.GetTicksMsec() / 1000.0;
         Vector3 selfPos = _self.Position;
         Vector3 camPos = _camera != null ? _camera.GlobalPosition : selfPos;
         float nameDist2 = NameTagDist * NameTagDist;
+        var entityScope = Perf.Measure(Perf.Section.Entities);
         StealthTick(selfPos);
+        RefreshFrustum();
+        RankEntityAnimation();
+        _animFull = _animMid = _animFar = _animOff = _closeEntities = 0;
         foreach (var e in _ents.Values)
         {
             if (e.IsBridge)
@@ -284,22 +295,52 @@ public partial class World : Node3D, IWorldContext
                 continue;
             }
 
-            if (e.HasTarget && e.Speed > 0f && !e.Dead)
-                e.Body.Position = e.Body.Position.MoveToward(e.Target, e.Speed * dt);
-
-            TickEntityFacing(e, dt);
-
-            UpdateEntityAnimLod(e, camPos);
-            AudioEntityStepTick(e, nowSec, selfPos);
-
-            if (e.NameTag != null)
+            float step = dt;
+            if (e.Far)
             {
-                bool near = e.Body.Position.DistanceSquaredTo(selfPos) <= nameDist2;
-                if (e.Plate != null) e.Plate.SetVisible(near);
-                else if (near != e.NameTag.Visible) e.NameTag.Visible = near;
-                if (e.HpBar != null) e.HpBar.Visible = near && !e.Dead;
+                e.FarAccum += delta;
+                if (e.FarAccum < FarEntityInterval) continue;
+                step = (float)e.FarAccum;
+                e.FarAccum = 0;
+            }
+            Vector3 pos = e.Body.Position;
+            var moveScope = Perf.Measure(Perf.Section.EntMove);
+            float moveStep = step;
+            if (e.JustEntered)
+            {
+                moveStep += e.MoveAccum;
+                e.MoveAccum = 0f;
+            }
+            else if (!e.Far && (!e.OnScreen || e.AnimEvery >= Config.AnimFarEvery))
+            {
+                int moveEvery = e.OnScreen ? Config.MoveFarEvery : OffScreenMoveEvery;
+                e.MoveAccum += step;
+                if (++e.MoveFrames % moveEvery != 0) moveStep = 0f;
+                else { moveStep = e.MoveAccum; e.MoveAccum = 0f; }
+            }
+            if (moveStep > 0f && !Perf.SkipMove && e.HasTarget && e.Speed > 0f && !e.Dead)
+            {
+                var moved = pos.MoveToward(e.Target, e.Speed * moveStep);
+                if (moved != pos) { pos = moved; e.Body.Position = pos; }
             }
 
+            moveScope.Dispose();
+            using (Perf.Measure(Perf.Section.EntFacing)) TickEntityFacing(e, step);
+            using (Perf.Measure(Perf.Section.EntCollider)) SyncEntityCollider(e, pos, selfPos);
+
+            using (Perf.Measure(Perf.Section.EntLod)) UpdateEntityAnimLod(e, camPos, pos);
+            using (Perf.Measure(Perf.Section.EntAudio)) AudioEntityStepTick(e, nowSec, selfPos, pos);
+
+            var plateScope = Perf.Measure(Perf.Section.EntPlates);
+            if (e.NameTag != null)
+            {
+                bool near = !Perf.SkipPlates && pos.DistanceSquaredTo(selfPos) <= nameDist2;
+                SyncEntityPlates(e, near);
+                if (e.Plate != null) e.Plate.SetVisible(near);
+                else if (near != e.NameTag.Visible) e.NameTag.Visible = near;
+            }
+
+            plateScope.Dispose();
             if (e.Anim != null && !e.AnimPaused)
             {
                 if (e.Dead) {  }
@@ -307,7 +348,7 @@ public partial class World : Node3D, IWorldContext
                 else
                 {
                     if (e.ActionClip != null) { e.ActionClip = null; e.Clip = null; }
-                    bool moving = EntityMoving(e);
+                    bool moving = EntityMoving(e, pos);
                     PlayClip(e, moving
                         ? e.Backwards ? "walk_reverse" : e.Speed >= RunThreshold ? "run" : "walk"
                         : e.Sitting ? "sit" : "idle");
@@ -315,11 +356,29 @@ public partial class World : Node3D, IWorldContext
                 if (e.AnimThrottled)
                 {
                     e.AnimAccum += dt;
-                    if (e.AnimAccum >= AnimLodStep) { e.Anim.Advance(e.AnimAccum); e.AnimAccum = 0; }
+                    e.AnimFrames++;
+                    if (e.JustEntered || (e.AnimFrames >= e.AnimEvery && e.AnimAccum >= e.AnimStep))
+                    {
+                        using (Perf.Measure(Perf.Section.EntStep))
+                        {
+                            if (e.Crowd != null) e.Crowd.Step(e.AnimAccum, e.OnScreen);
+                            else e.Anim.Advance(e.AnimAccum);
+                        }
+                        if (e.WingAnims != null && e.OnScreen)
+                            using (Perf.Measure(Perf.Section.EntWings))
+                                foreach (var wing in e.WingAnims)
+                                    wing?.Advance(e.AnimAccum);
+                        e.AnimAccum = 0;
+                        e.AnimFrames = 0;
+                    }
                 }
             }
         }
+        Perf.EntityTiers = (_ents.Count, _animFull, _animMid, _animFar, _animOff);
+        Perf.CloseEntities = _closeEntities;
+        entityScope.Dispose();
 
+        var selfScope = Perf.Measure(Perf.Section.SelfAnim);
         if (_selfAnim != null && !_selfDead)
         {
             if (nowSec < _selfActionUntil
@@ -355,40 +414,55 @@ public partial class World : Node3D, IWorldContext
         CombatStanceTick();
         ApplySelfAnimSpeed();
         AudioFootstepTick();
-        CombatTick(nowSec);
-        TickPadTriggers();
-        AreaCastTick(delta, nowSec);
-        LootTick(nowSec);
-        StallSignTick();
-        GatherTick(nowSec);
-        NpcTick(delta);
-        PvpTick(nowSec);
-        Chat.TickBubbles(nowSec);
+        selfScope.Dispose();
 
-        CastMoveCancelTick();
-        WarpGateTick();
-        AnvilTick();
-        PieceChangeTick(delta);
-        KoTextureAnim.Tick(delta);
-        UpdateSelectionRing();
-        TargetHpPollTick(nowSec);
-        UpdateTargetHud();
-        UpdateInfoPanel();
+        using (Perf.Measure(Perf.Section.Combat))
+        {
+            CombatTick(nowSec);
+            TickPadTriggers();
+            AreaCastTick(delta, nowSec);
+            LootTick(nowSec);
+            StallSignTick();
+            GatherTick(nowSec);
+            NpcTick(delta);
+            PvpTick(nowSec);
+            Chat.TickBubbles(nowSec);
+            CastMoveCancelTick();
+            WarpGateTick();
+            AnvilTick();
+            PieceChangeTick(delta);
+            KoTextureAnim.Tick(delta);
+        }
 
-        UpdateCamera(delta);
-        Floaters?.Tick(nowSec);
-        CursorTick(delta);
-        _mapHudAccum += delta;
-        if (_mapHudAccum >= MapHudInterval) { _mapHudAccum = 0; UpdateMiniMap(); UpdateFullMap(); }
-        UpdateInventoryTooltip();
-        UpdateDeletePrompt();
-        UpdateSky(delta);
+        using (Perf.Measure(Perf.Section.Selection))
+        {
+            UpdateSelectionRing();
+            TargetHpPollTick(nowSec);
+            UpdateTargetHud();
+            UpdateInfoPanel();
+        }
 
-        _fxCullAccum += delta;
-        if (_fxCullAccum >= FxCullInterval) { _fxCullAccum = 0; CullMapFx(); }
+        using (Perf.Measure(Perf.Section.Camera)) UpdateCamera(delta);
 
-        _pickMarkerAccum += delta;
-        if (_pickMarkerAccum >= PickMarkerInterval) { _pickMarkerAccum = 0; RefreshPickMarkers(); }
+        using (Perf.Measure(Perf.Section.Hud))
+        {
+            Floaters?.Tick(nowSec);
+            CursorTick(delta);
+            _mapHudAccum += delta;
+            if (_mapHudAccum >= MapHudInterval) { _mapHudAccum = 0; UpdateMiniMap(); UpdateFullMap(); }
+            UpdateInventoryTooltip();
+            UpdateDeletePrompt();
+        }
+
+        using (Perf.Measure(Perf.Section.Sky)) UpdateSky(delta);
+
+        using (Perf.Measure(Perf.Section.MapFx))
+        {
+            _fxCullAccum += delta;
+            if (_fxCullAccum >= FxCullInterval) { _fxCullAccum = 0; CullMapFx(); }
+            _pickMarkerAccum += delta;
+            if (_pickMarkerAccum >= PickMarkerInterval) { _pickMarkerAccum = 0; RefreshPickMarkers(); }
+        }
     }
 
     private (float x, float z) WorldToKo(Vector3 world)

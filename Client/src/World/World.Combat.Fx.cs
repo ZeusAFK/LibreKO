@@ -11,7 +11,7 @@ public partial class World
         Vector3 hitPoint = RandomHitPoint(victim);
         string element = WeaponElement(weaponItemId, targetEffect: true) ?? "";
         string targetFx = element.Length > 0 ? $"{element}_sword_target0_1" : "damage0_1";
-        var impact = Fx.Spawn(targetFx, this, hitPoint, oneShot: true);
+        var impact = Fx.Spawn(targetFx, this, hitPoint, oneShot: true, deferParts: true);
         if (impact != null && element.Length > 0)
             impact.Scale = Vector3.One * 0.22f;
     }
@@ -25,7 +25,6 @@ public partial class World
         foreach (var mi in FindAll<MeshInstance3D>(e.Body))
         {
             if (mi.Mesh == null || !mi.Visible) continue;
-            if (e.HpBar != null && e.HpBar.IsAncestorOf(mi)) continue;
             var b = (inv * mi.GlobalTransform) * mi.GetAabb();
             box = first ? b : box.Merge(b);
             first = false;
@@ -51,7 +50,7 @@ public partial class World
     {
         Node3D? parent = id == _myId ? _self : (_ents.TryGetValue(id, out var e) ? e.Body : null);
         if (parent == null) return;
-        Fx.Spawn(fxName, parent, new Vector3(0, y, 0), oneShot: true);
+        Fx.Spawn(fxName, parent, new Vector3(0, y, 0), oneShot: true, deferParts: true);
     }
 
     private static float ProjectileSpeedFor(string? fxName) =>
@@ -140,10 +139,10 @@ public partial class World
             var side = (end - start).Cross(Vector3.Up);
             if (side.LengthSquared() > 0.0001f) start += side.Normalized() * lateral;
         }
-        var node = Fx.Spawn(fxName, this, start);
+        var node = Fx.Spawn(fxName, this, start, deferParts: true);
         if (node is not FxInstance flight)
         {
-            if (node != null) node.QueueFree();
+            Fx.Free(node);
             return;
         }
         flight.HomingTarget = _ents.TryGetValue(targetId, out var te) ? te.Body : null;
@@ -162,13 +161,13 @@ public partial class World
             case ImpactFxPlacement.UnderEntity:
                 Node3D? body = entityId == _myId ? _self : (_ents.TryGetValue(entityId, out var e) ? e.Body : null);
                 if (body == null) return false;
-                Fx.Spawn(fxName, this, body.GlobalPosition + new Vector3(0, 0.15f, 0), oneShot: true);
+                Fx.Spawn(fxName, this, body.GlobalPosition + new Vector3(0, 0.15f, 0), oneShot: true, deferParts: true);
                 return true;
             case ImpactFxPlacement.OnEntity:
                 SpawnOwnedFx(entityId, 0, 3, fxName, targetPart, oneShot: true);
                 return true;
             case ImpactFxPlacement.AtImpactPoint when AreaImpactPoint(data) is { } point:
-                Fx.Spawn(fxName, this, point + new Vector3(0, 0.15f, 0), oneShot: true);
+                Fx.Spawn(fxName, this, point + new Vector3(0, 0.15f, 0), oneShot: true, deferParts: true);
                 return true;
             default:
                 return false;
@@ -201,7 +200,7 @@ public partial class World
             ownerSkeleton = skel;
         }
         Vector3 offset = Vector3.Zero;
-        var node = Fx.Spawn(fxName, owner, offset, oneShot);
+        var node = Fx.Spawn(fxName, owner, offset, oneShot, deferParts: true);
         if (node == null)
         {
             if (owner != body) owner.QueueFree();
@@ -209,24 +208,18 @@ public partial class World
         }
         var facing = ownerSkeleton ?? FindFirst<Skeleton3D>(body);
         if (facing != null && node is FxInstance pinned)
-        {
             pinned.Pin(owner, facing, offset, Vector3.Back);
-        }
-        if (oneShot)
-        {
-            if (owner != body)
-                node.TreeExited += () =>
-                {
-                    if (GodotObject.IsInstanceValid(owner) && !owner.IsQueuedForDeletion())
-                        owner.QueueFree();
-                };
-            return;
-        }
+        if (owner != body)
+            node.TreeExited += () =>
+            {
+                if (GodotObject.IsInstanceValid(owner) && !owner.IsQueuedForDeletion())
+                    owner.QueueFree();
+            };
+        if (oneShot) return;
 
-        var tracked = owner == body ? node : owner;
         var key = (entityId, skillId, phase);
         if (!_skillFx.TryGetValue(key, out var list)) _skillFx[key] = list = new List<Node3D>();
-        list.Add(tracked);
+        list.Add(node);
     }
 
     private void StopSkillFx(int casterId, int skillId, int? phase = null)
@@ -238,8 +231,16 @@ public partial class World
         foreach (var key in keys)
         {
             foreach (var node in _skillFx[key])
-                if (GodotObject.IsInstanceValid(node)) node.QueueFree();
+                Fx.Free(node);
             _skillFx.Remove(key);
         }
+    }
+
+    private void ForgetSkillFx(int casterId)
+    {
+        var keys = new List<(int Caster, int Skill, int Phase)>();
+        foreach (var key in _skillFx.Keys)
+            if (key.Caster == casterId) keys.Add(key);
+        foreach (var key in keys) _skillFx.Remove(key);
     }
 }

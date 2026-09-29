@@ -54,6 +54,7 @@ public partial class World
         public Vector3 Origin;
         public GeometryInstance3D[]? SunShafts;
         public float ShaftFade = -1f;
+        public bool Awake;
     }
     private readonly List<FxInfo> _mapFx = new();
     private readonly Dictionary<Node3D, int> _mapFxIndex = new();
@@ -346,7 +347,7 @@ public partial class World
         var info = _mapFx[best];
         string where = AimTestCamera(info.Origin, dist, heightAbove, yawDeg);
         return $"fx[{best}] {info.Fx} ko=({info.KoPos.X:F1},{info.KoPos.Z:F1}) " +
-               $"visible={info.Node.Visible} {where} cull={MapFxCullDist:F0}{DescribeFxParts(info.Node)}";
+               $"awake={info.Awake} {where} cull={MapFxCullDist:F0}{DescribeFxParts(info.Node)}";
     }
 
     internal string AimTestCameraKo(Vector3 koPos, float dist, float heightAbove, float yawDeg = float.NaN)
@@ -655,8 +656,9 @@ public partial class World
                 node.Quaternion = q.Normalized();
             if (pl.Scale > 0f && !Mathf.IsEqualApprox(pl.Scale, 1f))
                 node.Scale = Vector3.One * pl.Scale;
-            node.Visible = false;
+            Fx.SetShown(node, false);
             node.ProcessMode = ProcessModeEnum.Disabled;
+            if (node is FxInstance mapRoot) mapRoot.Asleep = true;
             AttachFxAmbience(node, pl.Fx);
             FxLampLight.Attach(node, pl.Fx);
             _mapFxIndex[node] = _mapFx.Count;
@@ -673,6 +675,8 @@ public partial class World
         CullMapFx(int.MaxValue);
     }
 
+    private readonly Plane[] _frustumPlanes = new Plane[6];
+
     private void CullMapFx() => CullMapFx(MapFxWakeBudget);
 
     private void CullMapFx(int wakeBudget)
@@ -682,7 +686,9 @@ public partial class World
         float far2 = MapFxCullDist * MapFxCullDist;
         float near2 = MapFxAlwaysRadius * MapFxAlwaysRadius;
         float sleepFar2 = MapFxSleepDist * MapFxSleepDist;
-        var planes = _camera.GetFrustum();
+        var frustum = _camera.GetFrustum();
+        int planeCount = Mathf.Min(frustum.Count, _frustumPlanes.Length);
+        for (int j = 0; j < planeCount; j++) _frustumPlanes[j] = frustum[j];
         float shine = _sky?.SunShine ?? 1f;
         _fxWakeQueue.Clear();
         for (int i = 0; i < _mapFx.Count; i++)
@@ -692,11 +698,11 @@ public partial class World
             if (!GodotObject.IsInstanceValid(node)) continue;
             var pos = info.Origin;
             float d2 = cp.DistanceSquaredTo(pos);
-            bool awake = node.Visible;
+            bool awake = info.Awake;
             float margin = awake ? MapFxFrustumSleepMargin : MapFxFrustumMargin;
             bool inFrustum = true;
-            for (int j = 0; j < planes.Count; j++)
-                if (planes[j].DistanceTo(pos) > margin) { inFrustum = false; break; }
+            for (int j = 0; j < planeCount; j++)
+                if (_frustumPlanes[j].DistanceTo(pos) > margin) { inFrustum = false; break; }
             float far = awake ? sleepFar2 : far2;
             bool show = Config.FxAmbient
                 && ((d2 <= far && (d2 <= near2 || inFrustum)) || node == _pickedFx?.Node);
@@ -707,7 +713,7 @@ public partial class World
                 {
                     info.ShaftFade = shine;
                     foreach (var gi in info.SunShafts)
-                        if (GodotObject.IsInstanceValid(gi)) gi.Transparency = 1f - shine;
+                        if (GodotObject.IsInstanceValid(gi)) Fx.SetTransparency(gi, 1f - shine);
                 }
             }
             if (show == awake) continue;
@@ -716,18 +722,24 @@ public partial class World
                 _fxWakeQueue.Add((d2, i));
                 continue;
             }
-            node.Visible = false;
+            info.Awake = false;
+            Fx.SetShown(node, false);
             node.ProcessMode = ProcessModeEnum.Disabled;
+            if (node is FxInstance sleeping) sleeping.Asleep = true;
             SetFxAmbience(node, false);
         }
+        FxLampLight.Rank(cp);
         if (_fxWakeQueue.Count == 0) return;
         _fxWakeQueue.Sort((a, b) => a.D2.CompareTo(b.D2));
         int wake = Mathf.Min(wakeBudget, _fxWakeQueue.Count);
         for (int k = 0; k < wake; k++)
         {
-            var node = _mapFx[_fxWakeQueue[k].Index].Node;
-            node.Visible = true;
+            var woken = _mapFx[_fxWakeQueue[k].Index];
+            var node = woken.Node;
+            woken.Awake = true;
+            Fx.SetShown(node, true);
             node.ProcessMode = ProcessModeEnum.Inherit;
+            if (node is FxInstance awake) awake.Asleep = false;
             SetFxAmbience(node, true);
         }
         if (Diag.SlowLog) GD.Print($"[slow] mapfx woke {wake} of {_fxWakeQueue.Count}");
@@ -735,7 +747,7 @@ public partial class World
     }
 
     private const float LargeObjectFootprint = 15f;
-    private const float LargeObjectLodBias = 16f;
+    private const float LargeObjectLodBias = 4f;
     private const float SmallObjectCullDist = 200f;
     private const float LargeObjectCullDist = 700f;
     private const float ObjectCullFade = 30f;

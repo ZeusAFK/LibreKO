@@ -44,7 +44,7 @@ public partial class World
     private static bool IsKurianRace(int race) => race == 6 || race == 14;
 
     internal static AnimationPlayer?[] AttachWings(Node3D body, int[]? gear, int race, int zone,
-                                                  bool enableShine = true)
+                                                  bool enableShine = true, bool shineShadow = false)
     {
         var anims = new AnimationPlayer?[WingSlotCount];
         var skel = FindFirst<Skeleton3D>(body);
@@ -60,7 +60,7 @@ public partial class World
         if (gear == null || gear.Length <= InventoryConstants.VisCosWing
             || System.Array.IndexOf(WingSuppressedZones, zone) >= 0)
         {
-            if (enableShine) ItemShineLight.Refresh(body);
+            if (enableShine) ItemShineLight.Refresh(body, shineShadow);
             return anims;
         }
 
@@ -95,7 +95,7 @@ public partial class World
                 RegisterAnimationMetadata(anim, $"res://assets/wings/{part.Stem}.anim.json");
             anims[part.Slot] = anim;
         }
-        if (enableShine) ItemShineLight.Refresh(body);
+        if (enableShine) ItemShineLight.Refresh(body, shineShadow);
         return anims;
     }
 
@@ -133,13 +133,14 @@ public partial class World
         foreach (var e in _ents.Values)
         {
             if (e.WingAnims == null) continue;
+            if (e.AnimPaused) continue;
             string state = EntityWingState(e);
-            bool active = !e.AnimPaused;
+            bool active = !e.AnimThrottled;
             for (int s = 0; s < e.WingAnims.Length; s++)
             {
                 if (e.WingAnims[s] is not { } anim) continue;
                 if (anim.Active != active) anim.Active = active;
-                if (active) PlayWingClip(anim, ref e.WingClips[s], state);
+                PlayWingClip(anim, ref e.WingClips[s], state);
             }
         }
 

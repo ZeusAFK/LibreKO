@@ -13,6 +13,9 @@ public sealed partial class Flinch : SkeletonModifier3D
     private int _clip = -1;
     private ulong _startMsec;
     private double _ramp;
+    private Skeleton3D _skeleton = null!;
+    private Node _holder = null!;
+    private bool _parkQueued;
 
     public static Flinch? Attach(Node3D body)
     {
@@ -20,6 +23,8 @@ public sealed partial class Flinch : SkeletonModifier3D
         if (skel == null) return null;
         var upper = UpperMask(skel, out int room);
         if (upper == null) return null;
+        var holder = new Node { Name = "flinch_idle" };
+        skel.AddChild(holder);
         var layer = new Flinch
         {
             Name = "flinch",
@@ -27,8 +32,10 @@ public sealed partial class Flinch : SkeletonModifier3D
             _upper = upper,
             _bones = new int[room],
             _target = new Quaternion[room],
+            _skeleton = skel,
+            _holder = holder,
         };
-        skel.AddChild(layer);
+        holder.AddChild(layer);
         return layer;
     }
 
@@ -49,7 +56,7 @@ public sealed partial class Flinch : SkeletonModifier3D
     public void Play(int clipIndex, Animation clip, double blend)
     {
         if (Active && clipIndex == _clip) return;
-        var skel = GetSkeleton();
+        var skel = GodotObject.IsInstanceValid(_skeleton) ? _skeleton : null;
         if (skel == null || clip.GetTrackCount() == 0) return;
         string node = clip.TrackGetPath(0).GetConcatenatedNames();
 
@@ -69,16 +76,39 @@ public sealed partial class Flinch : SkeletonModifier3D
         _startMsec = Time.GetTicksMsec();
         _ramp = ActionClip.Hold(0.0, blend) * 0.5;
         Active = true;
+        Engage(skel);
+    }
+
+    private void Engage(Skeleton3D skel)
+    {
+        _parkQueued = false;
+        if (GetParent() == skel) return;
+        GetParent()?.RemoveChild(this);
+        skel.AddChild(this);
+    }
+
+    private void Park()
+    {
+        if (!_parkQueued) return;
+        _parkQueued = false;
+        if (Active || !GodotObject.IsInstanceValid(_skeleton) || !GodotObject.IsInstanceValid(_holder)) return;
+        if (GetParent() != _skeleton) return;
+        _skeleton.RemoveChild(this);
+        _holder.AddChild(this);
     }
 
     public void Stop()
     {
         Active = false;
         _clip = -1;
+        if (_parkQueued || !GodotObject.IsInstanceValid(_skeleton) || GetParent() != _skeleton) return;
+        _parkQueued = true;
+        Callable.From(Park).CallDeferred();
     }
 
     public override void _ProcessModificationWithDelta(double delta)
     {
+        using var scope = Perf.Measure(Perf.Section.Flinch);
         var skel = GetSkeleton();
         if (skel == null || _count == 0 || _ramp <= 0.0 || Elapsed >= _ramp * 2.0) { Stop(); return; }
         float w = Weight;

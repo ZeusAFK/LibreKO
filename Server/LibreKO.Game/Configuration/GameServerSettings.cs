@@ -7,6 +7,7 @@ namespace LibreKO.Game.Configuration;
 public class GameServerSettings
 {
     public const string SectionName = "GameServer";
+    public const int DefaultBotSimControlPort = 15990;
 
     public string BindHost { get; set; } = "*";
 
@@ -20,6 +21,7 @@ public class GameServerSettings
     public string MapDirectory { get; set; } = "Map";
     public string QuestsDirectory { get; set; } = "Quests";
     public string? QuestManifest { get; set; }
+    public int BotSimControlPort { get; set; } = DefaultBotSimControlPort;
     public WelcomeSettings Welcome { get; set; } = new();
     public PlayerSettings Player { get; set; } = new();
     public MonsterSettings Monsters { get; set; } = new();
