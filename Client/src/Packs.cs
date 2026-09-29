@@ -25,6 +25,8 @@ public partial class Packs : Node
     {
         Diag.Install();
         if (OS.HasFeature("editor")) return;
+        Config.PinShippedDefaults();
+        Build.Pin();
         if (Platform.BundledContent) { MountDownloaded(); return; }
 
         string dir = OS.GetExecutablePath().GetBaseDir().PathJoin(ContentDir);

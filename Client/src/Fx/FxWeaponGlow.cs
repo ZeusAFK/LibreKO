@@ -153,17 +153,30 @@ public partial class FxWeaponGlow : Node3D
         var p = Vector3.Zero;
         for (int axis = 0; axis < 3; axis++)
         {
-            float u = ScatterBias + GD.Randi() % ScatterMod / ScatterDiv;
+            float u = ScatterBias + Scatter.Next(ScatterMod) / ScatterDiv;
             p[axis] = _bounds.Position[axis] + _bounds.Size[axis] * u;
         }
         return p;
     }
 
+    private const float GlowNearDist = 25f;
+    private const int GlowFarEvery = 4;
+    private const int GlowDistCheckFrames = 16;
+    private static readonly System.Random Scatter = new();
+    private int _frame;
+    private bool _far;
+
     public override void _Process(double delta)
     {
+        using var scope = Perf.Measure(Perf.Section.Gear);
         if (Fx.ShuttingDown) return;
         _age += delta;
         _texAge += delta;
+        _frame++;
+        if (_frame % GlowDistCheckFrames == 0)
+            _far = Fx.FrameCamera(this, out var cam)
+                && cam.Origin.DistanceSquaredTo(GlobalPosition) > GlowNearDist * GlowNearDist;
+        if (_far && _frame % GlowFarEvery != 0) return;
 
         for (int i = _tails.Count - 1; i >= 0; i--)
         {

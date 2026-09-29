@@ -681,9 +681,11 @@ public partial class World : Node3D
         }
     }
 
+    private int[]? _selfGearBuffer;
+
     private int[] SelfGear()
     {
-        var gear = new int[InventoryConstants.VisualSlots.Length];
+        var gear = _selfGearBuffer ??= new int[InventoryConstants.VisualSlots.Length];
         for (int i = 0; i < gear.Length; i++)
         {
             int s = InventoryConstants.VisualSlots[i];
@@ -699,7 +701,7 @@ public partial class World : Node3D
         RestorePartDefaults(_self, _selfDefaultParts);
         GraftEquipment(_self, _selfRace, _selfFace, gear, _selfHair, Net.I.HelmetHidden);
         AttachWeapons(_self, gear);
-        _selfWingAnims = AttachWings(_self, gear, _selfRace, _zone);
+        _selfWingAnims = AttachWings(_self, gear, _selfRace, _zone, shineShadow: true);
         System.Array.Clear(_selfWingClips);
         AttachHandFx(_self, gear, _selfRace, _zone);
         RearmWornLook(_self, gear);

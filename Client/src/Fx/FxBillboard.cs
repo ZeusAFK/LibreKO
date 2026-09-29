@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LibreKO;
 
-public partial class FxBillboard : MeshInstance3D
+public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
 {
     private StandardMaterial3D _mat = null!;
     private Texture2D?[] _frames = System.Array.Empty<Texture2D?>();
@@ -26,10 +26,70 @@ public partial class FxBillboard : MeshInstance3D
     private bool _groundFanBuilt;
     private bool _mirroredQuarterUv;
     private float _fanW, _fanH, _fanRot;
+    private FxInstance? _root;
+    private bool? _shown;
+    private bool _done;
+    private int _lastFrame = -1, _lastCell = -1;
+    private FxBoardBatch? _batcher;
+    private FxBoardBatch.Batch? _batch;
+    private FxBoardBatch.Key _key;
+    private Texture2DArray? _sequence;
+    private int _layers = 1;
+
+    internal bool Batched { get; private set; }
+    public FxPartKey? PoolKey { get; set; }
+    internal float Fade;
+    internal Vector2 AtlasOffset;
 
     public static System.Func<float, float, float?>? GroundHeight;
 
-    public static FxBillboard? Build(Godot.Collections.Dictionary p)
+    private static readonly Dictionary<FxPartKey, FxBillboard> _prototypes = new();
+
+    public static FxBillboard? Build(Godot.Collections.Dictionary p, FxPartKey? key = null)
+    {
+        if (key is { } pooledKey)
+        {
+            if (Fx.TakePooledPart(pooledKey) is FxBillboard pooled) return pooled;
+            if (_prototypes.TryGetValue(pooledKey, out var prototype)) return prototype.Clone(pooledKey);
+        }
+        var built = BuildFresh(p, key);
+        if (built != null && key is { } protoKey) _prototypes[protoKey] = built.Clone(protoKey);
+        return built;
+    }
+
+    private FxBillboard Clone(FxPartKey? key)
+    {
+        var c = new FxBillboard
+        {
+            CastShadow = ShadowCastingSetting.Off,
+            _frames = _frames,
+            _initPos = _initPos, _initVel = _initVel, _accel = _accel,
+            _start = _start, _life = _life, _fadeIn = _fadeIn, _fadeOut = _fadeOut,
+            _hideTime = _hideTime, _showTime = _showTime,
+            _w = _w, _h = _h, _wVel = _wVel, _hVel = _hVel, _wAcc = _wAcc, _hAcc = _hAcc,
+            _spins = _spins, _explicitRot = _explicitRot, _flat = _flat,
+            _rotDeg = _rotDeg, _matrixBasis = _matrixBasis, _spinRate = _spinRate,
+            _gap = _gap, _addBoost = _addBoost, _additive = _additive,
+            _texFps = _texFps, _frameCount = _frameCount, _wrap = _wrap,
+            _atlasCols = _atlasCols, _atlasRows = _atlasRows, _atlasFrames = _atlasFrames,
+            _mirroredQuarterUv = _mirroredQuarterUv,
+            _key = _key, _sequence = _sequence, _layers = _layers,
+            PoolKey = key,
+        };
+        if (_flat && _mat != null)
+        {
+            c._mat = (StandardMaterial3D)_mat.Duplicate();
+            c.MaterialOverride = c._mat;
+        }
+        if (Batched)
+        {
+            c.Batched = true;
+            c.SetNotifyTransform(false);
+        }
+        return c;
+    }
+
+    private static FxBillboard? BuildFresh(Godot.Collections.Dictionary p, FxPartKey? key)
     {
         var tex0 = Fx.FirstTexture(p);
         if (tex0 == null) return null;
@@ -40,7 +100,6 @@ public partial class FxBillboard : MeshInstance3D
         if (autoSpin && Mathf.Abs(spin) < 1e-4f) spin = Mathf.DegToRad(50f);
         var bb = new FxBillboard
         {
-            Mesh = new QuadMesh { Size = Vector2.One },
             CastShadow = ShadowCastingSetting.Off,
             _initPos = Fx.ReadVec3(p, "initPos"),
             _initVel = Fx.ReadVec3(p, "initVel"),
@@ -64,6 +123,7 @@ public partial class FxBillboard : MeshInstance3D
             _texFps = Fx.ReadF(p, "texFPS"),
             _frameCount = Mathf.Max(1, p["frameCount"].AsInt32()),
             _wrap = p.ContainsKey("frameWrap") && p["frameWrap"].AsBool(),
+            PoolKey = key,
         };
         int num = p.ContainsKey("num") ? Mathf.Max(1, p["num"].AsInt32()) : 1;
         bb._addBoost = p["blend"].AsString() == "add" ? Mathf.Min(num, 4) : 1f;
@@ -72,8 +132,11 @@ public partial class FxBillboard : MeshInstance3D
         if (sv.Count == 2) { bb._wVel = (float)sv[0].AsDouble(); bb._hVel = (float)sv[1].AsDouble(); }
         if (sa.Count == 2) { bb._wAcc = (float)sa[0].AsDouble(); bb._hAcc = (float)sa[1].AsDouble(); }
 
-        bb._mat = Fx.MakeMaterial(p, BaseMaterial3D.BillboardModeEnum.Disabled, tex0);
-        bb.MaterialOverride = bb._mat;
+        if (flat)
+        {
+            bb._mat = Fx.MakeMaterial(p, BaseMaterial3D.BillboardModeEnum.Disabled, tex0);
+            bb.MaterialOverride = bb._mat;
+        }
 
         if (p.ContainsKey("atlas"))
         {
@@ -83,7 +146,7 @@ public partial class FxBillboard : MeshInstance3D
             bb._atlasFrames = p.ContainsKey("atlasFrames")
                 ? Mathf.Clamp(p["atlasFrames"].AsInt32(), 1, bb._atlasCols * bb._atlasRows)
                 : bb._atlasCols * bb._atlasRows;
-            bb._mat.Uv1Scale = new Vector3(1f / bb._atlasCols, 1f / bb._atlasRows, 1f);
+            if (flat) bb._mat.Uv1Scale = new Vector3(1f / bb._atlasCols, 1f / bb._atlasRows, 1f);
         }
 
         bool add = p["blend"].AsString() == "add";
@@ -95,43 +158,117 @@ public partial class FxBillboard : MeshInstance3D
             var f = Fx.FrameTexture(p, i);
             bb._frames[i] = f != null ? Fx.TextureForBlend(f, add, srcBlend, destBlend) : null;
         }
+        if (!flat)
+        {
+            var (sequence, sequenceId, layers) = FxBoardBatch.SequenceFor(bb._frames);
+            if (sequence == null) return null;
+            int rf = p.ContainsKey("renderFlags") ? p["renderFlags"].AsInt32() : Fx.RfNotZWrite | Fx.RfDoubleSided;
+            bool blendAdd = add || Fx.IsSrcColorOverInv(srcBlend, destBlend);
+            bb._sequence = sequence;
+            bb._layers = layers;
+            bb._key = new FxBoardBatch.Key(sequenceId, blendAdd,
+                (rf & Fx.RfDoubleSided) != 0, (rf & Fx.RfNotZBuffer) != 0,
+                (rf & Fx.RfNotZWrite) == 0 ? Fx.FxSiblingWinnerPriority : 0,
+                1f / bb._atlasCols, 1f / bb._atlasRows);
+            bb.Batched = true;
+            bb.SetNotifyTransform(false);
+        }
         return bb;
     }
 
-    public override void _Process(double delta)
+    public override void _EnterTree()
     {
-        if (Fx.ShuttingDown || IsQueuedForDeletion()) return;
+        _root = GetParent() as FxInstance;
+        if (_root == null) return;
+        _root.AddPart(this);
+        SetProcess(false);
+    }
+
+    public override void _Ready()
+    {
+        if (_root != null) SetProcess(false);
+    }
+
+    public override void _ExitTree()
+    {
+        _root?.RemovePart(this);
+        _root = null;
+    }
+
+    private void SetShown(bool shown)
+    {
+        if (_shown == shown) return;
+        _shown = shown;
+        if (!Batched) Visible = shown;
+    }
+
+    internal void ResetShown() => _shown = null;
+
+    public void Reset()
+    {
+        _age = 0f;
+        _shown = null;
+        _lastColor = new Color(-1, -1, -1, -1);
+        _lastFrame = _lastCell = -1;
+        Fade = 0f;
+        AtlasOffset = Vector2.Zero;
+        _batcher = null;
+        _batch = null;
+        Transparency = 0f;
+        Visible = true;
+        _done = false;
+    }
+
+    public override void _Process(double delta) => Tick(delta);
+
+    public void Tick(double delta)
+    {
+        using var scope = Perf.Measure(Perf.Section.FxBoard);
+        if (_done || Fx.ShuttingDown) return;
         _age += (float)delta;
         float localT = _age - _start;
-        if (localT < 0f) { Visible = false; return; }
-        Visible = true;
+        if (localT < 0f) { SetShown(false); return; }
         if (!Fx.PartAge(localT, _life, _fadeIn, _fadeOut, out float t, out float a))
         {
-            Visible = false;
-            SetProcess(false);
-            QueueFree();
+            SetShown(false);
+            _done = true;
+            if (_root == null) SetProcess(false);
+            Fx.RecyclePart(this);
             return;
         }
-        if (Fx.PartHidden(localT, _hideTime, _showTime)) { Visible = false; return; }
+        if (Fx.PartHidden(localT, _hideTime, _showTime)) { SetShown(false); return; }
+        SetShown(true);
 
-        Position = _initPos + _initVel * t + 0.5f * _accel * (t * t);
+        Vector3 pos = _initPos + _initVel * t + 0.5f * _accel * (t * t);
         if (_flat && GroundHeight != null)
         {
-            var parent = GetParentOrNull<Node3D>();
-            Vector3 world = parent != null ? parent.GlobalTransform * Position : Position;
-            world.Y = GroundY(world.X, world.Z, world.Y) + _gap;
-            Position = parent != null ? parent.ToLocal(world) : world;
+            if (_root != null)
+            {
+                _root.EnsureFrame();
+                Vector3 world = _root.FrameXf * pos;
+                world.Y = GroundY(world.X, world.Z, world.Y) + _gap;
+                pos = _root.FrameXfInverse * world;
+            }
+            else
+            {
+                var parent = GetParentOrNull<Node3D>();
+                Vector3 world = parent != null ? parent.GlobalTransform * pos : pos;
+                world.Y = GroundY(world.X, world.Z, world.Y) + _gap;
+                pos = parent != null ? parent.ToLocal(world) : world;
+            }
         }
         else if (_flat)
-            Position += new Vector3(0f, _gap, 0f);
+            pos += new Vector3(0f, _gap, 0f);
 
         float w = Mathf.Max(0.001f, _w + _wVel * t + 0.5f * _wAcc * t * t);
         float h = Mathf.Max(0.001f, _h + _hVel * t + 0.5f * _hAcc * t * t);
 
         if (_flat)
         {
-            Transform = new Transform3D(Basis.Identity, Position);
-            EnsureGroundFan(w, h, _spinRate * t);
+            float spin = _spinRate * t;
+            EnsureGroundFan(w, h, spin, pos);
+            var fanScale = _fanW > 0f && _fanH > 0f ? new Vector3(w / _fanW, 1f, h / _fanH) : Vector3.One;
+            Transform = new Transform3D(new Basis(Vector3.Up, spin - _fanRot) * Basis.FromScale(fanScale), pos);
         }
         else
         {
@@ -146,23 +283,42 @@ public partial class FxBillboard : MeshInstance3D
             }
             else
             {
-                var cam = GetViewport()?.GetCamera3D();
-                if (cam != null)
+                bool hasCam;
+                Transform3D camXf;
+                Basis parentInverse;
+                if (_root != null)
+                {
+                    _root.EnsureFrame();
+                    hasCam = _root.HasCam;
+                    camXf = _root.CamXf;
+                    parentInverse = _root.FrameInverse;
+                }
+                else
+                {
+                    hasCam = Fx.FrameCamera(this, out camXf);
+                    var parent = GetParentOrNull<Node3D>();
+                    parentInverse = (parent?.GlobalTransform.Basis.Orthonormalized() ?? Basis.Identity).Inverse();
+                }
+                if (hasCam)
                 {
                     // View-plane, not look-at-position: FX_CAPTURE_HANDOFF.md measures 963u-apart
                     // quads sharing one normal to 0.00 deg.
-                    Basis camBasis = cam.GlobalTransform.Basis.Orthonormalized();
+                    Basis camBasis = camXf.Basis.Orthonormalized();
                     Basis worldBasis = camBasis * _matrixBasis;
                     if (_spins) worldBasis = worldBasis.Rotated(camBasis.Z, _spinRate * localT);
-                    var parent = GetParentOrNull<Node3D>();
-                    Basis parentBasis = parent?.GlobalTransform.Basis.Orthonormalized() ?? Basis.Identity;
-                    basis = parentBasis.Inverse() * worldBasis;
+                    basis = parentInverse * worldBasis;
                 }
                 else basis = Basis.Identity;
             }
             // NOT Basis.Scaled — it scales the rows, so a yawed quad's width lands on world Z and the
             // disc collapses to a 1-unit lens at yaw 90.
-            Transform = new Transform3D(basis * Basis.FromScale(new Vector3(w, h, 1f)), Position);
+            var local = new Transform3D(basis * Basis.FromScale(new Vector3(w, h, 1f)), pos);
+            if (Batched)
+            {
+                WriteBatched(local, t, a, Mathf.Max(w, h));
+                return;
+            }
+            Transform = local;
         }
 
         float rgb = _additive ? _addBoost * a : _addBoost;
@@ -171,35 +327,110 @@ public partial class FxBillboard : MeshInstance3D
 
         if (_atlasCols * _atlasRows > 1 && _texFps > 0f)
         {
-            int frame = Mathf.Max(0, (int)(_texFps * t));
-            int cell = _wrap ? frame % _atlasFrames : Mathf.Min(frame, _atlasFrames - 1);
-            _mat.Uv1Offset = new Vector3((cell % _atlasCols) / (float)_atlasCols,
-                                         (cell / _atlasCols) / (float)_atlasRows, 0f);
+            int cell = AtlasCell(t);
+            if (cell != _lastCell)
+            {
+                _lastCell = cell;
+                AtlasOffset = AtlasOffsetFor(cell);
+                _mat.Uv1Offset = new Vector3(AtlasOffset.X, AtlasOffset.Y, 0f);
+            }
         }
         else if (_frameCount > 1 && _texFps > 0f)
         {
-            int f = (int)(_texFps * t);
-            f = _wrap ? ((f % _frameCount) + _frameCount) % _frameCount : Mathf.Min(f, _frameCount - 1);
+            int f = FrameIndex(t);
+            if (f == _lastFrame) return;
+            _lastFrame = f;
             if (_frames[f] != null) _mat.AlbedoTexture = _frames[f];
         }
     }
 
+    private int AtlasCell(float t)
+    {
+        int frame = Mathf.Max(0, (int)(_texFps * t));
+        return _wrap ? frame % _atlasFrames : Mathf.Min(frame, _atlasFrames - 1);
+    }
+
+    private Vector2 AtlasOffsetFor(int cell) =>
+        new((cell % _atlasCols) / (float)_atlasCols, (cell / _atlasCols) / (float)_atlasRows);
+
+    private int FrameIndex(float t)
+    {
+        int f = (int)(_texFps * t);
+        return _wrap ? ((f % _frameCount) + _frameCount) % _frameCount : Mathf.Min(f, _frameCount - 1);
+    }
+
+    private void WriteBatched(in Transform3D local, float t, float a, float extent)
+    {
+        Transform3D world;
+        Vector3 camPos;
+        bool visible;
+        if (_root != null)
+        {
+            world = _root.FrameXf * local;
+            camPos = _root.HasCam ? _root.CamXf.Origin : world.Origin;
+            visible = _root.VisibleInTree;
+        }
+        else
+        {
+            var parent = GetParentOrNull<Node3D>();
+            world = parent != null ? parent.GlobalTransform * local : local;
+            camPos = Fx.FrameCamera(this, out var camXf) ? camXf.Origin : world.Origin;
+            visible = IsVisibleInTree();
+        }
+        float alpha = a * (1f - Fade);
+        float rgb = _additive ? _addBoost * a : _addBoost;
+        Vector2 uvOffset = Vector2.Zero;
+        float frame = 0f;
+        if (_atlasCols * _atlasRows > 1 && _texFps > 0f)
+        {
+            AtlasOffset = AtlasOffsetFor(AtlasCell(t));
+            uvOffset = AtlasOffset;
+        }
+        else if (_layers > 1 && _texFps > 0f)
+            frame = FrameIndex(t);
+        if (!visible || alpha <= 0f) return;
+        _batcher ??= FxBoardBatch.For(this);
+        if (_batcher == null) return;
+        if (_batch == null || _batch.Pruned) _batch = _batcher.Resolve(_key, _sequence!);
+        FxBoardBatch.Write(_batch, world, new Color(rgb, rgb, rgb, alpha), uvOffset, frame,
+            camPos.DistanceSquaredTo(world.Origin), extent);
+    }
+
     private const int GroundFanSegments = 24;
     private const int GroundFanRings = 4;
+    private const float GroundFanRebakeScale = 1.5f;
+    private const float GroundFanRebakeAngle = Mathf.Pi / 6f;
+    private const float GroundFanRebakeMove = 0.5f;
+    private const double GroundFanRebakeInterval = 0.1;
+    private Vector3 _fanAt;
+    private double _fanBakedAt;
 
-    private void EnsureGroundFan(float w, float h, float rotation)
+    private bool GroundFanStale(float w, float h, float rotation, Vector3 pos)
+    {
+        if (!_groundFanBuilt) return true;
+        double now = Time.GetTicksMsec() * 0.001;
+        if (now - _fanBakedAt < GroundFanRebakeInterval) return false;
+        float sw = w / _fanW, sh = h / _fanH;
+        return sw > GroundFanRebakeScale || sw < 1f / GroundFanRebakeScale
+            || sh > GroundFanRebakeScale || sh < 1f / GroundFanRebakeScale
+            || Mathf.Abs(Mathf.AngleDifference(rotation, _fanRot)) > GroundFanRebakeAngle
+            || pos.DistanceSquaredTo(_fanAt) > GroundFanRebakeMove * GroundFanRebakeMove;
+    }
+
+    private void EnsureGroundFan(float w, float h, float rotation, Vector3 pos)
     {
         if (!IsInsideTree()) return;
-        if (_groundFanBuilt && Mathf.IsEqualApprox(w, _fanW) && Mathf.IsEqualApprox(h, _fanH)
-            && Mathf.IsEqualApprox(rotation, _fanRot))
-            return;
+        if (!GroundFanStale(w, h, rotation, pos)) return;
+        _root?.EnsureFrame();
         _groundFanBuilt = true;
-        _fanW = w; _fanH = h; _fanRot = rotation;
+        _fanW = w; _fanH = h; _fanRot = rotation; _fanAt = pos;
+        _fanBakedAt = Time.GetTicksMsec() * 0.001;
         _groundFan ??= new ArrayMesh();
         _groundFan.ClearSurfaces();
         if (Mesh != _groundFan) Mesh = _groundFan;
 
-        Vector3 gp = GlobalPosition;
+        Vector3 gp = _root != null ? _root.FrameXf * pos
+            : GetParentOrNull<Node3D>() is { } parent ? parent.GlobalTransform * pos : pos;
         float c = Mathf.Cos(rotation), s = Mathf.Sin(rotation);
         Vector3 right = new(c, 0f, -s);
         Vector3 forward = new(s, 0f, c);

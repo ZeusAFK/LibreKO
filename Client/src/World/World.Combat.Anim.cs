@@ -102,6 +102,7 @@ public partial class World
             if (ActionClip.IsStaticPose(res.Length)) res.Length = (float)ActionClip.Hold(res.Length, blend);
         }
         anim.Play(name, blend);
+        CrowdAnimator.NotifyPlay(anim, name, blend);
         return ActionLength(res, blend);
     }
 
@@ -274,7 +275,7 @@ public partial class World
         Vector3? tgt = WorldPosOf(targetId);
         if (tgt == null) return;
         if (attackerId == _myId && _self != null) FaceSelfToward(tgt.Value);
-        else if (_ents.TryGetValue(attackerId, out var a)) FaceNodeToward(a.Body, a.Body.Position, tgt.Value);
+        else if (_ents.TryGetValue(attackerId, out var a)) FaceEntityToward(a, tgt.Value);
     }
 
     private void FaceTowardImpact(int casterId, short[] data)
@@ -282,7 +283,7 @@ public partial class World
         if (data.Length <= 2 || (data[0] == 0 && data[2] == 0)) return;
         Vector3 impact = GroundPos(data[0], data[2], 0f, 0f);
         if (casterId == _myId && _self != null) FaceSelfToward(impact);
-        else if (_ents.TryGetValue(casterId, out var a)) FaceNodeToward(a.Body, a.Body.Position, impact);
+        else if (_ents.TryGetValue(casterId, out var a)) FaceEntityToward(a, impact);
     }
 
     private void FaceSelfToward(Vector3 target)
@@ -294,13 +295,23 @@ public partial class World
         _self.RotationDegrees = new Vector3(0, 180f - Coord.KoHeading(-_faceDir.X, _faceDir.Z), 0);
     }
 
+    private void FaceEntityToward(Ent e, Vector3 to)
+    {
+        if (YawToward(e.Body.Position, to) is { } yaw) SetEntityYaw(e, yaw);
+    }
+
     private void FaceNodeToward(Node3D node, Vector3 from, Vector3 to)
+    {
+        if (YawToward(from, to) is { } yaw) node.RotationDegrees = new Vector3(0, yaw, 0);
+    }
+
+    private float? YawToward(Vector3 from, Vector3 to)
     {
         var (fx, fz) = WorldToKo(from);
         var (tx, tz) = WorldToKo(to);
         float dx = tx - fx, dz = tz - fz;
-        if (dx * dx + dz * dz < 0.01f) return;
-        node.RotationDegrees = new Vector3(0, 180f - Coord.KoHeading(dx, dz), 0);
+        if (dx * dx + dz * dz < 0.01f) return null;
+        return 180f - Coord.KoHeading(dx, dz);
     }
 
     private Vector3? WorldPosOf(int id) =>

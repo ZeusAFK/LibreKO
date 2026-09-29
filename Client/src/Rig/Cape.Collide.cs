@@ -49,7 +49,7 @@ public partial class Cape : MeshInstance3D
         {
             foreach (var child in parent.GetChildren())
             {
-                if (child is FxInstance or FxWeaponGlow or FxMesh or GpuParticles3D or ItemShineDriver
+                if (child is FxInstance or FxWeaponGlow or FxMesh or FxParticles or GpuParticles3D or ItemShineDriver
                     or WeaponTrail or Node3D { TopLevel: true }) continue;
                 var local = child is Node3D nd ? transform * nd.Transform : transform;
                 if (child is MeshInstance3D { Mesh: { } mesh, Visible: true })

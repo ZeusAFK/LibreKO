@@ -18,8 +18,8 @@ uniform float foam_amount = 0.4;      // shoreline foam opacity (live-tunable)
 uniform float refraction = 0.025;
 uniform float rough_min = 0.12;       // base roughness looking straight down (live-tunable)
 uniform float spec_amt = 0.4;         // specular intensity (live-tunable)
-uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
-uniform sampler2D depth_tex : hint_depth_texture, filter_linear_mipmap;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
+uniform sampler2D depth_tex : hint_depth_texture, filter_linear;
 
 varying vec3 v_world;
 varying vec3 v_wnorm;   // analytic Gerstner normal (world space)

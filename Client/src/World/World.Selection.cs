@@ -12,6 +12,7 @@ public partial class World
     private const float ClickPickRadius = 48f;
     private const float BodyPickPadPx = 3f;
     private const float BodyPickMinPx = 14f;
+    private const float BodyPickDist = 40f;
     private VBoxContainer _targetBox = null!;
     private Label _targetName = null!;
     private StatBar _targetHp = null!;
@@ -191,6 +192,7 @@ public partial class World
         pixels = radius;
         if (_camera == null) return null;
         var eye = _camera.GlobalPosition;
+        float boxPick2 = BodyPickDist * BodyPickDist;
         foreach (var kv in _ents)
         {
             var e = kv.Value;
@@ -198,9 +200,9 @@ public partial class World
             var world = e.Body.GlobalPosition + Vector3.Up;
             if (_camera.IsPositionBehind(world)) continue;
 
-            if (BodyScreenRect(e) is { } rect && rect.HasPoint(mouse))
+            float depth = eye.DistanceSquaredTo(world);
+            if (depth <= boxPick2 && BodyScreenRect(e) is { } rect && rect.HasPoint(mouse))
             {
-                float depth = eye.DistanceSquaredTo(e.Body.GlobalPosition);
                 if (depth < boxedDepth) { boxedDepth = depth; boxed = e; boxedId = kv.Key; }
             }
 
@@ -646,8 +648,11 @@ public partial class World
         if (!_ents.TryGetValue(id, out var e)) return;
         e.Hp = hp;
         e.MaxHp = maxHp;
-        UpdateEntHpBar(e);
     }
+
+    private int _targetHudId = -1, _targetHudLevel;
+    private string? _targetHudName;
+    private bool _targetBoxShown;
 
     private void UpdateTargetHud()
     {
@@ -656,11 +661,22 @@ public partial class World
             : (_lastHitId >= 0 && Now() <= _lastHitAt + LastHitHudDur ? _lastHitId : -1);
         if (show >= 0 && _ents.TryGetValue(show, out var e))
         {
-            _targetName.Text = e.Level > 0 ? $"{e.Name}   Lv {e.Level}" : e.Name;
+            if (show != _targetHudId || e.Level != _targetHudLevel || e.Name != _targetHudName)
+            {
+                _targetHudId = show;
+                _targetHudLevel = e.Level;
+                _targetHudName = e.Name;
+                _targetName.Text = e.Level > 0 ? $"{e.Name}   Lv {e.Level}" : e.Name;
+            }
             if (e.MaxHp > 0) _targetHp.Set(e.Hp, e.MaxHp); else _targetHp.SetFull();
-            _targetBox.Visible = true;
+            if (!_targetBoxShown) { _targetBoxShown = true; _targetBox.Visible = true; }
         }
-        else _targetBox.Visible = false;
+        else if (_targetBoxShown)
+        {
+            _targetBoxShown = false;
+            _targetHudId = -1;
+            _targetBox.Visible = false;
+        }
         PluginNotifyTarget();
     }
 }

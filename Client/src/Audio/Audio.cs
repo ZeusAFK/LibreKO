@@ -78,6 +78,7 @@ public partial class Audio : Node
 
     public static void Play(int soundId, Vector3 pos)
     {
+        if (Perf.SkipAudio) return;
         if (I == null || !Config.AudioEnabled) return;
         if (!SoundCatalog.TryGet(soundId, out var e)) return;
         if (e.Type == SoundCatalog.Kind.Stream) { Bgm(soundId); return; }
@@ -105,6 +106,7 @@ public partial class Audio : Node
 
     public static void PlayAt(int soundId, Node3D? node)
     {
+        if (Perf.SkipAudio) return;
         if (node != null && GodotObject.IsInstanceValid(node)) Play(soundId, node.GlobalPosition);
     }
 

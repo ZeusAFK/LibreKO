@@ -15,21 +15,42 @@ public partial class World
 
         var visual = new Node3D { Name = ModelNodeName, Scale = new Vector3(scale, scale, scale) };
         body.AddChild(visual);
-        var inst = scene.Instantiate<Node3D>();
+        Node3D inst;
+        using (Perf.Measure(Perf.Section.BuildInstance)) inst = scene.Instantiate<Node3D>();
         inst.RotationDegrees = new Vector3(0, 180, 0);
         visual.AddChild(inst);
-        ForceDoubleSided(inst);
-
-        var anim = FindFirst<AnimationPlayer>(inst);
+        AnimationPlayer? anim;
+        using (Perf.Measure(Perf.Section.BuildShare))
+        {
+            ForceDoubleSidedOnce(inst, scene.ResourcePath);
+            SkinShare.ShareUnder(inst);
+            anim = FindFirst<AnimationPlayer>(inst);
+        }
         if (anim != null)
-            RegisterAnimationMetadata(anim, scene.ResourcePath.GetBaseName() + ".anim.json");
+            using (Perf.Measure(Perf.Section.BuildMeta))
+                RegisterAnimationMetadata(anim, scene.ResourcePath.GetBaseName() + ".anim.json");
 
-        body.AddChild(NameLabel(name, ModelTopY(inst) * scale + 0.35f));
+        AttachNameLabel(body, name, ModelTopY(inst) * scale + 0.35f);
         return (body, anim);
+    }
+
+    private static readonly Dictionary<string, (Dictionary<int, AnimMeta> ByIndex, Dictionary<string, AnimMeta> ByName)>
+        AnimationMetaByPath = new();
+    private static readonly HashSet<string> DoubleSidedScenes = new();
+
+    private static void ForceDoubleSidedOnce(Node inst, string scenePath)
+    {
+        if (DoubleSidedScenes.Add(scenePath)) ForceDoubleSided(inst);
     }
 
     private static void RegisterAnimationMetadata(AnimationPlayer anim, string path)
     {
+        if (AnimationMetaByPath.TryGetValue(path, out var shared))
+        {
+            AnimationMetaByIndex[anim.GetInstanceId()] = shared.ByIndex;
+            AnimationMetaByName[anim.GetInstanceId()] = shared.ByName;
+            return;
+        }
         var map = new System.Collections.Generic.Dictionary<int, AnimMeta>();
         var names = new System.Collections.Generic.Dictionary<string, AnimMeta>(
             System.StringComparer.OrdinalIgnoreCase);
@@ -65,6 +86,7 @@ public partial class World
         }
         AnimationMetaByIndex[anim.GetInstanceId()] = map;
         AnimationMetaByName[anim.GetInstanceId()] = names;
+        AnimationMetaByPath[path] = (map, names);
     }
 
     private static string? AnimationNameAt(AnimationPlayer anim, int sourceIndex)
@@ -163,6 +185,7 @@ public partial class World
         if (res != null) res.LoopMode = Animation.LoopModeEnum.Linear;
         double blend = AnimationMetaFor(anim, name)?.Blend ?? AnimBlend;
         anim.Play(name, blend);
+        CrowdAnimator.NotifyPlay(anim, name, blend);
         clip = state;
     }
 

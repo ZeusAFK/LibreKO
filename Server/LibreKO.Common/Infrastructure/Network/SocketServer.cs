@@ -13,7 +13,8 @@ public class SocketServer(
     ILogger<SocketServer> logger,
     int maxConnectionsPerIp = 10,
     int connectionRateWindowSeconds = 10,
-    int maxConnectionAttemptsPerWindow = 20
+    int maxConnectionAttemptsPerWindow = 20,
+    bool exemptLoopback = false
 ) : IHostedService
 {
     private const int AcceptRetryBaseDelayMs = 50;
@@ -138,7 +139,7 @@ public class SocketServer(
             {
                 var remote = socket.RemoteEndPoint?.ToString() ?? "unknown";
 
-                if (socket.RemoteEndPoint is IPEndPoint remoteEp)
+                if (socket.RemoteEndPoint is IPEndPoint remoteEp && !(exemptLoopback && IPAddress.IsLoopback(remoteEp.Address)))
                 {
                     var ip = remoteEp.Address;
 

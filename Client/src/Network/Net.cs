@@ -176,6 +176,7 @@ public partial class Net : Node
 
     public override void _Process(double delta)
     {
+        using var scope = Perf.Measure(Perf.Section.Net);
         if (_conn.Connected && !_connectedFired)
         {
             _connectedFired = true;

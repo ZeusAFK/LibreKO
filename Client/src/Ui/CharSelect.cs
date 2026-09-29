@@ -37,6 +37,7 @@ public partial class CharSelect : Node3D
 
         _status.Text = "Loading characters…";
         Net.I.RequestCharList();
+        Callable.From(() => GlyphWarmer.Warm(this)).CallDeferred();
     }
 
     public override void _Process(double delta) => TickStage(delta);

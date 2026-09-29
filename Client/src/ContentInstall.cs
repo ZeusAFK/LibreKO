@@ -25,6 +25,7 @@ public sealed class ContentInstall
     private const int StallAttempts = 6;
     private const int MaxRetryDelaySeconds = 30;
     private const int StallSeconds = 20;
+    private const int CheckTimeoutSeconds = 10;
 
     public string AppUpdateUrl { get; private set; } = "";
 
@@ -42,6 +43,10 @@ public sealed class ContentInstall
 
     public ContentInstall(string baseUrl) =>
         BaseUrl = baseUrl.EndsWith('/') ? baseUrl : baseUrl + "/";
+
+    private bool HasPatchServer =>
+        Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri)
+        && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
 
     public readonly record struct Snapshot(
         ContentStage Stage, string Detail, long Done, long Total, double BytesPerSecond, long IdleMs);
@@ -122,9 +127,23 @@ public sealed class ContentInstall
             Directory.CreateDirectory(contentDir);
             Directory.CreateDirectory(patchDir);
 
+            if (!HasPatchServer)
+            {
+                if (Packs.ContentReady) Set(ContentStage.Done, "Ready");
+                else Set(ContentStage.Failed, "No patch server is configured");
+                return;
+            }
+
             Set(ContentStage.Checking, "Contacting patch server");
             using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
-            var channel = ContentChannel.Parse(await http.GetStringAsync(BaseUrl + ChannelPath, token));
+            string channelJson;
+            try { channelJson = await GetQuickly(http, BaseUrl + ChannelPath, token); }
+            catch (Exception e) when (Packs.ContentReady && !token.IsCancellationRequested && Transient(e))
+            {
+                Set(ContentStage.Done, "Ready");
+                return;
+            }
+            var channel = ContentChannel.Parse(channelJson);
             if (channel == null) { Set(ContentStage.Failed, "Patch server sent an unreadable channel"); return; }
 
             if (Build.ApkBuild < channel.MinApkBuild)
@@ -138,7 +157,7 @@ public sealed class ContentInstall
                 return;
             }
 
-            var manifest = ContentManifest.Parse(await http.GetStringAsync(BaseUrl + channel.Manifest, token));
+            var manifest = ContentManifest.Parse(await GetQuickly(http, BaseUrl + channel.Manifest, token));
             if (manifest == null) { Set(ContentStage.Failed, "Patch server sent an unreadable content list"); return; }
 
             int installed = ContentState.InstalledBuild();
@@ -185,7 +204,12 @@ public sealed class ContentInstall
     private async Task ApplyPatch(HttpClient http, ContentPatch step, string patchDir,
                                   int build, CancellationToken token)
     {
-        await Fetch(http, step, Path.Combine(patchDir, $"{build:D5}.pck"), "Downloading update", token);
+        string target = Path.Combine(patchDir, $"{build:D5}.pck");
+        long have = PartLength(target + ".part");
+        if (step.Size - have > ConsentThreshold)
+            await AskConsent(have, step.Size, token);
+
+        await Fetch(http, step, target, "Downloading update", token);
         ContentState.Save(build);
         Set(ContentStage.Done, "Ready");
     }
@@ -286,6 +310,17 @@ public sealed class ContentInstall
         catch (OperationCanceledException) when (!token.IsCancellationRequested)
         {
             throw new IOException($"no data arrived for {StallSeconds} seconds");
+        }
+    }
+
+    private static async Task<string> GetQuickly(HttpClient http, string url, CancellationToken token)
+    {
+        using var quick = CancellationTokenSource.CreateLinkedTokenSource(token);
+        quick.CancelAfter(TimeSpan.FromSeconds(CheckTimeoutSeconds));
+        try { return await http.GetStringAsync(url, quick.Token); }
+        catch (OperationCanceledException) when (!token.IsCancellationRequested)
+        {
+            throw new TimeoutException("the patch server did not answer");
         }
     }
 

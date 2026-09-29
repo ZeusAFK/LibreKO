@@ -30,8 +30,12 @@ public sealed class PlateStack
         Layout();
     }
 
+    private bool? _visible;
+
     public void SetVisible(bool visible)
     {
+        if (_visible == visible) return;
+        _visible = visible;
         if (_name.Visible != visible) _name.Visible = visible;
         if (_title != null && _title.Visible != visible) _title.Visible = visible;
         if (_clan != null && _clan.Visible != visible) _clan.Visible = visible;

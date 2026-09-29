@@ -300,6 +300,7 @@ public partial class Cape : MeshInstance3D
 
     public override void _Process(double delta)
     {
+        using var scope = Perf.Measure(Perf.Section.Cape);
         if (!IsInstanceValid(_skel) || _rest.Length == 0 || delta <= 0) return;
         var anchor = AnchorWorld();
         _pinCurrent = AttachmentWorld();

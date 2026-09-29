@@ -95,17 +95,21 @@ public partial class Sky
             dark = dark.Lerp(new Color(0.08f, 0.09f, 0.12f), 0.85f);
         }
 
-        if (!ReferenceEquals(_skyMat, _skyTexOn)) { _skyMat.SetShaderParameter("cloud_tex", CloudField.Texture); _skyTexOn = _skyMat; }
-        _skyMat.SetShaderParameter("cloud_pan", _cloudPan);
-        _skyMat.SetShaderParameter("cirrus_pan", _cirrusPan);
-        _skyMat.SetShaderParameter("cloud_scale", CloudScale);
-        _skyMat.SetShaderParameter("cloud_cover", CloudsEnabled ? _cloudCover : 0f);
-        _skyMat.SetShaderParameter("cloud_height", CloudHeight);
-        _skyMat.SetShaderParameter("cloud_density", CloudsEnabled ? CloudDensity : 0f);
-        _skyMat.SetShaderParameter("cloud_lit", lit);
-        _skyMat.SetShaderParameter("cloud_dark", dark);
-        _skyMat.SetShaderParameter("cirrus_amount", CloudsEnabled ? CirrusAmount * (1f - overcast * 0.8f) : 0f);
-        _skyMat.SetShaderParameter("sun_dir", _sunDir);
+        if (!ReferenceEquals(_skyMat, _skyTexOn))
+        {
+            _skyMat.SetShaderParameter(Param.CloudTex, CloudField.Texture);
+            _skyMat.SetShaderParameter(Param.CloudScale, CloudScale);
+            _skyMat.SetShaderParameter(Param.CloudHeight, CloudHeight);
+            _skyTexOn = _skyMat;
+        }
+        _skyMat.SetShaderParameter(Param.CloudPan, _cloudPan);
+        _skyMat.SetShaderParameter(Param.CirrusPan, _cirrusPan);
+        _skyMat.SetShaderParameter(Param.CloudCover, CloudsEnabled ? _cloudCover : 0f);
+        _skyMat.SetShaderParameter(Param.CloudDensity, CloudsEnabled ? CloudDensity : 0f);
+        _skyMat.SetShaderParameter(Param.CloudLit, lit);
+        _skyMat.SetShaderParameter(Param.CloudDark, dark);
+        _skyMat.SetShaderParameter(Param.CirrusAmount, CloudsEnabled ? CirrusAmount * (1f - overcast * 0.8f) : 0f);
+        _skyMat.SetShaderParameter(Param.SunDir, _sunDir);
 
         return 1f - SunCloudInfluence * _sunBlock;
     }

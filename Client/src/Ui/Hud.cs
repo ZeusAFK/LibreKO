@@ -20,17 +20,35 @@ public partial class StatBar : Control
     public enum RibbonKind { None, Upper, Lower, Plain }
 
     private const float Skew = 14f;
+    private const float RibbonBreathe = 0.19f;
+    private const float RibbonBreatheSwing = 0.025f;
+    private const float LowerCoreLift = 0.08f;
+    private const float FlowMargin = 4f;
+    private static Shader? _glowShader, _flowShader;
+    private static Shader GlowShader => _glowShader ??= GD.Load<Shader>("res://shaders/ribbon_glow.gdshader");
+    private static Shader FlowShader => _flowShader ??= GD.Load<Shader>("res://shaders/ribbon_flow.gdshader");
     private readonly Color _fill;
     private readonly Label _text;
     private readonly RibbonKind _ribbon;
+    private readonly Control? _glow, _flow, _border;
+    private readonly ShaderMaterial? _flowMaterial;
     private float _frac;
-    private float _flowTime;
 
     public StatBar(Color fill, Vector2 size, RibbonKind ribbon = RibbonKind.None)
     {
         _fill = fill;
         _ribbon = ribbon;
         CustomMinimumSize = size;
+
+        if (_ribbon != RibbonKind.None)
+        {
+            var glowMaterial = new ShaderMaterial { Shader = GlowShader };
+            glowMaterial.SetShaderParameter("breathe", new Vector3(1f - fill.R, 1f - fill.G, 1f - fill.B) * RibbonBreatheSwing);
+            _flowMaterial = new ShaderMaterial { Shader = FlowShader };
+            _glow = Layer(glowMaterial, DrawGlow);
+            _flow = Layer(_flowMaterial, DrawFlow);
+            _border = Layer(null, DrawBorder);
+        }
 
         _text = HudStyle.Label(_ribbon is RibbonKind.None or RibbonKind.Plain ? 11 : 10,
                                HorizontalAlignment.Center);
@@ -40,29 +58,57 @@ public partial class StatBar : Control
             _ribbon is RibbonKind.None or RibbonKind.Plain ? 2 : 1);
         _text.SetAnchorsPreset(LayoutPreset.FullRect);
         AddChild(_text);
-        Resized += QueueRedraw;
-        SetProcess(_ribbon != RibbonKind.None);
+        Resized += Refresh;
+        Refresh();
     }
 
-    public override void _Process(double delta)
+    private Control Layer(Material? material, System.Action<Control> draw)
     {
-        if (_ribbon == RibbonKind.None) return;
-        _flowTime = Mathf.PosMod(_flowTime + (float)delta, 120f);
-        QueueRedraw();
+        var layer = new Control { MouseFilter = MouseFilterEnum.Ignore, Material = material };
+        layer.Draw += () => draw(layer);
+        AddChild(layer);
+        return layer;
     }
+
+    private void Refresh()
+    {
+        QueueRedraw();
+        if (_glow == null || _flow == null || _border == null || _flowMaterial == null) return;
+        bool filled = _frac > 0f;
+        _glow.Visible = filled;
+        _flow.Visible = filled;
+        var quad = FilledQuad(Silhouette());
+        _flowMaterial.SetShaderParameter("quad_top_left", quad[0]);
+        _flowMaterial.SetShaderParameter("quad_top_right", quad[1]);
+        _flowMaterial.SetShaderParameter("quad_bottom_right", quad[2]);
+        _flowMaterial.SetShaderParameter("quad_bottom_left", quad[3]);
+        _glow.QueueRedraw();
+        _flow.QueueRedraw();
+        _border.QueueRedraw();
+    }
+
+    private int _cur = -1, _max = -1;
+    private string? _fullText;
 
     public void Set(int cur, int max)
     {
+        if (cur == _cur && max == _max) return;
+        _cur = cur;
+        _max = max;
+        _fullText = null;
         _frac = max > 0 ? Mathf.Clamp((float)cur / max, 0f, 1f) : 0f;
         _text.Text = $"{cur} / {max}";
-        QueueRedraw();
+        Refresh();
     }
 
     public void SetFull(string text = "")
     {
+        if (_fullText == text) return;
+        _fullText = text;
+        _cur = _max = -1;
         _frac = 1f;
         _text.Text = text;
-        QueueRedraw();
+        Refresh();
     }
 
     public override void _Draw()
@@ -135,107 +181,71 @@ public partial class StatBar : Control
                  new Color(0.62f, 0.56f, 0.38f, 0.55f), false, 1f);
     }
 
+    private Vector2[] Silhouette() => _ribbon switch
+    {
+        RibbonKind.Upper => new Vector2[] { new(0, 0), new(251, 0), new(273, 23), new(23, 24) },
+        RibbonKind.Lower => new Vector2[] { new(13, 0), new(264, 1), new(245, 16), new(0, 15) },
+        _ => new Vector2[] { new(0, 0), new(Size.X, 0), new(Size.X, Size.Y), new(0, Size.Y) },
+    };
+
+    private Vector2[] FilledQuad(Vector2[] silhouette) => new[]
+    {
+        silhouette[0],
+        silhouette[0].Lerp(silhouette[1], _frac),
+        silhouette[3].Lerp(silhouette[2], _frac),
+        silhouette[3],
+    };
+
+    private Color RibbonEdge() => _fill.Darkened(_ribbon == RibbonKind.Lower ? 0.40f : 0.45f);
+
     private void DrawRibbon()
     {
-        Vector2[] silhouette = _ribbon switch
-        {
-            RibbonKind.Upper => new Vector2[] { new(0, 0), new(251, 0), new(273, 23), new(23, 24) },
-            RibbonKind.Lower => new Vector2[] { new(13, 0), new(264, 1), new(245, 16), new(0, 15) },
-            _ => new Vector2[] { new(0, 0), new(Size.X, 0), new(Size.X, Size.Y), new(0, Size.Y) },
-        };
-
+        var silhouette = Silhouette();
         DrawColoredPolygon(silhouette, new Color(0.035f, 0.038f, 0.040f, 0.90f));
+        if (_frac > 0f) DrawColoredPolygon(FilledQuad(silhouette), RibbonEdge());
+    }
 
-        if (_frac > 0f)
-        {
-            Vector2[] filled =
-            {
-                silhouette[0],
-                silhouette[0].Lerp(silhouette[1], _frac),
-                silhouette[3].Lerp(silhouette[2], _frac),
-                silhouette[3],
-            };
+    private void DrawGlow(Control layer)
+    {
+        if (_frac <= 0f) return;
+        var filled = FilledQuad(Silhouette());
+        Color edge = RibbonEdge();
+        Color core = _fill.Lightened(_ribbon == RibbonKind.Upper ? RibbonBreathe : RibbonBreathe + LowerCoreLift);
 
-            Color edge = _fill.Darkened(_ribbon == RibbonKind.Lower ? 0.40f : 0.45f);
-            float breathe = 0.19f + Mathf.Sin(_flowTime * 0.62f) * 0.025f;
-            Color core = _fill.Lightened(_ribbon == RibbonKind.Upper ? breathe : breathe + 0.08f);
-            DrawColoredPolygon(filled, edge);
+        Vector2 a = filled[0].Lerp(filled[3], 0.22f);
+        Vector2 b = filled[1].Lerp(filled[2], 0.22f);
+        Vector2 c = filled[1].Lerp(filled[2], 0.72f);
+        Vector2 d = filled[0].Lerp(filled[3], 0.72f);
+        layer.DrawPolygon(new[] { a, b, c, d },
+            new[] { edge, edge, core, core },
+            new[] { Vector2.Zero, Vector2.Zero, Vector2.Right, Vector2.Right });
+        Vector2 e = filled[0].Lerp(filled[3], 0.48f);
+        Vector2 f = filled[1].Lerp(filled[2], 0.48f);
+        Vector2 g = filled[1].Lerp(filled[2], 0.88f);
+        Vector2 j = filled[0].Lerp(filled[3], 0.88f);
+        layer.DrawPolygon(new[] { e, f, g, j },
+            new[] { core, core, edge, edge },
+            new[] { Vector2.Right, Vector2.Right, Vector2.Zero, Vector2.Zero });
+    }
 
-            Vector2 a = filled[0].Lerp(filled[3], 0.22f);
-            Vector2 b = filled[1].Lerp(filled[2], 0.22f);
-            Vector2 c = filled[1].Lerp(filled[2], 0.72f);
-            Vector2 d = filled[0].Lerp(filled[3], 0.72f);
-            DrawPolygon(new[] { a, b, c, d },
-                new[] { edge, edge, core, core });
-            Vector2 e = filled[0].Lerp(filled[3], 0.48f);
-            Vector2 f = filled[1].Lerp(filled[2], 0.48f);
-            Vector2 g = filled[1].Lerp(filled[2], 0.88f);
-            Vector2 j = filled[0].Lerp(filled[3], 0.88f);
-            DrawPolygon(new[] { e, f, g, j },
-                new[] { core, core, edge, edge });
+    private void DrawFlow(Control layer)
+    {
+        var silhouette = Silhouette();
+        var bounds = new Rect2(silhouette[0], Vector2.Zero);
+        foreach (var point in silhouette) bounds = bounds.Expand(point);
+        layer.DrawRect(bounds.Grow(FlowMargin), Colors.White);
+    }
 
-            DrawRibbonTexture(filled);
-        }
-
+    private void DrawBorder(Control layer)
+    {
+        var silhouette = Silhouette();
         Vector2[] border =
         {
             silhouette[0], silhouette[1], silhouette[2], silhouette[3], silhouette[0],
         };
-        DrawPolyline(border, new Color(_fill, 0.13f), 3f, true);
-        DrawPolyline(border, new Color(0.055f, 0.060f, 0.060f, 0.96f), 1.5f, true);
-        DrawPolyline(border, new Color(0.56f, 0.48f, 0.27f, 0.48f), 0.75f, true);
-    }
-
-    private void DrawRibbonTexture(Vector2[] quad)
-    {
-        for (int i = 0; i < 18; i++)
-        {
-            float speed = 0.010f + Hash01(i * 73 + 9) * 0.012f;
-            float u = Mathf.PosMod(Hash01(i * 17 + 3) + _flowTime * speed, 1f);
-            float v = Hash01(i * 29 + 11);
-            Vector2 top = quad[0].Lerp(quad[1], u);
-            Vector2 bottom = quad[3].Lerp(quad[2], u);
-            Vector2 p = top.Lerp(bottom, 0.20f + v * 0.60f);
-            float length = 4f + Hash01(i * 43 + 7) * 10f;
-            float available = Mathf.Max(0f, quad[1].X - p.X - 1.5f);
-            length = Mathf.Min(length, available);
-            if (length < 0.5f) continue;
-            DrawLine(p, p + new Vector2(length, 0.15f),
-                new Color(1f, 1f, 0.88f, 0.025f), 3.0f, true);
-            DrawLine(p, p + new Vector2(length, 0.15f),
-                new Color(1f, 1f, 0.90f, 0.075f), 0.7f, true);
-        }
-
-        for (int i = 0; i < 76; i++)
-        {
-            float speed = 0.006f + Hash01(i * 53 + 19) * 0.016f;
-            float u = Mathf.PosMod(Hash01(i * 31 + 5) + _flowTime * speed, 1f);
-            float v = 0.13f + Hash01(i * 47 + 13) * 0.74f;
-            Vector2 top = quad[0].Lerp(quad[1], u);
-            Vector2 bottom = quad[3].Lerp(quad[2], u);
-            Vector2 p = top.Lerp(bottom, v);
-            float radius = 0.22f + Hash01(i * 67 + 23) * 0.52f;
-            DrawCircle(p, radius, new Color(1f, 1f, 0.88f, 0.08f + radius * 0.10f));
-            if (i % 13 == 0)
-            {
-                float pulse = 0.5f + 0.5f * Mathf.Sin(_flowTime * 1.15f + i * 1.7f);
-                DrawCircle(p, 1.8f + pulse * 0.8f,
-                    new Color(1f, 1f, 0.90f, 0.025f + pulse * 0.025f));
-                DrawCircle(p, 0.45f + pulse * 0.30f,
-                    new Color(1f, 1f, 0.92f, 0.22f + pulse * 0.20f));
-            }
-        }
-    }
-
-    private static float Hash01(int value)
-    {
-        uint x = unchecked((uint)value);
-        x ^= x >> 16;
-        x *= 0x7feb352dU;
-        x ^= x >> 15;
-        x *= 0x846ca68bU;
-        x ^= x >> 16;
-        return (x & 0x00ffffffU) / 16777215f;
+        layer.DrawPolyline(border, new Color(_fill, 0.13f), 3f, true);
+        layer.DrawPolyline(border, new Color(0.055f, 0.060f, 0.060f, 0.96f), 1.5f, true);
+        layer.DrawPolyline(border, new Color(0.56f, 0.48f, 0.27f, 0.48f), 0.75f, true);
     }
 }
 

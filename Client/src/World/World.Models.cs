@@ -376,7 +376,7 @@ public partial class World
     private static Node3D MakeMapObjectEntity(string name)
     {
         var body = new Node3D();
-        body.AddChild(NameLabel(name, 2.2f));
+        AttachNameLabel(body, name, 2.2f);
         return body;
     }
 
@@ -384,7 +384,7 @@ public partial class World
     {
         var body = new MeshInstance3D { Mesh = new CapsuleMesh() };
         body.MaterialOverride = new StandardMaterial3D { AlbedoColor = color };
-        body.AddChild(NameLabel(name, 2.2f));
+        AttachNameLabel(body, name, 2.2f);
         return body;
     }
 }
