@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 
 namespace LibreKO;
 
@@ -16,12 +16,6 @@ public partial class Boot : Control
         {
             ModelSelfTest();
             return;
-        }
-
-        if (GetTree().Root.GetNodeOrNull("PluginHost") == null)
-        {
-            var host = new LibreKO.Plugins.PluginHost { Name = "PluginHost" };
-            GetTree().Root.AddChild(host);
         }
 
         Config.ApplyVideo();

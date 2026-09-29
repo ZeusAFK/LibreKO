@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -252,7 +252,7 @@ public partial class World
     {
         foreach (var e in _ents.Values)
         {
-            if (e.HasTarget || e.IsBridge) continue;
+            if (e.HasTarget) continue;
             e.Body.Position = EntityGroundPos(e.KoX, e.KoZ, e.KoY, e.Lift);
         }
     }
@@ -276,43 +276,15 @@ public partial class World
     {
         if (_selfBody == null || NoClip) return float.NegativeInfinity;
         var space = GetWorld3D().DirectSpaceState;
-        var exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
-
-        // Search from slightly above feet (StepUp = 0.7m) downwards to find walkable floors.
-        // We do NOT start high above head (e.g. 21m) because that catches ceilings, domes, and rafters.
-        // We search deep down (up to 60m below) to allow dropping off ledges into pits/arenas (e.g. Juraid boss room).
-        float searchTop = feetY + StepUp;
-        float searchBottom = Mathf.Max(feetY - 60f, -200f);
-        var curFrom = new Vector3(atGodot.X, searchTop, atGodot.Z);
-        var toLimit = new Vector3(atGodot.X, searchBottom, atGodot.Z);
-
-        for (int step = 0; step < 8; step++)
-        {
-            var q = PhysicsRayQueryParameters3D.Create(curFrom, toLimit, WorldCollisionLayer);
-            q.Exclude = exclude;
-            var hit = space.IntersectRay(q);
-            if (hit.Count == 0) break;
-
-            var normal = (Vector3)hit["normal"];
-            var pos = (Vector3)hit["position"];
-
-            if (normal.Y >= 0.5f)
-            {
-                // Verify clear headroom (1.8m) above the floor hit
-                var headQ = PhysicsRayQueryParameters3D.Create(
-                    pos + new Vector3(0, 0.1f, 0),
-                    pos + new Vector3(0, 1.8f, 0),
-                    WorldCollisionLayer);
-                headQ.Exclude = exclude;
-                if (space.IntersectRay(headQ).Count == 0)
-                    return pos.Y;
-            }
-
-            if (pos.Y - 0.05f <= toLimit.Y) break;
-            curFrom = new Vector3(curFrom.X, pos.Y - 0.05f, curFrom.Z);
-        }
-
-        return float.NegativeInfinity;
+        var from = new Vector3(atGodot.X, feetY + StepUp, atGodot.Z);
+        float bottomOffset = _zone == 87 ? 60f : 2f;
+        var to = new Vector3(atGodot.X, Mathf.Min(atGodot.Y, feetY) - bottomOffset, atGodot.Z);
+        var q = PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer);
+        q.Exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
+        var hit = space.IntersectRay(q);
+        if (hit.Count == 0) return float.NegativeInfinity;
+        if (((Vector3)hit["normal"]).Y < 0.5f) return float.NegativeInfinity;
+        return ((Vector3)hit["position"]).Y;
     }
 
     private bool CapsuleOverlaps()

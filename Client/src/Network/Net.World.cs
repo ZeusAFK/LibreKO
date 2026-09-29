@@ -293,7 +293,7 @@ public partial class Net
         e.X = p.ReadShort() / 10f;
         e.Z = p.ReadShort() / 10f;
         e.Y = p.ReadShort() / 10f;
-        e.GateOpen = p.ReadInt() != 0;
+        e.GateOpen = p.ReadInt();
         e.ObjectType = p.ReadByte();
         p.ReadShort(); p.ReadShort();
         e.Dir = p.ReadByte();

@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
@@ -525,5 +525,5 @@ public class WorldVisibilityService(
     }
 
     private static bool ShouldIncludeNpc(NpcInstance npc) =>
-        npc.IsAlive || npc.NpcId == 8110 || npc.GateOpen || npc.ObjectType != 0;
+        npc.IsAlive || npc.NpcId == JuraidMountainService.BridgeNpcId || npc.GateOpen != 0 || npc.ObjectType != 0;
 }

@@ -33,7 +33,7 @@ public sealed class NpcSpawnPacketWriter
         short X,
         short Z,
         short Y,
-        bool GateOpen,
+        int GateOpen,
         byte ObjectType,
         short Direction);
 
@@ -90,7 +90,7 @@ public sealed class NpcSpawnPacketWriter
         packet.WriteShort(npc.X);
         packet.WriteShort(npc.Z);
         packet.WriteShort(npc.Y);
-        packet.WriteInt(npc.GateOpen ? 1 : 0);
+        packet.WriteInt(npc.GateOpen);
         packet.WriteByte(npc.ObjectType);
         packet.WriteShort(NoClan);
         packet.WriteShort(NoClanMarkVersion);

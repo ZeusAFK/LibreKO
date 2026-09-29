@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -282,19 +282,6 @@ public partial class World : Node3D, IWorldContext
         _animFull = _animMid = _animFar = _animOff = _closeEntities = 0;
         foreach (var e in _ents.Values)
         {
-            if (e.IsBridge)
-            {
-                int trap = TrapNumberForPosition(e.KoX, e.KoZ);
-                bool shouldOpen = e.GateOpen || _openedGateUniqueIds.Contains(e.Id)
-                    || (trap > 0 && _unlockedJuraidTraps.Contains(trap));
-                if (shouldOpen && e.BridgePitch > BridgeLoweredPitch + 0.5f && !e.BridgeLowering)
-                {
-                    StartLoweringBridge(e);
-                }
-                TickBridge(e, dt);
-                continue;
-            }
-
             float step = dt;
             if (e.Far)
             {

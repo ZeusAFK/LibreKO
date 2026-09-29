@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -291,12 +291,8 @@ public class AdminPacketCoordinator(
                 await HandleTempleEventCommandAsync(session, TempleEvent.Chaos, ZoneId.ChaosDungeon, "Chaos Dungeon", arg);
                 break;
 
-            case "jrclose":
             case "jrcancel":
-            case "juraidclose":
-            case "juraidcancel":
             case "templecancel":
-            case "cancelevent":
                 if (await eventSchedulerService.CancelTempleEventAsync())
                 {
                     await SendNoticeAsync(session, "Temple event cancelled.");
@@ -1445,7 +1441,7 @@ public class AdminPacketCoordinator(
             return;
         }
 
-        if (arg is "close" or "cancel" or "stop" or "end")
+        if (arg is "cancel")
         {
             if (await eventSchedulerService.CancelTempleEventAsync())
             {

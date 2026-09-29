@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
@@ -53,6 +53,7 @@ public class EventSchedulerService(
                 await TickBanish();
                 await collectionRaceService.TickAsync();
                 await lotteryService.TickAsync();
+                await juraidMountainService.TickAsync();
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -230,7 +231,7 @@ public class EventSchedulerService(
             return TempleEvent.JuraidMountain;
         }
 
-        // 2. Configuration-driven start hours (Chaos, BDW, and legacy Juraid start hours)
+        // 2. Configuration-driven start hours (Chaos, BDW)
         if (now.Minute == TempleEventRules.StartMinuteOfHour)
         {
             var events = settings.Value.Events;
@@ -238,13 +239,6 @@ public class EventSchedulerService(
                 return TempleEvent.Chaos;
             if (events.BorderDefenseWarStartHours.Contains(now.Hour))
                 return TempleEvent.BorderDefenseWar;
-            if (events.JuraidMountainStartHours.Contains(now.Hour))
-            {
-                minLevel = TempleEventRules.JuraidMountainDefaultMinLevel;
-                maxLevel = TempleEventRules.JuraidMountainDefaultMaxLevel;
-                joinWindowSeconds = TempleEventRules.DefaultCountdownMinutes * 60;
-                return TempleEvent.JuraidMountain;
-            }
         }
 
         return TempleEvent.None;
@@ -339,7 +333,7 @@ public class EventSchedulerService(
         }
 
         var playersInEvent = sessionManager.GetAll()
-            .Where(s => (zoneId != 0 && s.ZoneId == zoneId) || CharacterReconnectZoneRepair.IsEventZone(s.ZoneId))
+            .Where(s => zoneId != 0 && s.ZoneId == zoneId)
             .ToList();
 
         logger.LogInformation("Warping {Count} players out of event zones back to Moradon", playersInEvent.Count);

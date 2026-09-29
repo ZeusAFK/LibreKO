@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -101,16 +101,8 @@ public partial class World
         var resolved = _self.Position;
         var (koX, koZ) = WorldToKo(resolved);
         var grounded = GroundPos(koX, koZ, resolved.Y - _selfLift, _selfLift);
-        float feetY = resolved.Y - _selfLift;
-        float objY = ObjectFloorY(grounded, feetY);
-        if (objY > float.NegativeInfinity / 2f)
-        {
-            grounded.Y = objY + _selfLift;
-        }
-        else if (_terrain == null || !_terrain.HasTerrain)
-        {
-            grounded.Y = resolved.Y;
-        }
+        float objY = ObjectFloorY(grounded, resolved.Y - _selfLift);
+        if (objY > grounded.Y || (_zone == 87 && objY > float.NegativeInfinity / 2f)) grounded.Y = objY + _selfLift;
         _self.Position = grounded;
 
         if (CapsuleOverlaps() && !StepOffLedge(grounded, resolved.Y))
@@ -188,9 +180,8 @@ public partial class World
     {
         if (_self == null) return;
         var pos = GroundPos(koX, koZ, _self.Position.Y - _selfLift, _selfLift);
-        float warpObjY = ObjectFloorY(pos, pos.Y - _selfLift);
-        if (warpObjY > float.NegativeInfinity / 2f)
-            pos.Y = warpObjY + _selfLift;
+        float objY = ObjectFloorY(pos, pos.Y - _selfLift);
+        if (objY > pos.Y || (_zone == 87 && objY > float.NegativeInfinity / 2f)) pos.Y = objY + _selfLift;
         _self.Position = pos;
         _lastFreePos = pos;
         _lastKoX = koX; _lastKoZ = koZ;

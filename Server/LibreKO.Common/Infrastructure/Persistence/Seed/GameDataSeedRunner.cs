@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
+﻿using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -70,6 +70,7 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         await Seed(new LotteryRewardSeed());
         await Seed(new LotteryScheduleSeed());
         await Seed(new JuraidMountainScheduleSeed());
+        await Seed(new JuraidMountainRewardSeed());
         await Seed(new UserBotSeed());
 
         logger.LogInformation(

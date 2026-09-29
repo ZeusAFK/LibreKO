@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -77,6 +77,7 @@ internal static class ModelBuilderExtensions
         Configure<LotteryRewardData>(modelBuilder, "LotteryRewards");
         Configure<LotteryScheduleData>(modelBuilder, "LotterySchedules");
         Configure<JuraidMountainScheduleData>(modelBuilder, "JuraidMountainSchedules");
+        Configure<JuraidMountainRewardData>(modelBuilder, "JuraidMountainRewards");
         Configure<BotMerchantData>(modelBuilder, "BotMerchants");
         Configure<UserBotData>(modelBuilder, "UserBots");
 

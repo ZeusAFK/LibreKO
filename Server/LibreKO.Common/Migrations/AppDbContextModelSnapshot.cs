@@ -1431,6 +1431,30 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("JuraidMountainSchedules", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.JuraidMountainRewardData", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<ushort>("ItemCount")
+                        .HasColumnType("smallint unsigned");
+
+                    b.Property<int>("LoyaltyPoints")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("JuraidMountainRewards", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.KingSystemData", b =>
                 {
                     b.Property<byte>("Nation")

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -18,6 +18,7 @@ public class JuraidMountainTests
     private readonly IMonsterAggressionPolicy _aggressionPolicy;
     private readonly IZoneTransitionService _zoneTransitionService;
     private readonly InstanceRoomRegistry _instanceRooms;
+    private readonly IInstanceEntryService _instanceEntryService;
     private readonly IUserNotificationService _userNotificationService;
     private readonly ILoyaltyService _loyaltyService;
     private readonly ICombatNotificationService _combatNotificationService;
@@ -40,6 +41,13 @@ public class JuraidMountainTests
                 return Task.CompletedTask;
             });
         _instanceRooms = new InstanceRoomRegistry(_sessionManager, Substitute.For<ILogger<InstanceRoomRegistry>>());
+        _instanceEntryService = new InstanceEntryService(
+            _sessionManager,
+            _gameDataService,
+            _aggressionPolicy,
+            _zoneTransitionService,
+            _instanceRooms,
+            Substitute.For<ILogger<InstanceEntryService>>());
         _userNotificationService = Substitute.For<IUserNotificationService>();
         _loyaltyService = Substitute.For<ILoyaltyService>();
         _combatNotificationService = Substitute.For<ICombatNotificationService>();
@@ -89,7 +97,34 @@ public class JuraidMountainTests
                 Countable = 1
             };
         });
+
+        _gameDataService.GetStartPosition(87).Returns(new StartPositionData
+        {
+            ZoneId = 87,
+            KarusX = 224,
+            KarusZ = 272,
+            ElmoradX = 800,
+            ElmoradZ = 748
+        });
+
+        _gameDataService.JuraidMountainRewards.Returns(
+        [
+            new JuraidMountainRewardData { Id = 1, Outcome = "Win", ItemId = JuraidMountainService.SilveryGemItemId, ItemCount = 2, LoyaltyPoints = JuraidMountainService.LoyaltyWinBonus },
+            new JuraidMountainRewardData { Id = 2, Outcome = "Loss", ItemId = JuraidMountainService.BlackGemItemId, ItemCount = 1, LoyaltyPoints = 0 },
+            new JuraidMountainRewardData { Id = 3, Outcome = "Timeout", ItemId = JuraidMountainService.BlackGemItemId, ItemCount = 1, LoyaltyPoints = 0 }
+        ]);
     }
+
+    private JuraidMountainService CreateService() => new(
+        _sessionManager,
+        _gameDataService,
+        _zoneTransitionService,
+        _instanceRooms,
+        _instanceEntryService,
+        _userNotificationService,
+        _loyaltyService,
+        _combatNotificationService,
+        _logger);
 
     private UserSession CreateTestSession(int charId, AccountNation nation)
     {
@@ -108,17 +143,7 @@ public class JuraidMountainTests
     [Fact]
     public async Task StartMatchForCallerAsync_CreatesRoomAndSpawnsMonstersAndBridges()
     {
-        var service = new JuraidMountainService(
-            _sessionManager,
-            _gameDataService,
-            _aggressionPolicy,
-            _zoneTransitionService,
-            _instanceRooms,
-            _userNotificationService,
-            _loyaltyService,
-            _combatNotificationService,
-            _logger);
-
+        var service = CreateService();
         var caller = CreateTestSession(1, AccountNation.Karus);
 
         await service.StartMatchForCallerAsync(caller);
@@ -140,17 +165,7 @@ public class JuraidMountainTests
     [Fact]
     public async Task StageClear_UnlocksBridgeProgressively()
     {
-        var service = new JuraidMountainService(
-            _sessionManager,
-            _gameDataService,
-            _aggressionPolicy,
-            _zoneTransitionService,
-            _instanceRooms,
-            _userNotificationService,
-            _loyaltyService,
-            _combatNotificationService,
-            _logger);
-
+        var service = CreateService();
         var karusPlayer = CreateTestSession(1, AccountNation.Karus);
         await service.StartMatchForCallerAsync(karusPlayer);
 
@@ -163,27 +178,17 @@ public class JuraidMountainTests
 
         // Kill first Stage 1 monster -> Bridge 1 should still be closed
         await service.OnNpcKilledAsync(stage1Monsters[0], karusPlayer);
-        bridge1!.GateOpen.Should().BeFalse();
+        bridge1!.GateOpen.Should().Be(0);
 
-        // Kill second Stage 1 monster -> Stage 1 cleared! Bridge 1 should open
+        // Kill second Stage 1 monster -> Stage 1 cleared! Bridge 1 should open with status 2
         await service.OnNpcKilledAsync(stage1Monsters[1], karusPlayer);
-        bridge1.GateOpen.Should().BeTrue();
+        bridge1.GateOpen.Should().Be(JuraidMountainService.BridgeStatusLowered);
     }
 
     [Fact]
     public async Task DevabirdKilled_DeclaresWinner_DistributesSilveryGemsAndLoyalty()
     {
-        var service = new JuraidMountainService(
-            _sessionManager,
-            _gameDataService,
-            _aggressionPolicy,
-            _zoneTransitionService,
-            _instanceRooms,
-            _userNotificationService,
-            _loyaltyService,
-            _combatNotificationService,
-            _logger);
-
+        var service = CreateService();
         var karusPlayer = CreateTestSession(1, AccountNation.Karus);
         var elmoPlayer = CreateTestSession(2, AccountNation.ElMorad);
 
@@ -263,16 +268,7 @@ public class JuraidMountainTests
     [Fact]
     public async Task JuraidMountainService_StartMatchForCaller_EnforcesMinLevel()
     {
-        var service = new JuraidMountainService(
-            _sessionManager,
-            _gameDataService,
-            _aggressionPolicy,
-            _zoneTransitionService,
-            _instanceRooms,
-            _userNotificationService,
-            _loyaltyService,
-            _combatNotificationService,
-            _logger);
+        var service = CreateService();
 
         _gameDataService.JuraidMountainSchedules.Returns([
             new JuraidMountainScheduleData { Id = 1, MinLevel = 40, MaxLevel = 83 }
@@ -295,5 +291,3 @@ public class JuraidMountainTests
         highLevelCaller.ZoneId.Should().Be((byte)ZoneId.JuradMountain);
     }
 }
-
-

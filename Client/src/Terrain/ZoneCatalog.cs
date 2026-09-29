@@ -1,4 +1,4 @@
-namespace LibreKO;
+﻿namespace LibreKO;
 
 public static class ZoneCatalog
 {

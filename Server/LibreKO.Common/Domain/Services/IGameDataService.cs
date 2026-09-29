@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 
 namespace LibreKO.Common.Domain.Services;
@@ -53,6 +53,7 @@ public interface IGameDataService
     ILookup<int, LotteryRewardData> LotteryRewardsByEvent { get; }
     ILookup<int, LotteryScheduleData> LotterySchedulesByEvent { get; }
     IReadOnlyList<JuraidMountainScheduleData> JuraidMountainSchedules { get; }
+    IReadOnlyList<JuraidMountainRewardData> JuraidMountainRewards { get; }
     SiegeWarfareData? SiegeWarfare { get; }
     bool IsLoaded { get; }
 

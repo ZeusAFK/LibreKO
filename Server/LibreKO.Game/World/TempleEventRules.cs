@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 
 namespace LibreKO.Game.World;
 

@@ -23,7 +23,7 @@ public class GuardSummonTests : GameTestBase
         var packet = new Packet(GameOpcodes.GS_NPC_INOUT);
         NpcSpawnPacketWriter.WriteRecord(packet, new NpcSpawnPacketWriter.NpcState(
             1, 8850, true, 6200, 0, NpcData.TypeGuardSummon, 100, 0, 0,
-            (byte)AccountNation.ElMorad, 83, 100, 100, 0, false, 0, 0));
+            (byte)AccountNation.ElMorad, 83, 100, 100, 0, 0, 0, 0));
 
         packet.ResetOffset();
         for (var i = 0; i < NationRecordOffset; i++)

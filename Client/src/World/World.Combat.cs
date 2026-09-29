@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Godot;
 
 namespace LibreKO;
@@ -535,12 +535,6 @@ public partial class World
         }
         if (_ents.TryGetValue(victimId, out var e))
         {
-            if (e.IsBridge)
-            {
-                StartLoweringBridge(e);
-                return;
-            }
-
             if (killerId == _myId)
                 CombatLogAdd($"You defeated {e.Name}.", CombatLogKind.Outgoing);
             LayOutCorpse(e, settled: false);

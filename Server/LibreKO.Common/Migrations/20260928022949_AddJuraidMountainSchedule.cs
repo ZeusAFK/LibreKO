@@ -17,11 +17,31 @@ namespace LibreKO.Common.Migrations
                     Id = table.Column<int>(type: "int", nullable: false),
                     Day = table.Column<int>(type: "int", nullable: true),
                     Hour = table.Column<byte>(type: "tinyint unsigned", nullable: false),
-                    Minute = table.Column<byte>(type: "tinyint unsigned", nullable: false)
+                    Minute = table.Column<byte>(type: "tinyint unsigned", nullable: false),
+                    MinLevel = table.Column<byte>(type: "tinyint unsigned", nullable: false, defaultValue: (byte)40),
+                    MaxLevel = table.Column<byte>(type: "tinyint unsigned", nullable: false, defaultValue: (byte)83),
+                    CountdownMinutes = table.Column<byte>(type: "tinyint unsigned", nullable: false, defaultValue: (byte)10)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_JuraidMountainSchedules", x => x.Id);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "JuraidMountainRewards",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    Outcome = table.Column<string>(type: "varchar(32)", maxLength: 32, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ItemId = table.Column<int>(type: "int", nullable: false),
+                    ItemCount = table.Column<ushort>(type: "smallint unsigned", nullable: false),
+                    LoyaltyPoints = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_JuraidMountainRewards", x => x.Id);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
         }
@@ -29,6 +49,9 @@ namespace LibreKO.Common.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "JuraidMountainRewards");
+
             migrationBuilder.DropTable(
                 name: "JuraidMountainSchedules");
         }

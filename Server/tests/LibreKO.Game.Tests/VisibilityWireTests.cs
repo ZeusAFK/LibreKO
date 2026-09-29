@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
@@ -13,7 +13,7 @@ public class VisibilityWireTests
     private static NpcSpawnPacketWriter.NpcState Npc(short direction) => new(
         UniqueId: 9001, NpcId: 30200, IsMonster: false, ModelId: 30200, SellingGroup: 0,
         NpcType: 11, Size: 100, WeaponRight: 0, WeaponLeft: 0, Nation: 1, Level: 20,
-        X: 5430, Z: 3770, Y: 120, GateOpen: false, ObjectType: 0, Direction: direction);
+        X: 5430, Z: 3770, Y: 120, GateOpen: 0, ObjectType: 0, Direction: direction);
 
     private static Packet Record(short direction)
     {

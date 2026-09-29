@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -16,6 +16,7 @@ public interface IJuraidMountainService
     Task StartMatchForCallerAsync(UserSession session, int durationSeconds = TempleEventRules.JuraidMountainDurationSeconds);
     Task OnNpcKilledAsync(NpcInstance npc, UserSession killer);
     Task CancelAllMatchesAsync();
+    Task TickAsync();
 }
 
 public sealed class JuraidMatch
@@ -27,7 +28,6 @@ public sealed class JuraidMatch
     public HashSet<int> KarusMembers { get; } = [];
     public HashSet<int> ElmoradMembers { get; } = [];
 
-    // Stage remaining monsters (tracked by unique NPC ID)
     public HashSet<int> KarusStage1NpcIds { get; } = [];
     public HashSet<int> KarusStage2NpcIds { get; } = [];
     public HashSet<int> KarusStage3NpcIds { get; } = [];
@@ -42,21 +42,22 @@ public sealed class JuraidMatch
     public int KarusPartyIndex { get; set; } = -1;
     public int ElmoradPartyIndex { get; set; } = -1;
 
-    // Bridges indexed by TrapNumber (1..6)
     public Dictionary<int, NpcInstance> BridgesByTrap { get; } = [];
 
     public NpcInstance? DevabirdNpc { get; set; }
     public bool DevabirdKilled { get; set; }
     public AccountNation? WinnerNation { get; set; }
     public bool IsCompleted { get; set; }
+    public DateTime? FinishedAtUtc { get; set; }
+    public bool ReturnNoticeSent { get; set; }
 }
 
 public sealed class JuraidMountainService(
     SessionManager sessionManager,
     IGameDataService gameDataService,
-    IMonsterAggressionPolicy aggressionPolicy,
     IZoneTransitionService zoneTransitionService,
     InstanceRoomRegistry instanceRooms,
+    IInstanceEntryService instanceEntryService,
     IUserNotificationService userNotificationService,
     ILoyaltyService loyaltyService,
     ICombatNotificationService combatNotificationService,
@@ -64,14 +65,32 @@ public sealed class JuraidMountainService(
 {
     private const byte JuraidZoneId = (byte)ZoneId.JuradMountain;
 
-    // Start coordinates for Karus and El Morad (Safe platforms at room entrances)
-    public const float KarusStartX = 224f;
-    public const float KarusStartY = 1.58f;
-    public const float KarusStartZ = 272f;
+    public const int DevabirdNpcId = 8106;
+    public const int BridgeNpcId = 8110;
+    public const int KarusMerchantNpcId1 = 8111;
+    public const int KarusMerchantNpcId2 = 8112;
+    public const int ElmoradMerchantNpcId1 = 8161;
+    public const int ElmoradMerchantNpcId2 = 8162;
 
-    public const float ElmoradStartX = 800f;
-    public const float ElmoradStartY = 0f;
-    public const float ElmoradStartZ = 748f;
+    public const byte BridgeStatusLowered = 2;
+
+    private const int KarusWestMaxX = 400;
+    private const int KarusStage1MinZ = 540;
+    private const int KarusStage1MaxZ = 650;
+    private const int KarusStage2MinZ = 800;
+
+    private const int ElmoradEastMinX = 600;
+    private const int ElmoradStage1MinZ = 350;
+    private const int ElmoradStage1MaxZ = 500;
+    private const int ElmoradStage2MaxZ = 250;
+
+    private const int CentralMinX = 400;
+    private const int CentralMaxX = 600;
+
+    private const float DefaultKarusStartX = 224f;
+    private const float DefaultKarusStartZ = 272f;
+    private const float DefaultElmoradStartX = 800f;
+    private const float DefaultElmoradStartZ = 748f;
 
     private const float MoradonTownX = 816f;
     private const float MoradonTownZ = 532f;
@@ -80,6 +99,9 @@ public sealed class JuraidMountainService(
     public const int BlackGemItemId = 389205000;
     public const int LoyaltyWinBonus = 500;
     public const int MaxPlayersPerNationPerRoom = 8;
+
+    public const int FinishedMatchClosureDelaySeconds = 20;
+    public const int FinishedMatchWarningDelaySeconds = 10;
 
     private readonly ConcurrentDictionary<ushort, JuraidMatch> _activeMatches = new();
     private int _nextSetCounter;
@@ -106,7 +128,6 @@ public sealed class JuraidMountainService(
         logger.LogInformation("Starting Juraid Mountain matches: {KarusCount} Karus, {ElmoCount} El Morad",
             karusSessions.Count, elmoSessions.Count);
 
-        // Group into matches of up to 8 Karus and 8 El Morad
         int karusIdx = 0;
         int elmoIdx = 0;
 
@@ -147,7 +168,6 @@ public sealed class JuraidMountainService(
 
     private async Task<JuraidMatch> CreateAndLaunchMatchAsync(List<UserSession> participants, int durationSeconds)
     {
-        // Sets 1 to 5 correspond to different monster layouts in NpcPositions.json
         short set = (short)((Interlocked.Increment(ref _nextSetCounter) - 1) % 5 + 1);
 
         var duration = TimeSpan.FromSeconds(durationSeconds > 0 ? durationSeconds : TempleEventRules.JuraidMountainDurationSeconds);
@@ -171,17 +191,24 @@ public sealed class JuraidMountainService(
 
         _activeMatches[match.RoomId] = match;
 
-        // 1. Populate all 35 monsters and classify them into stages
-        PopulateMatchMonsters(match);
+        instanceEntryService.Populate(match.InstanceRoom);
+        foreach (var npc in match.InstanceRoom.Npcs)
+        {
+            ClassifyMonster(match, npc);
+        }
 
-        // 2. Warp participants into their respective starting positions
+        var startPos = gameDataService.GetStartPosition(JuraidZoneId);
+
         foreach (var session in participants)
         {
             instanceRooms.Join(instanceRoom, session);
             session.InstanceReturn = (session.ZoneId, session.X, session.Z);
 
-            float startX = session.Nation == AccountNation.Karus ? KarusStartX : ElmoradStartX;
-            float startZ = session.Nation == AccountNation.Karus ? KarusStartZ : ElmoradStartZ;
+            var (startX, startZ) = startPos != null
+                ? startPos.RandomSpawn(session.Nation)
+                : (session.Nation == AccountNation.Karus
+                    ? (DefaultKarusStartX, DefaultKarusStartZ)
+                    : (DefaultElmoradStartX, DefaultElmoradStartZ));
 
             try
             {
@@ -196,7 +223,6 @@ public sealed class JuraidMountainService(
             }
         }
 
-        // 3. Auto-form nation parties (up to 8 players per party per nation)
         var karusSessions = participants.Where(p => p.Nation == AccountNation.Karus).ToList();
         var elmoSessions = participants.Where(p => p.Nation == AccountNation.ElMorad).ToList();
 
@@ -209,115 +235,37 @@ public sealed class JuraidMountainService(
         return match;
     }
 
-    private void PopulateMatchMonsters(JuraidMatch match)
+    private static void ClassifyMonster(JuraidMatch match, NpcInstance npc)
     {
-        var positions = gameDataService.NpcPositions
-            .Where(pos => pos.ZoneId == JuraidZoneId && pos.Room == match.Set)
-            .ToList();
-
-        if (positions.Count == 0)
-        {
-            // Fallback to room 1 positions if set has no positions
-            positions = gameDataService.NpcPositions
-                .Where(pos => pos.ZoneId == JuraidZoneId && pos.Room == 1)
-                .ToList();
-        }
-
-        // Ensure all 6 bridges (Trap 1..6) are present in the match room
-        for (int trap = 1; trap <= 6; trap++)
-        {
-            if (!positions.Any(p => p.NpcId == 8110 && p.TrapNumber == trap))
-            {
-                var bridgePos = gameDataService.NpcPositions
-                    .FirstOrDefault(p => p.ZoneId == JuraidZoneId && p.NpcId == 8110 && p.TrapNumber == trap);
-                if (bridgePos != null)
-                    positions.Add(bridgePos);
-            }
-        }
-
-        foreach (var pos in positions)
-        {
-            var npcData = gameDataService.GetSpawnProto(pos);
-            if (npcData == null)
-            {
-                logger.LogWarning("Juraid set {Set} names missing NPC {NpcId}", match.Set, pos.NpcId);
-                continue;
-            }
-
-            var count = pos.NumNPC > 1 ? pos.NumNPC : 1;
-            for (var i = 0; i < count; i++)
-            {
-                var npc = NpcInstance.FromData(npcData, pos, 0);
-                npc.Room = match.RoomId;
-                npc.RespawnType = NpcRespawnType.Never;
-
-                if (npc.NpcId == 8110)
-                {
-                    npc.IsAggressive = false;
-                    npc.Direction = pos.TrapNumber switch
-                    {
-                        1 => 0,     // Karus Room 1 -> 2: North
-                        2 => 90,    // Karus Room 2 -> 3: East
-                        3 => 180,   // Karus Room 3 -> Center: South
-                        4 => 180,   // El Morad Room 1 -> 2: South
-                        5 => 270,   // El Morad Room 2 -> 3: West
-                        6 => 0,     // El Morad Room 3 -> Center: North
-                        _ => 0
-                    };
-                }
-                else
-                {
-                    aggressionPolicy.Apply(npc);
-                }
-
-                var height = sessionManager.Maps?.GetHeight(npc.ZoneId, npc.X, npc.Z) ?? 0f;
-                npc.Y = height;
-                npc.SpawnY = height;
-
-                sessionManager.Regions.SpawnNpc(npc);
-                match.InstanceRoom.Npcs.Add(npc);
-
-                ClassifyMonster(match, npc, pos);
-            }
-        }
-    }
-
-    private static void ClassifyMonster(JuraidMatch match, NpcInstance npc, NpcPosData pos)
-    {
-        if (npc.NpcId == 8106)
+        if (npc.NpcId == DevabirdNpcId)
         {
             match.DevabirdNpc = npc;
             return;
         }
 
-        if (npc.NpcId == 8110)
+        if (npc.NpcId == BridgeNpcId)
         {
-            // Bridge of Summoning
-            match.BridgesByTrap[pos.TrapNumber] = npc;
+            match.BridgesByTrap[npc.TrapNumber] = npc;
             return;
         }
 
-        // Merchants
-        if (npc.NpcId is 8111 or 8112 or 8161 or 8162)
+        if (npc.NpcId is KarusMerchantNpcId1 or KarusMerchantNpcId2 or ElmoradMerchantNpcId1 or ElmoradMerchantNpcId2)
             return;
 
-        int x = pos.LeftX;
-        int z = pos.TopZ;
+        float x = npc.X;
+        float z = npc.Z;
 
-        // Karus side
-        if (x < 400 && z >= 540 && z <= 650)
+        if (x < KarusWestMaxX && z >= KarusStage1MinZ && z <= KarusStage1MaxZ)
             match.KarusStage1NpcIds.Add(npc.UniqueId);
-        else if (x < 400 && z >= 800)
+        else if (x < KarusWestMaxX && z >= KarusStage2MinZ)
             match.KarusStage2NpcIds.Add(npc.UniqueId);
-        else if (x >= 400 && x <= 600 && z >= 800)
+        else if (x >= CentralMinX && x <= CentralMaxX && z >= KarusStage2MinZ)
             match.KarusStage3NpcIds.Add(npc.UniqueId);
-
-        // El Morad side
-        else if (x > 600 && z >= 350 && z <= 500)
+        else if (x > ElmoradEastMinX && z >= ElmoradStage1MinZ && z <= ElmoradStage1MaxZ)
             match.ElmoradStage1NpcIds.Add(npc.UniqueId);
-        else if (x > 600 && z <= 250)
+        else if (x > ElmoradEastMinX && z <= ElmoradStage2MaxZ)
             match.ElmoradStage2NpcIds.Add(npc.UniqueId);
-        else if (x >= 400 && x <= 600 && z <= 250)
+        else if (x >= CentralMinX && x <= CentralMaxX && z <= ElmoradStage2MaxZ)
             match.ElmoradStage3NpcIds.Add(npc.UniqueId);
     }
 
@@ -329,59 +277,84 @@ public sealed class JuraidMountainService(
         if (!_activeMatches.TryGetValue(npc.Room, out var match))
             return;
 
-        if (match.IsCompleted)
-            return;
+        int bridgeToUnlock = 0;
+        string? noticeMessage = null;
+        bool devabirdTriggered = false;
 
-        // 1. Devabird defeat -> match victory
-        if (npc.NpcId == 8106)
+        lock (match)
+        {
+            if (match.IsCompleted)
+                return;
+
+            if (npc.NpcId == DevabirdNpcId)
+            {
+                if (!match.DevabirdKilled)
+                {
+                    match.DevabirdKilled = true;
+                    match.IsCompleted = true;
+                    match.FinishedAtUtc = DateTime.UtcNow;
+                    devabirdTriggered = true;
+                }
+            }
+            else if (npc.NpcId == BridgeNpcId)
+            {
+                noticeMessage = "### [Juraid Mountain] A bridge barrier has collapsed! ###";
+            }
+            else
+            {
+                if (match.KarusStage1NpcIds.Remove(npc.UniqueId) && match.KarusStage1NpcIds.Count == 0)
+                {
+                    match.KarusStage = 2;
+                    bridgeToUnlock = 1;
+                    noticeMessage = "### [Juraid Mountain] Karus has cleared Stage 1! Bridge 1 is now OPEN! ###";
+                }
+                else if (match.KarusStage2NpcIds.Remove(npc.UniqueId) && match.KarusStage2NpcIds.Count == 0)
+                {
+                    match.KarusStage = 3;
+                    bridgeToUnlock = 2;
+                    noticeMessage = "### [Juraid Mountain] Karus has cleared Stage 2! Bridge 2 is now OPEN! ###";
+                }
+                else if (match.KarusStage3NpcIds.Remove(npc.UniqueId) && match.KarusStage3NpcIds.Count == 0)
+                {
+                    match.KarusStage = 4;
+                    bridgeToUnlock = 3;
+                    noticeMessage = "### [Juraid Mountain] Karus has cleared Stage 3! Central bridge to Devabird is now OPEN! ###";
+                }
+                else if (match.ElmoradStage1NpcIds.Remove(npc.UniqueId) && match.ElmoradStage1NpcIds.Count == 0)
+                {
+                    match.ElmoradStage = 2;
+                    bridgeToUnlock = 4;
+                    noticeMessage = "### [Juraid Mountain] El Morad has cleared Stage 1! Bridge 1 is now OPEN! ###";
+                }
+                else if (match.ElmoradStage2NpcIds.Remove(npc.UniqueId) && match.ElmoradStage2NpcIds.Count == 0)
+                {
+                    match.ElmoradStage = 3;
+                    bridgeToUnlock = 5;
+                    noticeMessage = "### [Juraid Mountain] El Morad has cleared Stage 2! Bridge 2 is now OPEN! ###";
+                }
+                else if (match.ElmoradStage3NpcIds.Remove(npc.UniqueId) && match.ElmoradStage3NpcIds.Count == 0)
+                {
+                    match.ElmoradStage = 4;
+                    bridgeToUnlock = 6;
+                    noticeMessage = "### [Juraid Mountain] El Morad has cleared Stage 3! Central bridge to Devabird is now OPEN! ###";
+                }
+            }
+        }
+
+        if (devabirdTriggered)
         {
             await HandleDevabirdKilledAsync(match, killer);
             return;
         }
 
-        // 2. Direct kill of Bridge of Summoning
-        if (npc.NpcId == 8110)
+        if (bridgeToUnlock > 0)
         {
-            await SendNoticeToRoomAsync(match, "### [Juraid Mountain] A bridge barrier has collapsed! ###");
-            return;
+            await UnlockBridgeAsync(match, bridgeToUnlock);
         }
 
-        // 3. Stage monster kills
-        if (match.KarusStage1NpcIds.Remove(npc.UniqueId) && match.KarusStage1NpcIds.Count == 0)
+        if (noticeMessage != null)
         {
-            match.KarusStage = 2;
-            await UnlockBridgeAsync(match, 1);
-            await SendNoticeToRoomAsync(match, "### [Juraid Mountain] Karus has cleared Stage 1! Bridge 1 is now OPEN! ###");
-        }
-        else if (match.KarusStage2NpcIds.Remove(npc.UniqueId) && match.KarusStage2NpcIds.Count == 0)
-        {
-            match.KarusStage = 3;
-            await UnlockBridgeAsync(match, 2);
-            await SendNoticeToRoomAsync(match, "### [Juraid Mountain] Karus has cleared Stage 2! Bridge 2 is now OPEN! ###");
-        }
-        else if (match.KarusStage3NpcIds.Remove(npc.UniqueId) && match.KarusStage3NpcIds.Count == 0)
-        {
-            match.KarusStage = 4;
-            await UnlockBridgeAsync(match, 3);
-            await SendNoticeToRoomAsync(match, "### [Juraid Mountain] Karus has cleared Stage 3! Central bridge to Devabird is now OPEN! ###");
-        }
-        else if (match.ElmoradStage1NpcIds.Remove(npc.UniqueId) && match.ElmoradStage1NpcIds.Count == 0)
-        {
-            match.ElmoradStage = 2;
-            await UnlockBridgeAsync(match, 4);
-            await SendNoticeToRoomAsync(match, "### [Juraid Mountain] El Morad has cleared Stage 1! Bridge 1 is now OPEN! ###");
-        }
-        else if (match.ElmoradStage2NpcIds.Remove(npc.UniqueId) && match.ElmoradStage2NpcIds.Count == 0)
-        {
-            match.ElmoradStage = 3;
-            await UnlockBridgeAsync(match, 5);
-            await SendNoticeToRoomAsync(match, "### [Juraid Mountain] El Morad has cleared Stage 2! Bridge 2 is now OPEN! ###");
-        }
-        else if (match.ElmoradStage3NpcIds.Remove(npc.UniqueId) && match.ElmoradStage3NpcIds.Count == 0)
-        {
-            match.ElmoradStage = 4;
-            await UnlockBridgeAsync(match, 6);
-            await SendNoticeToRoomAsync(match, "### [Juraid Mountain] El Morad has cleared Stage 3! Central bridge to Devabird is now OPEN! ###");
+            await SendNoticeToRoomAsync(match, noticeMessage);
         }
     }
 
@@ -391,29 +364,23 @@ public sealed class JuraidMountainService(
         {
             try
             {
-                bridgeNpc.GateOpen = true;
-                bridgeNpc.Hp = bridgeNpc.MaxHp > 0 ? bridgeNpc.MaxHp : 1000;
+                bridgeNpc.GateOpen = BridgeStatusLowered;
 
-                var gatePacket = MiscPacketWriter.ObjectGateFlag(1, bridgeNpc.UniqueId, true);
-                var deadPacket = DeathPacketWriter.NpcDeath(bridgeNpc.UniqueId);
-                var spawnPacket = NpcPacketMapper.BuildInOutPacket(bridgeNpc, InOutType.In);
+                var outPacket = NpcPacketMapper.BuildInOutPacket(bridgeNpc, InOutType.Out);
+                var inPacket = NpcPacketMapper.BuildInOutPacket(bridgeNpc, InOutType.In);
 
-                // Broadcast directly to all participants in this match room (regardless of region distance)
                 foreach (var charId in match.Participants)
                 {
                     var session = sessionManager.GetByCharacterId(charId);
                     if (session != null && session.ZoneId == JuraidZoneId)
                     {
-                        await session.Client.SendPacket(gatePacket);
-                        await session.Client.SendPacket(deadPacket);
-                        await session.Client.SendPacket(spawnPacket);
+                        await session.Client.SendPacket(outPacket);
+                        await session.Client.SendPacket(inPacket);
                     }
                 }
 
-                // Also broadcast into surrounding regions
-                await sessionManager.Regions.BroadcastFromNpc(bridgeNpc, gatePacket);
-                await sessionManager.Regions.BroadcastFromNpc(bridgeNpc, deadPacket);
-                await sessionManager.Regions.BroadcastFromNpc(bridgeNpc, spawnPacket);
+                await sessionManager.Regions.BroadcastFromNpc(bridgeNpc, outPacket);
+                await sessionManager.Regions.BroadcastFromNpc(bridgeNpc, inPacket);
 
                 logger.LogInformation("Bridge {Trap} unlocked and lowered in Juraid room {Room}", trapNumber, match.RoomId);
             }
@@ -424,14 +391,17 @@ public sealed class JuraidMountainService(
         }
     }
 
+    private (int ItemId, ushort ItemCount, int Loyalty) GetReward(string outcome, int fallbackItemId, ushort fallbackCount, int fallbackLoyalty)
+    {
+        var reward = gameDataService.JuraidMountainRewards?.FirstOrDefault(r => r.Outcome.Equals(outcome, StringComparison.OrdinalIgnoreCase));
+        if (reward != null)
+            return (reward.ItemId, (ushort)reward.ItemCount, reward.LoyaltyPoints);
+
+        return (fallbackItemId, fallbackCount, fallbackLoyalty);
+    }
+
     private async Task HandleDevabirdKilledAsync(JuraidMatch match, UserSession killer)
     {
-        if (match.DevabirdKilled)
-            return;
-
-        match.DevabirdKilled = true;
-        match.IsCompleted = true;
-
         var winnerNation = killer.Nation != AccountNation.None ? killer.Nation : AccountNation.Karus;
         match.WinnerNation = winnerNation;
 
@@ -440,7 +410,9 @@ public sealed class JuraidMountainService(
             $"### [Juraid Mountain] The {winnerName} nation has slain Devabird and claimed victory! ###");
         await sessionManager.BroadcastToAll(noticePkt);
 
-        // Distribute rewards to participants in this room
+        var (winItemId, winItemCount, winLoyalty) = GetReward("Win", SilveryGemItemId, 2, LoyaltyWinBonus);
+        var (lossItemId, lossItemCount, _) = GetReward("Loss", BlackGemItemId, 1, 0);
+
         foreach (var charId in match.Participants)
         {
             var member = sessionManager.GetByCharacterId(charId);
@@ -449,36 +421,25 @@ public sealed class JuraidMountainService(
 
             if (member.Nation == winnerNation)
             {
-                await TryGiveItemAsync(member, SilveryGemItemId, 2);
-                await loyaltyService.ChangeAsync(member, LoyaltyWinBonus);
+                if (winItemId > 0 && winItemCount > 0)
+                    await TryGiveItemAsync(member, winItemId, winItemCount);
+                if (winLoyalty > 0)
+                    await loyaltyService.ChangeAsync(member, winLoyalty);
+
                 await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
                     (byte)member.Nation,
-                    $"[Juraid Mountain] Victory! You have received 2x Silvery Gem and {LoyaltyWinBonus} National Points!"));
+                    $"[Juraid Mountain] Victory! You have received {winItemCount}x {gameDataService.GetItem(winItemId)?.Name ?? "Gem"} and {winLoyalty} National Points!"));
             }
             else
             {
-                await TryGiveItemAsync(member, BlackGemItemId, 1);
+                if (lossItemId > 0 && lossItemCount > 0)
+                    await TryGiveItemAsync(member, lossItemId, lossItemCount);
+
                 await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
                     (byte)member.Nation,
-                    "[Juraid Mountain] Defeat! You have received 1x Black Gem for your participation."));
+                    $"[Juraid Mountain] Defeat! You have received {lossItemCount}x {gameDataService.GetItem(lossItemId)?.Name ?? "Gem"} for your participation."));
             }
         }
-
-        // Schedule delayed return to Moradon after 20 seconds
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(10000);
-                await SendNoticeToRoomAsync(match, "### [Juraid Mountain] Returning to Moradon in 10 seconds... ###");
-                await Task.Delay(10000);
-                await CloseMatchAsync(match);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error while finalizing Juraid room {Room}", match.RoomId);
-            }
-        });
     }
 
     public async Task CancelAllMatchesAsync()
@@ -488,46 +449,51 @@ public sealed class JuraidMountainService(
 
         logger.LogInformation("Cancelling / finalizing all active Juraid Mountain matches ({Count})", _activeMatches.Count);
 
+        var (winItemId, winItemCount, _) = GetReward("Win", SilveryGemItemId, 2, LoyaltyWinBonus);
+        var (timeoutItemId, timeoutItemCount, _) = GetReward("Timeout", BlackGemItemId, 1, 0);
+
         foreach (var match in _activeMatches.Values.ToList())
         {
-            if (!match.IsCompleted)
+            lock (match)
             {
+                if (match.IsCompleted)
+                    continue;
+
                 match.IsCompleted = true;
+            }
 
-                // If Devabird was not killed, check stage progression to determine outcome
-                AccountNation? outcomeNation = null;
-                if (match.KarusStage > match.ElmoradStage)
-                    outcomeNation = AccountNation.Karus;
-                else if (match.ElmoradStage > match.KarusStage)
-                    outcomeNation = AccountNation.ElMorad;
+            AccountNation? outcomeNation = null;
+            if (match.KarusStage > match.ElmoradStage)
+                outcomeNation = AccountNation.Karus;
+            else if (match.ElmoradStage > match.KarusStage)
+                outcomeNation = AccountNation.ElMorad;
 
-                foreach (var charId in match.Participants)
+            foreach (var charId in match.Participants)
+            {
+                var member = sessionManager.GetByCharacterId(charId);
+                if (member == null || member.Room != match.RoomId || member.ZoneId != JuraidZoneId)
+                    continue;
+
+                if (outcomeNation != null && member.Nation == outcomeNation)
                 {
-                    var member = sessionManager.GetByCharacterId(charId);
-                    if (member == null || member.Room != match.RoomId || member.ZoneId != JuraidZoneId)
-                        continue;
-
-                    if (outcomeNation != null && member.Nation == outcomeNation)
-                    {
-                        await TryGiveItemAsync(member, SilveryGemItemId, 1);
-                        await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                            (byte)member.Nation,
-                            "[Juraid Mountain] Time expired! Your nation advanced further and received 1x Silvery Gem!"));
-                    }
-                    else
-                    {
-                        await TryGiveItemAsync(member, BlackGemItemId, 1);
-                        await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                            (byte)member.Nation,
-                            "[Juraid Mountain] Event ended! You received 1x Black Gem for participating."));
-                    }
+                    var count = (ushort)Math.Max(1, winItemCount / 2);
+                    await TryGiveItemAsync(member, winItemId, count);
+                    await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                        (byte)member.Nation,
+                        $"[Juraid Mountain] Time expired! Your nation advanced further and received {count}x {gameDataService.GetItem(winItemId)?.Name ?? "Gem"}!"));
+                }
+                else
+                {
+                    await TryGiveItemAsync(member, timeoutItemId, timeoutItemCount);
+                    await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                        (byte)member.Nation,
+                        $"[Juraid Mountain] Event ended! You received {timeoutItemCount}x {gameDataService.GetItem(timeoutItemId)?.Name ?? "Gem"} for participating."));
                 }
             }
 
             await CloseMatchAsync(match);
         }
 
-        // Sweep any remaining players who are still in Juraid Mountain back to Moradon
         foreach (var session in sessionManager.GetAll())
         {
             if (session.ZoneId == JuraidZoneId)
@@ -545,10 +511,33 @@ public sealed class JuraidMountainService(
         }
     }
 
+    public async Task TickAsync()
+    {
+        if (_activeMatches.IsEmpty)
+            return;
+
+        var now = DateTime.UtcNow;
+        foreach (var match in _activeMatches.Values.ToList())
+        {
+            if (!match.IsCompleted || match.FinishedAtUtc == null)
+                continue;
+
+            var elapsed = now - match.FinishedAtUtc.Value;
+            if (!match.ReturnNoticeSent && elapsed >= TimeSpan.FromSeconds(FinishedMatchWarningDelaySeconds))
+            {
+                match.ReturnNoticeSent = true;
+                await SendNoticeToRoomAsync(match, "### [Juraid Mountain] Returning to Moradon in 10 seconds... ###");
+            }
+
+            if (elapsed >= TimeSpan.FromSeconds(FinishedMatchClosureDelaySeconds))
+            {
+                await CloseMatchAsync(match);
+            }
+        }
+    }
 
     private async Task CloseMatchAsync(JuraidMatch match)
     {
-        // Disband auto-parties upon match conclusion
         await DisbandPartyAsync(match.KarusPartyIndex);
         await DisbandPartyAsync(match.ElmoradPartyIndex);
 
@@ -629,7 +618,6 @@ public sealed class JuraidMountainService(
         if (sessions.Count < 2)
             return -1;
 
-        // Ensure participants leave any prior party from before entering
         foreach (var session in sessions)
         {
             await LeavePreviousPartyIfAnyAsync(session);
@@ -648,7 +636,6 @@ public sealed class JuraidMountainService(
             member.IsPartyLeader = false;
         }
 
-        // Broadcast member info to everyone in the party so the party HUD displays all members
         for (int i = 0; i < PartyGroup.MaxMembers; i++)
         {
             if (party.MemberIds[i] < 0)

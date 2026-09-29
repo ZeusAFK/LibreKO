@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
@@ -55,6 +55,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
     public ILookup<int, LotteryRewardData> LotteryRewardsByEvent { get; private set; } = Enumerable.Empty<LotteryRewardData>().ToLookup(x => x.LotteryId);
     public ILookup<int, LotteryScheduleData> LotterySchedulesByEvent { get; private set; } = Enumerable.Empty<LotteryScheduleData>().ToLookup(x => x.LotteryId);
     public IReadOnlyList<JuraidMountainScheduleData> JuraidMountainSchedules { get; private set; } = [];
+    public IReadOnlyList<JuraidMountainRewardData> JuraidMountainRewards { get; private set; } = [];
     public ILookup<int, ItemOpData> ItemOpsByItemId { get; private set; } = Enumerable.Empty<ItemOpData>().ToLookup(x => x.ItemId);
     public IReadOnlyDictionary<int, string> ServerResourceTable { get; private set; } = new Dictionary<int, string>();
     public IReadOnlyDictionary<byte, PremiumItemData> PremiumItemTable { get; private set; } = new Dictionary<byte, PremiumItemData>();
@@ -316,6 +317,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
             LotteryRewardsByEvent = await LoadLookupAsync(db.LotteryRewards.OrderBy(x => x.Place), x => x.LotteryId, "lottery rewards", cancellationToken);
             LotterySchedulesByEvent = await LoadLookupAsync(db.LotterySchedules, x => x.LotteryId, "lottery schedules", cancellationToken);
             JuraidMountainSchedules = await LoadListAsync(db.JuraidMountainSchedules.OrderBy(x => x.Id), "juraid mountain schedules", cancellationToken);
+            JuraidMountainRewards = await LoadListAsync(db.JuraidMountainRewards.OrderBy(x => x.Id), "juraid mountain rewards", cancellationToken);
             SiegeWarfare = await db.SiegeWarfare.AsNoTracking().OrderBy(x => x.CastleIndex).FirstOrDefaultAsync(cancellationToken);
             if (SiegeWarfare != null)
                 logger.LogInformation("Loaded siege warfare data (castle owner: clan {ClanId})", SiegeWarfare.MasterKnights);

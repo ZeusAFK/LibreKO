@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -28,6 +28,7 @@ public class EventSystemsPacketCoordinator(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IZoneTransitionService zoneTransitionService,
+    InstanceRoomRegistry instanceRooms,
     EventSchedulerService eventSchedulerService,
     ILoyaltyService loyaltyService,
     ILogger<EventSystemsPacketCoordinator> logger) : IEventSystemsPacketCoordinator
@@ -297,7 +298,14 @@ public class EventSystemsPacketCoordinator(
     {
         eventSchedulerService.LeaveTempleEvent(session.CharacterId);
 
-        if (CharacterReconnectZoneRepair.IsEventZone(session.ZoneId))
+        if (session.InstanceReturn is { } returnPoint)
+        {
+            logger.LogInformation("Player {Name} left instance room {Room}. Warping to return point ({Zone}, {X}, {Z})",
+                session.Name, session.Room, returnPoint.ZoneId, returnPoint.X, returnPoint.Z);
+            instanceRooms.Leave(session);
+            await zoneTransitionService.ChangeZoneAsync(session, returnPoint.ZoneId, returnPoint.X, returnPoint.Z);
+        }
+        else if (CharacterReconnectZoneRepair.IsEventZone(session.ZoneId))
         {
             logger.LogInformation("Player {Name} left event from zone {Zone}. Warping to Moradon",
                 session.Name, session.ZoneId);
