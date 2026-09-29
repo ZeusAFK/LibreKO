@@ -12,9 +12,14 @@ public partial class Packs : Node
 
     public static bool ContentReady { get; private set; }
 
-    public static readonly string[] Content =
+    public static readonly (string File, string Root)[] Content =
     {
-        "terrain.pck", "characters.pck", "armor.pck", "weapons.pck", "npcs.pck", "objects.pck",
+        ("terrain.pck", "res://assets/terrain"),
+        ("characters.pck", "res://assets/characters"),
+        ("armor.pck", "res://assets/items/armor"),
+        ("weapons.pck", "res://assets/items/weapon"),
+        ("npcs.pck", "res://assets/npcs"),
+        ("objects.pck", "res://assets/objects"),
     };
 
     public static IReadOnlyList<string> Missing => _missing;
@@ -30,8 +35,8 @@ public partial class Packs : Node
         if (Platform.BundledContent) { MountDownloaded(); return; }
 
         string dir = OS.GetExecutablePath().GetBaseDir().PathJoin(ContentDir);
-        foreach (var pck in Content)
-            Mount(dir.PathJoin(pck), required: true);
+        foreach (var (pck, root) in Content)
+            Mount(dir.PathJoin(pck), required: !DirAccess.DirExistsAbsolute(root));
 
         MountLooseDir(dir.PathJoin("patches"), "patch");
 
