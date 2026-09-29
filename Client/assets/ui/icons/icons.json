@@ -30,6 +30,12 @@
     "gift": "system/gift.svg",
     "envelope": "system/envelope.svg",
     "sparkle": "system/sparkle.svg",
-    "medal": "system/medal.svg"
+    "medal": "system/medal.svg",
+    "package": "system/package.svg",
+    "chat-circle": "system/chat-circle.svg",
+    "hammer": "system/hammer.svg",
+    "door": "system/door.svg",
+    "user": "system/user.svg",
+    "storefront": "system/storefront.svg"
   }
 }

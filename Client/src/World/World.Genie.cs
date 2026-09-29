@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -56,7 +56,7 @@ public partial class World
         _geniePanel.Visible = true;
         _genieShown = true;
         Net.I.SendGenieStatus();
-        Net.I.SendGenieSystem(2);
+        Net.I.SendGenieSystem(Net.GenieLoadOptions);
     }
 
     private void CloseGenie()

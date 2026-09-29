@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Domain;
 
 namespace LibreKO;
@@ -11,6 +11,8 @@ public partial class World : Node3D
     private CanvasLayer? _touchZoneLayer;
     private CanvasLayer? _touchLayer;
     private TouchActionBar? _touchActions;
+    private const double TouchInteractionInterval = 0.25;
+    private double _touchInteractionAccum;
 
     private void TouchControlsInit()
     {
@@ -30,8 +32,7 @@ public partial class World : Node3D
             () => OpenNearestAnvil(),
             () => OpenNearestWarpGate(),
             OpenNearestPlayerMenu,
-            () => TryBrowseNearestMerchant(),
-            ToggleMerchantMenu);
+            () => TryBrowseNearestMerchant());
         _hotbarBox.Visible = false;
 
         GD.Print($"[touch] on-screen controls built: sticks {TouchControls.StickSize:F0}px, "
@@ -67,6 +68,7 @@ public partial class World : Node3D
     private void TouchControlsDispose()
     {
         _touchActions = null;
+        _touchInteractionAccum = 0;
         _touchLayer?.QueueFree();
         _touchLayer = null;
         _touchZoneLayer?.QueueFree();

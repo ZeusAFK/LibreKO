@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -43,7 +43,7 @@ public class QuestGenieTests
 
         context.Items.GenieExchange(0, SpiritPotion, 24).Should().BeTrue();
 
-        session.GenieExpiry.Should().BeCloseTo(DateTime.UtcNow.AddHours(24), TimeSpan.FromMinutes(1));
+        session.GenieTime.RemainingSeconds.Should().BeApproximately(24 * 3600, 0.1);
         session.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(1);
     }
 
@@ -52,11 +52,11 @@ public class QuestGenieTests
     {
         var (context, session) = CreateContext();
         GiveSlot(session, SpiritPotion, 2);
-        session.GenieExpiry = DateTime.UtcNow.AddHours(10);
+        session.GenieTime.Load(10 * 3600);
 
         context.Items.GenieExchange(0, SpiritPotion, 24).Should().BeTrue();
 
-        session.GenieExpiry.Should().BeCloseTo(DateTime.UtcNow.AddHours(34), TimeSpan.FromMinutes(1));
+        session.GenieTime.RemainingSeconds.Should().BeApproximately(34 * 3600, 0.1);
     }
 
     [Fact]
@@ -66,16 +66,16 @@ public class QuestGenieTests
 
         context.Items.GenieExchange(0, SpiritPotion, 24).Should().BeFalse();
 
-        session.GenieExpiry.Should().BeNull();
+        session.GenieTime.RemainingSeconds.Should().Be(0);
     }
 
     [Fact]
     public void RemainingTimeIsCountedInHoursAndNeverRoundsDownToNothing()
     {
-        Character.RemainingGenieHours(null).Should().Be(0);
-        Character.RemainingGenieHours(DateTime.UtcNow.AddHours(-1)).Should().Be(0);
-        Character.RemainingGenieHours(DateTime.UtcNow.AddMinutes(5)).Should().Be(1);
-        Character.RemainingGenieHours(DateTime.UtcNow.AddHours(36)).Should().Be(36);
+        new Character().GenieHours.Should().Be(0);
+        new Character { GenieRemainingSeconds = -1 * 3600 }.GenieHours.Should().Be(0);
+        new Character { GenieRemainingSeconds = 5 * 60 }.GenieHours.Should().Be(1);
+        new Character { GenieRemainingSeconds = 36 * 3600 }.GenieHours.Should().Be(36);
     }
 
     [Fact]
@@ -88,8 +88,7 @@ public class QuestGenieTests
         var character = new Character();
         new UserSessionCharacterMapper().ApplyToCharacter(session, character);
 
-        character.GenieExpiry.Should().BeNull();
-        character.GenieRemainingSeconds.GetValueOrDefault().Should().BeApproximately(session.GenieTime.RemainingSeconds, 0.1);
+        character.GenieRemainingSeconds.Should().BeApproximately(session.GenieTime.RemainingSeconds, 0.1);
         character.GenieHours.Should().Be(12);
     }
 

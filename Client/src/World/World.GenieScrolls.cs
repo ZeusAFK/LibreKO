@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -6,6 +6,9 @@ namespace LibreKO;
 
 public partial class World
 {
+    private const double GenieScrollPollInterval = 1;
+    private const double GenieScrollAttemptInterval = 2;
+    private const double GenieScrollRetryInterval = 10;
     private const int GenieScrollSlots = 4;
     private readonly int[] _genieScrollItems = new int[GenieScrollSlots];
     private readonly Button[] _genieScrollButtons = new Button[GenieScrollSlots];
@@ -127,7 +130,7 @@ public partial class World
     private bool GenieScrollTick(double now)
     {
         if (!_genieAutoScrolls.ButtonPressed || now < _genieNextScrollAt) return false;
-        _genieNextScrollAt = now + 1;
+        _genieNextScrollAt = now + GenieScrollPollInterval;
         for (int i = 0; i < GenieScrollSlots; i++)
         {
             int itemId = _genieScrollItems[i];
@@ -142,8 +145,8 @@ public partial class World
             if (item == null || !ItemUseAllowed(item, itemId, out _) || !CanCastWithGear(skill)) continue;
             // One item attempt at a time. Server replies, not an optimistic local timer,
             // determine whether a buff is active. Failed attempts back off for 10 seconds.
-            _genieScrollRetryAt[skill.Id] = now + 10;
-            _genieNextScrollAt = now + 2;
+            _genieScrollRetryAt[skill.Id] = now + GenieScrollRetryInterval;
+            _genieNextScrollAt = now + GenieScrollAttemptInterval;
             int selected = _selectedId;
             _selectedId = _myId;
             try { UseHotItem(itemId); }

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
@@ -16,7 +16,7 @@ public class GenieSystemTests
     public void StartAnnouncesTheRemainingMinutesAndFlagsTheCharacterActive()
     {
         var (coordinator, session, client) = Create();
-        session.GenieExpiry = DateTime.UtcNow.AddMinutes(90);
+        session.GenieTime.Load(90 * 60);
 
         coordinator.StartAsync(session).GetAwaiter().GetResult();
 
@@ -98,10 +98,10 @@ public class GenieSystemTests
     [Fact]
     public void RemainingMinutesNeverRoundDownToNothingWhileTimeIsLeft()
     {
-        Character.RemainingGenieMinutes(null).Should().Be(0);
-        Character.RemainingGenieMinutes(DateTime.UtcNow.AddMinutes(-1)).Should().Be(0);
-        Character.RemainingGenieMinutes(DateTime.UtcNow.AddSeconds(20)).Should().Be(1);
-        Character.RemainingGenieMinutes(DateTime.UtcNow.AddMinutes(120)).Should().Be(120);
+        new Character().GenieMinutes.Should().Be(0);
+        new Character { GenieRemainingSeconds = -1 * 60 }.GenieMinutes.Should().Be(0);
+        new Character { GenieRemainingSeconds = 20 * 1 }.GenieMinutes.Should().Be(1);
+        new Character { GenieRemainingSeconds = 120 * 60 }.GenieMinutes.Should().Be(120);
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public class GenieSystemTests
     {
         var combat = Substitute.For<ICombatPacketCoordinator>();
         var (coordinator, session, _) = Create(combat: combat);
-        session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.GenieTime.Load(30 * 60);
         session.GenieActive = true;
 
         coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack))
@@ -139,7 +139,7 @@ public class GenieSystemTests
         var magic = Substitute.For<IMagicPacketCoordinator>();
         var world = Substitute.For<IWorldPacketCoordinator>();
         var (coordinator, session, _) = Create(magic: magic, world: world);
-        session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.GenieTime.Load(30 * 60);
         session.GenieActive = true;
 
         coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.Move))
@@ -159,7 +159,7 @@ public class GenieSystemTests
     {
         var combat = Substitute.For<ICombatPacketCoordinator>();
         var (coordinator, session, _) = Create(combat: combat);
-        session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.GenieTime.Load(30 * 60);
         coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack))
             .GetAwaiter().GetResult();
         combat.DidNotReceive().HandleAttackAsync(Arg.Any<IClient>(), Arg.Any<Packet>());
@@ -170,7 +170,7 @@ public class GenieSystemTests
     public void RepeatedStartAcknowledgesAnAlreadyActiveSession()
     {
         var (coordinator, session, client) = Create();
-        session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.GenieTime.Load(30 * 60);
         session.GenieActive = true;
         coordinator.StartAsync(session).GetAwaiter().GetResult();
         var packet = Sent(client, 0);
@@ -183,7 +183,7 @@ public class GenieSystemTests
     public void DeadCharacterCannotStartGenie()
     {
         var (coordinator, session, _) = Create();
-        session.GenieExpiry = DateTime.UtcNow.AddMinutes(30);
+        session.GenieTime.Load(30 * 60);
         session.Hp = 0;
         coordinator.StartAsync(session).GetAwaiter().GetResult();
         session.GenieActive.Should().BeFalse();

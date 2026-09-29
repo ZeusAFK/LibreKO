@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -401,41 +401,6 @@ public partial class World : Node3D, IWorldContext
         CombatStanceTick();
         ApplySelfAnimSpeed();
         AudioFootstepTick();
-        CombatTick(nowSec);
-        TickPadTriggers();
-        AreaCastTick(delta, nowSec);
-        LootTick(nowSec);
-        StallSignTick();
-        GatherTick(nowSec);
-        NpcTick(delta);
-        UpdateTouchInteractionVisibility();
-        PvpTick(nowSec);
-        Chat.TickBubbles(nowSec);
-
-        CastMoveCancelTick();
-        WarpGateTick();
-        AnvilTick();
-        PieceChangeTick(delta);
-        KoTextureAnim.Tick(delta);
-        UpdateSelectionRing();
-        TargetHpPollTick(nowSec);
-        UpdateTargetHud();
-        UpdateInfoPanel();
-
-        UpdateCamera(delta);
-        Floaters?.Tick(nowSec);
-        CursorTick(delta);
-        _mapHudAccum += delta;
-        if (_mapHudAccum >= MapHudInterval) { _mapHudAccum = 0; UpdateMiniMap(); UpdateFullMap(); }
-        UpdateInventoryTooltip();
-        UpdateDeletePrompt();
-        UpdateSky(delta);
-
-        _fxCullAccum += delta;
-        if (_fxCullAccum >= FxCullInterval) { _fxCullAccum = 0; CullMapFx(); }
-
-        _pickMarkerAccum += delta;
-        if (_pickMarkerAccum >= PickMarkerInterval) { _pickMarkerAccum = 0; RefreshPickMarkers(); }
         selfScope.Dispose();
 
         using (Perf.Measure(Perf.Section.Combat))
@@ -447,6 +412,12 @@ public partial class World : Node3D, IWorldContext
             StallSignTick();
             GatherTick(nowSec);
             NpcTick(delta);
+            _touchInteractionAccum += delta;
+            if (_touchInteractionAccum >= TouchInteractionInterval)
+            {
+                _touchInteractionAccum %= TouchInteractionInterval;
+                UpdateTouchInteractionVisibility();
+            }
             PvpTick(nowSec);
             Chat.TickBubbles(nowSec);
             CastMoveCancelTick();

@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using Microsoft.Extensions.Logging;
@@ -65,8 +65,15 @@ public class SessionTerminationService(
             logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
         }
 
-        if (!session.IsBot && !await characterStatePersister.SaveAsync(session))
-            throw new InvalidOperationException("Could not save character state during login takeover.");
+        try
+        {
+            if (!session.IsBot && !await characterStatePersister.SaveAsync(session))
+                logger.LogWarning("Could not save character state during login takeover for {Name}", session.Name);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error saving character state during login takeover for {Name}", session.Name);
+        }
         sessionManager.RemoveSession(session);
     }
 

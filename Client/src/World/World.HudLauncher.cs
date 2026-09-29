@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Godot;
 
 namespace LibreKO;
@@ -42,7 +42,7 @@ public partial class World
         _hudLauncher.AddChild(LauncherButton(
             "system/users-three", "Party", ToggleParty));
         _hudLauncher.AddChild(LauncherButton(
-            "system/sparkle", "Genie (Numpad +)", ToggleGenie));
+            "system/sparkle", "Genie", ToggleGenie));
 
         if (Platform.TouchUi)
         {

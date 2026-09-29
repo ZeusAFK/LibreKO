@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 
@@ -91,7 +91,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
             };
         }
 
-        session.GenieTime.Load(character.GenieCreditSeconds);
+        session.GenieTime.Load(character.GenieRemainingSeconds);
         session.GenieOptions = character.GenieOptions;
         session.DrakiStage = character.DrakiStage;
         session.DrakiSubStage = character.DrakiSubStage;
@@ -181,7 +181,6 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         }
 
         character.GenieRemainingSeconds = session.GenieTime.RemainingSeconds;
-        character.GenieExpiry = null;
         character.GenieOptions = session.GenieOptions;
         character.DrakiStage = session.DrakiStage;
         character.DrakiSubStage = session.DrakiSubStage;

@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Game.World;
 using Xunit;
 
@@ -71,17 +71,40 @@ public class GenieTimeBalanceTests
     }
 
     [Fact]
-    public void PersistentBalanceTakesPrecedenceOverLegacyExpiry()
+    public void PersistentBalanceDeterminesRemainingTime()
     {
         var character = new Character
         {
-            GenieRemainingSeconds = 7200,
-            GenieExpiry = DateTime.UtcNow.AddDays(-30)
+            GenieRemainingSeconds = 7200
         };
         Assert.Equal(120, character.GenieMinutes);
         Assert.Equal(2, character.GenieHours);
         character.GenieRemainingSeconds = 0;
-        character.GenieExpiry = DateTime.UtcNow.AddDays(30);
         Assert.Equal(0, character.GenieMinutes);
     }
+    [Fact]
+    public void MigrationConvertsCreditBeforeDroppingEachSourceColumnAndKeepsCollectionRace()
+    {
+        var migration = new LibreKO.Common.Migrations.AddGenieOnlineTime();
+        var up = migration.UpOperations;
+        var added = Assert.IsType<Microsoft.EntityFrameworkCore.Migrations.Operations.AddColumnOperation>(up[0]);
+        Assert.Equal("GenieRemainingSeconds", added.Name);
+        Assert.False(added.IsNullable);
+        Assert.Equal(0.0, added.DefaultValue);
+        Assert.IsType<Microsoft.EntityFrameworkCore.Migrations.Operations.SqlOperation>(up[1]);
+        Assert.Equal("GenieExpiry",
+            Assert.IsType<Microsoft.EntityFrameworkCore.Migrations.Operations.DropColumnOperation>(up[2]).Name);
+        var down = migration.DownOperations;
+        Assert.Equal("GenieExpiry",
+            Assert.IsType<Microsoft.EntityFrameworkCore.Migrations.Operations.AddColumnOperation>(down[0]).Name);
+        Assert.IsType<Microsoft.EntityFrameworkCore.Migrations.Operations.SqlOperation>(down[1]);
+        Assert.Equal("GenieRemainingSeconds",
+            Assert.IsType<Microsoft.EntityFrameworkCore.Migrations.Operations.DropColumnOperation>(down[2]).Name);
+        Assert.Contains(migration.TargetModel.GetEntityTypes(), entity => entity.FindProperty("MaxWinners") != null);
+        var character = migration.TargetModel.FindEntityType(typeof(Character));
+        Assert.NotNull(character);
+        Assert.Null(character.FindProperty("GenieExpiry"));
+        Assert.False(character.FindProperty("GenieRemainingSeconds")!.IsNullable);
+    }
+
 }

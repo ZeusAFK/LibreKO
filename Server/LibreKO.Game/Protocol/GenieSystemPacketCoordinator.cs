@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
@@ -48,11 +48,7 @@ public class GenieSystemPacketCoordinator(
             case GenieSystemPacketWriter.UseHammer:
                 if (packet.RemainingBytes < 1) break;
                 bool used = await genieHammer.UseAsync(session, packet.ReadByte());
-                var reply = new Packet(GameOpcodes.GS_GENIE_SYSTEM);
-                reply.WriteByte(GenieSystemPacketWriter.InfoRequest);
-                reply.WriteByte(GenieSystemPacketWriter.UseHammer);
-                reply.WriteByte(used ? (byte)1 : (byte)0);
-                await client.SendPacket(reply);
+                await client.SendPacket(GenieSystemPacketWriter.HammerResult(used));
                 break;
             case GenieSystemPacketWriter.UseSpiritPotion:
                 await UseSpiritPotionAsync(session);

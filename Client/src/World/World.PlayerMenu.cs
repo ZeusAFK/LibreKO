@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 
 namespace LibreKO;
 
@@ -38,6 +38,12 @@ public partial class World
         var target = PickEntityAt(mouse, ClickPickRadius, out int id, out _);
         if (target == null || target.IsNpc || target.Dead || id == _myId) return false;
 
+        ShowPlayerMenu(id, target, mouse);
+        return true;
+    }
+
+    private void ShowPlayerMenu(int id, Ent target, Vector2 at)
+    {
         Select(id, target);
         _playerMenuId = id;
         _playerMenuName = target.Name;
@@ -52,9 +58,8 @@ public partial class World
         _playerMenu.AddItem("Duel", (int)PlayerMenuAction.Duel);
         _playerMenu.AddItem("Equipment View", (int)PlayerMenuAction.EquipmentView);
         _playerMenu.ResetSize();
-        _playerMenu.Position = (Vector2I)GetViewport().GetMousePosition();
+        _playerMenu.Position = (Vector2I)at;
         _playerMenu.Popup();
-        return true;
     }
 
     private bool HasNearbyPlayerForUserInfo()
@@ -69,45 +74,37 @@ public partial class World
         return false;
     }
 
-    private void OpenNearestPlayerMenu()
+    private bool TryFindInteractionPlayer(bool merchantOnly, out int bestId, out Ent? best)
     {
-        if (!_worldReady || _self == null || _selfDead) return;
-
-        int bestId = -1;
-        Ent? best = null;
-        float bestDistance = TradeRange;
+        bestId = -1;
+        best = null;
+        if (!_worldReady || _self == null || _selfDead) return false;
+        bool Eligible(int id, Ent e) => id != _myId && !e.IsNpc && !e.Dead
+            && (!merchantOnly || _stalls.ContainsKey(id))
+            && FlatDistance(_self.Position, e.Body.Position) <= TradeRange;
+        if (_ents.TryGetValue(_selectedId, out var selected) && Eligible(_selectedId, selected))
+        {
+            bestId = _selectedId;
+            best = selected;
+            return true;
+        }
+        float distance = TradeRange;
         foreach (var (id, e) in _ents)
         {
-            if (id == _myId || e.IsNpc || e.Dead) continue;
+            if (!Eligible(id, e)) continue;
             float d = FlatDistance(_self.Position, e.Body.Position);
-            if (d > bestDistance) continue;
-            bestDistance = d;
+            if (d > distance) continue;
+            distance = d;
             bestId = id;
             best = e;
         }
+        return best != null;
+    }
 
-        if (best == null) return;
-
-        Select(bestId, best);
-        _playerMenuId = bestId;
-        _playerMenuName = best.Name;
-
-        _playerMenu.Clear();
-        _playerMenu.AddItem("Request a party", (int)PlayerMenuAction.RequestParty);
-        _playerMenu.AddItem("Report", (int)PlayerMenuAction.Report);
-        _playerMenu.AddItem("User trade", (int)PlayerMenuAction.UserTrade);
-        _playerMenu.AddItem("Whisper", (int)PlayerMenuAction.Whisper);
-        _playerMenu.AddItem("Add friend", (int)PlayerMenuAction.AddFriend);
-        _playerMenu.AddItem("User Information", (int)PlayerMenuAction.UserInformation);
-        _playerMenu.AddItem("Duel", (int)PlayerMenuAction.Duel);
-        _playerMenu.AddItem("Equipment View", (int)PlayerMenuAction.EquipmentView);
-        _playerMenu.ResetSize();
-
-        Vector2 viewportSize = GetViewport().GetVisibleRect().Size;
-        _playerMenu.Position = new Vector2I(
-            (int)(viewportSize.X * 0.5f),
-            (int)(viewportSize.Y * 0.35f));
-        _playerMenu.Popup();
+    private void OpenNearestPlayerMenu(Vector2 at)
+    {
+        if (TryFindInteractionPlayer(false, out int id, out var target) && target != null)
+            ShowPlayerMenu(id, target, at);
     }
 
     private void OnPlayerMenuAction(long actionId)

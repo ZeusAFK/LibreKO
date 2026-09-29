@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -166,13 +166,6 @@ public class UserSession
     public const byte DrakiSubStageMax = 8;
 
     public GenieTimeBalance GenieTime { get; } = new();
-
-    // Compatibility for legacy callers/tests. Persistent state uses seconds.
-    public DateTime? GenieExpiry
-    {
-        get { double seconds = GenieTime.RemainingSeconds; return seconds > 0 ? DateTime.UtcNow.AddSeconds(seconds) : null; }
-        set => GenieTime.Load(value.HasValue ? (value.Value - DateTime.UtcNow).TotalSeconds : 0);
-    }
 
     public short GenieHours => (short)Math.Min(Math.Ceiling(GenieTime.RemainingSeconds / 3600), short.MaxValue);
 

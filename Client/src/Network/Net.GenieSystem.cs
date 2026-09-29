@@ -1,15 +1,31 @@
-using System;
+﻿using System;
 
 namespace LibreKO.Network;
 
 public partial class Net
 {
+    public const byte GenieInfoRequest = 1;
+    public const byte GenieUpdateRequest = 2;
+    public const byte GenieUseSpiritPotion = 1;
+    public const byte GenieLoadOptions = 2;
+    public const byte GenieSaveOptions = 3;
+    public const byte GenieStart = 4;
+    public const byte GenieStop = 5;
+    public const byte GenieRemainingTime = 6;
+    public const byte GenieUseHammer = 8;
+    public const byte GenieMove = 1;
+    public const byte GenieRotate = 2;
+    public const byte GenieMainAttack = 3;
+    public const byte GenieMagic = 4;
+    public const byte GenieAcknowledged = 1;
+    public const int GenieOptionBytes = 100;
+
     public event Action<bool>? GenieHammerResult;
 
     public void SendGenieHammer(byte threshold)
     {
         var p = new Packet(GameOpcodes.GS_GENIE_SYSTEM);
-        p.WriteByte(1); p.WriteByte(8); p.WriteByte(threshold);
+        p.WriteByte(GenieInfoRequest); p.WriteByte(GenieUseHammer); p.WriteByte(threshold);
         _conn.Send(p);
     }
 
@@ -20,10 +36,10 @@ public partial class Net
     public void SendGenieSystem(byte command, byte[]? options = null)
     {
         var p = new Packet(GameOpcodes.GS_GENIE_SYSTEM);
-        p.WriteByte(1);
+        p.WriteByte(GenieInfoRequest);
         p.WriteByte(command);
-        if (command == 3)
-            for (int i = 0; i < 100; i++) p.WriteByte(options != null && i < options.Length ? options[i] : (byte)0);
+        if (command == GenieSaveOptions)
+            for (int i = 0; i < GenieOptionBytes; i++) p.WriteByte(options != null && i < options.Length ? options[i] : (byte)0);
         _conn.Send(p);
     }
 
@@ -33,36 +49,36 @@ public partial class Net
     {
         if (!GenieRunning) return new Packet(opcode);
         var p = new Packet(GameOpcodes.GS_GENIE_SYSTEM);
-        p.WriteByte(2);
+        p.WriteByte(GenieUpdateRequest);
         p.WriteByte(action);
         return p;
     }
 
     private void HandleGenieSystem(Packet p)
     {
-        if (p.RemainingBytes < 2 || p.ReadByte() != 1) return;
+        if (p.RemainingBytes < 2 || p.ReadByte() != GenieInfoRequest) return;
         byte command = p.ReadByte();
-        if (command == 8)
+        if (command == GenieUseHammer)
         {
-            if (p.RemainingBytes >= 1) GenieHammerResult?.Invoke(p.ReadByte() == 1);
+            if (p.RemainingBytes >= 1) GenieHammerResult?.Invoke(p.ReadByte() == GenieAcknowledged);
             return;
         }
-        if (command == 2)
+        if (command == GenieLoadOptions)
         {
-            if (p.RemainingBytes < 100) return;
-            var options = new byte[100];
+            if (p.RemainingBytes < GenieOptionBytes) return;
+            var options = new byte[GenieOptionBytes];
             for (int i = 0; i < options.Length; i++) options[i] = p.ReadByte();
             GenieOptionsReceived?.Invoke(options);
             return;
         }
-        if (command is 4 or 5)
+        if (command is GenieStart or GenieStop)
         {
-            if (p.RemainingBytes < 4 || p.ReadUShort() != 1) return;
+            if (p.RemainingBytes < 4 || p.ReadUShort() != GenieAcknowledged) return;
             int minutes = p.ReadUShort();
-            GenieRunning = command == 4 && minutes > 0;
+            GenieRunning = command == GenieStart && minutes > 0;
             GenieSystemState?.Invoke(GenieRunning, minutes);
         }
-        else if ((command is 1 or 6) && p.RemainingBytes >= 2)
+        else if ((command is GenieUseSpiritPotion or GenieRemainingTime) && p.RemainingBytes >= 2)
         {
             int minutes = p.ReadUShort();
             if (minutes == 0) GenieRunning = false;

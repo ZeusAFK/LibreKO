@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
@@ -12,11 +12,15 @@ public interface IGenieHammerService
 
 public class GenieHammerService(IGameDataService data, IUserNotificationService notifications) : IGenieHammerService
 {
-    public static bool IsHammer(int id) => id is 810227000 or 810935000 or 900819000;
+    private static readonly int[] GenieHammerItems = [810227000, 810935000, 900819000];
+    public const int MinRepairThreshold = 1;
+    public const int MaxRepairThreshold = 50;
+
+    public static bool IsHammer(int id) => Array.IndexOf(GenieHammerItems, id) >= 0;
 
     public async Task<bool> UseAsync(UserSession session, int threshold)
     {
-        if (threshold is < 1 or > 50) return false;
+        if (threshold is < MinRepairThreshold or > MaxRepairThreshold) return false;
         var changes = new List<(byte Slot, short Durability)>();
         int hammerSlot = -1, remainingId = 0;
         ushort count = 0;

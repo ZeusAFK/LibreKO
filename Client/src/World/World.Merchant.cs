@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
@@ -412,18 +412,7 @@ public partial class World
 
     private bool TryBrowseNearestMerchant()
     {
-        int bestId = -1;
-        float bestDistance = TradeRange;
-        foreach (var (id, ent) in _ents)
-        {
-            if (ent.IsNpc || ent.Dead || id == _myId) continue;
-            if (!_stalls.ContainsKey(id)) continue;
-            float distance = FlatDistance(_self.Position, ent.Body.Position);
-            if (distance >= bestDistance) continue;
-            bestDistance = distance;
-            bestId = id;
-        }
-        if (bestId < 0) return false;
+        if (!TryFindInteractionPlayer(true, out int bestId, out _)) return false;
 
         if (_stalls[bestId].IsBuying) Net.I.SendBuyMerchantList(bestId);
         else Net.I.SendMerchantList(bestId);

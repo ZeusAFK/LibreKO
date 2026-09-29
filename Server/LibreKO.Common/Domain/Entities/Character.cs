@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LibreKO.Common.Domain.Entities;
@@ -73,41 +73,13 @@ public class Character : Entity
     public byte RebIntel { get; set; }
     public byte RebMagic { get; set; }
 
-    public DateTime? GenieExpiry { get; set; }
+    public double GenieRemainingSeconds { get; set; }
 
-    // Null only for legacy records not yet converted by the migration.
-    public double? GenieRemainingSeconds { get; set; }
-
-    public double GenieCreditSeconds => Math.Max(0, GenieRemainingSeconds
-        ?? (GenieExpiry.HasValue ? (GenieExpiry.Value - DateTime.UtcNow).TotalSeconds : 0));
-
-    public short GenieHours => (short)Math.Min(Math.Ceiling(GenieCreditSeconds / 3600), short.MaxValue);
-
-    public static short RemainingGenieHours(DateTime? expiry)
-    {
-        if (expiry == null)
-            return 0;
-
-        var remaining = (expiry.Value - DateTime.UtcNow).TotalHours;
-        if (remaining <= 0)
-            return 0;
-        return remaining < 1 ? (short)1 : (short)Math.Min(Math.Round(remaining), short.MaxValue);
-    }
+    public short GenieHours => (short)Math.Min(Math.Ceiling(Math.Max(0, GenieRemainingSeconds) / 3600), short.MaxValue);
 
     public byte[] GenieOptions { get; set; } = [];
 
-    public ushort GenieMinutes => (ushort)Math.Min(Math.Ceiling(GenieCreditSeconds / 60), ushort.MaxValue);
-
-    public static ushort RemainingGenieMinutes(DateTime? expiry)
-    {
-        if (expiry == null)
-            return 0;
-
-        var remaining = (expiry.Value - DateTime.UtcNow).TotalMinutes;
-        if (remaining <= 0)
-            return 0;
-        return (ushort)Math.Min(Math.Ceiling(remaining), ushort.MaxValue);
-    }
+    public ushort GenieMinutes => (ushort)Math.Min(Math.Ceiling(Math.Max(0, GenieRemainingSeconds) / 60), ushort.MaxValue);
 
     public byte DrakiStage { get; set; }
     public byte DrakiSubStage { get; set; }

@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -26,6 +26,13 @@ public sealed class GenieSystemPacketWriter
     public const byte Active = 1;
 
     public const int OptionBytes = 100;
+
+    public static Packet HammerResult(bool repaired)
+    {
+        var packet = Info(UseHammer);
+        packet.WriteByte(repaired ? (byte)Acknowledged : Inactive);
+        return packet;
+    }
 
     public static Packet SpiritPotion(ushort remainingMinutes)
     {

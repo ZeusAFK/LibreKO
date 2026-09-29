@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 
 namespace LibreKO.Network;
 
@@ -91,7 +91,7 @@ public partial class Net
         var wx = (ushort)(x * 10);
         var wz = (ushort)(z * 10);
         var wy = (ushort)(y * 10);
-        var p = GenieActionPacket(GameOpcodes.GS_MOVE, 1);
+        var p = GenieActionPacket(GameOpcodes.GS_MOVE, GenieMove);
         p.WriteUShort(wx); p.WriteUShort(wz); p.WriteUShort(wy);
         p.WriteShort((short)Mathf.Clamp(speed * 10f, -MaxWireSpeed, MaxWireSpeed));
         p.WriteByte(3);
@@ -109,7 +109,7 @@ public partial class Net
 
     public void SendRotate(float degrees)
     {
-        var p = GenieActionPacket(GameOpcodes.GS_ROTATE, 2);
+        var p = GenieActionPacket(GameOpcodes.GS_ROTATE, GenieRotate);
         p.WriteShort(Coord.HeadingToWire(degrees));
         _conn.Send(p);
     }
@@ -132,7 +132,7 @@ public partial class Net
 
     public void SendAttack(int targetId, short swingDelay, int attackType = 1, bool critical = false)
     {
-        var p = GenieActionPacket(GameOpcodes.GS_ATTACK, 3);
+        var p = GenieActionPacket(GameOpcodes.GS_ATTACK, GenieMainAttack);
         p.WriteByte((byte)attackType);
         p.WriteByte(0);
         p.WriteInt(targetId);
@@ -145,7 +145,7 @@ public partial class Net
 
     public void SendMagic(int subOpcode, int skillId, int targetId, short[]? data = null)
     {
-        var p = GenieActionPacket(GameOpcodes.GS_MAGIC_PROCESS, 4);
+        var p = GenieActionPacket(GameOpcodes.GS_MAGIC_PROCESS, GenieMagic);
         p.WriteByte((byte)subOpcode);
         p.WriteInt(skillId);
         p.WriteInt(MyCharId);

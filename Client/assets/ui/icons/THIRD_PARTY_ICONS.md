@@ -70,3 +70,16 @@ drawn as a single filled silhouette so it survives being tinted and scaled to 20
 
 `system/level.svg` is an original bar chart drawn for GKO on the same grid, for the GM panel's Level
 section: three rounded bars rising left to right.
+
+### Touch interaction icons (Phosphor, MIT)
+
+| Local file | Source in phosphor-icons/core | Author |
+|---|---|---|
+| `system/package.svg` | `assets/regular/package.svg` | Phosphor Icons |
+| `system/chat-circle.svg` | `assets/regular/chat-circle.svg` | Phosphor Icons |
+| `system/hammer.svg` | `assets/regular/hammer.svg` | Phosphor Icons |
+| `system/door.svg` | `assets/regular/door.svg` | Phosphor Icons |
+| `system/user.svg` | `assets/regular/user.svg` | Phosphor Icons |
+| `system/storefront.svg` | `assets/regular/storefront.svg` | Phosphor Icons |
+
+The `currentColor` fill is changed to white; the paths are unchanged.

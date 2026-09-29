@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace LibreKO.Domain;
@@ -7,6 +7,7 @@ namespace LibreKO.Domain;
 public sealed class GeniePartyCodeGate
 {
     public const double AuthorizationSeconds = 120;
+    public const int MaxPendingSenders = 128;
     private readonly Dictionary<int, (string Name, double Until)> _senders = new();
     private string _code = "";
     private bool _enabled;
@@ -22,12 +23,12 @@ public sealed class GeniePartyCodeGate
 
     public bool Receive(byte channel, int senderId, string senderName, string message, int selfId, double now)
     {
-        if (!_enabled || channel != 2 || senderId <= 0 || senderId == selfId
+        if (!_enabled || channel != ChatSystem.WhisperChannel || senderId <= 0 || senderId == selfId
             || string.IsNullOrWhiteSpace(senderName)
             || !string.Equals(message.Trim(), _code, StringComparison.Ordinal)) return false;
         foreach (int id in new List<int>(_senders.Keys))
             if (_senders[id].Until <= now) _senders.Remove(id);
-        if (_senders.Count >= 128 && !_senders.ContainsKey(senderId)) return false;
+        if (_senders.Count >= MaxPendingSenders && !_senders.ContainsKey(senderId)) return false;
         _senders[senderId] = (senderName, now + AuthorizationSeconds);
         return true;
     }

@@ -1,4 +1,4 @@
-namespace LibreKO.Game.World;
+﻿namespace LibreKO.Game.World;
 
 // A monotonic active-Genie time balance. Reading/saving never rounds up stored credit.
 public sealed class GenieTimeBalance(TimeProvider? clock = null)

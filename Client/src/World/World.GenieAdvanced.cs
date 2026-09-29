@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
@@ -7,9 +7,20 @@ namespace LibreKO;
 
 public partial class World
 {
-    private readonly int[] _genieSkills = new int[24];
-    private readonly Button[] _genieSlots = new Button[24];
-    private readonly CheckButton[] _genieModes = new CheckButton[8];
+    private const int GenieSkillGroupSlots = 8;
+    private const int GenieSkillGroups = 3;
+    private const int GenieSkillSlots = GenieSkillGroupSlots * GenieSkillGroups;
+    private const int GenieModeCount = 8;
+    private const double GenieStartReplyTimeout = 8;
+    private const double GeniePollInterval = 0.3;
+    private const float GenieRangeSlack = 2;
+    private const double GenieLeaderTargetMemory = 8;
+    private const double GenieSupportRetryInterval = 2;
+    private const double GeniePotionUiInterval = 1;
+
+    private readonly int[] _genieSkills = new int[GenieSkillSlots];
+    private readonly Button[] _genieSlots = new Button[GenieSkillSlots];
+    private readonly CheckButton[] _genieModes = new CheckButton[GenieModeCount];
     private readonly HashSet<string> _genieMonsters = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(int Skill, int Target), double> _genieSupportAt = new();
     private ItemList _genieMonsterList = null!;
@@ -44,16 +55,16 @@ public partial class World
         columns.AddThemeConstantOverride("separation", 12);
         main.AddChild(columns);
         string[] headings = { "Attack Skills", "Self Skills", "Party Skills" };
-        for (int group = 0; group < 3; group++)
+        for (int group = 0; group < GenieSkillGroups; group++)
         {
             var column = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
             columns.AddChild(column);
             column.AddChild(UiTheme.SectionTitle(headings[group]));
             var grid = new GridContainer { Columns = 4 };
             column.AddChild(grid);
-            for (int cell = 0; cell < 8; cell++)
+            for (int cell = 0; cell < GenieSkillGroupSlots; cell++)
             {
-                int slot = group * 8 + cell;
+                int slot = group * GenieSkillGroupSlots + cell;
                 var button = new Button { Text = "+", CustomMinimumSize = new Vector2(36, 36),
                     ExpandIcon = true, FocusMode = Control.FocusModeEnum.None };
                 var border = new[] { new Color("a98632"), new Color("9348bc"), new Color("346675") }[group];
@@ -117,10 +128,10 @@ public partial class World
             _genieRequestAt = Now();
             _genieStart.Disabled = true;
             _genieRunLabel.Text = "Waiting for server response…";
-            Net.I.SendGenieSystem(4);
+            Net.I.SendGenieSystem(Net.GenieStart);
         });
         GenieButton(footer, "Save Settings", SaveAdvancedGenie);
-        GenieButton(footer, "Use Spirit of Genie", () => Net.I.SendGenieSystem(1));
+        GenieButton(footer, "Use Spirit of Genie", () => Net.I.SendGenieSystem(Net.GenieUseSpiritPotion));
         misc.AddChild(UiTheme.SectionTitle("Genie Settings"));
         _genieRange = GeniePercent(misc, "Range from Start Position", 25, 3, 80);
         _genieAutoParty = new CheckButton { Text = "Auto Party" };
@@ -186,7 +197,7 @@ public partial class World
         foreach (var s in SkillData.ForClass(_selfClass).Where(SkillRequirementMet).OrderBy(s => s.Level))
         {
             if (s.IsPotion || s.IsDeadFriend || s.IsBlink || s.IsGroundArea) continue;
-            bool allowed = slot < 8 ? s.IsEnemy : slot < 16
+            bool allowed = slot < GenieSkillGroupSlots ? s.IsEnemy : slot < GenieSkillGroupSlots * 2
                 ? s.Moral is SkillTarget.Self or SkillTarget.FriendWithMe or SkillTarget.Party or SkillTarget.PartyAll
                 : s.IsFriendly;
             if (allowed) _genieSkillPicker.AddIconItem(SkillData.Icon(s.Id), s.Name, s.Id);
@@ -197,11 +208,11 @@ public partial class World
 
     private void RefreshGenieSlots()
     {
-        for (int i = 0; i < 24; i++)
+        for (int i = 0; i < GenieSkillSlots; i++)
         {
             var skill = SkillData.Get(_genieSkills[i]);
             _genieSlots[i].Icon = skill == null ? null : SkillData.Icon(skill.Id);
-            _genieSlots[i].Text = skill == null ? "+" : _genieSlots[i].Icon == null ? (i % 8 + 1).ToString() : "";
+            _genieSlots[i].Text = skill == null ? "+" : _genieSlots[i].Icon == null ? (i % GenieSkillGroupSlots + 1).ToString() : "";
             _genieSlots[i].TooltipText = skill == null ? "Select Skill" : SkillTooltip(skill);
         }
     }
@@ -214,12 +225,12 @@ public partial class World
 
     private byte[] GenieOptionBytes()
     {
-        var bytes = new byte[100];
-        for (int i = 0; i < 8; i++) if (_genieModes[i].ButtonPressed) bytes[0] |= (byte)(1 << i);
+        var bytes = new byte[Net.GenieOptionBytes];
+        for (int i = 0; i < GenieModeCount; i++) if (_genieModes[i].ButtonPressed) bytes[0] |= (byte)(1 << i);
         bytes[1] = (byte)_genieHp.Value;
         bytes[2] = (byte)_genieMp.Value;
         bytes[3] = (byte)_genieRange.Value;
-        for (int i = 0; i < 24; i++)
+        for (int i = 0; i < GenieSkillSlots; i++)
             System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(4 + i * 4, 4), _genieSkills[i]);
         return bytes;
     }
@@ -227,10 +238,10 @@ public partial class World
     private void OnGenieOptions(byte[] bytes)
     {
         // A new character's zero-filled options must not erase usable defaults.
-        if (bytes.Length != 100 || bytes[1] == 0 || _genieRequestPending || Net.I.GenieRunning) return;
-        for (int i = 0; i < 8; i++) _genieModes[i].ButtonPressed = (bytes[0] & (1 << i)) != 0;
+        if (bytes.Length != Net.GenieOptionBytes || bytes[1] == 0 || _genieRequestPending || Net.I.GenieRunning) return;
+        for (int i = 0; i < GenieModeCount; i++) _genieModes[i].ButtonPressed = (bytes[0] & (1 << i)) != 0;
         _genieHp.Value = bytes[1]; _genieMp.Value = bytes[2]; _genieRange.Value = bytes[3];
-        for (int i = 0; i < 24; i++)
+        for (int i = 0; i < GenieSkillSlots; i++)
             _genieSkills[i] = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(4 + i * 4, 4));
         RefreshGenieSlots();
     }
@@ -248,7 +259,7 @@ public partial class World
         config.SetValue("genie", "auto_hammer", _genieAutoHammer.ButtonPressed);
         config.SetValue("genie", "hammer_threshold", _genieHammerThreshold.Value);
         if (config.Save(GenieSettingsPath) != Error.Ok) Chat.Info("Could not save Genie settings to disk.");
-        Net.I.SendGenieSystem(3, GenieOptionBytes());
+        Net.I.SendGenieSystem(Net.GenieSaveOptions, GenieOptionBytes());
     }
 
     private void LoadAdvancedGenie()
@@ -261,7 +272,7 @@ public partial class World
             LoadGenieScrollSettings(config);
             _genieAutoHammer.ButtonPressed = config.GetValue("genie", "auto_hammer", false).AsBool();
             _genieHammerThreshold.Value = config.GetValue("genie", "hammer_threshold", 10).AsDouble();
-            OnGenieOptions(config.GetValue("genie", "options", new byte[100]).AsByteArray());
+            OnGenieOptions(config.GetValue("genie", "options", new byte[Net.GenieOptionBytes]).AsByteArray());
             foreach (string name in config.GetValue("genie", "monsters", Array.Empty<string>()).AsStringArray())
                 _genieMonsters.Add(name);
             _genieAutoParty.ButtonPressed = config.GetValue("genie", "auto_party", false).AsBool();
@@ -314,7 +325,7 @@ public partial class World
         _genieStart.Disabled = false;
         _genieStart.Text = "Start";
         _genieRunLabel.Text = "Genie stopped.";
-        if (Net.I.Connected) Net.I.SendGenieSystem(5);
+        if (Net.I.Connected) Net.I.SendGenieSystem(Net.GenieStop);
     }
 
     private void ConfigureGeniePartyCode() => _geniePartyCodes.Configure(
@@ -345,8 +356,8 @@ public partial class World
     {
         if (stage is 1 or 3) GenieObserveLeader(caster, target);
         if (stage == 3 && caster == _myId && Net.I.GenieRunning
-            && _genieSkills.Skip(8).Contains(skill) && SkillData.Get(skill) is { } support)
-            _genieSupportAt[(skill, target)] = Now() + Math.Max(2, support.Duration > 0 ? support.Duration - 2 : support.RecastSeconds);
+            && _genieSkills.Skip(GenieSkillGroupSlots).Contains(skill) && SkillData.Get(skill) is { } support)
+            _genieSupportAt[(skill, target)] = Now() + Math.Max(GenieSupportRetryInterval, support.Duration > 0 ? support.Duration - GenieSupportRetryInterval : support.RecastSeconds);
     }
     private void GenieObserveLeader(int source, int target)
     {
@@ -374,33 +385,33 @@ public partial class World
 
     private void AdvancedGenieTick(double now)
     {
-        if (_genieRequestPending && now - _genieRequestAt > 8) StopAdvancedGenie();
+        if (_genieRequestPending && now - _genieRequestAt > GenieStartReplyTimeout) StopAdvancedGenie();
         if (!Net.I.GenieRunning)
         { if (_genieWasRunning) StopAdvancedGenie(); return; }
         if (_selfDead || !Net.I.Connected || Net.I.ReconnectBlocking || MerchantBlocksMove() || now >= _genieDeadline
-            || _self.GlobalPosition.DistanceTo(_genieOrigin) > (float)_genieRange.Value + 2)
+            || _self.GlobalPosition.DistanceTo(_genieOrigin) > (float)_genieRange.Value + GenieRangeSlack)
         { StopAdvancedGenie(); return; }
         if (now < _geniePollAt) return;
-        _geniePollAt = now + 0.3;
+        _geniePollAt = now + GeniePollInterval;
         GenieHammerTick(now);
         if (now >= _geniePotionUiAt)
-        { _geniePotionUiAt = now + 1; RefreshGeniePotionSelectors(); }
+        { _geniePotionUiAt = now + GeniePotionUiInterval; RefreshGeniePotionSelectors(); }
         if (_genieModes[6].ButtonPressed && Vitals.MaxHp > 0 && Vitals.Hp * 100.0 / Vitals.MaxHp <= _genieHp.Value)
             UseGeniePotion(HealTarget.Hp);
         if (_genieModes[7].ButtonPressed && Vitals.MaxMp > 0 && Vitals.Mp * 100.0 / Vitals.MaxMp <= _genieMp.Value)
             UseGeniePotion(HealTarget.Mp);
         if (SelfCasting(now)) return;
         if (GenieScrollTick(now)) return;
-        if (_genieModes[1].ButtonPressed && GenieSupport(8, _myId, Vitals.Hp, Vitals.MaxHp, now)) return;
+        if (_genieModes[1].ButtonPressed && GenieSupport(GenieSkillGroupSlots, _myId, Vitals.Hp, Vitals.MaxHp, now)) return;
         if (_genieModes[2].ButtonPressed)
             foreach (var member in PartyMembers)
                 if (member.CharId != _myId && member.Hp > 0 && _ents.TryGetValue(member.CharId, out var ally)
-                    && !ally.Dead && !ally.Attackable && GenieSupport(16, member.CharId, member.Hp, member.MaxHp, now)) return;
+                    && !ally.Dead && !ally.Attackable && GenieSupport(GenieSkillGroupSlots * 2, member.CharId, member.Hp, member.MaxHp, now)) return;
         if (!_genieModes[0].ButtonPressed)
         { StopAutoAttack(); if (_genieMoving) _hasMoveTarget = false; _genieMoving = false; return; }
         int target = _selectedId;
         if (_genieModes[4].ButtonPressed && InParty && !AmLeader)
-            target = _genieLeaderId == PartyMembers[0].CharId && now - _genieLeaderSeenAt < 8 && GenieValidMonster(_genieLeaderTarget) ? _genieLeaderTarget : -1;
+            target = _genieLeaderId == PartyMembers[0].CharId && now - _genieLeaderSeenAt < GenieLeaderTargetMemory && GenieValidMonster(_genieLeaderTarget) ? _genieLeaderTarget : -1;
         else if (!GenieValidMonster(target))
             target = _ents.Where(pair => GenieValidMonster(pair.Key))
                 .OrderBy(pair => pair.Value.Body.GlobalPosition.DistanceSquaredTo(_self.GlobalPosition))
@@ -414,9 +425,9 @@ public partial class World
         if (!basicInRange && _autoAttack) StopAutoAttack();
         bool skillInRange = false;
         bool hasAttackSkill = false;
-        for (int j = 0; j < 8; j++)
+        for (int j = 0; j < GenieSkillGroupSlots; j++)
         {
-            int index = _genieModes[5].ButtonPressed ? (_genieAttackCursor + j) % 8 : j;
+            int index = _genieModes[5].ButtonPressed ? (_genieAttackCursor + j) % GenieSkillGroupSlots : j;
             var skill = SkillData.Get(_genieSkills[index]);
             if (skill == null || !skill.IsEnemy || !SkillRequirementMet(skill)) continue;
             if (_genieModes[5].ButtonPressed && !(skill.IsRanged && skill.NeedArrow is 3 or 5)) continue;
@@ -426,7 +437,7 @@ public partial class World
             if (!SkillReady(skill, now) || !CanCastWithGear(skill)) continue;
             _hasMoveTarget = false; _genieMoving = false;
             CastSkill(skill.Id);
-            _genieAttackCursor = (index + 1) % 8;
+            _genieAttackCursor = (index + 1) % GenieSkillGroupSlots;
             return;
         }
         // Use the normal movement path; never teleport or bypass server range checks.
@@ -441,7 +452,7 @@ public partial class World
 
     private bool GenieSupport(int start, int target, int hp, int maxHp, double now)
     {
-        for (int i = start; i < start + 8; i++)
+        for (int i = start; i < start + GenieSkillGroupSlots; i++)
         {
             var skill = SkillData.Get(_genieSkills[i]);
             if (skill == null || skill.IsEnemy || skill.IsDeadFriend || skill.IsGroundArea || skill.IsBlink
@@ -457,7 +468,7 @@ public partial class World
             try { CastSkill(skill.Id); }
             finally { _selectedId = previous; }
             // Only a server effect reply installs the full buff duration. Failed casts retry later.
-            _genieSupportAt[(skill.Id, target)] = now + 2;
+            _genieSupportAt[(skill.Id, target)] = now + GenieSupportRetryInterval;
             return true;
         }
         return false;

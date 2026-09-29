@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
 
@@ -107,6 +107,12 @@ public partial class World
         if (!_ents.TryGetValue(npcUniqueId, out var e) || !e.IsNpc || e.Dead || e.Attackable) return;
 
         if (FlatDistance(_self.Position, e.Body.Position) > NpcInteractRange) return;
+
+        if (e.NpcType == NpcTypes.Lever)
+        {
+            TryOperateObject((short)e.NpcId, npcUniqueId);
+            return;
+        }
 
         StopForNpcTalk(e);
 
