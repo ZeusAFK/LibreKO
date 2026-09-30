@@ -95,9 +95,6 @@ public sealed class JuraidMountainService(
     private const float MoradonTownX = 816f;
     private const float MoradonTownZ = 532f;
 
-    public const int SilveryGemItemId = 389196000;
-    public const int BlackGemItemId = 389205000;
-    public const int LoyaltyWinBonus = 500;
     public const int MaxPlayersPerNationPerRoom = 8;
 
     public const int FinishedMatchClosureDelaySeconds = 20;
@@ -391,13 +388,9 @@ public sealed class JuraidMountainService(
         }
     }
 
-    private (int ItemId, ushort ItemCount, int Loyalty) GetReward(string outcome, int fallbackItemId, ushort fallbackCount, int fallbackLoyalty)
+    private JuraidMountainRewardData? GetReward(JuraidMountainRewardOutcome outcome)
     {
-        var reward = gameDataService.JuraidMountainRewards?.FirstOrDefault(r => r.Outcome.Equals(outcome, StringComparison.OrdinalIgnoreCase));
-        if (reward != null)
-            return (reward.ItemId, (ushort)reward.ItemCount, reward.LoyaltyPoints);
-
-        return (fallbackItemId, fallbackCount, fallbackLoyalty);
+        return gameDataService.JuraidMountainRewards?.FirstOrDefault(r => r.Outcome == outcome);
     }
 
     private async Task HandleDevabirdKilledAsync(JuraidMatch match, UserSession killer)
@@ -410,8 +403,8 @@ public sealed class JuraidMountainService(
             $"### [Juraid Mountain] The {winnerName} nation has slain Devabird and claimed victory! ###");
         await sessionManager.BroadcastToAll(noticePkt);
 
-        var (winItemId, winItemCount, winLoyalty) = GetReward("Win", SilveryGemItemId, 2, LoyaltyWinBonus);
-        var (lossItemId, lossItemCount, _) = GetReward("Loss", BlackGemItemId, 1, 0);
+        var winReward = GetReward(JuraidMountainRewardOutcome.Win);
+        var lossReward = GetReward(JuraidMountainRewardOutcome.Loss);
 
         foreach (var charId in match.Participants)
         {
@@ -421,23 +414,31 @@ public sealed class JuraidMountainService(
 
             if (member.Nation == winnerNation)
             {
-                if (winItemId > 0 && winItemCount > 0)
-                    await TryGiveItemAsync(member, winItemId, winItemCount);
-                if (winLoyalty > 0)
-                    await loyaltyService.ChangeAsync(member, winLoyalty);
+                if (winReward != null)
+                {
+                    if (winReward.ItemId > 0 && winReward.ItemCount > 0)
+                        await TryGiveItemAsync(member, winReward.ItemId, (ushort)winReward.ItemCount);
+                    if (winReward.LoyaltyPoints > 0)
+                        await loyaltyService.ChangeAsync(member, winReward.LoyaltyPoints);
 
-                await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                    (byte)member.Nation,
-                    $"[Juraid Mountain] Victory! You have received {winItemCount}x {gameDataService.GetItem(winItemId)?.Name ?? "Gem"} and {winLoyalty} National Points!"));
+                    await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                        (byte)member.Nation,
+                        $"[Juraid Mountain] Victory! You have received {winReward.ItemCount}x {gameDataService.GetItem(winReward.ItemId)?.Name ?? "Gem"} and {winReward.LoyaltyPoints} National Points!"));
+                }
             }
             else
             {
-                if (lossItemId > 0 && lossItemCount > 0)
-                    await TryGiveItemAsync(member, lossItemId, lossItemCount);
+                if (lossReward != null)
+                {
+                    if (lossReward.ItemId > 0 && lossReward.ItemCount > 0)
+                        await TryGiveItemAsync(member, lossReward.ItemId, (ushort)lossReward.ItemCount);
+                    if (lossReward.LoyaltyPoints > 0)
+                        await loyaltyService.ChangeAsync(member, lossReward.LoyaltyPoints);
 
-                await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                    (byte)member.Nation,
-                    $"[Juraid Mountain] Defeat! You have received {lossItemCount}x {gameDataService.GetItem(lossItemId)?.Name ?? "Gem"} for your participation."));
+                    await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                        (byte)member.Nation,
+                        $"[Juraid Mountain] Defeat! You have received {lossReward.ItemCount}x {gameDataService.GetItem(lossReward.ItemId)?.Name ?? "Gem"} for your participation."));
+                }
             }
         }
     }
@@ -449,8 +450,8 @@ public sealed class JuraidMountainService(
 
         logger.LogInformation("Cancelling / finalizing all active Juraid Mountain matches ({Count})", _activeMatches.Count);
 
-        var (winItemId, winItemCount, _) = GetReward("Win", SilveryGemItemId, 2, LoyaltyWinBonus);
-        var (timeoutItemId, timeoutItemCount, _) = GetReward("Timeout", BlackGemItemId, 1, 0);
+        var timeoutWinReward = GetReward(JuraidMountainRewardOutcome.TimeoutWin);
+        var timeoutReward = GetReward(JuraidMountainRewardOutcome.Timeout);
 
         foreach (var match in _activeMatches.Values.ToList())
         {
@@ -476,18 +477,31 @@ public sealed class JuraidMountainService(
 
                 if (outcomeNation != null && member.Nation == outcomeNation)
                 {
-                    var count = (ushort)Math.Max(1, winItemCount / 2);
-                    await TryGiveItemAsync(member, winItemId, count);
-                    await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                        (byte)member.Nation,
-                        $"[Juraid Mountain] Time expired! Your nation advanced further and received {count}x {gameDataService.GetItem(winItemId)?.Name ?? "Gem"}!"));
+                    if (timeoutWinReward != null)
+                    {
+                        if (timeoutWinReward.ItemId > 0 && timeoutWinReward.ItemCount > 0)
+                            await TryGiveItemAsync(member, timeoutWinReward.ItemId, (ushort)timeoutWinReward.ItemCount);
+                        if (timeoutWinReward.LoyaltyPoints > 0)
+                            await loyaltyService.ChangeAsync(member, timeoutWinReward.LoyaltyPoints);
+
+                        await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                            (byte)member.Nation,
+                            $"[Juraid Mountain] Time expired! Your nation advanced further and received {timeoutWinReward.ItemCount}x {gameDataService.GetItem(timeoutWinReward.ItemId)?.Name ?? "Gem"}!"));
+                    }
                 }
                 else
                 {
-                    await TryGiveItemAsync(member, timeoutItemId, timeoutItemCount);
-                    await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                        (byte)member.Nation,
-                        $"[Juraid Mountain] Event ended! You received {timeoutItemCount}x {gameDataService.GetItem(timeoutItemId)?.Name ?? "Gem"} for participating."));
+                    if (timeoutReward != null)
+                    {
+                        if (timeoutReward.ItemId > 0 && timeoutReward.ItemCount > 0)
+                            await TryGiveItemAsync(member, timeoutReward.ItemId, (ushort)timeoutReward.ItemCount);
+                        if (timeoutReward.LoyaltyPoints > 0)
+                            await loyaltyService.ChangeAsync(member, timeoutReward.LoyaltyPoints);
+
+                        await member.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                            (byte)member.Nation,
+                            $"[Juraid Mountain] Event ended! You received {timeoutReward.ItemCount}x {gameDataService.GetItem(timeoutReward.ItemId)?.Name ?? "Gem"} for participating."));
+                    }
                 }
             }
 

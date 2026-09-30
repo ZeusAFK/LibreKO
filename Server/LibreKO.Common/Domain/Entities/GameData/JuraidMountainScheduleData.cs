@@ -22,6 +22,9 @@ public class JuraidMountainScheduleData
         {
             builder.HasKey(p => p.Id);
             builder.Property(p => p.Id).ValueGeneratedNever();
+            builder.Property(p => p.MinLevel).HasDefaultValue((byte)40);
+            builder.Property(p => p.MaxLevel).HasDefaultValue((byte)83);
+            builder.Property(p => p.CountdownMinutes).HasDefaultValue((byte)10);
         }
     }
 }

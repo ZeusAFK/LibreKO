@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibreKO.Common.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260928022949_AddJuraidMountainSchedule")]
+    [Migration("20260930002347_AddJuraidMountainSchedule")]
     partial class AddJuraidMountainSchedule
     {
         /// <inheritdoc />
@@ -1406,13 +1406,39 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("ItemUpgradeSettings", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.JuraidMountainRewardData", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LoyaltyPoints")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Outcome")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Outcome");
+
+                    b.ToTable("JuraidMountainRewards", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.JuraidMountainScheduleData", b =>
                 {
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
                     b.Property<byte>("CountdownMinutes")
-                        .HasColumnType("tinyint unsigned");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint unsigned")
+                        .HasDefaultValue((byte)10);
 
                     b.Property<int?>("Day")
                         .HasColumnType("int");
@@ -1421,10 +1447,14 @@ namespace LibreKO.Common.Migrations
                         .HasColumnType("tinyint unsigned");
 
                     b.Property<byte>("MaxLevel")
-                        .HasColumnType("tinyint unsigned");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint unsigned")
+                        .HasDefaultValue((byte)83);
 
                     b.Property<byte>("MinLevel")
-                        .HasColumnType("tinyint unsigned");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint unsigned")
+                        .HasDefaultValue((byte)40);
 
                     b.Property<byte>("Minute")
                         .HasColumnType("tinyint unsigned");
@@ -1432,30 +1462,6 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("JuraidMountainSchedules", (string)null);
-                });
-
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.JuraidMountainRewardData", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("int");
-
-                    b.Property<ushort>("ItemCount")
-                        .HasColumnType("smallint unsigned");
-
-                    b.Property<int>("LoyaltyPoints")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Outcome")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("JuraidMountainRewards", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.KingSystemData", b =>

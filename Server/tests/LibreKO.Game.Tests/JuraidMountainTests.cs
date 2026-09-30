@@ -109,9 +109,10 @@ public class JuraidMountainTests
 
         _gameDataService.JuraidMountainRewards.Returns(
         [
-            new JuraidMountainRewardData { Id = 1, Outcome = "Win", ItemId = JuraidMountainService.SilveryGemItemId, ItemCount = 2, LoyaltyPoints = JuraidMountainService.LoyaltyWinBonus },
-            new JuraidMountainRewardData { Id = 2, Outcome = "Loss", ItemId = JuraidMountainService.BlackGemItemId, ItemCount = 1, LoyaltyPoints = 0 },
-            new JuraidMountainRewardData { Id = 3, Outcome = "Timeout", ItemId = JuraidMountainService.BlackGemItemId, ItemCount = 1, LoyaltyPoints = 0 }
+            new JuraidMountainRewardData { Id = 1, Outcome = JuraidMountainRewardOutcome.Win, ItemId = 389196000, ItemCount = 2, LoyaltyPoints = 500 },
+            new JuraidMountainRewardData { Id = 2, Outcome = JuraidMountainRewardOutcome.Loss, ItemId = 389205000, ItemCount = 1, LoyaltyPoints = 0 },
+            new JuraidMountainRewardData { Id = 3, Outcome = JuraidMountainRewardOutcome.Timeout, ItemId = 389205000, ItemCount = 1, LoyaltyPoints = 0 },
+            new JuraidMountainRewardData { Id = 4, Outcome = JuraidMountainRewardOutcome.TimeoutWin, ItemId = 389196000, ItemCount = 1, LoyaltyPoints = 0 }
         ]);
     }
 
@@ -202,15 +203,42 @@ public class JuraidMountainTests
         await service.OnNpcKilledAsync(devabird!, karusPlayer);
 
         // Winning nation (Karus) receives 500 NP
-        await _loyaltyService.Received(1).ChangeAsync(karusPlayer, JuraidMountainService.LoyaltyWinBonus);
+        await _loyaltyService.Received(1).ChangeAsync(karusPlayer, 500);
 
         // Karus receives 2x Silvery Gem (389196000)
-        var karusGemSlot = karusPlayer.Inventory.FirstOrDefault(s => s.ItemId == JuraidMountainService.SilveryGemItemId);
+        var karusGemSlot = karusPlayer.Inventory.FirstOrDefault(s => s.ItemId == 389196000);
         karusGemSlot.Should().NotBeNull();
         karusGemSlot!.Count.Should().Be(2);
 
         // Losing nation (El Morad) receives 1x Black Gem (389205000)
-        var elmoGemSlot = elmoPlayer.Inventory.FirstOrDefault(s => s.ItemId == JuraidMountainService.BlackGemItemId);
+        var elmoGemSlot = elmoPlayer.Inventory.FirstOrDefault(s => s.ItemId == 389205000);
+        elmoGemSlot.Should().NotBeNull();
+        elmoGemSlot!.Count.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task CancelAllMatches_DistributesTimeoutAndTimeoutWinRewards()
+    {
+        var service = CreateService();
+        var karusPlayer = CreateTestSession(1, AccountNation.Karus);
+        var elmoPlayer = CreateTestSession(2, AccountNation.ElMorad);
+
+        await service.StartMatchesAsync([karusPlayer.CharacterId, elmoPlayer.CharacterId], 600);
+
+        var room = _instanceRooms.Get(1)!;
+        var stage1Monsters = room.Npcs.Where(n => n.NpcId == 8101).ToList();
+        foreach (var m in stage1Monsters)
+        {
+            await service.OnNpcKilledAsync(m, karusPlayer);
+        }
+
+        await service.CancelAllMatchesAsync();
+
+        var karusGemSlot = karusPlayer.Inventory.FirstOrDefault(s => s.ItemId == 389196000);
+        karusGemSlot.Should().NotBeNull();
+        karusGemSlot!.Count.Should().Be(1);
+
+        var elmoGemSlot = elmoPlayer.Inventory.FirstOrDefault(s => s.ItemId == 389205000);
         elmoGemSlot.Should().NotBeNull();
         elmoGemSlot!.Count.Should().Be(1);
     }

@@ -19,5 +19,12 @@
     "ItemId": 389205000,
     "ItemCount": 1,
     "LoyaltyPoints": 0
+  },
+  {
+    "Id": 4,
+    "Outcome": "TimeoutWin",
+    "ItemId": 389196000,
+    "ItemCount": 1,
+    "LoyaltyPoints": 0
   }
 ]

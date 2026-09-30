@@ -326,7 +326,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+santa/+angel/+offsanta - Santa/Angel");
                 await SendNoticeAsync(session, "+waropen <zoneId>/+warclose/+snowwar");
                 await SendNoticeAsync(session, "+bifroststart [min] / +bifrostclose - Bifrost event");
-                await SendNoticeAsync(session, "+jr [sec|min] / +jrclose / +bdw [sec] / +chaos [sec] / +templecancel - Temple Events");
+                await SendNoticeAsync(session, "+jr [sec|min] / +jrcancel / +bdw [sec] / +chaos [sec] / +templecancel - Temple Events");
                 await SendNoticeAsync(session, "+cropen <eventIndex> / +crclose / +crstatus - Collection Race");
                 await SendNoticeAsync(session, "+lottery start [id] / +lottery close / +lottery cancel - Lottery Event");
                 await SendNoticeAsync(session, "+savemerchantbots - Save active merchant bots to DB");

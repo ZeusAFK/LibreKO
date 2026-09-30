@@ -186,9 +186,10 @@ public class EventSchedulerService(
                 if (due != TempleEvent.None)
                 {
                     await StartTempleEventAsync(due, utcNow, scheduledJoinWindowSeconds, null, scheduledMinLevel, scheduledMaxLevel);
-                    return;
                 }
             }
+
+            return;
         }
 
         if (_templeEventJoinOpen && utcNow >= _templeEventStart)
