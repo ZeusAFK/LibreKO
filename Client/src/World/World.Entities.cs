@@ -62,7 +62,7 @@ public partial class World
         public int Hp, MaxHp;
         public int ModelId, Size, Nation, NpcId, NpcType;
         public int Race, Face, Hair;
-        public int CapeId, CapeR, CapeG, CapeB, KnightsId;
+        public int CapeId, CapeR, CapeG, CapeB, KnightsId, ClanGrade, ClanRanking;
         public bool IsGm;
         public bool HelmetHidden;
         public int[] Gear = System.Array.Empty<int>();
@@ -226,7 +226,7 @@ public partial class World
             using (Perf.Measure(Perf.Section.BuildGear))
             {
                 AttachWeapons(body, info.Gear, info.NpcType, info.NpcId);
-                if (!info.IsNpc) AttachClanGauntlet(body, info.Race, info.ClanGrade);
+                if (!info.IsNpc) AttachClanGauntlet(body, info.Race, info.ClanGrade, info.ClanRanking);
                 if (info.IsNpc)
                 {
                     string fxStem = _mobIndex != null && _mobIndex.TryGetValue(info.ModelId, out var fs)
@@ -261,7 +261,8 @@ public partial class World
             NpcId = info.NpcId, NpcType = info.NpcType,
             Race = info.Race, Face = info.Face, Hair = info.Hair,
             CapeId = info.CapeId, CapeR = info.CapeR, CapeG = info.CapeG, CapeB = info.CapeB,
-            KnightsId = info.KnightsId, IsGm = info.IsGm, HelmetHidden = info.HelmetHidden,
+            KnightsId = info.KnightsId, ClanGrade = info.ClanGrade, ClanRanking = info.ClanRanking,
+            IsGm = info.IsGm, HelmetHidden = info.HelmetHidden,
             Gear = info.Gear.Length > 0 ? (int[])info.Gear.Clone() : System.Array.Empty<int>(),
             DefaultParts = defaultParts,
             SpawnX = info.X, SpawnZ = info.Z, SpawnY = info.Y, SpawnDir = info.Dir,

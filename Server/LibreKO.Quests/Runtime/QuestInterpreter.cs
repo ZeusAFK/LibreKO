@@ -1,4 +1,4 @@
-using LibreKO.Quests.Binding;
+﻿using LibreKO.Quests.Binding;
 
 namespace LibreKO.Quests.Runtime;
 
@@ -586,8 +586,16 @@ public sealed class QuestInterpreter
                 _host.TeleportToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
                 break;
 
+            case QuestActionKind.WarpClan:
+                _host.TeleportClanToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
+                break;
+
             case QuestActionKind.EnterInstance:
                 _host.EnterInstance(args.GetInt("zone"), args.GetInt("set"), args.GetInt("x"), args.GetInt("z"));
+                break;
+
+            case QuestActionKind.EnterClanInstance:
+                _host.EnterClanInstance(args.GetInt("zone"), args.GetInt("set"), args.GetInt("x"), args.GetInt("z"));
                 break;
 
             case QuestActionKind.Cast:

@@ -15,7 +15,7 @@ public partial class World
     {
         BuildClanPremiumChip();
         Net.I.ClanPremiumEvent += OnClanPremiumStatus;
-        Net.I.MyClanInfoEvent += OnClanPremiumClanInfo;
+        Net.I.MyClanChangedEvent += OnClanPremiumClanInfo;
 
         RefreshClanPremiumChip();
         Net.I.SendClanPremiumQuery();
@@ -24,7 +24,7 @@ public partial class World
     private void ClanPremiumDispose()
     {
         Net.I.ClanPremiumEvent -= OnClanPremiumStatus;
-        Net.I.MyClanInfoEvent -= OnClanPremiumClanInfo;
+        Net.I.MyClanChangedEvent -= OnClanPremiumClanInfo;
     }
 
     private void BuildClanPremiumChip()

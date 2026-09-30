@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
@@ -27,6 +27,7 @@ public sealed class UserInfoPacketWriter
         string Name,
         byte Grade,
         byte Ranking,
+        short MarkVersion,
         short CapeId,
         byte CapeR,
         byte CapeG,
@@ -77,7 +78,7 @@ public sealed class UserInfoPacketWriter
             packet.WriteSByteString(clan.Name);
             packet.WriteByte(clan.Grade);
             packet.WriteByte(clan.Ranking);
-            packet.WriteShort(NoMarkVersion);
+            packet.WriteShort(clan.MarkVersion);
             packet.WriteShort(clan.CapeId);
             packet.WriteByte(clan.CapeR);
             packet.WriteByte(clan.CapeG);

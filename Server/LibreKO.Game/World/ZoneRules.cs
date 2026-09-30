@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 
 namespace LibreKO.Game.World;
 
@@ -95,4 +95,6 @@ public static class ZoneRules
     public static bool Allows(byte zoneId, ZoneFlags flag) => (For(zoneId).Flags & flag) == flag;
 
     public static bool BarsReborn(byte zoneId) => zoneId is (byte)ZoneId.Ardream or (byte)ZoneId.RonarkLandBase;
+
+    public static bool IsTempleEvent(byte zoneId) => zoneId is (byte)ZoneId.BorderDefenseWar or (byte)ZoneId.ChaosDungeon;
 }

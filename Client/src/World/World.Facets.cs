@@ -37,6 +37,7 @@ public partial class World : Node3D
         Facet(InventoryInit);
         Facet(StatsInit, StatsDispose);
         Facet(FriendsInit, FriendsDispose);
+        Facet(ClanInit, ClanDispose);
         Facet(ResetConfirmInit, ResetConfirmDispose);
         Facet(HotbarInit, HotbarDispose);
         Facet(SkillWindowInit, SkillWindowDispose);
@@ -56,7 +57,6 @@ public partial class World : Node3D
         Facet(ExchangeInit, ExchangeDispose);
         Facet(GatherInit, GatherDispose);
         Facet(MerchantInit, MerchantDispose);
-        Facet(ClanInit, ClanDispose);
         Facet(CosmeticsInit, CosmeticsDispose);
         Facet(PremiumInit, PremiumDispose);
         Facet(SeasonalInit, SeasonalDispose);

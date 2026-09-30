@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,7 +43,10 @@ public class KnightsRepository(AppDbContext context) : IKnightsRepository
                 Name = c.Name,
                 Fame = c.Fame,
                 Level = c.Level,
-                Class = c.Class
+                Class = c.Class,
+                Loyalty = c.Loyalty,
+                DonatedPoints = c.KnightsPoints,
+                LastOnlineTime = c.LastOnlineTime
             })
             .ToListAsync();
     }
@@ -52,6 +55,14 @@ public class KnightsRepository(AppDbContext context) : IKnightsRepository
     {
         return await context.Characters
             .Where(c => c.KnightsId == knightsId)
+            .ToListAsync();
+    }
+
+    public async Task<List<ClanMemberLoyalty>> GetMemberLoyaltyAsync()
+    {
+        return await context.Characters
+            .Where(c => c.KnightsId > 0)
+            .Select(c => new ClanMemberLoyalty(c.KnightsId, c.Name, c.Loyalty))
             .ToListAsync();
     }
 

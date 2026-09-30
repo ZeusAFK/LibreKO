@@ -16,7 +16,7 @@
     "DungeonFamily": 0,
     "SpecialType": 0,
     "TrapNumber": 0,
-    "Room": 0
+    "Room": 1
   },
   {
     "Index": 7750,
@@ -35,6 +35,6 @@
     "DungeonFamily": 0,
     "SpecialType": 0,
     "TrapNumber": 0,
-    "Room": 0
+    "Room": 1
   }
 ]

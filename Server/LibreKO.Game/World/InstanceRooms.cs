@@ -77,6 +77,7 @@ public sealed class InstanceRoomRegistry(SessionManager sessionManager, ILogger<
 public interface IInstanceEntryService
 {
     Task EnterAsync(UserSession session, byte zoneId, short set, float x, float z);
+    Task EnterClanAsync(UserSession session, byte zoneId, short set, float x, float z);
     void Populate(InstanceRoom room);
 }
 
@@ -88,17 +89,36 @@ public sealed class InstanceEntryService(
     InstanceRoomRegistry rooms,
     ILogger<InstanceEntryService> logger) : IInstanceEntryService
 {
-    public async Task EnterAsync(UserSession session, byte zoneId, short set, float x, float z)
+    public Task EnterAsync(UserSession session, byte zoneId, short set, float x, float z)
+    {
+        var returnPoint = (session.ZoneId, session.X, session.Z);
+        return OpenAsync(session, Participants(session), zoneId, set, x, z, _ => returnPoint);
+    }
+
+    public Task EnterClanAsync(UserSession session, byte zoneId, short set, float x, float z)
+    {
+        if (session.KnightsId <= 0)
+        {
+            logger.LogInformation("{Name} is in no clan, so no clan room of zone {Zone} opens", session.Name, zoneId);
+            return Task.CompletedTask;
+        }
+
+        return OpenAsync(session, ClanMembers(session), zoneId, set, x, z,
+            member => (member.ZoneId, member.X, member.Z));
+    }
+
+    private async Task OpenAsync(
+        UserSession session, IEnumerable<UserSession> members, byte zoneId, short set, float x, float z,
+        Func<UserSession, (byte ZoneId, float X, float Z)> returnPoint)
     {
         var duration = TimeSpan.FromMinutes(GameConstants.InstanceRoomMinutes);
         var room = rooms.Open(zoneId, set, duration);
         Populate(room);
 
-        var returnPoint = (session.ZoneId, session.X, session.Z);
-        foreach (var member in Participants(session))
+        foreach (var member in members.ToList())
         {
             rooms.Join(room, member);
-            member.InstanceReturn = member.ZoneId == zoneId ? member.InstanceReturn : returnPoint;
+            member.InstanceReturn = member.ZoneId == zoneId ? member.InstanceReturn : returnPoint(member);
             await zoneTransition.ChangeZoneAsync(member, zoneId, x, z);
             await member.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)member.Nation,
                 $"The dungeon closes in {GameConstants.InstanceRoomMinutes} minutes."));
@@ -106,6 +126,19 @@ public sealed class InstanceEntryService(
 
         logger.LogInformation("Instance room {Room}: zone {Zone} set {Set} opened by {Name} with {Count} monsters",
             room.Id, zoneId, set, session.Name, room.Npcs.Count);
+    }
+
+    private IEnumerable<UserSession> ClanMembers(UserSession session)
+    {
+        yield return session;
+        foreach (var member in sessionManager.GetAll())
+        {
+            if (member.CharacterId == session.CharacterId || member.KnightsId != session.KnightsId)
+                continue;
+            if (member.Room != 0 || member.IsWarping || ZoneRules.IsTempleEvent(member.ZoneId))
+                continue;
+            yield return member;
+        }
     }
 
     private IEnumerable<UserSession> Participants(UserSession session)

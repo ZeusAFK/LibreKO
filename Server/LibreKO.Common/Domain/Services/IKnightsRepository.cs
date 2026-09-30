@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 
 namespace LibreKO.Common.Domain.Services;
 
@@ -11,8 +11,11 @@ public interface IKnightsRepository
     Task UpdateAsync(KnightsEntity clan);
     Task<List<ClanMemberProjection>> GetMembersAsync(short knightsId);
     Task<List<Character>> GetCharactersByClanAsync(short knightsId);
+    Task<List<ClanMemberLoyalty>> GetMemberLoyaltyAsync();
     Task SyncCharacterClanStateAsync(int characterId, short knightsId, byte fame, int? money = null, int? loyalty = null);
 }
+
+public readonly record struct ClanMemberLoyalty(short ClanId, string Name, int Loyalty);
 
 public class ClanMemberProjection
 {
@@ -20,4 +23,7 @@ public class ClanMemberProjection
     public byte Fame { get; init; }
     public byte Level { get; init; }
     public short Class { get; init; }
+    public int Loyalty { get; init; }
+    public int DonatedPoints { get; init; }
+    public DateTime? LastOnlineTime { get; init; }
 }

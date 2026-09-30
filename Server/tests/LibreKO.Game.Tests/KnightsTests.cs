@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -175,6 +175,7 @@ public class KnightsTests : GameTestBase
         leader.KnightsId = clanId;
         leader.KnightsFame = 1;
         leader.KnightsName = "Defenders";
+        leader.ZoneId = (byte)ZoneId.Moradon;
 
         var packet = new Packet(GameOpcodes.GS_KNIGHTS_PROCESS);
         packet.WriteByte(0x04);
@@ -207,7 +208,7 @@ public class KnightsTests : GameTestBase
                     Name = "Defenders",
                     Chief = "Leader",
                     Nation = (byte)AccountNation.Karus,
-                    Flag = 1,
+                    Flag = (byte)ClanType.Accredited5,
                     Members = 1,
                     ClanPointFund = 100
                 });
@@ -222,7 +223,7 @@ public class KnightsTests : GameTestBase
                     MapId = 1,
                     KnightsId = clanId,
                     Fame = 1,
-                    Loyalty = 500
+                    Loyalty = 1_500
                 });
             });
 
@@ -233,7 +234,7 @@ public class KnightsTests : GameTestBase
             Name = "Defenders",
             Chief = "Leader",
             Nation = (byte)AccountNation.Karus,
-            Flag = 1,
+            Flag = (byte)ClanType.Accredited5,
             Members = 1,
             ClanPointFund = 100
         });
@@ -242,8 +243,8 @@ public class KnightsTests : GameTestBase
 
         var leaderClient = Substitute.For<IClient>();
         leaderClient.Id.Returns(Guid.NewGuid());
-        Packet? sentPacket = null;
-        leaderClient.SendPacket(Arg.Do<Packet>(packet => sentPacket = packet), Arg.Any<CancellationToken>())
+        var sentPackets = new List<Packet>();
+        leaderClient.SendPacket(Arg.Do<Packet>(sentPackets.Add), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var leader = sessionManager.CreateSession(leaderClient, leaderId, accountId: 5);
@@ -252,7 +253,7 @@ public class KnightsTests : GameTestBase
         leader.KnightsId = clanId;
         leader.KnightsFame = 1;
         leader.KnightsName = "Defenders";
-        leader.Loyalty = 500;
+        leader.Loyalty = 1_500;
 
         var packet = new Packet(GameOpcodes.GS_KNIGHTS_PROCESS);
         packet.WriteByte(0x3D);
@@ -261,12 +262,18 @@ public class KnightsTests : GameTestBase
         var coordinator = provider.GetRequiredService<IKnightsPacketCoordinator>();
         await coordinator.HandleProcessAsync(leaderClient, packet);
 
-        leader.Loyalty.Should().Be(375);
-        sentPacket.Should().NotBeNull();
-        sentPacket!.ResetOffset();
-        sentPacket.ReadByte().Should().Be(0x3D);
-        sentPacket.ReadByte().Should().Be(1);
-        sentPacket.ReadInt().Should().Be(375);
+        leader.Loyalty.Should().Be(1_375);
+        leader.KnightsPoints.Should().Be(125);
+
+        var reply = sentPackets.Single(sent => sent.GetData()[0] == 0x3D);
+        reply.ResetOffset();
+        reply.ReadByte().Should().Be(0x3D);
+        reply.ReadByte().Should().Be((byte)KnightsDonateResult.Succeeded);
+        reply.ReadInt().Should().Be(1_375);
+        reply.ReadInt().Should().Be(225);
+        reply.ReadByte().Should().Be(0);
+        reply.ReadInt().Should().Be(125);
+        reply.RemainingBytes.Should().Be(0);
 
         await using var scope = provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -274,7 +281,70 @@ public class KnightsTests : GameTestBase
         var character = await db.Characters.SingleAsync(entry => entry.Name == "Leader");
 
         clan.ClanPointFund.Should().Be(225);
-        character.Loyalty.Should().Be(375);
+        character.Loyalty.Should().Be(1_375);
+    }
+
+    [Theory]
+    [InlineData(ClanType.Training, 125, KnightsDonateResult.ClanNotAccredited)]
+    [InlineData(ClanType.Promoted, 125, KnightsDonateResult.ClanNotAccredited)]
+    [InlineData(ClanType.Accredited5, 600, KnightsDonateResult.NotEnoughPoints)]
+    [InlineData(ClanType.Accredited5, 0, KnightsDonateResult.NotEnoughPoints)]
+    public async Task KnightsPacketCoordinator_HandleProcessAsync_DonateIsRefusedWithTheRetailCode(
+        ClanType type, int amount, KnightsDonateResult expected)
+    {
+        const short clanId = 90;
+
+        using var provider = CreateProvider(
+            db =>
+            {
+                db.Set<KnightsEntity>().Add(new KnightsEntity
+                {
+                    Id = clanId, Name = "Trainees", Chief = "Leader",
+                    Nation = (byte)AccountNation.Karus, Flag = (byte)type, Members = 1,
+                });
+                db.Characters.Add(new Character
+                {
+                    AccountId = 5, Slot = 0, Name = "Leader", Level = 70, Class = 101, MapId = 1,
+                    KnightsId = clanId, Fame = 1, Loyalty = 1_500
+                });
+            });
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        sessionManager.Knights.AddClan(clanId, new KnightsEntity
+        {
+            Id = clanId, Name = "Trainees", Chief = "Leader",
+            Nation = (byte)AccountNation.Karus, Flag = (byte)type, Members = 1,
+        });
+
+        var leaderId = await GetCharacterIdAsync(provider, "Leader");
+        var leaderClient = Substitute.For<IClient>();
+        leaderClient.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        leaderClient.SendPacket(Arg.Do<Packet>(sentPackets.Add), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var leader = sessionManager.CreateSession(leaderClient, leaderId, accountId: 5);
+        leader.Name = "Leader";
+        leader.Nation = AccountNation.Karus;
+        leader.KnightsId = clanId;
+        leader.KnightsFame = 1;
+        leader.KnightsName = "Trainees";
+        leader.Loyalty = 1_500;
+
+        var packet = new Packet(GameOpcodes.GS_KNIGHTS_PROCESS);
+        packet.WriteByte(0x3D);
+        packet.WriteInt(amount);
+
+        var coordinator = provider.GetRequiredService<IKnightsPacketCoordinator>();
+        await coordinator.HandleProcessAsync(leaderClient, packet);
+
+        leader.Loyalty.Should().Be(1_500);
+        sessionManager.Knights.GetClan(clanId)!.ClanPointFund.Should().Be(0);
+        var reply = sentPackets.Should().ContainSingle().Subject;
+        reply.ResetOffset();
+        reply.ReadByte().Should().Be(0x3D);
+        reply.ReadByte().Should().Be((byte)expected);
+        reply.RemainingBytes.Should().Be(0);
     }
 
     [Fact]
@@ -293,7 +363,7 @@ public class KnightsTests : GameTestBase
                     Level = 70,
                     Class = 101,
                     MapId = 1,
-                    Money = 750000,
+                    Money = 10_750_000,
                     KnightsId = staleClanId,
                     Fame = 1
                 });
@@ -312,7 +382,8 @@ public class KnightsTests : GameTestBase
         session.Name = "Founder";
         session.Nation = AccountNation.Karus;
         session.Level = 70;
-        session.Money = 750000;
+        session.Money = 10_750_000;
+        session.ZoneId = (byte)ZoneId.Moradon;
         session.KnightsId = staleClanId;
         session.KnightsFame = 1;
         session.KnightsName = "GhostClan";
@@ -333,16 +404,16 @@ public class KnightsTests : GameTestBase
         sentPacket.ReadInt().Should().Be(characterId);
         sentPacket.ReadShort().Should().Be(session.KnightsId);
         sentPacket.ReadString().Should().Be("Renewed");
-        sentPacket.ReadByte().Should().Be(0);
-        sentPacket.ReadByte().Should().Be(0);
-        sentPacket.ReadInt().Should().Be(250000);
+        sentPacket.ReadByte().Should().Be(ClanRules.LowestGrade);
+        sentPacket.ReadByte().Should().Be(ClanRules.Unranked);
+        sentPacket.ReadInt().Should().Be(750_000);
         sentPacket.RemainingBytes.Should().Be(0);
 
         session.KnightsId.Should().BeGreaterThan(0);
         session.KnightsId.Should().NotBe(staleClanId);
         session.KnightsFame.Should().Be(1);
         session.KnightsName.Should().Be("Renewed");
-        session.Money.Should().Be(250000);
+        session.Money.Should().Be(750_000);
 
         await using var scope = provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -351,7 +422,7 @@ public class KnightsTests : GameTestBase
 
         founder.KnightsId.Should().Be((short)clan.Id);
         founder.Fame.Should().Be(1);
-        founder.Money.Should().Be(250000);
+        founder.Money.Should().Be(750_000);
         clan.Chief.Should().Be("Founder");
         clan.Members.Should().Be(1);
     }

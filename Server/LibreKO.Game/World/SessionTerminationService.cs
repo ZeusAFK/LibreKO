@@ -25,6 +25,7 @@ public class SessionTerminationService(
     INpcLifecycleService npcLifecycleService,
     InstanceRoomRegistry instanceRooms,
     IBorderDefenseWarService borderDefenseWarService,
+    IKnightsRuntimeService knightsRuntime,
     ILogger<SessionTerminationService> logger) : ISessionTerminationService
 {
     // Cap concurrent disconnect-time DB work so a mass disconnect (thousands of bots
@@ -56,6 +57,7 @@ public class SessionTerminationService(
     {
         session.Client.ExpectedClose = true;
         await RemoveFromWorldAsync(session);
+        await knightsRuntime.NotifyMemberOfflineAsync(session);
 
         try
         {
@@ -102,6 +104,7 @@ public class SessionTerminationService(
             logger.LogInformation("Client disconnected unexpectedly: {Name} (CharId={CharId})", session.Name, session.CharacterId);
 
         await RemoveFromWorldAsync(session);
+        await knightsRuntime.NotifyMemberOfflineAsync(session);
 
         try
         {

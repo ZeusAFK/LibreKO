@@ -12,4 +12,12 @@ public struct MyInfo
     public ItemSlot[] Inventory;
     public int CapeId;
     public int CapeR, CapeG, CapeB;
+    public int KnightsId;
+    public byte ClanFame;
+    public int AllianceId;
+    public byte ClanFlag;
+    public string ClanName;
+    public byte ClanGrade;
+    public byte ClanRanking;
+    public int MarkVersion;
 }

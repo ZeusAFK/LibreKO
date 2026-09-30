@@ -128,6 +128,8 @@ public partial class Net
         ItemSlot[] inventory = System.Array.Empty<ItemSlot>();
         byte[] skillPoints = new byte[9];
         int capeId = 0, capeR = 0, capeG = 0, capeB = 0;
+        short knightsId = 0; byte clanFame = 0, clanFlag = 0, clanGrade = 0, clanRanking = 0;
+        int allianceId = 0, markVersion = 0; string clanName = "";
         int rebirthLevel = 0, rebStr = 0, rebSta = 0, rebDex = 0, rebInt = 0, rebMag = 0;
         try
         {
@@ -143,15 +145,15 @@ public partial class Net
             exp = p.ReadLong();
             np = p.ReadInt();
             p.ReadInt();
-            short knightsId = p.ReadShort();
-            p.ReadByte();
+            knightsId = p.ReadShort();
+            clanFame = p.ReadByte();
             if (knightsId > 0)
             {
-                p.ReadShort();
-                p.ReadByte();
-                p.ReadSByteString();
-                p.ReadByte(); p.ReadByte();
-                p.ReadShort();
+                allianceId = p.ReadShort();
+                clanFlag = p.ReadByte();
+                clanName = p.ReadSByteString();
+                clanGrade = p.ReadByte(); clanRanking = p.ReadByte();
+                markVersion = p.ReadShort();
                 capeId = p.ReadShort();
                 capeR = p.ReadByte(); capeG = p.ReadByte(); capeB = p.ReadByte();
                 p.ReadByte();
@@ -215,7 +217,10 @@ public partial class Net
             Nation = nation, Race = race, Class = cls, Face = face, Hair = hair,
             Gear = gear, Inventory = inventory,
             CapeId = capeId, CapeR = capeR, CapeG = capeG, CapeB = capeB,
+            KnightsId = knightsId, ClanFame = clanFame, AllianceId = allianceId, ClanFlag = clanFlag,
+            ClanName = clanName, ClanGrade = clanGrade, ClanRanking = clanRanking, MarkVersion = markVersion,
         };
+        SeedMyClan(LastEnter);
         SeedPlayerState(
             level, exp, maxExp, hp, maxHp, mp, maxMp,
             str, sta, dex, intel, magicStat, statPoints,

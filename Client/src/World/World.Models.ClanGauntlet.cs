@@ -9,6 +9,8 @@ public partial class World
     private const string ClanGauntletFx = "clan_rank_1";
     private const int ClanGradeBest = 1;
     private const int ClanGradeWorst = 5;
+    private const int ClanRankFirst = 1;
+    private const int ClanRankLast = 5;
 
     private readonly struct ClanGauntlet
     {
@@ -21,7 +23,7 @@ public partial class World
 
     private Dictionary<string, ClanGauntlet>? _clanGauntletIndex;
 
-    private void AttachClanGauntlet(Node3D body, int race, int clanGrade)
+    private void AttachClanGauntlet(Node3D body, int race, int clanGrade, int clanRanking)
     {
         var skel = FindFirst<Skeleton3D>(body);
         if (skel == null) return;
@@ -50,6 +52,7 @@ public partial class World
         ForceDoubleSided(mesh);
         attach.AddChild(mesh);
 
+        if (clanRanking is < ClanRankFirst or > ClanRankLast) return;
         var glow = Fx.Spawn(ClanGauntletFx, attach, g.Pos, oneShot: false);
         if (glow != null) CullAttachedFx(glow);
     }

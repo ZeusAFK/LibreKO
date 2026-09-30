@@ -285,6 +285,7 @@ public partial class World
 
         BuildStatsPanel();
         BuildFriendsPanel();
+        BuildClanPage();
         RefreshStatsUI();
         _stHeaderName.Text = "Zeus";
         _stHeaderSub.Text = "Rogue";
@@ -641,21 +642,33 @@ public partial class World
         return list;
     }
 
+    private static MyClanInfo PreviewClan(bool asChief, byte flag = ClanTypes.Accredited5) => new()
+    {
+        InClan = true, ClanId = 1, Name = "Olympus", Flag = flag, Fame = asChief ? ClanRanks.Chief : ClanRanks.Trainee,
+        Grade = 2, Ranking = 3, PointFund = 5_000_000, Notice = "Siege practice tonight. Bring repair scrolls.",
+        Online = 3, MaxMembers = ClanTypes.MaxMembers,
+    };
+
+    private static System.Collections.Generic.List<ClanMember> PreviewClanMembers() => new()
+    {
+        new() { Name = "Zeus", Fame = ClanRanks.Chief, Level = 61, Class = 207, IsOnline = true, Memo = "" },
+        new() { Name = "Hera", Fame = ClanRanks.ViceChief, Level = 72, Class = 202, IsOnline = true, Memo = "" },
+        new() { Name = "Ares", Fame = ClanRanks.Trainee, Level = 72, Class = 201, IsOnline = false, Memo = "", HoursSinceLogin = 187 * 24 },
+        new() { Name = "Athena", Fame = ClanRanks.Trainee, Level = 72, Class = 204, IsOnline = true, Memo = "" },
+        new() { Name = "Tester10", Fame = ClanRanks.Trainee, Level = 31, Class = 205, IsOnline = false, Memo = "", HoursSinceLogin = 5 },
+    };
+
     internal Control BuildCapeUiPreview(bool asChief = true, int select = -1)
     {
         var me = Net.I.LastEnter;
         me.Name = asChief ? "Zeus" : "Tester10";
         Net.I.SeedPreviewEnter(me);
+        Net.I.SeedPreviewClan(PreviewClan(asChief));
 
         CapeInit();
         _capePanel.Visible = true;
         _capeShown = true;
 
-        OnCapeMyClan(new MyClanInfo
-        {
-            InClan = true, ClanId = 1, Name = "Olympus", Flag = 3, Members = 5,
-            Chief = "Zeus", Grade = 1, Points = 800_000, PointFund = 5_000_000,
-        });
         BuildCapeCatalogue();
         if (select >= 0)
         {
@@ -668,52 +681,45 @@ public partial class World
 
     internal Control BuildClanUiPreview(bool inClan, bool asChief = true, ClanTab tab = ClanTab.Members)
     {
-        ClanInit();
-        _clanPanel.Visible = true;
-        _clanShown = true;
+        var me = Net.I.LastEnter;
+        me.Name = asChief ? "Zeus" : "Tester10";
+        Net.I.SeedPreviewEnter(me);
+        Net.I.SeedPreviewClan(inClan ? PreviewClan(asChief) : new MyClanInfo { Name = "", Notice = "", MaxMembers = ClanTypes.MaxMembers });
+
+        var window = BuildPrimaryWindowUiPreview("Character");
+        ShowCharacterPage(CharacterPage.Clan);
+        _clanLoaded = true;
 
         if (inClan)
         {
-            var me = Net.I.LastEnter;
-            me.Name = asChief ? "Zeus" : "Tester10";
-            Net.I.SeedPreviewEnter(me);
-
-            OnMyClanInfo(new MyClanInfo
+            OnClanMembers(PreviewClanMembers());
+            if (tab == ClanTab.Points)
             {
-                InClan = true, ClanId = 1, Name = "Olympus", Flag = 3, Members = 5,
-                Chief = "Zeus", Grade = 1, Points = 800_000, PointFund = 5_000_000,
-                Notice = "Siege practice tonight. Bring repair scrolls.",
-            });
-            OnClanMembers(new System.Collections.Generic.List<ClanMember>
-            {
-                new() { Name = "Zeus", Fame = 1, Level = 61, Class = 207, IsOnline = true },
-                new() { Name = "Hera", Fame = 2, Level = 72, Class = 202, IsOnline = true },
-                new() { Name = "Ares", Fame = 3, Level = 72, Class = 201, IsOnline = false },
-                new() { Name = "Athena", Fame = 5, Level = 72, Class = 204, IsOnline = true },
-                new() { Name = "Tester10", Fame = 5, Level = 31, Class = 205, IsOnline = true },
-            });
-
-            if (tab == ClanTab.Donations)
-            {
-                ShowClanTab(ClanTab.Donations);
+                ShowClanTab(ClanTab.Points);
                 OnClanDonationList(new System.Collections.Generic.List<(string, int)>
                 {
                     ("Hera", 41_200), ("Zeus", 33_900), ("Ares", 12_050), ("Athena", 800),
                 });
             }
         }
-        else
-        {
-            OnMyClanInfo(new MyClanInfo { InClan = false });
-            OnClanList(new System.Collections.Generic.List<ClanBrowseEntry>
-            {
-                new() { Id = 1, Name = "Olympus", Chief = "Zeus", Members = 5, Flag = 3, Points = 800_000 },
-                new() { Id = 2, Name = "Asgard", Chief = "Odin", Members = 22, Flag = 2, Points = 361_400 },
-                new() { Id = 3, Name = "Avalon", Chief = "Arthur", Members = 8, Flag = 1, Points = 12_000 },
-            });
-        }
 
-        return DetachPreviewControl(_clanPanel);
+        return window;
+    }
+
+    internal Control BuildClanPointsUiPreview(bool asChief = true)
+    {
+        var me = Net.I.LastEnter;
+        me.Name = asChief ? "Zeus" : "Tester10";
+        Net.I.SeedPreviewEnter(me);
+        Sheet.SeedWealth(gold: 1_180_000, np: 12_450);
+        Net.I.SeedPreviewClan(PreviewClan(asChief));
+
+        ClanInit();
+        _clanPointsShown = true;
+        _clanPointsPanel.Visible = true;
+        ApplyClanPointsState();
+        OnClanPointStatus(true, 12_450, 5_000_000);
+        return DetachPreviewControl(_clanPointsPanel);
     }
 
     internal Control BuildWarpUiPreview(bool blocked = false)

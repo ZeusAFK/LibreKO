@@ -1,4 +1,4 @@
-namespace LibreKO.Quests.Binding;
+﻿namespace LibreKO.Quests.Binding;
 
 public enum QuestActionKind
 {
@@ -27,12 +27,14 @@ public enum QuestActionKind
     GenieExchange,
     ShowMap,
     Warp,
+    WarpClan,
     Cast,
     Effect,
     NpcEffect,
     DespawnNpc,
     Summon,
     EnterInstance,
+    EnterClanInstance,
     Promote,
     PromoteNovice,
     PromoteClan,
@@ -294,12 +296,14 @@ public static class QuestVocabulary
 
         Action(QuestActionKind.ShowMap, "Map {map:MapId}"),
         Action(QuestActionKind.Warp, "Teleport {zone:ZoneId} [at {x:Int} {z:Int}]"),
+        Action(QuestActionKind.WarpClan, "Teleport clan to {zone:ZoneId} [at {x:Int} {z:Int}]"),
         Action(QuestActionKind.Cast, "Cast {skill:SkillId}"),
         Action(QuestActionKind.Effect, "Effect {effect:EffectId}"),
         Action(QuestActionKind.NpcEffect, "Effect {effect:EffectId} on npc"),
         Action(QuestActionKind.DespawnNpc, "Despawn npc"),
         Action(QuestActionKind.Summon, "Summon {count:Count} of {npc:NpcId} [at {x:Int} {z:Int}]"),
         Action(QuestActionKind.EnterInstance, "Enter instance {zone:ZoneId} set {set:Count} [at {x:Int} {z:Int}]"),
+        Action(QuestActionKind.EnterClanInstance, "Enter clan instance {zone:ZoneId} set {set:Count} [at {x:Int} {z:Int}]"),
         Action(QuestActionKind.Promote, "Promote"),
         Action(QuestActionKind.PromoteNovice, "Promote to novice"),
         Action(QuestActionKind.PromoteClan, "Promote clan to {rank:ClanRank}"),

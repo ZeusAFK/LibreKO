@@ -13,7 +13,6 @@ public partial class World
     private bool _friendsLoaded;
     private readonly List<FriendEntry> _friends = new();
 
-    private const int FriendsPageWidth = 260;
 
     private bool FriendsPageVisible =>
         MainWindowOpen("Character") && _friendsContent is { Visible: true };
@@ -35,7 +34,7 @@ public partial class World
 
     private void BuildFriendsPanel()
     {
-        var root = new VBoxContainer { CustomMinimumSize = new Vector2(FriendsPageWidth, 0) };
+        var root = new VBoxContainer { CustomMinimumSize = new Vector2(CharacterPageWidth, 0) };
         root.AddThemeConstantOverride("separation", 8);
         _friendsContent = root;
 

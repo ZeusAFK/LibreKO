@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
 using Xunit;
@@ -62,7 +62,7 @@ public class UserInfoPacketWriterTests
         var clanned = Record(Clanless with
         {
             KnightsId = 42,
-            Clan = new UserInfoPacketWriter.ClanState(7, "Wolves", 3, 0, 12, 1, 2, 3, 4),
+            Clan = new UserInfoPacketWriter.ClanState(7, "Wolves", 3, 0, 0, 12, 1, 2, 3, 4),
         }).GetData().Length;
 
         (clanned - clanless).Should().Be("Wolves".Length);

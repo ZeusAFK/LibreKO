@@ -1179,7 +1179,7 @@ public class CharacterTests : GameTestBase
         var noClanCape = ReadMyInfoNoClanCape(myInfo);
 
         authority.Should().Be((byte)AccountAuthority.GameMaster);
-        noClanCape.Should().Be(99);
+        noClanCape.Should().Be(ushort.MaxValue, "no cape: the white cape follows GM mode on the client, not the account's authority");
         accountStatus.Should().Be(0);
         premiumHours.Should().Be(0);
     }
@@ -1596,7 +1596,7 @@ public class CharacterTests : GameTestBase
                     Flag = 1,
                     Members = 1,
                     Points = 0,
-                    Grade = 0
+                    Grade = 5
                 });
                 db.Characters.Add(new Character
                 {
@@ -1628,14 +1628,19 @@ public class CharacterTests : GameTestBase
             Flag = 1,
             Members = 1,
             Points = 0,
-            Grade = 0
+            Grade = 5,
+            ClanPointFund = 1_428_000
         });
 
         var preGameService = provider.GetRequiredService<IPreGameService>();
         var accountId = await GetAccountIdAsync(provider, "clan-user");
         var characterId = await GetCharacterIdAsync(provider, "ClanUser");
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId, accountId);
+        session.KnightsId = clanId;
 
-        var packets = await preGameService.GameStartAsync(characterId, accountId, 1);
+        var packets = await preGameService.GameStartAsync(characterId, accountId, 1, session);
         var myInfo = packets.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_MYINFO);
 
         myInfo.ResetOffset();
@@ -1686,6 +1691,19 @@ public class CharacterTests : GameTestBase
         for (var i = 0; i < 6; i++)
             myInfo.ReadByte();
         myInfo.ReadInt().Should().Be(money);
+        var update = packets.Single(packet =>
+            packet.GetOpcode() == (byte)GameOpcodes.GS_KNIGHTS_PROCESS && packet.GetData()[0] == (byte)KnightsSubOpcode.Update);
+        packets.IndexOf(update).Should().BeGreaterThan(packets.IndexOf(myInfo), "the clan state lands after MyInfo has named the clan");
+        update.ResetOffset();
+        update.ReadByte();
+        update.ReadShort().Should().Be(clanId);
+        update.ReadByte().Should().Be(1);
+        update.ReadShort().Should().Be(0);
+        update.ReadByte().Should().Be(0);
+        update.ReadByte();
+        update.ReadByte();
+        update.ReadByte();
+        update.ReadInt().Should().Be(1_428_000, "the Clan page shows the fund without opening the Contribution window");
     }
 
     [Fact]

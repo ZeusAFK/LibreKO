@@ -34,7 +34,6 @@ public class CharacterPacketMapper
 {
     private const int ChickenLevelLimit = 30;
     private const ushort NoCapeId = ushort.MaxValue;
-    private const ushort GameMasterCapeId = 99;
 
     public static Packet BuildAllCharacterInfo(IReadOnlyCollection<Character> characters)
     {
@@ -118,7 +117,7 @@ public class CharacterPacketMapper
             TotalAc = context.Stats.TotalAc,
             Money = context.Character.Money,
             Authority = (byte)context.Account.Authority,
-            NoClanCapeId = GetNoClanMyInfoCapeId(context.Account),
+            NoClanCapeId = NoCapeId,
             HasPremium = context.PremiumHours > 0,
             GenieTime = context.Character.GenieHours,
             IsChicken = context.Character.Level < ChickenLevelLimit,
@@ -154,8 +153,8 @@ public class CharacterPacketMapper
                 context.AllianceId,
                 context.Clan.Flag,
                 context.Clan.Name,
-                CalculateClanGrade(context.Clan.Points),
                 context.Clan.Grade,
+                context.Clan.Ranking,
                 clanCape,
                 context.Clan.CapeR,
                 context.Clan.CapeG,
@@ -178,31 +177,6 @@ public class CharacterPacketMapper
 
         return writer.Build();
     }
-
-    private static ushort GetNoClanMyInfoCapeId(Account account)
-    {
-        return account.Authority == AccountAuthority.GameMaster ? GameMasterCapeId : NoCapeId;
-    }
-
-    private static byte CalculateClanGrade(int points)
-    {
-        var clanPoints = Math.Max(0, points) / KnightsPacketConstants.MaxClanUsers;
-
-        if (clanPoints >= 20000)
-            return 1;
-
-        if (clanPoints >= 10000)
-            return 2;
-
-        if (clanPoints >= 5000)
-            return 3;
-
-        if (clanPoints >= 2000)
-            return 4;
-
-        return 5;
-    }
-
 
     private static bool TryReadInventoryItem(
         byte[] inventoryData,

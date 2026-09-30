@@ -27,16 +27,13 @@ public partial class World
     private bool _capeShown;
     private bool _capeRequestInFlight;
 
-    private MyClanInfo _capeMyClan;
-
-    private bool CapeImChief => _capeMyClan.InClan
-        && string.Equals(_capeMyClan.Chief, Net.I.LastEnter.Name, System.StringComparison.OrdinalIgnoreCase);
+    private bool CapeImChief => MyClan.IsChief;
 
     private void CapeInit()
     {
         BuildCapePanel();
         Net.I.CapeResultEvent += OnCapeResult;
-        Net.I.MyClanInfoEvent += OnCapeMyClan;
+        Net.I.MyClanChangedEvent += OnCapeMyClan;
         Net.I.ClanCapeUpdateEvent += OnClanCapeUpdate;
         Net.I.ClanCapeNpcEvent += OnCapeNpc;
     }
@@ -44,7 +41,7 @@ public partial class World
     private void CapeDispose()
     {
         Net.I.CapeResultEvent -= OnCapeResult;
-        Net.I.MyClanInfoEvent -= OnCapeMyClan;
+        Net.I.MyClanChangedEvent -= OnCapeMyClan;
         Net.I.ClanCapeUpdateEvent -= OnClanCapeUpdate;
         Net.I.ClanCapeNpcEvent -= OnCapeNpc;
     }
@@ -159,7 +156,6 @@ public partial class World
         _capeShown = true;
         _capeRequestInFlight = false;
         SetCapeStatus("", false);
-        Net.I.SendClanInfoRequest();
 
         var worn = Net.I.LastEnter;
         _capeCurrent = worn.CapeId;
@@ -212,8 +208,8 @@ public partial class World
             _capeR.Value = rr; _capeG.Value = gg; _capeB.Value = bb;
             OnCapeDyeChanged();
             var me = Net.I.LastEnter;
-            DressCape(_selfVisual, capeId >= 0 ? capeId : me.CapeId, rr, gg, bb, me.Authority == 0, me.Race);
-            _capePreviewing = false;
+            DressCape(_selfVisual, capeId >= 0 ? capeId : me.CapeId, rr, gg, bb, false, me.Race);
+            _capePreviewing = true;
             _capeCurrent = capeId >= 0 ? capeId : _capeCurrent;
             string what = capeId >= 0 ? $"cape #{capeId}" : "cape dye";
             SetCapeStatus($"Applied {what}.", false);
@@ -237,21 +233,16 @@ public partial class World
 
     private void OnCapeMyClan(MyClanInfo info)
     {
-        _capeMyClan = info;
         if (_capeShown) UpdateCapeGate();
     }
 
-    private static int CapeRankOf(MyClanInfo clan)
-    {
-        int grade = Mathf.Clamp(clan.Grade <= 0 ? 5 : clan.Grade, 1, 5);
-        return clan.Flag switch
-        {
-            >= 4 => 13 - grade,
-            3 => 8 - grade,
-            2 => 2,
-            _ => 1,
-        };
-    }
+    private bool CapeAllowed(Cape.CapeDef def) =>
+        ClanTypes.MeetsCapeRank(MyClan.Flag, MyClan.Grade, def.Ranking, def.Grade);
+
+    private static string CapeNeedName(Cape.CapeDef def) =>
+        def.Ranking <= ClanTypes.Promoted && def.Grade > 0
+            ? $"{CapeRankName(def.Ranking)} grade {def.Grade}"
+            : CapeRankName(def.Ranking);
 
     private static string CapeRankName(int rank) => rank switch
     {
@@ -339,7 +330,6 @@ public partial class World
         }
 
         foreach (var c in _capeColourGrid.GetChildren()) c.QueueFree();
-        int myRank = CapeRankOf(_capeMyClan);
 
         var ids = new List<int>();
         foreach (var (id, def) in Cape.Catalogue)
@@ -349,7 +339,7 @@ public partial class World
         foreach (int id in ids)
         {
             if (!Cape.TryGet(id, out var def)) continue;
-            bool locked = _capeMyClan.InClan && myRank < def.Ranking;
+            bool locked = MyClan.InClan && !CapeAllowed(def);
             int which = id;
 
             var cell = new Button
@@ -382,8 +372,8 @@ public partial class World
     private string CapeCellTip(Cape.CapeDef def, bool locked)
     {
         string cost = def.Points > 0 ? $"{def.Points:n0} clan points" : $"{def.Price:n0} gold";
-        string need = $"needs {CapeRankName(def.Ranking)}";
-        return locked ? $"{def.Name}\n{cost}\n{need} — your clan is {CapeRankName(CapeRankOf(_capeMyClan))}"
+        string need = $"needs {CapeNeedName(def)}";
+        return locked ? $"{def.Name}\n{cost}\n{need} — your clan is {ClanTypes.Standing(MyClan.Flag, MyClan.Grade)}"
                       : $"{def.Name}\n{cost}\n{need}";
     }
 
@@ -406,12 +396,12 @@ public partial class World
         }
 
         _capeChosenLbl.Text = def.M > 0 ? $"{def.Name} (pattern {def.M})" : def.Name;
-        _capeReqLbl.Text = $"Requires {CapeRankName(def.Ranking)}";
+        _capeReqLbl.Text = $"Requires {CapeNeedName(def)}";
         _capePriceLbl.Text = def.Points > 0
             ? $"{def.Points:n0} clan points"
             : $"{def.Price:n0} gold";
 
-        bool locked = _capeMyClan.InClan && CapeRankOf(_capeMyClan) < def.Ranking;
+        bool locked = MyClan.InClan && !CapeAllowed(def);
         _capeReqLbl.AddThemeColorOverride("font_color", locked ? UiTheme.Bad : UiTheme.TextLo);
         RefreshCapePreview();
     }
@@ -437,7 +427,7 @@ public partial class World
 
         var me = Net.I.LastEnter;
         DressCape(_selfVisual, previewId, (int)_capeR.Value, (int)_capeG.Value, (int)_capeB.Value,
-            me.Authority == 0, me.Race, highDetail: true);
+            false, me.Race, highDetail: true);
         _capePreviewing = true;
     }
 
@@ -452,11 +442,11 @@ public partial class World
     {
         bool chief = CapeImChief;
         _capeBuyBtn.Disabled = !chief || _capeRequestInFlight;
-        if (!_capeMyClan.InClan)
+        if (!MyClan.InClan)
             _capeHint.Text = "Join a clan to buy a cape.";
         else if (!chief)
             _capeHint.Text = "Only the clan chief can change the cape.";
-        else if (_capeMyClan.Flag < 2)
+        else if (MyClan.Flag < ClanTypes.Promoted)
             _capeHint.Text = "Your clan must be promoted (Official) before buying a cape.";
         else
             _capeHint.Text = "Custom dye costs 36,000 clan points.";
@@ -524,8 +514,7 @@ public partial class World
 
     private static (int Id, Color Dye) ResolveCape(int capeId, int r, int g, int b, bool isGm)
     {
-        if (isGm && !Cape.IsRenderable(capeId)) capeId = Cape.GmCapeId;
-        if (capeId == Cape.GmCapeId) return (capeId, Colors.White);
+        if (isGm || capeId == Cape.GmCapeId) return (Cape.GmCapeId, Colors.White);
         return (capeId, new Color(r / 255f, g / 255f, b / 255f));
     }
 
@@ -557,7 +546,7 @@ public partial class World
     private void DressSelfCape()
     {
         var me = Net.I.LastEnter;
-        bool gm = me.Authority == 0;
+        bool gm = Net.I.GmFxVisible(_myId, _isGm);
         DressCape(_selfVisual, me.CapeId, me.CapeR, me.CapeG, me.CapeB, gm, me.Race, highDetail: true);
         var (id, _) = ResolveCape(me.CapeId, me.CapeR, me.CapeG, me.CapeB, gm);
         GD.Print($"[cape] self: sent={me.CapeId} worn={(Cape.IsRenderable(id) ? id : 0)} "
@@ -573,17 +562,17 @@ public partial class World
 
     private void OnClanCapeUpdate(int clanId, int capeId, int r, int g, int b)
     {
-        if (_capeMyClan.InClan && _capeMyClan.ClanId == clanId) _capeCurrent = capeId;
+        if (MyClan.InClan && MyClan.ClanId == clanId) _capeCurrent = capeId;
         foreach (var e in _ents.Values)
             if (!e.IsNpc && e.KnightsId == clanId && e.KnightsId != 0)
             {
                 e.CapeId = capeId; e.CapeR = r; e.CapeG = g; e.CapeB = b;
                 DressCape(e.Body, capeId, r, g, b, e.IsGm, e.Race);
             }
-        if (_capeMyClan.InClan && _capeMyClan.ClanId == clanId && clanId != 0)
+        if (MyClan.InClan && MyClan.ClanId == clanId && clanId != 0)
         {
             var me = Net.I.LastEnter;
-            DressCape(_selfVisual, capeId, r, g, b, me.Authority == 0, me.Race);
+            DressCape(_selfVisual, capeId, r, g, b, Net.I.GmFxVisible(_myId, _isGm), me.Race);
         }
     }
 }

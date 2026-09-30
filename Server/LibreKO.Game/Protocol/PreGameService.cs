@@ -34,9 +34,11 @@ public class PreGameService(
     IGameDataService gameData,
     SessionManager sessionManager,
     TimeWeatherBroadcastService timeWeather,
+    IKnightsRuntimeService knightsRuntime,
     ILogger<PreGameService> logger) : IPreGameService
 {
     private const byte NewCharacterStartZone = (byte)ZoneId.Moradon;
+    private const string ClanNoticeTitle = "Clan Notice";
     private const int MaxCharacterNameLength = 20;
     private const int MaxSocialNumberLength = 15;
 
@@ -286,6 +288,13 @@ public class PreGameService(
             {
                 packets.Add(BuildQuestClockPacket());
                 packets.Add(BuildQuestStatePacket(session));
+
+                var clan = session.KnightsId > 0 ? sessionManager.Knights.GetClan(session.KnightsId) : null;
+                if (clan != null)
+                    packets.Add(KnightsPacketWriter.ClanUpdate(
+                        clan.Id, clan.Flag, clan.Cape, clan.CapeR, clan.CapeG, clan.CapeB, clan.ClanPointFund));
+                if (clan != null && clan.Notice.Length > 0)
+                    packets.Add(NoticePacketWriter.Login([(ClanNoticeTitle, clan.Notice)]));
             }
 
             packets.Add(PreGamePacketWriter.GameStart());
@@ -299,6 +308,9 @@ public class PreGameService(
                 character.LastOnlineTime = DateTime.UtcNow;
                 await characterRepository.UpdateAsync(character);
             }
+
+            if (session != null)
+                await knightsRuntime.NotifyMemberOnlineAsync(session);
         }
 
         return packets;

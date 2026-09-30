@@ -3106,6 +3106,10 @@ namespace LibreKO.Common.Migrations
                         .HasColumnType("int")
                         .HasColumnName("ClanPointFund");
 
+                    b.Property<byte>("ClanPointMethod")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("ClanPointMethod");
+
                     b.Property<int>("ClanWarehouseGold")
                         .HasColumnType("int")
                         .HasColumnName("ClanWarehouseGold");
@@ -3121,7 +3125,7 @@ namespace LibreKO.Common.Migrations
 
                     b.Property<byte>("Grade")
                         .HasColumnType("tinyint unsigned")
-                        .HasColumnName("Ranking");
+                        .HasColumnName("Grade");
 
                     b.Property<byte[]>("MarkData")
                         .IsRequired()
@@ -3158,6 +3162,10 @@ namespace LibreKO.Common.Migrations
 
                     b.Property<DateTime?>("PremiumExpiry")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<byte>("Ranking")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("Ranking");
 
                     b.HasKey("Id");
 

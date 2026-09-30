@@ -8,6 +8,7 @@ public static class NamePlate
     public const int OutlinePx = 2;
     private const string Group = "nameplate";
     private const string BaseMeta = "plate_base_px";
+    private const string LineMeta = "plate_line";
 
     private const float ReferenceViewportHeight = 1080f;
     private const float ReferenceHalfFovTan = 0.76733f;
@@ -36,6 +37,12 @@ public static class NamePlate
 
     public static readonly Color TitleColor = Color.Color8(236, 217, 166);
     public static readonly Color ClanColor = Color.Color8(226, 62, 52);
+
+    public static void Stack(Label3D label, int line)
+    {
+        label.SetMeta(LineMeta, line);
+        label.Offset = new Vector2(0f, line * LinePx);
+    }
 
     public static Label3D MakeTitle(string title, float y) => Small(title, y, TitleColor);
 
@@ -77,7 +84,10 @@ public static class NamePlate
         if (Engine.GetMainLoop() is not SceneTree tree)
             return;
         foreach (var node in tree.GetNodesInGroup(Group))
-            if (node is Label3D label && label.HasMeta(BaseMeta))
-                label.FontSize = Scaled(label.GetMeta(BaseMeta).AsInt32());
+        {
+            if (node is not Label3D label) continue;
+            if (label.HasMeta(BaseMeta)) label.FontSize = Scaled(label.GetMeta(BaseMeta).AsInt32());
+            if (label.HasMeta(LineMeta)) Stack(label, label.GetMeta(LineMeta).AsInt32());
+        }
     }
 }

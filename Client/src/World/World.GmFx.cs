@@ -15,11 +15,18 @@ public partial class World
 
     private void ApplyGmFx(int id, bool enabled)
     {
-        Node3D? body = null;
-        bool isGm = false;
-        if (id == _myId) { body = _self; isGm = _isGm; }
-        else if (_ents.TryGetValue(id, out var ent)) { body = ent.Body; isGm = ent.IsGm; }
-        if (body != null) SetGmAura(body, enabled && isGm);
+        if (id == _myId)
+        {
+            if (_self != null) SetGmAura(_self, enabled && _isGm);
+            DressSelfCape();
+            return;
+        }
+
+        if (!_ents.TryGetValue(id, out var ent)) return;
+        ent.IsGm = enabled;
+        if (ent.Body == null) return;
+        SetGmAura(ent.Body, enabled);
+        DressCape(ent.Body, ent.CapeId, ent.CapeR, ent.CapeG, ent.CapeB, ent.IsGm, ent.Race);
     }
 
     internal static void SetGmAura(Node3D body, bool enabled)

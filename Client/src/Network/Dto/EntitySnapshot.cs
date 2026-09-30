@@ -22,6 +22,7 @@ public sealed class EntitySnapshot
     public int KnightsId;
     public string ClanName = "";
     public int ClanGrade;
+    public int ClanRanking;
     public int TitleId;
     public bool IsGm;
     public bool Invisible;

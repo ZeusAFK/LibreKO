@@ -218,7 +218,7 @@ public partial class Net
             p.ReadShort();
             e.ClanName = p.ReadSByteString();
             e.ClanGrade = p.ReadByte();
-            p.ReadByte();
+            e.ClanRanking = p.ReadByte();
             p.ReadShort();
             e.CapeId = p.ReadShort();
             e.CapeR = p.ReadByte(); e.CapeG = p.ReadByte(); e.CapeB = p.ReadByte();

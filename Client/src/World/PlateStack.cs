@@ -70,7 +70,7 @@ public sealed class PlateStack
         {
             if (label == null || !GodotObject.IsInstanceValid(label)) continue;
             int priority = NamePlate.StackPriority + line * 2;
-            label.Offset = new Vector2(0f, line * NamePlate.LinePx);
+            NamePlate.Stack(label, line);
             label.RenderPriority = priority;
             label.OutlineRenderPriority = priority - 1;
             line++;

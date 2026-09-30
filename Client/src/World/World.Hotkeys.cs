@@ -74,7 +74,6 @@ public partial class World : Node3D
         Bound(KeyAction.Quests, () => ToggleMainWindow("Quests"));
         Bound(KeyAction.Party, () => ToggleParty());
         Bound(KeyAction.Friends, () => OpenCharacterPage(CharacterPage.Friends));
-        Bound(KeyAction.Clan, () => ToggleClan());
         Bound(KeyAction.Messenger, () => ToggleMessenger());
         Bound(KeyAction.MiniMap, () => ToggleMiniMap());
         Bound(KeyAction.ZoneMap, () => ToggleFullMap());

@@ -16,12 +16,12 @@
     "DungeonFamily": 0,
     "SpecialType": 0,
     "TrapNumber": 0,
-    "Room": 0
+    "Room": 1
   },
   {
     "Index": 2109,
     "ZoneId": 54,
-    "NpcId": 18030,
+    "NpcId": 13010,
     "ActType": 100,
     "DotCnt": 0,
     "Path": null,
@@ -35,6 +35,6 @@
     "DungeonFamily": 0,
     "SpecialType": 0,
     "TrapNumber": 0,
-    "Room": 0
+    "Room": 1
   }
 ]

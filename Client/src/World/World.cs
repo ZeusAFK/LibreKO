@@ -120,7 +120,7 @@ public partial class World : Node3D, IWorldContext
         if (selfScene != null)
         {
             AttachWeapons(_self, info.Gear);
-            AttachClanGauntlet(_self, info.Race, _myClan.InClan ? _myClan.Grade : 0);
+            AttachClanGauntlet(_self, info.Race, MyClan.InClan ? MyClan.Grade : 0, MyClan.InClan ? MyClan.Ranking : 0);
             _selfWingAnims = AttachWings(_self, info.Gear, info.Race, _zone, shineShadow: true);
             System.Array.Clear(_selfWingClips);
             AttachHandFx(_self, info.Gear, info.Race, _zone);

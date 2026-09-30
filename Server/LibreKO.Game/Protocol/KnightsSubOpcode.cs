@@ -1,4 +1,4 @@
-namespace LibreKO.Game.Protocol;
+﻿namespace LibreKO.Game.Protocol;
 
 public enum KnightsSubOpcode : byte
 {
@@ -9,15 +9,17 @@ public enum KnightsSubOpcode : byte
     Destroy = 0x05,
     Admit = 0x06,
     Reject = 0x07,
+    Punish = 0x08,
     Chief = 0x09,
     Vicechief = 0x0A,
     Officer = 0x0B,
+    AllListRequest = 0x0C,
     MemberRequest = 0x0D,
-    CurrentRequest = 0x0E,
-    JoinRequestNotice = 0x0F,
+    ModifyFame = 0x10,
     Invite = 0x11,
     MarkVersionReq = 0x19,
     MarkRegister = 0x1A,
+    CapeNpc = 0x1B,
     AllyCreate = 0x1C,
     AllyReq = 0x1D,
     AllyInsert = 0x1E,
@@ -27,6 +29,10 @@ public enum KnightsSubOpcode : byte
     MarkReq = 0x23,
     Update = 0x24,
     MarkRegionReq = 0x25,
+    MemberOnline = 0x27,
+    MemberOffline = 0x28,
+    PointRequest = 0x3B,
+    PointMethod = 0x3C,
     DonatePoints = 0x3D,
     HandoverList = 0x3E,
     HandoverReq = 0x3F,
@@ -35,4 +41,5 @@ public enum KnightsSubOpcode : byte
     NoticeResult = 0x51,
     UpdateMemo = 0x58,
     Top10 = 0x63,
+    LeaderPoints = 0x64,
 }

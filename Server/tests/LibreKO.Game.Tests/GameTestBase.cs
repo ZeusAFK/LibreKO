@@ -99,6 +99,8 @@ public abstract class GameTestBase
         services.AddSingleton<ILotteryService, LotteryService>();
         services.AddSingleton<IAchievementProgressService, AchievementProgressService>();
         services.AddSingleton<ILoyaltyService, LoyaltyService>();
+        services.AddSingleton<ClanStandingService>();
+        services.AddSingleton<IClanStandingService>(sp => sp.GetRequiredService<ClanStandingService>());
         services.AddSingleton<IPlayerProgressionService, PlayerProgressionService>();
         services.AddSingleton<IZoneTransitionService, ZoneTransitionService>();
         services.AddSingleton<InstanceRoomRegistry>();

@@ -1,0 +1,12 @@
+
+Bind Npc 18030
+
+On greeting
+    Say "This is the Abyss of Despair Underground Level 1. Please select your transport site."
+    Topic "Yes. I want to leave." do
+        If player is ElMorad
+            Teleport 2 at 1705 306
+        Else
+            Teleport 1 at 360 1742
+    Topic "No. I don't want to leave." goto close
+    Goto close

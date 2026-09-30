@@ -253,7 +253,9 @@ public static class ServiceCollectionExtensions
         services.AddHostedService(sp => sp.GetRequiredService<TimeWeatherBroadcastService>());
         services.AddHostedService<HeartbeatProbeService>();
         services.AddHostedService<DailyLoyaltyResetService>();
-        services.AddHostedService<ClanGradeRecalcService>();
+        services.AddSingleton<ClanStandingService>();
+        services.AddSingleton<IClanStandingService>(sp => sp.GetRequiredService<ClanStandingService>());
+        services.AddHostedService(sp => sp.GetRequiredService<ClanStandingService>());
         services.AddHostedService<ConcurrentPopulationUpdateService>();
         services.AddHostedService<PetSatisfactionTickService>();
         services.AddHostedService<GenieTickService>();

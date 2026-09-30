@@ -27,6 +27,7 @@ On event_110
                 Say "Come to me for anything related to the Knight Squad. What can I help you with today?"
                 Topic "I'll listen to your story further." goto event_111
                 Topic "I brought what you asked for." goto event_114
+                Topic "Yes, I'll level a challenge." goto event_115
             Else
                 Say please_relay_to_your
                 Topic "Confirm" goto close
@@ -50,6 +51,9 @@ On event_112
 On event_113
     Say "Despite all of this, you must focus on one thing-|You, <selfname>, Knight Squad Leader, must physically get the [Emblem Royal] yourself! By which I mean, your allies can help you to defeat Isiloon in combat, but they won't be able to loot the emblem. That's up to you. Bear it in mind, anyway. I wish you luck."
     Topic "Close" goto close
+
+On event_115
+    Enter clan instance 93 set 1 at 63 474
 
 On event_114 for quest 22
     Say "Did you bring everything required for promotion to Formal Knight Squad?"
@@ -80,6 +84,7 @@ On event_120
             Say "The Imperial Knight Squad is the nation's elite Combat Unit. To become a member, you must hold 1st Class qualifications as a Formal Knight Squad. <selfname> must also demonstrate great loyalty to the nation. Right now, Red Dragon is waiting to test you in the Cave of the Fire Dragon. You must fight Red Dragon and retrieve the [Emblem Royal], along with your Knight Squad promotion dues of 100 million Noah, and 25,000 Knight Squad saving points."
             Topic "I'll listen to your story further." goto event_121
             Topic "I brought what you asked for." goto event_124
+            Topic "Yes, I'll level a challenge." goto event_125
         Else
             Say please_relay_to_your
             Topic "Confirm" goto close
@@ -100,6 +105,9 @@ On event_122
 On event_123
     Say "Despite all of this, you must focus on one thing-|You, <selfname>, Knight Squad Leader, must physically get the [Emblem Royal] yourself! By which I mean, your allies can help you to defeat Red Dragon in combat, but they won't be able to loot the emblem. That's up to you. Bear it in mind, anyway. I wish you luck."
     Topic "Close" goto close
+
+On event_125
+    Enter clan instance 94 set 1 at 110 20
 
 On event_124 for quest 23
     Say "Did you bring everything required for promotion to Royal Knight Squad?"
@@ -131,6 +139,7 @@ On event_280
                 Say "The knight squad is a combat unit certified by the emperor. As proof of serving your country, only clans above class 3 are eligible to become knight squads. And you must prove your valor and ability. Caitharos is waiting to test you at the coliseum. After defeating Caitharos bring back the [Key of Honor] and 10 million Noahs."
                 Topic "I'll listen to your story further." goto event_281
                 Topic "I brought what you asked for." goto event_286
+                Topic "Yes, I'll level a challenge." goto event_285
             Else
                 Say please_relay_to_your
                 Topic "Confirm" goto close
@@ -154,6 +163,9 @@ On event_282
 On event_283
     Say "And the most important of all is that you, the clan leader, has to personally acquire the [Key of Honor]. Your friends aid in your combat against Caitharos but they cannot help you to acquire the key. Do not forget. I bid you good luck."
     Topic "Close" goto close
+
+On event_285
+    Enter clan instance 54 set 1 at 150 150
 
 On event_286 for quest 21
     Say "Did you bring the ingredients below needed for the knight squad promotion?"

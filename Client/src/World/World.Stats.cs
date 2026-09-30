@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 
 namespace LibreKO;
 
@@ -94,7 +94,7 @@ public partial class World : Node3D
         });
     }
 
-    private const int StatsPanelWidth = 560;
+    private const int CharacterPageWidth = 560;
     private const int StatsCombatColumn = 132;
     private const int StatsResistColumn = 172;
     private const int StatsIconSize = 22;
@@ -135,7 +135,7 @@ public partial class World : Node3D
 
     private void BuildStatsPanel()
     {
-        var root = new VBoxContainer { CustomMinimumSize = new Vector2(StatsPanelWidth, 0) };
+        var root = new VBoxContainer { CustomMinimumSize = new Vector2(CharacterPageWidth, 0) };
         root.AddThemeConstantOverride("separation", 8);
         _statsContent = root;
 

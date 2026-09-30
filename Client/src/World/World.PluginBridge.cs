@@ -15,6 +15,8 @@ public partial class World
     private const int PluginLogMax = 200;
     private static readonly Color PluginSystemLineColor = new("#9fd3ff");
 
+    private const string ClanWindowId = "clan";
+
     private static readonly Dictionary<string, string> MainWindowKeys = new(StringComparer.OrdinalIgnoreCase)
     {
         ["character_info"] = "Character",
@@ -316,6 +318,7 @@ public partial class World
 
         public void Toggle(string id)
         {
+            if (string.Equals(id, ClanWindowId, StringComparison.OrdinalIgnoreCase)) { _w.OpenCharacterPage(CharacterPage.Clan); return; }
             if (MainWindowKeys.TryGetValue(id, out var key)) { _w.ToggleMainWindow(key); return; }
             if (HudWindow.Find(id) is { } win) win.Visible = !win.Visible;
         }

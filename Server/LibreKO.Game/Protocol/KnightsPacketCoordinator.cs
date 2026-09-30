@@ -1,16 +1,14 @@
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
-using LibreKO.Common.Enums;
+using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
-using LibreKO.Game.Protocol.Writers;
 
 namespace LibreKO.Game.Protocol;
 
 public interface IKnightsPacketCoordinator
 {
     Task HandleProcessAsync(IClient client, Packet packet);
-    Task HandleListAsync(IClient client, Packet packet);
-    Task HandleCapeAsync(IClient client, Packet packet);
 }
 
 public class KnightsPacketCoordinator(
@@ -33,7 +31,11 @@ public class KnightsPacketCoordinator(
                 break;
 
             case KnightsSubOpcode.Join:
-                await knightsMembershipPacketService.HandleJoinRequestAsync(session, packet);
+                await knightsMembershipPacketService.HandleJoinAsync(session, packet);
+                break;
+
+            case KnightsSubOpcode.Invite:
+                await knightsMembershipPacketService.HandleInviteAnswerAsync(session, packet);
                 break;
 
             case KnightsSubOpcode.Withdraw:
@@ -62,16 +64,32 @@ public class KnightsPacketCoordinator(
                 await knightsManagementPacketService.HandlePromoteAsync(session, packet, subOpcode);
                 break;
 
+            case KnightsSubOpcode.AllListRequest:
+                await knightsManagementPacketService.HandleAllListRequestAsync(session, packet);
+                break;
+
             case KnightsSubOpcode.MemberRequest:
                 await knightsManagementPacketService.HandleMemberRequestAsync(session);
                 break;
 
-            case KnightsSubOpcode.CurrentRequest:
-                await knightsManagementPacketService.HandleCurrentRequestAsync(session);
+            case KnightsSubOpcode.PointRequest:
+                await knightsManagementPacketService.HandlePointRequestAsync(session);
+                break;
+
+            case KnightsSubOpcode.PointMethod:
+                await knightsManagementPacketService.HandlePointMethodAsync(session, packet);
                 break;
 
             case KnightsSubOpcode.DonatePoints:
                 await knightsManagementPacketService.HandleDonateAsync(session, packet);
+                break;
+
+            case KnightsSubOpcode.DonationList:
+                await knightsManagementPacketService.HandleDonationListAsync(session);
+                break;
+
+            case KnightsSubOpcode.LeaderPoints:
+                await knightsManagementPacketService.HandleLeaderPointsAsync(session);
                 break;
 
             case KnightsSubOpcode.Top10:
@@ -92,10 +110,6 @@ public class KnightsPacketCoordinator(
 
             case KnightsSubOpcode.HandoverReq:
                 await knightsManagementPacketService.HandleHandoverRequestAsync(session, packet);
-                break;
-
-            case KnightsSubOpcode.DonationList:
-                await knightsManagementPacketService.HandleDonationListAsync(session);
                 break;
 
             case KnightsSubOpcode.MarkVersionReq:
@@ -143,37 +157,6 @@ public class KnightsPacketCoordinator(
         }
     }
 
-    public async Task HandleListAsync(IClient client, Packet packet)
-    {
-        var session = sessionManager.GetByClientId(client.Id);
-        if (session == null)
-            return;
-
-        var clans = sessionManager.Knights.GetAll()
-            .Where(clan => clan.Nation == (byte)session.Nation)
-            .OrderByDescending(clan => clan.Points)
-            .Take(50)
-            .ToList();
-
-        var entries = new List<KnightsPacketWriter.BrowseEntry>(clans.Count);
-        foreach (var clan in clans)
-        {
-            entries.Add(new KnightsPacketWriter.BrowseEntry(
-                (short)clan.Id, clan.Name, clan.Chief, clan.Members, clan.Flag, clan.Points));
-        }
-
-        await client.SendPacket(KnightsPacketWriter.ClanBrowseList(entries));
-    }
-
-    public async Task HandleCapeAsync(IClient client, Packet packet)
-    {
-        var session = sessionManager.GetByClientId(client.Id);
-        if (session == null)
-            return;
-
-        await knightsManagementPacketService.HandleCapeAsync(session, packet);
-    }
-
     private async Task SendTop10Async(UserSession session)
     {
         var entries = new List<KnightsPacketWriter.TopEntry>(
@@ -181,15 +164,15 @@ public class KnightsPacketCoordinator(
         entries.AddRange(TopNationClans(AccountNation.Karus));
         entries.AddRange(TopNationClans(AccountNation.ElMorad));
 
-        await session.Client.SendPacket(
-            KnightsPacketWriter.TopBoard(KnightsSubOpcode.Top10, entries));
+        await session.Client.SendPacket(KnightsPacketWriter.TopBoard(entries));
     }
 
     private List<KnightsPacketWriter.TopEntry> TopNationClans(AccountNation nation)
     {
         var topClans = sessionManager.Knights.GetAll()
             .Where(clan => clan.Nation == (byte)nation)
-            .OrderByDescending(clan => clan.Points)
+            .OrderByDescending(clan => clan.ClanPointFund)
+            .ThenByDescending(clan => clan.Points)
             .ThenBy(clan => clan.Id)
             .Take(KnightsPacketWriter.TopBoardPerNation)
             .ToList();
@@ -197,7 +180,7 @@ public class KnightsPacketCoordinator(
         var entries = new List<KnightsPacketWriter.TopEntry>(KnightsPacketWriter.TopBoardPerNation);
         short rank = 0;
         foreach (var clan in topClans)
-            entries.Add(new KnightsPacketWriter.TopEntry((short)clan.Id, clan.Name, rank++));
+            entries.Add(new KnightsPacketWriter.TopEntry(clan.Id, clan.Name, rank++));
 
         for (; rank < KnightsPacketWriter.TopBoardPerNation; rank++)
         {
@@ -207,5 +190,4 @@ public class KnightsPacketCoordinator(
 
         return entries;
     }
-
 }

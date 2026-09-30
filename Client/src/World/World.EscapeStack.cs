@@ -33,7 +33,8 @@ public partial class World : Node3D
         EscapeCloses(() => _wantedShown, CloseWantedStall);
         EscapeCloses(() => _sellStallShown, CloseSellStall);
         EscapeCloses(() => _merchantMenuShown, CloseMerchantMenu);
-        EscapeCloses(() => _clanShown, () => CloseClan());
+        EscapeCloses(() => _clanCreateShown, () => CloseClanCreate());
+        EscapeCloses(() => _clanPointsShown, () => CloseClanPoints());
         EscapeCloses(() => _warpShown, () => CloseWarp());
         EscapeCloses(() => _rankShown, () => ToggleRank());
         EscapeCloses(() => _petShown, () => TogglePet());

@@ -24,7 +24,6 @@ public class GameServerBootstrapper(
     IServiceScopeFactory scopeFactory,
     IHostEnvironment hostEnvironment,
     IOptions<GameServerSettings> settings,
-    IMonsterAggressionPolicy monsterAggressionPolicy,
     INpcSpawnRowService spawnRows,
     ILogger<GameServerBootstrapper> logger) : IGameServerBootstrapper
 {

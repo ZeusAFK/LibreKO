@@ -145,7 +145,9 @@ public class UserSession
     // Clan/Knights
     public short KnightsId { get; set; }
     public int KnightsPoints { get; set; }
-    public byte KnightsFame { get; set; } // 1=chief, 2=vicechief, 5=trainee
+    public byte KnightsFame { get; set; }
+    public int ClanInviteFrom { get; set; }
+    public short ClanInviteClanId { get; set; }
     public string KnightsName { get; set; } = string.Empty;
     public byte Fame { get; set; } // authority/fame level (captain, etc.)
 

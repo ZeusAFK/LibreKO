@@ -287,7 +287,9 @@ public sealed class QuestScriptHost(
         _granted.Clear();
     }
     public void TeleportToZone(int zoneId, int x, int z) => context.Dialog.ZoneChange(zoneId, x, z);
+    public void TeleportClanToZone(int zoneId, int x, int z) => context.RequestClanZoneChange(zoneId, x, z);
     public void EnterInstance(int zoneId, int set, int x, int z) => context.RequestInstance(zoneId, set, x, z);
+    public void EnterClanInstance(int zoneId, int set, int x, int z) => context.RequestClanInstance(zoneId, set, x, z);
     public void CastSkill(int skillId)
     {
         if (!context.Character.CastSkill(0, skillId))

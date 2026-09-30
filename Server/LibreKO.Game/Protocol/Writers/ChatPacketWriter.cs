@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -8,6 +8,7 @@ public sealed class ChatPacketWriter
     public const byte TypePrivate = 2;
     public const byte TypeParty = 3;
     public const byte TypeNation = 4;
+    public const byte TypeClan = 6;
     public const byte TypeSystemNotice = 8;
     public const byte TypeGameMaster = 12;
     public const byte TypeDeathNotice = 26;
@@ -42,6 +43,14 @@ public sealed class ChatPacketWriter
         {
             _type = TypeSystemNotice,
             _nation = nation,
+            _characterId = NoSender,
+            _message = message,
+        }.Build();
+
+    public static Packet ClanNotice(string message) =>
+        new ChatPacketWriter
+        {
+            _type = TypeClan,
             _characterId = NoSender,
             _message = message,
         }.Build();

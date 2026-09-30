@@ -146,6 +146,7 @@ public partial class World
             "Shall we start the day at our inn and end it at our inn as well?",
             ("Use storage", OpenWarehouseStorage),
             ("Use [VIP] storage", ToggleVipWarehouse),
+            ("Create a Clan", CreateClanFromInn),
             ("Seal / Cancel (anti-theft)", () => OpenSealWindow(SealMode.Secret)),
             ("Seal / Cancel", () => OpenSealWindow(SealMode.Bind)));
     }

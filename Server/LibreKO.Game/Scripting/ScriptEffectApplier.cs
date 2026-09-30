@@ -44,6 +44,8 @@ public sealed class ScriptEffectApplier(
         await ApplyPendingNpcDespawnAsync(session, context, scriptName);
         await ApplyPendingSummonsAsync(session, context, scriptName);
         await ApplyPendingInstanceAsync(session, context, scriptName);
+        await ApplyPendingClanInstanceAsync(session, context, scriptName);
+        await ApplyPendingClanZoneChangeAsync(session, context, scriptName);
         await ApplyPendingZoneChangeAsync(session, context, scriptName);
 
         if (context.ActionFailed && context.FailureReason is { } reason)
@@ -228,6 +230,81 @@ public sealed class ScriptEffectApplier(
 
         await serviceProvider.GetRequiredService<IZoneTransitionService>()
             .ChangeZoneAsync(session, (byte)warp.ZoneId, warp.X, warp.Z);
+    }
+
+    private async Task ApplyPendingClanInstanceAsync(UserSession session, QuestScriptContext context, string scriptName)
+    {
+        if (context.PendingClanInstance is not { } entry)
+            return;
+
+        if (context.ActionFailed)
+        {
+            logger.LogInformation(
+                "Script {Script}: clan instance entry to {Zone} skipped for {Name} — the script's action failed",
+                scriptName, entry.ZoneId, session.Name);
+            return;
+        }
+
+        if (entry.ZoneId is <= 0 or > byte.MaxValue || !gameData.ZoneInfoTable.ContainsKey((short)entry.ZoneId))
+        {
+            logger.LogWarning(
+                "Script {Script}: zone {Zone} is not on this server, ignoring the clan instance entry for {Name}",
+                scriptName, entry.ZoneId, session.Name);
+            return;
+        }
+
+        var (x, z) = ResolveWarpTarget(session, (entry.ZoneId, entry.X, entry.Z));
+        await serviceProvider.GetRequiredService<IInstanceEntryService>()
+            .EnterClanAsync(session, (byte)entry.ZoneId, (short)entry.Set, x, z);
+    }
+
+    private async Task ApplyPendingClanZoneChangeAsync(UserSession session, QuestScriptContext context, string scriptName)
+    {
+        if (context.PendingClanZoneChange is not { } warp)
+            return;
+
+        if (context.ActionFailed)
+        {
+            logger.LogInformation(
+                "Script {Script}: clan zone change to {Zone} skipped for {Name} — the script's action failed",
+                scriptName, warp.ZoneId, session.Name);
+            return;
+        }
+
+        if (warp.ZoneId is <= 0 or > byte.MaxValue
+            || !gameData.ZoneInfoTable.ContainsKey((short)warp.ZoneId))
+        {
+            logger.LogWarning(
+                "Script {Script}: zone {Zone} is not on this server, ignoring the clan zone change for {Name}",
+                scriptName, warp.ZoneId, session.Name);
+            return;
+        }
+
+        if (session.KnightsId <= 0)
+        {
+            logger.LogInformation(
+                "Script {Script}: {Name} is in no clan, so the clan zone change to {Zone} moves nobody",
+                scriptName, session.Name, warp.ZoneId);
+            return;
+        }
+
+        var (x, z) = ResolveWarpTarget(session, warp);
+        var transitions = serviceProvider.GetRequiredService<IZoneTransitionService>();
+        var members = serviceProvider.GetRequiredService<SessionManager>().GetAll()
+            .Where(member => member.KnightsId == session.KnightsId && !ZoneRules.IsTempleEvent(member.ZoneId))
+            .ToList();
+
+        foreach (var member in members)
+        {
+            if (member.ZoneId == warp.ZoneId)
+            {
+                await serviceProvider.GetRequiredService<Protocol.IWorldPacketCoordinator>()
+                    .WarpAsync(member, (ushort)(x * 10f), (ushort)(z * 10f));
+                continue;
+            }
+
+            await transitions.ChangeZoneAsync(member, (byte)warp.ZoneId, x, z);
+        }
     }
 
     private (float X, float Z) ResolveWarpTarget(UserSession session, (int ZoneId, float X, float Z) warp)

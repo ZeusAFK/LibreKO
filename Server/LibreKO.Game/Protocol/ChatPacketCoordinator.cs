@@ -42,10 +42,11 @@ public class ChatPacketCoordinator(
         session.LastChatTicks = now;
 
         var type = (ChatType)chatType;
-        var outType = type == ChatType.General && session.IsGM ? ChatType.GameMaster : type;
+        var asGameMaster = session.IsGM && session.GmModeEnabled;
+        var outType = type == ChatType.General && asGameMaster ? ChatType.GameMaster : type;
 
         var result = ChatPacketWriter
-            .Say((byte)outType, (byte)session.Nation, session.CharacterId, session.Name, message, session.IsGM);
+            .Say((byte)outType, (byte)session.Nation, session.CharacterId, session.Name, message, asGameMaster);
 
         switch (type)
         {

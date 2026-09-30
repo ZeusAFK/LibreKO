@@ -14,6 +14,7 @@ public partial class World
         UserInformation,
         Duel,
         EquipmentView,
+        ClanInvite,
     }
 
     private PopupMenu _playerMenu = null!;
@@ -51,6 +52,8 @@ public partial class World
         _playerMenu.AddItem("User Information", (int)PlayerMenuAction.UserInformation);
         _playerMenu.AddItem("Duel", (int)PlayerMenuAction.Duel);
         _playerMenu.AddItem("Equipment View", (int)PlayerMenuAction.EquipmentView);
+        if (MyClan.CanInvite && target.KnightsId == 0)
+            _playerMenu.AddItem("Clan invite", (int)PlayerMenuAction.ClanInvite);
         _playerMenu.ResetSize();
         _playerMenu.Position = (Vector2I)GetViewport().GetMousePosition();
         _playerMenu.Popup();
@@ -96,6 +99,11 @@ public partial class World
 
             case PlayerMenuAction.EquipmentView:
                 RequestEquipmentView(name);
+                break;
+
+            case PlayerMenuAction.ClanInvite:
+                Net.I.SendClanInvite(id);
+                CombatNotice($"Inviting {name} to the clan…");
                 break;
         }
     }

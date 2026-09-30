@@ -1,10 +1,10 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
 public sealed class NpcServicePacketWriter
 {
-    public const byte ClanCapeSub = 20;
+    public const byte ClanCapeSub = (byte)KnightsSubOpcode.CapeNpc;
     public const byte ClassChangeOpenSub = 1;
 
     public static Packet TradeNpc(int sellingGroup)

@@ -44,9 +44,17 @@ public class QuestScriptContext
 
     public void RequestZoneChange(int zoneId, float x, float z) => PendingZoneChange = (zoneId, x, z);
 
+    public (int ZoneId, float X, float Z)? PendingClanZoneChange { get; private set; }
+
+    public void RequestClanZoneChange(int zoneId, float x, float z) => PendingClanZoneChange = (zoneId, x, z);
+
     public (int ZoneId, int Set, float X, float Z)? PendingInstance { get; private set; }
 
     public void RequestInstance(int zoneId, int set, float x, float z) => PendingInstance = (zoneId, set, x, z);
+
+    public (int ZoneId, int Set, float X, float Z)? PendingClanInstance { get; private set; }
+
+    public void RequestClanInstance(int zoneId, int set, float x, float z) => PendingClanInstance = (zoneId, set, x, z);
 
     public void FailAction(string reason)
     {

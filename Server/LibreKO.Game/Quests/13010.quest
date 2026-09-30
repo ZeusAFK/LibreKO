@@ -1,0 +1,9 @@
+
+Bind Npc 13010
+
+On greeting
+    Say "Do you want to leave?"
+    Topic "Yes. I want to leave." do
+        Teleport 21 at 817 451
+    Topic "No. I don't want to leave." goto close
+    Goto close

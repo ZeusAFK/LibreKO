@@ -9,11 +9,13 @@ public class KnightsEntity
     public string Name { get; set; } = default!;
     public string Chief { get; set; } = default!;
     public byte Nation { get; set; }
-    public byte Flag { get; set; } // ClanType: 1=training, 2=promoted, etc.
-    public byte Grade { get; set; } // Ranking
+    public byte Flag { get; set; }
+    public byte Grade { get; set; } = 5;
+    public byte Ranking { get; set; }
     public short Members { get; set; }
     public int Points { get; set; }
     public int ClanPointFund { get; set; }
+    public byte ClanPointMethod { get; set; }
     public short Cape { get; set; }
     public byte CapeR { get; set; }
     public byte CapeG { get; set; }
@@ -49,7 +51,8 @@ public class KnightsEntity
             builder.Property(k => k.Chief).HasColumnName("Chief").IsRequired().HasMaxLength(50);
             builder.Property(k => k.Nation).HasColumnName("Nation").IsRequired();
             builder.Property(k => k.Flag).HasColumnName("Flag").IsRequired();
-            builder.Property(k => k.Grade).HasColumnName("Ranking");
+            builder.Property(k => k.Grade).HasColumnName("Grade");
+            builder.Property(k => k.Ranking).HasColumnName("Ranking");
             builder.Property(k => k.Members).HasColumnName("Members");
             builder.Property(k => k.Points).HasColumnName("Points");
             builder.Property(k => k.Cape).HasColumnName("sCape");
@@ -58,6 +61,7 @@ public class KnightsEntity
             builder.Property(k => k.CapeB).HasColumnName("bCapeB");
 
             builder.Property(k => k.ClanPointFund).HasColumnName("ClanPointFund");
+            builder.Property(k => k.ClanPointMethod).HasColumnName("ClanPointMethod");
             builder.Property(k => k.Notice).HasColumnName("Notice").HasMaxLength(255);
             builder.Property(k => k.ClanWarehouseItems).HasColumnName("ClanWarehouseItems");
             builder.Property(k => k.ClanWarehouseGold).HasColumnName("ClanWarehouseGold");

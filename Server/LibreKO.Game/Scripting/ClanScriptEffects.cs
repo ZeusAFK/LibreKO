@@ -19,8 +19,7 @@ public static class ClanScriptEffects
         await PersistAsync(provider, logger, clan, "promotion");
 
         var update = KnightsPacketWriter.ClanUpdate(
-            KnightsSubOpcode.Update,
-            clan.Id, clan.Flag, clan.Cape, clan.CapeR, clan.CapeG, clan.CapeB, clan.Points);
+            clan.Id, clan.Flag, clan.Cape, clan.CapeR, clan.CapeG, clan.CapeB, clan.ClanPointFund);
         await SendToMembersAsync(sessions, clan.Id, update);
 
         logger.LogInformation("Clan {Clan} promoted to type {Type}, cape {Cape}",

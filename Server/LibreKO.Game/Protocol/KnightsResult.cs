@@ -1,4 +1,4 @@
-namespace LibreKO.Game.Protocol;
+﻿namespace LibreKO.Game.Protocol;
 
 public enum KnightsResult : byte
 {
@@ -34,6 +34,29 @@ public enum KnightsNoticeResult : byte
     NoAuthority = 1,
     CommandUnavailable = 2,
     BadCharacterName = 3,
+}
+
+public enum KnightsDonateResult : byte
+{
+    Succeeded = 1,
+    Failed = 2,
+    ClanNotAccredited = 6,
+    ClanNotValid = 7,
+    NotEnoughPoints = 8,
+}
+
+public enum KnightsPointMethodResult : byte
+{
+    Succeeded = 1,
+    NotSet = 2,
+    ClanNotAccredited = 6,
+}
+
+public enum KnightsHandoverResult : byte
+{
+    Succeeded = 1,
+    NotViceChief = 3,
+    NoAuthority = 4,
 }
 
 public enum CapeResult : short

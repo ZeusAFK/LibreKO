@@ -153,7 +153,6 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
 
             // Knights/Clan
             [GameOpcodes.GS_KNIGHTS_PROCESS] = knights.HandleProcessAsync,
-            [GameOpcodes.GS_KNIGHTS_LIST] = knights.HandleListAsync,
             // GS_CAPE is routed to knightsCape.HandleAsync below (the real cape-purchase
             // handler with clan validation). The earlier stub `knights.HandleCapeAsync`
             // was a no-op and was being overwritten by this dictionary key.

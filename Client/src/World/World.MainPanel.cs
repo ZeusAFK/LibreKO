@@ -9,9 +9,8 @@ public partial class World
     private readonly Dictionary<string, HudWindow> _mainWindows = new();
     private bool _mainShown;
 
-    internal enum CharacterPage { Character, Friends }
+    internal enum CharacterPage { Character, Clan, Friends }
 
-    private const int CharacterPageWidth = 268;
 
     private readonly Dictionary<CharacterPage, Button> _characterPageTabs = new();
     private readonly Dictionary<CharacterPage, Control> _characterPages = new();
@@ -26,12 +25,13 @@ public partial class World
         root.AddChild(tabs);
 
         _characterPages[CharacterPage.Character] = _statsContent;
+        _characterPages[CharacterPage.Clan] = _clanContent;
         _characterPages[CharacterPage.Friends] = _friendsContent;
 
         foreach (var (page, content) in _characterPages)
         {
             var which = page;
-            var button = UiTheme.TopTabButton(page == CharacterPage.Character ? "Character" : "Friends", 12);
+            var button = UiTheme.TopTabButton(CharacterPageName(page), 12);
             button.Pressed += () => ShowCharacterPage(which);
             _characterPageTabs[page] = button;
             tabs.AddChild(button);
@@ -47,9 +47,17 @@ public partial class World
         foreach (var (key, content) in _characterPages) content.Visible = key == page;
         foreach (var (key, button) in _characterPageTabs) button.ButtonPressed = key == page;
         if (page == CharacterPage.Friends) EnsureFriendsLoaded();
+        if (page == CharacterPage.Clan) EnsureClanLoaded();
         if (_mainWindows.TryGetValue("Character", out HudWindow? window))
             Callable.From(window.ResetSize).CallDeferred();
     }
+
+    private static string CharacterPageName(CharacterPage page) => page switch
+    {
+        CharacterPage.Character => "Character",
+        CharacterPage.Clan => "Clan",
+        _ => "Friends",
+    };
 
     private void OpenCharacterPage(CharacterPage page)
     {

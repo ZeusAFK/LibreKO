@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
@@ -110,8 +110,7 @@ public class KnightsCapePacketCoordinator(
             }
             else
             {
-                if ((capeDef.Grade > 0 && clan.Grade > capeDef.Grade)
-                    || (capeDef.Ranking > 0 && clan.Flag < capeDef.Ranking))
+                if (!ClanRules.MeetsCapeRank(clan.Flag, clan.Grade, capeDef.Ranking, capeDef.Grade))
                 {
                     await SendFailAsync(client, CapeResult.RankTooLow);
                     return;
@@ -131,7 +130,7 @@ public class KnightsCapePacketCoordinator(
         bool applyingPaint = r != 0 || g != 0 || b != 0;
         if (applyingPaint)
         {
-            if (clan.Grade > 3)
+            if (!ClanRules.AcceptsDonations((Common.Enums.ClanType)clan.Flag))
             {
                 await SendFailAsync(client, CapeResult.NotAllowed);
                 return;
@@ -184,9 +183,8 @@ public class KnightsCapePacketCoordinator(
 
         // Broadcast KNIGHTS_UPDATE so all online members refresh their cape view.
         var update = KnightsPacketWriter.ClanUpdate(
-            KnightsSubOpcode.Update,
-            (short)clan.Id, clan.Flag, clan.Cape,
-            clan.CapeR, clan.CapeG, clan.CapeB, clan.Points);
+            clan.Id, clan.Flag, clan.Cape,
+            clan.CapeR, clan.CapeG, clan.CapeB, clan.ClanPointFund);
         foreach (var member in sessionManager.GetAll())
         {
             if (member.KnightsId == clan.Id)
