@@ -97,6 +97,26 @@ public class MagicPacketCoordinator(
             return;
         }
 
+        var isFragmentCarrier = session.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired);
+        if (isFragmentCarrier)
+        {
+            if (magic.PrimaryType == MagicSkillType.Warp)
+            {
+                logger.LogWarning("Refusing warp skill {SkillId} from Fragment of Manes carrier {Name}", skillId, session.Name);
+                await SendMagicFailAsync(session, skillId);
+                return;
+            }
+
+            if (magic.PrimaryType == MagicSkillType.Buff
+                && MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, skillId, out var carrierType4)
+                && ((BuffType)carrierType4.BuffType == BuffType.Speed || carrierType4.Speed > 100))
+            {
+                logger.LogWarning("Refusing speed buff {SkillId} from Fragment of Manes carrier {Name}", skillId, session.Name);
+                await SendMagicFailAsync(session, skillId);
+                return;
+            }
+        }
+
         switch ((MagicProcessOpcode)magicOpcode)
         {
             case MagicProcessOpcode.Casting:
@@ -202,7 +222,8 @@ public class MagicPacketCoordinator(
     {
         MagicSkillType.Buff =>
             MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, skillId, out var type4Data)
-            && MagicBuffClassifier.IsBuff(type4Data),
+            && MagicBuffClassifier.IsBuff(type4Data)
+            && (BuffType)type4Data.BuffType != BuffType.FragmentOfManes,
         MagicSkillType.Transform or MagicSkillType.Stealth => true,
         _ => false,
     };

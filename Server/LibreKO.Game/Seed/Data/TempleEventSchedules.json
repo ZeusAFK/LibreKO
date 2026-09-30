@@ -1,0 +1,42 @@
+[
+  {
+    "Id": 1,
+    "Event": "BorderDefenseWar",
+    "Day": null,
+    "Hour": 14,
+    "Minute": 0,
+    "MinLevel": 20,
+    "MaxLevel": 83,
+    "CountdownMinutes": 10
+  },
+  {
+    "Id": 2,
+    "Event": "BorderDefenseWar",
+    "Day": null,
+    "Hour": 22,
+    "Minute": 0,
+    "MinLevel": 20,
+    "MaxLevel": 83,
+    "CountdownMinutes": 10
+  },
+  {
+    "Id": 3,
+    "Event": "JuraidMountain",
+    "Day": null,
+    "Hour": 13,
+    "Minute": 0,
+    "MinLevel": 40,
+    "MaxLevel": 83,
+    "CountdownMinutes": 10
+  },
+  {
+    "Id": 4,
+    "Event": "JuraidMountain",
+    "Day": null,
+    "Hour": 21,
+    "Minute": 0,
+    "MinLevel": 40,
+    "MaxLevel": 83,
+    "CountdownMinutes": 10
+  }
+]

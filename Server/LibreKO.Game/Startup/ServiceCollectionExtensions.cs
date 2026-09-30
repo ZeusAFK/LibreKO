@@ -120,6 +120,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<InstanceRoomRegistry>();
         services.AddSingleton<IInstanceEntryService, InstanceEntryService>();
         services.AddSingleton<IJuraidMountainService, JuraidMountainService>();
+        services.AddSingleton<IBorderDefenseWarService, BorderDefenseWarService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();
         services.AddSingleton<IAccountLockService, AccountLockService>();
         services.AddSingleton<IUserNotificationService, UserNotificationService>();

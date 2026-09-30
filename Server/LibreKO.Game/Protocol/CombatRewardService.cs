@@ -28,6 +28,7 @@ public class CombatRewardService(
     IUserNotificationService userNotificationService,
     ICollectionRaceService collectionRaceService,
     IJuraidMountainService juraidMountainService,
+    IBorderDefenseWarService borderDefenseWarService,
     ILogger<CombatRewardService> logger) : ICombatRewardService
 {
     public async Task AwardPlayerKillAsync(UserSession victim, UserSession? killer)
@@ -39,6 +40,9 @@ public class CombatRewardService(
         await questPacketCoordinator.CheckQuestKillAsync(killer, (int)victim.Nation);
         await achievementProgressService.ReportPlayerKillAsync(killer);
         await collectionRaceService.HandlePlayerKillAsync(victim, killer);
+
+        if (victim.ZoneId == (byte)ZoneId.BorderDefenseWar)
+            await borderDefenseWarService.OnPlayerKilledAsync(victim, killer);
     }
 
     public async Task AwardNpcKillAsync(NpcInstance npc, UserSession killer)
@@ -65,6 +69,9 @@ public class CombatRewardService(
 
         if (npc.ZoneId == (byte)ZoneId.JuradMountain)
             await juraidMountainService.OnNpcKilledAsync(npc, killer);
+
+        if (npc.ZoneId == (byte)ZoneId.BorderDefenseWar)
+            await borderDefenseWarService.OnNpcKilledAsync(npc, killer);
 
         var damagerIds = npc.WithLock(n => n.DamageMap.Keys.ToArray());
         foreach (var charId in damagerIds)

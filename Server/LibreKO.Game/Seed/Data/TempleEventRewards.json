@@ -1,0 +1,123 @@
+[
+  {
+    "Id": 1,
+    "Event": "BorderDefenseWar",
+    "Outcome": "Win",
+    "ItemId": 379154000,
+    "ItemCount": 1,
+    "MinLevel": 0,
+    "MaxLevel": 0,
+    "LoyaltyPoints": 500,
+    "ExpPercent": 100
+  },
+  {
+    "Id": 2,
+    "Event": "BorderDefenseWar",
+    "Outcome": "Win",
+    "ItemId": 900017000,
+    "ItemCount": 1,
+    "MinLevel": 0,
+    "MaxLevel": 0,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 0
+  },
+  {
+    "Id": 3,
+    "Event": "BorderDefenseWar",
+    "Outcome": "Win",
+    "ItemId": 900142000,
+    "ItemCount": 1,
+    "MinLevel": 20,
+    "MaxLevel": 57,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 0
+  },
+  {
+    "Id": 4,
+    "Event": "BorderDefenseWar",
+    "Outcome": "Win",
+    "ItemId": 900143000,
+    "ItemCount": 1,
+    "MinLevel": 58,
+    "MaxLevel": 83,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 0
+  },
+  {
+    "Id": 5,
+    "Event": "BorderDefenseWar",
+    "Outcome": "Loss",
+    "ItemId": 900017000,
+    "ItemCount": 1,
+    "MinLevel": 0,
+    "MaxLevel": 0,
+    "LoyaltyPoints": 100,
+    "ExpPercent": 50
+  },
+  {
+    "Id": 6,
+    "Event": "BorderDefenseWar",
+    "Outcome": "Loss",
+    "ItemId": 900142000,
+    "ItemCount": 1,
+    "MinLevel": 20,
+    "MaxLevel": 57,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 0
+  },
+  {
+    "Id": 7,
+    "Event": "BorderDefenseWar",
+    "Outcome": "Loss",
+    "ItemId": 900143000,
+    "ItemCount": 1,
+    "MinLevel": 58,
+    "MaxLevel": 83,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 0
+  },
+  {
+    "Id": 8,
+    "Event": "JuraidMountain",
+    "Outcome": "Win",
+    "ItemId": 389196000,
+    "ItemCount": 2,
+    "MinLevel": 0,
+    "MaxLevel": 0,
+    "LoyaltyPoints": 500,
+    "ExpPercent": 0
+  },
+  {
+    "Id": 9,
+    "Event": "JuraidMountain",
+    "Outcome": "Loss",
+    "ItemId": 389205000,
+    "ItemCount": 1,
+    "MinLevel": 0,
+    "MaxLevel": 0,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 0
+  },
+  {
+    "Id": 10,
+    "Event": "JuraidMountain",
+    "Outcome": "Timeout",
+    "ItemId": 389205000,
+    "ItemCount": 1,
+    "MinLevel": 0,
+    "MaxLevel": 0,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 0
+  },
+  {
+    "Id": 11,
+    "Event": "JuraidMountain",
+    "Outcome": "TimeoutWin",
+    "ItemId": 389196000,
+    "ItemCount": 1,
+    "MinLevel": 0,
+    "MaxLevel": 0,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 0
+  }
+]

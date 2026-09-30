@@ -2,14 +2,6 @@
 
 namespace LibreKO.Game.World;
 
-public enum TempleEvent : byte
-{
-    None = 0,
-    Chaos = 1,
-    BorderDefenseWar = 2,
-    JuraidMountain = 3,
-}
-
 public static class TempleEventRules
 {
     public const int JoinWindowSeconds = 600;
@@ -19,6 +11,8 @@ public static class TempleEventRules
     public const int JuraidMountainDurationSeconds = 2700;
     public const byte JuraidMountainDefaultMinLevel = 40;
     public const byte JuraidMountainDefaultMaxLevel = 83;
+    public const byte BorderDefenseWarDefaultMinLevel = 20;
+    public const byte BorderDefenseWarDefaultMaxLevel = 83;
 
     public const int ChaosPlayersPerRoom = 18;
     public const int StartMinuteOfHour = 0;

@@ -22,6 +22,12 @@ public partial class World
             return;
         }
 
+        if (HasActiveFragmentOfManes() && (IsSpeedBuff(s) || s.IsBlink))
+        {
+            CombatNotice("You cannot use movement skills while carrying the Fragment of Manes.");
+            return;
+        }
+
         double now = Now();
         if (SkillOnCooldown(s, now)) return;
         if (GroupCooldownBlocker(s, now) is { } blocker)

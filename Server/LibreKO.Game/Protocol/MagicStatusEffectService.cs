@@ -21,7 +21,6 @@ public class MagicStatusEffectService(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IMagicItemUsageService magicItemUsageService,
-    ICombatLifecycleService combatLifecycleService,
     ICombatNotificationService combatNotificationService,
     IUserNotificationService userNotificationService,
     IPlayerProgressionService playerProgressionService,
@@ -178,6 +177,26 @@ public class MagicStatusEffectService(
             {
                 await SendMagicFailAsync(caster, skillId);
                 return;
+            }
+        }
+
+        if ((buffType == BuffType.Speed || type4Data.Speed > 100)
+            && (target.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired)
+                || caster.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired)))
+        {
+            await SendMagicFailAsync(caster, skillId);
+            return;
+        }
+
+        if (buffType == BuffType.FragmentOfManes)
+        {
+            var activeSpeedBuffs = target.ActiveBuffs
+                .Where(kvp => (kvp.Value.BuffType == BuffType.Speed || kvp.Value.BuffType == BuffType.Speed2 || kvp.Value.BonusSpeed > 100) && !kvp.Value.IsExpired)
+                .Select(kvp => kvp.Key)
+                .ToList();
+            foreach (var speedSkillId in activeSpeedBuffs)
+            {
+                await CancelAsync(target, speedSkillId);
             }
         }
 
@@ -366,7 +385,7 @@ public class MagicStatusEffectService(
                 if (recovered > 0)
                     await playerProgressionService.ChangeExperienceAsync(target, recovered);
 
-                await combatLifecycleService.SendHpChangeAsync(target);
+                await combatNotificationService.SendHpChangeAsync(target);
                 await combatNotificationService.SendMspChangeAsync(target);
 
                 // Broadcast resurrection to region so other players see the player stand up.

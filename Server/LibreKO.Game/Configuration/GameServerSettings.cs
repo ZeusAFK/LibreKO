@@ -120,7 +120,5 @@ public class EventSettings
 
     public int[] ChaosStartHours { get; set; } = [];
 
-    public int[] BorderDefenseWarStartHours { get; set; } = [];
-
     public bool UseLocalTimeForSchedules { get; set; } = false;
 }

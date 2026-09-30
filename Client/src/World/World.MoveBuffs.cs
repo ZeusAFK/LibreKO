@@ -45,6 +45,7 @@ public partial class World
     {
         int pct = s.MoveSpeedPercent;
         if (pct == 100 || duration <= 0) return;
+        if (HasActiveFragmentOfManes() && pct > 100) return;
 
         _moveBuffPercent = pct;
         _moveBuffUntil = Now() + duration;

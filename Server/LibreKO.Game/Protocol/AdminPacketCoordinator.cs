@@ -1471,9 +1471,9 @@ public class AdminPacketCoordinator(
                 joinSec = s;
             }
         }
-        else if (contest == TempleEvent.JuraidMountain)
+        else if (contest is TempleEvent.JuraidMountain or TempleEvent.BorderDefenseWar)
         {
-            var defaultMin = gameDataService.JuraidMountainSchedules?.FirstOrDefault()?.CountdownMinutes ?? TempleEventRules.DefaultCountdownMinutes;
+            var defaultMin = gameDataService.TempleEventSchedules?.FirstOrDefault(s => s.Event == contest)?.CountdownMinutes ?? TempleEventRules.DefaultCountdownMinutes;
             joinSec = defaultMin > 0 ? defaultMin * 60 : TempleEventRules.JoinWindowSeconds;
         }
 

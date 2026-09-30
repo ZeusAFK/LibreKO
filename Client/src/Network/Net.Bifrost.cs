@@ -16,12 +16,19 @@ public partial class Net
 
     private const byte BifrostJoinSub    = 8;
     private const byte BifrostDisbandSub = 9;
+    private const byte TempleScreenSub   = 3;
+    private const byte AltarFlagSub      = 49;
+    private const byte AltarTimerSub     = 50;
 
     public event Action<int, TempleEventType>? BifrostTimeEvent;
 
     public event Action<bool, int>? BifrostJoinEvent;
 
     public event Action? BifrostDisbandEvent;
+
+    public event Action<int, int>? TempleScreenScoreEvent;
+    public event Action<int>? AltarTimerEvent;
+    public event Action<string, byte>? AltarFlagEvent;
 
     private void HandleBifrost(Packet p)
     {
@@ -53,6 +60,26 @@ public partial class Net
                 if (p.RemainingBytes >= 1) p.ReadByte();
                 if (p.RemainingBytes >= 2) p.ReadShort();
                 BifrostDisbandEvent?.Invoke();
+                break;
+            }
+            case TempleScreenSub:
+            {
+                int karus = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
+                int elmo = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
+                TempleScreenScoreEvent?.Invoke(karus, elmo);
+                break;
+            }
+            case AltarFlagSub:
+            {
+                string name = p.RemainingBytes >= 1 ? p.ReadSByteString() : string.Empty;
+                byte nation = p.RemainingBytes >= 1 ? p.ReadByte() : (byte)0;
+                AltarFlagEvent?.Invoke(name, nation);
+                break;
+            }
+            case AltarTimerSub:
+            {
+                int secs = p.RemainingBytes >= 2 ? p.ReadUShort() : 0;
+                AltarTimerEvent?.Invoke(secs);
                 break;
             }
         }

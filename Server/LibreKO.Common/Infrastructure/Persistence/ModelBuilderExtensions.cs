@@ -76,8 +76,8 @@ internal static class ModelBuilderExtensions
         Configure<LotteryEventData>(modelBuilder, "LotteryEvents");
         Configure<LotteryRewardData>(modelBuilder, "LotteryRewards");
         Configure<LotteryScheduleData>(modelBuilder, "LotterySchedules");
-        Configure<JuraidMountainScheduleData>(modelBuilder, "JuraidMountainSchedules");
-        Configure<JuraidMountainRewardData>(modelBuilder, "JuraidMountainRewards");
+        Configure<TempleEventScheduleData>(modelBuilder, "TempleEventSchedules");
+        Configure<TempleEventRewardData>(modelBuilder, "TempleEventRewards");
         Configure<BotMerchantData>(modelBuilder, "BotMerchants");
         Configure<UserBotData>(modelBuilder, "UserBots");
 

@@ -24,6 +24,7 @@ public class SessionTerminationService(
     IWorldPacketCoordinator worldPacketCoordinator,
     INpcLifecycleService npcLifecycleService,
     InstanceRoomRegistry instanceRooms,
+    IBorderDefenseWarService borderDefenseWarService,
     ILogger<SessionTerminationService> logger) : ISessionTerminationService
 {
     // Cap concurrent disconnect-time DB work so a mass disconnect (thousands of bots
@@ -171,6 +172,9 @@ public class SessionTerminationService(
 
         session.IsMining = false;
         session.IsFishing = false;
+
+        if (session.ZoneId == (byte)ZoneId.BorderDefenseWar)
+            await borderDefenseWarService.OnPlayerLogoutOrLeaveAsync(session);
     }
 
     private async Task MarkOfflineAsync(int characterId, CancellationToken cancellationToken)

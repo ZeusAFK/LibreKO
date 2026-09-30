@@ -1,4 +1,4 @@
-namespace LibreKO.Game.Protocol;
+﻿namespace LibreKO.Game.Protocol;
 
 public enum TempleSubOpcode : byte
 {
@@ -12,6 +12,7 @@ public enum TempleSubOpcode : byte
     TempleEventFinish = 10,
     TempleEventCounter = 16,
     AltarKilledMessage = 49,
+    AltarTimer = 50,
     DrakiEnter = 33,
     DrakiList = 34,
     DrakiTimer = 35,
