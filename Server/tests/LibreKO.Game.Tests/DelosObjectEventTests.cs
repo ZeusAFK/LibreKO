@@ -44,7 +44,7 @@ public class DelosObjectEventTests : GameTestBase
 
         await Pull(provider, session);
 
-        gate.GateOpen.Should().BeFalse();
+        gate.GateOpen.Should().Be(0);
         var flag = sent.Single(IsGateFlag);
         flag.ResetOffset();
         flag.ReadByte().Should().Be((byte)GateType);
@@ -69,11 +69,11 @@ public class DelosObjectEventTests : GameTestBase
         var (session, gate) = Setup(provider);
 
         await Pull(provider, session);
-        gate.GateOpen.Should().BeTrue("a player outside the castle clan cannot close Delos' gates");
+        gate.GateOpen.Should().Be(1, "a player outside the castle clan cannot close Delos' gates");
 
         session.IsGM = true;
         await Pull(provider, session);
-        gate.GateOpen.Should().BeFalse();
+        gate.GateOpen.Should().Be(0);
     }
 
     private static ServiceProvider Provider(short castleOwner) =>
@@ -90,7 +90,7 @@ public class DelosObjectEventTests : GameTestBase
         var gate = sessionManager.Regions.SpawnNpc(new NpcInstance
         {
             NpcId = OuterGate, NpcType = NpcData.TypeGate, ZoneId = (byte)Delos, X = 506, Z = 725,
-            Hp = 1, MaxHp = 1, GateOpen = true, ObjectType = NpcInstance.MapObjectType,
+            Hp = 1, MaxHp = 1, GateOpen = 1, ObjectType = NpcInstance.MapObjectType,
         });
 
         var client = Substitute.For<IClient>();

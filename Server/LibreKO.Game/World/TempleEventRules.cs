@@ -13,9 +13,12 @@ public enum TempleEvent : byte
 public static class TempleEventRules
 {
     public const int JoinWindowSeconds = 600;
+    public const byte DefaultCountdownMinutes = 10;
     public const int ChaosDurationSeconds = 1200;
     public const int BorderDefenseWarDurationSeconds = 1800;
     public const int JuraidMountainDurationSeconds = 2700;
+    public const byte JuraidMountainDefaultMinLevel = 40;
+    public const byte JuraidMountainDefaultMaxLevel = 83;
 
     public const int ChaosPlayersPerRoom = 18;
     public const int StartMinuteOfHour = 0;

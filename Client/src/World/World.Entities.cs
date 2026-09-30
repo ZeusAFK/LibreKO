@@ -53,6 +53,11 @@ public partial class World
         public float Radius = 0.9f;
         public float BoundRadius = 1.0f;
         public string Name = "";
+        public int Id;
+        public int GateOpen;
+        public Node3D? BridgeVisual;
+        public StaticBody3D? BridgeFloor;
+        public int ObjectType;
         public int Level;
         public int Hp, MaxHp;
         public int ModelId, Size, Nation, NpcId, NpcType;
@@ -98,10 +103,13 @@ public partial class World
     {
         if (info.Id == _myId)
             return;
-        if (info.IsNpc && info.ObjectType != 0) NoteGateState(info.X, info.Z, info.GateOpen);
+        if (info.IsNpc && info.ObjectType != 0) NoteGateState(info.X, info.Z, info.GateOpen != 0);
 
         if (_ents.TryGetValue(info.Id, out var existing))
         {
+            if (info.IsNpc && info.ObjectType == 0)
+                ApplyPlainNpcBridgeState(existing, info.GateOpen);
+
             var rp = EntityGroundPos(info.X, info.Z, info.Y, existing.Lift);
             float jump = existing.Body.Position.DistanceTo(rp);
             if (existing.Dead || info.Dead || jump > TeleportSnap || jump < MoveArriveEps)
@@ -118,6 +126,7 @@ public partial class World
                 existing.Attackable = info.Attackable;
                 RefreshEntityCollision(existing);
             }
+
             if (!info.IsNpc)
             {
                 if (info.Sitting) _sittingIds.Add(info.Id); else _sittingIds.Remove(info.Id);
@@ -242,10 +251,11 @@ public partial class World
         var radii = BodyRadii(body);
         var ent = new Ent
         {
+            Id = info.Id,
             Body = body, Anim = anim, Crowd = crowd, WingAnims = wingAnims, Flinch = flinch,
             Target = pos, HasTarget = true, Speed = 0f, Lift = lift,
             KoX = info.X, KoZ = info.Z, KoY = info.Y,
-            IsNpc = info.IsNpc, IsMonster = info.IsMonster, Attackable = info.Attackable,
+            IsNpc = info.IsNpc, IsMonster = info.IsMonster, Attackable = info.Attackable, ObjectType = info.ObjectType,
             Name = label, Level = info.Level, Radius = radii.Footprint, BoundRadius = radii.Bound,
             ModelId = info.ModelId, Size = info.Size, Nation = info.Nation,
             NpcId = info.NpcId, NpcType = info.NpcType,
@@ -259,8 +269,12 @@ public partial class World
         };
         _ents[info.Id] = ent;
         ApplyGmFx(info.Id, Net.I.GmFxVisible(info.Id, info.IsGm));
+
         ent.Collider = AttachBodyCollider(body, info.IsNpc ? ent.Radius : PlayerCapsuleRadius, lift);
         RefreshEntityCollision(ent);
+        if (info.IsNpc && info.ObjectType == 0)
+            ApplyPlainNpcBridgeState(ent, info.GateOpen);
+
         if (!info.IsNpc)
         {
             ent.TargetYaw = 180f - info.Dir;
@@ -636,6 +650,8 @@ public partial class World
         _pendingSpawns.Remove(id);
         if (_ents.TryGetValue(id, out var e))
         {
+            if (e.BridgeFloor != null && GodotObject.IsInstanceValid(e.BridgeFloor))
+                e.BridgeFloor.QueueFree();
             e.Crowd?.Release();
             e.Body.QueueFree();
             _ents.Remove(id);
@@ -769,5 +785,60 @@ public partial class World
         if (d >= 4) return new Color(1f, 0.35f, 0.30f);
         if (d >= 0) return new Color(1f, 0.85f, 0.35f);
         return new Color(0.5f, 1f, 0.5f);
+    }
+
+    public const float BridgeLoweredPitch = 110.0f;
+
+    private void ApplyPlainNpcBridgeState(Ent e, int gateOpen)
+    {
+        e.GateOpen = gateOpen;
+        if (e.BridgeVisual == null || !GodotObject.IsInstanceValid(e.BridgeVisual))
+            e.BridgeVisual = e.Body.GetNodeOrNull<Node3D>(ModelNodeName) ?? e.Body.FindChild(ModelNodeName, true, false) as Node3D;
+
+        if (gateOpen == 2)
+        {
+            if (e.BridgeVisual != null)
+                e.BridgeVisual.RotationDegrees = new Vector3(BridgeLoweredPitch, 0, 0);
+
+            if (e.BridgeFloor == null || !GodotObject.IsInstanceValid(e.BridgeFloor))
+            {
+                e.Body.ForceUpdateTransform();
+                var faces = new List<Vector3>();
+                CollectFaces(e.Body, faces);
+                if (faces.Count > 0)
+                {
+                    var shape = new ConcavePolygonShape3D { BackfaceCollision = true };
+                    shape.SetFaces(faces.ToArray());
+                    var floor = new StaticBody3D { Name = "BridgeFloor", CollisionLayer = WorldCollisionLayer, CollisionMask = 0 };
+                    floor.AddChild(new CollisionShape3D { Shape = shape });
+                    _entities.AddChild(floor);
+                    e.BridgeFloor = floor;
+                }
+            }
+            else
+            {
+                e.BridgeFloor.CollisionLayer = WorldCollisionLayer;
+            }
+        }
+        else if (gateOpen == 0)
+        {
+            if (e.BridgeVisual != null)
+                e.BridgeVisual.RotationDegrees = Vector3.Zero;
+
+            if (e.BridgeFloor != null && GodotObject.IsInstanceValid(e.BridgeFloor))
+            {
+                e.BridgeFloor.CollisionLayer = 0;
+            }
+        }
+    }
+
+    private static void CollectFaces(Node node, List<Vector3> faces)
+    {
+        if (node is MeshInstance3D { Mesh: { } mesh } mi)
+        {
+            var xform = mi.GlobalTransform;
+            foreach (var v in mesh.GetFaces()) faces.Add(xform * v);
+        }
+        foreach (var child in node.GetChildren()) CollectFaces(child, faces);
     }
 }

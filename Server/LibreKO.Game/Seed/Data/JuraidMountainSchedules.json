@@ -1,0 +1,20 @@
+[
+  {
+    "Id": 1,
+    "Day": null,
+    "Hour": 13,
+    "Minute": 0,
+    "MinLevel": 40,
+    "MaxLevel": 83,
+    "CountdownMinutes": 10
+  },
+  {
+    "Id": 2,
+    "Day": null,
+    "Hour": 21,
+    "Minute": 0,
+    "MinLevel": 40,
+    "MaxLevel": 83,
+    "CountdownMinutes": 10
+  }
+]

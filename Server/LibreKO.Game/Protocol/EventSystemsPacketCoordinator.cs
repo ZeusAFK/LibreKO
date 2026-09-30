@@ -28,6 +28,7 @@ public class EventSystemsPacketCoordinator(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IZoneTransitionService zoneTransitionService,
+    InstanceRoomRegistry instanceRooms,
     EventSchedulerService eventSchedulerService,
     ILoyaltyService loyaltyService,
     ILogger<EventSystemsPacketCoordinator> logger) : IEventSystemsPacketCoordinator
@@ -274,7 +275,7 @@ public class EventSystemsPacketCoordinator(
     {
         Packet packet;
 
-        if (eventSchedulerService.TryJoinTempleEvent(session))
+        if (eventSchedulerService.TryJoinTempleEvent(session, out var reason))
         {
             packet = EventPacketWriter.TempleEvent(
                 TempleEventJoin, 1, eventSchedulerService.TempleEventZone);
@@ -283,6 +284,11 @@ public class EventSystemsPacketCoordinator(
         else
         {
             packet = EventPacketWriter.TempleEvent(TempleEventJoin, 0, 0);
+            if (!string.IsNullOrEmpty(reason))
+            {
+                var noticePkt = ChatPacketWriter.SystemNotice((byte)session.Nation, reason);
+                await session.Client.SendPacket(noticePkt);
+            }
         }
 
         await session.Client.SendPacket(packet);
@@ -291,6 +297,20 @@ public class EventSystemsPacketCoordinator(
     private async Task HandleTempleEventDisbandAsync(UserSession session)
     {
         eventSchedulerService.LeaveTempleEvent(session.CharacterId);
+
+        if (session.InstanceReturn is { } returnPoint)
+        {
+            logger.LogInformation("Player {Name} left instance room {Room}. Warping to return point ({Zone}, {X}, {Z})",
+                session.Name, session.Room, returnPoint.ZoneId, returnPoint.X, returnPoint.Z);
+            instanceRooms.Leave(session);
+            await zoneTransitionService.ChangeZoneAsync(session, returnPoint.ZoneId, returnPoint.X, returnPoint.Z);
+        }
+        else if (CharacterReconnectZoneRepair.IsEventZone(session.ZoneId))
+        {
+            logger.LogInformation("Player {Name} left event from zone {Zone}. Warping to Moradon",
+                session.Name, session.ZoneId);
+            await zoneTransitionService.ChangeZoneAsync(session, (byte)ZoneId.Moradon, 0f, 0f);
+        }
 
         var packet = EventPacketWriter.TempleEvent(TempleEventDisband, 1, 0);
         await session.Client.SendPacket(packet);
