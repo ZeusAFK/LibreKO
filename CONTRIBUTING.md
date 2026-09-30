@@ -82,7 +82,8 @@ If the number is more than a couple for an ordinary change, remove them.
 wire sizes, fees, timers, zone ids. Extend the constant that already owns the concept rather
 than adding a parallel one.
 
-**File shape.** C# files are UTF-8 with a byte-order mark and CRLF line endings. Godot `.cfg` files
+**File shape.** C# files are UTF-8 with a byte-order mark. The repository stores LF line endings;
+on Windows, `core.autocrlf=true` shows CRLF in the checkout and commits LF. Godot `.cfg` files
 carry no byte-order mark, because the ConfigFile parser then misses the first section. The diff
 shows only what you changed.
 

@@ -88,16 +88,7 @@ public class PartyDisconnectTests : GameTestBase
         var persister = Substitute.For<ICharacterStatePersister>();
         persister.SaveAsync(oldSession, Arg.Any<CancellationToken>()).Returns(
             throws ? Task.FromException<bool>(new InvalidOperationException("Save failed")) : Task.FromResult(false));
-        var service = new SessionTerminationService(manager, persister,
-            provider.GetRequiredService<IChallengePacketCoordinator>(),
-            provider.GetRequiredService<IEventSystemsPacketCoordinator>(),
-            provider.GetRequiredService<IExchangePacketCoordinator>(),
-            provider.GetRequiredService<IMerchantPacketCoordinator>(),
-            provider.GetRequiredService<IPartyPacketCoordinator>(),
-            provider.GetRequiredService<IWorldPacketCoordinator>(),
-            provider.GetRequiredService<INpcLifecycleService>(),
-            provider.GetRequiredService<InstanceRoomRegistry>(),
-            Microsoft.Extensions.Logging.Abstractions.NullLogger<SessionTerminationService>.Instance);
+        var service = ActivatorUtilities.CreateInstance<SessionTerminationService>(provider, persister);
 
         await service.EvictForTakeoverAsync(oldSession);
 

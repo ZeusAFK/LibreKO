@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibreKO.Common.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260929194931_AddGenieOnlineTime")]
+    [Migration("20260930161007_AddGenieOnlineTime")]
     partial class AddGenieOnlineTime
     {
         /// <inheritdoc />
@@ -2786,6 +2786,81 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("StartPositions", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.TempleEventRewardData", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Event")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<int>("ExpPercent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LoyaltyPoints")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("MaxLevel")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("MinLevel")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("Outcome")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Event", "Outcome");
+
+                    b.ToTable("TempleEventRewards", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.TempleEventScheduleData", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("CountdownMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint unsigned")
+                        .HasDefaultValue((byte)10);
+
+                    b.Property<int?>("Day")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Event")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("Hour")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("MaxLevel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint unsigned")
+                        .HasDefaultValue((byte)83);
+
+                    b.Property<byte>("MinLevel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint unsigned")
+                        .HasDefaultValue((byte)20);
+
+                    b.Property<byte>("Minute")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Event");
+
+                    b.ToTable("TempleEventSchedules", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.UserBotData", b =>
                 {
                     b.Property<int>("Id")
@@ -3034,6 +3109,10 @@ namespace LibreKO.Common.Migrations
                         .HasColumnType("int")
                         .HasColumnName("ClanPointFund");
 
+                    b.Property<byte>("ClanPointMethod")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("ClanPointMethod");
+
                     b.Property<int>("ClanWarehouseGold")
                         .HasColumnType("int")
                         .HasColumnName("ClanWarehouseGold");
@@ -3049,7 +3128,7 @@ namespace LibreKO.Common.Migrations
 
                     b.Property<byte>("Grade")
                         .HasColumnType("tinyint unsigned")
-                        .HasColumnName("Ranking");
+                        .HasColumnName("Grade");
 
                     b.Property<byte[]>("MarkData")
                         .IsRequired()
@@ -3086,6 +3165,10 @@ namespace LibreKO.Common.Migrations
 
                     b.Property<DateTime?>("PremiumExpiry")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<byte>("Ranking")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("Ranking");
 
                     b.HasKey("Id");
 
