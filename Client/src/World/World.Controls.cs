@@ -48,7 +48,15 @@ public partial class World
         StopAutoAttack();
     }
 
-    private void ToggleRunMode() => _running = !_running;
+    private void ToggleRunMode()
+    {
+        if (HasActiveFragmentOfManes())
+        {
+            CombatNotice("You cannot run while carrying the Fragment of Manes.");
+            return;
+        }
+        _running = !_running;
+    }
 
     private void TargetNearestHostile()
     {

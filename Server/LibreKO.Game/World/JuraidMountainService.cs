@@ -146,8 +146,9 @@ public sealed class JuraidMountainService(
 
     public async Task StartMatchForCallerAsync(UserSession session, int durationSeconds = TempleEventRules.JuraidMountainDurationSeconds)
     {
-        var minLevel = gameDataService.JuraidMountainSchedules?.Count > 0
-            ? gameDataService.JuraidMountainSchedules.Min(s => s.MinLevel)
+        var juraidSchedules = gameDataService.TempleEventSchedules?.Where(s => s.Event == TempleEvent.JuraidMountain).ToList();
+        var minLevel = juraidSchedules != null && juraidSchedules.Count > 0
+            ? juraidSchedules.Min(s => s.MinLevel)
             : TempleEventRules.JuraidMountainDefaultMinLevel;
 
         if (session.Level < minLevel)
@@ -388,9 +389,9 @@ public sealed class JuraidMountainService(
         }
     }
 
-    private JuraidMountainRewardData? GetReward(JuraidMountainRewardOutcome outcome)
+    private TempleEventRewardData? GetReward(TempleEventRewardOutcome outcome)
     {
-        return gameDataService.JuraidMountainRewards?.FirstOrDefault(r => r.Outcome == outcome);
+        return gameDataService.TempleEventRewards?.FirstOrDefault(r => r.Event == TempleEvent.JuraidMountain && r.Outcome == outcome);
     }
 
     private async Task HandleDevabirdKilledAsync(JuraidMatch match, UserSession killer)
@@ -403,8 +404,8 @@ public sealed class JuraidMountainService(
             $"### [Juraid Mountain] The {winnerName} nation has slain Devabird and claimed victory! ###");
         await sessionManager.BroadcastToAll(noticePkt);
 
-        var winReward = GetReward(JuraidMountainRewardOutcome.Win);
-        var lossReward = GetReward(JuraidMountainRewardOutcome.Loss);
+        var winReward = GetReward(TempleEventRewardOutcome.Win);
+        var lossReward = GetReward(TempleEventRewardOutcome.Loss);
 
         foreach (var charId in match.Participants)
         {
@@ -450,8 +451,8 @@ public sealed class JuraidMountainService(
 
         logger.LogInformation("Cancelling / finalizing all active Juraid Mountain matches ({Count})", _activeMatches.Count);
 
-        var timeoutWinReward = GetReward(JuraidMountainRewardOutcome.TimeoutWin);
-        var timeoutReward = GetReward(JuraidMountainRewardOutcome.Timeout);
+        var timeoutWinReward = GetReward(TempleEventRewardOutcome.TimeoutWin);
+        var timeoutReward = GetReward(TempleEventRewardOutcome.Timeout);
 
         foreach (var match in _activeMatches.Values.ToList())
         {

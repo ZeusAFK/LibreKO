@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using Microsoft.Extensions.Logging;
@@ -8,6 +8,7 @@ namespace LibreKO.Game.World;
 
 public interface IZoneTransitionService
 {
+    event Func<UserSession, byte, Task>? PlayerLeavingZone;
     Task ChangeZoneAsync(UserSession session, byte newZone, float x, float z);
     Task SendZoneAbilityAsync(UserSession session);
     Task RefreshArenaAsync(UserSession session);
@@ -27,10 +28,17 @@ public class ZoneTransitionService(
     private const float MoradonTownX = 816f;
     private const float MoradonTownZ = 532f;
 
+    public event Func<UserSession, byte, Task>? PlayerLeavingZone;
+
     public async Task ChangeZoneAsync(UserSession session, byte newZone, float x, float z)
     {
         if (session.IsWarping)
             return;
+
+        if (session.ZoneId != newZone && PlayerLeavingZone != null)
+        {
+            await PlayerLeavingZone.Invoke(session, session.ZoneId);
+        }
 
         session.IsWarping = true;
 

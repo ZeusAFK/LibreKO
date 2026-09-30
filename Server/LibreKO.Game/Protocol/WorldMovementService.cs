@@ -43,6 +43,7 @@ public class WorldMovementService(
     IMiningPacketCoordinator miningPacketCoordinator,
     IStealthService stealthService,
     ICollectionRaceService collectionRaceService,
+    IBorderDefenseWarService borderDefenseWarService,
     ILogger<WorldMovementService> logger) : IWorldMovementService
 {
     private const byte MoveEchoFinish = 0;
@@ -102,6 +103,9 @@ public class WorldMovementService(
         session.MoveOldWillX = willX;
         session.MoveOldWillY = willY;
         session.MoveOldWillZ = willZ;
+
+        if (session.ZoneId == (byte)ZoneId.BorderDefenseWar)
+            await borderDefenseWarService.CheckCarrierBaseDeliveryAsync(session);
 
         await zoneTransitionService.RefreshArenaAsync(session);
 
@@ -204,6 +208,14 @@ public class WorldMovementService(
         var session = sessionManager.GetByClientId(client.Id);
         if (session == null || session.Hp <= 0 || session.Hp < session.MaxHp / 2)
             return;
+
+        if (session.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
+        {
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                (byte)session.Nation,
+                "You cannot use Town recall while carrying the Fragment of Manes."));
+            return;
+        }
 
         var startPos = gameDataService.GetStartPosition(session.ZoneId);
         if (startPos == null)

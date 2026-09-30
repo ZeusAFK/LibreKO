@@ -90,12 +90,35 @@ public partial class World
         return best;
     }
 
+    public const int FragmentOfManesSkillId = 492063;
+    public const byte SpeedBuffType = 6;
+    public const byte Speed2BuffType = 40;
+
+    public static bool IsSpeedBuff(SkillData.Skill s) =>
+        s.MoveSpeedPercent > 100 || s.BuffType == SpeedBuffType || s.BuffType == Speed2BuffType;
+
+    public bool HasActiveFragmentOfManes() =>
+        Net.I.BuffEnds.TryGetValue(FragmentOfManesSkillId, out var end) && end > Now();
+
     private void RegisterBuff(SkillData.Skill s, int targetId, int duration)
     {
         if (_buffPanel == null || targetId != _myId || duration <= 0) return;
         if (s.Type1 is not (MagicType.Buff or MagicType.DotHeal or MagicType.Stealth
             or MagicType.Transform)) return;
+
+        if (s.Id == FragmentOfManesSkillId)
+        {
+            for (int i = _buffs.Count - 1; i >= 0; i--)
+            {
+                var other = SkillData.Get(_buffs[i].SkillId);
+                if (other != null && IsSpeedBuff(other))
+                    DropBuff(i);
+            }
+        }
+
         AddBuffChip(s, Now() + duration);
+        if (s.MoveSpeedPercent != 100)
+            ApplyMoveSpeedBuff(s, duration);
     }
 
     private void RestoreBuffs()
@@ -213,6 +236,7 @@ public partial class World
 
     private void BuffChipInput(InputEvent ev, int skillId)
     {
+        if (skillId == FragmentOfManesSkillId) return;
         if (ev is InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true, DoubleClick: true })
             Net.I.SendMagic(MagicSub.Cancel, skillId, _myId);
     }

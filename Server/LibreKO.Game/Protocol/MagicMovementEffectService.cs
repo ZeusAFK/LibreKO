@@ -114,7 +114,8 @@ public class MagicMovementEffectService(
         if (target == null
             || target.CharacterId == caster.CharacterId
             || target.Hp <= 0
-            || target.ZoneId != caster.ZoneId)
+            || target.ZoneId != caster.ZoneId
+            || target.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
             return false;
 
         await worldMovementService.WarpAsync(target, (ushort)caster.GetPosX, (ushort)caster.GetPosZ);

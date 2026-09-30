@@ -520,6 +520,9 @@ public partial class World
 
     private SkillData.Skill? ConflictingBuff(SkillData.Skill s)
     {
+        if (HasActiveFragmentOfManes() && (IsSpeedBuff(s) || s.IsBlink))
+            return SkillData.Get(FragmentOfManesSkillId);
+
         if (s.Type1 != MagicType.Buff || s.BuffType == 0) return null;
         double now = Now();
         foreach (var (skillId, end) in Net.I.BuffEnds)

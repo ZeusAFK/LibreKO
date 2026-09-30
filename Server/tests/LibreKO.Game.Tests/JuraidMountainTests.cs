@@ -107,12 +107,12 @@ public class JuraidMountainTests
             ElmoradZ = 748
         });
 
-        _gameDataService.JuraidMountainRewards.Returns(
+        _gameDataService.TempleEventRewards.Returns(
         [
-            new JuraidMountainRewardData { Id = 1, Outcome = JuraidMountainRewardOutcome.Win, ItemId = 389196000, ItemCount = 2, LoyaltyPoints = 500 },
-            new JuraidMountainRewardData { Id = 2, Outcome = JuraidMountainRewardOutcome.Loss, ItemId = 389205000, ItemCount = 1, LoyaltyPoints = 0 },
-            new JuraidMountainRewardData { Id = 3, Outcome = JuraidMountainRewardOutcome.Timeout, ItemId = 389205000, ItemCount = 1, LoyaltyPoints = 0 },
-            new JuraidMountainRewardData { Id = 4, Outcome = JuraidMountainRewardOutcome.TimeoutWin, ItemId = 389196000, ItemCount = 1, LoyaltyPoints = 0 }
+            new TempleEventRewardData { Id = 1, Event = TempleEvent.JuraidMountain, Outcome = TempleEventRewardOutcome.Win, ItemId = 389196000, ItemCount = 2, LoyaltyPoints = 500 },
+            new TempleEventRewardData { Id = 2, Event = TempleEvent.JuraidMountain, Outcome = TempleEventRewardOutcome.Loss, ItemId = 389205000, ItemCount = 1, LoyaltyPoints = 0 },
+            new TempleEventRewardData { Id = 3, Event = TempleEvent.JuraidMountain, Outcome = TempleEventRewardOutcome.Timeout, ItemId = 389205000, ItemCount = 1, LoyaltyPoints = 0 },
+            new TempleEventRewardData { Id = 4, Event = TempleEvent.JuraidMountain, Outcome = TempleEventRewardOutcome.TimeoutWin, ItemId = 389196000, ItemCount = 1, LoyaltyPoints = 0 }
         ]);
     }
 
@@ -246,8 +246,8 @@ public class JuraidMountainTests
     [Fact]
     public void JuraidMountainSchedule_DailySchedule_MatchesAfternoonAndNight()
     {
-        var afternoon = new JuraidMountainScheduleData { Id = 1, Day = null, Hour = 13, Minute = 0 };
-        var night = new JuraidMountainScheduleData { Id = 2, Day = null, Hour = 21, Minute = 0 };
+        var afternoon = new TempleEventScheduleData { Id = 1, Event = TempleEvent.JuraidMountain, Day = null, Hour = 13, Minute = 0 };
+        var night = new TempleEventScheduleData { Id = 2, Event = TempleEvent.JuraidMountain, Day = null, Hour = 21, Minute = 0 };
 
         var matchAfternoon = new DateTime(2026, 9, 28, 13, 0, 0);
         var matchNight = new DateTime(2026, 9, 28, 21, 0, 0);
@@ -265,7 +265,7 @@ public class JuraidMountainTests
     [Fact]
     public void JuraidMountainSchedule_SpecificDay_MatchesOnlyOnThatDay()
     {
-        var sundaySchedule = new JuraidMountainScheduleData { Id = 3, Day = DayOfWeek.Sunday, Hour = 13, Minute = 0 };
+        var sundaySchedule = new TempleEventScheduleData { Id = 3, Event = TempleEvent.JuraidMountain, Day = DayOfWeek.Sunday, Hour = 13, Minute = 0 };
 
         var sunday = new DateTime(2026, 9, 27, 13, 0, 0); // Sunday
         var monday = new DateTime(2026, 9, 28, 13, 0, 0); // Monday
@@ -278,10 +278,10 @@ public class JuraidMountainTests
     }
 
     [Fact]
-    public void JuraidMountainSchedule_MinLevel_DefaultsTo40()
+    public void JuraidMountainSchedule_MinLevel_DefaultsTo20()
     {
-        var schedule = new JuraidMountainScheduleData { Id = 1, Hour = 13, Minute = 0 };
-        schedule.MinLevel.Should().Be(40);
+        var schedule = new TempleEventScheduleData { Id = 1, Event = TempleEvent.JuraidMountain, Hour = 13, Minute = 0 };
+        schedule.MinLevel.Should().Be(20);
         schedule.MaxLevel.Should().Be(83);
         schedule.CountdownMinutes.Should().Be(10);
     }
@@ -289,7 +289,7 @@ public class JuraidMountainTests
     [Fact]
     public void JuraidMountainSchedule_CountdownMinutes_CanBeConfigured()
     {
-        var schedule = new JuraidMountainScheduleData { Id = 1, CountdownMinutes = 5 };
+        var schedule = new TempleEventScheduleData { Id = 1, Event = TempleEvent.JuraidMountain, CountdownMinutes = 5 };
         schedule.CountdownMinutes.Should().Be(5);
     }
 
@@ -298,8 +298,8 @@ public class JuraidMountainTests
     {
         var service = CreateService();
 
-        _gameDataService.JuraidMountainSchedules.Returns([
-            new JuraidMountainScheduleData { Id = 1, MinLevel = 40, MaxLevel = 83 }
+        _gameDataService.TempleEventSchedules.Returns([
+            new TempleEventScheduleData { Id = 1, Event = TempleEvent.JuraidMountain, MinLevel = 40, MaxLevel = 83 }
         ]);
 
         var lowLevelCaller = CreateTestSession(101, AccountNation.Karus);

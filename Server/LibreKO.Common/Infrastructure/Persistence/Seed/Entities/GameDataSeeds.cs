@@ -396,14 +396,14 @@ public class LotteryScheduleSeed : SnapshotJsonSeed<LotteryScheduleData>
     protected override string JsonFileName => "LotterySchedules.json";
 }
 
-public class JuraidMountainScheduleSeed : SnapshotJsonSeed<JuraidMountainScheduleData>
+public class TempleEventScheduleSeed : SnapshotJsonSeed<TempleEventScheduleData>
 {
-    protected override string JsonFileName => "JuraidMountainSchedules.json";
+    protected override string JsonFileName => "TempleEventSchedules.json";
 }
 
-public class JuraidMountainRewardSeed : SnapshotJsonSeed<JuraidMountainRewardData>
+public class TempleEventRewardSeed : SnapshotJsonSeed<TempleEventRewardData>
 {
-    protected override string JsonFileName => "JuraidMountainRewards.json";
+    protected override string JsonFileName => "TempleEventRewards.json";
 }
 
 public class UserBotSeed : SnapshotJsonSeed<UserBotData>

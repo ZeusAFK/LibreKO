@@ -313,6 +313,10 @@ internal static class UserSessionMagicState
         {
             case BuffType.Speed:
             case BuffType.Freeze:
+                if (!session.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
+                    session.SpeedAmount = (byte)buff.BonusSpeed;
+                break;
+            case BuffType.FragmentOfManes:
                 session.SpeedAmount = (byte)buff.BonusSpeed;
                 break;
             case BuffType.Speed2:

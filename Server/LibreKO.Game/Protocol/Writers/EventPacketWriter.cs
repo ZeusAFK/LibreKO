@@ -86,6 +86,43 @@ public sealed class EventPacketWriter
         return packet;
     }
 
+    public static Packet TempleScreenScores(int karusScore, int elmoradScore)
+    {
+        var packet = new Packet(GameOpcodes.GS_EVENT);
+        packet.WriteByte((byte)TempleSubOpcode.TempleScreen);
+        packet.WriteInt(karusScore);
+        packet.WriteInt(elmoradScore);
+        return packet;
+    }
+
+    public static Packet AltarTimer(ushort secondsRemaining)
+    {
+        var packet = new Packet(GameOpcodes.GS_EVENT);
+        packet.WriteByte((byte)TempleSubOpcode.AltarTimer);
+        packet.WriteUShort(secondsRemaining);
+        return packet;
+    }
+
+    public static Packet AltarFlag(string playerName, byte nation)
+    {
+        var packet = new Packet(GameOpcodes.GS_EVENT);
+        packet.WriteByte((byte)TempleSubOpcode.AltarKilledMessage);
+        packet.WriteSByteString(playerName);
+        packet.WriteByte(nation);
+        return packet;
+    }
+
+    public static Packet TempleEventFinish(byte winnerNation, uint countdownSeconds)
+    {
+        var packet = new Packet(GameOpcodes.GS_EVENT);
+        packet.WriteByte((byte)TempleSubOpcode.TempleEventFinish);
+        packet.WriteByte(2);
+        packet.WriteByte(0);
+        packet.WriteByte(winnerNation);
+        packet.WriteUInt(countdownSeconds);
+        return packet;
+    }
+
     public const byte DrakiTimerHeaderFirst = 233;
     public const byte DrakiTimerHeaderSecond = 3;
 
