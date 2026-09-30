@@ -64,7 +64,7 @@ public class QuestSummonTests
         foreach (var label in new[] { "Suspicious amsangin", "Shows the secret book.", "Were pirates and pestle?" })
             Run(program, host, Shown(host).Single(b => b.Label.Text == label).TargetEvent);
         host.Received(1).PlayEffect(300435);
-        Run(program, host, Shown(host).Single(b => b.Label.Text.StartsWith("No. - By pirates")).TargetEvent);
+        Run(program, host, Shown(host).Single(b => b.Label.Text!.StartsWith("No. - By pirates")).TargetEvent);
         host.Received(1).PlayEffect(300438);
         host.Received(1).SummonNpc(GuardOfBlackMarketer, 1, 467, 519);
         host.Received(1).SummonNpc(GuardOfBlackMarketer, 1, 469, 523);

@@ -39,7 +39,7 @@ public class QuestMinerExtractTests
     private static DialogButton Follow(QuestProgram program, IQuestHost host, Func<IReadOnlyList<DialogButton>> shown, DialogButton button)
     {
         new QuestInterpreter(program, host).Run(button.TargetEvent).Failure.Should().BeNull();
-        return shown().Single(b => b.Label.Text == ExtractTopic || b.Label.Text.StartsWith("[Mysterious Ore]"));
+        return shown().Single(b => b.Label.Text == ExtractTopic || b.Label.Text!.StartsWith("[Mysterious Ore]"));
     }
 
     [Fact]

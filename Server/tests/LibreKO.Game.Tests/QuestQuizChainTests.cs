@@ -98,6 +98,6 @@ public class QuestQuizChainTests
         program.TryGetEntry(QuestProgram.GreetingEvent, 0, out var refusal).Should().BeTrue();
         Run(program, empty, refusal);
         empty.Received().ShowDialog(Arg.Any<LibreKO.Quests.Binding.DialogStyle>(), Arg.Any<int>(),
-            Arg.Is<DialogLine>(l => l.Text.Contains("I only pose the question")), Arg.Any<IReadOnlyList<DialogButton>>());
+            Arg.Is<DialogLine>(l => l.Text!.Contains("I only pose the question")), Arg.Any<IReadOnlyList<DialogButton>>());
     }
 }

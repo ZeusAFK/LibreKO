@@ -13,12 +13,12 @@ namespace LibreKO.Game.Tests;
 public class GenieSystemTests
 {
     [Fact]
-    public void StartAnnouncesTheRemainingMinutesAndFlagsTheCharacterActive()
+    public async Task StartAnnouncesTheRemainingMinutesAndFlagsTheCharacterActive()
     {
         var (coordinator, session, client) = Create();
         session.GenieTime.Load(90 * 60);
 
-        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        await coordinator.StartAsync(session);
 
         session.GenieActive.Should().BeTrue();
         var start = Sent(client, 0);
@@ -30,11 +30,11 @@ public class GenieSystemTests
     }
 
     [Fact]
-    public void StartingWithNoTimeLeftStopsInsteadOfStarting()
+    public async Task StartingWithNoTimeLeftStopsInsteadOfStarting()
     {
         var (coordinator, session, client) = Create();
 
-        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        await coordinator.StartAsync(session);
 
         session.GenieActive.Should().BeFalse();
         var stop = Sent(client, 0);
@@ -74,7 +74,7 @@ public class GenieSystemTests
     }
 
     [Fact]
-    public void SavedOptionsSurviveTheRoundTripToTheCharacter()
+    public async Task SavedOptionsSurviveTheRoundTripToTheCharacter()
     {
         var (coordinator, session, _) = Create();
         var save = new Packet(GameOpcodes.GS_GENIE_SYSTEM);
@@ -84,7 +84,7 @@ public class GenieSystemTests
         save.WriteByte(9);
         save.ResetOffset();
 
-        coordinator.HandleAsync(session.Client, save).GetAwaiter().GetResult();
+        await coordinator.HandleAsync(session.Client, save);
 
         session.GenieOptions.Length.Should().Be(GenieSystemPacketWriter.OptionBytes);
         session.GenieOptions[0].Should().Be(7);
@@ -105,36 +105,34 @@ public class GenieSystemTests
     }
 
     [Fact]
-    public void AnActionIsRelayedToTheHandlerThePlayersOwnPacketWouldReach()
+    public async Task AnActionIsRelayedToTheHandlerThePlayersOwnPacketWouldReach()
     {
         var combat = Substitute.For<ICombatPacketCoordinator>();
         var (coordinator, session, _) = Create(combat: combat);
         session.GenieTime.Load(30 * 60);
         session.GenieActive = true;
 
-        coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack))
-            .GetAwaiter().GetResult();
+        await coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack));
 
-        combat.Received(1).HandleAttackAsync(session.Client, Arg.Any<Packet>());
+        await combat.Received(1).HandleAttackAsync(session.Client, Arg.Any<Packet>());
     }
 
     [Fact]
-    public void WithNoTimeLeftTheActionIsRefusedAndTheGenieIsStopped()
+    public async Task WithNoTimeLeftTheActionIsRefusedAndTheGenieIsStopped()
     {
         var combat = Substitute.For<ICombatPacketCoordinator>();
         var (coordinator, session, client) = Create(combat: combat);
 
-        coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack))
-            .GetAwaiter().GetResult();
+        await coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack));
 
-        combat.DidNotReceive().HandleAttackAsync(Arg.Any<IClient>(), Arg.Any<Packet>());
+        await combat.DidNotReceive().HandleAttackAsync(Arg.Any<IClient>(), Arg.Any<Packet>());
         var stop = Sent(client, 0);
         stop.ReadByte().Should().Be(GenieSystemPacketWriter.InfoRequest);
         stop.ReadByte().Should().Be(GenieSystemPacketWriter.Stop);
     }
 
     [Fact]
-    public void EachActionReachesItsOwnHandler()
+    public async Task EachActionReachesItsOwnHandler()
     {
         var magic = Substitute.For<IMagicPacketCoordinator>();
         var world = Substitute.For<IWorldPacketCoordinator>();
@@ -142,37 +140,33 @@ public class GenieSystemTests
         session.GenieTime.Load(30 * 60);
         session.GenieActive = true;
 
-        coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.Move))
-            .GetAwaiter().GetResult();
-        coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.Rotate))
-            .GetAwaiter().GetResult();
-        coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.Magic))
-            .GetAwaiter().GetResult();
+        await coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.Move));
+        await coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.Rotate));
+        await coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.Magic));
 
-        world.Received(1).HandleMoveAsync(session.Client, Arg.Any<Packet>());
-        world.Received(1).HandleRotateAsync(session.Client, Arg.Any<Packet>());
-        magic.Received(1).HandleAsync(session.Client, Arg.Any<Packet>());
+        await world.Received(1).HandleMoveAsync(session.Client, Arg.Any<Packet>());
+        await world.Received(1).HandleRotateAsync(session.Client, Arg.Any<Packet>());
+        await magic.Received(1).HandleAsync(session.Client, Arg.Any<Packet>());
     }
 
     [Fact]
-    public void InactiveGenieCannotRelayActionsEvenWithRemainingTime()
+    public async Task InactiveGenieCannotRelayActionsEvenWithRemainingTime()
     {
         var combat = Substitute.For<ICombatPacketCoordinator>();
         var (coordinator, session, _) = Create(combat: combat);
         session.GenieTime.Load(30 * 60);
-        coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack))
-            .GetAwaiter().GetResult();
-        combat.DidNotReceive().HandleAttackAsync(Arg.Any<IClient>(), Arg.Any<Packet>());
+        await coordinator.HandleAsync(session.Client, Action(GenieSystemPacketWriter.MainAttack));
+        await combat.DidNotReceive().HandleAttackAsync(Arg.Any<IClient>(), Arg.Any<Packet>());
         session.GenieActive.Should().BeFalse();
     }
 
     [Fact]
-    public void RepeatedStartAcknowledgesAnAlreadyActiveSession()
+    public async Task RepeatedStartAcknowledgesAnAlreadyActiveSession()
     {
         var (coordinator, session, client) = Create();
         session.GenieTime.Load(30 * 60);
         session.GenieActive = true;
-        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        await coordinator.StartAsync(session);
         var packet = Sent(client, 0);
         packet.ReadByte().Should().Be(GenieSystemPacketWriter.InfoRequest);
         packet.ReadByte().Should().Be(GenieSystemPacketWriter.Start);
@@ -180,30 +174,30 @@ public class GenieSystemTests
     }
 
     [Fact]
-    public void DeadCharacterCannotStartGenie()
+    public async Task DeadCharacterCannotStartGenie()
     {
         var (coordinator, session, _) = Create();
         session.GenieTime.Load(30 * 60);
         session.Hp = 0;
-        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        await coordinator.StartAsync(session);
         session.GenieActive.Should().BeFalse();
     }
 
     [Fact]
-    public void OnlyStartingGenieResumesTheTimerAndStoppingPausesIt()
+    public async Task OnlyStartingGenieResumesTheTimerAndStoppingPausesIt()
     {
         var (coordinator, session, _) = Create();
         session.GenieTime.Load(7200);
         session.GenieTime.IsRunning.Should().BeFalse();
-        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        await coordinator.StartAsync(session);
         session.GenieTime.IsRunning.Should().BeTrue();
-        coordinator.StopAsync(session).GetAwaiter().GetResult();
+        await coordinator.StopAsync(session);
         session.GenieTime.IsRunning.Should().BeFalse();
         double saved = session.GenieTime.RemainingSeconds;
         session.GenieTime.AddSeconds(120);
         session.GenieTime.IsRunning.Should().BeFalse();
         session.GenieTime.RemainingSeconds.Should().Be(saved + 120);
-        coordinator.StartAsync(session).GetAwaiter().GetResult();
+        await coordinator.StartAsync(session);
         session.GenieTime.IsRunning.Should().BeTrue();
         session.GenieActive = false;
         session.GenieTime.IsRunning.Should().BeFalse();

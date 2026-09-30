@@ -25,7 +25,7 @@ public static class CharacterMerge
         Remove(body);
         var sources = new List<(ArrayMesh Mesh, int Surface)>();
         var slots = new List<OutfitMaterial.Slot>();
-        var used = new List<MeshInstance3D>();
+        var used = new List<(MeshInstance3D Part, ArrayMesh Mesh)>();
         Skin? skin = null;
         Node? parent = null;
         foreach (var part in Ordered(World.BodyParts(body)))
@@ -46,32 +46,33 @@ public static class CharacterMerge
             parent ??= part.GetParent();
             for (int i = 0; i < count; i++) sources.Add((mesh, i));
             slots.AddRange(partSlots);
-            used.Add(part);
+            used.Add((part, mesh));
         }
         if (used.Count < 2 || skin == null || parent == null) return;
         if (Combined(sources) is not { } combined) return;
 
+        var first = used[0].Part;
         var merged = new MeshInstance3D
         {
             Name = MergedName,
             Mesh = combined,
             Skin = skin,
-            Skeleton = used[0].Skeleton,
-            CastShadow = used[0].CastShadow,
-            Transparency = used[0].Transparency,
-            VisibilityRangeEnd = used[0].VisibilityRangeEnd,
-            VisibilityRangeEndMargin = used[0].VisibilityRangeEndMargin,
-            VisibilityRangeFadeMode = used[0].VisibilityRangeFadeMode,
-            Layers = used[0].Layers,
+            Skeleton = first.Skeleton,
+            CastShadow = first.CastShadow,
+            Transparency = first.Transparency,
+            VisibilityRangeEnd = first.VisibilityRangeEnd,
+            VisibilityRangeEndMargin = first.VisibilityRangeEndMargin,
+            VisibilityRangeFadeMode = first.VisibilityRangeFadeMode,
+            Layers = first.Layers,
         };
         merged.SetSurfaceOverrideMaterial(0, OutfitMaterial.For(slots));
         parent.AddChild(merged);
         SkinShare.FixBounds(merged);
         var stored = new Godot.Collections.Array();
-        foreach (var part in used)
+        foreach (var (part, mesh) in used)
         {
             stored.Add(part);
-            stored.Add(part.Mesh);
+            stored.Add(mesh);
             part.SetMeta(MergedIntoMeta, merged);
             part.Visible = false;
             part.Mesh = null;

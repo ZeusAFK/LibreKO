@@ -231,6 +231,9 @@ public partial class World
     private const float StepUp = 0.7f;
     private const float EntityFloorProbeUp = 2f;
     private const float EntityFloorProbeDown = 0.5f;
+    private const float ObjectFloorProbeDown = 2f;
+    private const float PitFloorProbeDown = 60f;
+    private const byte JuraidZone = 87;
     private const float GroundNormalProbe = 0.6f;
 
     private Vector3 EntityGroundPos(float koX, float koZ, float serverY, float lift)
@@ -277,7 +280,7 @@ public partial class World
         if (_selfBody == null || NoClip) return float.NegativeInfinity;
         var space = GetWorld3D().DirectSpaceState;
         var from = new Vector3(atGodot.X, feetY + StepUp, atGodot.Z);
-        float bottomOffset = _zone == 87 ? 60f : 2f;
+        float bottomOffset = _zone == JuraidZone ? PitFloorProbeDown : ObjectFloorProbeDown;
         var to = new Vector3(atGodot.X, Mathf.Min(atGodot.Y, feetY) - bottomOffset, atGodot.Z);
         var q = PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer);
         q.Exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };

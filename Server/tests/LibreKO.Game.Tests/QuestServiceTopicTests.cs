@@ -67,7 +67,7 @@ public class QuestServiceTopicTests
         Run(program, empty, topics);
         Run(program, empty, Shown(empty).Single(b => b.Label.Text == "Trade 1st grade treasure chest").TargetEvent);
         empty.Received().ShowDialog(Arg.Any<DialogStyle>(), Arg.Any<int>(),
-            Arg.Is<DialogLine>(l => l.Text.StartsWith("You don't have the treasure chest")), Arg.Any<IReadOnlyList<DialogButton>>());
+            Arg.Is<DialogLine>(l => l.Text!.StartsWith("You don't have the treasure chest")), Arg.Any<IReadOnlyList<DialogButton>>());
         empty.DidNotReceiveWithAnyArgs().ApplyReward(default!);
     }
 

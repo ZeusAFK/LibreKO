@@ -45,7 +45,7 @@ public class QuestButtonBodyTests
     {
         var compilation = Compile(Inline);
         var choice = Greeting(compilation).Choices
-            .Single(c => c.Button.Label.Text.Contains("Sentinel"));
+            .Single(c => c.Button.Label.Text!.Contains("Sentinel"));
 
         compilation.Program.TryGetEvent(choice.Button.TargetEvent, out var lifted)
             .Should().BeTrue("the wire carries an event id, so the body needs one");
@@ -57,8 +57,8 @@ public class QuestButtonBodyTests
     public void EachButtonGetsItsOwnBody()
     {
         var choices = Greeting(Compile(Inline)).Choices;
-        var first = choices.Single(c => c.Button.Label.Text.Contains("Sentinel"));
-        var second = choices.Single(c => c.Button.Label.Text.Contains("swing"));
+        var first = choices.Single(c => c.Button.Label.Text!.Contains("Sentinel"));
+        var second = choices.Single(c => c.Button.Label.Text!.Contains("swing"));
 
         first.Button.TargetEvent.Should().NotBe(second.Button.TargetEvent);
     }
@@ -124,7 +124,7 @@ public class QuestButtonBodyTests
             .Should().BeEmpty();
 
         var choice = Greeting(compilation).Choices
-            .Single(c => c.Button.Label.Text.Contains("more"));
+            .Single(c => c.Button.Label.Text!.Contains("more"));
         compilation.Program.TryGetEvent(choice.Button.TargetEvent, out var lifted);
         lifted.Body.OfType<BoundStatement.Dialog>().Should().HaveCount(1);
     }

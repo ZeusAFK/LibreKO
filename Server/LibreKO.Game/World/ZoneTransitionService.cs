@@ -43,9 +43,10 @@ public class ZoneTransitionService(
             return;
         }
 
-        if (session.ZoneId != newZone && PlayerLeavingZone != null)
+        if (session.ZoneId != newZone && PlayerLeavingZone is { } leaving)
         {
-            await PlayerLeavingZone.Invoke(session, session.ZoneId);
+            foreach (var handler in leaving.GetInvocationList().Cast<Func<UserSession, byte, Task>>())
+                await handler(session, session.ZoneId);
         }
 
         session.IsWarping = true;
