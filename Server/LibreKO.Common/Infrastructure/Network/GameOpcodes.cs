@@ -145,7 +145,6 @@ public enum GameOpcodes : byte
     GS_REPORT = 0x7C,
     GS_PET = 0x76,
     GS_EVENT_BOARD = 0x9C,
-    GS_REBIRTH = 0xD3,
     GS_MAIL = 0xD5,
     GS_AUCTION = 0xC3,
     GS_BOUNTY = 0xD8,

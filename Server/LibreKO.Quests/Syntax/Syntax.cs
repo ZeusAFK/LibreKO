@@ -163,7 +163,9 @@ public sealed record QuestRewardsSyntax(
     TextSpan Span,
     IReadOnlyList<StatementSyntax> Body,
     Token? ClassGroup = null,
-    Token? Nation = null);
+    Token? Nation = null,
+    Token? RebirthMin = null,
+    Token? RebirthMax = null);
 
 public sealed record QuestFileSyntax(
     TextSpan Span,

@@ -347,7 +347,6 @@ public partial class Net : Node
             case GameOpcodes.GS_MAP_EVENT:         HandleMapEvent(p); break;
             case GameOpcodes.GS_PET:               HandlePet(p); break;
 
-            case GameOpcodes.GS_REBIRTH:           HandleRebirth(p); break;
             case GameOpcodes.GS_CORPSE:            HandleCorpse(p); break;
             case GameOpcodes.GS_BIFROST:           HandleBifrost(p); break;
             case GameOpcodes.GS_EVENT:             HandleBifrostEvent(p); break;

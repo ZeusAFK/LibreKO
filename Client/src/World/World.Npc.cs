@@ -197,6 +197,13 @@ public partial class World
 
     private void OnNpcDialog(NpcDialog dlg)
     {
+        if (dlg.Flag == NpcDialog.RebirthPanelFlag)
+        {
+            CloseNpcDialog();
+            OpenRebirthPicker();
+            return;
+        }
+
         _npcDialogScript = dlg.ScriptFile;
         if (dlg.HeaderText is { Length: > 0 } body)
             BeginNpcDialog(

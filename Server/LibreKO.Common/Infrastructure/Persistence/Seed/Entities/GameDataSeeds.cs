@@ -87,6 +87,7 @@ public class NpcSeed : JsonEntitySeed<NpcData>
 public class NpcPosSeed : JsonEntitySeed<NpcPosData>
 {
     protected override string JsonFileName => "NpcPositions.json";
+    protected override string? ShardPattern => "NpcPositions.zone*.json";
     public override bool PerformDelete => true;
 
     public override IEnumerable<NpcPosData> GetSeedData()

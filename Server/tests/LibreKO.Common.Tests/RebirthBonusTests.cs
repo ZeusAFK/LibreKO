@@ -16,7 +16,7 @@ public class RebirthBonusTests
     [Fact]
     public void PointsStopAtTheRebirthCap()
     {
-        RebirthBonus.PointsFor(11).Should().Be(RebirthBonus.PointsFor(RebirthBonus.MaxRebirthLevel));
+        RebirthBonus.PointsFor(RebirthBonus.MaxRebirthLevel + 1).Should().Be(RebirthBonus.PointsFor(RebirthBonus.MaxRebirthLevel));
         RebirthBonus.PointsFor(-3).Should().Be(0);
     }
 

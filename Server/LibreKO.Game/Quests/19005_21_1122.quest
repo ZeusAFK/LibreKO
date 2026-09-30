@@ -1,0 +1,20 @@
+Bind Npc 19005 Zone 21
+Quest 1122 "Rebirth"
+    Fulfil elsewhere
+    Journal "If you complete the 3 qualifications you may be reborn through Makin"
+
+Requires player level >= 83 and (quest 1121 is completed or quest 1720 is completed or quest 1722 is completed or quest 1723 is completed)
+
+Rewards none
+
+On offer
+    Show quest "Are you ready? You'll have to be done with the 2nd job change. Will you incarnate now?"
+
+On in_progress
+    Say "Are you ready? You'll have to be done with the 2nd job change. Will you incarnate now?"
+    Topic "For example, for the country!" do
+        If player has 900579000
+            Open rebirth panel
+        Else
+            Say "You do not qualify for reincarnation. You'll need to pass the three tests."
+    Topic "No.Is left to do in this life yet." goto close

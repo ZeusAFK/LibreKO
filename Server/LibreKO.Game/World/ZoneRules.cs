@@ -93,4 +93,6 @@ public static class ZoneRules
         => Table.TryGetValue(zoneId, out var rule) ? rule : Unlisted;
 
     public static bool Allows(byte zoneId, ZoneFlags flag) => (For(zoneId).Flags & flag) == flag;
+
+    public static bool BarsReborn(byte zoneId) => zoneId is (byte)ZoneId.Ardream or (byte)ZoneId.RonarkLandBase;
 }

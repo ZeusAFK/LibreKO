@@ -29,7 +29,6 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         IItemPacketCoordinator item,
         IKnightsPacketCoordinator knights,
         IKnightsCapePacketCoordinator knightsCape,
-        IRebirthPacketCoordinator rebirth,
         ILootPacketCoordinator loot,
         IMerchantPacketCoordinator merchant,
         IMiscPacketCoordinator misc,
@@ -216,7 +215,6 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_REPORT] = misc.HandleReportAsync,
             [GameOpcodes.GS_PET] = pet.HandleAsync,
             [GameOpcodes.GS_CAPE] = knightsCape.HandleAsync,
-            [GameOpcodes.GS_REBIRTH] = rebirth.HandleAsync,
 
             // No-ops (acknowledged but no server action)
             // (title sub-system), NOT GenderChange. Sending a real S2C response causes

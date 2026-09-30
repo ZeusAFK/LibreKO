@@ -1,4 +1,5 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+﻿using Microsoft.Extensions.Hosting;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -23,6 +24,10 @@ public class AdminPanelPacketCoordinator(
     IUserNotificationService userNotificationService,
     ICombatNotificationService combatNotificationService,
     IZoneTransitionService zoneTransitionService,
+    IWorldMovementService worldMovementService,
+    INpcSpawnRowService spawnRows,
+    INpcSpawnRowStore spawnStore,
+    IHostEnvironment hostEnvironment,
     ICollectionRaceService collectionRaceService,
     IPlayerProgressionService playerProgressionService,
     ILoyaltyService loyaltyService,
@@ -43,6 +48,11 @@ public class AdminPanelPacketCoordinator(
     private const byte ReqSetLevel = 11;
     private const byte ReqSetSkill = 12;
     private const byte ReqSetLook = 13;
+    private const byte ReqFind = 14;
+    private const byte ReqGo = 15;
+    private const byte ReqSpawnRow = 16;
+    private const byte ReqSpawnSet = 17;
+    private const byte ReqSpawnPersist = 18;
 
     private const byte KeepProgress = 0;
     private const byte ResetProgress = 1;
@@ -52,6 +62,12 @@ public class AdminPanelPacketCoordinator(
     private const byte AckResult = 0x11;
     private const byte AckGrant = 0x12;
     private const byte AckCollectionRaces = 0x14;
+    private const byte AckFind = 0x15;
+    private const byte AckSpawnRow = 0x16;
+
+    private const int FindRowCap = 200;
+    private const int SpawnCountCeiling = 50;
+    private const int SpawnEditBodySize = 4 + 4 + 4 + 4 + 1 + 2 + 2;
 
     private const byte StatFloor = 1;
     private const byte StatCeiling = 255;
@@ -120,6 +136,26 @@ public class AdminPanelPacketCoordinator(
 
             case ReqZone:
                 await HandleZoneAsync(session, packet);
+                break;
+
+            case ReqFind:
+                await HandleFindAsync(session, packet);
+                break;
+
+            case ReqGo:
+                await HandleGoAsync(session, packet);
+                break;
+
+            case ReqSpawnRow:
+                await HandleSpawnRowAsync(session, packet);
+                break;
+
+            case ReqSpawnSet:
+                await HandleSpawnEditAsync(session, packet, persist: false);
+                break;
+
+            case ReqSpawnPersist:
+                await HandleSpawnEditAsync(session, packet, persist: true);
                 break;
 
             case ReqCollectionRaces:
@@ -442,6 +478,167 @@ public class AdminPanelPacketCoordinator(
         await zoneTransitionService.ChangeZoneAsync(session, (byte)target, 0f, 0f);
         logger.LogInformation(
             "GM {Name} used the panel to change zone {From} -> {To}", session.Name, from, target);
+    }
+
+    private async Task HandleFindAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 3)
+            return;
+
+        var kind = packet.ReadByte();
+        var query = packet.ReadUtf8String().Trim();
+        if (query.Length == 0)
+        {
+            await SendResultAsync(session, false, "Type a name or an id to search for.");
+            return;
+        }
+
+        var byId = int.TryParse(query, out var wanted);
+        IEnumerable<AdminPanelPacketWriter.FindRow> rows = kind == AdminPanelPacketWriter.FindPlayers
+            ? sessionManager.GetAll()
+                .Where(s => FindMatches(s.Name, s.CharacterId, query, byId, wanted))
+                .Select(s => new AdminPanelPacketWriter.FindRow(
+                    s.CharacterId, 0, s.Name, s.Level, s.ZoneId, WireCoordinate(s.X), WireCoordinate(s.Z), false, s.IsBot))
+            : sessionManager.Regions.GetAllNpcs()
+                .Where(n => n.Room == 0 && !n.IsDead && n.IsMonster == (kind == AdminPanelPacketWriter.FindMonsters)
+                            && FindMatches(n.Name, n.NpcId, query, byId, wanted))
+                .Select(n => new AdminPanelPacketWriter.FindRow(
+                    n.NpcId, n.SpawnRow, n.Name, n.Level, n.ZoneId, WireCoordinate(n.X), WireCoordinate(n.Z), n.IsMonster, false));
+        var found = rows
+            .OrderBy(r => r.ZoneId)
+            .ThenBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(r => r.X)
+            .ToList();
+        await session.Client.SendPacket(AdminPanelPacketWriter.FindResults(
+            AckFind, kind, found.Count, found.Take(FindRowCap).ToList()));
+    }
+
+    private static bool FindMatches(string name, int id, string query, bool byId, int wanted) =>
+        (byId && id == wanted) || name.Contains(query, StringComparison.OrdinalIgnoreCase);
+
+    private static ushort WireCoordinate(float value) => (ushort)Math.Clamp(value, 0, ushort.MaxValue);
+
+    private static ushort WarpUnits(ushort coordinate) => (ushort)Math.Min(coordinate * 10, ushort.MaxValue);
+
+    private async Task HandleGoAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 5)
+            return;
+
+        var zone = packet.ReadByte();
+        var x = packet.ReadUShort();
+        var z = packet.ReadUShort();
+        if (!gameDataService.ZoneInfoTable.TryGetValue(zone, out var zoneInfo))
+        {
+            await SendResultAsync(session, false, $"Zone {zone} is not on this server.");
+            return;
+        }
+
+        if (session.IsWarping)
+        {
+            await SendResultAsync(session, false, "A zone change is already under way.");
+            return;
+        }
+
+        var name = string.IsNullOrWhiteSpace(zoneInfo.MapName) ? $"zone {zone}" : zoneInfo.MapName;
+        if (zone == session.ZoneId)
+        {
+            await SendResultAsync(session, true, $"Moving to {x}, {z}.");
+            await worldMovementService.WarpAsync(session, WarpUnits(x), WarpUnits(z));
+            logger.LogInformation("GM {Name} used the panel to warp to {X}, {Z} in zone {Zone}", session.Name, x, z, zone);
+            return;
+        }
+
+        await SendResultAsync(session, true, $"Moving to {name} at {x}, {z}.");
+        await zoneTransitionService.ChangeZoneAsync(session, zone, x, z);
+        logger.LogInformation("GM {Name} used the panel to go to zone {Zone} at {X}, {Z}", session.Name, zone, x, z);
+    }
+
+    private async Task HandleSpawnRowAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 4)
+            return;
+
+        var index = packet.ReadInt();
+        var row = spawnRows.Find(index);
+        if (row == null)
+        {
+            await SendResultAsync(session, false, $"No spawn row {index}.");
+            return;
+        }
+
+        await SendSpawnRowAsync(session, row);
+    }
+
+    private async Task SendSpawnRowAsync(UserSession session, NpcPosData row)
+    {
+        var name = gameDataService.GetSpawnProto(row)?.Name ?? $"npc {row.NpcId}";
+        var height = sessionManager.Maps?.GetHeight(row.ZoneId, row.LeftX, row.TopZ) ?? 0f;
+        await session.Client.SendPacket(AdminPanelPacketWriter.SpawnRow(AckSpawnRow, new AdminPanelPacketWriter.SpawnRowInfo(
+            CanPersist(row), row.Index, row.NpcId, name, (byte)row.ZoneId, row.ActType < NpcPosData.NpcSpawnActTypeBase,
+            row.LeftX, row.TopZ, (int)MathF.Round(height * 10f), row.Direction, row.NumNPC, row.RegTime, row.SpawnRange,
+            spawnRows.AliveCount(row))));
+    }
+
+    private bool CanPersist(NpcPosData row) =>
+        hostEnvironment.IsDevelopment() && NpcPositionSeedFile.PathFor(hostEnvironment.ContentRootPath, row.ZoneId) != null;
+
+    private async Task HandleSpawnEditAsync(UserSession session, Packet packet, bool persist)
+    {
+        if (packet.RemainingBytes < SpawnEditBodySize)
+            return;
+
+        var index = packet.ReadInt();
+        var x = packet.ReadInt();
+        var z = packet.ReadInt();
+        var direction = packet.ReadInt();
+        var count = packet.ReadByte();
+        var respawn = packet.ReadShort();
+        var range = packet.ReadShort();
+        var row = spawnRows.Find(index);
+        if (row == null)
+        {
+            await SendResultAsync(session, false, $"No spawn row {index}.");
+            return;
+        }
+
+        if (x < 0 || z < 0 || direction < 0 || direction >= 360 || count < 1 || count > SpawnCountCeiling || respawn < 0 || range < 0)
+        {
+            await SendResultAsync(session, false, "Spawn values out of range.");
+            return;
+        }
+
+        if (persist && !CanPersist(row))
+        {
+            await SendResultAsync(session, false, "Persisting is only available on a local development server.");
+            return;
+        }
+
+        spawnRows.Edit(row, x, z, direction, count, respawn, range);
+        var spawned = await spawnRows.RespawnRowAsync(row);
+
+        if (!persist)
+        {
+            await SendResultAsync(session, true, $"Spawn row {index} set ({spawned} spawned); not persisted.");
+            await SendSpawnRowAsync(session, row);
+            return;
+        }
+
+        var path = NpcPositionSeedFile.PathFor(hostEnvironment.ContentRootPath, row.ZoneId)!;
+        if (!NpcPositionSeedFile.TryUpdate(path, spawnRows.LastPersisted(row), row, out var error))
+        {
+            await SendResultAsync(session, false, $"Spawn row {index} set ({spawned} spawned) but not persisted: {error}");
+            await SendSpawnRowAsync(session, row);
+            return;
+        }
+
+        var stored = await spawnStore.UpdateAsync(row);
+        spawnRows.MarkPersisted(row);
+        await SendResultAsync(session, true,
+            $"Spawn row {index} persisted to {Path.GetFileName(path)}{(stored ? " and the database" : "")} ({spawned} spawned).");
+        logger.LogInformation("GM {Name} persisted spawn row {Index} ({NpcId} in zone {Zone} at {X}, {Z})",
+            session.Name, index, row.NpcId, row.ZoneId, x, z);
+        await SendSpawnRowAsync(session, row);
     }
 
     private async Task SendCollectionRacesAsync(UserSession session)

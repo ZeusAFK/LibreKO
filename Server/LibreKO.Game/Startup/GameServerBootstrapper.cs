@@ -25,6 +25,7 @@ public class GameServerBootstrapper(
     IHostEnvironment hostEnvironment,
     IOptions<GameServerSettings> settings,
     IMonsterAggressionPolicy monsterAggressionPolicy,
+    INpcSpawnRowService spawnRows,
     ILogger<GameServerBootstrapper> logger) : IGameServerBootstrapper
 {
     private const short ObjectBind = 0;
@@ -122,10 +123,9 @@ public class GameServerBootstrapper(
 
                 var pos = sourcePosition.ZoneId == zoneId
                     ? sourcePosition
-                    : ClonePositionForZone(sourcePosition, zoneId);
+                    : NpcSpawnRowService.CloneForZone(sourcePosition, zoneId);
 
-                var npcData = gameData.GetSpawnProto(pos);
-                if (npcData == null)
+                if (gameData.GetSpawnProto(pos) == null)
                 {
                     skipped++;
                     logger.LogDebug("NPC ID {NpcId} in zone {Zone} has no {Side} data - skipped",
@@ -134,28 +134,10 @@ public class GameServerBootstrapper(
                     continue;
                 }
 
-                var count = pos.NumNPC > 1 ? pos.NumNPC : 1;
-                for (var i = 0; i < count; i++)
-                {
-                    var npc = NpcInstance.FromData(npcData, pos, 0);
-
-                    monsterAggressionPolicy.Apply(npc);
-
-                    if (sessionManager.Maps != null)
-                    {
-                        PlaceOnWalkableGround(npc, pos);
-
-                        var height = sessionManager.Maps.GetHeight(npc.ZoneId, npc.X, npc.Z);
-                        npc.Y = height;
-                        npc.SpawnY = height;
-                    }
-
-                    sessionManager.Regions.SpawnNpc(npc);
-                    spawned++;
-
-                    var zone = (byte)pos.ZoneId;
-                    perZone[zone] = perZone.GetValueOrDefault(zone) + 1;
-                }
+                var placed = spawnRows.Spawn(pos).Count;
+                spawned += placed;
+                var zone = (byte)pos.ZoneId;
+                perZone[zone] = perZone.GetValueOrDefault(zone) + placed;
             }
         }
 
@@ -261,54 +243,6 @@ public class GameServerBootstrapper(
         if (a.MapSize != b.MapSize || a.UnitDistance != b.UnitDistance) return false;
         return a.HeightMap.AsSpan().SequenceEqual(b.HeightMap);
     }
-
-    private const int SpawnPlacementRetries = 32;
-
-    private void PlaceOnWalkableGround(NpcInstance npc, NpcPosData pos)
-    {
-        var maps = sessionManager.Maps!;
-        if (maps.IsMovable(npc.ZoneId, npc.X, npc.Z))
-            return;
-
-        for (var attempt = 0; attempt < SpawnPlacementRetries; attempt++)
-        {
-            var (x, z) = NpcInstance.RandomSpawnPoint(pos);
-            if (!maps.IsMovable(npc.ZoneId, x, z))
-                continue;
-
-            npc.X = npc.SpawnX = x;
-            npc.Z = npc.SpawnZ = z;
-            return;
-        }
-
-        if (!maps.IsMovable(npc.ZoneId, pos.LeftX, pos.TopZ))
-            return;
-
-        npc.X = npc.SpawnX = pos.LeftX;
-        npc.Z = npc.SpawnZ = pos.TopZ;
-    }
-
-    private static NpcPosData ClonePositionForZone(NpcPosData source, short zoneId)
-        => new()
-        {
-            Index = source.Index,
-            ZoneId = zoneId,
-            NpcId = source.NpcId,
-            ActType = source.ActType,
-            DotCnt = source.DotCnt,
-            Path = source.Path,
-            LeftX = source.LeftX,
-            TopZ = source.TopZ,
-            NumNPC = source.NumNPC,
-            RegTime = source.RegTime,
-            Direction = source.Direction,
-            SpawnRange = source.SpawnRange,
-            RegenType = source.RegenType,
-            DungeonFamily = source.DungeonFamily,
-            SpecialType = source.SpecialType,
-            TrapNumber = source.TrapNumber,
-            Room = source.Room,
-        };
 
     private static string NormalizeMapFamily(string mapName)
     {

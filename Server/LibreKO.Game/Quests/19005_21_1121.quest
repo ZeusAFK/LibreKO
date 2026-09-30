@@ -1,0 +1,24 @@
+Bind Npc 19005 Zone 21
+Quest 1121 "Certificating qualifications : proof of honor"
+    Journal "Donate 10000 Contribution"
+
+Requires player level >= 83 and player rebirth level < 10 and quest 1120 is completed
+
+Rewards
+    Take 10000 np
+    Give 1 of 900579000
+
+On offer
+    Say "My eyes weren't wrong. You passed the first two tests. Now on to the last test. I want to test your ability."
+    Topic "How?" do
+        Say "Bring contribution point 10,000."
+        Topic "10000, or by mean?" do
+            Say "Anyone can't be a hero, you know."
+            Topic "Ah ...You got it." do
+                Show quest "this is the last test. So cheers!"
+
+On in_progress
+    Say "You don't have enough contribution point. If you want to prove your skill, you'll need to offer 10,000 contribution point."
+
+On claimable
+    Show quest "The mission has completed. Here's the qualificiation of the reincarnation. If you want to move on to the next life, come back. And the body after reincarnation will be stronger than you right now. And I'll take all the contribution."

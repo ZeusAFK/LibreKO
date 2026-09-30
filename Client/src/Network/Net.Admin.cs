@@ -20,6 +20,37 @@ public class AdminCollectionRace
     public string Objectives = string.Empty;
 }
 
+public class AdminFindHit
+{
+    public int Id;
+    public int SpawnRow;
+    public string Name = string.Empty;
+    public int Level;
+    public int Zone;
+    public int X;
+    public int Z;
+    public bool Monster;
+    public bool Bot;
+}
+
+public class AdminSpawnRow
+{
+    public bool CanPersist;
+    public int Index;
+    public int NpcId;
+    public string Name = string.Empty;
+    public int Zone;
+    public bool Monster;
+    public int X;
+    public int Z;
+    public float Y;
+    public int Direction;
+    public int Count;
+    public int RespawnSeconds;
+    public int SpawnRange;
+    public int Alive;
+}
+
 public enum AdminPanelGrant : byte
 {
     None = 0,
@@ -38,6 +69,11 @@ public partial class Net
     private const byte AdminReqSetLevel = 11;
     private const byte AdminReqSetSkill = 12;
     private const byte AdminReqSetLook = 13;
+    private const byte AdminReqFind = 14;
+    private const byte AdminReqGo = 15;
+    private const byte AdminReqSpawnRow = 16;
+    private const byte AdminReqSpawnSet = 17;
+    private const byte AdminReqSpawnPersist = 18;
     private const byte AdminKeepProgress = 0;
     private const byte AdminResetProgress = 1;
 
@@ -48,8 +84,21 @@ public partial class Net
     private const byte AdminReqCollectionRaceStart = 9;
     private const byte AdminReqCollectionRaceClose = 10;
     private const byte AdminAckCollectionRaces = 0x14;
+    private const byte AdminAckFind = 0x15;
+    private const byte AdminAckSpawnRow = 0x16;
+    public const int AdminFindNpcs = 0;
+    public const int AdminFindMonsters = 1;
+    public const int AdminFindPlayers = 2;
+    private const int AdminFindMonsterFlag = 1;
+    private const int AdminFindBotFlag = 2;
+    private const int AdminFindRowMinBytes = 17;
+    private const int AdminSpawnRowMinBytes = 31;
 
     public event Action<List<AdminCollectionRace>>? AdminCollectionRacesEvent;
+
+    public event Action<int, int, List<AdminFindHit>>? AdminFindEvent;
+
+    public event Action<AdminSpawnRow>? AdminSpawnRowEvent;
 
     public event Action<AdminState>? AdminStateEvent;
 
@@ -69,6 +118,8 @@ public partial class Net
         {
             case AdminAckState: ParseAdminState(p); break;
             case AdminAckCollectionRaces: ParseAdminCollectionRaces(p); break;
+            case AdminAckFind: ParseAdminFind(p); break;
+            case AdminAckSpawnRow: ParseAdminSpawnRow(p); break;
             case 0x13: HandleGmFx(p); break;
             case AdminAckResult:
                 bool ok = p.RemainingBytes >= 1 && p.ReadByte() == 1;
@@ -242,6 +293,80 @@ public partial class Net
             });
         }
         AdminCollectionRacesEvent?.Invoke(rows);
+    }
+
+    private void ParseAdminFind(Packet p)
+    {
+        if (p.RemainingBytes < 5) return;
+        int kind = p.ReadByte();
+        int total = p.ReadUShort();
+        int count = p.ReadUShort();
+        var hits = new List<AdminFindHit>(count);
+        for (int i = 0; i < count && p.RemainingBytes >= AdminFindRowMinBytes; i++)
+        {
+            var hit = new AdminFindHit { Id = p.ReadInt(), SpawnRow = p.ReadInt(), Name = p.ReadSByteString() };
+            hit.Level = p.ReadShort();
+            hit.Zone = p.ReadByte();
+            hit.X = p.ReadUShort();
+            hit.Z = p.ReadUShort();
+            int flags = p.ReadByte();
+            hit.Monster = (flags & AdminFindMonsterFlag) != 0;
+            hit.Bot = (flags & AdminFindBotFlag) != 0;
+            hits.Add(hit);
+        }
+        AdminFindEvent?.Invoke(kind, total, hits);
+    }
+
+    private void ParseAdminSpawnRow(Packet p)
+    {
+        if (p.RemainingBytes < AdminSpawnRowMinBytes) return;
+        var row = new AdminSpawnRow { CanPersist = p.ReadByte() == 1, Index = p.ReadInt(), NpcId = p.ReadInt(), Name = p.ReadSByteString() };
+        row.Zone = p.ReadByte();
+        row.Monster = p.ReadByte() == 1;
+        row.X = p.ReadInt();
+        row.Z = p.ReadInt();
+        row.Y = p.ReadInt() / 10f;
+        row.Direction = p.ReadInt();
+        row.Count = p.ReadByte();
+        row.RespawnSeconds = p.ReadShort();
+        row.SpawnRange = p.ReadShort();
+        row.Alive = p.ReadInt();
+        AdminSpawnRowEvent?.Invoke(row);
+    }
+
+    public void SendAdminSpawnRowRequest(int row) => SendAdminInt(AdminReqSpawnRow, row);
+
+    public void SendAdminSpawnEdit(bool persist, int row, int x, int z, int direction, int count, int respawnSeconds, int range)
+    {
+        var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+        p.WriteByte(persist ? AdminReqSpawnPersist : AdminReqSpawnSet);
+        p.WriteInt(row);
+        p.WriteInt(x);
+        p.WriteInt(z);
+        p.WriteInt(direction);
+        p.WriteByte((byte)Math.Clamp(count, 0, byte.MaxValue));
+        p.WriteShort((short)Math.Clamp(respawnSeconds, 0, short.MaxValue));
+        p.WriteShort((short)Math.Clamp(range, 0, short.MaxValue));
+        _conn.Send(p);
+    }
+
+    public void SendAdminFind(int kind, string query)
+    {
+        var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+        p.WriteByte(AdminReqFind);
+        p.WriteByte((byte)kind);
+        p.WriteUtf8String(query);
+        _conn.Send(p);
+    }
+
+    public void SendAdminGo(int zone, int x, int z)
+    {
+        var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+        p.WriteByte(AdminReqGo);
+        p.WriteByte((byte)zone);
+        p.WriteUShort((ushort)Math.Clamp(x, 0, ushort.MaxValue));
+        p.WriteUShort((ushort)Math.Clamp(z, 0, ushort.MaxValue));
+        _conn.Send(p);
     }
 
     public void SendAdminCollectionRacesRequest() => SendAdminByte(AdminReqCollectionRaces);

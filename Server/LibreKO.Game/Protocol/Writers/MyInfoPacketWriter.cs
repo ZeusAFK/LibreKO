@@ -7,7 +7,6 @@ public sealed class MyInfoPacketWriter
 {
     private const int SkillPointDataSize = 9;
     private const byte AuthorityTrailer = byte.MaxValue;
-    private const int ReservedItemRecords = 4;
 
     private readonly int[] _itemIds = new int[InventoryConstants.InventoryTotal];
     private readonly short[] _itemDurability = new short[InventoryConstants.InventoryTotal];
@@ -94,6 +93,11 @@ public sealed class MyInfoPacketWriter
     public byte MoradonMilitary { get; set; }
     public short GenieTime { get; set; }
     public byte RebirthLevel { get; set; }
+    public byte RebirthStrength { get; set; }
+    public byte RebirthStamina { get; set; }
+    public byte RebirthDexterity { get; set; }
+    public byte RebirthIntelligence { get; set; }
+    public byte RebirthMagic { get; set; }
     public long SealedExperience { get; set; }
     public short CoverTitle { get; set; }
     public short SkillTitle { get; set; }
@@ -290,11 +294,11 @@ public sealed class MyInfoPacketWriter
         packet.WriteByte(0);
         packet.WriteShort(GenieTime);
         packet.WriteByte(RebirthLevel);
-        packet.WriteByte(0);
-        packet.WriteByte(0);
-        packet.WriteByte(0);
-        packet.WriteByte(0);
-        packet.WriteByte(0);
+        packet.WriteByte(RebirthStrength);
+        packet.WriteByte(RebirthStamina);
+        packet.WriteByte(RebirthDexterity);
+        packet.WriteByte(RebirthIntelligence);
+        packet.WriteByte(RebirthMagic);
         packet.WriteLong(SealedExperience);
         packet.WriteShort(CoverTitle);
         packet.WriteShort(SkillTitle);
@@ -319,7 +323,7 @@ public sealed class MyInfoPacketWriter
                 _itemFlags[storageSlot]);
         }
 
-        for (var reserved = 0; reserved < ReservedItemRecords; reserved++)
+        for (var reserved = 0; reserved < InventoryConstants.MyInfoReservedItemRecords; reserved++)
             WriteItemRecord(packet, 0, 0, 0, 0);
     }
 

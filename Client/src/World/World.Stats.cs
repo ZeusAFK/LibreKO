@@ -38,7 +38,6 @@ public partial class World : Node3D
         Net.I.ClassEligibilityEvent += OnClassEligibility;
         Net.I.JobChangeResultEvent += OnJobChangeResult;
         Net.I.ClassPromotedEvent += OnClassPromoted;
-        Net.I.RebStatChangeEvent += OnRebirthResult;
     }
 
     private void StatsDispose()
@@ -54,7 +53,6 @@ public partial class World : Node3D
         Net.I.ClassEligibilityEvent -= OnClassEligibility;
         Net.I.JobChangeResultEvent -= OnJobChangeResult;
         Net.I.ClassPromotedEvent -= OnClassPromoted;
-        Net.I.RebStatChangeEvent -= OnRebirthResult;
     }
 
     private void OnStatReset(bool ok, int money, int[] stats, int maxHp, int maxMp, int ap, int statPoints)
@@ -95,9 +93,6 @@ public partial class World : Node3D
             _ => "Class change failed.",
         });
     }
-
-    private void OnRebirthResult(int sub, int code) =>
-        Chat.Info(code == 1 ? "Rebirth successful!" : "Rebirth failed.");
 
     private const int StatsPanelWidth = 560;
     private const int StatsCombatColumn = 132;
@@ -424,7 +419,7 @@ public partial class World : Node3D
 
         if (_stHeaderName == null) return;
         var info = Net.I.LastEnter;
-        _stHeaderName.Text = $"{info.Name}    Lv {Sheet.Level}";
+        _stHeaderName.Text = $"{info.Name}    Lv {Sheet.LevelLabel}";
         _stHeaderSub.Text = $"{ClassName(info.Class)}   •   {Nations.Name(info.Nation)}";
         RefreshTitleButton();
 

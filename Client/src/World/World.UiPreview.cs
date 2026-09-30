@@ -344,6 +344,17 @@ public partial class World
         return DetachPreviewControl(_invDelPanel);
     }
 
+    internal Control BuildAdminSpawnUiPreview()
+    {
+        BuildAdminPanelUiPreview("Find");
+        OnAdminSpawnRow(new AdminSpawnRow
+        {
+            CanPersist = true, Index = 7800, NpcId = 31741, Name = "[Trader] Julia", Zone = 21, X = 769, Z = 369, Y = 35.2f,
+            Direction = 90, Count = 1, RespawnSeconds = 3600, SpawnRange = 0, Alive = 1,
+        });
+        return DetachPreviewControl(_admSpawnPanel);
+    }
+
     internal Control BuildAdminPanelUiPreview(string tab, string itemQuery = "raptor")
     {
         ItemData.EnsureLoaded();
@@ -375,6 +386,17 @@ public partial class World
                 new AdminCollectionRace { Id = 2, Name = "Moradon Apple Harvest", ZoneId = 21, MinLevel = 1, MaxLevel = 35, DurationMinutes = 60, AutoStart = true, Schedule = "Mon 11:00, Thu 16:00", Objectives = "15 x Apples of Moradon, 5 x Teeth of Bandicoot, 5 x Silk bundle" },
                 new AdminCollectionRace { Id = 5, Name = "Wolves of Moradon", ZoneId = 21, MinLevel = 1, MaxLevel = 83, DurationMinutes = 60, AutoStart = true, Schedule = "Daily 12:00", Objectives = "15 x Werewolf, 10 x Dark Eyes, 10 x Dire Wolf" },
                 new AdminCollectionRace { Id = 21, Name = "Ronark Apostles of Flame", ZoneId = 71, MinLevel = 61, MaxLevel = 70, DurationMinutes = 60, AutoStart = false, Schedule = "manual", Objectives = "15 x Apostle of Flame, 10 x Doom Soldier, 10 x Troll, 2 enemy players" },
+            ]);
+        }
+        if (tab == "Find")
+        {
+            _admFindQuery.Text = "julia";
+            _admFindLastQuery = "julia";
+            OnAdminFind(Net.AdminFindNpcs, 3,
+            [
+                new AdminFindHit { Id = 31741, SpawnRow = 7800, Name = "[Trader] Julia", Level = 80, Zone = 21, X = 769, Z = 369 },
+                new AdminFindHit { Id = 29235, SpawnRow = 3125, Name = "[VIP Manager] Juliane", Level = 80, Zone = 21, X = 797, Z = 546 },
+                new AdminFindHit { Id = 32558, SpawnRow = 7554, Name = "[Analyst] Julius", Level = 80, Zone = 71, X = 605, Z = 890 },
             ]);
         }
         if (tab == "Items")

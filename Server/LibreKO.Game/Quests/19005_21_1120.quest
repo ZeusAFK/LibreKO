@@ -1,0 +1,21 @@
+Bind Npc 19005 Zone 21
+Quest 1120 "Certificating qualifications : proof of wealth"
+    Journal "Donate 1 Gold Bar"
+    Collect 100000000 coins
+
+Requires player level >= 83 and quest 1119 is completed
+
+Rewards none
+
+On offer
+    Say "Congratulation on your proving of your power. The second test is about your wealth. Without wealth, you won't be able to be a hero."
+    Topic "The ...Where do you like that?" do
+        Say "If you don't wanna believe it it's fine."
+        Topic "Ah ...You got it." do
+            Show quest "Bring 100,000,000 Noah?"
+
+On in_progress
+    Say "you still don't have 100,000,000 Noah?"
+
+On claimable
+    Show quest "This!! Shiny thing!!  It's a gold bar! If you want to complete, come back to me again. I'll take the gold bar now."

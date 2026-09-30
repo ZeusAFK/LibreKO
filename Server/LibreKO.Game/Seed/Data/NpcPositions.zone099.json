@@ -1,0 +1,21 @@
+[
+  {
+    "Index": 7754,
+    "ZoneId": 99,
+    "NpcId": 29516,
+    "ActType": 100,
+    "DotCnt": 0,
+    "Path": null,
+    "LeftX": 127,
+    "TopZ": 131,
+    "NumNPC": 1,
+    "RegTime": 120,
+    "Direction": 45,
+    "SpawnRange": 0,
+    "RegenType": 0,
+    "DungeonFamily": 0,
+    "SpecialType": 0,
+    "TrapNumber": 0,
+    "Room": 0
+  }
+]

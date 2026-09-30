@@ -39,6 +39,7 @@ public partial class World : Node3D
         EscapeCloses(() => _petShown, () => TogglePet());
         EscapeCloses(() => _shoppingmallShown, () => ToggleShoppingMall());
         EscapeCloses(() => _rebirthShown, () => CloseRebirth());
+        EscapeCloses(() => _admSpawnShown, CloseAdminSpawn);
         EscapeCloses(() => _kingShown, () => CloseKing());
         EscapeCloses(() => _siegeShown, () => CloseSiege());
         EscapeCloses(() => _capeShown, () => CloseCape());

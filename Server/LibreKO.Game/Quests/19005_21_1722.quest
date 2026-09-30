@@ -1,0 +1,22 @@
+Bind Npc 19005 Zone 21
+Quest 1722 "The third rebirth is in progress."
+    Journal "The third rebirth is in progress."
+    Kill 200 of 1 at direction_488 in zone 71
+
+Requires player level >= 83 and player is elmorad and player rebirth level >= 10 and quest 1120 is completed
+
+Rewards
+    Give 1 of 900579000
+
+direction_488 = location "Karus" about "Karus\nKill and bring a Karus user" found "Karus" at 100 100
+
+On offer
+    Say "You've reached the third rebirth. Can you defeat 200 enemies?"
+    Topic " Defeat 200 enemies" do
+        Show quest "Defeat 200 enemies. You must defeat them after accepting the quest. Make sure that it's those 200 enemies in the center area of Ronark Land. If you give up the quest, you'll have to defeat 200 enemies from the beginning again, so be aware. Are you ready now?"
+
+On in_progress
+    Say "You are currently in the third rebirth process. If you give up the quest in the middle of it, you'll have to defeat 200 enemies all over and once you accept the quest, and you rebirth with Noah, quest will disappear automatically."
+
+On claimable
+    Show quest "You've captured 200 enemies! Let's see. You're satisfied with your third rebirth!"

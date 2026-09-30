@@ -15,6 +15,7 @@ public interface IPlayerProgressionService
     Task ChangeExperienceAsync(UserSession session, long expAmount);
     Task ResetToLevelAsync(UserSession session, byte level);
     Task SetLevelAsync(UserSession session, byte level);
+    Task CompleteRebirthAsync(UserSession session);
 }
 
 public class PlayerProgressionService(
@@ -117,6 +118,31 @@ public class PlayerProgressionService(
         await session.Client.SendPacket(CharacterDevelopmentPacketMapper.CreateSkillResetSuccess(session));
         await session.Client.SendPacket(SkillDataPacketWriter.Cleared());
         await userNotificationService.SendStatUpdateAsync(session);
+        await characterStatePersister.SaveAsync(session);
+    }
+
+    public async Task CompleteRebirthAsync(UserSession session)
+    {
+        session.Experience = 0;
+        session.WithLock(s =>
+        {
+            s.Quest.QuestMap.Clear();
+            s.Quest.QuestKillCountsMap.Clear();
+            s.Quest.ActiveQuestId = 0;
+            s.Quest.SyncActiveQuestKillCounts();
+            s.Quest.ViewVersions.Clear();
+            s.Quest.AvailableNotifications.Clear();
+            s.Quest.StartedNotifications.Clear();
+            s.Quest.ReadyNotifications.Clear();
+        });
+
+        await ApplyLevelChangeAsync(session, session.Level, levelUp: false);
+        await SendExperienceAsync(session);
+        await userNotificationService.SendStatUpdateAsync(session);
+        await session.Client.SendPacket(QuestPacketWriter.QuestList([]));
+        if (quests is not null)
+            await quests.SendViewsAsync(session);
+        await characterStatePersister.SaveQuestStateAsync(session);
         await characterStatePersister.SaveAsync(session);
     }
 

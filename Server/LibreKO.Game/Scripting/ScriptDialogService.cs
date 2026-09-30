@@ -47,4 +47,9 @@ public class ScriptDialogService(
     {
         queuedPackets.Add(ClassChangePacketWriter.OpenJobChangePanel());
     }
+
+    public void SendRebirthPanel()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.RebirthPanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
 }

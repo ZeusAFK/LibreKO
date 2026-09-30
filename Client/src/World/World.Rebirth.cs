@@ -1,61 +1,35 @@
 ﻿using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
 
 public partial class World
 {
+    private static readonly string[] RebirthStatLabels = ["STR", "HP", "DEX", "INT", "MP"];
+
     private CanvasLayer _rebirthLayer = null!;
     private HudWindow _rebirthPanel = null!;
-    private ConfirmationDialog _rebirthAsk = null!;
-    private Label _rebirthLevelLbl = null!, _rebirthStatus = null!;
-    private Label _rebirthExpReq = null!, _rebirthGoldReq = null!, _rebirthNpReq = null!;
-    private Label _rebirthStr = null!, _rebirthSta = null!, _rebirthDex = null!, _rebirthInt = null!, _rebirthMag = null!;
+    private Label _rebirthLevelLbl = null!, _rebirthPointsLbl = null!, _rebirthStatus = null!;
+    private readonly Label[] _rebirthBonusLbls = new Label[RebirthPick.StatCount];
+    private readonly Label[] _rebirthPickLbls = new Label[RebirthPick.StatCount];
+    private readonly Button[] _rebirthAddBtns = new Button[RebirthPick.StatCount];
+    private readonly Button[] _rebirthRemoveBtns = new Button[RebirthPick.StatCount];
     private Button _rebirthBtn = null!;
+    private readonly RebirthPick _rebirthPick = new();
+    private byte[] _rebirthSent = [];
     private bool _rebirthShown;
     private bool _rebirthInFlight;
-
-    private int _rebirthLevel;
-    private int _rebirthLvl;
-    private long _rebirthExp, _rebirthMaxExp;
-    private int _rebirthGold, _rebirthNp;
-    private int _rebStr, _rebSta, _rebDex, _rebInt, _rebMag;
 
     private void RebirthInit()
     {
         BuildRebirthPanel();
-
-        _rebirthLvl = Sheet.Level;
-        _rebirthExp = Sheet.Exp; _rebirthMaxExp = Sheet.MaxExp;
-        SeedRebirthSheet();
-
-        Net.I.RebirthActivateEvent += OnRebirthActivate;
-        Net.I.RebirthResultEvent   += OnRebirthResult;
-        Net.I.RebirthCompleteEvent += OnRebirthComplete;
-        Net.I.RebirthProgressEvent += OnRebirthProgress;
-        Net.I.GoldChangeEvent      += OnRebirthGold;
-        Net.I.LoyaltyChangeEvent   += OnRebirthLoyalty;
-        Net.I.ExpChangeEvent       += OnRebirthExp;
-        Net.I.LevelChangeEvent     += OnRebirthLevel;
-    }
-
-    private void SeedRebirthSheet()
-    {
-        _rebirthGold = Sheet.Gold; _rebirthNp = Sheet.Np;
-        _rebStr = Sheet.Str; _rebSta = Sheet.Sta; _rebDex = Sheet.Dex;
-        _rebInt = Sheet.Intel; _rebMag = Sheet.Mag;
+        Net.I.RebStatChangeEvent += OnRebirthStatResult;
     }
 
     private void RebirthDispose()
     {
-        Net.I.RebirthActivateEvent -= OnRebirthActivate;
-        Net.I.RebirthResultEvent   -= OnRebirthResult;
-        Net.I.RebirthCompleteEvent -= OnRebirthComplete;
-        Net.I.RebirthProgressEvent -= OnRebirthProgress;
-        Net.I.GoldChangeEvent      -= OnRebirthGold;
-        Net.I.LoyaltyChangeEvent   -= OnRebirthLoyalty;
-        Net.I.ExpChangeEvent       -= OnRebirthExp;
-        Net.I.LevelChangeEvent     -= OnRebirthLevel;
+        Net.I.RebStatChangeEvent -= OnRebirthStatResult;
     }
 
     private void BuildRebirthPanel()
@@ -63,7 +37,7 @@ public partial class World
         _rebirthLayer = new CanvasLayer { Layer = 74 };
         AddChild(_rebirthLayer);
 
-        _rebirthPanel = new HudWindow("rebirth", "Master Rebirth", new Vector2(220, 130), 320) { Visible = false };
+        _rebirthPanel = new HudWindow("rebirth", "Rebirth", new Vector2(220, 130), 320) { Visible = false };
         _rebirthPanel.Closed += CloseRebirth;
         _rebirthLayer.AddChild(_rebirthPanel);
 
@@ -74,18 +48,36 @@ public partial class World
         root.AddChild(_rebirthLevelLbl);
 
         root.AddChild(new HSeparator());
-        root.AddChild(UiTheme.SectionTitle("Requirements"));
-        _rebirthExpReq  = HudStyle.Label(13); root.AddChild(_rebirthExpReq);
-        _rebirthGoldReq = HudStyle.Label(13); root.AddChild(_rebirthGoldReq);
-        _rebirthNpReq   = HudStyle.Label(13); root.AddChild(_rebirthNpReq);
+        root.AddChild(UiTheme.SectionTitle("Bonus points"));
+        _rebirthPointsLbl = HudStyle.Label(13);
+        root.AddChild(_rebirthPointsLbl);
 
-        root.AddChild(new HSeparator());
-        root.AddChild(UiTheme.SectionTitle("Rebirth bonus (carried from your current stats)"));
-        _rebirthStr = HudStyle.Label(13); root.AddChild(_rebirthStr);
-        _rebirthSta = HudStyle.Label(13); root.AddChild(_rebirthSta);
-        _rebirthDex = HudStyle.Label(13); root.AddChild(_rebirthDex);
-        _rebirthInt = HudStyle.Label(13); root.AddChild(_rebirthInt);
-        _rebirthMag = HudStyle.Label(13); root.AddChild(_rebirthMag);
+        for (int row = 0; row < RebirthPick.StatCount; row++)
+        {
+            int index = row;
+            var line = new HBoxContainer();
+            line.AddThemeConstantOverride("separation", 6);
+            root.AddChild(line);
+
+            var name = HudStyle.Label(13);
+            name.Text = RebirthStatLabels[row];
+            name.CustomMinimumSize = new Vector2(48, 0);
+            line.AddChild(name);
+
+            _rebirthBonusLbls[row] = UiTheme.Text("", 12, UiTheme.TextDim);
+            _rebirthBonusLbls[row].CustomMinimumSize = new Vector2(64, 0);
+            line.AddChild(_rebirthBonusLbls[row]);
+
+            _rebirthRemoveBtns[row] = RebirthStepButton("-", () => { _rebirthPick.Remove(index); RefreshRebirthUI(); });
+            line.AddChild(_rebirthRemoveBtns[row]);
+
+            _rebirthPickLbls[row] = HudStyle.Label(13, HorizontalAlignment.Center);
+            _rebirthPickLbls[row].CustomMinimumSize = new Vector2(28, 0);
+            line.AddChild(_rebirthPickLbls[row]);
+
+            _rebirthAddBtns[row] = RebirthStepButton("+", () => { _rebirthPick.Add(index); RefreshRebirthUI(); });
+            line.AddChild(_rebirthAddBtns[row]);
+        }
 
         root.AddChild(new HSeparator());
         var actionRow = new HBoxContainer();
@@ -95,20 +87,31 @@ public partial class World
         _rebirthBtn.AddThemeFontSizeOverride("font_size", 13);
         _rebirthBtn.Pressed += OnRebirthPressed;
         actionRow.AddChild(_rebirthBtn);
+        var cancel = new Button { Text = "Not yet", FocusMode = Control.FocusModeEnum.None };
+        cancel.AddThemeFontSizeOverride("font_size", 13);
+        cancel.Pressed += CloseRebirth;
+        actionRow.AddChild(cancel);
         _rebirthStatus = HudStyle.Label(13, HorizontalAlignment.Right);
         _rebirthStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         actionRow.AddChild(_rebirthStatus);
-
-        _rebirthAsk = new ConfirmationDialog { Title = "Rebirth" };
-        _rebirthAsk.Confirmed += OnRebirthConfirmed;
-        _rebirthLayer.AddChild(_rebirthAsk);
     }
 
-    private void ToggleRebirth()
+    private static Button RebirthStepButton(string text, System.Action pressed)
     {
-        if (_rebirthShown) { CloseRebirth(); return; }
-        SeedRebirthSheet();
+        var btn = new Button
+        {
+            Text = text,
+            CustomMinimumSize = new Vector2(30, 24),
+            FocusMode = Control.FocusModeEnum.None,
+        };
+        btn.Pressed += pressed;
+        return btn;
+    }
 
+    private void OpenRebirthPicker()
+    {
+        _rebirthPick.Clear();
+        _rebirthInFlight = false;
         SetRebirthStatus("", false);
         RefreshRebirthUI();
         _rebirthPanel.Visible = true;
@@ -122,37 +125,20 @@ public partial class World
         _rebirthPanel.Visible = false;
     }
 
-    private int RebirthExpPercent() =>
-        _rebirthMaxExp > 0 ? (int)Mathf.Min(100, _rebirthExp * 100 / _rebirthMaxExp) : 0;
-
-    private bool RebirthEligible() =>
-        RebirthExpPercent() >= 100 && _rebirthGold >= Net.RebirthGoldCost && _rebirthNp >= Net.RebirthLoyaltyCost;
-
     private void RefreshRebirthUI()
     {
-        _rebirthLevelLbl.Text = _rebirthLevel > 0
-            ? $"Rebirth Lv {_rebirthLevel}"
-            : "Not yet reborn";
-
-        int exp = RebirthExpPercent();
-        bool expOk = exp >= 100, goldOk = _rebirthGold >= Net.RebirthGoldCost, npOk = _rebirthNp >= Net.RebirthLoyaltyCost;
-        SetReq(_rebirthExpReq,  expOk,  $"EXP at 100%  ({exp}%)");
-        SetReq(_rebirthGoldReq, goldOk, $"Gold  {_rebirthGold:n0} / {Net.RebirthGoldCost:n0}");
-        SetReq(_rebirthNpReq,   npOk,   $"National points  {_rebirthNp:n0} / {Net.RebirthLoyaltyCost:n0}");
-
-        _rebirthStr.Text = $"STR +{_rebStr}";
-        _rebirthSta.Text = $"HP  +{_rebSta}";
-        _rebirthDex.Text = $"DEX +{_rebDex}";
-        _rebirthInt.Text = $"INT +{_rebInt}";
-        _rebirthMag.Text = $"MP  +{_rebMag}";
-
-        _rebirthBtn.Disabled = _rebirthInFlight || !RebirthEligible();
-    }
-
-    private static void SetReq(Label lbl, bool met, string text)
-    {
-        lbl.Text = (met ? "✓  " : "✕  ") + text;
-        lbl.AddThemeColorOverride("font_color", met ? UiTheme.Good : UiTheme.Bad);
+        int level = Sheet.RebirthLevel;
+        _rebirthLevelLbl.Text = $"Rebirth Lv {level}  →  Lv {level + 1}";
+        _rebirthPointsLbl.Text = $"Place {RebirthPick.PointsPerRebirth} points  ({_rebirthPick.Remaining} left)";
+        for (int row = 0; row < RebirthPick.StatCount; row++)
+        {
+            _rebirthBonusLbls[row].Text = $"now +{Sheet.RebirthBonusAtRow(row)}";
+            int picked = _rebirthPick.PickedAt(row);
+            _rebirthPickLbls[row].Text = picked > 0 ? $"+{picked}" : "";
+            _rebirthAddBtns[row].Disabled = _rebirthInFlight || !_rebirthPick.CanAdd(row);
+            _rebirthRemoveBtns[row].Disabled = _rebirthInFlight || !_rebirthPick.CanRemove(row);
+        }
+        _rebirthBtn.Disabled = _rebirthInFlight || !_rebirthPick.Complete;
     }
 
     private void SetRebirthStatus(string text, bool warn)
@@ -164,84 +150,34 @@ public partial class World
     private void OnRebirthPressed()
     {
         if (_rebirthInFlight || _selfDead) return;
-        if (!RebirthEligible())
+        if (!_rebirthPick.Complete)
         {
-            SetRebirthStatus("You don't meet the requirements yet.", true);
-            return;
-        }
-        _rebirthAsk.DialogText =
-            $"Rebirth your character?\n\nCost: {Net.RebirthGoldCost:n0} gold + {Net.RebirthLoyaltyCost:n0} NP" +
-            "\nYour EXP will be reset to 0 and your current stats become a permanent bonus.";
-        _rebirthAsk.PopupCentered();
-    }
-
-    private void OnRebirthConfirmed()
-    {
-        if (_rebirthInFlight || _selfDead) return;
-        if (!RebirthEligible())
-        {
-            SetRebirthStatus("You don't meet the requirements yet.", true);
+            SetRebirthStatus($"Place all {RebirthPick.PointsPerRebirth} points first.", true);
             return;
         }
         _rebirthInFlight = true;
+        _rebirthSent = _rebirthPick.Payload();
         SetRebirthStatus("Reincarnating…", false);
         RefreshRebirthUI();
-        Net.I.SendRebirthRequest();
+        Net.I.SendRebirthStatChange(_rebirthSent);
     }
 
-    private void OnRebirthActivate()
+    private void OnRebirthStatResult(int sub, int code)
     {
+        if (sub != Net.ClassChangeRebirthStat)
+        {
+            CombatNotice(code == 1 ? "Rebirth bonus points redistributed." : "The rebirth bonus points were not changed.");
+            return;
+        }
         _rebirthInFlight = false;
-        SetRebirthStatus("Rebirth accepted!", false);
-        if (_rebirthShown) RefreshRebirthUI();
-    }
-
-    private void OnRebirthResult(int code)
-    {
-        _rebirthInFlight = false;
-        SetRebirthStatus("Rebirth failed — you no longer meet the requirements.", true);
-        if (_rebirthShown) RefreshRebirthUI();
-    }
-
-    private void OnRebirthComplete(int rebirthLevel)
-    {
-        _rebirthLevel = rebirthLevel;
-        _rebirthInFlight = false;
-        Chat.Info($"Rebirth complete — you are now Rebirth Lv {rebirthLevel}.");
-        if (_rebirthShown) RefreshRebirthUI();
-    }
-
-    private void OnRebirthProgress(int levelOffset, int current, int max)
-    {
-        if (!_rebirthShown) return;
-        int pct = max > 0 ? Mathf.Clamp((int)((long)current * 100 / max), 0, 100) : 0;
-        SetRebirthStatus($"Reincarnating… {pct}%", false);
-    }
-
-    private void OnRebirthGold(int total)
-    {
-        _rebirthGold = total;
-        if (_rebirthShown) RefreshRebirthUI();
-    }
-
-    private void OnRebirthLoyalty(int np, int monthly)
-    {
-        _rebirthNp = np;
-        if (_rebirthShown) RefreshRebirthUI();
-    }
-
-    private void OnRebirthExp(long exp)
-    {
-        _rebirthExp = exp;
-        if (_rebirthShown) RefreshRebirthUI();
-    }
-
-    private void OnRebirthLevel(int level, int statPoints, int skillPool, long maxExp, long exp,
-        int maxHp, int hp, int maxMp, int mp)
-    {
-        _rebirthLvl = level;
-        _rebirthMaxExp = maxExp;
-        _rebirthExp = exp;
+        if (code == 1)
+        {
+            Sheet.ApplyRebirth(_rebirthSent);
+            CombatNotice($"Rebirth Lv {Sheet.RebirthLevel}");
+            CloseRebirth();
+            return;
+        }
+        SetRebirthStatus("Mekin refused the rebirth.", true);
         if (_rebirthShown) RefreshRebirthUI();
     }
 }

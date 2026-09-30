@@ -53,6 +53,7 @@ public static class InventoryConstants
     public const int CospreWireMax = 9;
 
     public const int MyInfoWireTotal = SlotMax + HaveMax + CospreWireMax + BagSlotMax + MagicBagTotal;
+    public const int MyInfoReservedItemRecords = 4;
 
     public static readonly int[] CospreWirePositions =
         { CosPosWing, CosPosHelmet, CosPosGloveRight, CosPosGloveLeft, CosPosPauldron,

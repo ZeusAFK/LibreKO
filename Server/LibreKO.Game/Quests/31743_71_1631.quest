@@ -1,0 +1,27 @@
+Bind Npc 31743 Zone 71
+Quest 1631 "Ones Who Failed Rebirth"
+    Daily
+    Journal "Do you understand what I've just say? I see. You are the rebirth one. Welcome. My name is Dason. Could you please do me a favor?"
+    Kill 3 of 10024 at direction_1541
+
+Requires player level >= 1 and player rebirth level >= 1
+
+Rewards for rebirth 1 to 5
+    Give 1 of 931685000
+
+Rewards for rebirth 6 to 9
+    Give 1 of 931684000
+
+Rewards for rebirth 10 to 15
+    Give 1 of 931683000
+
+direction_1541 = location "Spirit of Hero" about "Spirit of Hero\n" found "Ronark Land" karus at 1534 1018 elmorad at 438 1043 in zone 71
+
+On offer
+    Show quest "Rebirth is not allowed for the ones who is not prepared.However there are lots of souls who've sacrificd themselves fighting for their nation. They wonder around in this world thinking that they are still alive. Only the rebirth one can see their souls. Please help them rest in peace."
+
+On in_progress
+    Say "Rebirth is not allowed for the ones who is not prepared.However there are lots of souls who've sacrificd themselves fighting for their nation. They wonder around in this world thinking that they are still alive. Only the rebirth one can see their souls. Please help them rest in peace."
+
+On claimable
+    Show quest "Rebirth is not allowed for the ones who is not prepared.However there are lots of souls who've sacrificd themselves fighting for their nation. They wonder around in this world thinking that they are still alive. Only the rebirth one can see their souls. Please help them rest in peace."

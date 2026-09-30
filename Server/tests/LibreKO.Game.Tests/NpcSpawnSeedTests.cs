@@ -16,9 +16,12 @@ public class NpcSpawnSeedTests
 
     private static List<NpcPosData> Positions([CallerFilePath] string source = "")
     {
-        var path = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(source)!, "..", "..", "LibreKO.Game", "Seed", "Data", "NpcPositions.json"));
-        return JsonSerializer.Deserialize<List<NpcPosData>>(File.ReadAllText(path))!;
+        var directory = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(source)!, "..", "..", "LibreKO.Game", "Seed", "Data"));
+        return Directory.GetFiles(directory, "NpcPositions.zone*.json")
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .SelectMany(path => JsonSerializer.Deserialize<List<NpcPosData>>(File.ReadAllText(path))!)
+            .ToList();
     }
 
     [Fact]

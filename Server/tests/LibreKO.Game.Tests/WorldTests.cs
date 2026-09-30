@@ -69,6 +69,7 @@ public class WorldTests : GameTestBase
                 Version = 2618
             }),
             Substitute.For<IMonsterAggressionPolicy>(),
+            new NpcSpawnRowService(sessionManager, gameData, Substitute.For<IMonsterAggressionPolicy>()),
             Substitute.For<Microsoft.Extensions.Logging.ILogger<LibreKO.Game.Startup.GameServerBootstrapper>>());
 
         var spawnMethod = typeof(LibreKO.Game.Startup.GameServerBootstrapper).GetMethod(
@@ -205,6 +206,7 @@ public class WorldTests : GameTestBase
                 Version = 2618
             }),
             Substitute.For<IMonsterAggressionPolicy>(),
+            new NpcSpawnRowService(sessionManager, gameData, Substitute.For<IMonsterAggressionPolicy>()),
             Substitute.For<Microsoft.Extensions.Logging.ILogger<LibreKO.Game.Startup.GameServerBootstrapper>>());
 
         var spawnMethod = typeof(LibreKO.Game.Startup.GameServerBootstrapper).GetMethod(

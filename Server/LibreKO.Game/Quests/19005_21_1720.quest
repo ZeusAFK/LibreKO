@@ -1,0 +1,18 @@
+Bind Npc 19005 Zone 21
+Quest 1720 "Certificating qualifications : proof of honor"
+    Journal "Donate 10000 Contribution"
+    Collect 500000000 coins
+
+Requires player level >= 83 and player rebirth level >= 10 and quest 1120 is completed
+
+Rewards
+    Give 1 of 900579000
+
+On offer
+    Show quest "The final test, the Proof of Honor, has two ways to complete it. 1. Defeat 200 enemies from Ronark Land Center area, 2. Rebirth with 500 million noah.  Choose carefully."
+
+On in_progress
+    Say "The final test, the Proof of Honor, has two ways to complete it. 1. Defeat 200 enemies from Ronark Land Center area, 2. Rebirth with 500 million noah.  Choose carefully."
+
+On claimable
+    Show quest "This long, long journey is over! Here are the qualifications for rebirth. Come back to me when you are ready for the next life. The reborn body is much stronger than your present body. Oh yes, I'll take this 500 million noah."

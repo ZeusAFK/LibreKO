@@ -1,0 +1,27 @@
+Bind Npc 19005 Zone 21
+Quest 1119 "Certificating qualifications : proof of strength"
+    Journal "Fill the exp 100% and show it to Makin"
+
+Requires player level >= 83 and player reached level 83 at 100 percent and player rebirth level < 15
+
+Rewards none
+
+On offer
+    Say "Man..  What should we do? You saw the start that fell at Logos? Something bad will happen!"
+    Topic "Would not a way to stop this disaster?" do
+        Say "We don't have any...   Does it mean that God has abandoned us?"
+        Topic "So like this we must suffer the destruction?" do
+            Say "...!! Yeah! That's what we can do."
+            Topic "What is the way?" do
+                Say "From the Logos Prophecy, moment like this... (turning pages) 3:6, it says.. Stars fall from the sky and there a knight, who is born again after enduring death, will save this world."
+                Topic "Born again experiencing the death?" do
+                    Say "Yes..  This hasn't happened but the time has come now."
+                    Topic "What should I do?" do
+                        Say "Reincarnation can be tried here now. But it's not easy. It'll be painful. But would you really like to reincarnate?"
+                        Topic "I pledge allegiance to my country." do
+                            Say "If that's what you wish for. But prove how strong you are."
+                            Topic "What should I do?" do
+                                Show quest "Become level 83 and Exp 100%."
+
+On claimable
+    Show quest "I knew you would be the one!! \n Now, there's the second mission."

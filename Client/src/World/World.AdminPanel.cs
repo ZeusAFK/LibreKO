@@ -37,6 +37,7 @@ public partial class World
         Net.I.AdminGrantEvent += OnAdminGrant;
         Net.I.AdminStateEvent += OnAdminState;
         Net.I.AdminResultEvent += OnAdminResult;
+        Net.I.AdminSpawnRowEvent += OnAdminSpawnRow;
         EnableAdminPanel(_isGm ? AdminPanelGrant.GameMaster : Net.I.PanelGrant);
     }
 
@@ -74,6 +75,9 @@ public partial class World
         Net.I.AdminGrantEvent -= OnAdminGrant;
         Net.I.AdminStateEvent -= OnAdminState;
         Net.I.AdminResultEvent -= OnAdminResult;
+        Net.I.AdminCollectionRacesEvent -= OnAdminCollectionRaces;
+        Net.I.AdminFindEvent -= OnAdminFind;
+        Net.I.AdminSpawnRowEvent -= OnAdminSpawnRow;
     }
 
     private void BuildAdminPanel()
@@ -105,6 +109,7 @@ public partial class World
         AddAdminTab(tabBar, "Class", BuildAdminClassTab());
         AddAdminTab(tabBar, "Skills", BuildAdminSkillsTab());
         AddAdminTab(tabBar, "Zones", BuildAdminZonesTab());
+        AddAdminTab(tabBar, "Find", BuildAdminFindTab());
         AddAdminTab(tabBar, "Races", BuildAdminCollectionRaceTab());
 
         _admStatusLbl = UiTheme.Text("", 12, UiTheme.TextLo);
@@ -119,6 +124,7 @@ public partial class World
         RefreshAdminClassTab();
         SyncAdminLookPicks();
         RefreshAdminZonesTab();
+        BuildAdminSpawnPanel();
         SelectAdminTab("Character");
         Callable.From(_admPanel.ResetSize).CallDeferred();
     }
@@ -175,6 +181,7 @@ public partial class World
         Callable.From(_admPanel.ResetSize).CallDeferred();
 
         if (label == "Zones") RefreshAdminZonesTab();
+        if (label == "Find") Callable.From(_admFindQuery.GrabFocus).CallDeferred();
         if (label == "Skills") LoadAdminSkillSpins();
         if (label == "Class") SyncAdminLookPicks();
         if (label == "Races") Net.I?.SendAdminCollectionRacesRequest();

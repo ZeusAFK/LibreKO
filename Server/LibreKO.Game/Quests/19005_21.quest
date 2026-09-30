@@ -1,0 +1,7 @@
+Bind Npc 19005 Zone 21
+
+On greeting
+    Say "ah... Logos Stars are falling."
+    If no topic fits
+        Say "You don't have enough EXP. You have be to be level 83 with 100 % EXP."
+        Topic "Close" goto close

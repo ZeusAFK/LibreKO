@@ -57,7 +57,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IItemPacketCoordinator, ItemPacketCoordinator>();
         services.AddSingleton<IKnightsPacketCoordinator, KnightsPacketCoordinator>();
         services.AddSingleton<IKnightsCapePacketCoordinator, KnightsCapePacketCoordinator>();
-        services.AddSingleton<IRebirthPacketCoordinator, RebirthPacketCoordinator>();
         services.AddSingleton<ILootPacketCoordinator, LootPacketCoordinator>();
         services.AddSingleton<IMagicPacketCoordinator, MagicPacketCoordinator>();
         services.AddSingleton<IMerchantPacketCoordinator, MerchantPacketCoordinator>();
@@ -223,6 +222,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<LibreKO.Quests.Localization.IQuestTranslations>(provider =>
             QuestTranslationLoader.Load(provider));
         services.AddSingleton<INpcLifecycleService, NpcLifecycleService>();
+        services.AddSingleton<INpcSpawnRowService, NpcSpawnRowService>();
+        services.AddSingleton<INpcSpawnRowStore, NpcSpawnRowStore>();
         services.AddSingleton<INpcSummonService, NpcSummonService>();
         services.AddSingleton<QuestScriptEngine>();
         services.AddSingleton<IQuestDefinitionSource>(p => p.GetRequiredService<QuestScriptEngine>());

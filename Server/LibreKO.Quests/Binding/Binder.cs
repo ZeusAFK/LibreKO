@@ -108,11 +108,13 @@ public sealed class Binder
                 }
                 var options = BindRewardChoice(choices);
                 var group = ResolveClassGroup(block.ClassGroup);
+                var (rebirthMin, rebirthMax) = ResolveRebirthScope(block);
                 foreach (var nation in NationsFor(ResolveNation(block.Nation), group))
                     built.Add(new QuestRewards(_defaultQuest,
-                        [.. CollectedFor(nation, group), .. transfers.Cast<BoundStatement.Action>()], group, nation)
+                        [.. CollectedFor(nation, group), .. transfers.Cast<BoundStatement.Action>()], group, nation, rebirthMin, rebirthMax)
                         { Options = options });
             }
+            CheckRebirthTiers(built);
             if (built.Count > 0)
                 questRewards = built;
         }
@@ -289,6 +291,33 @@ public sealed class Binder
             return [];
         }
         return [.. options.Cast<BoundStatement.Action>()];
+    }
+
+    private (int Min, int Max) ResolveRebirthScope(QuestRewardsSyntax block)
+    {
+        if (block.RebirthMin is not { } min || block.RebirthMax is not { } max)
+            return (0, int.MaxValue);
+        if (min.Value < 0 || max.Value < min.Value)
+        {
+            _diagnostics.Error(DiagnosticId.UnexpectedToken, block.Span,
+                "Rewards for rebirth names the lowest level first, as in 1 to 5.");
+            return (0, int.MaxValue);
+        }
+        return ((int)min.Value, (int)max.Value);
+    }
+
+    private void CheckRebirthTiers(List<QuestRewards> built)
+    {
+        var tiers = built.Where(r => r.RebirthScoped).Select(r => (r.RebirthMin, r.RebirthMax)).Distinct()
+            .OrderBy(t => t.RebirthMin).ToList();
+        for (var i = 1; i < tiers.Count; i++)
+        {
+            if (tiers[i].RebirthMin == tiers[i - 1].RebirthMax + 1)
+                continue;
+            _diagnostics.Error(DiagnosticId.DuplicateDirective, _file.Span,
+                "Rebirth reward ranges follow one another without gaps or overlaps: 1 to 5, then 6 to 9.");
+            return;
+        }
     }
 
     private int ResolveClassGroup(Token? token)

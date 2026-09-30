@@ -353,7 +353,7 @@ public class PreGameService(
             : (short)0;
 
         return CharacterPacketMapper.BuildMyInfo(new MyInfoPacketContext(
-            character, account, gameData.GetMaxExpForLevel(character.Level),
+            character, account, RebirthBonus.RequiredExperience(gameData.GetMaxExpForLevel(character.Level), character.RebirthLevel),
             stats, clan, allianceId, clanFame, zoneId, posX, posZ, posY, premiumHours));
     }
 

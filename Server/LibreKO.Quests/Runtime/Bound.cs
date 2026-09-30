@@ -145,9 +145,13 @@ public sealed record QuestText(int QuestId, string? Title, string? Journal, bool
     int Nation = 0, int ClassGroup = 0, bool Repeat = false, bool FulfilElsewhere = false);
 
 public sealed record QuestRewards(int QuestId, IReadOnlyList<BoundStatement.Action> Transfers,
-    int ClassGroup = 0, int Nation = 0)
+    int ClassGroup = 0, int Nation = 0, int RebirthMin = 0, int RebirthMax = int.MaxValue)
 {
     public IReadOnlyList<BoundStatement.Action> Options { get; init; } = [];
+
+    public bool RebirthScoped => RebirthMin > 0 || RebirthMax < int.MaxValue;
+
+    public bool Covers(int rebirthLevel) => RebirthMin <= rebirthLevel && rebirthLevel <= RebirthMax;
 }
 
 public sealed record QuestFlow(int QuestId, BoundCondition? Requires, int ZoneId, bool AutoAccept = false, bool AutoComplete = false)
@@ -293,10 +297,14 @@ public sealed class QuestProgram
             ?? Texts.FirstOrDefault(t => t.QuestId == questId);
     }
 
-    public QuestRewards? RewardsFor(int questId, int classGroup = 0, int nation = 0)
+    public QuestRewards? RewardsFor(int questId, int classGroup = 0, int nation = 0, int rebirthLevel = 0)
     {
         var candidates = QuestRewards.Where(r => r.QuestId == questId
             && (r.Nation == 0 || nation == 0 || r.Nation == nation)).ToList();
+        var tiers = candidates.Where(r => r.RebirthScoped).ToList();
+        if (tiers.Count > 0)
+            return tiers.FirstOrDefault(r => r.Covers(rebirthLevel))
+                ?? (rebirthLevel < tiers.Min(r => r.RebirthMin) ? tiers.MinBy(r => r.RebirthMin) : tiers.MaxBy(r => r.RebirthMax));
         return candidates.FirstOrDefault(r => r.ClassGroup == classGroup && classGroup != 0 && r.Nation == nation && nation != 0)
             ?? candidates.FirstOrDefault(r => r.ClassGroup == classGroup && classGroup != 0 && r.Nation == 0)
             ?? candidates.FirstOrDefault(r => r.ClassGroup == 0 && r.Nation == nation && nation != 0)

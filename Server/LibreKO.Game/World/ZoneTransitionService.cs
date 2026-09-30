@@ -28,12 +28,20 @@ public class ZoneTransitionService(
     private const float MoradonTownX = 816f;
     private const float MoradonTownZ = 532f;
 
+    public const string RebornBarredNotice = "Reborn characters cannot enter Ardream or Ronark Land Base.";
+
     public event Func<UserSession, byte, Task>? PlayerLeavingZone;
 
     public async Task ChangeZoneAsync(UserSession session, byte newZone, float x, float z)
     {
         if (session.IsWarping)
             return;
+
+        if (ZoneRules.BarsReborn(newZone) && session.RebirthLevel > 0 && !session.IsGM)
+        {
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, RebornBarredNotice));
+            return;
+        }
 
         if (session.ZoneId != newZone && PlayerLeavingZone != null)
         {

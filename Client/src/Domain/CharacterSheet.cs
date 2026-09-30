@@ -60,6 +60,31 @@ public sealed class CharacterSheet
         _statBonus[3] = intel; _statBonus[4] = mag;
     }
 
+    private readonly int[] _rebirthBonus = new int[StatCount];
+
+    public int RebirthLevel { get; private set; }
+
+    public int RebirthBonusAtRow(int row) => (uint)row < StatCount ? _rebirthBonus[row] : 0;
+
+    public string LevelLabel => RebirthLevel > 0 ? $"{Level}/{RebirthLevel}" : Level.ToString();
+
+    public void SeedRebirth(int level, int str, int sta, int dex, int intel, int mag)
+    {
+        RebirthLevel = level;
+        _rebirthBonus[0] = str; _rebirthBonus[1] = sta; _rebirthBonus[2] = dex;
+        _rebirthBonus[3] = intel; _rebirthBonus[4] = mag;
+    }
+
+    public void ApplyRebirth(byte[] picks)
+    {
+        RebirthLevel++;
+        for (int i = 0; i < StatCount && i < picks.Length; i++)
+        {
+            _rebirthBonus[i] += picks[i];
+            _statBonus[i] += picks[i];
+        }
+    }
+
     public int StatTotal => Str + Sta + Dex + Intel + Mag;
 
     public bool AtBaseStats => StatTotal == BaseStatTotal;

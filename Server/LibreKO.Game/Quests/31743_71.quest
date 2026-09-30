@@ -1,0 +1,11 @@
+Bind Npc 31743 Zone 71
+
+On greeting
+    If player rebirth level < 1
+        Say "(Unidentified language spoken) (Re..bir.th? I think he said Rebirth)"
+        Topic "Close" goto close
+    Else
+        Say "Do you understand what I've just say? I see. You are the rebirth one. Welcome. My name is Dason. Could you please do me a favor?"
+        If no topic fits
+            Say "Even if you are the rebirth one, it is dangerous to encounter too many souls in a short time. Please comeback tomorrow."
+            Topic "Close" goto close

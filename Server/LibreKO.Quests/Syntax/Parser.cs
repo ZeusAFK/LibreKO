@@ -182,14 +182,20 @@ public sealed class Parser
                     _diagnostics.Error(DiagnosticId.DeclarationAfterHandler, line.Span,
                         "Rewards belongs above the first On handler.");
                 var position = 1;
-                var (rewardNation, rewardClass) = line.Tokens.Count > 1 && line.Tokens[1].IsWord("for")
-                    ? ParseScope(line, ref position)
-                    : (null, null);
+                Token? rewardNation = null, rewardClass = null, rebirthMin = null, rebirthMax = null;
+                if (line.Tokens.Count > 1 && line.Tokens[1].IsWord("for"))
+                {
+                    if (line.Tokens.Count > 2 && line.Tokens[2].IsWord("rebirth"))
+                        (rebirthMin, rebirthMax) = ParseRebirthScope(line, ref position);
+                    else
+                        (rewardNation, rewardClass) = ParseScope(line, ref position);
+                }
                 if (questRewards is not null && questRewards.Any(r =>
                         (r.Nation is null) != (rewardNation is null) || (r.ClassGroup is null) != (rewardClass is null)
-                        || (SameWord(r.Nation, rewardNation) && SameWord(r.ClassGroup, rewardClass))))
+                        || (r.RebirthMin is null) != (rebirthMin is null)
+                        || (rebirthMin is null && SameWord(r.Nation, rewardNation) && SameWord(r.ClassGroup, rewardClass))))
                     _diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
-                        "This quest already has Rewards for that nation or class; every Rewards block names the same kind of scope, once.");
+                        "This quest already has Rewards for that nation, class or rebirth range; every Rewards block names the same kind of scope, once.");
                 questRewards ??= [];
                 if (line.StartsWith("rewards", "none"))
                 {
@@ -200,7 +206,7 @@ public sealed class Parser
                 else
                 {
                     questRewards.Add(new QuestRewardsSyntax(line.Span,
-                        ParseIndentedBlock(line, ref position), rewardClass, rewardNation));
+                        ParseIndentedBlock(line, ref position), rewardClass, rewardNation, rebirthMin, rebirthMax));
                 }
                 continue;
             }
@@ -884,6 +890,17 @@ public sealed class Parser
             _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "\"for\" takes a nation, a class, or a nation and a class, and ends the line.");
         return (nation, group);
+    }
+
+    private (Token? Min, Token? Max) ParseRebirthScope(Line line, ref int position)
+    {
+        var tokens = line.Tokens;
+        position = tokens.Count;
+        if (tokens.Count == 6 && tokens[3].Kind == TokenKind.Number && tokens[4].IsWord("to") && tokens[5].Kind == TokenKind.Number)
+            return (tokens[3], tokens[5]);
+        _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            "\"for rebirth\" takes the lowest and the highest rebirth level, as in Rewards for rebirth 1 to 5, and ends the line.");
+        return (null, null);
     }
 
     private static bool SameWord(Token? left, Token? right) =>

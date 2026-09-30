@@ -144,7 +144,7 @@ public static class QuestProgramComposer
             Bindings = programs.SelectMany(p => p.Bindings).Distinct().ToArray(),
             GreetingTopics = topics,
             AutomaticTopics = automaticTopics,
-            QuestRewards = programs.SelectMany(p => p.QuestRewards).DistinctBy(r => (r.QuestId, r.ClassGroup, r.Nation)).ToArray(),
+            QuestRewards = programs.SelectMany(p => p.QuestRewards).DistinctBy(r => (r.QuestId, r.ClassGroup, r.Nation, r.RebirthMin, r.RebirthMax)).ToArray(),
             Flows = programs.SelectMany(p => p.Flows).DistinctBy(r => r.QuestId).ToArray(),
             GreetingFallback = fallback
         };

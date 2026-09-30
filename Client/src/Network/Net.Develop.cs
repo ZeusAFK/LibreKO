@@ -104,6 +104,16 @@ public partial class Net
 
     public void SendSkillReset() => SendClassByte(GameOpcodes.GS_CLASS_CHANGE, 3);
 
+    public const byte ClassChangeRebirthStat = 7;
+
+    public void SendRebirthStatChange(byte[] picks)
+    {
+        var p = new Packet(GameOpcodes.GS_CLASS_CHANGE);
+        p.WriteByte(ClassChangeRebirthStat);
+        for (int i = 0; i < 5; i++) p.WriteByte(i < picks.Length ? picks[i] : (byte)0);
+        _conn.Send(p);
+    }
+
     public const byte ResetKindStat = 1;
     public const byte ResetKindSkill = 2;
 

@@ -51,6 +51,7 @@ public sealed class QuestScriptHost(
     public bool CanReceiveStacks(int count) => context.Items.CheckGiveSlot(0, count);
     public int PlayerWeight => context.Player.CheckWeight(0);
     public long PlayerExperience => session.Experience;
+    public int PlayerRebirthLevel => session.RebirthLevel;
     public int QuestStatus(int questId)
     {
         if (questId is > 0 and <= short.MaxValue && objectives?.TextFor(questId)?.Daily == true
@@ -307,6 +308,7 @@ public sealed class QuestScriptHost(
     public void OpenRenamePanel() => context.Dialog.SendNameChange();
     public void OpenJobChangePanel() => context.Dialog.SendJobChangePanel();
     public void OpenClanRenamePanel() => context.Dialog.SendClanNameChange();
+    public void OpenRebirthPanel() => context.Dialog.SendRebirthPanel();
 
     public void Unsupported(string what)
     {

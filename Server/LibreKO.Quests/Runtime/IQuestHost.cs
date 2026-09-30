@@ -30,6 +30,7 @@ public interface IQuestHost
     bool CanReceiveStacks(int count);
     int PlayerWeight { get; }
     long PlayerExperience { get; }
+    int PlayerRebirthLevel => 0;
     int QuestStatus(int questId);
     int KillCount(int questId, int group);
     bool HasActiveKillQuest();
@@ -87,6 +88,7 @@ public interface IQuestHost
     void OpenRenamePanel();
     void OpenJobChangePanel();
     void OpenClanRenamePanel();
+    void OpenRebirthPanel();
 
     void Unsupported(string what);
 }

@@ -122,6 +122,59 @@ public sealed class AdminPanelPacketWriter
         return packet;
     }
 
+    public const byte FindNpcs = 0;
+    public const byte FindMonsters = 1;
+    public const byte FindPlayers = 2;
+    public const byte FindMonsterFlag = 1;
+    public const byte FindBotFlag = 2;
+
+    public readonly record struct FindRow(int Id, int SpawnRow, string Name, short Level, byte ZoneId, ushort X, ushort Z, bool Monster, bool Bot);
+
+    public readonly record struct SpawnRowInfo(
+        bool CanPersist, int Index, int NpcId, string Name, byte ZoneId, bool Monster, int X, int Z, int YTenths,
+        int Direction, byte Count, short RespawnSeconds, short SpawnRange, int Alive);
+
+    public static Packet SpawnRow(byte sub, SpawnRowInfo row)
+    {
+        var packet = Sub(sub);
+        packet.WriteByte((byte)(row.CanPersist ? Granted : Denied));
+        packet.WriteInt(row.Index);
+        packet.WriteInt(row.NpcId);
+        packet.WriteSByteString(row.Name);
+        packet.WriteByte(row.ZoneId);
+        packet.WriteByte((byte)(row.Monster ? Granted : Denied));
+        packet.WriteInt(row.X);
+        packet.WriteInt(row.Z);
+        packet.WriteInt(row.YTenths);
+        packet.WriteInt(row.Direction);
+        packet.WriteByte(row.Count);
+        packet.WriteShort(row.RespawnSeconds);
+        packet.WriteShort(row.SpawnRange);
+        packet.WriteInt(row.Alive);
+        return packet;
+    }
+
+    public static Packet FindResults(byte sub, byte kind, int total, IReadOnlyList<FindRow> rows)
+    {
+        var packet = Sub(sub);
+        packet.WriteByte(kind);
+        packet.WriteUShort((ushort)Math.Min(total, ushort.MaxValue));
+        packet.WriteUShort((ushort)rows.Count);
+        foreach (var row in rows)
+        {
+            packet.WriteInt(row.Id);
+            packet.WriteInt(row.SpawnRow);
+            packet.WriteSByteString(row.Name);
+            packet.WriteShort(row.Level);
+            packet.WriteByte(row.ZoneId);
+            packet.WriteUShort(row.X);
+            packet.WriteUShort(row.Z);
+            packet.WriteByte((byte)((row.Monster ? FindMonsterFlag : 0) | (row.Bot ? FindBotFlag : 0)));
+        }
+
+        return packet;
+    }
+
     public static Packet Result(byte sub, bool ok, string message)
     {
         var packet = Sub(sub);

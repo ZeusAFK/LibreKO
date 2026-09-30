@@ -60,6 +60,7 @@ public class NpcInstance
     public ushort Room { get; set; }
 
     // Spawn (home) position for returning after combat or patrol
+    public int SpawnRow { get; set; }
     public float SpawnX { get; set; }
     public float SpawnY { get; set; }
     public float SpawnZ { get; set; }
@@ -453,6 +454,7 @@ public class NpcInstance
             SpawnY = 0,
             SpawnZ = spawnZ,
             ZoneId = (byte)pos.ZoneId,
+            SpawnRow = pos.Index,
             Direction = (short)pos.Direction,
             MoveType = moveType,
             InitMoveType = moveType,

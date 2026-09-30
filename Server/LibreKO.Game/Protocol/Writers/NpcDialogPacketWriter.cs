@@ -1,5 +1,6 @@
 ﻿using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Game.World;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -8,6 +9,7 @@ public sealed class NpcDialogPacketWriter
     public const int NoText = -1;
     public const int NpcSayLines = 8;
     public const byte ObjectEventEffect = 3;
+    public const byte RebirthPanelStyle = 48;
 
     public static Packet NpcSay(IReadOnlyList<int> textIds) => NpcSay(textIds, null);
 
@@ -83,6 +85,9 @@ public sealed class NpcDialogPacketWriter
 
         return packet;
     }
+
+    public static Packet RebirthPanel(int npcId, string scriptFile) =>
+        SelectMessage(npcId, RebirthPanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
 
     public static Packet Effect(short entityId, int effectId)
     {

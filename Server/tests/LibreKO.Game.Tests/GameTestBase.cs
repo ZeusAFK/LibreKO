@@ -107,6 +107,8 @@ public abstract class GameTestBase
         services.AddSingleton<IJuraidMountainService, JuraidMountainService>();
         services.AddSingleton<IBorderDefenseWarService, BorderDefenseWarService>();
         services.AddSingleton<INpcLifecycleService, NpcLifecycleService>();
+        services.AddSingleton<INpcSpawnRowService, NpcSpawnRowService>();
+        services.AddSingleton<INpcSpawnRowStore, NpcSpawnRowStore>();
         services.AddSingleton<INpcSummonService, NpcSummonService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();
         services.AddSingleton(CreateServerRepositoryStub());

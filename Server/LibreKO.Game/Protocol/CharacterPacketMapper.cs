@@ -123,6 +123,11 @@ public class CharacterPacketMapper
             GenieTime = context.Character.GenieHours,
             IsChicken = context.Character.Level < ChickenLevelLimit,
             RebirthLevel = WireByte(context.Character.RebirthLevel),
+            RebirthStrength = context.Character.RebStr,
+            RebirthStamina = context.Character.RebSta,
+            RebirthDexterity = context.Character.RebDex,
+            RebirthIntelligence = context.Character.RebIntel,
+            RebirthMagic = context.Character.RebMagic,
         };
 
         writer.SetPosition(context.PosX, context.PosZ, context.PosY);

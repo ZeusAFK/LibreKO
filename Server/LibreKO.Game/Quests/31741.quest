@@ -1,0 +1,97 @@
+RewardPool dasons_delicate_gift
+    810656000 weight 90
+    810657000 weight 90
+    810658000 weight 90
+    810659000 weight 90
+    810660000 weight 90
+    810661000 weight 90
+    810662000 weight 90
+    810663000 weight 90
+    379109000 weight 60
+    379129000 weight 60
+    389093000 weight 60
+    810201000 weight 60
+    399127000 weight 12
+    399128000 weight 12
+    399129000 weight 12
+    910202000 weight 8
+    910203000 weight 8
+    910204000 weight 8
+
+RewardPool dasons_shining_gift
+    810656000 weight 60
+    810657000 weight 60
+    810658000 weight 60
+    810659000 weight 60
+    810660000 weight 60
+    810661000 weight 60
+    810662000 weight 60
+    810663000 weight 60
+    379109000 weight 60
+    379129000 weight 60
+    389093000 weight 60
+    810201000 weight 60
+    399127000 weight 30
+    399128000 weight 30
+    399129000 weight 30
+    910202000 weight 20
+    910203000 weight 20
+    910204000 weight 20
+
+RewardPool dasons_glorious_gift
+    810656000 weight 35
+    810657000 weight 35
+    810658000 weight 35
+    810659000 weight 35
+    810660000 weight 35
+    810661000 weight 35
+    810662000 weight 35
+    810663000 weight 35
+    379109000 weight 60
+    379129000 weight 60
+    389093000 weight 60
+    810201000 weight 60
+    399127000 weight 50
+    399128000 weight 50
+    399129000 weight 50
+    910202000 weight 40
+    910203000 weight 40
+    910204000 weight 40
+
+Bind Npc 31741
+
+On greeting
+    Say "Hello, I'm Julia and I'm here to help Moira"
+    Topic "Exchange Dason's Gift" goto dasons_gift
+    Topic "Close" goto close
+
+On dasons_gift
+    Say "Please select one of the following options"
+    Topic "Dason's Delicate Gift" goto open_delicate_gift
+    Topic "Dason's Shining Gift" goto open_shining_gift
+    Topic "Dason's Glorious Gift" goto open_glorious_gift
+    Topic "Close" goto close
+
+On open_delicate_gift
+    Transaction
+        Take 1 of 931685000
+        Give random from dasons_delicate_gift
+    Else
+        Say "I'm afraid that is not what I've asked for"
+        Topic "Close" goto close
+
+On open_shining_gift
+    Transaction
+        Take 1 of 931684000
+        Give random from dasons_shining_gift
+    Else
+        Say "I'm afraid that is not what I've asked for"
+        Topic "Close" goto close
+
+On open_glorious_gift
+    Transaction
+        Take 1 of 931683000
+        Give random from dasons_glorious_gift
+    Else
+        Say "I'm afraid that is not what I've asked for"
+        Topic "Close" goto close

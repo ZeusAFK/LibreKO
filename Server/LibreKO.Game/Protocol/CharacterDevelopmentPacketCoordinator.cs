@@ -22,6 +22,8 @@ public class CharacterDevelopmentPacketCoordinator(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IJobChangeService jobChangeService,
+    IPlayerProgressionService progression,
+    IUserNotificationService userNotificationService,
     ILogger<CharacterDevelopmentPacketCoordinator> logger) : ICharacterDevelopmentPacketCoordinator
 {
     private const byte JobChangeMinimumLevel = 10;
@@ -353,7 +355,8 @@ public class CharacterDevelopmentPacketCoordinator(
         var recInt = packet.ReadByte();
         var recCha = packet.ReadByte();
 
-        if (session.RebirthLevel >= RebirthBonus.MaxRebirthLevel
+        if (session.Level < ProgressionTable.MaxLevel
+            || session.RebirthLevel >= RebirthBonus.MaxRebirthLevel
             || recStr + recSta + recDex + recInt + recCha != RebirthBonus.PointsPerRebirth)
         {
             await SendRebResultAsync(session, ClassChangeSubOpcode.RebirthStatChange, 0);
@@ -373,22 +376,15 @@ public class CharacterDevelopmentPacketCoordinator(
         session.RebIntel = (byte)Math.Min(byte.MaxValue, session.RebIntel + recInt);
         session.RebMagic = (byte)Math.Min(byte.MaxValue, session.RebMagic + recCha);
         session.RebirthLevel++;
-        session.Experience = 0;
 
-        session.Inventory[scrollSlot].Count--;
-        if (session.Inventory[scrollSlot].Count <= 0)
-            session.Inventory[scrollSlot].Clear();
-
-        if (session.RebirthLevel < RebirthBonus.MaxRebirthLevel)
-        {
-            for (short qid = 1119; qid <= 1122; qid++)
-            {
-                session.Quest.QuestMap.Remove(qid);
-                session.Quest.RemoveQuestKillCounts(qid);
-            }
-        }
+        var scroll = session.Inventory[scrollSlot];
+        scroll.Count--;
+        if (scroll.Count <= 0)
+            scroll.Clear();
+        await userNotificationService.SendStackChangeAsync(session, (byte)scrollSlot, scroll.ItemId, scroll.Count, scroll.Durability);
 
         await SendRebResultAsync(session, ClassChangeSubOpcode.RebirthStatChange, 1);
+        await progression.CompleteRebirthAsync(session);
         logger.LogInformation(
             "{Name} rebirth +1 (now {Level}): +str={Str} sta={Sta} dex={Dex} int={Int} cha={Cha}",
             session.Name, session.RebirthLevel, recStr, recSta, recDex, recInt, recCha);

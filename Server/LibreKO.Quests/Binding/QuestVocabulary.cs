@@ -43,6 +43,7 @@ public enum QuestActionKind
     OpenRenamePanel,
     OpenJobChangePanel,
     OpenClanRenamePanel,
+    OpenRebirthPanel,
     GivePremium,
     GiveClanPremium,
     GiveAchievement,
@@ -93,6 +94,7 @@ public enum QuestConditionKind
     NoTopicFits,
     Weekday,
     HasEffect,
+    RebirthLevel,
 }
 
 public enum SwitchSelectorKind
@@ -308,6 +310,7 @@ public static class QuestVocabulary
         Action(QuestActionKind.OpenRenamePanel, "Open rename panel"),
         Action(QuestActionKind.OpenJobChangePanel, "Open job change panel"),
         Action(QuestActionKind.OpenClanRenamePanel, "Open clan rename panel"),
+        Action(QuestActionKind.OpenRebirthPanel, "Open rebirth panel"),
         Action(QuestActionKind.GiveAchievement, "Give achievement {achievement:Count}"),
         Action(QuestActionKind.JoinTempleEvent, "Join temple event"),
         Action(QuestActionKind.SetLevel, "Set player level to {level:Count}"),
@@ -343,6 +346,7 @@ public static class QuestVocabulary
         Condition(QuestConditionKind.PlayerNation, "player is not {nation:Nation}", Negated()),
 
         Condition(QuestConditionKind.PlayerLevel, "player level {op:CompareOp} {value:Count}"),
+        Condition(QuestConditionKind.RebirthLevel, "player rebirth level {op:CompareOp} {value:Count}"),
         Condition(QuestConditionKind.PlayerGold, "player gold {op:CompareOp} {amount:Count}"),
         Condition(QuestConditionKind.PlayerNationalPoints, "player np {op:CompareOp} {amount:Count}"),
         Condition(QuestConditionKind.HasPremium, "player premium {op:CompareOp} {value:Count}"),

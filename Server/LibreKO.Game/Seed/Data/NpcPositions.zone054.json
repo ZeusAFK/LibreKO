@@ -1,0 +1,40 @@
+[
+  {
+    "Index": 2108,
+    "ZoneId": 54,
+    "NpcId": 2690,
+    "ActType": 1,
+    "DotCnt": 0,
+    "Path": null,
+    "LeftX": 119,
+    "TopZ": 128,
+    "NumNPC": 1,
+    "RegTime": 3600,
+    "Direction": 0,
+    "SpawnRange": 7,
+    "RegenType": 0,
+    "DungeonFamily": 0,
+    "SpecialType": 0,
+    "TrapNumber": 0,
+    "Room": 0
+  },
+  {
+    "Index": 2109,
+    "ZoneId": 54,
+    "NpcId": 18030,
+    "ActType": 100,
+    "DotCnt": 0,
+    "Path": null,
+    "LeftX": 142,
+    "TopZ": 157,
+    "NumNPC": 1,
+    "RegTime": 300,
+    "Direction": 0,
+    "SpawnRange": 0,
+    "RegenType": 0,
+    "DungeonFamily": 0,
+    "SpecialType": 0,
+    "TrapNumber": 0,
+    "Room": 0
+  }
+]

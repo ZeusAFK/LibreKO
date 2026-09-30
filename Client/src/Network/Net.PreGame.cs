@@ -123,12 +123,12 @@ public partial class Net
         int statPoints = 0, np = 0, gold = 0, maxWeight = 0;
         int str = 0, sta = 0, dex = 0, intel = 0, magicStat = 0;
         int strB = 0, staB = 0, dexB = 0, intelB = 0, magicB = 0;
-        const int MyInfoSlotBytes = 19;
         int ap = 0, ac = 0, fr = 0, cr = 0, lr = 0, mr = 0, dr = 0, pr = 0;
         int[] gear = System.Array.Empty<int>();
         ItemSlot[] inventory = System.Array.Empty<ItemSlot>();
         byte[] skillPoints = new byte[9];
         int capeId = 0, capeR = 0, capeG = 0, capeB = 0;
+        int rebirthLevel = 0, rebStr = 0, rebSta = 0, rebDex = 0, rebInt = 0, rebMag = 0;
         try
         {
             nation = p.ReadByte();
@@ -200,6 +200,7 @@ public partial class Net
                 int vis = System.Array.IndexOf(InventoryConstants.VisualSlots, slot);
                 if (vis >= 0) gear[vis] = itemId;
             }
+            ReadRebirthTail(p, out rebirthLevel, out rebStr, out rebSta, out rebDex, out rebInt, out rebMag);
         }
         catch (System.Exception e)
         {
@@ -221,9 +222,29 @@ public partial class Net
             strB, staB, dexB, intelB, magicB,
             ap, ac, gold, np, maxWeight,
             fr, cr, lr, mr, dr, pr, skillPoints);
+        Sheet.SeedRebirth(rebirthLevel, rebStr, rebSta, rebDex, rebInt, rebMag);
         _known.Clear();
         _gmFxStates.Clear();
         if (ReconnectEntered()) return;
         EnterWorldEvent?.Invoke(LastEnter);
+    }
+
+    private const int MyInfoSlotBytes = 19;
+    private const int MyInfoTailBeforeRebirth = 4 + 4 + 6 + 2;
+
+    private static void ReadRebirthTail(Packet p, out int level, out int str, out int sta, out int dex, out int intel, out int mag)
+    {
+        level = str = sta = dex = intel = mag = 0;
+        int reserved = InventoryConstants.MyInfoReservedItemRecords * MyInfoSlotBytes;
+        if (p.RemainingBytes < reserved + MyInfoTailBeforeRebirth + 6) return;
+        for (int i = 0; i < reserved; i++) p.ReadByte();
+        p.ReadByte();
+        if (p.ReadByte() != 0) return;
+        p.ReadByte(); p.ReadByte();
+        p.ReadInt();
+        for (int i = 0; i < 6; i++) p.ReadByte();
+        p.ReadShort();
+        level = p.ReadByte();
+        str = p.ReadByte(); sta = p.ReadByte(); dex = p.ReadByte(); intel = p.ReadByte(); mag = p.ReadByte();
     }
 }

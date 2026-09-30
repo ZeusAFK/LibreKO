@@ -145,7 +145,7 @@ public sealed class QuestInterpreter
         if (_host.QuestStatus(choice.QuestId) is not (1 or 3))
             return choice;
         var goals = _program.Objectives.FirstOrDefault(o => o.QuestId == choice.QuestId);
-        var rewards = _program.RewardsFor(choice.QuestId, _host.PlayerClassGroup, _host.PlayerNation);
+        var rewards = _program.RewardsFor(choice.QuestId, _host.PlayerClassGroup, _host.PlayerNation, _host.PlayerRebirthLevel);
         var measurable = goals is { Groups.Count: > 0 } || rewards is not null;
         var ready = measurable && ObjectivesComplete(choice.QuestId)
                     && (rewards is null || CostsAvailable(rewards)) && !WaitsOnFulfilment(choice.QuestId);
@@ -249,7 +249,7 @@ public sealed class QuestInterpreter
     {
         var flow = _program.Flows.Single(f => f.QuestId == questId);
         var classGroup = _host.PlayerClassGroup;
-        var rewards = _program.RewardsFor(questId, classGroup, _host.PlayerNation)
+        var rewards = _program.RewardsFor(questId, classGroup, _host.PlayerNation, _host.PlayerRebirthLevel)
             ?? throw new InvalidOperationException($"Quest {questId} has no rewards.");
         rewards = rewards with { Transfers = ResolvePremium(rewards.Transfers) };
         var text = _program.TextFor(questId, _host.PlayerNation, classGroup)
@@ -437,7 +437,7 @@ public sealed class QuestInterpreter
     {
         if (_host.ActionFailed || _host.QuestStatus(questId) is not (1 or 3) || WaitsOnFulfilment(questId))
             return;
-        var rewards = _program.RewardsFor(questId, _host.PlayerClassGroup, _host.PlayerNation);
+        var rewards = _program.RewardsFor(questId, _host.PlayerClassGroup, _host.PlayerNation, _host.PlayerRebirthLevel);
         if (rewards is null)
         {
             _failure = $"Quest {questId} has no declared Rewards.";
@@ -646,6 +646,10 @@ public sealed class QuestInterpreter
                 _host.OpenClanRenamePanel();
                 break;
 
+            case QuestActionKind.OpenRebirthPanel:
+                _host.OpenRebirthPanel();
+                break;
+
             case QuestActionKind.OpenStatSkillPanel:
                 _host.OpenStatSkillPanel();
                 break;
@@ -690,6 +694,7 @@ public sealed class QuestInterpreter
             QuestConditionKind.PlayerClassSubtype => Compare(_host.PlayerClassSubtype, node.Operator, args.GetInt("value")),
             QuestConditionKind.PlayerNation => _host.PlayerNation == args.GetInt("nation"),
             QuestConditionKind.PlayerLevel => Compare(_host.PlayerLevel, node.Operator, args.GetInt("value")),
+            QuestConditionKind.RebirthLevel => Compare(_host.PlayerRebirthLevel, node.Operator, args.GetInt("value")),
             QuestConditionKind.PlayerGold => Compare(_host.PlayerCoins, node.Operator, args.GetInt("amount")),
             QuestConditionKind.PlayerNationalPoints => Compare(_host.PlayerLoyalty, node.Operator, args.GetInt("amount")),
             QuestConditionKind.KillCount =>
