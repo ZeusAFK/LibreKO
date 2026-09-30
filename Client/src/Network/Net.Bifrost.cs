@@ -34,6 +34,11 @@ public partial class Net
     {
         if (p.RemainingBytes < 1) return;
         byte sub = p.ReadByte();
+        if (sub == MonsterSquadSub)
+        {
+            HandleNestTimer(p);
+            return;
+        }
         if (sub != BifrostEventSub) return;
 
         int remaining = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
@@ -48,6 +53,12 @@ public partial class Net
         byte sub = p.ReadByte();
         switch (sub)
         {
+            case MonsterStoneSub:
+                HandleMonsterStone(p);
+                break;
+            case TempleEventFinishSub:
+                HandleTempleEventFinish(p);
+                break;
             case BifrostJoinSub:
             {
                 bool ok = (p.RemainingBytes >= 1 ? p.ReadByte() : 0) == 1;

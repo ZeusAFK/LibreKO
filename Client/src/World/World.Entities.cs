@@ -16,6 +16,7 @@ public partial class World
         public Node3D Body = null!;
         public bool Infiltrating;
         public StaticBody3D? Collider;
+        public StaticBody3D? GateBlocker;
         public Label3D? NameTag;
         public PlateStack? Plate;
         public Node3D? IndicatorFx;
@@ -272,6 +273,7 @@ public partial class World
         ApplyGmFx(info.Id, Net.I.GmFxVisible(info.Id, info.IsGm));
 
         ent.Collider = AttachBodyCollider(body, info.IsNpc ? ent.Radius : PlayerCapsuleRadius, lift);
+        if (IsBreakableGate(info)) ent.GateBlocker = AttachGateBlocker(body);
         RefreshEntityCollision(ent);
         if (info.IsNpc && info.ObjectType == 0)
             ApplyPlainNpcBridgeState(ent, info.GateOpen);
@@ -398,6 +400,7 @@ public partial class World
 
     private static void RefreshEntityCollision(Ent e)
     {
+        RefreshGateBlocker(e);
         if (e.Collider == null || !GodotObject.IsInstanceValid(e.Collider)) return;
         e.Collider.CollisionLayer = e.ColliderNear && BlocksMovement(e) ? BlockerCollisionLayer : 0u;
     }

@@ -51,7 +51,8 @@ public partial class World
         if (!hide && !_othersHidden) return;
         _othersHidden = hide;
         foreach (var e in _ents.Values)
-            if (e.Body != null && GodotObject.IsInstanceValid(e.Body) && e.Body.Visible == hide)
+            if (e.Body != null && GodotObject.IsInstanceValid(e.Body) && e.Body.Visible == hide
+                && !(e.GateBlocker != null && e.Dead))
                 e.Body.Visible = !hide;
     }
 

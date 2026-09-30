@@ -86,6 +86,34 @@ public sealed class EventPacketWriter
         return packet;
     }
 
+    public static Packet MonsterStone(MonsterStoneResult result)
+    {
+        var packet = new Packet(GameOpcodes.GS_EVENT);
+        packet.WriteByte((byte)TempleSubOpcode.MonsterStone);
+        packet.WriteByte((byte)result);
+        return packet;
+    }
+
+    public static Packet MonsterStoneEntered(int itemId)
+    {
+        var packet = MonsterStone(MonsterStoneResult.Entered);
+        packet.WriteInt(itemId);
+        return packet;
+    }
+
+    public const ushort NestFinishEvent = 17;
+    public const byte NestFinishResult = 101;
+
+    public static Packet NestCompleted(uint closesInSeconds)
+    {
+        var packet = new Packet(GameOpcodes.GS_EVENT);
+        packet.WriteByte((byte)TempleSubOpcode.TempleEventFinish);
+        packet.WriteUShort(NestFinishEvent);
+        packet.WriteByte(NestFinishResult);
+        packet.WriteUInt(closesInSeconds);
+        return packet;
+    }
+
     public static Packet TempleScreenScores(int karusScore, int elmoradScore)
     {
         var packet = new Packet(GameOpcodes.GS_EVENT);

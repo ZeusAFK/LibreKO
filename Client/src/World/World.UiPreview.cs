@@ -12,6 +12,9 @@ public partial class World
     private const int PreviewHpPotion = 389015000;
     private const int PreviewMpPotion = 389020000;
     private const int PreviewPotionCount = 63;
+    private const int PreviewMonsterStone = 900144023;
+    private const int PreviewNestTimeLeft = 1786;
+    private const int PreviewNestGraceLeft = 11;
     private const int PreviewUpgradedWeapon = 156210008;
     private const int PreviewUpgradedResult = 156210009;
     private const int PreviewReverseWeapon = 156211038;
@@ -856,6 +859,12 @@ public partial class World
     {
         ShowQuestProgressToast(quest, objective, done, needed);
         return DetachPreviewControl(_questToastPanel!);
+    }
+
+    internal Control BuildNestTimerUiPreview(bool completed)
+    {
+        ShowNestTimer(PreviewMonsterStone, completed ? PreviewNestGraceLeft : PreviewNestTimeLeft, completed);
+        return DetachPreviewControl(_nestTimerPanel!);
     }
 
     internal Control ShowNoticeUiPreview(string text)

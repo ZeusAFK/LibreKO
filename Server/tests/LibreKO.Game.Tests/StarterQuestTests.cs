@@ -101,6 +101,7 @@ public class StarterSeedQuestTests
             Substitute.For<ICollectionRaceService>(),
             Substitute.For<IJuraidMountainService>(),
             Substitute.For<IBorderDefenseWarService>(),
+            Substitute.For<IMonsterStoneService>(),
             combatRewardLogger);
 
         await service.AwardNpcKillAsync(npc, killer);

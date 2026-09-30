@@ -349,6 +349,11 @@ public partial class World
                 CombatNotice(problem);
                 return true;
             }
+            if (SkillData.Get(def.Effect1) is { } skill && OpensNestDungeon(skill))
+            {
+                OpenNestDungeon(itemId, skill);
+                return true;
+            }
             CastSkill(def.Effect1);
             return true;
         }

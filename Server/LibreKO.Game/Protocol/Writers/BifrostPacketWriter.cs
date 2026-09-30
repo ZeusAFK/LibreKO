@@ -12,4 +12,12 @@ public sealed class BifrostPacketWriter
         packet.WriteByte(eventType);
         return packet;
     }
+
+    public static Packet NestTimer(ushort secondsRemaining)
+    {
+        var packet = new Packet(GameOpcodes.GS_BIFROST);
+        packet.WriteByte((byte)TempleSubOpcode.MonsterSquad);
+        packet.WriteUShort(secondsRemaining);
+        return packet;
+    }
 }

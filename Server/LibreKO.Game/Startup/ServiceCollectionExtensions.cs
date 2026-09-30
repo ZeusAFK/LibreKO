@@ -119,6 +119,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IZoneTransitionService, ZoneTransitionService>();
         services.AddSingleton<InstanceRoomRegistry>();
         services.AddSingleton<IInstanceEntryService, InstanceEntryService>();
+        services.AddSingleton<IMonsterStoneService, MonsterStoneService>();
         services.AddSingleton<IJuraidMountainService, JuraidMountainService>();
         services.AddSingleton<IBorderDefenseWarService, BorderDefenseWarService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();

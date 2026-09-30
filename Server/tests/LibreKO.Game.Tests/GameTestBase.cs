@@ -105,6 +105,7 @@ public abstract class GameTestBase
         services.AddSingleton<IZoneTransitionService, ZoneTransitionService>();
         services.AddSingleton<InstanceRoomRegistry>();
         services.AddSingleton<IInstanceEntryService, InstanceEntryService>();
+        services.AddSingleton<IMonsterStoneService, MonsterStoneService>();
         services.AddSingleton<IMonsterAggressionPolicy, MonsterAggressionPolicy>();
         services.AddSingleton<IJuraidMountainService, JuraidMountainService>();
         services.AddSingleton<IBorderDefenseWarService, BorderDefenseWarService>();

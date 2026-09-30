@@ -267,6 +267,7 @@ public partial class World : Node3D, IWorldContext
         using (Perf.Measure(Perf.Section.Spawn))
         {
             ProcessSpawnQueue();
+            TickNestTimer();
             TickQuestToast(delta);
         }
 

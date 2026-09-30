@@ -29,6 +29,7 @@ public class CombatRewardService(
     ICollectionRaceService collectionRaceService,
     IJuraidMountainService juraidMountainService,
     IBorderDefenseWarService borderDefenseWarService,
+    IMonsterStoneService monsterStoneService,
     ILogger<CombatRewardService> logger) : ICombatRewardService
 {
     public async Task AwardPlayerKillAsync(UserSession victim, UserSession? killer)
@@ -72,6 +73,9 @@ public class CombatRewardService(
 
         if (npc.ZoneId == (byte)ZoneId.BorderDefenseWar)
             await borderDefenseWarService.OnNpcKilledAsync(npc, killer);
+
+        if (MonsterStoneRules.IsNestZone(npc.ZoneId))
+            await monsterStoneService.OnNpcKilledAsync(npc);
 
         var damagerIds = npc.WithLock(n => n.DamageMap.Keys.ToArray());
         foreach (var charId in damagerIds)

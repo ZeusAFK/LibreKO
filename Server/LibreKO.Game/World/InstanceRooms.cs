@@ -7,14 +7,26 @@ using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.World;
 
-public sealed class InstanceRoom(ushort id, byte zoneId, short set, DateTime expiresAt)
+public sealed class InstanceRoom(ushort id, byte zoneId, short set, DateTime expiresAt, bool endsOnBossKill = false)
 {
     public ushort Id { get; } = id;
     public byte ZoneId { get; } = zoneId;
     public short Set { get; } = set;
-    public DateTime ExpiresAt { get; } = expiresAt;
+    public DateTime ExpiresAt { get; private set; } = expiresAt;
+    public bool EndsOnBossKill { get; } = endsOnBossKill;
+    public bool Finishing { get; private set; }
     public ConcurrentDictionary<int, byte> Members { get; } = new();
     public List<NpcInstance> Npcs { get; } = [];
+
+    public bool Finish(DateTime closesAt)
+    {
+        if (Finishing || closesAt >= ExpiresAt)
+            return false;
+
+        Finishing = true;
+        ExpiresAt = closesAt;
+        return true;
+    }
 }
 
 public sealed class InstanceRoomRegistry(SessionManager sessionManager, ILogger<InstanceRoomRegistry> logger)
@@ -24,7 +36,7 @@ public sealed class InstanceRoomRegistry(SessionManager sessionManager, ILogger<
 
     public IEnumerable<InstanceRoom> Rooms => _rooms.Values;
 
-    public InstanceRoom Open(byte zoneId, short set, TimeSpan duration)
+    public InstanceRoom Open(byte zoneId, short set, TimeSpan duration, bool endsOnBossKill = false)
     {
         ushort id;
         do
@@ -32,7 +44,7 @@ public sealed class InstanceRoomRegistry(SessionManager sessionManager, ILogger<
             id = (ushort)(Interlocked.Increment(ref _nextRoom) & 0xFFFF);
         } while (id == 0 || _rooms.ContainsKey(id));
 
-        var room = new InstanceRoom(id, zoneId, set, DateTime.UtcNow + duration);
+        var room = new InstanceRoom(id, zoneId, set, DateTime.UtcNow + duration, endsOnBossKill);
         _rooms[id] = room;
         return room;
     }
@@ -78,6 +90,7 @@ public interface IInstanceEntryService
 {
     Task EnterAsync(UserSession session, byte zoneId, short set, float x, float z);
     Task EnterClanAsync(UserSession session, byte zoneId, short set, float x, float z);
+    Task EnterAloneAsync(UserSession session, byte zoneId, short set, float x, float z, bool endsOnBossKill);
     void Populate(InstanceRoom room);
 }
 
@@ -91,9 +104,12 @@ public sealed class InstanceEntryService(
 {
     public Task EnterAsync(UserSession session, byte zoneId, short set, float x, float z)
     {
-        var returnPoint = (session.ZoneId, session.X, session.Z);
-        return OpenAsync(session, Participants(session), zoneId, set, x, z, _ => returnPoint);
+        (byte ZoneId, float X, float Z)? returnPoint = (session.ZoneId, session.X, session.Z);
+        return OpenAsync(session, Participants(session), zoneId, set, x, z, _ => returnPoint, endsOnBossKill: false);
     }
+
+    public Task EnterAloneAsync(UserSession session, byte zoneId, short set, float x, float z, bool endsOnBossKill) =>
+        OpenAsync(session, [session], zoneId, set, x, z, _ => null, endsOnBossKill);
 
     public Task EnterClanAsync(UserSession session, byte zoneId, short set, float x, float z)
     {
@@ -104,15 +120,15 @@ public sealed class InstanceEntryService(
         }
 
         return OpenAsync(session, ClanMembers(session), zoneId, set, x, z,
-            member => (member.ZoneId, member.X, member.Z));
+            member => (member.ZoneId, member.X, member.Z), endsOnBossKill: false);
     }
 
     private async Task OpenAsync(
         UserSession session, IEnumerable<UserSession> members, byte zoneId, short set, float x, float z,
-        Func<UserSession, (byte ZoneId, float X, float Z)> returnPoint)
+        Func<UserSession, (byte ZoneId, float X, float Z)?> returnPoint, bool endsOnBossKill)
     {
         var duration = TimeSpan.FromMinutes(GameConstants.InstanceRoomMinutes);
-        var room = rooms.Open(zoneId, set, duration);
+        var room = rooms.Open(zoneId, set, duration, endsOnBossKill);
         Populate(room);
 
         foreach (var member in members.ToList())

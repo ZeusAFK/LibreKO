@@ -121,7 +121,7 @@ public partial class World
     {
         if (_questToastPanel?.GetParent() is not Control anchor) return;
         _questToastPanel.Position = new Vector2(
-            Mathf.Round((anchor.Size.X - _questToastPanel.Size.X) * 0.5f), QuestToastTop);
+            Mathf.Round((anchor.Size.X - _questToastPanel.Size.X) * 0.5f), QuestToastTop + NestTimerOffset());
     }
 
     private void ShowQuestProgressToast(string questName, string objective, int current, int target)

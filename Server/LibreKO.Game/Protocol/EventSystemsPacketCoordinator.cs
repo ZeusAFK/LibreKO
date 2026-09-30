@@ -26,19 +26,16 @@ public interface IEventSystemsPacketCoordinator
 
 public class EventSystemsPacketCoordinator(
     SessionManager sessionManager,
-    IGameDataService gameDataService,
     IZoneTransitionService zoneTransitionService,
     InstanceRoomRegistry instanceRooms,
     EventSchedulerService eventSchedulerService,
     ILoyaltyService loyaltyService,
+    IMonsterStoneService monsterStoneService,
     ILogger<EventSystemsPacketCoordinator> logger) : IEventSystemsPacketCoordinator
 {
     private const byte TempleEventMonsterStone = 6;
     private const byte TempleEventJoin = 8;
     private const byte TempleEventDisband = 9;
-
-    private const int ItemMonsterStone = 900144023;
-    private static readonly byte[] MonsterStoneZones = [21, 22, 23, 24, 25];
 
     private const byte BattleEventOpen = 1;
     private const byte BattleMapEventResult = 2;
@@ -67,7 +64,8 @@ public class EventSystemsPacketCoordinator(
         switch (subOpcode)
         {
             case TempleEventMonsterStone:
-                await HandleMonsterStoneAsync(session);
+                if (packet.RemainingBytes >= sizeof(int))
+                    await monsterStoneService.UseAsync(session, packet.ReadInt());
                 break;
 
             case TempleEventJoin:
@@ -231,42 +229,6 @@ public class EventSystemsPacketCoordinator(
             return;
 
         await RemoveRivalAsync(player);
-    }
-
-    private async Task HandleMonsterStoneAsync(UserSession session)
-    {
-        var slotIndex = -1;
-        for (var index = InventoryConstants.SlotMax; index < InventoryConstants.SlotMax + InventoryConstants.HaveMax; index++)
-        {
-            if (session.Inventory[index].ItemId == ItemMonsterStone)
-            {
-                slotIndex = index;
-                break;
-            }
-        }
-
-        if (slotIndex < 0)
-            return;
-
-        var slot = session.Inventory[slotIndex];
-        if (slot.Count > 1)
-            slot.Count--;
-        else
-            slot.Clear();
-
-        var countPacket = new ItemCountChangePacketWriter()
-            .Add((byte)slotIndex, slot.ItemId, slot.Count, slot.Durability)
-            .Build();
-        await session.Client.SendPacket(countPacket);
-
-        var targetZone = MonsterStoneZones[Random.Shared.Next(MonsterStoneZones.Length)];
-        var startPos = gameDataService.GetStartPosition(targetZone);
-        if (startPos == null)
-            return;
-
-        var x = startPos.BaseX(session.Nation) / 10.0f;
-        var z = startPos.BaseZ(session.Nation) / 10.0f;
-        await zoneTransitionService.ChangeZoneAsync(session, targetZone, x, z);
     }
 
     public Task JoinTempleEventAsync(UserSession session) => HandleTempleEventJoinAsync(session);
