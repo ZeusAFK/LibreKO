@@ -71,4 +71,16 @@ public static class ZoneCatalog
             if (z.Id == zoneId) return z.Stem;
         return null;
     }
+
+    public static bool IsEventZone(int zoneId) =>
+        zoneId is 87 // Juraid Mountain
+            or 84    // Border War Defence
+            or 85    // Chaos Dungeon
+            or 86    // Under The Castle
+            or 89    // Border War Defence 2
+            or 55    // Forgotten Temple
+            or 56    // Lost Temple
+            or 69    // Snow War
+            or 81 or 82 or 83 // Monster Stone
+            or 95;   // Draki Tower
 }

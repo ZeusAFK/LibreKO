@@ -95,7 +95,7 @@ public class WorldVisibilityService(
 
         var nearbyUsers = sessionManager.Regions.GetNearbyUsers(session).ToList();
         var nearbyNpcs = sessionManager.Regions.GetNearbyNpcs(session)
-            .Where(npc => npc.IsAlive)
+            .Where(ShouldIncludeNpc)
             .ToList();
 
         await SendUserSnapshotAsync(session, nearbyUsers);
@@ -125,7 +125,7 @@ public class WorldVisibilityService(
             return;
 
         var nearbyNpcs = sessionManager.Regions.GetNearbyNpcs(session)
-            .Where(npc => npc.IsAlive)
+            .Where(ShouldIncludeNpc)
             .ToList();
 
         if (packet.RemainingBytes < 2)
@@ -182,7 +182,7 @@ public class WorldVisibilityService(
     public async Task SendNpcRegionListAsync(UserSession session)
     {
         var npcs = sessionManager.Regions.GetNearbyNpcs(session)
-            .Where(n => n.IsAlive)
+            .Where(ShouldIncludeNpc)
             .ToList();
 
         logger.LogDebug("NPC_REGION for {Name}: {Count} nearby NPCs in zone {Zone} region ({RX},{RZ})",
@@ -523,4 +523,7 @@ public class WorldVisibilityService(
             _ => 0,
         };
     }
+
+    private static bool ShouldIncludeNpc(NpcInstance npc) =>
+        npc.IsAlive || npc.NpcId == JuraidMountainService.BridgeNpcId || npc.GateOpen != 0 || npc.ObjectType != 0;
 }

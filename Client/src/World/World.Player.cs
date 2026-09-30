@@ -103,7 +103,7 @@ public partial class World
         var (koX, koZ) = WorldToKo(resolved);
         var grounded = GroundPos(koX, koZ, resolved.Y - _selfLift, _selfLift);
         float objY = ObjectFloorY(grounded, resolved.Y - _selfLift);
-        if (objY > grounded.Y) grounded.Y = objY + _selfLift;
+        if (objY > grounded.Y || (_zone == 87 && objY > float.NegativeInfinity / 2f)) grounded.Y = objY + _selfLift;
         _self.Position = grounded;
 
         if (CapsuleOverlaps() && !StepOffLedge(grounded, resolved.Y))
@@ -181,6 +181,8 @@ public partial class World
     {
         if (_self == null) return;
         var pos = GroundPos(koX, koZ, _self.Position.Y - _selfLift, _selfLift);
+        float objY = ObjectFloorY(pos, pos.Y - _selfLift);
+        if (objY > pos.Y || (_zone == 87 && objY > float.NegativeInfinity / 2f)) pos.Y = objY + _selfLift;
         _self.Position = pos;
         _lastFreePos = pos;
         _lastKoX = koX; _lastKoZ = koZ;

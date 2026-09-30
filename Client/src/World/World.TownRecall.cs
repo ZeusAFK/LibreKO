@@ -24,7 +24,6 @@ public partial class World
     public void TownRecallTryOpen()
     {
         if (!_worldReady) return;
-        if (Chat.IsActive) return;
         if (_selfDead) return;
         if (Vitals.BelowHalfHp)
         {

@@ -52,6 +52,8 @@ public interface IGameDataService
     IReadOnlyDictionary<int, LotteryEventData> LotteryEventTable { get; }
     ILookup<int, LotteryRewardData> LotteryRewardsByEvent { get; }
     ILookup<int, LotteryScheduleData> LotterySchedulesByEvent { get; }
+    IReadOnlyList<JuraidMountainScheduleData> JuraidMountainSchedules { get; }
+    IReadOnlyList<JuraidMountainRewardData> JuraidMountainRewards { get; }
     SiegeWarfareData? SiegeWarfare { get; }
     bool IsLoaded { get; }
 

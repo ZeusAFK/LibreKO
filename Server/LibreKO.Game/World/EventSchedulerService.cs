@@ -1,4 +1,5 @@
-﻿using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -15,14 +16,19 @@ public class EventSchedulerService(
     IZoneTransitionService zoneTransitionService,
     ICollectionRaceService collectionRaceService,
     ILotteryService lotteryService,
+    IJuraidMountainService juraidMountainService,
+    IGameDataService gameDataService,
     ILogger<EventSchedulerService> logger) : BackgroundService
 {
     private DateTime _lastWarOpen = DateTime.MinValue;
     private bool _banishPending;
     private DateTime _banishTime;
+    private int _lastAutoCheckMinute = -1;
 
     private TempleEvent _templeEvent;
     private byte _templeEventZone;
+    private byte _templeEventMinLevel;
+    private byte _templeEventMaxLevel;
     private bool _templeEventJoinOpen;
     private DateTime _templeEventStart;
     private DateTime _templeEventEnd;
@@ -47,6 +53,7 @@ public class EventSchedulerService(
                 await TickBanish();
                 await collectionRaceService.TickAsync();
                 await lotteryService.TickAsync();
+                await juraidMountainService.TickAsync();
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -167,17 +174,25 @@ public class EventSchedulerService(
 
     private async Task TickTempleEvent()
     {
-        var now = DateTime.UtcNow;
+        var utcNow = DateTime.UtcNow;
+        var scheduleNow = settings.Value.Events.UseLocalTimeForSchedules ? DateTime.Now : utcNow;
 
         if (_templeEventZone == 0)
         {
-            var due = DueTempleEvent(now);
-            if (due != TempleEvent.None && now - _lastTempleEventCall >= TimeSpan.FromHours(1))
-                await StartTempleEventAsync(due, now);
+            if (scheduleNow.Minute != _lastAutoCheckMinute)
+            {
+                var due = DueTempleEvent(scheduleNow, out var scheduledMinLevel, out var scheduledMaxLevel, out var scheduledJoinWindowSeconds);
+                _lastAutoCheckMinute = scheduleNow.Minute;
+                if (due != TempleEvent.None)
+                {
+                    await StartTempleEventAsync(due, utcNow, scheduledJoinWindowSeconds, null, scheduledMinLevel, scheduledMaxLevel);
+                }
+            }
+
             return;
         }
 
-        if (_templeEventJoinOpen && now >= _templeEventStart)
+        if (_templeEventJoinOpen && utcNow >= _templeEventStart)
         {
             _templeEventJoinOpen = false;
             logger.LogInformation(
@@ -187,37 +202,61 @@ public class EventSchedulerService(
             await WarpParticipantsToEventAsync();
         }
 
-        if (now >= _templeEventEnd)
+        if (utcNow >= _templeEventEnd)
         {
             logger.LogInformation("{Contest} in zone {Zone} ended", _templeEvent, _templeEventZone);
             await WarpParticipantsOutAsync(_templeEventZone);
             _templeEvent = TempleEvent.None;
             _templeEventZone = 0;
+            _templeEventMinLevel = 0;
+            _templeEventMaxLevel = 0;
             _templeEventJoinOpen = false;
             _templeParticipants.Clear();
         }
     }
 
-    private TempleEvent DueTempleEvent(DateTime now)
+    private TempleEvent DueTempleEvent(DateTime now, out byte minLevel, out byte maxLevel, out int joinWindowSeconds)
     {
-        if (now.Minute != TempleEventRules.StartMinuteOfHour)
-            return TempleEvent.None;
+        minLevel = 0;
+        maxLevel = 0;
+        joinWindowSeconds = TempleEventRules.JoinWindowSeconds;
 
-        var events = settings.Value.Events;
-        if (events.ChaosStartHours.Contains(now.Hour))
-            return TempleEvent.Chaos;
-        if (events.BorderDefenseWarStartHours.Contains(now.Hour))
-            return TempleEvent.BorderDefenseWar;
-        if (events.JuraidMountainStartHours.Contains(now.Hour))
+        // 1. Check database-driven Juraid Mountain schedules
+        var juraidSchedule = gameDataService.JuraidMountainSchedules?.FirstOrDefault(s => s.Matches(now));
+        if (juraidSchedule != null)
+        {
+            minLevel = juraidSchedule.MinLevel > 0 ? juraidSchedule.MinLevel : TempleEventRules.JuraidMountainDefaultMinLevel;
+            maxLevel = juraidSchedule.MaxLevel > 0 ? juraidSchedule.MaxLevel : TempleEventRules.JuraidMountainDefaultMaxLevel;
+            int countdownMin = juraidSchedule.CountdownMinutes > 0 ? juraidSchedule.CountdownMinutes : TempleEventRules.DefaultCountdownMinutes;
+            joinWindowSeconds = countdownMin * 60;
             return TempleEvent.JuraidMountain;
+        }
+
+        // 2. Configuration-driven start hours (Chaos, BDW)
+        if (now.Minute == TempleEventRules.StartMinuteOfHour)
+        {
+            var events = settings.Value.Events;
+            if (events.ChaosStartHours.Contains(now.Hour))
+                return TempleEvent.Chaos;
+            if (events.BorderDefenseWarStartHours.Contains(now.Hour))
+                return TempleEvent.BorderDefenseWar;
+        }
 
         return TempleEvent.None;
     }
 
-    private async Task StartTempleEventAsync(TempleEvent contest, DateTime now, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds, UserSession? autoJoinSession = null)
+    private async Task StartTempleEventAsync(
+        TempleEvent contest,
+        DateTime now,
+        int joinWindowSeconds = TempleEventRules.JoinWindowSeconds,
+        UserSession? autoJoinSession = null,
+        byte minLevel = 0,
+        byte maxLevel = 0)
     {
         _templeEvent = contest;
         _templeEventZone = TempleEventRules.ZoneFor(contest);
+        _templeEventMinLevel = minLevel;
+        _templeEventMaxLevel = maxLevel;
         _templeEventJoinOpen = true;
         _templeEventStart = now.AddSeconds(joinWindowSeconds);
         _templeEventEnd = _templeEventStart
@@ -230,8 +269,8 @@ public class EventSchedulerService(
         }
 
         logger.LogInformation(
-            "{Contest} called in zone {Zone}; entries are open for {Window}",
-            contest, _templeEventZone, TimeSpan.FromSeconds(joinWindowSeconds));
+            "{Contest} (Level {Min}-{Max}) called in zone {Zone}; entries are open for {Window}",
+            contest, _templeEventMinLevel, _templeEventMaxLevel, _templeEventZone, TimeSpan.FromSeconds(joinWindowSeconds));
 
         string contestName = TempleEventRules.NameFor(contest);
 
@@ -239,7 +278,11 @@ public class EventSchedulerService(
             ? (joinWindowSeconds / 60 == 1 ? "1 Minute" : $"{joinWindowSeconds / 60} Minutes")
             : $"{joinWindowSeconds} Seconds";
 
-        var noticePkt = NoticePacketWriter.Broadcast($"### [EVENT] {contestName} registration is now OPEN ({timeStr})! ###");
+        string levelNotice = _templeEventMinLevel > 0
+            ? $" (Level {_templeEventMinLevel}+)"
+            : string.Empty;
+
+        var noticePkt = NoticePacketWriter.Broadcast($"### [EVENT] {contestName}{levelNotice} registration is now OPEN ({timeStr})! ###");
         await sessionManager.BroadcastToAll(noticePkt);
 
         var bifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, joinWindowSeconds, (byte)contest);
@@ -256,6 +299,12 @@ public class EventSchedulerService(
 
         var startPkt = NoticePacketWriter.Broadcast($"### [EVENT] {TempleEventRules.NameFor(_templeEvent)} has started! Teleporting registered players... ###");
         await sessionManager.BroadcastToAll(startPkt);
+
+        if (_templeEvent == TempleEvent.JuraidMountain)
+        {
+            await juraidMountainService.StartMatchesAsync(_templeParticipants.ToList(), TempleEventRules.JuraidMountainDurationSeconds);
+            return;
+        }
 
         foreach (var charId in _templeParticipants)
         {
@@ -276,14 +325,21 @@ public class EventSchedulerService(
 
     private async Task WarpParticipantsOutAsync(byte zoneId)
     {
-        var playersInZone = sessionManager.GetAll().Where(s => s.ZoneId == zoneId).ToList();
-        logger.LogInformation("Warping {Count} players out of event zone {Zone} back to Moradon",
-            playersInZone.Count, zoneId);
-
         var endPkt = NoticePacketWriter.Broadcast($"### [EVENT] {TempleEventRules.NameFor(_templeEvent)} has ended! Returning participants to Moradon... ###");
         await sessionManager.BroadcastToAll(endPkt);
 
-        foreach (var session in playersInZone)
+        if (_templeEvent == TempleEvent.JuraidMountain || juraidMountainService.HasActiveMatches)
+        {
+            await juraidMountainService.CancelAllMatchesAsync();
+        }
+
+        var playersInEvent = sessionManager.GetAll()
+            .Where(s => zoneId != 0 && s.ZoneId == zoneId)
+            .ToList();
+
+        logger.LogInformation("Warping {Count} players out of event zones back to Moradon", playersInEvent.Count);
+
+        foreach (var session in playersInEvent)
         {
             try
             {
@@ -291,15 +347,39 @@ public class EventSchedulerService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to warp player {Name} out of event zone {Zone}", session.Name, zoneId);
+                logger.LogError(ex, "Failed to warp player {Name} out of event zone {Zone}", session.Name, session.ZoneId);
             }
         }
     }
 
-    public bool TryJoinTempleEvent(UserSession session)
+    public bool TryJoinTempleEvent(UserSession session) => TryJoinTempleEvent(session, out _);
+
+    public bool TryJoinTempleEvent(UserSession session, out string? reason)
     {
-        if (_templeEventZone == 0 || !_templeEventJoinOpen) return false;
-        if (_templeParticipants.Contains(session.CharacterId)) return false;
+        reason = null;
+        if (_templeEventZone == 0 || !_templeEventJoinOpen)
+        {
+            reason = "Registration is not currently open.";
+            return false;
+        }
+
+        if (_templeParticipants.Contains(session.CharacterId))
+        {
+            reason = "You have already registered for this event.";
+            return false;
+        }
+
+        if (_templeEventMinLevel > 0 && session.Level < _templeEventMinLevel)
+        {
+            reason = $"Your level ({session.Level}) is too low. Minimum level is {_templeEventMinLevel}.";
+            return false;
+        }
+
+        if (_templeEventMaxLevel > 0 && session.Level > _templeEventMaxLevel)
+        {
+            reason = $"Your level ({session.Level}) is too high. Maximum level is {_templeEventMaxLevel}.";
+            return false;
+        }
 
         _templeParticipants.Add(session.CharacterId);
         return true;
@@ -316,12 +396,37 @@ public class EventSchedulerService(
 
     public bool TempleEventAcceptingEntries => _templeEventJoinOpen;
 
-    public async Task CallTempleEventAsync(TempleEvent contest, int joinWindowSeconds = TempleEventRules.JoinWindowSeconds, UserSession? autoJoinSession = null)
+    public async Task CallTempleEventAsync(
+        TempleEvent contest,
+        int joinWindowSeconds = 0,
+        UserSession? autoJoinSession = null,
+        byte minLevel = 0,
+        byte maxLevel = 0)
     {
         if (contest == TempleEvent.None)
             return;
 
-        await StartTempleEventAsync(contest, DateTime.UtcNow, joinWindowSeconds, autoJoinSession);
+        if (contest == TempleEvent.JuraidMountain)
+        {
+            if (minLevel == 0)
+                minLevel = gameDataService.JuraidMountainSchedules?.Count > 0
+                    ? gameDataService.JuraidMountainSchedules.Min(s => s.MinLevel)
+                    : TempleEventRules.JuraidMountainDefaultMinLevel;
+            if (maxLevel == 0)
+                maxLevel = TempleEventRules.JuraidMountainDefaultMaxLevel;
+
+            if (joinWindowSeconds <= 0)
+            {
+                var defaultCountdown = gameDataService.JuraidMountainSchedules?.FirstOrDefault()?.CountdownMinutes ?? TempleEventRules.DefaultCountdownMinutes;
+                joinWindowSeconds = defaultCountdown > 0 ? defaultCountdown * 60 : TempleEventRules.JoinWindowSeconds;
+            }
+        }
+        else if (joinWindowSeconds <= 0)
+        {
+            joinWindowSeconds = TempleEventRules.JoinWindowSeconds;
+        }
+
+        await StartTempleEventAsync(contest, DateTime.UtcNow, joinWindowSeconds, autoJoinSession, minLevel, maxLevel);
     }
 
     public async Task<bool> CancelTempleEventAsync()
@@ -349,6 +454,11 @@ public class EventSchedulerService(
             {
                 await WarpParticipantsOutAsync(_templeEventZone);
             }
+        }
+
+        if (_templeEvent == TempleEvent.JuraidMountain || juraidMountainService.HasActiveMatches)
+        {
+            await juraidMountainService.CancelAllMatchesAsync();
         }
 
         byte[] eventZones = [(byte)ZoneId.JuradMountain, (byte)ZoneId.BorderDefenseWar, (byte)ZoneId.ChaosDungeon];

@@ -75,7 +75,7 @@ public class WorldObjectEventService(
                         var gateNpc = sessionManager.Regions.GetNpc(npcId);
                         if (gateNpc != null && (byte)gateNpc.Nation == (byte)session.Nation)
                         {
-                            gateNpc.GateOpen = !gateNpc.GateOpen;
+                            gateNpc.GateOpen = gateNpc.GateOpen != 0 ? 0 : 1;
                             await BroadcastGateFlagAsync(gateNpc, ObjectGate);
                             success = true;
                         }
@@ -96,10 +96,10 @@ public class WorldObjectEventService(
                         {
                             if (sessionManager.Regions.GetNpc(npcId) is { } leverNpc && leverNpc.UniqueId != gateNpc.UniqueId)
                             {
-                                leverNpc.GateOpen = !leverNpc.GateOpen;
+                                leverNpc.GateOpen = leverNpc.GateOpen != 0 ? 0 : 1;
                                 await BroadcastGateFlagAsync(leverNpc, (byte)objectEvent.Type);
                             }
-                            gateNpc.GateOpen = !gateNpc.GateOpen;
+                            gateNpc.GateOpen = gateNpc.GateOpen != 0 ? 0 : 1;
                             await BroadcastGateFlagAsync(gateNpc, ObjectGate);
                             success = true;
                         }
@@ -176,7 +176,7 @@ public class WorldObjectEventService(
 
     private async Task BroadcastGateFlagAsync(NpcInstance npc, byte objectType)
     {
-        var packet = MiscPacketWriter.ObjectGateFlag(objectType, npc.UniqueId, npc.GateOpen);
+        var packet = MiscPacketWriter.ObjectGateFlag(objectType, npc.UniqueId, npc.GateOpen != 0);
         await sessionManager.Regions.BroadcastFromNpc(npc, packet);
     }
 

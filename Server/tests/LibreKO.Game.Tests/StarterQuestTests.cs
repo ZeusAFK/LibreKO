@@ -99,6 +99,7 @@ public class StarterSeedQuestTests
             Substitute.For<IAchievementProgressService>(),
             userNotificationService,
             Substitute.For<ICollectionRaceService>(),
+            Substitute.For<IJuraidMountainService>(),
             combatRewardLogger);
 
         await service.AwardNpcKillAsync(npc, killer);

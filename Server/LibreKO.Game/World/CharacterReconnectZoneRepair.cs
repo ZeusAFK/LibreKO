@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 
@@ -24,8 +24,25 @@ public static class CharacterReconnectZoneRepair
         return true;
     }
 
+    public static bool IsEventZone(short zoneId) =>
+        zoneId is (short)ZoneId.JuradMountain
+            or (short)ZoneId.BorderDefenseWar
+            or (short)ZoneId.ChaosDungeon
+            or (short)ZoneId.UnderCastle
+            or (short)ZoneId.DungeonDefence
+            or (short)ZoneId.ForgottenTemple
+            or (short)ZoneId.LostTemple
+            or (short)ZoneId.SnowBattle
+            or (short)ZoneId.MonsterStone1
+            or (short)ZoneId.MonsterStone2
+            or (short)ZoneId.MonsterStone3
+            or (short)ZoneId.DrakiTower;
+
+    public static bool IsEventZone(byte zoneId) => IsEventZone((short)zoneId);
+
     private static bool RequiresRepair(short zoneId, IGameDataService gameData) =>
         zoneId == UnsupportedTowerWarZoneId
+        || IsEventZone(zoneId)
         || (gameData.ZoneInfoTable is { Count: > 0 } zones && !zones.ContainsKey(zoneId));
 
     public static (short ZoneId, short PosX, short PosZ, short PosY) ResolveSafeSpawn(

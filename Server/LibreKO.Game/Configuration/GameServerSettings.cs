@@ -122,5 +122,5 @@ public class EventSettings
 
     public int[] BorderDefenseWarStartHours { get; set; } = [];
 
-    public int[] JuraidMountainStartHours { get; set; } = [];
+    public bool UseLocalTimeForSchedules { get; set; } = false;
 }

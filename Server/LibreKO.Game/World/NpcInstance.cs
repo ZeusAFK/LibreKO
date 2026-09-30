@@ -312,7 +312,7 @@ public class NpcInstance
     public bool IsNationOwned => Nation is EntityNation.Karus or EntityNation.ElMorad;
     public bool HasAi => IsMonster || IsGuard || IsScarecrow || IsNationOwned || FollowsAPath(MoveType);
     public EntityNation Nation { get; set; }
-    public bool GateOpen { get; set; }
+    public int GateOpen { get; set; }
     public bool IsGate => NpcType == NpcData.TypeGate;
     public const byte MapObjectType = 1;
     public byte ObjectType { get; set; }
@@ -529,7 +529,7 @@ public class NpcInstance
             InitMoveType = NpcMoveType.Stationary,
             Waypoints = [],
             ObjectType = MapObjectType,
-            GateOpen = evt.Status != 0,
+            GateOpen = evt.Status,
             Nation = (EntityNation)npc.Group
         };
 

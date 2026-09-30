@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
 using Xunit;
@@ -10,7 +10,7 @@ public class SpawnPacketWriterTests
     private static NpcSpawnPacketWriter.NpcState Monster => new(
         UniqueId: 7001, NpcId: 240, IsMonster: true, ModelId: 1240, SellingGroup: 0,
         NpcType: 12, Size: 100, WeaponRight: 0, WeaponLeft: 0, Nation: 1, Level: 62,
-        X: 5430, Z: 3770, Y: 120, GateOpen: false, ObjectType: 0, Direction: 90);
+        X: 5430, Z: 3770, Y: 120, GateOpen: 0, ObjectType: 0, Direction: 90);
 
     [Fact]
     public void NpcSpawn_MatchesTheFifteenFieldsRetailReads()

@@ -69,6 +69,8 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         await Seed(new LotteryEventSeed());
         await Seed(new LotteryRewardSeed());
         await Seed(new LotteryScheduleSeed());
+        await Seed(new JuraidMountainScheduleSeed());
+        await Seed(new JuraidMountainRewardSeed());
         await Seed(new UserBotSeed());
 
         logger.LogInformation(

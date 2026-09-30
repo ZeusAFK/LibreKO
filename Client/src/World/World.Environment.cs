@@ -277,7 +277,8 @@ public partial class World
         if (_selfBody == null || NoClip) return float.NegativeInfinity;
         var space = GetWorld3D().DirectSpaceState;
         var from = new Vector3(atGodot.X, feetY + StepUp, atGodot.Z);
-        var to = new Vector3(atGodot.X, Mathf.Min(atGodot.Y, feetY) - 2f, atGodot.Z);
+        float bottomOffset = _zone == 87 ? 60f : 2f;
+        var to = new Vector3(atGodot.X, Mathf.Min(atGodot.Y, feetY) - bottomOffset, atGodot.Z);
         var q = PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer);
         q.Exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
         var hit = space.IntersectRay(q);

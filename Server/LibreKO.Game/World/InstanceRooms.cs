@@ -77,6 +77,7 @@ public sealed class InstanceRoomRegistry(SessionManager sessionManager, ILogger<
 public interface IInstanceEntryService
 {
     Task EnterAsync(UserSession session, byte zoneId, short set, float x, float z);
+    void Populate(InstanceRoom room);
 }
 
 public sealed class InstanceEntryService(
@@ -128,7 +129,7 @@ public sealed class InstanceEntryService(
         }
     }
 
-    private void Populate(InstanceRoom room)
+    public void Populate(InstanceRoom room)
     {
         foreach (var pos in gameData.NpcPositions)
         {
