@@ -18,6 +18,7 @@ public partial class Net
     public const byte GenieMainAttack = 3;
     public const byte GenieMagic = 4;
     public const byte GenieAcknowledged = 1;
+    public const byte GenieActive = 1;
     public const int GenieOptionBytes = 100;
 
     public event Action<bool>? GenieHammerResult;
@@ -60,7 +61,7 @@ public partial class Net
         byte command = p.ReadByte();
         if (command == GenieUseHammer)
         {
-            if (p.RemainingBytes >= 1) GenieHammerResult?.Invoke(p.ReadByte() == GenieAcknowledged);
+            if (p.RemainingBytes >= 1) GenieHammerResult?.Invoke(p.ReadByte() == GenieActive);
             return;
         }
         if (command == GenieLoadOptions)

@@ -28,25 +28,18 @@ public static class HudPlacement
         ? new(HudAnchor.Spot.TopRight, new Vector2(TouchEdge, TouchEdge), Vector2.Zero)
         : new(HudAnchor.Spot.TopLeft, pointerMargin, Vector2.Zero);
 
-    public static Slot AttendanceGift => new(
+    private const int SideIconRows = 2;
+
+    private static Slot SideIcon(int index) => new(
         HudAnchor.Spot.TopLeft,
-        new Vector2(SideIconLeft, TouchEdge + LauncherButtonSize + TouchEdge),
+        new Vector2(SideIconLeft + index / SideIconRows * (LauncherButtonSize + TouchEdge),
+                    TouchEdge + index % SideIconRows * (LauncherButtonSize + TouchEdge)),
         Vector2.Zero);
 
-    public static Slot AchievementTrophy => new(
-        HudAnchor.Spot.TopLeft,
-        new Vector2(SideIconLeft, TouchEdge + (LauncherButtonSize + TouchEdge) * 2f),
-        Vector2.Zero);
-
-    public static Slot MailIcon => new(
-        HudAnchor.Spot.TopLeft,
-        new Vector2(SideIconLeft, TouchEdge + (LauncherButtonSize + TouchEdge) * 3f),
-        Vector2.Zero);
-
-    public static Slot TownButton => new(
-        HudAnchor.Spot.TopLeft,
-        new Vector2(SideIconLeft, TouchEdge),
-        Vector2.Zero);
+    public static Slot TownButton => SideIcon(0);
+    public static Slot AttendanceGift => SideIcon(1);
+    public static Slot AchievementTrophy => SideIcon(2);
+    public static Slot MailIcon => SideIcon(3);
 
     public static Slot QuestTracker => Platform.TouchUi
         ? new(HudAnchor.Spot.TopRight,

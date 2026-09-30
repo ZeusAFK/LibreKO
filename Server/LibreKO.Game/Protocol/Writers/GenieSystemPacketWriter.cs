@@ -30,7 +30,7 @@ public sealed class GenieSystemPacketWriter
     public static Packet HammerResult(bool repaired)
     {
         var packet = Info(UseHammer);
-        packet.WriteByte(repaired ? (byte)Acknowledged : Inactive);
+        packet.WriteByte(repaired ? Active : Inactive);
         return packet;
     }
 
