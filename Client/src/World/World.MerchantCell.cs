@@ -101,7 +101,7 @@ public partial class World
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             };
             UpgradeBadge.Show(preview, Item.ItemId);
-            SetDragPreview(preview);
+            SetDragPreview(GmItemId.Wrap(preview, Item.ItemId));
 
             return new Godot.Collections.Dictionary
             {

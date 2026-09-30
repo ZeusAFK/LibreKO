@@ -10,6 +10,7 @@ public partial class World : Node3D
     private const int WornDurabilityPercent = 25;
     private const int TooltipColorWorn = 2;
     private const int TooltipColorMerchant = 4;
+    private const int TooltipColorGmItemId = 8;
 
     private CanvasLayer _itemTipLayer = null!;
 
@@ -152,6 +153,11 @@ public partial class World : Node3D
         var ext = ItemData.ExtFor(item.ItemId);
         int rarity = ext?.MagicOrRare ?? -1;
         lines.Add(new TooltipLine(ItemData.DisplayName(item.ItemId), ItemGrade.ColorIndex(rarity)));
+
+        if (_isGm)
+        {
+            lines.Add(new TooltipLine($"Item ID: {item.ItemId}", TooltipColorGmItemId));
+        }
 
         string marker = RarityMarker(rarity);
         if (marker.Length > 0)

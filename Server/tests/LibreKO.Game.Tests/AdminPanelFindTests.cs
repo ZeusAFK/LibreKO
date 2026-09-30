@@ -73,6 +73,7 @@ public class AdminPanelFindTests
             Substitute.For<ICollectionRaceService>(),
             Substitute.For<IPlayerProgressionService>(),
             Substitute.For<ILoyaltyService>(),
+            Substitute.For<IItemGrantService>(),
             Substitute.For<IServiceScopeFactory>(),
             Options.Create(new GameServerSettings()),
             Substitute.For<ILogger<AdminPanelPacketCoordinator>>());

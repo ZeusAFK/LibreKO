@@ -96,6 +96,8 @@ public partial class Net : Node
     public int Nation { get; private set; }
     public string SelectedChar { get; private set; } = "";
     public MyInfo LastEnter { get; private set; }
+    public const byte GameMasterAuthority = 0;
+    public bool IsGm => LastEnter.Authority == GameMasterAuthority;
 
     internal void SeedPreviewEnter(MyInfo info) => LastEnter = info;
 

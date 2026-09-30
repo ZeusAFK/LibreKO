@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -477,4 +477,120 @@ public class AdminTests : GameTestBase
         sentPacket.ReadString().Should().Be("Usage: +setlevel <1-83>");
     }
 
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_ItemCommandGivesItem()
+    {
+        const int testItemId = 100110001;
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(testItemId).Returns(new ItemData
+                {
+                    Num = testItemId,
+                    Name = "Hero Sword(+1)",
+                    Duration = 12000,
+                    Countable = 0
+                });
+            });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 501, accountId: 511);
+        session.Name = "GM";
+        session.IsGM = true;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(session, $"+item {testItemId}");
+
+        var slot = session.Inventory.Skip(InventoryConstants.SlotMax).FirstOrDefault(s => s.ItemId == testItemId);
+        slot.Should().NotBeNull();
+        slot!.ItemId.Should().Be(testItemId);
+        slot.Count.Should().Be(1);
+        slot.Durability.Should().Be(12000);
+    }
+
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_UnstackableItemCountAllocatesMultipleSlots()
+    {
+        const int testItemId = 100110001;
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(testItemId).Returns(new ItemData
+                {
+                    Num = testItemId,
+                    Name = "Hero Sword(+1)",
+                    Duration = 12000,
+                    Countable = 0
+                });
+            });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 501, accountId: 511);
+        session.Name = "GM";
+        session.IsGM = true;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(session, $"+item {testItemId} 3");
+
+        var slots = session.Inventory.Skip(InventoryConstants.SlotMax).Where(s => s.ItemId == testItemId).ToList();
+        slots.Should().HaveCount(3);
+        slots.Should().AllSatisfy(s =>
+        {
+            s.ItemId.Should().Be(testItemId);
+            s.Count.Should().Be(1);
+            s.Durability.Should().Be(12000);
+        });
+    }
+
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_ItemCommandWithTextSearchesItems()
+    {
+        const int testItemId = 100110001;
+        var heroItem = new ItemData
+        {
+            Num = testItemId,
+            Name = "Hero Sword(+1)",
+            Duration = 12000,
+            Countable = 0
+        };
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.ItemTable.Returns(new Dictionary<int, ItemData> { [testItemId] = heroItem });
+            });
+
+        Packet? sentPacket = null;
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Do<Packet>(p => sentPacket = p), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 501, accountId: 511);
+        session.Name = "GM";
+        session.IsGM = true;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(session, "+item hero");
+
+        sentPacket.Should().NotBeNull();
+        sentPacket!.ResetOffset();
+        sentPacket.GetOpcode().Should().Be((byte)GameOpcodes.GS_CHAT);
+        sentPacket.ReadByte();
+        sentPacket.ReadByte();
+        sentPacket.ReadInt();
+        sentPacket.ReadSByteString();
+        sentPacket.ReadString().Should().Contain("[100110001] Hero Sword(+1)");
+    }
 }

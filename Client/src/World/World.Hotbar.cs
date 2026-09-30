@@ -870,7 +870,7 @@ public partial class World
             if (icon != null)
                 preview.AddChild(new TextureRect { Texture = icon, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered });
             else { var lbl = HudStyle.Label(11, HorizontalAlignment.Center); lbl.Text = _name.Text; preview.AddChild(lbl); }
-            SetDragPreview(preview);
+            SetDragPreview(GmItemId.Wrap(preview, _id));
             return new Godot.Collections.Dictionary { { "id", _id }, { "barAbs", Abs } };
         }
 
