@@ -167,13 +167,23 @@ public class UserSession
     public const byte DrakiSubStageMin = 1;
     public const byte DrakiSubStageMax = 8;
 
-    public DateTime? GenieExpiry { get; set; }
+    public GenieTimeBalance GenieTime { get; } = new();
 
-    public short GenieHours => Character.RemainingGenieHours(GenieExpiry);
+    public short GenieHours => (short)Math.Min(Math.Ceiling(GenieTime.RemainingSeconds / 3600), short.MaxValue);
 
-    public ushort GenieMinutes => Character.RemainingGenieMinutes(GenieExpiry);
+    public ushort GenieMinutes => (ushort)Math.Min(Math.Ceiling(GenieTime.RemainingSeconds / 60), ushort.MaxValue);
 
-    public bool GenieActive { get; set; }
+    private bool _genieActive;
+    public bool GenieActive
+    {
+        get { using var scope = _sync.EnterScope(); return _genieActive; }
+        set
+        {
+            using var scope = _sync.EnterScope();
+            if (value) GenieTime.Resume(); else GenieTime.Pause();
+            _genieActive = value;
+        }
+    }
 
     public byte[] GenieOptions { get; set; } = [];
 

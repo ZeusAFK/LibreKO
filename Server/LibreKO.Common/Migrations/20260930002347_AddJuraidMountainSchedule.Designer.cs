@@ -168,12 +168,12 @@ namespace LibreKO.Common.Migrations
                     b.Property<byte>("Fame")
                         .HasColumnType("tinyint unsigned");
 
-                    b.Property<DateTime?>("GenieExpiry")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<byte[]>("GenieOptions")
                         .IsRequired()
                         .HasColumnType("longblob");
+
+                    b.Property<double>("GenieRemainingSeconds")
+                        .HasColumnType("double");
 
                     b.Property<int>("Hair")
                         .HasColumnType("int");

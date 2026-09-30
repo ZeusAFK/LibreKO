@@ -14,6 +14,7 @@ public sealed class GenieSystemPacketWriter
     public const byte Stop = 5;
     public const byte RemainingTime = 6;
     public const byte Activated = 7;
+    public const byte UseHammer = 8;
 
     public const byte Move = 1;
     public const byte Rotate = 2;
@@ -25,6 +26,13 @@ public sealed class GenieSystemPacketWriter
     public const byte Active = 1;
 
     public const int OptionBytes = 100;
+
+    public static Packet HammerResult(bool repaired)
+    {
+        var packet = Info(UseHammer);
+        packet.WriteByte(repaired ? Active : Inactive);
+        return packet;
+    }
 
     public static Packet SpiritPotion(ushort remainingMinutes)
     {

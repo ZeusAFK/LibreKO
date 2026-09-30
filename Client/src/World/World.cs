@@ -412,6 +412,12 @@ public partial class World : Node3D, IWorldContext
             StallSignTick();
             GatherTick(nowSec);
             NpcTick(delta);
+            _touchInteractionAccum += delta;
+            if (_touchInteractionAccum >= TouchInteractionInterval)
+            {
+                _touchInteractionAccum %= TouchInteractionInterval;
+                UpdateTouchInteractionVisibility();
+            }
             PvpTick(nowSec);
             Chat.TickBubbles(nowSec);
             CastMoveCancelTick();

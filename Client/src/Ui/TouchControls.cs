@@ -19,6 +19,14 @@ public static class TouchControls
     public const float ClusterMargin = 44f;
     public const float PageButtonSize = 70f;
     public const float PageButtonAngle = 318f;
+    public const float InteractButtonSize = 70f;
+    public const float InteractionOrbit = 140f;
+    public const float LootButtonAngle = 80f;
+    public const float NpcButtonAngle = 50f;
+    public const float AnvilButtonAngle = 20f;
+    public const float TeleportButtonAngle = -10f;
+    public const float UserButtonAngle = -40f;
+    public const float MarketButtonAngle = -70f;
     public const float PrimarySize = 78f;
     public const float PrimaryAngle = 136f;
     public const float PrimaryOrbit = 194f;
@@ -104,7 +112,13 @@ public static class TouchControls
     public static TouchActionBar BuildActions(Node parent, Action onAttack, Action<int> onSlot,
                                               Action<int> onPage, Func<int, Texture2D?> iconFor,
                                               Action onTapTarget,
-                                              Action<int, int, int>? onDrop = null)
+                                              Action<int, int, int>? onDrop = null,
+                                              Action? onNpcInteract = null,
+                                              Action? onLootOpen = null,
+                                              Action? onAnvilOpen = null,
+                                              Action? onTeleportOpen = null,
+                                              Action<Vector2>? onUserOpen = null,
+                                              Action? onMarketBrowse = null)
     {
         var orbs = new Orb[ActionSlots + 3 + PotionAngles.Length];
         orbs[0] = new Orb(0f, 0f, LookStickSize);
@@ -195,10 +209,70 @@ public static class TouchControls
         pageButton.Pressed += () => onPage(1);
         cluster.AddChild(pageButton);
 
+        var interactionCluster = BuildInteractionCluster(parent, out var interactionHub);
+        var lootButton = InteractionButton(interactionCluster, interactionHub, LootButtonAngle,
+            "package", "Open nearest loot box", onLootOpen);
+        var npcButton = InteractionButton(interactionCluster, interactionHub, NpcButtonAngle,
+            "chat-circle", "Interact with nearest NPC", onNpcInteract);
+        var anvilButton = InteractionButton(interactionCluster, interactionHub, AnvilButtonAngle,
+            "hammer", "Use nearest Magic Anvil", onAnvilOpen);
+        var teleportButton = InteractionButton(interactionCluster, interactionHub, TeleportButtonAngle,
+            "door", "Use nearest Warp Gate", onTeleportOpen);
+        var userButton = InteractionButton(interactionCluster, interactionHub, UserButtonAngle,
+            "user", "Open player menu", null);
+        userButton.Pressed += () => onUserOpen?.Invoke(
+            userButton.GetGlobalRect().Position + new Vector2(userButton.Size.X, 0));
+        var marketButton = InteractionButton(interactionCluster, interactionHub, MarketButtonAngle,
+            "storefront", "Browse player shop", onMarketBrowse);
+
         var bar = new TouchActionBar(cluster, slots, iconFor, BuildPageIndicator(parent),
-                                    attack, attackGlyph, hub);
+                                    attack, attackGlyph, hub, npcButton, lootButton,
+                                    anvilButton, teleportButton, userButton, marketButton);
         bar.Refresh();
         return bar;
+    }
+
+    private static Control BuildInteractionCluster(Node parent, out Vector2 hub)
+    {
+        var orbs = new[]
+        {
+            new Orb(0f, 0f, StickSize),
+            new Orb(LootButtonAngle, InteractionOrbit, InteractButtonSize),
+            new Orb(NpcButtonAngle, InteractionOrbit, InteractButtonSize),
+            new Orb(AnvilButtonAngle, InteractionOrbit, InteractButtonSize),
+            new Orb(TeleportButtonAngle, InteractionOrbit, InteractButtonSize),
+            new Orb(UserButtonAngle, InteractionOrbit, InteractButtonSize),
+            new Orb(MarketButtonAngle, InteractionOrbit, InteractButtonSize),
+        };
+        Vector2 min = Vector2.Inf, max = -Vector2.Inf;
+        foreach (var orb in orbs)
+        {
+            var centre = Radial(orb.Angle, orb.Radius);
+            float half = orb.Size * 0.5f;
+            min = min.Min(centre - Vector2.One * half);
+            max = max.Max(centre + Vector2.One * half);
+        }
+        var cluster = new Control { Name = "TouchInteractions", MouseFilter = Control.MouseFilterEnum.Ignore };
+        parent.AddChild(cluster);
+        HudAnchor.Pin(cluster, HudAnchor.Spot.BottomLeft,
+            new Vector2(Px(ThumbInset + min.X), Px(ThumbInset - max.Y) + HudPlacement.BottomInset),
+            Px(max - min));
+        hub = -Px(min);
+        return cluster;
+    }
+
+    private static Godot.Button InteractionButton(Control cluster, Vector2 hub, float angle,
+                                                   string icon, string tooltip, Action? action)
+    {
+        var button = Button("", Px(InteractButtonSize), UiTheme.Gold);
+        button.AddChild(Glyph("system/" + icon, Px(InteractButtonSize), 0.27f, UiTheme.GoldBright));
+        button.TooltipText = tooltip;
+        Place(button, hub, angle, InteractionOrbit, InteractButtonSize);
+        AddOuterRing(button);
+        button.Pressed += () => action?.Invoke();
+        button.Visible = false;
+        cluster.AddChild(button);
+        return button;
     }
 
     private static PageIndicator BuildPageIndicator(Node parent)
@@ -579,6 +653,12 @@ public sealed class TouchActionBar
     private readonly PageIndicator _indicator;
     private readonly Godot.Button _attack;
     private readonly Control _attackGlyph;
+    private readonly Godot.Button _npcButton;
+    private readonly Godot.Button _lootButton;
+    private readonly Godot.Button _anvilButton;
+    private readonly Godot.Button _teleportButton;
+    private readonly Godot.Button _userButton;
+    private readonly Godot.Button _marketButton;
     private readonly Vector2 _hub;
     private int _attackState = -1;
 
@@ -586,7 +666,9 @@ public sealed class TouchActionBar
 
     internal TouchActionBar(Control root, Godot.Button[] slots, Func<int, Texture2D?> iconFor,
                             PageIndicator indicator, Godot.Button attack, Control attackGlyph,
-                            Vector2 hub)
+                            Vector2 hub, Godot.Button npcButton, Godot.Button lootButton,
+                            Godot.Button anvilButton, Godot.Button teleportButton,
+                            Godot.Button userButton, Godot.Button marketButton)
     {
         Root = root;
         _slots = slots;
@@ -594,7 +676,14 @@ public sealed class TouchActionBar
         _indicator = indicator;
         _attack = attack;
         _attackGlyph = attackGlyph;
+        _npcButton = npcButton;
+        _lootButton = lootButton;
+        _anvilButton = anvilButton;
+        _teleportButton = teleportButton;
+        _userButton = userButton;
+        _marketButton = marketButton;
         _hub = hub;
+        SetInteractionVisibility(false, false, false, false, false, false);
         SetAutoAttack(false, false);
     }
 
@@ -606,6 +695,18 @@ public sealed class TouchActionBar
     {
         Root.AddChild(orb);
         TouchControls.PlacePotion(orb, _hub, index);
+    }
+
+    public void SetInteractionVisibility(bool npcNearby, bool lootNearby,
+                                         bool anvilNearby, bool teleportNearby,
+                                         bool userNearby, bool marketNearby)
+    {
+        if (_npcButton.Visible != npcNearby) _npcButton.Visible = npcNearby;
+        if (_lootButton.Visible != lootNearby) _lootButton.Visible = lootNearby;
+        if (_anvilButton.Visible != anvilNearby) _anvilButton.Visible = anvilNearby;
+        if (_teleportButton.Visible != teleportNearby) _teleportButton.Visible = teleportNearby;
+        if (_userButton.Visible != userNearby) _userButton.Visible = userNearby;
+        if (_marketButton.Visible != marketNearby) _marketButton.Visible = marketNearby;
     }
 
     public void SetAutoAttack(bool hasTarget, bool attacking)

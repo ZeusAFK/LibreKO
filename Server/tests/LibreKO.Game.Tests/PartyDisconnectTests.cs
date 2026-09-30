@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
@@ -15,7 +16,12 @@ public class PartyDisconnectTests : GameTestBase
     [Fact]
     public async Task DroppingTheConnectionTakesThePlayerOutOfTheParty()
     {
-        using var provider = CreateProvider(_ => { });
+        using var provider = CreateProvider(db =>
+        {
+            db.Characters.AddRange(
+                new Character { Id = 400, AccountId = 500, Name = "Player400" },
+                new Character { Id = 401, AccountId = 501, Name = "Player401" });
+        });
         var sessionManager = provider.GetRequiredService<SessionManager>();
 
         var leaderPackets = new List<Packet>();
@@ -43,7 +49,12 @@ public class PartyDisconnectTests : GameTestBase
     [Fact]
     public async Task LoggingBackInTakesTheAbandonedSessionOutOfTheParty()
     {
-        using var provider = CreateProvider(_ => { });
+        using var provider = CreateProvider(db =>
+        {
+            db.Characters.AddRange(
+                new Character { Id = 400, AccountId = 500, Name = "Player400" },
+                new Character { Id = 401, AccountId = 501, Name = "Player401" });
+        });
         var sessionManager = provider.GetRequiredService<SessionManager>();
 
         var leaderPackets = new List<Packet>();
@@ -59,8 +70,44 @@ public class PartyDisconnectTests : GameTestBase
         await provider.GetRequiredService<ISessionTerminationService>()
             .EvictForTakeoverAsync(member);
 
+        sessionManager.GetByCharacterId(member.CharacterId).Should().BeNull();
         leader.PartyIndex.Should().Be(-1, "an evicted session must not leave a ghost in the party");
         sessionManager.Parties.GetParty(party.Index).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TakeoverRemovesTheOldSessionEvenWhenSavingFails(bool throws)
+    {
+        using var provider = CreateProvider(_ => { });
+        var manager = provider.GetRequiredService<SessionManager>();
+        var oldSession = CreateMember(manager, 400, new List<Packet>());
+        oldSession.GenieTime.Load(120);
+        oldSession.GenieActive = true;
+        var persister = Substitute.For<ICharacterStatePersister>();
+        persister.SaveAsync(oldSession, Arg.Any<CancellationToken>()).Returns(
+            throws ? Task.FromException<bool>(new InvalidOperationException("Save failed")) : Task.FromResult(false));
+        var service = new SessionTerminationService(manager, persister,
+            provider.GetRequiredService<IChallengePacketCoordinator>(),
+            provider.GetRequiredService<IEventSystemsPacketCoordinator>(),
+            provider.GetRequiredService<IExchangePacketCoordinator>(),
+            provider.GetRequiredService<IMerchantPacketCoordinator>(),
+            provider.GetRequiredService<IPartyPacketCoordinator>(),
+            provider.GetRequiredService<IWorldPacketCoordinator>(),
+            provider.GetRequiredService<INpcLifecycleService>(),
+            provider.GetRequiredService<InstanceRoomRegistry>(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<SessionTerminationService>.Instance);
+
+        await service.EvictForTakeoverAsync(oldSession);
+
+        manager.GetByCharacterId(400).Should().BeNull();
+        manager.GetByClientId(oldSession.Client.Id).Should().BeNull();
+        oldSession.GenieTime.IsRunning.Should().BeFalse();
+        oldSession.GenieActive.Should().BeFalse();
+        await persister.Received(1).SaveAsync(oldSession, Arg.Any<CancellationToken>());
+        var replacement = CreateMember(manager, 400, new List<Packet>());
+        manager.GetByCharacterId(400).Should().BeSameAs(replacement);
     }
 
     private static UserSession CreateMember(SessionManager sessionManager, int characterId, List<Packet> sent)

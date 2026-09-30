@@ -91,6 +91,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGlobalMapPacketCoordinator, GlobalMapPacketCoordinator>();
         services.AddSingleton<IGeniePacketCoordinator, GeniePacketCoordinator>();
         services.AddSingleton<IGenieSystemPacketCoordinator, GenieSystemPacketCoordinator>();
+        services.AddSingleton<IGenieHammerService, GenieHammerService>();
         services.AddSingleton<IDailyQuestPacketCoordinator, DailyQuestPacketCoordinator>();
         services.AddSingleton<ICollectionRacePacketCoordinator, CollectionRacePacketCoordinator>();
         services.AddSingleton<ILotteryPacketCoordinator, LotteryPacketCoordinator>();

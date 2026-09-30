@@ -18,7 +18,8 @@ public class GenieSystemPacketCoordinator(
     ICombatPacketCoordinator combat,
     IMagicPacketCoordinator magic,
     IWorldPacketCoordinator world,
-    ILogger<GenieSystemPacketCoordinator> logger) : IGenieSystemPacketCoordinator
+    ILogger<GenieSystemPacketCoordinator> logger,
+    IGenieHammerService genieHammer) : IGenieSystemPacketCoordinator
 {
     public const int SpiritOfGenieItem = 810378000;
     public const int SpiritOfGenieMinutes = 120;
@@ -44,12 +45,18 @@ public class GenieSystemPacketCoordinator(
 
         switch (packet.ReadByte())
         {
+            case GenieSystemPacketWriter.UseHammer:
+                if (packet.RemainingBytes < 1) break;
+                bool used = await genieHammer.UseAsync(session, packet.ReadByte());
+                await client.SendPacket(GenieSystemPacketWriter.HammerResult(used));
+                break;
             case GenieSystemPacketWriter.UseSpiritPotion:
                 await UseSpiritPotionAsync(session);
                 break;
             case GenieSystemPacketWriter.LoadOptions:
                 await session.Client.SendPacket(
                     GenieSystemPacketWriter.Options(session.GenieOptions));
+                await session.Client.SendPacket(GenieSystemPacketWriter.Remaining(session.GenieMinutes));
                 break;
             case GenieSystemPacketWriter.SaveOptions:
                 SaveOptions(session, packet);
@@ -65,14 +72,17 @@ public class GenieSystemPacketCoordinator(
 
     public async Task StartAsync(UserSession session)
     {
-        if (session.GenieMinutes == 0)
+        if (session.GenieMinutes == 0 || session.Hp <= 0)
         {
             await StopAsync(session);
             return;
         }
 
         if (session.GenieActive)
+        {
+            await session.Client.SendPacket(GenieSystemPacketWriter.Started(session.GenieMinutes));
             return;
+        }
 
         session.GenieActive = true;
         await session.Client.SendPacket(GenieSystemPacketWriter.Started(session.GenieMinutes));
@@ -91,7 +101,7 @@ public class GenieSystemPacketCoordinator(
 
     private async Task RelayAsync(IClient client, UserSession session, Packet packet)
     {
-        if (session.GenieMinutes == 0)
+        if (!session.GenieActive || session.GenieMinutes == 0 || session.Hp <= 0)
         {
             await StopAsync(session);
             return;
@@ -120,12 +130,12 @@ public class GenieSystemPacketCoordinator(
     private async Task UseSpiritPotionAsync(UserSession session)
     {
         if (!await itemUsage.TryConsumeItemAsync(session, SpiritOfGenieItem))
+        {
+            await session.Client.SendPacket(GenieSystemPacketWriter.Remaining(session.GenieMinutes));
             return;
+        }
 
-        var standing = session.GenieExpiry > DateTime.UtcNow
-            ? session.GenieExpiry!.Value
-            : DateTime.UtcNow;
-        session.GenieExpiry = standing.AddMinutes(SpiritOfGenieMinutes);
+        session.GenieTime.AddSeconds(SpiritOfGenieMinutes * 60.0);
 
         await session.Client.SendPacket(
             GenieSystemPacketWriter.SpiritPotion(session.GenieMinutes));

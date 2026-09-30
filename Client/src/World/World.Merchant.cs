@@ -397,20 +397,22 @@ public partial class World
         }
     }
 
-    private bool TryBrowseNearestMerchant()
+    private bool HasNearbyMerchantStall()
     {
-        int bestId = -1;
-        float bestDistance = TradeRange;
+        if (!_worldReady || _self == null || _selfDead || _stalls.Count == 0) return false;
         foreach (var (id, ent) in _ents)
         {
-            if (ent.IsNpc || ent.Dead || id == _myId) continue;
+            if (id == _myId || ent.IsNpc || ent.Dead) continue;
             if (!_stalls.ContainsKey(id)) continue;
-            float distance = ent.Body.Position.DistanceTo(_self.Position);
-            if (distance >= bestDistance) continue;
-            bestDistance = distance;
-            bestId = id;
+            if (FlatDistance(_self.Position, ent.Body.Position) <= TradeRange)
+                return true;
         }
-        if (bestId < 0) return false;
+        return false;
+    }
+
+    private bool TryBrowseNearestMerchant()
+    {
+        if (!TryFindInteractionPlayer(true, out int bestId, out _)) return false;
 
         if (_stalls[bestId].IsBuying) Net.I.SendBuyMerchantList(bestId);
         else Net.I.SendMerchantList(bestId);

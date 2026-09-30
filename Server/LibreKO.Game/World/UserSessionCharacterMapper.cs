@@ -91,7 +91,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
             };
         }
 
-        session.GenieExpiry = character.GenieExpiry;
+        session.GenieTime.Load(character.GenieRemainingSeconds);
         session.GenieOptions = character.GenieOptions;
         session.DrakiStage = character.DrakiStage;
         session.DrakiSubStage = character.DrakiSubStage;
@@ -180,7 +180,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
             character.PetExp = 0;
         }
 
-        character.GenieExpiry = session.GenieExpiry;
+        character.GenieRemainingSeconds = session.GenieTime.RemainingSeconds;
         character.GenieOptions = session.GenieOptions;
         character.DrakiStage = session.DrakiStage;
         character.DrakiSubStage = session.DrakiSubStage;

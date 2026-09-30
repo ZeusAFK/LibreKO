@@ -39,6 +39,12 @@ public partial class World
         var target = PickEntityAt(mouse, ClickPickRadius, out int id, out _);
         if (target == null || target.IsNpc || target.Dead || id == _myId) return false;
 
+        ShowPlayerMenu(id, target, mouse);
+        return true;
+    }
+
+    private void ShowPlayerMenu(int id, Ent target, Vector2 at)
+    {
         Select(id, target);
         _playerMenuId = id;
         _playerMenuName = target.Name;
@@ -55,9 +61,53 @@ public partial class World
         if (MyClan.CanInvite && target.KnightsId == 0)
             _playerMenu.AddItem("Clan invite", (int)PlayerMenuAction.ClanInvite);
         _playerMenu.ResetSize();
-        _playerMenu.Position = (Vector2I)GetViewport().GetMousePosition();
+        _playerMenu.Position = (Vector2I)at;
         _playerMenu.Popup();
-        return true;
+    }
+
+    private bool HasNearbyPlayerForUserInfo()
+    {
+        if (!_worldReady || _self == null || _selfDead) return false;
+        foreach (var (id, e) in _ents)
+        {
+            if (id == _myId || e.IsNpc || e.Dead) continue;
+            if (FlatDistance(_self.Position, e.Body.Position) <= TradeRange)
+                return true;
+        }
+        return false;
+    }
+
+    private bool TryFindInteractionPlayer(bool merchantOnly, out int bestId, out Ent? best)
+    {
+        bestId = -1;
+        best = null;
+        if (!_worldReady || _self == null || _selfDead) return false;
+        bool Eligible(int id, Ent e) => id != _myId && !e.IsNpc && !e.Dead
+            && (!merchantOnly || _stalls.ContainsKey(id))
+            && FlatDistance(_self.Position, e.Body.Position) <= TradeRange;
+        if (_ents.TryGetValue(_selectedId, out var selected) && Eligible(_selectedId, selected))
+        {
+            bestId = _selectedId;
+            best = selected;
+            return true;
+        }
+        float distance = TradeRange;
+        foreach (var (id, e) in _ents)
+        {
+            if (!Eligible(id, e)) continue;
+            float d = FlatDistance(_self.Position, e.Body.Position);
+            if (d > distance) continue;
+            distance = d;
+            bestId = id;
+            best = e;
+        }
+        return best != null;
+    }
+
+    private void OpenNearestPlayerMenu(Vector2 at)
+    {
+        if (TryFindInteractionPlayer(false, out int id, out var target) && target != null)
+            ShowPlayerMenu(id, target, at);
     }
 
     private void OnPlayerMenuAction(long actionId)

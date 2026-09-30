@@ -73,35 +73,13 @@ public class Character : Entity
     public byte RebIntel { get; set; }
     public byte RebMagic { get; set; }
 
-    public DateTime? GenieExpiry { get; set; }
+    public double GenieRemainingSeconds { get; set; }
 
-    public short GenieHours => RemainingGenieHours(GenieExpiry);
-
-    public static short RemainingGenieHours(DateTime? expiry)
-    {
-        if (expiry == null)
-            return 0;
-
-        var remaining = (expiry.Value - DateTime.UtcNow).TotalHours;
-        if (remaining <= 0)
-            return 0;
-        return remaining < 1 ? (short)1 : (short)Math.Min(Math.Round(remaining), short.MaxValue);
-    }
+    public short GenieHours => (short)Math.Min(Math.Ceiling(Math.Max(0, GenieRemainingSeconds) / 3600), short.MaxValue);
 
     public byte[] GenieOptions { get; set; } = [];
 
-    public ushort GenieMinutes => RemainingGenieMinutes(GenieExpiry);
-
-    public static ushort RemainingGenieMinutes(DateTime? expiry)
-    {
-        if (expiry == null)
-            return 0;
-
-        var remaining = (expiry.Value - DateTime.UtcNow).TotalMinutes;
-        if (remaining <= 0)
-            return 0;
-        return (ushort)Math.Min(Math.Ceiling(remaining), ushort.MaxValue);
-    }
+    public ushort GenieMinutes => (ushort)Math.Min(Math.Ceiling(Math.Max(0, GenieRemainingSeconds) / 60), ushort.MaxValue);
 
     public byte DrakiStage { get; set; }
     public byte DrakiSubStage { get; set; }

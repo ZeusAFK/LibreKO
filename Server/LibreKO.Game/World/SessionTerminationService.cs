@@ -68,6 +68,15 @@ public class SessionTerminationService(
             logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
         }
 
+        try
+        {
+            if (!session.IsBot && !await characterStatePersister.SaveAsync(session))
+                logger.LogWarning("Could not save character state during login takeover for {Name}", session.Name);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error saving character state during login takeover for {Name}", session.Name);
+        }
         sessionManager.RemoveSession(session);
     }
 
@@ -125,6 +134,8 @@ public class SessionTerminationService(
     // Runs before cleanup: while the session sits in its region, visibility paths re-hand it out.
     private async Task RemoveFromWorldAsync(UserSession session)
     {
+        session.GenieTime.Pause();
+        session.GenieActive = false;
         session.MovePending = false;
         sessionManager.Regions.RemoveFromRegion(session);
         instanceRooms.Leave(session);

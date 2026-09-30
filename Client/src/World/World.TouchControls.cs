@@ -11,6 +11,8 @@ public partial class World : Node3D
     private CanvasLayer? _touchZoneLayer;
     private CanvasLayer? _touchLayer;
     private TouchActionBar? _touchActions;
+    private const double TouchInteractionInterval = 0.25;
+    private double _touchInteractionAccum;
 
     private void TouchControlsInit()
     {
@@ -23,7 +25,14 @@ public partial class World : Node3D
         TouchControls.BuildStick(_touchLayer, StartCameraHalfTurn);
         _touchActions = TouchControls.BuildActions(_touchLayer, () => ToggleAutoAttack(),
             ActivateHotSlot, ChangeHotPage, TouchSlotIcon,
-            () => SelectNearest(hostile: true), DropOntoHotSlot);
+            () => SelectNearest(hostile: true),
+            DropOntoHotSlot,
+            () => TalkToNearestNpc(""),
+            () => OpenNearestLootBox(),
+            () => OpenNearestAnvil(),
+            () => OpenNearestWarpGate(),
+            OpenNearestPlayerMenu,
+            () => TryBrowseNearestMerchant());
         _hotbarBox.Visible = false;
 
         GD.Print($"[touch] on-screen controls built: sticks {TouchControls.StickSize:F0}px, "
@@ -44,9 +53,22 @@ public partial class World : Node3D
         return SkillData.IsSkill(id) ? SkillData.Icon(id) : ItemData.Icon(id);
     }
 
+    private void UpdateTouchInteractionVisibility()
+    {
+        if (_touchActions == null) return;
+        _touchActions.SetInteractionVisibility(
+            HasNearbyNpc(),
+            HasNearbyLootBox(),
+            HasNearbyAnvil(),
+            HasNearbyWarpGate(),
+            HasNearbyPlayerForUserInfo(),
+            HasNearbyMerchantStall());
+    }
+
     private void TouchControlsDispose()
     {
         _touchActions = null;
+        _touchInteractionAccum = 0;
         _touchLayer?.QueueFree();
         _touchLayer = null;
         _touchZoneLayer?.QueueFree();
