@@ -31,6 +31,7 @@ public class AdminPanelPacketCoordinator(
     ICollectionRaceService collectionRaceService,
     IPlayerProgressionService playerProgressionService,
     ILoyaltyService loyaltyService,
+    IItemGrantService itemGrantService,
     IServiceScopeFactory scopeFactory,
     IOptions<GameServerSettings> settings,
     ILogger<AdminPanelPacketCoordinator> logger) : IAdminPanelPacketCoordinator
@@ -246,41 +247,15 @@ public class AdminPanelPacketCoordinator(
             return;
         }
 
-        if (itemData.Countable == 0)
-            count = 1;
-
-        var outcome = session.WithLock(s =>
-        {
-            var slotIndex = s.FindSlotForItem(itemId, gameDataService, (ushort)count);
-            if (slotIndex < 0)
-                return (Placed: false, SlotIndex: 0, ItemId: 0, Count: (ushort)0, Durability: (short)0, IsNew: false);
-
-            var slot = s.Inventory[slotIndex];
-            var isNew = slot.IsEmpty;
-            if (isNew)
-            {
-                slot.ItemId = itemId;
-                slot.Count = 0;
-                slot.Durability = itemData.Duration;
-            }
-            slot.Count = (ushort)Math.Min(GiveCountCeiling, slot.Count + count);
-
-            s.RecalculateStatsWithBuffs(gameDataService);
-            return (Placed: true, SlotIndex: slotIndex, ItemId: slot.ItemId, Count: slot.Count,
-                Durability: slot.Durability, IsNew: isNew);
-        });
-
-        if (!outcome.Placed)
+        var placed = await itemGrantService.GrantAsync(session, itemData, count);
+        if (placed <= 0)
         {
             await SendResultAsync(session, false, "Inventory full.");
             return;
         }
 
-        await userNotificationService.SendStackChangeAsync(
-            session, (byte)outcome.SlotIndex, outcome.ItemId, outcome.Count, outcome.Durability, outcome.IsNew);
-        await userNotificationService.SendWeightChangeAsync(session);
-        await SendResultAsync(session, true, $"Received {itemData.Name} x{count}.");
-        logger.LogInformation("GM {Name} granted self item {ItemId} x{Count}", session.Name, itemId, count);
+        await SendResultAsync(session, true, $"Received {itemData.Name} x{placed}.");
+        logger.LogInformation("GM {Name} granted self item {ItemId} x{Count}", session.Name, itemId, placed);
     }
 
     private async Task HandleSetClassAsync(UserSession session, Packet packet)

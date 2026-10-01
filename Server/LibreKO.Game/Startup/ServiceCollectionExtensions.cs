@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
         // Packet coordinators
         services.AddSingleton<IAdminPacketCoordinator, AdminPacketCoordinator>();
         services.AddSingleton<IAdminPanelPacketCoordinator, AdminPanelPacketCoordinator>();
+        services.AddSingleton<IItemGrantService, ItemGrantService>();
         services.AddSingleton<ICharacterDevelopmentPacketCoordinator, CharacterDevelopmentPacketCoordinator>();
         services.AddSingleton<IJobChangeService, JobChangeService>();
         services.AddSingleton<IClanNtsService, ClanNtsService>();

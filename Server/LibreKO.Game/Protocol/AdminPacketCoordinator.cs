@@ -44,9 +44,11 @@ public class AdminPacketCoordinator(
     ILotteryService lotteryService,
     IMerchantBotService merchantBotService,
     IJuraidMountainService juraidMountainService,
+    IItemGrantService itemGrantService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
     private const int MaxGmSummonCount = 50;
+    private const string ItemUsage = "+item <itemId> [count] | <name> - Give yourself an item, or search items by name";
 
     public async Task HandleOperatorAsync(IClient client, Packet packet)
     {
@@ -306,9 +308,8 @@ public class AdminPacketCoordinator(
             case "?":
             case "help":
                 await SendNoticeAsync(session, "GM Commands:");
-                await SendNoticeAsync(session, "+give <itemId> [count] - Give item");
+                await SendNoticeAsync(session, ItemUsage);
                 await SendNoticeAsync(session, "+monsummon <npcId> [count] - Spawn monsters here once; they never respawn");
-                await SendNoticeAsync(session, "+item <name> - Search items by name");
                 await SendNoticeAsync(session, "+gold <amount> - Give/take gold");
                 await SendNoticeAsync(session, "+kc <name> <amount> - Give/take Knight Cash");
                 await SendNoticeAsync(session,
@@ -352,12 +353,12 @@ public class AdminPacketCoordinator(
                 await merchantBotService.ClearAllBotsAsync(session);
                 break;
 
-            case "give":
-                await HandleGiveItemAsync(session, arg);
-                break;
-
             case "item":
-                await HandleItemSearchAsync(session, arg);
+                var firstToken = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                if (firstToken != null && int.TryParse(firstToken, out _))
+                    await HandleGiveItemAsync(session, arg);
+                else
+                    await HandleItemSearchAsync(session, arg);
                 break;
 
             case "mute":
@@ -1231,17 +1232,17 @@ public class AdminPacketCoordinator(
 
     private async Task HandleGiveItemAsync(UserSession session, string arg)
     {
-        // /give <itemId> [count]
+        // +item <itemId> [count]
         var giveParts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (giveParts.Length == 0 || !int.TryParse(giveParts[0], out var itemId))
         {
-            await SendNoticeAsync(session, "Usage: /give <itemId> [count]");
+            await SendNoticeAsync(session, ItemUsage);
             return;
         }
 
         var count = 1;
         if (giveParts.Length > 1 && int.TryParse(giveParts[1], out var c))
-            count = Math.Clamp(c, 1, 9999);
+            count = Math.Clamp(c, 1, (int)InventoryConstants.MaxStackCount);
 
         var itemData = gameDataService.GetItem(itemId);
         if (itemData == null)
@@ -1250,45 +1251,23 @@ public class AdminPacketCoordinator(
             return;
         }
 
-        var outcome = session.WithLock(s =>
-        {
-            var slotIndex = s.FindSlotForItem(itemId, gameDataService, (ushort)count);
-            if (slotIndex < 0)
-                return (Success: false, SlotIndex: 0, ItemId: 0, Count: (ushort)0, Durability: (short)0, IsNew: false);
-
-            var slot = s.Inventory[slotIndex];
-            var isNew = slot.IsEmpty;
-            if (isNew)
-            {
-                slot.ItemId = itemId;
-                slot.Durability = itemData.Duration;
-                slot.Count = 0;
-            }
-            slot.Count = (ushort)Math.Min(9999, slot.Count + count);
-            if (isNew)
-                slot.Durability = itemData.Duration;
-
-            s.RecalculateStatsWithBuffs(gameDataService);
-            return (Success: true, SlotIndex: slotIndex, ItemId: slot.ItemId, Count: slot.Count, Durability: slot.Durability, IsNew: isNew);
-        });
-
-        if (!outcome.Success)
+        var placed = await itemGrantService.GrantAsync(session, itemData, count);
+        if (placed == 0)
         {
             await SendNoticeAsync(session, "Inventory full");
             return;
         }
 
-        await userNotificationService.SendStackChangeAsync(session, (byte)outcome.SlotIndex, outcome.ItemId, outcome.Count, outcome.Durability, outcome.IsNew);
-        await userNotificationService.SendWeightChangeAsync(session);
-        await SendNoticeAsync(session, $"Given {itemData.Name} x{count}");
+        await SendNoticeAsync(session, $"Given {itemData.Name} x{placed}");
+        logger.LogInformation("GM {Gm} gave self item {ItemId} ({Name}) x{Count}", session.Name, itemId, itemData.Name, placed);
     }
 
     private async Task HandleItemSearchAsync(UserSession session, string arg)
     {
-        // /item <name> — search items by name, show top 10 results
+        // +item <name> — search items by name, show top 10 results
         if (string.IsNullOrWhiteSpace(arg))
         {
-            await SendNoticeAsync(session, "Usage: /item <name>");
+            await SendNoticeAsync(session, ItemUsage);
             return;
         }
 

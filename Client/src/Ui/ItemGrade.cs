@@ -1,5 +1,6 @@
 ﻿using Godot;
 using LibreKO.Domain;
+using LibreKO.Network;
 
 namespace LibreKO;
 
@@ -67,5 +68,26 @@ public sealed partial class UpgradeBadge : Label
         var badge = Attach(parent);
         badge.Set(itemId);
         return badge;
+    }
+}
+
+public static class GmItemId
+{
+    public static readonly Color Color = new(1f, 0.85f, 0.2f);
+
+    public static Control Wrap(Control preview, int id)
+    {
+        if (!Net.I.IsGm)
+            return preview;
+
+        var box = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        box.AddChild(preview);
+        var idLbl = HudStyle.Label(11, HorizontalAlignment.Center);
+        idLbl.Text = $"{id}";
+        idLbl.AddThemeColorOverride("font_color", Color);
+        idLbl.AddThemeConstantOverride("outline_size", 2);
+        idLbl.AddThemeColorOverride("font_outline_color", Colors.Black);
+        box.AddChild(idLbl);
+        return box;
     }
 }
