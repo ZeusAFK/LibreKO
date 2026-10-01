@@ -136,7 +136,7 @@ public class ClanWarehousePacketCoordinator(
             return session.WithLock(s =>
             {
                 var source = s.Inventory[absSrc];
-                if (source.ItemId != itemId || source.Count < count)
+                if (source.ItemId != itemId || source.Count < count || source.IsLinked)
                     return false;
 
                 var destination = slots[realDst];

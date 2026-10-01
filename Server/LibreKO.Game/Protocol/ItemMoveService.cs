@@ -144,6 +144,14 @@ public class ItemMoveService(
             return;
         }
 
+        if (session.Pet is { IsSummoned: true }
+            && (sourceIndex == InventoryConstants.Pet || destinationIndex == InventoryConstants.Pet))
+        {
+            logger.LogDebug("Rejected item move for {Name}: the familiar is out", session.Name);
+            await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
         var sourceItem = session.Inventory[sourceIndex];
         var destinationItem = session.Inventory[destinationIndex];
         if (sourceItem.ItemId != itemId)
@@ -232,7 +240,7 @@ public class ItemMoveService(
         var start = InventoryConstants.InventoryStart;
         var arranged = Enumerable.Range(start, InventoryConstants.HaveMax)
             .Select(slot => session.Inventory[slot])
-            .Select(item => (item.ItemId, item.Durability, item.Count, item.Flag))
+            .Select(item => (item.ItemId, item.Durability, item.Count, item.Flag, item.ExpiresAt, item.UniqueId))
             .OrderByDescending(item => item.ItemId)
             .ToArray();
 
@@ -243,6 +251,8 @@ public class ItemMoveService(
             item.Durability = arranged[offset].Durability;
             item.Count = arranged[offset].Count;
             item.Flag = arranged[offset].Flag;
+            item.ExpiresAt = arranged[offset].ExpiresAt;
+            item.UniqueId = arranged[offset].UniqueId;
         }
     }
 
@@ -252,6 +262,8 @@ public class ItemMoveService(
         (sourceItem.Durability, destinationItem.Durability) = (destinationItem.Durability, sourceItem.Durability);
         (sourceItem.Count, destinationItem.Count) = (destinationItem.Count, sourceItem.Count);
         (sourceItem.Flag, destinationItem.Flag) = (destinationItem.Flag, sourceItem.Flag);
+        (sourceItem.ExpiresAt, destinationItem.ExpiresAt) = (destinationItem.ExpiresAt, sourceItem.ExpiresAt);
+        (sourceItem.UniqueId, destinationItem.UniqueId) = (destinationItem.UniqueId, sourceItem.UniqueId);
     }
 
     private static void MoveItem(ItemSlot sourceItem, ItemSlot destinationItem)
@@ -260,6 +272,8 @@ public class ItemMoveService(
         destinationItem.Durability = sourceItem.Durability;
         destinationItem.Count = sourceItem.Count;
         destinationItem.Flag = sourceItem.Flag;
+        destinationItem.ExpiresAt = sourceItem.ExpiresAt;
+        destinationItem.UniqueId = sourceItem.UniqueId;
         sourceItem.Clear();
     }
 

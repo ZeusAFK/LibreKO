@@ -658,6 +658,10 @@ public sealed class QuestInterpreter
                 _host.OpenRebirthPanel();
                 break;
 
+            case QuestActionKind.OpenFamiliarPanel:
+                _host.OpenFamiliarPanel();
+                break;
+
             case QuestActionKind.OpenStatSkillPanel:
                 _host.OpenStatSkillPanel();
                 break;

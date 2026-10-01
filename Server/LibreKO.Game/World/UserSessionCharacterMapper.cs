@@ -80,17 +80,6 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         session.Fame = character.Fame;
         session.IsMuted = character.IsMuted;
 
-        if (character.PetItemId > 0)
-        {
-            session.Pet = new PetState
-            {
-                ItemId = character.PetItemId,
-                Satisfaction = character.PetSatisfaction,
-                Level = character.PetLevel == 0 ? (byte)1 : character.PetLevel,
-                Exp = character.PetExp,
-            };
-        }
-
         session.GenieTime.Load(character.GenieRemainingSeconds);
         session.GenieOptions = character.GenieOptions;
         session.DrakiStage = character.DrakiStage;
@@ -164,21 +153,6 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         character.KnightsPoints = session.KnightsPoints;
         character.Fame = session.KnightsId > 0 ? session.KnightsFame : session.Fame;
         character.IsMuted = session.IsMuted;
-
-        if (session.Pet != null)
-        {
-            character.PetItemId = session.Pet.ItemId;
-            character.PetSatisfaction = session.Pet.Satisfaction;
-            character.PetLevel = session.Pet.Level;
-            character.PetExp = session.Pet.Exp;
-        }
-        else
-        {
-            character.PetItemId = 0;
-            character.PetSatisfaction = 0;
-            character.PetLevel = 0;
-            character.PetExp = 0;
-        }
 
         character.GenieRemainingSeconds = session.GenieTime.RemainingSeconds;
         character.GenieOptions = session.GenieOptions;

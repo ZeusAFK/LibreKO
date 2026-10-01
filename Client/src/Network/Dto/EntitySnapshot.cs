@@ -7,6 +7,7 @@ public sealed class EntitySnapshot
     public bool IsMonster;
     public bool Attackable;
     public string Name = "";
+    public string PetOwner = "";
     public int Nation;
     public int Level;
     public int NpcId;

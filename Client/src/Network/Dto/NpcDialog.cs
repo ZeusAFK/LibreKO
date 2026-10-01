@@ -5,6 +5,7 @@ namespace LibreKO.Network;
 public sealed class NpcDialog
 {
     public const int RebirthPanelFlag = 48;
+    public const int FamiliarPanelFlag = 9;
 
     public int NpcId;
     public int Flag;

@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<KnightsAllianceEntity> KnightsAlliances { get; set; }
     public DbSet<Friendship> Friendships { get; set; }
     public DbSet<UserDailyOp> UserDailyOps { get; set; }
+    public DbSet<Pet> Pets { get; set; }
     public DbSet<MailBox> MailBoxes { get; set; }
     public DbSet<Mail> Mails { get; set; }
     public DbSet<MailAttachment> MailAttachments { get; set; }
@@ -30,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // Static game data
     public DbSet<LevelUpData> LevelUp { get; set; }
+    public DbSet<PetLevelData> PetLevels { get; set; }
     public DbSet<CoefficientData> Coefficients { get; set; }
     public DbSet<StartPositionData> StartPositions { get; set; }
     public DbSet<HomeData> Homes { get; set; }

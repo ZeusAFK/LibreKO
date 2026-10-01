@@ -25,6 +25,13 @@ public class NpcHostilityTests
     }
 
     [Fact]
+    public void AFamiliarIsNeverATargetWhateverItsNation()
+    {
+        var pet = new EntitySnapshot { IsNpc = true, NpcType = NpcTypes.Pet, Nation = Nations.ElMorad };
+        Assert.False(NpcHostility.IsHostile(pet, Nations.Karus, npcsAreTargets: true));
+    }
+
+    [Fact]
     public void AnOrdinaryMonsterStaysATarget()
     {
         var mob = new EntitySnapshot { IsNpc = true, IsMonster = true, NpcType = NpcTypes.Monster };

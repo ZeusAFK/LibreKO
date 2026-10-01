@@ -13,7 +13,8 @@ public class NpcAiBehaviorService(
     INpcAiTargetingService npcAiTargetingService,
     INpcAiMovementService npcAiMovementService,
     INpcAiCombatService npcAiCombatService,
-    IGuardSummonAiService guardSummonAiService) : INpcAiBehaviorService
+    IGuardSummonAiService guardSummonAiService,
+    IPetAiService petAiService) : INpcAiBehaviorService
 {
     public async Task ProcessNpcAsync(NpcInstance npc, long nowTicks)
     {
@@ -26,6 +27,12 @@ public class NpcAiBehaviorService(
         if (npc.IsGuardSummon)
         {
             await guardSummonAiService.TickAsync(npc, nowTicks);
+            return;
+        }
+
+        if (npc.IsPet)
+        {
+            await petAiService.TickAsync(npc, nowTicks);
             return;
         }
 

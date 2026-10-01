@@ -91,6 +91,7 @@ public interface IQuestHost
     void OpenJobChangePanel();
     void OpenClanRenamePanel();
     void OpenRebirthPanel();
+    void OpenFamiliarPanel();
 
     void Unsupported(string what);
 }

@@ -288,6 +288,13 @@ public partial class Net
         e.Size = p.ReadShort();
         int w1 = p.ReadInt();
         int w2 = p.ReadInt();
+        string petName = "";
+        if (e.NpcType == NpcTypes.Pet)
+        {
+            e.PetOwner = p.ReadSByteString();
+            petName = p.ReadSByteString();
+            p.ReadInt();
+        }
         e.Nation = p.ReadByte();
         e.Level = p.ReadByte();
         e.X = p.ReadShort() / 10f;
@@ -300,9 +307,11 @@ public partial class Net
         p.ReadByte();
         if (w1 > 0 || w2 > 0)
             e.Gear = new[] { 0, 0, 0, 0, 0, 0, w1, w2 };
-        e.Name = GameData.I != null
-            ? GameData.I.NpcName(e.NpcId, e.IsMonster)
-            : (e.IsMonster ? "Mob #" : "NPC #") + e.NpcId;
+        e.Name = e.NpcType == NpcTypes.Pet
+            ? petName
+            : GameData.I != null
+                ? GameData.I.NpcName(e.NpcId, e.IsMonster)
+                : (e.IsMonster ? "Mob #" : "NPC #") + e.NpcId;
         return e;
     }
 }

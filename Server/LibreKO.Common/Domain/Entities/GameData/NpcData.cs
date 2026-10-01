@@ -11,6 +11,7 @@ public class NpcData
     public const byte TypePatrolGuard = 12;
     public const byte TypeStoreGuard = 13;
     public const byte TypeWarGuard = 14;
+    public const byte TypePet = 15;
     public const byte TypeTradeMerchant = 21;
     public const byte TypeRepairMerchant = 22;
     public const byte TypeAnvil = 24;

@@ -52,4 +52,9 @@ public class ScriptDialogService(
     {
         queuedPackets.Add(NpcDialogPacketWriter.RebirthPanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
     }
+
+    public void SendFamiliarPanel()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.FamiliarPanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
 }

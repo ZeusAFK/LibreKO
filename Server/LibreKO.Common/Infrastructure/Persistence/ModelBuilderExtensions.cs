@@ -16,6 +16,7 @@ internal static class ModelBuilderExtensions
         Configure<Mail>(modelBuilder, "Mails");
         Configure<MailAttachment>(modelBuilder, "MailAttachments");
         Configure<UserDailyOp>(modelBuilder, "UserDailyOps");
+        Configure<Pet>(modelBuilder, "Pets");
         Configure<Warehouse>(modelBuilder, "Warehouses");
 
         Configure<KnightsEntity>(modelBuilder, "Knights");
@@ -30,6 +31,7 @@ internal static class ModelBuilderExtensions
 
         Configure<CoefficientData>(modelBuilder, "Coefficients");
         Configure<LevelUpData>(modelBuilder, "LevelUp");
+        Configure<PetLevelData>(modelBuilder, "PetLevels");
         Configure<HomeData>(modelBuilder, "Homes");
 
         Configure<ItemData>(modelBuilder, "Items");

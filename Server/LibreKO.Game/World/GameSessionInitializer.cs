@@ -18,6 +18,7 @@ public class GameSessionInitializer(
     IUserSessionCharacterMapper userSessionCharacterMapper,
     IGameDataService gameData,
     SessionManager sessionManager,
+    IPetService petService,
     ILogger<GameSessionInitializer> logger) : IGameSessionInitializer
 {
     public async Task<UserSession?> InitializeAsync(IClient client)
@@ -70,6 +71,7 @@ public class GameSessionInitializer(
         userSessionCharacterMapper.HydrateSession(session, character, account, warehouse, maxHp, maxMp, gameData);
         userSessionCharacterMapper.HydrateDailyOps(
             session, await dailyOpRepository.GetOrCreateByCharacterId(character.Id));
+        await petService.LoadAsync(session);
         session.IsGM = account.Authority == AccountAuthority.GameMaster;
         logger.LogDebug("Session created for {Name}: Authority={Authority}, IsGM={IsGM}", session.Name, account.Authority, session.IsGM);
 

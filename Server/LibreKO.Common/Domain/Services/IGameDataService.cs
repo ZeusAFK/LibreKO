@@ -6,6 +6,7 @@ namespace LibreKO.Common.Domain.Services;
 public interface IGameDataService
 {
     IReadOnlyDictionary<byte, long> LevelUpTable { get; }
+    IReadOnlyDictionary<byte, PetLevelData> PetLevelTable { get; }
     IReadOnlyDictionary<short, CoefficientData> CoefficientTable { get; }
     IReadOnlyDictionary<short, StartPositionData> StartPositionTable { get; }
     IReadOnlyDictionary<int, ItemData> ItemTable { get; }

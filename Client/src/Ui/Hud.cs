@@ -101,6 +101,15 @@ public partial class StatBar : Control
         Refresh();
     }
 
+    public void SetFraction(float fraction, string text)
+    {
+        _cur = _max = -1;
+        _fullText = null;
+        _frac = Mathf.Clamp(fraction, 0f, 1f);
+        _text.Text = text;
+        Refresh();
+    }
+
     public void SetFull(string text = "")
     {
         if (_fullText == text) return;

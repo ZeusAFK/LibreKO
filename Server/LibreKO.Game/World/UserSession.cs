@@ -203,7 +203,8 @@ public class UserSession
 
     // Pet companion
     public PetState? Pet { get; set; }
-    public DateTime LastPetSatisfactionDecay { get; set; }
+    public int LastStruckNpcId { get; set; }
+    public long LastStruckTicks { get; set; }
 
     public int[] DailyOps { get; } = new int[UserDailyOp.Count];
 

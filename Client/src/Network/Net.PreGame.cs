@@ -192,13 +192,8 @@ public partial class Net
                     break;
                 }
                 int slot = InventoryConstants.MyInfoWireSlot(wireIndex);
-                int itemId = p.ReadInt();
-                short dur = p.ReadShort(); short count = p.ReadShort();
-                byte flag = p.ReadByte(); p.ReadShort(); p.ReadInt(); p.ReadInt();
-                inventory[slot] = new ItemSlot
-                {
-                    ItemId = itemId, Durability = dur, Count = count, Flag = flag,
-                };
+                inventory[slot] = ReadItemRecord(p);
+                int itemId = inventory[slot].ItemId;
                 int vis = System.Array.IndexOf(InventoryConstants.VisualSlots, slot);
                 if (vis >= 0) gear[vis] = itemId;
             }

@@ -1,0 +1,542 @@
+[
+  {
+    "Level": 1,
+    "MaxHp": 35,
+    "MaxMp": 20,
+    "Attack": 5,
+    "Defence": 0,
+    "Resist": 0,
+    "Exp": 50
+  },
+  {
+    "Level": 2,
+    "MaxHp": 41,
+    "MaxMp": 30,
+    "Attack": 7,
+    "Defence": 10,
+    "Resist": 2,
+    "Exp": 100
+  },
+  {
+    "Level": 3,
+    "MaxHp": 47,
+    "MaxMp": 42,
+    "Attack": 9,
+    "Defence": 20,
+    "Resist": 4,
+    "Exp": 190
+  },
+  {
+    "Level": 4,
+    "MaxHp": 55,
+    "MaxMp": 53,
+    "Attack": 12,
+    "Defence": 30,
+    "Resist": 6,
+    "Exp": 342
+  },
+  {
+    "Level": 5,
+    "MaxHp": 63,
+    "MaxMp": 66,
+    "Attack": 15,
+    "Defence": 40,
+    "Resist": 8,
+    "Exp": 581
+  },
+  {
+    "Level": 6,
+    "MaxHp": 72,
+    "MaxMp": 80,
+    "Attack": 19,
+    "Defence": 50,
+    "Resist": 10,
+    "Exp": 929
+  },
+  {
+    "Level": 7,
+    "MaxHp": 82,
+    "MaxMp": 94,
+    "Attack": 23,
+    "Defence": 60,
+    "Resist": 12,
+    "Exp": 1393
+  },
+  {
+    "Level": 8,
+    "MaxHp": 93,
+    "MaxMp": 108,
+    "Attack": 27,
+    "Defence": 70,
+    "Resist": 14,
+    "Exp": 1950
+  },
+  {
+    "Level": 9,
+    "MaxHp": 104,
+    "MaxMp": 123,
+    "Attack": 31,
+    "Defence": 80,
+    "Resist": 16,
+    "Exp": 2535
+  },
+  {
+    "Level": 10,
+    "MaxHp": 116,
+    "MaxMp": 139,
+    "Attack": 36,
+    "Defence": 90,
+    "Resist": 18,
+    "Exp": 5070
+  },
+  {
+    "Level": 11,
+    "MaxHp": 167,
+    "MaxMp": 157,
+    "Attack": 41,
+    "Defence": 121,
+    "Resist": 20,
+    "Exp": 6084
+  },
+  {
+    "Level": 12,
+    "MaxHp": 185,
+    "MaxMp": 174,
+    "Attack": 47,
+    "Defence": 132,
+    "Resist": 22,
+    "Exp": 7300
+  },
+  {
+    "Level": 13,
+    "MaxHp": 204,
+    "MaxMp": 192,
+    "Attack": 53,
+    "Defence": 143,
+    "Resist": 24,
+    "Exp": 8760
+  },
+  {
+    "Level": 14,
+    "MaxHp": 225,
+    "MaxMp": 210,
+    "Attack": 59,
+    "Defence": 154,
+    "Resist": 26,
+    "Exp": 10512
+  },
+  {
+    "Level": 15,
+    "MaxHp": 247,
+    "MaxMp": 229,
+    "Attack": 66,
+    "Defence": 165,
+    "Resist": 28,
+    "Exp": 12612
+  },
+  {
+    "Level": 16,
+    "MaxHp": 270,
+    "MaxMp": 250,
+    "Attack": 74,
+    "Defence": 176,
+    "Resist": 30,
+    "Exp": 15136
+  },
+  {
+    "Level": 17,
+    "MaxHp": 295,
+    "MaxMp": 271,
+    "Attack": 81,
+    "Defence": 187,
+    "Resist": 32,
+    "Exp": 18163
+  },
+  {
+    "Level": 18,
+    "MaxHp": 320,
+    "MaxMp": 293,
+    "Attack": 90,
+    "Defence": 198,
+    "Resist": 34,
+    "Exp": 21795
+  },
+  {
+    "Level": 19,
+    "MaxHp": 347,
+    "MaxMp": 315,
+    "Attack": 99,
+    "Defence": 209,
+    "Resist": 36,
+    "Exp": 26154
+  },
+  {
+    "Level": 20,
+    "MaxHp": 375,
+    "MaxMp": 338,
+    "Attack": 108,
+    "Defence": 220,
+    "Resist": 38,
+    "Exp": 52308
+  },
+  {
+    "Level": 21,
+    "MaxHp": 491,
+    "MaxMp": 363,
+    "Attack": 116,
+    "Defence": 262,
+    "Resist": 40,
+    "Exp": 60154
+  },
+  {
+    "Level": 22,
+    "MaxHp": 527,
+    "MaxMp": 388,
+    "Attack": 125,
+    "Defence": 274,
+    "Resist": 42,
+    "Exp": 69177
+  },
+  {
+    "Level": 23,
+    "MaxHp": 566,
+    "MaxMp": 413,
+    "Attack": 135,
+    "Defence": 286,
+    "Resist": 44,
+    "Exp": 79553
+  },
+  {
+    "Level": 24,
+    "MaxHp": 606,
+    "MaxMp": 440,
+    "Attack": 145,
+    "Defence": 298,
+    "Resist": 46,
+    "Exp": 91485
+  },
+  {
+    "Level": 25,
+    "MaxHp": 647,
+    "MaxMp": 467,
+    "Attack": 155,
+    "Defence": 310,
+    "Resist": 48,
+    "Exp": 105207
+  },
+  {
+    "Level": 26,
+    "MaxHp": 691,
+    "MaxMp": 496,
+    "Attack": 166,
+    "Defence": 322,
+    "Resist": 50,
+    "Exp": 120988
+  },
+  {
+    "Level": 27,
+    "MaxHp": 736,
+    "MaxMp": 525,
+    "Attack": 177,
+    "Defence": 334,
+    "Resist": 52,
+    "Exp": 139136
+  },
+  {
+    "Level": 28,
+    "MaxHp": 783,
+    "MaxMp": 554,
+    "Attack": 189,
+    "Defence": 346,
+    "Resist": 54,
+    "Exp": 160006
+  },
+  {
+    "Level": 29,
+    "MaxHp": 831,
+    "MaxMp": 585,
+    "Attack": 201,
+    "Defence": 358,
+    "Resist": 56,
+    "Exp": 184006
+  },
+  {
+    "Level": 30,
+    "MaxHp": 881,
+    "MaxMp": 616,
+    "Attack": 214,
+    "Defence": 370,
+    "Resist": 58,
+    "Exp": 368012
+  },
+  {
+    "Level": 31,
+    "MaxHp": 1087,
+    "MaxMp": 650,
+    "Attack": 227,
+    "Defence": 423,
+    "Resist": 60,
+    "Exp": 404813
+  },
+  {
+    "Level": 32,
+    "MaxHp": 1148,
+    "MaxMp": 683,
+    "Attack": 241,
+    "Defence": 436,
+    "Resist": 62,
+    "Exp": 445294
+  },
+  {
+    "Level": 33,
+    "MaxHp": 1212,
+    "MaxMp": 717,
+    "Attack": 256,
+    "Defence": 449,
+    "Resist": 64,
+    "Exp": 489823
+  },
+  {
+    "Level": 34,
+    "MaxHp": 1278,
+    "MaxMp": 753,
+    "Attack": 271,
+    "Defence": 462,
+    "Resist": 66,
+    "Exp": 538805
+  },
+  {
+    "Level": 35,
+    "MaxHp": 1345,
+    "MaxMp": 789,
+    "Attack": 287,
+    "Defence": 475,
+    "Resist": 68,
+    "Exp": 808207
+  },
+  {
+    "Level": 36,
+    "MaxHp": 1416,
+    "MaxMp": 823,
+    "Attack": 303,
+    "Defence": 488,
+    "Resist": 70,
+    "Exp": 889027
+  },
+  {
+    "Level": 37,
+    "MaxHp": 1488,
+    "MaxMp": 865,
+    "Attack": 320,
+    "Defence": 501,
+    "Resist": 72,
+    "Exp": 977929
+  },
+  {
+    "Level": 38,
+    "MaxHp": 1562,
+    "MaxMp": 904,
+    "Attack": 337,
+    "Defence": 514,
+    "Resist": 74,
+    "Exp": 1075721
+  },
+  {
+    "Level": 39,
+    "MaxHp": 1639,
+    "MaxMp": 944,
+    "Attack": 356,
+    "Defence": 527,
+    "Resist": 76,
+    "Exp": 1183293
+  },
+  {
+    "Level": 40,
+    "MaxHp": 1717,
+    "MaxMp": 985,
+    "Attack": 374,
+    "Defence": 540,
+    "Resist": 78,
+    "Exp": 2366586
+  },
+  {
+    "Level": 41,
+    "MaxHp": 1836,
+    "MaxMp": 1028,
+    "Attack": 391,
+    "Defence": 604,
+    "Resist": 80,
+    "Exp": 2603244
+  },
+  {
+    "Level": 42,
+    "MaxHp": 1957,
+    "MaxMp": 1071,
+    "Attack": 408,
+    "Defence": 618,
+    "Resist": 82,
+    "Exp": 2863568
+  },
+  {
+    "Level": 43,
+    "MaxHp": 2224,
+    "MaxMp": 1115,
+    "Attack": 426,
+    "Defence": 632,
+    "Resist": 84,
+    "Exp": 3149924
+  },
+  {
+    "Level": 44,
+    "MaxHp": 2322,
+    "MaxMp": 1160,
+    "Attack": 444,
+    "Defence": 646,
+    "Resist": 86,
+    "Exp": 3464916
+  },
+  {
+    "Level": 45,
+    "MaxHp": 2422,
+    "MaxMp": 1206,
+    "Attack": 463,
+    "Defence": 660,
+    "Resist": 88,
+    "Exp": 5197374
+  },
+  {
+    "Level": 46,
+    "MaxHp": 2525,
+    "MaxMp": 1254,
+    "Attack": 483,
+    "Defence": 674,
+    "Resist": 90,
+    "Exp": 5717111
+  },
+  {
+    "Level": 47,
+    "MaxHp": 2631,
+    "MaxMp": 1303,
+    "Attack": 502,
+    "Defence": 688,
+    "Resist": 92,
+    "Exp": 6288822
+  },
+  {
+    "Level": 48,
+    "MaxHp": 2739,
+    "MaxMp": 1352,
+    "Attack": 523,
+    "Defence": 702,
+    "Resist": 94,
+    "Exp": 6917704
+  },
+  {
+    "Level": 49,
+    "MaxHp": 2850,
+    "MaxMp": 1402,
+    "Attack": 544,
+    "Defence": 716,
+    "Resist": 96,
+    "Exp": 7609474
+  },
+  {
+    "Level": 50,
+    "MaxHp": 2963,
+    "MaxMp": 1454,
+    "Attack": 565,
+    "Defence": 730,
+    "Resist": 98,
+    "Exp": 15218948
+  },
+  {
+    "Level": 51,
+    "MaxHp": 3076,
+    "MaxMp": 1505,
+    "Attack": 584,
+    "Defence": 805,
+    "Resist": 100,
+    "Exp": 16740842
+  },
+  {
+    "Level": 52,
+    "MaxHp": 3189,
+    "MaxMp": 1561,
+    "Attack": 603,
+    "Defence": 820,
+    "Resist": 102,
+    "Exp": 18414926
+  },
+  {
+    "Level": 53,
+    "MaxHp": 3302,
+    "MaxMp": 1616,
+    "Attack": 622,
+    "Defence": 835,
+    "Resist": 104,
+    "Exp": 20256418
+  },
+  {
+    "Level": 54,
+    "MaxHp": 3405,
+    "MaxMp": 1671,
+    "Attack": 641,
+    "Defence": 850,
+    "Resist": 106,
+    "Exp": 22097910
+  },
+  {
+    "Level": 55,
+    "MaxHp": 3507,
+    "MaxMp": 1726,
+    "Attack": 660,
+    "Defence": 865,
+    "Resist": 108,
+    "Exp": 23939402
+  },
+  {
+    "Level": 56,
+    "MaxHp": 3610,
+    "MaxMp": 1781,
+    "Attack": 679,
+    "Defence": 880,
+    "Resist": 110,
+    "Exp": 25780894
+  },
+  {
+    "Level": 57,
+    "MaxHp": 3713,
+    "MaxMp": 1836,
+    "Attack": 698,
+    "Defence": 895,
+    "Resist": 112,
+    "Exp": 27622386
+  },
+  {
+    "Level": 58,
+    "MaxHp": 3816,
+    "MaxMp": 1891,
+    "Attack": 717,
+    "Defence": 905,
+    "Resist": 116,
+    "Exp": 29463878
+  },
+  {
+    "Level": 59,
+    "MaxHp": 3919,
+    "MaxMp": 1946,
+    "Attack": 736,
+    "Defence": 920,
+    "Resist": 118,
+    "Exp": 31305370
+  },
+  {
+    "Level": 60,
+    "MaxHp": 4032,
+    "MaxMp": 2001,
+    "Attack": 755,
+    "Defence": 935,
+    "Resist": 120,
+    "Exp": 33146862
+  }
+]

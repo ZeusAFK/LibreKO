@@ -13,6 +13,12 @@ public partial class World
     private const int WingKurianBoneDefault = 44;
     private const int WingSlotCount = 4;
 
+    private static readonly int[] WingVisualSlots =
+    {
+        InventoryConstants.VisCosWing, InventoryConstants.VisCosFairy,
+        InventoryConstants.VisCosTalisman, InventoryConstants.VisCosEmblem,
+    };
+
     private static readonly int[] WingSuppressedZones =
         { 37, 38, 39, 45, 57, 58, 59, 60, 76, 85, 86, 89 };
 
@@ -57,8 +63,7 @@ public partial class World
                 ba.QueueFree();
             }
 
-        if (gear == null || gear.Length <= InventoryConstants.VisCosWing
-            || System.Array.IndexOf(WingSuppressedZones, zone) >= 0)
+        if (gear == null || System.Array.IndexOf(WingSuppressedZones, zone) >= 0)
         {
             if (enableShine) ItemShineLight.Refresh(body, shineShadow);
             return anims;
@@ -66,10 +71,9 @@ public partial class World
 
         _wingIndex ??= LoadWingIndex();
         bool kurian = IsKurianRace(race);
-        for (int i = InventoryConstants.VisCosWing;
-             i <= InventoryConstants.VisCosEmblem && i < gear.Length; i++)
+        foreach (int i in WingVisualSlots)
         {
-            if (gear[i] <= 0 || !_wingIndex.TryGetValue(gear[i], out var part)) continue;
+            if (i >= gear.Length || gear[i] <= 0 || !_wingIndex.TryGetValue(gear[i], out var part)) continue;
             if (part.Slot < 0 || part.Slot >= WingSlotCount || anims[part.Slot] != null) continue;
 
             string resPath = $"res://assets/wings/{part.Stem}.glb";
@@ -89,6 +93,7 @@ public partial class World
             ForceDoubleSided(inst);
             if (enableShine && part.Slot == 0)
                 ItemShine.Apply(inst, gear[InventoryConstants.VisBreast], 0);
+            AttachFxPlugs(inst, $"res://assets/wings/{part.Stem}.fxplug.json");
 
             var anim = FindFirst<AnimationPlayer>(inst);
             if (anim != null)

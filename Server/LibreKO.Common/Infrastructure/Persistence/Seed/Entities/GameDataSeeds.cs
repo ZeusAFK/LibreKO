@@ -40,6 +40,11 @@ public class LevelUpSeed : SnapshotJsonSeed<LevelUpData>
     }
 }
 
+public class PetLevelSeed : SnapshotJsonSeed<PetLevelData>
+{
+    protected override string JsonFileName => "PetLevels.json";
+}
+
 public class CoefficientSeed : SnapshotJsonSeed<CoefficientData>
 {
     protected override string JsonFileName => "Coefficients.json";

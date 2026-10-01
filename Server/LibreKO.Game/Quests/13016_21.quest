@@ -1,0 +1,34 @@
+include translations/13016_keite
+
+Bind Npc 13016 Zone 21
+
+On greeting
+    Say "I'm [Trainer] Kate. I'm in charge of all things related to Familiar| You can hatch Familiar eggs or change names with the [Familiar Name Change Certificate]. Would you like to try it?"
+
+On topics
+    If quest 78 is completed
+        Topic "Familiar Hatching and transform" goto hatching
+        Topic "Use Voucher" goto vouchers
+
+On hatching
+    Open familiar panel
+
+On vouchers
+    Say if_you_bring_a
+    Topic "Exchange Magic Bag" goto magic_bag
+    Topic "Exchange Automatic Loot" goto automatic_looting
+    Topic "I'll just go." goto close
+
+On magic_bag
+    If player has 800440000
+        Trade 1 of 800440000 for 1 of 700011001 for 30 days
+    Else
+        Say "You don't have a [Voucher for Magic Bag]."
+        Topic "Confirm" goto close
+
+On automatic_looting
+    If player has 800450000
+        Trade 1 of 800450000 for 1 of 700012000 for 30 days
+    Else
+        Say "You don't have a [Voucher for Automatic Looting]."
+        Topic "Confirm" goto close

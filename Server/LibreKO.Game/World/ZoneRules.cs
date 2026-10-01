@@ -94,6 +94,20 @@ public static class ZoneRules
 
     public static bool Allows(byte zoneId, ZoneFlags flag) => (For(zoneId).Flags & flag) == flag;
 
+    private static readonly HashSet<byte> PetsBarred =
+    [
+        (byte)ZoneId.Delos, (byte)ZoneId.BattleOfBarrack, (byte)ZoneId.Arena,
+        (byte)ZoneId.NapiesGorge, (byte)ZoneId.AlseidsPrairie, (byte)ZoneId.NiedsTriangle,
+        (byte)ZoneId.NereidsIsland, (byte)ZoneId.Zipang, (byte)ZoneId.Oreads, (byte)ZoneId.SnowBattle,
+        (byte)ZoneId.MonsterStone1, (byte)ZoneId.MonsterStone2, (byte)ZoneId.MonsterStone3,
+        (byte)ZoneId.BorderDefenseWar, (byte)ZoneId.ChaosDungeon, (byte)ZoneId.UnderCastle,
+        (byte)ZoneId.JuradMountain, (byte)ZoneId.DungeonDefence, (byte)ZoneId.Prison,
+        (byte)ZoneId.IsiloonArena, (byte)ZoneId.FelankorArena, (byte)ZoneId.DrakiTower,
+        (byte)ZoneId.PartyClan1, (byte)ZoneId.PartyClan2, (byte)ZoneId.PartyClan3, (byte)ZoneId.PartyClan4,
+    ];
+
+    public static bool AllowsPets(byte zoneId) => !PetsBarred.Contains(zoneId);
+
     public static bool BarsReborn(byte zoneId) => zoneId is (byte)ZoneId.Ardream or (byte)ZoneId.RonarkLandBase;
 
     public static bool IsTempleEvent(byte zoneId) => zoneId is (byte)ZoneId.BorderDefenseWar or (byte)ZoneId.ChaosDungeon;

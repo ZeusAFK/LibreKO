@@ -20,6 +20,7 @@ public class ZoneTransitionService(
     TimeWeatherBroadcastService timeWeather,
     ICollectionRaceService collectionRaceService,
     InstanceRoomRegistry instanceRooms,
+    IPetService petService,
     ILogger<ZoneTransitionService> logger) : IZoneTransitionService
 {
     private const byte ZoneAbilityUpdate = 1;
@@ -48,6 +49,9 @@ public class ZoneTransitionService(
             foreach (var handler in leaving.GetInvocationList().Cast<Func<UserSession, byte, Task>>())
                 await handler(session, session.ZoneId);
         }
+
+        if (session.ZoneId != newZone)
+            await petService.DismissAsync(session);
 
         session.IsWarping = true;
 

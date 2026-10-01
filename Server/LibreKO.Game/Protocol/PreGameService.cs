@@ -35,6 +35,7 @@ public class PreGameService(
     SessionManager sessionManager,
     TimeWeatherBroadcastService timeWeather,
     IKnightsRuntimeService knightsRuntime,
+    IPetService petService,
     ILogger<PreGameService> logger) : IPreGameService
 {
     private const byte NewCharacterStartZone = (byte)ZoneId.Moradon;
@@ -364,9 +365,15 @@ public class PreGameService(
             ? (short)(sessionManager.Knights.GetAllianceForClan(character.KnightsId)?.MainClanId ?? 0)
             : (short)0;
 
+        var pets = await petService.DescribeAsync(inventory);
+        var petsBySlot = new Dictionary<int, PetItemInfo>();
+        for (var slot = 0; slot < inventory.Length; slot++)
+            if (inventory[slot].IsLinked && pets.TryGetValue(inventory[slot].UniqueId, out var pet))
+                petsBySlot[slot] = pet;
+
         return CharacterPacketMapper.BuildMyInfo(new MyInfoPacketContext(
             character, account, RebirthBonus.RequiredExperience(gameData.GetMaxExpForLevel(character.Level), character.RebirthLevel),
-            stats, clan, allianceId, clanFame, zoneId, posX, posZ, posY, premiumHours));
+            stats, clan, allianceId, clanFame, zoneId, posX, posZ, posY, premiumHours, petsBySlot));
     }
 
     private async Task RepairReconnectZoneIfNeededAsync(Character character, AccountNation nation)

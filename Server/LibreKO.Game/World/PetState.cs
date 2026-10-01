@@ -1,21 +1,47 @@
+using LibreKO.Common.Domain.Entities;
+using LibreKO.Common.Domain.Entities.GameData;
+
 namespace LibreKO.Game.World;
 
-public class PetState
+public sealed class PetState(Pet record, int itemId)
 {
-    public const byte ModeAttack = 3;
-    public const byte ModeDefence = 4;
-    public const byte ModeLooting = 8;
-    public const byte ModeChat = 9;
+    public const byte MaxLevel = 60;
+    public const int NoTarget = -1;
 
-    public const short MaxSatisfaction = 10000;
-    public const byte MaxPetLevel = 60;
+    public Pet Record { get; } = record;
+    public int ItemId { get; } = itemId;
+    public ItemSlot[] Items { get; } = PetInventory.Load(record.Items);
+    public NpcInstance? Npc { get; set; }
+    public PetMode Mode { get; set; } = PetMode.Defence;
+    public int TargetNpcId { get; set; } = NoTarget;
+    public long LastSatisfactionTicks { get; set; } = DateTime.UtcNow.Ticks;
+    public long LastAttackTicks { get; set; }
 
-    public int ItemId { get; set; }
-    public int Nid { get; set; }
-    public byte Mode { get; set; } = ModeDefence;
-    public short Satisfaction { get; set; } = MaxSatisfaction;
-    public byte Level { get; set; } = 1;
-    public long Exp { get; set; }
-    public int Hp { get; set; }
-    public int MaxHp { get; set; }
+    public bool IsSummoned => Npc is { IsAlive: true };
+
+    public void SaveItems() => Record.Items = PetInventory.Save(Items);
+}
+
+public enum PetMode : byte
+{
+    Summoned = 1,
+    Died = 2,
+    Attack = 3,
+    Defence = 4,
+    Looting = 8,
+    Chat = 9,
+}
+
+public static class PetInventory
+{
+    public static ItemSlot[] Load(byte[]? data)
+    {
+        var slots = new ItemSlot[Pet.InventorySize];
+        for (var i = 0; i < slots.Length; i++)
+            slots[i] = new ItemSlot();
+        UserSessionBinaryState.LoadSlots(slots, data);
+        return slots;
+    }
+
+    public static byte[] Save(ItemSlot[] slots) => UserSessionBinaryState.SerializeSlots(slots);
 }

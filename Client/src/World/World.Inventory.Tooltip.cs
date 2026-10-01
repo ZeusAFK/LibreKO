@@ -169,6 +169,14 @@ public partial class World : Node3D
 
         lines.Add(TooltipLine.Rule());
 
+        if (item.IsLinked && Net.I.PetItems.TryGetValue(item.UniqueId, out var pet))
+        {
+            lines.Add(new TooltipLine(pet.Name, TooltipColorMerchant));
+            lines.Add(new TooltipLine($"Level {pet.Level}  EXP {pet.ExpPercent / 100f:0.00}%", 0));
+            lines.Add(new TooltipLine($"Satisfaction {pet.Satisfaction / 100f:0.00}%", 0));
+            lines.Add(TooltipLine.Rule());
+        }
+
         int maxDurability = def.Duration + (ext?.DurationBonus ?? 0);
         if (maxDurability > 1 && !def.IsChargeItem)
         {

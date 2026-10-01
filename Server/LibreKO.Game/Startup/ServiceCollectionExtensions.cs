@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICharacterRepository, CharacterRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IUserDailyOpRepository, UserDailyOpRepository>();
+        services.AddScoped<IPetRepository, PetRepository>();
         services.AddScoped<IKnightsRepository, KnightsRepository>();
         services.AddScoped<IKnightsAllianceRepository, KnightsAllianceRepository>();
         services.AddScoped<IKingElectionRepository, KingElectionRepository>();
@@ -211,6 +212,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INpcAiBehaviorService, NpcAiBehaviorService>();
         services.AddSingleton<INpcAiCombatService, NpcAiCombatService>();
         services.AddSingleton<IGuardSummonAiService, GuardSummonAiService>();
+        services.AddSingleton<IPetService, PetService>();
+        services.AddSingleton<IPetAiService, PetAiService>();
         services.AddSingleton<INpcAiDeathService, NpcAiDeathService>();
         services.AddSingleton<INpcAiMagicService, NpcAiMagicService>();
         services.AddSingleton<INpcAiMovementService, NpcAiMovementService>();
@@ -260,7 +263,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IClanStandingService>(sp => sp.GetRequiredService<ClanStandingService>());
         services.AddHostedService(sp => sp.GetRequiredService<ClanStandingService>());
         services.AddHostedService<ConcurrentPopulationUpdateService>();
-        services.AddHostedService<PetSatisfactionTickService>();
         services.AddHostedService<GenieTickService>();
         services.AddHostedService(sp => sp.GetRequiredService<BifrostEventService>());
         services.AddHostedService(sp => sp.GetRequiredService<SocketServer>());

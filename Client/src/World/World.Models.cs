@@ -9,7 +9,11 @@ public partial class World
     internal static void AttachCharacterFxPlugs(Node3D body, string modelStem)
     {
         if (string.IsNullOrEmpty(modelStem)) return;
-        string path = $"res://assets/npcs/{modelStem}.fxplug.json";
+        AttachFxPlugs(body, $"res://assets/npcs/{modelStem}.fxplug.json");
+    }
+
+    internal static void AttachFxPlugs(Node3D body, string path)
+    {
         using var file = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
         if (file == null) return;
         var parsed = Json.ParseString(file.GetAsText());

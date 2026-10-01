@@ -12,6 +12,7 @@ public sealed class MyInfoPacketWriter
     private readonly short[] _itemDurability = new short[InventoryConstants.InventoryTotal];
     private readonly short[] _itemCount = new short[InventoryConstants.InventoryTotal];
     private readonly byte[] _itemFlags = new byte[InventoryConstants.InventoryTotal];
+    private readonly PetItemInfo?[] _itemPets = new PetItemInfo?[InventoryConstants.InventoryTotal];
     private byte[] _skillPointData = new byte[SkillPointDataSize];
 
     public int CharacterId { get; set; }
@@ -185,6 +186,14 @@ public sealed class MyInfoPacketWriter
         _itemFlags[storageSlot] = flag;
     }
 
+    public void SetPetItem(int storageSlot, PetItemInfo pet)
+    {
+        if (storageSlot < 0 || storageSlot >= InventoryConstants.InventoryTotal)
+            return;
+
+        _itemPets[storageSlot] = pet;
+    }
+
     public Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_MYINFO);
@@ -315,27 +324,16 @@ public sealed class MyInfoPacketWriter
         for (var wireIndex = 0; wireIndex < InventoryConstants.MyInfoWireTotal; wireIndex++)
         {
             var storageSlot = InventoryConstants.MyInfoWireSlot(wireIndex);
-            WriteItemRecord(
+            ItemRecordWriter.Write(
                 packet,
                 _itemIds[storageSlot],
                 _itemDurability[storageSlot],
                 _itemCount[storageSlot],
-                _itemFlags[storageSlot]);
+                _itemFlags[storageSlot],
+                _itemPets[storageSlot]);
         }
 
         for (var reserved = 0; reserved < InventoryConstants.MyInfoReservedItemRecords; reserved++)
-            WriteItemRecord(packet, 0, 0, 0, 0);
-    }
-
-    private static void WriteItemRecord(
-        Packet packet, int itemId, short durability, short count, byte flag)
-    {
-        packet.WriteInt(itemId);
-        packet.WriteShort(durability);
-        packet.WriteShort(count);
-        packet.WriteByte(flag);
-        packet.WriteShort(0);
-        packet.WriteInt(0);
-        packet.WriteInt(0);
+            ItemRecordWriter.Write(packet, 0, 0, 0, 0, null);
     }
 }

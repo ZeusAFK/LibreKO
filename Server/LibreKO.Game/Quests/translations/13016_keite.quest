@@ -1,0 +1,4 @@
+before_you_receive_a = text "Before you receive a Familiar egg, show me you're ready to tame this docile creature | If you've undertaken [Sentinel] Patrick's task diligently, it should not be difficult."
+familiars_devoid_of_evil = text "Familiars, devoid of evil, are surfacing all over the continent. Are you ready to domesticate them?"
+if_you_bring_a = text "If you bring a [Voucher], bought from a shop, it can be exchanged for certified National items."
+you_have_brought_a = text "You have brought a User Buff Pet Scroll exchange voucher. What type of voucher did you bring?"

@@ -26,6 +26,7 @@ public class SessionTerminationService(
     InstanceRoomRegistry instanceRooms,
     IBorderDefenseWarService borderDefenseWarService,
     IKnightsRuntimeService knightsRuntime,
+    IPetService petService,
     ILogger<SessionTerminationService> logger) : ISessionTerminationService
 {
     // Cap concurrent disconnect-time DB work so a mass disconnect (thousands of bots
@@ -183,6 +184,8 @@ public class SessionTerminationService(
             session.SummonedGuard = null;
             await npcLifecycleService.DespawnAsync(guard);
         }
+
+        await petService.DismissAsync(session);
 
         session.IsMining = false;
         session.IsFishing = false;

@@ -27,9 +27,11 @@ public class MagicStatusEffectService(
     IStealthService stealthService,
     INpcSummonService npcSummonService,
     INpcLifecycleService npcLifecycleService,
+    IPetService petService,
     ILogger<MagicStatusEffectService> logger) : IMagicStatusEffectService
 {
     private const int SkillSucceeded = 1;
+    private const int PetEffectNoDuration = -1;
 
     public Task ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
@@ -45,6 +47,12 @@ public class MagicStatusEffectService(
 
     public async Task CancelAsync(UserSession session, int skillId)
     {
+        if (session.Pet is { IsSummoned: true } && SummonsPet(skillId))
+        {
+            await petService.DismissAsync(session);
+            return;
+        }
+
         if (!session.ActiveBuffs.TryRemove(skillId, out var removedBuff))
             return;
 
@@ -739,6 +747,7 @@ public class MagicStatusEffectService(
             MagicStealthType.SeeInvisible or MagicStealthType.SeeInvisibleParty =>
                 await GrantSightAsync(caster, stealthType, skillId, type9Data, data),
             MagicStealthType.GuardSummon => await SummonGuardAsync(caster, skillId, type9Data, data),
+            MagicStealthType.PetSummon => await CallPetAsync(caster, magic, skillId, data),
             _ => UnhandledStealth(caster, stealthType, skillId),
         };
 
@@ -831,6 +840,34 @@ public class MagicStatusEffectService(
         await AnnounceStealthAsync(caster, caster, skillId, type9Data, data);
         return true;
     }
+
+    private async Task<bool> CallPetAsync(UserSession caster, MagicData magic, int skillId, int[] data)
+    {
+        if (skillId == PetService.FamiliarChannelingSkill)
+        {
+            logger.LogDebug("Familiar channeling from {Name} is not implemented", caster.Name);
+            return false;
+        }
+
+        if (!magicItemUsageService.CanUseSkillItems(caster, magic)
+            || !await petService.SummonAsync(caster) || caster.Pet?.Npc is not { } pet)
+            return false;
+
+        await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic);
+
+        await caster.Client.SendPacket(MagicProcessPacketWriter.Create(
+            MagicProcessOpcode.Effecting,
+            skillId,
+            (short)caster.CharacterId,
+            (short)caster.CharacterId,
+            [data[0], SkillSucceeded, data[2], PetEffectNoDuration, pet.UniqueId, data[5], data[6]]));
+        return true;
+    }
+
+    private bool SummonsPet(int skillId) =>
+        gameDataService.GetMagic(skillId) is { } magic
+        && MagicTypeLookup.TryResolve(gameDataService.MagicType9Table, magic, skillId, out var type9)
+        && (MagicStealthType)type9.StateChange == MagicStealthType.PetSummon;
 
     public async Task DismissGuardAsync(UserSession session)
     {

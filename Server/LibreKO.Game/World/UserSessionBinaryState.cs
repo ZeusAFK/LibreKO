@@ -7,6 +7,7 @@ public static class UserSessionBinaryState
     public const int BytesPerItem = 8;
     public const int BytesPerFlag = 1;
     public const int BytesPerExpiry = 8;
+    public const int BytesPerUniqueId = 4;
 
     public static void LoadItems(ItemSlot[] inventory, byte[]? data) => LoadSlots(inventory, data);
 
@@ -22,6 +23,7 @@ public static class UserSessionBinaryState
         var count = Math.Min(data.Length / BytesPerItem, slots.Length);
         var flagsOffset = slots.Length * BytesPerItem;
         var expiryOffset = flagsOffset + slots.Length * BytesPerFlag;
+        var uniqueOffset = expiryOffset + slots.Length * BytesPerExpiry;
 
         for (var index = 0; index < count; index++)
         {
@@ -37,6 +39,10 @@ public static class UserSessionBinaryState
             var expiryAt = expiryOffset + index * BytesPerExpiry;
             if (expiryAt + BytesPerExpiry <= data.Length)
                 slots[index].ExpiresAt = BitConverter.ToInt64(data, expiryAt);
+
+            var uniqueAt = uniqueOffset + index * BytesPerUniqueId;
+            if (uniqueAt + BytesPerUniqueId <= data.Length)
+                slots[index].UniqueId = BitConverter.ToInt32(data, uniqueAt);
         }
     }
 
@@ -44,7 +50,8 @@ public static class UserSessionBinaryState
     {
         var flagsOffset = slots.Length * BytesPerItem;
         var expiryOffset = flagsOffset + slots.Length * BytesPerFlag;
-        var data = new byte[expiryOffset + slots.Length * BytesPerExpiry];
+        var uniqueOffset = expiryOffset + slots.Length * BytesPerExpiry;
+        var data = new byte[uniqueOffset + slots.Length * BytesPerUniqueId];
 
         for (var index = 0; index < slots.Length; index++)
         {
@@ -55,6 +62,7 @@ public static class UserSessionBinaryState
             BitConverter.TryWriteBytes(data.AsSpan(offset + 6), slot.Count);
             data[flagsOffset + index] = slot.Flag;
             BitConverter.TryWriteBytes(data.AsSpan(expiryOffset + index * BytesPerExpiry), slot.ExpiresAt);
+            BitConverter.TryWriteBytes(data.AsSpan(uniqueOffset + index * BytesPerUniqueId), slot.UniqueId);
         }
 
         return data;

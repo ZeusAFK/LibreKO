@@ -33,6 +33,7 @@ public class CombatLifecycleService(
     IZoneTransitionService zoneTransitionService,
     ISavedMagicService savedMagicService,
     IStealthService stealthService,
+    IPetService petService,
     ILogger<CombatLifecycleService> logger) : ICombatLifecycleService
 {
     public const int NoKillerId = -1;
@@ -187,6 +188,7 @@ public class CombatLifecycleService(
         rewardRecipient.LastKilledNpcId = npc.NpcId;
 
         await combatRewardService.AwardNpcKillAsync(npc, rewardRecipient);
+        await petService.AwardKillAsync(npc);
     }
 
     public async Task HandlePlayerDeathAsync(UserSession victim, UserSession? killer)

@@ -79,6 +79,7 @@ public abstract class GameTestBase
         services.AddScoped<ICharacterRepository, CharacterRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IUserDailyOpRepository, UserDailyOpRepository>();
+        services.AddScoped<IPetRepository, PetRepository>();
         services.AddScoped<IKnightsRepository, KnightsRepository>();
         services.AddScoped<IKnightsAllianceRepository, KnightsAllianceRepository>();
         services.AddScoped<IKingElectionRepository, KingElectionRepository>();
@@ -169,6 +170,8 @@ public abstract class GameTestBase
         services.AddSingleton<INpcAiBehaviorService, NpcAiBehaviorService>();
         services.AddSingleton<INpcAiCombatService, NpcAiCombatService>();
         services.AddSingleton<IGuardSummonAiService, GuardSummonAiService>();
+        services.AddSingleton<IPetService, PetService>();
+        services.AddSingleton<IPetAiService, PetAiService>();
         services.AddSingleton<INpcAiDeathService, NpcAiDeathService>();
         services.AddSingleton<INpcAiMagicService, NpcAiMagicService>();
         services.AddSingleton<INpcAiMovementService, NpcAiMovementService>();

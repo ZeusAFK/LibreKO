@@ -15,6 +15,7 @@ public interface ICharacterStatePersister
 
 public class CharacterStatePersister(
     IServiceScopeFactory scopeFactory,
+    IPetService petService,
     ILogger<CharacterStatePersister> logger) : ICharacterStatePersister
 {
     private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
@@ -64,6 +65,7 @@ public class CharacterStatePersister(
         await dailyOpRepository.UpdateAsync(dailyOp);
         if (account != null)
             await accountRepository.UpdateAsync(account);
+        await petService.SaveAsync(session);
 
         return true;
     }

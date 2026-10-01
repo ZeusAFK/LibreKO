@@ -58,12 +58,6 @@ public class Character : Entity
 
     public bool IsMuted { get; set; }
 
-    // Pet companion (0 PetItemId = no pet). Satisfaction in 0..=10000.
-    public int PetItemId { get; set; }
-    public short PetSatisfaction { get; set; }
-    public byte PetLevel { get; set; }
-    public long PetExp { get; set; }
-
     // Rebirth (WIZ_REBIRTH 0xD3). RebirthLevel increments on each rebirth.
     // Reb* fields snapshot the stats at rebirth for bonus restoration.
     public short RebirthLevel { get; set; }
@@ -155,10 +149,6 @@ public class Character : Entity
             builder.Property(p => p.Y).IsRequired();
             builder.Property(p => p.Z).IsRequired();
             builder.Property(p => p.IsMuted);
-            builder.Property(p => p.PetItemId);
-            builder.Property(p => p.PetSatisfaction);
-            builder.Property(p => p.PetLevel);
-            builder.Property(p => p.PetExp);
             builder.Property(p => p.RebirthLevel);
             builder.Property(p => p.RebStr);
             builder.Property(p => p.RebSta);

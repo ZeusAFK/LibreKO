@@ -13,12 +13,15 @@ public class ItemSlot
     public ushort Count { get; set; }
     public byte Flag { get; set; }
     public long ExpiresAt { get; set; }
+    public int UniqueId { get; set; }
 
     public ItemFlag State => (ItemFlag)Flag;
 
     public bool IsEmpty => ItemId == 0;
 
-    public bool IsTradable => State
+    public bool IsLinked => UniqueId != 0;
+
+    public bool IsTradable => !IsLinked && State
         is not (ItemFlag.Rented or ItemFlag.CharacterSeal or ItemFlag.Duplicate
             or ItemFlag.Sealed or ItemFlag.Bound);
 
@@ -44,5 +47,6 @@ public class ItemSlot
         Count = 0;
         Flag = 0;
         ExpiresAt = 0;
+        UniqueId = 0;
     }
 }

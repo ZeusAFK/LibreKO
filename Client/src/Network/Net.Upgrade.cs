@@ -56,6 +56,9 @@ public partial class Net
             case PieceChangeExchangeSub:
                 HandlePieceExchangeResult(p);
                 break;
+            case PetHatchSub:
+                HandlePetHatch(p);
+                break;
             default:
                 NpcWindowEvent?.Invoke(GameOpcodes.GS_ITEM_UPGRADE);
                 break;

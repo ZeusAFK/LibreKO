@@ -217,6 +217,13 @@ public partial class World
             return;
         }
 
+        if (dlg.Flag == NpcDialog.FamiliarPanelFlag)
+        {
+            CloseNpcDialog();
+            OpenPetHatch(dlg.NpcId);
+            return;
+        }
+
         _npcDialogScript = dlg.ScriptFile;
         if (dlg.HeaderText is { Length: > 0 } body)
             BeginNpcDialog(

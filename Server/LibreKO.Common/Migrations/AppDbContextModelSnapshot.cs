@@ -232,18 +232,6 @@ namespace LibreKO.Common.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<long>("PetExp")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("PetItemId")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("PetLevel")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<short>("PetSatisfaction")
-                        .HasColumnType("smallint");
-
                     b.Property<int>("PlayMinutes")
                         .HasColumnType("int");
 
@@ -2424,6 +2412,34 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("NpcPositions", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PetLevelData", b =>
+                {
+                    b.Property<byte>("Level")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<short>("Attack")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Defence")
+                        .HasColumnType("smallint");
+
+                    b.Property<long>("Exp")
+                        .HasColumnType("bigint");
+
+                    b.Property<short>("MaxHp")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("MaxMp")
+                        .HasColumnType("smallint");
+
+                    b.Property<byte>("Resist")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Level");
+
+                    b.ToTable("PetLevels", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PremiumItemData", b =>
                 {
                     b.Property<byte>("Type")
@@ -3365,6 +3381,58 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Patches", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.Pet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<byte>("Class")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long>("Exp")
+                        .HasColumnType("bigint");
+
+                    b.Property<short>("Hp")
+                        .HasColumnType("smallint");
+
+                    b.Property<byte[]>("Items")
+                        .IsRequired()
+                        .HasColumnType("longblob");
+
+                    b.Property<byte>("Level")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<short>("ModelId")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Mp")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("varchar(15)");
+
+                    b.Property<short>("Satisfaction")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Size")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Pets", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Server", b =>

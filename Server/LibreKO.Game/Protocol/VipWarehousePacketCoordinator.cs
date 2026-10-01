@@ -137,7 +137,7 @@ public class VipWarehousePacketCoordinator(
         var success = session.WithLock(s =>
         {
             var source = s.Inventory[absSrc];
-            if (source.ItemId != itemId || source.Count < count)
+            if (source.ItemId != itemId || source.Count < count || source.IsLinked)
                 return false;
 
             var destination = s.VipWarehouse[realDst];

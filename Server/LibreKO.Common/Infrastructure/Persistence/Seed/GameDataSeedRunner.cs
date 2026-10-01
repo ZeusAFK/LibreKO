@@ -22,6 +22,7 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         logger.LogInformation("Starting game data seeding{Forced}...", force ? " (forced)" : string.Empty);
 
         await Seed(new LevelUpSeed());
+        await Seed(new PetLevelSeed());
         await Seed(new CoefficientSeed());
         await Seed(new StartPositionSeed());
         await Seed(new HomeSeed());

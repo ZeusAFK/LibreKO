@@ -183,6 +183,12 @@ public class NpcInstance
                 TopDamagerCharId = charId;
         });
 
+        if (attacker != null)
+        {
+            attacker.LastStruckNpcId = UniqueId;
+            attacker.LastStruckTicks = DateTime.UtcNow.Ticks;
+        }
+
         // Scarecrows (training dummies) never aggro or chase attackers
         if (IsScarecrow)
             return;
@@ -311,11 +317,14 @@ public class NpcInstance
     public bool IsBoss => NpcType == NpcData.TypeBoss;
     public bool IsScarecrow => NpcType == NpcData.TypeScarecrow;
     public bool IsGuardSummon => NpcType == NpcData.TypeGuardSummon;
+    public bool IsPet => NpcType == NpcData.TypePet;
     public int OwnerCharId { get; set; }
+    public string PetOwnerName { get; set; } = string.Empty;
+    public ConcurrentDictionary<int, int> PetDamage { get; } = new();
     public bool IsAttackable => (IsMonster && !IsGuardSummon) || IsScarecrow; // Anything players can hit
     public bool IsGuard => NpcType is >= NpcData.TypeGuard and <= NpcData.TypeWarGuard;
     public bool IsNationOwned => Nation is EntityNation.Karus or EntityNation.ElMorad;
-    public bool HasAi => IsMonster || IsGuard || IsScarecrow || IsNationOwned || FollowsAPath(MoveType);
+    public bool HasAi => IsMonster || IsGuard || IsScarecrow || IsNationOwned || IsPet || FollowsAPath(MoveType);
     public EntityNation Nation { get; set; }
     public int GateOpen { get; set; }
     public bool IsGate => NpcType == NpcData.TypeGate;

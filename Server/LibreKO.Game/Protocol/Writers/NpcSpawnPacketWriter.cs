@@ -17,6 +17,7 @@ public sealed class NpcSpawnPacketWriter
     public const short NoClan = 0;
     public const short NoClanMarkVersion = 0;
     public const byte NoEventRoom = 0;
+    public const int PetRecordTail = 0;
 
     public readonly record struct NpcState(
         int UniqueId,
@@ -35,7 +36,9 @@ public sealed class NpcSpawnPacketWriter
         short Y,
         int GateOpen,
         byte ObjectType,
-        short Direction);
+        short Direction,
+        string PetOwnerName = "",
+        string PetName = "");
 
     private readonly byte _inOutType;
     private readonly NpcState? _npc;
@@ -85,6 +88,12 @@ public sealed class NpcSpawnPacketWriter
         packet.WriteShort(npc.Size);
         packet.WriteInt(npc.WeaponRight);
         packet.WriteInt(npc.WeaponLeft);
+        if (npc.NpcType == NpcData.TypePet)
+        {
+            packet.WriteSByteString(npc.PetOwnerName);
+            packet.WriteSByteString(npc.PetName);
+            packet.WriteInt(PetRecordTail);
+        }
         packet.WriteByte(npc.IsMonster && npc.NpcType != NpcData.TypeGuardSummon ? (byte)0 : npc.Nation);
         packet.WriteByte(npc.Level);
         packet.WriteShort(npc.X);

@@ -20,6 +20,7 @@ public class ItemUpgradeService(
     IUserNotificationService userNotificationService,
     IGlobalAnvilRateService globalAnvilRateService,
     IChaoticGeneratorService chaoticGeneratorService,
+    IPetService petService,
     ILogger<ItemUpgradeService> logger) : IItemUpgradeService
 {
 
@@ -125,10 +126,27 @@ public class ItemUpgradeService(
             case ItemUpgradeSubOpcode.BifrostExchange:
                 await chaoticGeneratorService.HandlePieceExchangeAsync(session, packet);
                 break;
+            case ItemUpgradeSubOpcode.PetHatching:
+                await HandlePetHatchingAsync(session, packet);
+                break;
             default:
                 logger.LogDebug("Unhandled item upgrade sub-opcode {SubOpcode} from {Name}", subOpcode, session.Name);
                 break;
         }
+    }
+
+    private const int PetHatchingRequestBytes = 11;
+
+    private async Task HandlePetHatchingAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < PetHatchingRequestBytes)
+            return;
+
+        var npcId = packet.ReadInt();
+        var eggItemId = packet.ReadInt();
+        var bagSlot = packet.ReadByte();
+        var name = packet.ReadString();
+        await petService.HatchAsync(session, npcId, eggItemId, bagSlot, name);
     }
 
     private async Task HandleStandardUpgradeAsync(UserSession session, Packet packet, ItemUpgradeSubOpcode responseSubOpcode)

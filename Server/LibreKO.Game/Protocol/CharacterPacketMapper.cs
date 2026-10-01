@@ -21,7 +21,8 @@ public sealed record MyInfoPacketContext(
     short PosX,
     short PosZ,
     short PosY,
-    short PremiumHours);
+    short PremiumHours,
+    IReadOnlyDictionary<int, PetItemInfo>? PetsBySlot = null);
 
 public sealed record SelectCharacterPacketContext(
     short ZoneId,
@@ -173,6 +174,8 @@ public class CharacterPacketMapper
                     context.Character.Items, storageSlot,
                     out var itemId, out var durability, out var count, out var flag))
                 writer.SetItem(storageSlot, itemId, durability, count, flag);
+            if (context.PetsBySlot?.TryGetValue(storageSlot, out var pet) == true)
+                writer.SetPetItem(storageSlot, pet);
         }
 
         return writer.Build();

@@ -1140,6 +1140,37 @@ public partial class World
         return box;
     }
 
+    internal Control BuildFamiliarUiPreview(bool summoned)
+    {
+        ItemData.EnsureLoaded();
+        BuildPetPanel();
+        var sheet = new PetSheet
+        {
+            Index = 1, Name = "Kauly", Class = 101, Level = 12, ExpPercent = 4375,
+            MaxHp = 168, Hp = 131, MaxMp = 190, Mp = 190, Satisfaction = 7240, Attack = 51, Defence = 110,
+            Mode = PetSheet.ModeAttack,
+        };
+        ShowPetSheet(summoned ? sheet : null);
+        if (summoned) SetPetStatus("50.00% satisfaction rate increase", false);
+        _petPanel.Visible = true;
+        return DetachPreviewControl(_petPanel);
+    }
+
+    internal Control BuildFamiliarHatchUiPreview()
+    {
+        ItemData.EnsureLoaded();
+        BuildPetHatchPanel();
+        Inv.ApplySlotUpdate(GridStart + 2, new ItemSlot { ItemId = PreviewEggItem, Count = 1, Durability = 1 });
+        Inv.ApplySlotUpdate(GridStart + 6, new ItemSlot { ItemId = PreviewEggItem, Count = 1, Durability = 1 });
+        OpenPetHatch(PreviewTrainerNpc);
+        _petHatchName.Text = "Kauly";
+        RefreshPetHatchUI();
+        return DetachPreviewControl(_petHatchPanel);
+    }
+
+    private const int PreviewEggItem = 600001000;
+    private const int PreviewTrainerNpc = 13016;
+
     internal Control BuildClassChangeUiPreview()
     {
         BuildClassChangePanel();

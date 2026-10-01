@@ -32,5 +32,7 @@ internal static class NpcPacketMapper
         npc.GetPosY,
         npc.GateOpen,
         npc.ObjectType,
-        npc.Direction);
+        npc.Direction,
+        npc.PetOwnerName,
+        npc.IsPet ? npc.Name : string.Empty);
 }

@@ -19,6 +19,7 @@ public static class NpcTypes
     public const int Boss = 3;
     public const int Guard = 11;
     public const int WarGuard = 14;
+    public const int Pet = 15;
     public const int Merchant = 21;
     public const int Tinker = 22;
     public const int Anvil = 24;
