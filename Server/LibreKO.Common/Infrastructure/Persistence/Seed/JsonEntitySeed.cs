@@ -32,7 +32,8 @@ public abstract class JsonEntitySeed<T> : IEntitySeed<T>, IFileBackedSeed
     public virtual string[] PropertiesToExclude => [];
     public virtual string[] PropertiesToUpdate => [];
     public string SeedPath => SeedDataLocation.DataPath(JsonFileName);
-    public IReadOnlyList<string> SeedSources => File.Exists(SeedPath) ? [SeedPath] : ShardPaths();
+    public IReadOnlyList<string> SeedSources =>
+        ShardPaths() is { Length: > 0 } shards ? shards : File.Exists(SeedPath) ? [SeedPath] : [];
 
     protected abstract string JsonFileName { get; }
 

@@ -49,10 +49,21 @@ public class ShardedSeedTests : IDisposable
     }
 
     [Fact]
-    public void TheSingleFileWinsOverShards()
+    public void ShardsWinOverASingleFileLeftBehindBySplitting()
     {
         Write("Rows.json", """[{"Num":9}]""");
         Write("Rows.part00.json", """[{"Num":1}]""");
+
+        var seed = new RowSeed();
+
+        seed.SeedSources.Should().ContainSingle().Which.Should().EndWith("Rows.part00.json");
+        seed.GetSeedData().Select(row => row.Num).Should().Equal(1);
+    }
+
+    [Fact]
+    public void TheSingleFileStandsWhenThereAreNoShards()
+    {
+        Write("Rows.json", """[{"Num":9}]""");
 
         var seed = new RowSeed();
 
