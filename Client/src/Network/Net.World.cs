@@ -246,7 +246,7 @@ public partial class Net
         p.ReadByte();
         p.ReadInt();
         p.ReadByte();
-        e.IsGm = p.ReadByte() == 0;
+        e.IsGm = p.ReadByte() == GameMasterAuthority;
         p.ReadByte();
         e.Invisibility = p.ReadByte();
         e.Invisible = e.Invisibility != 0;

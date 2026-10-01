@@ -40,7 +40,7 @@ public partial class World : Node3D, IWorldContext
         _myId = info.CharId;
         _zone = info.Zone;
         _myKoX = info.X; _myKoZ = info.Z; _myKoY = info.Y;
-        _isGm = info.Authority == 0;
+        _isGm = info.Authority == Net.GameMasterAuthority;
         _collisionsOff = _isGm;
 
         _loadStartedAt = Now();

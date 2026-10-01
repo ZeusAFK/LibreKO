@@ -75,7 +75,7 @@ public class GameServerBootstrapper(
             return;
 
         logger.LogWarning(
-            "PUBLIC DEMO MODE: every account gets {Grants}. Turn off GameServer:PublicDemo before launch (docs/PUBLIC_DEMO_GM_PANEL.md).",
+            "PUBLIC DEMO MODE: every account gets {Grants}. Turn off GameServer:PublicDemo before launch",
             string.Join(" + ", granted));
     }
 

@@ -160,7 +160,6 @@ public partial class World : Node3D
         if (from == to || from < 0 || to < 0 || from >= Inv.Length || to >= Inv.Length) return;
         if (Inv[from].IsEmpty) return;
 
-
         var fromRegion = ItemMove.RegionOf(from);
         var toRegion = ItemMove.RegionOf(to);
         byte dir = ItemMove.DirectionFor(fromRegion, toRegion);
