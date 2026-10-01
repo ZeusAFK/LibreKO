@@ -61,6 +61,13 @@ public class BlindEffectTests
     }
 
     [Fact]
+    public void TheSlowRidesInTheSpeedSlotOfTheEcho()
+    {
+        Assert.Equal(48, SecondaryBuff.SpeedPercent(new short[] { 0, 1, 0, 11, 0, 48, 0 }));
+        Assert.Equal(100, SecondaryBuff.SpeedPercent(new short[] { 0, 1, 0 }));
+    }
+
+    [Fact]
     public void ASkillWhoseOwnTypeIsTheBuffHasNoSecondaryEcho()
     {
         Assert.False(SecondaryBuff.IsEcho(MagicType.Buff, MagicType.Buff, 5, new short[] { 0, 1, 0, 6, 0, 0, 0 }));

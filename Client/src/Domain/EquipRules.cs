@@ -98,17 +98,30 @@ public static class EquipRules
         || itemRace > RaceOpenAbove
         || itemRace == playerRace;
 
-    public static EquipRefusal Check(EquipStats who, ItemData.Item item)
+    public static EquipRefusal Check(EquipStats who, ItemData.Item item, ItemData.Ext? ext = null)
     {
         if (!RaceAllows(item.Race, who.Race)) return EquipRefusal.Race;
         if (!ClassAllows(who.Class, item.Class) || ForbidsKind(who.Class, item.Kind)) return EquipRefusal.Class;
-        if (who.Level < item.ReqLevel) return EquipRefusal.LevelTooLow;
+        if (who.Level < RequiredLevel(item, ext)) return EquipRefusal.LevelTooLow;
         if (item.ReqLevelMax > 0 && who.Level > item.ReqLevelMax) return EquipRefusal.LevelTooHigh;
-        if (who.Str < item.ReqStr) return EquipRefusal.Strength;
-        if (who.Sta < item.ReqSta) return EquipRefusal.Stamina;
-        if (who.Dex < item.ReqDex) return EquipRefusal.Dexterity;
-        if (who.Intel < item.ReqInt) return EquipRefusal.Intelligence;
-        if (who.Cha < item.ReqCha) return EquipRefusal.Charisma;
+        var (str, sta, dex, intel, cha) = RequiredStats(item, ext);
+        if (who.Str < str) return EquipRefusal.Strength;
+        if (who.Sta < sta) return EquipRefusal.Stamina;
+        if (who.Dex < dex) return EquipRefusal.Dexterity;
+        if (who.Intel < intel) return EquipRefusal.Intelligence;
+        if (who.Cha < cha) return EquipRefusal.Charisma;
         return EquipRefusal.None;
     }
+
+    public static int RequiredLevel(ItemData.Item item, ItemData.Ext? ext) =>
+        WithUpgrade(item.ReqLevel, ext?.ReqLevelBonus ?? 0);
+
+    public static (int Str, int Sta, int Dex, int Intel, int Cha) RequiredStats(ItemData.Item item, ItemData.Ext? ext) => (
+        WithUpgrade(item.ReqStr, ext?.ReqStrBonus ?? 0),
+        WithUpgrade(item.ReqSta, ext?.ReqStaBonus ?? 0),
+        WithUpgrade(item.ReqDex, ext?.ReqDexBonus ?? 0),
+        WithUpgrade(item.ReqInt, ext?.ReqIntBonus ?? 0),
+        WithUpgrade(item.ReqCha, ext?.ReqChaBonus ?? 0));
+
+    private static int WithUpgrade(int required, int bonus) => required > 0 ? required + bonus : 0;
 }

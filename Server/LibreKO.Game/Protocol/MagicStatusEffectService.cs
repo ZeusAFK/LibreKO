@@ -132,6 +132,17 @@ public class MagicStatusEffectService(
 
     private const int NotTransformed = 0;
 
+    private enum BuffOutcome
+    {
+        Applied,
+        Refused,
+        Skipped,
+    }
+
+    private const int AreaTarget = -1;
+    private const int ReflectCurseChance = 25;
+    private const float NpcDebuffReachSlack = 3f;
+
     private async Task ExecuteBuffAsync(
         UserSession caster, MagicData magic, int skillId, int targetId, int[] data, bool isPrimary)
     {
@@ -155,38 +166,154 @@ public class MagicStatusEffectService(
             }
         }
 
+        var isDebuff = !MagicBuffClassifier.IsBuff(type4Data);
+
+        if (targetId == AreaTarget && (SkillMoral)magic.Moral != SkillMoral.Self)
+        {
+            await ExecuteAreaBuffAsync(caster, magic, skillId, type4Data, isDebuff, data, isPrimary);
+            return;
+        }
+
+        if (isDebuff
+            && sessionManager.GetByCharacterId(targetId) == null
+            && sessionManager.Regions.GetNpc(targetId) is { } npcTarget)
+        {
+            await ExecuteNpcDebuffAsync(caster, magic, skillId, npcTarget, type4Data, data, isPrimary);
+            return;
+        }
+
         var target = ResolveBuffTarget(caster, magic, targetId);
         if (target == null)
             return;
 
-        var buffType = (BuffType)type4Data.BuffType;
-        var isDebuff = !MagicBuffClassifier.IsBuff(type4Data);
-
-        if (isDebuff && target.CharacterId != caster.CharacterId)
+        var (outcome, affected) = await ApplyBuffToPlayerAsync(caster, target, magic, skillId, type4Data, isDebuff, isPrimary);
+        if (outcome != BuffOutcome.Applied)
         {
-            if (target.BlockCurses)
-            {
+            if (outcome == BuffOutcome.Refused && isPrimary)
                 await SendMagicFailAsync(caster, skillId);
-                return;
+            return;
+        }
+
+        if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
+        {
+            await SendMagicFailAsync(caster, skillId);
+            return;
+        }
+
+        await AnnounceBuffAsync(caster, affected.CharacterId, skillId, type4Data, data);
+    }
+
+    private async Task ExecuteAreaBuffAsync(
+        UserSession caster, MagicData magic, int skillId, MagicType4Data type4Data, bool isDebuff,
+        int[] data, bool isPrimary)
+    {
+        var moral = (SkillMoral)magic.Moral;
+        var centreX = AreaCoordinate(data[0], caster.X);
+        var centreZ = AreaCoordinate(data[2], caster.Z);
+        var applied = false;
+
+        foreach (var player in AreaPlayers(caster, moral, type4Data.Radius, centreX, centreZ).ToList())
+        {
+            var (outcome, affected) = await ApplyBuffToPlayerAsync(caster, player, magic, skillId, type4Data, isDebuff, isPrimary);
+            if (outcome != BuffOutcome.Applied)
+                continue;
+
+            applied = true;
+            await AnnounceBuffAsync(caster, affected.CharacterId, skillId, type4Data, data);
+        }
+
+        if (isDebuff && IsHostileMoral(moral))
+        {
+            foreach (var npc in AreaNpcs(caster, type4Data.Radius + NpcDebuffReachSlack, centreX, centreZ).ToList())
+            {
+                if (!TryDebuffNpc(caster, magic, npc, skillId, type4Data))
+                    continue;
+
+                applied = true;
+                await AnnounceBuffAsync(caster, npc.UniqueId, skillId, type4Data, data);
             }
+        }
 
-            if (target.ReflectCurses && Random.Shared.Next(100) < 25)
-                target = caster;
+        if (!isPrimary)
+            return;
 
-            if (magic.SuccessRate > 0 && magic.SuccessRate < 100 && Random.Shared.Next(100) >= magic.SuccessRate)
-            {
+        if (!await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
+        {
+            await SendMagicFailAsync(caster, skillId);
+            return;
+        }
+
+        if (!applied || moral >= SkillMoral.All)
+        {
+            await sessionManager.Regions.SendToRegion(
+                caster,
+                MagicProcessPacketWriter.Create(
+                    MagicProcessOpcode.Effecting, skillId, (short)caster.CharacterId, AreaTarget, data),
+                excludeSender: false);
+        }
+    }
+
+    private async Task ExecuteNpcDebuffAsync(
+        UserSession caster, MagicData magic, int skillId, NpcInstance npc, MagicType4Data type4Data,
+        int[] data, bool isPrimary)
+    {
+        if (!IsHostileMoral((SkillMoral)magic.Moral)
+            || !NpcDebuffs.Affects((BuffType)type4Data.BuffType)
+            || !TryDebuffNpc(caster, magic, npc, skillId, type4Data))
+        {
+            if (isPrimary)
                 await SendMagicFailAsync(caster, skillId);
-                return;
+            return;
+        }
+
+        if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
+        {
+            await SendMagicFailAsync(caster, skillId);
+            return;
+        }
+
+        await AnnounceBuffAsync(caster, npc.UniqueId, skillId, type4Data, data);
+    }
+
+    private static bool TryDebuffNpc(
+        UserSession caster, MagicData magic, NpcInstance npc, int skillId, MagicType4Data type4Data)
+    {
+        if (!IsDebuffableNpc(npc, caster) || !LandsDebuff(magic))
+            return false;
+
+        return npc.Debuffs.TryApply(skillId, type4Data, DateTime.UtcNow.Ticks);
+    }
+
+    private async Task<(BuffOutcome Outcome, UserSession Target)> ApplyBuffToPlayerAsync(
+        UserSession caster, UserSession target, MagicData magic, int skillId, MagicType4Data type4Data,
+        bool isDebuff, bool isPrimary)
+    {
+        var buffType = (BuffType)type4Data.BuffType;
+
+        if (isDebuff)
+        {
+            if (target.CharacterId == caster.CharacterId)
+            {
+                if (IsHostileMoral((SkillMoral)magic.Moral))
+                    return (BuffOutcome.Skipped, target);
+            }
+            else
+            {
+                if (target.BlockCurses)
+                    return (BuffOutcome.Refused, target);
+
+                if (target.ReflectCurses && Random.Shared.Next(100) < ReflectCurseChance)
+                    target = caster;
+
+                if (!LandsOnPlayer(caster, target, magic, buffType, isPrimary))
+                    return (BuffOutcome.Refused, target);
             }
         }
 
         if ((buffType == BuffType.Speed || type4Data.Speed > 100)
             && (target.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired)
                 || caster.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired)))
-        {
-            await SendMagicFailAsync(caster, skillId);
-            return;
-        }
+            return (BuffOutcome.Refused, target);
 
         if (buffType == BuffType.FragmentOfManes)
         {
@@ -195,9 +322,7 @@ public class MagicStatusEffectService(
                 .Select(kvp => kvp.Key)
                 .ToList();
             foreach (var speedSkillId in activeSpeedBuffs)
-            {
                 await CancelAsync(target, speedSkillId);
-            }
         }
 
         var existingKey = buffType == BuffType.None
@@ -208,10 +333,7 @@ public class MagicStatusEffectService(
         if (existingKey > 0)
         {
             if (!isDebuff)
-            {
-                await SendMagicFailAsync(caster, skillId);
-                return;
-            }
+                return (BuffOutcome.Refused, target);
 
             target.ActiveBuffs.TryRemove(existingKey, out _);
         }
@@ -255,40 +377,104 @@ public class MagicStatusEffectService(
         target.RecalculateStatsWithBuffs(gameDataService);
         await userNotificationService.SendStatUpdateAsync(target);
 
-        // If this buff is a debuff that maps to a party-panel status icon, notify the
-        // target's party so the icon lights up.
         var statusType = GetPartyStatusCode(buffType);
         if (statusType > 0 && isDebuff)
             await combatNotificationService.SendPartyStatusUpdateAsync(target, statusType, applied: true);
 
-        if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
-        {
-            await SendMagicFailAsync(caster, skillId);
-            return;
-        }
+        return (BuffOutcome.Applied, target);
+    }
 
-        // Data layout: [data[0], bResult, data[2], sDuration, data[4], bSpeed, data[6]]
-        await sessionManager.Regions.SendToRegion(
+    private static bool LandsDebuff(MagicData magic) =>
+        magic.SuccessRate is 0 or >= 100 || Random.Shared.Next(100) < magic.SuccessRate;
+
+    private static bool LandsOnPlayer(
+        UserSession caster, UserSession target, MagicData magic, BuffType buffType, bool isPrimary)
+    {
+        if (!StatusEffectChance.LocksMovement(buffType) || magic.PrimaryType == MagicSkillType.Melee)
+            return LandsDebuff(magic);
+
+        return IsExtendedRow(magic, isPrimary)
+            || StatusEffectChance.Lands(caster, target, buffType, StatusEffectChance.StatusChance);
+    }
+
+    private static bool IsExtendedRow(MagicData magic, bool isPrimary) =>
+        !isPrimary && magic.PrimaryType == MagicSkillType.Buff;
+
+    private Task AnnounceBuffAsync(
+        UserSession caster, int targetId, int skillId, MagicType4Data type4Data, int[] data) =>
+        sessionManager.Regions.SendToRegion(
             caster,
             MagicProcessPacketWriter.Create(
                 MagicProcessOpcode.Effecting,
                 skillId,
                 (short)caster.CharacterId,
-                (short)target.CharacterId,
-                [data[0], 1, data[2], type4Data.Duration, data[4], type4Data.Speed, data[6]]),
+                targetId,
+                [data[0], SkillSucceeded, data[2], type4Data.Duration, data[4], type4Data.Speed, data[6]]),
             excludeSender: false);
+
+    private IEnumerable<UserSession> AreaPlayers(
+        UserSession caster, SkillMoral moral, float radius, float centreX, float centreZ)
+    {
+        foreach (var player in sessionManager.Regions.GetNearbyUsers(caster).Prepend(caster))
+        {
+            if (player.Hp <= 0 || player.ZoneId != caster.ZoneId || !AcceptsAreaPlayer(caster, player, moral))
+                continue;
+
+            if (WithinRadius(player.X, player.Z, centreX, centreZ, radius))
+                yield return player;
+        }
     }
+
+    private IEnumerable<NpcInstance> AreaNpcs(UserSession caster, float radius, float centreX, float centreZ)
+    {
+        foreach (var npc in sessionManager.Regions.GetNearbyNpcs(caster))
+        {
+            if (IsDebuffableNpc(npc, caster) && WithinRadius(npc.X, npc.Z, centreX, centreZ, radius))
+                yield return npc;
+        }
+    }
+
+    private static bool AcceptsAreaPlayer(UserSession caster, UserSession player, SkillMoral moral)
+    {
+        var isCaster = player.CharacterId == caster.CharacterId;
+        return moral switch
+        {
+            SkillMoral.Party or SkillMoral.PartyAll => isCaster
+                || (caster.IsInParty && player.PartyIndex == caster.PartyIndex),
+            SkillMoral.AreaFriend or SkillMoral.SelfArea or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe
+                => isCaster || !PvpRules.IsEnemy(caster, player),
+            SkillMoral.AreaAll => isCaster || PvpRules.CanAttackPlayer(caster, player),
+            _ => !isCaster && PvpRules.CanAttackPlayer(caster, player),
+        };
+    }
+
+    private static bool IsHostileMoral(SkillMoral moral) =>
+        moral is SkillMoral.Enemy or SkillMoral.AreaEnemy or SkillMoral.Npc;
+
+    private static bool IsDebuffableNpc(NpcInstance npc, UserSession caster) =>
+        npc.IsAlive && npc.ZoneId == caster.ZoneId && NpcHostility.IsAttackableBy(npc, caster);
+
+    private static bool WithinRadius(float x, float z, float centreX, float centreZ, float radius)
+    {
+        if (radius <= 0)
+            return true;
+
+        var dx = x - centreX;
+        var dz = z - centreZ;
+        return dx * dx + dz * dz <= radius * radius;
+    }
+
+    private static float AreaCoordinate(int value, float fallback) => value == 0 ? fallback : value;
 
     private UserSession? ResolveBuffTarget(UserSession caster, MagicData magic, int targetId)
     {
-        if ((SkillMoral)magic.Moral == SkillMoral.Self || targetId == NoTarget || targetId == caster.CharacterId)
+        if ((SkillMoral)magic.Moral == SkillMoral.Self || targetId == AreaTarget || targetId == caster.CharacterId)
             return caster;
 
         return sessionManager.GetByCharacterId(targetId);
     }
 
     private const byte PotionItemGroup = 9;
-    private const int NoTarget = -1;
 
     private async Task ExecuteSpecialAsync(UserSession caster, MagicData magic, int skillId, int targetId)
     {

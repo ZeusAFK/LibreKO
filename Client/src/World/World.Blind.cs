@@ -56,10 +56,10 @@ public partial class World
                 e.Body.Visible = !hide;
     }
 
-    private void OnSecondaryBuffLanded(SkillData.Skill s, int affected, int seconds)
+    private void OnSecondaryBuffLanded(SkillData.Skill s, int affected, int seconds, int speedPercent)
     {
         if (affected != _myId || _buffPanel == null || seconds <= 0) return;
         AddBuffChip(s, Now() + seconds);
-        StartBlind(s.Buff2Type, seconds);
+        ApplySelfStatus(s.Buff2Type, speedPercent, seconds);
     }
 }

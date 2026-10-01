@@ -24,6 +24,14 @@ public class MagicOverTimeService(
     private const int PercentScale = 100;
     private const int ManaDrainCasterShare = 2;
 
+    public static bool IsHealOverTime(MagicType3Data type3Data) =>
+        type3Data.Duration > 0
+        && type3Data.TimeDamage > 0
+        && (MagicDirectType)type3Data.DirectType is not (MagicDirectType.HealthPurchase or MagicDirectType.ManaPurchase);
+
+    public static bool HasHealOverTime(UserSession session) =>
+        session.ActiveOverTimeEffects.Values.Any(effect => effect.TickAmount > 0);
+
     private static byte AttributeToPartyStatus(byte attribute) => (byte)((MagicAttribute)attribute switch
     {
         MagicAttribute.Disease => PartyStatusIcon.Disease,
@@ -190,8 +198,11 @@ public class MagicOverTimeService(
         var centerZ = GetAreaCoordinate(data.Length > 2 ? data[2] : 0, caster.Z);
         var radiusSq = type3Data.Radius * type3Data.Radius;
 
+        var healsOverTime = IsHealOverTime(type3Data);
+
         if (ShouldAffectAreaPlayer(caster, caster, magic.Moral)
-            && IsWithinAreaRadius(caster.X, caster.Z, centerX, centerZ, radiusSq))
+            && IsWithinAreaRadius(caster.X, caster.Z, centerX, centerZ, radiusSq)
+            && !(healsOverTime && HasHealOverTime(caster)))
         {
             playerTargets.Add(caster);
         }
@@ -199,6 +210,9 @@ public class MagicOverTimeService(
         foreach (var player in sessionManager.Regions.GetNearbyUsers(caster))
         {
             if (!ShouldAffectAreaPlayer(caster, player, magic.Moral))
+                continue;
+
+            if (healsOverTime && HasHealOverTime(player))
                 continue;
 
             if (IsWithinAreaRadius(player.X, player.Z, centerX, centerZ, radiusSq))
@@ -244,6 +258,10 @@ public class MagicOverTimeService(
             if (directType == MagicDirectType.ManaDrain)
             {
                 await DrainPlayerManaAsync(caster, target, type3Data);
+            }
+            else if (directType == MagicDirectType.Mana)
+            {
+                await ReducePlayerManaAsync(target, type3Data);
             }
             else
             {
@@ -388,6 +406,20 @@ public class MagicOverTimeService(
         await RestoreCasterHealthAsync(caster, drained / ManaDrainCasterShare);
     }
 
+    private async Task ReducePlayerManaAsync(UserSession target, MagicType3Data type3Data)
+    {
+        if (type3Data.FirstDamage >= 0 || target.BlockMagic)
+            return;
+
+        var reduced = Math.Min((int)target.Mp, -type3Data.FirstDamage);
+        if (reduced <= 0)
+            return;
+
+        target.Mp = (short)(target.Mp - reduced);
+        target.MarkCombat();
+        await combatLifecycleService.SendMspChangeAsync(target);
+    }
+
     private static int PercentOfHealth(int currentHp, int maxHp, int firstDamage) =>
         firstDamage < PercentScale
             ? firstDamage * currentHp / -PercentScale
@@ -500,14 +532,15 @@ public class MagicOverTimeService(
 
         var isAlly = target.Nation == caster.Nation;
         var isFoe = PvpRules.IsEnemy(caster, target);
+        var isPartyMember = caster.IsInParty && target.PartyIndex == caster.PartyIndex;
         return (SkillMoral)moral switch
         {
+            SkillMoral.Party or SkillMoral.PartyAll => isPartyMember,
             SkillMoral.AreaEnemy or SkillMoral.SelfArea => isFoe,
             SkillMoral.AreaFriend => isAlly,
             SkillMoral.AreaAll => true,
             SkillMoral.Npc or SkillMoral.Enemy or SkillMoral.All or SkillMoral.None => isFoe,
-            SkillMoral.Self or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe
-                or SkillMoral.Party or SkillMoral.PartyAll => isAlly,
+            SkillMoral.Self or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe => isAlly,
             _ => isFoe
         };
     }

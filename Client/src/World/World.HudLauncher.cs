@@ -7,7 +7,6 @@ public partial class World
 {
     private static float LauncherButtonSize => HudPlacement.LauncherButtonSize;
     private const float LauncherGap = 4f;
-    private const int LauncherSlots = 8;
 
     private CanvasLayer _hudLauncherLayer = null!;
     private HBoxContainer _hudLauncher = null!;
@@ -35,10 +34,6 @@ public partial class World
             "game/main-hand", "Skills", () => ToggleMainWindow("Skills")));
         _hudLauncher.AddChild(LauncherButton(
             "system/bag", "Inventory", () => ToggleMainWindow("Inventory")));
-        _hudLauncher.AddChild(LauncherButton(
-            "system/pus", "Power-Up Store", OpenPowerUpStore));
-        _hudLauncher.AddChild(LauncherButton(
-            "system/gift", "Lottery Event", ToggleLottery));
         _hudLauncher.AddChild(LauncherButton(
             "system/users-three", "Party", ToggleParty));
         _hudLauncher.AddChild(LauncherButton(

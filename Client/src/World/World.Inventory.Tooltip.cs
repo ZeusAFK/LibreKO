@@ -190,9 +190,12 @@ public partial class World : Node3D
                 (d, e) => (d.Ac > 0 ? d.Ac : d.Value) + (e?.BonusAc ?? 0));
         }
 
+        AddRateLine(lines, 4534, 4535, "Hit Rate", ext?.BonusHitrate ?? 0);
+        AddRateLine(lines, 4515, 4516, "Dodging Rate", ext?.BonusEvasionrate ?? 0);
+
         AddStatLine(lines, absSlot, def, ext, 4521, "Strength Bonus", 0, ext?.BonusStr ?? 0,
             (_, e) => e?.BonusStr ?? 0, 4);
-        AddStatLine(lines, absSlot, def, ext, 0, "Health Bonus", 0, ext?.BonusSta ?? 0,
+        AddStatLine(lines, absSlot, def, ext, 4802, "Health Bonus", 0, ext?.BonusSta ?? 0,
             (_, e) => e?.BonusSta ?? 0, 4);
         AddStatLine(lines, absSlot, def, ext, 4518, "Dexterity Bonus", 0, ext?.BonusDex ?? 0,
             (_, e) => e?.BonusDex ?? 0, 4);
@@ -206,6 +209,21 @@ public partial class World : Node3D
             (_, e) => e?.BonusMaxMp ?? 0, 4);
 
         AddSpecialLine(lines, ext);
+
+        AddStatLine(lines, absSlot, def, ext, 4530, "Defense Ability (Dagger)", 0, ext?.BonusDaggerAc ?? 0,
+            (_, e) => e?.BonusDaggerAc ?? 0, 4);
+        AddStatLine(lines, absSlot, def, ext, 4612, "Defense Ability (Jamadar)", 0, ext?.BonusJamadarAc ?? 0,
+            (_, e) => e?.BonusJamadarAc ?? 0, 4);
+        AddStatLine(lines, absSlot, def, ext, 4532, "Defense Ability (Sword)", 0, ext?.BonusSwordAc ?? 0,
+            (_, e) => e?.BonusSwordAc ?? 0, 4);
+        AddStatLine(lines, absSlot, def, ext, 4529, "Defense Ability (Club)", 0, ext?.BonusClubAc ?? 0,
+            (_, e) => e?.BonusClubAc ?? 0, 4);
+        AddStatLine(lines, absSlot, def, ext, 4528, "Defense Ability (Axe)", 0, ext?.BonusAxeAc ?? 0,
+            (_, e) => e?.BonusAxeAc ?? 0, 4);
+        AddStatLine(lines, absSlot, def, ext, 4531, "Defense Ability (Spear)", 0, ext?.BonusSpearAc ?? 0,
+            (_, e) => e?.BonusSpearAc ?? 0, 4);
+        AddStatLine(lines, absSlot, def, ext, 4527, "Defense Ability (Arrow)", 0, ext?.BonusArrowAc ?? 0,
+            (_, e) => e?.BonusArrowAc ?? 0, 4);
 
         AddStatLine(lines, absSlot, def, ext, 4548, "Resistance to Flame", 0, ext?.BonusFireR ?? 0,
             (_, e) => e?.BonusFireR ?? 0, 3);
@@ -234,19 +252,21 @@ public partial class World : Node3D
         if (def.ReqCls > 0)
             lines.Add(new TooltipLine(" -" + ItemData.Text(EquipRules.ClassNameTextId(def.ReqCls), UnknownClassName),
                 RequirementClassFailed(def.ReqCls) ? 13 : 0));
-        if (def.ReqLevel > 0)
+        int reqLevel = EquipRules.RequiredLevel(def, ext);
+        if (reqLevel > 0)
         {
-            int color = Sheet.Level > 0 && Sheet.Level < def.ReqLevel ? 13 : 0;
-            string text = def.ReqLevelMax > def.ReqLevel && def.ReqLevelMax < 100
-                ? FormatRangeText(4558, "Required Level", def.ReqLevel, def.ReqLevelMax)
-                : FormatIntText(4541, "Required Level", def.ReqLevel);
+            int color = Sheet.Level > 0 && Sheet.Level < reqLevel ? 13 : 0;
+            string text = def.ReqLevelMax > reqLevel && def.ReqLevelMax < 100
+                ? FormatRangeText(4558, "Required Level", reqLevel, def.ReqLevelMax)
+                : FormatIntText(4541, "Required Level", reqLevel);
             lines.Add(new TooltipLine(text, color));
         }
-        AddRequirement(lines, 4544, "Required Strength", def.ReqStr + (ext?.ReqStrBonus ?? 0), Sheet.Str);
-        AddRequirement(lines, 4543, "Required Health", def.ReqSta, Sheet.Sta);
-        AddRequirement(lines, 4538, "Required Dexterity", def.ReqDex, Sheet.Dex);
-        AddRequirement(lines, 4540, "Required Intelligence", def.ReqInt, Sheet.Intel);
-        AddRequirement(lines, 4537, "Required Magic Power", def.ReqCha, Sheet.Mag);
+        var (reqStr, reqSta, reqDex, reqInt, reqCha) = EquipRules.RequiredStats(def, ext);
+        AddRequirement(lines, 4544, "Required Strength", reqStr, Sheet.Str);
+        AddRequirement(lines, 4543, "Required Health", reqSta, Sheet.Sta);
+        AddRequirement(lines, 4538, "Required Dexterity", reqDex, Sheet.Dex);
+        AddRequirement(lines, 4540, "Required Intelligence", reqInt, Sheet.Intel);
+        AddRequirement(lines, 4537, "Required Magic Power", reqCha, Sheet.Mag);
 
         string grade = RarityGradeLine(rarity);
         if (grade.Length > 0)
@@ -437,6 +457,14 @@ public partial class World : Node3D
         if (baseValue != 0 && bonusValue > 0) return $"{baseValue}(+{bonusValue})";
         if (baseValue != 0 && bonusValue < 0) return $"{baseValue}({bonusValue})";
         return (baseValue + bonusValue).ToString();
+    }
+
+    private static void AddRateLine(List<TooltipLine> lines, int raiseTextId, int lowerTextId, string what, int percent)
+    {
+        if (percent == 0) return;
+        lines.Add(percent > 0
+            ? new TooltipLine(FormatIntText(raiseTextId, $"Increase {what} by %d%%", percent), 4)
+            : new TooltipLine(FormatIntText(lowerTextId, $"Decrease {what} by %d%%", -percent), 4));
     }
 
     private static string FormatIntText(int textId, string fallback, int value)

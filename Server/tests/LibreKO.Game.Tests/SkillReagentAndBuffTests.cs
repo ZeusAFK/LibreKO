@@ -432,6 +432,20 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     private static void GiveStones(UserSession caster, int stone, ushort count) =>
         caster.Inventory[InventoryConstants.InventoryStart + 1] = new ItemSlot { ItemId = stone, Count = count };
 
+    private static async Task CastAsync(
+        IMagicPacketCoordinator coordinator, UserSession caster, int skillId, int targetId)
+    {
+        var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
+        packet.WriteByte((byte)MagicProcessOpcode.Casting);
+        packet.WriteInt(skillId);
+        packet.WriteInt(caster.CharacterId);
+        packet.WriteInt(targetId);
+        for (var i = 0; i < 7; i++)
+            packet.WriteInt(0);
+        await coordinator.HandleAsync(caster.Client, packet);
+        caster.CastCommitTicks = 0;
+    }
+
     private static Packet EffectingPacket(int skillId, int casterId, int targetId)
     {
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
@@ -468,6 +482,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
             caster.SkillPoints[i] = 99;
         GiveStones(caster, StoneOfRogue, 3);
 
+        await CastAsync(provider.GetRequiredService<IMagicPacketCoordinator>(), caster, MagicShield, caster.CharacterId);
         await provider.GetRequiredService<IMagicPacketCoordinator>()
             .HandleAsync(caster.Client, EffectingPacket(MagicShield, caster.CharacterId, caster.CharacterId));
 
@@ -586,6 +601,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         var before = caster.Stats.ColdR;
 
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
+        await CastAsync(coordinator, caster, ResistCold, caster.CharacterId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(ResistCold);
@@ -636,6 +652,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
         var before = monster.Hp;
 
+        await CastAsync(coordinator, caster, skillId, monster.UniqueId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

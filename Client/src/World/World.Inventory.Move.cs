@@ -65,7 +65,7 @@ public partial class World : Node3D
 
         int eq = Inv.ResolveEquipDest(def.Slot, ItemData.EquipSlotFor(def));
         if (eq < 0) return;
-        if (!CanEquipOrNotice(def)) return;
+        if (!CanEquipOrNotice(Inv[absSlot].ItemId, def)) return;
 
         var preClear = Inv.HandsToClear(eq, def.Slot, IsTwoHanded);
         var free2 = Inv.FreeGridSlots();
@@ -91,10 +91,10 @@ public partial class World : Node3D
     private const int TextEquipIntelligence = 3021;
     private const int TextEquipCharisma = 3019;
 
-    private bool CanEquipOrNotice(ItemData.Item def)
+    private bool CanEquipOrNotice(int itemId, ItemData.Item def)
     {
         var who = new EquipStats(_selfClass, _selfRace, Sheet.Level, Sheet.Str, Sheet.Sta, Sheet.Dex, Sheet.Intel, Sheet.Mag);
-        var refusal = EquipRules.Check(who, def);
+        var refusal = EquipRules.Check(who, def, ItemData.ExtFor(itemId));
         if (refusal == EquipRefusal.None) return true;
         CombatNotice(refusal switch
         {
@@ -174,7 +174,7 @@ public partial class World : Node3D
         {
             var def = ItemData.Get(Inv[from].ItemId);
             if (def == null) return;
-            if (!CanEquipOrNotice(def)) return;
+            if (!CanEquipOrNotice(Inv[from].ItemId, def)) return;
             var preClear = Inv.HandsToClear(to, def.Slot, IsTwoHanded);
             var free = Inv.FreeGridSlots();
             free.Remove(from);

@@ -84,9 +84,23 @@ public static class ItemData
         public int BonusMagicR;
         public int BonusPoisonR;
         public int BonusCurseR;
+        public int BonusHitrate;
+        public int BonusEvasionrate;
+        public int BonusDaggerAc;
+        public int BonusJamadarAc;
+        public int BonusSwordAc;
+        public int BonusClubAc;
+        public int BonusAxeAc;
+        public int BonusSpearAc;
+        public int BonusArrowAc;
         public int MagicOrRare;
         public int DurationBonus;
         public int ReqStrBonus;
+        public int ReqStaBonus;
+        public int ReqDexBonus;
+        public int ReqIntBonus;
+        public int ReqChaBonus;
+        public int ReqLevelBonus;
         public int Plus;
         public int FireDamage;
         public int IceDamage;
@@ -231,9 +245,19 @@ public static class ItemData
                     BonusFireR = Int(o, "bonusFireR"), BonusColdR = Int(o, "bonusColdR"),
                     BonusLightningR = Int(o, "bonusLightningR"), BonusMagicR = Int(o, "bonusMagicR"),
                     BonusPoisonR = Int(o, "bonusPoisonR"), BonusCurseR = Int(o, "bonusCurseR"),
+                    BonusHitrate = Int(o, "bonusHitrate"), BonusEvasionrate = Int(o, "bonusEvasionrate"),
+                    BonusDaggerAc = Int(o, "bonusDaggerAc"), BonusJamadarAc = Int(o, "bonusJamadarAc"),
+                    BonusSwordAc = Int(o, "bonusSwordAc"), BonusClubAc = Int(o, "bonusClubAc"),
+                    BonusAxeAc = Int(o, "bonusAxeAc"), BonusSpearAc = Int(o, "bonusSpearAc"),
+                    BonusArrowAc = Int(o, "bonusArrowAc"),
                     MagicOrRare = Int(o, "magicOrRare"),
                     DurationBonus = Int(o, "durationBonus"),
                     ReqStrBonus = Int(o, "reqStrBonus"),
+                    ReqStaBonus = Int(o, "reqStaBonus"),
+                    ReqDexBonus = Int(o, "reqDexBonus"),
+                    ReqIntBonus = Int(o, "reqIntBonus"),
+                    ReqChaBonus = Int(o, "reqChaBonus"),
+                    ReqLevelBonus = Int(o, "reqLevelBonus"),
                     Plus = Int(o, "plus"),
                     FireDamage = Int(o, "fireDamage"), IceDamage = Int(o, "iceDamage"),
                     LightningDamage = Int(o, "lightningDamage"), PoisonDamage = Int(o, "poisonDamage"),

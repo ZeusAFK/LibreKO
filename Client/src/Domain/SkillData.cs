@@ -96,7 +96,7 @@ public static class SkillData
 
         public bool IsCasterAreaMoral => SkillTarget.IsCasterArea(Moral);
 
-        public bool IsArea => Radius > 0 && Type1 is MagicType.DotHeal or MagicType.Aoe or MagicType.Melee;
+        public bool IsArea => Radius > 0 && Type1 is MagicType.DotHeal or MagicType.Aoe or MagicType.Melee or MagicType.Buff;
 
         public bool IsGroundArea => IsArea && IsAreaMoral && HasCastPhase;
 

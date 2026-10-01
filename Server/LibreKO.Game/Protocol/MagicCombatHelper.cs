@@ -172,7 +172,7 @@ internal static class MagicCombatHelper
             var rightHand = gameData.GetItem(rightSlot.ItemId);
             if (rightHand != null && rightHand.Category == ItemKind.Staff)
             {
-                staffDamage = rightHand.Damage;
+                staffDamage = rightHand.Damage + UserSessionMagicState.WeaponDamageBonus(caster);
                 attributeDamage = ElementalDamage(rightHand, attribute);
             }
         }

@@ -29,9 +29,19 @@ public partial class DebugOverlay : CanvasLayer
             FitContent = true,
             ScrollActive = false,
             AutowrapMode = TextServer.AutowrapMode.Off,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        _graph = new FrameGraph { Visible = false, CustomMinimumSize = new Vector2(DetailWidth, GraphHeight) };
-        _stack = new VBoxContainer { CustomMinimumSize = new Vector2(CompactWidth, 0f) };
+        _graph = new FrameGraph
+        {
+            Visible = false,
+            CustomMinimumSize = new Vector2(DetailWidth, GraphHeight),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _stack = new VBoxContainer
+        {
+            CustomMinimumSize = new Vector2(CompactWidth, 0f),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
         HudPlacement.Stats(new Vector2(HudAnchor.Edge, HudAnchor.Edge)).ApplyTo(_stack);
         _label.AddThemeFontSizeOverride("normal_font_size", 14);
         _label.AddThemeColorOverride("font_outline_color", Colors.Black);

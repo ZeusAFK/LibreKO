@@ -17,6 +17,12 @@ public class NpcAiBehaviorService(
 {
     public async Task ProcessNpcAsync(NpcInstance npc, long nowTicks)
     {
+        if (npc.Debuffs.IsStunned(nowTicks))
+        {
+            npc.IsMoving = false;
+            return;
+        }
+
         if (npc.IsGuardSummon)
         {
             await guardSummonAiService.TickAsync(npc, nowTicks);

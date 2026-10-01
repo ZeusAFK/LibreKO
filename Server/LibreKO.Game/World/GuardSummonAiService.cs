@@ -82,7 +82,7 @@ public class GuardSummonAiService(
         guard.LastAttackTicks = nowTicks;
 
         var damage = CombatUtils.NpcStrikeDamage(
-            guard.Attack1 > 0 ? guard.Attack1 : guard.Attack2, monster.Ac, guard.HitRate, monster.EvadeRate);
+            guard.TotalHit, monster.TotalAc, guard.HitRate, monster.EvadeRate);
         var result = AttackResult.Failed;
         if (damage > 0)
         {

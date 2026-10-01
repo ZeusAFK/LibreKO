@@ -36,6 +36,8 @@
     "hammer": "system/hammer.svg",
     "door": "system/door.svg",
     "user": "system/user.svg",
-    "storefront": "system/storefront.svg"
+    "storefront": "system/storefront.svg",
+    "gem": "system/gem.svg",
+    "ticket": "system/ticket.svg"
   }
 }

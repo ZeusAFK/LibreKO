@@ -350,6 +350,7 @@ public partial class World
     {
         bool wasInactive = _lotteryState == null || !_lotteryState.Active;
         _lotteryState = state;
+        RefreshLotteryIcon();
         RenderLottery();
 
         if (state.Active && wasInactive)
@@ -441,6 +442,7 @@ public partial class World
         if (_lotteryState != null)
         {
             _lotteryState.Active = false;
+            RefreshLotteryIcon();
             RenderLottery();
         }
     }

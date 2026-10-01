@@ -143,7 +143,7 @@ public class NpcAiMagicService(
                 => CalculateRangedMagicDamage(npc, target, ranged),
             MagicSkillType.OverTime when gameData.MagicType3Table.TryGetValue(magic.Id, out var overTime)
                 => CalculateOverTimeMagicDamage(npc, overTime),
-            _ => npc.Attack1 > 0 ? npc.Attack1 : npc.Attack2
+            _ => npc.TotalHit
         };
 
         logger.LogDebug(
@@ -270,7 +270,7 @@ public class NpcAiMagicService(
 
     private static int CalculateMeleeMagicDamage(NpcInstance npc, UserSession target, MagicType1Data type1)
     {
-        var totalHit = npc.Attack1 > 0 ? npc.Attack1 : npc.Attack2;
+        var totalHit = npc.TotalHit;
         var baseDamage = totalHit * (100 + type1.Hit) / 100 + type1.AddDamage;
         var damage = baseDamage * 200 / (target.Stats.TotalAc + 240);
         var variance = Random.Shared.Next(0, Math.Max(1, damage / 5));
@@ -279,7 +279,7 @@ public class NpcAiMagicService(
 
     private static int CalculateRangedMagicDamage(NpcInstance npc, UserSession target, MagicType2Data type2)
     {
-        var totalHit = npc.Attack1 > 0 ? npc.Attack1 : npc.Attack2;
+        var totalHit = npc.TotalHit;
         var baseDamage = totalHit + type2.AddDamage;
         var damage = baseDamage * 200 / (target.Stats.TotalAc + 240);
         var variance = Random.Shared.Next(0, Math.Max(1, damage / 5));
@@ -288,7 +288,7 @@ public class NpcAiMagicService(
 
     private static int CalculateOverTimeMagicDamage(NpcInstance npc, MagicType3Data type3)
     {
-        return type3.FirstDamage > 0 ? type3.FirstDamage : (npc.Attack1 > 0 ? npc.Attack1 : npc.Attack2);
+        return type3.FirstDamage > 0 ? type3.FirstDamage : (npc.TotalHit);
     }
 
     private async Task ExecuteHealEffectAsync(NpcInstance healer, NpcInstance target, MagicData magic)

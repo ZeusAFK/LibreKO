@@ -109,7 +109,12 @@ public class GameSessionInitializer(
             : UserSession.AccountStatusNone;
 
         if (coefficient != null)
+        {
             session.RecalculateStats(coefficient, gameData);
+            if (session.Hp > 0)
+                session.Hp = (short)Math.Clamp(character.Hp, 1, session.MaxHp);
+            session.Mp = (short)Math.Clamp(character.Mp, 0, session.MaxMp);
+        }
 
         sessionManager.Regions.AddToRegion(session);
 

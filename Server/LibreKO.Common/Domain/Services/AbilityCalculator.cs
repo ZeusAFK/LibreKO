@@ -19,7 +19,7 @@ public static class AbilityCalculator
         return CalculateMaxHp(character.Level, character.Stamina, coefficient.Hp, 0);
     }
 
-    public static short CalculateMaxHp(byte level, byte stamina, double hpCoeff, short itemMaxHpBonus)
+    public static short CalculateMaxHp(byte level, int stamina, double hpCoeff, short itemMaxHpBonus)
     {
         var lv = (int)level;
         var sta = (int)stamina;
@@ -37,7 +37,7 @@ public static class AbilityCalculator
         return CalculateMaxMp(character.Level, character.Intelligence, character.Stamina, coefficient, 0);
     }
 
-    public static short CalculateMaxMp(byte level, byte intelligence, byte stamina, CoefficientData coefficient, short itemMaxMpBonus)
+    public static short CalculateMaxMp(byte level, int intelligence, int stamina, CoefficientData coefficient, short itemMaxMpBonus)
     {
         if (coefficient.Mp != 0)
         {
@@ -62,7 +62,7 @@ public static class AbilityCalculator
         byte level, byte strength, byte stamina, byte dexterity, byte intelligence,
         short classId, CoefficientData coefficient, ItemSlot[] inventory, IGameDataService gameData,
         byte[]? skillPoints = null, AchievementTitleData? title = null,
-        RebirthBonus? rebirth = null, StatBonus? buffs = null)
+        RebirthBonus? rebirth = null, StatBonus? buffs = null, short weaponDamageBonus = 0)
     {
         var stats = new DerivedStats();
 
@@ -190,7 +190,7 @@ public static class AbilityCalculator
         stats.ItemNpBonus = setTotals.NpBonus;
 
         // Phase 2: Calculate weapon damage and hit coefficient
-        var (itemDamage, hitCoefficient) = CalculateEquippedWeaponStats(inventory, gameData, coefficient);
+        var (itemDamage, hitCoefficient) = CalculateEquippedWeaponStats(inventory, gameData, coefficient, weaponDamageBonus);
 
         // Phase 3: Compute derived stats
         int totalStr = strength + itemStrB;
@@ -214,12 +214,15 @@ public static class AbilityCalculator
             stats.TotalHit = (ushort)Math.Min(
                 ushort.MaxValue, stats.TotalHit * (100 + setTotals.ApBonusPercent) / 100);
 
+        if (weaponDamageBonus > 0 && stats.TotalHit < ushort.MaxValue)
+            stats.TotalHit++;
+
         // Defense
         stats.TotalAc = (short)(coefficient.Ac * (level + itemAc));
 
         // HP/MP
-        stats.MaxHp = CalculateMaxHp(level, stamina, coefficient.Hp, itemMaxHp);
-        stats.MaxMp = CalculateMaxMp(level, intelligence, stamina, coefficient, itemMaxMp);
+        stats.MaxHp = CalculateMaxHp(level, stamina + itemStaB, coefficient.Hp, itemMaxHp);
+        stats.MaxMp = CalculateMaxMp(level, intelligence + itemIntB, stamina + itemStaB, coefficient, itemMaxMp);
 
         // Item bonuses
         stats.StrBonus = itemStrB;
@@ -266,36 +269,13 @@ public static class AbilityCalculator
         return stats;
     }
 
-    public static ushort CalculateTotalHitWithWeaponDamageBonus(
-        byte level,
-        byte strength,
-        byte dexterity,
-        short classId,
-        CoefficientData coefficient,
-        ItemSlot[] inventory,
-        IGameDataService gameData,
-        short itemStrBonus,
-        short itemDexBonus,
-        short flatWeaponDamageBonus)
-    {
-        var (itemDamage, hitCoefficient) = CalculateEquippedWeaponStats(inventory, gameData, coefficient, flatWeaponDamageBonus);
-        var totalHit = CalculateTotalHitCore(
-            level,
-            strength,
-            dexterity,
-            classId,
-            itemStrBonus,
-            itemDexBonus,
-            itemDamage,
-            hitCoefficient);
+    private const int JobDigits = 100;
 
-        if (flatWeaponDamageBonus > 0 && totalHit < ushort.MaxValue)
-            totalHit++;
+    private static int JobOf(short classId) => Math.Abs(classId) % JobDigits;
 
-        return totalHit;
-    }
+    private static bool IsWarrior(short classId) => JobOf(classId) is 1 or 5 or 6;
 
-    private static bool IsWarrior(short classId) => classId / 100 is 1 or 5;
+    private static bool IsRogue(short classId) => JobOf(classId) is 2 or 7 or 8;
 
     private static bool CheckSkillPoint(byte[] skillPoints, int skillIndex, int min, int max)
     {
@@ -427,7 +407,7 @@ public static class AbilityCalculator
         int totalStr = tempStr + itemStrBonus;
         int totalDex = tempDex + itemDexBonus;
 
-        bool isRogue = classId / 100 == 5 || classId / 100 == 7; // rogue classes: 5xx, 7xx
+        bool isRogue = IsRogue(classId);
         uint apStat = isRogue ? (uint)totalDex : (uint)totalStr;
         if (!isRogue)
             additionalAP += baseAP;

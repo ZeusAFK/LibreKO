@@ -20,7 +20,7 @@ internal static class UserSessionMagicState
         short str = 0, sta = 0, dex = 0, intel = 0, cha = 0;
         foreach (var buff in session.ActiveBuffs.Values)
         {
-            if (buff.IsExpired)
+            if (buff.IsExpired || !GrantsStats(buff.BuffType))
                 continue;
             str += buff.BonusStr;
             sta += buff.BonusSta;
@@ -31,113 +31,139 @@ internal static class UserSessionMagicState
         return new StatBonus(str, sta, dex, intel, cha);
     }
 
-    public static void ApplyBuffBonuses(UserSession session, IGameDataService gameData, CoefficientData coefficient)
+    public static short WeaponDamageBonus(UserSession session)
+    {
+        short bonus = 0;
+        foreach (var buff in session.ActiveBuffs.Values)
+            if (!buff.IsExpired && buff.BuffType == BuffType.WeaponDamage)
+                bonus += buff.BonusAttack;
+        return bonus;
+    }
+
+    private static bool GrantsStats(BuffType buffType) =>
+        buffType is BuffType.Stats or BuffType.BattleCry or BuffType.GmBuff;
+
+    public static void ApplyBuffBonuses(UserSession session)
     {
         ResetBuffFlags(session);
 
-        // Percentage AC multiplier (default 100 = no change).
-        // Various buff types modify this; applied to TotalAc after the loop.
-        int acPct = 100;
+        int acPct = NeutralPercent;
         short flatAcBonus = 0;
-        short flatWeaponDamageBonus = 0;
         short magicAttackBonus = 0;
+        int resistPct = NeutralPercent;
 
         foreach (var buff in session.ActiveBuffs.Values)
         {
             if (buff.IsExpired)
                 continue;
 
-            // AC handling: per-type via two channels: percentage and flat.
-            // Percentage is applied first, flat is added at damage time.
-            // We apply both here since .NET recalculates from scratch each time.
             switch (buff.BuffType)
             {
                 case BuffType.Ac:
                 case BuffType.WeaponAc:
-                    // If no flat AC and has percentage → percentage; else → flat
                     if (buff.BonusAc == 0 && buff.BonusAcPct > 0)
-                        acPct += buff.BonusAcPct - 100;
+                        acPct += buff.BonusAcPct - NeutralPercent;
                     else
                         flatAcBonus += buff.BonusAc;
                     break;
                 case BuffType.AttackSpeedArmor:
-                    // Flat AC + attack speed delta
+                case BuffType.Armored:
                     flatAcBonus += buff.BonusAc;
                     break;
                 case BuffType.TripleAcHalfSpeed:
-                    // +300% to AC multiplier (100+300=400 → 4x AC)
-                    acPct += 300;
+                    acPct += TripleAcPercent;
                     break;
                 case BuffType.KaulTransformation:
-                    // Hardcoded +500 flat AC
-                    flatAcBonus += 500;
+                    flatAcBonus += KaulAcBonus;
                     break;
                 case BuffType.AttackRangeArmor:
-                    // Hardcoded +100 flat AC
-                    flatAcBonus += 100;
-                    break;
-                case BuffType.WeaponDamage:
-                    flatWeaponDamageBonus += buff.BonusAttack;
+                    flatAcBonus += AttackRangeArmorAcBonus;
                     break;
                 case BuffType.ReduceTarget:
                 case BuffType.Undead:
-                    // Debuff: adjusts AC percentage (typically reduces AC)
+                case BuffType.DivideArmor:
                     if (buff.BonusAcPct > 0)
-                        acPct += buff.BonusAcPct - 100;
+                        acPct += buff.BonusAcPct - NeutralPercent;
                     break;
-                default:
-                    // Generic fallback: apply flat AC for buff types not explicitly handled above.
-                    // Data naturally has Ac=0 for types that don't use it, so this is safe.
-                    flatAcBonus += buff.BonusAc;
+                case BuffType.VariousEffects:
+                    if (buff.BonusAc == 0 && buff.BonusAcPct > NeutralPercent)
+                        acPct += buff.BonusAcPct - NeutralPercent;
+                    else if (buff.BonusAc > 0 && buff.BonusAcPct == NeutralPercent)
+                        flatAcBonus += buff.BonusAc;
+                    session.Stats.MaxHp = ApplyBuffResourceBonus(session.Stats.MaxHp, buff.BonusMaxHp, buff.BonusMaxHpPct);
+                    break;
+                case BuffType.HpMp:
+                    session.Stats.MaxHp = ApplyBuffResourceBonus(session.Stats.MaxHp, buff.BonusMaxHp, buff.BonusMaxHpPct);
+                    session.Stats.MaxMp = ApplyBuffResourceBonus(session.Stats.MaxMp, buff.BonusMaxMp, buff.BonusMaxMpPct);
+                    break;
+                case BuffType.Resistances:
+                    session.Stats.FireR += buff.BonusFireR;
+                    session.Stats.ColdR += buff.BonusColdR;
+                    session.Stats.LightningR += buff.BonusLightningR;
+                    session.Stats.MagicR += buff.BonusMagicR;
+                    session.Stats.PoisonR += buff.BonusPoisonR;
+                    session.Stats.DiseaseR += buff.BonusDiseaseR;
+                    break;
+                case BuffType.DecreaseResist:
+                    resistPct = NeutralPercent - buff.BonusFireR;
+                    break;
+                case BuffType.MagicPower:
+                case BuffType.MagicSpell:
+                    magicAttackBonus += (short)(buff.BonusMagicAttack - NeutralPercent);
+                    break;
+                case BuffType.AntiDagger:
+                    session.Stats.DaggerR += WeaponDefenceScrollBonus;
+                    break;
+                case BuffType.AntiJamadar:
+                    session.Stats.JamadarR += WeaponDefenceScrollBonus;
+                    break;
+                case BuffType.AntiSword:
+                    session.Stats.SwordR += WeaponDefenceScrollBonus;
+                    break;
+                case BuffType.AntiMace:
+                    session.Stats.MaceR += WeaponDefenceScrollBonus;
+                    break;
+                case BuffType.AntiAxe:
+                    session.Stats.AxeR += WeaponDefenceScrollBonus;
+                    break;
+                case BuffType.AntiSpear:
+                    session.Stats.SpearR += WeaponDefenceScrollBonus;
+                    break;
+                case BuffType.AntiBow:
+                    session.Stats.BowR += WeaponDefenceScrollBonus;
                     break;
             }
-
-            // MaxHP/MaxMP only apply when the buff type is HP_MP (canonical
-            // gates BUFF_TYPE_HP_MP = 50 the same way).
-            if (buff.BuffType == BuffType.HpMp)
-            {
-                session.Stats.MaxHp = ApplyBuffResourceBonus(session.Stats.MaxHp, buff.BonusMaxHp, buff.BonusMaxHpPct);
-                session.Stats.MaxMp = ApplyBuffResourceBonus(session.Stats.MaxMp, buff.BonusMaxMp, buff.BonusMaxMpPct);
-            }
-
-            // Resistances (data naturally has 0 for non-resistance buff types)
-            session.Stats.FireR += buff.BonusFireR;
-            session.Stats.ColdR += buff.BonusColdR;
-            session.Stats.LightningR += buff.BonusLightningR;
-            session.Stats.MagicR += buff.BonusMagicR;
-            session.Stats.PoisonR += buff.BonusPoisonR;
-            session.Stats.DiseaseR += buff.BonusDiseaseR;
-
-            if (buff.BonusMagicAttack != 0)
-                magicAttackBonus += (short)(buff.BonusMagicAttack - 100);
 
             ApplyBuffTypeFlags(session, buff);
         }
 
-        // Apply AC: percentage first, then flat
         if (acPct <= 0)
             session.Stats.TotalAc = 0;
-        else if (acPct != 100)
-            session.Stats.TotalAc = (short)(session.Stats.TotalAc * acPct / 100);
+        else if (acPct != NeutralPercent)
+            session.Stats.TotalAc = (short)(session.Stats.TotalAc * acPct / NeutralPercent);
 
         session.Stats.TotalAc += flatAcBonus;
 
-        session.MagicAttackAmount = magicAttackBonus;
+        if (resistPct != NeutralPercent)
+            ScaleResistances(session.Stats, Math.Max(0, resistPct));
 
-        if (flatWeaponDamageBonus > 0)
-        {
-            session.Stats.TotalHit = AbilityCalculator.CalculateTotalHitWithWeaponDamageBonus(
-                session.Level,
-                session.Strength,
-                session.Dexterity,
-                session.Class,
-                coefficient,
-                session.Inventory,
-                gameData,
-                session.Stats.StrBonus,
-                session.Stats.DexBonus,
-                flatWeaponDamageBonus);
-        }
+        session.MagicAttackAmount = magicAttackBonus;
+    }
+
+    private const int NeutralPercent = 100;
+    private const int TripleAcPercent = 300;
+    private const short KaulAcBonus = 500;
+    private const short AttackRangeArmorAcBonus = 100;
+    private const short WeaponDefenceScrollBonus = 5;
+
+    private static void ScaleResistances(DerivedStats stats, int percent)
+    {
+        stats.FireR = (short)(stats.FireR * percent / NeutralPercent);
+        stats.ColdR = (short)(stats.ColdR * percent / NeutralPercent);
+        stats.LightningR = (short)(stats.LightningR * percent / NeutralPercent);
+        stats.MagicR = (short)(stats.MagicR * percent / NeutralPercent);
+        stats.PoisonR = (short)(stats.PoisonR * percent / NeutralPercent);
+        stats.DiseaseR = (short)(stats.DiseaseR * percent / NeutralPercent);
     }
 
     public static byte[] SerializeSavedMagic(UserSession session)
@@ -312,9 +338,14 @@ internal static class UserSessionMagicState
         switch (buff.BuffType)
         {
             case BuffType.Speed:
-            case BuffType.Freeze:
                 if (!session.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
                     session.SpeedAmount = (byte)buff.BonusSpeed;
+                break;
+            case BuffType.Freeze:
+                session.SpeedAmount = (byte)buff.BonusSpeed;
+                session.CanUseSkills = false;
+                session.BlockMagic = true;
+                session.BlockPhysical = true;
                 break;
             case BuffType.FragmentOfManes:
                 session.SpeedAmount = (byte)buff.BonusSpeed;
@@ -329,7 +360,11 @@ internal static class UserSessionMagicState
                 break;
             case BuffType.Damage:
                 if (buff.BonusAttack > 0)
-                    session.AttackAmount = (byte)buff.BonusAttack;
+                    session.AttackAmount = (byte)Math.Max(0, session.AttackAmount + buff.BonusAttack - NeutralPercent);
+                break;
+            case BuffType.VariousEffects:
+                if (buff.BonusAttack > NeutralPercent)
+                    session.AttackAmount = (byte)(session.AttackAmount + buff.BonusAttack - NeutralPercent);
                 break;
             case BuffType.AttackSpeedArmor:
                 if (buff.BonusAttack > 0)

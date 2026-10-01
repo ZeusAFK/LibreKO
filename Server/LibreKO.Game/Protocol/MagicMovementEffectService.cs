@@ -32,7 +32,7 @@ public class MagicMovementEffectService(
         {
             MagicWarpType.BindPoint => await WarpToBindPointAsync(caster, magic),
             MagicWarpType.SummonInZone => await SummonToCasterAsync(caster, targetId),
-            MagicWarpType.MoveToTarget => await MoveToTargetAsync(caster, magic, targetId),
+            MagicWarpType.MoveToTarget => await MoveToTargetAsync(caster, magic, type8Data, targetId),
             MagicWarpType.Blink => await BlinkAsync(caster, type8Data, data),
             _ => Unhandled(warpType, skillId, caster),
         };
@@ -122,7 +122,8 @@ public class MagicMovementEffectService(
         return true;
     }
 
-    private async Task<bool> MoveToTargetAsync(UserSession caster, MagicData magic, int targetId)
+    private async Task<bool> MoveToTargetAsync(
+        UserSession caster, MagicData magic, MagicType8Data type8Data, int targetId)
     {
         var target = sessionManager.GetByCharacterId(targetId);
         if (target == null
@@ -133,6 +134,18 @@ public class MagicMovementEffectService(
 
         if ((SkillMoral)magic.Moral < SkillMoral.Enemy && PvpRules.IsEnemy(caster, target))
             return false;
+
+        if ((SkillMoral)magic.Moral == SkillMoral.Party
+            && (!caster.IsInParty || target.PartyIndex != caster.PartyIndex))
+            return false;
+
+        if (type8Data.Radius > 0)
+        {
+            float dx = target.X - caster.X, dz = target.Z - caster.Z;
+            float reach = type8Data.Radius + BlinkReachSlack;
+            if (dx * dx + dz * dz > reach * reach)
+                return false;
+        }
 
         await worldMovementService.WarpAsync(caster, (ushort)target.GetPosX, (ushort)target.GetPosZ);
         return true;

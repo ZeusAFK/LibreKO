@@ -258,6 +258,7 @@ public class UserSession
     public ConcurrentDictionary<int, int> PendingArrowHits { get; } = new();
     public long SkillBurstTicks { get; set; }
     public long LastPotionTicks { get; set; }
+    public long MageStatusImmuneUntilTicks { get; set; }
 
     // Buff type-specific state flags (recalculated from ActiveBuffs)
     public bool IsBlinded { get; set; }
@@ -351,8 +352,9 @@ public class UserSession
             Level, Strength, Stamina, Dexterity, Intelligence,
             Class, coefficient, Inventory, gameData, SkillPoints, TitleBonuses(gameData),
             new RebirthBonus(RebStr, RebSta, RebDex, RebIntel, RebMagic),
-            UserSessionMagicState.BuffStatBonus(this));
-        UserSessionMagicState.ApplyBuffBonuses(this, gameData, coefficient);
+            UserSessionMagicState.BuffStatBonus(this),
+            UserSessionMagicState.WeaponDamageBonus(this));
+        UserSessionMagicState.ApplyBuffBonuses(this);
         MaxHp = Stats.MaxHp;
         MaxMp = Stats.MaxMp;
     }

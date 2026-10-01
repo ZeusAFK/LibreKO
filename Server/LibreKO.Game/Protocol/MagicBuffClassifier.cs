@@ -79,7 +79,14 @@ internal static class MagicBuffClassifier
                 or BuffType.NpDropNoah
                 or BuffType.DivideArmor
                 or BuffType.RewardMask
-                or BuffType.MagicSpell => true,
+                or BuffType.MagicSpell
+                or BuffType.AntiDagger
+                or BuffType.AntiJamadar
+                or BuffType.AntiSword
+                or BuffType.AntiMace
+                or BuffType.AntiAxe
+                or BuffType.AntiSpear
+                or BuffType.AntiBow => true,
 
             _ => false
         };

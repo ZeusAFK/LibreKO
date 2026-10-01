@@ -218,7 +218,7 @@ public partial class World
         if (_swingTarget < 0 || now < _swingCommitAt) return;
         int target = _swingTarget;
         _swingTarget = -1;
-        if (_selfDead) return;
+        if (_selfDead || IsStunned()) return;
         if (!_ents.TryGetValue(target, out var t) || t.Dead || !t.Attackable) return;
         Net.I.SendAttack(target, SwingDelay());
     }
@@ -417,7 +417,8 @@ public partial class World
             case 3:
                 if (s != null && SecondaryBuff.IsEcho(s, data))
                 {
-                    OnSecondaryBuffLanded(s, targetId == 0 ? casterId : targetId, SecondaryBuff.Seconds(data));
+                    OnSecondaryBuffLanded(s, targetId == 0 ? casterId : targetId, SecondaryBuff.Seconds(data),
+                        SecondaryBuff.SpeedPercent(data));
                     break;
                 }
                 bool miss = data.Length > 3 && data[3] <= -100;
@@ -460,7 +461,8 @@ public partial class World
                 if (!miss && s != null)
                 {
                     RegisterBuff(s, affected, BuffSeconds(s, data));
-                    if (affected == _myId && s.Type1 == MagicType.Buff) StartBlind(s.BuffType, BuffSeconds(s, data));
+                    if (affected == _myId && s.Type1 == MagicType.Buff)
+                        ApplySelfStatus(s.BuffType, SecondaryBuff.SpeedPercent(data), BuffSeconds(s, data));
                 }
                 if (!miss && s?.IsResurrect == true) Revive(affected);
                 break;
@@ -559,6 +561,7 @@ public partial class World
     {
         if (_selfDead) return;
         _selfDead = true;
+        ClearStun();
         StopAutoAttack();
         Deselect();
         _pendingCasts.Clear();

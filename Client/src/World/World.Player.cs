@@ -88,7 +88,7 @@ public partial class World
         speed *= MoveSpeedMultiplier();
         if (GmSpeedHeld)
             speed *= GmSpeedMult;
-        if (IsRootedByCast()) speed = 0f;
+        if (IsRootedByCast() || IsStunned()) speed = 0f;
 
         var wasAt = _self.Position;
         if (_selfBody != null)

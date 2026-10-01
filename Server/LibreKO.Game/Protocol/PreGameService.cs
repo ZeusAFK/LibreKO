@@ -276,7 +276,7 @@ public class PreGameService(
 
         if (subOpcode == 1)
         {
-            var myInfo = await BuildMyInfoPacket(characterId, accountId);
+            var myInfo = await BuildMyInfoPacket(characterId, accountId, session);
             if (myInfo != null)
                 packets.Add(myInfo);
 
@@ -336,7 +336,7 @@ public class PreGameService(
 
     // --- Private helpers ---
 
-    private async Task<Packet?> BuildMyInfoPacket(int characterId, int accountId)
+    private async Task<Packet?> BuildMyInfoPacket(int characterId, int accountId, UserSession? session)
     {
         var character = await characterRepository.GetById(characterId);
         var account = await accountRepository.GetById(accountId);
@@ -347,14 +347,14 @@ public class PreGameService(
 
         var inventory = DeserializeInventory(character.Items);
         var coefficient = gameData.GetCoefficient(character.Class);
-        var stats = coefficient != null
+        var stats = session?.Stats ?? (coefficient != null
             ? AbilityCalculator.Calculate(
                 character.Level, character.Strength, character.Stamina,
                 character.Dexterity, character.Intelligence,
                 character.Class, coefficient, inventory, gameData, null, null,
                 new RebirthBonus(character.RebStr, character.RebSta, character.RebDex,
                     character.RebIntel, character.RebMagic))
-            : new DerivedStats();
+            : new DerivedStats());
 
         var clan = character.KnightsId > 0 ? sessionManager.Knights.GetClan(character.KnightsId) : null;
         var clanFame = ResolveClanFame(character, clan);

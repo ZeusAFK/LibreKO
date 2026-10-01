@@ -1,0 +1,23 @@
+Bind Npc 31506 Zone 21
+Quest 1745 "Please remove wild grass"
+    Journal "Please remove wild grass"
+    Kill 40 of 9856 at direction_2106
+
+Requires player level >= 1
+
+Rewards
+    Give 10 of 910201000
+    Give 10 of 910202000
+    Give 10 of 910203000
+    Give 1 of 810638000 for 7 days
+
+direction_2106 = location "Wild Grass" found "Moradon" at 805 343 in zone 21
+
+On offer
+    Show quest "Warrior! Moradon's front yard is suddenly overgrown with wild grass and plants can't grow! Can you bring me just 40 wild grass for 10 gems of EXP, Contribution, Life jewels each as well as Fire Dragon Wings (7 Days)."
+
+On in_progress
+    Say "Warrior! Moradon's front yard is suddenly overgrown with wild grass and plants can't grow! Can you bring me just 40 wild grass for 10 gems of EXP, Contribution, Life jewels each as well as Fire Dragon Wings (7 Days)."
+
+On claimable
+    Show quest "Warrior! Moradon's front yard is suddenly overgrown with wild grass and plants can't grow! Can you bring me just 40 wild grass for 10 gems of EXP, Contribution, Life jewels each as well as Fire Dragon Wings (7 Days)."

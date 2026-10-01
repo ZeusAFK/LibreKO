@@ -150,6 +150,10 @@ public class NpcInstance
     public Dictionary<int, int> DamageMap { get; } = []; // CharacterId → totalDamage
     public int TopDamagerCharId { get; set; }
     public ConcurrentDictionary<int, ActiveOverTimeEffect> ActiveOverTimeEffects { get; } = new();
+    public NpcDebuffs Debuffs { get; } = new();
+
+    public int TotalAc => Debuffs.ScaleAc(Ac, DateTime.UtcNow.Ticks);
+    public int TotalHit => Debuffs.ScaleAttack(Attack1 > 0 ? Attack1 : Attack2, DateTime.UtcNow.Ticks);
 
     // Group behavior
     public byte Family { get; set; } // NPC family type for group calling
@@ -351,6 +355,7 @@ public class NpcInstance
         DamageMap.Clear();
         TopDamagerCharId = 0;
         ActiveOverTimeEffects.Clear();
+        Debuffs.Clear();
         MoveType = InitMoveType;
         CurrentWaypoint = 0;
     }

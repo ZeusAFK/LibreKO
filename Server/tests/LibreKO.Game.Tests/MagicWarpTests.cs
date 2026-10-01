@@ -17,6 +17,7 @@ public class MagicWarpTests : GameTestBase
     private const int EscapeId = 209035;
     private const int SummonFriendId = 209004;
     private const int DescentId = 205650;
+    private const short DescentRadius = 60;
     private const int WildAdventId = 208770;
     private const int BlinkId = 210774;
     private const short BlinkRadius = 20;
@@ -127,19 +128,49 @@ public class MagicWarpTests : GameTestBase
     }
 
     [Fact]
-    public async Task DescentMovesTheCasterToTheTarget()
+    public async Task DescentMovesTheCasterToThePartyMember()
     {
         using var provider = CreateProvider(_ => { }, gameData =>
-            Warp(gameData, DescentId, SkillMoral.Party, MagicWarpType.MoveToTarget));
+            Warp(gameData, DescentId, SkillMoral.Party, MagicWarpType.MoveToTarget, DescentRadius));
 
         var (sessionManager, caster, client) = CreateCaster(provider);
-        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 640, z: 480);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 130, z: 140);
+        caster.PartyIndex = friend.PartyIndex = 1;
 
         await Cast(provider, client, DescentId, caster, friend.CharacterId);
 
-        caster.X.Should().BeApproximately(640, 0.5f);
-        caster.Z.Should().BeApproximately(480, 0.5f);
-        friend.X.Should().BeApproximately(640, 0.5f, "the target does not move");
+        caster.X.Should().BeApproximately(130, 0.5f);
+        caster.Z.Should().BeApproximately(140, 0.5f);
+        friend.X.Should().BeApproximately(130, 0.5f, "the target does not move");
+    }
+
+    [Fact]
+    public async Task DescentRefusesAPlayerOutsideTheParty()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, DescentId, SkillMoral.Party, MagicWarpType.MoveToTarget, DescentRadius));
+
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var stranger = CreateOther(sessionManager, AccountNation.Karus, x: 130, z: 140);
+
+        await Cast(provider, client, DescentId, caster, stranger.CharacterId);
+
+        caster.X.Should().BeApproximately(100, 0.5f);
+    }
+
+    [Fact]
+    public async Task DescentRefusesAPartyMemberBeyondItsRadius()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, DescentId, SkillMoral.Party, MagicWarpType.MoveToTarget, DescentRadius));
+
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 640, z: 480);
+        caster.PartyIndex = friend.PartyIndex = 1;
+
+        await Cast(provider, client, DescentId, caster, friend.CharacterId);
+
+        caster.X.Should().BeApproximately(100, 0.5f, "the member stands far beyond the skill's reach");
     }
 
     [Fact]

@@ -10,7 +10,8 @@ public enum MagicTimingVerdict
     OnCooldown,
     AlreadyCasting,
     CastTooEarly,
-    TooSoonAfterLastSkill
+    TooSoonAfterLastSkill,
+    NotCast
 }
 
 public interface IMagicTimingService
@@ -78,6 +79,9 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
 
         if (IsReleaseOfTheAcceptedCast(session, magic, now))
             return MagicTimingVerdict.Allowed;
+
+        if (magic.CastTime > 0 && magic.PrimaryType != MagicSkillType.Ranged && !HasInstantMagic(session))
+            return MagicTimingVerdict.NotCast;
 
         return RemainingCooldownMs(session, magic.Id, now) > 0
             ? MagicTimingVerdict.OnCooldown
@@ -214,6 +218,9 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
     }
 
     private static bool ConsumesAnItem(MagicData magic) => magic.UseItem != 0;
+
+    private static bool HasInstantMagic(UserSession session) =>
+        session.ActiveBuffs.Values.Any(buff => buff.BuffType == BuffType.InstantMagic && !buff.IsExpired);
 
     private static bool IsPotion(MagicData magic) =>
         ConsumesAnItem(magic)

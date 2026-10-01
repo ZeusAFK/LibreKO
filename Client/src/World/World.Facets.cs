@@ -96,6 +96,7 @@ public partial class World : Node3D
         Facet(AttendanceInit, AttendanceDispose);
         Facet(AchievementInit, AchievementDispose);
         Facet(MailIconInit, MailIconDispose);
+        Facet(TopIconsInit, TopIconsDispose);
         Facet(BountyInit, BountyDispose);
         Facet(TournamentInit, TournamentDispose);
         Facet(DisguiseInit, DisguiseDispose);

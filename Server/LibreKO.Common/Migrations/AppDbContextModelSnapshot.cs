@@ -1752,6 +1752,12 @@ namespace LibreKO.Common.Migrations
                     b.Property<short>("Range")
                         .HasColumnType("smallint");
 
+                    b.Property<int>("RequiredBuffSkill")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("RequiredBuffType")
+                        .HasColumnType("tinyint unsigned");
+
                     b.HasKey("Id");
 
                     b.ToTable("MagicType1", (string)null);

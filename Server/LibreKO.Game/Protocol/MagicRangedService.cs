@@ -29,7 +29,7 @@ public class MagicRangedService(
                 return;
             }
 
-            finalDamage = CalculateRangedDamage(
+            finalDamage = target.BlockPhysical ? 0 : CalculateRangedDamage(
                 caster,
                 type2Data,
                 target.Stats.TotalAc,
@@ -69,7 +69,7 @@ public class MagicRangedService(
             finalDamage = CalculateRangedDamage(
                 caster,
                 type2Data,
-                npcTarget.Ac,
+                npcTarget.TotalAc,
                 Math.Max(1f, npcTarget.EvadeRate),
                 isPlayerTarget: false);
             finalDamage = GmMode.Dealt(caster, npcTarget.Hp, Math.Min(finalDamage, CombatUtils.MaxDamage));

@@ -117,6 +117,14 @@ public class MagicPacketCoordinator(
             }
         }
 
+        if (RequiresLearnedSkill((MagicProcessOpcode)magicOpcode)
+            && (MagicProcessOpcode)magicOpcode != MagicProcessOpcode.Flying
+            && (HealOverTimeAlreadyRunning(session, magic, targetId) || MissesRequiredBuff(session, magic)))
+        {
+            await SendMagicFailAsync(session, skillId);
+            return;
+        }
+
         switch ((MagicProcessOpcode)magicOpcode)
         {
             case MagicProcessOpcode.Casting:
@@ -184,6 +192,38 @@ public class MagicPacketCoordinator(
                 break;
         }
     }
+
+    private bool HealOverTimeAlreadyRunning(UserSession session, MagicData magic, int targetId)
+    {
+        if (magic.PrimaryType != MagicSkillType.OverTime
+            || !MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, magic.Id, out var type3Data)
+            || !MagicOverTimeService.IsHealOverTime(type3Data))
+            return false;
+
+        var holder = (SkillMoral)magic.Moral switch
+        {
+            SkillMoral.Self => session,
+            <= SkillMoral.Party => targetId == session.CharacterId || targetId == AreaTarget
+                ? session
+                : sessionManager.GetByCharacterId(targetId),
+            SkillMoral.PartyAll => session,
+            _ => null,
+        };
+        return holder != null && MagicOverTimeService.HasHealOverTime(holder);
+    }
+
+    private bool MissesRequiredBuff(UserSession session, MagicData magic)
+    {
+        if (magic.PrimaryType != MagicSkillType.Melee
+            || !MagicTypeLookup.TryResolve(gameDataService.MagicType1Table, magic, magic.Id, out var type1Data)
+            || type1Data.RequiredBuffType == 0)
+            return false;
+
+        return !session.ActiveBuffs.Values.Any(buff =>
+            (byte)buff.BuffType == type1Data.RequiredBuffType && !buff.IsExpired);
+    }
+
+    private const int AreaTarget = -1;
 
     private int? InstantMagicBuffOf(UserSession session, MagicData magic)
     {

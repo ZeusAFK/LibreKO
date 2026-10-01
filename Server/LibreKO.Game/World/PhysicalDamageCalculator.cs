@@ -24,7 +24,7 @@ public readonly record struct PhysicalDefender(
         target.Stats.AcBonusClassPercent);
 
     public static PhysicalDefender Of(NpcInstance target) => new(
-        target.Ac,
+        target.TotalAc,
         target.EvadeRate,
         IsPlayer: false,
         BlocksPhysical: false,

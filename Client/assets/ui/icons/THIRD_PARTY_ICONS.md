@@ -83,3 +83,12 @@ section: three rounded bars rising left to right.
 | `system/storefront.svg` | `assets/regular/storefront.svg` | Phosphor Icons |
 
 The `currentColor` fill is changed to white; the paths are unchanged.
+
+### HUD top-row icons (Phosphor, MIT)
+
+| Local file | Source in phosphor-icons/core | Author |
+|---|---|---|
+| `system/gem.svg` | `assets/fill/sketch-logo-fill.svg` | Phosphor Icons |
+| `system/ticket.svg` | `assets/fill/ticket-fill.svg` | Phosphor Icons |
+
+The Power-Up Store and lottery buttons. The `currentColor` fill is changed to white; the paths are unchanged.

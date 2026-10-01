@@ -280,7 +280,7 @@ public partial class World
     }
 
     private bool SelfCasting(double now) =>
-        IsRootedByCast() || (_selfActionRank == ActionRankSkill && now < _selfActionUntil);
+        IsRootedByCast() || IsStunned() || (_selfActionRank == ActionRankSkill && now < _selfActionUntil);
 
     private const double PotionCooldownSeconds = 2.0;
 

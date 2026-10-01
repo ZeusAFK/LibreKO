@@ -239,6 +239,14 @@ public partial class World
         return DetachPreviewControl(_mailIconButton);
     }
 
+    internal (Control Store, Control Lottery) BuildTopIconsUiPreview()
+    {
+        TopIconsInit();
+        _lotteryState = new LotteryState { Active = true };
+        RefreshLotteryIcon();
+        return (DetachPreviewControl(_powerUpStoreIcon), DetachPreviewControl(_lotteryIcon));
+    }
+
     internal Control BuildClockUiPreview()
     {
         BuildClockHud();

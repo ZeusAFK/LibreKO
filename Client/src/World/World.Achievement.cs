@@ -7,22 +7,15 @@ namespace LibreKO;
 
 public partial class World
 {
-    private const float TrophyIconSize = 24f;
     private const float TrophyBadgeSize = 13f;
     private const float TrophyTouchBadgeSize = 30f;
     private const int TrophyTouchCountFont = 17;
     private const int TrophyCountFont = 9;
-    private const float TrophyGap = 6f;
-    private const float TrophyPadX = 9f;
     private const float TrophyBlinkDim = 0.3f;
     private const float TrophyBlinkStep = 0.6f;
 
     private static float BadgeSizeForTrophy =>
         Platform.TouchUi ? TrophyTouchBadgeSize : TrophyBadgeSize;
-
-    private static Color TrophyIconColor(bool waiting) => Platform.TouchUi
-        ? (waiting ? UiTheme.GoldBright : UiTheme.TextLo)
-        : (waiting ? UiTheme.GoldBright : UiTheme.TextDim);
 
     private CanvasLayer _trophyLayer = null!;
     private Button _trophy = null!;
@@ -590,19 +583,8 @@ public partial class World
         _trophyLayer = new CanvasLayer { Layer = 66 };
         AddChild(_trophyLayer);
 
-        _trophy = new Button { FocusMode = Control.FocusModeEnum.None, TooltipText = "Achievements" };
-        var flat = new StyleBoxEmpty();
-        _trophy.AddThemeStyleboxOverride("normal", flat);
-        _trophy.AddThemeStyleboxOverride("hover", flat);
-        _trophy.AddThemeStyleboxOverride("pressed", flat);
-        _trophy.Pressed += ToggleAchievements;
-        _trophyLayer.AddChild(_trophy);
-
-        _trophyIcon = UiIcons.Image("system/trophy",
-            new Vector2(TrophyIconSize, TrophyIconSize), TrophyIconColor(false));
-        _trophyIcon.MouseFilter = Control.MouseFilterEnum.Ignore;
-        _trophyIcon.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        _trophy.AddChild(_trophyIcon);
+        _trophy = TopIconButton(_trophyLayer, "system/trophy", "Achievements",
+            ToggleAchievements, out _trophyIcon);
 
         var badge = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         badge.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
@@ -623,35 +605,11 @@ public partial class World
         _trophyBadge = badge;
         _trophyBadge.Visible = false;
 
-        if (_attendanceGift != null) _attendanceGift.Resized += PlaceTrophy;
-        if (_premiumChip != null) _premiumChip.Resized += PlaceTrophy;
         _trophy.Resized += PlaceTrophy;
         Callable.From(PlaceTrophy).CallDeferred();
     }
 
-    private void PlaceTrophy()
-    {
-        if (Platform.TouchUi)
-        {
-            float side = HudPlacement.LauncherButtonSize;
-            _trophy.CustomMinimumSize = new Vector2(side, side);
-            float inset = side * HudPlacement.LauncherGlyphInset;
-            _trophyIcon.OffsetLeft = _trophyIcon.OffsetTop = inset;
-            _trophyIcon.OffsetRight = _trophyIcon.OffsetBottom = -inset;
-            HudPlacement.AchievementTrophy.ApplyTo(_trophy);
-            return;
-        }
-        if (_premiumChip == null) return;
-
-        float giftWidth = _attendanceGift?.Size.X ?? 0f;
-        _trophy.CustomMinimumSize = new Vector2(
-            TrophyIconSize + TrophyPadX * 2f,
-            Mathf.Max(_premiumChip.Size.Y, TrophyIconSize));
-        HudAnchor.Pin(_trophy, HudAnchor.Spot.TopRight, new Vector2(
-            HudAnchor.Edge + MiniMap.SquareSize + StatusHudGap
-                + _premiumChip.Size.X + TrophyGap + giftWidth + TrophyGap,
-            HudAnchor.Edge));
-    }
+    private void PlaceTrophy() => PlaceTopIcon(_trophy, _trophyIcon, HudPlacement.AchievementTrophy);
 
     private void RefreshTrophy(int claimable)
     {
@@ -660,7 +618,7 @@ public partial class World
         bool waiting = claimable > 0;
         _trophyBadge.Visible = waiting;
         _trophyCount.Text = claimable > 9 ? "9+" : claimable.ToString();
-        _trophyIcon.SelfModulate = TrophyIconColor(waiting);
+        _trophyIcon.SelfModulate = TopIconColor(waiting);
         _trophy.TooltipText = waiting
             ? $"Achievements — {claimable} reward{(claimable == 1 ? "" : "s")} to claim"
             : "Achievements";

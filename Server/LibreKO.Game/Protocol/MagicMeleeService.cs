@@ -119,7 +119,7 @@ public class MagicMeleeService(
 
     private async Task<int> StrikePlayerAsync(UserSession caster, MagicType1Data type1Data, UserSession target)
     {
-        var finalDamage = CalculateMeleeDamage(
+        var finalDamage = target.BlockPhysical ? 0 : CalculateMeleeDamage(
             caster,
             type1Data,
             target.Stats.TotalAc,
@@ -151,7 +151,7 @@ public class MagicMeleeService(
         var finalDamage = CalculateMeleeDamage(
             caster,
             type1Data,
-            npcTarget.Ac,
+            npcTarget.TotalAc,
             Math.Max(1f, npcTarget.EvadeRate),
             isPlayerTarget: false);
         finalDamage += type1Data.AddDamage;

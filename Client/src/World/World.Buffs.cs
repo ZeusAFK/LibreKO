@@ -94,6 +94,8 @@ public partial class World
     public const byte SpeedBuffType = 6;
     public const byte Speed2BuffType = 40;
 
+    public static bool IsSpeedBuffType(int buffType) => buffType is SpeedBuffType or Speed2BuffType;
+
     public static bool IsSpeedBuff(SkillData.Skill s) =>
         s.MoveSpeedPercent > 100 || s.BuffType == SpeedBuffType || s.BuffType == Speed2BuffType;
 
@@ -243,6 +245,8 @@ public partial class World
 
     private void OnBuffExpired(int buffType)
     {
+        if (IsStunBuffType(buffType)) ClearStun();
+        else if (buffType == Speed2BuffType) ClearMoveSpeedBuff();
         if (_buffPanel == null || buffType == 0) return;
 
         for (int i = _buffs.Count - 1; i >= 0; i--)

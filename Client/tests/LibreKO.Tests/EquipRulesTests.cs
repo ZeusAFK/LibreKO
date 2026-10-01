@@ -103,4 +103,36 @@ public class EquipRulesTests
         };
         Assert.Equal(expected, EquipRules.Check(MageMaster, staff));
     }
+
+    [Fact]
+    public void AnUpgradeRaisesTheStatsItsItemRequires()
+    {
+        var aria = MageMaster with { Intel = 255, Cha = 107 };
+        var elixirStaff = new ItemData.Item { Class = 0, Kind = 110, ReqInt = 158, ReqCha = 104 };
+        var plusEight = new ItemData.Ext { ReqChaBonus = 28 };
+
+        Assert.Equal(EquipRefusal.None, EquipRules.Check(aria, elixirStaff));
+        Assert.Equal(EquipRefusal.Charisma, EquipRules.Check(aria, elixirStaff, plusEight));
+        Assert.Equal(EquipRefusal.None, EquipRules.Check(aria with { Cha = 132 }, elixirStaff, plusEight));
+    }
+
+    [Fact]
+    public void EachRequiredStatTakesItsOwnUpgradeBonus()
+    {
+        var item = new ItemData.Item { Class = 0, ReqStr = 10, ReqSta = 10, ReqDex = 10, ReqInt = 10, ReqCha = 10 };
+        var ext = new ItemData.Ext { ReqStrBonus = 1, ReqStaBonus = 2, ReqDexBonus = 3, ReqIntBonus = 4, ReqChaBonus = 5 };
+        var (str, sta, dex, intel, cha) = EquipRules.RequiredStats(item, ext);
+
+        Assert.Equal((11, 12, 13, 14, 15), (str, sta, dex, intel, cha));
+    }
+
+    [Fact]
+    public void AnUpgradeAddsNoRequirementTheBaseItemDoesNotHave()
+    {
+        var item = new ItemData.Item { Class = 0, ReqInt = 158, ReqLevel = 0 };
+        var ext = new ItemData.Ext { ReqStrBonus = 28, ReqLevelBonus = 5 };
+
+        Assert.Equal((0, 0, 0, 158, 0), EquipRules.RequiredStats(item, ext));
+        Assert.Equal(0, EquipRules.RequiredLevel(item, ext));
+    }
 }

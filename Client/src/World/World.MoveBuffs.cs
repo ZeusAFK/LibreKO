@@ -41,10 +41,12 @@ public partial class World
         return _moveBuffPercent / 100f;
     }
 
-    private void ApplyMoveSpeedBuff(SkillData.Skill s, int duration)
+    private void ApplyMoveSpeedBuff(SkillData.Skill s, int duration) =>
+        ApplyMoveSpeedBuff(s.MoveSpeedPercent, duration);
+
+    private void ApplyMoveSpeedBuff(int pct, int duration)
     {
-        int pct = s.MoveSpeedPercent;
-        if (pct == 100 || duration <= 0) return;
+        if (pct <= 0 || pct == 100 || duration <= 0) return;
         if (HasActiveFragmentOfManes() && pct > 100) return;
 
         _moveBuffPercent = pct;

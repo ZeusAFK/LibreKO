@@ -1569,6 +1569,96 @@ public class CharacterTests : GameTestBase
     }
 
     [Fact]
+    public async Task GameStartCommand_ShowsTheSessionStatsSoScrollsAndTitlesSurviveARelog()
+    {
+        const short sessionMaxHp = 4321;
+        const ushort sessionAttack = 1234;
+        const short sessionStaminaBonus = 3;
+
+        using var provider = CreateProvider(
+            db =>
+            {
+                db.Accounts.Add(new Account
+                {
+                    Login = "scroll-user",
+                    Password = "pw",
+                    Nation = AccountNation.Karus,
+                    Authority = AccountAuthority.Normal
+                });
+                db.SaveChanges();
+
+                var accountId = db.Accounts.Single(a => a.Login == "scroll-user").Id;
+                db.Characters.Add(new Character
+                {
+                    AccountId = accountId,
+                    Slot = 0,
+                    Name = "Scrolled",
+                    Race = 1,
+                    Class = 101,
+                    Face = 2,
+                    Hair = 3,
+                    Level = 10,
+                    Hp = 4000,
+                    Mp = 100,
+                    MapId = 1,
+                    Items = new byte[InventoryConstants.InventoryTotal * 8],
+                    SkillPointData = new byte[9]
+                });
+            });
+
+        var preGameService = provider.GetRequiredService<IPreGameService>();
+        var accountId = await GetAccountIdAsync(provider, "scroll-user");
+        var characterId = await GetCharacterIdAsync(provider, "Scrolled");
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId, accountId);
+        session.Stats.MaxHp = sessionMaxHp;
+        session.Stats.TotalHit = sessionAttack;
+        session.Stats.StaBonus = sessionStaminaBonus;
+
+        var packets = await preGameService.GameStartAsync(characterId, accountId, 1, session);
+        var myInfo = packets.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_MYINFO);
+
+        myInfo.ResetOffset();
+        myInfo.ReadInt();
+        myInfo.ReadSByteString();
+        myInfo.ReadShort();
+        myInfo.ReadShort();
+        myInfo.ReadShort();
+        myInfo.ReadByte();
+        myInfo.ReadByte();
+        myInfo.ReadShort();
+        myInfo.ReadByte();
+        myInfo.ReadInt();
+        for (var i = 0; i < 5; i++)
+            myInfo.ReadByte();
+        myInfo.ReadShort();
+        myInfo.ReadLong();
+        myInfo.ReadLong();
+        myInfo.ReadInt();
+        myInfo.ReadInt();
+        myInfo.ReadShort();
+        myInfo.ReadByte();
+        myInfo.ReadLong();
+        myInfo.ReadUShort();
+        myInfo.ReadInt();
+        myInfo.ReadLong();
+        myInfo.ReadShort().Should().Be(sessionMaxHp);
+        myInfo.ReadShort().Should().Be(4000);
+        myInfo.ReadShort();
+        myInfo.ReadShort();
+        myInfo.ReadInt();
+        myInfo.ReadInt();
+        myInfo.ReadByte();
+        myInfo.ReadByte();
+        myInfo.ReadByte();
+        myInfo.ReadByte().Should().Be((byte)sessionStaminaBonus);
+        for (var i = 0; i < 6; i++)
+            myInfo.ReadByte();
+        myInfo.ReadShort().Should().Be((short)sessionAttack);
+    }
+
+    [Fact]
     public async Task GameStartCommand_SerializesClanBlockWithSingleByteClanNameAndAlignedMoney()
     {
         const short clanId = 77;

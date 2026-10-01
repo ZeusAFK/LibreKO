@@ -77,5 +77,12 @@ public enum BuffType : byte
     BattleCry = 171,
     IncreaseAttack = 172,
     RewardMask = 180,
-    MagicSpell = 183
+    MagicSpell = 183,
+    AntiDagger = 185,
+    AntiJamadar = 186,
+    AntiSword = 187,
+    AntiMace = 188,
+    AntiAxe = 189,
+    AntiSpear = 190,
+    AntiBow = 191
 }

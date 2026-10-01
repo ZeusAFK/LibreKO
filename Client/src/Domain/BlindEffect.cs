@@ -45,6 +45,8 @@ public static class SecondaryBuff
 {
     private const int ResultSlot = 1;
     private const int DurationSlot = 3;
+    private const int SpeedSlot = 5;
+    private const int NeutralSpeed = 100;
     private const int Applied = 1;
 
     public static bool IsEcho(SkillData.Skill s, short[] data) => IsEcho(s.Type1, s.Type2, s.Buff2Type, data);
@@ -54,4 +56,6 @@ public static class SecondaryBuff
         && data[ResultSlot] == Applied && data[DurationSlot] > 0;
 
     public static int Seconds(short[] data) => data.Length > DurationSlot ? data[DurationSlot] : 0;
+
+    public static int SpeedPercent(short[] data) => data.Length > SpeedSlot ? data[SpeedSlot] : NeutralSpeed;
 }

@@ -98,6 +98,7 @@ public partial class World
 
     private void LootTick(double now)
     {
+        AutoLootTick();
         if (_boxes.Count == 0) { if (_lootPrompt.Visible) _lootPrompt.Visible = false; return; }
 
         _despawnScratch.Clear();
@@ -131,6 +132,7 @@ public partial class World
             if (GodotObject.IsInstanceValid(box.Node)) box.Node.QueueFree();
             _boxes.Remove(bundleId);
         }
+        _autoLootTried.Remove(bundleId);
         if (_openBundleId == bundleId) CloseLoot();
     }
 
@@ -251,6 +253,7 @@ public partial class World
 
         _lootEntries.Clear();
         _lootEntries.AddRange(entries);
+        if (AutoLootNext()) return;
         RefreshLootWindow();
         _lootLayer.Visible = true;
     }
@@ -323,17 +326,20 @@ public partial class World
         // The floater comes from ItemGainedEvent, which knows the real stack delta.
         Audio.PlayUi(itemId != Net.GoldItemId ? Sfx.GetItem : Sfx.CoinGet);
         if (_lootEntries.Count == 0) { DespawnBox(bundleId); return; }
+        if (AutoLootNext()) return;
         RefreshLootWindow();
     }
 
     private void OnLootFail(byte code)
     {
+        if (_autoLooting) { StopAutoLoot(); return; }
         if (code == 7) return;
         if (_openBundleId >= 0) Net.I.SendBundleOpen(_openBundleId);
     }
 
     private void CloseLoot()
     {
+        _autoLooting = false;
         _openBundleId = -1;
         _lootEntries.Clear();
         if (_lootLayer != null) _lootLayer.Visible = false;

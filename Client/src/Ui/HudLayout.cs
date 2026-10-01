@@ -114,6 +114,7 @@ public sealed partial class HudLayout : Node
 
         GetViewport().SizeChanged += KeepOnScreen;
         _target.VisibilityChanged += KeepOnScreen;
+        _target.Resized += ClampAfterResize;
 
         Callable.From(InstallOverlays).CallDeferred();
         Callable.From(ApplySavedLayout).CallDeferred();
@@ -124,6 +125,8 @@ public sealed partial class HudLayout : Node
         if (!GodotObject.IsInstanceValid(_target) || !_target.IsVisibleInTree()) return;
         Callable.From(FollowDefaultOnScreen).CallDeferred();
     }
+
+    private void ClampAfterResize() => Callable.From(ClampOnScreen).CallDeferred();
 
     private void FollowDefaultOnScreen()
     {
@@ -266,7 +269,11 @@ public sealed partial class HudLayout : Node
     public override void _ExitTree()
     {
         GetViewport().SizeChanged -= KeepOnScreen;
-        if (GodotObject.IsInstanceValid(_target)) _target.VisibilityChanged -= KeepOnScreen;
+        if (GodotObject.IsInstanceValid(_target))
+        {
+            _target.VisibilityChanged -= KeepOnScreen;
+            _target.Resized -= ClampAfterResize;
+        }
         if (_moveGrip != null && GodotObject.IsInstanceValid(_moveGrip))
             _moveGrip.QueueFree();
         if (_corner != null && GodotObject.IsInstanceValid(_corner))

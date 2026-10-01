@@ -957,7 +957,9 @@
     "ComboType": 0,
     "ComboCount": 0,
     "ComboDamage": 0,
-    "Range": 128
+    "Range": 128,
+    "RequiredBuffType": 171,
+    "RequiredBuffSkill": 106781
   },
   {
     "Id": 106802,
@@ -2793,7 +2795,9 @@
     "ComboType": 0,
     "ComboCount": 0,
     "ComboDamage": 0,
-    "Range": 0
+    "Range": 0,
+    "RequiredBuffType": 171,
+    "RequiredBuffSkill": 106781
   },
   {
     "Id": 115802,
@@ -3801,7 +3805,9 @@
     "ComboType": 0,
     "ComboCount": 0,
     "ComboDamage": 0,
-    "Range": 128
+    "Range": 128,
+    "RequiredBuffType": 171,
+    "RequiredBuffSkill": 206781
   },
   {
     "Id": 206802,
@@ -5577,7 +5583,9 @@
     "ComboType": 0,
     "ComboCount": 0,
     "ComboDamage": 0,
-    "Range": 0
+    "Range": 0,
+    "RequiredBuffType": 171,
+    "RequiredBuffSkill": 206781
   },
   {
     "Id": 215802,
@@ -5889,7 +5897,9 @@
     "ComboType": 0,
     "ComboCount": 0,
     "ComboDamage": 0,
-    "Range": 0
+    "Range": 0,
+    "RequiredBuffType": 171,
+    "RequiredBuffSkill": 490806
   },
   {
     "Id": 490808,

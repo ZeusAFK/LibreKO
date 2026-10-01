@@ -30,6 +30,31 @@ public class MagicExecutionService(
             await ExecuteTypeAsync(
                 session, magic, magic.SecondaryType, skillId, targetId, data, isPrimary: false);
         }
+
+        await ExecuteExtendedEffectAsync(session, magic, skillId, targetId, data);
+    }
+
+    private const int ExtendedEffectOffset = 80000;
+
+    private async Task ExecuteExtendedEffectAsync(
+        UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    {
+        if (magic.PrimaryType is not (MagicSkillType.Melee or MagicSkillType.Ranged or MagicSkillType.OverTime))
+            return;
+
+        var extendedId = skillId + ExtendedEffectOffset;
+        if (gameDataService.GetMagic(extendedId) is not { PrimaryType: MagicSkillType.Buff } extended
+            || !gameDataService.MagicType4Table.TryGetValue(extendedId, out var type4Data))
+            return;
+
+        if (sessionManager.GetByCharacterId(targetId) is not { } target || !PvpRules.CanAttackPlayer(caster, target))
+            return;
+
+        if (!StatusEffectChance.Lands(caster, target, (BuffType)type4Data.BuffType, StatusEffectChance.ExtendedRowChance))
+            return;
+
+        await magicStatusEffectService.ExecuteAsync(
+            caster, extended, MagicSkillType.Buff, extendedId, targetId, data, isPrimary: false);
     }
 
     private bool HasTypeData(MagicData magic, MagicSkillType skillType, int skillId) => skillType switch

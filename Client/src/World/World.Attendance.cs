@@ -18,7 +18,6 @@ public partial class World
     private const int TextAttendanceNoNoahItem = 33623;
     private const int TextAttendanceClaimFailedCode = 33624;
 
-    private const float AttendanceGiftIconSize = 24f;
     private const float AttendanceGiftBadgeSize = 13f;
     private const float AttendanceGiftTouchBadgeSize = 30f;
     private const int AttendanceGiftTouchCountFont = 17;
@@ -27,11 +26,6 @@ public partial class World
     private static float GiftBadgeSize =>
         Platform.TouchUi ? AttendanceGiftTouchBadgeSize : AttendanceGiftBadgeSize;
 
-    private static Color GiftIconColor(bool waiting) => Platform.TouchUi
-        ? new Color(1f, 1f, 1f, waiting ? 0.96f : 0.55f)
-        : waiting ? UiTheme.GoldBright : UiTheme.TextDim;
-    private const float AttendanceGiftGap = 6f;
-    private const float AttendanceGiftPadX = 9f;
     private const float AttendanceGiftBlinkDim = 0.3f;
     private const float AttendanceGiftBlinkStep = 0.6f;
 
@@ -79,23 +73,8 @@ public partial class World
         _attendanceGiftLayer = new CanvasLayer { Layer = 66 };
         AddChild(_attendanceGiftLayer);
 
-        _attendanceGift = new Button
-        {
-            FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Daily attendance",
-        };
-        var flat = new StyleBoxEmpty();
-        _attendanceGift.AddThemeStyleboxOverride("normal", flat);
-        _attendanceGift.AddThemeStyleboxOverride("hover", flat);
-        _attendanceGift.AddThemeStyleboxOverride("pressed", flat);
-        _attendanceGift.Pressed += OpenAttendance;
-        _attendanceGiftLayer.AddChild(_attendanceGift);
-
-        _attendanceGiftIcon = UiIcons.Image("system/gift",
-            new Vector2(AttendanceGiftIconSize, AttendanceGiftIconSize), GiftIconColor(false));
-        _attendanceGiftIcon.MouseFilter = Control.MouseFilterEnum.Ignore;
-        _attendanceGiftIcon.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        _attendanceGift.AddChild(_attendanceGiftIcon);
+        _attendanceGift = TopIconButton(_attendanceGiftLayer, "system/gift", "Daily attendance",
+            OpenAttendance, out _attendanceGiftIcon);
 
         var badge = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         badge.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
@@ -115,32 +94,12 @@ public partial class World
         badge.AddChild(_attendanceGiftCount);
         _attendanceGiftBadge = badge;
 
-        if (_premiumChip != null) _premiumChip.Resized += PlaceAttendanceGift;
         _attendanceGift.Resized += PlaceAttendanceGift;
         Callable.From(PlaceAttendanceGift).CallDeferred();
     }
 
-    private void PlaceAttendanceGift()
-    {
-        if (Platform.TouchUi)
-        {
-            float side = HudPlacement.LauncherButtonSize;
-            _attendanceGift.CustomMinimumSize = new Vector2(side, side);
-            float inset = side * HudPlacement.LauncherGlyphInset;
-            _attendanceGiftIcon.OffsetLeft = _attendanceGiftIcon.OffsetTop = inset;
-            _attendanceGiftIcon.OffsetRight = _attendanceGiftIcon.OffsetBottom = -inset;
-            HudPlacement.AttendanceGift.ApplyTo(_attendanceGift);
-            return;
-        }
-        if (_premiumChip == null) return;
-        _attendanceGift.CustomMinimumSize = new Vector2(
-            AttendanceGiftIconSize + AttendanceGiftPadX * 2f,
-            Mathf.Max(_premiumChip.Size.Y, AttendanceGiftIconSize));
-        HudAnchor.Pin(_attendanceGift, HudAnchor.Spot.TopRight, new Vector2(
-            HudAnchor.Edge + MiniMap.SquareSize + StatusHudGap
-                + _premiumChip.Size.X + AttendanceGiftGap,
-            HudAnchor.Edge));
-    }
+    private void PlaceAttendanceGift() =>
+        PlaceTopIcon(_attendanceGift, _attendanceGiftIcon, HudPlacement.AttendanceGift);
 
     private void SetAttendanceGift(int claimable)
     {
@@ -149,7 +108,7 @@ public partial class World
         bool waiting = claimable > 0;
         _attendanceGiftBadge.Visible = waiting;
         _attendanceGiftCount.Text = claimable > 9 ? "9+" : claimable.ToString();
-        _attendanceGiftIcon.SelfModulate = GiftIconColor(waiting);
+        _attendanceGiftIcon.SelfModulate = TopIconColor(waiting);
         _attendanceGift.TooltipText = waiting
             ? "Daily attendance — a reward is waiting"
             : "Daily attendance";

@@ -15,6 +15,8 @@ public class MagicType1Data
     public byte ComboCount { get; set; }
     public short ComboDamage { get; set; }
     public short Range { get; set; }
+    public byte RequiredBuffType { get; set; }
+    public int RequiredBuffSkill { get; set; }
 
     internal class EntityConfiguration : IEntityTypeConfiguration<MagicType1Data>
     {

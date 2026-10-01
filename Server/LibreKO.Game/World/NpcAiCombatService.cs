@@ -134,7 +134,7 @@ public class NpcAiCombatService(
 
         if (!target.BlockPhysical)
         {
-            var totalHit = npc.Attack1 > 0 ? npc.Attack1 : npc.Attack2;
+            var totalHit = npc.TotalHit;
             if (totalHit > 0)
             {
                 var tempAc = target.Stats.TotalAc;

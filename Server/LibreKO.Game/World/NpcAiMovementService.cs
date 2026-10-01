@@ -295,6 +295,6 @@ public class NpcAiMovementService(
                 ? (byte)7
                 : (byte)2;
 
-        return speed * AiTickSeconds;
+        return speed * AiTickSeconds * npc.Debuffs.SpeedFactor(DateTime.UtcNow.Ticks);
     }
 }
