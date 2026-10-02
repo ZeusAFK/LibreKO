@@ -27,9 +27,10 @@ public partial class FxWeaponGlow : Node3D
     private Vector3 _wobbleDir = Vector3.Up;
     private Aabb _bounds;
 
-    public static Node3D? Create(string fxName, string tailFxName, string guideStem)
+    public static Node3D? Create(string fxName, string tailFxName, string guideStem,
+                                 string guideDir = WeaponGuideDir)
     {
-        if (BuildShine(fxName, guideStem) is not { } root) return null;
+        if (BuildShine(fxName, guideStem, guideDir) is not { } root) return null;
         root.AddTails(tailFxName);
         return FxRegistry.Track(root, fxName, "weapon glow");
     }
@@ -44,14 +45,16 @@ public partial class FxWeaponGlow : Node3D
 
     private static readonly System.Collections.Generic.Dictionary<string, Mesh?> ShellCache = Shutdown.Track(new System.Collections.Generic.Dictionary<string, Mesh?>());
 
-    private static Mesh? GuideShell(string guideStem)
-    {
-        if (ShellCache.TryGetValue(guideStem, out var cached)) return cached;
+    private const string WeaponGuideDir = "res://assets/items/weapon/fxguide";
 
-        string guidePath = $"res://assets/items/weapon/fxguide/{guideStem}.glb";
+    private static Mesh? GuideShell(string guideStem, string guideDir)
+    {
+        string guidePath = $"{guideDir}/{guideStem}.glb";
+        if (ShellCache.TryGetValue(guidePath, out var cached)) return cached;
+
         if (!ResourceLoader.Exists(guidePath) || ResourceLoader.Load(guidePath) is not PackedScene guideScene)
         {
-            ShellCache[guideStem] = null;
+            ShellCache[guidePath] = null;
             return null;
         }
 
@@ -62,13 +65,13 @@ public partial class FxWeaponGlow : Node3D
 
         var shell = FindMesh(guide)?.Mesh;
         guide.QueueFree();
-        if (shell != null) ShellCache[guideStem] = shell;
+        if (shell != null) ShellCache[guidePath] = shell;
         return shell;
     }
 
-    private static FxWeaponGlow? BuildShine(string fxName, string guideStem)
+    private static FxWeaponGlow? BuildShine(string fxName, string guideStem, string guideDir)
     {
-        if (GuideShell(guideStem) is not { } shell || Fx.LoadDescriptor(fxName) is not { } descriptor)
+        if (GuideShell(guideStem, guideDir) is not { } shell || Fx.LoadDescriptor(fxName) is not { } descriptor)
             return null;
 
         Godot.Collections.Dictionary? part = null;

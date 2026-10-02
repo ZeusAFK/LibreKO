@@ -7,6 +7,7 @@ public partial class World
 {
     private const string ClanGauntletNode = "clan_gauntlet";
     private const string ClanGauntletFx = "clan_rank_1";
+    private const string ClanGauntletGuideDir = "res://assets/items/clanaddon/fxguide";
     private const int ClanGradeBest = 1;
     private const int ClanGradeWorst = 5;
     private const int ClanRankFirst = 1;
@@ -19,11 +20,12 @@ public partial class World
         public Vector3 Pos { get; init; }
         public Quaternion Quat { get; init; }
         public Vector3 Scale { get; init; }
+        public string FxGuide { get; init; }
     }
 
-    private Dictionary<string, ClanGauntlet>? _clanGauntletIndex;
+    private static Dictionary<string, ClanGauntlet>? _clanGauntletIndex;
 
-    private void AttachClanGauntlet(Node3D body, int race, int clanGrade, int clanRanking)
+    internal static void AttachClanGauntlet(Node3D body, int race, int clanGrade, int clanRanking)
     {
         var skel = FindFirst<Skeleton3D>(body);
         if (skel == null) return;
@@ -53,8 +55,17 @@ public partial class World
         attach.AddChild(mesh);
 
         if (clanRanking is < ClanRankFirst or > ClanRankLast) return;
-        var glow = Fx.Spawn(ClanGauntletFx, attach, g.Pos, oneShot: false);
-        if (glow != null) CullAttachedFx(glow);
+        if (g.FxGuide.Length > 0
+            && FxWeaponGlow.Create(ClanGauntletFx, "", g.FxGuide, ClanGauntletGuideDir) is { } glow)
+        {
+            mesh.AddChild(glow);
+            if (FindFirst<MeshInstance3D>(mesh) is { } plate) glow.Transform = plate.Transform;
+            CullAttachedFx(glow);
+            return;
+        }
+
+        var board = Fx.Spawn(ClanGauntletFx, attach, g.Pos, oneShot: false);
+        if (board != null) CullAttachedFx(board);
     }
 
     private static Dictionary<string, ClanGauntlet> LoadClanGauntletIndex()
@@ -78,6 +89,7 @@ public partial class World
                 Pos = new Vector3((float)pos[0], (float)pos[1], (float)pos[2]),
                 Quat = new Quaternion((float)q[0], (float)q[1], (float)q[2], (float)q[3]),
                 Scale = new Vector3((float)sc[0], (float)sc[1], (float)sc[2]),
+                FxGuide = e.ContainsKey("fxg") ? e["fxg"].AsString() : "",
             };
         }
 
