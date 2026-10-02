@@ -47,13 +47,14 @@ public partial class World
         skel.AddChild(attach);
         attach.BoneIdx = g.Joint;
 
+        var seated = GearAttach.SeatOnLimb(g.Pos, GearAttach.LimbEnd(skel, g.Joint));
         var mesh = scene.Instantiate<Node3D>();
-        mesh.Transform = new Transform3D(new Basis(g.Quat).Scaled(g.Scale), g.Pos);
+        mesh.Transform = new Transform3D(new Basis(g.Quat).Scaled(g.Scale), seated);
         ForceDoubleSided(mesh);
         attach.AddChild(mesh);
 
         if (clanRanking is < ClanRankFirst or > ClanRankLast) return;
-        var glow = Fx.Spawn(ClanGauntletFx, attach, g.Pos, oneShot: false);
+        var glow = Fx.Spawn(ClanGauntletFx, attach, seated, oneShot: false);
         if (glow != null) CullAttachedFx(glow);
     }
 
