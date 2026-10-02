@@ -27,7 +27,7 @@ public partial class World
         if (Platform.TouchUi) BuildTownButton();
         else
             _hudLauncher.AddChild(LauncherButton(
-                "system/home", "Go to town", () => Net.I.SendGoTown(), town: true));
+                "system/home", "Go to town", TownRecallPress, town: true));
         _hudLauncher.AddChild(LauncherButton(
             "game/helmet", "Character Info", () => ToggleMainWindow("Character")));
         _hudLauncher.AddChild(LauncherButton(
@@ -61,7 +61,7 @@ public partial class World
     private void BuildTownButton()
     {
         _townButton = LauncherButton("system/home", "Go to town",
-                                     () => Net.I.SendGoTown(), town: true);
+                                     TownRecallPress, town: true);
         _hudLauncherLayer.AddChild(_townButton);
         HudPlacement.TownButton.ApplyTo(_townButton);
     }
