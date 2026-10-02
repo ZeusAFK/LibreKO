@@ -22,6 +22,8 @@ public static class CostumeLook
     private const int ModelDigits = 10_000;
     private const int TypeSpan = 10;
     private const int TypeDigits = 100;
+    private const int PrefixSpan = 10_000;
+    private const int PrefixDigits = 100;
 
     private static readonly (int Type, int Part)[] OutfitPieces =
     {
@@ -40,25 +42,36 @@ public static class CostumeLook
         return $"{category}_{model:D4}_{TypeOf(resource):D2}_{resource % TypeSpan}";
     }
 
+    public static int PartPrefix(int itemId, int saleType) =>
+        saleType == ItemData.SaleTypeLowNoRepair ? 0 : itemId / PrefixSpan % PrefixDigits;
+
+    public static string[] PartStems(int prefix, int resource, int race)
+    {
+        string stem = ArmorStem(resource, race);
+        return prefix == 0 ? new[] { stem } : new[] { $"{prefix:D2}_{stem}", stem };
+    }
+
     public static HashSet<int> Dress(int[] gear, bool helmetHidden, Func<int, int> resourceOf,
-                                     Func<int, int, bool> graft)
+                                     Func<int, int, int, bool> graft)
     {
         var claimed = new HashSet<int>();
-        int outfit = ResourceIn(gear, InventoryConstants.VisCosPauldron, resourceOf);
-        if (outfit != 0 && TypeOf(outfit) == UpperType && graft(UpperPart, outfit))
+        int outfitItem = ItemIn(gear, InventoryConstants.VisCosPauldron);
+        int outfit = outfitItem > 0 ? resourceOf(outfitItem) : 0;
+        if (outfit != 0 && TypeOf(outfit) == UpperType && graft(UpperPart, outfit, outfitItem))
         {
             claimed.Add(UpperPart);
             foreach (var (type, part) in OutfitPieces)
-                if (graft(part, WithType(outfit, type)))
+                if (graft(part, WithType(outfit, type), outfitItem))
                     claimed.Add(part);
         }
 
-        int helm = helmetHidden ? 0 : ResourceIn(gear, InventoryConstants.VisCosHelmet, resourceOf);
-        if (helm != 0 && TypeOf(helm) == HelmType && graft(HeadPart, helm))
+        int helmItem = helmetHidden ? 0 : ItemIn(gear, InventoryConstants.VisCosHelmet);
+        int helm = helmItem > 0 ? resourceOf(helmItem) : 0;
+        if (helm != 0 && TypeOf(helm) == HelmType && graft(HeadPart, helm, helmItem))
             claimed.Add(HeadPart);
         return claimed;
     }
 
-    private static int ResourceIn(int[] gear, int visualSlot, Func<int, int> resourceOf) =>
-        visualSlot < gear.Length && gear[visualSlot] > 0 ? resourceOf(gear[visualSlot]) : 0;
+    private static int ItemIn(int[] gear, int visualSlot) =>
+        visualSlot < gear.Length && gear[visualSlot] > 0 ? gear[visualSlot] : 0;
 }

@@ -78,10 +78,22 @@ public partial class Net
         }
     }
 
+    private const byte LootPartyCoins = 2;
+
     private void HandleItemGet(Packet p)
     {
         if (p.RemainingBytes < 1) return;
         byte result = p.ReadByte();
+        if (result == LootPartyCoins)
+        {
+            if (p.RemainingBytes < 13) return;
+            int coinBundle = p.ReadInt();
+            p.ReadByte();
+            int coinItem = p.ReadInt();
+            GoldChangeEvent?.Invoke(p.ReadInt());
+            LootTakenEvent?.Invoke(coinBundle, -1, coinItem);
+            return;
+        }
         if (result != 1)
         {
             LootFailEvent?.Invoke(result == 0 && p.RemainingBytes >= 4 ? p.ReadInt() : 0);

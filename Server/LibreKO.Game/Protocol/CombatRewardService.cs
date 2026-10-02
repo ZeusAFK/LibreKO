@@ -1,4 +1,5 @@
-﻿using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
@@ -20,18 +21,19 @@ public class CombatRewardService(
     IOptions<GameServerSettings> settings,
     SessionManager sessionManager,
     IGameDataService gameDataService,
-    IKingEventState kingEventState,
     TimeWeatherBroadcastService timeWeather,
     IPlayerProgressionService playerProgressionService,
     IQuestPacketCoordinator questPacketCoordinator,
     IAchievementProgressService achievementProgressService,
-    IUserNotificationService userNotificationService,
     ICollectionRaceService collectionRaceService,
     IJuraidMountainService juraidMountainService,
     IBorderDefenseWarService borderDefenseWarService,
     IMonsterStoneService monsterStoneService,
     ILogger<CombatRewardService> logger) : ICombatRewardService
 {
+    private const int CoinRollMinPercent = 70;
+    private const int CoinRollMaxPercent = 100;
+
     public async Task AwardPlayerKillAsync(UserSession victim, UserSession? killer)
     {
         if (killer == null || killer == victim || killer.Nation == victim.Nation)
@@ -60,9 +62,6 @@ public class CombatRewardService(
                 await AwardSoloExpAsync(rewardRecipient, npc);
         }
 
-        if (npc.GoldDrop > 0)
-            await AwardGoldAsync(npc, rewardRecipient);
-
         await questPacketCoordinator.CheckQuestKillAsync(rewardRecipient, npc.NpcId);
         rewardRecipient.MonstersDefeated++;
         await achievementProgressService.ReportMonsterKillAsync(rewardRecipient, npc.NpcId);
@@ -85,7 +84,7 @@ public class CombatRewardService(
                 await questPacketCoordinator.CheckQuestKillAsync(damager, npc.NpcId);
         }
 
-        if (npc.DropItemGroup > 0)
+        if (npc.DropItemGroup > 0 || npc.GoldDrop > 0)
             await CreateDropsAsync(npc, rewardRecipient);
 
         npc.WithLock(n =>
@@ -165,66 +164,14 @@ public class CombatRewardService(
         }
     }
 
-    private async Task AwardGoldAsync(NpcInstance npc, UserSession rewardRecipient)
+    private ushort RollCoins(NpcInstance npc)
     {
-        var goldAmount = Random.Shared.Next(npc.GoldDrop / 2, npc.GoldDrop + 1);
-        if (goldAmount <= 0)
-            return;
+        if (npc.GoldDrop <= 0)
+            return 0;
 
-        if (rewardRecipient.IsInParty)
-        {
-            var nearbyMembers = GetNearbyPartyMembers(rewardRecipient, npc);
-            if (nearbyMembers.Count == 0)
-                return;
-
-            var share = goldAmount / nearbyMembers.Count;
-            foreach (var member in nearbyMembers)
-            {
-                var memberGold = member.WithLock(s =>
-                {
-                    var gold = share;
-                    var noahPercent = gameDataService.GetPremiumProperty(s.PremiumType, PremiumPropertyType.Noah);
-                    if (noahPercent > 0)
-                        gold = gold * (100 + noahPercent) / 100;
-
-                    var kingNoahBonus = kingEventState.GetNoahBonus(s.Nation);
-                    if (kingNoahBonus > 0)
-                        gold = gold * (100 + kingNoahBonus) / 100;
-
-                    if (s.Stats.ItemCoinBonusPercent > 0)
-                gold = gold * (100 + s.Stats.ItemCoinBonusPercent) / 100;
-
-            gold = timeWeather.ApplyCoinBonus(gold);
-
-                    s.Money += gold;
-                    return gold;
-                });
-                await userNotificationService.SendGoldGainAsync(member, memberGold);
-            }
-
-            return;
-        }
-
-        var soloGold = rewardRecipient.WithLock(s =>
-        {
-            var gold = goldAmount;
-            var noahPercent = gameDataService.GetPremiumProperty(s.PremiumType, PremiumPropertyType.Noah);
-            if (noahPercent > 0)
-                gold = gold * (100 + noahPercent) / 100;
-
-            var kingBonus = kingEventState.GetNoahBonus(s.Nation);
-            if (kingBonus > 0)
-                gold = gold * (100 + kingBonus) / 100;
-
-            if (s.Stats.ItemCoinBonusPercent > 0)
-                gold = gold * (100 + s.Stats.ItemCoinBonusPercent) / 100;
-
-            gold = timeWeather.ApplyCoinBonus(gold);
-
-            s.Money += gold;
-            return gold;
-        });
-        await userNotificationService.SendGoldGainAsync(rewardRecipient, soloGold);
+        var rolled = (long)npc.GoldDrop * Random.Shared.Next(CoinRollMinPercent, CoinRollMaxPercent + 1) / 100;
+        var coins = timeWeather.ApplyCoinBonus((int)Math.Min(rolled, int.MaxValue));
+        return (ushort)Math.Clamp(coins, 0, ushort.MaxValue);
     }
 
     private int ResolveDropItem(int dropValue)
@@ -244,39 +191,41 @@ public class CombatRewardService(
 
     private async Task CreateDropsAsync(NpcInstance npc, UserSession rewardRecipient)
     {
-        var dropTable = gameDataService.GetNpcItem(npc.DropItemGroup, npc.IsMonster);
-        if (dropTable == null)
-            return;
-
-        var drops = dropTable.GetDrops();
+        var coins = RollCoins(npc);
         var droppedItems = new List<(int ItemId, ushort Count)>();
-        var dropBonus = gameDataService.GetPremiumProperty(rewardRecipient.PremiumType, PremiumPropertyType.Drop);
-
-        foreach (var (itemId, percent) in drops)
+        var dropTable = npc.DropItemGroup > 0 ? gameDataService.GetNpcItem(npc.DropItemGroup, npc.IsMonster) : null;
+        if (dropTable != null)
         {
-            if (itemId <= 0 || percent <= 0)
-                continue;
+            var dropBonus = gameDataService.GetPremiumProperty(rewardRecipient.PremiumType, PremiumPropertyType.Drop);
+            foreach (var (itemId, percent) in dropTable.GetDrops())
+            {
+                if (itemId <= 0 || percent <= 0)
+                    continue;
 
-            var adjustedPercent = dropBonus > 0 ? percent + percent * dropBonus / 100 : percent;
-            adjustedPercent = timeWeather.ApplyDropBonus(adjustedPercent);
-            if (Random.Shared.Next(1, 10001) > adjustedPercent)
-                continue;
+                var adjustedPercent = dropBonus > 0 ? percent + percent * dropBonus / 100 : percent;
+                adjustedPercent = timeWeather.ApplyDropBonus(adjustedPercent);
+                if (Random.Shared.Next(1, 10001) > adjustedPercent)
+                    continue;
 
-            var resolvedItemId = ResolveDropItem(itemId);
-            if (resolvedItemId <= 0 || gameDataService.GetItem(resolvedItemId) == null)
-                continue;
+                var resolvedItemId = ResolveDropItem(itemId);
+                if (resolvedItemId <= 0 || gameDataService.GetItem(resolvedItemId) == null)
+                    continue;
 
-            droppedItems.Add((resolvedItemId, 1));
+                droppedItems.Add((resolvedItemId, 1));
+            }
         }
 
-        if (droppedItems.Count == 0)
+        if (coins == 0 && droppedItems.Count == 0)
             return;
 
         var bundle = sessionManager.Regions.CreateBundle(npc.X, npc.Z, npc.Y);
         bundle.OwnerCharId = rewardRecipient.CharacterId;
         bundle.OwnerPartyIndex = rewardRecipient.IsInParty ? rewardRecipient.PartyIndex : -1;
 
-        foreach (var (itemId, count) in droppedItems.Take(LootBundle.MaxItems))
+        if (coins > 0)
+            bundle.Items.Add(new LootItem { ItemId = InventoryConstants.ItemGold, Count = coins });
+
+        foreach (var (itemId, count) in droppedItems.Take(LootBundle.MaxItems - bundle.Items.Count))
         {
             bundle.Items.Add(new LootItem
             {

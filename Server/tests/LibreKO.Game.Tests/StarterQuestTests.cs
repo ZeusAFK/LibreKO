@@ -78,10 +78,8 @@ public class StarterSeedQuestTests
 
         var settings = Options.Create(new GameServerSettings());
         var gameData = Substitute.For<IGameDataService>();
-        var kingEventState = Substitute.For<IKingEventState>();
         var playerProgressionService = Substitute.For<IPlayerProgressionService>();
         var questPacketCoordinator = Substitute.For<IQuestPacketCoordinator>();
-        var userNotificationService = Substitute.For<IUserNotificationService>();
 
         var combatRewardLogger = Substitute.For<ILogger<CombatRewardService>>();
         var timeWeather = new TimeWeatherBroadcastService(
@@ -92,12 +90,10 @@ public class StarterSeedQuestTests
             settings,
             sessionManager,
             gameData,
-            kingEventState,
             timeWeather,
             playerProgressionService,
             questPacketCoordinator,
             Substitute.For<IAchievementProgressService>(),
-            userNotificationService,
             Substitute.For<ICollectionRaceService>(),
             Substitute.For<IJuraidMountainService>(),
             Substitute.For<IBorderDefenseWarService>(),

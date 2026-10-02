@@ -94,7 +94,7 @@ public static partial class CharacterPreview
 
         var costume = gear != null
             ? Domain.CostumeLook.Dress(gear, false, ArmorResource,
-                (part, resource) => GraftPart(parts, part, Domain.CostumeLook.ArmorStem(resource, race), "items/armor"))
+                (part, resource, itemId) => GraftArmor(parts, part, itemId, resource, race))
             : null;
         bool helmet = costume?.Contains(Domain.CostumeLook.HeadPart) == true
                       || gear != null && gear.Length > 2 && gear[2] > 0;
@@ -107,8 +107,8 @@ public static partial class CharacterPreview
             {
                 if (gi >= gear.Length || gear[gi] <= 0) continue;
                 if (costume?.Contains(pn) == true) continue;
-                string? stem = ArmorPartStem(gear[gi], race);
-                if (stem != null && GraftPart(parts, pn, stem, "items/armor") && enableShine)
+                int resource = ArmorResource(gear[gi]);
+                if (resource != 0 && GraftArmor(parts, pn, gear[gi], resource, race) && enableShine)
                     ItemShine.Apply(parts[pn], gear[gi], pn);
             }
     }
@@ -145,8 +145,13 @@ public static partial class CharacterPreview
         && (_armorItems.TryGetValue(itemId, out int r) || _armorItems.TryGetValue(Domain.ItemData.BaseId(itemId), out r))
             ? r : 0;
 
-    private static string? ArmorPartStem(int itemId, int race) =>
-        ArmorResource(itemId) is var r and not 0 ? Domain.CostumeLook.ArmorStem(r, race) : null;
+    private static bool GraftArmor(Dictionary<int, MeshInstance3D> parts, int partNode, int itemId, int resource, int race)
+    {
+        int prefix = Domain.CostumeLook.PartPrefix(itemId, Domain.ItemData.Get(itemId)?.SaleType ?? 0);
+        foreach (string stem in Domain.CostumeLook.PartStems(prefix, resource, race))
+            if (GraftPart(parts, partNode, stem, "items/armor")) return true;
+        return false;
+    }
 
     private static string? FacePartStem(int race, int face)
     {

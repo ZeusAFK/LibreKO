@@ -30,7 +30,7 @@ public partial class World
 
         var costume = gear != null
             ? CostumeLook.Dress(gear, hideHelmet, ArmorResource,
-                (part, resource) => GraftPart(parts, part, CostumeLook.ArmorStem(resource, race), "items/armor"))
+                (part, resource, itemId) => GraftArmor(parts, part, itemId, resource, race))
             : null;
         bool helmet = costume?.Contains(CostumeLook.HeadPart) == true
                       || !hideHelmet && gear != null
@@ -48,12 +48,12 @@ public partial class World
                 if (gi >= gear.Length || gear[gi] <= 0) continue;
                 if (hideHelmet && gi == HelmetGearIndex) continue;
                 if (costume?.Contains(pn) == true) continue;
-                string? stem = ArmorPartStem(gear[gi], race);
-                if (stem == null)
+                int resource = ArmorResource(gear[gi]);
+                if (resource == 0)
                 {
                     missing++; continue;
                 }
-                if (GraftPart(parts, pn, stem, "items/armor"))
+                if (GraftArmor(parts, pn, gear[gi], resource, race))
                 {
                     grafted++;
                     ItemShine.Apply(parts[pn], gear[gi], pn);
@@ -108,8 +108,13 @@ public partial class World
         && (_partsIndex.Items.TryGetValue(itemId, out int r) || _partsIndex.Items.TryGetValue(ItemData.BaseId(itemId), out r))
             ? r : 0;
 
-    private string? ArmorPartStem(int itemId, int race) =>
-        ArmorResource(itemId) is var r and not 0 ? CostumeLook.ArmorStem(r, race) : null;
+    private bool GraftArmor(Dictionary<int, MeshInstance3D> parts, int partNode, int itemId, int resource, int race)
+    {
+        int prefix = CostumeLook.PartPrefix(itemId, ItemData.Get(itemId)?.SaleType ?? 0);
+        foreach (string stem in CostumeLook.PartStems(prefix, resource, race))
+            if (GraftPart(parts, partNode, stem, "items/armor")) return true;
+        return false;
+    }
 
     private string? FacePartStem(int race, int face)
     {

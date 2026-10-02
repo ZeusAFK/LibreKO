@@ -324,7 +324,8 @@ public partial class World
     private void OnLootTaken(int bundleId, int bundleSlot, int itemId)
     {
         if (bundleId != _openBundleId) return;
-        if (bundleSlot >= 0 && bundleSlot < _lootEntries.Count) _lootEntries.RemoveAt(bundleSlot);
+        int taken = bundleSlot >= 0 ? bundleSlot : _lootEntries.FindIndex(entry => entry.ItemId == itemId);
+        if (taken >= 0 && taken < _lootEntries.Count) _lootEntries.RemoveAt(taken);
         // The floater comes from ItemGainedEvent, which knows the real stack delta.
         Audio.PlayUi(itemId != Net.GoldItemId ? Sfx.GetItem : Sfx.CoinGet);
         if (_lootEntries.Count == 0) { DespawnBox(bundleId); return; }

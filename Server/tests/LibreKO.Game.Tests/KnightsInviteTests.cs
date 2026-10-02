@@ -133,7 +133,7 @@ public class KnightsInviteTests : GameTestBase
         joined.ReadShort();
         joined.ReadString().Should().Be("Wolves");
         joined.ReadByte().Should().Be(4);
-        joined.ReadByte().Should().Be(ClanRules.Unranked);
+        joined.ReadByte().Should().Be(1);
 
         await using var scope = provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

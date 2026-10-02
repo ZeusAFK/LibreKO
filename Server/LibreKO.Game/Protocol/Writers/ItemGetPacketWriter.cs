@@ -6,6 +6,7 @@ public sealed class ItemGetPacketWriter
 {
     public const byte ResultError = 0;
     public const byte ResultSuccess = 1;
+    public const byte ResultPartyCoins = 2;
     public const int FailureNoRoom = -11;
 
     public const byte PositionGold = byte.MaxValue;
@@ -34,12 +35,20 @@ public sealed class ItemGetPacketWriter
         }.Build();
     public static Packet LootedGold(
         int bundleId, int itemId, ushort count, int money, ushort bundleSlot) => Looted(bundleId, PositionGold, itemId, count, money, bundleSlot);
+    public static Packet PartyCoins(int bundleId, int itemId, int money) => new ItemGetPacketWriter()
+        {
+            Result = ResultPartyCoins,
+            BundleId = bundleId,
+            Position = PositionGold,
+            ItemId = itemId,
+            Money = money,
+        }.Build();
     private Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_ITEM_GET);
         packet.WriteByte(Result);
 
-        if (Result != ResultSuccess)
+        if (Result != ResultSuccess && Result != ResultPartyCoins)
         {
             if (Failure is { } failure) packet.WriteInt(failure);
             return packet;
@@ -48,6 +57,12 @@ public sealed class ItemGetPacketWriter
         packet.WriteInt(BundleId);
         packet.WriteByte(Position);
         packet.WriteInt(ItemId);
+        if (Result == ResultPartyCoins)
+        {
+            packet.WriteInt(Money);
+            return packet;
+        }
+
         packet.WriteUShort(Count);
         packet.WriteInt(Money);
         packet.WriteUShort(BundleSlot);
