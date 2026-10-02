@@ -203,4 +203,51 @@ public class ClanStandingTests : GameTestBase
         sessionManager.Knights.GetClan(6)!.Ranking.Should().Be(1);
         sessionManager.Knights.GetClan(1)!.Ranking.Should().Be(ClanRules.Unranked);
     }
+
+    [Fact]
+    public async Task TheClanTheBoardListsFirstWearsTheRankEvenWithoutAContributionFund()
+    {
+        using var provider = CreateProvider(db =>
+        {
+            db.Set<KnightsEntity>().Add(Clan(1, AccountNation.Karus, points: 1_500_000, fund: 0));
+        });
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        sessionManager.Knights.AddClan(1, Clan(1, AccountNation.Karus, points: 1_500_000, fund: 0));
+
+        await provider.GetRequiredService<IClanStandingService>().RefreshRankingsAsync();
+
+        sessionManager.Knights.GetClan(1)!.Ranking.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task EachNationKeepsItsOwnFirstPlace()
+    {
+        using var provider = CreateProvider(db =>
+        {
+            db.Set<KnightsEntity>().Add(Clan(1, AccountNation.Karus, points: 10, fund: 100));
+            db.Set<KnightsEntity>().Add(Clan(2, AccountNation.ElMorad, points: 10, fund: 50));
+        });
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        sessionManager.Knights.AddClan(1, Clan(1, AccountNation.Karus, points: 10, fund: 100));
+        sessionManager.Knights.AddClan(2, Clan(2, AccountNation.ElMorad, points: 10, fund: 50));
+
+        await provider.GetRequiredService<IClanStandingService>().RefreshRankingsAsync();
+
+        sessionManager.Knights.GetClan(1)!.Ranking.Should().Be(1);
+        sessionManager.Knights.GetClan(2)!.Ranking.Should().Be(1);
+    }
+
+    private static KnightsEntity Clan(short id, AccountNation nation, int points, int fund) => new()
+    {
+        Id = id,
+        Name = $"Clan{id}",
+        Chief = $"Chief{id}",
+        Nation = (byte)nation,
+        Flag = (byte)ClanType.Promoted,
+        Members = 1,
+        Points = points,
+        ClanPointFund = fund,
+    };
 }

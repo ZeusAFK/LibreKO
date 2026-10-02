@@ -155,17 +155,19 @@ public class ClanStandingService(
 
     private void ApplyRankings(List<KnightsEntity> changed)
     {
-        var ranked = sessionManager.Knights.GetAll()
-            .Where(clan => clan.ClanPointFund > 0)
-            .OrderByDescending(clan => clan.ClanPointFund)
-            .ThenBy(clan => clan.Id)
-            .Take(ClanRules.RankedClans)
-            .ToList();
-
         var rankings = new Dictionary<short, byte>();
-        byte rank = 1;
-        foreach (var clan in ranked)
-            rankings[clan.Id] = rank++;
+        var clans = sessionManager.Knights.GetAll();
+        foreach (var nation in clans.Select(clan => clan.Nation).Distinct())
+        {
+            byte rank = 1;
+            foreach (var clan in clans
+                         .Where(clan => clan.Nation == nation)
+                         .OrderByDescending(clan => clan.ClanPointFund)
+                         .ThenByDescending(clan => clan.Points)
+                         .ThenBy(clan => clan.Id)
+                         .Take(ClanRules.RankedClans))
+                rankings[clan.Id] = rank++;
+        }
 
         foreach (var clan in sessionManager.Knights.GetAll())
         {
