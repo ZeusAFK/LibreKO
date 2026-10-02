@@ -61,6 +61,8 @@ public static class ItemShine
     public static int LevelFor(int itemId)
     {
         if (itemId <= 0) return 0;
+        if (ItemData.ExtFor(itemId) is { MagicOrRare: ItemData.Rarity.Unique })
+            return LevelForPlus(ItemData.UpgradeLevel(itemId));
         if (_cats == null) Load();
         if (_cats == null || _cats.Count == 0) return 0;
         int baseId = itemId / 1000 * 1000;
@@ -69,6 +71,15 @@ public static class ItemShine
             ? level
             : 0;
     }
+
+    public static int LevelForPlus(int plus) => plus switch
+    {
+        >= 10 => MaxLevel,
+        9 => 3,
+        8 => 2,
+        7 => 1,
+        _ => 0,
+    };
 
     public static float Envelope(int level, double now, int partIndex)
     {
