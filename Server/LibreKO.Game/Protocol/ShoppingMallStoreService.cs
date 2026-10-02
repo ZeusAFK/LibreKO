@@ -14,6 +14,7 @@ public interface IShoppingMallStoreService
     Task HandleOpenAsync(UserSession session);
     Task HandleCloseAsync(UserSession session);
     Task HandleBuyAsync(UserSession session, Packet packet);
+    Task SendBalanceAsync(UserSession session);
 }
 
 public class ShoppingMallStoreService(
@@ -88,9 +89,12 @@ public class ShoppingMallStoreService(
 
         await session.Client.SendPacket(ShoppingMallPacketWriter.Catalog(StoreOpen, StoreCatalog, catalog));
         await session.Client.SendPacket(ShoppingMallPacketWriter.Categories(StoreOpen, StoreCategories, categories));
-        await session.Client.SendPacket(ShoppingMallPacketWriter.Balance(
-            StoreOpen, StoreBalance, session.KnightCash));
+        await SendBalanceAsync(session);
     }
+
+    public Task SendBalanceAsync(UserSession session) =>
+        session.Client.SendPacket(ShoppingMallPacketWriter.Balance(
+            StoreOpen, StoreBalance, session.KnightCash));
 
     public async Task HandleBuyAsync(UserSession session, Packet packet)
     {

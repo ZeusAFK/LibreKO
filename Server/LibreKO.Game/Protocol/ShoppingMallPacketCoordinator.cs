@@ -7,6 +7,7 @@ public interface IShoppingMallPacketCoordinator
 {
     Task HandleAsync(IClient client, Packet packet);
     Task SendUnreadAsync(UserSession session);
+    Task SendBalanceAsync(UserSession session);
 }
 
 public class ShoppingMallPacketCoordinator(
@@ -50,4 +51,6 @@ public class ShoppingMallPacketCoordinator(
     }
 
     public Task SendUnreadAsync(UserSession session) => shoppingMallLetterService.SendUnreadAsync(session);
+
+    public Task SendBalanceAsync(UserSession session) => shoppingMallStoreService.SendBalanceAsync(session);
 }

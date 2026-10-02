@@ -1,6 +1,7 @@
 using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
@@ -75,6 +76,101 @@ public class ShoppingMallTests : GameTestBase
         sentPacket.ReadByte().Should().Be(6);
         sentPacket.ReadByte().Should().Be(1);
         sentPacket.ReadByte().Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ShoppingMallPacketCoordinator_SendBalanceAsync_SendsTheAccountKnightCash()
+    {
+        using var provider = CreateProvider(_ => { });
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var session = sessionManager.CreateSession(client, characterId: 11, accountId: 22);
+        session.KnightCash = 250;
+
+        var coordinator = provider.GetRequiredService<IShoppingMallPacketCoordinator>();
+        await coordinator.SendBalanceAsync(session);
+
+        sentPackets.Should().ContainSingle();
+        var sentPacket = sentPackets.Single();
+        sentPacket.GetOpcode().Should().Be((byte)GameOpcodes.GS_SHOPPING_MALL);
+        sentPacket.ResetOffset();
+        sentPacket.ReadByte().Should().Be(1);
+        sentPacket.ReadByte().Should().Be(5);
+        sentPacket.ReadInt().Should().Be(250);
+    }
+
+    [Fact]
+    public async Task GamePacketHandler_GameStartPhaseTwo_SendsKnightCashBalance()
+    {
+        using var provider = CreateProvider(
+            db =>
+            {
+                db.Accounts.Add(new Account
+                {
+                    Login = "cash-user",
+                    Password = "pw",
+                    Nation = AccountNation.Karus,
+                    Authority = AccountAuthority.Normal,
+                    KnightCash = 250
+                });
+                db.SaveChanges();
+
+                var accountId = db.Accounts.Single(account => account.Login == "cash-user").Id;
+                db.Characters.Add(new Character
+                {
+                    AccountId = accountId,
+                    Slot = 0,
+                    Name = "CashReady",
+                    Race = 1,
+                    Class = 101,
+                    Face = 2,
+                    Hair = 3,
+                    Level = 10,
+                    Hp = 100,
+                    Mp = 100,
+                    MapId = 1,
+                    X = 10,
+                    Z = 20,
+                    Items = new byte[InventoryConstants.InventoryTotal * 8],
+                    SkillPointData = new byte[9]
+                });
+            });
+
+        var packetHandler = provider.GetRequiredService<IPacketHandler>();
+        var accountId = await GetAccountIdAsync(provider, "cash-user");
+        var characterId = await GetCharacterIdAsync(provider, "CashReady");
+
+        var sentPackets = new List<Packet>();
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.IsCryptoEnabled.Returns(true);
+        client.AccountId.Returns(accountId);
+        client.CharacterId.Returns(characterId);
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        (await provider.GetRequiredService<IAccountLockService>()
+            .AcquireAsync(client, accountId)).Granted.Should().BeTrue();
+
+        var request = new Packet(GameOpcodes.GS_GAMESTART);
+        request.WriteByte(2);
+
+        await packetHandler.HandlePacket(client, request);
+
+        var balance = sentPackets.Single(packet =>
+            packet.GetOpcode() == (byte)GameOpcodes.GS_SHOPPING_MALL
+            && packet.GetData().Length >= 6
+            && packet.GetData()[0] == 1
+            && packet.GetData()[1] == 5);
+        balance.ResetOffset();
+        balance.ReadByte().Should().Be(1);
+        balance.ReadByte().Should().Be(5);
+        balance.ReadInt().Should().Be(250);
     }
 
     [Fact]
