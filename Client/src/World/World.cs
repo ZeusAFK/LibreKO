@@ -117,6 +117,7 @@ public partial class World : Node3D, IWorldContext
         _self.Position = GroundPos(info.X, info.Z, info.Y, _selfLift);
         _lastFreePos = _self.Position;
         _entities.AddChild(_self);
+        ApplySelfClan(MyClan.InClan ? MyClan.Name : "");
         if (selfScene != null)
         {
             AttachWeapons(_self, info.Gear);
