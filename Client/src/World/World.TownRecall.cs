@@ -1,10 +1,13 @@
 ﻿using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
 
 public partial class World
 {
+    private const int TextTownRecallLowHp = 1903;
+
     private CanvasLayer _townRecallLayer = null!;
     private ConfirmationDialog _townRecallDialog = null!;
 
@@ -17,7 +20,7 @@ public partial class World
         _townRecallDialog.DialogText = "Recall to town?\n(You must be above 50% HP.)";
         _townRecallDialog.GetOkButton().Text = "Recall";
         _townRecallDialog.GetCancelButton().Text = "Cancel";
-        _townRecallDialog.Confirmed += TownRecallConfirm;
+        _townRecallDialog.Confirmed += TownRecallPress;
         _townRecallLayer.AddChild(_townRecallDialog);
     }
 
@@ -37,14 +40,15 @@ public partial class World
     {
         if (!_worldReady || _selfDead) return false;
         if (!Vitals.BelowHalfHp) return true;
-        Chat.Info("Town recall failed — heal above 50% HP first.");
+        CombatNotice(ItemData.Text(TextTownRecallLowHp,
+            "You cannot teleport back to town when you have half the HP or less"));
         return false;
     }
 
     private void TownRecallConfirm()
     {
         Net.I.SendTownRecall();
-        Chat.Info("Recalling to town…");
+        CombatNotice("Recalling to town…");
         Audio.Play(Sfx.WarpZone, _self.GlobalPosition);
     }
 }

@@ -483,6 +483,70 @@ public class KnightsTests : GameTestBase
     }
 
     [Fact]
+    public async Task KnightsPacketCoordinator_HandleProcessAsync_Top10ListsEachNationInItsStoredRankingOrder()
+    {
+        using var provider = CreateProvider(
+            db =>
+            {
+                db.Characters.Add(new Character
+                {
+                    AccountId = 7,
+                    Slot = 0,
+                    Name = "Viewer",
+                    Level = 70,
+                    Class = 101,
+                    MapId = 1
+                });
+            });
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        sessionManager.Knights.AddClan(1, RankedClan(1, "Second", ranking: 2, fund: 900));
+        sessionManager.Knights.AddClan(2, RankedClan(2, "First", ranking: 1, fund: 100));
+        sessionManager.Knights.AddClan(3, RankedClan(3, "Unranked", ranking: ClanRules.Unranked, fund: 5000));
+        var characterId = await GetCharacterIdAsync(provider, "Viewer");
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        Packet? sentPacket = null;
+        client.SendPacket(Arg.Do<Packet>(packet => sentPacket = packet), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var session = sessionManager.CreateSession(client, characterId, accountId: 7);
+        session.Name = "Viewer";
+        session.Nation = AccountNation.Karus;
+
+        var packet = new Packet(GameOpcodes.GS_KNIGHTS_PROCESS);
+        packet.WriteByte((byte)KnightsSubOpcode.Top10);
+        await provider.GetRequiredService<IKnightsPacketCoordinator>().HandleProcessAsync(client, packet);
+
+        sentPacket.Should().NotBeNull();
+        sentPacket!.ResetOffset();
+        sentPacket.ReadByte().Should().Be((byte)KnightsSubOpcode.Top10);
+        sentPacket.ReadShort().Should().Be(0);
+        foreach (var (id, name) in new[] { ((short)2, "First"), ((short)1, "Second") })
+        {
+            sentPacket.ReadShort().Should().Be(id);
+            sentPacket.ReadString().Should().Be(name);
+            sentPacket.ReadShort();
+            sentPacket.ReadShort();
+        }
+
+        sentPacket.ReadShort().Should().Be(-1);
+    }
+
+    private static KnightsEntity RankedClan(short id, string name, byte ranking, int fund) => new()
+    {
+        Id = id,
+        Name = name,
+        Chief = $"Chief{id}",
+        Nation = (byte)AccountNation.Karus,
+        Flag = (byte)ClanType.Promoted,
+        Members = 1,
+        Ranking = ranking,
+        ClanPointFund = fund,
+    };
+
+    [Fact]
     public async Task GameSessionInitializer_UsesStoredOfficerFameWhenClanHasNoIndexedRoleMatch()
     {
         const short clanId = 99;

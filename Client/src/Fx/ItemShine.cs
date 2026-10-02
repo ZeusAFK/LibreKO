@@ -25,61 +25,28 @@ public static class ItemShine
     private static readonly float[] BlinkRateByLevel = { 0.62f, 0.85f, 1.25f, 1f };
     private static readonly float[] StrengthByLevel = { 0.7f, 1.25f, 2.2f, 3.6f };
 
-    private static System.Collections.Generic.Dictionary<int, System.Collections.Generic.Dictionary<int, int>>? _cats;
-
-    private static void Load()
-    {
-        _cats = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.Dictionary<int, int>>();
-
-        const string path = "res://assets/items/shine.json";
-        using var f = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
-        if (f == null)
-        {
-            GD.PushWarning($"[itemshine] cannot open {path} (err {Godot.FileAccess.GetOpenError()})"
-                           + " - run: python tools/bake_item_shine.py");
-            return;
-        }
-        if (Json.ParseString(f.GetAsText()).AsGodotDictionary() is not { } root
-            || !root.TryGetValue("cats", out var cs) || cs.AsGodotDictionary() is not { } csd)
-        {
-            GD.PushWarning($"[itemshine] {path} is not a valid shine table");
-            return;
-        }
-
-        foreach (var key in csd.Keys)
-        {
-            if (!int.TryParse(key.AsString(), out int cat) || csd[key].AsGodotDictionary() is not { } extd)
-                continue;
-            var map = new System.Collections.Generic.Dictionary<int, int>();
-            foreach (var e in extd.Keys)
-                if (int.TryParse(e.AsString(), out int ext))
-                    map[ext] = extd[e].AsInt32();
-            _cats[cat] = map;
-        }
-    }
+    private static readonly int[] UpgradeLevelFloors = { 7, 8, 9, 10 };
+    private static readonly int[] ReverseLevelFloors = { 1, 5, 11, 21 };
 
     public static int LevelFor(int itemId)
     {
         if (itemId <= 0) return 0;
-        if (ItemData.ExtFor(itemId) is { MagicOrRare: ItemData.Rarity.Unique })
-            return LevelForPlus(ItemData.UpgradeLevel(itemId));
-        if (_cats == null) Load();
-        if (_cats == null || _cats.Count == 0) return 0;
-        int baseId = itemId / 1000 * 1000;
-        if (ItemData.Get(baseId) is not { } item) return 0;
-        return _cats.TryGetValue(item.Cat, out var map) && map.TryGetValue(itemId - baseId, out int level)
-            ? level
-            : 0;
+        int plus = ItemData.UpgradeLevel(itemId);
+        return ItemData.ExtFor(itemId) is { MagicOrRare: ItemData.Rarity.Reverse or ItemData.Rarity.ReverseUnique }
+            ? LevelForReversePlus(plus)
+            : LevelForPlus(plus);
     }
 
-    public static int LevelForPlus(int plus) => plus switch
+    public static int LevelForPlus(int plus) => LevelFrom(plus, UpgradeLevelFloors);
+
+    public static int LevelForReversePlus(int plus) => LevelFrom(plus, ReverseLevelFloors);
+
+    private static int LevelFrom(int plus, int[] floors)
     {
-        >= 10 => MaxLevel,
-        9 => 3,
-        8 => 2,
-        7 => 1,
-        _ => 0,
-    };
+        int level = 0;
+        while (level < floors.Length && plus >= floors[level]) level++;
+        return level;
+    }
 
     public static float Envelope(int level, double now, int partIndex)
     {
@@ -144,7 +111,7 @@ public static class ItemShine
                 int baseId = itemId / 1000 * 1000;
                 int cat = ItemData.Get(baseId) is { } it ? it.Cat : -1;
                 GD.Print($"[itemshine] item={itemId} base={baseId} ext={itemId - baseId} cat={cat}"
-                         + $" tableCats={(_cats?.Count ?? -1)} -> level 0 (no shine)");
+                         + $" plus={ItemData.UpgradeLevel(itemId)} -> level 0 (no shine)");
             }
             if (mesh.GetMeta(MetaKey, false).AsBool()) Clear(mesh);
             return false;

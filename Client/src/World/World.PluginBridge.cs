@@ -79,7 +79,7 @@ public partial class World
     {
         private const string SelectPlayerNotice = "Select a player to trade with.";
 
-        public void GoTown() => Net.I.SendGoTown();
+        public void GoTown() => _w.TownRecallPress();
 
         public void ToggleSit() => _w.ToggleSitting();
 

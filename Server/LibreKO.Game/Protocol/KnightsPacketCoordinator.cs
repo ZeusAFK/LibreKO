@@ -170,9 +170,8 @@ public class KnightsPacketCoordinator(
     private List<KnightsPacketWriter.TopEntry> TopNationClans(AccountNation nation)
     {
         var topClans = sessionManager.Knights.GetAll()
-            .Where(clan => clan.Nation == (byte)nation)
-            .OrderByDescending(clan => clan.ClanPointFund)
-            .ThenByDescending(clan => clan.Points)
+            .Where(clan => clan.Nation == (byte)nation && clan.Ranking != ClanRules.Unranked)
+            .OrderBy(clan => clan.Ranking)
             .ThenBy(clan => clan.Id)
             .Take(KnightsPacketWriter.TopBoardPerNation)
             .ToList();
