@@ -31,9 +31,10 @@ public partial class FxWeaponGlow : Node3D
     private Vector3 _wobbleDir = Vector3.Up;
     private Aabb _bounds;
 
-    public static Node3D? Create(string fxName, string tailFxName, string guideStem)
+    public static Node3D? Create(string fxName, string tailFxName, string guideStem,
+        string? guideDir = null, float intensity = ShineDim)
     {
-        if (BuildShine(fxName, guideStem) is not { } root) return null;
+        if (BuildShine(fxName, guideStem, guideDir, intensity) is not { } root) return null;
         root.AddTails(tailFxName);
         return FxRegistry.Track(root, fxName, "weapon glow");
     }
@@ -46,16 +47,16 @@ public partial class FxWeaponGlow : Node3D
         return root._tails.Count > 0 ? FxRegistry.Track(root, tailFxName, "weapon glow tail") : null;
     }
 
+    private const string WeaponGuideDir = "res://assets/items/weapon/fxguide";
     private static readonly System.Collections.Generic.Dictionary<string, Mesh?> ShellCache = new();
 
-    private static Mesh? GuideShell(string guideStem)
+    private static Mesh? GuideShell(string guideStem, string? guideDir)
     {
-        if (ShellCache.TryGetValue(guideStem, out var cached)) return cached;
-
-        string guidePath = $"res://assets/items/weapon/fxguide/{guideStem}.glb";
+        string guidePath = $"{guideDir ?? WeaponGuideDir}/{guideStem}.glb";
+        if (ShellCache.TryGetValue(guidePath, out var cached)) return cached;
         if (!ResourceLoader.Exists(guidePath) || ResourceLoader.Load(guidePath) is not PackedScene guideScene)
         {
-            ShellCache[guideStem] = null;
+            ShellCache[guidePath] = null;
             return null;
         }
 
@@ -66,13 +67,13 @@ public partial class FxWeaponGlow : Node3D
 
         var shell = FindMesh(guide)?.Mesh;
         guide.QueueFree();
-        if (shell != null) ShellCache[guideStem] = shell;
+        ShellCache[guidePath] = shell;
         return shell;
     }
 
-    private static FxWeaponGlow? BuildShine(string fxName, string guideStem)
+    private static FxWeaponGlow? BuildShine(string fxName, string guideStem, string? guideDir, float intensity)
     {
-        if (GuideShell(guideStem) is not { } shell || Fx.LoadDescriptor(fxName) is not { } descriptor)
+        if (GuideShell(guideStem, guideDir) is not { } shell || Fx.LoadDescriptor(fxName) is not { } descriptor)
             return null;
 
         Godot.Collections.Dictionary? part = null;
@@ -113,7 +114,7 @@ public partial class FxWeaponGlow : Node3D
             root.AddChild(layer);
             var mat = ShineState(Fx.MakeMaterial(part, BaseMaterial3D.BillboardModeEnum.Disabled, frame0));
             mat.RenderPriority = i;
-            mat.AlbedoColor = new Color(ShineDim, ShineDim, ShineDim, 1f);
+            mat.AlbedoColor = new Color(intensity, intensity, intensity, 1f);
             root._materials[i] = mat;
             layer.AddChild(new MeshInstance3D
             {
