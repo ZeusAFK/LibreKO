@@ -24,7 +24,6 @@ public class LootPacketCoordinator(
 {
     private const byte LootSuccess = 1;
     private const byte LootError = 0;
-    private const byte LootNoSlot = 7;
 
     public async Task HandleItemDropAsync(IClient client, Packet packet)
     {
@@ -166,7 +165,7 @@ public class LootPacketCoordinator(
         var slotIndex = session.WithLock(s => s.FindSlotForItem(itemId, gameDataService, peekedCount));
         if (slotIndex < 0)
         {
-            var noRoom = ItemGetPacketWriter.Failed(LootNoSlot);
+            var noRoom = ItemGetPacketWriter.NoRoom();
             await session.Client.SendPacket(noRoom);
             return;
         }

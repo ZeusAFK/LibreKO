@@ -81,6 +81,18 @@ public static class EquipRules
         _ => Job(playerClass) == itemClass,
     };
 
+    public static bool UseAllows(int playerClass, int itemClass) => itemClass switch
+    {
+        ItemClassAnyone => true,
+        1 => IsWarrior(playerClass),
+        2 => IsRogue(playerClass),
+        3 => IsMage(playerClass),
+        4 => IsPriest(playerClass),
+        13 => IsKurian(playerClass),
+        > ClassesPerNation => playerClass == itemClass,
+        _ => Job(playerClass) == itemClass,
+    };
+
     public static bool ForbidsKind(int playerClass, int kind)
     {
         var forbidden = IsWarrior(playerClass) ? WarriorForbiddenKinds

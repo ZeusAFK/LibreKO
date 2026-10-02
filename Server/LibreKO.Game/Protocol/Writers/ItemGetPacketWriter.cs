@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -6,11 +6,12 @@ public sealed class ItemGetPacketWriter
 {
     public const byte ResultError = 0;
     public const byte ResultSuccess = 1;
-    public const byte ResultNoSlot = 7;
+    public const int FailureNoRoom = -11;
 
     public const byte PositionGold = byte.MaxValue;
 
     public byte Result { get; set; }
+    public int? Failure { get; set; }
     public int BundleId { get; set; }
     public byte Position { get; set; }
     public int ItemId { get; set; }
@@ -19,6 +20,7 @@ public sealed class ItemGetPacketWriter
     public ushort BundleSlot { get; set; }
 
     public static Packet Failed(byte result) => new ItemGetPacketWriter() { Result = result }.Build();
+    public static Packet NoRoom() => new ItemGetPacketWriter() { Result = ResultError, Failure = FailureNoRoom }.Build();
     public static Packet Looted(
         int bundleId, byte position, int itemId, ushort count, int money, ushort bundleSlot) => new ItemGetPacketWriter()
         {
@@ -38,7 +40,10 @@ public sealed class ItemGetPacketWriter
         packet.WriteByte(Result);
 
         if (Result != ResultSuccess)
+        {
+            if (Failure is { } failure) packet.WriteInt(failure);
             return packet;
+        }
 
         packet.WriteInt(BundleId);
         packet.WriteByte(Position);

@@ -25,6 +25,13 @@ public partial class GameData : Node
         return (isMonster ? "Mob #" : "NPC #") + npcId;
     }
 
+    public string TalkNpcName(int npcId)
+    {
+        if (_npcNames.TryGetValue(npcId, out var n) && n.Length > 0) return n;
+        if (_mobNames.TryGetValue(npcId, out var m) && m.Length > 0) return m;
+        return "NPC #" + npcId;
+    }
+
     private static void LoadNames(string path, Dictionary<int, string> into)
     {
         if (!ResourceLoader.Exists(path)) return;

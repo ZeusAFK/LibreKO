@@ -12,6 +12,7 @@ public partial class Net
     private const byte VipWhInput = 0x02;
     private const byte VipWhOutput = 0x03;
     private const byte VipWhMove = 0x04;
+    private const byte VipWhUseKey = 0x06;
     public const byte VipWhSetPinSub = 0x08;
     public const byte VipWhCancelPinSub = 0x09;
     public const byte VipWhChangePinSub = 0x0A;
@@ -27,6 +28,8 @@ public partial class Net
     public event Action<byte, bool>? VipWarehouseResultEvent;
 
     public event Action? VipWarehouseExpiredEvent;
+
+    public event Action<bool, int>? VipVaultRenewedEvent;
 
     public event Action? VipWarehousePinPromptEvent;
 
@@ -63,6 +66,13 @@ public partial class Net
                 VipWarehouseResultEvent?.Invoke(sub, ok);
                 break;
             }
+            case VipWhUseKey:
+            {
+                bool ok = p.RemainingBytes >= 1 && p.ReadByte() == VipSuccess;
+                int remaining = ok && p.RemainingBytes >= 4 ? p.ReadInt() : 0;
+                VipVaultRenewedEvent?.Invoke(ok, remaining);
+                break;
+            }
             case VipWhSetPinSub: case VipWhCancelPinSub: case VipWhChangePinSub:
             {
                 bool ok = p.RemainingBytes >= 1 && p.ReadByte() == VipSuccess;
@@ -81,6 +91,14 @@ public partial class Net
                 break;
             }
         }
+    }
+
+    public void SendVipVaultUseKey(int itemId)
+    {
+        var p = new Packet(GameOpcodes.GS_VIP_WAREHOUSE);
+        p.WriteByte(VipWhUseKey);
+        p.WriteInt(itemId);
+        _conn.Send(p);
     }
 
     public void SendVipWarehouseOpen()

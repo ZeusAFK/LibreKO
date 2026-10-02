@@ -165,7 +165,14 @@ public partial class World : Node3D
 
         string itemClass = ItemClassName(def.Kind);
         if (itemClass.Length > 0)
-            lines.Add(new TooltipLine(itemClass, 0, HorizontalAlignment.Right));
+        {
+            bool unusable = _selfClass > 0
+                && (EquipRules.ForbidsKind(_selfClass, def.Kind) || RequirementClassFailed(def.ReqCls));
+            lines.Add(unusable
+                ? new TooltipLine($"{itemClass} {ItemData.Text(UnableToEquipText, "(Unable to equip)")}",
+                    TooltipColorFailed, HorizontalAlignment.Right)
+                : new TooltipLine(itemClass, 0, HorizontalAlignment.Right));
+        }
 
         lines.Add(TooltipLine.Rule());
 
@@ -222,7 +229,7 @@ public partial class World : Node3D
         AddStatLine(lines, absSlot, def, ext, 4522, "MP Bonus", 0, ext?.BonusMaxMp ?? 0,
             (_, e) => e?.BonusMaxMp ?? 0, 4);
 
-        AddSpecialLine(lines, ext);
+        AddExtensionEffects(lines, ext);
 
         AddStatLine(lines, absSlot, def, ext, 4530, "Defense Ability (Dagger)", 0, ext?.BonusDaggerAc ?? 0,
             (_, e) => e?.BonusDaggerAc ?? 0, 4);
@@ -252,6 +259,10 @@ public partial class World : Node3D
         AddStatLine(lines, absSlot, def, ext, 4546, "Resistance to Curse", 0, ext?.BonusCurseR ?? 0,
             (_, e) => e?.BonusCurseR ?? 0, 3);
 
+        if (ext?.Mirror is > 0 and var mirror)
+            lines.Add(new TooltipLine(FormatIntText(4555, "Repel Physical Attack", mirror), TooltipColorEffect));
+        AddSkillOptions(lines, item.ItemId);
+
         if (def.Weight > 0)
             lines.Add(new TooltipLine(FormatFloatText(4553, "Weight", def.Weight / 10.0f), 0));
 
@@ -270,7 +281,7 @@ public partial class World : Node3D
         if (reqLevel > 0)
         {
             int color = Sheet.Level > 0 && Sheet.Level < reqLevel ? 13 : 0;
-            string text = def.ReqLevelMax > reqLevel && def.ReqLevelMax < 100
+            string text = def.ReqLevelMax > reqLevel && def.ReqLevelMax <= RequiredLevelRangeCap
                 ? FormatRangeText(4558, "Required Level", reqLevel, def.ReqLevelMax)
                 : FormatIntText(4541, "Required Level", reqLevel);
             lines.Add(new TooltipLine(text, color));
@@ -281,6 +292,8 @@ public partial class World : Node3D
         AddRequirement(lines, 4538, "Required Dexterity", reqDex, Sheet.Dex);
         AddRequirement(lines, 4540, "Required Intelligence", reqInt, Sheet.Intel);
         AddRequirement(lines, 4537, "Required Magic Power", reqCha, Sheet.Mag);
+
+        AddCospreBonus(lines, item.ItemId);
 
         string grade = RarityGradeLine(rarity);
         if (grade.Length > 0)
@@ -293,13 +306,23 @@ public partial class World : Node3D
         if (description.Count > 0)
         {
             if (grade.Length == 0) lines.Add(TooltipLine.Rule());
+            description[0] = DescriptionMark + description[0];
+            description[^1] += DescriptionMark;
             foreach (var text in description)
                 lines.Add(new TooltipLine(text, 12, HorizontalAlignment.Center));
         }
 
-        lines.Add(new TooltipLine(
-            ItemData.Text(18500, "[Enable Comparison by pressing the 'Ctrl' Key.]"),
-            9, HorizontalAlignment.Center));
+        if (CanCompare(absSlot, def))
+            lines.Add(new TooltipLine(
+                ItemData.Text(18500, "[Enable Comparison by pressing the 'Ctrl' Key.]"),
+                9, HorizontalAlignment.Center));
+
+        int tradeNote = TradeNoteText(item.ItemId, def);
+        if (tradeNote != 0)
+        {
+            lines.Add(TooltipLine.Rule());
+            lines.Add(new TooltipLine(ItemData.Text(tradeNote, ""), TooltipColorFailed, HorizontalAlignment.Right));
+        }
 
         return lines;
     }
@@ -307,15 +330,15 @@ public partial class World : Node3D
     private static string RarityMarker(int rarity) => rarity switch
     {
         < 0 => ItemData.Text(2402, "Regular item"),
-        0 => ItemData.Text(2401, "Craft item"),
-        1 => ItemData.Text(2403, "Rare item"),
-        2 => ItemData.Text(2403, "Rare item"),
-        3 => ItemData.Text(2404, "Magic item"),
-        4 => ItemData.Text(2405, "Unique item"),
-        5 => ItemData.Text(2406, "Upgrade item"),
-        6 => ItemData.Text(2407, "An event item"),
-        11 => ItemData.Text(2409, "Reverse item"),
-        12 => ItemData.Text(2408, "Reverse unique item"),
+        ItemData.Rarity.Regular => ItemData.Text(2402, "Regular item"),
+        ItemData.Rarity.Magic => ItemData.Text(2404, "Magic item"),
+        ItemData.Rarity.Rare => ItemData.Text(2403, "Rare item"),
+        ItemData.Rarity.Craft => ItemData.Text(2401, "Craft item"),
+        ItemData.Rarity.Unique => ItemData.Text(2405, "Unique item"),
+        ItemData.Rarity.Upgrade => ItemData.Text(2406, "Upgrade item"),
+        ItemData.Rarity.Event => ItemData.Text(2407, "An event item"),
+        ItemData.Rarity.Reverse => ItemData.Text(2409, "Reverse item"),
+        ItemData.Rarity.ReverseUnique => ItemData.Text(2408, "Reverse unique item"),
         _ => "",
     };
 
@@ -373,28 +396,106 @@ public partial class World : Node3D
         lines.Add(new TooltipLine($"{StatLabel(textId, fallback)} : {total}", color));
     }
 
-    private void AddSpecialLine(List<TooltipLine> lines, ItemData.Ext? ext)
+    private const int UnableToEquipText = 3036;
+    private const int TooltipColorFailed = 13;
+    private const int TooltipColorEffect = 8;
+    private const int RequiredLevelRangeCap = 70;
+    private const string DescriptionMark = "*";
+    private const int SkillOptionText = 4594;
+    private const int SkillOptionOnAttackText = 4592;
+    private const int SkillOptionOnDamageText = 4593;
+    private const int SkillOptionOnDamageTrigger = 13;
+    private const int NoTradeText = 4580;
+    private const int QuestItemTradeText = 4581;
+    private const int NoTradeCountableText = 4703;
+    private const int NoTradeCountable = 2;
+    private const int CospreWeightDivisor = 10;
+
+    private static void AddExtensionEffects(List<TooltipLine> lines, ItemData.Ext? ext)
     {
         if (ext == null) return;
-
         AddElementLine(lines, 4508, "Flame Damage", ext.FireDamage);
         AddElementLine(lines, 4509, "Glacier Damage", ext.IceDamage);
         AddElementLine(lines, 4510, "Lightning Damage", ext.LightningDamage);
         AddElementLine(lines, 4511, "Poison Damage", ext.PoisonDamage);
+        AddElementLine(lines, 4512, "HP Recovery", ext.HpDrain);
+        AddElementLine(lines, 4514, "MP Recovery", ext.MpDrain);
+        AddElementLine(lines, 4513, "MP Damage", ext.MpDamage);
+    }
 
-        if (ext.Special == 0) return;
-        if (ext.FireDamage != 0 || ext.IceDamage != 0 || ext.LightningDamage != 0 || ext.PoisonDamage != 0)
-            return;
-
-        int textId = SpecialTextId(ext.Name);
-        if (textId == 0) return;
-        string fallback = textId switch
+    private static void AddSkillOptions(List<TooltipLine> lines, int itemId)
+    {
+        foreach (var option in ItemData.SkillOptions(itemId))
         {
-            4512 => "HP Recovery",
-            4513 => "MP Damage",
-            _ => "Special Effect",
-        };
-        lines.Add(new TooltipLine($"{StatLabel(textId, fallback)} : {ext.Special}", 8));
+            string trigger = option.Trigger == SkillOptionOnDamageTrigger
+                ? ItemData.Text(SkillOptionOnDamageText, "Damage")
+                : ItemData.Text(SkillOptionOnAttackText, "Attack");
+            string skill = SkillData.Get(option.SkillId)?.Name ?? option.SkillId.ToString();
+            string template = ItemData.Text(SkillOptionText, "Skill Option : %s has %d%% probability to cast %s");
+            lines.Add(new TooltipLine(FillSkillOption(template, trigger, option.Chance, skill), TooltipColorEffect));
+        }
+    }
+
+    private static string FillSkillOption(string template, string trigger, int chance, string skill)
+    {
+        int first = template.IndexOf("%s", System.StringComparison.Ordinal);
+        if (first >= 0) template = template[..first] + trigger + template[(first + 2)..];
+        template = template.Replace("%d", chance.ToString()).Replace("%%", "%");
+        int second = template.IndexOf("%s", System.StringComparison.Ordinal);
+        return second >= 0 ? template[..second] + skill + template[(second + 2)..] : template;
+    }
+
+    private static void AddCospreBonus(List<TooltipLine> lines, int itemId)
+    {
+        if (ItemData.CospreBonus(itemId) is not { } bonus) return;
+        int before = lines.Count;
+        AddCospreLine(lines, 9600, bonus.NoahPct);
+        AddCospreLine(lines, 9601, bonus.XpPct);
+        AddCospreLine(lines, 9602, bonus.Hp);
+        AddCospreLine(lines, 9603, bonus.Ac);
+        AddCospreLine(lines, 9604, bonus.ApPct);
+        AddCospreLine(lines, 45002, bonus.Ap);
+        AddCospreLine(lines, 4521, bonus.Str);
+        AddCospreLine(lines, 4802, bonus.Sta);
+        AddCospreLine(lines, 4518, bonus.Dex);
+        AddCospreLine(lines, 4520, bonus.Int);
+        AddCospreLine(lines, 4517, bonus.Cha);
+        AddCospreLine(lines, CospreDamageToText(bonus.ApClass), bonus.ApClassPct);
+        AddCospreLine(lines, CospreDamageFromText(bonus.AcClass), bonus.AcClassPct);
+        AddCospreLine(lines, 4610, bonus.MaxWeight / CospreWeightDivisor);
+        AddCospreLine(lines, 4611, bonus.Np);
+        if (lines.Count > before) lines.Insert(before, TooltipLine.Rule());
+    }
+
+    private static void AddCospreLine(List<TooltipLine> lines, int textId, int value)
+    {
+        if (textId == 0 || value == 0) return;
+        lines.Add(new TooltipLine(FormatIntText(textId, "", value), TooltipColorEffect));
+    }
+
+    private static int CospreDamageToText(int classCode) => classCode switch
+    {
+        1 => 9605, 2 => 9606, 3 => 9607, 4 => 9608, 5 => 9615,
+        _ => 0,
+    };
+
+    private static int CospreDamageFromText(int classCode) => classCode switch
+    {
+        1 => 9609, 2 => 9610, 3 => 9611, 4 => 9612, 7 => 9614,
+        _ => 0,
+    };
+
+    private static int TradeNoteText(int itemId, ItemData.Item def) =>
+        ItemData.IsNoTradeId(itemId) ? NoTradeText
+        : def.Race == ItemData.QuestItemRace ? QuestItemTradeText
+        : def.Countable == NoTradeCountable ? NoTradeCountableText
+        : 0;
+
+    private bool CanCompare(int absSlot, ItemData.Item def)
+    {
+        if (absSlot < GridStart) return false;
+        int eq = Inv.ResolveEquipDest(def.Slot, ItemData.EquipSlotFor(def));
+        return eq >= 0 && eq < Inv.Length && !Inv[eq].IsEmpty;
     }
 
     private static void AddElementLine(List<TooltipLine> lines, int textId, string fallback, int value)
@@ -408,8 +509,8 @@ public partial class World : Node3D
         if (delay <= 0) return;
         int textId = delay switch
         {
-            <= 100 => 4505,
-            <= 111 => 4502,
+            <= 89 => 4505,
+            <= 110 => 4502,
             <= 130 => 4503,
             <= 150 => 4504,
             _ => 4506,
@@ -421,8 +522,9 @@ public partial class World : Node3D
     {
         if (value <= 0) return;
         string text = FormatIntText(textId, fallback, value);
-        if (mine > 0) text = $"{text} ({mine})";
-        lines.Add(new TooltipLine(text, mine > 0 && mine < value ? 13 : 0));
+        bool failing = mine > 0 && mine < value;
+        if (failing) text = $"{text} ({mine})";
+        lines.Add(new TooltipLine(text, failing ? TooltipColorFailed : 0));
     }
 
     private int CompareColor(int absSlot, ItemData.Item def, int value, System.Func<ItemData.Item, ItemData.Ext?, int> selector)
@@ -522,18 +624,6 @@ public partial class World : Node3D
         int fmt = s.IndexOf('%');
         if (fmt >= 0) s = s[..fmt];
         return s.Replace(":", "").Trim();
-    }
-
-    private static int SpecialTextId(string name)
-    {
-        string n = name.ToLowerInvariant();
-        if (n.Contains("flame") || n.Contains("fire")) return 4508;
-        if (n.Contains("frozen") || n.Contains("glacier") || n.Contains("frost") || n.Contains("ice")) return 4509;
-        if (n.Contains("lightning")) return 4510;
-        if (n.Contains("poison") || n.Contains("viper")) return 4511;
-        if (n.Contains("vampire")) return 4512;
-        if (n.Contains("mp damage")) return 4513;
-        return 0;
     }
 
     private static bool IsWeaponItem(ItemData.Item def) => def.Slot is 0 or 1 or 3 or 4 && def.Kind != 60;

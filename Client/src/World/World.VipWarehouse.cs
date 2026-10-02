@@ -9,6 +9,10 @@ public partial class World
     private const int VipWhSlots = Net.VipWarehouseSlots;
     private const int VipWhPageSize = Net.VipWarehousePageSize;
     private const int VipWhPages = VipWhSlots / VipWhPageSize;
+    private const int SecondsPerDay = 86_400;
+    private static readonly HashSet<int> VipVaultKeys = new() { 800_442_000, 810_442_000, 998_019_000 };
+
+    private static bool IsVipVaultKey(int itemId) => VipVaultKeys.Contains(itemId);
 
     private readonly ItemSlot[] _vipWh = new ItemSlot[VipWhSlots];
     private int _vipWhPage;
@@ -38,6 +42,7 @@ public partial class World
         Net.I.VipWarehouseExpiredEvent += OnVipWarehouseExpired;
         Net.I.VipWarehousePinPromptEvent += OnVipWarehousePinPrompt;
         Net.I.VipWarehousePinResultEvent += OnVipWarehousePinResult;
+        Net.I.VipVaultRenewedEvent += OnVipVaultRenewed;
     }
 
     private void VipWarehouseDispose()
@@ -47,6 +52,18 @@ public partial class World
         Net.I.VipWarehouseExpiredEvent -= OnVipWarehouseExpired;
         Net.I.VipWarehousePinPromptEvent -= OnVipWarehousePinPrompt;
         Net.I.VipWarehousePinResultEvent -= OnVipWarehousePinResult;
+        Net.I.VipVaultRenewedEvent -= OnVipVaultRenewed;
+    }
+
+    private void OnVipVaultRenewed(bool ok, int remainingSeconds)
+    {
+        if (!ok)
+        {
+            CombatNotice("The vault key could not be used.");
+            return;
+        }
+        int days = Mathf.Max(1, Mathf.RoundToInt(remainingSeconds / (float)SecondsPerDay));
+        CombatNotice($"Your VIP vault is rented for {days} more day{(days == 1 ? "" : "s")}.");
     }
 
     private void BuildVipWarehousePanel()

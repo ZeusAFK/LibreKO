@@ -1,5 +1,6 @@
 ﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Game.World;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -19,7 +20,6 @@ public sealed class UserInfoPacketWriter
     public const short NoMarkVersion = -1;
     public const byte AuthorityPlayer = 1;
     public const byte AuthorityGameMaster = 0;
-    public const byte NoKnightsRank = 0xFF;
     public const int NoTransform = 0;
 
     public readonly record struct ClanState(
@@ -60,7 +60,8 @@ public sealed class UserInfoPacketWriter
         ushort ZoneId,
         bool IsHidingHelmet,
         short DisplayTitleId,
-        IReadOnlyList<VisualItem> Visuals);
+        IReadOnlyList<VisualItem> Visuals,
+        NationRanks? Ranks = null);
 
     public static void WriteRecord(Packet packet, UserState user)
     {
@@ -118,8 +119,9 @@ public sealed class UserInfoPacketWriter
         packet.WriteByte(0);
         packet.WriteByte(0);
         packet.WriteShort(0);
-        packet.WriteByte(NoKnightsRank);
-        packet.WriteByte(NoKnightsRank);
+        var ranks = (user.Ranks ?? NationRanks.None).Shown;
+        packet.WriteByte(ranks.Knights);
+        packet.WriteByte(ranks.Personal);
 
         foreach (var visual in user.Visuals)
         {

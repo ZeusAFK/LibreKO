@@ -307,11 +307,30 @@ public static partial class KeyBinds
     {
         if (_loaded) return;
         _loaded = true;
-        foreach (var entry in Table)
-        {
-            string saved = Config.GetKeyBind(entry.Action.ToString());
-            Bound[entry.Action] = saved.Length == 0 ? entry.Default : KeyChord.Parse(saved);
-        }
+        foreach (var (action, chord) in Resolve(Table, SavedChord))
+            Bound[action] = chord;
         LoadPad();
+    }
+
+    private static KeyChord? SavedChord(KeyAction action)
+    {
+        string text = Config.GetKeyBind(action.ToString());
+        return text.Length == 0 ? null : KeyChord.Parse(text);
+    }
+
+    internal static Dictionary<KeyAction, KeyChord> Resolve(IReadOnlyList<Entry> table, Func<KeyAction, KeyChord?> saved)
+    {
+        var bound = new Dictionary<KeyAction, KeyChord>();
+        var chosen = new HashSet<KeyChord>();
+        foreach (var entry in table)
+        {
+            if (saved(entry.Action) is not { } chord) continue;
+            bound[entry.Action] = chord;
+            if (chord.Assigned) chosen.Add(chord);
+        }
+        foreach (var entry in table)
+            if (!bound.ContainsKey(entry.Action))
+                bound[entry.Action] = chosen.Contains(entry.Default) ? KeyChord.Unbound : entry.Default;
+        return bound;
     }
 }

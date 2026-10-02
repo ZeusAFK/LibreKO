@@ -155,6 +155,11 @@ public partial class World
 
     private static void PlayClip(Ent e, string state)
     {
+        if (state == "sit" && e.Hover != null)
+        {
+            PlayClipOn(e.Anim, ref e.Clip, WingSitLocomotion, e.Hover.Loop);
+            return;
+        }
         bool stance = !e.IsNpc && state == "idle" && (e.CombatStance || Now() < e.CombatStanceUntil);
         PlayClipOn(
             e.Anim,
@@ -169,7 +174,7 @@ public partial class World
         int idleSlot = -1)
     {
         if (anim == null || clip == state) return;
-        string[] requested = state == "idle" && idleOverride != null ? idleOverride : ClipsFor(state);
+        string[] requested = idleOverride ?? ClipsFor(state);
         string? name = null;
         if (idleOverride != null)
         {

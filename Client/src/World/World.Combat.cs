@@ -360,12 +360,6 @@ public partial class World
         _comboBuffered = false;
     }
 
-    private int SelfWeaponItem()
-    {
-        var g = SelfGear();
-        return g.Length > 6 ? g[6] : 0;
-    }
-
     private bool InRange(int id, float radius) =>
         _ents.TryGetValue(id, out var e) && e.Body.GlobalPosition.DistanceTo(_self.GlobalPosition) <= radius;
 
@@ -404,7 +398,10 @@ public partial class World
                 }
                 if (s != null)
                 {
-                    PlaySkillAction(casterId, SkillAnim(casterId, s, false), ClipsForCast(s), ActionRankSkill);
+                    bool remoteUse = casterId != _myId;
+                    if (remoteUse) _remoteCastingSkill[casterId] = skillId;
+                    PlaySkillAction(casterId, SkillAnim(casterId, s, false), ClipsForCast(s), ActionRankSkill, restart: remoteUse);
+                    if (remoteUse) HoldEntityCastPose(casterId, s);
                     LatchStrikeTarget(casterId, s.IsMelee ? targetId : -1);
                 }
                 if (casterId != _myId && s != null) StartCastFx(casterId, s);
@@ -425,9 +422,11 @@ public partial class World
                 int affected = targetId == 0 ? casterId : targetId;
                 if (Diag.SlowLog) GD.Print($"[fx] effecting skill={skillId} caster={casterId} target={targetId} miss={miss} targetFx={s?.TargetFx} part={s?.TargetPart} data3={(data.Length > 3 ? data[3] : 0)}");
                 StopSkillFx(casterId, skillId, 1);
+                bool castFollowUp = _remoteCastingSkill.Remove(casterId, out int castingSkill) && castingSkill == skillId;
                 if (s != null && !s.HasFlyingStage && (s.IsMelee || s.SelfAnim2 != 0))
                 {
-                    PlaySkillAction(casterId, SkillAnim(casterId, s, true), ClipsForCast(s), ActionRankSkill);
+                    PlaySkillAction(casterId, SkillAnim(casterId, s, true), ClipsForCast(s), ActionRankSkill,
+                                    restart: casterId != _myId && !castFollowUp);
                     LatchStrikeTarget(casterId, !miss && s.IsMelee ? targetId : -1);
                 }
                 if (s?.SelfFx2 != null)
@@ -470,12 +469,14 @@ public partial class World
             case 4:
             case 6:
                 StopSkillFx(casterId, skillId);
+                if (casterId != _myId) EndEntityCastPose(casterId);
                 if (casterId == _myId)
                 {
                     bool awaited = HasPendingCast(skillId);
                     ClearPendingCast(skillId);
                     EndCast(skillId);
                     if (s != null) CancelSkillCooldown(s);   // a refused cast must not eat the cooldown
+                    if (sub == MagicSub.Fail) NoteGenieRefusal(skillId);
                     if (awaited && s != null) LogSkillRefused(s, sub);
                     _castLogged.Remove(skillId);
                 }

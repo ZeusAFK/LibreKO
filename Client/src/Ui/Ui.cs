@@ -290,6 +290,7 @@ public partial class SettingsPanel : CanvasLayer
     private OptionButton _language = null!;
     private OptionButton _res = null!;
     private CheckButton _shadows = null!, _ssao = null!, _volFog = null!, _bloom = null!, _clouds = null!;
+    private CheckButton _fxLayer = null!;
     private CheckButton _capes = null!;
     private OptionButton _aa = null!;
     private OptionButton _upscale = null!;
@@ -387,6 +388,7 @@ public partial class SettingsPanel : CanvasLayer
                                (Config.UpscaleLevel)_upscaleQuality.Selected, (Config.FpsCap)_fps.Selected);
             Config.SetEffects(_fxAmbient.ButtonPressed, (int)_fxDistance.Value, _fxNumbers.ButtonPressed,
                               _fxCombatLog.ButtonPressed);
+            Config.SetFxLayer(_fxLayer.ButtonPressed);
             Config.SetControls((float)_camTurnSpeed.Value, _camEdgePan.ButtonPressed, (float)_camEdgeSpeed.Value);
             if (_moveStick != null && _lookStick != null)
                 Config.SetStickSensitivity((float)_moveStick.Value, (float)_lookStick.Value);
@@ -520,6 +522,9 @@ public partial class SettingsPanel : CanvasLayer
         vb.AddChild(Row("Ambient Occlusion", _ssao = new CheckButton { ButtonPressed = Config.Ssao }));
         vb.AddChild(Row("Volumetric Fog", _volFog = new CheckButton { ButtonPressed = Config.VolumetricFog }));
         vb.AddChild(Row("Bloom", _bloom = new CheckButton { ButtonPressed = Config.Bloom }));
+        var fxLayerRow = Row("Accurate Effect Blending", _fxLayer = new CheckButton { ButtonPressed = Config.FxLayer });
+        fxLayerRow.TooltipText = "Blends spells and effects the way the original client does, outside bloom and tone mapping.";
+        vb.AddChild(fxLayerRow);
         vb.AddChild(Row("Clouds", _clouds = new CheckButton { ButtonPressed = Config.Clouds }));
         var capeRow = Row("Clan Capes", _capes = new CheckButton { ButtonPressed = Config.Capes });
         capeRow.TooltipText = "Simulated cloth on every player in range. Costs a lot of frame time.";

@@ -194,7 +194,7 @@ public static class ItemShine
         return driver;
     }
 
-    private static readonly Dictionary<(ulong Source, int Level, int Part), (StandardMaterial3D Surface, ShaderMaterial Shine)> _sharedShine = new();
+    private static readonly Dictionary<(ulong Source, int Level, int Part), (StandardMaterial3D Surface, ShaderMaterial Shine)> _sharedShine = Shutdown.Track(new Dictionary<(ulong Source, int Level, int Part), (StandardMaterial3D Surface, ShaderMaterial Shine)>());
 
     private static (StandardMaterial3D Surface, ShaderMaterial Shine) SharedShine(StandardMaterial3D src, int level, int partIndex)
     {

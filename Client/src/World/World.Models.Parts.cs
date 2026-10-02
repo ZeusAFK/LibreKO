@@ -28,7 +28,12 @@ public partial class World
         string? faceStem = FacePartStem(race, face);
         if (faceStem != null) { if (GraftPart(parts, 4, faceStem, "characters")) grafted++; else missing++; }
 
-        bool helmet = !hideHelmet && gear != null
+        var costume = gear != null
+            ? CostumeLook.Dress(gear, hideHelmet, ArmorResource,
+                (part, resource) => GraftPart(parts, part, CostumeLook.ArmorStem(resource, race), "items/armor"))
+            : null;
+        bool helmet = costume?.Contains(CostumeLook.HeadPart) == true
+                      || !hideHelmet && gear != null
                       && gear.Length > HelmetGearIndex && gear[HelmetGearIndex] > 0;
         if (!helmet && HairPartStem(race, HairCode.StyleOf(hair)) is { } hairStem
             && GraftPart(parts, 5, hairStem, "characters"))
@@ -42,6 +47,7 @@ public partial class World
             {
                 if (gi >= gear.Length || gear[gi] <= 0) continue;
                 if (hideHelmet && gi == HelmetGearIndex) continue;
+                if (costume?.Contains(pn) == true) continue;
                 string? stem = ArmorPartStem(gear[gi], race);
                 if (stem == null)
                 {
@@ -97,15 +103,13 @@ public partial class World
         return int.TryParse(nodeName.AsSpan(i + 5), out int n) ? n : -1;
     }
 
-    private string? ArmorPartStem(int itemId, int race)
-    {
-        if (_partsIndex == null) return null;
-        if (!_partsIndex.Items.TryGetValue(itemId, out int r)
-            && !_partsIndex.Items.TryGetValue(itemId / 1000 * 1000, out r))
-            return null;
-        int cat = r / 10000000, mid = (r / 1000) % 10000 + race, type = (r / 10) % 100, variant = r % 10;
-        return $"{cat}_{mid:D4}_{type:D2}_{variant}";
-    }
+    private int ArmorResource(int itemId) =>
+        _partsIndex != null
+        && (_partsIndex.Items.TryGetValue(itemId, out int r) || _partsIndex.Items.TryGetValue(ItemData.BaseId(itemId), out r))
+            ? r : 0;
+
+    private string? ArmorPartStem(int itemId, int race) =>
+        ArmorResource(itemId) is var r and not 0 ? CostumeLook.ArmorStem(r, race) : null;
 
     private string? FacePartStem(int race, int face)
     {

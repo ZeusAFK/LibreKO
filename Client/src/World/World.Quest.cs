@@ -541,7 +541,7 @@ public partial class World
         var npcs = _questViews.TryGetValue(questId, out var view)
             ? new[] { view.NpcId } : QuestData.NpcsForState(questId, state);
         if (npcs.Length == 0) return "See the quest text";
-        string who = GameData.I != null ? GameData.I.NpcName(npcs[0], true) : $"#{npcs[0]}";
+        string who = NpcDisplayName(npcs[0]);
         return state == 0 ? $"Ask {who} for this quest" : $"Report to {who}";
     }
 
@@ -742,7 +742,7 @@ public partial class World
     }
 
     private static string NpcDisplayName(int npcId) =>
-        GameData.I != null ? GameData.I.NpcName(npcId, true) : $"#{npcId}";
+        GameData.I != null ? GameData.I.TalkNpcName(npcId) : $"#{npcId}";
 
     private static string Clip(string text)
     {

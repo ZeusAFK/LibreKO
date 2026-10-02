@@ -42,10 +42,8 @@ public static class ItemSearch
     public const int NameCap = 60;
     public const int ResultCap = 100;
 
-    private const int NoTradeIdLast = 999_999_999;
-
     public static bool IsTradeable(ItemData.Item def) =>
-        (def.Id < ItemData.NoTradeIdFirst || def.Id > NoTradeIdLast)
+        !ItemData.IsNoTradeId(def.Id)
         && def.Race != ItemData.QuestItemRace
         && def.Bound == 0;
 

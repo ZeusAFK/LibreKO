@@ -233,6 +233,7 @@ public partial class World
         RebuildGiftPicker();
         RequestLetterList();
         Net.I.SendShoppingMallUnread();
+        Net.I.SendShoppingMallOpen();
     }
 
     public void CloseShoppingMall()

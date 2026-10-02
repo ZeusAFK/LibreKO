@@ -517,6 +517,13 @@ public static class UiTheme
         var edit = spin.GetLineEdit();
         edit.AddThemeFontSizeOverride("font_size", fontSize);
         edit.FocusExited += spin.Apply;
+        edit.TextChanged += text =>
+        {
+            if (double.TryParse(text, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out double typed)
+                && typed >= spin.MinValue && typed <= spin.MaxValue)
+                spin.SetValueNoSignal(typed);
+        };
         return spin;
     }
 

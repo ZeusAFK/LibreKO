@@ -28,6 +28,7 @@ public partial class World : Node3D
         if (Config.Development)
             Facet(BuildInfoPanel);
         Facet(BuildEscMenu);
+        Facet(EscCloseInit, EscCloseDispose);
         Facet(
             () => { Chat = new ChatSystem(this); Chat.Build(); Chat.LocalCommand = RunLocalCommand; },
             () => Chat?.Dispose());
@@ -130,7 +131,18 @@ public partial class World : Node3D
         Facet(CursorInit, CursorDispose);
         Facet(AdminPanelInit, AdminPanelDispose);
         Facet(GmFxInit, GmFxDispose);
+        Facet(FxLayerInit, FxLayerDispose);
         Facet(BuildAudio, TeardownAudio);
+    }
+
+    private FxLayer? _fxLayer;
+
+    private void FxLayerInit() => _fxLayer = FxLayer.Attach(GetViewport());
+
+    private void FxLayerDispose()
+    {
+        if (_fxLayer != null && GodotObject.IsInstanceValid(_fxLayer)) _fxLayer.QueueFree();
+        _fxLayer = null;
     }
 
     private void TeardownFacets()

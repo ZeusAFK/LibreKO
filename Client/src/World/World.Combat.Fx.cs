@@ -6,15 +6,26 @@ namespace LibreKO;
 
 public partial class World
 {
-    private void SpawnHitImpact(Ent victim, Vector3 strikeDir, int weaponItemId)
+    private const string BasicHitFx = "damage0_1";
+    private const string ElementHitFxSuffix = "_sword_target0_1";
+
+    private void SpawnHitImpact(Ent victim, int[]? attackerGear)
     {
-        Vector3 hitPoint = RandomHitPoint(victim);
-        string element = WeaponElement(weaponItemId, targetEffect: true) ?? "";
-        string targetFx = element.Length > 0 ? $"{element}_sword_target0_1" : "damage0_1";
-        var impact = Fx.Spawn(targetFx, this, hitPoint, oneShot: true, deferParts: true);
-        if (impact != null && element.Length > 0)
-            impact.Scale = Vector3.One * 0.22f;
+        if (HitElement(attackerGear) is { } element)
+        {
+            float centre = EntityLocalBox(victim).GetCenter().Y;
+            Fx.Spawn(element + ElementHitFxSuffix, victim.Body, new Vector3(0f, centre, 0f), oneShot: true, deferParts: true);
+            return;
+        }
+        Fx.Spawn(BasicHitFx, this, RandomHitPoint(victim), oneShot: true, deferParts: true);
     }
+
+    private static string? HitElement(int[]? gear) =>
+        gear == null ? null
+        : WeaponElement(GearAt(gear, InventoryConstants.VisRightHand))
+          ?? WeaponElement(GearAt(gear, InventoryConstants.VisLeftHand));
+
+    private static int GearAt(int[] gear, int slot) => slot < gear.Length ? gear[slot] : 0;
 
     private static Aabb EntityLocalBox(Ent e)
     {

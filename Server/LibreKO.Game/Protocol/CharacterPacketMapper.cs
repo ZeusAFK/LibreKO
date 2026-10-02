@@ -22,7 +22,8 @@ public sealed record MyInfoPacketContext(
     short PosZ,
     short PosY,
     short PremiumHours,
-    IReadOnlyDictionary<int, PetItemInfo>? PetsBySlot = null);
+    IReadOnlyDictionary<int, PetItemInfo>? PetsBySlot = null,
+    NationRanks? Ranks = null);
 
 public sealed record SelectCharacterPacketContext(
     short ZoneId,
@@ -112,6 +113,7 @@ public class CharacterPacketMapper
             Experience = context.Character.Experience,
             Loyalty = context.Character.Loyalty,
             LoyaltyMonthly = context.Character.LoyaltyMonthly,
+            Ranks = context.Ranks ?? NationRanks.None,
             MaxWeight = context.Stats.MaxWeight,
             ItemWeight = context.Stats.ItemWeight,
             TotalHit = (short)context.Stats.TotalHit,

@@ -297,6 +297,7 @@ public sealed partial class HudLayout : Node
         {
             _target.Position = _dragOriginPosition;
             CycleBackgroundOpacity();
+            return;
         }
         ClampOnScreen();
         if (_persist) Config.SaveWindowPos(_id, _target.Position);
@@ -345,7 +346,7 @@ public sealed partial class HudLayout : Node
         var min = _target.GetCombinedMinimumSize();
         var size = new Vector2(
             Mathf.Max(_target.Size.X, min.X),
-            Mathf.Max(_target.Size.Y, min.Y));
+            Mathf.Max(_target.Size.Y, min.Y)) * _target.Scale;
         var p = _target.Position;
         p.X = Mathf.Clamp(p.X, 0f, Mathf.Max(0f, vp.X - size.X));
         p.Y = Mathf.Clamp(p.Y, 0f, Mathf.Max(0f, vp.Y - size.Y));

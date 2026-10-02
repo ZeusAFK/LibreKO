@@ -8,7 +8,8 @@ public sealed class NpcDialogPacketWriter
 {
     public const int NoText = -1;
     public const int NpcSayLines = 8;
-    public const byte ObjectEventEffect = 3;
+    public const byte ObjectEventEffect = 11;
+    public const byte ObjectEventShown = 1;
     public const byte RebirthPanelStyle = 48;
     public const byte FamiliarPanelStyle = 9;
 
@@ -93,11 +94,12 @@ public sealed class NpcDialogPacketWriter
     public static Packet FamiliarPanel(int npcId, string scriptFile) =>
         SelectMessage(npcId, FamiliarPanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
 
-    public static Packet Effect(short entityId, int effectId)
+    public static Packet Effect(int entityId, int effectId)
     {
         var packet = new Packet(GameOpcodes.GS_OBJECT_EVENT);
         packet.WriteByte(ObjectEventEffect);
-        packet.WriteShort(entityId);
+        packet.WriteByte(ObjectEventShown);
+        packet.WriteInt(entityId);
         packet.WriteInt(effectId);
         return packet;
     }

@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
@@ -34,5 +34,6 @@ internal static class NpcPacketMapper
         npc.ObjectType,
         npc.Direction,
         npc.PetOwnerName,
-        npc.IsPet ? npc.Name : string.Empty);
+        npc.IsPet ? npc.Name : string.Empty,
+        npc.StatueLook);
 }

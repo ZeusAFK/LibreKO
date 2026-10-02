@@ -96,7 +96,11 @@ public partial class Net
             if (_selectRetries < 2 && SelectedChar.Length > 0)
             {
                 _selectRetries++;
-                GetTree().CreateTimer(0.8).Timeout += SendSelect;
+                int generation = _connGeneration;
+                GetTree().CreateTimer(0.8).Timeout += () =>
+                {
+                    if (generation == _connGeneration && _conn.Connected) SendSelect();
+                };
                 return;
             }
             if (ReconnectSelectFailed()) return;
@@ -117,6 +121,7 @@ public partial class Net
         float y = p.ReadShort() / 10f;
 
         int authority = 1;
+        int knightsRank = LibreKO.Domain.NationRankAura.Unranked, personalRank = LibreKO.Domain.NationRankAura.Unranked;
         int level = 0, maxHp = 0, hp = 0, maxMp = 0, mp = 0;
         long exp = 0, maxExp = 0;
         int nation = 0, race = 0, cls = 0, face = 0, hair = 0;
@@ -178,7 +183,8 @@ public partial class Net
             mr = p.ReadByte(); dr = p.ReadByte(); pr = p.ReadByte();
             gold = p.ReadInt();
             authority = p.ReadByte();
-            p.ReadByte(); p.ReadByte();
+            knightsRank = p.ReadByte();
+            personalRank = p.ReadByte();
             skillPoints = new byte[9];
             for (int i = 0; i < 9; i++) skillPoints[i] = p.ReadByte();
             gear = new int[InventoryConstants.VisualSlotCount];
@@ -214,6 +220,7 @@ public partial class Net
             CapeId = capeId, CapeR = capeR, CapeG = capeG, CapeB = capeB,
             KnightsId = knightsId, ClanFame = clanFame, AllianceId = allianceId, ClanFlag = clanFlag,
             ClanName = clanName, ClanGrade = clanGrade, ClanRanking = clanRanking, MarkVersion = markVersion,
+            KnightsRank = knightsRank, PersonalRank = personalRank,
         };
         SeedMyClan(LastEnter);
         SeedPlayerState(

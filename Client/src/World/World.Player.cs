@@ -42,6 +42,7 @@ public partial class World
     private float _myKoX, _myKoZ, _myKoY;
     private float _lastKoX, _lastKoZ;
     private double _sendAccum;
+    private bool _moveSent;
     private float _lastSentHeading = float.NaN;
     private bool _running = true;
     private bool _isGm;
@@ -59,9 +60,9 @@ public partial class World
         _walkPressedEdge = false;
         _walkKeyHeld = false;
 
-        if (_selfDead) { _selfMoving = false; return; }
+        if (_selfDead) { _selfMoving = false; _moveSent = false; return; }
         bool typing = GetViewport().GuiGetFocusOwner() is LineEdit or TextEdit or SpinBox;
-        if (typing && !WhisperInputHasFocus()) { _selfMoving = false; return; }
+        if (typing && !WhisperInputHasFocus()) { _selfMoving = false; SendMoveStop(); return; }
 
         if (_selfSitting)
         {
@@ -70,6 +71,7 @@ public partial class World
                 _selfMoving = false;
                 _moveWish = Vector3.Zero;
                 if (_selfBody != null) _selfBody.Velocity = Vector3.Zero;
+                SendMoveStop();
                 return;
             }
             StandUp();
@@ -81,7 +83,10 @@ public partial class World
         _selfMoving = wish != Vector3.Zero;
         if (_selfMoving) CloseInteractionDialogs();
         if (wish == Vector3.Zero && !_turning)
+        {
+            SendMoveStop();
             return;
+        }
 
         wish = _moveWish;
         float speed = _selfMovingBackward ? WalkSpeed : _running ? RunSpeed : WalkSpeed;
@@ -123,14 +128,33 @@ public partial class World
             speed = 0f;
         }
 
+        bool travelling = _selfMoving && speed > 0f;
         _sendAccum += delta;
-        if (_sendAccum >= 1.0 / SendHz)
+        if (!travelling && _moveSent)
+        {
+            SendMoveStop();
+            SendHeadingIfChanged(koX, koZ);
+        }
+        else if (_sendAccum >= 1.0 / SendHz)
         {
             _sendAccum = 0;
-            Net.I.SendMove(koX, koZ, _myKoY, _selfMovingBackward ? -speed : speed);
+            if (travelling)
+            {
+                Net.I.SendMove(koX, koZ, _myKoY, _selfMovingBackward ? -speed : speed,
+                               _moveSent ? Net.MoveEchoMove : Net.MoveEchoStart);
+                _moveSent = true;
+            }
             _lastKoX = koX; _lastKoZ = koZ;
             SendHeadingIfChanged(koX, koZ);
         }
+    }
+
+    private void SendMoveStop()
+    {
+        if (!_moveSent) return;
+        _moveSent = false;
+        _sendAccum = 0;
+        Net.I.SendMove(_myKoX, _myKoZ, _myKoY, 0f, Net.MoveEchoFinish);
     }
 
     private bool StepOffLedge(Vector3 below, float edgeY)

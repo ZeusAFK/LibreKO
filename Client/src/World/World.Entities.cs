@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Godot;
+using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -15,6 +16,8 @@ public partial class World
     {
         public Node3D Body = null!;
         public bool Infiltrating;
+        public bool StealthUndetected;
+        public float ActionTimeScale = 1f;
         public StaticBody3D? Collider;
         public StaticBody3D? GateBlocker;
         public Label3D? NameTag;
@@ -29,6 +32,7 @@ public partial class World
         public string? Clip;
         public AnimationPlayer?[]? WingAnims;
         public string?[] WingClips = new string?[WingSlotCount];
+        public HoverClips? Hover;
         public double ActionUntil;
         public int ActionRank;
         public int ActionAnim = NoActionAnim;
@@ -45,6 +49,7 @@ public partial class World
         public float Lift;
         public float KoX, KoZ, KoY;
         public bool IsNpc, IsMonster;
+        public bool Statue;
         public bool Attackable;
         public float TargetYaw;
         public bool Backwards;
@@ -66,6 +71,7 @@ public partial class World
         public int CapeId, CapeR, CapeG, CapeB, KnightsId, ClanGrade, ClanRanking;
         public bool IsGm;
         public bool HelmetHidden;
+        public int PersonalRank = NationRankAura.Unranked;
         public int[] Gear = System.Array.Empty<int>();
         public Dictionary<int, (Mesh? Mesh, Skin? Skin)> DefaultParts = new();
         public float SpawnX, SpawnZ, SpawnY, SpawnDir;
@@ -103,7 +109,12 @@ public partial class World
     private void OnSpawn(EntitySnapshot info)
     {
         if (info.Id == _myId)
+        {
+            if (_selfPersonalRank == info.PersonalRank) return;
+            _selfPersonalRank = info.PersonalRank;
+            RefreshRankAuraFor(_myId, _stealthIds.Contains(_myId));
             return;
+        }
         if (info.IsNpc && info.ObjectType != 0) NoteGateState(info.X, info.Z, info.GateOpen != 0);
 
         if (_ents.TryGetValue(info.Id, out var existing))
@@ -111,7 +122,7 @@ public partial class World
             if (info.IsNpc && info.ObjectType == 0)
                 ApplyPlainNpcBridgeState(existing, info.GateOpen);
 
-            var rp = EntityGroundPos(info.X, info.Z, info.Y, existing.Lift);
+            var rp = existing.Statue ? StatueSpot(info.X, info.Z, info.Y) : EntityGroundPos(info.X, info.Z, info.Y, existing.Lift);
             float jump = existing.Body.Position.DistanceTo(rp);
             if (existing.Dead || info.Dead || jump > TeleportSnap || jump < MoveArriveEps)
             {
@@ -135,6 +146,8 @@ public partial class World
                 ApplyEntityCombatStance(existing, _stanceIds.Contains(info.Id));
                 if (info.Gathering) BeginRemoteGather(info.Id, info.GatherFishing);
                 else if (existing.Gathering) EndRemoteGather(info.Id);
+                existing.PersonalRank = info.PersonalRank;
+                RefreshRankAuraFor(info.Id, _stealthIds.Contains(info.Id));
             }
             if (info.Dead) LayOutCorpse(existing);
             else if (existing.Dead)
@@ -177,24 +190,27 @@ public partial class World
     private void BuildEntity(EntitySnapshot info)
     {
         var label = info.Name.Length > 0 ? info.Name : (info.IsNpc ? "NPC" : "Player");
+        bool statue = info.IsNpc && RankerStatue.Is(info.NpcType);
 
         var watch = Diag.Watch();
         var sceneScope = Perf.Measure(Perf.Section.BuildScene);
         bool mapObject = info.ObjectType == NpcTypes.ObjectType.MapObject;
         var loadWatch = Diag.Watch();
         PackedScene? scene = mapObject ? null
-            : info.IsNpc ? ResolveMobScene(info.ModelId)
-                         : ResolvePlayerScene(info.Race);
+            : info.IsNpc && !statue ? ResolveMobScene(info.ModelId)
+                                    : ResolvePlayerScene(info.Race);
         Diag.Slow($"model load {label} model={info.ModelId} race={info.Race}", loadWatch);
         float lift = scene != null || mapObject ? 0f : CapsuleHalf;
-        var pos = EntityGroundPos(info.X, info.Z, info.Y, lift);
+        var pos = statue ? StatueSpot(info.X, info.Z, info.Y) : EntityGroundPos(info.X, info.Z, info.Y, lift);
 
         Node3D body;
         AnimationPlayer? anim = null;
         CrowdAnimator? crowd = null;
         if (scene != null)
         {
-            (body, anim) = MakeAnimatedEntity(scene, label, info.Size > 0 ? info.Size / 100f : 1f);
+            (body, anim) = statue
+                ? MakeAnimatedEntity(scene, StatueOverheadName, RankerStatue.Scale)
+                : MakeAnimatedEntity(scene, label, info.Size > 0 ? info.Size / 100f : 1f);
             crowd = CrowdAnimator.Create(anim, body, scene.ResourcePath);
             if (crowd != null) anim!.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
         }
@@ -217,7 +233,9 @@ public partial class World
             using (Perf.Measure(Perf.Section.BuildGraft))
             {
                 defaultParts = CapturePartDefaults(body);
-                if (!info.IsNpc)
+                if (statue)
+                    GraftEquipment(body, info.Race, info.Face, info.Gear, info.Hair, false);
+                else if (!info.IsNpc)
                 {
                     flinch = Flinch.Attach(body);
                     GraftEquipment(body, info.Race, info.Face, info.Gear, info.Hair, info.HelmetHidden);
@@ -228,13 +246,13 @@ public partial class World
             {
                 AttachWeapons(body, info.Gear, info.NpcType, info.NpcId);
                 if (!info.IsNpc) AttachClanGauntlet(body, info.Race, info.ClanGrade, info.ClanRanking);
-                if (info.IsNpc)
+                if (info.IsNpc && !statue)
                 {
                     string fxStem = _mobIndex != null && _mobIndex.TryGetValue(info.ModelId, out var fs)
                         ? fs : "";
                     AttachCharacterFxPlugs(body, fxStem);
                 }
-                else
+                else if (!info.IsNpc)
                 {
                     wingAnims = AttachWings(body, info.Gear, info.Race, _zone);
                     AttachHandFx(body, info.Gear, info.Race, _zone);
@@ -247,6 +265,7 @@ public partial class World
 
         string modelStem = mapObject ? "(map object)"
             : scene == null ? "(capsule fallback)"
+            : statue ? "(ranker statue)"
             : info.IsNpc ? (_mobIndex != null && _mobIndex.TryGetValue(info.ModelId, out var ms) ? ms + ".glb" : "(model)")
             : "(race rig)";
         var radii = BodyRadii(body);
@@ -256,14 +275,14 @@ public partial class World
             Body = body, Anim = anim, Crowd = crowd, WingAnims = wingAnims, Flinch = flinch,
             Target = pos, HasTarget = true, Speed = 0f, Lift = lift,
             KoX = info.X, KoZ = info.Z, KoY = info.Y,
-            IsNpc = info.IsNpc, IsMonster = info.IsMonster, Attackable = info.Attackable, ObjectType = info.ObjectType,
+            IsNpc = info.IsNpc, IsMonster = info.IsMonster, Statue = statue, Attackable = info.Attackable, ObjectType = info.ObjectType,
             Name = label, Level = info.Level, Radius = radii.Footprint, BoundRadius = radii.Bound,
             ModelId = info.ModelId, Size = info.Size, Nation = info.Nation,
             NpcId = info.NpcId, NpcType = info.NpcType,
             Race = info.Race, Face = info.Face, Hair = info.Hair,
             CapeId = info.CapeId, CapeR = info.CapeR, CapeG = info.CapeG, CapeB = info.CapeB,
             KnightsId = info.KnightsId, ClanGrade = info.ClanGrade, ClanRanking = info.ClanRanking,
-            IsGm = info.IsGm, HelmetHidden = info.HelmetHidden,
+            IsGm = info.IsGm, HelmetHidden = info.HelmetHidden, PersonalRank = info.PersonalRank,
             Gear = info.Gear.Length > 0 ? (int[])info.Gear.Clone() : System.Array.Empty<int>(),
             DefaultParts = defaultParts,
             SpawnX = info.X, SpawnZ = info.Z, SpawnY = info.Y, SpawnDir = info.Dir,
@@ -284,6 +303,7 @@ public partial class World
             body.RotationDegrees = new Vector3(0, ent.TargetYaw, 0);
             if (info.Sitting) _sittingIds.Add(info.Id);
             ent.Sitting = _sittingIds.Contains(info.Id);
+            if (ent.Sitting) ent.Hover = ResolveHoverClips(body, anim);
             ent.CombatStance = _stanceIds.Contains(info.Id);
             ent.Gathering = info.Gathering;
             ent.GatherFishing = info.GatherFishing;
@@ -306,6 +326,7 @@ public partial class World
         }
         ent.RoleFx = SpawnNpcRoleFx(ent);
         if (info.Invisible) StealthOnSpawn(info.Id, info.Invisibility);
+        if (!info.IsNpc) RefreshRankAuraFor(info.Id, _stealthIds.Contains(info.Id));
         if (crowd != null) ent.AnimActive = false;
         if (info.Dead) LayOutCorpse(ent);
         else PlayClip(ent, "idle");
@@ -317,6 +338,7 @@ public partial class World
         if (ent.Gathering && !info.Dead) BeginRemoteGather(info.Id, ent.GatherFishing);
         RefreshNpcQuestMarker(ent);
         AttachPendingStall(info.Id);
+        if (statue) AttachStatuePlaque(body, info.Name, info.X, info.Z, info.Y);
         Diag.Slow($"entity {label} model={info.ModelId} npc={info.IsNpc}", watch);
     }
 
@@ -639,6 +661,11 @@ public partial class World
         AttachWeapons(e.Body, e.Gear);
         e.WingAnims = AttachWings(e.Body, e.Gear, e.Race, _zone);
         System.Array.Clear(e.WingClips);
+        if (e.Sitting)
+        {
+            e.Hover = ResolveHoverClips(e.Body, e.Anim);
+            e.Clip = null;
+        }
         AttachHandFx(e.Body, e.Gear, e.Race, _zone);
         RearmWornLook(e.Body, e.Gear);
         ApplyEntityRenderCost(e.Body);
@@ -663,6 +690,7 @@ public partial class World
             StateVisualForgetEntity(id);
             StealthForgetEntity(id);
             ForgetStall(id);
+            _remoteCastingSkill.Remove(id);
         }
     }
 

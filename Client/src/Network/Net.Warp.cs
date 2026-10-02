@@ -10,7 +10,7 @@ public partial class Net
 
     public event Action<List<WarpListEntry>>? WarpListEvent;
 
-    public event Action? WarpFailEvent;
+    public event Action<byte, int>? WarpFailEvent;
 
     public const byte WarpListMenu = 1;
     public const byte WarpListResult = 2;
@@ -23,6 +23,9 @@ public partial class Net
     public const byte WarpResultNotQualified = 7;
     public const byte WarpResultTradeCooldown = 8;
     public const byte WarpResultServerFull = 9;
+    public const byte WarpResultClanGrade = 12;
+    public const byte WarpResultSameAddress = 13;
+    public const byte WarpResultCaptcha = 14;
 
     private void HandleWarpList(Packet p)
     {
@@ -31,12 +34,14 @@ public partial class Net
         if (kind == WarpListResult)
         {
             byte result = p.RemainingBytes >= 1 ? p.ReadByte() : WarpResultArrived;
-            if (result != WarpResultArrived) WarpFailEvent?.Invoke();
+            if (result == WarpResultArrived) return;
+            int detail = result == WarpResultLevelTooLow && p.RemainingBytes >= 1 ? p.ReadByte() : 0;
+            WarpFailEvent?.Invoke(result, detail);
             return;
         }
         if (kind != WarpListMenu)
         {
-            WarpFailEvent?.Invoke();
+            WarpFailEvent?.Invoke(0, 0);
             return;
         }
 

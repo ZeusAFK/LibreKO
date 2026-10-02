@@ -84,7 +84,7 @@ public partial class Net
         byte result = p.ReadByte();
         if (result != 1)
         {
-            LootFailEvent?.Invoke(result);
+            LootFailEvent?.Invoke(result == 0 && p.RemainingBytes >= 4 ? p.ReadInt() : 0);
             return;
         }
         if (p.RemainingBytes < 17) return;

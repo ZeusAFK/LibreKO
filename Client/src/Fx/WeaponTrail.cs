@@ -1,4 +1,5 @@
 ﻿using Godot;
+using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -19,7 +20,7 @@ public partial class WeaponTrail : Node3D
 
     private MeshInstance3D _mi = null!;
     private ImmediateMesh _mesh = null!;
-    private StandardMaterial3D _mat = null!;
+    private ShaderMaterial _mat = null!;
 
     private readonly Vector3[] _a = new Vector3[Raw];
     private readonly Vector3[] _b = new Vector3[Raw];
@@ -47,19 +48,15 @@ public partial class WeaponTrail : Node3D
             _alpha = ((traceColor >> 24) & 0xFF) / 255f,
             _anim = anim,
         };
-        t._mat = new StandardMaterial3D
-        {
-            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-            BlendMode = BaseMaterial3D.BlendModeEnum.Add,
-            Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-            CullMode = BaseMaterial3D.CullModeEnum.Disabled,
-            VertexColorUseAsAlbedo = true,
-            AlbedoTexture = tex,
-            TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmaps,
-            DisableReceiveShadows = true,
-        };
+        t._mat = FxShading.SurfaceMaterial(FxShading.RfAlphaBlending | Fx.RfDoubleSided | Fx.RfNotZWrite,
+            FxBlendMath.Pack(FxBlendMath.SrcAlpha, FxBlendMath.One, true, 1), tex);
         t._mesh = new ImmediateMesh();
-        t._mi = new MeshInstance3D { Mesh = t._mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        t._mi = new MeshInstance3D
+        {
+            Mesh = t._mesh,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            Layers = FxShading.LayerBit,
+        };
         t.AddChild(t._mi);
         t.Visible = false;
         body.AddChild(t);
@@ -73,7 +70,10 @@ public partial class WeaponTrail : Node3D
         if (_shown == shown) return;
         _shown = shown;
         Visible = shown;
+        FxLayer.Users += shown ? 1 : -1;
     }
+
+    public override void _ExitTree() => SetShown(false);
 
     private const float TraceLeadFrames = 2f;
 

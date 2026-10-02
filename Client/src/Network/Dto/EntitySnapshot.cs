@@ -25,12 +25,15 @@ public sealed class EntitySnapshot
     public int ClanGrade;
     public int ClanRanking;
     public int TitleId;
+    public int KnightsRank = LibreKO.Domain.NationRankAura.Unranked;
+    public int PersonalRank = LibreKO.Domain.NationRankAura.Unranked;
     public bool IsGm;
     public bool Invisible;
     public int Invisibility;
     public bool HelmetHidden;
     public bool Sitting;
     public bool Dead;
+    public bool Vacant;
     public bool Gathering;
     public bool GatherFishing;
     public float X, Z, Y;

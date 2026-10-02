@@ -15,10 +15,14 @@ public partial class Net
     public const byte ObjectEventWarpGate = 5;
     public const byte ObjectEventRemoveBind = 7;
     public const byte ObjectEventAnvil = 8;
+    public const byte ObjectEventEffect = 11;
+    private const int ObjectEffectBytes = 8;
 
     public event Action<byte, bool, int>? ObjectEventResultEvent;
 
     public event Action<int, bool>? ObjectEventGateStateEvent;
+
+    public event Action<int, int>? ObjectEffectEvent;
 
     public static bool IsGateObject(byte type) =>
         type is ObjectEventGate or ObjectEventGate2 or ObjectEventGateLever or ObjectEventFlagLever
@@ -29,6 +33,11 @@ public partial class Net
         if (p.RemainingBytes < 2) return;
         byte type = p.ReadByte();
         bool success = p.ReadByte() != 0;
+        if (type == ObjectEventEffect)
+        {
+            if (p.RemainingBytes >= ObjectEffectBytes) ObjectEffectEvent?.Invoke(p.ReadInt(), p.ReadInt());
+            return;
+        }
         if (success && IsGateObject(type) && p.RemainingBytes >= GateStateBytes)
         {
             int uniqueId = p.ReadInt();

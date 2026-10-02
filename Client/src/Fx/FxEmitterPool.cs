@@ -5,7 +5,7 @@ namespace LibreKO;
 
 internal sealed class FxParticleTemplate
 {
-    public ParticleProcessMaterial Process = null!;
+    public Material Process = null!;
     public ShaderMaterial Material = null!;
     public FxEmitterKeys? Emitter;
     public int Capacity;
@@ -17,11 +17,13 @@ internal sealed class FxParticleTemplate
     public float Spread;
     public bool Gather;
     public bool SingleBurst;
-    public bool Additive;
-    public Vector3 EmitDir = Vector3.Up;
+    public bool Commutative;
+    public Vector3 EmitAxis;
     public Vector3 BoxOffset;
     public Vector3 BoxExtent;
-    public Basis BoxBasis = Basis.Identity;
+    public Vector3 GatherPoint;
+    public float OrbitRate;
+    public bool FixedOrientation;
     public float Start, Life, FadeIn, FadeOut, HideTime, ShowTime;
     public Vector3 Origin, Velocity, Acceleration;
 }
@@ -69,8 +71,9 @@ internal static class FxEmitterPool
             Emitting = false,
             LocalCoords = false,
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            Layers = FxShading.LayerBit,
             VisibilityAabb = new Aabb(-Vector3.One * SharedAabbHalf, Vector3.One * (2f * SharedAabbHalf)),
-            DrawOrder = template.Additive ? GpuParticles3D.DrawOrderEnum.Index : GpuParticles3D.DrawOrderEnum.ViewDepth,
+            DrawOrder = template.Commutative ? GpuParticles3D.DrawOrderEnum.Index : GpuParticles3D.DrawOrderEnum.ViewDepth,
             ProcessMaterial = template.Process,
             DrawPass1 = _quad ??= new QuadMesh { Size = Vector2.One },
             MaterialOverride = template.Material,

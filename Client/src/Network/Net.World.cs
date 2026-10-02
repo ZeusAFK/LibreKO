@@ -15,6 +15,8 @@ public partial class Net
     }
 
     public const byte MoveEchoFinish = 0;
+    public const byte MoveEchoStart = 1;
+    public const byte MoveEchoMove = 3;
 
     private void HandleMove(Packet p)
     {
@@ -82,7 +84,12 @@ public partial class Net
         if (type == 2)
             RaiseOut(id);
         else
-            RaiseSpawn(ReadNpcInfo(p, id));
+            RaiseNpcSpawn(ReadNpcInfo(p, id));
+    }
+
+    private void RaiseNpcSpawn(EntitySnapshot npc)
+    {
+        if (!npc.Vacant) RaiseSpawn(npc);
     }
 
     private void HandleNpcMove(Packet p)
@@ -200,7 +207,7 @@ public partial class Net
         for (int i = 0; i < count && p.RemainingBytes > 0; i++)
         {
             int id = p.ReadInt();
-            RaiseSpawn(ReadNpcInfo(p, id));
+            RaiseNpcSpawn(ReadNpcInfo(p, id));
         }
     }
 
@@ -257,7 +264,8 @@ public partial class Net
         p.ReadByte();
         p.ReadByte();
         p.ReadShort();
-        p.ReadByte(); p.ReadByte();
+        e.KnightsRank = p.ReadByte();
+        e.PersonalRank = p.ReadByte();
         e.Gear = new int[InventoryConstants.VisualSlotCount];
         for (int i = 0; i < InventoryConstants.VisualSlotCount; i++)
         {
@@ -312,6 +320,26 @@ public partial class Net
             : GameData.I != null
                 ? GameData.I.NpcName(e.NpcId, e.IsMonster)
                 : (e.IsMonster ? "Mob #" : "NPC #") + e.NpcId;
+        if (RankerStatue.Is(e.NpcType))
+            ReadStatue(p, e);
         return e;
+    }
+
+    private static void ReadStatue(Packet p, EntitySnapshot e)
+    {
+        string ranker = p.ReadString();
+        if (ranker.Length == 0)
+        {
+            e.Vacant = true;
+            return;
+        }
+        e.Name = ranker;
+        e.Race = p.ReadByte();
+        e.Class = p.ReadShort();
+        e.Face = p.ReadByte();
+        e.Hair = p.ReadInt();
+        int head = p.ReadInt(), breast = p.ReadInt(), leg = p.ReadInt(), glove = p.ReadInt(), foot = p.ReadInt();
+        int right = p.ReadInt(), left = p.ReadInt();
+        e.Gear = RankerStatue.Dress(e.Class, head, breast, leg, glove, foot, right, left);
     }
 }

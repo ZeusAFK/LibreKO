@@ -5,7 +5,7 @@ namespace LibreKO;
 
 public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
 {
-    private StandardMaterial3D _mat = null!;
+    private ShaderMaterial _mat = null!;
     private Texture2D?[] _frames = System.Array.Empty<Texture2D?>();
     private float _age;
     private Vector3 _initPos, _initVel, _accel;
@@ -17,8 +17,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
     private float _spinRate;
     private Color _lastColor = new Color(-1, -1, -1, -1);
     private float _gap;
-    private float _addBoost = 1f;
-    private bool _additive;
+    private float _blendWord;
     private float _texFps; private int _frameCount; private bool _wrap;
     private int _atlasCols = 1, _atlasRows = 1;
     private int _atlasFrames = 1;
@@ -43,7 +42,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
 
     public static System.Func<float, float, float?>? GroundHeight;
 
-    private static readonly Dictionary<FxPartKey, FxBillboard> _prototypes = new();
+    private static readonly Dictionary<FxPartKey, FxBillboard> _prototypes = Shutdown.Track(new Dictionary<FxPartKey, FxBillboard>());
 
     public static FxBillboard? Build(Godot.Collections.Dictionary p, FxPartKey? key = null)
     {
@@ -69,7 +68,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             _w = _w, _h = _h, _wVel = _wVel, _hVel = _hVel, _wAcc = _wAcc, _hAcc = _hAcc,
             _spins = _spins, _explicitRot = _explicitRot, _flat = _flat,
             _rotDeg = _rotDeg, _matrixBasis = _matrixBasis, _spinRate = _spinRate,
-            _gap = _gap, _addBoost = _addBoost, _additive = _additive,
+            _gap = _gap, _blendWord = _blendWord,
             _texFps = _texFps, _frameCount = _frameCount, _wrap = _wrap,
             _atlasCols = _atlasCols, _atlasRows = _atlasRows, _atlasFrames = _atlasFrames,
             _mirroredQuarterUv = _mirroredQuarterUv,
@@ -78,8 +77,9 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
         };
         if (_flat && _mat != null)
         {
-            c._mat = (StandardMaterial3D)_mat.Duplicate();
+            c._mat = (ShaderMaterial)_mat.Duplicate();
             c.MaterialOverride = c._mat;
+            c.Layers = Layers;
         }
         if (Batched)
         {
@@ -98,6 +98,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
         float spin = flat ? rv.Y : rv.X;
         bool autoSpin = p.ContainsKey("autoSpin") && p["autoSpin"].AsBool();
         if (autoSpin && Mathf.Abs(spin) < 1e-4f) spin = Mathf.DegToRad(50f);
+        float bundleScale = Fx.ReadF(p, "bundleScale", 1f);
         var bb = new FxBillboard
         {
             CastShadow = ShadowCastingSetting.Off,
@@ -110,8 +111,8 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             _fadeOut = Fx.ReadF(p, "fadeOut"),
             _hideTime = Fx.ReadF(p, "hideTime"),
             _showTime = Fx.ReadF(p, "showTime"),
-            _w = Mathf.Max(0.01f, Fx.ReadF(p, "sizeW", 1f) * Fx.ReadF(p, "bundleScale", 1f)),
-            _h = Mathf.Max(0.01f, Fx.ReadF(p, "sizeH", 1f) * Fx.ReadF(p, "bundleScale", 1f)),
+            _w = Mathf.Max(0.01f, Fx.ReadF(p, "sizeW", 1f) * bundleScale),
+            _h = Mathf.Max(0.01f, Fx.ReadF(p, "sizeH", 1f) * bundleScale),
             _spins = Mathf.Abs(spin) > 1e-4f,
             _spinRate = spin,
             _explicitRot = p.ContainsKey("rotEnable") && p["rotEnable"].AsBool(),
@@ -126,16 +127,19 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             PoolKey = key,
         };
         int num = p.ContainsKey("num") ? Mathf.Max(1, p["num"].AsInt32()) : 1;
-        bb._addBoost = p["blend"].AsString() == "add" ? Mathf.Min(num, 4) : 1f;
+        int blendWord = FxShading.Packed(p, num);
+        int rf = FxShading.RenderFlags(p);
+        bb._blendWord = blendWord;
         var sv = p.ContainsKey("sizeVel") ? p["sizeVel"].AsGodotArray() : new Godot.Collections.Array();
         var sa = p.ContainsKey("sizeAccel") ? p["sizeAccel"].AsGodotArray() : new Godot.Collections.Array();
-        if (sv.Count == 2) { bb._wVel = (float)sv[0].AsDouble(); bb._hVel = (float)sv[1].AsDouble(); }
-        if (sa.Count == 2) { bb._wAcc = (float)sa[0].AsDouble(); bb._hAcc = (float)sa[1].AsDouble(); }
+        if (sv.Count == 2) { bb._wVel = (float)sv[0].AsDouble() * bundleScale; bb._hVel = (float)sv[1].AsDouble() * bundleScale; }
+        if (sa.Count == 2) { bb._wAcc = (float)sa[0].AsDouble() * bundleScale; bb._hAcc = (float)sa[1].AsDouble() * bundleScale; }
 
         if (flat)
         {
-            bb._mat = Fx.MakeMaterial(p, BaseMaterial3D.BillboardModeEnum.Disabled, tex0);
+            bb._mat = FxShading.SurfaceMaterial(rf, blendWord, tex0);
             bb.MaterialOverride = bb._mat;
+            bb.Layers = FxShading.LayerBit;
         }
 
         if (p.ContainsKey("atlas"))
@@ -146,29 +150,19 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             bb._atlasFrames = p.ContainsKey("atlasFrames")
                 ? Mathf.Clamp(p["atlasFrames"].AsInt32(), 1, bb._atlasCols * bb._atlasRows)
                 : bb._atlasCols * bb._atlasRows;
-            if (flat) bb._mat.Uv1Scale = new Vector3(1f / bb._atlasCols, 1f / bb._atlasRows, 1f);
+            if (flat) bb._mat.SetShaderParameter(FxShading.UvScaleParam, new Vector2(1f / bb._atlasCols, 1f / bb._atlasRows));
         }
 
-        bool add = p["blend"].AsString() == "add";
-        bb._additive = add;
-        int srcBlend = Fx.SrcBlend(p), destBlend = Fx.DestBlend(p);
         bb._frames = new Texture2D?[bb._frameCount];
-        for (int i = 0; i < bb._frameCount; i++)
-        {
-            var f = Fx.FrameTexture(p, i);
-            bb._frames[i] = f != null ? Fx.TextureForBlend(f, add, srcBlend, destBlend) : null;
-        }
+        for (int i = 0; i < bb._frameCount; i++) bb._frames[i] = Fx.FrameTexture(p, i);
         if (!flat)
         {
             var (sequence, sequenceId, layers) = FxBoardBatch.SequenceFor(bb._frames);
             if (sequence == null) return null;
-            int rf = p.ContainsKey("renderFlags") ? p["renderFlags"].AsInt32() : Fx.RfNotZWrite | Fx.RfDoubleSided;
-            bool blendAdd = add || Fx.IsSrcColorOverInv(srcBlend, destBlend);
             bb._sequence = sequence;
             bb._layers = layers;
-            bb._key = new FxBoardBatch.Key(sequenceId, blendAdd,
-                (rf & Fx.RfDoubleSided) != 0, (rf & Fx.RfNotZBuffer) != 0,
-                (rf & Fx.RfNotZWrite) == 0 ? Fx.FxSiblingWinnerPriority : 0,
+            bb._key = new FxBoardBatch.Key(sequenceId, !FxShading.Commutative(blendWord),
+                FxShading.DoubleSided(rf), FxShading.NoDepthTest(rf), FxShading.Priority(rf),
                 1f / bb._atlasCols, 1f / bb._atlasRows);
             bb.Batched = true;
             bb.SetNotifyTransform(false);
@@ -321,9 +315,8 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             Transform = local;
         }
 
-        float rgb = _additive ? _addBoost * a : _addBoost;
-        var want = new Color(rgb, rgb, rgb, a);
-        if (want != _lastColor) { _mat.AlbedoColor = want; _lastColor = want; }
+        var want = new Color(1f, 1f, 1f, a);
+        if (want != _lastColor) { _mat.SetShaderParameter(FxShading.TintParam, want); _lastColor = want; }
 
         if (_atlasCols * _atlasRows > 1 && _texFps > 0f)
         {
@@ -332,7 +325,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             {
                 _lastCell = cell;
                 AtlasOffset = AtlasOffsetFor(cell);
-                _mat.Uv1Offset = new Vector3(AtlasOffset.X, AtlasOffset.Y, 0f);
+                _mat.SetShaderParameter(FxShading.UvOffsetParam, AtlasOffset);
             }
         }
         else if (_frameCount > 1 && _texFps > 0f)
@@ -340,7 +333,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             int f = FrameIndex(t);
             if (f == _lastFrame) return;
             _lastFrame = f;
-            if (_frames[f] != null) _mat.AlbedoTexture = _frames[f];
+            if (_frames[f] is { } texture) _mat.SetShaderParameter(FxShading.TextureParam, texture);
         }
     }
 
@@ -377,8 +370,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             camPos = Fx.FrameCamera(this, out var camXf) ? camXf.Origin : world.Origin;
             visible = IsVisibleInTree();
         }
-        float alpha = a * (1f - Fade);
-        float rgb = _additive ? _addBoost * a : _addBoost;
+        float keep = 1f - Fade;
         Vector2 uvOffset = Vector2.Zero;
         float frame = 0f;
         if (_atlasCols * _atlasRows > 1 && _texFps > 0f)
@@ -388,11 +380,11 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
         }
         else if (_layers > 1 && _texFps > 0f)
             frame = FrameIndex(t);
-        if (!visible || alpha <= 0f) return;
+        if (!visible || a <= 0f || keep <= 0f) return;
         _batcher ??= FxBoardBatch.For(this);
         if (_batcher == null) return;
         if (_batch == null || _batch.Pruned) _batch = _batcher.Resolve(_key, _sequence!);
-        FxBoardBatch.Write(_batch, world, new Color(rgb, rgb, rgb, alpha), uvOffset, frame,
+        FxBoardBatch.Write(_batch, world, new Color(keep, keep, keep, a), uvOffset, frame, _blendWord,
             camPos.DistanceSquaredTo(world.Origin), extent);
     }
 
@@ -403,9 +395,10 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
     private const float GroundFanRebakeMove = 0.5f;
     private const double GroundFanRebakeInterval = 0.1;
     private Vector3 _fanAt;
+    private float _fanYaw;
     private double _fanBakedAt;
 
-    private bool GroundFanStale(float w, float h, float rotation, Vector3 pos)
+    private bool GroundFanStale(float w, float h, float rotation, Vector3 centre, float frameYaw)
     {
         if (!_groundFanBuilt) return true;
         double now = Time.GetTicksMsec() * 0.001;
@@ -414,23 +407,26 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
         return sw > GroundFanRebakeScale || sw < 1f / GroundFanRebakeScale
             || sh > GroundFanRebakeScale || sh < 1f / GroundFanRebakeScale
             || Mathf.Abs(Mathf.AngleDifference(rotation, _fanRot)) > GroundFanRebakeAngle
-            || pos.DistanceSquaredTo(_fanAt) > GroundFanRebakeMove * GroundFanRebakeMove;
+            || Mathf.Abs(Mathf.AngleDifference(frameYaw, _fanYaw)) > GroundFanRebakeAngle
+            || centre.DistanceSquaredTo(_fanAt) > GroundFanRebakeMove * GroundFanRebakeMove;
     }
 
     private void EnsureGroundFan(float w, float h, float rotation, Vector3 pos)
     {
         if (!IsInsideTree()) return;
-        if (!GroundFanStale(w, h, rotation, pos)) return;
         _root?.EnsureFrame();
+        Transform3D frame = _root != null ? _root.FrameXf
+            : GetParentOrNull<Node3D>() is { } parent ? parent.GlobalTransform : Transform3D.Identity;
+        Vector3 gp = frame * pos;
+        float frameYaw = frame.Basis.Orthonormalized().GetEuler().Y;
+        if (!GroundFanStale(w, h, rotation, gp, frameYaw)) return;
         _groundFanBuilt = true;
-        _fanW = w; _fanH = h; _fanRot = rotation; _fanAt = pos;
+        _fanW = w; _fanH = h; _fanRot = rotation; _fanAt = gp; _fanYaw = frameYaw;
         _fanBakedAt = Time.GetTicksMsec() * 0.001;
         _groundFan ??= new ArrayMesh();
         _groundFan.ClearSurfaces();
         if (Mesh != _groundFan) Mesh = _groundFan;
-
-        Vector3 gp = _root != null ? _root.FrameXf * pos
-            : GetParentOrNull<Node3D>() is { } parent ? parent.GlobalTransform * pos : pos;
+        var toWorld = new Basis(Vector3.Up, frameYaw);
         float c = Mathf.Cos(rotation), s = Mathf.Sin(rotation);
         Vector3 right = new(c, 0f, -s);
         Vector3 forward = new(s, 0f, c);
@@ -452,7 +448,8 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
                 cz *= r / extent;
                 Vector3 off = right * (cx * w * 0.5f) + forward * (cz * h * 0.5f);
                 int v = 1 + (ring - 1) * rim + i;
-                verts[v] = new Vector3(off.X, GroundY(gp.X + off.X, gp.Z + off.Z, gp.Y - _gap) + _gap - gp.Y, off.Z);
+                Vector3 sample = toWorld * off;
+                verts[v] = new Vector3(off.X, GroundY(gp.X + sample.X, gp.Z + sample.Z, gp.Y - _gap) + _gap - gp.Y, off.Z);
                 uvs[v] = GroundUv(cx, cz, _mirroredQuarterUv);
             }
         }

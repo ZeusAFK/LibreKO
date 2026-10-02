@@ -452,11 +452,28 @@ public partial class World
         CloseWarp();
     }
 
-    private void OnWarpFail()
+    private void OnWarpFail(byte result, int detail)
     {
         _openGate = null;
-        if (_warpShown) SetWarpStatus("The gatekeeper won't send you there.", true);
+        string reason = WarpRefusalText(result, detail);
+        if (_warpShown) SetWarpStatus(reason, true);
+        else CombatNotice(reason);
     }
+
+    private static string WarpRefusalText(byte result, int detail) => result switch
+    {
+        Net.WarpResultLevelTooLow => ItemData.Text(6610, "You need to be at least level %d.").Replace("%d", detail.ToString()),
+        Net.WarpResultCastleSiege => ItemData.Text(6612, "You cannot enter during the Castle Siege War."),
+        Net.WarpResultNoNationalPoints => ItemData.Text(6613, "You cannot enter when you have 0 national points."),
+        Net.WarpResultLevelRangeOnly => ItemData.Text(7657, "Only characters with level 30~50 can enter."),
+        Net.WarpResultNotQualified => ItemData.Text(7659, "You cannot enter because you do not qualify."),
+        Net.WarpResultTradeCooldown => ItemData.Text(6614, "You can't teleport for 2 minutes after trading"),
+        Net.WarpResultServerFull => ItemData.Text(7666, "Arena Server is full to capacity. Please try again later."),
+        Net.WarpResultClanGrade => ItemData.Text(7669, "You cannot enter because your clan grade is too low"),
+        Net.WarpResultSameAddress => ItemData.Text(6621, "Attending event with multiple characters from the same IP, is not allowed."),
+        Net.WarpResultCaptcha => ItemData.Text(6622, "Failed to enter (Reason: Captcha penalty)"),
+        _ => "The gatekeeper won't send you there.",
+    };
 
     private void OnWarpGold(int total)
     {

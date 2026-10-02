@@ -9,12 +9,23 @@ public partial class World
     {
         Net.I.ObjectEventResultEvent += OnObjectEventResult;
         Net.I.ObjectEventGateStateEvent += OnObjectGateState;
+        Net.I.ObjectEffectEvent += OnObjectEffect;
     }
 
     private void ObjectEventDispose()
     {
         Net.I.ObjectEventResultEvent -= OnObjectEventResult;
         Net.I.ObjectEventGateStateEvent -= OnObjectGateState;
+        Net.I.ObjectEffectEvent -= OnObjectEffect;
+    }
+
+    private const float ObjectEffectHeight = 1.0f;
+
+    private void OnObjectEffect(int entityId, int effectId)
+    {
+        string? fx = Fx.NameForId(effectId) ?? SkillData.Get(effectId)?.TargetFx;
+        if (string.IsNullOrEmpty(fx)) return;
+        SpawnFxOn(entityId, fx, ObjectEffectHeight);
     }
 
     private const string AnvilSuccessFx = "item_success";

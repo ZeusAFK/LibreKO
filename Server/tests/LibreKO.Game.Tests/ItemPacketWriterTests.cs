@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
@@ -24,10 +24,21 @@ public class ItemPacketWriterTests
     [Fact]
     public void ItemGet_FailureIsResultOnly()
     {
-        var packet = ItemGetPacketWriter.Failed(ItemGetPacketWriter.ResultNoSlot);
+        var packet = ItemGetPacketWriter.Failed(ItemGetPacketWriter.ResultError);
         packet.ResetOffset();
 
-        packet.ReadByte().Should().Be(ItemGetPacketWriter.ResultNoSlot);
+        packet.ReadByte().Should().Be(ItemGetPacketWriter.ResultError);
+        packet.RemainingBytes.Should().Be(0);
+    }
+
+    [Fact]
+    public void ItemGet_NoRoomIsAnErrorWithTheNoRoomReasonCode()
+    {
+        var packet = ItemGetPacketWriter.NoRoom();
+        packet.ResetOffset();
+
+        packet.ReadByte().Should().Be(ItemGetPacketWriter.ResultError);
+        packet.ReadInt().Should().Be(ItemGetPacketWriter.FailureNoRoom);
         packet.RemainingBytes.Should().Be(0);
     }
 
@@ -215,5 +226,19 @@ public class CharacterStateWriterTests
         packet.ReadByte();
 
         packet.ReadInt().Should().Be(0x11223344);
+    }
+
+    [Fact]
+    public void ObjectEffect_UsesTheObjectEffectTypeWithAResultAndFullIds()
+    {
+        var packet = NpcDialogPacketWriter.Effect(70_123, 300_391);
+        packet.ResetOffset();
+
+        packet.GetOpcode().Should().Be((byte)GameOpcodes.GS_OBJECT_EVENT);
+        packet.ReadByte().Should().Be(NpcDialogPacketWriter.ObjectEventEffect);
+        packet.ReadByte().Should().Be(NpcDialogPacketWriter.ObjectEventShown);
+        packet.ReadInt().Should().Be(70_123);
+        packet.ReadInt().Should().Be(300_391);
+        packet.RemainingBytes.Should().Be(0);
     }
 }

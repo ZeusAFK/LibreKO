@@ -15,6 +15,7 @@ public class FramedConn
     private NetworkStream? _stream;
     private CancellationTokenSource? _cts;
     private readonly object _sendLock = new();
+    private int _attempt;
 
     private const int ConnectTimeoutMs = 5000;
 
@@ -32,32 +33,55 @@ public class FramedConn
         LastError = null;
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
+        int attempt = Volatile.Read(ref _attempt);
         _ = Task.Run(() =>
         {
-            var tcp = new TcpClient();
+            var tcp = new TcpClient { NoDelay = true };
             try
             {
                 if (!tcp.ConnectAsync(host, port).Wait(ConnectTimeoutMs, ct))
                 {
+                    try { tcp.Close(); } catch { }
+                    if (!IsCurrent(attempt)) return;
                     LastError = $"connection to {host}:{port} timed out";
                     ConnectFailed = true;
+                    return;
+                }
+                if (!IsCurrent(attempt))
+                {
                     try { tcp.Close(); } catch { }
                     return;
                 }
                 _tcp = tcp;
                 _stream = tcp.GetStream();
                 Connected = true;
-                ReceiveLoop(ct);
+                ReceiveLoop(ct, attempt);
             }
             catch (Exception e)
             {
-                LastError = (e.InnerException ?? e).Message;
+                try { tcp.Close(); } catch { }
+                if (!IsCurrent(attempt)) return;
+                var cause = e.InnerException ?? e;
+                Godot.GD.Print($"[net] connection to {host}:{port} failed: {cause.Message}");
+                LastError = ConnectErrorText(cause);
                 ConnectFailed = true;
                 Connected = false;
-                try { tcp.Close(); } catch { }
             }
         }, ct);
     }
+
+    private static string ConnectErrorText(Exception cause) => cause is SocketException se
+        ? se.SocketErrorCode switch
+        {
+            SocketError.ConnectionRefused => "The server refused the connection. It may be offline.",
+            SocketError.HostNotFound or SocketError.NoData or SocketError.TryAgain => "The server address could not be found.",
+            SocketError.NetworkUnreachable or SocketError.HostUnreachable or SocketError.NetworkDown => "The server cannot be reached from this network.",
+            SocketError.TimedOut => "The connection timed out.",
+            _ => cause.Message,
+        }
+        : cause.Message;
+
+    private bool IsCurrent(int attempt) => Volatile.Read(ref _attempt) == attempt;
 
     public void Send(Packet packet)
     {
@@ -80,7 +104,7 @@ public class FramedConn
         }
     }
 
-    private void ReceiveLoop(CancellationToken ct)
+    private void ReceiveLoop(CancellationToken ct, int attempt)
     {
         var two = new byte[2];
         try
@@ -109,12 +133,12 @@ public class FramedConn
         }
         catch (Exception e)
         {
-            if (!ct.IsCancellationRequested)
+            if (!ct.IsCancellationRequested && IsCurrent(attempt))
                 LastError = e.Message;
         }
         finally
         {
-            Connected = false;
+            if (IsCurrent(attempt)) Connected = false;
         }
     }
 
@@ -135,6 +159,7 @@ public class FramedConn
 
     public void Close()
     {
+        Interlocked.Increment(ref _attempt);
         Connected = false;
         try { _cts?.Cancel(); } catch { }
         try { _stream?.Dispose(); } catch { }

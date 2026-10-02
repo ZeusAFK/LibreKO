@@ -130,7 +130,18 @@ public partial class World
         else alpha = _stealthDetected.Contains(charId) ? StealthSeenAlpha : StealthHideAlpha;
 
         StealthSetBodyAlpha(body, alpha);
+        RefreshRankAuraFor(charId, stealthed);
+
+        if (charId == _myId || !_ents.TryGetValue(charId, out var ent)) return;
+        ent.StealthUndetected = stealthed && !_stealthDetected.Contains(charId);
+        if (_selectedId == charId && HiddenFromMe(ent))
+        {
+            if (_autoAttack && _autoTargetId == charId) StopAutoAttack();
+            Deselect();
+        }
     }
+
+    private static bool HiddenFromMe(Ent e) => e.Infiltrating || (e.StealthUndetected && e.Attackable);
 
     private void StealthSpawnFx(int charId)
     {

@@ -10,8 +10,8 @@ public static class SkinShare
     private const float AabbGrowFraction = 0.6f;
     private const float AabbGrowMin = 0.3f;
 
-    private static readonly Dictionary<string, Skin> _canonical = new();
-    private static readonly Dictionary<ulong, Skin> _byInstance = new();
+    private static readonly Dictionary<string, Skin> _canonical = Shutdown.Track(new Dictionary<string, Skin>());
+    private static readonly Dictionary<ulong, Skin> _byInstance = Shutdown.Track(new Dictionary<ulong, Skin>());
 
     public static int Distinct => _canonical.Count;
 

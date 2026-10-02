@@ -92,7 +92,12 @@ public static partial class CharacterPreview
         string? faceStem = FacePartStem(race, face);
         if (faceStem != null) GraftPart(parts, 4, faceStem, "characters");
 
-        bool helmet = gear != null && gear.Length > 2 && gear[2] > 0;
+        var costume = gear != null
+            ? Domain.CostumeLook.Dress(gear, false, ArmorResource,
+                (part, resource) => GraftPart(parts, part, Domain.CostumeLook.ArmorStem(resource, race), "items/armor"))
+            : null;
+        bool helmet = costume?.Contains(Domain.CostumeLook.HeadPart) == true
+                      || gear != null && gear.Length > 2 && gear[2] > 0;
         if (!helmet && HairPartStem(race, hair) is { } hairStem
             && GraftPart(parts, 5, hairStem, "characters") && hairColour is { } tint)
             TintHair(parts[5], tint);
@@ -101,6 +106,7 @@ public static partial class CharacterPreview
             foreach (var (gi, pn) in ArmorSlotToPart)
             {
                 if (gi >= gear.Length || gear[gi] <= 0) continue;
+                if (costume?.Contains(pn) == true) continue;
                 string? stem = ArmorPartStem(gear[gi], race);
                 if (stem != null && GraftPart(parts, pn, stem, "items/armor") && enableShine)
                     ItemShine.Apply(parts[pn], gear[gi], pn);
@@ -134,15 +140,13 @@ public static partial class CharacterPreview
         return int.TryParse(nodeName.AsSpan(i + 5), out int n) ? n : -1;
     }
 
-    private static string? ArmorPartStem(int itemId, int race)
-    {
-        if (_armorItems == null) return null;
-        if (!_armorItems.TryGetValue(itemId, out int r)
-            && !_armorItems.TryGetValue(itemId / 1000 * 1000, out r))
-            return null;
-        int cat = r / 10000000, mid = (r / 1000) % 10000 + race, type = (r / 10) % 100, variant = r % 10;
-        return $"{cat}_{mid:D4}_{type:D2}_{variant}";
-    }
+    private static int ArmorResource(int itemId) =>
+        _armorItems != null
+        && (_armorItems.TryGetValue(itemId, out int r) || _armorItems.TryGetValue(Domain.ItemData.BaseId(itemId), out r))
+            ? r : 0;
+
+    private static string? ArmorPartStem(int itemId, int race) =>
+        ArmorResource(itemId) is var r and not 0 ? Domain.CostumeLook.ArmorStem(r, race) : null;
 
     private static string? FacePartStem(int race, int face)
     {
@@ -227,7 +231,7 @@ public static partial class CharacterPreview
             if (!TryGetWeapon(gear[slot], out var w)) continue;
             string path = $"res://assets/items/weapon/{w.Stem}.glb";
             if (!ResourceLoader.Exists(path) || ResourceLoader.Load(path) is not PackedScene scene) continue;
-            int bone = HandBone(skel, right: slot == 6);
+            int bone = WeaponMount.Bone(skel, right: slot == 6, gear[slot]);
             if (bone < 0) continue;
             var attach = new BoneAttachment3D { Name = $"weapon_{slot}", BoneIdx = bone };
             skel.AddChild(attach);
@@ -236,18 +240,6 @@ public static partial class CharacterPreview
             attach.AddChild(mesh);
             if (enableShine) ItemShine.Apply(mesh, gear[slot], slot);
         }
-    }
-
-    private static int HandBone(Skeleton3D skel, bool right)
-    {
-        string wristKey = right ? "rightwrist" : "leftwrist";
-        for (int i = 0; i < skel.GetBoneCount(); i++)
-        {
-            if (skel.GetBoneName(i).Replace(" ", "").ToLower() != wristKey) continue;
-            var kids = skel.GetBoneChildren(i);
-            return kids.Length > 0 ? kids[0] : i;
-        }
-        return -1;
     }
 
     private static Dictionary<int, WeaponPlug> LoadWeapons()

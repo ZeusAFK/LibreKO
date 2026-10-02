@@ -31,6 +31,7 @@ public partial class Login : Control
     public override void _Ready()
     {
         Ui.MenuScale(true);
+        ItemData.PreloadInBackground();
         Backdrop.RerollLoginArt();
         Ui.Background(this, Backdrop.LoginArt, Backdrop.LoginFit, bottomScrim: Platform.TouchUi);
         Audio.BgmFile(Sfx.BgmIntroFile);

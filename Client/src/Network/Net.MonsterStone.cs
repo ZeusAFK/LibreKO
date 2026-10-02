@@ -66,9 +66,13 @@ public partial class Net
     {
         if (p.RemainingBytes < 7) return;
         ushort eventId = p.ReadUShort();
-        p.ReadByte();
+        byte winner = p.ReadByte();
         uint seconds = p.ReadUInt();
-        if (eventId != NestFinishEvent) return;
+        if (eventId != NestFinishEvent)
+        {
+            TempleEventFinishEvent?.Invoke(eventId, winner, seconds);
+            return;
+        }
         NestCompleted = true;
         StartNestCountdown(seconds);
     }

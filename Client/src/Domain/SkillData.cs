@@ -100,7 +100,8 @@ public static class SkillData
 
         public bool IsGroundArea => IsArea && IsAreaMoral && HasCastPhase;
 
-        public bool IsCasterArea => IsArea && (IsCasterAreaMoral || (IsAreaMoral && !HasCastPhase));
+        public bool IsCasterArea => (IsArea && (IsCasterAreaMoral || (IsAreaMoral && !HasCastPhase)))
+            || (IsCasterAreaMoral && Type1 is MagicType.Buff or MagicType.Special);
 
         public bool IsAreaCast => IsGroundArea || IsCasterArea;
 
@@ -169,7 +170,7 @@ public static class SkillData
     public static bool IsSkill(int id) => _skills.ContainsKey(id);
     public static IEnumerable<Skill> All => _skills.Values;
 
-    private static readonly Dictionary<int, Texture2D?> _iconCache = new();
+    private static readonly Dictionary<int, Texture2D?> _iconCache = Shutdown.Track(new Dictionary<int, Texture2D?>());
     private static Texture2D? _enigma;
     private static bool _enigmaTried;
 

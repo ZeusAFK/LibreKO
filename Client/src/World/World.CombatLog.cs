@@ -67,9 +67,31 @@ public partial class World
 
         _combatLogRoot.Visible = Config.CombatLog;
         Config.EffectsChanged += ApplyCombatLogVisibility;
+        Net.I.DeathNoticeEvent += OnDeathNotice;
     }
 
-    private void CombatLogDispose() => Config.EffectsChanged -= ApplyCombatLogVisibility;
+    private void CombatLogDispose()
+    {
+        Config.EffectsChanged -= ApplyCombatLogVisibility;
+        Net.I.DeathNoticeEvent -= OnDeathNotice;
+    }
+
+    private const int DeathNoticeDefeated = 1;
+    private const int DeathNoticeAvenged = 2;
+
+    private void OnDeathNotice(Net.DeathNotice n)
+    {
+        string line = n.Kind switch
+        {
+            DeathNoticeDefeated => TextTemplate.Fill(
+                ItemData.Text(7108, "- %s has been defeated by %s -"), n.VictimName, n.KillerName),
+            DeathNoticeAvenged => TextTemplate.Fill(
+                ItemData.Text(18600, "##### %s has avenged %s. #####"), n.KillerName, n.VictimName),
+            _ => TextTemplate.Fill(
+                ItemData.Text(7109, "- %s defeat %s ( %d, %d ) -"), n.KillerName, n.VictimName, n.X, n.Z),
+        };
+        CombatNotice(line);
+    }
 
     private void ApplyCombatLogVisibility()
     {

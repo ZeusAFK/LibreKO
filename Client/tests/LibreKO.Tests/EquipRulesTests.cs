@@ -31,6 +31,26 @@ public class EquipRulesTests
     }
 
     [Theory]
+    [InlineData(104, 4, true)]
+    [InlineData(212, 4, true)]
+    [InlineData(201, 1, true)]
+    [InlineData(105, 1, true)]
+    [InlineData(213, 1, false)]
+    [InlineData(102, 2, true)]
+    [InlineData(101, 2, false)]
+    [InlineData(209, 3, true)]
+    [InlineData(214, 13, true)]
+    [InlineData(110, 10, true)]
+    [InlineData(109, 10, false)]
+    [InlineData(206, 206, true)]
+    [InlineData(106, 206, false)]
+    [InlineData(103, 0, true)]
+    public void ConsumablesFollowTheServersJobGroups(int playerClass, int itemClass, bool expected)
+    {
+        Assert.Equal(expected, EquipRules.UseAllows(playerClass, itemClass));
+    }
+
+    [Theory]
     [InlineData(110, 70, true)]
     [InlineData(108, 70, false)]
     [InlineData(106, 230, true)]

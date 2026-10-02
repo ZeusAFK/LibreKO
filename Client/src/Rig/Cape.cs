@@ -69,7 +69,7 @@ public partial class Cape : MeshInstance3D
     private static int _cols = 5, _rows = 9;
     private static readonly Dictionary<int, CapeDef> _table = new();
     private static readonly Dictionary<string, GridMesh> _grids = new();
-    private static readonly Dictionary<string, Texture2D?> _texCache = new();
+    private static readonly Dictionary<string, Texture2D?> _texCache = Shutdown.Track(new Dictionary<string, Texture2D?>());
 
     private static void Load()
     {

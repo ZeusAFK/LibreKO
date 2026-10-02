@@ -133,7 +133,15 @@ public partial class World
         if (!s.IsFriendly || _selectedId < 0 || _selectedId == _myId) return _myId;
         if (!_ents.TryGetValue(_selectedId, out var e)) return _myId;
         if (e.IsNpc || e.Dead || e.Attackable) return _myId;
+        if (s.Moral == SkillTarget.Party && !IsPartyMember(_selectedId)) return _myId;
         return InSkillRange(_selectedId, s) ? _selectedId : _myId;
+    }
+
+    private static bool IsPartyMember(int charId)
+    {
+        foreach (var member in Net.I.Party)
+            if (member.CharId == charId) return true;
+        return false;
     }
 
     private int ResurrectTarget(SkillData.Skill s)

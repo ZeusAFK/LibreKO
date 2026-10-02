@@ -28,14 +28,14 @@ public partial class Net
     {
         var code = p.RemainingBytes > 0 ? (AccountKickCode)p.ReadByte() : AccountKickCode.Evicted;
 
-        if (code == AccountKickCode.Evicted)
+        if (RemovalMessage(code) is { } message)
         {
             Evicted = true;
             AutoReconnect = false;
             CancelReconnect();
             MyCharId = 0;
             Disconnect(expected: true);
-            LibreKO.Login.PendingNotice = EvictedMessage;
+            LibreKO.Login.PendingNotice = message;
             GetTree().ChangeSceneToFile("res://scenes/Login.tscn");
             return;
         }
@@ -48,6 +48,14 @@ public partial class Net
 
         KickResultEvent?.Invoke(code);
     }
+
+    private static string? RemovalMessage(AccountKickCode code) => code switch
+    {
+        AccountKickCode.Evicted => EvictedMessage,
+        AccountKickCode.RemovedByGameMaster => "A Game Master removed you from the server.",
+        AccountKickCode.Banned => "This account has been banned.",
+        _ => null,
+    };
 
     private bool HandleLoginDenied(Packet p)
     {

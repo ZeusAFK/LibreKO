@@ -1,6 +1,7 @@
 ﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
+using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
 using LibreKO.Game.Scripting;
@@ -469,6 +470,10 @@ public class AdminPacketCoordinator(
                 await HandleAdjustAsync(session, arg, kind: "np");
                 break;
 
+            case "rank":
+                await HandleRankAsync(session, arg);
+                break;
+
             case "mon":
             case "monster":
                 await HandleSummonMonsterAsync(session, arg);
@@ -528,7 +533,7 @@ public class AdminPacketCoordinator(
             return;
         }
 
-        await sessionTerminationService.LogoutAsync(target.Client);
+        await RemoveFromServerAsync(target, AccountKickCode.RemovedByGameMaster);
         await SendNoticeAsync(session, $"Kicked {target.Name}.");
         logger.LogInformation("GM {Gm} kicked {Target}", session.Name, target.Name);
     }
@@ -638,6 +643,26 @@ public class AdminPacketCoordinator(
             return;
         }
     }
+
+    private async Task HandleRankAsync(UserSession session, string arg)
+    {
+        string name = arg.Trim();
+        var target = name.Length == 0 ? session : sessionManager.GetByName(name);
+        if (target == null)
+        {
+            await SendNoticeAsync(session, $"Player not found: {name}");
+            return;
+        }
+
+        var ranks = serviceProvider.GetRequiredService<INationRankService>();
+        await ranks.RefreshAsync();
+        var placed = ranks.Of(target.CharacterId);
+        string note = target.IsGM ? " (Game Master accounts are not ranked)" : "";
+        await SendNoticeAsync(session,
+            $"{target.Name}: total points place {PlaceText(placed.Knights)}, monthly points place {PlaceText(placed.Personal)}{note}");
+    }
+
+    private static string PlaceText(byte place) => place == NationRanks.Unranked ? "none" : place.ToString();
 
     private async Task HandleKnightCashAsync(UserSession session, string arg)
     {
@@ -1119,6 +1144,20 @@ public class AdminPacketCoordinator(
         logger.LogInformation("GM {Gm} sent {Target} to prison", session.Name, target.Name);
     }
 
+    private const int RemovalGraceMs = 500;
+
+    private async Task RemoveFromServerAsync(UserSession target, AccountKickCode code)
+    {
+        var client = target.Client;
+        await client.SendPacket(SessionPacketWriter.KickResult(code));
+        await sessionTerminationService.LogoutAsync(client);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(RemovalGraceMs);
+            client.Disconnect();
+        });
+    }
+
     private async Task HandleBanAsync(UserSession session, string arg, bool ban)
     {
         if (string.IsNullOrWhiteSpace(arg))
@@ -1163,7 +1202,7 @@ public class AdminPacketCoordinator(
         await accountRepo.UpdateAsync(account);
 
         if (ban && target != null)
-            await sessionTerminationService.LogoutAsync(target.Client);
+            await RemoveFromServerAsync(target, AccountKickCode.Banned);
 
         await SendNoticeAsync(session, $"Account {account.Login} {(ban ? "banned" : "unbanned")}.");
         logger.LogInformation("GM {Gm} {Action} account {Login}", session.Name, ban ? "banned" : "unbanned", account.Login);

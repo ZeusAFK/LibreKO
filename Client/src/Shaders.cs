@@ -1,10 +1,10 @@
-using Godot;
+﻿using Godot;
 
 namespace LibreKO;
 
 public static class Shaders
 {
-    private static readonly System.Collections.Generic.Dictionary<string, Shader> _cache = new();
+    private static readonly System.Collections.Generic.Dictionary<string, Shader> _cache = Shutdown.Track(new System.Collections.Generic.Dictionary<string, Shader>());
 
     public static Shader Get(string name)
     {

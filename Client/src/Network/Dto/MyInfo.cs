@@ -20,4 +20,6 @@ public struct MyInfo
     public byte ClanGrade;
     public byte ClanRanking;
     public int MarkVersion;
+    public int KnightsRank;
+    public int PersonalRank;
 }

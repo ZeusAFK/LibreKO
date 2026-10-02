@@ -86,7 +86,7 @@ public partial class Net
 
     private const float MaxWireSpeed = 90f;
 
-    public void SendMove(float x, float z, float y, float speed)
+    public void SendMove(float x, float z, float y, float speed, byte echo = MoveEchoMove)
     {
         var wx = (ushort)(x * 10);
         var wz = (ushort)(z * 10);
@@ -94,7 +94,7 @@ public partial class Net
         var p = GenieActionPacket(GameOpcodes.GS_MOVE, GenieMove);
         p.WriteUShort(wx); p.WriteUShort(wz); p.WriteUShort(wy);
         p.WriteShort((short)Mathf.Clamp(speed * 10f, -MaxWireSpeed, MaxWireSpeed));
-        p.WriteByte(3);
+        p.WriteByte(echo);
         p.WriteUShort(wx); p.WriteUShort(wz); p.WriteUShort(wy);
         _conn.Send(p);
     }
@@ -304,6 +304,7 @@ public partial class Net
 
     public void SendPartyAnswer(bool accept)
     {
+        _partyJoining = accept && !InParty;
         var p = new Packet(GameOpcodes.GS_PARTY);
         p.WriteByte(PartyRequest.Permit);
         p.WriteByte(accept ? (byte)1 : (byte)0);

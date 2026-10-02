@@ -85,6 +85,20 @@ public partial class World
         vb.AddChild(b);
     }
 
+    private void EscCloseInit() => Net.I.WindowCloseHandler = OpenEscForWindowClose;
+
+    private void EscCloseDispose()
+    {
+        if (Net.I.WindowCloseHandler == OpenEscForWindowClose) Net.I.WindowCloseHandler = null;
+    }
+
+    private bool OpenEscForWindowClose()
+    {
+        if (!_worldReady || _escShown) return false;
+        ToggleEsc(true);
+        return true;
+    }
+
     private void ToggleEsc(bool? show = null)
     {
         _escShown = show ?? !_escShown;

@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
+using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -31,7 +32,7 @@ public partial class World
             string resPath = $"res://assets/items/weapon/{w.Stem}.glb";
             if (!ResourceLoader.Exists(resPath) || ResourceLoader.Load(resPath) is not PackedScene scene)
                 continue;
-            int bone = HandBone(skel, right: slot == 6);
+            int bone = WeaponMount.Bone(skel, right: slot == 6, gear[slot]);
             if (bone < 0) continue;
             var attach = new BoneAttachment3D { Name = $"{WeaponNodePrefix}{slot}" };
             skel.AddChild(attach);
@@ -40,35 +41,36 @@ public partial class World
             mesh.Transform = new Transform3D(new Basis(w.Quat).Scaled(w.Scale), w.Pos);
             ForceDoubleSided(mesh);
             attach.AddChild(mesh);
-            AttachWeaponGlow(mesh, gear[slot]);
+            uint? glowTrace = AttachWeaponGlow(mesh, gear[slot]);
             ItemShine.Apply(mesh, gear[slot], slot);
             if (slot == 6 && w.TraceSteps > 0)
                 WeaponTrail.Create(body, BodyAnim(body), skel, bone,
-                                   mesh.Transform, w.Trace0, w.Trace1, w.TraceColor);
+                                   mesh.Transform, w.Trace0, w.Trace1, glowTrace ?? w.TraceColor);
         }
     }
 
-    private void AttachWeaponGlow(Node3D weaponMesh, int itemId)
+    private uint? AttachWeaponGlow(Node3D weaponMesh, int itemId)
     {
         if (!_glowLoaded) { LoadWeaponGlow(); _glowLoaded = true; }
-        bool hasTableGlow = TryResolveWeaponGlow(itemId, out int baseItemId, out var fxName, out var tailFx);
-        if (!hasTableGlow)
+        if (!TryResolveWeaponGlow(itemId, out int baseItemId, out var fxName, out var tailFx)) return null;
+        var def = ItemData.Get(baseItemId);
+        var ext = def != null ? ItemData.ExtRow(def.Cat, itemId - baseItemId) : null;
+        if (def != null && ext != null)
         {
-            baseItemId = ResolveWeaponBaseId(itemId);
-            fxName = "";
-            tailFx = "";
+            int variant = WeaponGlowRule.VariantFx(ext.GlowFx, def.Kind, def.Effect2, ext.Linked,
+                ext.FireDamage, ext.IceDamage, ext.LightningDamage);
+            if (variant != WeaponGlowRule.NoFx)
+            {
+                fxName = LoadableFx(variant);
+                tailFx = LoadableFx(variant + 1);
+            }
         }
-        string? element = WeaponElement(itemId, targetEffect: false);
-        if (element == null && !hasTableGlow)
-            return;
+        if (fxName.Length == 0 && tailFx.Length == 0) return null;
 
         var mi = FindFirst<MeshInstance3D>(weaponMesh);
-        Vector3 bladeAt; float radius;
+        Vector3 bladeAt;
         if (_weaponIndex != null && _weaponIndex.TryGetValue(baseItemId, out var wi) && wi.FxPos is { } fxp)
-        {
             bladeAt = mi != null ? mi.Transform * fxp : fxp;
-            radius = wi.FxRadius > 0.01f ? wi.FxRadius : 0.6f;
-        }
         else if (mi?.Mesh != null)
         {
             var ab = mi.Mesh.GetAabb();
@@ -81,57 +83,45 @@ public partial class World
                 if (d > best) { best = d; tip = corner; }
             }
             bladeAt = (mi.Transform * ab.GetCenter()).Lerp(tip, 0.62f);
-            radius = Mathf.Max(0.2f, (mi.Transform.Basis * ab.Size).Length() * 0.32f);
         }
-        else { bladeAt = Vector3.Zero; radius = 0.6f; }
+        else bladeAt = Vector3.Zero;
 
+        if (fxName.Length > 0
+            && _weaponIndex != null
+            && _weaponIndex.TryGetValue(baseItemId, out var info)
+            && info.FxGuide.Length > 0
+            && FxWeaponGlow.Create(fxName, tailFx, info.FxGuide) is { } guideGlow)
         {
-            if (hasTableGlow || element is { Length: > 0 })
-            {
-                string mainFx = hasTableGlow && fxName.Length > 0 ? fxName : $"{element}_sword0_1";
-                if (tailFx.Length == 0 && element is { Length: > 0 })
-                    tailFx = $"{element}_sword_tail0_1";
-                if (_weaponIndex != null
-                    && _weaponIndex.TryGetValue(baseItemId, out var info)
-                    && info.FxGuide.Length > 0
-                    && FxWeaponGlow.Create(mainFx, tailFx, info.FxGuide) is { } guideGlow)
-                {
-                    weaponMesh.AddChild(guideGlow);
-                    if (mi != null) guideGlow.Transform = mi.Transform;
-                }
-                else
-                {
-                    Fx.Spawn(mainFx, weaponMesh, bladeAt);
-                    Aabb bounds = mi?.Mesh != null ? mi.Mesh.GetAabb() : new Aabb(bladeAt, Vector3.Zero);
-                    if (FxWeaponGlow.CreateTailOnly(tailFx, bounds) is { } scatter)
-                    {
-                        weaponMesh.AddChild(scatter);
-                        if (mi != null) scatter.Transform = mi.Transform;
-                    }
-                    else Fx.Spawn(tailFx, weaponMesh, bladeAt);
-                }
-            }
-            return;
+            weaponMesh.AddChild(guideGlow);
+            if (mi != null) guideGlow.Transform = mi.Transform;
         }
-
+        else
+        {
+            if (fxName.Length > 0) Fx.Spawn(fxName, weaponMesh, bladeAt);
+            Aabb bounds = mi?.Mesh != null ? mi.Mesh.GetAabb() : new Aabb(bladeAt, Vector3.Zero);
+            if (FxWeaponGlow.CreateTailOnly(tailFx, bounds) is { } scatter)
+            {
+                weaponMesh.AddChild(scatter);
+                if (mi != null) scatter.Transform = mi.Transform;
+            }
+            else if (tailFx.Length > 0) Fx.Spawn(tailFx, weaponMesh, bladeAt);
+        }
+        if (fxName.Length == 0) return null;
+        return ext == null ? WeaponGlowRule.White
+            : WeaponGlowRule.Tint(ext.MagicOrRare, ext.FireDamage, ext.IceDamage, ext.LightningDamage, ext.PoisonDamage);
     }
 
-    private static string? WeaponElement(int itemId, bool targetEffect)
+    private static string LoadableFx(int fxId) =>
+        Fx.NameForId(fxId) is { } name && Fx.Has(name) ? name : "";
+
+    private static string? WeaponElement(int itemId)
     {
         if (itemId <= 0 || ItemData.ExtFor(itemId) is not { } ext) return null;
         bool Eligible(int damage) => damage >= 64 || (ext.MagicOrRare == 4 && damage > 0);
         if (Eligible(ext.FireDamage)) return "fire";
         if (Eligible(ext.IceDamage)) return "ice";
-        if (targetEffect)
-        {
-            if (Eligible(ext.PoisonDamage)) return "poison";
-            if (Eligible(ext.LightningDamage)) return "lighting";
-        }
-        else
-        {
-            if (Eligible(ext.LightningDamage)) return "lighting";
-            if (Eligible(ext.PoisonDamage)) return "poison";
-        }
+        if (Eligible(ext.PoisonDamage)) return "poison";
+        if (Eligible(ext.LightningDamage)) return "lighting";
         return null;
     }
 
@@ -199,18 +189,6 @@ public partial class World
                 if (int.TryParse(e.AsString(), out int ext)) map[ext] = extd[e].AsString();
             into[cat] = map;
         }
-    }
-
-    private static int HandBone(Skeleton3D skel, bool right)
-    {
-        string wristKey = right ? "rightwrist" : "leftwrist";
-        for (int i = 0; i < skel.GetBoneCount(); i++)
-        {
-            if (skel.GetBoneName(i).Replace(" ", "").ToLower() != wristKey) continue;
-            var kids = skel.GetBoneChildren(i);
-            return kids.Length > 0 ? kids[0] : i;
-        }
-        return -1;
     }
 
     private static System.Collections.Generic.Dictionary<int, WeaponInfo> LoadWeaponIndex()

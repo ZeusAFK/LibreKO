@@ -16,8 +16,12 @@ public partial class World
     private int _bdwElmoScore;
     private int _bdwAltarSeconds;
     private string _bdwAltarCarrier = string.Empty;
+    private int _bdwReturnSeconds;
+    private string? _bdwResult;
 
     private const byte BdwZone = 84;
+    private const int BdwVictorySound = 340119;
+    private const int BdwDefeatSound = 340118;
 
     private void BorderDefenseWarInit()
     {
@@ -33,6 +37,7 @@ public partial class World
         Net.I.TempleScreenScoreEvent += OnBdwScoresReceived;
         Net.I.AltarFlagEvent += OnBdwAltarFlagReceived;
         Net.I.AltarTimerEvent += OnBdwAltarTimerReceived;
+        Net.I.TempleEventFinishEvent += OnBdwFinishReceived;
 
         UpdateBdwHudVisibility();
     }
@@ -42,6 +47,7 @@ public partial class World
         Net.I.TempleScreenScoreEvent -= OnBdwScoresReceived;
         Net.I.AltarFlagEvent -= OnBdwAltarFlagReceived;
         Net.I.AltarTimerEvent -= OnBdwAltarTimerReceived;
+        Net.I.TempleEventFinishEvent -= OnBdwFinishReceived;
 
         _bdwAltarTimer?.Stop();
         if (_bdwHudLayer != null && IsInstanceValid(_bdwHudLayer))
@@ -81,7 +87,6 @@ public partial class World
         var vbox = new VBoxContainer();
         margin.AddChild(vbox);
 
-        // Title and Score Row
         var scoreRow = new HBoxContainer();
         scoreRow.Alignment = BoxContainer.AlignmentMode.Center;
         vbox.AddChild(scoreRow);
@@ -100,7 +105,6 @@ public partial class World
         _bdwElmoScoreLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         scoreRow.AddChild(_bdwElmoScoreLbl);
 
-        // Altar Status Row
         _bdwAltarStatusLbl = UiTheme.Text("Altar of Manes: Active in Center", 11, UiTheme.TextHi, HorizontalAlignment.Center);
         _bdwAltarStatusLbl.AddThemeConstantOverride("outline_size", 1);
         vbox.AddChild(_bdwAltarStatusLbl);
@@ -147,8 +151,32 @@ public partial class World
         UpdateBdwHudVisibility();
     }
 
+    private void OnBdwFinishReceived(int eventId, int winnerNation, uint seconds)
+    {
+        bool won = winnerNation != 0 && winnerNation == Net.I.LastEnter.Nation;
+        string result = won ? "Your nation has won the battle." : "Your nation has lost the battle.";
+        Audio.PlayUi(won ? BdwVictorySound : BdwDefeatSound);
+        CombatNotice(result);
+        if (_zone != BdwZone) return;
+
+        _bdwResult = result;
+        _bdwReturnSeconds = (int)seconds;
+        _bdwAltarCarrier = string.Empty;
+        if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
+        {
+            _bdwAltarStatusLbl.AddThemeColorOverride("font_color", won ? UiTheme.Good : UiTheme.Bad);
+            ShowBdwReturnCountdown();
+        }
+        if (_bdwReturnSeconds > 0) _bdwAltarTimer.Start();
+        UpdateBdwHudVisibility();
+    }
+
+    private void ShowBdwReturnCountdown() =>
+        _bdwAltarStatusLbl.Text = $"{_bdwResult}  {_bdwReturnSeconds / 60}:{_bdwReturnSeconds % 60:00}";
+
     private void OnBdwAltarTimerReceived(int seconds)
     {
+        if (_bdwResult != null) return;
         _bdwAltarSeconds = seconds;
         _bdwAltarCarrier = string.Empty;
 
@@ -177,6 +205,14 @@ public partial class World
 
     private void OnBdwAltarTick()
     {
+        if (_bdwResult != null)
+        {
+            if (_bdwReturnSeconds > 0) _bdwReturnSeconds--;
+            else _bdwAltarTimer.Stop();
+            if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
+                ShowBdwReturnCountdown();
+            return;
+        }
         if (_bdwAltarSeconds > 0)
         {
             _bdwAltarSeconds--;

@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Enums;
 
 namespace LibreKO.Common.Domain.Services;
@@ -27,6 +27,8 @@ public interface ICharacterRepository
     Task<IReadOnlyList<CharacterRankRow>> GetTopByLoyalty(AccountNation nation, int count);
 
     Task<int> GetLoyaltyRank(AccountNation nation, int loyalty);
+
+    Task<IReadOnlyList<int>> GetPlayerIdsByLoyalty(AccountNation nation, int count, bool monthly);
 
     Task<int> ResetDailyLoyaltyAll();
 }

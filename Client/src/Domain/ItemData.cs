@@ -106,7 +106,24 @@ public static class ItemData
         public int IceDamage;
         public int LightningDamage;
         public int PoisonDamage;
+        public int HpDrain;
+        public int MpDamage;
+        public int MpDrain;
+        public int Mirror;
     }
+
+    public sealed class SetBonus
+    {
+        public string Name = "";
+        public int Ac, Hp, Mp;
+        public int Str, Sta, Dex, Int, Cha;
+        public int FireR, ColdR, LightningR, PoisonR, MagicR, CurseR;
+        public int XpPct, NoahPct, ApPct, Ap;
+        public int ApClass, ApClassPct, AcClass, AcClassPct;
+        public int MaxWeight, Np;
+    }
+
+    public readonly record struct SkillOption(int Trigger, int SkillId, int Chance);
 
     public sealed class SellEntry
     {
@@ -121,8 +138,12 @@ public static class ItemData
     private const int SellPriceDivisor = 6;
 
     public const int NoTradeIdFirst = 900000001;
+    public const int NoTradeIdLast = 999999999;
+
+    public static bool IsNoTradeId(int id) => id is >= NoTradeIdFirst and <= NoTradeIdLast;
     public const int QuestItemRace = 20;
     private const int ExtBlockSpan = 1_000_000_000;
+    private const int BaseIdSpan = 1000;
 
     public static class Kind
     {
@@ -140,8 +161,10 @@ public static class ItemData
 
     public static class Rarity
     {
-        public const int Craft = 0;
-        public const int Magic = 3;
+        public const int Regular = 0;
+        public const int Magic = 1;
+        public const int Rare = 2;
+        public const int Craft = 3;
         public const int Unique = 4;
         public const int Upgrade = 5;
         public const int Event = 6;
@@ -163,13 +186,32 @@ public static class ItemData
     private static readonly HashSet<int> _reverseCats = new();
     private static readonly HashSet<int> _ambiguousLinkedExts = new();
     private static readonly Dictionary<int, string> _texts = new();
-    private static readonly Dictionary<int, Texture2D?> _iconCache = new();
-    private static bool _loaded;
+    private static readonly Dictionary<int, SetBonus> _setBonuses = new();
+    private static readonly Dictionary<int, List<SkillOption>> _skillOptions = new();
+    private static readonly Dictionary<int, Texture2D?> _iconCache = Shutdown.Track(new Dictionary<int, Texture2D?>());
+    private static readonly object LoadLock = new();
+    private static volatile bool _loaded;
+    private static bool _parsing;
+
+    public static void PreloadInBackground()
+    {
+        if (!_loaded) System.Threading.Tasks.Task.Run(EnsureLoaded);
+    }
 
     public static void EnsureLoaded()
     {
         if (_loaded) return;
-        _loaded = true;
+        lock (LoadLock)
+        {
+            if (_loaded || _parsing) return;
+            _parsing = true;
+            try { Parse(); }
+            finally { _parsing = false; _loaded = true; }
+        }
+    }
+
+    private static void Parse()
+    {
         using var f = Godot.FileAccess.Open("res://assets/items/items.json", Godot.FileAccess.ModeFlags.Read);
         if (f == null) { GD.PushWarning("[items] missing items.json (run tools/bake_items.py)"); return; }
         var parsed = Json.ParseString(f.GetAsText());
@@ -181,6 +223,8 @@ public static class ItemData
         LoadPieceRewards(d);
         LoadAttendance(d);
         LoadUiHelp(d);
+        LoadSetBonuses(d);
+        LoadSkillOptions(d);
         foreach (var key in d.Keys)
         {
             if (!int.TryParse(key.AsString(), out int id)) continue;
@@ -261,6 +305,8 @@ public static class ItemData
                     Plus = Int(o, "plus"),
                     FireDamage = Int(o, "fireDamage"), IceDamage = Int(o, "iceDamage"),
                     LightningDamage = Int(o, "lightningDamage"), PoisonDamage = Int(o, "poisonDamage"),
+                    HpDrain = Int(o, "hpDrain"), MpDamage = Int(o, "mpDamage"),
+                    MpDrain = Int(o, "mpDrain"), Mirror = Int(o, "mirror"),
                 };
                 _exts[ExtKey(cat, extId)] = e;
                 if (!_extsByCat.TryGetValue(cat, out var catList))
@@ -288,6 +334,60 @@ public static class ItemData
                 if (e.MagicOrRare is Rarity.Reverse or Rarity.ReverseUnique) reverse++;
             if (reverse * 2 > list.Count) _reverseCats.Add(cat);
         }
+    }
+
+    private static void LoadSetBonuses(Godot.Collections.Dictionary root)
+    {
+        if (!root.TryGetValue("_sets", out var sv) || sv.VariantType != Variant.Type.Dictionary) return;
+        var rows = sv.AsGodotDictionary();
+        foreach (var key in rows.Keys)
+        {
+            if (!int.TryParse(key.AsString(), out int id)) continue;
+            var o = rows[key].AsGodotDictionary();
+            _setBonuses[id] = new SetBonus
+            {
+                Name = Str(o, "name"),
+                Ac = Int(o, "ac"), Hp = Int(o, "hp"), Mp = Int(o, "mp"),
+                Str = Int(o, "str"), Sta = Int(o, "sta"), Dex = Int(o, "dex"), Int = Int(o, "int"), Cha = Int(o, "cha"),
+                FireR = Int(o, "fireR"), ColdR = Int(o, "coldR"), LightningR = Int(o, "lightningR"),
+                PoisonR = Int(o, "poisonR"), MagicR = Int(o, "magicR"), CurseR = Int(o, "curseR"),
+                XpPct = Int(o, "xpPct"), NoahPct = Int(o, "noahPct"), ApPct = Int(o, "apPct"), Ap = Int(o, "ap"),
+                ApClass = Int(o, "apClass"), ApClassPct = Int(o, "apClassPct"),
+                AcClass = Int(o, "acClass"), AcClassPct = Int(o, "acClassPct"),
+                MaxWeight = Int(o, "maxWeight"), Np = Int(o, "np"),
+            };
+        }
+    }
+
+    private static void LoadSkillOptions(Godot.Collections.Dictionary root)
+    {
+        if (!root.TryGetValue("_ops", out var ov) || ov.VariantType != Variant.Type.Dictionary) return;
+        var rows = ov.AsGodotDictionary();
+        foreach (var key in rows.Keys)
+        {
+            if (!int.TryParse(key.AsString(), out int id)) continue;
+            var list = new List<SkillOption>();
+            foreach (var entry in rows[key].AsGodotArray())
+            {
+                var a = entry.AsGodotArray();
+                if (a.Count >= 3) list.Add(new SkillOption(a[0].AsInt32(), a[1].AsInt32(), a[2].AsInt32()));
+            }
+            if (list.Count > 0) _skillOptions[id] = list;
+        }
+    }
+
+    public static SetBonus? CospreBonus(int itemId)
+    {
+        EnsureLoaded();
+        return _setBonuses.TryGetValue(itemId, out var exact) ? exact
+            : _setBonuses.TryGetValue(BaseId(itemId), out var shared) ? shared : null;
+    }
+
+    public static IReadOnlyList<SkillOption> SkillOptions(int itemId)
+    {
+        EnsureLoaded();
+        return _skillOptions.TryGetValue(itemId, out var exact) ? exact
+            : _skillOptions.TryGetValue(BaseId(itemId), out var shared) ? shared : System.Array.Empty<SkillOption>();
     }
 
     private static void LoadSellGroups(Godot.Collections.Dictionary root)
@@ -401,9 +501,11 @@ public static class ItemData
     {
         EnsureLoaded();
         if (_items.TryGetValue(id, out var it)) return it;
-        int baseId = id / 1000 * 1000;
+        int baseId = BaseId(id);
         return baseId != id && _items.TryGetValue(baseId, out var b) ? b : null;
     }
+
+    public static int BaseId(int id) => id / BaseIdSpan * BaseIdSpan;
 
     public static int ExtIdFor(int id) => id / ExtBlockSpan * 1000 + id % 1000;
 
@@ -439,6 +541,12 @@ public static class ItemData
         return _linkedExts.TryGetValue(id, out var byLinked) ? byLinked : null;
     }
 
+    public static Ext? ExtRow(int cat, int extId)
+    {
+        EnsureLoaded();
+        return _exts.TryGetValue(ExtKey(cat, extId), out var ext) ? ext : null;
+    }
+
     public static int PriceMultiply(int id)
     {
         if (id % 1000 == 0) return 1;
@@ -467,7 +575,7 @@ public static class ItemData
     public static bool IsSellable(int id)
     {
         var def = Get(id);
-        return def != null && id < NoTradeIdFirst && def.Race != QuestItemRace && SellPrice(id) > 0;
+        return def != null && !IsNoTradeId(id) && def.Race != QuestItemRace && SellPrice(id) > 0;
     }
 
     public static string DisplayName(int id)
@@ -601,7 +709,7 @@ public static class ItemData
     private static long ExtKey(int cat, int extId) => ((long)cat << 32) | (uint)extId;
 
     private static bool UsesExtName(int rarity) =>
-        rarity is Rarity.Magic or Rarity.Unique or Rarity.Event or Rarity.ReverseUnique;
+        rarity is Rarity.Craft or Rarity.Unique or Rarity.Event or Rarity.ReverseUnique;
 
     private static int UpgradeLevel(Ext ext)
     {
@@ -609,7 +717,7 @@ public static class ItemData
         if (ext.MagicOrRare == Rarity.Reverse) return ext.Plus % 100;
         int tail = ext.Id % 10;
         if (tail != 0) return tail;
-        return ext.MagicOrRare != Rarity.Craft ? 10 : 0;
+        return ext.MagicOrRare != Rarity.Regular ? 10 : 0;
     }
 
     private static bool TakesUpgradeSuffix(int rarity) =>

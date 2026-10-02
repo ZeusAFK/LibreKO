@@ -41,6 +41,8 @@ public partial class World
     private readonly CheckButton[] _genieModes = new CheckButton[GenieModeCount];
     private readonly HashSet<string> _genieMonsters = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(int Skill, int Target), double> _genieSupportAt = new();
+    private readonly Dictionary<int, double> _genieRefusedUntil = new();
+    private const double GenieRefusedSkillHold = 3.0;
     private ItemList _genieMonsterList = null!;
     private SpinBox _genieHp = null!, _genieMp = null!, _genieRange = null!;
     private CheckButton _genieAutoParty = null!;
@@ -454,7 +456,7 @@ public partial class World
             hasAttackSkill = true;
             if (!InSkillRange(target, skill)) continue;
             skillInRange = true;
-            if (!SkillReady(skill, now) || !CanCastWithGear(skill)) continue;
+            if (!SkillReady(skill, now) || !CanCastWithGear(skill) || GenieSkillHeld(skill.Id, now)) continue;
             _hasMoveTarget = false; _genieMoving = false;
             CastSkill(skill.Id);
             _genieAttackCursor = (index + 1) % GenieSkillGroupSlots;
@@ -470,13 +472,21 @@ public partial class World
         else if (_genieMoving) { _hasMoveTarget = false; _genieMoving = false; }
     }
 
+    private void NoteGenieRefusal(int skillId)
+    {
+        if (Net.I.GenieRunning) _genieRefusedUntil[skillId] = Now() + GenieRefusedSkillHold;
+    }
+
+    private bool GenieSkillHeld(int skillId, double now) =>
+        _genieRefusedUntil.TryGetValue(skillId, out double until) && now < until;
+
     private bool GenieSupport(int start, int target, int hp, int maxHp, double now)
     {
         for (int i = start; i < start + GenieSkillGroupSlots; i++)
         {
             var skill = SkillData.Get(_genieSkills[i]);
             if (skill == null || skill.IsEnemy || skill.IsDeadFriend || skill.IsGroundArea || skill.IsBlink
-                || !SkillRequirementMet(skill) || !SkillReady(skill, now)) continue;
+                || !SkillRequirementMet(skill) || !SkillReady(skill, now) || GenieSkillHeld(skill.Id, now)) continue;
             if (target == _myId && skill.Moral is not (SkillTarget.Self or SkillTarget.FriendWithMe or SkillTarget.Party or SkillTarget.PartyAll)) continue;
             if (target != _myId && (!skill.IsFriendly || !InSkillRange(target, skill))) continue;
             if (skill.FirstDamage > 0 && (maxHp <= 0 || hp * 100.0 / maxHp > _genieHp.Value)) continue;

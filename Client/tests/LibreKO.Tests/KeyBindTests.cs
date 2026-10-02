@@ -40,4 +40,25 @@ public class KeyBindTests
             Assert.Equal(KeyAction.HotPage1 + i, Enum.Parse<KeyAction>($"HotPage{i + 1}"));
         }
     }
+
+    [Fact]
+    public void ADefaultThatCollidesWithASavedChordStaysUnbound()
+    {
+        var table = KeyBinds.All;
+        var first = table.First(e => e.Default.Assigned);
+        var second = table.First(e => e.Default.Assigned && e.Action != first.Action && e.Default != first.Default);
+
+        var bound = KeyBinds.Resolve(table, action => action == first.Action ? second.Default : null);
+
+        Assert.Equal(second.Default, bound[first.Action]);
+        Assert.Equal(KeyChord.Unbound, bound[second.Action]);
+    }
+
+    [Fact]
+    public void WithNothingSavedEveryActionTakesItsDefault()
+    {
+        var bound = KeyBinds.Resolve(KeyBinds.All, _ => null);
+
+        Assert.All(KeyBinds.All, e => Assert.Equal(e.Default, bound[e.Action]));
+    }
 }

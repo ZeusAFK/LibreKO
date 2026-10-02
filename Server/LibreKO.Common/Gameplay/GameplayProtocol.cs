@@ -29,6 +29,8 @@ public enum AccountKickCode : byte
     Done = 1,
     NotOnline = 2,
     Rejected = 3,
+    RemovedByGameMaster = 4,
+    Banned = 5,
 }
 
 [Flags]

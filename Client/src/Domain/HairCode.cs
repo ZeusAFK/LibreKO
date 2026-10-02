@@ -4,7 +4,7 @@ namespace LibreKO.Domain;
 
 public static class HairCode
 {
-    public const int MaxStyle = 6;
+    public const int MaxStyle = 7;
 
     public static int Pack(int style, Color colour) =>
         (Mathf.Clamp(style, 0, MaxStyle) << 24)

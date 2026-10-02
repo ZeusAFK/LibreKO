@@ -1,4 +1,5 @@
 ﻿using Godot;
+using LibreKO.Domain;
 using System.Collections.Generic;
 
 namespace LibreKO;
@@ -200,7 +201,13 @@ public static class Fx
         {
             var p = pv.AsGodotDictionary().Duplicate();
             p["bundleScale"] = sizeScale;
-            if (forceAdditive) p["blend"] = "add";
+            if (forceAdditive)
+            {
+                p["blend"] = "add";
+                p["srcBlend"] = FxBlendMath.SrcAlpha;
+                p["destBlend"] = FxBlendMath.One;
+                p["renderFlags"] = FxShading.RenderFlags(p) | FxShading.RfAlphaBlending;
+            }
             float partEnd = PartEnd(p);
             if (partEnd <= 0.001f)
             {
@@ -264,7 +271,8 @@ public static class Fx
     }
 
     private const int PartPoolPerKey = 256;
-    private static readonly Dictionary<FxPartKey, FxParticleTemplate> _particleTemplates = new();
+    private static readonly Dictionary<FxPartKey, FxParticleTemplate> _particleTemplates =
+        Shutdown.Track(new Dictionary<FxPartKey, FxParticleTemplate>(), template => (template.Process, template.Material));
     private static readonly Dictionary<FxPartKey, Stack<Node3D>> _partPool = new();
 
     internal static int PooledParts { get; private set; }
@@ -326,8 +334,9 @@ public static class Fx
         return gp;
     }
 
-    private const int SpreadEmitType = 1;
     private const int GatherEmitType = 2;
+    private const float OrbitRateEpsilon = 1e-4f;
+    private const float EmitAxisEpsilon = 1e-6f;
 
     private static FxParticleTemplate BuildParticleTemplate(Godot.Collections.Dictionary p, FxPartKey key, Texture2D tex)
     {
@@ -364,10 +373,12 @@ public static class Fx
         if (lut != null) pm.ColorRamp = lut;
         var material = FxParticleMaterial.Build(p, tex, particleLife, lut != null);
         material.RenderPriority = key.Index;
-        bool add = p["blend"].AsString() == "add" || IsSrcColorOverInv(SrcBlend(p), DestBlend(p));
+        float orbitRate = -ReadF(p, "ptRotVel");
         return new FxParticleTemplate
         {
-            Process = pm,
+            Process = Mathf.Abs(orbitRate) > OrbitRateEpsilon
+                ? FxParticleMaterial.OrbitProcess(pm, lut, orbitRate)
+                : pm,
             Material = material,
             Emitter = emitter,
             Capacity = capacity,
@@ -379,16 +390,16 @@ public static class Fx
             Spread = ReadF(p, "spread"),
             Gather = gather,
             SingleBurst = singleBurst,
-            Additive = add,
-            EmitDir = emitDir.LengthSquared() > 1e-6f ? emitDir.Normalized() : Vector3.Up,
-            BoxOffset = gather ? boxCentre - gatherPoint : boxCentre,
+            Commutative = FxShading.Commutative(FxShading.Packed(p)),
+            EmitAxis = emitDir.LengthSquared() > EmitAxisEpsilon ? emitDir.Normalized() : Vector3.Zero,
+            BoxOffset = boxCentre,
             BoxExtent = boxExtent,
-            BoxBasis = emitType == SpreadEmitType && emitter == null
-                ? FxSpawnBox.Orientation(emitDir)
-                : Basis.Identity,
+            GatherPoint = gatherPoint,
+            OrbitRate = orbitRate,
+            FixedOrientation = p.ContainsKey("rotAbs") && p["rotAbs"].AsBool(),
             Start = ReadF(p, "startTime"),
             Life = ReadF(p, "life"),
-            Origin = ReadVec3(p, "initPos") + gatherPoint,
+            Origin = ReadVec3(p, "initPos"),
             Velocity = ReadVec3(p, "initVel"),
             Acceleration = ReadVec3(p, "accel"),
             FadeIn = ReadF(p, "fadeIn"),
@@ -434,40 +445,6 @@ public static class Fx
         foreach (var child in node.GetChildren()) SetShown(child, shown);
     }
 
-    internal static void ApplyRenderFlags(StandardMaterial3D mat, Godot.Collections.Dictionary p)
-    {
-        int rf = p.ContainsKey("renderFlags") ? p["renderFlags"].AsInt32() : RfNotZWrite | RfDoubleSided;
-        bool writesZ = (rf & RfNotZWrite) == 0;
-        mat.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
-        // Measured: DepthDrawModeEnum.Always punches a black hole through the world — FX_CONTINUATION_HANDOFF §4r.
-        mat.DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Disabled;
-        mat.RenderPriority = writesZ ? FxSiblingWinnerPriority : 0;
-        mat.NoDepthTest = (rf & RfNotZBuffer) != 0;
-        mat.CullMode = (rf & RfDoubleSided) != 0
-            ? BaseMaterial3D.CullModeEnum.Disabled
-            : BaseMaterial3D.CullModeEnum.Back;
-    }
-
-    internal static StandardMaterial3D MakeMaterial(Godot.Collections.Dictionary p,
-        BaseMaterial3D.BillboardModeEnum billboard, Texture2D? tex)
-    {
-        bool add = p["blend"].AsString() == "add" || IsSrcColorOverInv(SrcBlend(p), DestBlend(p));
-        var mat = new StandardMaterial3D
-        {
-            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-            BlendMode = add ? BaseMaterial3D.BlendModeEnum.Add : BaseMaterial3D.BlendModeEnum.Mix,
-            DisableFog = add,
-            VertexColorUseAsAlbedo = true,
-            BillboardMode = billboard,
-            BillboardKeepScale = true,
-            TextureFilter = BaseMaterial3D.TextureFilterEnum.Linear,
-            AlbedoColor = Colors.White,
-        };
-        ApplyRenderFlags(mat, p);
-        if (tex != null) mat.AlbedoTexture = TextureForBlend(tex, add, SrcBlend(p), DestBlend(p));
-        return mat;
-    }
-
     private static FxEmitterKeys? EmitterKeysFor(Godot.Collections.Dictionary p)
     {
         if (!p.ContainsKey("emitterRef") || p["emitterRef"].VariantType == Variant.Type.Nil) return null;
@@ -490,97 +467,6 @@ public static class Fx
         };
     }
 
-    private static readonly Dictionary<ulong, Texture2D> _glowCache = new();
-
-    private const float GlowAlphaGain = 2.0f;
-    private const float GlowRgbGain = 1.5f;
-
-    internal static Texture2D GlowAlpha(Texture2D src)
-    {
-        ulong key = src.GetRid().Id;
-        if (_glowCache.TryGetValue(key, out var cached)) return cached;
-        var img = FxImages.Read(src);
-        if (img == null) { _glowCache[key] = src; return src; }
-        if (img.IsCompressed()) img.Decompress();
-        if (img.GetFormat() != Image.Format.Rgba8) img.Convert(Image.Format.Rgba8);
-        int w = img.GetWidth(), h = img.GetHeight();
-
-        int aMin = 255;
-        for (int y = 0; y < h && aMin > 250; y++)
-            for (int x = 0; x < w; x++)
-            {
-                int av = (int)(img.GetPixel(x, y).A * 255f);
-                if (av < aMin) { aMin = av; if (aMin <= 250) break; }
-            }
-        Texture2D result;
-        if (aMin <= 250)
-        {
-            bool changed = false;
-            for (int y = 0; y < h; y++)
-                for (int x = 0; x < w; x++)
-                {
-                    var c = img.GetPixel(x, y);
-                    if (c.A >= 0.999f) continue;
-                    img.SetPixel(x, y, new Color(c.R, c.G, c.B, Mathf.Min(1f, c.A * GlowAlphaGain)));
-                    changed = true;
-                }
-            result = changed ? ImageTexture.CreateFromImage(img) : src;
-            if (changed) FxImages.Remember(result, img);
-        }
-        else
-        {
-            for (int y = 0; y < h; y++)
-                for (int x = 0; x < w; x++)
-                {
-                    var c = img.GetPixel(x, y);
-                    float lum = Mathf.Max(c.R, Mathf.Max(c.G, c.B));
-                    img.SetPixel(x, y, new Color(
-                        Mathf.Min(1f, c.R * GlowRgbGain),
-                        Mathf.Min(1f, c.G * GlowRgbGain),
-                        Mathf.Min(1f, c.B * GlowRgbGain),
-                        Mathf.Min(1f, lum * GlowAlphaGain)));
-                }
-            result = ImageTexture.CreateFromImage(img);
-            FxImages.Remember(result, img);
-        }
-        _glowCache[key] = result;
-        return result;
-    }
-
-    private static readonly Dictionary<ulong, Texture2D> _srcColorCache = new();
-
-    internal static Texture2D SrcColorSquared(Texture2D src)
-    {
-        ulong key = src.GetRid().Id;
-        if (_srcColorCache.TryGetValue(key, out var cached)) return cached;
-        var img = FxImages.Read(src);
-        if (img == null) { _srcColorCache[key] = src; return src; }
-        if (img.IsCompressed()) img.Decompress();
-        if (img.GetFormat() != Image.Format.Rgba8) img.Convert(Image.Format.Rgba8);
-        int w = img.GetWidth(), h = img.GetHeight();
-        for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            {
-                var c = img.GetPixel(x, y);
-                float r = c.R * c.A, g = c.G * c.A, b = c.B * c.A;
-                img.SetPixel(x, y, new Color(r * r, g * g, b * b, 1f));
-            }
-        var result = ImageTexture.CreateFromImage(img);
-        FxImages.Remember(result, img);
-        _srcColorCache[key] = result;
-        return result;
-    }
-
-    internal static bool IsSrcColorOverInv(int srcBlend, int destBlend) => srcBlend == 3 && destBlend == 4;
-
-    internal static Texture2D TextureForBlend(Texture2D src, bool additive, int srcBlend = 5,
-        int destBlend = 6) =>
-        IsSrcColorOverInv(srcBlend, destBlend) ? GlowAlpha(src)
-        : !additive ? src
-        : srcBlend == 2 ? src
-        : srcBlend == 3 ? SrcColorSquared(src)
-        : src;
-
     internal static int SrcBlend(Godot.Collections.Dictionary p) =>
         p.ContainsKey("srcBlend") ? p["srcBlend"].AsInt32() : 5;
 
@@ -589,7 +475,7 @@ public static class Fx
 
     internal static Texture2D? FirstTexture(Godot.Collections.Dictionary p) => FrameTexture(p, 0);
 
-    private static readonly Dictionary<string, Texture2D?> _frameTextures = new();
+    private static readonly Dictionary<string, Texture2D?> _frameTextures = Shutdown.Track(new Dictionary<string, Texture2D?>());
 
     internal static Texture2D? FrameTexture(Godot.Collections.Dictionary p, int frame)
     {

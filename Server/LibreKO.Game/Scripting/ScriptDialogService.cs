@@ -17,7 +17,7 @@ public class ScriptDialogService(
 
     public void ShowEffect(int effectId)
     {
-        queuedPackets.Add(NpcDialogPacketWriter.Effect((short)session.CharacterId, effectId));
+        queuedPackets.Add(NpcDialogPacketWriter.Effect(session.CharacterId, effectId));
     }
 
     public void ShowNpcEffect(int effectId)
@@ -25,7 +25,7 @@ public class ScriptDialogService(
         if (npc == null)
             return;
 
-        queuedPackets.Add(NpcDialogPacketWriter.Effect((short)npc.UniqueId, effectId));
+        queuedPackets.Add(NpcDialogPacketWriter.Effect(npc.UniqueId, effectId));
     }
 
     public void SendStatSkillDistribute()

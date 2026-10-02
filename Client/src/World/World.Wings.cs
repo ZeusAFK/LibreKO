@@ -37,14 +37,53 @@ public partial class World
         public const string Run = "run";
         public const string Breath = "breath";
         public const string Attack = "attack";
+        public const string Sit = "sit";
         public const string Die = "die";
     }
+
+    private const string WingSitLocomotion = "wing_sit";
+    private const string WornWingNode = WingNodePrefix + "0";
+    private const int WingSitStartAnim = 145;
+    private const int WingSitLoopAnim = 146;
+    private const int WingSitEndAnim = 147;
+    private static readonly string[] WingSitStartNames = { "wing_S", "wing_s" };
+    private static readonly string[] WingSitLoopNames = { "wing_B", "wing_Breath", "wing_breath" };
+    private static readonly string[] WingSitEndNames = { "wing_E", "wing_e" };
+
+    private sealed class HoverClips
+    {
+        public string[] Start = System.Array.Empty<string>();
+        public string[] Loop = System.Array.Empty<string>();
+        public string[] End = System.Array.Empty<string>();
+    }
+
+    private static HoverClips? ResolveHoverClips(Node3D? body, AnimationPlayer? anim)
+    {
+        if (body == null || anim == null || FindFirst<Skeleton3D>(body)?.GetNodeOrNull(WornWingNode) == null)
+            return null;
+        string? start = HoverClip(anim, WingSitStartAnim, WingSitStartNames);
+        string? loop = HoverClip(anim, WingSitLoopAnim, WingSitLoopNames);
+        string? end = HoverClip(anim, WingSitEndAnim, WingSitEndNames);
+        if (start == null || loop == null || end == null) return null;
+        return new HoverClips { Start = new[] { start }, Loop = new[] { loop }, End = new[] { end } };
+    }
+
+    private static string? HoverClip(AnimationPlayer anim, int animIndex, string[] names)
+    {
+        if (AnimationMetaAt(anim, animIndex)?.Name is { Length: > 0 } byIndex && anim.HasAnimation(byIndex))
+            return byIndex;
+        return Pick(anim, names);
+    }
+
+    private static bool HoverPosture(HoverClips? hover, bool sitting, int actionRank, double actionUntil) =>
+        hover != null && (sitting || actionRank == ActionRankPosture && Now() < actionUntil);
 
     private readonly record struct WingPart(string Stem, int Bone, int Slot);
 
     private static Dictionary<int, WingPart>? _wingIndex;
     private static int _wingKurianBone = WingKurianBoneDefault;
     private AnimationPlayer?[] _selfWingAnims = new AnimationPlayer?[WingSlotCount];
+    private HoverClips? _selfHover;
     private readonly string?[] _selfWingClips = new string?[WingSlotCount];
 
     private static bool IsKurianRace(int race) => race == 6 || race == 14;
@@ -73,7 +112,7 @@ public partial class World
         bool kurian = IsKurianRace(race);
         foreach (int i in WingVisualSlots)
         {
-            if (i >= gear.Length || gear[i] <= 0 || !_wingIndex.TryGetValue(gear[i], out var part)) continue;
+            if (i >= gear.Length || gear[i] <= 0 || !TryWingPart(gear[i], out var part)) continue;
             if (part.Slot < 0 || part.Slot >= WingSlotCount || anims[part.Slot] != null) continue;
 
             string resPath = $"res://assets/wings/{part.Stem}.glb";
@@ -103,6 +142,9 @@ public partial class World
         if (enableShine) ItemShineLight.Refresh(body, shineShadow);
         return anims;
     }
+
+    private static bool TryWingPart(int itemId, out WingPart part) =>
+        _wingIndex!.TryGetValue(itemId, out part) || _wingIndex.TryGetValue(ItemData.BaseId(itemId), out part);
 
     private static Dictionary<int, WingPart> LoadWingIndex()
     {
@@ -158,6 +200,7 @@ public partial class World
     private static string EntityWingState(Ent e)
     {
         if (e.Dead) return WingState.Die;
+        if (HoverPosture(e.Hover, e.Sitting, e.ActionRank, e.ActionUntil)) return WingState.Sit;
         if (e.ActionClip != null || Now() < e.ActionUntil) return WingState.Attack;
         return e.Clip is "run" or "walk" or "walk_reverse" ? WingState.Run : WingState.Breath;
     }
@@ -165,6 +208,7 @@ public partial class World
     private string SelfWingState()
     {
         if (_selfDead) return WingState.Die;
+        if (HoverPosture(_selfHover, _selfSitting, _selfActionRank, _selfActionUntil)) return WingState.Sit;
         if (Now() < _selfActionUntil) return WingState.Attack;
         return _selfClip is "run" or "walk" or "walk_reverse" ? WingState.Run : WingState.Breath;
     }
@@ -176,6 +220,7 @@ public partial class World
         {
             WingState.Run => WingAnimSlot.Run,
             WingState.Attack => WingAnimSlot.Attack,
+            WingState.Sit => WingAnimSlot.Sit,
             WingState.Die => WingAnimSlot.Die,
             _ => WingAnimSlot.Breath,
         };

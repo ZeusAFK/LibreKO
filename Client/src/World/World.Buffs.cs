@@ -79,15 +79,15 @@ public partial class World
     private float AttackSpeedMultiplier()
     {
         double now = Now();
-        float best = 1f;
+        float factor = 1f;
         foreach (var (skillId, end) in Net.I.BuffEnds)
         {
             if (end <= now) continue;
             var s = SkillData.Get(skillId);
-            if (s == null || s.AttackSpeedPercent == 100) continue;
-            best = Mathf.Max(best, s.AttackSpeedPercent / 100f);
+            if (s == null || s.AttackSpeedPercent == 100 || s.AttackSpeedPercent <= 0) continue;
+            factor *= s.AttackSpeedPercent / 100f;
         }
-        return best;
+        return factor;
     }
 
     public const int FragmentOfManesSkillId = 492063;
@@ -249,13 +249,15 @@ public partial class World
         else if (buffType == Speed2BuffType) ClearMoveSpeedBuff();
         if (_buffPanel == null || buffType == 0) return;
 
+        bool dropped = false;
         for (int i = _buffs.Count - 1; i >= 0; i--)
         {
-            if (SkillData.Get(_buffs[i].SkillId)?.BuffType != buffType) continue;
+            var s = SkillData.Get(_buffs[i].SkillId);
+            if (s == null || !BuffExpiry.Removes(buffType, s.BuffType, s.Type1, s.TimeDamage)) continue;
             DropBuff(i);
-            ShowBuffRows();
-            return;
+            dropped = true;
         }
+        if (dropped) ShowBuffRows();
     }
 
     private void DropBuffChip(int skillId)

@@ -16,6 +16,7 @@ public partial class World
     private CanvasLayer _admLayer = null!;
     private HudWindow _admPanel = null!;
     private bool _admEnabled, _admShown;
+    private AdminPanelGrant _admGrant;
     private AdminState _admState;
 
     private readonly Dictionary<string, Control> _admTabs = new();
@@ -43,10 +44,13 @@ public partial class World
 
     private void OnAdminGrant(AdminPanelGrant grant) => EnableAdminPanel(grant);
 
+    private bool AdminFullPanel => _isGm || _admGrant == AdminPanelGrant.GameMaster;
+
     private void EnableAdminPanel(AdminPanelGrant grant)
     {
         if (_admEnabled || grant == AdminPanelGrant.None) return;
         _admEnabled = true;
+        _admGrant = grant;
         SeedAdminState();
         BuildAdminPanel();
     }
@@ -109,8 +113,11 @@ public partial class World
         AddAdminTab(tabBar, "Class", BuildAdminClassTab());
         AddAdminTab(tabBar, "Skills", BuildAdminSkillsTab());
         AddAdminTab(tabBar, "Zones", BuildAdminZonesTab());
-        AddAdminTab(tabBar, "Find", BuildAdminFindTab());
-        AddAdminTab(tabBar, "Races", BuildAdminCollectionRaceTab());
+        if (AdminFullPanel)
+        {
+            AddAdminTab(tabBar, "Find", BuildAdminFindTab());
+            AddAdminTab(tabBar, "Races", BuildAdminCollectionRaceTab());
+        }
 
         _admStatusLbl = UiTheme.Text("", 12, UiTheme.TextLo);
         _admStatusLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -124,7 +131,7 @@ public partial class World
         RefreshAdminClassTab();
         SyncAdminLookPicks();
         RefreshAdminZonesTab();
-        BuildAdminSpawnPanel();
+        if (AdminFullPanel) BuildAdminSpawnPanel();
         SelectAdminTab("Character");
         Callable.From(_admPanel.ResetSize).CallDeferred();
     }

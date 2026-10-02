@@ -21,7 +21,7 @@ public static class WarpData
     }
 
     private static readonly Dictionary<int, Destination> _destinations = new();
-    private static readonly Dictionary<string, Texture2D?> _images = new();
+    private static readonly Dictionary<string, Texture2D?> _images = Shutdown.Track(new Dictionary<string, Texture2D?>());
     private static bool _loaded;
 
     private static void EnsureLoaded()

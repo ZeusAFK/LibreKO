@@ -5,34 +5,32 @@ namespace LibreKO;
 
 internal static class FxParticleMaterial
 {
-    private static readonly Dictionary<(bool Add, bool NoDepth, bool DoubleSided, bool Layers), Shader> Shaders = new();
-    private static readonly Dictionary<string, Texture2DArray> Sequences = new();
+    private static readonly Dictionary<(bool NoDepth, bool DoubleSided, bool Layers), Shader> Shaders = Shutdown.Track(new Dictionary<(bool NoDepth, bool DoubleSided, bool Layers), Shader>());
+    private static readonly Dictionary<string, Texture2DArray> Sequences = Shutdown.Track(new Dictionary<string, Texture2DArray>());
 
     internal static ShaderMaterial Build(Godot.Collections.Dictionary p, Texture2D first,
         float lifetime, bool hasColorRamp)
     {
-        bool add = p["blend"].AsString() == "add" || Fx.IsSrcColorOverInv(Fx.SrcBlend(p), Fx.DestBlend(p));
-        int flags = p.ContainsKey("renderFlags") ? p["renderFlags"].AsInt32() : Fx.RfNotZWrite | Fx.RfDoubleSided;
+        int flags = FxShading.RenderFlags(p);
         int count = Mathf.Max(1, p["frameCount"].AsInt32());
         bool layers = count > 1;
-        var key = (add, (flags & Fx.RfNotZBuffer) != 0, (flags & Fx.RfDoubleSided) != 0, layers);
+        bool noDepthTest = FxShading.NoDepthTest(flags);
+        var key = (noDepthTest, FxShading.DoubleSided(flags), layers);
         if (!Shaders.TryGetValue(key, out var shader))
         {
-            string modes = $"unshaded, depth_draw_never, {(add ? "blend_add, fog_disabled" : "blend_mix")}, "
-                + (key.Item3 ? "cull_disabled" : "cull_back") + (key.Item2 ? ", depth_test_disabled" : "");
-            shader = new Shader { Code = "shader_type spatial;\nrender_mode " + modes + ";\n"
+            shader = new Shader { Code = "shader_type spatial;\n"
+                + $"render_mode {FxShading.RenderModes(key.Item2, noDepthTest)};\n"
                 + (layers ? "uniform sampler2DArray texture_albedo" : "uniform sampler2D texture_albedo")
-                + " : source_color, filter_linear, repeat_enable;\n" + VertexCode
-                + "\nvoid fragment() {\n    vec4 tex = "
+                + " : filter_linear, repeat_enable;\nuniform float fx_blend;\n" + FxShading.Header() + VertexCode
+                + "\nvoid fragment() {\n    vec4 fx_out = fx_shade("
                 + (layers ? "texture(texture_albedo, vec3(UV, texture_layer))" : "texture(texture_albedo, UV)")
-                + ";\n    ALBEDO = tex.rgb * COLOR.rgb;\n    ALPHA = tex.a * COLOR.a;\n}\n" };
+                + $", COLOR, fx_blend, fx_clip, CAMERA_VISIBLE_LAYERS, {FxShading.DepthTested(noDepthTest)});\n"
+                + FxShading.Apply() + "}\n" };
             Shaders[key] = shader;
         }
         var mat = new ShaderMaterial { Shader = shader };
-        if (layers)
-            mat.SetShaderParameter("texture_albedo", Sequence(p, first, add));
-        else
-            mat.SetShaderParameter("texture_albedo", Fx.TextureForBlend(first, add, Fx.SrcBlend(p), Fx.DestBlend(p)));
+        mat.SetShaderParameter("texture_albedo", layers ? Sequence(p, first) : first);
+        mat.SetShaderParameter(FxShading.BlendParam, (float)FxShading.Packed(p));
         mat.SetShaderParameter("particle_lifetime", lifetime);
         mat.SetShaderParameter("fade_in", hasColorRamp ? 0f : Fx.ReadF(p, "fadeIn"));
         mat.SetShaderParameter("fade_out", hasColorRamp ? 0f : Fx.ReadF(p, "fadeOut"));
@@ -59,15 +57,85 @@ internal static class FxParticleMaterial
         return mat;
     }
 
-    private static Texture2DArray Sequence(Godot.Collections.Dictionary p, Texture2D first, bool add)
+    private static Shader? _orbitShader;
+
+    internal static ShaderMaterial OrbitProcess(ParticleProcessMaterial basis, Texture2D? colorRamp, float orbitRate)
     {
-        string key = p["tex"].ToString() + $"/{add}/{Fx.SrcBlend(p)}/{Fx.DestBlend(p)}";
+        _orbitShader ??= new Shader { Code = OrbitProcessCode };
+        var material = new ShaderMaterial { Shader = _orbitShader };
+        material.SetShaderParameter("lifetime_randomness", (float)basis.LifetimeRandomness);
+        material.SetShaderParameter("scale_min", basis.ScaleMin);
+        material.SetShaderParameter("scale_max", basis.ScaleMax);
+        material.SetShaderParameter("gravity", basis.Gravity);
+        material.SetShaderParameter("orbit_rate", orbitRate);
+        material.SetShaderParameter("has_color_ramp", colorRamp != null);
+        if (colorRamp != null) material.SetShaderParameter("color_ramp", colorRamp);
+        return material;
+    }
+
+    private const string OrbitProcessCode = """
+shader_type particles;
+render_mode disable_velocity, disable_force, keep_data;
+
+uniform float lifetime_randomness = 0.0;
+uniform float scale_min = 1.0;
+uniform float scale_max = 1.0;
+uniform vec3 gravity = vec3(0.0);
+uniform float orbit_rate = 0.0;
+uniform bool has_color_ramp = false;
+uniform sampler2D color_ramp : repeat_disable, filter_linear;
+
+float orbit_hash(uint x) {
+    x = (x ^ 61u) ^ (x >> 16u);
+    x *= 9u;
+    x = x ^ (x >> 4u);
+    x *= 668265261u;
+    x = x ^ (x >> 15u);
+    return float(x) / 4294967295.0;
+}
+
+vec3 orbit_turn(vec3 v, vec3 k, float a) {
+    float c = cos(a);
+    float s = sin(a);
+    return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c);
+}
+
+void start() {
+    vec3 spawn = TRANSFORM[3].xyz;
+    USERDATA1 = vec4(COLOR.rgb, 0.0);
+    USERDATA2 = CUSTOM;
+    USERDATA3 = vec4(spawn - COLOR.rgb, 0.0);
+    USERDATA4 = vec4(VELOCITY, 0.0);
+    uint seed = NUMBER * 1973u + RANDOM_SEED * 9277u;
+    float s = mix(scale_min, scale_max, orbit_hash(seed));
+    TRANSFORM = mat4(vec4(normalize(TRANSFORM[0].xyz) * s, 0.0), vec4(normalize(TRANSFORM[1].xyz) * s, 0.0),
+                     vec4(normalize(TRANSFORM[2].xyz) * s, 0.0), vec4(spawn, 1.0));
+    CUSTOM = vec4(0.0, 0.0, 0.0, 1.0 - lifetime_randomness * orbit_hash(seed + 7u));
+    COLOR = vec4(1.0);
+}
+
+void process() {
+    CUSTOM.y += DELTA / LIFETIME;
+    if (CUSTOM.y > CUSTOM.w) {
+        ACTIVE = false;
+    }
+    float age = CUSTOM.y * LIFETIME;
+    vec3 travel = USERDATA3.xyz + USERDATA4.xyz * age;
+    vec3 turned = orbit_turn(travel, USERDATA2.xyz, USERDATA2.w + orbit_rate * age);
+    TRANSFORM[3].xyz = USERDATA1.xyz + turned + 0.5 * gravity * age * age;
+    COLOR = has_color_ramp ? texture(color_ramp, vec2(clamp(CUSTOM.y / CUSTOM.w, 0.0, 1.0), 0.0)) : vec4(1.0);
+}
+""";
+
+    private static Texture2DArray Sequence(Godot.Collections.Dictionary p, Texture2D first)
+    {
+        string key = p["tex"].ToString();
         if (Sequences.TryGetValue(key, out var cached)) return cached;
         var images = new Godot.Collections.Array<Image>();
         int count = Mathf.Max(1, p["frameCount"].AsInt32());
         for (int i = 0; i < count; i++)
         {
-            var tex = Fx.TextureForBlend(Fx.FrameTexture(p, i) ?? first, add, Fx.SrcBlend(p), Fx.DestBlend(p));
+            var tex = Fx.FrameTexture(p, i) ?? first;
             var image = FxImages.Read(tex) ?? Image.CreateEmpty(first.GetWidth(), first.GetHeight(), false, Image.Format.Rgba8);
             if (image.IsCompressed()) image.Decompress();
             image.ClearMipmaps();
@@ -123,6 +191,7 @@ void vertex() {
     texture_layer = mod(frame, frame_count);
     if (fade_in > 0.0) COLOR.a *= clamp(age / fade_in, 0.0, 1.0);
     if (fade_out > 0.0) COLOR.a *= clamp((life - age) / fade_out, 0.0, 1.0);
+    fx_clip = fx_scene_view_projection * (INV_VIEW_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)));
 }
 """;
 }

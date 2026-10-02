@@ -128,7 +128,7 @@ public partial class World
         if (_strikeTargetSelf < 0) return;
         if (!_ents.TryGetValue(_strikeTargetSelf, out var v)) return;
         if (!GodotObject.IsInstanceValid(v.Body) || v.Dead) return;
-        SpawnHitImpact(v, v.Body.GlobalPosition - _self.GlobalPosition, SelfWeaponItem());
+        SpawnHitImpact(v, SelfGear());
         AudioWeaponImpact(_self.GlobalPosition, v.Body.GlobalPosition);
     }
 
@@ -137,8 +137,7 @@ public partial class World
         if (attacker.StrikeTarget < 0) return;
         if (!_ents.TryGetValue(attacker.StrikeTarget, out var v)) return;
         if (!GodotObject.IsInstanceValid(v.Body) || v.Dead) return;
-        int weapon = HeldWeapon(attacker.Gear);
-        SpawnHitImpact(v, (v.Body.GlobalPosition - attacker.Body.GlobalPosition).Normalized(), weapon);
+        SpawnHitImpact(v, attacker.Gear);
         AudioWeaponImpact(attacker.Body.GlobalPosition, v.Body.GlobalPosition);
     }
 

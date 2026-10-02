@@ -10,7 +10,7 @@ public static class CharacterMerge
     private const string PartsMeta = "merged_parts";
     private const string MergedIntoMeta = "merged_into";
 
-    private static readonly Dictionary<string, ArrayMesh?> _meshes = new();
+    private static readonly Dictionary<string, ArrayMesh?> _meshes = Shutdown.Track(new Dictionary<string, ArrayMesh?>());
 
     public static int CachedMeshes => _meshes.Count;
 

@@ -18,7 +18,7 @@ public partial class Net
 
     public event Action<int, int, int>? LootTakenEvent;
 
-    public event Action<byte>? LootFailEvent;
+    public event Action<int>? LootFailEvent;
 
     private void HandleItemDrop(Packet p)
     {

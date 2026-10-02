@@ -8,6 +8,7 @@ public partial class World
 {
     private const float NestTimerGap = 6f;
     private const string NestTimerFallbackTitle = "Monster Stone";
+    private const string DrakiTimerTitle = "Draki's Tower";
 
     private CanvasLayer? _nestTimerLayer;
     private PanelContainer? _nestTimerPanel;
@@ -89,6 +90,13 @@ public partial class World
 
     private void TickNestTimer()
     {
+        int draki = Net.I.DrakiSecondsLeft;
+        if (draki > 0)
+        {
+            ShowTimerPlate(DrakiTimerTitle, $"Stage {Net.I.DrakiStage}-{Net.I.DrakiSubStage}",
+                           $"{draki / 60}:{draki % 60:00}");
+            return;
+        }
         int left = NestDungeon.IsNestZone(_zone) ? Net.I.NestSecondsLeft : 0;
         if (left <= 0)
         {
@@ -100,16 +108,22 @@ public partial class World
 
     private void ShowNestTimer(int stoneItemId, int secondsLeft, bool completed)
     {
-        EnsureNestTimer();
         string title = stoneItemId != 0 ? ItemData.DisplayName(stoneItemId) : NestTimerFallbackTitle;
-        string line = NestDungeon.TerminationLine(secondsLeft, completed);
-        string key = $"{title}|{completed}|{line}";
+        ShowTimerPlate(title, completed ? NestDungeon.CompletedLine : null,
+                       NestDungeon.TerminationLine(secondsLeft, completed));
+    }
+
+    private void ShowTimerPlate(string title, string? middle, string line)
+    {
+        EnsureNestTimer();
+        bool showMiddle = middle != null;
+        string key = $"{title}|{middle}|{line}";
         if (key != _nestTimerText)
         {
             _nestTimerText = key;
             _nestTimerTitle!.Text = $"<< {title} >>";
-            _nestTimerDone!.Text = NestDungeon.CompletedLine;
-            _nestTimerDone.Visible = completed;
+            _nestTimerDone!.Text = middle ?? "";
+            _nestTimerDone.Visible = showMiddle;
             _nestTimerLine!.Text = line;
             _nestTimerPanel!.ResetSize();
             CentreNestTimer();

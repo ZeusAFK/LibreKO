@@ -63,9 +63,12 @@ public partial class FxInstance : Node3D
 
     internal void RemovePart(IFxPart part) => _parts.Remove(part);
 
+    private bool _layerUser;
+
     public override void _EnterTree()
     {
         Driven = true;
+        if (!_layerUser) { _layerUser = true; FxLayer.Users++; }
         if (_registered) return;
         _driver = FxDriver.For(this);
         if (_driver == null) return;
@@ -74,7 +77,11 @@ public partial class FxInstance : Node3D
         _visibilityCountdown = 0;
     }
 
-    public override void _ExitTree() => Driven = false;
+    public override void _ExitTree()
+    {
+        Driven = false;
+        if (_layerUser) { _layerUser = false; FxLayer.Users--; }
+    }
 
     internal void Unregistered() => _registered = false;
 
@@ -172,6 +179,7 @@ public partial class FxInstance : Node3D
         if (FollowNode != null)
         {
             if (!GodotObject.IsInstanceValid(FollowNode)) { FollowNode = null; _pinnedValid = false; return; }
+            if (!IsInsideTree() || !FollowNode.IsInsideTree()) { _pinnedValid = false; return; }
             var follow = FollowNode.GlobalTransform;
             Vector3 facing;
             if (FacingNode == FollowNode) facing = follow.Basis * FollowDirection;

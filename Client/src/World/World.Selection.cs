@@ -165,7 +165,7 @@ public partial class World
         return st.Commit();
     }
 
-    private static bool Selectable(Ent e) => (!e.Dead || !e.IsNpc) && !e.Infiltrating;
+    private bool Selectable(Ent e) => (!e.Dead || !e.IsNpc) && !HiddenFromMe(e) && !_othersHidden;
 
     private void UpdateSelectionRing()
     {
@@ -517,7 +517,7 @@ public partial class World
         foreach (var kv in _ents)
         {
             var e = kv.Value;
-            if (e.Dead || e.Attackable != hostile) continue;
+            if (e.Dead || e.Attackable != hostile || !Selectable(e)) continue;
             if (!hostile && !e.IsNpc) continue;
             float d = e.Body.Position.DistanceTo(_self.Position);
             if (d < bestD) { bestD = d; best = e; bestId = kv.Key; }
@@ -537,6 +537,7 @@ public partial class World
     {
         if (_autoAttack && _autoTargetId != id)
             StopAutoAttack();
+        if (_selectedId != id) _targetHpPollAt = 0;
         _selectedId = id;
         _selfClip = null;
         _pickedObject = null;

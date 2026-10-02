@@ -20,6 +20,7 @@ public interface IWorldVisibilityService
     Task BroadcastUserLookChangeAsync(UserSession session, byte slot, int itemId, short durability);
     Task BroadcastDisplayTitleAsync(UserSession session);
     Task BroadcastUserInOutAsync(UserSession session, InOutType type);
+    Task ResendUserRecordAsync(UserSession session);
     Task BroadcastRegionTransitionAsync(UserSession session, int oldRegionX, int oldRegionZ);
 }
 
@@ -353,6 +354,9 @@ public class WorldVisibilityService(
             await sessionManager.Regions.SendToRegion(session, BuildCombatStancePacket(session));
     }
 
+    public Task ResendUserRecordAsync(UserSession session) =>
+        sessionManager.Regions.SendToRegion(session, BuildUserInOutPacket(session, InOutType.In), excludeSender: false);
+
     public async Task BroadcastRegionTransitionAsync(UserSession session, int oldRegionX, int oldRegionZ)
     {
         var oldNearby = sessionManager.Regions
@@ -503,7 +507,8 @@ public class WorldVisibilityService(
             session.ZoneId,
             session.IsHidingHelmet,
             session.DisplayTitleId,
-            visuals);
+            visuals,
+            session.NationRanks);
     }
 
     private static byte PoseOf(UserSession session) => (byte)(

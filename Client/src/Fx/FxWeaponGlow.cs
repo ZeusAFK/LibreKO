@@ -15,16 +15,12 @@ public partial class FxWeaponGlow : Node3D
     private const int ScatterMod = 50;
     private const float TexPhaseMax = 10f;
     private const float ScaleFactor = 0.7f;
-    private const float ShineDim = 0.3f;
 
     private readonly System.Collections.Generic.List<Node3D> _tails = new();
-    private StandardMaterial3D[] _materials = System.Array.Empty<StandardMaterial3D>();
+    private ShaderMaterial[] _materials = System.Array.Empty<ShaderMaterial>();
     private Node3D[] _meshes = System.Array.Empty<Node3D>();
     private int[] _shown = System.Array.Empty<int>();
     private Texture2D?[] _frames = System.Array.Empty<Texture2D?>();
-    private bool _add;
-    private int _srcBlend = 5;
-    private int _destBlend = 6;
     private float _fps = 1f;
     private double _age;
     private double _texAge;
@@ -46,7 +42,7 @@ public partial class FxWeaponGlow : Node3D
         return root._tails.Count > 0 ? FxRegistry.Track(root, tailFxName, "weapon glow tail") : null;
     }
 
-    private static readonly System.Collections.Generic.Dictionary<string, Mesh?> ShellCache = new();
+    private static readonly System.Collections.Generic.Dictionary<string, Mesh?> ShellCache = Shutdown.Track(new System.Collections.Generic.Dictionary<string, Mesh?>());
 
     private static Mesh? GuideShell(string guideStem)
     {
@@ -91,7 +87,7 @@ public partial class FxWeaponGlow : Node3D
         {
             Name = $"fx_{fxName}_guide",
             _bounds = shell.GetAabb(),
-            _materials = new StandardMaterial3D[Layers],
+            _materials = new ShaderMaterial[Layers],
             _meshes = new Node3D[Layers],
             _shown = new[] { -1, -1, -1 },
         };
@@ -100,20 +96,19 @@ public partial class FxWeaponGlow : Node3D
         for (int i = 0; i < textures.Count; i++)
             root._frames[i] = Fx.FrameTexture(part, i);
         root._fps = Mathf.Max(0.01f, Fx.ReadF(part, "texFPS", 1f));
-        root._srcBlend = Fx.SrcBlend(part);
-        root._destBlend = Fx.DestBlend(part);
         root._wobbleDir = FirstNormal(shell);
         root._texAge = GD.Randf() * TexPhaseMax;
 
         var frame0 = root._frames.Length > 0 ? root._frames[0] : null;
+        int renderFlags = FxShading.RenderFlags(part) | Fx.RfDoubleSided | Fx.RfNotZWrite;
+        int blendWord = FxShading.Packed(part);
         for (int i = 0; i < Layers; i++)
         {
             var layer = new Node3D { Name = $"layer{i}" };
             root._meshes[i] = layer;
             root.AddChild(layer);
-            var mat = ShineState(Fx.MakeMaterial(part, BaseMaterial3D.BillboardModeEnum.Disabled, frame0));
+            var mat = FxShading.SurfaceMaterial(renderFlags, blendWord, frame0);
             mat.RenderPriority = i;
-            mat.AlbedoColor = new Color(ShineDim, ShineDim, ShineDim, 1f);
             root._materials[i] = mat;
             layer.AddChild(new MeshInstance3D
             {
@@ -121,17 +116,26 @@ public partial class FxWeaponGlow : Node3D
                 Mesh = shell,
                 MaterialOverride = mat,
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                Layers = FxShading.LayerBit,
             });
         }
-        root._add = root._materials[0].BlendMode == BaseMaterial3D.BlendModeEnum.Add;
         return root;
     }
 
-    private static StandardMaterial3D ShineState(StandardMaterial3D mat)
+    private bool _layerUser;
+
+    public override void _EnterTree()
     {
-        mat.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
-        mat.DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Disabled;
-        return mat;
+        if (_materials.Length == 0 || _layerUser) return;
+        _layerUser = true;
+        FxLayer.Users++;
+    }
+
+    public override void _ExitTree()
+    {
+        if (!_layerUser) return;
+        _layerUser = false;
+        FxLayer.Users--;
     }
 
     private void AddTails(string tailFxName)
@@ -199,8 +203,8 @@ public partial class FxWeaponGlow : Node3D
             int f = (frame + i) % _frames.Length;
             if (f == _shown[i]) continue;
             _shown[i] = f;
-            if (_frames[f] == null) continue;
-            _materials[i].AlbedoTexture = Fx.TextureForBlend(_frames[f]!, _add, _srcBlend, _destBlend);
+            if (_frames[f] is not { } texture) continue;
+            _materials[i].SetShaderParameter(FxShading.TextureParam, texture);
         }
     }
 

@@ -29,6 +29,8 @@ public partial class World
     private const string ItemBoxScenePath = "res://assets/objects/itembox_jo_a1.glb";
     private const float ItemBoxScale = 1.0f;
     private const float LootClickPickRadius = 56f;
+    private const int LootFailNoRoom = -11;
+    private const int LootNoRoomText = 1708;
     private PackedScene? _itemBoxScene;
     private bool _itemBoxLoaded;
 
@@ -330,10 +332,15 @@ public partial class World
         RefreshLootWindow();
     }
 
-    private void OnLootFail(byte code)
+    private void OnLootFail(int reason)
     {
+        if (reason == LootFailNoRoom)
+        {
+            CombatNotice(ItemData.Text(LootNoRoomText, "You cannot trade or pick up items because you have either exceeded the possible quantity or the weight."));
+            if (_autoLooting) StopAutoLoot();
+            return;
+        }
         if (_autoLooting) { StopAutoLoot(); return; }
-        if (code == 7) return;
         if (_openBundleId >= 0) Net.I.SendBundleOpen(_openBundleId);
     }
 

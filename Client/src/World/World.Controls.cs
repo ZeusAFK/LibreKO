@@ -142,6 +142,7 @@ public partial class World
             }
             else if (!TouchControls.Available && TrySetTerrainMoveTarget(mouseButton.Position))
             {
+                _clickMovePressedEdge = true;
                 _terrainMoveHeld = true;
                 _terrainMovePointer = mouseButton.Position;
                 _terrainMoveRetargetAccum = 0.0;
@@ -170,6 +171,7 @@ public partial class World
                     motion.Position.X, motion.Position.Y, TargetDragSlop)
                 && TrySetTerrainMoveTarget(motion.Position))
             {
+                _clickMovePressedEdge = true;
                 _terrainMoveHeld = true;
                 _terrainMovePointer = motion.Position;
                 _terrainMoveRetargetAccum = 0.0;

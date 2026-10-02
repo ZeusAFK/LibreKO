@@ -8,8 +8,13 @@ public static class ItemGrade
 {
     public static int ColorIndex(int rarity) => rarity switch
     {
+        ItemData.Rarity.Magic => Config.RarityNameMagic,
+        ItemData.Rarity.Rare => Config.RarityNameRare,
+        ItemData.Rarity.Craft => Config.RarityNameCraft,
         ItemData.Rarity.Unique => Config.RarityNameUnique,
-        ItemData.Rarity.Upgrade => Config.RarityNameUpgrade,
+        ItemData.Rarity.Upgrade or ItemData.Rarity.Pet => Config.RarityNameUpgrade,
+        ItemData.Rarity.Event => Config.RarityNameEvent,
+        ItemData.Rarity.Cospre or ItemData.Rarity.CospreTransparent => Config.RarityNameCospre,
         ItemData.Rarity.Reverse => Config.RarityNameReverse,
         ItemData.Rarity.ReverseUnique => Config.RarityNameReverseUnique,
         _ => Config.RarityNameRegular,

@@ -55,6 +55,12 @@ public class AdminPanelPacketCoordinator(
     private const byte ReqSpawnSet = 17;
     private const byte ReqSpawnPersist = 18;
 
+    private static readonly HashSet<byte> GameMasterOnlySubs =
+    [
+        ReqCollectionRaces, ReqCollectionRaceStart, ReqCollectionRaceClose,
+        ReqFind, ReqGo, ReqSpawnRow, ReqSpawnSet, ReqSpawnPersist,
+    ];
+
     private const byte KeepProgress = 0;
     private const byte ResetProgress = 1;
     private const int SkillEditBodySize = 2 + ProgressionTable.MasteryClassSlotCount;
@@ -98,6 +104,14 @@ public class AdminPanelPacketCoordinator(
                 "Admin-panel sub {Sub} refused for non-GM {Name} (character {CharacterId})",
                 sub, session.Name, session.CharacterId);
             await SendStateAsync(session, granted: false);
+            return;
+        }
+
+        if (!session.IsGM && GameMasterOnlySubs.Contains(sub))
+        {
+            logger.LogWarning(
+                "Admin-panel sub {Sub} is GM-only, refused for public-demo grant {Name} (character {CharacterId})",
+                sub, session.Name, session.CharacterId);
             return;
         }
 

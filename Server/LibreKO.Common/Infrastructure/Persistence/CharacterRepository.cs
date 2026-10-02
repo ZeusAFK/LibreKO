@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -79,6 +79,18 @@ public class CharacterRepository(AppDbContext context) : ICharacterRepository
                             where acc.Nation == nation && ch.LoyaltyDaily > dailyLoyalty && ch.DeletionTime == null
                             select ch.Id).CountAsync();
         return higher + 1;
+    }
+
+    public async Task<IReadOnlyList<int>> GetPlayerIdsByLoyalty(AccountNation nation, int count, bool monthly)
+    {
+        var players = from ch in context.Characters
+                      join acc in context.Accounts on ch.AccountId equals acc.Id
+                      where acc.Nation == nation && acc.Authority == AccountAuthority.Normal && ch.DeletionTime == null
+                      select ch;
+        var ranked = monthly
+            ? players.Where(ch => ch.LoyaltyMonthly > 0).OrderByDescending(ch => ch.LoyaltyMonthly).ThenByDescending(ch => ch.Loyalty)
+            : players.Where(ch => ch.Loyalty > 0).OrderByDescending(ch => ch.Loyalty).ThenByDescending(ch => ch.LoyaltyMonthly);
+        return await ranked.ThenBy(ch => ch.Id).Select(ch => ch.Id).Take(count).ToListAsync();
     }
 
     public async Task<int> ResetDailyLoyaltyAll()

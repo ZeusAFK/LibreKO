@@ -46,12 +46,26 @@ public partial class Net
 
     public event Action<ChatLine>? ChatEvent;
 
+    public readonly record struct DeathNotice(
+        int VictimNation, int KillerNation, int Kind, int KillerId, string KillerName,
+        int VictimId, string VictimName, int X, int Z);
+
+    public event Action<DeathNotice>? DeathNoticeEvent;
+
+    public const byte ChatTypeDeathNotice = 26;
+    private const int DeathNoticeMinBytes = 4 + 4 + 1 + 4 + 1 + 4;
+
     public event Action<int, string>? ChatTargetEvent;
 
     private void HandleChat(Packet p)
     {
         if (p.RemainingBytes < 1) return;
         byte type = p.ReadByte();
+        if (type == ChatTypeDeathNotice)
+        {
+            HandleDeathNotice(p);
+            return;
+        }
         int nation = p.RemainingBytes >= 1 ? p.ReadByte() : 0;
         int charId = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
         string name = p.RemainingBytes >= 1 ? p.ReadSByteString() : "";
@@ -60,6 +74,24 @@ public partial class Net
 
         if (message.Length == 0) return;
         ChatEvent?.Invoke(new ChatLine(type, nation, charId, name, message, isGm));
+    }
+
+    private void HandleDeathNotice(Packet p)
+    {
+        if (p.RemainingBytes < DeathNoticeMinBytes) return;
+        int victimNation = p.ReadByte();
+        int killerNation = p.ReadByte();
+        p.ReadByte();
+        int kind = p.ReadByte();
+        int killerId = p.ReadInt();
+        string killerName = p.ReadSByteString();
+        if (p.RemainingBytes < 5) return;
+        int victimId = p.ReadInt();
+        string victimName = p.ReadSByteString();
+        int x = p.RemainingBytes >= 2 ? p.ReadShort() : 0;
+        int z = p.RemainingBytes >= 2 ? p.ReadShort() : 0;
+        DeathNoticeEvent?.Invoke(new DeathNotice(victimNation, killerNation, kind, killerId, killerName,
+                                                 victimId, victimName, x, z));
     }
 
     private void HandleChatTarget(Packet p)

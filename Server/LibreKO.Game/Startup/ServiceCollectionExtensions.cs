@@ -262,6 +262,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ClanStandingService>();
         services.AddSingleton<IClanStandingService>(sp => sp.GetRequiredService<ClanStandingService>());
         services.AddHostedService(sp => sp.GetRequiredService<ClanStandingService>());
+        services.AddSingleton<IRankerStatueService, RankerStatueService>();
+        services.AddSingleton<NationRankService>();
+        services.AddSingleton<INationRankService>(sp => sp.GetRequiredService<NationRankService>());
+        services.AddHostedService(sp => sp.GetRequiredService<NationRankService>());
         services.AddHostedService<ConcurrentPopulationUpdateService>();
         services.AddHostedService<GenieTickService>();
         services.AddHostedService(sp => sp.GetRequiredService<BifrostEventService>());

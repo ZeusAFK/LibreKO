@@ -109,6 +109,7 @@ public partial class Net : Node
     {
         I = this;
         Config.Load();
+        GetTree().AutoAcceptQuit = false;
     }
 
     public void BeginGameLogin(string host, int port, string account, string password)
@@ -136,6 +137,7 @@ public partial class Net : Node
         _missedPings = 0;
         _connectFailReported = false;
         CancelReconnect();
+        _connGeneration++;
         _conn.Connect(host, port);
     }
 
@@ -168,8 +170,14 @@ public partial class Net : Node
         MyCharId = 0;
     }
 
+    public Func<bool>? WindowCloseHandler;
+    private int _connGeneration;
+
     public override void _Notification(int what)
     {
+        if (what == NotificationWMCloseRequest && _conn.Connected && !ReconnectBlocking
+            && WindowCloseHandler?.Invoke() == true)
+            return;
         if (what == NotificationWMCloseRequest || what == NotificationPredelete)
             Disconnect(expected: true);
         if (what == NotificationWMCloseRequest)

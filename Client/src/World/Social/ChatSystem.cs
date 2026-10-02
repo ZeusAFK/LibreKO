@@ -299,6 +299,19 @@ internal sealed class ChatSystem
 
     internal void ShowNoticePreview(string msg) => OnNotice(msg);
 
+    private const byte ClanChannel = 6;
+
+    private void ShowServerLine(ChatLine line)
+    {
+        if (line.Type != ClanChannel)
+        {
+            OnNotice(line.Message);
+            return;
+        }
+        var (tag, col) = ChanStyle(line.Type);
+        Append($"[color=#{col}][lb]{tag}[rb] {BbCode.Esc(line.Message)}[/color]");
+    }
+
     private void OnNotice(string msg)
     {
         Info(msg);
@@ -462,6 +475,12 @@ internal sealed class ChatSystem
     private void OnChat(ChatLine line)
     {
         if (line.Type == WhisperChannel) return;
+
+        if (line.CharId < 0 && line.Name.Length == 0)
+        {
+            ShowServerLine(line);
+            return;
+        }
 
         string text = Understandable(line) ? line.Message : Garble(line.Message);
 

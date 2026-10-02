@@ -32,6 +32,7 @@ public class MagicStatusEffectService(
 {
     private const int SkillSucceeded = 1;
     private const int PetEffectNoDuration = -1;
+    private const byte DamageOverTimeCured = 200;
 
     public Task ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
@@ -494,6 +495,22 @@ public class MagicStatusEffectService(
 
         var special = (SpecialMagicType)type5Data.Type;
 
+        if (targetId == AreaTarget && IsCleanse(special))
+        {
+            var moral = (SkillMoral)magic.Moral;
+            foreach (var member in AreaPlayers(caster, moral, 0, caster.X, caster.Z).ToList())
+            {
+                await CleanseAsync(member, special);
+                await sessionManager.Regions.SendToRegion(
+                    caster,
+                    MagicProcessPacketWriter.Create(
+                        MagicProcessOpcode.Effecting, skillId, (short)caster.CharacterId,
+                        (short)member.CharacterId, [0, SkillSucceeded]),
+                    excludeSender: false);
+            }
+            return;
+        }
+
         // Sub-types 4 (self-resurrect) and 6 (life crystal) always target the caster.
         UserSession target;
         if (special is SpecialMagicType.ResurrectionSelf or SpecialMagicType.LifeCrystal)
@@ -511,43 +528,11 @@ public class MagicStatusEffectService(
 
         switch (special)
         {
-            case SpecialMagicType.RemoveDot: // clear harmful DOTs (negative tick = damage)
-            {
-                var harmful = target.ActiveOverTimeEffects
-                    .Where(kv => kv.Value.TickAmount < 0)
-                    .ToList();
-                if (harmful.Count == 0) break;
-
-                // Capture distinct status codes BEFORE removing so we can clear each
-                // icon flavor that was actually present (poison + disease + generic).
-                var clearedCodes = harmful
-                    .Select(kv => kv.Value.PartyStatusCode)
-                    .Where(c => c > 0)
-                    .Distinct()
-                    .ToList();
-
-                foreach (var (id, _) in harmful)
-                    target.ActiveOverTimeEffects.TryRemove(id, out _);
-
-                await target.Client.SendPacket(MagicProcessPacketWriter.CreateDurationExpired(200));
-
-                // Drop one status-clear per distinct flavor that was active.
-                foreach (var code in clearedCodes)
-                    await combatNotificationService.SendPartyStatusUpdateAsync(target, code, applied: false);
+            case SpecialMagicType.RemoveDot:
+            case SpecialMagicType.RemoveBuff:
+            case SpecialMagicType.RemoveBless:
+                await CleanseAsync(target, special);
                 break;
-            }
-
-            case SpecialMagicType.RemoveBuff: // clear all type-4 debuffs cast by others
-            case SpecialMagicType.RemoveBless: // same shape (single buff dispel)
-            {
-                if (await ClearDebuffsAsync(target))
-                {
-                    target.RebuildSpecialStates(gameDataService);
-                    target.RecalculateStatsWithBuffs(gameDataService);
-                    await userNotificationService.SendStatUpdateAsync(target);
-                }
-                break;
-            }
 
             case SpecialMagicType.Resurrection:
             case SpecialMagicType.ResurrectionSelf:
@@ -606,6 +591,42 @@ public class MagicStatusEffectService(
                 targetId,
                 [0, 1]),
             excludeSender: false);
+    }
+
+    private static bool IsCleanse(SpecialMagicType special) =>
+        special is SpecialMagicType.RemoveDot or SpecialMagicType.RemoveBuff or SpecialMagicType.RemoveBless;
+
+    private async Task CleanseAsync(UserSession target, SpecialMagicType special)
+    {
+        if (special == SpecialMagicType.RemoveDot)
+        {
+            var harmful = target.ActiveOverTimeEffects
+                .Where(kv => kv.Value.TickAmount < 0)
+                .ToList();
+            if (harmful.Count == 0) return;
+
+            var clearedCodes = harmful
+                .Select(kv => kv.Value.PartyStatusCode)
+                .Where(c => c > 0)
+                .Distinct()
+                .ToList();
+
+            foreach (var (id, _) in harmful)
+                target.ActiveOverTimeEffects.TryRemove(id, out _);
+
+            await target.Client.SendPacket(MagicProcessPacketWriter.CreateDurationExpired(DamageOverTimeCured));
+
+            foreach (var code in clearedCodes)
+                await combatNotificationService.SendPartyStatusUpdateAsync(target, code, applied: false);
+            return;
+        }
+
+        if (await ClearDebuffsAsync(target))
+        {
+            target.RebuildSpecialStates(gameDataService);
+            target.RecalculateStatsWithBuffs(gameDataService);
+            await userNotificationService.SendStatUpdateAsync(target);
+        }
     }
 
     private async Task<bool> ClearDebuffsAsync(UserSession target)

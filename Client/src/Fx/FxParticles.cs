@@ -5,11 +5,15 @@ namespace LibreKO;
 public partial class FxParticles : Node3D, IFxPooledPart, IFxPart
 {
     private const uint EmitFlags = (uint)(GpuParticles3D.EmitFlags.Position | GpuParticles3D.EmitFlags.Velocity);
-    private const float SpreadFlatness = 0f;
+    private const uint OrbitEmitFlags = EmitFlags
+        | (uint)(GpuParticles3D.EmitFlags.Color | GpuParticles3D.EmitFlags.Custom);
+    private const float NoTravel = 1e-10f;
+    private const uint OrientedFlag = (uint)GpuParticles3D.EmitFlags.RotationScale;
 
     private float _age, _start, _life, _hideTime, _showTime;
     private Vector3 _origin, _velocity, _acceleration;
     private Vector3 _lastPosition = new(float.NaN, float.NaN, float.NaN);
+    private Vector3 _travel;
     private FxInstance? _root;
     private bool _suppressed, _done;
 
@@ -161,6 +165,7 @@ public partial class FxParticles : Node3D, IFxPooledPart, IFxPart
         }
         if (Fx.PartHidden(raw, _hideTime, _showTime)) return;
         Vector3 position = _origin + _velocity * t + 0.5f * _acceleration * t * t + EmitterOffset(t);
+        _travel = _hasEmitter ? position - _lastPosition : _velocity + _acceleration * t;
         if (position != _lastPosition)
         {
             _lastPosition = position;
@@ -210,24 +215,48 @@ public partial class FxParticles : Node3D, IFxPooledPart, IFxPart
         }
         else world = GlobalTransform;
 
+        Vector3 axis = EmitAxis(template.EmitAxis);
+        bool aimed = axis.LengthSquared() > NoTravel;
+        Basis arc = aimed ? FxSpawnBox.Orientation(axis) : Basis.Identity;
+        Vector3 gather = arc * template.GatherPoint;
+        bool orbit = template.OrbitRate != 0f;
+        Color centre = default, spin = default;
+        if (orbit)
+        {
+            Vector3 worldAxis = aimed ? (world.Basis * axis).Normalized() : world.Basis.Z.Normalized();
+            centre = new Color(world.Origin.X, world.Origin.Y, world.Origin.Z, 0f);
+            spin = new Color(worldAxis.X, worldAxis.Y, worldAxis.Z, 0f);
+        }
+
         var xform = Transform3D.Identity;
+        uint oriented = 0;
+        if (template.FixedOrientation)
+        {
+            xform.Basis = world.Basis.Orthonormalized();
+            oriented = OrientedFlag;
+        }
         for (int i = 0; i < want; i++)
         {
-            Vector3 local = template.BoxBasis * (template.BoxOffset + new Vector3(
+            Vector3 local = arc * (template.BoxOffset + new Vector3(
                 Span(template.BoxExtent.X), Span(template.BoxExtent.Y), Span(template.BoxExtent.Z)));
-            Vector3 pos = world * local;
             Vector3 velocity;
             if (template.Gather)
             {
-                Vector3 radial = pos - world.Origin;
-                velocity = radial.LengthSquared() > 1e-8f
-                    ? radial.Normalized() * -template.Speed
-                    : world.Basis * (template.EmitDir * -template.Speed);
+                Vector3 toward = gather - local;
+                velocity = toward.LengthSquared() > NoTravel
+                    ? world.Basis * (toward.Normalized() * template.Speed)
+                    : Vector3.Zero;
             }
             else
-                velocity = world.Basis * (SpreadDirection(template.EmitDir, template.Spread) * template.Speed);
-            xform.Origin = pos;
-            _shared.EmitParticle(xform, velocity, Colors.White, Colors.White, EmitFlags);
+                velocity = aimed ? world.Basis * (arc * ConeDirection(template.Spread) * template.Speed) : Vector3.Zero;
+            xform.Origin = world * local;
+            if (orbit)
+            {
+                if (!template.SingleBurst) spin.A = (float)(Rng.NextDouble() * Mathf.Tau);
+                _shared.EmitParticle(xform, velocity, centre, spin, OrbitEmitFlags | oriented);
+            }
+            else
+                _shared.EmitParticle(xform, velocity, Colors.White, Colors.White, EmitFlags | oriented);
             _expiry[_expiryHead] = _age + template.LifeMax;
             _expiryHead = (_expiryHead + 1) % capacity;
             _alive++;
@@ -236,21 +265,17 @@ public partial class FxParticles : Node3D, IFxPooledPart, IFxPart
 
     private static float Span(float extent) => extent <= 0f ? 0f : (float)(Rng.NextDouble() * 2.0 - 1.0) * extent;
 
-    private static Vector3 SpreadDirection(Vector3 direction, float spreadDegrees)
+    private Vector3 EmitAxis(Vector3 emitAxis)
     {
-        if (spreadDegrees <= 0.001f) return direction.LengthSquared() > 0f ? direction.Normalized() : Vector3.Back;
-        float spreadRad = Mathf.Pi * spreadDegrees / 180f;
-        float angle1 = spreadRad * (float)(Rng.NextDouble() * 2.0 - 1.0);
-        float angle2 = spreadRad * (1f - SpreadFlatness) * (float)(Rng.NextDouble() * 2.0 - 1.0);
-        var directionXz = new Vector3(Mathf.Sin(angle1), 0f, Mathf.Cos(angle1));
-        var directionYz = new Vector3(0f, Mathf.Sin(angle2), Mathf.Cos(angle2));
-        directionYz.Z /= Mathf.Max(0.0001f, Mathf.Sqrt(Mathf.Abs(directionYz.Z)));
-        var spread = new Vector3(directionXz.X * directionYz.Z, directionYz.Y, directionXz.Z * directionYz.Z);
-        Vector3 forward = direction.LengthSquared() > 0f ? direction.Normalized() : Vector3.Back;
-        Vector3 binormal = Vector3.Up.Cross(forward);
-        if (binormal.LengthSquared() < 1e-8f) binormal = Vector3.Back;
-        binormal = binormal.Normalized();
-        Vector3 normal = binormal.Cross(forward);
-        return binormal * spread.X + normal * spread.Y + forward * spread.Z;
+        if (emitAxis == Vector3.Zero || _travel.LengthSquared() <= NoTravel) return emitAxis;
+        return FxSpawnBox.Orientation(_travel) * emitAxis;
+    }
+
+    private static Vector3 ConeDirection(float halfAngleDegrees)
+    {
+        float tilt = Mathf.DegToRad(halfAngleDegrees) * (float)(Rng.NextDouble() * 2.0 - 1.0);
+        float roll = (float)(Rng.NextDouble() * Mathf.Tau);
+        float sinTilt = Mathf.Sin(tilt);
+        return new Vector3(sinTilt * Mathf.Cos(roll), sinTilt * Mathf.Sin(roll), Mathf.Cos(tilt));
     }
 }

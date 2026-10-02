@@ -1,12 +1,12 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Game.World;
 
 namespace LibreKO.Game.Protocol.Writers;
 
 public sealed class MyInfoPacketWriter
 {
     private const int SkillPointDataSize = 9;
-    private const byte AuthorityTrailer = byte.MaxValue;
 
     private readonly int[] _itemIds = new int[InventoryConstants.InventoryTotal];
     private readonly short[] _itemDurability = new short[InventoryConstants.InventoryTotal];
@@ -36,6 +36,7 @@ public sealed class MyInfoPacketWriter
     public long Experience { get; set; }
     public int Loyalty { get; set; }
     public int LoyaltyMonthly { get; set; }
+    public NationRanks Ranks { get; set; } = NationRanks.None;
 
     public short KnightsId { get; set; }
     public byte ClanFame { get; set; }
@@ -282,8 +283,9 @@ public sealed class MyInfoPacketWriter
 
         packet.WriteInt(Money);
         packet.WriteByte(Authority);
-        packet.WriteByte(AuthorityTrailer);
-        packet.WriteByte(AuthorityTrailer);
+        var shownRanks = Ranks.Shown;
+        packet.WriteByte(shownRanks.Knights);
+        packet.WriteByte(shownRanks.Personal);
 
         packet.WriteBytes(_skillPointData);
 

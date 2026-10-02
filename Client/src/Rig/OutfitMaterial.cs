@@ -12,7 +12,7 @@ internal static class OutfitMaterial
         Texture2D? Texture, Color Color, float Roughness, float Metallic, float Specular, float Scissor,
         int ShineLevel, int ShinePart);
 
-    private static readonly Dictionary<string, ShaderMaterial> _materials = new();
+    private static readonly Dictionary<string, ShaderMaterial> _materials = Shutdown.Track(new Dictionary<string, ShaderMaterial>());
     private static Shader? _shader, _shineShader;
     private static ImageTexture? _white;
 

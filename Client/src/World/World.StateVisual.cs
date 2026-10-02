@@ -131,17 +131,21 @@ public partial class World
         if (e.Sitting == sitting) return;
         e.Sitting = sitting;
         e.Clip = null;
+        if (sitting) e.Hover = ResolveHoverClips(e.Body, e.Anim);
 
         if (e.NameTag != null && GodotObject.IsInstanceValid(e.NameTag))
         {
             var tagPos = e.NameTag.Position;
-            tagPos.Y = sitting ? SittingNameTagHeight : (e.OriginalTagY > 0 ? e.OriginalTagY : StandingNameTagHeight);
+            tagPos.Y = sitting && e.Hover == null
+                ? SittingNameTagHeight
+                : (e.OriginalTagY > 0 ? e.OriginalTagY : StandingNameTagHeight);
             e.NameTag.Position = tagPos;
         }
 
-        if (e.Anim != null && Pick(e.Anim, sitting ? SitDownClips : StandUpClips) != null)
+        var posture = sitting ? e.Hover?.Start ?? SitDownClips : e.Hover?.End ?? StandUpClips;
+        if (e.Anim != null && Pick(e.Anim, posture) != null)
         {
-            PlayEntityAction(e, sitting ? SitDownClips : StandUpClips, ActionRankPosture);
+            PlayEntityAction(e, posture, ActionRankPosture);
             return;
         }
 
@@ -158,10 +162,12 @@ public partial class World
             _selfNameTag = _self != null ? FindFirst<Label3D>(_self) : null;
         }
 
+        if (sitting && _selfSitVisual != sitting) _selfHover = ResolveHoverClips(_self, _selfAnim);
+
         if (_selfNameTag != null && GodotObject.IsInstanceValid(_selfNameTag))
         {
             var tagPos = _selfNameTag.Position;
-            tagPos.Y = sitting ? SittingNameTagHeight : StandingSelfNameTagHeight;
+            tagPos.Y = sitting && _selfHover == null ? SittingNameTagHeight : StandingSelfNameTagHeight;
             _selfNameTag.Position = tagPos;
         }
 
@@ -174,7 +180,7 @@ public partial class World
         {
             if (_selfAnim != null)
             {
-                double len = PlayActionOn(_selfAnim, StandUpClips);
+                double len = PlayActionOn(_selfAnim, _selfHover?.End ?? StandUpClips);
                 if (len > 0)
                 {
                     BeginSelfAction(len, ActionRankPosture, Now());
@@ -183,9 +189,10 @@ public partial class World
             return;
         }
 
-        if (_selfAnim != null && Pick(_selfAnim, SitDownClips) != null)
+        var sitDown = _selfHover?.Start ?? SitDownClips;
+        if (_selfAnim != null && Pick(_selfAnim, sitDown) != null)
         {
-            double len = PlayActionOn(_selfAnim, SitDownClips);
+            double len = PlayActionOn(_selfAnim, sitDown);
             BeginSelfAction(len, ActionRankPosture, Now());
             return;
         }
@@ -280,6 +287,7 @@ public partial class World
         if (host.GetNodeOrNull<Node3D>(TransformNodeName) is not { } worn)
             return;
 
+        host.RemoveChild(worn);
         worn.QueueFree();
 
         if (charId == _myId)

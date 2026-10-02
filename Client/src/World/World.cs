@@ -125,6 +125,8 @@ public partial class World : Node3D, IWorldContext
             System.Array.Clear(_selfWingClips);
             AttachHandFx(_self, info.Gear, info.Race, _zone);
         }
+        _selfPersonalRank = info.PersonalRank;
+        RefreshRankAuraFor(_myId, _stealthIds.Contains(_myId));
         _selfVisual = selfVisual;
         DressSelfCape();
         _selfStandingVisualTransform = selfVisual.Transform;
@@ -322,7 +324,7 @@ public partial class World : Node3D, IWorldContext
             var plateScope = Perf.Measure(Perf.Section.EntPlates);
             if (e.NameTag != null)
             {
-                bool near = !Perf.SkipPlates && pos.DistanceSquaredTo(selfPos) <= nameDist2;
+                bool near = !Perf.SkipPlates && pos.DistanceSquaredTo(selfPos) <= nameDist2 && !HiddenFromMe(e);
                 SyncEntityPlates(e, near);
                 if (e.Plate != null) e.Plate.SetVisible(near);
                 else if (near != e.NameTag.Visible) e.NameTag.Visible = near;
@@ -335,7 +337,7 @@ public partial class World : Node3D, IWorldContext
                 else if (nowSec < e.ActionUntil) {  }
                 else
                 {
-                    if (e.ActionClip != null) { e.ActionClip = null; e.Clip = null; }
+                    if (e.ActionClip != null) { e.ActionClip = null; e.Clip = null; ResetEntityActionScale(e); }
                     bool moving = EntityMoving(e, pos);
                     PlayClip(e, moving
                         ? e.Backwards ? "walk_reverse" : e.Speed >= RunThreshold ? "run" : "walk"
@@ -349,8 +351,9 @@ public partial class World : Node3D, IWorldContext
                     {
                         using (Perf.Measure(Perf.Section.EntStep))
                         {
-                            if (e.Crowd != null) e.Crowd.Step(e.AnimAccum, e.OnScreen);
-                            else e.Anim.Advance(e.AnimAccum);
+                            double animStep = nowSec < e.ActionUntil ? e.AnimAccum * e.ActionTimeScale : e.AnimAccum;
+                            if (e.Crowd != null) e.Crowd.Step(animStep, e.OnScreen);
+                            else e.Anim.Advance(animStep);
                         }
                         if (e.WingAnims != null && e.OnScreen)
                             using (Perf.Measure(Perf.Section.EntWings))
@@ -369,10 +372,11 @@ public partial class World : Node3D, IWorldContext
         var selfScope = Perf.Measure(Perf.Section.SelfAnim);
         if (_selfAnim != null && !_selfDead)
         {
+            bool clickMoveEdge = _clickMovePressedEdge;
+            _clickMovePressedEdge = false;
             if (nowSec < _selfActionUntil
-                && _walkKeyHeld
                 && !IsRootedByCast()
-                && (_selfActionRank != ActionRankSkill || _walkPressedEdge))
+                && ((_walkKeyHeld && (_selfActionRank != ActionRankSkill || _walkPressedEdge)) || clickMoveEdge))
             {
                 _selfActionUntil = 0;
                 _selfClip = null;
@@ -389,12 +393,15 @@ public partial class World : Node3D, IWorldContext
                         : _running ? "run" : "walk";
                 bool combatStance = locomotion == "idle" && SelfCombatStanceReady();
                 var stanceGear = combatStance ? SelfGear() : null;
-                PlayClipOn(
-                    _selfAnim,
-                    ref _selfClip,
-                    locomotion,
-                    combatStance ? StanceIdleClips(stanceGear) : null,
-                    combatStance ? StanceIdleSlot(stanceGear) : -1);
+                if (locomotion == "sit" && _selfHover != null)
+                    PlayClipOn(_selfAnim, ref _selfClip, WingSitLocomotion, _selfHover.Loop);
+                else
+                    PlayClipOn(
+                        _selfAnim,
+                        ref _selfClip,
+                        locomotion,
+                        combatStance ? StanceIdleClips(stanceGear) : null,
+                        combatStance ? StanceIdleSlot(stanceGear) : -1);
             }
         }
 

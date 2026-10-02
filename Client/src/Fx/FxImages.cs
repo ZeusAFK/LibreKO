@@ -12,7 +12,7 @@ internal static class FxImages
     private const uint CtexWebp = 2;
     private static readonly byte[] CtexMagic = { (byte)'G', (byte)'S', (byte)'T', (byte)'2' };
 
-    private static readonly Dictionary<ulong, Image> _derived = new();
+    private static readonly Dictionary<ulong, Image> _derived = Shutdown.Track(new Dictionary<ulong, Image>());
 
     internal static void Remember(Texture2D texture, Image image) => _derived[texture.GetRid().Id] = image;
 

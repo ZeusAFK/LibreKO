@@ -14,6 +14,7 @@ public partial class World
     private MoveKeys _movePrevMask;
     private bool _movePressedEdge;
     private bool _walkPressedEdge;
+    private bool _clickMovePressedEdge;
     private bool _walkKeyHeld;
     private bool _moveInputHeld;
     private const double CastHoldCancelGraceSeconds = 0.15;

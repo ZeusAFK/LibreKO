@@ -19,6 +19,24 @@ public partial class Net
     private const byte TempleScreenSub   = 3;
     private const byte AltarFlagSub      = 49;
     private const byte AltarTimerSub     = 50;
+    private const byte DrakiTimerSub     = 35;
+    private const byte DrakiTimerEndSub  = 36;
+    private const int DrakiTimerHeaderBytes = 2;
+
+    private ulong _drakiEndsAtMs;
+    public int DrakiStage { get; private set; }
+    public int DrakiSubStage { get; private set; }
+
+    public int DrakiSecondsLeft
+    {
+        get
+        {
+            ulong now = Godot.Time.GetTicksMsec();
+            return _drakiEndsAtMs > now ? (int)((_drakiEndsAtMs - now + 999) / 1000) : 0;
+        }
+    }
+
+    public void ClearDrakiTimer() => _drakiEndsAtMs = 0;
 
     public event Action<int, TempleEventType>? BifrostTimeEvent;
 
@@ -28,6 +46,7 @@ public partial class Net
 
     public event Action<int, int>? TempleScreenScoreEvent;
     public event Action<int>? AltarTimerEvent;
+    public event Action<int, int, uint>? TempleEventFinishEvent;
     public event Action<string, byte>? AltarFlagEvent;
 
     private void HandleBifrost(Packet p)
@@ -93,6 +112,21 @@ public partial class Net
                 AltarTimerEvent?.Invoke(secs);
                 break;
             }
+            case DrakiTimerSub:
+            {
+                if (p.RemainingBytes < DrakiTimerHeaderBytes + 2 + 2 + 4 + 4) break;
+                p.ReadUShort();
+                DrakiStage = p.ReadUShort();
+                DrakiSubStage = p.ReadUShort();
+                int limit = p.ReadInt();
+                int elapsed = p.ReadInt();
+                int left = Math.Max(0, limit - elapsed);
+                _drakiEndsAtMs = left > 0 ? Godot.Time.GetTicksMsec() + (ulong)left * 1000UL : 0;
+                break;
+            }
+            case DrakiTimerEndSub:
+                ClearDrakiTimer();
+                break;
         }
     }
 

@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -84,6 +84,7 @@ public partial class World
 
     private void OnAdminSpawnRow(AdminSpawnRow row)
     {
+        if (!AdminFullPanel) return;
         _admSpawnRow = row;
         _admSpawnTitle.Text = $"{row.Name}  ({row.NpcId})";
         _admSpawnInfo.Text = $"{(row.Monster ? "Monster" : "NPC")} spawn row {row.Index} in {AdminZoneName(row.Zone)} ({row.Zone})"

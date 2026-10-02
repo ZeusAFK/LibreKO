@@ -2,6 +2,7 @@
 using LibreKO.Common.Domain.Entities.GameData;
 
 using LibreKO.Common.Enums;
+using LibreKO.Game.Protocol.Writers;
 
 namespace LibreKO.Game.World;
 
@@ -320,6 +321,7 @@ public class NpcInstance
     public bool IsPet => NpcType == NpcData.TypePet;
     public int OwnerCharId { get; set; }
     public string PetOwnerName { get; set; } = string.Empty;
+    public NpcSpawnPacketWriter.StatueLook? StatueLook { get; set; }
     public ConcurrentDictionary<int, int> PetDamage { get; } = new();
     public bool IsAttackable => (IsMonster && !IsGuardSummon) || IsScarecrow; // Anything players can hit
     public bool IsGuard => NpcType is >= NpcData.TypeGuard and <= NpcData.TypeWarGuard;

@@ -70,6 +70,7 @@ public static class Config
     public static bool Ssao { get; private set; } = true;
     public static bool VolumetricFog { get; private set; } = false;
     public static bool Bloom { get; private set; } = true;
+    public static bool FxLayer { get; private set; } = true;
     public static bool Clouds { get; private set; } = true;
     public static bool Capes { get; private set; } = true;
 
@@ -165,6 +166,7 @@ public static class Config
         Argb(0xFFCDC300), Argb(0xFFFFFF00), Argb(0xFFFFFF00), Argb(0xFF7FFF00),
         Argb(0xFFFFFFFF), Argb(0xFFFF0000),
         Argb(0xFFFFFFFF), Argb(0xFFD68CFF), Argb(0xFFFFCC33), Argb(0xFFFF66CC), Argb(0xFFFF9933),
+        Argb(0xFF87CEEB), Argb(0xFFFFFF00), Argb(0xFF7FFF00), Argb(0xFF00BFFF), Argb(0xFF00FFCC),
     };
 
     public const int RarityNameRegular = 14;
@@ -172,6 +174,11 @@ public static class Config
     public const int RarityNameUnique = 16;
     public const int RarityNameReverse = 17;
     public const int RarityNameReverseUnique = 18;
+    public const int RarityNameMagic = 19;
+    public const int RarityNameRare = 20;
+    public const int RarityNameCraft = 21;
+    public const int RarityNameEvent = 22;
+    public const int RarityNameCospre = 23;
     private static Color[] _tooltipColors = (Color[])DefaultTooltipColors.Clone();
 
     private static T ReadEnum<T>(ConfigFile cfg, string section, string key, T fallback)
@@ -283,6 +290,7 @@ public static class Config
         Ssao = cfg.GetValue("graphics", "ssao", Ssao).AsBool();
         VolumetricFog = cfg.GetValue("graphics", "volumetric_fog", VolumetricFog).AsBool();
         Bloom = cfg.GetValue("graphics", "bloom", Bloom).AsBool();
+        FxLayer = cfg.GetValue("graphics", "fx_layer", FxLayer).AsBool();
         Clouds = cfg.GetValue("graphics", "clouds", Clouds).AsBool();
         Capes = cfg.GetValue("graphics", "capes", Capes).AsBool();
         AntiAlias = ReadEnum(cfg, "graphics", "aa", AntiAlias);
@@ -379,6 +387,7 @@ public static class Config
         cfg.SetValue("graphics", "ssao", Ssao);
         cfg.SetValue("graphics", "volumetric_fog", VolumetricFog);
         cfg.SetValue("graphics", "bloom", Bloom);
+        cfg.SetValue("graphics", "fx_layer", FxLayer);
         cfg.SetValue("graphics", "clouds", Clouds);
         cfg.SetValue("graphics", "capes", Capes);
         cfg.SetValue("graphics", "aa", (int)AntiAlias);
@@ -427,6 +436,7 @@ public static class Config
         WinHeight = Mathf.Max(480, height);
         VSync = vsync;
         ApplyVideo();
+        if (DisplayServer.GetName() != "headless") ApplyFrameCap();
         Save();
     }
 
@@ -445,6 +455,14 @@ public static class Config
         AntiAlias = aa;
         FpsLimit = fps;
         ApplyGraphicsToViewport();
+        Save();
+        GraphicsChanged?.Invoke();
+    }
+
+    public static void SetFxLayer(bool on)
+    {
+        if (FxLayer == on) return;
+        FxLayer = on;
         Save();
         GraphicsChanged?.Invoke();
     }
@@ -506,11 +524,15 @@ public static class Config
         Save();
     }
 
+    private static void ApplyFrameCap() =>
+        Engine.MaxFps = FrameLimit.EngineCap(FpsValue(FpsLimit), VSync,
+            DisplayServer.ScreenGetRefreshRate(DisplayServer.WindowGetCurrentScreen()));
+
     public static void ApplyGraphicsToViewport()
     {
         if (DisplayServer.GetName() == "headless")
             return;
-        Engine.MaxFps = FpsValue(FpsLimit);
+        ApplyFrameCap();
         if (Engine.GetMainLoop() is not SceneTree { Root: { } vp })
             return;
         var upscale = EffectiveUpscale;

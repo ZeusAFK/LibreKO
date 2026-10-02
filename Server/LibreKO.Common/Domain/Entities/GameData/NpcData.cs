@@ -21,6 +21,9 @@ public class NpcData
     public const byte TypeHealer = 40;
     public const byte TypeGate = 50;
     public const byte TypeTalk = 64;
+    public const byte TypeRankerKarusFirst = 82;
+    public const byte TypeRankerElMoradFirst = 85;
+    public const int RankerPlaces = 3;
     public const short MakeupArtist = 31525;
     public const byte TypeObjectWood = 54;
     public const byte TypeChaoticGenerator = 162;

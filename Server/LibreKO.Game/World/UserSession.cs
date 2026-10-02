@@ -130,6 +130,7 @@ public class UserSession
 
     // Visual
     public bool IsHidingHelmet { get; set; }
+    public NationRanks NationRanks { get; set; } = NationRanks.None;
     public InvisibilityType Invisibility { get; set; }
     public bool IsInvisible => Invisibility != InvisibilityType.None;
     public bool IsInfiltrating => Invisibility == InvisibilityType.Infiltration;

@@ -25,7 +25,7 @@ public class AdminPanelFindTests
 
     private sealed record Hit(int Id, int SpawnRow, string Name, short Level, byte Zone, ushort X, ushort Z, byte Flags);
 
-    private static (AdminPanelPacketCoordinator Coordinator, UserSession Gm, IClient Client, List<Packet> Sent, IZoneTransitionService Zones, IWorldMovementService Movement) Arrange()
+    private static (AdminPanelPacketCoordinator Coordinator, UserSession Gm, IClient Client, List<Packet> Sent, IZoneTransitionService Zones, IWorldMovementService Movement) Arrange(bool demoGrant = false)
     {
         var sessions = new SessionManager();
         var client = Substitute.For<IClient>();
@@ -35,7 +35,7 @@ public class AdminPanelFindTests
             .Returns(Task.CompletedTask);
         var gm = sessions.CreateSession(client, 1, 1);
         gm.Name = "Zeus";
-        gm.IsGM = true;
+        gm.IsGM = !demoGrant;
         gm.ZoneId = Moradon;
         gm.Level = 83;
 
@@ -75,7 +75,7 @@ public class AdminPanelFindTests
             Substitute.For<ILoyaltyService>(),
             Substitute.For<IItemGrantService>(),
             Substitute.For<IServiceScopeFactory>(),
-            Options.Create(new GameServerSettings()),
+            Options.Create(new GameServerSettings { PublicDemo = { GrantGameMasterPanelToEveryone = demoGrant } }),
             Substitute.For<ILogger<AdminPanelPacketCoordinator>>());
         return (coordinator, gm, client, sent, zones, movement);
     }
@@ -215,6 +215,20 @@ public class AdminPanelFindTests
         ok.Should().BeTrue();
         message.Should().Contain("Ronark Land").And.Contain("1534, 1018");
         await zones.Received(1).ChangeZoneAsync(gm, RonarkLand, 1534f, 1018f);
+        await movement.DidNotReceive().WarpAsync(Arg.Any<UserSession>(), Arg.Any<ushort>(), Arg.Any<ushort>());
+    }
+
+    [Fact]
+    public async Task APublicDemoGrantCannotFindOrGo()
+    {
+        var (coordinator, gm, client, sent, zones, movement) = Arrange(demoGrant: true);
+
+        await coordinator.HandleAsync(client, FindRequest(AdminPanelPacketWriter.FindPlayers, "ri"));
+        await coordinator.HandleAsync(client, GoRequest(RonarkLand, 1534, 1018));
+        await coordinator.HandleAsync(client, GoRequest(Moradon, 769, 369));
+
+        sent.Should().BeEmpty();
+        await zones.DidNotReceive().ChangeZoneAsync(gm, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
         await movement.DidNotReceive().WarpAsync(Arg.Any<UserSession>(), Arg.Any<ushort>(), Arg.Any<ushort>());
     }
 

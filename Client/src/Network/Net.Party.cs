@@ -33,6 +33,7 @@ public partial class Net
 
     private readonly List<PartyMember> _party = new();
     private readonly Dictionary<int, HashSet<byte>> _partyStatus = new();
+    private bool _partyJoining;
 
     public IReadOnlyList<PartyMember> Party => _party;
 
@@ -52,6 +53,7 @@ public partial class Net
         if (_party.Count > 0) Godot.GD.Print($"[party] roster cleared: {reason}");
         _party.Clear();
         _partyStatus.Clear();
+        _partyJoining = false;
     }
 
     private PartyMember SelfPartyMember() =>
@@ -60,6 +62,7 @@ public partial class Net
 
     private void ApplyPartyMember(PartyMember m)
     {
+        if (m.CharId == MyCharId) _partyJoining = false;
         if (m.BecameLeader)
         {
             _party.RemoveAll(x => x.CharId == m.CharId);
@@ -72,7 +75,7 @@ public partial class Net
             else _party.Add(m);
         }
 
-        if (_party.FindIndex(x => x.CharId == MyCharId) < 0)
+        if (!_partyJoining && _party.FindIndex(x => x.CharId == MyCharId) < 0)
             _party.Insert(0, SelfPartyMember());
     }
 
@@ -104,7 +107,12 @@ public partial class Net
             {
                 if (p.RemainingBytes < 2) return;
                 short status = p.ReadShort();
-                if (status != PartyStatusMemberRecord) { PartyErrorEvent?.Invoke(status); return; }
+                if (status != PartyStatusMemberRecord)
+                {
+                    _partyJoining = false;
+                    PartyErrorEvent?.Invoke(status);
+                    return;
+                }
 
                 if (p.RemainingBytes < 5) return;
                 int id = p.ReadInt();

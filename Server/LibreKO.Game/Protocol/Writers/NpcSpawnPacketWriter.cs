@@ -19,6 +19,20 @@ public sealed class NpcSpawnPacketWriter
     public const byte NoEventRoom = 0;
     public const int PetRecordTail = 0;
 
+    public readonly record struct StatueLook(
+        string Name,
+        byte Race,
+        short Class,
+        byte Face,
+        int Hair,
+        int Head,
+        int Breast,
+        int Leg,
+        int Glove,
+        int Foot,
+        int RightHand,
+        int LeftHand);
+
     public readonly record struct NpcState(
         int UniqueId,
         short NpcId,
@@ -38,7 +52,8 @@ public sealed class NpcSpawnPacketWriter
         byte ObjectType,
         short Direction,
         string PetOwnerName = "",
-        string PetName = "");
+        string PetName = "",
+        StatueLook? Statue = null);
 
     private readonly byte _inOutType;
     private readonly NpcState? _npc;
@@ -105,5 +120,31 @@ public sealed class NpcSpawnPacketWriter
         packet.WriteShort(NoClanMarkVersion);
         packet.WriteByte((byte)npc.Direction);
         packet.WriteByte(NoEventRoom);
+        if (IsRankerStatue(npc.NpcType))
+            WriteStatue(packet, npc.Statue);
+    }
+
+    public static bool IsRankerStatue(int npcType) =>
+        npcType >= NpcData.TypeRankerKarusFirst && npcType < NpcData.TypeRankerElMoradFirst + NpcData.RankerPlaces;
+
+    private static void WriteStatue(Packet packet, StatueLook? statue)
+    {
+        if (statue is not { } look)
+        {
+            packet.WriteString(string.Empty);
+            return;
+        }
+        packet.WriteString(look.Name);
+        packet.WriteByte(look.Race);
+        packet.WriteShort(look.Class);
+        packet.WriteByte(look.Face);
+        packet.WriteInt(look.Hair);
+        packet.WriteInt(look.Head);
+        packet.WriteInt(look.Breast);
+        packet.WriteInt(look.Leg);
+        packet.WriteInt(look.Glove);
+        packet.WriteInt(look.Foot);
+        packet.WriteInt(look.RightHand);
+        packet.WriteInt(look.LeftHand);
     }
 }

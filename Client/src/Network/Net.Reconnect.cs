@@ -87,6 +87,7 @@ public partial class Net
         _pingAccum = 0;
         _missedPings = 0;
         PingMs = -1;
+        _connGeneration++;
         _conn.Connect(_host, _port);
         ReconnectChangedEvent?.Invoke();
     }

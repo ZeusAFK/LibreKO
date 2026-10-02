@@ -137,6 +137,7 @@ public partial class World
 
     private static void BeginEntityAction(Ent e, double len, int rank, double now, int anim = NoActionAnim)
     {
+        ResetEntityActionScale(e);
         e.ActionUntil = now + Mathf.Min((float)len, ActionClipCap);
         e.ActionRank = rank;
         e.ActionAnim = anim;
@@ -144,7 +145,35 @@ public partial class World
         e.Clip = null;
     }
 
-    private void PlaySkillAction(int entityId, int action, string[] fallback, int rank)
+    private readonly System.Collections.Generic.Dictionary<int, int> _remoteCastingSkill = new();
+
+    private static void ResetEntityActionScale(Ent e)
+    {
+        if (e.ActionTimeScale == 1f) return;
+        e.ActionTimeScale = 1f;
+        if (e.Anim != null && e.Anim.SpeedScale != 1f) e.Anim.SpeedScale = 1f;
+    }
+
+    private void HoldEntityCastPose(int casterId, SkillData.Skill s)
+    {
+        if (!s.RootsCaster || s.CastSeconds <= CastStretchMinSeconds) return;
+        if (!_ents.TryGetValue(casterId, out var e) || e.Anim == null || e.Dead) return;
+        double now = Now();
+        double clipLeft = e.ActionUntil - now;
+        if (clipLeft <= 0) return;
+        e.ActionUntil = now + s.CastSeconds;
+        e.ActionTimeScale = (float)(clipLeft / s.CastSeconds);
+        if (!e.AnimThrottled) e.Anim.SpeedScale = e.ActionTimeScale;
+    }
+
+    private void EndEntityCastPose(int casterId)
+    {
+        if (!_ents.TryGetValue(casterId, out var e) || e.ActionTimeScale == 1f) return;
+        ResetEntityActionScale(e);
+        e.ActionUntil = 0;
+    }
+
+    private void PlaySkillAction(int entityId, int action, string[] fallback, int rank, bool restart = false)
     {
         if (action < 0) return;
         double now = Now();
@@ -154,15 +183,24 @@ public partial class World
             if (now < _selfActionUntil && action == _selfActionAnim) return;
             if (!CanPlaySelfAction(rank, now)) return;
             double len = PlayActionOn(_selfAnim, action, fallback);
+            if (len > 0 && rank == ActionRankSkill && Net.I.GenieRunning) len *= GenieClipScale();
             if (len > 0) BeginSelfAction(len, rank, now, action);
         }
         else if (_ents.TryGetValue(entityId, out var e) && e.Anim != null && !e.Dead)
         {
-            if (now < e.ActionUntil && action == e.ActionAnim) return;
+            if (!restart && now < e.ActionUntil && action == e.ActionAnim) return;
             if (!CanPlayEntityAction(e, rank, now)) return;
             double len = PlayActionOn(e.Anim, action, fallback);
             if (len > 0) BeginEntityAction(e, len, rank, now, action);
         }
+    }
+
+    private double GenieClipScale()
+    {
+        var gear = SelfGear();
+        int right = gear.Length > InventoryConstants.VisRightHand ? ItemData.Get(gear[InventoryConstants.VisRightHand])?.Kind ?? WeaponAnimation.None : WeaponAnimation.None;
+        int left = gear.Length > InventoryConstants.VisLeftHand ? ItemData.Get(gear[InventoryConstants.VisLeftHand])?.Kind ?? WeaponAnimation.None : WeaponAnimation.None;
+        return GenieClip.Scale(right, left);
     }
 
     private void SelfAction(string[] candidates, int rank)

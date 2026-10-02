@@ -20,6 +20,11 @@ public partial class World : Node3D
             InventoryActivate(absSlot);
             return;
         }
+        if (IsVipVaultKey(Inv[absSlot].ItemId))
+        {
+            Net.I.SendVipVaultUseKey(Inv[absSlot].ItemId);
+            return;
+        }
         if (def.Effect1 != 0 && SkillData.IsSkill(def.Effect1))
             AddToHotbar(Inv[absSlot].ItemId);
     }

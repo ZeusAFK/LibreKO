@@ -115,6 +115,8 @@ public partial class World
         }
 
         StopForNpcTalk(e);
+        if (e.Anim != null && YawToward(e.Body.Position, _self.Position) is { } towardTalker)
+            FaceEntity(e, towardTalker, immediate: false);
 
         _npcTalkId = npcUniqueId;
         _npcRangeAccum = 0;

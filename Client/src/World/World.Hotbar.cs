@@ -391,7 +391,7 @@ public partial class World
             problem = $"{name} can only be used up to level {def.ReqLevelMax}.";
             return false;
         }
-        if (def.Class != 0 && _selfClass != def.Class && _selfClass / 100 != def.Class)
+        if (!EquipRules.UseAllows(_selfClass, def.Class))
         {
             problem = $"Your class cannot use {name}.";
             return false;
