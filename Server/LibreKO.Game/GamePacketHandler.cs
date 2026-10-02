@@ -273,6 +273,7 @@ public class GamePacketHandler(
             if (session.AccountStatus != 0 || session.PremiumType != 0 || session.PremiumTime > 0)
                 await miscPacketCoordinator.SendPremiumInfoAsync(session);
             await worldPacketCoordinator.BroadcastUserInOutAsync(session, InOutType.Respawn);
+            await shoppingMallPacketCoordinator.SendBalanceAsync(session);
             await shoppingMallPacketCoordinator.SendUnreadAsync(session);
             await savedMagicService.RecastAsync(session);
             await collectionRaceService.SyncPlayerAsync(session);

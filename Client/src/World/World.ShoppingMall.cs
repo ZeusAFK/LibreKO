@@ -534,7 +534,7 @@ public partial class World
         var basketPanel = new VBoxContainer { CustomMinimumSize = new Vector2(150, 220) };
         basketPanel.AddThemeConstantOverride("separation", 6);
         basketPanel.AddChild(UiTheme.Text("Basket", 12, UiTheme.TextHi));
-        _pusWallet = UiTheme.Text("KC 0", 12, UiTheme.GoldBright);
+        _pusWallet = UiTheme.Text($"KC {Sheet.KnightCash:n0}", 12, UiTheme.GoldBright);
         basketPanel.AddChild(_pusWallet);
         _pusBasketList = new VBoxContainer();
         _pusBasketList.AddThemeConstantOverride("separation", 4);
