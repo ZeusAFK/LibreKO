@@ -23,15 +23,22 @@ public partial class World
 
     public void TownRecallTryOpen()
     {
-        if (!_worldReady) return;
-        if (_selfDead) return;
-        if (Vitals.BelowHalfHp)
-        {
-            Chat.Info("Town recall failed — heal above 50% HP first.");
-            return;
-        }
-
+        if (!TownRecallReady()) return;
         _townRecallDialog.PopupCentered();
+    }
+
+    private void TownRecallPress()
+    {
+        if (!TownRecallReady()) return;
+        TownRecallConfirm();
+    }
+
+    private bool TownRecallReady()
+    {
+        if (!_worldReady || _selfDead) return false;
+        if (!Vitals.BelowHalfHp) return true;
+        Chat.Info("Town recall failed — heal above 50% HP first.");
+        return false;
     }
 
     private void TownRecallConfirm()
