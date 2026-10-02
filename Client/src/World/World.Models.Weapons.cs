@@ -31,13 +31,14 @@ public partial class World
             string resPath = $"res://assets/items/weapon/{w.Stem}.glb";
             if (!ResourceLoader.Exists(resPath) || ResourceLoader.Load(resPath) is not PackedScene scene)
                 continue;
-            int bone = HandBone(skel, right: slot == 6);
+            int bone = GearAttach.WeaponBone(skel, w.Joint, right: slot == InventoryConstants.VisRightHand);
             if (bone < 0) continue;
             var attach = new BoneAttachment3D { Name = $"{WeaponNodePrefix}{slot}" };
             skel.AddChild(attach);
             attach.BoneIdx = bone;
+            var seated = GearAttach.SeatOnLimb(w.Pos, GearAttach.LimbEnd(skel, bone));
             var mesh = scene.Instantiate<Node3D>();
-            mesh.Transform = new Transform3D(new Basis(w.Quat).Scaled(w.Scale), w.Pos);
+            mesh.Transform = new Transform3D(new Basis(w.Quat).Scaled(w.Scale), seated);
             ForceDoubleSided(mesh);
             attach.AddChild(mesh);
             AttachWeaponGlow(mesh, gear[slot]);
@@ -199,18 +200,6 @@ public partial class World
                 if (int.TryParse(e.AsString(), out int ext)) map[ext] = extd[e].AsString();
             into[cat] = map;
         }
-    }
-
-    private static int HandBone(Skeleton3D skel, bool right)
-    {
-        string wristKey = right ? "rightwrist" : "leftwrist";
-        for (int i = 0; i < skel.GetBoneCount(); i++)
-        {
-            if (skel.GetBoneName(i).Replace(" ", "").ToLower() != wristKey) continue;
-            var kids = skel.GetBoneChildren(i);
-            return kids.Length > 0 ? kids[0] : i;
-        }
-        return -1;
     }
 
     private static System.Collections.Generic.Dictionary<int, WeaponInfo> LoadWeaponIndex()

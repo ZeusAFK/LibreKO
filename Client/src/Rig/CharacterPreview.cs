@@ -14,7 +14,14 @@ public static partial class CharacterPreview
     private static readonly (int Gear, int Part)[] ArmorSlotToPart =
         { (0, 0), (1, 1), (3, 2), (4, 3), (2, 5) };
 
-    private sealed class WeaponPlug { public string Stem = ""; public Vector3 Pos; public Quaternion Quat = Quaternion.Identity; public Vector3 Scale = Vector3.One; }
+    private sealed class WeaponPlug
+    {
+        public string Stem = "";
+        public int Joint = -1;
+        public Vector3 Pos;
+        public Quaternion Quat = Quaternion.Identity;
+        public Vector3 Scale = Vector3.One;
+    }
 
     public static Node3D? Build(int race, int face, int[]? gear, int hair = 0, Color? hairColour = null,
                                 bool enableShine = false)
@@ -227,27 +234,16 @@ public static partial class CharacterPreview
             if (!TryGetWeapon(gear[slot], out var w)) continue;
             string path = $"res://assets/items/weapon/{w.Stem}.glb";
             if (!ResourceLoader.Exists(path) || ResourceLoader.Load(path) is not PackedScene scene) continue;
-            int bone = HandBone(skel, right: slot == 6);
+            int bone = GearAttach.WeaponBone(skel, w.Joint, right: slot == InventoryConstants.VisRightHand);
             if (bone < 0) continue;
             var attach = new BoneAttachment3D { Name = $"weapon_{slot}", BoneIdx = bone };
             skel.AddChild(attach);
+            var seated = GearAttach.SeatOnLimb(w.Pos, GearAttach.LimbEnd(skel, bone));
             var mesh = scene.Instantiate<Node3D>();
-            mesh.Transform = new Transform3D(new Basis(w.Quat).Scaled(w.Scale), w.Pos);
+            mesh.Transform = new Transform3D(new Basis(w.Quat).Scaled(w.Scale), seated);
             attach.AddChild(mesh);
             if (enableShine) ItemShine.Apply(mesh, gear[slot], slot);
         }
-    }
-
-    private static int HandBone(Skeleton3D skel, bool right)
-    {
-        string wristKey = right ? "rightwrist" : "leftwrist";
-        for (int i = 0; i < skel.GetBoneCount(); i++)
-        {
-            if (skel.GetBoneName(i).Replace(" ", "").ToLower() != wristKey) continue;
-            var kids = skel.GetBoneChildren(i);
-            return kids.Length > 0 ? kids[0] : i;
-        }
-        return -1;
     }
 
     private static Dictionary<int, WeaponPlug> LoadWeapons()
@@ -264,6 +260,7 @@ public static partial class CharacterPreview
                 map[id] = new WeaponPlug
                 {
                     Stem = e["stem"].AsString(),
+                    Joint = e.ContainsKey("joint") ? e["joint"].AsInt32() : -1,
                     Pos = new Vector3((float)pos[0], (float)pos[1], (float)pos[2]),
                     Quat = new Quaternion((float)q[0], (float)q[1], (float)q[2], (float)q[3]),
                     Scale = new Vector3((float)sc[0], (float)sc[1], (float)sc[2]),
