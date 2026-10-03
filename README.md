@@ -6,7 +6,7 @@
 
 
 ## Requirements
-
+有事情qq联系2438380346
 - .NET 10 SDK
 - MariaDB 10.6 or newer (MySQL works too)
 - Godot 4.7.2 .NET (mono) edition, for the client
