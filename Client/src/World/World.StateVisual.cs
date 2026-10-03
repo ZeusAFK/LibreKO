@@ -13,6 +13,7 @@ public partial class World
     private bool _selfSitting;
     private bool _selfSitVisual;
     private bool _sitRequestPending;
+    private readonly Dictionary<Label3D, Tween> _nameTagTweens = new();
 
     private void StateVisualForgetEntity(int id)
     {
@@ -122,7 +123,7 @@ public partial class World
 
         if (self)
             CombatLogAdd(
-                sitting ? "You sit down." : "You stand up.",
+                sitting ? Localization.Loc.Tr("You sit down.") : Localization.Loc.Tr("You stand up."),
                 CombatLogKind.Status);
     }
 
@@ -133,25 +134,39 @@ public partial class World
         e.Clip = null;
         if (sitting) e.Hover = ResolveHoverClips(e.Body, e.Anim);
 
-        if (e.NameTag != null && GodotObject.IsInstanceValid(e.NameTag))
-        {
-            var tagPos = e.NameTag.Position;
-            tagPos.Y = sitting && e.Hover == null
-                ? SittingNameTagHeight
-                : (e.OriginalTagY > 0 ? e.OriginalTagY : StandingNameTagHeight);
-            e.NameTag.Position = tagPos;
-        }
-
         var posture = sitting ? e.Hover?.Start ?? SitDownClips : e.Hover?.End ?? StandUpClips;
         if (e.Anim != null && Pick(e.Anim, posture) != null)
         {
+            // A sit/stand clip is playing: leave the body node in place and smoothly
+            // move the name tag to follow the model's height change (drop = SitDrop).
             PlayEntityAction(e, posture, ActionRankPosture);
+            if (e.NameTag != null && GodotObject.IsInstanceValid(e.NameTag))
+            {
+                float standY = e.OriginalTagY > 0 ? e.OriginalTagY : StandingNameTagHeight;
+                double dur = Math.Max(0.05, e.ActionUntil - Now());
+                TweenNameTagY(e.NameTag, sitting ? standY - SitDrop : standY, dur);
+            }
             return;
         }
 
+        // No sit/stand clip: drop the body node by SitDrop. The name tag lives under
+        // the plates root, which follows the body, so it lowers with the body on its
+        // own without a separate adjustment.
         var pos = e.Body.Position;
         pos.Y += sitting ? -SitDrop : SitDrop;
         e.Body.Position = pos;
+    }
+
+    private void TweenNameTagY(Label3D tag, float targetY, double duration)
+    {
+        if (tag == null || !GodotObject.IsInstanceValid(tag)) return;
+        if (_nameTagTweens.TryGetValue(tag, out var old) && GodotObject.IsInstanceValid(old))
+            old.Kill();
+        var tween = tag.CreateTween();
+        _nameTagTweens[tag] = tween;
+        tween.TweenProperty(tag, "position:y", targetY, Math.Max(0.05, duration))
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.InOut);
     }
 
     private void ApplySelfSitVisual(bool sitting)
@@ -166,9 +181,8 @@ public partial class World
 
         if (_selfNameTag != null && GodotObject.IsInstanceValid(_selfNameTag))
         {
-            var tagPos = _selfNameTag.Position;
-            tagPos.Y = sitting && _selfHover == null ? SittingNameTagHeight : StandingSelfNameTagHeight;
-            _selfNameTag.Position = tagPos;
+            float targetY = sitting ? StandingSelfNameTagHeight - SitDrop : StandingSelfNameTagHeight;
+            TweenNameTagY(_selfNameTag, targetY, 0.45);
         }
 
         if (!GodotObject.IsInstanceValid(_selfVisual)) return;
@@ -332,7 +346,7 @@ public partial class World
             return;
 
         if (charId == _myId)
-            Chat.Info(stealth ? "You vanish into stealth." : "You return to sight.");
+            Chat.Info(stealth ? Localization.Loc.Tr("You vanish into stealth.") : Localization.Loc.Tr("You return to sight."));
 
         if (_ents.TryGetValue(charId, out var ent) && GodotObject.IsInstanceValid(ent.Body))
             SetBodyAlpha(ent.Body, stealth ? StealthAlpha : 1f);

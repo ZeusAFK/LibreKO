@@ -35,20 +35,19 @@ public partial class World
         DismissResetConfirm();
 
         bool stat = _resetKind == Net.ResetKindStat;
-        string what = stat ? "stat points" : "mastery points";
-        string body = $"Every one of your {what} goes back into the pool, and it costs "
-                      + $"{cost:n0} gold.";
+        string what = stat ? Localization.Loc.Tr("stat points") : Localization.Loc.Tr("mastery points");
+        string body = $"{Localization.Loc.Tr("Every one of your")} {what} {Localization.Loc.Tr("goes back into the pool, and it costs")} {cost:n0} {Localization.Loc.Tr("gold.")}";
         if (stat)
-            body += "\n\nYour inventory must be empty.";
+            body += Localization.Loc.Tr("\n\nYour inventory must be empty.");
 
         _resetConfirm = Notice.Confirm(
             this,
             body,
-            "Redistribute",
-            "Cancel",
+            Localization.Loc.Tr("Redistribute"),
+            Localization.Loc.Tr("Cancel"),
             ConfirmReset,
             CancelReset,
-            stat ? "Redistribute stats" : "Redistribute mastery");
+            stat ? Localization.Loc.Tr("Redistribute stats") : Localization.Loc.Tr("Redistribute mastery"));
     }
 
     private void ConfirmReset()
@@ -77,8 +76,8 @@ public partial class World
         if (!ok)
         {
             CombatNotice(money > 0
-                ? $"The redistribution needs {money:n0} gold, and an empty inventory."
-                : "There is nothing to redistribute.");
+                ? $"{Localization.Loc.Tr("The redistribution needs")} {money:n0} {Localization.Loc.Tr("gold, and an empty inventory.")}"
+                : Localization.Loc.Tr("There is nothing to redistribute."));
             CancelReset();
             return;
         }
@@ -91,8 +90,8 @@ public partial class World
         if (!ok)
         {
             CombatNotice(money > 0
-                ? $"The redistribution needs {money:n0} gold."
-                : "There is nothing to redistribute.");
+                ? $"{Localization.Loc.Tr("The redistribution needs")} {money:n0} {Localization.Loc.Tr("gold.")}"
+                : Localization.Loc.Tr("There is nothing to redistribute."));
             CancelReset();
             return;
         }

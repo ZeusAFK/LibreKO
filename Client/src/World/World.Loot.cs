@@ -210,7 +210,7 @@ public partial class World
         var titleRow = new HBoxContainer();
         root.AddChild(titleRow);
         _lootTitle = HudStyle.Label(17);
-        _lootTitle.Text = "Loot";
+        _lootTitle.Text = Localization.Loc.Tr("Loot");
         _lootTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         titleRow.AddChild(_lootTitle);
         var close = new Button { Text = "✕", FocusMode = Control.FocusModeEnum.None };
@@ -226,7 +226,7 @@ public partial class World
 
         root.AddChild(new HSeparator());
         var hint = HudStyle.Label(12);
-        hint.Text = "Click an item to take it";
+        hint.Text = Localization.Loc.Tr("Click an item to take it");
         root.AddChild(hint);
 
         HudLayout.Attach(
@@ -241,7 +241,7 @@ public partial class World
         var layer = new CanvasLayer { Layer = 65 };
         AddChild(layer);
         _lootPrompt = HudStyle.Label(16, HorizontalAlignment.Center);
-        _lootPrompt.Text = "Click the box to loot";
+        _lootPrompt.Text = Localization.Loc.Tr("Click the box to loot");
         _lootPrompt.AddThemeColorOverride("font_color", new Color("ffe08a"));
         _lootPrompt.CustomMinimumSize = new Vector2(240, 0);
         _lootPrompt.Visible = false;
@@ -299,7 +299,7 @@ public partial class World
         name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         name.VerticalAlignment = VerticalAlignment.Center;
         name.Text = isGold
-            ? $"Gold  x{entry.Count}"
+            ? $"{Localization.Loc.Tr("Gold")}  x{entry.Count}"
             : entry.Count > 1 ? $"{ItemData.DisplayName(entry.ItemId)}  x{entry.Count}"
                               : ItemData.DisplayName(entry.ItemId);
         if (isGold) name.AddThemeColorOverride("font_color", new Color("ffd24a"));

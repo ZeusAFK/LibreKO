@@ -50,16 +50,16 @@ public partial class World
         _playerMenuName = target.Name;
 
         _playerMenu.Clear();
-        _playerMenu.AddItem("Request a party", (int)PlayerMenuAction.RequestParty);
-        _playerMenu.AddItem("Report", (int)PlayerMenuAction.Report);
-        _playerMenu.AddItem("User trade", (int)PlayerMenuAction.UserTrade);
-        _playerMenu.AddItem("Whisper", (int)PlayerMenuAction.Whisper);
-        _playerMenu.AddItem("Add friend", (int)PlayerMenuAction.AddFriend);
-        _playerMenu.AddItem("User Information", (int)PlayerMenuAction.UserInformation);
-        _playerMenu.AddItem("Duel", (int)PlayerMenuAction.Duel);
-        _playerMenu.AddItem("Equipment View", (int)PlayerMenuAction.EquipmentView);
+        _playerMenu.AddItem(Localization.Loc.Tr("Request a party"), (int)PlayerMenuAction.RequestParty);
+        _playerMenu.AddItem(Localization.Loc.Tr("Report"), (int)PlayerMenuAction.Report);
+        _playerMenu.AddItem(Localization.Loc.Tr("User trade"), (int)PlayerMenuAction.UserTrade);
+        _playerMenu.AddItem(Localization.Loc.Tr("Whisper"), (int)PlayerMenuAction.Whisper);
+        _playerMenu.AddItem(Localization.Loc.Tr("Add friend"), (int)PlayerMenuAction.AddFriend);
+        _playerMenu.AddItem(Localization.Loc.Tr("User Information"), (int)PlayerMenuAction.UserInformation);
+        _playerMenu.AddItem(Localization.Loc.Tr("Duel"), (int)PlayerMenuAction.Duel);
+        _playerMenu.AddItem(Localization.Loc.Tr("Equipment View"), (int)PlayerMenuAction.EquipmentView);
         if (MyClan.CanInvite && target.KnightsId == 0)
-            _playerMenu.AddItem("Clan invite", (int)PlayerMenuAction.ClanInvite);
+            _playerMenu.AddItem(Localization.Loc.Tr("Clan invite"), (int)PlayerMenuAction.ClanInvite);
         _playerMenu.ResetSize();
         _playerMenu.Position = (Vector2I)at;
         _playerMenu.Popup();
@@ -144,7 +144,7 @@ public partial class World
 
             case PlayerMenuAction.Duel:
                 ToggleDuel();
-                CombatNotice($"Create or join a duel to fight {name}.");
+                CombatNotice($"{Localization.Loc.Tr("Create or join a duel to fight")} {name}.");
                 break;
 
             case PlayerMenuAction.EquipmentView:
@@ -153,7 +153,7 @@ public partial class World
 
             case PlayerMenuAction.ClanInvite:
                 Net.I.SendClanInvite(id);
-                CombatNotice($"Inviting {name} to the clan…");
+                CombatNotice($"{Localization.Loc.Tr("Inviting")} {name} {Localization.Loc.Tr("to the clan…")}");
                 break;
         }
     }
@@ -162,34 +162,34 @@ public partial class World
     {
         if (InParty && !AmLeader)
         {
-            CombatNotice("Only the party leader can invite.");
+            CombatNotice(Localization.Loc.Tr("Only the party leader can invite."));
             return;
         }
         if (InParty && PartyMembers.Count >= PartyMaxMembers)
         {
-            CombatNotice("Your party is full.");
+            CombatNotice(Localization.Loc.Tr("Your party is full."));
             return;
         }
 
         if (InParty) Net.I.SendPartyInvite(name);
         else Net.I.SendPartyCreate(name);
-        CombatNotice($"Inviting {name} to your party…");
+        CombatNotice($"{Localization.Loc.Tr("Inviting")} {name} {Localization.Loc.Tr("to your party…")}");
     }
 
     private void RequestTradeWith(int charId, string name)
     {
-        if (_exShown || _exWaiting) { CombatNotice("You are already trading."); return; }
+        if (_exShown || _exWaiting) { CombatNotice(Localization.Loc.Tr("You are already trading.")); return; }
         if (_selfDead) return;
 
         if (!_ents.TryGetValue(charId, out var e) || e.Dead)
         {
-            CombatNotice($"{name} is no longer nearby.");
+            CombatNotice($"{name} {Localization.Loc.Tr("is no longer nearby.")}");
             return;
         }
 
         if (e.Body.Position.DistanceTo(_self.Position) > TradeRange)
         {
-            CombatNotice($"{name} is too far away to trade.");
+            CombatNotice($"{name} {Localization.Loc.Tr("is too far away to trade.")}");
             return;
         }
 

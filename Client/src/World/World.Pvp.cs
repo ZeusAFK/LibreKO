@@ -61,7 +61,7 @@ public partial class World
         col.AddThemeConstantOverride("separation", 4);
         _pvpChip.AddChild(col);
 
-        _pvpNameLbl = UiTheme.Text("Rival", 13, PvpRivalCol, HorizontalAlignment.Center);
+        _pvpNameLbl = UiTheme.Text(Localization.Loc.Tr("Rival"), 13, PvpRivalCol, HorizontalAlignment.Center);
         _pvpNameLbl.MouseFilter = Control.MouseFilterEnum.Ignore;
         col.AddChild(_pvpNameLbl);
 
@@ -69,7 +69,7 @@ public partial class World
         angerRow.AddThemeConstantOverride("separation", 6);
         col.AddChild(angerRow);
 
-        var angerLbl = UiTheme.Text("Anger", 11, UiTheme.TextLo, HorizontalAlignment.Left);
+        var angerLbl = UiTheme.Text(Localization.Loc.Tr("Anger"), 11, UiTheme.TextLo, HorizontalAlignment.Left);
         angerLbl.MouseFilter = Control.MouseFilterEnum.Ignore;
         angerRow.AddChild(angerLbl);
 
@@ -107,16 +107,16 @@ public partial class World
         ClearRivalMarker();
 
         _pvpRivalId = rivalCharId;
-        _pvpRivalName = string.IsNullOrEmpty(rivalName) ? "Unknown" : rivalName;
+        _pvpRivalName = string.IsNullOrEmpty(rivalName) ? Localization.Loc.Tr("Unknown") : rivalName;
         _pvpClanName = clanName ?? "";
         _pvpGauge = 0;
         _pvpFull = false;
 
-        _pvpNameLbl.Text = _pvpClanName.Length > 0 ? $"Rival: {_pvpRivalName} [{_pvpClanName}]" : $"Rival: {_pvpRivalName}";
+        _pvpNameLbl.Text = _pvpClanName.Length > 0 ? $"{Localization.Loc.Tr("Rival")}: {_pvpRivalName} [{_pvpClanName}]" : $"{Localization.Loc.Tr("Rival")}: {_pvpRivalName}";
         RefreshPvpPips();
         _pvpLayer.Visible = true;
 
-        CombatNotice($"{_pvpRivalName} is now your rival.");
+        CombatNotice($"{_pvpRivalName} {Localization.Loc.Tr("is now your rival.")}");
 
         TryMarkRival();
     }
@@ -124,7 +124,7 @@ public partial class World
     private void OnPvpRivalRemoved()
     {
         if (_pvpRivalId >= 0)
-            CombatNotice($"Your rivalry with {_pvpRivalName} has ended.");
+            CombatNotice($"{Localization.Loc.Tr("Your rivalry with")} {_pvpRivalName} {Localization.Loc.Tr("has ended.")}");
         ClearRivalMarker();
         _pvpRivalId = -1;
         _pvpRivalName = "";

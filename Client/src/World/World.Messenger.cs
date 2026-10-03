@@ -17,29 +17,29 @@ public partial class World
     {
         _msgrLayer = new CanvasLayer { Layer = 74 };
         AddChild(_msgrLayer);
-        _msgrPanel = new HudWindow("messenger", "Messenger", new Vector2(200, 130)) { Visible = false };
+        _msgrPanel = new HudWindow("messenger", Localization.Loc.Tr("Messenger"), new Vector2(200, 130)) { Visible = false };
         _msgrPanel.Closed += CloseMessenger;
         _msgrLayer.AddChild(_msgrPanel);
         var root = _msgrPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
 
-        root.AddChild(UiTheme.SectionTitle("Online"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Online")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(320, 240), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _msgrList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         _msgrList.AddThemeConstantOverride("separation", 3);
         scroll.AddChild(_msgrList);
 
-        root.AddChild(UiTheme.SectionTitle("Quick Whisper"));
-        _msgrToInput = new LineEdit { PlaceholderText = "To (name)", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 20 };
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Quick Whisper")));
+        _msgrToInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("To (name)"), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 20 };
         root.AddChild(_msgrToInput);
         var sendRow = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         sendRow.AddThemeConstantOverride("separation", 6);
         root.AddChild(sendRow);
-        _msgrTextInput = new LineEdit { PlaceholderText = "Message", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 128 };
+        _msgrTextInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("Message"), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 128 };
         _msgrTextInput.TextSubmitted += _ => DoMessengerSend();
         sendRow.AddChild(_msgrTextInput);
-        var sendBtn = new Button { Text = "Send", FocusMode = Control.FocusModeEnum.None };
+        var sendBtn = new Button { Text = Localization.Loc.Tr("Send"), FocusMode = Control.FocusModeEnum.None };
         sendBtn.Pressed += DoMessengerSend;
         sendRow.AddChild(sendBtn);
 
@@ -87,16 +87,16 @@ public partial class World
             var name = UiTheme.Text(b.Name, 13, b.Online ? UiTheme.TextHi : UiTheme.TextLo);
             name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             hb.AddChild(name);
-            hb.AddChild(UiTheme.Text(b.Online ? "Online" : "Offline", 12, b.Online ? UiTheme.Gold : UiTheme.TextLo));
+            hb.AddChild(UiTheme.Text(b.Online ? Localization.Loc.Tr("Online") : Localization.Loc.Tr("Offline"), 12, b.Online ? UiTheme.Gold : UiTheme.TextLo));
             string targetName = b.Name;
-            var whisper = new Button { Text = "Whisper", FocusMode = Control.FocusModeEnum.None };
+            var whisper = new Button { Text = Localization.Loc.Tr("Whisper"), FocusMode = Control.FocusModeEnum.None };
             whisper.Pressed += () => { _msgrToInput.Text = targetName; _msgrTextInput.GrabFocus(); };
             hb.AddChild(whisper);
             _msgrList.AddChild(row);
         }
         if (_msgrList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No one else online.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No one else online.");
             _msgrList.AddChild(e);
         }
     }

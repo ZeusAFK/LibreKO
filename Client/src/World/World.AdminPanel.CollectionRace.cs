@@ -19,22 +19,22 @@ public partial class World
     {
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(AdminRaceListWidth, 0) };
         box.AddThemeConstantOverride("separation", 6);
-        box.AddChild(UiTheme.SectionTitle("Collection Races", UiIcons.Get("system/home")));
+        box.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Collection Races"), UiIcons.Get("system/home")));
 
         var findRow = new HBoxContainer();
         findRow.AddThemeConstantOverride("separation", 5);
         box.AddChild(findRow);
         _admRaceFilter = new LineEdit
         {
-            PlaceholderText = "filter by name, zone or level",
+            PlaceholderText = Localization.Loc.Tr("filter by name, zone or level"),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         _admRaceFilter.TextChanged += _ => RefreshAdminRaceList();
         findRow.AddChild(_admRaceFilter);
-        _admRaceActiveOnly = UiTheme.FlatCheck("Active only", false);
+        _admRaceActiveOnly = UiTheme.FlatCheck(Localization.Loc.Tr("Active only"), false);
         _admRaceActiveOnly.Toggled += _ => RefreshAdminRaceList();
         findRow.AddChild(_admRaceActiveOnly);
-        var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), "Refresh");
+        var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), Localization.Loc.Tr("Refresh"));
         refresh.Pressed += () => Net.I.SendAdminCollectionRacesRequest();
         findRow.AddChild(refresh);
 
@@ -83,8 +83,8 @@ public partial class World
         }
 
         _admRaceSummary.Text = _admRaces.Count == 0
-            ? "No races loaded."
-            : $"{shown} of {_admRaces.Count} races shown, {active} running.";
+            ? Localization.Loc.Tr("No races loaded.")
+            : $"{shown} {Localization.Loc.Tr("of")} {_admRaces.Count} {Localization.Loc.Tr("races shown")}, {active} {Localization.Loc.Tr("running")}.";
     }
 
     private static bool AdminRaceMatches(AdminCollectionRace race, string filter) =>
@@ -109,9 +109,9 @@ public partial class World
         var title = UiTheme.Text($"{race.Id}  {race.Name}", 13, race.Active ? UiTheme.Good : UiTheme.GoldBright);
         title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         head.AddChild(title);
-        head.AddChild(UiTheme.Pill(race.Active ? $"running  {race.RemainingSeconds / 60:D2}:{race.RemainingSeconds % 60:D2}" : race.AutoStart ? "scheduled" : "manual",
+        head.AddChild(UiTheme.Pill(race.Active ? $"{Localization.Loc.Tr("running")}  {race.RemainingSeconds / 60:D2}:{race.RemainingSeconds % 60:D2}" : race.AutoStart ? Localization.Loc.Tr("scheduled") : Localization.Loc.Tr("manual"),
             race.Active ? UiTheme.Good : UiTheme.TextLo));
-        var action = UiTheme.SmallButton(race.Active ? "Close" : "Start", race.Active ? "End this race now; completers are mailed their rewards" : "Start this race now in its zone");
+        var action = UiTheme.SmallButton(race.Active ? Localization.Loc.Tr("Close") : Localization.Loc.Tr("Start"), race.Active ? Localization.Loc.Tr("End this race now; completers are mailed their rewards") : Localization.Loc.Tr("Start this race now in its zone"));
         var raceId = race.Id;
         var wasActive = race.Active;
         action.Pressed += () =>
@@ -122,15 +122,15 @@ public partial class World
         head.AddChild(action);
 
         var meta = UiTheme.Text(
-            $"{ZoneCatalog.Name(race.ZoneId)} ({race.ZoneId})  ·  level {race.MinLevel}-{race.MaxLevel}  ·  {race.DurationMinutes} min" +
-            (race.MaxWinners > 0 ? $"  ·  {race.MaxWinners} winners" : "  ·  no winner limit") +
-            (race.Active ? $"  ·  {race.Completions} finished" : ""),
+            $"{ZoneCatalog.Name(race.ZoneId)} ({race.ZoneId})  ·  {Localization.Loc.Tr("level")} {race.MinLevel}-{race.MaxLevel}  ·  {race.DurationMinutes} {Localization.Loc.Tr("min")}" +
+            (race.MaxWinners > 0 ? $"  ·  {race.MaxWinners} {Localization.Loc.Tr("winners")}" : $"  ·  {Localization.Loc.Tr("no winner limit")}") +
+            (race.Active ? $"  ·  {race.Completions} {Localization.Loc.Tr("finished")}" : ""),
             12, UiTheme.TextLo);
         rows.AddChild(meta);
         var objectives = UiTheme.Text(race.Objectives, 12, UiTheme.TextHi);
         objectives.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         rows.AddChild(objectives);
-        var schedule = UiTheme.Text($"Schedule (UTC): {race.Schedule}", 11, UiTheme.TextDim);
+        var schedule = UiTheme.Text($"{Localization.Loc.Tr("Schedule (UTC):")} {race.Schedule}", 11, UiTheme.TextDim);
         schedule.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         rows.AddChild(schedule);
         return panel;

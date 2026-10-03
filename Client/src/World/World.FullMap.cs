@@ -38,7 +38,7 @@ public partial class World
         close.Pressed += ToggleFullMap;
         _fullMapLayer.AddChild(close);
 
-        var hint = UiTheme.Text("M or Esc to close", 13, UiTheme.TextDim, HorizontalAlignment.Center);
+        var hint = UiTheme.Text(Localization.Loc.Tr("M or Esc to close"), 13, UiTheme.TextDim, HorizontalAlignment.Center);
         hint.SetAnchorsPreset(Control.LayoutPreset.BottomWide);
         hint.OffsetTop = -34; hint.OffsetBottom = -12;
         hint.MouseFilter = Control.MouseFilterEnum.Ignore;

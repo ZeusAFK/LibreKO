@@ -34,7 +34,7 @@ public partial class World
         _rankLayer = new CanvasLayer { Layer = 75 };
         AddChild(_rankLayer);
 
-        _rankPanel = new HudWindow("rank", "Rankings", new Vector2(220, 90)) { Visible = false };
+        _rankPanel = new HudWindow("rank", Localization.Loc.Tr("Rankings"), new Vector2(220, 90)) { Visible = false };
         _rankPanel.Closed += CloseRank;
         _rankLayer.AddChild(_rankPanel);
 
@@ -42,22 +42,22 @@ public partial class World
         root.AddThemeConstantOverride("separation", 8);
         root.CustomMinimumSize = new Vector2(380, 0);
 
-        root.AddChild(UiTheme.SectionTitle("Loyalty Ladder"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Loyalty Ladder")));
 
         var tabs = new HBoxContainer();
         tabs.AddThemeConstantOverride("separation", 6);
-        _rankKarusTab = new Button { Text = "Karus", FocusMode = Control.FocusModeEnum.None, ToggleMode = true };
+        _rankKarusTab = new Button { Text = Localization.Loc.Tr("Karus"), FocusMode = Control.FocusModeEnum.None, ToggleMode = true };
         _rankKarusTab.AddThemeFontSizeOverride("font_size", 13);
         _rankKarusTab.Pressed += () => SelectRankTab(1);
         tabs.AddChild(_rankKarusTab);
-        _rankElmoradTab = new Button { Text = "El Morad", FocusMode = Control.FocusModeEnum.None, ToggleMode = true };
+        _rankElmoradTab = new Button { Text = Localization.Loc.Tr("El Morad"), FocusMode = Control.FocusModeEnum.None, ToggleMode = true };
         _rankElmoradTab.AddThemeFontSizeOverride("font_size", 13);
         _rankElmoradTab.Pressed += () => SelectRankTab(2);
         tabs.AddChild(_rankElmoradTab);
 
         var spacer = new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         tabs.AddChild(spacer);
-        var refresh = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
+        var refresh = new Button { Text = Localization.Loc.Tr("Refresh"), FocusMode = Control.FocusModeEnum.None };
         refresh.AddThemeFontSizeOverride("font_size", 12);
         refresh.Pressed += RequestRank;
         tabs.AddChild(refresh);
@@ -66,9 +66,9 @@ public partial class World
         var header = new HBoxContainer();
         header.AddThemeConstantOverride("separation", 8);
         header.AddChild(RankCell("#", 34, UiTheme.TextLo, HorizontalAlignment.Center));
-        header.AddChild(RankCell("Name", 150, UiTheme.TextLo));
-        header.AddChild(RankCell("Clan", 120, UiTheme.TextLo));
-        header.AddChild(RankCell("Loyalty", 70, UiTheme.TextLo, HorizontalAlignment.Right));
+        header.AddChild(RankCell(Localization.Loc.Tr("Name"), 150, UiTheme.TextLo));
+        header.AddChild(RankCell(Localization.Loc.Tr("Clan"), 120, UiTheme.TextLo));
+        header.AddChild(RankCell(Localization.Loc.Tr("Loyalty"), 70, UiTheme.TextLo, HorizontalAlignment.Right));
         root.AddChild(header);
 
         var scroll = new ScrollContainer
@@ -124,7 +124,7 @@ public partial class World
 
     private void RequestRank()
     {
-        _rankStatus.Text = "Loading…";
+        _rankStatus.Text = Localization.Loc.Tr("Loading…");
         Net.I.SendRankRequest(Net.RankTypePkZone);
     }
 
@@ -152,8 +152,8 @@ public partial class World
 
         if (_rankShown) RefreshRankRows();
         _rankMine.Text = _rankMyPlace > 0
-            ? $"Your rank:  #{_rankMyPlace}    Loyalty {_rankMyLoyalty:n0}"
-            : $"Your loyalty:  {_rankMyLoyalty:n0}";
+            ? $"{Localization.Loc.Tr("Your rank")}:  #{_rankMyPlace}    {Localization.Loc.Tr("Loyalty")} {_rankMyLoyalty:n0}"
+            : $"{Localization.Loc.Tr("Your loyalty")}:  {_rankMyLoyalty:n0}";
     }
 
     private void RefreshRankRows()
@@ -164,7 +164,7 @@ public partial class World
         if (list.Count == 0)
         {
             var lbl = HudStyle.Label(13);
-            lbl.Text = "No ranked players yet.";
+            lbl.Text = Localization.Loc.Tr("No ranked players yet.");
             _rankRows.AddChild(lbl);
             _rankStatus.Text = "";
             return;
@@ -172,7 +172,7 @@ public partial class World
 
         foreach (var e in list)
             _rankRows.AddChild(BuildRankRow(e));
-        _rankStatus.Text = $"Top {list.Count} by daily loyalty";
+        _rankStatus.Text = $"{Localization.Loc.Tr("Top")} {list.Count} {Localization.Loc.Tr("by daily loyalty")}";
     }
 
     private Control BuildRankRow(RankEntry e)

@@ -137,13 +137,21 @@ public static class AchievementData
 
     private static string BonusLabel(string key) => key switch
     {
-        "str" => "STR", "hp" => "HP", "dex" => "DEX", "int" => "INT", "mp" => "MP",
-        "attack" => "Attack", "defence" => "Defence",
-        "loyalty" => "NP", "exp" => "EXP",
-        "fire" => "Fire", "ice" => "Ice", "light" => "Lightning",
-        "r_fire" => "Fire resist", "r_ice" => "Ice resist", "r_light" => "Lightning resist",
-        "r_magic" => "Magic resist", "r_curse" => "Curse resist", "r_poison" => "Poison resist",
-        _ => key.StartsWith("ac_") ? key[3..] + " defence" : key,
+        "str" => "力量", "hp" => "体力", "dex" => "敏捷", "int" => "智力", "mp" => "魔力",
+        "attack" => "攻击力", "defence" => "防御力",
+        "loyalty" => "贡献", "exp" => "经验",
+        "fire" => "火焰", "ice" => "寒冰", "light" => "闪电",
+        "r_fire" => "火焰抗性", "r_ice" => "寒冰抗性", "r_light" => "闪电抗性",
+        "r_magic" => "魔法抗性", "r_curse" => "诅咒抗性", "r_poison" => "剧毒抗性",
+        _ => key.StartsWith("ac_") ? WeaponAcLabel(key[3..]) : key,
+    };
+
+    private static string WeaponAcLabel(string w) => w switch
+    {
+        "shortsword" => "短剑防御", "sword" => "剑防御", "axe" => "斧防御",
+        "blow" => "钝器防御", "spear" => "枪防御", "jamadar" => "战锤防御",
+        "dagger" => "匕首防御", "bow" => "弓防御", "arrow" => "箭防御",
+        _ => w + "防御",
     };
 
     private static int Read(Godot.Collections.Dictionary row, string key) =>

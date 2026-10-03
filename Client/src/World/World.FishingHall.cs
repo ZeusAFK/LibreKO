@@ -15,12 +15,12 @@ public partial class World
     {
         _fishHallLayer = new CanvasLayer { Layer = 74 };
         AddChild(_fishHallLayer);
-        _fishHallPanel = new HudWindow("fishinghall", "Fishing Hall of Fame", new Vector2(190, 130)) { Visible = false };
+        _fishHallPanel = new HudWindow("fishinghall", Localization.Loc.Tr("Fishing Hall of Fame"), new Vector2(190, 130)) { Visible = false };
         _fishHallPanel.Closed += CloseFishingHall;
         _fishHallLayer.AddChild(_fishHallPanel);
         var root = _fishHallPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Top Anglers"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Top Anglers")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(320, 320), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _fishHallList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -76,7 +76,7 @@ public partial class World
         }
         if (_fishHallList.GetChildCount() == 0)
         {
-            var none = HudStyle.Label(13); none.Text = "No anglers ranked yet.";
+            var none = HudStyle.Label(13); none.Text = Localization.Loc.Tr("No anglers ranked yet.");
             _fishHallList.AddChild(none);
         }
     }

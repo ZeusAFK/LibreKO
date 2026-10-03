@@ -94,7 +94,7 @@ public partial class ReconnectDialog : PanelContainer
 
         var header = new PanelContainer();
         header.AddThemeStyleboxOverride("panel", UiTheme.HeaderBand(4));
-        header.AddChild(UiTheme.Text("Connection Lost", 18, UiTheme.GoldBright, HorizontalAlignment.Center));
+        header.AddChild(UiTheme.Text(Localization.Loc.Tr("Connection Lost"), 18, UiTheme.GoldBright, HorizontalAlignment.Center));
         col.AddChild(header);
 
         var margin = new MarginContainer();
@@ -138,7 +138,7 @@ public partial class ReconnectDialog : PanelContainer
         _attempts.AddThemeStyleboxOverride("fill", fill);
         body.AddChild(_attempts);
 
-        _close = Ui.MenuButton("Close Game", 38, 16);
+        _close = Ui.MenuButton(Localization.Loc.Tr("Close Game"), 38, 16);
         _close.Visible = false;
         _close.Pressed += () => CloseGamePressed?.Invoke();
         body.AddChild(_close);
@@ -146,8 +146,8 @@ public partial class ReconnectDialog : PanelContainer
 
     public void SetReconnecting(int attempt)
     {
-        _headline.Text = "The connection to the server was lost.";
-        _status.Text = $"Reconnecting — attempt {Mathf.Max(1, attempt)} of {Net.MaxReconnectAttempts}";
+        _headline.Text = Localization.Loc.Tr("The connection to the server was lost.");
+        _status.Text = $"{Localization.Loc.Tr("Reconnecting — attempt")} {Mathf.Max(1, attempt)} {Localization.Loc.Tr("of")} {Net.MaxReconnectAttempts}";
         _attempts.Value = Mathf.Max(1, attempt);
         _attempts.Visible = true;
         _hint.Visible = true;
@@ -167,8 +167,8 @@ public partial class ReconnectDialog : PanelContainer
 
     public void SetFailed(string reason)
     {
-        _headline.Text = "Could not reconnect to the server.";
-        _status.Text = reason.Length > 0 ? reason : "The game has to be closed.";
+        _headline.Text = Localization.Loc.Tr("Could not reconnect to the server.");
+        _status.Text = reason.Length > 0 ? reason : Localization.Loc.Tr("The game has to be closed.");
         _hint.Visible = false;
         _attempts.Visible = false;
         _close.Visible = true;
@@ -193,6 +193,6 @@ public partial class ReconnectDialog : PanelContainer
 
     private void ApplyHint() =>
         _hint.Text = _waitSeconds > 0
-            ? $"Next attempt in {_waitSeconds} s"
-            : "Contacting the server" + new string('.', _dots);
+            ? $"{Localization.Loc.Tr("Next attempt in")} {_waitSeconds} s"
+            : Localization.Loc.Tr("Contacting the server") + new string('.', _dots);
 }

@@ -57,39 +57,34 @@ public static class StarterStats
 
     public static string RaceName(int race) => race switch
     {
-        1 => "Ark Tuarek",
-        2 => "Tuarek",
-        3 => "Wrinkle Tuarek",
-        4 => "Pury Tuarek",
-        6 or 14 => "Kurian",
-        11 => "Barbarian",
-        12 => "El Morad Man",
-        13 => "El Morad Woman",
-        _ => $"Race {race}",
+        1 => Localization.Loc.Tr("Ark Tuarek"),
+        2 => Localization.Loc.Tr("Tuarek"),
+        3 => Localization.Loc.Tr("Wrinkle Tuarek"),
+        4 => Localization.Loc.Tr("Pury Tuarek"),
+        6 or 14 => Localization.Loc.Tr("Kurian"),
+        11 => Localization.Loc.Tr("Barbarian"),
+        12 => Localization.Loc.Tr("El Morad Man"),
+        13 => Localization.Loc.Tr("El Morad Woman"),
+        _ => $"{Localization.Loc.Tr("Race")} {race}",
     };
 
     public static string ClassName(int cls) => (cls % 100) switch
     {
-        1 => "Warrior",
-        2 => "Rogue",
-        3 => "Mage",
-        4 => "Priest",
-        13 => "Kurian",
-        _ => $"Class {cls}",
+        1 => Localization.Loc.Tr("Warrior"),
+        2 => Localization.Loc.Tr("Rogue"),
+        3 => Localization.Loc.Tr("Mage"),
+        4 => Localization.Loc.Tr("Priest"),
+        13 => Localization.Loc.Tr("Kurian"),
+        _ => $"{Localization.Loc.Tr("Class")} {cls}",
     };
 
     public static string Blurb(int cls) => (cls % 100) switch
     {
-        1 => "Front-line fighter. Becomes a Blade for critical damage, or a Protector "
-             + "who shields the party's casters.",
-        2 => "Ranged specialist. Becomes a Hunter with the bow, or an Assassin who "
-             + "strikes from stealth.",
-        3 => "Elemental caster. Becomes a Mage of raw destruction, or an Enchanter who "
-             + "weakens and controls the enemy.",
-        4 => "Support caster. Becomes a Priest who heals and resurrects, or a Pikeman "
-             + "who fights with the spear.",
-        13 => "Close-quarters summoner. Fights with clawed gauntlets and calls on the "
-              + "spirits that bind them.",
+        1 => Localization.Loc.Tr("Front-line fighter. Becomes a Blade for critical damage, or a Protector who shields the party's casters."),
+        2 => Localization.Loc.Tr("Ranged specialist. Becomes a Hunter with the bow, or an Assassin who strikes from stealth."),
+        3 => Localization.Loc.Tr("Elemental caster. Becomes a Mage of raw destruction, or an Enchanter who weakens and controls the enemy."),
+        4 => Localization.Loc.Tr("Support caster. Becomes a Priest who heals and resurrects, or a Pikeman who fights with the spear."),
+        13 => Localization.Loc.Tr("Close-quarters summoner. Fights with clawed gauntlets and calls on the spirits that bind them."),
         _ => "",
     };
 }

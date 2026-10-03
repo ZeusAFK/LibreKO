@@ -16,19 +16,19 @@ public partial class World
 
     private void BuildGenieHammerOptions(VBoxContainer parent)
     {
-        parent.AddChild(UiTheme.SectionTitle("Genie Hammer"));
-        _genieAutoHammer = new CheckButton { Text = "Auto Genie Hammer" };
+        parent.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Genie Hammer")));
+        _genieAutoHammer = new CheckButton { Text = Localization.Loc.Tr("Auto Genie Hammer") };
         parent.AddChild(_genieAutoHammer);
-        _genieHammerThreshold = GeniePercent(parent, "Repair below durability (%)", 10, MinRepairThreshold, MaxRepairThreshold);
-        _genieHammerStatus = UiTheme.Text("Uses one hammer charge to repair worn equipment.", 11, UiTheme.TextLo);
+        _genieHammerThreshold = GeniePercent(parent, Localization.Loc.Tr("Repair below durability (%)"), 10, MinRepairThreshold, MaxRepairThreshold);
+        _genieHammerStatus = UiTheme.Text(Localization.Loc.Tr("Uses one hammer charge to repair worn equipment."), 11, UiTheme.TextLo);
         parent.AddChild(_genieHammerStatus);
         Net.I.GenieHammerResult += OnGenieHammerResult;
     }
 
     private void OnGenieHammerResult(bool ok)
     {
-        _genieHammerStatus.Text = ok ? "Equipment repaired. One hammer charge used."
-            : "Repair was not needed or no usable Genie Hammer was available.";
+        _genieHammerStatus.Text = ok ? Localization.Loc.Tr("Equipment repaired. One hammer charge used.")
+            : Localization.Loc.Tr("Repair was not needed or no usable Genie Hammer was available.");
     }
 
     private void GenieHammerTick(double now)
@@ -52,8 +52,8 @@ public partial class World
             if ((System.Array.IndexOf(GenieHammerItems, Inv[i].ItemId) >= 0) && Inv[i].Durability > 0)
             { hammer = true; break; }
         }
-        if (!hammer) { _genieHammerStatus.Text = "No Genie Hammer charges in inventory."; return; }
-        _genieHammerStatus.Text = "Repairing equipment…";
+        if (!hammer) { _genieHammerStatus.Text = Localization.Loc.Tr("No Genie Hammer charges in inventory."); return; }
+        _genieHammerStatus.Text = Localization.Loc.Tr("Repairing equipment…");
         Net.I.SendGenieHammer((byte)_genieHammerThreshold.Value);
     }
 }

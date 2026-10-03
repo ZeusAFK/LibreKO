@@ -15,12 +15,12 @@ public partial class World
     {
         _dqLayer = new CanvasLayer { Layer = 73 };
         AddChild(_dqLayer);
-        _dqPanel = new HudWindow("dailyquest", "Daily Quests", new Vector2(170, 120)) { Visible = false };
+        _dqPanel = new HudWindow("dailyquest", Localization.Loc.Tr("Daily Quests"), new Vector2(170, 120)) { Visible = false };
         _dqPanel.Closed += CloseDailyQuest;
         _dqLayer.AddChild(_dqPanel);
         var root = _dqPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Daily Quests"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Daily Quests")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(340, 220), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _dqList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -64,20 +64,20 @@ public partial class World
             var name = UiTheme.Text(q.Title, 13, q.Available ? UiTheme.TextHi : UiTheme.TextLo);
             name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             hb.AddChild(name);
-            if (q.Claimed) hb.AddChild(UiTheme.Text("Done", 12, UiTheme.Gold));
+            if (q.Claimed) hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Done"), 12, UiTheme.Gold));
             else if (q.Available)
             {
                 int id = q.Id;
-                var btn = new Button { Text = "Claim", FocusMode = Control.FocusModeEnum.None };
+                var btn = new Button { Text = Localization.Loc.Tr("Claim"), FocusMode = Control.FocusModeEnum.None };
                 btn.Pressed += () => Net.I.SendDailyQuestClaim(id);
                 hb.AddChild(btn);
             }
-            else hb.AddChild(UiTheme.Text("Locked", 12, UiTheme.TextLo));
+            else hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Locked"), 12, UiTheme.TextLo));
             _dqList.AddChild(row);
         }
         if (_dqList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No daily quests.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No daily quests.");
             _dqList.AddChild(e);
         }
     }

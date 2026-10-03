@@ -55,7 +55,7 @@ public partial class World
         _amountCountRow = new HBoxContainer();
         _amountCountRow.AddThemeConstantOverride("separation", 8);
         root.AddChild(_amountCountRow);
-        var countLabel = UiTheme.Text("Quantity", 13, UiTheme.TextLo);
+        var countLabel = UiTheme.Text(Localization.Loc.Tr("Quantity"), 13, UiTheme.TextLo);
         countLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _amountCountRow.AddChild(countLabel);
         _amountCount = UiTheme.NumberBox(1, 9_999, 1, 120);
@@ -65,7 +65,7 @@ public partial class World
         _amountPriceRow = new HBoxContainer();
         _amountPriceRow.AddThemeConstantOverride("separation", 8);
         root.AddChild(_amountPriceRow);
-        _amountPriceLabel = UiTheme.Text("Price each", 13, UiTheme.TextLo);
+        _amountPriceLabel = UiTheme.Text(Localization.Loc.Tr("Price each"), 13, UiTheme.TextLo);
         _amountPriceLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _amountPriceRow.AddChild(_amountPriceLabel);
         _amountPrice = new MoneyEdit(MerchantPriceMax, 160);
@@ -78,17 +78,17 @@ public partial class World
 
         _amountTotalRow = UiTheme.Section();
         root.AddChild(_amountTotalRow);
-        _amountTotalRow.AddChild(MoneyRow("Total", out _amountTotal, UiTheme.GoldBright));
+        _amountTotalRow.AddChild(MoneyRow(Localization.Loc.Tr("Total"), out _amountTotal, UiTheme.GoldBright));
 
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 8);
         footer.Alignment = BoxContainer.AlignmentMode.Center;
         root.AddChild(footer);
-        _amountConfirmBtn = new Button { Text = "Yes", FocusMode = Control.FocusModeEnum.None };
+        _amountConfirmBtn = new Button { Text = Localization.Loc.Tr("Yes"), FocusMode = Control.FocusModeEnum.None };
         _amountConfirmBtn.CustomMinimumSize = new Vector2(104, 28);
         _amountConfirmBtn.Pressed += AcceptAmount;
         footer.AddChild(_amountConfirmBtn);
-        var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        var cancel = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         cancel.CustomMinimumSize = new Vector2(104, 28);
         cancel.Pressed += CloseAmountPrompt;
         footer.AddChild(cancel);
@@ -97,7 +97,7 @@ public partial class World
     private void AskStallPrice(ItemSlot slot, int absSlot, int stallSlot)
     {
         int suggested = System.Math.Max(1, ItemData.SellPrice(slot.ItemId));
-        AskAmount(slot, "Price this item", suggested, slot.Count, slot.Count > 1,
+        AskAmount(slot, Localization.Loc.Tr("Price this item"), suggested, slot.Count, slot.Count > 1,
             (count, price) => Net.I.SendMerchantAddItem(
                 slot.ItemId, count, price, (byte)(absSlot - GridStart), (byte)stallSlot),
             defaultCount: slot.Count);
@@ -122,7 +122,7 @@ public partial class World
         bool pickQuantity = countable && maxCount > 1;
         _amountCountRow.Visible = pickQuantity;
         _amountTotalRow.Visible = pickQuantity;
-        _amountPriceLabel.Text = pickQuantity ? "Price each" : "Price";
+        _amountPriceLabel.Text = pickQuantity ? Localization.Loc.Tr("Price each") : Localization.Loc.Tr("Price");
         _amountCount.MaxValue = System.Math.Max(1, maxCount);
         _amountCount.Value = pickQuantity
             ? System.Math.Clamp(defaultCount > 0 ? defaultCount : maxCount, 1, maxCount)
@@ -135,7 +135,7 @@ public partial class World
         _amountPriceFixed.Text = Money(price);
 
         RefreshAmountTotal();
-        _amountConfirmBtn.Text = priceEditable ? "Confirm" : "Yes";
+        _amountConfirmBtn.Text = priceEditable ? Localization.Loc.Tr("Confirm") : Localization.Loc.Tr("Yes");
         _amountLayer.Visible = true;
     }
 

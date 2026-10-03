@@ -112,7 +112,7 @@ public partial class Net
             short len = p.RemainingBytes >= 2 ? p.ReadShort() : (short)0;
             string notice = "";
             if (len > 0 && p.RemainingBytes >= len)
-                notice = System.Text.Encoding.ASCII.GetString(p.ReadBytes(len));
+                notice = System.Text.Encoding.UTF8.GetString(p.ReadBytes(len));
             KingBoardEvent?.Invoke(new List<string>(), notice);
         }
     }

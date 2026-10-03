@@ -16,12 +16,31 @@ Server/**/appsettings.Local.json
 Client/.godot/
 Client/.mono/
 Client/settings.cfg
+Client/keys.cfg
 Client/export/
 Client/builds/
 *.pck
 *.apk
 *.aab
 *.exe
+
+# Baked game content produced by the LibreKO-Assets pipeline from a game
+# installation. Keep only source/translation assets; ignore the rest so the
+# repository stays small and free of third-party game content (see README "Client").
+Client/assets/*
+!Client/assets/localization/
+!Client/assets/ui/
+!Client/assets/backgrounds/
+!Client/assets/achievements/
+!Client/assets/sky/
+!Client/assets/tables/
+
+# Server runtime data seeded/generated from a game installation
+Server/LibreKO.Game/Seed/
+Server/LibreKO.Game/Map/
+
+# Local capture / test output
+Client/_capture/
 
 # Local project rules / assistant config
 /CLAUDE.md

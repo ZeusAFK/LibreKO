@@ -39,7 +39,7 @@ public partial class World
         _equipViewLayer = new CanvasLayer { Layer = 78 };
         AddChild(_equipViewLayer);
 
-        _equipViewPanel = new HudWindow("equipview", "Equipment View", new Vector2(360, 120), 420) { Visible = false };
+        _equipViewPanel = new HudWindow("equipview", Localization.Loc.Tr("Equipment View"), new Vector2(360, 120), 420) { Visible = false };
         _equipViewPanel.Closed += CloseEquipView;
         _equipViewLayer.AddChild(_equipViewPanel);
 
@@ -55,7 +55,7 @@ public partial class World
 
         var gearCol = new VBoxContainer { CustomMinimumSize = new Vector2(EquipViewGearWidth, 0) };
         gearCol.AddThemeConstantOverride("separation", 4);
-        gearCol.AddChild(UiTheme.SectionTitle("Equipment"));
+        gearCol.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Equipment")));
         var gearScroll = new ScrollContainer
         {
             CustomMinimumSize = new Vector2(EquipViewGearWidth, EquipViewGearHeight),
@@ -69,7 +69,7 @@ public partial class World
 
         var statCol = new VBoxContainer { CustomMinimumSize = new Vector2(190, 0) };
         statCol.AddThemeConstantOverride("separation", 4);
-        statCol.AddChild(UiTheme.SectionTitle("State"));
+        statCol.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("State")));
         _equipViewStats = new VBoxContainer();
         _equipViewStats.AddThemeConstantOverride("separation", 3);
         statCol.AddChild(_equipViewStats);
@@ -89,9 +89,9 @@ public partial class World
     private void RequestEquipmentView(string name)
     {
         _equipViewPending = name;
-        _equipViewPanel.Title = $"Equipment View — {name}";
+        _equipViewPanel.Title = $"{Localization.Loc.Tr("Equipment View")} — {name}";
         ClearEquipView();
-        _equipViewStatus.Text = "Requesting…";
+        _equipViewStatus.Text = Localization.Loc.Tr("Requesting…");
         _equipViewPanel.Visible = true;
         _equipViewShown = true;
         Net.I.SendEquipmentViewRequest(name);
@@ -120,10 +120,10 @@ public partial class World
             ClearEquipView();
             _equipViewStatus.Text = result switch
             {
-                Net.EquipmentViewResult.NotInSameRegion => $"{_equipViewPending} is not in this region.",
-                Net.EquipmentViewResult.CannotChooseYourself => "You cannot inspect yourself.",
-                Net.EquipmentViewResult.NoViewEquipmentItem => "You need a View Equipment item.",
-                _ => $"{_equipViewPending} could not be found.",
+                Net.EquipmentViewResult.NotInSameRegion => $"{_equipViewPending} {Localization.Loc.Tr("is not in this region.")}",
+                Net.EquipmentViewResult.CannotChooseYourself => Localization.Loc.Tr("You cannot inspect yourself."),
+                Net.EquipmentViewResult.NoViewEquipmentItem => Localization.Loc.Tr("You need a View Equipment item."),
+                _ => $"{_equipViewPending} {Localization.Loc.Tr("could not be found.")}",
             };
             _equipViewStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
             return;
@@ -131,8 +131,8 @@ public partial class World
 
         ClearEquipView();
         _equipViewStatus.Text = "";
-        _equipViewPanel.Title = $"Equipment View — {view.Name}";
-        _equipViewHeader.Text = $"{view.Name}   Lv {view.Level}   {CharacterClassCatalog.DisplayName(view.Class)}   {NationName(view.Nation)}";
+        _equipViewPanel.Title = $"{Localization.Loc.Tr("Equipment View")} — {view.Name}";
+        _equipViewHeader.Text = $"{view.Name}   {Localization.Loc.Tr("Lv")} {view.Level}   {CharacterClassCatalog.DisplayName(view.Class)}   {NationName(view.Nation)}";
         _equipViewHeader.AddThemeColorOverride("font_color", NationColor(view.Nation));
 
         foreach (var (slot, label) in EquipViewSlots)
@@ -145,24 +145,24 @@ public partial class World
             _equipViewGear.AddChild(BuildEquipViewRow(slot, label, itemId, dura));
         }
 
-        AddEquipViewStat("Max HP", view.MaxHp.ToString("N0"), new Color("c0392b"));
-        AddEquipViewStat("Max MP", view.MaxMp.ToString("N0"), new Color("2d6fb0"));
+        AddEquipViewStat(Localization.Loc.Tr("Max HP"), view.MaxHp.ToString("N0"), new Color("c0392b"));
+        AddEquipViewStat(Localization.Loc.Tr("Max MP"), view.MaxMp.ToString("N0"), new Color("2d6fb0"));
         _equipViewStats.AddChild(new HSeparator());
-        AddEquipViewStat("Strength", StatWithBonus(view.Str, view.StrBonus));
-        AddEquipViewStat("Stamina", StatWithBonus(view.Sta, view.StaBonus));
-        AddEquipViewStat("Dexterity", StatWithBonus(view.Dex, view.DexBonus));
-        AddEquipViewStat("Intelligence", StatWithBonus(view.Intel, view.IntelBonus));
-        AddEquipViewStat("Magic attack", StatWithBonus(view.Magic, view.MagicBonus));
+        AddEquipViewStat(Localization.Loc.Tr("Strength"), StatWithBonus(view.Str, view.StrBonus));
+        AddEquipViewStat(Localization.Loc.Tr("Stamina"), StatWithBonus(view.Sta, view.StaBonus));
+        AddEquipViewStat(Localization.Loc.Tr("Dexterity"), StatWithBonus(view.Dex, view.DexBonus));
+        AddEquipViewStat(Localization.Loc.Tr("Intelligence"), StatWithBonus(view.Intel, view.IntelBonus));
+        AddEquipViewStat(Localization.Loc.Tr("Magic attack"), StatWithBonus(view.Magic, view.MagicBonus));
         _equipViewStats.AddChild(new HSeparator());
-        AddEquipViewStat("Attack", view.Attack.ToString());
-        AddEquipViewStat("Defence", view.Defence.ToString());
+        AddEquipViewStat(Localization.Loc.Tr("Attack"), view.Attack.ToString());
+        AddEquipViewStat(Localization.Loc.Tr("Defence"), view.Defence.ToString());
         _equipViewStats.AddChild(new HSeparator());
-        AddEquipViewStat("Fire resist", view.FireR.ToString());
-        AddEquipViewStat("Ice resist", view.IceR.ToString());
-        AddEquipViewStat("Lightning resist", view.LightningR.ToString());
-        AddEquipViewStat("Magic resist", view.MagicR.ToString());
-        AddEquipViewStat("Curse resist", view.CurseR.ToString());
-        AddEquipViewStat("Poison resist", view.PoisonR.ToString());
+        AddEquipViewStat(Localization.Loc.Tr("Fire resist"), view.FireR.ToString());
+        AddEquipViewStat(Localization.Loc.Tr("Ice resist"), view.IceR.ToString());
+        AddEquipViewStat(Localization.Loc.Tr("Lightning resist"), view.LightningR.ToString());
+        AddEquipViewStat(Localization.Loc.Tr("Magic resist"), view.MagicR.ToString());
+        AddEquipViewStat(Localization.Loc.Tr("Curse resist"), view.CurseR.ToString());
+        AddEquipViewStat(Localization.Loc.Tr("Poison resist"), view.PoisonR.ToString());
     }
 
     private static string StatWithBonus(int stat, int bonus) =>
@@ -186,7 +186,7 @@ public partial class World
         };
         hb.AddChild(icon);
 
-        var slotLabel = UiTheme.Text(label, 10, UiTheme.TextDim);
+        var slotLabel = UiTheme.Text(Localization.Loc.Tr(label), 10, UiTheme.TextDim);
         slotLabel.CustomMinimumSize = new Vector2(78, 0);
         hb.AddChild(slotLabel);
 

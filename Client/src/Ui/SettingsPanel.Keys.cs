@@ -19,14 +19,14 @@ public partial class SettingsPanel : CanvasLayer
 
         var hint = new Label
         {
-            Text = "Click a binding, then press the new key. Right-click a binding to clear it.",
+            Text = Localization.Loc.Tr("Click a binding, then press the new key. Right-click a binding to clear it."),
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         };
         hint.AddThemeFontSizeOverride("font_size", 12);
         hint.AddThemeColorOverride("font_color", new Color(0.72f, 0.74f, 0.78f));
         vb.AddChild(hint);
 
-        var filter = new LineEdit { PlaceholderText = "Search actions…", Name = "bind_filter" };
+        var filter = new LineEdit { PlaceholderText = Localization.Loc.Tr("Search actions…"), Name = "bind_filter" };
         Ui.StyleField(filter);
         filter.TextChanged += ApplyBindFilter;
         vb.AddChild(filter);
@@ -47,7 +47,7 @@ public partial class SettingsPanel : CanvasLayer
         }
 
         vb.AddChild(new HSeparator());
-        var reset = new Button { Text = "Reset All Bindings" };
+        var reset = new Button { Text = Localization.Loc.Tr("Reset All Bindings") };
         reset.Pressed += () =>
         {
             CancelCapture();
@@ -59,7 +59,7 @@ public partial class SettingsPanel : CanvasLayer
 
     private static Label GroupHeader(string text)
     {
-        var label = new Label { Text = text.ToUpperInvariant() };
+        var label = new Label { Text = Localization.Loc.Tr(text).ToUpperInvariant() };
         label.AddThemeFontSizeOverride("font_size", 12);
         label.AddThemeColorOverride("font_color", UiTheme.Gold);
         return label;
@@ -71,7 +71,7 @@ public partial class SettingsPanel : CanvasLayer
         row.AddThemeConstantOverride("separation", 10);
         row.AddChild(new Label
         {
-            Text = entry.Label,
+            Text = Localization.Loc.Tr(entry.Label),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         });
 
@@ -80,7 +80,7 @@ public partial class SettingsPanel : CanvasLayer
             Name = $"bind_{entry.Action}",
             CustomMinimumSize = new Vector2(BindButtonWidth, 0),
             FocusMode = Control.FocusModeEnum.None,
-            TooltipText = $"{entry.Label} — default {entry.Default.Text}",
+            TooltipText = $"{Localization.Loc.Tr(entry.Label)} — {Localization.Loc.Tr("default")} {entry.Default.Text}",
         };
         button.Pressed += () => BeginCapture(entry.Action);
         button.Cleared += () =>
@@ -114,7 +114,7 @@ public partial class SettingsPanel : CanvasLayer
     {
         CancelCapture();
         _capturing = action;
-        if (_bindButtons.TryGetValue(action, out var button)) button.Text = "Press a key…";
+        if (_bindButtons.TryGetValue(action, out var button)) button.Text = Localization.Loc.Tr("Press a key…");
     }
 
     private void CancelCapture()
@@ -150,7 +150,7 @@ public partial class SettingsPanel : CanvasLayer
     {
         if (!_bindButtons.TryGetValue(action, out var button)) return;
         var chord = KeyBinds.Get(action);
-        button.Text = chord.Text;
+        button.Text = Localization.Loc.Tr(chord.Text);
         button.AddThemeColorOverride("font_color",
             chord.Assigned ? UiTheme.TextHi : new Color(0.55f, 0.55f, 0.58f));
     }

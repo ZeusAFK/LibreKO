@@ -17,12 +17,12 @@ public partial class World
     {
         _rentLayer = new CanvasLayer { Layer = 73 };
         AddChild(_rentLayer);
-        _rentPanel = new HudWindow("rental", "Rentals", new Vector2(160, 120)) { Visible = false };
+        _rentPanel = new HudWindow("rental", Localization.Loc.Tr("Rentals"), new Vector2(160, 120)) { Visible = false };
         _rentPanel.Closed += CloseRental;
         _rentLayer.AddChild(_rentPanel);
         var root = _rentPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Rentals"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Rentals")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(340, 200), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _rentList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -66,7 +66,7 @@ public partial class World
         foreach (var c in _rentList.GetChildren()) c.QueueFree();
         if (list.Count == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "Nothing to rent.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("Nothing to rent.");
             _rentList.AddChild(e);
             return;
         }
@@ -80,9 +80,9 @@ public partial class World
             var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
             info.AddThemeConstantOverride("separation", -2);
             info.AddChild(UiTheme.Text(ItemData.DisplayName(itemId), 13, UiTheme.TextHi));
-            info.AddChild(UiTheme.Text($"{it.Days} days  ·  {it.Cost:n0} gold", 11, UiTheme.TextLo));
+            info.AddChild(UiTheme.Text($"{it.Days} {Localization.Loc.Tr("days")}  ·  {it.Cost:n0} {Localization.Loc.Tr("gold")}", 11, UiTheme.TextLo));
             hb.AddChild(info);
-            var btn = new Button { Text = "Rent", FocusMode = Control.FocusModeEnum.None };
+            var btn = new Button { Text = Localization.Loc.Tr("Rent"), FocusMode = Control.FocusModeEnum.None };
             btn.Pressed += () => Net.I.SendRentalRent(itemId);
             hb.AddChild(btn);
             _rentList.AddChild(row);
@@ -91,6 +91,6 @@ public partial class World
 
     private void OnRentalRent(int itemId, bool ok)
     {
-        _rentStatus.Text = ok ? $"Rented {ItemData.DisplayName(itemId)}." : "Couldn't rent that (not enough gold?).";
+        _rentStatus.Text = ok ? $"{Localization.Loc.Tr("Rented")} {ItemData.DisplayName(itemId)}." : Localization.Loc.Tr("Couldn't rent that (not enough gold?).");
     }
 }

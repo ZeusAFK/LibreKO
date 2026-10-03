@@ -1,12 +1,24 @@
-# LibreKO 中文
-添加中文语言
-目前修复了名牌错误
-修复了无法使用中文名牌和公会中文名牌
-设计了dps统计界面
+# LibreKO
 
+An open-source game server and client for a classic MMORPG, written in C# (.NET 10) and Godot 4 (C#).
+
+- `Server/` — the login server, the game server, the shared library and the quest language compiler.
+- `Client/` — the Godot 4 client project.
+
+Both are licensed under the GNU Affero General Public License v3.0, see [LICENSE](LICENSE).
+Third-party notices for the server are in [Server/NOTICES.md](Server/NOTICES.md).
+
+## Localization
+
+The client ships with an in-game language switcher supporting **English**, **Español** and
+**简体中文**. The Simplified Chinese dictionaries (UI, items, mobs, NPC names, skills, quests,
+texts and zones) live in `Client/assets/localization/` and are committed to this repository, so
+Chinese is available out of the box. Switch languages from the Settings screen (Settings → Language),
+or set `language=2` under `[game]` in `settings.cfg`. Chinese characters (names, chat, clan names)
+are supported end to end — both the client and the server encode packet strings as UTF-8.
 
 ## Requirements
-有事情qq联系2438380346
+
 - .NET 10 SDK
 - MariaDB 10.6 or newer (MySQL works too)
 - Godot 4.7.2 .NET (mono) edition, for the client

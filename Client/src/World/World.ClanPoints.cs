@@ -22,7 +22,7 @@ public partial class World
         _clanPointsLayer = new CanvasLayer { Layer = 74 };
         AddChild(_clanPointsLayer);
 
-        _clanPointsPanel = new HudWindow("clanpoint", "Clan Contribution", new Vector2(240, 140), bodyMinWidth: ClanPointsPanelWidth)
+        _clanPointsPanel = new HudWindow("clanpoint", Localization.Loc.Tr("Clan Contribution"), new Vector2(240, 140), bodyMinWidth: ClanPointsPanelWidth)
         { Visible = false };
         _clanPointsPanel.Closed += CloseClanPoints;
         _clanPointsLayer.AddChild(_clanPointsPanel);
@@ -30,7 +30,7 @@ public partial class World
         root.AddThemeConstantOverride("separation", 8);
 
         var intro = UiTheme.Text(
-            "National points you save here become the clan's Contribution. They pay for the Knights' promotions and capes, and you get back a third if you leave.",
+            Localization.Loc.Tr("National points you save here become the clan's Contribution. They pay for the Knights' promotions and capes, and you get back a third if you leave."),
             12, UiTheme.TextLo);
         intro.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         intro.CustomMinimumSize = new Vector2(1, 0);
@@ -45,40 +45,40 @@ public partial class World
         var col = new VBoxContainer();
         col.AddThemeConstantOverride("separation", 4);
         margin.AddChild(col);
-        _clanPointsMineLbl = ClanPointsRow(col, "Your national points");
-        _clanPointsFundLbl = ClanPointsRow(col, "Clan Contribution");
+        _clanPointsMineLbl = ClanPointsRow(col, Localization.Loc.Tr("Your national points"));
+        _clanPointsFundLbl = ClanPointsRow(col, Localization.Loc.Tr("Clan Contribution"));
 
         var amountRow = new HBoxContainer();
         amountRow.AddThemeConstantOverride("separation", 6);
         root.AddChild(amountRow);
-        var amountLbl = UiTheme.Text("Save", 13, UiTheme.TextHi);
+        var amountLbl = UiTheme.Text(Localization.Loc.Tr("Save"), 13, UiTheme.TextHi);
         amountLbl.CustomMinimumSize = new Vector2(60, 0);
         amountRow.AddChild(amountLbl);
         _clanPointsEdit = new LineEdit
         {
-            PlaceholderText = "national points",
+            PlaceholderText = Localization.Loc.Tr("national points"),
             Alignment = HorizontalAlignment.Right,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         _clanPointsEdit.TextSubmitted += _ => SubmitClanPoints();
         amountRow.AddChild(_clanPointsEdit);
-        _clanPointsSaveBtn = new Button { Text = "Save", FocusMode = Control.FocusModeEnum.None };
+        _clanPointsSaveBtn = new Button { Text = Localization.Loc.Tr("Save"), FocusMode = Control.FocusModeEnum.None };
         _clanPointsSaveBtn.Pressed += SubmitClanPoints;
         amountRow.AddChild(_clanPointsSaveBtn);
 
         _clanPointsMethodBox = new VBoxContainer();
         _clanPointsMethodBox.AddThemeConstantOverride("separation", 2);
         root.AddChild(_clanPointsMethodBox);
-        _clanPointsMethodBox.AddChild(UiTheme.SectionTitle("Accumulation"));
+        _clanPointsMethodBox.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Accumulation")));
         var group = new ButtonGroup();
-        _clanPointsAuto = new CheckBox { Text = "Automatic: a share of every member's earned points goes to the clan", ButtonGroup = group, FocusMode = Control.FocusModeEnum.None };
-        _clanPointsFree = new CheckBox { Text = "Free: members save points here when they choose", ButtonGroup = group, FocusMode = Control.FocusModeEnum.None };
+        _clanPointsAuto = new CheckBox { Text = Localization.Loc.Tr("Automatic: a share of every member's earned points goes to the clan"), ButtonGroup = group, FocusMode = Control.FocusModeEnum.None };
+        _clanPointsFree = new CheckBox { Text = Localization.Loc.Tr("Free: members save points here when they choose"), ButtonGroup = group, FocusMode = Control.FocusModeEnum.None };
         _clanPointsMethodBox.AddChild(_clanPointsAuto);
         _clanPointsMethodBox.AddChild(_clanPointsFree);
         var confirmRow = new HBoxContainer();
         _clanPointsMethodBox.AddChild(confirmRow);
         confirmRow.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
-        var confirm = new Button { Text = "Confirm", FocusMode = Control.FocusModeEnum.None };
+        var confirm = new Button { Text = Localization.Loc.Tr("Confirm"), FocusMode = Control.FocusModeEnum.None };
         confirm.Pressed += () => Net.I.SendClanPointMethod(
             _clanPointsAuto.ButtonPressed ? ClanTypes.AutomaticAccumulation : ClanTypes.FreeAccumulation);
         confirmRow.AddChild(confirm);
@@ -140,7 +140,7 @@ public partial class World
         var clan = MyClan;
         bool accredited = ClanTypes.AcceptsDonations(clan.Flag);
         _clanPointsMineLbl.Text = $"{Sheet.Np:n0}";
-        _clanPointsFundLbl.Text = $"{clan.PointFund:n0}   ({clan.PointFund / ClanTypes.NationalPointsPerClanPoint:n0} points)";
+        _clanPointsFundLbl.Text = $"{clan.PointFund:n0}   ({clan.PointFund / ClanTypes.NationalPointsPerClanPoint:n0} {Localization.Loc.Tr("points")})";
         _clanPointsSaveBtn.Disabled = !accredited;
         _clanPointsEdit.Editable = accredited;
         _clanPointsMethodBox.Visible = clan.IsChief && accredited;
@@ -153,7 +153,7 @@ public partial class World
     {
         if (!int.TryParse(_clanPointsEdit.Text.Trim().Replace(",", ""), out int amount) || amount <= 0)
         {
-            SetClanPointsStatus("Enter how many national points to save.", true);
+            SetClanPointsStatus(Localization.Loc.Tr("Enter how many national points to save."), true);
             return;
         }
         Net.I.SendClanDonate(amount);
@@ -164,7 +164,7 @@ public partial class World
         if (!ok) { SetClanPointsStatus(ClanMsgCommandUnavailable, true); return; }
         _clanPointsMine = np;
         _clanPointsMineLbl.Text = $"{np:n0}";
-        _clanPointsFundLbl.Text = $"{fund:n0}   ({fund / ClanTypes.NationalPointsPerClanPoint:n0} points)";
+        _clanPointsFundLbl.Text = $"{fund:n0}   ({fund / ClanTypes.NationalPointsPerClanPoint:n0} {Localization.Loc.Tr("points")})";
         ApplyMyClan();
     }
 
@@ -174,9 +174,9 @@ public partial class World
         {
             _clanPointsEdit.Clear();
             _clanPointsMineLbl.Text = $"{np:n0}";
-            _clanPointsFundLbl.Text = $"{fund:n0}   ({fund / ClanTypes.NationalPointsPerClanPoint:n0} points)";
-            SetClanPointsStatus($"You have saved up {amount:n0} Contribution for the clan", false);
-            Chat.Info($"You have saved up {amount:n0} Contribution for the clan");
+            _clanPointsFundLbl.Text = $"{fund:n0}   ({fund / ClanTypes.NationalPointsPerClanPoint:n0} {Localization.Loc.Tr("points")})";
+            SetClanPointsStatus($"{Localization.Loc.Tr("You have saved up")} {amount:n0} {Localization.Loc.Tr("Contribution for the clan")}", false);
+            Chat.Info($"{Localization.Loc.Tr("You have saved up")} {amount:n0} {Localization.Loc.Tr("Contribution for the clan")}");
             ApplyMyClan();
             if (ClanPageVisible && _clanTab == ClanTab.Points) Net.I.SendClanDonationList();
             return;
@@ -185,8 +185,8 @@ public partial class World
         SetClanPointsStatus(result switch
         {
             Net.KnDonateNotAccredited => ClanMsgPointsOnlyAccredited,
-            Net.KnDonateNotEnough => "Saved Contribution is insufficient.",
-            _ => "You failed to save up enough Contribution.",
+            Net.KnDonateNotEnough => Localization.Loc.Tr("Saved Contribution is insufficient."),
+            _ => Localization.Loc.Tr("You failed to save up enough Contribution."),
         }, true);
     }
 
@@ -195,16 +195,16 @@ public partial class World
         if (result == Net.KnResultOk)
         {
             SetClanPointsStatus(method == ClanTypes.AutomaticAccumulation
-                ? "Changed to automatic accumulation method."
-                : "Changed to free accumulation method.", false);
+                ? Localization.Loc.Tr("Changed to automatic accumulation method.")
+                : Localization.Loc.Tr("Changed to free accumulation method."), false);
             _clanPointsAuto.ButtonPressed = method == ClanTypes.AutomaticAccumulation;
             _clanPointsFree.ButtonPressed = method != ClanTypes.AutomaticAccumulation;
             return;
         }
 
         SetClanPointsStatus(result == Net.KnMethodNotAccredited
-            ? "Accredited Knights or above can select an accumulation method."
-            : "Accumulation method not set.", true);
+            ? Localization.Loc.Tr("Accredited Knights or above can select an accumulation method.")
+            : Localization.Loc.Tr("Accumulation method not set."), true);
     }
 
     private void OnClanPointsLoyalty(int np, int monthly)

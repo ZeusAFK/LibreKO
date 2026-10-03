@@ -12,7 +12,7 @@ public partial class World
     {
         _admItemSearch = new ItemSearchPanel(
             tradeableOnly: false,
-            actionText: "Add",
+            actionText: Localization.Loc.Tr("Add"),
             onAction: (hit, count) => OnAdminGiveItem(hit.Id, count),
             showTooltip: itemId => ShowItemTooltip(-1, TooltipItem(itemId)),
             hideTooltip: HideItemTooltip);
@@ -22,6 +22,6 @@ public partial class World
     private void OnAdminGiveItem(int itemId, int count)
     {
         Net.I.SendAdminGiveItem(itemId, count);
-        SetAdminStatus($"Requesting {ItemData.DisplayName(itemId)} x{count}…", false);
+        SetAdminStatus($"{Localization.Loc.Tr("Requesting")} {ItemData.DisplayName(itemId)} x{count}…", false);
     }
 }

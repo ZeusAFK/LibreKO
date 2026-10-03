@@ -48,7 +48,7 @@ public partial class World
         _clanWhLayer = new CanvasLayer { Layer = 74 };
         AddChild(_clanWhLayer);
 
-        _clanWhPanel = new HudWindow("clanwarehouse", "Clan Warehouse", new Vector2(150, 90)) { Visible = false };
+        _clanWhPanel = new HudWindow("clanwarehouse", Localization.Loc.Tr("Clan Warehouse"), new Vector2(150, 90)) { Visible = false };
         _clanWhPanel.Closed += CloseClanWarehouse;
         _clanWhLayer.AddChild(_clanWhPanel);
 
@@ -59,7 +59,7 @@ public partial class World
         var whCol = new VBoxContainer();
         whCol.AddThemeConstantOverride("separation", 6);
         body.AddChild(whCol);
-        whCol.AddChild(UiTheme.SectionTitle("Clan Warehouse"));
+        whCol.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Clan Warehouse")));
 
         var whGrid = new GridContainer { Columns = 4 };
         whGrid.AddThemeConstantOverride("h_separation", 4);
@@ -90,7 +90,7 @@ public partial class World
 
         whCol.AddChild(new HSeparator());
         var storedRow = new HBoxContainer();
-        var sl = UiTheme.Text("Clan gold", 12, UiTheme.TextLo); sl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        var sl = UiTheme.Text(Localization.Loc.Tr("Clan gold"), 12, UiTheme.TextLo); sl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         storedRow.AddChild(sl);
         _clanWhStoredGold = UiTheme.Text("0", 13, UiTheme.Gold, HorizontalAlignment.Right);
         storedRow.AddChild(_clanWhStoredGold);
@@ -98,11 +98,11 @@ public partial class World
 
         var goldRow = new HBoxContainer();
         goldRow.AddThemeConstantOverride("separation", 6);
-        _clanWhGoldInput = new LineEdit { PlaceholderText = "amount", CustomMinimumSize = new Vector2(110, 0) };
+        _clanWhGoldInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("amount"), CustomMinimumSize = new Vector2(110, 0) };
         goldRow.AddChild(_clanWhGoldInput);
-        var depBtn = new Button { Text = "Deposit", FocusMode = Control.FocusModeEnum.None };
+        var depBtn = new Button { Text = Localization.Loc.Tr("Deposit"), FocusMode = Control.FocusModeEnum.None };
         depBtn.Pressed += () => ClanWhGoldTransfer(deposit: true);
-        var wdrBtn = new Button { Text = "Withdraw", FocusMode = Control.FocusModeEnum.None };
+        var wdrBtn = new Button { Text = Localization.Loc.Tr("Withdraw"), FocusMode = Control.FocusModeEnum.None };
         wdrBtn.Pressed += () => ClanWhGoldTransfer(deposit: false);
         goldRow.AddChild(depBtn); goldRow.AddChild(wdrBtn);
         whCol.AddChild(goldRow);
@@ -110,7 +110,7 @@ public partial class World
         var bagCol = new VBoxContainer();
         bagCol.AddThemeConstantOverride("separation", 6);
         body.AddChild(bagCol);
-        bagCol.AddChild(UiTheme.SectionTitle("Inventory"));
+        bagCol.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Inventory")));
 
         var bagGrid = new GridContainer { Columns = 5 };
         bagGrid.AddThemeConstantOverride("h_separation", 4);
@@ -129,12 +129,12 @@ public partial class World
         }
         bagCol.AddChild(new HSeparator());
         var carriedRow = new HBoxContainer();
-        var cl = UiTheme.Text("Carried gold", 12, UiTheme.TextLo); cl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        var cl = UiTheme.Text(Localization.Loc.Tr("Carried gold"), 12, UiTheme.TextLo); cl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         carriedRow.AddChild(cl);
         _clanWhCarriedGold = UiTheme.Text("0", 13, UiTheme.Gold, HorizontalAlignment.Right);
         carriedRow.AddChild(_clanWhCarriedGold);
         bagCol.AddChild(carriedRow);
-        _clanWhStatus = UiTheme.Text("Deposit is open to all; only the chief / vice-chief may withdraw.", 11, new Color(UiTheme.TextLo, 0.7f));
+        _clanWhStatus = UiTheme.Text(Localization.Loc.Tr("Deposit is open to all; only the chief / vice-chief may withdraw."), 11, new Color(UiTheme.TextLo, 0.7f));
         bagCol.AddChild(_clanWhStatus);
     }
 
@@ -143,7 +143,7 @@ public partial class World
         if (_clanWhShown) { CloseClanWarehouse(); return; }
         _clanWhInFlight = false;
         _clanWhPage = 0;
-        _clanWhStatus.Text = "Deposit is open to all; only the chief / vice-chief may withdraw.";
+        _clanWhStatus.Text = Localization.Loc.Tr("Deposit is open to all; only the chief / vice-chief may withdraw.");
         _clanWhPanel.Visible = true;
         _clanWhShown = true;
         Net.I.SendClanWhOpen();
@@ -192,9 +192,9 @@ public partial class World
     private void ClanWhDepositSlot(int abs)
     {
         if (_clanWhInFlight || abs < 0 || abs >= Inv.Length || Inv[abs].IsEmpty) return;
-        if (!_clanWhLoaded) { _clanWhStatus.Text = "You're not in a clan."; return; }
+        if (!_clanWhLoaded) { _clanWhStatus.Text = Localization.Loc.Tr("You're not in a clan."); return; }
         int whIdx = FirstFreeClanWarehouse();
-        if (whIdx < 0) { _clanWhStatus.Text = "Clan warehouse is full."; return; }
+        if (whIdx < 0) { _clanWhStatus.Text = Localization.Loc.Tr("Clan warehouse is full."); return; }
         var slot = Inv[abs];
         _clanWhPending = new ClanWhPending { Op = 2, InvAbs = abs, WhIdx = whIdx, Count = slot.Count };
         _clanWhInFlight = true;
@@ -208,7 +208,7 @@ public partial class World
         int absWh = _clanWhPage * ClanWhPageSize + whIdx;
         if (absWh < 0 || absWh >= ClanWhSlots || _clanWh[absWh].IsEmpty) return;
         int free = Inv.FirstFreeGridSlot();
-        if (free < 0) { _clanWhStatus.Text = "Your bags are full."; return; }
+        if (free < 0) { _clanWhStatus.Text = Localization.Loc.Tr("Your bags are full."); return; }
         var slot = _clanWh[absWh];
         _clanWhPending = new ClanWhPending { Op = 3, InvAbs = free, WhIdx = absWh, Count = slot.Count };
         _clanWhInFlight = true;
@@ -219,11 +219,11 @@ public partial class World
     private void ClanWhGoldTransfer(bool deposit)
     {
         if (_clanWhInFlight) return;
-        if (!_clanWhLoaded) { _clanWhStatus.Text = "You're not in a clan."; return; }
+        if (!_clanWhLoaded) { _clanWhStatus.Text = Localization.Loc.Tr("You're not in a clan."); return; }
         if (!int.TryParse(_clanWhGoldInput.Text.Replace(",", "").Trim(), out int amount) || amount <= 0)
-        { _clanWhStatus.Text = "Enter an amount."; return; }
-        if (deposit && amount > Sheet.Gold) { _clanWhStatus.Text = "Not enough carried gold."; return; }
-        if (!deposit && amount > _clanWhMoney) { _clanWhStatus.Text = "Not enough clan gold."; return; }
+        { _clanWhStatus.Text = Localization.Loc.Tr("Enter an amount."); return; }
+        if (deposit && amount > Sheet.Gold) { _clanWhStatus.Text = Localization.Loc.Tr("Not enough carried gold."); return; }
+        if (!deposit && amount > _clanWhMoney) { _clanWhStatus.Text = Localization.Loc.Tr("Not enough clan gold."); return; }
 
         _clanWhPending = new ClanWhPending { Op = (byte)(deposit ? 2 : 3), Gold = true, Count = amount };
         _clanWhInFlight = true;
@@ -235,7 +235,7 @@ public partial class World
     {
         if (op == 1)
         {
-            if (_clanWhShown) _clanWhStatus.Text = "You're not in a clan.";
+            if (_clanWhShown) _clanWhStatus.Text = Localization.Loc.Tr("You're not in a clan.");
             return;
         }
 
@@ -243,7 +243,7 @@ public partial class World
         _clanWhInFlight = false;
         if (!ok)
         {
-            _clanWhStatus.Text = op == 3 ? "Only the chief or vice-chief may withdraw." : "Transfer failed.";
+            _clanWhStatus.Text = op == 3 ? Localization.Loc.Tr("Only the chief or vice-chief may withdraw.") : Localization.Loc.Tr("Transfer failed.");
             if (_clanWhShown) RefreshClanWarehouse();
             return;
         }

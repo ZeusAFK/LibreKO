@@ -61,7 +61,7 @@ public partial class World
         _deathExpLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         col.AddChild(_deathExpLbl);
 
-        _deathHintLbl = UiTheme.Text(RespawnHint, 13, UiTheme.TextLo, HorizontalAlignment.Center);
+        _deathHintLbl = UiTheme.Text(Localization.Loc.Tr(RespawnHint), 13, UiTheme.TextLo, HorizontalAlignment.Center);
         _deathHintLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         col.AddChild(_deathHintLbl);
 
@@ -69,7 +69,7 @@ public partial class World
 
         _deathOkBtn = new Button
         {
-            Text = "OK",
+            Text = Localization.Loc.Tr("OK"),
             FocusMode = Control.FocusModeEnum.None,
             CustomMinimumSize = new Vector2(120, 30),
             SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
@@ -87,14 +87,14 @@ public partial class World
     private void RefreshDeathDialogText()
     {
         _deathExpLbl.Text = _deathExpLost > 0
-            ? $"Lost {_deathExpLost:n0} experience points."
-            : "You have been defeated.";
+            ? $"{Localization.Loc.Tr("Lost")} {_deathExpLost:n0} {Localization.Loc.Tr("experience points.")}"
+            : Localization.Loc.Tr("You have been defeated.");
     }
 
     private void ShowDeathDialog()
     {
         RefreshDeathDialogText();
-        ArmRespawnButton(RespawnHint);
+        ArmRespawnButton(Localization.Loc.Tr(RespawnHint));
         _deathLayer.Visible = true;
     }
 
@@ -117,7 +117,7 @@ public partial class World
     {
         _respawnPending = true;
         _deathOkBtn.Disabled = true;
-        _deathHintLbl.Text = RespawnSentHint;
+        _deathHintLbl.Text = Localization.Loc.Tr(RespawnSentHint);
     }
 
     private void ConfirmRespawn()
@@ -133,7 +133,7 @@ public partial class World
         GetTree().CreateTimer(RespawnRetrySeconds).Timeout += () =>
         {
             if (token != _respawnToken || !_selfDead) return;
-            ArmRespawnButton(RespawnRetryHint);
+            ArmRespawnButton(Localization.Loc.Tr(RespawnRetryHint));
         };
     }
 }

@@ -78,7 +78,7 @@ public partial class World
         foreach (var page in _skillPages)
         {
             int tab = page.Category;
-            tabBar.AddChild(MakeSubTabButton(page.Label, tab, () => SelectSkillTab(tab), _skillTabBtns));
+            tabBar.AddChild(MakeSubTabButton(Localization.Loc.Tr(page.Label), tab, () => SelectSkillTab(tab), _skillTabBtns));
         }
 
         var grid = new GridContainer { Columns = SkillPage.Columns, MouseFilter = Control.MouseFilterEnum.Pass };
@@ -200,7 +200,7 @@ public partial class World
             _skillCells[i].SetSelected(s != null && s.Id == _skillSelected);
         }
         int pages = CurrentTabPageCount();
-        _skillPageLbl.Text = $"{_skillPageIndex + 1} Page";
+        _skillPageLbl.Text = $"{_skillPageIndex + 1} {Localization.Loc.Tr("Page")}";
         _skillPrevBtn.Disabled = _skillPageIndex <= 0;
         _skillNextBtn.Disabled = _skillPageIndex >= pages - 1;
         RefreshSkillInfo();
@@ -225,20 +225,20 @@ public partial class World
             return;
         }
 
-        _skillDescLbl.Text = s.Desc.Replace('|', '\n');
-        _skillMpLbl.Text = $"MP consumed : {s.Msp}";
+        _skillDescLbl.Text = Localization.Loc.SkillDesc(s.Id, s.Desc).Replace('|', '\n');
+        _skillMpLbl.Text = $"{Localization.Loc.Tr("MP consumed")} : {s.Msp}";
         _skillPointLbl.Visible = SkillData.MasteryType(s.Tree) > 0;
-        _skillPointLbl.Text = $"Required Skill Point : {s.Level}";
-        _skillLevelLbl.Text = $"Required Level : {s.Level}";
+        _skillPointLbl.Text = $"{Localization.Loc.Tr("Required Skill Point")} : {s.Level}";
+        _skillLevelLbl.Text = $"{Localization.Loc.Tr("Required Level")} : {s.Level}";
 
-        string weapon = SkillData.WeaponRequirementName(s.NeedWeapon);
-        _skillItem0Lbl.Text = weapon.Length > 0 ? $"Basic item : Required Item : {weapon}" : "No basic item";
+        string weapon = Localization.Loc.Tr(SkillData.WeaponRequirementName(s.NeedWeapon));
+        _skillItem0Lbl.Text = weapon.Length > 0 ? $"{Localization.Loc.Tr("Basic item")} : {Localization.Loc.Tr("Required Item")} : {weapon}" : Localization.Loc.Tr("No basic item");
         _skillItem1Lbl.Text = s.NeedItem != 0
-            ? $"Required item : {ItemData.DisplayName(s.NeedItem)}"
-            : "No required item";
+            ? $"{Localization.Loc.Tr("Required item")} : {ItemData.DisplayName(s.NeedItem)}"
+            : Localization.Loc.Tr("No required item");
         _skillItem2Lbl.Text = s.ConsumedItem != 0 && s.ConsumedItem != s.NeedItem
-            ? $"Item consumed : {ItemData.DisplayName(s.ConsumedItem)}"
-            : "No item consumed";
+            ? $"{Localization.Loc.Tr("Item consumed")} : {ItemData.DisplayName(s.ConsumedItem)}"
+            : Localization.Loc.Tr("No item consumed");
     }
 
     private void RefreshSkillsEnabled()
@@ -260,7 +260,7 @@ public partial class World
 
     private void BuildMasteryBlock(VBoxContainer root)
     {
-        root.AddChild(UiTheme.SectionTitle("Mastery"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Mastery")));
         _masteryPoolLbl = HudStyle.Label(14);
         root.AddChild(_masteryPoolLbl);
 
@@ -272,7 +272,7 @@ public partial class World
         {
             int t = type, idx = type - MasteryPoints.FirstTree;
             _masteryNameLbls[idx] = HudStyle.Label(13);
-            _masteryNameLbls[idx].Text = SkillData.PageName(_selfClass, type);
+            _masteryNameLbls[idx].Text = Localization.Loc.Tr(SkillData.PageName(_selfClass, type));
             _masteryNameLbls[idx].CustomMinimumSize = new Vector2(96, 0);
             grid.AddChild(_masteryNameLbls[idx]);
             _masteryValLbls[idx] = HudStyle.Label(13, HorizontalAlignment.Right);
@@ -291,13 +291,13 @@ public partial class World
     private string MasteryHint(int type)
     {
         if (!MasteryPoints.ClassHasTree(_selfClass, type))
-            return "This mastery unlocks with your next class change";
+            return Localization.Loc.Tr("This mastery unlocks with your next class change");
         int cap = MasteryPoints.CapInTree(_selfClass, type, Sheet.Level);
         if (Mastery.InTree(type) >= cap)
             return type == MasteryPoints.MasterTree
-                ? $"Capped at {cap} — one more per level above {MasteryPoints.MasterTreeMinLevel}"
-                : $"Capped at your level ({cap})";
-        return Mastery.Pool > 0 ? "Spend a mastery point" : "No mastery points left";
+                ? $"{Localization.Loc.Tr("Capped at")} {cap} — {Localization.Loc.Tr("one more per level above")} {MasteryPoints.MasterTreeMinLevel}"
+                : $"{Localization.Loc.Tr("Capped at your level")} ({cap})";
+        return Mastery.Pool > 0 ? Localization.Loc.Tr("Spend a mastery point") : Localization.Loc.Tr("No mastery points left");
     }
 
     private void OnMasterySpend(int type)
@@ -337,7 +337,7 @@ public partial class World
     private void RefreshMasteryUI()
     {
         if (_masteryPoolLbl == null) return;
-        _masteryPoolLbl.Text = $"Mastery points: {Mastery.Pool}";
+        _masteryPoolLbl.Text = $"{Localization.Loc.Tr("Mastery points")}: {Mastery.Pool}";
         for (int type = MasteryPoints.FirstTree; type <= MasteryPoints.LastTree; type++)
         {
             int idx = type - MasteryPoints.FirstTree;
@@ -405,7 +405,7 @@ public partial class World
             if (skill == null) { TooltipText = ""; return; }
 
             _icon.Texture = met ? SkillData.Icon(skill.Id) ?? SkillData.EnigmaIcon() : SkillData.EnigmaIcon();
-            _name.Text = skill.Name;
+            _name.Text = Localization.Loc.SkillName(skill.Id, skill.Name);
             _name.AddThemeColorOverride("font_color", met ? UiTheme.TextHi : UiTheme.TextLo);
             TooltipText = SkillTooltip(skill);
         }
@@ -437,7 +437,7 @@ public partial class World
             var icon = SkillData.Icon(Skill.Id);
             if (icon != null)
                 preview.AddChild(new TextureRect { Texture = icon, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered });
-            else { var l = HudStyle.Label(11, HorizontalAlignment.Center); l.Text = Skill.Name; preview.AddChild(l); }
+            else { var l = HudStyle.Label(11, HorizontalAlignment.Center); l.Text = Localization.Loc.SkillName(Skill.Id, Skill.Name); preview.AddChild(l); }
             SetDragPreview(preview);
             return new Godot.Collections.Dictionary { { "id", Skill.Id } };
         }

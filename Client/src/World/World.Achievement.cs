@@ -55,7 +55,7 @@ public partial class World
     {
         _achLayer = new CanvasLayer { Layer = 73 };
         AddChild(_achLayer);
-        _achPanel = new HudWindow("achievements", "Achievements", new Vector2(160, 110),
+        _achPanel = new HudWindow("achievements", Localization.Loc.Tr("Achievements"), new Vector2(160, 110),
             bodyMinWidth: AchListWidth)
         { Visible = false };
         _achPanel.Closed += CloseAchievements;
@@ -68,7 +68,7 @@ public partial class World
         _achTabs.AddThemeConstantOverride("separation", 4);
         root.AddChild(_achTabs);
 
-        _achSummaryTabButton = UiTheme.TopTabButton("Summary");
+        _achSummaryTabButton = UiTheme.TopTabButton(Localization.Loc.Tr("Summary"));
         _achSummaryTabButton.Pressed += ShowAchievementSummaryPage;
         _achTabs.AddChild(_achSummaryTabButton);
 
@@ -89,7 +89,7 @@ public partial class World
         _achSummary.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         summaryRow.AddChild(_achSummary);
 
-        _achHideClaimed = new CheckButton { Text = "Hide claimed", FocusMode = Control.FocusModeEnum.None };
+        _achHideClaimed = new CheckButton { Text = Localization.Loc.Tr("Hide claimed"), FocusMode = Control.FocusModeEnum.None };
         _achHideClaimed.AddThemeFontSizeOverride("font_size", 12);
         _achHideClaimed.Toggled += _ => RebuildAchievementList(keepScroll: false);
         summaryRow.AddChild(_achHideClaimed);
@@ -228,9 +228,9 @@ public partial class World
         if (_titleShown) RebuildTitleList();
 
         _achSummary.Text = _achEntries.Count == 0
-            ? "Waiting for the server…"
+            ? Localization.Loc.Tr("Waiting for the server…")
             : $"{AchievementData.TabName(_achTab)} {claimedInCategory} / {inCategory}"
-              + $"   ·   {claimed} of {_achEntries.Count} earned   ·   {points} points";
+              + $"   ·   {claimed} {Localization.Loc.Tr("of")} {_achEntries.Count} {Localization.Loc.Tr("earned")}   ·   {points} {Localization.Loc.Tr("points")}";
     }
 
     private void RebuildAchievementSummary()
@@ -259,7 +259,7 @@ public partial class World
         col.AddThemeConstantOverride("separation", 2);
         section.AddChild(col);
 
-        col.AddChild(UiTheme.Text("Achievement Points", 11, UiTheme.TextLo, HorizontalAlignment.Center));
+        col.AddChild(UiTheme.Text(Localization.Loc.Tr("Achievement Points"), 11, UiTheme.TextLo, HorizontalAlignment.Center));
         col.AddChild(UiTheme.Heading(26, _achHasReport ? $"{_achReport.Points:N0}" : "-"));
         return section;
     }
@@ -289,7 +289,7 @@ public partial class World
             rows.Add((AchievementData.TabName(tab), done, of));
         }
 
-        col.AddChild(BuildAchievementProgressRow("Total", doneTotal, ofTotal, UiTheme.GoldBright, bold: true));
+        col.AddChild(BuildAchievementProgressRow(Localization.Loc.Tr("Total"), doneTotal, ofTotal, UiTheme.GoldBright, bold: true));
         col.AddChild(new Control { CustomMinimumSize = new Vector2(0, 4) });
         foreach (var row in rows)
             col.AddChild(BuildAchievementProgressRow(row.Name, row.Done, row.Of, UiTheme.Bronze));
@@ -341,14 +341,14 @@ public partial class World
         col.AddThemeConstantOverride("separation", 4);
         section.AddChild(col);
 
-        col.AddChild(UiTheme.SectionTitle("Individual Report"));
-        col.AddChild(BuildAchievementReportRow("Accumulated Playtime",
+        col.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Individual Report")));
+        col.AddChild(BuildAchievementReportRow(Localization.Loc.Tr("Accumulated Playtime"),
             _achHasReport ? FormatPlayTime(_achReport.PlayMinutes) : "-"));
-        col.AddChild(BuildAchievementReportRow("Monsters Defeated",
+        col.AddChild(BuildAchievementReportRow(Localization.Loc.Tr("Monsters Defeated"),
             _achHasReport ? $"{_achReport.MonstersDefeated:N0}" : "-"));
-        col.AddChild(BuildAchievementReportRow("Players Defeated",
+        col.AddChild(BuildAchievementReportRow(Localization.Loc.Tr("Players Defeated"),
             _achHasReport ? $"{_achReport.PlayersDefeated:N0}" : "-"));
-        col.AddChild(BuildAchievementReportRow("Deaths",
+        col.AddChild(BuildAchievementReportRow(Localization.Loc.Tr("Deaths"),
             _achHasReport ? $"{_achReport.Deaths:N0}" : "-"));
         return section;
     }
@@ -377,7 +377,7 @@ public partial class World
         col.AddThemeConstantOverride("separation", 4);
         section.AddChild(col);
 
-        col.AddChild(UiTheme.SectionTitle("Recently Achieved"));
+        col.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Recently Achieved")));
 
         int shown = 0;
         if (_achHasReport)
@@ -404,7 +404,7 @@ public partial class World
         }
 
         if (shown == 0)
-            col.AddChild(UiTheme.Text("Nothing yet - go and earn something.", 12, UiTheme.TextLo));
+            col.AddChild(UiTheme.Text(Localization.Loc.Tr("Nothing yet - go and earn something."), 12, UiTheme.TextLo));
 
         return section;
     }
@@ -466,8 +466,8 @@ public partial class World
         {
             var empty = HudStyle.Label(13);
             empty.Text = _achHideClaimed.ButtonPressed
-                ? $"Everything in {AchievementData.TabName(_achTab)} is claimed."
-                : $"Nothing in {AchievementData.TabName(_achTab)} yet.";
+                ? $"{Localization.Loc.Tr("Everything in")} {AchievementData.TabName(_achTab)} {Localization.Loc.Tr("is claimed.")}"
+                : $"{Localization.Loc.Tr("Nothing in")} {AchievementData.TabName(_achTab)} {Localization.Loc.Tr("yet.")}";
             _achList.AddChild(empty);
         }
 
@@ -550,13 +550,13 @@ public partial class World
     private Control BuildAchievementAction(AchievementEntry entry, AchievementData.Info info)
     {
         if (entry.Claimed)
-            return UiTheme.Text("Claimed", 12, UiTheme.TextDim);
+            return UiTheme.Text(Localization.Loc.Tr("Claimed"), 12, UiTheme.TextDim);
 
         if (!entry.Claimable)
             return UiTheme.Text($"{(int)(entry.Fraction * 100f)}%", 12, UiTheme.TextLo);
 
         int id = entry.Id;
-        var claim = new Button { Text = "Claim", FocusMode = Control.FocusModeEnum.None };
+        var claim = new Button { Text = Localization.Loc.Tr("Claim"), FocusMode = Control.FocusModeEnum.None };
         claim.Pressed += () => Net.I.SendAchievementClaim(id);
         return claim;
     }
@@ -565,16 +565,16 @@ public partial class World
     {
         if (result == Net.AchievementClaimIssued)
         {
-            CombatNotice($"{AchievementData.NameOf(achievementId)} — reward received.");
+            CombatNotice($"{AchievementData.NameOf(achievementId)} — {Localization.Loc.Tr("reward received.")}");
             return;
         }
 
         CombatNotice(result switch
         {
-            Net.AchievementClaimInventoryFull => "Your inventory is too full for that reward.",
-            Net.AchievementClaimItemMissing => "That reward no longer exists.",
-            Net.AchievementClaimNotAvailable => "That achievement is not complete yet.",
-            _ => $"The reward could not be issued. ({result})",
+            Net.AchievementClaimInventoryFull => Localization.Loc.Tr("Your inventory is too full for that reward."),
+            Net.AchievementClaimItemMissing => Localization.Loc.Tr("That reward no longer exists."),
+            Net.AchievementClaimNotAvailable => Localization.Loc.Tr("That achievement is not complete yet."),
+            _ => $"{Localization.Loc.Tr("The reward could not be issued.")} ({result})",
         });
     }
 
@@ -583,7 +583,7 @@ public partial class World
         _trophyLayer = new CanvasLayer { Layer = 66 };
         AddChild(_trophyLayer);
 
-        _trophy = TopIconButton(_trophyLayer, "system/trophy", "Achievements",
+        _trophy = TopIconButton(_trophyLayer, "system/trophy", Localization.Loc.Tr("Achievements"),
             ToggleAchievements, out _trophyIcon);
 
         var badge = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -620,8 +620,8 @@ public partial class World
         _trophyCount.Text = claimable > 9 ? "9+" : claimable.ToString();
         _trophyIcon.SelfModulate = TopIconColor(waiting);
         _trophy.TooltipText = waiting
-            ? $"Achievements — {claimable} reward{(claimable == 1 ? "" : "s")} to claim"
-            : "Achievements";
+            ? $"{Localization.Loc.Tr("Achievements")} — {claimable} {Localization.Loc.Tr("reward(s) to claim")}"
+            : Localization.Loc.Tr("Achievements");
 
         if (_trophyBlink != null && _trophyBlink.IsValid()) _trophyBlink.Kill();
         _trophyBlink = null;

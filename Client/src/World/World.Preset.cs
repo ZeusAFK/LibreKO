@@ -32,7 +32,7 @@ public partial class World
 
         _presetLayer = new CanvasLayer { Layer = 74 };
         AddChild(_presetLayer);
-        _presetPanel = new HudWindow("presets", "Presets", new Vector2(200, 140), bodyMinWidth: 260)
+        _presetPanel = new HudWindow("presets", Localization.Loc.Tr("Presets"), new Vector2(200, 140), bodyMinWidth: 260)
         { Visible = false };
         _presetPanel.Closed += ClosePreset;
         _presetLayer.AddChild(_presetPanel);
@@ -62,7 +62,7 @@ public partial class World
         for (int i = 0; i < PresetPlan.SlotCount; i++)
         {
             int slot = i;
-            var btn = UiTheme.TopTabButton($"Plan {i + 1}");
+            var btn = UiTheme.TopTabButton($"{Localization.Loc.Tr("Plan")} {i + 1}");
             btn.Pressed += () => SelectPresetSlot(slot);
             _presetSlotBtns[i] = btn;
             bar.AddChild(btn);
@@ -71,7 +71,7 @@ public partial class World
 
     private void BuildPresetStatBlock(VBoxContainer root)
     {
-        root.AddChild(UiTheme.SectionTitle("Stats"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Stats")));
         _presetStatPointsLbl = HudStyle.Label(13);
         root.AddChild(_presetStatPointsLbl);
 
@@ -98,9 +98,9 @@ public partial class World
 
         var apply = new Button
         {
-            Text = "Apply stat plan",
+            Text = Localization.Loc.Tr("Apply stat plan"),
             FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Retail only accepts this straight after a stat redistribution",
+            TooltipText = Localization.Loc.Tr("Retail only accepts this straight after a stat redistribution"),
         };
         apply.Pressed += ApplyStatPreset;
         root.AddChild(apply);
@@ -109,7 +109,7 @@ public partial class World
 
     private void BuildPresetSkillBlock(VBoxContainer root)
     {
-        root.AddChild(UiTheme.SectionTitle("Mastery"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Mastery")));
         _presetTreePointsLbl = HudStyle.Label(13);
         root.AddChild(_presetTreePointsLbl);
 
@@ -135,9 +135,9 @@ public partial class World
 
         var apply = new Button
         {
-            Text = "Apply mastery plan",
+            Text = Localization.Loc.Tr("Apply mastery plan"),
             FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Retail only accepts this straight after a skill redistribution",
+            TooltipText = Localization.Loc.Tr("Retail only accepts this straight after a skill redistribution"),
         };
         apply.Pressed += ApplySkillPreset;
         root.AddChild(apply);
@@ -244,7 +244,7 @@ public partial class World
             _presetStatLbls[i].Text = plan.Stats[i].ToString();
         }
         if (_presetStatPointsLbl != null && GodotObject.IsInstanceValid(_presetStatPointsLbl))
-            _presetStatPointsLbl.Text = $"Planned {statSpent} of {Sheet.PointsForLevel} stat point(s)";
+            _presetStatPointsLbl.Text = $"{Localization.Loc.Tr("Planned")} {statSpent} {Localization.Loc.Tr("of")} {Sheet.PointsForLevel} {Localization.Loc.Tr("stat point(s)")}";
 
         int treeSpent = 0;
         for (int tree = MasteryPoints.FirstTree; tree <= MasteryPoints.LastTree; tree++)
@@ -261,7 +261,7 @@ public partial class World
                 _presetTreeLbls[index].Text = plan.Trees[index].ToString();
         }
         if (_presetTreePointsLbl != null && GodotObject.IsInstanceValid(_presetTreePointsLbl))
-            _presetTreePointsLbl.Text = $"Planned {treeSpent} of {Mastery.PointsForLevel} mastery point(s)";
+            _presetTreePointsLbl.Text = $"{Localization.Loc.Tr("Planned")} {treeSpent} {Localization.Loc.Tr("of")} {Mastery.PointsForLevel} {Localization.Loc.Tr("mastery point(s)")}";
     }
 
     private const string RedistributeAtKaishan =
@@ -271,7 +271,7 @@ public partial class World
     {
         if (!Sheet.AtBaseStats)
         {
-            CombatNotice(RedistributeAtKaishan);
+            CombatNotice(Localization.Loc.Tr(RedistributeAtKaishan));
             return;
         }
         SendStatPlan();
@@ -294,7 +294,7 @@ public partial class World
     {
         if (Mastery.Pool < Mastery.PointsForLevel)
         {
-            CombatNotice(RedistributeAtKaishan);
+            CombatNotice(Localization.Loc.Tr(RedistributeAtKaishan));
             return;
         }
         SendSkillPlan();
@@ -314,10 +314,10 @@ public partial class World
         {
             CombatNotice(result switch
             {
-                Net.PresetStatNeedsRedistribution => "Redistribute your stats before applying a plan.",
-                Net.PresetStatClassError => "Your class cannot use a stat plan.",
-                Net.PresetStatPointsMismatch => "The plan no longer matches your stat points.",
-                _ => "The stat plan could not be applied.",
+                Net.PresetStatNeedsRedistribution => Localization.Loc.Tr("Redistribute your stats before applying a plan."),
+                Net.PresetStatClassError => Localization.Loc.Tr("Your class cannot use a stat plan."),
+                Net.PresetStatPointsMismatch => Localization.Loc.Tr("The plan no longer matches your stat points."),
+                _ => Localization.Loc.Tr("The stat plan could not be applied."),
             });
             return;
         }
@@ -329,7 +329,7 @@ public partial class World
         StorePresetPlan(PresetStatKind, ActivePreset.Stats);
         RefreshStatsUI();
         RefreshPresetUI();
-        CombatNotice("Stat plan applied.");
+        CombatNotice(Localization.Loc.Tr("Stat plan applied."));
     }
 
     private void OnPresetSkillResult(int result, PresetSkillState state)
@@ -338,13 +338,13 @@ public partial class World
         {
             CombatNotice(result switch
             {
-                Net.PresetSkillNeedsRedistribution => "Redistribute your mastery before applying a plan.",
-                Net.PresetSkillLevelTooLow => $"Mastery plans need level {MasteryPoints.MinLevel} or above.",
-                Net.PresetSkillNeedsFirstJobChange => "Mastery plans unlock after your first class change.",
-                Net.PresetSkillNeedsSecondJobChange => "That mastery unlocks after your second class change.",
-                Net.PresetSkillMasterFailed => "Your master skill points are above what your level allows.",
-                Net.PresetSkillPointsMismatch => "The plan no longer matches your mastery points.",
-                _ => "The mastery plan could not be applied.",
+                Net.PresetSkillNeedsRedistribution => Localization.Loc.Tr("Redistribute your mastery before applying a plan."),
+                Net.PresetSkillLevelTooLow => $"{Localization.Loc.Tr("Mastery plans need level")} {MasteryPoints.MinLevel} {Localization.Loc.Tr("or above.")}",
+                Net.PresetSkillNeedsFirstJobChange => Localization.Loc.Tr("Mastery plans unlock after your first class change."),
+                Net.PresetSkillNeedsSecondJobChange => Localization.Loc.Tr("That mastery unlocks after your second class change."),
+                Net.PresetSkillMasterFailed => Localization.Loc.Tr("Your master skill points are above what your level allows."),
+                Net.PresetSkillPointsMismatch => Localization.Loc.Tr("The plan no longer matches your mastery points."),
+                _ => Localization.Loc.Tr("The mastery plan could not be applied."),
             });
             return;
         }
@@ -354,7 +354,7 @@ public partial class World
         StorePresetPlan(PresetSkillKind, ActivePreset.Trees);
         RefreshMasteryUI();
         RefreshPresetUI();
-        CombatNotice("Mastery plan applied.");
+        CombatNotice(Localization.Loc.Tr("Mastery plan applied."));
     }
 
     private void LoadPresetPlans()

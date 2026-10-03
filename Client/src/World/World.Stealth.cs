@@ -36,7 +36,7 @@ public partial class World
 
         _sightRadius = radius;
         if (radius <= 0f) _stealthDetected.Clear();
-        CombatNotice(radius > 0f ? "You can see the hidden." : "The hidden fade from view.");
+        CombatNotice(radius > 0f ? Localization.Loc.Tr("You can see the hidden.") : Localization.Loc.Tr("The hidden fade from view."));
         foreach (int id in _stealthIds) ApplyStealthFade(id, stealthed: true);
     }
 
@@ -64,7 +64,7 @@ public partial class World
     {
         if (!_stealthIds.Contains(_myId)) return;
         Net.I.SendStealth();
-        CombatNotice("Cancelling stealth.");
+        CombatNotice(Localization.Loc.Tr("Cancelling stealth."));
     }
 
     private void StealthOnSpawn(int charId, int invisibility)
@@ -102,9 +102,9 @@ public partial class World
             StealthSpawnFx(charId);
 
             if (charId == _myId)
-                CombatNotice("You melt into the shadows.");
+                CombatNotice(Localization.Loc.Tr("You melt into the shadows."));
             else if (_ents.TryGetValue(charId, out var e) && !string.IsNullOrEmpty(e.Name))
-                CombatNotice($"{e.Name} vanishes.");
+                CombatNotice($"{e.Name} {Localization.Loc.Tr("vanishes.")}");
         }
         else
         {
@@ -114,7 +114,7 @@ public partial class World
             ApplyStealthFade(charId, stealthed: false);
 
             if (charId == _myId)
-                CombatNotice("You step back into the light.");
+                CombatNotice(Localization.Loc.Tr("You step back into the light."));
         }
     }
 

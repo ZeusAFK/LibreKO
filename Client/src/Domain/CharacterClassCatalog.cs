@@ -20,12 +20,12 @@ public static class CharacterClassCatalog
 
     public static string DisplayName(int classCode) => Family(classCode) switch
     {
-        1 => "Warrior",
-        2 => "Rogue",
-        3 => "Mage",
-        4 => "Priest",
-        5 => "Kurian",
-        _ => $"Class {classCode}",
+        1 => Localization.Loc.Tr("Warrior"),
+        2 => Localization.Loc.Tr("Rogue"),
+        3 => Localization.Loc.Tr("Mage"),
+        4 => Localization.Loc.Tr("Priest"),
+        5 => Localization.Loc.Tr("Kurian"),
+        _ => $"{Localization.Loc.Tr("Class")} {classCode}",
     };
 
     public static int Tier(int classCode) => (classCode % 100) switch
@@ -38,22 +38,22 @@ public static class CharacterClassCatalog
 
     public static string TierName(int classCode) => Tier(classCode) switch
     {
-        TierBeginner => "Beginner",
-        TierNovice => "Novice",
-        TierMaster => "Master",
-        _ => "Unknown",
+        TierBeginner => Localization.Loc.Tr("Beginner"),
+        TierNovice => Localization.Loc.Tr("Novice"),
+        TierMaster => Localization.Loc.Tr("Master"),
+        _ => Localization.Loc.Tr("Unknown"),
     };
 
     public static string SpecializationName(int classCode) => classCode switch
     {
-        101 => "Warrior",   105 => "Berserker", 106 => "Guardian",
-        102 => "Rogue",     107 => "Hunter",    108 => "Penetrator",
-        103 => "Wizard",    109 => "Sorcerer",  110 => "Necromancer",
-        104 => "Priest",    111 => "Shaman",    112 => "Dark Priest",
-        201 => "Warrior",   205 => "Blade",     206 => "Protector",
-        202 => "Rogue",     207 => "Ranger",    208 => "Assassin",
-        203 => "Wizard",    209 => "Mage",      210 => "Enchanter",
-        204 => "Priest",    211 => "Cleric",    212 => "Druid",
+        101 => Localization.Loc.Tr("Warrior"),   105 => Localization.Loc.Tr("Berserker"), 106 => Localization.Loc.Tr("Guardian"),
+        102 => Localization.Loc.Tr("Rogue"),     107 => Localization.Loc.Tr("Hunter"),    108 => Localization.Loc.Tr("Penetrator"),
+        103 => Localization.Loc.Tr("Wizard"),    109 => Localization.Loc.Tr("Sorcerer"),  110 => Localization.Loc.Tr("Necromancer"),
+        104 => Localization.Loc.Tr("Priest"),    111 => Localization.Loc.Tr("Shaman"),    112 => Localization.Loc.Tr("Dark Priest"),
+        201 => Localization.Loc.Tr("Warrior"),   205 => Localization.Loc.Tr("Blade"),     206 => Localization.Loc.Tr("Protector"),
+        202 => Localization.Loc.Tr("Rogue"),     207 => Localization.Loc.Tr("Ranger"),    208 => Localization.Loc.Tr("Assassin"),
+        203 => Localization.Loc.Tr("Wizard"),    209 => Localization.Loc.Tr("Mage"),      210 => Localization.Loc.Tr("Enchanter"),
+        204 => Localization.Loc.Tr("Priest"),    211 => Localization.Loc.Tr("Cleric"),    212 => Localization.Loc.Tr("Druid"),
         _ => DisplayName(classCode),
     };
 }

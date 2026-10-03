@@ -617,7 +617,7 @@ public partial class World
             FocusMode = Control.FocusModeEnum.None,
             CustomMinimumSize = new Vector2(TargetCloseSize, TargetCloseSize),
             SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
-            TooltipText = "Clear target",
+            TooltipText = Localization.Loc.Tr("Clear target"),
         };
         foreach (string state in new[] { "normal", "hover", "pressed", "focus" })
             close.AddThemeStyleboxOverride(state, new StyleBoxEmpty());
@@ -667,7 +667,7 @@ public partial class World
                 _targetHudId = show;
                 _targetHudLevel = e.Level;
                 _targetHudName = e.Name;
-                _targetName.Text = e.Level > 0 ? $"{e.Name}   Lv {e.Level}" : e.Name;
+                _targetName.Text = e.Level > 0 ? $"{e.Name}   {Localization.Loc.Tr("Lv")} {e.Level}" : e.Name;
             }
             if (e.MaxHp > 0) _targetHp.Set(e.Hp, e.MaxHp); else _targetHp.SetFull();
             if (!_targetBoxShown) { _targetBoxShown = true; _targetBox.Visible = true; }

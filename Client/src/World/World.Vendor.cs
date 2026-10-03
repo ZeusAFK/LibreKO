@@ -63,7 +63,7 @@ public partial class World
         _vendorLayer = new CanvasLayer { Layer = 74 };
         AddChild(_vendorLayer);
 
-        _vendorPanel = new HudWindow("vendor", "Merchant", new Vector2(180, 110)) { Visible = false };
+        _vendorPanel = new HudWindow("vendor", Localization.Loc.Tr("Merchant"), new Vector2(180, 110)) { Visible = false };
         _vendorPanel.Closed += CloseVendor;
         _vendorLayer.AddChild(_vendorPanel);
 
@@ -73,8 +73,8 @@ public partial class World
         var cols = new HBoxContainer();
         cols.AddThemeConstantOverride("separation", 16);
         root.AddChild(cols);
-        cols.AddChild(BuildColumn("Buy", out _vendorBuyList));
-        cols.AddChild(BuildColumn("Sell", out _vendorSellList));
+        cols.AddChild(BuildColumn(Localization.Loc.Tr("Buy"), out _vendorBuyList));
+        cols.AddChild(BuildColumn(Localization.Loc.Tr("Sell"), out _vendorSellList));
 
         root.AddChild(new HSeparator());
         var footer = new HBoxContainer();
@@ -135,7 +135,7 @@ public partial class World
         var amountRow = new HBoxContainer();
         amountRow.AddThemeConstantOverride("separation", 8);
         root.AddChild(amountRow);
-        var amountLbl = UiTheme.Text("Quantity", 13, UiTheme.TextLo);
+        var amountLbl = UiTheme.Text(Localization.Loc.Tr("Quantity"), 13, UiTheme.TextLo);
         amountLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         amountRow.AddChild(amountLbl);
         _buyAmountSpin = new SpinBox
@@ -160,10 +160,10 @@ public partial class World
         buttons.AddThemeConstantOverride("separation", 8);
         buttons.Alignment = BoxContainer.AlignmentMode.End;
         root.AddChild(buttons);
-        var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        var cancel = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         cancel.Pressed += CloseBuyAmount;
         buttons.AddChild(cancel);
-        _buyAmountOk = new Button { Text = "Buy", FocusMode = Control.FocusModeEnum.None };
+        _buyAmountOk = new Button { Text = Localization.Loc.Tr("Buy"), FocusMode = Control.FocusModeEnum.None };
         _buyAmountOk.Pressed += ConfirmBuyAmount;
         buttons.AddChild(_buyAmountOk);
     }
@@ -174,7 +174,7 @@ public partial class World
         _buyAmountEntry = entry;
         _buyAmountIcon.Texture = ItemData.Icon(entry.Id);
         _buyAmountName.Text = ItemData.DisplayName(entry.Id);
-        _buyAmountUnit.Text = $"{ItemData.BuyPrice(entry.Id):n0} gold each";
+        _buyAmountUnit.Text = $"{ItemData.BuyPrice(entry.Id):n0} {Localization.Loc.Tr("gold each")}";
         SetBuyAmount(1);
         _buyAmountLayer.Visible = true;
         _buyAmountShown = true;
@@ -215,8 +215,8 @@ public partial class World
         bool ok = CanBuy(entry.Id, count, out _, out _, out string problem);
         _buyAmountOk.Disabled = !ok;
         _buyAmountTotal.Text = ok
-            ? $"Total {(long)ItemData.BuyPrice(entry.Id) * count:n0} gold   ·   {(long)def.Weight * count / 10f:0.0} wt"
-              + $"   ·   load {CarriedWeight() / 10f:0.0} / {Sheet.MaxWeight / 10f:0.0}"
+            ? $"{Localization.Loc.Tr("Total")} {(long)ItemData.BuyPrice(entry.Id) * count:n0} {Localization.Loc.Tr("gold")}   ·   {(long)def.Weight * count / 10f:0.0} wt"
+              + $"   ·   {Localization.Loc.Tr("load")} {CarriedWeight() / 10f:0.0} / {Sheet.MaxWeight / 10f:0.0}"
             : problem;
         _buyAmountTotal.AddThemeColorOverride("font_color", ok ? UiTheme.TextLo : new Color("ff6a6a"));
     }
@@ -283,7 +283,7 @@ public partial class World
             if (def == null) continue;
             var captured = entry;
             _vendorBuyList.AddChild(BuildTradeRow(
-                entry.Id, $"{ItemData.BuyPrice(entry.Id):n0} gold", "Buy",
+                entry.Id, $"{ItemData.BuyPrice(entry.Id):n0} {Localization.Loc.Tr("gold")}", Localization.Loc.Tr("Buy"),
                 () => BuyItem(captured),
                 () => BuyItem(captured),
                 -1, TooltipItem(entry.Id)));
@@ -292,7 +292,7 @@ public partial class World
         if (shown == 0)
         {
             var lbl = HudStyle.Label(13);
-            lbl.Text = "Nothing for sale.";
+            lbl.Text = Localization.Loc.Tr("Nothing for sale.");
             _vendorBuyList.AddChild(lbl);
         }
     }
@@ -312,7 +312,7 @@ public partial class World
             int absSlot = abs;
             long total = (long)unit * slot.Count;
             _vendorSellList.AddChild(BuildTradeRow(
-                slot.ItemId, total > 0 ? $"{total:n0} gold" : "No value", "Sell",
+                slot.ItemId, total > 0 ? $"{total:n0} {Localization.Loc.Tr("gold")}" : Localization.Loc.Tr("No value"), Localization.Loc.Tr("Sell"),
                 () => SellSlot(absSlot),
                 () => SellSlot(absSlot),
                 absSlot, slot,
@@ -322,7 +322,7 @@ public partial class World
         if (shown == 0)
         {
             var lbl = HudStyle.Label(13);
-            lbl.Text = "Your bags are empty.";
+            lbl.Text = Localization.Loc.Tr("Your bags are empty.");
             _vendorSellList.AddChild(lbl);
         }
     }
@@ -404,7 +404,7 @@ public partial class World
         problem = "";
 
         var def = ItemData.Get(itemId);
-        if (def == null) { problem = "The merchant won't trade that."; return false; }
+        if (def == null) { problem = Localization.Loc.Tr("The merchant won't trade that."); return false; }
 
         if (def.Countable != 0)
         {
@@ -413,17 +413,17 @@ public partial class World
                 { dest = abs; stack = true; break; }
         }
         if (dest < 0) dest = Inv.FirstFreeGridSlot();
-        if (dest < 0) { problem = "Your bags are full."; return false; }
+        if (dest < 0) { problem = Localization.Loc.Tr("Your bags are full."); return false; }
 
-        if ((long)ItemData.BuyPrice(itemId) * count > Sheet.Gold) { problem = "Not enough gold."; return false; }
+        if ((long)ItemData.BuyPrice(itemId) * count > Sheet.Gold) { problem = Localization.Loc.Tr("Not enough gold."); return false; }
 
         if (Sheet.MaxWeight > 0)
         {
             long free = Sheet.MaxWeight - CarriedWeight();
             if ((long)def.Weight * count > free)
             {
-                problem = $"Too heavy — only {Mathf.Max(0f, free / 10f):0.0} wt free "
-                    + $"of {Sheet.MaxWeight / 10f:0.0}.";
+                problem = $"{Localization.Loc.Tr("Too heavy — only")} {Mathf.Max(0f, free / 10f):0.0} {Localization.Loc.Tr("wt free")} "
+                    + $"{Localization.Loc.Tr("of")} {Sheet.MaxWeight / 10f:0.0}.";
                 return false;
             }
         }
@@ -453,9 +453,9 @@ public partial class World
         {
             SetVendorStatus(code switch
             {
-                3 => "Not enough gold.",
-                4 => "Your bags are full.",
-                _ => "The merchant won't trade that.",
+                3 => Localization.Loc.Tr("Not enough gold."),
+                4 => Localization.Loc.Tr("Your bags are full."),
+                _ => Localization.Loc.Tr("The merchant won't trade that."),
             }, true);
             return;
         }
@@ -464,8 +464,8 @@ public partial class World
         RefreshSellList();
         if (CharTabOpen()) RefreshInventoryUI();
         SetVendorStatus(_pendingTrade.Buy
-            ? $"Bought {ItemData.DisplayName(_pendingTrade.ItemId)} (−{price:n0})"
-            : $"Sold {ItemData.DisplayName(_pendingTrade.ItemId)} (+{price:n0})", false);
+            ? $"{Localization.Loc.Tr("Bought")} {ItemData.DisplayName(_pendingTrade.ItemId)} (−{price:n0})"
+            : $"{Localization.Loc.Tr("Sold")} {ItemData.DisplayName(_pendingTrade.ItemId)} (+{price:n0})", false);
     }
 
     private void ApplyTradeToInventory(PendingTrade t)
@@ -506,7 +506,7 @@ public partial class World
         if (_vendorShown) RefreshVendorGold();
     }
 
-    private void RefreshVendorGold() => _vendorGoldLbl.Text = $"Gold  {Sheet.Gold:n0}";
+    private void RefreshVendorGold() => _vendorGoldLbl.Text = $"{Localization.Loc.Tr("Gold")}  {Sheet.Gold:n0}";
 
     private void SetVendorStatus(string text, bool warn)
     {

@@ -52,7 +52,7 @@ public partial class World
     {
         if (HasActiveFragmentOfManes())
         {
-            CombatNotice("You cannot run while carrying the Fragment of Manes.");
+            CombatNotice(Localization.Loc.Tr("You cannot run while carrying the Fragment of Manes."));
             return;
         }
         _running = !_running;

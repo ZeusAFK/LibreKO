@@ -18,7 +18,7 @@ public partial class World
         _userInfoLayer = new CanvasLayer { Layer = 78 };
         AddChild(_userInfoLayer);
 
-        _userInfoPanel = new HudWindow("userinfo", "User Information", new Vector2(320, 150), 260) { Visible = false };
+        _userInfoPanel = new HudWindow("userinfo", Localization.Loc.Tr("User Information"), new Vector2(320, 150), 260) { Visible = false };
         _userInfoPanel.Closed += CloseUserInfo;
         _userInfoLayer.AddChild(_userInfoPanel);
 
@@ -43,9 +43,9 @@ public partial class World
     private void RequestUserInformation(string name)
     {
         _userInfoPending = name;
-        _userInfoPanel.Title = $"User Information — {name}";
+        _userInfoPanel.Title = $"{Localization.Loc.Tr("User Information")} — {name}";
         ClearUserInfoRows();
-        _userInfoStatus.Text = "Requesting…";
+        _userInfoStatus.Text = Localization.Loc.Tr("Requesting…");
         _userInfoPanel.Visible = true;
         _userInfoShown = true;
         Net.I.SendUserInformationRequest(name);
@@ -69,35 +69,35 @@ public partial class World
         if (!accepted)
         {
             ClearUserInfoRows();
-            _userInfoStatus.Text = $"{_userInfoPending} could not be found.";
+            _userInfoStatus.Text = $"{_userInfoPending} {Localization.Loc.Tr("could not be found.")}";
             _userInfoStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
             return;
         }
 
         ClearUserInfoRows();
         _userInfoStatus.Text = "";
-        _userInfoPanel.Title = $"User Information — {info.Name}";
+        _userInfoPanel.Title = $"{Localization.Loc.Tr("User Information")} — {info.Name}";
 
-        AddUserInfoRow("Name", info.Name, UiTheme.TextHi);
-        AddUserInfoRow("Level", info.RebirthLevel > 0
-            ? $"{info.Level}  (rebirth {info.RebirthLevel})"
+        AddUserInfoRow(Localization.Loc.Tr("Name"), info.Name, UiTheme.TextHi);
+        AddUserInfoRow(Localization.Loc.Tr("Level"), info.RebirthLevel > 0
+            ? $"{info.Level}  ({Localization.Loc.Tr("rebirth")} {info.RebirthLevel})"
             : info.Level.ToString());
-        AddUserInfoRow("Class", CharacterClassCatalog.DisplayName(info.Class));
+        AddUserInfoRow(Localization.Loc.Tr("Class"), CharacterClassCatalog.DisplayName(info.Class));
 
         _userInfoRows.AddChild(new HSeparator());
 
-        AddUserInfoRow("Clan", info.ClanId != 0 && info.ClanName.Length > 0 ? info.ClanName : "—");
+        AddUserInfoRow(Localization.Loc.Tr("Clan"), info.ClanId != 0 && info.ClanName.Length > 0 ? info.ClanName : "—");
         if (info.ClanId != 0)
         {
-            AddUserInfoRow("Clan rank", ClanGradeName(info.ClanGrade));
+            AddUserInfoRow(Localization.Loc.Tr("Clan rank"), ClanGradeName(info.ClanGrade));
             if (info.ClanChief.Length > 0)
-                AddUserInfoRow("Clan leader", info.ClanChief);
+                AddUserInfoRow(Localization.Loc.Tr("Clan leader"), info.ClanChief);
         }
 
         _userInfoRows.AddChild(new HSeparator());
 
-        AddUserInfoRow("National points", info.Loyalty.ToString("N0"), UiTheme.Gold);
-        AddUserInfoRow("Monthly NP", info.MonthlyLoyalty.ToString("N0"));
+        AddUserInfoRow(Localization.Loc.Tr("National points"), info.Loyalty.ToString("N0"), UiTheme.Gold);
+        AddUserInfoRow(Localization.Loc.Tr("Monthly NP"), info.MonthlyLoyalty.ToString("N0"));
     }
 
     private void AddUserInfoRow(string label, string value, Color? valueColor = null)
@@ -118,9 +118,9 @@ public partial class World
 
     private static string NationName(int nation) => nation switch
     {
-        Nations.Karus => "Karus",
-        Nations.ElMorad => "El Morad",
-        _ => "Neutral",
+        Nations.Karus => Localization.Loc.Tr("Karus"),
+        Nations.ElMorad => Localization.Loc.Tr("El Morad"),
+        _ => Localization.Loc.Tr("Neutral"),
     };
 
     private static Color NationColor(int nation) => nation switch
@@ -132,9 +132,9 @@ public partial class World
 
     private static string ClanGradeName(int grade) => grade switch
     {
-        1 => "Chief",
-        2 => "Vice chief",
-        5 => "Trainee",
-        _ => "Member",
+        1 => Localization.Loc.Tr("Chief"),
+        2 => Localization.Loc.Tr("Vice chief"),
+        5 => Localization.Loc.Tr("Trainee"),
+        _ => Localization.Loc.Tr("Member"),
     };
 }

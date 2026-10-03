@@ -161,7 +161,7 @@ public partial class World
             MouseFilter = Control.MouseFilterEnum.Pass,
             TooltipText = harmful
                 ? $"{s.Name}\n{TextWrap.Wrap(s.Desc, BuffTooltipWidth)}"
-                : $"{s.Name}\n{TextWrap.Wrap(s.Desc, BuffTooltipWidth)}\nDouble-click to remove.",
+                : $"{s.Name}\n{TextWrap.Wrap(s.Desc, BuffTooltipWidth)}\n{Localization.Loc.Tr("Double-click to remove.")}",
         };
         if (!harmful)
         {

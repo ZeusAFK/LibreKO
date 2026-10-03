@@ -62,7 +62,7 @@ public partial class World
         _sealSlot = -1;
         _sealCode = "";
         _sealPad.Visible = false;
-        _sealPanel.Title = mode == SealMode.Secret ? "Item Seal / Unseal" : "Item Bind / Release";
+        _sealPanel.Title = mode == SealMode.Secret ? Localization.Loc.Tr("Item Seal / Unseal") : Localization.Loc.Tr("Item Bind / Release");
         _sealPanel.Visible = true;
         _sealShown = true;
         RefreshSealWindow();
@@ -100,18 +100,18 @@ public partial class World
 
         var action = SealActionFor(_sealMode, held.State);
         _sealHeadline.Text = held.IsEmpty
-            ? "Place an item in the socket."
+            ? Localization.Loc.Tr("Place an item in the socket.")
             : action switch
             {
-                ItemSealType.Seal => "This item will be sealed.",
-                ItemSealType.Unseal => "The seal on this item will be lifted.",
-                ItemSealType.Bind => "This item will be bound to you.",
-                _ => "The binding on this item will be released.",
+                ItemSealType.Seal => Localization.Loc.Tr("This item will be sealed."),
+                ItemSealType.Unseal => Localization.Loc.Tr("The seal on this item will be lifted."),
+                ItemSealType.Bind => Localization.Loc.Tr("This item will be bound to you."),
+                _ => Localization.Loc.Tr("The binding on this item will be released."),
             };
 
         _sealPrompt.Text = held.IsEmpty || action != ItemSealType.Seal
             ? ""
-            : $"{SealFee:n0} coins";
+            : $"{SealFee:n0} {Localization.Loc.Tr("coins")}";
 
         _sealConfirm.Disabled = held.IsEmpty
             || (_sealMode == SealMode.Secret && _sealCode.Length != SealCodeLength);
@@ -139,11 +139,10 @@ public partial class World
         _sealAskText.Text = action switch
         {
             ItemSealType.Seal =>
-                $"It costs {SealFee:n0} coins and the item cannot be traded, upgraded or destroyed "
-                + "until unsealed. Seal it now?",
-            ItemSealType.Unseal => "Lift the seal?",
-            ItemSealType.Bind => "Bind this item to you?",
-            _ => "Release the binding?",
+                $"{Localization.Loc.Tr("It costs")} {SealFee:n0} {Localization.Loc.Tr("coins and the item cannot be traded, upgraded or destroyed until unsealed. Seal it now?")}",
+            ItemSealType.Unseal => Localization.Loc.Tr("Lift the seal?"),
+            ItemSealType.Bind => Localization.Loc.Tr("Bind this item to you?"),
+            _ => Localization.Loc.Tr("Release the binding?"),
         };
         _sealAskPanel.Visible = true;
         Audio.PlayUi(Sfx.MsgBoxPop);
@@ -177,10 +176,10 @@ public partial class World
         ApplySealFlag(abs, sealType);
         CombatNotice(sealType switch
         {
-            ItemSealType.Seal => "Item sealed.",
-            ItemSealType.Unseal => "Seal lifted.",
-            ItemSealType.Bind => "Item bound to you.",
-            _ => "Binding released.",
+            ItemSealType.Seal => Localization.Loc.Tr("Item sealed."),
+            ItemSealType.Unseal => Localization.Loc.Tr("Seal lifted."),
+            ItemSealType.Bind => Localization.Loc.Tr("Item bound to you."),
+            _ => Localization.Loc.Tr("Binding released."),
         });
         _sealCode = "";
         RefreshSealWindow();
@@ -206,18 +205,18 @@ public partial class World
 
     private static string SealRefusal(ItemSealType sealType, ItemSealResult result) => result switch
     {
-        ItemSealResult.NeedCoins => "You are short on the seal fee.",
-        ItemSealResult.WrongCode => "Wrong secret answer.",
-        ItemSealResult.MissingMaterial => "Insufficient items to perform the seal.",
-        ItemSealResult.TooSoon => "Please try again in a moment.",
-        ItemSealResult.NoCodeSet => "No secret answer is set for this account yet.",
-        ItemSealResult.CodeLockedOut => "Too many wrong answers. Contact support to reset it.",
+        ItemSealResult.NeedCoins => Localization.Loc.Tr("You are short on the seal fee."),
+        ItemSealResult.WrongCode => Localization.Loc.Tr("Wrong secret answer."),
+        ItemSealResult.MissingMaterial => Localization.Loc.Tr("Insufficient items to perform the seal."),
+        ItemSealResult.TooSoon => Localization.Loc.Tr("Please try again in a moment."),
+        ItemSealResult.NoCodeSet => Localization.Loc.Tr("No secret answer is set for this account yet."),
+        ItemSealResult.CodeLockedOut => Localization.Loc.Tr("Too many wrong answers. Contact support to reset it."),
         _ => sealType switch
         {
-            ItemSealType.Seal => "Seal failed.",
-            ItemSealType.Unseal => "Seal lift failed.",
-            ItemSealType.Bind => "This item cannot be bound.",
-            _ => "Item restoration failed.",
+            ItemSealType.Seal => Localization.Loc.Tr("Seal failed."),
+            ItemSealType.Unseal => Localization.Loc.Tr("Seal lift failed."),
+            ItemSealType.Bind => Localization.Loc.Tr("This item cannot be bound."),
+            _ => Localization.Loc.Tr("Item restoration failed."),
         },
     };
 
@@ -226,7 +225,7 @@ public partial class World
         _sealLayer = new CanvasLayer { Layer = 75 };
         AddChild(_sealLayer);
 
-        _sealPanel = new HudWindow("seal", "Item Seal / Unseal", new Vector2(210, 110))
+        _sealPanel = new HudWindow("seal", Localization.Loc.Tr("Item Seal / Unseal"), new Vector2(210, 110))
         {
             Visible = false,
         };
@@ -270,7 +269,7 @@ public partial class World
         _sealCodeRow.AddThemeConstantOverride("separation", 4);
         stageBox.AddChild(_sealCodeRow);
         _sealCodeRow.AddChild(UiTheme.Text(
-            "Enter your secret answer", 11, UiTheme.TextDim, HorizontalAlignment.Center));
+            Localization.Loc.Tr("Enter your secret answer"), 11, UiTheme.TextDim, HorizontalAlignment.Center));
 
         _sealCodeField = new LineEdit
         {
@@ -288,11 +287,11 @@ public partial class World
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         buttons.AddThemeConstantOverride("separation", 10);
         root.AddChild(buttons);
-        _sealConfirm = UiTheme.SmallButton("Confirm", "");
+        _sealConfirm = UiTheme.SmallButton(Localization.Loc.Tr("Confirm"), "");
         _sealConfirm.CustomMinimumSize = new Vector2(96, 28);
         _sealConfirm.Pressed += AskSealConfirm;
         buttons.AddChild(_sealConfirm);
-        var cancel = UiTheme.SmallButton("Cancel", "");
+        var cancel = UiTheme.SmallButton(Localization.Loc.Tr("Cancel"), "");
         cancel.CustomMinimumSize = new Vector2(96, 28);
         cancel.Pressed += CloseSealWindow;
         buttons.AddChild(cancel);
@@ -320,7 +319,7 @@ public partial class World
 
         var footer = new HBoxContainer();
         bagBox.AddChild(footer);
-        var goldLabel = UiTheme.Text("Coins", 12, UiTheme.TextLo);
+        var goldLabel = UiTheme.Text(Localization.Loc.Tr("Coins"), 12, UiTheme.TextLo);
         goldLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         footer.AddChild(goldLabel);
         _sealGold = UiTheme.Text("", 12, UiTheme.Gold, HorizontalAlignment.Right);
@@ -357,7 +356,7 @@ public partial class World
         }));
         grid.AddChild(SealKey("C", () => { _sealCode = ""; RefreshSealWindow(); }));
 
-        var done = UiTheme.SmallButton("Done", "");
+        var done = UiTheme.SmallButton(Localization.Loc.Tr("Done"), "");
         done.CustomMinimumSize = new Vector2(0, 30);
         done.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         done.Pressed += () => _sealPad.Visible = false;
@@ -429,11 +428,11 @@ public partial class World
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         buttons.AddThemeConstantOverride("separation", 10);
         box.AddChild(buttons);
-        var yes = UiTheme.SmallButton("Confirm", "");
+        var yes = UiTheme.SmallButton(Localization.Loc.Tr("Confirm"), "");
         yes.CustomMinimumSize = new Vector2(96, 28);
         yes.Pressed += SendSeal;
         buttons.AddChild(yes);
-        var no = UiTheme.SmallButton("Cancel", "");
+        var no = UiTheme.SmallButton(Localization.Loc.Tr("Cancel"), "");
         no.CustomMinimumSize = new Vector2(96, 28);
         no.Pressed += () => _sealAskPanel.Visible = false;
         buttons.AddChild(no);

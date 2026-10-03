@@ -5,7 +5,6 @@ namespace LibreKO;
 public sealed class PlateStack
 {
     private readonly Label3D _name;
-    private readonly Node _parent;
 
     private Label3D? _title;
     private Label3D? _clan;
@@ -13,7 +12,6 @@ public sealed class PlateStack
     public PlateStack(Label3D name)
     {
         _name = name;
-        _parent = name.GetParent();
     }
 
     public Label3D Name => _name;
@@ -50,10 +48,12 @@ public sealed class PlateStack
         }
         else if (label == null || !GodotObject.IsInstanceValid(label))
         {
-            label = make(text, _name.Position.Y);
-            label.Position = _name.Position;
+            // Parent the clan/title label under the name label so it inherits the
+            // name's transform (movement, sit/stand height) and always follows it.
+            label = make(text, 0f);
+            label.Position = Vector3.Zero;
             label.Visible = _name.Visible;
-            _parent.AddChild(label);
+            _name.AddChild(label);
         }
         else
         {

@@ -70,6 +70,7 @@ public enum KeyAction
     DailyQuests,
     Rentals,
     TownRecall,
+    DpsPanel,
 
     HotPageNext,
     PotionHp,
@@ -243,6 +244,7 @@ public static partial class KeyBinds
         new(KeyAction.DailyQuests, BindGroup.Windows, "Daily Quests", Chord(Key.KpPeriod)),
         new(KeyAction.Rentals, BindGroup.Windows, "Rentals", Chord(Key.Pause)),
         new(KeyAction.TownRecall, BindGroup.Windows, "Town Recall", Ctrl(Key.H)),
+        new(KeyAction.DpsPanel, BindGroup.Windows, "DPS Damage Stats", Chord(Key.F)),
 
         new(KeyAction.PerformanceOverlay, BindGroup.System, "Performance Overlay", Shift(Key.F3)),
         new(KeyAction.PerfSkipPoses, BindGroup.System, "Perf bisect: crowd poses", Shift(Key.F5)),

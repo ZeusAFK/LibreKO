@@ -41,7 +41,7 @@ public partial class World : Node3D
         {
             if (region == ItemMove.Region.BagSlot && MagicBagHasItems(absSlot))
             {
-                CombatNotice(BagStillHoldsItems);
+                CombatNotice(Localization.Loc.Tr(BagStillHoldsItems));
                 return;
             }
             int free = Inv.FirstFreeGridSlot();
@@ -171,7 +171,7 @@ public partial class World : Node3D
         if (dir == ItemMove.None) return;
         if (fromRegion == ItemMove.Region.BagSlot && MagicBagHasItems(from))
         {
-            CombatNotice(BagStillHoldsItems);
+            CombatNotice(Localization.Loc.Tr(BagStillHoldsItems));
             return;
         }
 
@@ -235,7 +235,7 @@ public partial class World : Node3D
         Floaters?.Item(itemId, count);
         if (itemId == Net.GoldItemId) return;
         string name = ItemData.DisplayName(itemId);
-        CombatLogAdd(count > 1 ? $"You obtained {name} x{count:n0}." : $"You obtained {name}.", CombatLogKind.Resource);
+        CombatLogAdd(count > 1 ? $"{Localization.Loc.Tr("You obtained")} {name} x{count:n0}." : $"{Localization.Loc.Tr("You obtained")} {name}.", CombatLogKind.Resource);
     }
 
     private void OnInventorySlotUpdate(int absSlot, ItemSlot item)

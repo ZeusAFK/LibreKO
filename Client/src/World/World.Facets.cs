@@ -44,6 +44,7 @@ public partial class World : Node3D
         Facet(HotbarInit, HotbarDispose);
         Facet(SkillWindowInit, SkillWindowDispose);
         Facet(PartyInit, PartyDispose);
+        Facet(DpsInit, DpsDispose);
         Facet(LootInit, LootDispose);
         Facet(NpcInit, NpcDispose);
         Facet(QuestInit, QuestDispose);

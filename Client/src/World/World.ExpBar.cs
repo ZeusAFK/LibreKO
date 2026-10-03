@@ -96,7 +96,7 @@ public partial class World : Node3D
         _expBarRoot.AddChild(row);
 
         _expBarLevel = StripText(row, UiTheme.TextHi, LevelTextScale);
-        StripText(row, UiTheme.TextLo).Text = "EXP";
+        StripText(row, UiTheme.TextLo).Text = Localization.Loc.Tr("EXP");
         _expBarLabel = StripText(row, UiTheme.GoldBright);
         _expBarClock = StripText(row, UiTheme.TextHi);
         _expBarStats = StripText(row, UiTheme.Good);
@@ -147,7 +147,7 @@ public partial class World : Node3D
         _expBarFill.AnchorRight = ratio;
         if (_expBarGleam != null) _expBarGleam.AnchorRight = ratio;
         _expBarLabel.Text = $"{Sheet.ExpPercent:0.0}%";
-        if (_expBarLevel != null) _expBarLevel.Text = $"Lv {Sheet.Level}";
+        if (_expBarLevel != null) _expBarLevel.Text = $"{Localization.Loc.Tr("Lv")} {Sheet.Level}";
     }
 
     private void ExpBarStatsTick(double now)

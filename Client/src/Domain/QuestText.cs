@@ -34,13 +34,18 @@ public static class QuestText
     public static string Menu(int id)
     {
         EnsureLoaded();
+        string zh = Localization.Loc.QuestMenuText(id, "");
+        if (zh.Length > 0) return zh;
         return id >= 0 && _menu.TryGetValue(id, out var s) ? s : "";
     }
 
     public static string Talk(int id, string selfName)
     {
         EnsureLoaded();
-        if (id < 0 || !_talk.TryGetValue(id, out var s) || s.Length == 0) return "";
+        if (id < 0) return "";
+        string zh = Localization.Loc.QuestTalkText(id, "");
+        if (zh.Length > 0) return Substitute(zh, selfName);
+        if (!_talk.TryGetValue(id, out var s) || s.Length == 0) return "";
         return Substitute(s, selfName);
     }
 

@@ -310,9 +310,29 @@ public partial class SettingsPanel : CanvasLayer
 
     public static void Open(Node parent) => parent.AddChild(new SettingsPanel { Layer = 200 });
 
-    public override void _ExitTree() => Audio.ApplyVolumes();
-
     public override void _Ready()
+    {
+        Localization.Loc.LanguageChanged += OnLanguageChanged;
+        Build();
+    }
+
+    public override void _ExitTree()
+    {
+        Localization.Loc.LanguageChanged -= OnLanguageChanged;
+        Audio.ApplyVolumes();
+    }
+
+    // Rebuild the panel in its new language after the language dropdown is applied.
+    private void OnLanguageChanged() => CallDeferred(nameof(DeferredRebuild));
+
+    private void DeferredRebuild()
+    {
+        foreach (Node child in GetChildren())
+            child.QueueFree();
+        Build();
+    }
+
+    private void Build()
     {
         var dim = new ColorRect { Color = new Color(0, 0, 0, 0.45f) };
         dim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
@@ -347,7 +367,7 @@ public partial class SettingsPanel : CanvasLayer
         outer.AddThemeConstantOverride("separation", 12);
         margin.AddChild(outer);
 
-        var title = new Label { Text = "Settings", HorizontalAlignment = HorizontalAlignment.Center };
+        var title = new Label { Text = Localization.Loc.Tr("Settings"), HorizontalAlignment = HorizontalAlignment.Center };
         title.AddThemeFontSizeOverride("font_size", 22);
         outer.AddChild(title);
 
@@ -365,19 +385,19 @@ public partial class SettingsPanel : CanvasLayer
         }
         outer.AddChild(tabs);
 
-        BuildDisplayTab(Tab(tabs, "Display"));
-        BuildGraphicsTab(Tab(tabs, "Graphics"));
-        BuildEffectsTab(Tab(tabs, "Effects"));
-        BuildControlsTab(Tab(tabs, "Controls"));
-        BuildKeysTab(Tab(tabs, "Keys"));
-        BuildPadTab(Tab(tabs, "Joypad"));
-        BuildSoundTab(Tab(tabs, "Sound"));
-        BuildPluginsTab(Tab(tabs, "Plugins"));
+        BuildDisplayTab(Tab(tabs, Localization.Loc.Tr("Display")));
+        BuildGraphicsTab(Tab(tabs, Localization.Loc.Tr("Graphics")));
+        BuildEffectsTab(Tab(tabs, Localization.Loc.Tr("Effects")));
+        BuildControlsTab(Tab(tabs, Localization.Loc.Tr("Controls")));
+        BuildKeysTab(Tab(tabs, Localization.Loc.Tr("Keys")));
+        BuildPadTab(Tab(tabs, Localization.Loc.Tr("Joypad")));
+        BuildSoundTab(Tab(tabs, Localization.Loc.Tr("Sound")));
+        BuildPluginsTab(Tab(tabs, Localization.Loc.Tr("Plugins")));
 
         var btns = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         btns.AddThemeConstantOverride("separation", 12);
         outer.AddChild(btns);
-        var apply = new Button { Text = "Apply", CustomMinimumSize = ActionButtonSize };
+        var apply = new Button { Text = Localization.Loc.Tr("Apply"), CustomMinimumSize = ActionButtonSize };
         apply.Pressed += () =>
         {
             Config.SetVideo((Config.VideoMode)_mode.Selected, Resolutions[_res.Selected].X,
@@ -401,7 +421,7 @@ public partial class SettingsPanel : CanvasLayer
                             (float)_volUi.Value, (float)_volVoice.Value);
         };
         btns.AddChild(apply);
-        var close = new Button { Text = "Close", CustomMinimumSize = ActionButtonSize };
+        var close = new Button { Text = Localization.Loc.Tr("Close"), CustomMinimumSize = ActionButtonSize };
         close.Pressed += QueueFree;
         btns.AddChild(close);
     }
@@ -413,6 +433,7 @@ public partial class SettingsPanel : CanvasLayer
     {
         (GameLanguage.English, "English"),
         (GameLanguage.Spanish, "Espanol"),
+        (GameLanguage.Chinese, "简体中文"),
     };
 
     private void ApplyLanguage()
@@ -428,23 +449,23 @@ public partial class SettingsPanel : CanvasLayer
 
     private void BuildDisplayTab(VBoxContainer vb)
     {
-        vb.AddChild(Row("Language", _language = new OptionButton()));
+        vb.AddChild(Row(Localization.Loc.Tr("Language"), _language = new OptionButton()));
         foreach (var (language, label) in LanguageChoices)
             _language.AddItem(label, (int)language);
         _language.Selected = Array.FindIndex(LanguageChoices, c => c.Language == Config.Language);
         if (_language.Selected < 0)
             _language.Selected = 0;
 
-        var windowRow = Row("Window", _mode = new OptionButton());
+        var windowRow = Row(Localization.Loc.Tr("Window"), _mode = new OptionButton());
         windowRow.Visible = Platform.PointerUi;
         vb.AddChild(windowRow);
-        _mode.AddItem("Windowed", 0);
-        _mode.AddItem("Borderless Fullscreen", 1);
-        _mode.AddItem("Fullscreen", 2);
+        _mode.AddItem(Localization.Loc.Tr("Windowed"), 0);
+        _mode.AddItem(Localization.Loc.Tr("Borderless Fullscreen"), 1);
+        _mode.AddItem(Localization.Loc.Tr("Fullscreen"), 2);
         _mode.Selected = (int)Config.WindowMode;
         _mode.ItemSelected += _ => _res.Disabled = _mode.Selected != 0;
 
-        var resRow = Row("Resolution", _res = new OptionButton());
+        var resRow = Row(Localization.Loc.Tr("Resolution"), _res = new OptionButton());
         resRow.Visible = Platform.PointerUi;
         vb.AddChild(resRow);
         int sel = 0;
@@ -467,9 +488,9 @@ public partial class SettingsPanel : CanvasLayer
             CustomMinimumSize = new Vector2(52, 0),
         };
         _uiScale.ValueChanged += v => scaleValue.Text = UiScaleText((float)v);
-        var scaleRow = Row("UI Size", _uiScale);
+        var scaleRow = Row(Localization.Loc.Tr("UI Size"), _uiScale);
         scaleRow.AddChild(scaleValue);
-        scaleRow.TooltipText = "Scales every menu, window and HUD element. Larger values suit small or touch screens.";
+        scaleRow.TooltipText = Localization.Loc.Tr("Scales every menu, window and HUD element. Larger values suit small or touch screens.");
         vb.AddChild(scaleRow);
 
         _nameScale = new HSlider
@@ -483,19 +504,22 @@ public partial class SettingsPanel : CanvasLayer
             CustomMinimumSize = new Vector2(52, 0),
         };
         _nameScale.ValueChanged += v => nameScaleValue.Text = UiScaleText((float)v);
-        var nameScaleRow = Row("Name Size", _nameScale);
+        var nameScaleRow = Row(Localization.Loc.Tr("Name Size"), _nameScale);
         nameScaleRow.AddChild(nameScaleValue);
-        nameScaleRow.TooltipText = "Size of the names over characters, monsters and NPCs.";
+        nameScaleRow.TooltipText = Localization.Loc.Tr("Size of the names over characters, monsters and NPCs.");
         vb.AddChild(nameScaleRow);
 
-        var vsyncRow = Row("V-Sync", _vsync = new CheckButton { ButtonPressed = Config.VSync });
+        var vsyncRow = Row(Localization.Loc.Tr("V-Sync"), _vsync = new CheckButton { ButtonPressed = Config.VSync });
         vsyncRow.Visible = Platform.PointerUi;
-        vsyncRow.TooltipText = "Caps the frame rate to your monitor's refresh rate. Turn it off to see "
-                               + "what the other graphics settings are actually doing.";
+        vsyncRow.TooltipText = Localization.Loc.Tr("Caps the frame rate to your monitor's refresh rate. Turn it off to see "
+                               + "what the other graphics settings are actually doing.");
         vb.AddChild(vsyncRow);
 
-        vb.AddChild(Row("FPS Limit", _fps = new OptionButton()));
-        foreach (var (label, id) in new[] { ("Unlimited", 0), ("30", 1), ("60", 2), ("120", 3), ("144", 4), ("240", 5) })
+        vb.AddChild(Row(Localization.Loc.Tr("FPS Limit"), _fps = new OptionButton()));
+        foreach (var (label, id) in new[]
+                 {
+                     (Localization.Loc.Tr("Unlimited"), 0), ("30", 1), ("60", 2), ("120", 3), ("144", 4), ("240", 5),
+                 })
             _fps.AddItem(label, id);
         _fps.Selected = (int)Config.FpsLimit;
     }
@@ -513,43 +537,44 @@ public partial class SettingsPanel : CanvasLayer
             CustomMinimumSize = new Vector2(52, 0),
         };
         _viewDistance.ValueChanged += v => viewValue.Text = ViewDistanceText((float)v);
-        var viewRow = Row("View Distance", _viewDistance);
+        var viewRow = Row(Localization.Loc.Tr("View Distance"), _viewDistance);
         viewRow.AddChild(viewValue);
-        viewRow.TooltipText = "How far terrain, objects and characters draw. Lower values run faster on phones.";
+        viewRow.TooltipText = Localization.Loc.Tr("How far terrain, objects and characters draw. Lower values run faster on phones.");
         vb.AddChild(viewRow);
 
-        vb.AddChild(Row("Shadows", _shadows = new CheckButton { ButtonPressed = Config.Shadows }));
-        vb.AddChild(Row("Ambient Occlusion", _ssao = new CheckButton { ButtonPressed = Config.Ssao }));
-        vb.AddChild(Row("Volumetric Fog", _volFog = new CheckButton { ButtonPressed = Config.VolumetricFog }));
-        vb.AddChild(Row("Bloom", _bloom = new CheckButton { ButtonPressed = Config.Bloom }));
-        var fxLayerRow = Row("Accurate Effect Blending", _fxLayer = new CheckButton { ButtonPressed = Config.FxLayer });
-        fxLayerRow.TooltipText = "Blends spells and effects the way the original client does, outside bloom and tone mapping.";
+        vb.AddChild(Row(Localization.Loc.Tr("Shadows"), _shadows = new CheckButton { ButtonPressed = Config.Shadows }));
+        vb.AddChild(Row(Localization.Loc.Tr("Ambient Occlusion"), _ssao = new CheckButton { ButtonPressed = Config.Ssao }));
+        vb.AddChild(Row(Localization.Loc.Tr("Volumetric Fog"), _volFog = new CheckButton { ButtonPressed = Config.VolumetricFog }));
+        vb.AddChild(Row(Localization.Loc.Tr("Bloom"), _bloom = new CheckButton { ButtonPressed = Config.Bloom }));
+        var fxLayerRow = Row(Localization.Loc.Tr("Accurate Effect Blending"), _fxLayer = new CheckButton { ButtonPressed = Config.FxLayer });
+        fxLayerRow.TooltipText = Localization.Loc.Tr("Blends spells and effects the way the original client does, outside bloom and tone mapping.");
         vb.AddChild(fxLayerRow);
-        vb.AddChild(Row("Clouds", _clouds = new CheckButton { ButtonPressed = Config.Clouds }));
-        var capeRow = Row("Clan Capes", _capes = new CheckButton { ButtonPressed = Config.Capes });
-        capeRow.TooltipText = "Simulated cloth on every player in range. Costs a lot of frame time.";
+        vb.AddChild(Row(Localization.Loc.Tr("Clouds"), _clouds = new CheckButton { ButtonPressed = Config.Clouds }));
+        var capeRow = Row(Localization.Loc.Tr("Clan Capes"), _capes = new CheckButton { ButtonPressed = Config.Capes });
+        capeRow.TooltipText = Localization.Loc.Tr("Simulated cloth on every player in range. Costs a lot of frame time.");
         vb.AddChild(capeRow);
-        vb.AddChild(Row("Anti-Aliasing", _aa = new OptionButton()));
-        foreach (var (label, id) in new[] { ("Off", 0), ("FXAA", 1), ("MSAA 2x", 2), ("MSAA 4x", 3) })
+        vb.AddChild(Row(Localization.Loc.Tr("Anti-Aliasing"), _aa = new OptionButton()));
+        foreach (var (label, id) in new[] { (Localization.Loc.Tr("Off"), 0), ("FXAA", 1), ("MSAA 2x", 2), ("MSAA 4x", 3) })
             _aa.AddItem(label, id);
         _aa.Selected = (int)Config.AntiAlias;
 
-        var upscaleRow = Row("Upscaling", _upscale = new OptionButton());
-        foreach (var (label, id) in new[] { ("Off", 0), ("FSR 1.0", 1), ("FSR 2.2", 2) })
+        var upscaleRow = Row(Localization.Loc.Tr("Upscaling"), _upscale = new OptionButton());
+        foreach (var (label, id) in new[] { (Localization.Loc.Tr("Off"), 0), ("FSR 1.0", 1), ("FSR 2.2", 2) })
             _upscale.AddItem(label, id);
         _upscale.Selected = (int)Config.Upscale;
         _upscale.Disabled = !Config.UpscaleSupported;
         upscaleRow.TooltipText = Config.UpscaleSupported
-            ? "Renders the world below screen resolution and upscales it. The interface stays sharp. "
-              + "FSR 2.2 is sharper but can smear fast-moving effects."
-            : "Not available on this renderer.";
+            ? Localization.Loc.Tr("Renders the world below screen resolution and upscales it. The interface stays sharp. "
+              + "FSR 2.2 is sharper but can smear fast-moving effects.")
+            : Localization.Loc.Tr("Not available on this renderer.");
         vb.AddChild(upscaleRow);
 
-        var qualityRow = Row("Upscale Quality", _upscaleQuality = new OptionButton());
+        var qualityRow = Row(Localization.Loc.Tr("Upscale Quality"), _upscaleQuality = new OptionButton());
         foreach (var (label, id) in new[]
                  {
-                     ("Ultra Quality", 0), ("Quality", 1), ("Balanced", 2),
-                     ("Performance", 3), ("Ultra Performance", 4),
+                     (Localization.Loc.Tr("Ultra Quality"), 0), (Localization.Loc.Tr("Quality"), 1),
+                     (Localization.Loc.Tr("Balanced"), 2),
+                     (Localization.Loc.Tr("Performance"), 3), (Localization.Loc.Tr("Ultra Performance"), 4),
                  })
             _upscaleQuality.AddItem(label, id);
         _upscaleQuality.Selected = (int)Config.UpscaleQuality;
@@ -571,13 +596,13 @@ public partial class SettingsPanel : CanvasLayer
         _upscaleQuality.Disabled = Config.Upscale == Config.UpscaleMode.Off || !Config.UpscaleSupported;
         ShowInternalRes();
         qualityRow.AddChild(internalRes);
-        qualityRow.TooltipText = "How far below screen resolution the world is drawn before upscaling.";
+        qualityRow.TooltipText = Localization.Loc.Tr("How far below screen resolution the world is drawn before upscaling.");
         vb.AddChild(qualityRow);
     }
 
     private void BuildEffectsTab(VBoxContainer vb)
     {
-        vb.AddChild(Row("World Effects", _fxAmbient = new CheckButton { ButtonPressed = Config.FxAmbient }));
+        vb.AddChild(Row(Localization.Loc.Tr("World Effects"), _fxAmbient = new CheckButton { ButtonPressed = Config.FxAmbient }));
         _fxDistance = new HSlider
         {
             MinValue = 40, MaxValue = 400, Step = 10, Value = Config.FxDistance,
@@ -585,11 +610,11 @@ public partial class SettingsPanel : CanvasLayer
         };
         var dist = new Label { Text = $"{Config.FxDistance} m", CustomMinimumSize = new Vector2(52, 0) };
         _fxDistance.ValueChanged += v => dist.Text = $"{(int)v} m";
-        var distRow = Row("Effect Distance", _fxDistance);
+        var distRow = Row(Localization.Loc.Tr("Effect Distance"), _fxDistance);
         distRow.AddChild(dist);
         vb.AddChild(distRow);
-        vb.AddChild(Row("Damage Numbers", _fxNumbers = new CheckButton { ButtonPressed = Config.DamageNumbers }));
-        vb.AddChild(Row("Combat Log", _fxCombatLog = new CheckButton { ButtonPressed = Config.CombatLog }));
+        vb.AddChild(Row(Localization.Loc.Tr("Damage Numbers"), _fxNumbers = new CheckButton { ButtonPressed = Config.DamageNumbers }));
+        vb.AddChild(Row(Localization.Loc.Tr("Combat Log"), _fxCombatLog = new CheckButton { ButtonPressed = Config.CombatLog }));
     }
 
     private void BuildControlsTab(VBoxContainer vb)
@@ -601,14 +626,14 @@ public partial class SettingsPanel : CanvasLayer
         };
         var turnValue = new Label { Text = TurnSpeedText(Config.CamTurnSpeed), CustomMinimumSize = new Vector2(52, 0) };
         _camTurnSpeed.ValueChanged += v => turnValue.Text = TurnSpeedText((float)v);
-        var turnRow = Row("Camera Turn Speed", _camTurnSpeed);
+        var turnRow = Row(Localization.Loc.Tr("Camera Turn Speed"), _camTurnSpeed);
         turnRow.AddChild(turnValue);
-        turnRow.TooltipText = "How fast the middle-mouse click spins the camera a half turn.";
+        turnRow.TooltipText = Localization.Loc.Tr("How fast the middle-mouse click spins the camera a half turn.");
         turnRow.Visible = Platform.PointerUi;
         vb.AddChild(turnRow);
 
-        var edgeRow = Row("Screen Edge Panning", _camEdgePan = new CheckButton { ButtonPressed = Config.CamEdgePan });
-        edgeRow.TooltipText = "In fullscreen, hold the cursor against the left or right border to turn the camera.";
+        var edgeRow = Row(Localization.Loc.Tr("Screen Edge Panning"), _camEdgePan = new CheckButton { ButtonPressed = Config.CamEdgePan });
+        edgeRow.TooltipText = Localization.Loc.Tr("In fullscreen, hold the cursor against the left or right border to turn the camera.");
         edgeRow.Visible = Platform.PointerUi;
         vb.AddChild(edgeRow);
 
@@ -619,17 +644,17 @@ public partial class SettingsPanel : CanvasLayer
         };
         var edgeValue = new Label { Text = TurnSpeedText(Config.CamEdgePanSpeed), CustomMinimumSize = new Vector2(52, 0) };
         _camEdgeSpeed.ValueChanged += v => edgeValue.Text = TurnSpeedText((float)v);
-        var edgeSpeedRow = Row("Edge Pan Speed", _camEdgeSpeed);
+        var edgeSpeedRow = Row(Localization.Loc.Tr("Edge Pan Speed"), _camEdgeSpeed);
         edgeSpeedRow.AddChild(edgeValue);
         edgeSpeedRow.TooltipText = $"The original client turns at {Config.CamEdgePanSpeedRetail:0} °/s.";
         edgeSpeedRow.Visible = Platform.PointerUi;
         vb.AddChild(edgeSpeedRow);
 
         if (Platform.PointerUi) return;
-        vb.AddChild(StickRow("Move Stick", out _moveStick, Config.MoveStickSensitivity,
-                             "How far the left stick pushes before the character runs flat out."));
-        vb.AddChild(StickRow("Look Stick", out _lookStick, Config.LookStickSensitivity,
-                             "How fast the right stick swings the camera."));
+        vb.AddChild(StickRow(Localization.Loc.Tr("Move Stick"), out _moveStick, Config.MoveStickSensitivity,
+                             Localization.Loc.Tr("How far the left stick pushes before the character runs flat out.")));
+        vb.AddChild(StickRow(Localization.Loc.Tr("Look Stick"), out _lookStick, Config.LookStickSensitivity,
+                             Localization.Loc.Tr("How fast the right stick swings the camera.")));
     }
 
     private static HBoxContainer StickRow(string label, out HSlider slider, float value, string hint)
@@ -655,12 +680,12 @@ public partial class SettingsPanel : CanvasLayer
 
     private void BuildSoundTab(VBoxContainer vb)
     {
-        vb.AddChild(Row("Enabled", _sndOn = new CheckButton { ButtonPressed = Config.AudioEnabled }));
-        vb.AddChild(VolumeRow("Master", Audio.BusMaster, out _volMaster, Config.MasterVolume));
-        vb.AddChild(VolumeRow("Music", Audio.BusMusic, out _volMusic, Config.MusicVolume));
-        vb.AddChild(VolumeRow("Sound effects", Audio.BusSfx, out _volSfx, Config.SfxVolume));
-        vb.AddChild(VolumeRow("Interface sounds", Audio.BusUi, out _volUi, Config.UiVolume));
-        vb.AddChild(VolumeRow("Voice", Audio.BusVoice, out _volVoice, Config.VoiceVolume));
+        vb.AddChild(Row(Localization.Loc.Tr("Enabled"), _sndOn = new CheckButton { ButtonPressed = Config.AudioEnabled }));
+        vb.AddChild(VolumeRow(Localization.Loc.Tr("Master"), Audio.BusMaster, out _volMaster, Config.MasterVolume));
+        vb.AddChild(VolumeRow(Localization.Loc.Tr("Music"), Audio.BusMusic, out _volMusic, Config.MusicVolume));
+        vb.AddChild(VolumeRow(Localization.Loc.Tr("Sound effects"), Audio.BusSfx, out _volSfx, Config.SfxVolume));
+        vb.AddChild(VolumeRow(Localization.Loc.Tr("Interface sounds"), Audio.BusUi, out _volUi, Config.UiVolume));
+        vb.AddChild(VolumeRow(Localization.Loc.Tr("Voice"), Audio.BusVoice, out _volVoice, Config.VoiceVolume));
     }
 
     public override void _Input(InputEvent ev)

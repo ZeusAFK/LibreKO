@@ -20,7 +20,7 @@ public partial class World
         _clanCreateLayer = new CanvasLayer { Layer = 75 };
         AddChild(_clanCreateLayer);
 
-        _clanCreatePanel = new HudWindow("creat_clan", "Create a Clan", new Vector2(300, 200), bodyMinWidth: ClanCreatePanelWidth)
+        _clanCreatePanel = new HudWindow("creat_clan", Localization.Loc.Tr("Create a Clan"), new Vector2(300, 200), bodyMinWidth: ClanCreatePanelWidth)
         { Visible = false };
         _clanCreatePanel.Closed += CloseClanCreate;
         _clanCreateLayer.AddChild(_clanCreatePanel);
@@ -34,7 +34,7 @@ public partial class World
 
         _clanCreateName = new LineEdit
         {
-            PlaceholderText = "clan name",
+            PlaceholderText = Localization.Loc.Tr("clan name"),
             MaxLength = ClanNameMaxLength,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
@@ -45,10 +45,10 @@ public partial class World
         buttons.AddThemeConstantOverride("separation", 8);
         root.AddChild(buttons);
         buttons.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
-        var yes = new Button { Text = "Create", FocusMode = Control.FocusModeEnum.None };
+        var yes = new Button { Text = Localization.Loc.Tr("Create"), FocusMode = Control.FocusModeEnum.None };
         yes.Pressed += SubmitClanCreate;
         buttons.AddChild(yes);
-        var no = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        var no = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         no.Pressed += CloseClanCreate;
         buttons.AddChild(no);
     }
@@ -61,21 +61,21 @@ public partial class World
     {
         if (Sheet.Level < ClanTypes.CreationLevel)
         {
-            CombatNotice("Sorry.  A weakling like you are not fit to become a leader!!");
+            CombatNotice(Localization.Loc.Tr("Sorry.  A weakling like you are not fit to become a leader!!"));
             return;
         }
         if (Sheet.Gold < ClanTypes.CreationCoins)
         {
-            CombatNotice($"Sorry.  You need {ClanTypes.CreationCoins:n0} Coins in order to create a clan.");
+            CombatNotice($"{Localization.Loc.Tr("Sorry.  You need")} {ClanTypes.CreationCoins:n0} {Localization.Loc.Tr("Coins in order to create a clan.")}");
             return;
         }
         if (MyClan.InClan)
         {
-            CombatNotice("You can't create a clan because you're already in another clan.");
+            CombatNotice(Localization.Loc.Tr("You can't create a clan because you're already in another clan."));
             return;
         }
 
-        OpenClanCreate($"Name your clan. Founding it costs {ClanTypes.CreationCoins:n0} coins and makes you its chief.");
+        OpenClanCreate($"{Localization.Loc.Tr("Name your clan. Founding it costs")} {ClanTypes.CreationCoins:n0} {Localization.Loc.Tr("coins and makes you its chief.")}");
     }
 
     private void OpenClanCreate(string message)
@@ -99,7 +99,7 @@ public partial class World
         string name = _clanCreateName.Text.Trim();
         if (name.Length < ClanNameMinLength)
         {
-            _clanCreateMessage.Text = $"A clan name needs {ClanNameMinLength} to {ClanNameMaxLength} characters.";
+            _clanCreateMessage.Text = $"{Localization.Loc.Tr("A clan name needs")} {ClanNameMinLength} {Localization.Loc.Tr("to")} {ClanNameMaxLength} {Localization.Loc.Tr("characters.")}";
             return;
         }
         Net.I.SendClanCreate(name);

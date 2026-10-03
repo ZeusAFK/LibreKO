@@ -158,6 +158,8 @@ public static class ItemData
     public const int MaxPlusJewel = 3;
     public const int MaxPlusGear = 10;
     public const int MaxPlusReverse = 21;
+    private const int EquipSlotFirst = 0;
+    private const int EquipSlotLast = 14;
 
     public static class Rarity
     {
@@ -585,18 +587,39 @@ public static class ItemData
         var ext = ExtFor(id);
         if (ext != null && UsesExtName(ext.MagicOrRare))
         {
-            string extName = ext.Name.Trim();
+            string extName = Localization.Loc.ItemName(id, ext.Name.Trim());
             if (extName.Length > 0) return extName;
         }
         if (string.IsNullOrWhiteSpace(def.Name)) return $"Item {id}";
-        int plus = ext == null ? 0 : UpgradeLevel(ext);
-        return plus > 0 ? $"{def.Name}(+{plus})" : def.Name;
+        int plus = ext == null ? PlusFallback(id, def) : UpgradeLevel(ext);
+        string name = Localization.Loc.ItemName(id, def.Name);
+        return plus > 0 ? $"{name}(+{plus})" : name;
+    }
+
+    /// <summary>Localized description for tooltips (keeps the '|' newline convention of the source data).</summary>
+    public static string DisplayDesc(int id)
+    {
+        var def = Get(id);
+        if (def == null) return "";
+        return Localization.Loc.ItemDesc(id, def.Desc);
     }
 
     public static int UpgradeLevel(int id)
     {
-        SplitUpgrade(DisplayName(id), out int plus);
-        return plus;
+        var ext = ExtFor(id);
+        if (ext != null) return UpgradeLevel(ext);
+        return PlusFallback(id, Get(id));
+    }
+
+    /// <summary>KO encodes an upgraded item's +N in the last digit of its id (a +1 weapon ends in 1,
+    /// a +8 in 8). The client only has this id when the extension tables were not baked, so without an
+    /// Ext we fall back to that convention for equippable items — the reason a freshly upgraded item
+    /// kept showing its old level.</summary>
+    private static int PlusFallback(int id, Item? def)
+    {
+        if (def == null || def.Slot < EquipSlotFirst || def.Slot > EquipSlotLast) return 0;
+        int tail = id % 10;
+        return tail is >= 1 and <= 8 ? tail : 0;
     }
 
     public static string SplitUpgrade(string displayName, out int plus)
@@ -614,6 +637,8 @@ public static class ItemData
     public static string Text(int id, string fallback)
     {
         EnsureLoaded();
+        string zh = Localization.Loc.ItemText(id, "");
+        if (zh.Length > 0) return zh;
         return _texts.TryGetValue(id, out var text) && text.Length > 0 ? text : fallback;
     }
 
@@ -714,7 +739,8 @@ public static class ItemData
     private static int UpgradeLevel(Ext ext)
     {
         if (!TakesUpgradeSuffix(ext.MagicOrRare)) return 0;
-        if (ext.MagicOrRare == Rarity.Reverse) return ext.Plus % 100;
+        if (ext.Plus > 0)
+            return ext.MagicOrRare == Rarity.Reverse ? ext.Plus % 100 : Math.Min(ext.Plus, MaxPlusGear);
         int tail = ext.Id % 10;
         if (tail != 0) return tail;
         return ext.MagicOrRare != Rarity.Regular ? 10 : 0;

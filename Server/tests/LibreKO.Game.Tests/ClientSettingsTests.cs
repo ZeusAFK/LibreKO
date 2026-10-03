@@ -31,6 +31,22 @@ public class ClientSettingsTests : GameTestBase
     }
 
     [Fact]
+    public async Task SetLanguage_Chinese_Accepted()
+    {
+        var (coordinator, session, client, sent) = CreateHarness();
+
+        await coordinator.HandleAsync(client, Request(SubSetLanguage, (byte)GameLanguage.Chinese));
+
+        session.Language.Should().Be(GameLanguage.Chinese);
+        session.LanguageCode.Should().Be("zh");
+        var reply = sent.Should().ContainSingle().Subject;
+        reply.GetOpcode().Should().Be((byte)GameOpcodes.GS_CLIENT_SETTINGS);
+        reply.ReadByte().Should().Be(SubSetLanguage);
+        reply.ReadByte().Should().Be(1);
+        reply.ReadByte().Should().Be((byte)GameLanguage.Chinese);
+    }
+
+    [Fact]
     public async Task SetLanguage_RejectsALanguageTheServerDoesNotHaveAndKeepsTheCurrentOne()
     {
         var (coordinator, session, client, sent) = CreateHarness();

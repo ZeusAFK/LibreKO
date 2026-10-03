@@ -14,6 +14,8 @@ public partial class World
     private TextureRect _powerUpStoreImage = null!;
     private Button _lotteryIcon = null!;
     private TextureRect _lotteryImage = null!;
+    private Button _dpsIcon = null!;
+    private TextureRect _dpsImage = null!;
 
     private static Color TopIconColor(bool waiting) => waiting ? UiTheme.GoldBright : UiTheme.TextLo;
 
@@ -22,16 +24,21 @@ public partial class World
         _topIconLayer = new CanvasLayer { Layer = 66 };
         AddChild(_topIconLayer);
 
-        _powerUpStoreIcon = TopIconButton(_topIconLayer, "system/gem", "Power-Up Store",
+        _powerUpStoreIcon = TopIconButton(_topIconLayer, "system/gem", Localization.Loc.Tr("Power-Up Store"),
             OpenPowerUpStore, out _powerUpStoreImage);
         _powerUpStoreIcon.Resized += PlacePowerUpStoreIcon;
 
-        _lotteryIcon = TopIconButton(_topIconLayer, "system/ticket", "Lottery Event",
+        _lotteryIcon = TopIconButton(_topIconLayer, "system/ticket", Localization.Loc.Tr("Lottery Event"),
             ToggleLottery, out _lotteryImage);
         _lotteryImage.SelfModulate = TopIconColor(true);
         _lotteryIcon.Visible = false;
         _lotteryIcon.Resized += PlaceLotteryIcon;
         _lotteryIcon.VisibilityChanged += PlaceLotteryIcon;
+
+        _dpsIcon = TopIconButton(_topIconLayer, "system/combat-attack", Localization.Loc.Tr("DPS Damage"),
+            ToggleDps, out _dpsImage);
+        _dpsIcon.Resized += PlaceDpsIcon;
+        Callable.From(PlaceDpsIcon).CallDeferred();
 
         if (_premiumChip != null) _premiumChip.Resized += PlaceTopIcons;
         Callable.From(PlacePowerUpStoreIcon).CallDeferred();
@@ -73,6 +80,9 @@ public partial class World
     private void PlaceLotteryIcon() =>
         PlaceTopIcon(_lotteryIcon, _lotteryImage, HudPlacement.LotteryIcon);
 
+    private void PlaceDpsIcon() =>
+        PlaceTopIcon(_dpsIcon, _dpsImage, HudPlacement.DpsIcon);
+
     private void PlaceTopIcon(Button icon, TextureRect image, HudPlacement.Slot touchSlot)
     {
         if (!Platform.TouchUi)
@@ -96,7 +106,7 @@ public partial class World
         var size = new Vector2(TopIconSize + TopIconPadX * 2f, Mathf.Max(_premiumChip.Size.Y, TopIconSize));
         float right = HudAnchor.Edge + MiniMap.SquareSize + StatusHudGap + _premiumChip.Size.X;
         float top = HudAnchor.Edge + (_premiumChip.Size.Y - size.Y) * 0.5f;
-        foreach (Control icon in new Control[] { _attendanceGift, _trophy, _mailIconButton, _powerUpStoreIcon, _lotteryIcon })
+        foreach (Control icon in new Control[] { _attendanceGift, _trophy, _mailIconButton, _dpsIcon, _powerUpStoreIcon, _lotteryIcon })
         {
             if (!IsInstanceValid(icon) || !icon.Visible) continue;
             right += TopIconGap;

@@ -21,18 +21,18 @@ public partial class World
     {
         _ringUpLayer = new CanvasLayer { Layer = 62 };
         AddChild(_ringUpLayer);
-        _ringUpPanel = new HudWindow("ring_upgrade", "Ring Upgrade", new Vector2(220, 150)) { Visible = false };
+        _ringUpPanel = new HudWindow("ring_upgrade", Localization.Loc.Tr("Ring Upgrade"), new Vector2(220, 150)) { Visible = false };
         _ringUpPanel.Closed += CloseRingUpgrade;
         _ringUpLayer.AddChild(_ringUpPanel);
 
         var root = _ringUpPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Accessory Upgrade"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Accessory Upgrade")));
 
         var pick = new HBoxContainer();
         pick.AddThemeConstantOverride("separation", 6);
-        _ringUpRightBtn = new Button { Text = "Right Ring", FocusMode = Control.FocusModeEnum.None, ToggleMode = true };
-        _ringUpLeftBtn = new Button { Text = "Left Ring", FocusMode = Control.FocusModeEnum.None, ToggleMode = true };
+        _ringUpRightBtn = new Button { Text = Localization.Loc.Tr("Right Ring"), FocusMode = Control.FocusModeEnum.None, ToggleMode = true };
+        _ringUpLeftBtn = new Button { Text = Localization.Loc.Tr("Left Ring"), FocusMode = Control.FocusModeEnum.None, ToggleMode = true };
         _ringUpRightBtn.Pressed += () => SelectRingSlot(InventoryConstants.RightRing);
         _ringUpLeftBtn.Pressed += () => SelectRingSlot(InventoryConstants.LeftRing);
         pick.AddChild(_ringUpRightBtn);
@@ -44,12 +44,12 @@ public partial class World
 
         var rateRow = new HBoxContainer();
         rateRow.AddThemeConstantOverride("separation", 8);
-        rateRow.AddChild(UiTheme.Text("Success rate:", 13, UiTheme.TextLo));
+        rateRow.AddChild(UiTheme.Text(Localization.Loc.Tr("Success rate:"), 13, UiTheme.TextLo));
         _ringUpRateLabel = UiTheme.Text("—", 13, UiTheme.Gold);
         rateRow.AddChild(_ringUpRateLabel);
         root.AddChild(rateRow);
 
-        _ringUpUpgradeBtn = new Button { Text = "Upgrade", FocusMode = Control.FocusModeEnum.None };
+        _ringUpUpgradeBtn = new Button { Text = Localization.Loc.Tr("Upgrade"), FocusMode = Control.FocusModeEnum.None };
         _ringUpUpgradeBtn.Pressed += OnRingUpgradePressed;
         root.AddChild(_ringUpUpgradeBtn);
 
@@ -87,7 +87,7 @@ public partial class World
         _ringUpRightBtn.ButtonPressed = slot == InventoryConstants.RightRing;
         _ringUpLeftBtn.ButtonPressed = slot == InventoryConstants.LeftRing;
 
-        string side = slot == InventoryConstants.RightRing ? "Right Ring" : "Left Ring";
+        string side = slot == InventoryConstants.RightRing ? Localization.Loc.Tr("Right Ring") : Localization.Loc.Tr("Left Ring");
         int itemId = RingItemIdAt(slot);
         if (itemId != 0)
         {
@@ -99,10 +99,10 @@ public partial class World
         }
         else
         {
-            _ringUpSlotLabel.Text = $"{side}: (empty)";
+            _ringUpSlotLabel.Text = $"{side}: ({Localization.Loc.Tr("empty")})";
             _ringUpRateLabel.Text = "—";
             _ringUpUpgradeBtn.Disabled = true;
-            _ringUpStatusLabel.Text = "Equip a ring in that slot first.";
+            _ringUpStatusLabel.Text = Localization.Loc.Tr("Equip a ring in that slot first.");
         }
     }
 
@@ -122,13 +122,13 @@ public partial class World
         switch (result)
         {
             case Net.RingUpgradeResultSuccess:
-                _ringUpStatusLabel.Text = $"Success! Now +{newPlus}.";
+                _ringUpStatusLabel.Text = $"{Localization.Loc.Tr("Success! Now")} +{newPlus}.";
                 break;
             case Net.RingUpgradeResultInvalid:
-                _ringUpStatusLabel.Text = $"Cannot upgrade further (+{newPlus}).";
+                _ringUpStatusLabel.Text = $"{Localization.Loc.Tr("Cannot upgrade further")} (+{newPlus}).";
                 break;
             default:
-                _ringUpStatusLabel.Text = $"Upgrade failed. Still +{newPlus}.";
+                _ringUpStatusLabel.Text = $"{Localization.Loc.Tr("Upgrade failed. Still")} +{newPlus}.";
                 break;
         }
         Net.I.SendRingUpgradeStatus(_ringUpSlot);

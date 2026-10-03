@@ -81,7 +81,7 @@ public partial class World
         {
             var column = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
             columns.AddChild(column);
-            column.AddChild(UiTheme.SectionTitle(headings[group]));
+            column.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr(headings[group])));
             var grid = new GridContainer { Columns = 4 };
             column.AddChild(grid);
             for (int cell = 0; cell < GenieSkillGroupSlots; cell++)
@@ -101,45 +101,45 @@ public partial class World
                 grid.AddChild(button);
                 _genieSlots[slot] = button;
             }
-            GenieMode(column, skillModes[group], headings[group].Replace("Skills", "Mode"), group < 2);
-            GenieMode(column, actionModes[group], new[] { "R Attack", "Party Leader Target", "3 - 5 Combo" }[group], group == 0);
+            GenieMode(column, skillModes[group], new[] { Localization.Loc.Tr("Attack Mode"), Localization.Loc.Tr("Self Mode"), Localization.Loc.Tr("Party Mode") }[group], group < 2);
+            GenieMode(column, actionModes[group], new[] { Localization.Loc.Tr("R Attack"), Localization.Loc.Tr("Party Leader Target"), Localization.Loc.Tr("3 - 5 Combo") }[group], group == 0);
         }
         var lower = new HBoxContainer();
         lower.AddThemeConstantOverride("separation", 12);
         main.AddChild(lower);
         var potions = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         lower.AddChild(potions);
-        potions.AddChild(UiTheme.SectionTitle("Potion Options"));
-        GenieMode(potions, GenieModeFlag.HpPotion, "Use HP Potion", true);
+        potions.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Potion Options")));
+        GenieMode(potions, GenieModeFlag.HpPotion, Localization.Loc.Tr("Use HP Potion"), true);
         BuildGeniePotionSelector(potions, HealTarget.Hp);
-        _genieHp = GeniePercent(potions, "HP Threshold (%)", 70, 1, 99);
-        GenieMode(potions, GenieModeFlag.MpPotion, "Use MP Potion", true);
+        _genieHp = GeniePercent(potions, Localization.Loc.Tr("HP Threshold (%)"), 70, 1, 99);
+        GenieMode(potions, GenieModeFlag.MpPotion, Localization.Loc.Tr("Use MP Potion"), true);
         BuildGeniePotionSelector(potions, HealTarget.Mp);
-        _genieMp = GeniePercent(potions, "MP Threshold (%)", 35, 1, 99);
+        _genieMp = GeniePercent(potions, Localization.Loc.Tr("MP Threshold (%)"), 35, 1, 99);
         var monsters = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         lower.AddChild(monsters);
-        monsters.AddChild(UiTheme.SectionTitle("Monster Attack List"));
+        monsters.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Monster Attack List")));
         _genieMonsterList = new ItemList { CustomMinimumSize = new Vector2(245, 104) };
         monsters.AddChild(_genieMonsterList);
         var actions = new HBoxContainer();
         monsters.AddChild(actions);
-        GenieButton(actions, "+ Add Target", () =>
+        GenieButton(actions, Localization.Loc.Tr("+ Add Target"), () =>
         {
             if (_selectedId >= 0 && _ents.TryGetValue(_selectedId, out var e) && e.IsMonster)
             { _genieMonsters.Add(e.Name); RefreshGenieMonsters(); }
-            else Chat.Info("Select a monster first.");
+            else Chat.Info(Localization.Loc.Tr("Select a monster first."));
         });
-        GenieButton(actions, "Remove", () =>
+        GenieButton(actions, Localization.Loc.Tr("Remove"), () =>
         {
             foreach (int i in _genieMonsterList.GetSelectedItems()) _genieMonsters.Remove(_genieMonsterList.GetItemText(i));
             RefreshGenieMonsters();
         });
-        main.AddChild(UiTheme.Text("Empty list: all monsters in range. Click a slot to select a skill.", 11, UiTheme.TextLo));
-        _genieRunLabel = UiTheme.Text("Genie stopped.", 13, UiTheme.Gold);
+        main.AddChild(UiTheme.Text(Localization.Loc.Tr("Empty list: all monsters in range. Click a slot to select a skill."), 11, UiTheme.TextLo));
+        _genieRunLabel = UiTheme.Text(Localization.Loc.Tr("Genie stopped."), 13, UiTheme.Gold);
         main.AddChild(_genieRunLabel);
         var footer = new HBoxContainer();
         main.AddChild(footer);
-        _genieStart = GenieButton(footer, "Start", () =>
+        _genieStart = GenieButton(footer, Localization.Loc.Tr("Start"), () =>
         {
             if (_genieRequestPending) return;
             if (Net.I.GenieRunning) { StopAdvancedGenie(); return; }
@@ -149,23 +149,23 @@ public partial class World
             _genieRequestPending = true;
             _genieRequestAt = Now();
             _genieStart.Disabled = true;
-            _genieRunLabel.Text = "Waiting for server response…";
+            _genieRunLabel.Text = Localization.Loc.Tr("Waiting for server response…");
             Net.I.SendGenieSystem(Net.GenieStart);
         });
-        GenieButton(footer, "Save Settings", SaveAdvancedGenie);
-        GenieButton(footer, "Use Spirit of Genie", () => Net.I.SendGenieSystem(Net.GenieUseSpiritPotion));
-        misc.AddChild(UiTheme.SectionTitle("Genie Settings"));
-        _genieRange = GeniePercent(misc, "Range from Start Position", 25, 3, 80);
-        _genieAutoParty = new CheckButton { Text = "Auto Party" };
+        GenieButton(footer, Localization.Loc.Tr("Save Settings"), SaveAdvancedGenie);
+        GenieButton(footer, Localization.Loc.Tr("Use Spirit of Genie"), () => Net.I.SendGenieSystem(Net.GenieUseSpiritPotion));
+        misc.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Genie Settings")));
+        _genieRange = GeniePercent(misc, Localization.Loc.Tr("Range from Start Position"), 25, 3, 80);
+        _genieAutoParty = new CheckButton { Text = Localization.Loc.Tr("Auto Party") };
         misc.AddChild(_genieAutoParty);
-        _geniePtCode = new LineEdit { PlaceholderText = "PT CODE — code to send in a private message", Secret = true, MaxLength = 64 };
-        misc.AddChild(UiTheme.SectionTitle("PT CODE"));
+        _geniePtCode = new LineEdit { PlaceholderText = Localization.Loc.Tr("PT CODE — code to send in a private message"), Secret = true, MaxLength = 64 };
+        misc.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("PT CODE")));
         misc.AddChild(_geniePtCode);
         _geniePtCode.TextChanged += _ => ConfigureGeniePartyCode();
         _genieAutoParty.Toggled += _ => ConfigureGeniePartyCode();
-        misc.AddChild(UiTheme.Text("Senders who PM the code can have their party invite accepted within 2 minutes.", 11, UiTheme.TextLo));
-        misc.AddChild(UiTheme.Text("3 - 5 Combo: cycles through selected 3-arrow and 5-arrow skills.", 11, UiTheme.TextLo));
-        misc.AddChild(UiTheme.Text("Leader Target uses the nearby party leader's most recent attack.", 11, UiTheme.TextLo));
+        misc.AddChild(UiTheme.Text(Localization.Loc.Tr("Senders who PM the code can have their party invite accepted within 2 minutes."), 11, UiTheme.TextLo));
+        misc.AddChild(UiTheme.Text(Localization.Loc.Tr("3 - 5 Combo: cycles through selected 3-arrow and 5-arrow skills."), 11, UiTheme.TextLo));
+        misc.AddChild(UiTheme.Text(Localization.Loc.Tr("Leader Target uses the nearby party leader's most recent attack."), 11, UiTheme.TextLo));
         BuildGenieScrollOptions(misc);
         BuildGenieHammerOptions(misc);
         misc.AddChild(new HSeparator());
@@ -215,7 +215,7 @@ public partial class World
     {
         _genieEditingSlot = slot;
         _genieSkillPicker.Clear();
-        _genieSkillPicker.AddItem("Clear Slot", 0);
+        _genieSkillPicker.AddItem(Localization.Loc.Tr("Clear Slot"), 0);
         foreach (var s in SkillData.ForClass(_selfClass).Where(SkillRequirementMet).OrderBy(s => s.Level))
         {
             if (s.IsPotion || s.IsDeadFriend || s.IsBlink || s.IsGroundArea) continue;
@@ -235,7 +235,7 @@ public partial class World
             var skill = SkillData.Get(_genieSkills[i]);
             _genieSlots[i].Icon = skill == null ? null : SkillData.Icon(skill.Id);
             _genieSlots[i].Text = skill == null ? "+" : _genieSlots[i].Icon == null ? (i % GenieSkillGroupSlots + 1).ToString() : "";
-            _genieSlots[i].TooltipText = skill == null ? "Select Skill" : SkillTooltip(skill);
+            _genieSlots[i].TooltipText = skill == null ? Localization.Loc.Tr("Select Skill") : SkillTooltip(skill);
         }
     }
 
@@ -280,7 +280,7 @@ public partial class World
         SaveGenieScrollSettings(config);
         config.SetValue("genie", "auto_hammer", _genieAutoHammer.ButtonPressed);
         config.SetValue("genie", "hammer_threshold", _genieHammerThreshold.Value);
-        if (config.Save(GenieSettingsPath) != Error.Ok) Chat.Info("Could not save Genie settings to disk.");
+        if (config.Save(GenieSettingsPath) != Error.Ok) Chat.Info(Localization.Loc.Tr("Could not save Genie settings to disk."));
         Net.I.SendGenieSystem(Net.GenieSaveOptions, GenieOptionBytes());
     }
 
@@ -322,9 +322,9 @@ public partial class World
         _genieWasRunning = running;
         if (!running) _genieWantsRunning = false;
         _genieDeadline = Now() + minutes * 60;
-        _genieStart.Text = running ? "Stop" : "Start";
-        _genieRunLabel.Text = running ? $"Genie active • {minutes} minutes" :
-            minutes > 0 ? $"Genie stopped • {minutes} minutes" : "No time remaining. Spirit of Genie required.";
+        _genieStart.Text = running ? Localization.Loc.Tr("Stop") : Localization.Loc.Tr("Start");
+        _genieRunLabel.Text = running ? $"{Localization.Loc.Tr("Genie active")} • {minutes} {Localization.Loc.Tr("minutes")}" :
+            minutes > 0 ? $"{Localization.Loc.Tr("Genie stopped")} • {minutes} {Localization.Loc.Tr("minutes")}" : Localization.Loc.Tr("No time remaining. Spirit of Genie required.");
     }
 
     private void HaltGenieActions()
@@ -345,8 +345,8 @@ public partial class World
         _genieWantsRunning = false;
         _genieRequestPending = false;
         _genieStart.Disabled = false;
-        _genieStart.Text = "Start";
-        _genieRunLabel.Text = "Genie stopped.";
+        _genieStart.Text = Localization.Loc.Tr("Start");
+        _genieRunLabel.Text = Localization.Loc.Tr("Genie stopped.");
         if (Net.I.Connected) Net.I.SendGenieSystem(Net.GenieStop);
     }
 

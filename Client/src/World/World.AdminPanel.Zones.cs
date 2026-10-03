@@ -16,7 +16,7 @@ public partial class World
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(470, 0) };
         box.AddThemeConstantOverride("separation", 6);
 
-        box.AddChild(UiTheme.SectionTitle("Travel", UiIcons.Get("system/home")));
+        box.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Travel"), UiIcons.Get("system/home")));
 
         _admZoneHere = UiTheme.Text("", 13, UiTheme.GoldBright);
         box.AddChild(_admZoneHere);
@@ -26,12 +26,12 @@ public partial class World
         box.AddChild(findRow);
         _admZoneFilter = new LineEdit
         {
-            PlaceholderText = "filter by name or number",
+            PlaceholderText = Localization.Loc.Tr("filter by name or number"),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         _admZoneFilter.TextChanged += _ => RefreshAdminZoneList();
         findRow.AddChild(_admZoneFilter);
-        var clear = UiTheme.IconButton(UiIcons.Get("system/close"), "Clear the filter");
+        var clear = UiTheme.IconButton(UiIcons.Get("system/close"), Localization.Loc.Tr("Clear the filter"));
         clear.Pressed += () => { _admZoneFilter.Text = ""; RefreshAdminZoneList(); };
         findRow.AddChild(clear);
 
@@ -49,7 +49,7 @@ public partial class World
         _admZoneScroll.AddChild(_admZoneList);
 
         box.AddChild(UiTheme.Text(
-            "You arrive at the zone's own start position for your nation.", 11, UiTheme.TextLo));
+            Localization.Loc.Tr("You arrive at the zone's own start position for your nation."), 11, UiTheme.TextLo));
 
         return box;
     }
@@ -57,7 +57,7 @@ public partial class World
     private void RefreshAdminZonesTab()
     {
         if (_admZoneHere == null) return;
-        _admZoneHere.Text = $"Currently in {AdminZoneName(_zone)}  ({_zone})";
+        _admZoneHere.Text = $"{Localization.Loc.Tr("Currently in")} {AdminZoneName(_zone)}  ({_zone})";
         RefreshAdminZoneList();
         if (_admZoneHereRow is { } row)
             Callable.From(() => _admZoneScroll.EnsureControlVisible(row)).CallDeferred();
@@ -82,10 +82,10 @@ public partial class World
 
         _admZoneSummary.Text = shown switch
         {
-            0 => $"No zone matches \"{filter}\".",
-            1 => "1 zone.",
-            _ when filter.Length == 0 => $"{shown} zones.",
-            _ => $"{shown} zones match.",
+            0 => $"{Localization.Loc.Tr("No zone matches")} \"{filter}\".",
+            1 => Localization.Loc.Tr("1 zone."),
+            _ when filter.Length == 0 => $"{shown} {Localization.Loc.Tr("zones.")}",
+            _ => $"{shown} {Localization.Loc.Tr("zones match.")}",
         };
     }
 
@@ -118,18 +118,18 @@ public partial class World
 
         var go = new Button
         {
-            Text = here ? "Here" : "Go",
+            Text = here ? Localization.Loc.Tr("Here") : Localization.Loc.Tr("Go"),
             Disabled = here,
             FocusMode = Control.FocusModeEnum.None,
             CustomMinimumSize = new Vector2(58, 0),
-            TooltipText = here ? "" : $"Travel to {zone.Name}",
+            TooltipText = here ? "" : $"{Localization.Loc.Tr("Travel to")} {zone.Name}",
         };
         go.AddThemeFontSizeOverride("font_size", 12);
         int target = zone.Id;
         string label = zone.Name;
         go.Pressed += () =>
         {
-            SetAdminStatus($"Moving to {label}…", false);
+            SetAdminStatus($"{Localization.Loc.Tr("Moving to")} {label}…", false);
             Net.I.SendAdminZone(target);
         };
         line.AddChild(go);
@@ -141,6 +141,6 @@ public partial class World
     {
         foreach (var zone in ZoneCatalog.All)
             if (zone.Id == zoneId) return zone.Name;
-        return $"zone {zoneId}";
+        return $"{Localization.Loc.Tr("zone")} {zoneId}";
     }
 }

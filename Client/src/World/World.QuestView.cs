@@ -66,7 +66,7 @@ public partial class World
             var offered = index;
             AddNpcMenuButton($"{++shown}.   {view.Topics[index]}", () => OnNpcMenuClick(offered));
         }
-        AddNpcMenuButton($"{++shown}.   Close", CloseNpcDialog);
+        AddNpcMenuButton($"{++shown}.   {Localization.Loc.Tr("Close")}", CloseNpcDialog);
         EndNpcDialog(shown);
     }
 
@@ -84,11 +84,11 @@ public partial class World
         {
             var hunt = QuestSection(QuestObjectiveHeading(view.Objectives.Groups.Length > 0, false));
             if (view.Objectives.AnyWillDo)
-                hunt.AddChild(UiTheme.Text("Complete any one", 12, UiTheme.TextLo));
+                hunt.AddChild(UiTheme.Text(Localization.Loc.Tr("Complete any one"), 12, UiTheme.TextLo));
             for (var index = 0; index < view.Objectives.Groups.Length; index++)
             {
                 var goal = view.Objectives.Groups[index];
-                var name = goal.Name ?? (GameData.I != null ? GameData.I.NpcName(goal.Monsters[0], true) : "Creature");
+                var name = goal.Name ?? (GameData.I != null ? GameData.I.NpcName(goal.Monsters[0], true) : Localization.Loc.Tr("Creature"));
                 hunt.AddChild(QuestObjectiveTarget(QuestValueRow(name, $"{view.Counts[index]} / {goal.Count}",
                     view.Counts[index] >= goal.Count ? UiTheme.Good : UiTheme.GoldBright),
                     view.QuestId, index, goal.HasTarget));
@@ -112,12 +112,12 @@ public partial class World
             }
         }
         if (view.Objectives.Groups.Length == 0 && deliveries.Length == 0)
-            QuestSection("Objectives").AddChild(QuestParagraph(view.StandingObjective, UiTheme.TextLo));
+            QuestSection(Localization.Loc.Tr("Objectives")).AddChild(QuestParagraph(view.StandingObjective, UiTheme.TextLo));
 
         var payouts = view.Transfers.Where(t => !t.Take).ToArray();
         if (payouts.Length > 0)
         {
-            var rewards = QuestSection("Rewards");
+            var rewards = QuestSection(Localization.Loc.Tr("Rewards"));
             foreach (var transfer in payouts)
                 rewards.AddChild(QuestItemRow(transfer.DisplayItemId, QuestTransferName(transfer),
                     transfer.Kind is 4 or 5 ? "" : transfer.Count.ToString("n0"), UiTheme.GoldBright));
@@ -125,7 +125,7 @@ public partial class World
         System.Action? onRewardChosen = null;
         if (view.Options.Length > 0)
         {
-            var choice = QuestSection("Choose one");
+            var choice = QuestSection(Localization.Loc.Tr("Choose one"));
             var marks = new List<Label>();
             for (var index = 0; index < view.Options.Length; index++)
             {
@@ -148,7 +148,7 @@ public partial class World
             PaintChoice();
         }
         if (view.Daily && view.State == QuestViewState.Completed && view.NextReset > 0)
-            _npcQuestContent.AddChild(QuestParagraph($"Available again: {DateTimeOffset.FromUnixTimeSeconds(view.NextReset).ToLocalTime():g}", UiTheme.TextLo));
+            _npcQuestContent.AddChild(QuestParagraph($"{Localization.Loc.Tr("Available again")}: {DateTimeOffset.FromUnixTimeSeconds(view.NextReset).ToLocalTime():g}", UiTheme.TextLo));
 
         for (var index = 0; index < view.Topics.Length; index++)
         {
@@ -161,27 +161,27 @@ public partial class World
         Button Action(string label, System.Action run, bool enabled = true)
         {
             var button = new Button { Text = label, CustomMinimumSize = new Vector2(0, 36), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, Disabled = !enabled };
-            if (!enabled) button.TooltipText = "Choose a reward first";
+            if (!enabled) button.TooltipText = Localization.Loc.Tr("Choose a reward first");
             button.Pressed += () => { CloseNpcDialog(); run(); };
             actions.AddChild(button);
             return button;
         }
-        if (view.CanAccept) Action("Accept", () => Net.I.SendQuestAccept(view.QuestId));
+        if (view.CanAccept) Action(Localization.Loc.Tr("Accept"), () => Net.I.SendQuestAccept(view.QuestId));
         if (view.CanClaim)
         {
-            var confirm = Action("Confirm", () => Net.I.SendQuestComplete(view.QuestId, _questRewardChoice),
+            var confirm = Action(Localization.Loc.Tr("Confirm"), () => Net.I.SendQuestComplete(view.QuestId, _questRewardChoice),
                 view.Options.Length == 0 || _questRewardChoice >= 0);
             var paint = onRewardChosen;
             onRewardChosen = () =>
             {
                 paint?.Invoke();
                 confirm.Disabled = _questRewardChoice < 0;
-                confirm.TooltipText = confirm.Disabled ? "Choose a reward first" : "";
+                confirm.TooltipText = confirm.Disabled ? Localization.Loc.Tr("Choose a reward first") : "";
             };
         }
         if (!view.CanClaim && view.State is QuestViewState.InProgress or QuestViewState.Claimable)
-            Action("Abandon", () => Net.I.SendQuestAbandon(view.QuestId));
-        Action(view.CanAccept ? "Reject" : "Close", () => { });
+            Action(Localization.Loc.Tr("Abandon"), () => Net.I.SendQuestAbandon(view.QuestId));
+        Action(view.CanAccept ? Localization.Loc.Tr("Reject") : Localization.Loc.Tr("Close"), () => { });
         EndNpcDialog(view.Topics.Length + 1);
         Callable.From(FitQuestPanel).CallDeferred();
     }
@@ -213,7 +213,7 @@ public partial class World
     private const float QuestParagraphWidth = 400f;
 
     internal static string QuestObjectiveHeading(bool kills, bool deliveries) =>
-        kills ? "Hunt" : deliveries ? "Collect" : "Objectives";
+        kills ? Localization.Loc.Tr("Hunt") : deliveries ? Localization.Loc.Tr("Collect") : Localization.Loc.Tr("Objectives");
 
     private static RichTextLabel QuestParagraph(string text, Color color, float width = QuestParagraphWidth)
     {
@@ -234,7 +234,7 @@ public partial class World
     private Control QuestRewardOption(Control row, int index, System.Action chosen)
     {
         row.MouseFilter = Control.MouseFilterEnum.Stop;
-        row.TooltipText = "Pick this reward";
+        row.TooltipText = Localization.Loc.Tr("Pick this reward");
         row.GuiInput += ev =>
         {
             if (ev is not InputEventMouseButton { ButtonIndex: MouseButton.Left } click) return;
@@ -250,7 +250,7 @@ public partial class World
     {
         if (!hasTarget) return row;
         row.MouseFilter = Control.MouseFilterEnum.Stop;
-        row.TooltipText = "Show where to find this";
+        row.TooltipText = Localization.Loc.Tr("Show where to find this");
         row.GuiInput += ev =>
         {
             if (ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
@@ -302,16 +302,16 @@ public partial class World
 
     private static string QuestTransferName(QuestTransfer transfer) => transfer.Kind switch
     {
-        4 => "First job change",
-        5 => "Second job change",
+        4 => Localization.Loc.Tr("First job change"),
+        5 => Localization.Loc.Tr("Second job change"),
         _ => QuestRewardName(transfer.DisplayItemId)
     };
 
     private static string QuestRewardName(int displayItemId) => displayItemId switch
     {
-        QuestData.CoinItemId => "Coins",
-        QuestData.ExpItemId => "Experience",
-        QuestData.LadderPointItemId => "Ladder points",
+        QuestData.CoinItemId => Localization.Loc.Tr("Coins"),
+        QuestData.ExpItemId => Localization.Loc.Tr("Experience"),
+        QuestData.LadderPointItemId => Localization.Loc.Tr("Ladder points"),
         _ => ItemData.DisplayName(displayItemId)
     };
 

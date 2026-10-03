@@ -12,30 +12,30 @@ public partial class World
     private const int ClanRankColumn = 34;
     private const int HoursPerDay = 24;
 
-    private const string ClanMsgQuit = "Successfully quitted the clan.";
-    private const string ClanMsgQuitFailed = "Failed quitting the clan.";
-    private const string ClanMsgJoined = "Successfully joined the clan.";
-    private const string ClanMsgFull = "Failed because the clan has reached the maximum number of people allowed.";
-    private const string ClanMsgInvalid = "This clan is not valid.";
-    private const string ClanMsgNoAuthority = "You do not have the authority.";
-    private const string ClanMsgAlreadyInClan = "This user is already in a clan.";
-    private const string ClanMsgOtherNation = "This user is from a different nation.";
-    private const string ClanMsgDead = "This user is dead.";
-    private const string ClanMsgNoUser = "This user does not exist.";
-    private const string ClanMsgYourself = "You cannot choose yourself.";
-    private const string ClanMsgNotInClan = "This user is not in the clan.";
-    private const string ClanMsgDeclined = "The user has declined.";
-    private const string ClanMsgZone = "It is not allowed in this zone.";
-    private const string ClanMsgBanned = "Banned from Clan";
-    private const string ClanMsgNoticeAuthority = "You don't have the authorization.";
-    private const string ClanMsgNoticeName = "Please confirm the exact character ID.";
-    private const string ClanMsgCommandUnavailable = "This command cannot be used.";
-    private const string ClanMsgHandoverAuthority = "You don't have the authority to change leadership.";
-    private const string ClanMsgHandoverNoVice = "There is no Co-leader authorized to change leadership.";
-    private const string ClanMsgHandoverFailed = "You failed to pass on the leadership.";
-    private const string ClanMsgAllianceFailed = "Failed to make an alliance.";
-    private const string ClanMsgPointsOnlyAccredited = "Accredited Knights Grade 5 or above can save-up Contribution.";
-    private const string ClanMsgLeaveConfirm = "Do you really want to withdraw from the clan?";
+    private static string ClanMsgQuit => Localization.Loc.Tr("Successfully quitted the clan.");
+    private static string ClanMsgQuitFailed => Localization.Loc.Tr("Failed quitting the clan.");
+    private static string ClanMsgJoined => Localization.Loc.Tr("Successfully joined the clan.");
+    private static string ClanMsgFull => Localization.Loc.Tr("Failed because the clan has reached the maximum number of people allowed.");
+    private static string ClanMsgInvalid => Localization.Loc.Tr("This clan is not valid.");
+    private static string ClanMsgNoAuthority => Localization.Loc.Tr("You do not have the authority.");
+    private static string ClanMsgAlreadyInClan => Localization.Loc.Tr("This user is already in a clan.");
+    private static string ClanMsgOtherNation => Localization.Loc.Tr("This user is from a different nation.");
+    private static string ClanMsgDead => Localization.Loc.Tr("This user is dead.");
+    private static string ClanMsgNoUser => Localization.Loc.Tr("This user does not exist.");
+    private static string ClanMsgYourself => Localization.Loc.Tr("You cannot choose yourself.");
+    private static string ClanMsgNotInClan => Localization.Loc.Tr("This user is not in the clan.");
+    private static string ClanMsgDeclined => Localization.Loc.Tr("The user has declined.");
+    private static string ClanMsgZone => Localization.Loc.Tr("It is not allowed in this zone.");
+    private static string ClanMsgBanned => Localization.Loc.Tr("Banned from Clan");
+    private static string ClanMsgNoticeAuthority => Localization.Loc.Tr("You don't have the authorization.");
+    private static string ClanMsgNoticeName => Localization.Loc.Tr("Please confirm the exact character ID.");
+    private static string ClanMsgCommandUnavailable => Localization.Loc.Tr("This command cannot be used.");
+    private static string ClanMsgHandoverAuthority => Localization.Loc.Tr("You don't have the authority to change leadership.");
+    private static string ClanMsgHandoverNoVice => Localization.Loc.Tr("There is no Co-leader authorized to change leadership.");
+    private static string ClanMsgHandoverFailed => Localization.Loc.Tr("You failed to pass on the leadership.");
+    private static string ClanMsgAllianceFailed => Localization.Loc.Tr("Failed to make an alliance.");
+    private static string ClanMsgPointsOnlyAccredited => Localization.Loc.Tr("Accredited Knights Grade 5 or above can save-up Contribution.");
+    private static string ClanMsgLeaveConfirm => Localization.Loc.Tr("Do you really want to withdraw from the clan?");
 
     internal enum ClanTab { Members, Points, Union }
 
@@ -136,41 +136,41 @@ public partial class World
         _clanMemberMenu.IdPressed += OnMemberMenuAction;
         _clanDialogLayer.AddChild(_clanMemberMenu);
 
-        _clanInviteAsk = new ConfirmationDialog { Title = "Clan", Exclusive = false };
-        _clanInviteAsk.GetOkButton().Text = "Join";
-        _clanInviteAsk.GetCancelButton().Text = "Decline";
+        _clanInviteAsk = new ConfirmationDialog { Title = Localization.Loc.Tr("Clan"), Exclusive = false };
+        _clanInviteAsk.GetOkButton().Text = Localization.Loc.Tr("Join");
+        _clanInviteAsk.GetCancelButton().Text = Localization.Loc.Tr("Decline");
         _clanInviteAsk.Confirmed += () => AnswerClanInvite(true);
         _clanInviteAsk.Canceled += () => AnswerClanInvite(false);
         _clanDialogLayer.AddChild(_clanInviteAsk);
 
         _clanDisbandAsk = new ConfirmationDialog
         {
-            Title = "Disband clan",
-            DialogText = "You are the chief, so leaving disbands the clan.\nContinue?",
+            Title = Localization.Loc.Tr("Disband clan"),
+            DialogText = Localization.Loc.Tr("You are the chief, so leaving disbands the clan.\nContinue?"),
             Exclusive = false,
         };
-        _clanDisbandAsk.GetOkButton().Text = "Disband";
+        _clanDisbandAsk.GetOkButton().Text = Localization.Loc.Tr("Disband");
         _clanDisbandAsk.Confirmed += () => Net.I.SendClanDestroy();
         _clanDialogLayer.AddChild(_clanDisbandAsk);
 
         _clanLeaveAsk = new ConfirmationDialog
         {
-            Title = "Leave clan",
+            Title = Localization.Loc.Tr("Leave clan"),
             DialogText = ClanMsgLeaveConfirm,
             Exclusive = false,
         };
-        _clanLeaveAsk.GetOkButton().Text = "Leave";
+        _clanLeaveAsk.GetOkButton().Text = Localization.Loc.Tr("Leave");
         _clanLeaveAsk.Confirmed += () => Net.I.SendClanWithdraw();
         _clanDialogLayer.AddChild(_clanLeaveAsk);
 
-        _clanRemoveAsk = new ConfirmationDialog { Title = "Expel", Exclusive = false };
-        _clanRemoveAsk.GetOkButton().Text = "Expel";
+        _clanRemoveAsk = new ConfirmationDialog { Title = Localization.Loc.Tr("Expel"), Exclusive = false };
+        _clanRemoveAsk.GetOkButton().Text = Localization.Loc.Tr("Expel");
         _clanRemoveAsk.Confirmed += () => { if (_ctxMember.Length > 0) Net.I.SendClanKick(_ctxMember); };
         _clanDialogLayer.AddChild(_clanRemoveAsk);
 
-        _clanAllianceAsk = new ConfirmationDialog { Title = "Alliance", Exclusive = false };
-        _clanAllianceAsk.GetOkButton().Text = "Accept";
-        _clanAllianceAsk.GetCancelButton().Text = "Refuse";
+        _clanAllianceAsk = new ConfirmationDialog { Title = Localization.Loc.Tr("Alliance"), Exclusive = false };
+        _clanAllianceAsk.GetOkButton().Text = Localization.Loc.Tr("Accept");
+        _clanAllianceAsk.GetCancelButton().Text = Localization.Loc.Tr("Refuse");
         _clanAllianceAsk.Confirmed += () => Net.I.SendAllianceAnswer(true);
         _clanAllianceAsk.Canceled += () => Net.I.SendAllianceAnswer(false);
         _clanDialogLayer.AddChild(_clanAllianceAsk);
@@ -203,7 +203,7 @@ public partial class World
         _clanFundLbl = UiTheme.Text("", 12, UiTheme.Gold);
         cardCol.AddChild(_clanFundLbl);
 
-        _clanMineBox.AddChild(UiTheme.SectionTitle("Notice"));
+        _clanMineBox.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Notice")));
 
         _clanNoticeLbl = UiTheme.Text("", 12, UiTheme.Gold);
         _clanNoticeLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -214,13 +214,13 @@ public partial class World
         _clanNoticeRow.AddThemeConstantOverride("separation", 6);
         _clanNoticeEdit = new LineEdit
         {
-            PlaceholderText = "clan notice",
+            PlaceholderText = Localization.Loc.Tr("clan notice"),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             MaxLength = 200,
         };
         _clanNoticeEdit.TextSubmitted += _ => SubmitClanNotice();
         _clanNoticeRow.AddChild(_clanNoticeEdit);
-        var noticeBtn = new Button { Text = "Set", FocusMode = Control.FocusModeEnum.None };
+        var noticeBtn = new Button { Text = Localization.Loc.Tr("Set"), FocusMode = Control.FocusModeEnum.None };
         noticeBtn.Pressed += SubmitClanNotice;
         _clanNoticeRow.AddChild(noticeBtn);
         _clanMineBox.AddChild(_clanNoticeRow);
@@ -249,15 +249,15 @@ public partial class World
         actions.AddThemeConstantOverride("separation", 6);
         _clanMineBox.AddChild(actions);
 
-        var refreshBtn = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
+        var refreshBtn = new Button { Text = Localization.Loc.Tr("Refresh"), FocusMode = Control.FocusModeEnum.None };
         refreshBtn.Pressed += () => RefreshClanTab();
         actions.AddChild(refreshBtn);
 
-        _clanSaveBtn = new Button { Text = "Save Contribution", FocusMode = Control.FocusModeEnum.None };
+        _clanSaveBtn = new Button { Text = Localization.Loc.Tr("Save Contribution"), FocusMode = Control.FocusModeEnum.None };
         _clanSaveBtn.Pressed += () => ToggleClanPoints();
         actions.AddChild(_clanSaveBtn);
 
-        _clanAllianceBtn = new Button { Text = "Ally with target", FocusMode = Control.FocusModeEnum.None };
+        _clanAllianceBtn = new Button { Text = Localization.Loc.Tr("Ally with target"), FocusMode = Control.FocusModeEnum.None };
         _clanAllianceBtn.Pressed += OnAllianceButton;
         actions.AddChild(_clanAllianceBtn);
 
@@ -274,11 +274,10 @@ public partial class World
         _clanJoinBox.AddThemeConstantOverride("separation", 8);
         root.AddChild(_clanJoinBox);
 
-        var intro = UiTheme.Text("You are not in a clan.", 14, UiTheme.TextHi);
+        var intro = UiTheme.Text(Localization.Loc.Tr("You are not in a clan."), 14, UiTheme.TextHi);
         _clanJoinBox.AddChild(intro);
         var how = UiTheme.Text(
-            "A chief can invite you from your character, or you can found a clan at an Inn Hostess "
-            + $"for {ClanTypes.CreationCoins:n0} coins at level {ClanTypes.CreationLevel} or above.",
+            $"{Localization.Loc.Tr("A chief can invite you from your character, or you can found a clan at an Inn Hostess for")} {ClanTypes.CreationCoins:n0} {Localization.Loc.Tr("coins at level")} {ClanTypes.CreationLevel} {Localization.Loc.Tr("or above.")}",
             12, UiTheme.TextLo);
         how.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         how.CustomMinimumSize = new Vector2(1, 0);
@@ -341,23 +340,23 @@ public partial class World
 
         _clanNameLbl.Text = info.Name;
         string standing = ClanTypes.Standing(info.Flag, info.Grade);
-        if (info.Ranking is >= 1 and <= 5) standing += $"   ·   Rank #{info.Ranking}";
+        if (info.Ranking is >= 1 and <= 5) standing += $"   ·   {Localization.Loc.Tr("Rank")} #{info.Ranking}";
         _clanStandingLbl.Text = standing;
         _clanDutyLbl.Text =
-            $"{ClanRanks.Name(info.Fame)}   ·   Members {_clanMembers.Count}/{info.MaxMembers}   ·   {info.Online} online";
+            $"{ClanRanks.Name(info.Fame)}   ·   {Localization.Loc.Tr("Members")} {_clanMembers.Count}/{info.MaxMembers}   ·   {info.Online} {Localization.Loc.Tr("online")}";
         _clanFundLbl.Visible = ClanTypes.AcceptsDonations(info.Flag);
         _clanFundLbl.Text =
-            $"Clan Contribution {info.PointFund:n0}   ({info.PointFund / ClanTypes.NationalPointsPerClanPoint:n0} points)";
+            $"{Localization.Loc.Tr("Clan Contribution")} {info.PointFund:n0}   ({info.PointFund / ClanTypes.NationalPointsPerClanPoint:n0} {Localization.Loc.Tr("points")})";
 
         string notice = info.Notice ?? "";
         bool hasNotice = notice.Length > 0;
-        _clanNoticeLbl.Text = hasNotice ? notice : "No notice set.";
+        _clanNoticeLbl.Text = hasNotice ? notice : Localization.Loc.Tr("No notice set.");
         _clanNoticeLbl.AddThemeColorOverride("font_color", hasNotice ? UiTheme.Gold : UiTheme.TextDim);
         _clanNoticeRow.Visible = info.IsChief;
-        _clanLeaveBtn.Text = info.IsChief ? "Disband clan" : "Leave clan";
+        _clanLeaveBtn.Text = info.IsChief ? Localization.Loc.Tr("Disband clan") : Localization.Loc.Tr("Leave clan");
         _clanSaveBtn.Visible = ClanTypes.AcceptsDonations(info.Flag);
         _clanAllianceBtn.Visible = info.IsChief && info.Flag >= ClanTypes.Promoted && _clanTab == ClanTab.Union;
-        _clanAllianceBtn.Text = info.AllianceId > 0 ? "Leave alliance" : "Ally with target";
+        _clanAllianceBtn.Text = info.AllianceId > 0 ? Localization.Loc.Tr("Leave alliance") : Localization.Loc.Tr("Ally with target");
 
         if (_clanTabButtons.Count > 0 && !_clanTabButtons[_clanTab].ButtonPressed)
             _clanTabButtons[_clanTab].ButtonPressed = true;
@@ -382,16 +381,16 @@ public partial class World
                 {
                     SetClanListHint(ClanMsgPointsOnlyAccredited);
                     _clanList.AddChild(UiTheme.Text(
-                        "Clan Contribution is the national points members save for the clan. It pays for the Knights' promotions and capes.",
+                        Localization.Loc.Tr("Clan Contribution is the national points members save for the clan. It pays for the Knights' promotions and capes."),
                         12, UiTheme.TextDim));
                     break;
                 }
-                SetClanListHint("National points each member has saved for the clan.");
-                _clanList.AddChild(UiTheme.Text("Loading…", 12, UiTheme.TextDim));
+                SetClanListHint(Localization.Loc.Tr("National points each member has saved for the clan."));
+                _clanList.AddChild(UiTheme.Text(Localization.Loc.Tr("Loading…"), 12, UiTheme.TextDim));
                 Net.I.SendClanDonationList();
                 break;
             default:
-                _clanList.AddChild(UiTheme.Text("Loading…", 12, UiTheme.TextDim));
+                _clanList.AddChild(UiTheme.Text(Localization.Loc.Tr("Loading…"), 12, UiTheme.TextDim));
                 Net.I.SendAllianceList();
                 break;
         }
@@ -411,7 +410,7 @@ public partial class World
         SetClanListHint("");
         if (_clanMembers.Count == 0)
         {
-            _clanList.AddChild(UiTheme.Text("Loading…", 12, UiTheme.TextDim));
+            _clanList.AddChild(UiTheme.Text(Localization.Loc.Tr("Loading…"), 12, UiTheme.TextDim));
             return;
         }
 
@@ -472,16 +471,16 @@ public partial class World
         _clanMemberMenu.SetItemDisabled(0, true);
         if (!self)
         {
-            _clanMemberMenu.AddItem("Whisper", 1);
-            _clanMemberMenu.AddItem("Invite to party", 2);
-            _clanMemberMenu.AddItem("User information", 3);
+            _clanMemberMenu.AddItem(Localization.Loc.Tr("Whisper"), 1);
+            _clanMemberMenu.AddItem(Localization.Loc.Tr("Invite to party"), 2);
+            _clanMemberMenu.AddItem(Localization.Loc.Tr("User information"), 3);
         }
         if (MyClan.IsChief && !self)
         {
             _clanMemberMenu.AddSeparator();
-            _clanMemberMenu.AddItem("Appoint vice-chief", 4);
-            _clanMemberMenu.AddItem("Hand over leadership", 5);
-            _clanMemberMenu.AddItem("Expel from clan", 6);
+            _clanMemberMenu.AddItem(Localization.Loc.Tr("Appoint vice-chief"), 4);
+            _clanMemberMenu.AddItem(Localization.Loc.Tr("Hand over leadership"), 5);
+            _clanMemberMenu.AddItem(Localization.Loc.Tr("Expel from clan"), 6);
         }
         if (_clanMemberMenu.ItemCount <= 1) return;
         _clanMemberMenu.ResetSize();
@@ -500,7 +499,7 @@ public partial class World
             case 4: Net.I.SendClanPromoteVice(_ctxMember); break;
             case 5: Net.I.SendClanHandover(_ctxMember); break;
             case 6:
-                _clanRemoveAsk.DialogText = $"Do you really want to expel {_ctxMember}?";
+                _clanRemoveAsk.DialogText = $"{Localization.Loc.Tr("Do you really want to expel")} {_ctxMember}?";
                 _clanRemoveAsk.PopupCentered();
                 break;
         }
@@ -508,9 +507,9 @@ public partial class World
 
     private static string ClanTabName(ClanTab tab) => tab switch
     {
-        ClanTab.Members => "Members",
-        ClanTab.Points => "Contribution",
-        _ => "Union",
+        ClanTab.Members => Localization.Loc.Tr("Members"),
+        ClanTab.Points => Localization.Loc.Tr("Contribution"),
+        _ => Localization.Loc.Tr("Union"),
     };
 
     private void SubmitClanNotice()
@@ -535,7 +534,7 @@ public partial class World
         foreach (var c in _clanList.GetChildren()) c.QueueFree();
         if (list.Count == 0)
         {
-            _clanList.AddChild(UiTheme.Text("Nobody has saved Contribution yet.", 13, UiTheme.TextDim));
+            _clanList.AddChild(UiTheme.Text(Localization.Loc.Tr("Nobody has saved Contribution yet."), 13, UiTheme.TextDim));
             return;
         }
 
@@ -564,10 +563,10 @@ public partial class World
         if (!MyClan.InClan) return;
         var target = _clanList;
         foreach (var c in target.GetChildren()) c.QueueFree();
-        target.AddChild(UiTheme.Text("Top clans", 13, UiTheme.Gold));
+        target.AddChild(UiTheme.Text(Localization.Loc.Tr("Top clans"), 13, UiTheme.Gold));
         if (top.Count == 0)
         {
-            target.AddChild(UiTheme.Text("No ranked clans yet.", 13, UiTheme.TextDim));
+            target.AddChild(UiTheme.Text(Localization.Loc.Tr("No ranked clans yet."), 13, UiTheme.TextDim));
             return;
         }
 
@@ -593,7 +592,7 @@ public partial class World
         CloseClanCreate();
         if (ok)
         {
-            Chat.Info("You are now a leader of a clan. Congratulations!!!");
+            Chat.Info(Localization.Loc.Tr("You are now a leader of a clan. Congratulations!!!"));
             _clanLoaded = true;
             Net.I.SendClanMembersRequest();
             return;
@@ -601,14 +600,14 @@ public partial class World
 
         string text = code switch
         {
-            2 => "Sorry. A weakling like you are not fit to become a leader!!",
-            3 => "Oh~ I'm sorry, but somebody else is already using that name. Try a different name.",
-            4 => $"Sorry. You need {ClanTypes.CreationCoins:n0} Coins in order to create a clan.",
-            5 => "You can't create a clan because you're already in another clan.",
-            7 => "You cannot create a clan today.",
-            8 => "Creating a clan is only allowed in the 1st server group.",
-            9 => "Creating a clan is only allowed in your nation's village or Moradon.",
-            _ => "Hm.. You can't create a clan right now. Please come back later.",
+            2 => Localization.Loc.Tr("Sorry. A weakling like you are not fit to become a leader!!"),
+            3 => Localization.Loc.Tr("Oh~ I'm sorry, but somebody else is already using that name. Try a different name."),
+            4 => $"{Localization.Loc.Tr("Sorry. You need")} {ClanTypes.CreationCoins:n0} {Localization.Loc.Tr("Coins in order to create a clan.")}",
+            5 => Localization.Loc.Tr("You can't create a clan because you're already in another clan."),
+            7 => Localization.Loc.Tr("You cannot create a clan today."),
+            8 => Localization.Loc.Tr("Creating a clan is only allowed in the 1st server group."),
+            9 => Localization.Loc.Tr("Creating a clan is only allowed in your nation's village or Moradon."),
+            _ => Localization.Loc.Tr("Hm.. You can't create a clan right now. Please come back later."),
         };
         CombatNotice(text);
         if (code == 3) OpenClanCreate(text);
@@ -618,7 +617,7 @@ public partial class World
     {
         _clanInviterId = inviterId;
         _clanInviteClanId = clanId;
-        _clanInviteAsk.DialogText = $"Will you join the clan {clanName} ?";
+        _clanInviteAsk.DialogText = $"{Localization.Loc.Tr("Will you join the clan")} {clanName} ?";
         _clanInviteAsk.PopupCentered();
     }
 
@@ -644,7 +643,7 @@ public partial class World
                 if (!ok) CombatNotice(code == 12 ? ClanMsgZone : ClanMsgQuitFailed);
                 return;
             case Net.KnDestroy:
-                if (ok) Chat.Info("The clan has been disbanded.");
+                if (ok) Chat.Info(Localization.Loc.Tr("The clan has been disbanded."));
                 else CombatNotice(ClanRefusal(code));
                 return;
             case Net.KnRemove:
@@ -702,8 +701,8 @@ public partial class World
     {
         if (!ok) { CombatNotice(ClanMsgHandoverFailed); return; }
         Chat.Info(string.Equals(oldChief, Net.I.LastEnter.Name, StringComparison.OrdinalIgnoreCase)
-            ? $"You have handed over leadership to {newChief}."
-            : $"{oldChief}, the leader of {MyClan.Name}, passes leadership to {newChief}.");
+            ? $"{Localization.Loc.Tr("You have handed over leadership to")} {newChief}."
+            : $"{oldChief}, {Localization.Loc.Tr("the leader of")} {MyClan.Name}, {Localization.Loc.Tr("passes leadership to")} {newChief}.");
         Net.I.SendClanMembersRequest();
     }
 
@@ -712,7 +711,7 @@ public partial class World
         if (charId == _myId)
         {
             if (clanId == 0) Chat.Info(ClanMsgBanned);
-            else Chat.Info($"You are now {ClanRanks.Name(fame)} of the clan.");
+            else Chat.Info($"{Localization.Loc.Tr("You are now")} {ClanRanks.Name(fame)} {Localization.Loc.Tr("of the clan.")}");
             if (clanId != 0 && ClanPageVisible) Net.I.SendClanMembersRequest();
             return;
         }
@@ -731,7 +730,7 @@ public partial class World
 
     private void OnClanMemberPresence(string name, bool online)
     {
-        Chat.Info(online ? $"{name} is online." : $"{name} is offline.");
+        Chat.Info(online ? $"{name} {Localization.Loc.Tr("is online.")}" : $"{name} {Localization.Loc.Tr("is offline.")}");
         for (int i = 0; i < _clanMembers.Count; i++)
         {
             if (!string.Equals(_clanMembers[i].Name, name, StringComparison.OrdinalIgnoreCase)) continue;
@@ -795,18 +794,18 @@ public partial class World
 
         if (_selectedId <= 0 || !_ents.TryGetValue(_selectedId, out var target) || target.IsNpc)
         {
-            CombatNotice("Target the chief of the clan you want to ally with.");
+            CombatNotice(Localization.Loc.Tr("Target the chief of the clan you want to ally with."));
             return;
         }
 
         if (MyClan.AllianceId == MyClan.ClanId) Net.I.SendAllianceInsert(_selectedId);
         else Net.I.SendAllianceCreate(_selectedId);
-        SetClanStatus($"Alliance request sent to {target.Name}.", false);
+        SetClanStatus($"{Localization.Loc.Tr("Alliance request sent to")} {target.Name}.", false);
     }
 
     private void OnAllianceInvite(string clanName, int clanId)
     {
-        _clanAllianceAsk.DialogText = $"The Knights {clanName} has sent a request for confederacy.  Will you accept?";
+        _clanAllianceAsk.DialogText = $"{Localization.Loc.Tr("The Knights")} {clanName} {Localization.Loc.Tr("has sent a request for confederacy.  Will you accept?")}";
         _clanAllianceAsk.PopupCentered();
     }
 
@@ -826,12 +825,12 @@ public partial class World
         if (clans.Count == 0)
         {
             SetClanListHint(MyClan.IsChief && MyClan.Flag >= ClanTypes.Promoted
-                ? "Your Knights are in no alliance. Target another chief and press Ally with target."
-                : "Your Knights are in no alliance.");
+                ? Localization.Loc.Tr("Your Knights are in no alliance. Target another chief and press Ally with target.")
+                : Localization.Loc.Tr("Your Knights are in no alliance."));
             return;
         }
 
-        SetClanListHint(notice.Length > 0 ? notice : "Alliance");
+        SetClanListHint(notice.Length > 0 ? notice : Localization.Loc.Tr("Alliance"));
         foreach (var clan in clans)
         {
             var row = new PanelContainer();
@@ -843,11 +842,11 @@ public partial class World
             var name = UiTheme.Text(clan.Name, 13, clan.Id == MyClan.ClanId ? UiTheme.GoldBright : UiTheme.TextHi);
             name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             head.AddChild(name);
-            head.AddChild(UiTheme.Text(clan.Id == MyClan.AllianceId ? "leads" : "member", 11, UiTheme.TextLo));
+            head.AddChild(UiTheme.Text(clan.Id == MyClan.AllianceId ? Localization.Loc.Tr("leads") : Localization.Loc.Tr("member"), 11, UiTheme.TextLo));
             if (MyClan.IsChief && MyClan.AllianceId == MyClan.ClanId && clan.Id != MyClan.ClanId)
             {
                 int punishId = clan.Id;
-                var kick = new Button { Text = "Expel", FocusMode = Control.FocusModeEnum.None };
+                var kick = new Button { Text = Localization.Loc.Tr("Expel"), FocusMode = Control.FocusModeEnum.None };
                 kick.Pressed += () => Net.I.SendAlliancePunish(punishId);
                 head.AddChild(kick);
             }

@@ -22,7 +22,7 @@ public partial class World
         _titleLayer = new CanvasLayer { Layer = 74 };
         AddChild(_titleLayer);
 
-        _titlePanel = new HudWindow("titles", "Titles", new Vector2(320, 150),
+        _titlePanel = new HudWindow("titles", Localization.Loc.Tr("Titles"), new Vector2(320, 150),
             bodyMinWidth: TitlePickerWidth)
         { Visible = false };
         _titlePanel.Closed += CloseTitlePicker;
@@ -68,13 +68,12 @@ public partial class World
 
         var unlocked = UnlockedTitles();
         _titleHint.Text = unlocked.Count == 0
-            ? "Claim an achievement that carries a title to earn one."
-            : $"{unlocked.Count} earned. Every claimed title's bonus already counts — "
-              + "this only picks the name shown above your character.";
+            ? Localization.Loc.Tr("Claim an achievement that carries a title to earn one.")
+            : $"{unlocked.Count} {Localization.Loc.Tr("earned. Every claimed title's bonus already counts — this only picks the name shown above your character.")}";
 
-        _titleList.AddChild(BuildTitleRow(NoTitle, "No title", ""));
+        _titleList.AddChild(BuildTitleRow(NoTitle, Localization.Loc.Tr("No title"), ""));
         foreach (var (titleId, title) in unlocked)
-            _titleList.AddChild(BuildTitleRow(titleId, title.Name, title.Bonus));
+            _titleList.AddChild(BuildTitleRow(titleId, Localization.Loc.Tr(title.Name), title.Bonus));
     }
 
     private List<(int Id, AchievementData.Title Title)> UnlockedTitles()
@@ -129,11 +128,11 @@ public partial class World
 
         if (worn)
         {
-            columns.AddChild(UiTheme.Text("Worn", 12, UiTheme.Gold));
+            columns.AddChild(UiTheme.Text(Localization.Loc.Tr("Worn"), 12, UiTheme.Gold));
             return row;
         }
 
-        var wear = new Button { Text = "Wear", FocusMode = Control.FocusModeEnum.None };
+        var wear = new Button { Text = Localization.Loc.Tr("Wear"), FocusMode = Control.FocusModeEnum.None };
         int chosen = titleId;
         wear.Pressed += () => Net.I.SendTitleSelect(chosen);
         columns.AddChild(wear);
@@ -146,7 +145,7 @@ public partial class World
 
         int titleId = Net.I.DisplayTitleId;
         var title = titleId != 0 ? AchievementData.TitleOf(titleId) : null;
-        _stTitleBtn.Text = title is { } worn ? $"Title: {worn.Name}" : "Title: none";
+        _stTitleBtn.Text = title is { } worn ? $"{Localization.Loc.Tr("Title")}: {Localization.Loc.Tr(worn.Name)}" : Localization.Loc.Tr("Title: none");
         _stTitleBtn.AddThemeColorOverride(
             "font_color", title != null ? UiTheme.GoldBright : UiTheme.TextLo);
     }

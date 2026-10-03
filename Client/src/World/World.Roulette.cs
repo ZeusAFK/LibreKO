@@ -17,22 +17,22 @@ public partial class World
     {
         _rouletteLayer = new CanvasLayer { Layer = 78 };
         AddChild(_rouletteLayer);
-        _roulettePanel = new HudWindow("roulette", "Event Roulette", new Vector2(220, 150)) { Visible = false };
+        _roulettePanel = new HudWindow("roulette", Localization.Loc.Tr("Event Roulette"), new Vector2(220, 150)) { Visible = false };
         _roulettePanel.Closed += CloseRoulette;
         _rouletteLayer.AddChild(_roulettePanel);
 
         var root = _roulettePanel.Body;
         root.AddThemeConstantOverride("separation", 8);
-        root.AddChild(UiTheme.SectionTitle("Event Roulette"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Event Roulette")));
 
-        _rouletteCoinsLabel = UiTheme.Text("Event Coins: -", 14, UiTheme.Gold);
+        _rouletteCoinsLabel = UiTheme.Text($"{Localization.Loc.Tr("Event Coins")}: -", 14, UiTheme.Gold);
         root.AddChild(_rouletteCoinsLabel);
 
-        _rouletteSpinBtn = new Button { Text = "Spin (1 coin)", FocusMode = Control.FocusModeEnum.None };
+        _rouletteSpinBtn = new Button { Text = Localization.Loc.Tr("Spin (1 coin)"), FocusMode = Control.FocusModeEnum.None };
         _rouletteSpinBtn.Pressed += OnRouletteSpinPressed;
         root.AddChild(_rouletteSpinBtn);
 
-        _rouletteResultLabel = UiTheme.Text("Spin to win a prize!", 13, UiTheme.TextLo);
+        _rouletteResultLabel = UiTheme.Text(Localization.Loc.Tr("Spin to win a prize!"), 13, UiTheme.TextLo);
         root.AddChild(_rouletteResultLabel);
 
         Net.I.RouletteStatusEvent += OnRouletteStatus;
@@ -64,7 +64,7 @@ public partial class World
     {
         if (_rouletteCoins < 1)
         {
-            _rouletteResultLabel.Text = "Not enough event coins.";
+            _rouletteResultLabel.Text = Localization.Loc.Tr("Not enough event coins.");
             return;
         }
         Net.I.SendRouletteSpin();
@@ -73,7 +73,7 @@ public partial class World
     private void OnRouletteStatus(int coins)
     {
         _rouletteCoins = coins;
-        _rouletteCoinsLabel.Text = $"Event Coins: {coins}";
+        _rouletteCoinsLabel.Text = $"{Localization.Loc.Tr("Event Coins")}: {coins}";
         _rouletteSpinBtn.Disabled = coins < 1;
     }
 
@@ -81,15 +81,15 @@ public partial class World
     {
         if (!ok)
         {
-            _rouletteResultLabel.Text = "Not enough event coins.";
+            _rouletteResultLabel.Text = Localization.Loc.Tr("Not enough event coins.");
             Net.I.SendRouletteStatus();
             return;
         }
 
         string prize = prizeGold > 0
-            ? $"{prizeGold:N0} gold"
-            : (prizeItemId > 0 ? $"item #{prizeItemId}" : "nothing");
-        _rouletteResultLabel.Text = $"You won {prize}!";
+            ? $"{prizeGold:N0} {Localization.Loc.Tr("gold")}"
+            : (prizeItemId > 0 ? $"item #{prizeItemId}" : Localization.Loc.Tr("nothing"));
+        _rouletteResultLabel.Text = $"{Localization.Loc.Tr("You won")} {prize}!";
 
         Net.I.SendRouletteStatus();
     }

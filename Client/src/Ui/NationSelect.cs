@@ -53,8 +53,8 @@ public partial class NationSelect : Control
         header.OffsetBottom = HeaderBottom;
         header.AddThemeConstantOverride("separation", 4);
         root.AddChild(header);
-        header.AddChild(Ui.Legend("Select Your Nation", 34, UiTheme.GoldBright));
-        header.AddChild(Ui.Legend("This choice binds the account and cannot be changed.",
+        header.AddChild(Ui.Legend(Localization.Loc.Tr("Select Your Nation"), 34, UiTheme.GoldBright));
+        header.AddChild(Ui.Legend(Localization.Loc.Tr("This choice binds the account and cannot be changed."),
                                   14, UiTheme.TextHi));
 
         _elmorad = BuildSide(root, "El Morad", ElMoradLore, Nations.ElMorad, left: true);
@@ -79,7 +79,7 @@ public partial class NationSelect : Control
         side.AnchorRight = left ? 0.5f : 1f;
         root.AddChild(side);
 
-        var pick = Ui.MenuButton($"Choose {name}", 52, 21);
+        var pick = Ui.MenuButton($"{Localization.Loc.Tr("Choose")} {Localization.Loc.Tr(name)}", 52, 21);
         if (Platform.PointerUi)
         {
             pick.AddThemeStyleboxOverride("normal", Ui.EdgeFade(new Color(0.02f, 0.02f, 0.03f, 0.42f)));
@@ -118,7 +118,7 @@ public partial class NationSelect : Control
 
         var body = new Label
         {
-            Text = lore,
+            Text = Localization.Loc.Tr(lore),
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Bottom,
@@ -163,7 +163,7 @@ public partial class NationSelect : Control
     private void Choose(int nation)
     {
         _karus.Disabled = _elmorad.Disabled = true;
-        _status.Text = "Selecting nation…";
+        _status.Text = Localization.Loc.Tr("Selecting nation…");
         Net.I.SelectNation(nation);
     }
 
@@ -173,7 +173,7 @@ public partial class NationSelect : Control
         {
             _karus.Disabled = _elmorad.Disabled = false;
             _status.Text = "";
-            Notice.Show(this, "Nation selection was rejected. Please try again.");
+            Notice.Show(this, Localization.Loc.Tr("Nation selection was rejected. Please try again."));
             return;
         }
         GetTree().ChangeSceneToFile("res://scenes/CharSelect.tscn");
@@ -183,7 +183,7 @@ public partial class NationSelect : Control
     {
         _karus.Disabled = _elmorad.Disabled = false;
         _status.Text = "";
-        Notice.Show(this, "Error: " + e);
+        Notice.Show(this, Localization.Loc.Tr("Error: ") + e);
     }
 
     public override void _ExitTree()

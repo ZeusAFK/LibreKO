@@ -23,7 +23,7 @@ public partial class World
     {
         if (!_worldReady || _self == null) return;
 
-        Chat.Info("Awakening succeeded — your power surges.");
+        Chat.Info(Localization.Loc.Tr("Awakening succeeded — your power surges."));
         SpawnAwakenBurst(effectScale);
     }
 

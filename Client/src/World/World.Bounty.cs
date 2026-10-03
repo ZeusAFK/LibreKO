@@ -17,30 +17,30 @@ public partial class World
     {
         _bountyLayer = new CanvasLayer { Layer = 74 };
         AddChild(_bountyLayer);
-        _bountyPanel = new HudWindow("bounty", "Bounty Board", new Vector2(200, 120)) { Visible = false };
+        _bountyPanel = new HudWindow("bounty", Localization.Loc.Tr("Bounty Board"), new Vector2(200, 120)) { Visible = false };
         _bountyPanel.Closed += CloseBounty;
         _bountyLayer.AddChild(_bountyPanel);
         var root = _bountyPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
 
-        root.AddChild(UiTheme.SectionTitle("Post a Bounty"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Post a Bounty")));
         var form = new HBoxContainer();
         form.AddThemeConstantOverride("separation", 6);
         root.AddChild(form);
 
-        form.AddChild(UiTheme.Text("Target", 12, UiTheme.TextLo));
-        _bountyTargetEdit = new LineEdit { CustomMinimumSize = new Vector2(120, 0), PlaceholderText = "name" };
+        form.AddChild(UiTheme.Text(Localization.Loc.Tr("Target"), 12, UiTheme.TextLo));
+        _bountyTargetEdit = new LineEdit { CustomMinimumSize = new Vector2(120, 0), PlaceholderText = Localization.Loc.Tr("name") };
         form.AddChild(_bountyTargetEdit);
 
-        form.AddChild(UiTheme.Text("Reward", 12, UiTheme.TextLo));
-        _bountyRewardEdit = new LineEdit { CustomMinimumSize = new Vector2(90, 0), PlaceholderText = "gold" };
+        form.AddChild(UiTheme.Text(Localization.Loc.Tr("Reward"), 12, UiTheme.TextLo));
+        _bountyRewardEdit = new LineEdit { CustomMinimumSize = new Vector2(90, 0), PlaceholderText = Localization.Loc.Tr("gold") };
         form.AddChild(_bountyRewardEdit);
 
-        var postBtn = new Button { Text = "Post", FocusMode = Control.FocusModeEnum.None };
+        var postBtn = new Button { Text = Localization.Loc.Tr("Post"), FocusMode = Control.FocusModeEnum.None };
         postBtn.Pressed += OnBountyPostPressed;
         form.AddChild(postBtn);
 
-        root.AddChild(UiTheme.SectionTitle("Open Bounties"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Open Bounties")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(380, 300), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _bountyList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -96,11 +96,11 @@ public partial class World
             target.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             hb.AddChild(target);
 
-            hb.AddChild(UiTheme.Text($"by {b.Poster}", 12, UiTheme.TextLo));
+            hb.AddChild(UiTheme.Text($"{Localization.Loc.Tr("by")} {b.Poster}", 12, UiTheme.TextLo));
             hb.AddChild(UiTheme.Text($"{b.Reward:N0}g", 12, UiTheme.Gold));
 
             int id = b.Id;
-            var btn = new Button { Text = "Claim", FocusMode = Control.FocusModeEnum.None };
+            var btn = new Button { Text = Localization.Loc.Tr("Claim"), FocusMode = Control.FocusModeEnum.None };
             btn.Pressed += () => Net.I.SendBountyClaim(id);
             hb.AddChild(btn);
 
@@ -108,7 +108,7 @@ public partial class World
         }
         if (_bountyList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No open bounties.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No open bounties.");
             _bountyList.AddChild(e);
         }
     }

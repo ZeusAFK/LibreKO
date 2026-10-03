@@ -154,9 +154,9 @@ public partial class World
 
     private string CombatEntityName(int id)
     {
-        if (id == _myId) return "You";
+        if (id == _myId) return Localization.Loc.Tr("You");
         return _ents.TryGetValue(id, out var e) && !string.IsNullOrWhiteSpace(e.Name)
             ? e.Name
-            : "Unknown";
+            : Localization.Loc.Tr("Unknown");
     }
 }

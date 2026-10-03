@@ -1,4 +1,5 @@
-﻿using LibreKO.Common.Infrastructure.Network;
+﻿using System.Collections.Generic;
+using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
 using LibreKO.Game.Protocol.Writers;
@@ -17,6 +18,7 @@ public interface ICombatNotificationService
     Task SendPartyClassUpdateAsync(UserSession session);
     Task SendPartyStatusUpdateAsync(UserSession session, byte statusType, bool applied);
     Task SendToPartyAsync(PartyGroup party, Packet packet);
+    Task SendPartyDamageAsync(UserSession session, int damage);
 }
 
 public class CombatNotificationService(SessionManager sessionManager,
@@ -138,6 +140,55 @@ public class CombatNotificationService(SessionManager sessionManager,
             if (member != null)
                 await member.Client.SendPacket(packet);
         }
+    }
+
+    // Accumulate damage on the attacker and, throttled to ~2/s, broadcast the
+    // party's full damage table to every member so clients can show teammate DPS.
+    public async Task SendPartyDamageAsync(UserSession session, int damage)
+    {
+        session.WithLock(s =>
+        {
+            s.DamageDealt += damage;
+            if (s.FirstDamageAt == default)
+                s.FirstDamageAt = DateTime.UtcNow;
+        });
+
+        var now = DateTime.UtcNow;
+        if ((now - session.LastDpsBroadcast).TotalMilliseconds < 500)
+            return;
+        session.LastDpsBroadcast = now;
+
+        if (!session.IsInParty)
+            return;
+        var party = sessionManager.Parties.GetParty(session.PartyIndex);
+        if (party == null)
+            return;
+
+        var entries = new List<(int CharId, long Damage)>(PartyGroup.MaxMembers);
+        long windowStart = long.MaxValue;
+        for (var index = 0; index < PartyGroup.MaxMembers; index++)
+        {
+            if (party.MemberIds[index] < 0)
+                continue;
+
+            var member = sessionManager.GetByCharacterId(party.MemberIds[index]);
+            if (member == null)
+                continue;
+
+            var (dealt, firstAt) = member.WithLock(m => (m.DamageDealt, m.FirstDamageAt));
+            entries.Add((member.CharacterId, dealt));
+            if (firstAt != default)
+            {
+                long unix = new DateTimeOffset(firstAt.ToUniversalTime()).ToUnixTimeSeconds();
+                if (unix < windowStart)
+                    windowStart = unix;
+            }
+        }
+
+        if (windowStart == long.MaxValue)
+            windowStart = new DateTimeOffset(now.ToUniversalTime()).ToUnixTimeSeconds();
+
+        await SendToPartyAsync(party, DpsPacketWriter.DamageTable(windowStart, entries));
     }
 
     private enum DeathNoticeType : byte

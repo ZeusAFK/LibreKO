@@ -98,7 +98,7 @@ public partial class World
         var grip = new HotGrip
         {
             Vertical = vertical,
-            TooltipText = "Drag to move the skill bar",
+            TooltipText = Localization.Loc.Tr("Drag to move the skill bar"),
             CustomMinimumSize = HotGripSize(vertical),
             SizeFlagsVertical = Control.SizeFlags.ShrinkEnd,
             SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
@@ -197,20 +197,20 @@ public partial class World
         grid.AddThemeConstantOverride("v_separation", HotPageBtnGap);
 
         var lockBtn = MakeHotTool(Config.HotbarLocked ? HotToolGlyph.Locked : HotToolGlyph.Unlocked,
-            Config.HotbarLocked ? "Unlock the skill bar" : "Lock the skill bar");
+            Config.HotbarLocked ? Localization.Loc.Tr("Unlock the skill bar") : Localization.Loc.Tr("Lock the skill bar"));
         lockBtn.Pressed += () => ApplyHotbarLayout(!Config.HotbarLocked, vertical, extraBars);
         grid.AddChild(lockBtn);
 
-        var turn = MakeHotTool(HotToolGlyph.Turn, vertical ? "Lay the skill bar flat" : "Stand the skill bar up");
+        var turn = MakeHotTool(HotToolGlyph.Turn, vertical ? Localization.Loc.Tr("Lay the skill bar flat") : Localization.Loc.Tr("Stand the skill bar up"));
         turn.Pressed += () => ApplyHotbarLayout(Config.HotbarLocked, !vertical, extraBars);
         grid.AddChild(turn);
 
-        var add = MakeHotTool(HotToolGlyph.Add, "Add a skill bar");
+        var add = MakeHotTool(HotToolGlyph.Add, Localization.Loc.Tr("Add a skill bar"));
         add.Disabled = extraBars >= HotbarLayout.MaxBars - 1;
         add.Pressed += () => ApplyHotbarLayout(Config.HotbarLocked, vertical, extraBars + 1);
         grid.AddChild(add);
 
-        var remove = MakeHotTool(HotToolGlyph.Remove, "Remove a skill bar");
+        var remove = MakeHotTool(HotToolGlyph.Remove, Localization.Loc.Tr("Remove a skill bar"));
         remove.Disabled = extraBars <= 0;
         remove.Pressed += () => ApplyHotbarLayout(Config.HotbarLocked, vertical, extraBars - 1);
         grid.AddChild(remove);
@@ -365,7 +365,7 @@ public partial class World
         // Effect1 naming a magic row the bake never produced is what made quest potions inert.
         if (def.Effect1 != 0)
         {
-            CombatNotice($"{ItemData.DisplayName(itemId)} has no usable effect.");
+            CombatNotice($"{ItemData.DisplayName(itemId)} {Localization.Loc.Tr("has no usable effect.")}");
             return true;
         }
         return false;
@@ -378,22 +378,22 @@ public partial class World
         string name = ItemData.DisplayName(itemId);
         if (!HasItemInBackpack(itemId))
         {
-            problem = $"You have no {name} left.";
+            problem = $"{Localization.Loc.Tr("You have no")} {name} {Localization.Loc.Tr("left.")}";
             return false;
         }
         if (Sheet.Level > 0 && def.ReqLevel > 0 && Sheet.Level < def.ReqLevel)
         {
-            problem = $"{name} needs level {def.ReqLevel}.";
+            problem = $"{name} {Localization.Loc.Tr("needs level")} {def.ReqLevel}.";
             return false;
         }
         if (Sheet.Level > 0 && def.ReqLevelMax > 0 && Sheet.Level > def.ReqLevelMax)
         {
-            problem = $"{name} can only be used up to level {def.ReqLevelMax}.";
+            problem = $"{name} {Localization.Loc.Tr("can only be used up to level")} {def.ReqLevelMax}.";
             return false;
         }
         if (!EquipRules.UseAllows(_selfClass, def.Class))
         {
-            problem = $"Your class cannot use {name}.";
+            problem = $"{Localization.Loc.Tr("Your class cannot use")} {name}.";
             return false;
         }
         return true;

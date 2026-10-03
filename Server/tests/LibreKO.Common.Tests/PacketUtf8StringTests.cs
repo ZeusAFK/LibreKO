@@ -22,12 +22,12 @@ public class PacketUtf8StringTests
     }
 
     [Fact]
-    public void WriteString_StaysAsciiSoRetailLayoutsDoNotShift()
+    public void WriteString_RoundTripsNonAsciiTextLikeTheUtf8Methods()
     {
         var packet = new Packet(GameOpcodes.GS_SELECT_MSG);
         packet.WriteString("Dónde");
 
-        packet.ReadString().Should().Be("D?nde");
+        packet.ReadString().Should().Be("Dónde");
     }
 
     [Fact]

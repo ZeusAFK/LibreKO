@@ -102,12 +102,12 @@ public partial class World
         col.AddThemeConstantOverride("separation", 3);
         m.AddChild(col);
 
-        _battleeventZoneLbl = UiTheme.SectionTitle("War Zone");
+        _battleeventZoneLbl = UiTheme.SectionTitle(Localization.Loc.Tr("War Zone"));
         col.AddChild(_battleeventZoneLbl);
         col.AddChild(new HSeparator());
 
-        _battleeventKarusLbl = ScoreRow(col, "Karus", BattleKarusCol);
-        _battleeventElmoLbl  = ScoreRow(col, "El Morad", BattleElmoCol);
+        _battleeventKarusLbl = ScoreRow(col, Localization.Loc.Tr("Karus"), BattleKarusCol);
+        _battleeventElmoLbl  = ScoreRow(col, Localization.Loc.Tr("El Morad"), BattleElmoCol);
 
         col.AddChild(new HSeparator());
         _battleeventTimerLbl = UiTheme.Text("--:--", 13, UiTheme.TextHi, HorizontalAlignment.Center);
@@ -156,13 +156,13 @@ public partial class World
     {
         if (openType == Net.BattleZoneClose)
         {
-            ShowBattleBanner("The battle zone has closed.");
+            ShowBattleBanner(Localization.Loc.Tr("The battle zone has closed."));
             StopBattleScoreboard();
         }
         else
         {
-            string snow = openType == Net.BattleZoneSnowOpen ? "Snow " : "";
-            ShowBattleBanner($"The {snow}Battle Zone is now OPEN!  ({BattleZoneName(zone)})");
+            string snow = openType == Net.BattleZoneSnowOpen ? Localization.Loc.Tr("Snow ") : "";
+            ShowBattleBanner($"{Localization.Loc.Tr("The")} {snow}{Localization.Loc.Tr("Battle Zone is now OPEN!")}  ({BattleZoneName(zone)})");
             StartBattleScoreboard(zone, 0);
             Net.I.SendBattleStatusRequest();
         }
@@ -185,12 +185,12 @@ public partial class World
 
         if (declareType == Net.BattleDeclareWinner)
         {
-            ShowBattleResultPopup(mine ? "VICTORY!" : $"{nationName} won the war.", mine);
-            Chat.Info($"[War] {nationName} has won the battle!");
+            ShowBattleResultPopup(mine ? Localization.Loc.Tr("VICTORY!") : $"{nationName} {Localization.Loc.Tr("won the war.")}", mine);
+            Chat.Info($"{Localization.Loc.Tr("[War]")} {nationName} {Localization.Loc.Tr("has won the battle!")}");
         }
         else if (declareType == Net.BattleDeclareLoser)
         {
-            if (mine) ShowBattleResultPopup("DEFEAT", false);
+            if (mine) ShowBattleResultPopup(Localization.Loc.Tr("DEFEAT"), false);
         }
         StopBattleScoreboard();
     }
@@ -265,13 +265,13 @@ public partial class World
 
     private static string BattleZoneName(int zone) => zone switch
     {
-        61 => "Napies Gorge",
-        62 => "Alseids Prairie",
-        63 => "Nieds Triangle",
-        64 => "Nereid's Island",
-        65 => "Zipang",
-        66 => "Oreads",
-        69 => "Snow Battle",
-        _  => "Battle Zone",
+        61 => Localization.Loc.Tr("Napies Gorge"),
+        62 => Localization.Loc.Tr("Alseids Prairie"),
+        63 => Localization.Loc.Tr("Nieds Triangle"),
+        64 => Localization.Loc.Tr("Nereid's Island"),
+        65 => Localization.Loc.Tr("Zipang"),
+        66 => Localization.Loc.Tr("Oreads"),
+        69 => Localization.Loc.Tr("Snow Battle"),
+        _  => Localization.Loc.Tr("Battle Zone"),
     };
 }

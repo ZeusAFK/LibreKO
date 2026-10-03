@@ -258,7 +258,7 @@ public static class QuestData
             if (first.Length > 44) first = first.Substring(0, 43).TrimEnd() + "…";
             if (first.Length > 0) return first;
         }
-        return $"Quest #{questId}";
+        return $"{Localization.Loc.Tr("Quest")} #{questId}";
     }
 
     public static KillGroup[] Groups(int questId)

@@ -94,21 +94,21 @@ public partial class World
         _shoppingmallLayer = new CanvasLayer { Layer = 73 };
         AddChild(_shoppingmallLayer);
 
-        _shoppingmallPanel = new HudWindow("shoppingmall", "Power-Up Store", new Vector2(220, 120)) { Visible = false };
+        _shoppingmallPanel = new HudWindow("shoppingmall", Localization.Loc.Tr("Power-Up Store"), new Vector2(220, 120)) { Visible = false };
         _shoppingmallPanel.Closed += CloseShoppingMall;
         _shoppingmallLayer.AddChild(_shoppingmallPanel);
 
         var root = _shoppingmallPanel.Body;
         root.AddThemeConstantOverride("separation", 8);
 
-        root.AddChild(UiTheme.SectionTitle("Cash Shop"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Cash Shop")));
         var storeRow = new HBoxContainer();
         storeRow.AddThemeConstantOverride("separation", 8);
         _shoppingmallStoreStatus = HudStyle.Label(13);
         _shoppingmallStoreStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        _shoppingmallStoreStatus.Text = "Store closed.";
+        _shoppingmallStoreStatus.Text = Localization.Loc.Tr("Store closed.");
         storeRow.AddChild(_shoppingmallStoreStatus);
-        var openBtn = new Button { Text = "Open Store", FocusMode = Control.FocusModeEnum.None };
+        var openBtn = new Button { Text = Localization.Loc.Tr("Open Store"), FocusMode = Control.FocusModeEnum.None };
         openBtn.AddThemeFontSizeOverride("font_size", 12);
         openBtn.Pressed += () => Net.I.SendShoppingMallOpen();
         storeRow.AddChild(openBtn);
@@ -120,15 +120,15 @@ public partial class World
 
         root.AddChild(new HSeparator());
 
-        root.AddChild(UiTheme.SectionTitle("Gift Letters"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Gift Letters")));
 
         var tabs = new HBoxContainer();
         tabs.AddThemeConstantOverride("separation", 6);
-        _shoppingmallInboxTab = MakeTab("Inbox", () => SwitchLetterView(false));
-        _shoppingmallHistoryTab = MakeTab("History", () => SwitchLetterView(true));
+        _shoppingmallInboxTab = MakeTab(Localization.Loc.Tr("Inbox"), () => SwitchLetterView(false));
+        _shoppingmallHistoryTab = MakeTab(Localization.Loc.Tr("History"), () => SwitchLetterView(true));
         tabs.AddChild(_shoppingmallInboxTab);
         tabs.AddChild(_shoppingmallHistoryTab);
-        var refresh = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
+        var refresh = new Button { Text = Localization.Loc.Tr("Refresh"), FocusMode = Control.FocusModeEnum.None };
         refresh.AddThemeFontSizeOverride("font_size", 12);
         refresh.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         refresh.Pressed += RequestLetterList;
@@ -149,7 +149,7 @@ public partial class World
         var readBox = new VBoxContainer();
         readBox.AddThemeConstantOverride("separation", 2);
         readPanel.AddChild(readBox);
-        _shoppingmallReadTitle = UiTheme.Text("Select a letter to read.", 13, UiTheme.GoldBright);
+        _shoppingmallReadTitle = UiTheme.Text(Localization.Loc.Tr("Select a letter to read."), 13, UiTheme.GoldBright);
         readBox.AddChild(_shoppingmallReadTitle);
         _shoppingmallReadBody = UiTheme.Text("", 12, UiTheme.TextLo);
         _shoppingmallReadBody.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -159,23 +159,23 @@ public partial class World
 
         root.AddChild(new HSeparator());
 
-        root.AddChild(UiTheme.SectionTitle("Send a Letter"));
-        _shoppingmallToEdit = MakeField(root, "To", 16);
-        _shoppingmallSubjectEdit = MakeField(root, "Subject", 31);
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Send a Letter")));
+        _shoppingmallToEdit = MakeField(root, Localization.Loc.Tr("To"), 16);
+        _shoppingmallSubjectEdit = MakeField(root, Localization.Loc.Tr("Subject"), 31);
 
-        var msgLbl = UiTheme.Text("Message", 12, UiTheme.TextLo);
+        var msgLbl = UiTheme.Text(Localization.Loc.Tr("Message"), 12, UiTheme.TextLo);
         root.AddChild(msgLbl);
         _shoppingmallMsgEdit = new TextEdit
         {
             CustomMinimumSize = new Vector2(420, 56),
-            PlaceholderText = "Write your message…",
+            PlaceholderText = Localization.Loc.Tr("Write your message…"),
             WrapMode = TextEdit.LineWrappingMode.Boundary,
         };
         root.AddChild(_shoppingmallMsgEdit);
 
         var giftRow = new HBoxContainer();
         giftRow.AddThemeConstantOverride("separation", 8);
-        giftRow.AddChild(UiTheme.Text("Attach", 12, UiTheme.TextLo));
+        giftRow.AddChild(UiTheme.Text(Localization.Loc.Tr("Attach"), 12, UiTheme.TextLo));
         _shoppingmallGiftPick = new OptionButton { FocusMode = Control.FocusModeEnum.None };
         _shoppingmallGiftPick.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         giftRow.AddChild(_shoppingmallGiftPick);
@@ -186,7 +186,7 @@ public partial class World
         _shoppingmallStatus = HudStyle.Label(12);
         _shoppingmallStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         sendRow.AddChild(_shoppingmallStatus);
-        var sendBtn = new Button { Text = "Send", FocusMode = Control.FocusModeEnum.None };
+        var sendBtn = new Button { Text = Localization.Loc.Tr("Send"), FocusMode = Control.FocusModeEnum.None };
         sendBtn.AddThemeFontSizeOverride("font_size", 12);
         sendBtn.Pressed += SendComposedLetter;
         sendRow.AddChild(sendBtn);
@@ -273,7 +273,7 @@ public partial class World
         if (_shoppingmallLetters.Count == 0)
         {
             var empty = HudStyle.Label(13);
-            empty.Text = _shoppingmallHistoryView ? "No past letters." : "Your mailbox is empty.";
+            empty.Text = _shoppingmallHistoryView ? Localization.Loc.Tr("No past letters.") : Localization.Loc.Tr("Your mailbox is empty.");
             _shoppingmallList.AddChild(empty);
             return;
         }
@@ -309,32 +309,32 @@ public partial class World
         var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         info.AddThemeConstantOverride("separation", -2);
         var subject = UiTheme.Text("", 13, letter.Status == 1 ? UiTheme.TextHi : UiTheme.TextLo);
-        subject.Text = string.IsNullOrEmpty(letter.Subject) ? "(no subject)" : letter.Subject;
+        subject.Text = string.IsNullOrEmpty(letter.Subject) ? Localization.Loc.Tr("(no subject)") : letter.Subject;
         info.AddChild(subject);
         string gift = letter.HasGift
             ? (letter.ItemId != 0
                 ? $"  ·  {ItemData.DisplayName(letter.ItemId)}" + (letter.Count > 1 ? $" x{letter.Count}" : "")
-                : "") + (letter.Coins > 0 ? $"  ·  {letter.Coins:n0} gold" : "")
+                : "") + (letter.Coins > 0 ? $"  ·  {letter.Coins:n0} {Localization.Loc.Tr("gold")}" : "")
             : "";
-        var meta = UiTheme.Text($"from {letter.Sender}{gift}   ({letter.DaysLeft}d left)", 11, UiTheme.TextDim);
+        var meta = UiTheme.Text($"{Localization.Loc.Tr("from")} {letter.Sender}{gift}   ({letter.DaysLeft}{Localization.Loc.Tr("d left")})", 11, UiTheme.TextDim);
         info.AddChild(meta);
         hb.AddChild(info);
 
         int id = letter.LetterId;
-        var readBtn = new Button { Text = "Read", FocusMode = Control.FocusModeEnum.None };
+        var readBtn = new Button { Text = Localization.Loc.Tr("Read"), FocusMode = Control.FocusModeEnum.None };
         readBtn.AddThemeFontSizeOverride("font_size", 11);
         readBtn.Pressed += () => Net.I.SendShoppingMallReadLetter(id);
         hb.AddChild(readBtn);
 
         if (letter.HasGift)
         {
-            var getBtn = new Button { Text = "Get", FocusMode = Control.FocusModeEnum.None };
+            var getBtn = new Button { Text = Localization.Loc.Tr("Get"), FocusMode = Control.FocusModeEnum.None };
             getBtn.AddThemeFontSizeOverride("font_size", 11);
             getBtn.Pressed += () => Net.I.SendShoppingMallGetGift(id);
             hb.AddChild(getBtn);
         }
 
-        var delBtn = new Button { Text = "×", FocusMode = Control.FocusModeEnum.None, TooltipText = "Delete" };
+        var delBtn = new Button { Text = "×", FocusMode = Control.FocusModeEnum.None, TooltipText = Localization.Loc.Tr("Delete") };
         delBtn.AddThemeFontSizeOverride("font_size", 13);
         delBtn.Pressed += () => Net.I.SendShoppingMallDelete(new[] { id });
         hb.AddChild(delBtn);
@@ -346,13 +346,13 @@ public partial class World
     {
         if (!ok)
         {
-            _shoppingmallReadTitle.Text = "That letter is no longer available.";
+            _shoppingmallReadTitle.Text = Localization.Loc.Tr("That letter is no longer available.");
             _shoppingmallReadBody.Text = "";
             return;
         }
-        var subject = "Letter";
+        var subject = Localization.Loc.Tr("Letter");
         foreach (var l in _shoppingmallLetters)
-            if (l.LetterId == letterId) { subject = string.IsNullOrEmpty(l.Subject) ? "Letter" : l.Subject; break; }
+            if (l.LetterId == letterId) { subject = string.IsNullOrEmpty(l.Subject) ? Localization.Loc.Tr("Letter") : l.Subject; break; }
         _shoppingmallReadTitle.Text = subject;
         _shoppingmallReadBody.Text = message;
     }
@@ -361,7 +361,7 @@ public partial class World
     {
         if (ok)
         {
-            Chat.Info("Gift claimed from your mailbox.");
+            Chat.Info(Localization.Loc.Tr("Gift claimed from your mailbox."));
             RequestLetterList();
             Net.I.SendShoppingMallUnread();
         }
@@ -369,8 +369,8 @@ public partial class World
         {
             SetShoppingMallStatus(code switch
             {
-                -2 => "That gift was already claimed.",
-                _  => "Couldn't claim the gift (bags full or too heavy).",
+                -2 => Localization.Loc.Tr("That gift was already claimed."),
+                _  => Localization.Loc.Tr("Couldn't claim the gift (bags full or too heavy)."),
             }, true);
         }
     }
@@ -379,7 +379,7 @@ public partial class World
     {
         if (overflow)
         {
-            SetShoppingMallStatus("Delete up to 5 letters at a time.", true);
+            SetShoppingMallStatus(Localization.Loc.Tr("Delete up to 5 letters at a time."), true);
             return;
         }
         if (deletedIds.Count > 0)
@@ -392,26 +392,26 @@ public partial class World
     private void OnShoppingMallUnread(int count)
     {
         _shoppingmallUnread = count;
-        _shoppingmallInboxTab.Text = count > 0 ? $"Inbox ({count})" : "Inbox";
+        _shoppingmallInboxTab.Text = count > 0 ? $"{Localization.Loc.Tr("Inbox")} ({count})" : Localization.Loc.Tr("Inbox");
     }
 
     private void OnShoppingMallOpen(short error, short freeSlot)
     {
         if (error == 1)
         {
-            _shoppingmallStoreStatus.Text = "Store open — catalogue loaded from the server.";
+            _shoppingmallStoreStatus.Text = Localization.Loc.Tr("Store open — catalogue loaded from the server.");
             _shoppingmallStoreStatus.AddThemeColorOverride("font_color", UiTheme.Good);
         }
         else
         {
             string reason = error switch
             {
-                -2 => "You can't shop while dead.",
-                -3 => "Close your trade first.",
-                -4 => "Close your stall first.",
-                -5 => "The store is closed in this zone.",
-                -8 => "Make a free inventory slot first.",
-                _  => "The store couldn't open.",
+                -2 => Localization.Loc.Tr("You can't shop while dead."),
+                -3 => Localization.Loc.Tr("Close your trade first."),
+                -4 => Localization.Loc.Tr("Close your stall first."),
+                -5 => Localization.Loc.Tr("The store is closed in this zone."),
+                -8 => Localization.Loc.Tr("Make a free inventory slot first."),
+                _  => Localization.Loc.Tr("The store couldn't open."),
             };
             _shoppingmallStoreStatus.Text = reason;
             _shoppingmallStoreStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
@@ -421,7 +421,7 @@ public partial class World
     private void RebuildGiftPicker()
     {
         _shoppingmallGiftPick.Clear();
-        _shoppingmallGiftPick.AddItem("None", 0);
+        _shoppingmallGiftPick.AddItem(Localization.Loc.Tr("None"), 0);
         _shoppingmallGiftPick.SetItemMetadata(0, -1);
         int idx = 1;
         for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
@@ -442,9 +442,9 @@ public partial class World
         string subject = _shoppingmallSubjectEdit.Text.Trim();
         string message = _shoppingmallMsgEdit.Text.Trim();
 
-        if (to.Length == 0) { SetShoppingMallStatus("Enter a recipient.", true); return; }
-        if (subject.Length == 0) { SetShoppingMallStatus("Enter a subject.", true); return; }
-        if (message.Length == 0) { SetShoppingMallStatus("Write a message.", true); return; }
+        if (to.Length == 0) { SetShoppingMallStatus(Localization.Loc.Tr("Enter a recipient."), true); return; }
+        if (subject.Length == 0) { SetShoppingMallStatus(Localization.Loc.Tr("Enter a subject."), true); return; }
+        if (message.Length == 0) { SetShoppingMallStatus(Localization.Loc.Tr("Write a message."), true); return; }
 
         int sel = _shoppingmallGiftPick.Selected;
         int absSlot = sel > 0 ? (int)_shoppingmallGiftPick.GetItemMetadata(sel) : -1;
@@ -452,25 +452,25 @@ public partial class World
         if (absSlot >= 0 && absSlot < Inv.Length && !Inv[absSlot].IsEmpty)
         {
             int cost = Net.ShoppingMallGiftCost;
-            if (Sheet.Gold < cost) { SetShoppingMallStatus($"Sending a gift costs {cost:n0} gold.", true); return; }
+            if (Sheet.Gold < cost) { SetShoppingMallStatus($"{Localization.Loc.Tr("Sending a gift costs")} {cost:n0} {Localization.Loc.Tr("gold.")}", true); return; }
             byte srcPos = (byte)(absSlot - GridStart);
             Net.I.SendShoppingMallGiftLetter(to, subject, message, Inv[absSlot].ItemId, srcPos);
         }
         else
         {
             int cost = Net.ShoppingMallLetterCost;
-            if (Sheet.Gold < cost) { SetShoppingMallStatus($"Sending a letter costs {cost:n0} gold.", true); return; }
+            if (Sheet.Gold < cost) { SetShoppingMallStatus($"{Localization.Loc.Tr("Sending a letter costs")} {cost:n0} {Localization.Loc.Tr("gold.")}", true); return; }
             Net.I.SendShoppingMallTextLetter(to, subject, message);
         }
-        SetShoppingMallStatus("Sending…", false);
+        SetShoppingMallStatus(Localization.Loc.Tr("Sending…"), false);
     }
 
     private void OnShoppingMallSendResult(bool ok, int code)
     {
         if (ok)
         {
-            SetShoppingMallStatus("Letter sent.", false);
-            Chat.Info("Your letter was delivered.");
+            SetShoppingMallStatus(Localization.Loc.Tr("Letter sent."), false);
+            Chat.Info(Localization.Loc.Tr("Your letter was delivered."));
             _shoppingmallToEdit.Text = "";
             _shoppingmallSubjectEdit.Text = "";
             _shoppingmallMsgEdit.Text = "";
@@ -479,9 +479,9 @@ public partial class World
         }
         SetShoppingMallStatus(code switch
         {
-            -6  => "You can't mail yourself.",
-            -32 => "That item can't be mailed.",
-            _   => "Couldn't send (check the name / your gold).",
+            -6  => Localization.Loc.Tr("You can't mail yourself."),
+            -32 => Localization.Loc.Tr("That item can't be mailed."),
+            _   => Localization.Loc.Tr("Couldn't send (check the name / your gold)."),
         }, true);
     }
 
@@ -492,13 +492,13 @@ public partial class World
             if (knightCash >= 0)
                 OnShoppingMallBalance(knightCash);
 
-            _pusBasketStatus.Text = "Purchase complete.";
+            _pusBasketStatus.Text = Localization.Loc.Tr("Purchase complete.");
             _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-            Chat.Info("Power-Up Store purchase complete.");
+            Chat.Info(Localization.Loc.Tr("Power-Up Store purchase complete."));
             return;
         }
 
-        _pusBasketStatus.Text = "Purchase failed. Check your KC balance and try again.";
+        _pusBasketStatus.Text = Localization.Loc.Tr("Purchase failed. Check your KC balance and try again.");
         _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
     }
 
@@ -534,14 +534,14 @@ public partial class World
 
         var basketPanel = new VBoxContainer { CustomMinimumSize = new Vector2(150, 220) };
         basketPanel.AddThemeConstantOverride("separation", 6);
-        basketPanel.AddChild(UiTheme.Text("Basket", 12, UiTheme.TextHi));
+        basketPanel.AddChild(UiTheme.Text(Localization.Loc.Tr("Basket"), 12, UiTheme.TextHi));
         _pusWallet = UiTheme.Text($"KC {Sheet.KnightCash:n0}", 12, UiTheme.GoldBright);
         basketPanel.AddChild(_pusWallet);
         _pusBasketList = new VBoxContainer();
         _pusBasketList.AddThemeConstantOverride("separation", 4);
         basketPanel.AddChild(_pusBasketList);
 
-        _pusSummary = UiTheme.Text("Total 0 KC", 12, UiTheme.GoldBright);
+        _pusSummary = UiTheme.Text($"{Localization.Loc.Tr("Total")} 0 KC", 12, UiTheme.GoldBright);
         basketPanel.AddChild(_pusSummary);
         _pusBasketStatus = UiTheme.Text("", 11, UiTheme.TextLo);
         _pusBasketStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -549,10 +549,10 @@ public partial class World
 
         var basketButtons = new HBoxContainer();
         basketButtons.AddThemeConstantOverride("separation", 6);
-        _pusClearButton = new Button { Text = "Clear", FocusMode = Control.FocusModeEnum.None };
+        _pusClearButton = new Button { Text = Localization.Loc.Tr("Clear"), FocusMode = Control.FocusModeEnum.None };
         _pusClearButton.Pressed += ClearPusBasket;
         basketButtons.AddChild(_pusClearButton);
-        _pusBuyButton = new Button { Text = "Buy", FocusMode = Control.FocusModeEnum.None };
+        _pusBuyButton = new Button { Text = Localization.Loc.Tr("Buy"), FocusMode = Control.FocusModeEnum.None };
         _pusBuyButton.Pressed += BuyPusBasket;
         basketButtons.AddChild(_pusBuyButton);
         basketPanel.AddChild(basketButtons);
@@ -568,7 +568,7 @@ public partial class World
         var rows = _pusCatalog.Where(i => i.Category == _pusSelectedCategory).ToList();
         if (rows.Count == 0)
         {
-            _pusItemList.AddChild(UiTheme.Text("No items in this category.", 12, UiTheme.TextLo));
+            _pusItemList.AddChild(UiTheme.Text(Localization.Loc.Tr("No items in this category."), 12, UiTheme.TextLo));
         }
         else
         {
@@ -594,7 +594,7 @@ public partial class World
                 info.AddChild(UiTheme.Text(item.Name, 12, UiTheme.TextHi));
                 info.AddChild(UiTheme.Text(item.Description, 11, UiTheme.TextLo));
                 info.AddChild(UiTheme.Text(
-                    $"{item.Price:n0} Knight Cash",
+                    $"{item.Price:n0} {Localization.Loc.Tr("Knight Cash")}",
                     11,
                     UiTheme.GoldBright));
                 hb.AddChild(info);
@@ -609,8 +609,8 @@ public partial class World
 
         if (_pusBasket.Count == 0)
         {
-            _pusBasketStatus.Text = "Basket empty.";
-            _pusSummary.Text = "Total 0 KC";
+            _pusBasketStatus.Text = Localization.Loc.Tr("Basket empty.");
+            _pusSummary.Text = $"{Localization.Loc.Tr("Total")} 0 KC";
         }
         else
         {
@@ -631,8 +631,8 @@ public partial class World
                 hb.AddChild(remove);
                 _pusBasketList.AddChild(row);
             }
-            _pusSummary.Text = $"Total {total:n0} Knight Cash";
-            _pusBasketStatus.Text = "Ready to buy.";
+            _pusSummary.Text = $"{Localization.Loc.Tr("Total")} {total:n0} {Localization.Loc.Tr("Knight Cash")}";
+            _pusBasketStatus.Text = Localization.Loc.Tr("Ready to buy.");
         }
 
         _pusBuyButton.Disabled = _pusBasket.Count == 0;
@@ -722,7 +722,7 @@ public partial class World
     {
         if (_pusBasket.Count == 0)
         {
-            _pusBasketStatus.Text = "Basket is empty.";
+            _pusBasketStatus.Text = Localization.Loc.Tr("Basket is empty.");
             _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
             return;
         }
@@ -738,9 +738,9 @@ public partial class World
             Net.I.SendPowerUpStoreBuy(entry.Item.Id, entry.Count);
         }
 
-        _pusBasketStatus.Text = $"Purchase request sent for {total:n0} KC. Server validation pending.";
+        _pusBasketStatus.Text = $"{Localization.Loc.Tr("Purchase request sent for")} {total:n0} KC. {Localization.Loc.Tr("Server validation pending.")}";
         _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-        Chat.Info($"Power-Up Store purchase request sent: {total:n0} KC.");
+        Chat.Info($"{Localization.Loc.Tr("Power-Up Store purchase request sent:")} {total:n0} KC.");
         _pusBasket.Clear();
         RefreshPusView();
     }

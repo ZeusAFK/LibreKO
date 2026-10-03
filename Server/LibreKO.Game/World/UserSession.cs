@@ -60,6 +60,11 @@ public class UserSession
     public int Deaths { get; set; }
     public DateTime SessionStartedAt { get; set; } = DateTime.UtcNow;
 
+    // Accumulated damage dealt this session (DPS panel, broadcast to party).
+    public long DamageDealt { get; set; }
+    public DateTime FirstDamageAt { get; set; }
+    public DateTime LastDpsBroadcast { get; set; }
+
     public int AccumulatedPlayMinutes() =>
         PlayMinutes + (int)Math.Max(0, (DateTime.UtcNow - SessionStartedAt).TotalMinutes);
     public int DailyLoyalty { get; set; }
@@ -74,6 +79,7 @@ public class UserSession
     public string LanguageCode => Language switch
     {
         GameLanguage.Spanish => "es",
+        GameLanguage.Chinese => "zh",
         _ => LibreKO.Quests.Localization.QuestTranslations.SourceLanguage,
     };
 

@@ -28,7 +28,7 @@ public partial class World
     private int _bifrostMaxSeen;
     private bool _bifrostPromptShown;
     private bool _isEventRegistered;
-    private string _eventTitle = "Juraid Mountain";
+    private string _eventTitle = Localization.Loc.Tr("Juraid Mountain");
 
     private const int BifrostUrgentSecs = 30;
     private static readonly Color BifrostCalmCol   = new("c8a45a");
@@ -76,7 +76,7 @@ public partial class World
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Stop,
             MouseDefaultCursorShape = Control.CursorShape.PointingHand,
-            TooltipText = "Click to open registration window",
+            TooltipText = Localization.Loc.Tr("Click to open registration window"),
         };
         _bifrostBanner.AddThemeStyleboxOverride("panel", UiTheme.Panel(5, true));
         _bifrostBanner.GuiInput += ev =>
@@ -205,7 +205,7 @@ public partial class World
         _joinModalBar.AddThemeStyleboxOverride("fill", _joinModalBarFill);
         timerBox.AddChild(_joinModalBar);
 
-        _joinModalStatus = UiTheme.Text("Registration is OPEN! Click [Join] to participate.", 10, UiTheme.TextHi, HorizontalAlignment.Center);
+        _joinModalStatus = UiTheme.Text(Localization.Loc.Tr("Registration is OPEN! Click [Join] to participate."), 10, UiTheme.TextHi, HorizontalAlignment.Center);
         _joinModalStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         vb.AddChild(_joinModalStatus);
 
@@ -213,12 +213,12 @@ public partial class World
         btnRow.AddThemeConstantOverride("separation", 6);
         vb.AddChild(btnRow);
 
-        _joinModalBtn = Ui.MenuButton("Join", height: 24, fontSize: 10);
+        _joinModalBtn = Ui.MenuButton(Localization.Loc.Tr("Join"), height: 24, fontSize: 10);
         _joinModalBtn.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _joinModalBtn.Pressed += OnJoinModalToggle;
         btnRow.AddChild(_joinModalBtn);
 
-        _joinModalCloseBtn = Ui.MenuButton("Close", height: 24, fontSize: 10);
+        _joinModalCloseBtn = Ui.MenuButton(Localization.Loc.Tr("Close"), height: 24, fontSize: 10);
         _joinModalCloseBtn.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _joinModalCloseBtn.Pressed += CloseJoinModal;
         btnRow.AddChild(_joinModalCloseBtn);
@@ -231,7 +231,7 @@ public partial class World
 
         if (_bifrostActive)
         {
-            Chat.Info($"[{_eventTitle}] Window closed. Click the top timer banner anytime to reopen.");
+            Chat.Info($"[{_eventTitle}] {Localization.Loc.Tr("Window closed. Click the top timer banner anytime to reopen.")}");
         }
     }
 
@@ -247,10 +247,10 @@ public partial class World
 
         _eventTitle = eventType switch
         {
-            TempleEventType.Chaos => "Chaos Dungeon",
-            TempleEventType.BorderDefenseWar => "Border Defense War",
-            TempleEventType.JuraidMountain => "Juraid Mountain",
-            _ => "Bifrost"
+            TempleEventType.Chaos => Localization.Loc.Tr("Chaos Dungeon"),
+            TempleEventType.BorderDefenseWar => Localization.Loc.Tr("Border Defense War"),
+            TempleEventType.JuraidMountain => Localization.Loc.Tr("Juraid Mountain"),
+            _ => Localization.Loc.Tr("Bifrost")
         };
 
         if (_bifrostTitleLbl != null && IsInstanceValid(_bifrostTitleLbl))
@@ -269,7 +269,7 @@ public partial class World
 
         if (!wasActive)
         {
-            Chat.Info($"[{_eventTitle}] Registration is open ({remaining} seconds)!");
+            Chat.Info($"[{_eventTitle}] {Localization.Loc.Tr("Registration is open")} ({remaining} {Localization.Loc.Tr("seconds")})!");
             OfferBifrostJoin();
         }
     }
@@ -297,16 +297,16 @@ public partial class World
 
         if (_isEventRegistered)
         {
-            _joinModalStatus.Text = "✓ Registered! You will be teleported automatically.";
+            _joinModalStatus.Text = Localization.Loc.Tr("✓ Registered! You will be teleported automatically.");
             _joinModalStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-            _joinModalBtn.Text = "Cancel";
+            _joinModalBtn.Text = Localization.Loc.Tr("Cancel");
             _joinModalBtn.AddThemeColorOverride("font_color", UiTheme.Bad);
         }
         else
         {
-            _joinModalStatus.Text = "Registration is OPEN! Click [Join] to participate.";
+            _joinModalStatus.Text = Localization.Loc.Tr("Registration is OPEN! Click [Join] to participate.");
             _joinModalStatus.AddThemeColorOverride("font_color", UiTheme.TextHi);
-            _joinModalBtn.Text = "Join";
+            _joinModalBtn.Text = Localization.Loc.Tr("Join");
             _joinModalBtn.AddThemeColorOverride("font_color", UiTheme.TextHi);
         }
     }
@@ -317,11 +317,11 @@ public partial class World
         UpdateJoinModalState();
         if (joined)
         {
-            Chat.Info($"[{_eventTitle}] You have registered! Prepare for battle.");
+            Chat.Info($"[{_eventTitle}] {Localization.Loc.Tr("You have registered! Prepare for battle.")}");
         }
         else
         {
-            Chat.Info($"[{_eventTitle}] Unable to register for the event at this time.");
+            Chat.Info($"[{_eventTitle}] {Localization.Loc.Tr("Unable to register for the event at this time.")}");
         }
     }
 
@@ -329,12 +329,12 @@ public partial class World
     {
         _isEventRegistered = false;
         UpdateJoinModalState();
-        Chat.Info($"[{_eventTitle}] You cancelled your event registration.");
+        Chat.Info($"[{_eventTitle}] {Localization.Loc.Tr("You cancelled your event registration.")}");
     }
 
     private void EndBifrostEvent()
     {
-        if (_bifrostActive) Chat.Info($"[{_eventTitle}] Event registration has ended.");
+        if (_bifrostActive) Chat.Info($"[{_eventTitle}] {Localization.Loc.Tr("Event registration has ended.")}");
         _bifrostActive = false;
         _bifrostRemaining = 0;
         _bifrostMaxSeen = 0;

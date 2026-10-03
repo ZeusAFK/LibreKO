@@ -51,7 +51,7 @@ public partial class World
         marker.CustomMinimumSize = new Vector2(16, 20);
         marker.MouseFilter = Control.MouseFilterEnum.Ignore;
         headerBar.AddChild(marker);
-        _zoncHeaderLbl = UiTheme.Text("Battle Zones", 13, UiTheme.TextHi);
+        _zoncHeaderLbl = UiTheme.Text(Localization.Loc.Tr("Battle Zones"), 13, UiTheme.TextHi);
         _zoncHeaderLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _zoncHeaderLbl.MouseFilter = Control.MouseFilterEnum.Ignore;
         headerBar.AddChild(_zoncHeaderLbl);
@@ -64,7 +64,7 @@ public partial class World
         _zoncRows.AddThemeConstantOverride("separation", 2);
         body.AddChild(_zoncRows);
 
-        var loading = UiTheme.Text("Loading…", 12, UiTheme.TextLo);
+        var loading = UiTheme.Text(Localization.Loc.Tr("Loading…"), 12, UiTheme.TextLo);
         _zoncRows.AddChild(loading);
 
         HudLayout.Attach(
@@ -78,7 +78,7 @@ public partial class World
     {
         _zoncExpanded = !_zoncExpanded;
         ((PanelContainer)_zoncRows.GetParent()).Visible = _zoncExpanded;
-        _zoncHeaderLbl.Text = _zoncExpanded ? "Battle Zones" : "Battle Zones  ▸";
+        _zoncHeaderLbl.Text = _zoncExpanded ? Localization.Loc.Tr("Battle Zones") : $"{Localization.Loc.Tr("Battle Zones")}  ▸";
     }
 
     private void RequestZoneConcurrent()
@@ -92,7 +92,7 @@ public partial class World
 
         if (zones.Count == 0)
         {
-            _zoncRows.AddChild(UiTheme.Text("No battle zones open.", 12, UiTheme.TextLo));
+            _zoncRows.AddChild(UiTheme.Text(Localization.Loc.Tr("No battle zones open."), 12, UiTheme.TextLo));
             return;
         }
 

@@ -31,14 +31,14 @@ public partial class World
         Net.I.GoldChangeEvent -= OnRepairGold;
     }
 
-    private void OnRepairGold(int g) { if (_repairShown) _repairGoldLbl.Text = $"{g:n0} gold"; }
+    private void OnRepairGold(int g) { if (_repairShown) _repairGoldLbl.Text = $"{g:n0} {Localization.Loc.Tr("gold")}"; }
 
     private void BuildRepairPanel()
     {
         _repairLayer = new CanvasLayer { Layer = 74 };
         AddChild(_repairLayer);
 
-        _repairPanel = new HudWindow("repair", "Repair", new Vector2(360, 140), 340) { Visible = false };
+        _repairPanel = new HudWindow("repair", Localization.Loc.Tr("Repair"), new Vector2(360, 140), 340) { Visible = false };
         _repairPanel.Closed += CloseRepair;
         _repairLayer.AddChild(_repairPanel);
 
@@ -58,7 +58,7 @@ public partial class World
         root.AddChild(new HSeparator());
         var btnRow = new HBoxContainer();
         btnRow.AddThemeConstantOverride("separation", 8);
-        var allBtn = new Button { Text = "Repair All", FocusMode = Control.FocusModeEnum.None };
+        var allBtn = new Button { Text = Localization.Loc.Tr("Repair All"), FocusMode = Control.FocusModeEnum.None };
         allBtn.Pressed += RepairAll;
         btnRow.AddChild(allBtn);
         _repairStatus = UiTheme.Text("", 12, UiTheme.TextLo, HorizontalAlignment.Right);
@@ -67,7 +67,7 @@ public partial class World
         root.AddChild(btnRow);
 
         var footer = new HBoxContainer();
-        var lbl = UiTheme.Text("Gold", 13, UiTheme.TextLo);
+        var lbl = UiTheme.Text(Localization.Loc.Tr("Gold"), 13, UiTheme.TextLo);
         lbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         footer.AddChild(lbl);
         _repairGoldLbl = UiTheme.Text("", 13, UiTheme.Gold, HorizontalAlignment.Right);
@@ -78,9 +78,9 @@ public partial class World
     private void OnRepairOpen(int sellingGroup)
     {
         ShowNpcServiceChoice(
-            "A great blacksmith like me is hard to find. Tell me if you need anything…",
-            ("Buy / Sell", () => OnVendorOpen(sellingGroup)),
-            ("Repair", OpenRepairList));
+            Localization.Loc.Tr("A great blacksmith like me is hard to find. Tell me if you need anything…"),
+            (Localization.Loc.Tr("Buy / Sell"), () => OnVendorOpen(sellingGroup)),
+            (Localization.Loc.Tr("Repair"), OpenRepairList));
     }
 
     private void OpenRepairList()
@@ -91,7 +91,7 @@ public partial class World
         _repairInFlight = false;
         _repairCur = -1;
         _repairStatus.Text = "";
-        _repairGoldLbl.Text = $"{Sheet.Gold:n0} gold";
+        _repairGoldLbl.Text = $"{Sheet.Gold:n0} {Localization.Loc.Tr("gold")}";
         RefreshRepairList();
         _repairPanel.Visible = true;
         _repairShown = true;
@@ -142,12 +142,12 @@ public partial class World
         }
         if (n == 0)
         {
-            _repairList.AddChild(UiTheme.Text("Nothing needs repair.", 13, UiTheme.TextLo, HorizontalAlignment.Center));
+            _repairList.AddChild(UiTheme.Text(Localization.Loc.Tr("Nothing needs repair."), 13, UiTheme.TextLo, HorizontalAlignment.Center));
             _repairStatus.Text = "";
         }
         else
         {
-            _repairStatus.Text = $"All: {total:n0} gold";
+            _repairStatus.Text = $"{Localization.Loc.Tr("All")}: {total:n0} {Localization.Loc.Tr("gold")}";
         }
     }
 
@@ -171,10 +171,10 @@ public partial class World
         var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         info.AddThemeConstantOverride("separation", -2);
         info.AddChild(UiTheme.Text(ItemData.DisplayName(itemId), 13, UiTheme.TextHi));
-        info.AddChild(UiTheme.Text($"Durability {cur} / {max}     {cost:n0} gold", 11, UiTheme.TextLo));
+        info.AddChild(UiTheme.Text($"{Localization.Loc.Tr("Durability")} {cur} / {max}     {cost:n0} {Localization.Loc.Tr("gold")}", 11, UiTheme.TextLo));
         hb.AddChild(info);
 
-        var btn = new Button { Text = "Repair", FocusMode = Control.FocusModeEnum.None };
+        var btn = new Button { Text = Localization.Loc.Tr("Repair"), FocusMode = Control.FocusModeEnum.None };
         btn.AddThemeFontSizeOverride("font_size", 12);
         btn.Pressed += () => onRepair();
         hb.AddChild(btn);
@@ -229,13 +229,13 @@ public partial class World
         }
         else if (!ok)
         {
-            _repairStatus.Text = "Repair failed (not enough gold?).";
+            _repairStatus.Text = Localization.Loc.Tr("Repair failed (not enough gold?).");
             _repairQueue.Clear();
         }
         _repairCur = -1;
         if (_repairShown)
         {
-            _repairGoldLbl.Text = $"{Sheet.Gold:n0} gold";
+            _repairGoldLbl.Text = $"{Sheet.Gold:n0} {Localization.Loc.Tr("gold")}";
             RefreshRepairList();
         }
         PumpRepair();

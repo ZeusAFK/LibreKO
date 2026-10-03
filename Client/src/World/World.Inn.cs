@@ -22,30 +22,30 @@ public partial class World
         _innLayer = new CanvasLayer { Layer = 74 };
         AddChild(_innLayer);
 
-        _innPanel = new HudWindow("inn", "Inn", new Vector2(200, 150)) { Visible = false };
+        _innPanel = new HudWindow("inn", Localization.Loc.Tr("Inn"), new Vector2(200, 150)) { Visible = false };
         _innPanel.Closed += CloseInn;
         _innLayer.AddChild(_innPanel);
 
         var root = _innPanel.Body;
         root.AddThemeConstantOverride("separation", 8);
-        root.AddChild(UiTheme.SectionTitle("Inn"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Inn")));
 
         root.AddChild(UiTheme.Text(
-            "Bind this town as your recall home, or rest to recover HP and MP.",
+            Localization.Loc.Tr("Bind this town as your recall home, or rest to recover HP and MP."),
             12, UiTheme.TextLo));
 
-        _innStatusLabel = UiTheme.Text("Checking…", 13, UiTheme.TextHi);
+        _innStatusLabel = UiTheme.Text(Localization.Loc.Tr("Checking…"), 13, UiTheme.TextHi);
         root.AddChild(_innStatusLabel);
 
         var btnRow = new HBoxContainer();
         btnRow.AddThemeConstantOverride("separation", 8);
         root.AddChild(btnRow);
 
-        var setBtn = new Button { Text = "Set as Home", FocusMode = Control.FocusModeEnum.None };
+        var setBtn = new Button { Text = Localization.Loc.Tr("Set as Home"), FocusMode = Control.FocusModeEnum.None };
         setBtn.Pressed += () => Net.I.SendInnSetHome();
         btnRow.AddChild(setBtn);
 
-        var restBtn = new Button { Text = "Rest", FocusMode = Control.FocusModeEnum.None };
+        var restBtn = new Button { Text = Localization.Loc.Tr("Rest"), FocusMode = Control.FocusModeEnum.None };
         restBtn.Pressed += () => Net.I.SendInnRest();
         btnRow.AddChild(restBtn);
 
@@ -104,7 +104,7 @@ public partial class World
     {
         if (!ok) return;
         _innRestTicksLeft = 12;
-        _innRestLabel.Text = "Resting…";
+        _innRestLabel.Text = Localization.Loc.Tr("Resting…");
         if (_innRestTimer.IsStopped()) _innRestTimer.Start();
     }
 
@@ -113,7 +113,7 @@ public partial class World
         if (_innRestTicksLeft <= 0)
         {
             _innRestTimer.Stop();
-            _innRestLabel.Text = "Rested.";
+            _innRestLabel.Text = Localization.Loc.Tr("Rested.");
             return;
         }
         _innRestTicksLeft--;
@@ -124,7 +124,7 @@ public partial class World
         if (_innRestTicksLeft == 0)
         {
             _innRestTimer.Stop();
-            _innRestLabel.Text = "Rested.";
+            _innRestLabel.Text = Localization.Loc.Tr("Rested.");
         }
     }
 
@@ -136,13 +136,13 @@ public partial class World
         {
             bool here = _innSavedZone == hereZone;
             _innStatusLabel.Text = here
-                ? $"This town (zone {_innSavedZone}) is your inn home."
-                : $"Your inn home is zone {_innSavedZone}.";
+                ? $"{Localization.Loc.Tr("This town (zone")} {_innSavedZone} {Localization.Loc.Tr(") is your inn home.")}"
+                : $"{Localization.Loc.Tr("Your inn home is zone")} {_innSavedZone}.";
             _innStatusLabel.AddThemeColorOverride("font_color", here ? UiTheme.Gold : UiTheme.TextHi);
         }
         else
         {
-            _innStatusLabel.Text = "No inn home set.";
+            _innStatusLabel.Text = Localization.Loc.Tr("No inn home set.");
             _innStatusLabel.AddThemeColorOverride("font_color", UiTheme.TextLo);
         }
     }

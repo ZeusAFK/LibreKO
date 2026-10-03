@@ -37,7 +37,7 @@ public partial class World
         _reportLayer = new CanvasLayer { Layer = 77 };
         AddChild(_reportLayer);
 
-        _reportPanel = new HudWindow("report", "Sheriff Reports", new Vector2(170, 110)) { Visible = false };
+        _reportPanel = new HudWindow("report", Localization.Loc.Tr("Sheriff Reports"), new Vector2(170, 110)) { Visible = false };
         _reportPanel.Closed += CloseReport;
         _reportLayer.AddChild(_reportPanel);
         var r = _reportPanel.Body;
@@ -46,43 +46,43 @@ public partial class World
         _reportGateLbl = HudStyle.Label(13);
         r.AddChild(_reportGateLbl);
 
-        r.AddChild(UiTheme.SectionTitle("File a Report"));
+        r.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("File a Report")));
         var targetRow = new HBoxContainer(); targetRow.AddThemeConstantOverride("separation", 6);
-        var targetLbl = HudStyle.Label(13); targetLbl.Text = "Accused:"; targetLbl.CustomMinimumSize = new Vector2(64, 0);
+        var targetLbl = HudStyle.Label(13); targetLbl.Text = Localization.Loc.Tr("Accused:"); targetLbl.CustomMinimumSize = new Vector2(64, 0);
         targetRow.AddChild(targetLbl);
-        _reportTargetEdit = new LineEdit { PlaceholderText = "player name", CustomMinimumSize = new Vector2(220, 0) };
+        _reportTargetEdit = new LineEdit { PlaceholderText = Localization.Loc.Tr("player name"), CustomMinimumSize = new Vector2(220, 0) };
         targetRow.AddChild(_reportTargetEdit);
         r.AddChild(targetRow);
 
         var reasonRow = new HBoxContainer(); reasonRow.AddThemeConstantOverride("separation", 6);
-        var reasonLbl = HudStyle.Label(13); reasonLbl.Text = "Reason:"; reasonLbl.CustomMinimumSize = new Vector2(64, 0);
+        var reasonLbl = HudStyle.Label(13); reasonLbl.Text = Localization.Loc.Tr("Reason:"); reasonLbl.CustomMinimumSize = new Vector2(64, 0);
         reasonRow.AddChild(reasonLbl);
-        _reportReasonEdit = new LineEdit { PlaceholderText = "reason (max 512 chars)", CustomMinimumSize = new Vector2(220, 0) };
+        _reportReasonEdit = new LineEdit { PlaceholderText = Localization.Loc.Tr("reason (max 512 chars)"), CustomMinimumSize = new Vector2(220, 0) };
         _reportReasonEdit.MaxLength = Net.ReportReasonMax;
         reasonRow.AddChild(_reportReasonEdit);
         r.AddChild(reasonRow);
 
-        _reportFileBtn = new Button { Text = "Submit Report", FocusMode = Control.FocusModeEnum.None };
+        _reportFileBtn = new Button { Text = Localization.Loc.Tr("Submit Report"), FocusMode = Control.FocusModeEnum.None };
         _reportFileBtn.Pressed += OnFileReportPressed;
         r.AddChild(_reportFileBtn);
 
         r.AddChild(new HSeparator());
 
         var listRow = new HBoxContainer(); listRow.AddThemeConstantOverride("separation", 6);
-        var listTitle = UiTheme.SectionTitle("Open Reports");
+        var listTitle = UiTheme.SectionTitle(Localization.Loc.Tr("Open Reports"));
         listTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         listRow.AddChild(listTitle);
-        _reportPrevBtn = new Button { Text = "Prev", FocusMode = Control.FocusModeEnum.None };
+        _reportPrevBtn = new Button { Text = Localization.Loc.Tr("Prev"), FocusMode = Control.FocusModeEnum.None };
         _reportPrevBtn.Pressed += () => { if (_reportPage > 0) { _reportPage--; RefreshReportList(); } };
         listRow.AddChild(_reportPrevBtn);
         _reportPageLbl = HudStyle.Label(13); _reportPageLbl.Text = "1 / 1";
         _reportPageLbl.CustomMinimumSize = new Vector2(56, 0);
         _reportPageLbl.HorizontalAlignment = HorizontalAlignment.Center;
         listRow.AddChild(_reportPageLbl);
-        _reportNextBtn = new Button { Text = "Next", FocusMode = Control.FocusModeEnum.None };
+        _reportNextBtn = new Button { Text = Localization.Loc.Tr("Next"), FocusMode = Control.FocusModeEnum.None };
         _reportNextBtn.Pressed += () => { if (_reportPage + 1 < _reportTotalPages) { _reportPage++; RefreshReportList(); } };
         listRow.AddChild(_reportNextBtn);
-        var refreshBtn = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
+        var refreshBtn = new Button { Text = Localization.Loc.Tr("Refresh"), FocusMode = Control.FocusModeEnum.None };
         refreshBtn.Pressed += () => { _reportPage = 0; RefreshReportList(); };
         listRow.AddChild(refreshBtn);
         r.AddChild(listRow);
@@ -126,12 +126,12 @@ public partial class World
     {
         if (_reportEligible)
         {
-            _reportGateLbl.Text = "You are a sheriff (King / GM). File reports and vote below.";
+            _reportGateLbl.Text = Localization.Loc.Tr("You are a sheriff (King / GM). File reports and vote below.");
             _reportGateLbl.AddThemeColorOverride("font_color", UiTheme.GoldBright);
         }
         else
         {
-            _reportGateLbl.Text = "Only the King or a GM may file reports or vote. (View only)";
+            _reportGateLbl.Text = Localization.Loc.Tr("Only the King or a GM may file reports or vote. (View only)");
             _reportGateLbl.AddThemeColorOverride("font_color", UiTheme.TextLo);
         }
         _reportTargetEdit.Editable = _reportEligible;
@@ -147,14 +147,14 @@ public partial class World
 
     private void OnFileReportPressed()
     {
-        if (!_reportEligible) { SetReportStatus("Only the King or a GM can file reports.", true); return; }
+        if (!_reportEligible) { SetReportStatus(Localization.Loc.Tr("Only the King or a GM can file reports."), true); return; }
         string target = _reportTargetEdit.Text.Trim();
         string reason = _reportReasonEdit.Text.Trim();
-        if (target.Length < 2) { SetReportStatus("Enter the accused player's name.", true); return; }
-        if (reason.Length == 0) { SetReportStatus("Enter a reason for the report.", true); return; }
-        if (reason.Length > Net.ReportReasonMax) { SetReportStatus("Reason is too long (max 512).", true); return; }
+        if (target.Length < 2) { SetReportStatus(Localization.Loc.Tr("Enter the accused player's name."), true); return; }
+        if (reason.Length == 0) { SetReportStatus(Localization.Loc.Tr("Enter a reason for the report."), true); return; }
+        if (reason.Length > Net.ReportReasonMax) { SetReportStatus(Localization.Loc.Tr("Reason is too long (max 512)."), true); return; }
         Net.I.SendReportFile(target, reason);
-        SetReportStatus("Filing report…", false);
+        SetReportStatus(Localization.Loc.Tr("Filing report…"), false);
     }
 
     private void OnReportResult(byte sub, bool ok)
@@ -164,21 +164,21 @@ public partial class World
             case Net.ReportFileSub:
                 if (ok)
                 {
-                    SetReportStatus("Report filed.", false);
+                    SetReportStatus(Localization.Loc.Tr("Report filed."), false);
                     _reportTargetEdit.Text = "";
                     _reportReasonEdit.Text = "";
                     _reportPage = 0;
                     RefreshReportList();
                 }
-                else SetReportStatus("Couldn't file (not a sheriff, or unknown player / bad reason).", true);
+                else SetReportStatus(Localization.Loc.Tr("Couldn't file (not a sheriff, or unknown player / bad reason)."), true);
                 break;
             case Net.ReportVoteYesSub:
             case Net.ReportVoteNoSub:
-                if (ok) { SetReportStatus("Vote cast.", false); RefreshReportList(); }
-                else SetReportStatus("Vote rejected (already voted, or report resolved).", true);
+                if (ok) { SetReportStatus(Localization.Loc.Tr("Vote cast."), false); RefreshReportList(); }
+                else SetReportStatus(Localization.Loc.Tr("Vote rejected (already voted, or report resolved)."), true);
                 break;
             default:
-                if (!ok) SetReportStatus("Action rejected by the server.", true);
+                if (!ok) SetReportStatus(Localization.Loc.Tr("Action rejected by the server."), true);
                 break;
         }
     }
@@ -194,7 +194,7 @@ public partial class World
         foreach (var c in _reportVoteList.GetChildren()) c.QueueFree();
         if (entries.Count == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No open reports.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No open reports.");
             _reportVoteList.AddChild(e);
             return;
         }
@@ -211,7 +211,7 @@ public partial class World
             var name = UiTheme.Text(entry.TargetName, 13, UiTheme.TextHi);
             name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             head.AddChild(name);
-            var tally = UiTheme.Text($"Yes {entry.VoteYes}/3   No {entry.VoteNo}/2", 12, UiTheme.TextLo);
+            var tally = UiTheme.Text($"{Localization.Loc.Tr("Yes")} {entry.VoteYes}/3   {Localization.Loc.Tr("No")} {entry.VoteNo}/2", 12, UiTheme.TextLo);
             head.AddChild(tally);
             vb.AddChild(head);
 
@@ -221,11 +221,11 @@ public partial class World
 
             var btnRow = new HBoxContainer(); btnRow.AddThemeConstantOverride("separation", 6);
             btnRow.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
-            var yesBtn = new Button { Text = "Vote Yes", FocusMode = Control.FocusModeEnum.None, Disabled = !_reportEligible };
-            yesBtn.Pressed += () => { Net.I.SendReportVoteYes(id); SetReportStatus("Voting yes…", false); };
+            var yesBtn = new Button { Text = Localization.Loc.Tr("Vote Yes"), FocusMode = Control.FocusModeEnum.None, Disabled = !_reportEligible };
+            yesBtn.Pressed += () => { Net.I.SendReportVoteYes(id); SetReportStatus(Localization.Loc.Tr("Voting yes…"), false); };
             btnRow.AddChild(yesBtn);
-            var noBtn = new Button { Text = "Vote No", FocusMode = Control.FocusModeEnum.None, Disabled = !_reportEligible };
-            noBtn.Pressed += () => { Net.I.SendReportVoteNo(id); SetReportStatus("Voting no…", false); };
+            var noBtn = new Button { Text = Localization.Loc.Tr("Vote No"), FocusMode = Control.FocusModeEnum.None, Disabled = !_reportEligible };
+            noBtn.Pressed += () => { Net.I.SendReportVoteNo(id); SetReportStatus(Localization.Loc.Tr("Voting no…"), false); };
             btnRow.AddChild(noBtn);
             vb.AddChild(btnRow);
 
@@ -236,7 +236,7 @@ public partial class World
     private void OnReportInspector(bool open, int openCount)
     {
         if (_reportShown)
-            SetReportStatus(openCount > 0 ? $"{openCount} report(s) still open." : "No reports open.", false);
+            SetReportStatus(openCount > 0 ? $"{openCount} {Localization.Loc.Tr("report(s) still open.")}" : Localization.Loc.Tr("No reports open."), false);
     }
 
     private void SetReportStatus(string text, bool warn)

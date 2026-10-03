@@ -20,16 +20,18 @@ public partial class GameData : Node
     public string NpcName(int npcId, bool isMonster)
     {
         var map = isMonster ? _mobNames : _npcNames;
-        if (map.TryGetValue(npcId, out var n) && n.Length > 0)
-            return n;
-        return (isMonster ? "Mob #" : "NPC #") + npcId;
+        string fallback = map.TryGetValue(npcId, out var n) && n.Length > 0 ? n
+            : (isMonster ? "Mob #" : "NPC #") + npcId;
+        return Localization.Loc.MobName(npcId, fallback);
     }
 
     public string TalkNpcName(int npcId)
     {
-        if (_npcNames.TryGetValue(npcId, out var n) && n.Length > 0) return n;
-        if (_mobNames.TryGetValue(npcId, out var m) && m.Length > 0) return m;
-        return "NPC #" + npcId;
+        string fallback;
+        if (_npcNames.TryGetValue(npcId, out var n) && n.Length > 0) fallback = n;
+        else if (_mobNames.TryGetValue(npcId, out var m) && m.Length > 0) fallback = m;
+        else fallback = "NPC #" + npcId;
+        return Localization.Loc.MobName(npcId, fallback);
     }
 
     private static void LoadNames(string path, Dictionary<int, string> into)

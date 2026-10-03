@@ -180,4 +180,5 @@ public enum GameOpcodes : byte
     GS_VIP_WAREHOUSE = 0x8B,
     GS_COLLECTION_RACE = 0xEF,
     GS_LOTTERY = 0xF0,
+    GS_PARTY_DPS = 0xF1,
 }

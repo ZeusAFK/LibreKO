@@ -67,7 +67,7 @@ public partial class CharSelect : Node3D
         root.AddThemeConstantOverride("separation", 8);
         margin.AddChild(root);
 
-        root.AddChild(Ui.Legend("Create Character", 22, UiTheme.GoldBright));
+        root.AddChild(Ui.Legend(Localization.Loc.Tr("Create Character"), 22, UiTheme.GoldBright));
 
         var scroll = new ScrollContainer
         {
@@ -80,8 +80,8 @@ public partial class CharSelect : Node3D
         form.AddThemeConstantOverride("separation", 5);
         scroll.AddChild(form);
 
-        form.AddChild(SectionLabel("Name"));
-        _createName = new LineEdit { PlaceholderText = "character name", MaxLength = 20 };
+        form.AddChild(SectionLabel(Localization.Loc.Tr("Name")));
+        _createName = new LineEdit { PlaceholderText = Localization.Loc.Tr("character name"), MaxLength = 20 };
         Ui.StyleField(_createName);
         _createName.TextChanged += _ => RefreshCreateState();
         form.AddChild(_createName);
@@ -91,36 +91,36 @@ public partial class CharSelect : Node3D
             var picks = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
             picks.AddThemeConstantOverride("separation", 12);
             form.AddChild(picks);
-            _raceBox = PickColumn(picks, "Race");
-            _jobBox = PickColumn(picks, "Job");
+            _raceBox = PickColumn(picks, Localization.Loc.Tr("Race"));
+            _jobBox = PickColumn(picks, Localization.Loc.Tr("Job"));
         }
         else
         {
-            form.AddChild(SectionLabel("Race"));
+            form.AddChild(SectionLabel(Localization.Loc.Tr("Race")));
             _raceBox = new VBoxContainer();
             _raceBox.AddThemeConstantOverride("separation", 5);
             form.AddChild(_raceBox);
 
-            form.AddChild(SectionLabel("Job"));
+            form.AddChild(SectionLabel(Localization.Loc.Tr("Job")));
             _jobBox = new VBoxContainer();
             _jobBox.AddThemeConstantOverride("separation", 5);
             form.AddChild(_jobBox);
         }
 
-        form.AddChild(SectionLabel("Stats"));
+        form.AddChild(SectionLabel(Localization.Loc.Tr("Stats")));
         for (int i = 0; i < 5; i++) form.AddChild(BuildStatRow(i));
         _createBonus = new Label { HorizontalAlignment = HorizontalAlignment.Right };
         _createBonus.AddThemeFontSizeOverride("font_size", 13);
         _createBonus.AddThemeColorOverride("font_color", UiTheme.Neutral);
         form.AddChild(_createBonus);
 
-        form.AddChild(SectionLabel("Appearance"));
-        _faceLbl = BuildStepperRow(form, "Face", d => StepFace(d));
-        _hairLbl = BuildStepperRow(form, "Hair", d => StepHair(d));
+        form.AddChild(SectionLabel(Localization.Loc.Tr("Appearance")));
+        _faceLbl = BuildStepperRow(form, Localization.Loc.Tr("Face"), d => StepFace(d));
+        _hairLbl = BuildStepperRow(form, Localization.Loc.Tr("Hair"), d => StepHair(d));
 
         var colourRow = new HBoxContainer();
         colourRow.AddThemeConstantOverride("separation", 8);
-        var colourLbl = new Label { Text = "Hair colour", CustomMinimumSize = new Vector2(96, 0) };
+        var colourLbl = new Label { Text = Localization.Loc.Tr("Hair colour"), CustomMinimumSize = new Vector2(96, 0) };
         colourLbl.AddThemeFontSizeOverride("font_size", 13);
         colourLbl.AddThemeColorOverride("font_color", UiTheme.TextHi);
         colourRow.AddChild(colourLbl);
@@ -140,9 +140,9 @@ public partial class CharSelect : Node3D
         _createStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
         root.AddChild(_createStatus);
 
-        _createConfirm = Ui.MenuButton("Create", 44, 19);
+        _createConfirm = Ui.MenuButton(Localization.Loc.Tr("Create"), 44, 19);
         _createConfirm.Pressed += SubmitCreate;
-        var cancel = Ui.MenuButton("Cancel", 34, 15);
+        var cancel = Ui.MenuButton(Localization.Loc.Tr("Cancel"), 34, 15);
         cancel.Pressed += CloseCreate;
 
         if (Platform.TouchUi)
@@ -169,7 +169,7 @@ public partial class CharSelect : Node3D
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
 
-        var label = new Label { Text = StatLabels[index], CustomMinimumSize = new Vector2(44, 0) };
+        var label = new Label { Text = Localization.Loc.Tr(StatLabels[index]), CustomMinimumSize = new Vector2(44, 0) };
         label.AddThemeFontSizeOverride("font_size", 13);
         label.AddThemeColorOverride("font_color", UiTheme.TextHi);
         row.AddChild(label);
@@ -258,7 +258,7 @@ public partial class CharSelect : Node3D
     {
         if (FreeSlot() < 0)
         {
-            _status.Text = $"All {MaxSlots} character slots are in use.";
+            _status.Text = $"{Localization.Loc.Tr("All")} {MaxSlots} {Localization.Loc.Tr("character slots are in use.")}";
             return;
         }
         _createPanel.Visible = true;
@@ -376,7 +376,7 @@ public partial class CharSelect : Node3D
     {
         if (StarterStats.For(_createRace, _createClass) is not { } roll)
         {
-            _createStatus.Text = "That race and job combination is not available.";
+            _createStatus.Text = Localization.Loc.Tr("That race and job combination is not available.");
             _createConfirm.Disabled = true;
             return;
         }
@@ -389,7 +389,7 @@ public partial class CharSelect : Node3D
             _statUp[i].Disabled = Remaining(roll) <= 0;
         }
         int left = Remaining(roll);
-        _createBonus.Text = $"Bonus points: {left}";
+        _createBonus.Text = $"{Localization.Loc.Tr("Bonus points:")} {left}";
         _faceLbl.Text = _createFace.ToString();
         _hairLbl.Text = _createHair.ToString();
 
@@ -415,12 +415,12 @@ public partial class CharSelect : Node3D
     {
         if (StarterStats.For(_createRace, _createClass) is not { } roll) return;
         int slot = FreeSlot();
-        if (slot < 0) { _createStatus.Text = "No free character slot."; return; }
+        if (slot < 0) { _createStatus.Text = Localization.Loc.Tr("No free character slot."); return; }
 
         var stats = FinalStats(roll);
         _creating = true;
         _createConfirm.Disabled = true;
-        _createStatus.Text = "Creating…";
+        _createStatus.Text = Localization.Loc.Tr("Creating…");
         Net.I.CreateCharacter(
             slot, _createName.Text.StripEdges(), _createRace, _createClass,
             _createFace, HairCode.Pack(_createHair, _hairColour.Color),
@@ -436,18 +436,18 @@ public partial class CharSelect : Node3D
             _selectPanel.Visible = true;
             FrameStageCamera(forCreate: false);
             _createName.Text = "";
-            _status.Text = "Character created.";
+            _status.Text = Localization.Loc.Tr("Character created.");
             Net.I.RequestCharList();
             return;
         }
         _createStatus.Text = code switch
         {
-            3 => "That name is already taken.",
-            5 => "Invalid name.",
-            6 => "That name is not allowed.",
-            7 => "Invalid race for that nation.",
-            9 => "Invalid job for that race.",
-            _ => $"Create failed (code {code}).",
+            3 => Localization.Loc.Tr("That name is already taken."),
+            5 => Localization.Loc.Tr("Invalid name."),
+            6 => Localization.Loc.Tr("That name is not allowed."),
+            7 => Localization.Loc.Tr("Invalid race for that nation."),
+            9 => Localization.Loc.Tr("Invalid job for that race."),
+            _ => $"{Localization.Loc.Tr("Create failed (code")} {code}).",
         };
         RefreshCreateState();
     }

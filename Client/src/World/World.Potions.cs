@@ -39,7 +39,7 @@ public partial class World
     private void UsePotion(PotionButton? button)
     {
         if (button is { ItemId: not 0 } && !UseHotItem(button.ItemId))
-            CombatNotice($"{ItemData.DisplayName(button.ItemId)} has no usable effect.");
+            CombatNotice($"{ItemData.DisplayName(button.ItemId)} {Localization.Loc.Tr("has no usable effect.")}");
     }
 
     private void PotionBarTick(double now)
@@ -172,7 +172,7 @@ public partial class PotionButton : TouchTapButton
         _count.Text = count.ToString();
         _badge.Visible = count > 0;
         TooltipText = itemId == 0
-            ? HealTarget == Domain.HealTarget.Hp ? "No health potion" : "No mana potion"
+            ? HealTarget == Domain.HealTarget.Hp ? Localization.Loc.Tr("No health potion") : Localization.Loc.Tr("No mana potion")
             : $"{ItemData.DisplayName(itemId)} × {count}";
     }
 

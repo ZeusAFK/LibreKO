@@ -16,18 +16,18 @@ public partial class World
     {
         _fortuneLayer = new CanvasLayer { Layer = 73 };
         AddChild(_fortuneLayer);
-        _fortunePanel = new HudWindow("fortune", "Daily Fortune", new Vector2(360, 240)) { Visible = false };
+        _fortunePanel = new HudWindow("fortune", Localization.Loc.Tr("Daily Fortune"), new Vector2(360, 240)) { Visible = false };
         _fortunePanel.Closed += CloseFortune;
         _fortuneLayer.AddChild(_fortunePanel);
         var root = _fortunePanel.Body;
         root.AddThemeConstantOverride("separation", 8);
-        root.AddChild(UiTheme.SectionTitle("Daily Fortune"));
-        root.AddChild(UiTheme.Text("Try your luck — one free draw each day!", 13, UiTheme.TextLo));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Daily Fortune")));
+        root.AddChild(UiTheme.Text(Localization.Loc.Tr("Try your luck — one free draw each day!"), 13, UiTheme.TextLo));
 
         _fortuneResult = UiTheme.Text("", 14, UiTheme.Gold);
         root.AddChild(_fortuneResult);
 
-        _fortuneDrawBtn = new Button { Text = "Draw", FocusMode = Control.FocusModeEnum.None };
+        _fortuneDrawBtn = new Button { Text = Localization.Loc.Tr("Draw"), FocusMode = Control.FocusModeEnum.None };
         _fortuneDrawBtn.Pressed += OnFortuneDrawPressed;
         root.AddChild(_fortuneDrawBtn);
 
@@ -68,26 +68,26 @@ public partial class World
     {
         _fortuneCanDraw = canDraw;
         _fortuneDrawBtn.Disabled = !canDraw;
-        _fortuneDrawBtn.Text = canDraw ? "Draw" : "Drawn Today";
+        _fortuneDrawBtn.Text = canDraw ? Localization.Loc.Tr("Draw") : Localization.Loc.Tr("Drawn Today");
         if (!canDraw && _fortuneResult.Text == "")
-            _fortuneResult.Text = "You've already drawn today. Come back tomorrow!";
+            _fortuneResult.Text = Localization.Loc.Tr("You've already drawn today. Come back tomorrow!");
     }
 
     private void OnFortuneDraw(bool drew, int rewardItemId, int rewardGold)
     {
         _fortuneCanDraw = false;
         _fortuneDrawBtn.Disabled = true;
-        _fortuneDrawBtn.Text = "Drawn Today";
+        _fortuneDrawBtn.Text = Localization.Loc.Tr("Drawn Today");
 
         if (!drew)
         {
-            _fortuneResult.Text = "Already drawn today. Come back tomorrow!";
+            _fortuneResult.Text = Localization.Loc.Tr("Already drawn today. Come back tomorrow!");
             return;
         }
 
         string prize = rewardItemId != 0
-            ? (rewardGold > 0 ? $"item #{rewardItemId} + {rewardGold} gold" : $"item #{rewardItemId}")
-            : $"{rewardGold} gold";
-        _fortuneResult.Text = $"You won: {prize}!";
+            ? (rewardGold > 0 ? $"item #{rewardItemId} + {rewardGold} {Localization.Loc.Tr("gold")}" : $"item #{rewardItemId}")
+            : $"{rewardGold} {Localization.Loc.Tr("gold")}";
+        _fortuneResult.Text = $"{Localization.Loc.Tr("You won")}: {prize}!";
     }
 }

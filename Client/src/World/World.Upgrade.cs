@@ -81,7 +81,7 @@ public partial class World
         _upgradeLayer = new CanvasLayer { Layer = 75 };
         AddChild(_upgradeLayer);
 
-        _upgradePanel = new HudWindow("anvil", "Magic Anvil", new Vector2(120, 105), 800) { Visible = false };
+        _upgradePanel = new HudWindow("anvil", Localization.Loc.Tr("Magic Anvil"), new Vector2(120, 105), 800) { Visible = false };
         _upgradePanel.Closed += CloseUpgrade;
         _upgradeLayer.AddChild(_upgradePanel);
 
@@ -101,7 +101,7 @@ public partial class World
         ritualPanel.AddChild(ritual);
         ritual.AddChild(BuildUpgradeBench());
 
-        _upgradeTarget = UiTheme.Text("Place the item to upgrade.", 14, UiTheme.TextHi, HorizontalAlignment.Center);
+        _upgradeTarget = UiTheme.Text(Localization.Loc.Tr("Place the item to upgrade."), 14, UiTheme.TextHi, HorizontalAlignment.Center);
         _upgradeTarget.CustomMinimumSize = new Vector2(0, 30);
         ritual.AddChild(_upgradeTarget);
 
@@ -112,7 +112,7 @@ public partial class World
 
         _upgradeBtn = new Button
         {
-            Text = "Upgrade",
+            Text = Localization.Loc.Tr("Upgrade"),
             FocusMode = Control.FocusModeEnum.None,
             CustomMinimumSize = new Vector2(0, 38),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
@@ -126,7 +126,7 @@ public partial class World
         var bag = new VBoxContainer();
         bag.AddThemeConstantOverride("separation", 7);
         bagPanel.AddChild(bag);
-        bag.AddChild(UiTheme.SectionTitle("Inventory"));
+        bag.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Inventory")));
         _upgradeBackpackGrid = new VBoxContainer();
         _upgradeBackpackGrid.AddThemeConstantOverride("separation", 4);
         bag.AddChild(_upgradeBackpackGrid);
@@ -141,7 +141,7 @@ public partial class World
         var bench = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         bench.AddThemeConstantOverride("separation", 16);
 
-        bench.AddChild(BuildUpgradeColumn("Item", BuildUpgradeTargetSocket()));
+        bench.AddChild(BuildUpgradeColumn(Localization.Loc.Tr("Item"), BuildUpgradeTargetSocket()));
         bench.AddChild(UiTheme.Text("+", 26, UiTheme.GoldDark));
 
         var materials = new GridContainer { Columns = 3 };
@@ -157,13 +157,13 @@ public partial class World
             _upgradeSockets[i] = socket;
             materials.AddChild(socket);
         }
-        bench.AddChild(BuildUpgradeColumn("Materials", materials));
+        bench.AddChild(BuildUpgradeColumn(Localization.Loc.Tr("Materials"), materials));
 
         bench.AddChild(UiTheme.Text("=", 26, UiTheme.GoldDark));
         _upgradeResultSocket = new UpgradeSocket("?", 64, interactive: false);
         _upgradeResultSocket.Hovered += held => ShowItemTooltip(-1, held);
         _upgradeResultSocket.Unhovered += HideItemTooltip;
-        bench.AddChild(BuildUpgradeColumn("Result", _upgradeResultSocket));
+        bench.AddChild(BuildUpgradeColumn(Localization.Loc.Tr("Result"), _upgradeResultSocket));
         return bench;
     }
 
@@ -194,7 +194,7 @@ public partial class World
         _upgradeBusy = false;
         ClearUpgradeSockets();
         RefreshUpgradeBackpack();
-        _upgradeTarget.Text = "Place the item to upgrade.";
+        _upgradeTarget.Text = Localization.Loc.Tr("Place the item to upgrade.");
         SetUpgradeStatus("", false);
         _upgradePanel.Visible = true;
         _upgradeShown = true;
@@ -247,9 +247,9 @@ public partial class World
 
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 6);
-        footer.AddChild(UiTheme.Pill($"{usable.Count} usable", UiTheme.Gold));
+        footer.AddChild(UiTheme.Pill($"{usable.Count} {Localization.Loc.Tr("usable")}", UiTheme.Gold));
         footer.AddChild(UiTheme.Pill($"{BackpackUsedCount()}/{GridCount}", UiTheme.Edge));
-        footer.AddChild(UiTheme.Text($"{Sheet.Gold:n0} gold", 12, UiTheme.Gold, HorizontalAlignment.Right));
+        footer.AddChild(UiTheme.Text($"{Sheet.Gold:n0} {Localization.Loc.Tr("gold")}", 12, UiTheme.Gold, HorizontalAlignment.Right));
         _upgradeBackpackGrid.AddChild(footer);
     }
 
@@ -307,7 +307,7 @@ public partial class World
 
             if (target < 0)
             {
-                SetUpgradeStatus("All material sockets are full.", true);
+                SetUpgradeStatus(Localization.Loc.Tr("All material sockets are full."), true);
                 return;
             }
         }
@@ -355,7 +355,7 @@ public partial class World
 
         if (_upgradeItemIds[0] == 0)
         {
-            _upgradeTarget.Text = "Place the item to upgrade.";
+            _upgradeTarget.Text = Localization.Loc.Tr("Place the item to upgrade.");
             SetUpgradeStatus("", false);
             RefreshUpgradeActions();
             return;
@@ -364,12 +364,12 @@ public partial class World
         _upgradeTarget.Text = ItemData.DisplayName(_upgradeItemIds[0]);
         if (!HasUpgradeMaterial())
         {
-            SetUpgradeStatus("Add the upgrade materials.", false);
+            SetUpgradeStatus(Localization.Loc.Tr("Add the upgrade materials."), false);
             RefreshUpgradeActions();
             return;
         }
 
-        SetUpgradeStatus($"Checking {UpgradeOperationName()} recipe...", false);
+        SetUpgradeStatus($"{Localization.Loc.Tr("Checking")} {UpgradeOperationName()} {Localization.Loc.Tr("recipe...")}", false);
         RefreshUpgradeActions();
         Net.I.SendUpgradeRequest(_upgradeAnvilId, _upgradeItemIds, _upgradePositions, preview: true);
     }
@@ -387,18 +387,18 @@ public partial class World
         {
             int id = _upgradeItemIds[i];
             if (id >= AccessoryCompoundScrollFirst && id <= AccessoryCompoundScrollLast)
-                return "Accessory compound";
+                return Localization.Loc.Tr("Accessory compound");
             if (id == ReverseScroll)
-                return "Reverse conversion";
+                return Localization.Loc.Tr("Reverse conversion");
             if (id == ReverseStrengthenScroll)
-                return "Reverse upgrade";
+                return Localization.Loc.Tr("Reverse upgrade");
             if (id is UpgradeScrollHigh or UpgradeScrollHighBlessed or UpgradeScrollClass
                 or UpgradeScrollMiddle or UpgradeScrollLow or UpgradeScrollTraining)
-                return "Upgrade";
+                return Localization.Loc.Tr("Upgrade");
             if (IsBonusScroll(id))
-                return "Bonus";
+                return Localization.Loc.Tr("Bonus");
         }
-        return "Upgrade";
+        return Localization.Loc.Tr("Upgrade");
     }
 
     private static bool IsUpgradeMaterial(int itemId) => itemId switch
@@ -438,10 +438,10 @@ public partial class World
     private string UpgradePlacementError(int itemId)
     {
         if (IsUpgradeTarget(itemId))
-            return $"The item socket already holds {ItemData.DisplayName(_upgradeItemIds[0])}. Clear it first.";
+            return $"{Localization.Loc.Tr("The item socket already holds")} {ItemData.DisplayName(_upgradeItemIds[0])}. {Localization.Loc.Tr("Clear it first.")}";
         if (_upgradeItemIds[0] == 0)
-            return $"{ItemData.DisplayName(itemId)} cannot be upgraded.";
-        return $"{ItemData.DisplayName(itemId)} is not an upgrade material.";
+            return $"{ItemData.DisplayName(itemId)} {Localization.Loc.Tr("cannot be upgraded.")}";
+        return $"{ItemData.DisplayName(itemId)} {Localization.Loc.Tr("is not an upgrade material.")}";
     }
 
     private static bool IsBonusScroll(int itemId)
@@ -456,11 +456,11 @@ public partial class World
         DismissUpgradeConfirm();
         _upgradeConfirm = Notice.Confirm(
             this,
-            "The item might be destroyed while performing the upgrade. Will you continue?",
-            "Upgrade", "Cancel",
+            Localization.Loc.Tr("The item might be destroyed while performing the upgrade. Will you continue?"),
+            Localization.Loc.Tr("Upgrade"), Localization.Loc.Tr("Cancel"),
             SendUpgrade,
             () => _upgradeConfirm = null,
-            "Magic Anvil");
+            Localization.Loc.Tr("Magic Anvil"));
     }
 
     private void SendUpgrade()
@@ -469,7 +469,7 @@ public partial class World
         if (!CanSendUpgrade()) return;
         _upgradeBusy = true;
         RefreshUpgradeActions();
-        SetUpgradeStatus($"{UpgradeOperationName()} in progress...", false);
+        SetUpgradeStatus($"{UpgradeOperationName()} {Localization.Loc.Tr("in progress...")}", false);
         Net.I.SendUpgradeRequest(_upgradeAnvilId, _upgradeItemIds, _upgradePositions, preview: false);
     }
 
@@ -493,12 +493,12 @@ public partial class World
             case UpgradeResultSucceeded when resultItemId != 0:
                 _upgradeTarget.Text = ItemData.DisplayName(resultItemId);
                 _upgradeResultSocket.Set(resultItemId, 1, ResultDurability(resultItemId));
-                SetUpgradeStatus("Upgrade succeeded.", false);
-                CombatNotice($"Upgrade succeeded: {ItemData.DisplayName(resultItemId)}");
+                SetUpgradeStatus(Localization.Loc.Tr("Upgrade succeeded."), false);
+                CombatNotice($"{Localization.Loc.Tr("Upgrade succeeded")}: {ItemData.DisplayName(resultItemId)}");
                 break;
             case UpgradeResultFailed:
-                SetUpgradeStatus("Upgrade failed — the item was destroyed.", true);
-                CombatNotice("The upgrade failed and the item was destroyed.");
+                SetUpgradeStatus(Localization.Loc.Tr("Upgrade failed — the item was destroyed."), true);
+                CombatNotice(Localization.Loc.Tr("The upgrade failed and the item was destroyed."));
                 break;
             default:
                 SetUpgradeStatus(UpgradeError(result.ResultCode), true);
@@ -508,7 +508,7 @@ public partial class World
         if (result.ResultCode is UpgradeResultSucceeded or UpgradeResultFailed)
         {
             ClearUpgradeSockets();
-            _upgradeTarget.Text = "Place the item to upgrade.";
+            _upgradeTarget.Text = Localization.Loc.Tr("Place the item to upgrade.");
             if (result.ResultCode == UpgradeResultSucceeded && resultItemId != 0)
                 _upgradeResultSocket.Set(resultItemId, 1, ResultDurability(resultItemId));
         }
@@ -525,7 +525,7 @@ public partial class World
         {
             _upgradePreviewId = previewId;
             _upgradeResultSocket.Set(previewId, 1, ResultDurability(previewId));
-            SetUpgradeStatus($"Upgrades to {ItemData.DisplayName(previewId)}.", false);
+            SetUpgradeStatus($"{Localization.Loc.Tr("Upgrades to")} {ItemData.DisplayName(previewId)}.", false);
         }
         else
         {
@@ -538,11 +538,11 @@ public partial class World
 
     private static string UpgradeError(byte code) => code switch
     {
-        UpgradeResultTrading => "Cannot upgrade while trading.",
-        UpgradeResultNeedCoins => "You don't have enough coins.",
-        UpgradeResultNoMatch => "The items required for upgrade do not match.",
-        UpgradeResultSealed => "That item is sealed or rented.",
-        _ => "Cannot perform item upgrade.",
+        UpgradeResultTrading => Localization.Loc.Tr("Cannot upgrade while trading."),
+        UpgradeResultNeedCoins => Localization.Loc.Tr("You don't have enough coins."),
+        UpgradeResultNoMatch => Localization.Loc.Tr("The items required for upgrade do not match."),
+        UpgradeResultSealed => Localization.Loc.Tr("That item is sealed or rented."),
+        _ => Localization.Loc.Tr("Cannot perform item upgrade."),
     };
 
     private void SetUpgradeStatus(string text, bool warn)

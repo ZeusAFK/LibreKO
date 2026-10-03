@@ -16,12 +16,12 @@ public partial class World
     {
         _disguiseLayer = new CanvasLayer { Layer = 74 };
         AddChild(_disguiseLayer);
-        _disguisePanel = new HudWindow("disguise", "Disguise", new Vector2(190, 130)) { Visible = false };
+        _disguisePanel = new HudWindow("disguise", Localization.Loc.Tr("Disguise"), new Vector2(190, 130)) { Visible = false };
         _disguisePanel.Closed += CloseDisguise;
         _disguiseLayer.AddChild(_disguisePanel);
         var root = _disguisePanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Disguise"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Disguise")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(340, 320), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _disguiseList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -70,14 +70,14 @@ public partial class World
             hb.AddChild(name);
             if (active)
             {
-                var rbtn = new Button { Text = "Remove", FocusMode = Control.FocusModeEnum.None };
+                var rbtn = new Button { Text = Localization.Loc.Tr("Remove"), FocusMode = Control.FocusModeEnum.None };
                 rbtn.Pressed += () => Net.I.SendDisguiseRemove();
                 hb.AddChild(rbtn);
             }
             else
             {
                 int id = d.Id;
-                var btn = new Button { Text = "Apply", FocusMode = Control.FocusModeEnum.None };
+                var btn = new Button { Text = Localization.Loc.Tr("Apply"), FocusMode = Control.FocusModeEnum.None };
                 btn.Pressed += () => Net.I.SendDisguiseApply(id);
                 hb.AddChild(btn);
             }
@@ -85,7 +85,7 @@ public partial class World
         }
         if (_disguiseList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No disguises available.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No disguises available.");
             _disguiseList.AddChild(e);
         }
     }
@@ -95,7 +95,7 @@ public partial class World
         if (ok)
         {
             _disguiseCurrent = disguiseId;
-            Chat.Info("Disguise applied. (model swap deferred)");
+            Chat.Info(Localization.Loc.Tr("Disguise applied. (model swap deferred)"));
             Net.I.SendDisguiseList();
         }
     }
@@ -105,7 +105,7 @@ public partial class World
         if (ok)
         {
             _disguiseCurrent = 0;
-            Chat.Info("Disguise removed.");
+            Chat.Info(Localization.Loc.Tr("Disguise removed."));
             Net.I.SendDisguiseList();
         }
     }

@@ -18,6 +18,9 @@ public static class WarpData
             Name = name; Description = description; Image = image;
             MinLevel = minLevel; MaxLevel = maxLevel;
         }
+
+        public string DisplayName => Localization.Loc.Tr(Name);
+        public string DisplayDesc => Localization.Loc.Tr(Description);
     }
 
     private static readonly Dictionary<int, Destination> _destinations = new();

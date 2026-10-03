@@ -18,26 +18,26 @@ public partial class World
     {
         _duelLayer = new CanvasLayer { Layer = 60 };
         AddChild(_duelLayer);
-        _duelPanel = new HudWindow("duel", "Duel Lobby", new Vector2(220, 130)) { Visible = false };
+        _duelPanel = new HudWindow("duel", Localization.Loc.Tr("Duel Lobby"), new Vector2(220, 130)) { Visible = false };
         _duelPanel.Closed += CloseDuel;
         _duelLayer.AddChild(_duelPanel);
         var root = _duelPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
 
-        root.AddChild(UiTheme.SectionTitle("Create a Duel"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Create a Duel")));
         var form = new HBoxContainer();
         form.AddThemeConstantOverride("separation", 6);
         root.AddChild(form);
 
-        form.AddChild(UiTheme.Text("Stake", 12, UiTheme.TextLo));
-        _duelStakeEdit = new LineEdit { CustomMinimumSize = new Vector2(100, 0), PlaceholderText = "gold (0 = honor)" };
+        form.AddChild(UiTheme.Text(Localization.Loc.Tr("Stake"), 12, UiTheme.TextLo));
+        _duelStakeEdit = new LineEdit { CustomMinimumSize = new Vector2(100, 0), PlaceholderText = Localization.Loc.Tr("gold (0 = honor)") };
         form.AddChild(_duelStakeEdit);
 
-        var createBtn = new Button { Text = "Create", FocusMode = Control.FocusModeEnum.None };
+        var createBtn = new Button { Text = Localization.Loc.Tr("Create"), FocusMode = Control.FocusModeEnum.None };
         createBtn.Pressed += OnDuelCreatePressed;
         form.AddChild(createBtn);
 
-        root.AddChild(UiTheme.SectionTitle("Open Duels"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Open Duels")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(380, 300), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _duelList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -94,20 +94,20 @@ public partial class World
             creator.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             hb.AddChild(creator);
 
-            hb.AddChild(UiTheme.Text(d.Stake > 0 ? $"{d.Stake:N0}g" : "Honor", 12, UiTheme.Gold));
-            hb.AddChild(UiTheme.Text(d.Full ? "Full" : "Open", 12, d.Full ? UiTheme.TextLo : UiTheme.TextHi));
+            hb.AddChild(UiTheme.Text(d.Stake > 0 ? $"{d.Stake:N0}g" : Localization.Loc.Tr("Honor"), 12, UiTheme.Gold));
+            hb.AddChild(UiTheme.Text(d.Full ? Localization.Loc.Tr("Full") : Localization.Loc.Tr("Open"), 12, d.Full ? UiTheme.TextLo : UiTheme.TextHi));
 
             int id = d.Id;
             bool mine = id == _duelMineId || d.Creator == myName;
             if (mine)
             {
-                var leave = new Button { Text = "Leave", FocusMode = Control.FocusModeEnum.None };
+                var leave = new Button { Text = Localization.Loc.Tr("Leave"), FocusMode = Control.FocusModeEnum.None };
                 leave.Pressed += () => Net.I.SendDuelLeave(id);
                 hb.AddChild(leave);
             }
             else if (!d.Full)
             {
-                var join = new Button { Text = "Join", FocusMode = Control.FocusModeEnum.None };
+                var join = new Button { Text = Localization.Loc.Tr("Join"), FocusMode = Control.FocusModeEnum.None };
                 join.Pressed += () => Net.I.SendDuelJoin(id);
                 hb.AddChild(join);
             }
@@ -120,7 +120,7 @@ public partial class World
         }
         if (_duelList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No open duels.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No open duels.");
             _duelList.AddChild(e);
         }
     }

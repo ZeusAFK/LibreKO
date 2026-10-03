@@ -108,18 +108,18 @@ internal sealed class FloaterSystem
     internal void RegenHp(int amount)
     {
         if (!Config.DamageNumbers) return;
-        Spawn(Kind.RegenHp, _ctx.SelfCharId, $"+{amount:n0} HP", null);
+        Spawn(Kind.RegenHp, _ctx.SelfCharId, $"+{amount:n0} {Localization.Loc.Tr("HP")}", null);
     }
 
     internal void RegenMp(int amount)
     {
         if (!Config.DamageNumbers) return;
-        Spawn(Kind.RegenMp, _ctx.SelfCharId, $"+{amount:n0} MP", null);
+        Spawn(Kind.RegenMp, _ctx.SelfCharId, $"+{amount:n0} {Localization.Loc.Tr("MP")}", null);
     }
 
-    internal void Exp(long amount) => Spawn(Kind.Exp, _ctx.SelfCharId, $"+{amount:n0} EXP", null);
+    internal void Exp(long amount) => Spawn(Kind.Exp, _ctx.SelfCharId, $"+{amount:n0} {Localization.Loc.Tr("EXP")}", null);
 
-    internal void Gold(long amount) => Spawn(Kind.Gold, _ctx.SelfCharId, $"+{amount:n0} Gold", null);
+    internal void Gold(long amount) => Spawn(Kind.Gold, _ctx.SelfCharId, $"+{amount:n0} {Localization.Loc.Tr("Gold")}", null);
 
     internal void Item(int itemId, int count) => Spawn(
         Kind.Item, _ctx.SelfCharId,

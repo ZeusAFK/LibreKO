@@ -23,7 +23,7 @@ public partial class World
 
     private void BuildAdminSpawnPanel()
     {
-        _admSpawnPanel = new HudWindow("spawn-row", "Spawn row", new Vector2(560, 160), 400) { Visible = false };
+        _admSpawnPanel = new HudWindow("spawn-row", Localization.Loc.Tr("Spawn row"), new Vector2(560, 160), 400) { Visible = false };
         _admSpawnPanel.Closed += CloseAdminSpawn;
         _admLayer.AddChild(_admSpawnPanel);
 
@@ -42,32 +42,32 @@ public partial class World
         grid.AddThemeConstantOverride("v_separation", 8);
         root.AddChild(grid);
 
-        _admSpawnX = AdminSpawnField(grid, "X", 0, AdminSpawnCoordinateMax, "Spawn centre, east-west");
-        _admSpawnZ = AdminSpawnField(grid, "Z", 0, AdminSpawnCoordinateMax, "Spawn centre, north-south");
-        _admSpawnDirection = AdminSpawnField(grid, "Facing", 0, AdminSpawnDirectionMax, "Degrees; 0 lets the client pick");
-        _admSpawnCount = AdminSpawnField(grid, "Quantity", 1, AdminSpawnCountMax, "How many stand here");
-        _admSpawnRespawn = AdminSpawnField(grid, "Respawn s", 0, AdminSpawnRespawnMax, "Seconds between a death and the return");
-        _admSpawnRange = AdminSpawnField(grid, "Range", 0, AdminSpawnRangeMax, "Radius each one may spawn within; 0 is the exact spot");
+        _admSpawnX = AdminSpawnField(grid, "X", 0, AdminSpawnCoordinateMax, Localization.Loc.Tr("Spawn centre, east-west"));
+        _admSpawnZ = AdminSpawnField(grid, "Z", 0, AdminSpawnCoordinateMax, Localization.Loc.Tr("Spawn centre, north-south"));
+        _admSpawnDirection = AdminSpawnField(grid, Localization.Loc.Tr("Facing"), 0, AdminSpawnDirectionMax, Localization.Loc.Tr("Degrees; 0 lets the client pick"));
+        _admSpawnCount = AdminSpawnField(grid, Localization.Loc.Tr("Quantity"), 1, AdminSpawnCountMax, Localization.Loc.Tr("How many stand here"));
+        _admSpawnRespawn = AdminSpawnField(grid, Localization.Loc.Tr("Respawn s"), 0, AdminSpawnRespawnMax, Localization.Loc.Tr("Seconds between a death and the return"));
+        _admSpawnRange = AdminSpawnField(grid, Localization.Loc.Tr("Range"), 0, AdminSpawnRangeMax, Localization.Loc.Tr("Radius each one may spawn within; 0 is the exact spot"));
 
         root.AddChild(UiTheme.Rule());
         var actions = new HBoxContainer();
         actions.AddThemeConstantOverride("separation", 8);
         root.AddChild(actions);
 
-        var set = AdminButton("Set", 90);
-        set.TooltipText = "Apply to the running server only";
+        var set = AdminButton(Localization.Loc.Tr("Set"), 90);
+        set.TooltipText = Localization.Loc.Tr("Apply to the running server only");
         set.Pressed += () => SendAdminSpawnEdit(persist: false);
         actions.AddChild(set);
 
-        _admSpawnPersistBtn = AdminButton("Persist", 90);
-        _admSpawnPersistBtn.TooltipText = "Apply and write the spawn row to the seed file of this zone";
+        _admSpawnPersistBtn = AdminButton(Localization.Loc.Tr("Persist"), 90);
+        _admSpawnPersistBtn.TooltipText = Localization.Loc.Tr("Apply and write the spawn row to the seed file of this zone");
         _admSpawnPersistBtn.Pressed += () => SendAdminSpawnEdit(persist: true);
         actions.AddChild(_admSpawnPersistBtn);
 
         var spacer = new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         actions.AddChild(spacer);
 
-        var close = AdminButton("Close", 90);
+        var close = AdminButton(Localization.Loc.Tr("Close"), 90);
         close.Pressed += CloseAdminSpawn;
         actions.AddChild(close);
     }
@@ -87,8 +87,8 @@ public partial class World
         if (!AdminFullPanel) return;
         _admSpawnRow = row;
         _admSpawnTitle.Text = $"{row.Name}  ({row.NpcId})";
-        _admSpawnInfo.Text = $"{(row.Monster ? "Monster" : "NPC")} spawn row {row.Index} in {AdminZoneName(row.Zone)} ({row.Zone})"
-            + $"  ·  ground height {row.Y:0.0}  ·  {row.Alive} of {row.Count} alive";
+        _admSpawnInfo.Text = $"{(row.Monster ? Localization.Loc.Tr("Monster") : Localization.Loc.Tr("NPC"))} {Localization.Loc.Tr("spawn row")} {row.Index} {Localization.Loc.Tr("in")} {AdminZoneName(row.Zone)} ({row.Zone})"
+            + $"  ·  {Localization.Loc.Tr("ground height")} {row.Y:0.0}  ·  {row.Alive} {Localization.Loc.Tr("of")} {row.Count} {Localization.Loc.Tr("alive")}";
         _admSpawnX.Value = row.X;
         _admSpawnZ.Value = row.Z;
         _admSpawnDirection.Value = row.Direction;
@@ -111,7 +111,7 @@ public partial class World
     private void SendAdminSpawnEdit(bool persist)
     {
         if (_admSpawnRow is not { } row) return;
-        SetAdminStatus(persist ? $"Persisting spawn row {row.Index}…" : $"Setting spawn row {row.Index}…", false);
+        SetAdminStatus(persist ? $"{Localization.Loc.Tr("Persisting spawn row")} {row.Index}…" : $"{Localization.Loc.Tr("Setting spawn row")} {row.Index}…", false);
         Net.I.SendAdminSpawnEdit(persist, row.Index, (int)_admSpawnX.Value, (int)_admSpawnZ.Value,
             (int)_admSpawnDirection.Value, (int)_admSpawnCount.Value, (int)_admSpawnRespawn.Value, (int)_admSpawnRange.Value);
     }

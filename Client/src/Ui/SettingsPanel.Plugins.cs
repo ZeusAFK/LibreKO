@@ -15,12 +15,12 @@ public partial class SettingsPanel : CanvasLayer
     private void BuildPluginsTab(VBoxContainer tab)
     {
         var intro = UiTheme.Text(
-            $"Plugins are folders inside \"{PluginHost.PrimaryRoot}\". Each one carries a plugin.json; " +
-            "only one UI theme can be enabled at a time.", PluginDescriptionFontSize, UiTheme.TextLo);
+            $"{Localization.Loc.Tr("Plugins are folders inside \"")}{PluginHost.PrimaryRoot}{Localization.Loc.Tr("\". Each one carries a plugin.json; only one UI theme can be enabled at a time.")}",
+            PluginDescriptionFontSize, UiTheme.TextLo);
         intro.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         tab.AddChild(intro);
 
-        _pluginRestartNote = UiTheme.Text("Changes take effect after the game restarts.", PluginDescriptionFontSize, UiTheme.Warning);
+        _pluginRestartNote = UiTheme.Text(Localization.Loc.Tr("Changes take effect after the game restarts."), PluginDescriptionFontSize, UiTheme.Warning);
         _pluginRestartNote.Visible = PluginHost.RestartRequired;
         tab.AddChild(_pluginRestartNote);
 
@@ -32,10 +32,10 @@ public partial class SettingsPanel : CanvasLayer
         var buttons = new HBoxContainer();
         buttons.AddThemeConstantOverride("separation", 10);
         tab.AddChild(buttons);
-        var open = new Button { Text = "Open plugins folder" };
+        var open = new Button { Text = Localization.Loc.Tr("Open plugins folder") };
         open.Pressed += PluginHost.OpenFolder;
         buttons.AddChild(open);
-        var rescan = new Button { Text = "Rescan" };
+        var rescan = new Button { Text = Localization.Loc.Tr("Rescan") };
         rescan.Pressed += () => { PluginHost.Discover(); FillPluginList(); };
         buttons.AddChild(rescan);
     }
@@ -45,7 +45,7 @@ public partial class SettingsPanel : CanvasLayer
         foreach (var child in _pluginList.GetChildren()) child.QueueFree();
         if (PluginHost.All.Count == 0)
         {
-            _pluginList.AddChild(UiTheme.Text("No plugins found.", PluginDescriptionFontSize, UiTheme.TextDim));
+            _pluginList.AddChild(UiTheme.Text(Localization.Loc.Tr("No plugins found."), PluginDescriptionFontSize, UiTheme.TextDim));
             return;
         }
         foreach (var info in PluginHost.All)
@@ -72,7 +72,7 @@ public partial class SettingsPanel : CanvasLayer
             head.AddChild(UiTheme.Text(info.Version, PluginMetaFontSize, UiTheme.TextLo));
         head.AddChild(UiTheme.Text(PluginManifest.TypeName(info.Type), PluginMetaFontSize, UiTheme.Gold));
 
-        string meta = info.Manifest?.Author.Length > 0 ? $"by {info.Manifest.Author}" : "";
+        string meta = info.Manifest?.Author.Length > 0 ? $"{Localization.Loc.Tr("by")} {info.Manifest.Author}" : "";
         if (info.Manifest?.Homepage.Length > 0) meta += (meta.Length > 0 ? "  " : "") + info.Manifest.Homepage;
         if (meta.Length > 0)
             text.AddChild(UiTheme.Text(meta, PluginMetaFontSize, UiTheme.TextLo));
@@ -98,7 +98,7 @@ public partial class SettingsPanel : CanvasLayer
 
         var toggle = new CheckButton
         {
-            Text = "Enabled",
+            Text = Localization.Loc.Tr("Enabled"),
             ButtonPressed = info.Enabled,
             Disabled = !info.CanEnable,
             SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,

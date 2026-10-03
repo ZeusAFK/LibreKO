@@ -15,7 +15,7 @@ public partial class World
         if (_questNotificationWindow != null) return;
         var layer = new CanvasLayer { Layer = 74 };
         AddChild(layer);
-        _questNotificationWindow = new HudWindow("quest_available", "Quest available", new Vector2(40, 180), 420) { Visible = false };
+        _questNotificationWindow = new HudWindow("quest_available", Localization.Loc.Tr("Quest available"), new Vector2(40, 180), 420) { Visible = false };
         _questNotificationWindow.Closed += DismissQuestNotifications;
         layer.AddChild(_questNotificationWindow);
     }
@@ -37,7 +37,7 @@ public partial class World
         string self = Net.I?.LastEnter.Name ?? "";
         bool paged = _questNotifications.Count > 1;
         _questNotificationWindow.Title = paged
-            ? $"Quests available ({_questNotificationIndex + 1} of {_questNotifications.Count})"
+            ? $"{Localization.Loc.Tr("Quests available")} ({_questNotificationIndex + 1} {Localization.Loc.Tr("of")} {_questNotifications.Count})"
             : QuestMarkup.Plain(view.Title, self);
         var body = _questNotificationWindow.Body;
         foreach (var child in body.GetChildren()) { body.RemoveChild(child); child.QueueFree(); }
@@ -51,7 +51,7 @@ public partial class World
             button.Pressed += () => AnswerQuestNotification(view.QuestId, choice);
             body.AddChild(button);
         }
-        var close = new Button { Text = paged ? "Close all" : "Close", CustomMinimumSize = new Vector2(0, 36) };
+        var close = new Button { Text = paged ? Localization.Loc.Tr("Close all") : Localization.Loc.Tr("Close"), CustomMinimumSize = new Vector2(0, 36) };
         close.Pressed += DismissQuestNotifications;
         body.AddChild(close);
     }
@@ -60,7 +60,7 @@ public partial class World
     {
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 8);
-        var previous = UiTheme.IconButton("<", "Previous quest");
+        var previous = UiTheme.IconButton("<", Localization.Loc.Tr("Previous quest"));
         previous.Pressed += () => StepQuestNotification(-1);
         row.AddChild(previous);
         var title = UiTheme.Text(QuestMarkup.Plain(view.Title, self), 14, UiTheme.TextHi);
@@ -69,7 +69,7 @@ public partial class World
         title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         title.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         row.AddChild(title);
-        var next = UiTheme.IconButton(">", "Next quest");
+        var next = UiTheme.IconButton(">", Localization.Loc.Tr("Next quest"));
         next.Pressed += () => StepQuestNotification(1);
         row.AddChild(next);
         return row;
@@ -77,10 +77,10 @@ public partial class World
 
     private static string QuestNotificationCaption(QuestView view) => view.State switch
     {
-        QuestViewState.Claimable => "Ready to turn in",
-        QuestViewState.InProgress => "Quest started",
-        QuestViewState.Completed => "Quest completed",
-        _ => "Quest available",
+        QuestViewState.Claimable => Localization.Loc.Tr("Ready to turn in"),
+        QuestViewState.InProgress => Localization.Loc.Tr("Quest started"),
+        QuestViewState.Completed => Localization.Loc.Tr("Quest completed"),
+        _ => Localization.Loc.Tr("Quest available"),
     };
 
     private void StepQuestNotification(int step)

@@ -63,7 +63,7 @@ public partial class World
         _pieceLayer = new CanvasLayer { Layer = 75 };
         AddChild(_pieceLayer);
 
-        _piecePanel = new HudWindow("piecechange", "Chaotic Generator", new Vector2(150, 120), 640) { Visible = false };
+        _piecePanel = new HudWindow("piecechange", Localization.Loc.Tr("Chaotic Generator"), new Vector2(150, 120), 640) { Visible = false };
         _piecePanel.Closed += ClosePieceChange;
         _pieceLayer.AddChild(_piecePanel);
 
@@ -98,11 +98,11 @@ public partial class World
         buttons.AddThemeConstantOverride("separation", 8);
         altar.AddChild(buttons);
 
-        _pieceStartBtn = PieceButton("Start", StartPieceSpin);
+        _pieceStartBtn = PieceButton(Localization.Loc.Tr("Start"), StartPieceSpin);
         buttons.AddChild(_pieceStartBtn);
-        _pieceStopBtn = PieceButton("Stop", StopPieceSpin);
+        _pieceStopBtn = PieceButton(Localization.Loc.Tr("Stop"), StopPieceSpin);
         buttons.AddChild(_pieceStopBtn);
-        _pieceTalkBtn = PieceButton("Talk", TalkToGenerator);
+        _pieceTalkBtn = PieceButton(Localization.Loc.Tr("Talk"), TalkToGenerator);
         buttons.AddChild(_pieceTalkBtn);
 
         var bagPanel = UiTheme.Section();
@@ -111,7 +111,7 @@ public partial class World
         var bag = new VBoxContainer();
         bag.AddThemeConstantOverride("separation", 7);
         bagPanel.AddChild(bag);
-        bag.AddChild(UiTheme.SectionTitle("Inventory"));
+        bag.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Inventory")));
         _pieceBackpackGrid = new VBoxContainer();
         _pieceBackpackGrid.AddThemeConstantOverride("separation", 4);
         bag.AddChild(_pieceBackpackGrid);
@@ -142,7 +142,7 @@ public partial class World
         _pieceSocket.Cleared += ClearPieceBench;
         _pieceSocket.Hovered += held => ShowItemTooltip(PieceSocketSlot(), held);
         _pieceSocket.Unhovered += HideItemTooltip;
-        bench.AddChild(BuildUpgradeColumn("Piece", _pieceSocket));
+        bench.AddChild(BuildUpgradeColumn(Localization.Loc.Tr("Piece"), _pieceSocket));
 
         bench.AddChild(UiTheme.Text("=", 26, UiTheme.GoldDark));
 
@@ -156,7 +156,7 @@ public partial class World
             _pieceResultSockets[i] = socket;
             wheel.AddChild(socket);
         }
-        bench.AddChild(BuildUpgradeColumn("Reward", wheel));
+        bench.AddChild(BuildUpgradeColumn(Localization.Loc.Tr("Reward"), wheel));
         return bench;
     }
 
@@ -188,7 +188,7 @@ public partial class World
         var (title, body) = ItemData.UiHelp(HelpChaoticGenerator);
         if (body.Length == 0) return;
         ClosePieceChange();
-        Notice.Show(this, body.Replace('|', '\n'), title.Length > 0 ? title : "Chaotic Generator");
+        Notice.Show(this, body.Replace('|', '\n'), title.Length > 0 ? title : Localization.Loc.Tr("Chaotic Generator"));
     }
 
     private void ClearPieceBench()
@@ -221,7 +221,7 @@ public partial class World
         if (!ItemData.IsExchangePiece(item.ItemId))
         {
             SetPieceMessage(ItemData.Text(TextPlacePiece, "Place one of the pieces."), true);
-            _pieceSubMessage.Text = $"{ItemData.DisplayName(item.ItemId)} is not a generator piece.";
+            _pieceSubMessage.Text = $"{ItemData.DisplayName(item.ItemId)} {Localization.Loc.Tr("is not a generator piece.")}";
             return;
         }
 
@@ -231,7 +231,7 @@ public partial class World
         _pieceSocket.Set(item.ItemId, item.Count, item.Durability);
         var blocked = PieceBlockReason();
         SetPieceMessage(blocked ?? ItemData.Text(TextPressStart, "Press Start."), blocked != null);
-        _pieceSubMessage.Text = $"{_pieceRewards.Count} possible rewards.";
+        _pieceSubMessage.Text = $"{_pieceRewards.Count} {Localization.Loc.Tr("possible rewards.")}";
         RefreshPieceBackpack();
         RefreshPieceActions();
     }
@@ -292,7 +292,7 @@ public partial class World
 
             SetPieceMessage(PieceEffectText(result.Effect), false);
             _pieceSubMessage.Text = ItemData.DisplayName(result.RewardItemId);
-            CombatNotice($"Chaotic Generator: {ItemData.DisplayName(result.RewardItemId)}");
+            CombatNotice($"{Localization.Loc.Tr("Chaotic Generator")}: {ItemData.DisplayName(result.RewardItemId)}");
             _pieceItemId = 0;
             _piecePosition = -1;
             _pieceRewards = System.Array.Empty<int>();
@@ -347,9 +347,9 @@ public partial class World
 
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 6);
-        footer.AddChild(UiTheme.Pill($"{usable.Count} usable", UiTheme.Gold));
+        footer.AddChild(UiTheme.Pill($"{usable.Count} {Localization.Loc.Tr("usable")}", UiTheme.Gold));
         footer.AddChild(UiTheme.Pill($"{BackpackUsedCount()}/{GridCount}", UiTheme.Edge));
-        footer.AddChild(UiTheme.Text($"{Sheet.Gold:n0} gold", 12, UiTheme.Gold, HorizontalAlignment.Right));
+        footer.AddChild(UiTheme.Text($"{Sheet.Gold:n0} {Localization.Loc.Tr("gold")}", 12, UiTheme.Gold, HorizontalAlignment.Right));
         _pieceBackpackGrid.AddChild(footer);
     }
 
@@ -362,12 +362,12 @@ public partial class World
     private string? PieceBlockReason()
     {
         if (Sheet.MaxWeight > 0 && CarriedWeight() >= Sheet.MaxWeight)
-            return "You are carrying too much.";
+            return Localization.Loc.Tr("You are carrying too much.");
 
         for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
             if (Inv[abs].IsEmpty) return null;
 
-        return "Your bag is full.";
+        return Localization.Loc.Tr("Your bag is full.");
     }
 
     private bool CanStartPieceSpin()

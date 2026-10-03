@@ -19,11 +19,11 @@ public partial class World
 
     private static readonly Dictionary<string, string> MainWindowKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["character_info"] = "Character",
-        ["inventory"] = "Inventory",
-        ["skills"] = "Skills",
-        ["quests"] = "Quests",
-        ["party"] = "Party",
+        ["character_info"] = Localization.Loc.Tr("Character"),
+        ["inventory"] = Localization.Loc.Tr("Inventory"),
+        ["skills"] = Localization.Loc.Tr("Skills"),
+        ["quests"] = Localization.Loc.Tr("Quests"),
+        ["party"] = Localization.Loc.Tr("Party"),
     };
 
     private void PluginBridgeInit()
@@ -87,7 +87,7 @@ public partial class World
         {
             if (!IsPlayer)
             {
-                _w.CombatNotice(SelectPlayerNotice);
+                _w.CombatNotice(Localization.Loc.Tr(SelectPlayerNotice));
                 return;
             }
             _w.BeginTradeRequest(_targetId, _targetName);

@@ -84,15 +84,15 @@ public partial class World
         var detailsBox = new VBoxContainer();
         detailsBox.AddThemeConstantOverride("separation", 3);
 
-        var timeRow = QuestValueRow("Time Remaining :", "-- : --", UiTheme.Good);
+        var timeRow = QuestValueRow(Localization.Loc.Tr("Time Remaining :"), "-- : --", UiTheme.Good);
         _lotteryTimerLabel = timeRow.GetChild<Label>(timeRow.GetChildCount() - 1);
         detailsBox.AddChild(timeRow);
 
-        var soldRow = QuestValueRow("Tickets Sold :", "0", UiTheme.TextHi);
+        var soldRow = QuestValueRow(Localization.Loc.Tr("Tickets Sold :"), "0", UiTheme.TextHi);
         _lotterySoldLabel = soldRow.GetChild<Label>(soldRow.GetChildCount() - 1);
         detailsBox.AddChild(soldRow);
 
-        var winRow = QuestValueRow("Number of People to Win :", "4", new Color(0.35f, 1f, 0.45f));
+        var winRow = QuestValueRow(Localization.Loc.Tr("Number of People to Win :"), "4", new Color(0.35f, 1f, 0.45f));
         _lotteryWinnersLabel = winRow.GetChild<Label>(winRow.GetChildCount() - 1);
         detailsBox.AddChild(winRow);
 
@@ -104,7 +104,7 @@ public partial class World
         var purchasedRow = new HBoxContainer();
         purchasedRow.AddThemeConstantOverride("separation", 8);
 
-        var pLabel = UiTheme.Text("Purchased Ticket :", 13, UiTheme.TextHi);
+        var pLabel = UiTheme.Text(Localization.Loc.Tr("Purchased Ticket :"), 13, UiTheme.TextHi);
         purchasedRow.AddChild(pLabel);
 
         var ticketIcon = new TextureRect
@@ -196,7 +196,7 @@ public partial class World
         priceBox.AddChild(_lotteryCostLabel);
         rightCol.AddChild(priceBox);
 
-        _lotteryBuyBtn = UiTheme.ActionButton("Buy 1x Ticket", "Purchase 1 ticket to enter the lottery draw");
+        _lotteryBuyBtn = UiTheme.ActionButton(Localization.Loc.Tr("Buy 1x Ticket"), Localization.Loc.Tr("Purchase 1 ticket to enter the lottery draw"));
         _lotteryBuyBtn.Pressed += OnBuyTicketPressed;
         rightCol.AddChild(_lotteryBuyBtn);
 
@@ -235,7 +235,7 @@ public partial class World
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
         };
-        var prizeText = UiTheme.Text("Prize", 15, new Color(0.95f, 0.65f, 0.65f), HorizontalAlignment.Center);
+        var prizeText = UiTheme.Text(Localization.Loc.Tr("Prize"), 15, new Color(0.95f, 0.65f, 0.65f), HorizontalAlignment.Center);
         var bagRight = new TextureRect
         {
             Texture = UiIcons.Get("system/gift"),
@@ -314,7 +314,7 @@ public partial class World
 
     private void OnBuyTicketPressed()
     {
-        _lotteryStatusLabel.Text = "Purchasing ticket...";
+        _lotteryStatusLabel.Text = Localization.Loc.Tr("Purchasing ticket...");
         _lotteryStatusLabel.SelfModulate = UiTheme.TextLo;
         Net.I.SendLotteryBuyTicket();
     }
@@ -334,7 +334,7 @@ public partial class World
         if (_lotteryTimerLabel == null || !GodotObject.IsInstanceValid(_lotteryTimerLabel)) return;
         if (_lotteryState == null || !_lotteryState.Active)
         {
-            _lotteryTimerLabel.Text = "Inactive";
+            _lotteryTimerLabel.Text = Localization.Loc.Tr("Inactive");
             _lotteryTimerLabel.SelfModulate = UiTheme.TextDim;
             return;
         }
@@ -365,8 +365,8 @@ public partial class World
 
         if (_lotteryState == null || !_lotteryState.Active)
         {
-            _lotteryWindow.Title = "Lottery";
-            _lotteryTimerLabel.Text = "Inactive";
+            _lotteryWindow.Title = Localization.Loc.Tr("Lottery");
+            _lotteryTimerLabel.Text = Localization.Loc.Tr("Inactive");
             _lotterySoldLabel.Text = "0";
             _lotteryWinnersLabel.Text = "-";
             _lotteryMyTicketsLabel.Text = "0 / 0";
@@ -380,7 +380,7 @@ public partial class World
             return;
         }
 
-        _lotteryWindow.Title = !string.IsNullOrEmpty(_lotteryState.Name) ? _lotteryState.Name : "Lottery";
+        _lotteryWindow.Title = !string.IsNullOrEmpty(_lotteryState.Name) ? _lotteryState.Name : Localization.Loc.Tr("Lottery");
         UpdateLotteryTimerDisplay();
 
         _lotterySoldLabel.Text = $"{_lotteryState.TotalTickets:N0}";

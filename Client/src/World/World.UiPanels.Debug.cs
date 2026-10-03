@@ -69,7 +69,7 @@ public partial class World
 
         var b = new Button
         {
-            Text = title,
+            Text = Localization.Loc.Tr(title),
             ToggleMode = true,
             ButtonGroup = _infoTabGroup,
             CustomMinimumSize = new Vector2(72, 28),
@@ -196,7 +196,7 @@ public partial class World
     {
         if (_water == null || !_water.HasWater)
         {
-            col.AddChild(new Label { Text = "No water in this zone." });
+            col.AddChild(new Label { Text = Localization.Loc.Tr("No water in this zone.") });
             return;
         }
         AddSlider(col, "Ripple size", 0.02f, 0.15f, 0.025f, 0.005f, v => _water.SetParam("nmap_scale", v));

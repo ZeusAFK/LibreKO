@@ -88,7 +88,7 @@ public partial class HudWindow : PanelContainer
         if (_minimizeBtn != null)
         {
             _minimizeBtn.Text = minimized ? "❒" : "—";
-            _minimizeBtn.TooltipText = minimized ? "Restore" : "Minimize";
+            _minimizeBtn.TooltipText = minimized ? Localization.Loc.Tr("Restore") : Localization.Loc.Tr("Minimize");
         }
 
         _titleLbl.ClipText = minimized;
@@ -207,7 +207,7 @@ public partial class HudWindow : PanelContainer
 
         if (minimizable)
         {
-            _minimizeBtn = UiTheme.IconButton("—", "Minimize");
+            _minimizeBtn = UiTheme.IconButton("—", Localization.Loc.Tr("Minimize"));
             _minimizeBtn.CustomMinimumSize = HeaderButtonSize;
             _minimizeBtn.AddThemeFontSizeOverride("font_size", MinimizeGlyphFontSize);
             _minimizeBtn.AddThemeColorOverride("font_color", new Color(UiTheme.TextHi, 0.82f));
@@ -221,7 +221,7 @@ public partial class HudWindow : PanelContainer
 
         if (closable)
         {
-            var close = UiTheme.IconButton(UiIcons.Get("system/close"), "Close");
+            var close = UiTheme.IconButton(UiIcons.Get("system/close"), Localization.Loc.Tr("Close"));
             close.CustomMinimumSize = HeaderButtonSize;
             close.AddThemeConstantOverride("icon_max_width", Platform.Pick(12, 22));
             close.AddThemeColorOverride("icon_normal_color", new Color(UiTheme.TextHi, 0.82f));

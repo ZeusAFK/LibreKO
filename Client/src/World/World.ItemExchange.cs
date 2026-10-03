@@ -15,13 +15,13 @@ public partial class World
     {
         _itemExchangeLayer = new CanvasLayer { Layer = 64 };
         AddChild(_itemExchangeLayer);
-        _itemExchangePanel = new HudWindow("itemexchange", "Item Exchange", new Vector2(200, 130)) { Visible = false };
+        _itemExchangePanel = new HudWindow("itemexchange", Localization.Loc.Tr("Item Exchange"), new Vector2(200, 130)) { Visible = false };
         _itemExchangePanel.Closed += CloseItemExchange;
         _itemExchangeLayer.AddChild(_itemExchangePanel);
         var root = _itemExchangePanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Item Exchange"));
-        root.AddChild(UiTheme.Text("Turn in materials for a reward item.", 12, UiTheme.TextLo));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Item Exchange")));
+        root.AddChild(UiTheme.Text(Localization.Loc.Tr("Turn in materials for a reward item."), 12, UiTheme.TextLo));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(380, 320), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _itemExchangeList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -68,19 +68,19 @@ public partial class World
             name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             titleRow.AddChild(name);
             int recipeId = r.RecipeId;
-            var btn = new Button { Text = "Exchange", FocusMode = Control.FocusModeEnum.None };
+            var btn = new Button { Text = Localization.Loc.Tr("Exchange"), FocusMode = Control.FocusModeEnum.None };
             btn.Pressed += () => Net.I.SendItemExchange(recipeId);
             titleRow.AddChild(btn);
 
             string inName = ItemData.DisplayName(r.InputItemId);
             string outName = ItemData.DisplayName(r.OutputItemId);
-            vb.AddChild(UiTheme.Text($"Give {r.InputCount} x {inName}  ->  {outName}", 12, UiTheme.TextLo));
+            vb.AddChild(UiTheme.Text($"{Localization.Loc.Tr("Give")} {r.InputCount} x {inName}  ->  {outName}", 12, UiTheme.TextLo));
 
             _itemExchangeList.AddChild(row);
         }
         if (_itemExchangeList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No exchanges available.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No exchanges available.");
             _itemExchangeList.AddChild(e);
         }
     }

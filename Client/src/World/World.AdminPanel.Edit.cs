@@ -26,12 +26,12 @@ public partial class World
     {
         var box = new VBoxContainer();
         box.AddThemeConstantOverride("separation", 7);
-        box.AddChild(AdminHeading("Level", "system/level"));
+        box.AddChild(AdminHeading(Localization.Loc.Tr("Level"), "system/level"));
 
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 0);
         box.AddChild(row);
-        row.AddChild(AdminFieldLabel("Level", 66));
+        row.AddChild(AdminFieldLabel(Localization.Loc.Tr("Level"), 66));
         _admLevelSpin = AdminSpin(CharacterSheet.MinLevel, CharacterSheet.MaxLevel, 135);
         row.AddChild(_admLevelSpin);
 
@@ -39,19 +39,19 @@ public partial class World
         actions.AddThemeConstantOverride("separation", 8);
         box.AddChild(actions);
 
-        var set = AdminButton("Set", 56);
+        var set = AdminButton(Localization.Loc.Tr("Set"), 56);
         set.Pressed += () =>
         {
             Net.I.SendAdminSetLevel((int)_admLevelSpin.Value, reset: false);
-            SetAdminStatus("Setting level…", false);
+            SetAdminStatus(Localization.Loc.Tr("Setting level…"), false);
         };
         actions.AddChild(set);
 
-        var reset = AdminButton("Reset to level");
+        var reset = AdminButton(Localization.Loc.Tr("Reset to level"));
         reset.Pressed += () =>
         {
             Net.I.SendAdminSetLevel((int)_admLevelSpin.Value, reset: true);
-            SetAdminStatus("Resetting to level…", false);
+            SetAdminStatus(Localization.Loc.Tr("Resetting to level…"), false);
         };
         actions.AddChild(reset);
 
@@ -75,7 +75,7 @@ public partial class World
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(640, 0) };
         box.AddThemeConstantOverride("separation", 7);
 
-        box.AddChild(UiTheme.SectionTitle("Skill points", UiIcons.Get("game/main-hand")));
+        box.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Skill points"), UiIcons.Get("game/main-hand")));
         _admSkillLbl = UiTheme.Text("", 12, UiTheme.TextLo);
         box.AddChild(_admSkillLbl);
 
@@ -84,21 +84,21 @@ public partial class World
         grid.AddThemeConstantOverride("v_separation", 3);
         box.AddChild(grid);
 
-        grid.AddChild(UiTheme.Text("Pool (free)", 13, UiTheme.TextHi));
+        grid.AddChild(UiTheme.Text(Localization.Loc.Tr("Pool (free)"), 13, UiTheme.TextHi));
         _admSkillPool = MakeAdminSpin(0, byte.MaxValue, 1);
         grid.AddChild(_admSkillPool);
 
         string[] treeNames = { "Tree 1", "Tree 2", "Tree 3", "Master" };
         for (int i = 0; i < AdminSkillTreeCount; i++)
         {
-            grid.AddChild(UiTheme.Text(treeNames[i], 13, UiTheme.TextHi));
+            grid.AddChild(UiTheme.Text(Localization.Loc.Tr(treeNames[i]), 13, UiTheme.TextHi));
             _admSkillTrees[i] = MakeAdminSpin(0, byte.MaxValue, 1);
             grid.AddChild(_admSkillTrees[i]);
         }
 
         var note = UiTheme.Text(
-            "Pool = unspent mastery points. Trees = points already spent in each mastery branch. "
-            + "Skills unlock as their branch reaches the required points.",
+            Localization.Loc.Tr("Pool = unspent mastery points. Trees = points already spent in each mastery branch. ")
+            + Localization.Loc.Tr("Skills unlock as their branch reaches the required points."),
             11, UiTheme.TextDim);
         note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         note.CustomMinimumSize = new Vector2(360, 0);
@@ -108,19 +108,19 @@ public partial class World
         row.AddThemeConstantOverride("separation", 5);
         box.AddChild(row);
 
-        var apply = new Button { Text = "Apply", FocusMode = Control.FocusModeEnum.None };
+        var apply = new Button { Text = Localization.Loc.Tr("Apply"), FocusMode = Control.FocusModeEnum.None };
         apply.Pressed += OnAdminApplySkills;
         row.AddChild(apply);
 
-        var revert = new Button { Text = "Revert", FocusMode = Control.FocusModeEnum.None };
+        var revert = new Button { Text = Localization.Loc.Tr("Revert"), FocusMode = Control.FocusModeEnum.None };
         revert.Pressed += LoadAdminSkillSpins;
         row.AddChild(revert);
 
-        var reset = new Button { Text = "Reset skills", FocusMode = Control.FocusModeEnum.None };
+        var reset = new Button { Text = Localization.Loc.Tr("Reset skills"), FocusMode = Control.FocusModeEnum.None };
         reset.Pressed += () =>
         {
             Net.I.SendAdminSetSkill(0, System.Array.Empty<int>(), reset: true);
-            SetAdminStatus("Resetting skills…", false);
+            SetAdminStatus(Localization.Loc.Tr("Resetting skills…"), false);
         };
         row.AddChild(reset);
 
@@ -144,7 +144,7 @@ public partial class World
             spent += points;
         }
         if (_admSkillLbl != null)
-            _admSkillLbl.Text = $"Pool {pool}   ·   spent {spent}";
+            _admSkillLbl.Text = $"{Localization.Loc.Tr("Pool")} {pool}   ·   {Localization.Loc.Tr("spent")} {spent}";
     }
 
     private void OnAdminApplySkills()
@@ -153,7 +153,7 @@ public partial class World
         for (int i = 0; i < trees.Length; i++)
             trees[i] = (int)_admSkillTrees[i].Value;
         Net.I.SendAdminSetSkill((int)_admSkillPool.Value, trees, reset: false);
-        SetAdminStatus("Applying skill points…", false);
+        SetAdminStatus(Localization.Loc.Tr("Applying skill points…"), false);
     }
 
     private Control BuildAdminTransformSection()
@@ -162,23 +162,23 @@ public partial class World
         box.AddThemeConstantOverride("separation", 5);
 
         box.AddChild(new HSeparator());
-        box.AddChild(UiTheme.SectionTitle("Transform (test)"));
+        box.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Transform (test)")));
 
         var grid = new GridContainer { Columns = 2 };
         grid.AddThemeConstantOverride("h_separation", 10);
         grid.AddThemeConstantOverride("v_separation", 4);
         box.AddChild(grid);
 
-        grid.AddChild(UiTheme.Text("Nation", 13, UiTheme.TextHi));
-        _admNationPick = UiTheme.Dropdown(new[] { "Karus", "El Morad" });
+        grid.AddChild(UiTheme.Text(Localization.Loc.Tr("Nation"), 13, UiTheme.TextHi));
+        _admNationPick = UiTheme.Dropdown(new[] { Localization.Loc.Tr("Karus"), Localization.Loc.Tr("El Morad") });
         _admNationPick.ItemSelected += _ => RebuildAdminLookPicks();
         grid.AddChild(_admNationPick);
 
-        grid.AddChild(UiTheme.Text("Body (gender)", 13, UiTheme.TextHi));
+        grid.AddChild(UiTheme.Text(Localization.Loc.Tr("Body (gender)"), 13, UiTheme.TextHi));
         _admRacePick = UiTheme.Dropdown();
         grid.AddChild(_admRacePick);
 
-        grid.AddChild(UiTheme.Text("Class", 13, UiTheme.TextHi));
+        grid.AddChild(UiTheme.Text(Localization.Loc.Tr("Class"), 13, UiTheme.TextHi));
         _admClassPick = UiTheme.Dropdown();
         grid.AddChild(_admClassPick);
 
@@ -186,17 +186,17 @@ public partial class World
         row.AddThemeConstantOverride("separation", 5);
         box.AddChild(row);
 
-        var setClass = new Button { Text = "Set class", FocusMode = Control.FocusModeEnum.None };
+        var setClass = new Button { Text = Localization.Loc.Tr("Set class"), FocusMode = Control.FocusModeEnum.None };
         setClass.Pressed += OnAdminSetPickedClass;
         row.AddChild(setClass);
 
-        var setLook = new Button { Text = "Set nation + body", FocusMode = Control.FocusModeEnum.None };
+        var setLook = new Button { Text = Localization.Loc.Tr("Set nation + body"), FocusMode = Control.FocusModeEnum.None };
         setLook.Pressed += OnAdminSetPickedLook;
         row.AddChild(setLook);
 
         var note = UiTheme.Text(
-            "Class + skills switch live (pick any class of any nation to test its skills). "
-            + "Nation + body model apply after you relog to the character screen and back.",
+            Localization.Loc.Tr("Class + skills switch live (pick any class of any nation to test its skills). ")
+            + Localization.Loc.Tr("Nation + body model apply after you relog to the character screen and back."),
             11, UiTheme.Warning);
         note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         note.CustomMinimumSize = new Vector2(360, 0);
@@ -248,7 +248,7 @@ public partial class World
         if (_admClassPickIds.Length == 0 || _admClassPick.Selected < 0) return;
         int id = _admClassPickIds[_admClassPick.Selected];
         Net.I.SendAdminSetClass(id);
-        SetAdminStatus($"Changing class to {CharacterClassCatalog.SpecializationName(id)} ({id})…", false);
+        SetAdminStatus($"{Localization.Loc.Tr("Changing class to")} {CharacterClassCatalog.SpecializationName(id)} ({id})…", false);
     }
 
     private void OnAdminSetPickedLook()
@@ -257,6 +257,6 @@ public partial class World
         int nation = _admNationPick.Selected == 0 ? Nations.Karus : Nations.ElMorad;
         int race = _admRacePickIds[_admRacePick.Selected];
         Net.I.SendAdminSetLook(nation, race);
-        SetAdminStatus("Applying nation + body — relog to load the new model.", false);
+        SetAdminStatus(Localization.Loc.Tr("Applying nation + body — relog to load the new model."), false);
     }
 }

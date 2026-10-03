@@ -37,7 +37,7 @@ public partial class World
         _rebirthLayer = new CanvasLayer { Layer = 74 };
         AddChild(_rebirthLayer);
 
-        _rebirthPanel = new HudWindow("rebirth", "Rebirth", new Vector2(220, 130), 320) { Visible = false };
+        _rebirthPanel = new HudWindow("rebirth", Localization.Loc.Tr("Rebirth"), new Vector2(220, 130), 320) { Visible = false };
         _rebirthPanel.Closed += CloseRebirth;
         _rebirthLayer.AddChild(_rebirthPanel);
 
@@ -48,7 +48,7 @@ public partial class World
         root.AddChild(_rebirthLevelLbl);
 
         root.AddChild(new HSeparator());
-        root.AddChild(UiTheme.SectionTitle("Bonus points"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Bonus points")));
         _rebirthPointsLbl = HudStyle.Label(13);
         root.AddChild(_rebirthPointsLbl);
 
@@ -83,11 +83,11 @@ public partial class World
         var actionRow = new HBoxContainer();
         actionRow.AddThemeConstantOverride("separation", 8);
         root.AddChild(actionRow);
-        _rebirthBtn = new Button { Text = "Rebirth", FocusMode = Control.FocusModeEnum.None };
+        _rebirthBtn = new Button { Text = Localization.Loc.Tr("Rebirth"), FocusMode = Control.FocusModeEnum.None };
         _rebirthBtn.AddThemeFontSizeOverride("font_size", 13);
         _rebirthBtn.Pressed += OnRebirthPressed;
         actionRow.AddChild(_rebirthBtn);
-        var cancel = new Button { Text = "Not yet", FocusMode = Control.FocusModeEnum.None };
+        var cancel = new Button { Text = Localization.Loc.Tr("Not yet"), FocusMode = Control.FocusModeEnum.None };
         cancel.AddThemeFontSizeOverride("font_size", 13);
         cancel.Pressed += CloseRebirth;
         actionRow.AddChild(cancel);
@@ -128,11 +128,11 @@ public partial class World
     private void RefreshRebirthUI()
     {
         int level = Sheet.RebirthLevel;
-        _rebirthLevelLbl.Text = $"Rebirth Lv {level}  →  Lv {level + 1}";
-        _rebirthPointsLbl.Text = $"Place {RebirthPick.PointsPerRebirth} points  ({_rebirthPick.Remaining} left)";
+        _rebirthLevelLbl.Text = $"{Localization.Loc.Tr("Rebirth")} Lv {level}  →  Lv {level + 1}";
+        _rebirthPointsLbl.Text = $"{Localization.Loc.Tr("Place")} {RebirthPick.PointsPerRebirth} {Localization.Loc.Tr("points")}  ({_rebirthPick.Remaining} {Localization.Loc.Tr("left")})";
         for (int row = 0; row < RebirthPick.StatCount; row++)
         {
-            _rebirthBonusLbls[row].Text = $"now +{Sheet.RebirthBonusAtRow(row)}";
+            _rebirthBonusLbls[row].Text = $"{Localization.Loc.Tr("now")} +{Sheet.RebirthBonusAtRow(row)}";
             int picked = _rebirthPick.PickedAt(row);
             _rebirthPickLbls[row].Text = picked > 0 ? $"+{picked}" : "";
             _rebirthAddBtns[row].Disabled = _rebirthInFlight || !_rebirthPick.CanAdd(row);
@@ -152,12 +152,12 @@ public partial class World
         if (_rebirthInFlight || _selfDead) return;
         if (!_rebirthPick.Complete)
         {
-            SetRebirthStatus($"Place all {RebirthPick.PointsPerRebirth} points first.", true);
+            SetRebirthStatus($"{Localization.Loc.Tr("Place all")} {RebirthPick.PointsPerRebirth} {Localization.Loc.Tr("points first.")}", true);
             return;
         }
         _rebirthInFlight = true;
         _rebirthSent = _rebirthPick.Payload();
-        SetRebirthStatus("Reincarnating…", false);
+        SetRebirthStatus(Localization.Loc.Tr("Reincarnating…"), false);
         RefreshRebirthUI();
         Net.I.SendRebirthStatChange(_rebirthSent);
     }
@@ -166,18 +166,18 @@ public partial class World
     {
         if (sub != Net.ClassChangeRebirthStat)
         {
-            CombatNotice(code == 1 ? "Rebirth bonus points redistributed." : "The rebirth bonus points were not changed.");
+            CombatNotice(code == 1 ? Localization.Loc.Tr("Rebirth bonus points redistributed.") : Localization.Loc.Tr("The rebirth bonus points were not changed."));
             return;
         }
         _rebirthInFlight = false;
         if (code == 1)
         {
             Sheet.ApplyRebirth(_rebirthSent);
-            CombatNotice($"Rebirth Lv {Sheet.RebirthLevel}");
+            CombatNotice($"{Localization.Loc.Tr("Rebirth")} Lv {Sheet.RebirthLevel}");
             CloseRebirth();
             return;
         }
-        SetRebirthStatus("Mekin refused the rebirth.", true);
+        SetRebirthStatus(Localization.Loc.Tr("Mekin refused the rebirth."), true);
         if (_rebirthShown) RefreshRebirthUI();
     }
 }

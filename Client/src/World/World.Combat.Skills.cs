@@ -13,18 +13,18 @@ public partial class World
 
         if (!SkillRequirementMet(s))
         {
-            CombatNotice($"You have not learned {s.Name}. {SkillRequirementText(s)}.");
+            CombatNotice($"{Localization.Loc.Tr("You have not learned")} {Localization.Loc.SkillName(s.Id, s.Name)}. {SkillRequirementText(s)}.");
             return;
         }
         if (!SkillData.IsGranted(s.Tree, SelfTransformModel()))
         {
-            CombatNotice($"You cannot use {s.Name}.");
+            CombatNotice($"{Localization.Loc.Tr("You cannot use")} {Localization.Loc.SkillName(s.Id, s.Name)}.");
             return;
         }
 
         if (HasActiveFragmentOfManes() && (IsSpeedBuff(s) || s.IsBlink))
         {
-            CombatNotice("You cannot use movement skills while carrying the Fragment of Manes.");
+            CombatNotice(Localization.Loc.Tr("You cannot use movement skills while carrying the Fragment of Manes."));
             return;
         }
 
@@ -39,7 +39,7 @@ public partial class World
         if (HasPendingCast(id)) return;
         if (!Vitals.HasMana(s.Msp))
         {
-            CombatNotice("Not enough mana.");
+            CombatNotice(Localization.Loc.Tr("Not enough mana."));
             return;
         }
         if (!CanCastWithGear(s)) return;
@@ -116,7 +116,7 @@ public partial class World
     {
         if (_selectedId < 0 || !_ents.TryGetValue(_selectedId, out var target) || !target.Attackable || target.Dead)
         {
-            CombatNotice("Select a target first.");
+            CombatNotice(Localization.Loc.Tr("Select a target first."));
             return null;
         }
         if (!InSkillRange(_selectedId, s))
@@ -332,7 +332,7 @@ public partial class World
     }
 
     private string GroupCooldownNotice(SkillData.Skill blocker, double now) =>
-        $"{blocker.Name} is available in {Mathf.CeilToInt((float)(_skillReady[blocker.Id] - now))} seconds";
+        $"{Localization.Loc.SkillName(blocker.Id, blocker.Name)} {Localization.Loc.Tr("is available in")} {Mathf.CeilToInt((float)(_skillReady[blocker.Id] - now))} {Localization.Loc.Tr("seconds")}";
 
     private bool SkillReady(SkillData.Skill s, double now) =>
         !HasPendingCast(s.Id)
@@ -354,46 +354,46 @@ public partial class World
     {
         int mastery = SkillData.MasteryType(s.Tree);
         return mastery > 0
-            ? $"Requires {SkillData.PageName(SkillData.ClassPrefix(s.Id), mastery)} mastery {s.Level}"
-            : $"Requires level {s.Level}";
+            ? $"{Localization.Loc.Tr("Requires")} {SkillData.PageName(SkillData.ClassPrefix(s.Id), mastery)} {Localization.Loc.Tr("mastery")} {s.Level}"
+            : $"{Localization.Loc.Tr("Requires level")} {s.Level}";
     }
 
     private static string SkillTooltip(SkillData.Skill s)
     {
-        var lines = new List<string> { s.Name };
+        var lines = new List<string> { Localization.Loc.SkillName(s.Id, s.Name) };
         if (!string.IsNullOrWhiteSpace(s.Desc))
-            lines.Add(s.Desc);
+            lines.Add(Localization.Loc.SkillDesc(s.Id, s.Desc));
 
         if (s.Level > 0)
             lines.Add(SkillRequirementText(s));
 
         var cost = new List<string>();
-        if (s.Msp > 0) cost.Add($"MP {s.Msp}");
-        if (s.Hp > 0) cost.Add($"HP {s.Hp}");
-        if (s.Sp > 0) cost.Add($"SP {s.Sp}");
-        if (s.NeedArrow > 0) cost.Add($"Arrows {s.NeedArrow}");
+        if (s.Msp > 0) cost.Add($"{Localization.Loc.Tr("MP")} {s.Msp}");
+        if (s.Hp > 0) cost.Add($"{Localization.Loc.Tr("HP")} {s.Hp}");
+        if (s.Sp > 0) cost.Add($"{Localization.Loc.Tr("SP")} {s.Sp}");
+        if (s.NeedArrow > 0) cost.Add($"{Localization.Loc.Tr("Arrows")} {s.NeedArrow}");
         if (cost.Count > 0) lines.Add(string.Join("  ", cost));
 
         if (s.IsResurrect && s.NeedStone > 0 && s.UseItem != 0)
-            lines.Add($"Costs the target {s.NeedStone} × {ItemData.DisplayName(s.UseItem)}");
+            lines.Add($"{Localization.Loc.Tr("Costs the target")} {s.NeedStone} × {ItemData.DisplayName(s.UseItem)}");
         if (s.IsMasterScrollSkill)
-            lines.Add($"Consumes 1 × {ItemData.DisplayName(s.ConsumedItem)}");
+            lines.Add($"{Localization.Loc.Tr("Consumes")} 1 × {ItemData.DisplayName(s.ConsumedItem)}");
 
         var timing = new List<string>();
-        if (s.Cast > 0) timing.Add($"Cast {s.CastSeconds:0.#}s");
-        if (s.Recast > 0) timing.Add($"Cooldown {s.RecastSeconds:0.#}s");
-        if (s.Range > 0) timing.Add($"Range {s.Range}");
+        if (s.Cast > 0) timing.Add($"{Localization.Loc.Tr("Cast")} {s.CastSeconds:0.#}s");
+        if (s.Recast > 0) timing.Add($"{Localization.Loc.Tr("Cooldown")} {s.RecastSeconds:0.#}s");
+        if (s.Range > 0) timing.Add($"{Localization.Loc.Tr("Range")} {s.Range}");
         if (timing.Count > 0) lines.Add(string.Join("  ", timing));
 
-        if (s.Hit > 0) lines.Add($"Damage {s.Hit}%");
-        else if (s.Type1 == MagicType.Ranged && s.AddDamage > 0) lines.Add($"Damage {s.AddDamage}%");
-        else if (s.AddDamage is > 0 and not 100) lines.Add($"Add damage {s.AddDamage}");
-        if (s.FirstDamage != 0) lines.Add($"{(s.FirstDamage < 0 ? "Damage" : "Heal")} {System.Math.Abs(s.FirstDamage)}");
+        if (s.Hit > 0) lines.Add($"{Localization.Loc.Tr("Damage")} {s.Hit}%");
+        else if (s.Type1 == MagicType.Ranged && s.AddDamage > 0) lines.Add($"{Localization.Loc.Tr("Damage")} {s.AddDamage}%");
+        else if (s.AddDamage is > 0 and not 100) lines.Add($"{Localization.Loc.Tr("Add damage")} {s.AddDamage}");
+        if (s.FirstDamage != 0) lines.Add($"{Localization.Loc.Tr(s.FirstDamage < 0 ? "Damage" : "Heal")} {System.Math.Abs(s.FirstDamage)}");
         if (s.TimeDamage != 0 || s.Duration > 0)
-            lines.Add($"Over time {System.Math.Abs(s.TimeDamage)} / {s.Duration}s");
-        if (s.Radius > 0) lines.Add($"Radius {s.Radius}");
-        if (s.Angle > 0) lines.Add($"Angle {s.Angle}");
-        if (s.Attribute > 0) lines.Add($"Attribute {s.Attribute}");
+            lines.Add($"{Localization.Loc.Tr("Over time")} {System.Math.Abs(s.TimeDamage)} / {s.Duration}s");
+        if (s.Radius > 0) lines.Add($"{Localization.Loc.Tr("Radius")} {s.Radius}");
+        if (s.Angle > 0) lines.Add($"{Localization.Loc.Tr("Angle")} {s.Angle}");
+        if (s.Attribute > 0) lines.Add($"{Localization.Loc.Tr("Attribute")} {s.Attribute}");
         return string.Join("\n", lines);
     }
 

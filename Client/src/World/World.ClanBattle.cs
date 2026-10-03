@@ -60,7 +60,7 @@ public partial class World
 
     private void OnClanBattleNotify()
     {
-        const string line = "Clan battle status has changed.";
+        string line = Localization.Loc.Tr("Clan battle status has changed.");
         ShowClanBattleBanner(line, ClanBattleGold);
         Chat.Append($"[color=#46d3c0][lb]clan battle[rb] [/color][color=#ecd9a6]{BbCode.Esc(line)}[/color]");
     }
@@ -75,12 +75,12 @@ public partial class World
 
     private static (string Line, bool Disband) ClanBattleMessage(int sub) => sub switch
     {
-        0 => ("Your clan has been disbanded.", true),
-        1 => ("A clan battle has been declared.", false),
-        2 => ("The clan battle has begun!", false),
-        3 => ("Clan battle score updated.", false),
-        4 => ("The clan battle has ended.", false),
-        5 => ("The clan battle is in progress.", false),
-        _ => ("Clan battle status has changed.", false),
+        0 => (Localization.Loc.Tr("Your clan has been disbanded."), true),
+        1 => (Localization.Loc.Tr("A clan battle has been declared."), false),
+        2 => (Localization.Loc.Tr("The clan battle has begun!"), false),
+        3 => (Localization.Loc.Tr("Clan battle score updated."), false),
+        4 => (Localization.Loc.Tr("The clan battle has ended."), false),
+        5 => (Localization.Loc.Tr("The clan battle is in progress."), false),
+        _ => (Localization.Loc.Tr("Clan battle status has changed."), false),
     };
 }

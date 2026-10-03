@@ -129,7 +129,7 @@ public partial class World
 
         chat.Input = new LineEdit
         {
-            PlaceholderText = "Message",
+            PlaceholderText = Localization.Loc.Tr("Message"),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             MaxLength = 128,
             KeepEditingOnTextSubmit = true,
@@ -137,7 +137,7 @@ public partial class World
         chat.Input.TextSubmitted += _ => SendWhisperFrom(name);
         row.AddChild(chat.Input);
 
-        var send = new Button { Text = "Send", FocusMode = Control.FocusModeEnum.None };
+        var send = new Button { Text = Localization.Loc.Tr("Send"), FocusMode = Control.FocusModeEnum.None };
         send.AddThemeColorOverride("font_color", WhisperBlueText);
         send.AddThemeColorOverride("font_hover_color", Colors.White);
         send.AddThemeColorOverride("font_pressed_color", Colors.White);

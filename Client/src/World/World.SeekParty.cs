@@ -29,7 +29,7 @@ public partial class World
         _seekLayer = new CanvasLayer { Layer = 71 };
         AddChild(_seekLayer);
 
-        var win = new HudWindow("seek_party", "Seek Party", new Vector2(300, 110), 420) { Visible = false };
+        var win = new HudWindow("seek_party", Localization.Loc.Tr("Seek Party"), new Vector2(300, 110), 420) { Visible = false };
         win.Closed += () => _seekShown = false;
         _seekLayer.AddChild(win);
         _seekPanel = win;
@@ -38,9 +38,9 @@ public partial class World
         root.AddThemeConstantOverride("separation", 6);
 
         var top = new HBoxContainer(); top.AddThemeConstantOverride("separation", 5); root.AddChild(top);
-        _seekRegisterBtn = SmallButton("Look for a party", top);
+        _seekRegisterBtn = SmallButton(Localization.Loc.Tr("Look for a party"), top);
         _seekRegisterBtn.Pressed += ToggleSeeking;
-        SmallButton("Refresh", top).Pressed += () => Net.I.SendPartyBbsList(_seekPage);
+        SmallButton(Localization.Loc.Tr("Refresh"), top).Pressed += () => Net.I.SendPartyBbsList(_seekPage);
 
         _seekStatusLbl = HudStyle.Label(12);
         _seekStatusLbl.AddThemeColorOverride("font_color", new Color("b9c0c8"));
@@ -53,26 +53,26 @@ public partial class World
         scroll.AddChild(_seekListBox);
 
         var nav = new HBoxContainer(); nav.AddThemeConstantOverride("separation", 6); root.AddChild(nav);
-        SmallButton("◄ Prev", nav).Pressed += () => { if (_seekPage > 0) { _seekPage--; Net.I.SendPartyBbsList(_seekPage); } };
-        _seekPageLbl = HudStyle.Label(12); _seekPageLbl.Text = "Page 1"; nav.AddChild(_seekPageLbl);
-        SmallButton("Next ►", nav).Pressed += () =>
+        SmallButton(Localization.Loc.Tr("◄ Prev"), nav).Pressed += () => { if (_seekPage > 0) { _seekPage--; Net.I.SendPartyBbsList(_seekPage); } };
+        _seekPageLbl = HudStyle.Label(12); _seekPageLbl.Text = Localization.Loc.Tr("Page 1"); nav.AddChild(_seekPageLbl);
+        SmallButton(Localization.Loc.Tr("Next ►"), nav).Pressed += () =>
         {
             if ((_seekPage + 1) * 10 < _seekTotal) { _seekPage++; Net.I.SendPartyBbsList(_seekPage); }
         };
 
         root.AddChild(new HSeparator());
 
-        var wlbl = HudStyle.Label(13); wlbl.Text = "Recruit (party leader only):"; root.AddChild(wlbl);
+        var wlbl = HudStyle.Label(13); wlbl.Text = Localization.Loc.Tr("Recruit (party leader only):"); root.AddChild(wlbl);
         var wrow = new HBoxContainer(); wrow.AddThemeConstantOverride("separation", 5); root.AddChild(wrow);
         _wantedClassOpt = new OptionButton { FocusMode = Control.FocusModeEnum.None };
         _wantedClassOpt.AddThemeFontSizeOverride("font_size", 12);
-        for (int i = 0; i < WantedClasses.Length; i++) _wantedClassOpt.AddItem(WantedClasses[i].Label, i);
+        for (int i = 0; i < WantedClasses.Length; i++) _wantedClassOpt.AddItem(Localization.Loc.Tr(WantedClasses[i].Label), i);
         wrow.AddChild(_wantedClassOpt);
-        _wantedMsgInput = new LineEdit { MaxLength = 60, PlaceholderText = "Recruiting message",
+        _wantedMsgInput = new LineEdit { MaxLength = 60, PlaceholderText = Localization.Loc.Tr("Recruiting message"),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         _wantedMsgInput.TextSubmitted += _ => PostWanted();
         wrow.AddChild(_wantedMsgInput);
-        SmallButton("Post", wrow).Pressed += PostWanted;
+        SmallButton(Localization.Loc.Tr("Post"), wrow).Pressed += PostWanted;
     }
 
     private void ToggleSeekParty()
@@ -96,16 +96,16 @@ public partial class World
 
     private void UpdateSeekStatus()
     {
-        _seekRegisterBtn.Text = _seeking ? "Stop looking" : "Look for a party";
+        _seekRegisterBtn.Text = _seeking ? Localization.Loc.Tr("Stop looking") : Localization.Loc.Tr("Look for a party");
         _seekStatusLbl.Text = _seeking
-            ? "You are listed as looking for a party."
-            : "Browse players seeking a party, or list yourself.";
+            ? Localization.Loc.Tr("You are listed as looking for a party.")
+            : Localization.Loc.Tr("Browse players seeking a party, or list yourself.");
     }
 
     private void OnBbsRegister(bool ok)
     {
-        if (ok) { _seeking = true; Chat.Info("You are now listed as looking for a party."); }
-        else Chat.Info("Can't seek a party while you're already in one.");
+        if (ok) { _seeking = true; Chat.Info(Localization.Loc.Tr("You are now listed as looking for a party.")); }
+        else Chat.Info(Localization.Loc.Tr("Can't seek a party while you're already in one."));
         UpdateSeekStatus();
         if (_seekShown) Net.I.SendPartyBbsList(_seekPage);
     }
@@ -113,12 +113,12 @@ public partial class World
     private void OnBbsDelete()
     {
         _seeking = false;
-        Chat.Info("Removed your seek-party listing.");
+        Chat.Info(Localization.Loc.Tr("Removed your seek-party listing."));
         UpdateSeekStatus();
         if (_seekShown) Net.I.SendPartyBbsList(_seekPage);
     }
 
-    private void OnBbsWantedFail() => Chat.Info("Only the party leader can post a recruiting message.");
+    private void OnBbsWantedFail() => Chat.Info(Localization.Loc.Tr("Only the party leader can post a recruiting message."));
 
     private void OnBbsList(int page, int total, List<PartyBbsEntry> entries)
     {
@@ -129,11 +129,11 @@ public partial class World
         foreach (var c in _seekListBox.GetChildren()) c.QueueFree();
 
         int pages = Mathf.Max(1, (total + 9) / 10);
-        _seekPageLbl.Text = $"Page {page + 1} / {pages}";
+        _seekPageLbl.Text = $"{Localization.Loc.Tr("Page")} {page + 1} / {pages}";
 
         if (entries.Count == 0)
         {
-            var empty = HudStyle.Label(13); empty.Text = "Nobody is seeking a party right now.";
+            var empty = HudStyle.Label(13); empty.Text = Localization.Loc.Tr("Nobody is seeking a party right now.");
             empty.AddThemeColorOverride("font_color", new Color("b9c0c8"));
             _seekListBox.AddChild(empty);
             return;
@@ -161,8 +161,8 @@ public partial class World
 
         var head = HudStyle.Label(14);
         head.Text = e.IsLeaderRecruiting
-            ? $"{e.Name}  ·  party {e.MemberCount}/8  ·  wants {ClassName(e.ClassOrWanted)}"
-            : $"{e.Name}  ·  Lv {e.Level}  {ClassName(e.ClassOrWanted)}";
+            ? $"{e.Name}  ·  {Localization.Loc.Tr("party")} {e.MemberCount}/8  ·  {Localization.Loc.Tr("wants")} {ClassName(e.ClassOrWanted)}"
+            : $"{e.Name}  ·  {Localization.Loc.Tr("Lv")} {e.Level}  {ClassName(e.ClassOrWanted)}";
         info.AddChild(head);
 
         var sub = HudStyle.Label(11);
@@ -172,11 +172,11 @@ public partial class World
         info.AddChild(sub);
 
         string name = e.Name;
-        var inviteBtn = SmallButton("Invite", row);
+        var inviteBtn = SmallButton(Localization.Loc.Tr("Invite"), row);
         inviteBtn.Pressed += () =>
         {
             if (InParty) Net.I.SendPartyInvite(name); else Net.I.SendPartyCreate(name);
-            Chat.Info($"Inviting {name} to your party…");
+            Chat.Info($"{Localization.Loc.Tr("Inviting")} {name} {Localization.Loc.Tr("to your party…")}");
         };
         return panel;
     }
@@ -184,6 +184,6 @@ public partial class World
     private static string SeekZoneName(int zoneId)
     {
         foreach (var z in ZoneCatalog.All) if (z.Id == zoneId) return z.Name;
-        return $"Zone {zoneId}";
+        return $"{Localization.Loc.Tr("Zone")} {zoneId}";
     }
 }

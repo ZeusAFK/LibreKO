@@ -26,7 +26,7 @@ public partial class LoadingScreen : CanvasLayer
         box.AddThemeConstantOverride("separation", 8);
         host.AddChild(box);
 
-        _status = Line("Loading…", 19, UiTheme.TextHi, 5);
+        _status = Line(Localization.Loc.Tr("Loading…"), 19, UiTheme.TextHi, 5);
         box.AddChild(_status);
 
         _bar = new ProgressBar

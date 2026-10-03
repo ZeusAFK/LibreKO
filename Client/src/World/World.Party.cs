@@ -89,16 +89,16 @@ public partial class World
         btnRow.AddThemeConstantOverride("separation", 5);
         _partyContent.AddChild(btnRow);
 
-        var inviteBtn = SmallButton("Invite", btnRow);
+        var inviteBtn = SmallButton(Localization.Loc.Tr("Invite"), btnRow);
         inviteBtn.Pressed += OpenInvitePrompt;
 
-        var leaveBtn = SmallButton("Leave", btnRow);
+        var leaveBtn = SmallButton(Localization.Loc.Tr("Leave"), btnRow);
         leaveBtn.Pressed += () => { if (InParty) Net.I.SendPartyLeave(_myId); };
 
-        _partyDisbandBtn = SmallButton("Disband", btnRow);
+        _partyDisbandBtn = SmallButton(Localization.Loc.Tr("Disband"), btnRow);
         _partyDisbandBtn.Pressed += () => { if (AmLeader) Net.I.SendPartyDisband(); };
 
-        var seekBtn = SmallButton("Seek Party", btnRow);
+        var seekBtn = SmallButton(Localization.Loc.Tr("Seek Party"), btnRow);
         seekBtn.Pressed += ToggleSeekParty;
 
         _partyCtxMenu = new PopupMenu();
@@ -126,13 +126,13 @@ public partial class World
             child.QueueFree();
         }
 
-        _partyHeaderLbl.Text = InParty ? $"Party  ({PartyMembers.Count}/{PartyMaxMembers})" : "Party";
+        _partyHeaderLbl.Text = InParty ? $"{Localization.Loc.Tr("Party")}  ({PartyMembers.Count}/{PartyMaxMembers})" : Localization.Loc.Tr("Party");
         _partyDisbandBtn.Disabled = !AmLeader;
 
         if (!InParty)
         {
             var hint = HudStyle.Label(13);
-            hint.Text = "Not in a party.\nInvite a player, or use Seek Party.";
+            hint.Text = Localization.Loc.Tr("Not in a party.\nInvite a player, or use Seek Party.");
             _partyMembersBox.AddChild(hint);
             return;
         }
@@ -156,13 +156,13 @@ public partial class World
 
         var head = HudStyle.Label(14);
         string lead = isLeader ? "★ " : "";
-        string me = m.CharId == _myId ? "  (you)" : "";
+        string me = m.CharId == _myId ? Localization.Loc.Tr("  (you)") : "";
         head.Text = $"{lead}{m.Name}{me}";
         if (isLeader) head.AddThemeColorOverride("font_color", new Color("ffd24a"));
         row.AddChild(head);
 
         var sub = HudStyle.Label(11);
-        sub.Text = $"Lv {level}   {ClassName(cls)}";
+        sub.Text = $"{Localization.Loc.Tr("Lv")} {level}   {ClassName(cls)}";
         sub.AddThemeColorOverride("font_color", new Color("b9c0c8"));
         row.AddChild(sub);
 
@@ -190,17 +190,42 @@ public partial class World
         bool self = m.CharId == _myId;
         row.GuiInput += ev =>
         {
+            if (ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+            {
+                int selId = self ? _myId : memberId;
+                if (_ents.TryGetValue(selId, out var ent))
+                    Select(selId, ent);
+            }
             if (ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right }
                 && AmLeader && !self)
             {
                 _ctxMemberId = memberId;
                 _partyCtxMenu.Clear();
-                _partyCtxMenu.AddItem("Promote to leader", 1);
-                _partyCtxMenu.AddItem("Kick from party", 2);
+                _partyCtxMenu.AddItem(Localization.Loc.Tr("Promote to leader"), 1);
+                _partyCtxMenu.AddItem(Localization.Loc.Tr("Kick from party"), 2);
                 _partyCtxMenu.Position = (Vector2I)GetViewport().GetMousePosition();
                 _partyCtxMenu.Popup();
             }
         };
+
+        if (self && _buffs.Count > 0)
+        {
+            var iconRow = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+            iconRow.AddThemeConstantOverride("separation", 2);
+            foreach (var b in _buffs)
+            {
+                if (SkillData.Icon(b.SkillId) is not { } tex) continue;
+                iconRow.AddChild(new TextureRect
+                {
+                    Texture = tex,
+                    CustomMinimumSize = new Vector2(18, 18),
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                });
+            }
+            if (iconRow.GetChildCount() > 0) row.AddChild(iconRow);
+        }
         return row;
     }
 
@@ -230,23 +255,23 @@ public partial class World
         var ir = new VBoxContainer { CustomMinimumSize = new Vector2(252, 0) };
         ir.AddThemeConstantOverride("separation", 5);
         im.AddChild(ir);
-        var il = HudStyle.Label(13); il.Text = "Invite player by name:"; ir.AddChild(il);
-        _inviteNameInput = new LineEdit { MaxLength = 20, PlaceholderText = "Character name" };
+        var il = HudStyle.Label(13); il.Text = Localization.Loc.Tr("Invite player by name:"); ir.AddChild(il);
+        _inviteNameInput = new LineEdit { MaxLength = 20, PlaceholderText = Localization.Loc.Tr("Character name") };
         _inviteNameInput.TextSubmitted += _ => ConfirmInvite();
         ir.AddChild(_inviteNameInput);
         var irow = new HBoxContainer(); irow.AddThemeConstantOverride("separation", 5); ir.AddChild(irow);
-        SmallButton("Send", irow).Pressed += ConfirmInvite;
-        SmallButton("Cancel", irow).Pressed += () => _inviteNamePanel.Visible = false;
+        SmallButton(Localization.Loc.Tr("Send"), irow).Pressed += ConfirmInvite;
+        SmallButton(Localization.Loc.Tr("Cancel"), irow).Pressed += () => _inviteNamePanel.Visible = false;
 
         _partyDialogLayer = new CanvasLayer { Layer = 72 };
         AddChild(_partyDialogLayer);
         _inviteAskDialog = new ConfirmationDialog
         {
-            Title = "Party Invite",
-            OkButtonText = "Join",
+            Title = Localization.Loc.Tr("Party Invite"),
+            OkButtonText = Localization.Loc.Tr("Join"),
             Exclusive = false,
         };
-        _inviteAskDialog.GetCancelButton().Text = "Decline";
+        _inviteAskDialog.GetCancelButton().Text = Localization.Loc.Tr("Decline");
         _inviteAskDialog.Confirmed += () => AnswerInvite(true);
         _inviteAskDialog.Canceled += () => AnswerInvite(false);
         _partyDialogLayer.AddChild(_inviteAskDialog);
@@ -266,7 +291,7 @@ public partial class World
         if (name.Length == 0) return;
         if (InParty) Net.I.SendPartyInvite(name);
         else Net.I.SendPartyCreate(name);
-        CombatNotice($"Inviting {name} to your party…");
+        CombatNotice($"{Localization.Loc.Tr("Inviting")} {name} {Localization.Loc.Tr("to your party…")}");
     }
 
     private void OnPartyInvite(int inviterId, string inviterName)
@@ -281,9 +306,9 @@ public partial class World
             return;
         }
         _invitePending = true;
-        _inviteAskDialog.DialogText = $"{inviterName} invites you to a party.\nJoin?";
+        _inviteAskDialog.DialogText = $"{inviterName} {Localization.Loc.Tr("invites you to a party.\nJoin?")}";
         _inviteAskDialog.PopupCentered();
-        CombatNotice($"{inviterName} invites you to a party. (P to open the party window)");
+        CombatNotice($"{inviterName} {Localization.Loc.Tr("invites you to a party. (P to open the party window)")}");
     }
 
     private void AnswerInvite(bool accept)
@@ -306,22 +331,22 @@ public partial class World
     {
         CombatNotice(code switch
         {
-            -2 => "Party invite failed: level difference is more than 8.",
-            -3 => "Party invite failed: target is in a different zone.",
-            _  => "Party invite failed.",
+            -2 => Localization.Loc.Tr("Party invite failed: level difference is more than 8."),
+            -3 => Localization.Loc.Tr("Party invite failed: target is in a different zone."),
+            _  => Localization.Loc.Tr("Party invite failed."),
         });
     }
 
     private void OnPartyRemoved(int memberId, string who)
     {
-        if (memberId == _myId) CombatNotice("You left the party.");
-        else if (who.Length > 0) CombatNotice($"{who} left the party.");
+        if (memberId == _myId) CombatNotice(Localization.Loc.Tr("You left the party."));
+        else if (who.Length > 0) CombatNotice($"{who} {Localization.Loc.Tr("left the party.")}");
         RefreshPartyUI();
     }
 
     private void OnPartyDisband()
     {
-        CombatNotice("The party has been disbanded.");
+        CombatNotice(Localization.Loc.Tr("The party has been disbanded."));
         RefreshPartyUI();
     }
 
@@ -343,6 +368,6 @@ public partial class World
 
     private static string StatusName(byte type) => type switch
     {
-        1 => "dot", 2 => "poison", 3 => "disease", 4 => "blind", 5 => "low hp", _ => "",
+        1 => Localization.Loc.Tr("dot"), 2 => Localization.Loc.Tr("poison"), 3 => Localization.Loc.Tr("disease"), 4 => Localization.Loc.Tr("blind"), 5 => Localization.Loc.Tr("low hp"), _ => "",
     };
 }

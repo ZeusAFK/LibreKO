@@ -180,8 +180,8 @@ public partial class World
         if (!CanAutoAttack())
         {
             CombatNotice(_selectedId < 0
-                ? "Select a target first."
-                : "That target cannot be attacked.");
+                ? Localization.Loc.Tr("Select a target first.")
+                : Localization.Loc.Tr("That target cannot be attacked."));
             return;
         }
 
@@ -488,8 +488,8 @@ public partial class World
     {
         if (BasicRangedAttackSkill()?.Id == s.Id || !_castLogged.Add(s.Id)) return;
         CombatLogAdd(s.IsPotion
-            ? $"You used {ItemData.DisplayName(s.UseItem)}."
-            : $"You used {s.Name}.", CombatLogKind.Status);
+            ? $"{Localization.Loc.Tr("You used")} {ItemData.DisplayName(s.UseItem)}."
+            : $"{Localization.Loc.Tr("You used")} {Localization.Loc.SkillName(s.Id, s.Name)}.", CombatLogKind.Status);
     }
 
     private void LogSkillOutcome(SkillData.Skill s, bool miss)
@@ -497,23 +497,23 @@ public partial class World
         LogSkillUse(s);
         _castLogged.Remove(s.Id);
         if (BasicRangedAttackSkill()?.Id == s.Id || s.IsPotion) return;
-        if (miss) CombatLogAdd(SystemText(TextMissed, "%s Missed.", s.Name), CombatLogKind.Incoming);
-        else CombatLogAdd($"{s.Name} succeeded.", CombatLogKind.Outgoing);
+        if (miss) CombatLogAdd(SystemText(TextMissed, "%s Missed.", Localization.Loc.SkillName(s.Id, s.Name)), CombatLogKind.Incoming);
+        else CombatLogAdd($"{Localization.Loc.SkillName(s.Id, s.Name)} {Localization.Loc.Tr("succeeded.")}", CombatLogKind.Outgoing);
     }
 
     private void LogSkillRefused(SkillData.Skill s, int sub)
     {
         if (sub == MagicSub.Cancel)
         {
-            if (_castLogged.Contains(s.Id)) CombatLogAdd($"{s.Name} was cancelled.", CombatLogKind.Status);
+            if (_castLogged.Contains(s.Id)) CombatLogAdd($"{Localization.Loc.SkillName(s.Id, s.Name)} {Localization.Loc.Tr("was cancelled.")}", CombatLogKind.Status);
             return;
         }
         if (s is { UseItem: not 0, IsRanged: false })
-            CombatNotice($"You couldn't use {ItemData.DisplayName(s.ConsumedItem)} right now.");
+            CombatNotice($"{Localization.Loc.Tr("You couldn't use")} {ItemData.DisplayName(s.ConsumedItem)} {Localization.Loc.Tr("right now.")}");
         else if (ConflictingBuff(s) is { } blocker)
-            CombatNotice($"{blocker.Name} is already active.");
+            CombatNotice($"{Localization.Loc.SkillName(blocker.Id, blocker.Name)} {Localization.Loc.Tr("is already active.")}");
         else
-            CombatLogAdd($"{s.Name} failed.", CombatLogKind.Incoming);
+            CombatLogAdd($"{Localization.Loc.SkillName(s.Id, s.Name)} {Localization.Loc.Tr("failed.")}", CombatLogKind.Incoming);
     }
 
     private static int BuffSeconds(SkillData.Skill s, short[] data) =>
@@ -544,7 +544,7 @@ public partial class World
         if (victimId == _myId)
         {
             CombatLogAdd(
-                killerId >= 0 ? $"You were defeated by {CombatEntityName(killerId)}." : "You died.",
+                killerId >= 0 ? $"{Localization.Loc.Tr("You were defeated by")} {CombatEntityName(killerId)}." : Localization.Loc.Tr("You died."),
                 CombatLogKind.Incoming);
             EnterSelfDeath();
             return;
@@ -552,7 +552,7 @@ public partial class World
         if (_ents.TryGetValue(victimId, out var e))
         {
             if (killerId == _myId)
-                CombatLogAdd($"You defeated {e.Name}.", CombatLogKind.Outgoing);
+                CombatLogAdd($"{Localization.Loc.Tr("You defeated")} {e.Name}.", CombatLogKind.Outgoing);
             LayOutCorpse(e, settled: false);
             if (_autoAttack && _autoTargetId == victimId) StopAutoAttack();
         }
@@ -579,9 +579,9 @@ public partial class World
         _hpBar?.Set(hp, maxHp);
         if (_selfDead && hp > 0) OnSelfResurrected();
         if (dmg > 0)
-            CombatLogAdd($"{CombatEntityName(attackerId)} hit you for {dmg:n0} damage.", CombatLogKind.Incoming);
+            CombatLogAdd($"{CombatEntityName(attackerId)} {Localization.Loc.Tr("hit you for")} {dmg:n0} {Localization.Loc.Tr("damage.")}", CombatLogKind.Incoming);
         else if (recovered > 0)
-            CombatLogAdd($"You recovered {recovered:n0} HP.", CombatLogKind.Recovery);
+            CombatLogAdd($"{Localization.Loc.Tr("You recovered")} {recovered:n0} {Localization.Loc.Tr("HP")}.", CombatLogKind.Recovery);
         if (dmg > 0 && _self != null)
         {
             Floaters?.Wound(dmg);
@@ -604,11 +604,11 @@ public partial class World
         _mpBar?.Set(mp, maxMp);
         if (delta > 0)
         {
-            CombatLogAdd($"You recovered {delta:n0} MP.", CombatLogKind.Resource);
+            CombatLogAdd($"{Localization.Loc.Tr("You recovered")} {delta:n0} {Localization.Loc.Tr("MP")}.", CombatLogKind.Resource);
             Floaters?.RegenMp(delta);
         }
         else if (delta < 0)
-            CombatLogAdd($"You used {-delta:n0} MP.", CombatLogKind.Resource);
+            CombatLogAdd($"{Localization.Loc.Tr("You used")} {-delta:n0} {Localization.Loc.Tr("MP")}.", CombatLogKind.Resource);
     }
 
     private void OnItemStats(DerivedStats stats)
@@ -638,7 +638,7 @@ public partial class World
         _selfActionUntil = 0;
         _selfClip = null;
         HideDeathDialog();
-        CombatLogAdd("You have been resurrected.", CombatLogKind.Recovery);
+        CombatLogAdd(Localization.Loc.Tr("You have been resurrected."), CombatLogKind.Recovery);
     }
 
     private void OnRegene(float koX, float koZ)
@@ -656,7 +656,7 @@ public partial class World
         ClearAllBuffs();
         _selfClip = null;
         HideDeathDialog();
-        CombatLogAdd("You returned to the battlefield.", CombatLogKind.Status);
+        CombatLogAdd(Localization.Loc.Tr("You returned to the battlefield."), CombatLogKind.Status);
     }
 
     private static readonly string[] BasicAttackClips =
