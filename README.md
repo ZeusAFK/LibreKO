@@ -1,12 +1,9 @@
-# LibreKO
+# LibreKO 中文
+添加中文语言
+目前修复了名牌错误
+修复了无法使用中文名牌和公会中文名牌
+设计了dps统计界面
 
-An open-source game server and client for a classic MMORPG, written in C# (.NET 10) and Godot 4 (C#).
-
-- `Server/` — the login server, the game server, the shared library and the quest language compiler.
-- `Client/` — the Godot 4 client project.
-
-Both are licensed under the GNU Affero General Public License v3.0, see [LICENSE](LICENSE).
-Third-party notices for the server are in [Server/NOTICES.md](Server/NOTICES.md).
 
 ## Requirements
 
