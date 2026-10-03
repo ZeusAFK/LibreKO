@@ -708,6 +708,7 @@ public static class ItemData
         12 => 9,
         13 => 5,
         14 => 7,
+        20 => 5,
         _ => -1,
     };
 

@@ -245,10 +245,20 @@ public partial class World
         var space = GetWorld3D().DirectSpaceState;
         var from = new Vector3(onTerrain.X, anchorY + EntityFloorProbeUp, onTerrain.Z);
         var to = new Vector3(onTerrain.X, terrainFeetY - EntityFloorProbeDown, onTerrain.Z);
-        var hit = space.IntersectRay(PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer));
+        var probe = PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer);
+        if (SelfProbeExclude() is { } exclude) probe.Exclude = exclude;
+        var hit = space.IntersectRay(probe);
         if (hit.Count == 0 || ((Vector3)hit["normal"]).Y < 0.5f) return onTerrain;
         float floorY = ((Vector3)hit["position"]).Y;
         return floorY > terrainFeetY ? new Vector3(onTerrain.X, floorY + lift, onTerrain.Z) : onTerrain;
+    }
+
+    private Godot.Collections.Array<Rid>? _selfProbeExclude;
+
+    private Godot.Collections.Array<Rid>? SelfProbeExclude()
+    {
+        if (_selfBody == null) return null;
+        return _selfProbeExclude ??= new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
     }
 
     private void RegroundEntities()

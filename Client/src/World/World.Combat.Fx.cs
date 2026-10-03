@@ -33,7 +33,7 @@ public partial class World
         bool first = true;
         var box = new Aabb();
         var inv = e.Body.GlobalTransform.AffineInverse();
-        foreach (var mi in FindAll<MeshInstance3D>(e.Body))
+        foreach (var mi in ModelMeshes(e.Body))
         {
             if (mi.Mesh == null || !mi.Visible) continue;
             var b = (inv * mi.GlobalTransform) * mi.GetAabb();
@@ -45,6 +45,20 @@ public partial class World
                            new Vector3(e.Radius * 1.4f, 1.6f, e.Radius * 1.4f));
         e.HitFxBox = box;
         return box;
+    }
+
+    private static List<MeshInstance3D> ModelMeshes(Node body)
+    {
+        var list = new List<MeshInstance3D>();
+        Walk(body);
+        return list;
+
+        void Walk(Node n)
+        {
+            if (n is FxInstance or FxWeaponGlow) return;
+            if (n is MeshInstance3D mi) list.Add(mi);
+            foreach (var c in n.GetChildren()) Walk(c);
+        }
     }
 
     private Vector3 RandomHitPoint(Ent e)

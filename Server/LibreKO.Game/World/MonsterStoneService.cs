@@ -76,6 +76,28 @@ public static class MonsterStoneRules
         level < MinimumLevel ? null : UniversalBands.First(band => level <= band.MaxLevel).Families;
 
     private static byte ZoneOf(short family) => FamiliesByZone.First(entry => entry.Value.Contains(family)).Key;
+
+    public static int FamilyLevel(byte zoneId, short set)
+    {
+        var family = (short)(set - FamilySetBase);
+        if (!FamiliesByZone.TryGetValue(zoneId, out var families) || !families.Contains(family))
+            return 0;
+
+        int low = MinimumLevel, first = 0, last = 0;
+        foreach (var (maxLevel, bandFamilies) in UniversalBands)
+        {
+            var high = Math.Min(maxLevel, ProgressionTable.MaxLevel);
+            if (bandFamilies.Contains(family))
+            {
+                if (first == 0)
+                    first = low;
+                last = high;
+            }
+            low = high + 1;
+        }
+
+        return first == 0 ? 0 : (first + last) / 2;
+    }
 }
 
 public interface IMonsterStoneService

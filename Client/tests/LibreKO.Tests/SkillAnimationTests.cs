@@ -29,4 +29,15 @@ public class SkillAnimationTests
     {
         Assert.Equal(SkillAnimation.None, SkillAnimation.WeaponBucket(WeaponAnimation.NoItem, WeaponAnimation.Bow));
     }
+
+    [Theory]
+    [InlineData(0, WeaponAnimation.NoItem, WeaponAnimation.GearCheck.NoWeapon)]
+    [InlineData(7, WeaponAnimation.NoItem, WeaponAnimation.GearCheck.WrongWeapon)]
+    [InlineData(7, WeaponAnimation.Sword, WeaponAnimation.GearCheck.WrongWeapon)]
+    [InlineData(0, WeaponAnimation.Mace, WeaponAnimation.GearCheck.Ok)]
+    [InlineData(9, WeaponAnimation.NoItem, WeaponAnimation.GearCheck.Ok)]
+    public void AWrongWeaponGroupIsRefusedBeforeAMissingWeapon(int itemGroup, int rightKind, WeaponAnimation.GearCheck verdict)
+    {
+        Assert.Equal(verdict, WeaponAnimation.CheckGear(itemGroup, rightKind, WeaponAnimation.NoItem));
+    }
 }

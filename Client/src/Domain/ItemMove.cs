@@ -58,4 +58,14 @@ public static class ItemMove
         (Region.MagicBag, Region.MagicBag) => MagicBagToMagicBag,
         _ => None,
     };
+
+    public static bool Merges(byte direction, ItemSlot source, ItemSlot destination, int countable) =>
+        direction is InventoryToInventory or InventoryToMagicBag or MagicBagToInventory or MagicBagToMagicBag
+        && countable > 0
+        && !source.IsEmpty
+        && destination.ItemId == source.ItemId
+        && destination.Flag == source.Flag
+        && !source.IsLinked
+        && !destination.IsLinked
+        && source.Count + destination.Count <= Inventory.StackMax;
 }

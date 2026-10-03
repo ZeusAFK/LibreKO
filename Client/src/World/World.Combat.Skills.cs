@@ -42,7 +42,7 @@ public partial class World
             CombatNotice("Not enough mana.");
             return;
         }
-        if (!CanCastWithGear(s)) return;
+        if (!CanCastWithGear(s, announce: true)) return;
 
         if (s.IsMeleeArea)
         {
@@ -108,6 +108,8 @@ public partial class World
 
     private const int TextSkillTooFar = 4009;
     private const int TextSkillNoItem = 4007;
+    private const int TextSkillImproperItem = 4005;
+    private const int TextEquipWeapon = 7658;
     private const int TextNoClassStoneFirst = 7606;
     private const int FirstStoneFamily = 1;
     private const int LastStoneFamily = 4;
@@ -152,14 +154,16 @@ public partial class World
         return InSkillRange(_selectedId, s) ? _selectedId : -1;
     }
 
-    private bool CanCastWithGear(SkillData.Skill s)
+    private bool CanCastWithGear(SkillData.Skill s, bool announce = false)
     {
         var gear = SelfGear();
         switch (WeaponAnimation.CheckGear(s.ItemGroup, HeldItemClass(gear, 6), HeldItemClass(gear, 7)))
         {
             case WeaponAnimation.GearCheck.NoWeapon:
+                if (announce) CombatNotice(SystemText(TextEquipWeapon, "Please equip your weapon."));
                 return false;
             case WeaponAnimation.GearCheck.WrongWeapon:
+                if (announce) CombatNotice(SystemText(TextSkillImproperItem, "Skill failed - Improper item"));
                 return false;
         }
         if (s.UseItem != 0 && !s.IsResurrect && ItemData.Get(s.UseItem) != null)

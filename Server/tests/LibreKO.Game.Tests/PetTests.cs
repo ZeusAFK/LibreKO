@@ -219,6 +219,8 @@ public class PetTests : GameTestBase
         npc.ModelId.Should().Be(PetService.HatchedModelId);
         npc.OwnerCharId.Should().Be(owner.CharacterId);
         sessions.Regions.GetNpc(npc.UniqueId).Should().BeSameAs(npc);
+        Distance(npc, owner).Should().BeGreaterThan(0f, "the familiar does not stand inside its owner")
+            .And.BeLessThan(PetAiService.FollowDistance * 2);
 
         var sheet = sent.Single(p => p.GetOpcode() == (byte)GameOpcodes.GS_PET);
         sheet.ResetOffset();

@@ -226,7 +226,14 @@ public partial class World : Node3D
             return;
         }
 
-        Inv.Swap(_moveCur.From, _moveCur.To);
+        var moved = Inv[_moveCur.From];
+        if (ItemMove.Merges(_moveCur.Dir, moved, Inv[_moveCur.To], ItemData.Get(moved.ItemId)?.Countable ?? 0))
+        {
+            Inv.Stack(_moveCur.To, moved.Count);
+            Inv.Consume(_moveCur.From, moved.Count);
+        }
+        else
+            Inv.Swap(_moveCur.From, _moveCur.To);
         if (IsVisualSlot(_moveCur.From) || IsVisualSlot(_moveCur.To)) RerenderSelfEquipment();
         AudioItemMove(_moveCur.ItemId, _moveCur.From, _moveCur.To);
         PumpMoves();

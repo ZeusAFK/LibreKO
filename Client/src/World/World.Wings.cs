@@ -94,16 +94,15 @@ public partial class World
         var anims = new AnimationPlayer?[WingSlotCount];
         var skel = FindFirst<Skeleton3D>(body);
         if (skel == null) return anims;
+        var worn = new Dictionary<string, BoneAttachment3D>();
         foreach (var old in skel.GetChildren())
             if (old is BoneAttachment3D ba
                 && ba.Name.ToString().StartsWith(WingNodePrefix, System.StringComparison.Ordinal))
-            {
-                skel.RemoveChild(ba);
-                ba.QueueFree();
-            }
+                worn[ba.Name.ToString()] = ba;
 
         if (gear == null || System.Array.IndexOf(WingSuppressedZones, zone) >= 0)
         {
+            DropWings(skel, worn.Values);
             if (enableShine) ItemShineLight.Refresh(body, shineShadow);
             return anims;
         }
@@ -122,7 +121,22 @@ public partial class World
             if (bone < 0 || bone >= skel.GetBoneCount()) bone = part.Bone;
             if (bone < 0 || bone >= skel.GetBoneCount()) continue;
 
-            var attach = new BoneAttachment3D { Name = WingNodePrefix + part.Slot };
+            string name = WingNodePrefix + part.Slot;
+            string look = $"{part.Stem}/{bone}/{kurian}";
+            if (worn.Remove(name, out var kept))
+            {
+                if (kept.GetMeta(WingLookMeta, "").AsString() == look && kept.GetChildOrNull<Node3D>(0) is { } keptInst)
+                {
+                    if (enableShine && part.Slot == 0)
+                        ItemShine.Apply(keptInst, gear[InventoryConstants.VisBreast], 0);
+                    anims[part.Slot] = FindFirst<AnimationPlayer>(keptInst);
+                    continue;
+                }
+                DropWings(skel, new[] { kept });
+            }
+
+            var attach = new BoneAttachment3D { Name = name };
+            attach.SetMeta(WingLookMeta, look);
             skel.AddChild(attach);
             attach.BoneIdx = bone;
 
@@ -139,8 +153,20 @@ public partial class World
                 RegisterAnimationMetadata(anim, $"res://assets/wings/{part.Stem}.anim.json");
             anims[part.Slot] = anim;
         }
+        DropWings(skel, worn.Values);
         if (enableShine) ItemShineLight.Refresh(body, shineShadow);
         return anims;
+    }
+
+    private const string WingLookMeta = "wing_look";
+
+    private static void DropWings(Skeleton3D skel, IEnumerable<BoneAttachment3D> wings)
+    {
+        foreach (var ba in wings)
+        {
+            skel.RemoveChild(ba);
+            ba.QueueFree();
+        }
     }
 
     private static bool TryWingPart(int itemId, out WingPart part) =>

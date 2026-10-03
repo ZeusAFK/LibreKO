@@ -59,9 +59,9 @@ public static class WeaponAnimation
     public static GearCheck CheckGear(int itemGroup, int rightKind, int leftKind)
     {
         if (itemGroup == GroupNeedsNoWeapon) return GearCheck.Ok;
-        if (!IsWeapon(rightKind) && !IsWeapon(leftKind)) return GearCheck.NoWeapon;
         if (itemGroup != 0 && itemGroup != Group(rightKind) && itemGroup != Group(leftKind))
             return GearCheck.WrongWeapon;
+        if (!IsWeapon(rightKind) && !IsWeapon(leftKind)) return GearCheck.NoWeapon;
         return GearCheck.Ok;
     }
 

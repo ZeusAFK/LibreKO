@@ -29,14 +29,24 @@ public partial class World
     {
         var skel = FindFirst<Skeleton3D>(body);
         if (skel == null) return;
+        var worn = new Dictionary<string, BoneAttachment3D>();
         foreach (var old in skel.GetChildren())
             if (old is BoneAttachment3D ba
                 && ba.Name.ToString().StartsWith(HandFxNodePrefix, System.StringComparison.Ordinal))
-            {
-                skel.RemoveChild(ba);
-                ba.QueueFree();
-            }
+                worn[ba.Name.ToString()] = ba;
 
+        AddHandFx(skel, gear, race, zone, worn);
+        foreach (var ba in worn.Values)
+        {
+            skel.RemoveChild(ba);
+            ba.QueueFree();
+        }
+    }
+
+    private const string HandFxLookMeta = "handfx_look";
+
+    private static void AddHandFx(Skeleton3D skel, int[]? gear, int race, int zone, Dictionary<string, BoneAttachment3D> worn)
+    {
         if (gear == null || gear.Length <= InventoryConstants.VisCosGloveLeft) return;
         if (System.Array.IndexOf(HandFxSuppressedZones, zone) >= 0) return;
 
@@ -57,7 +67,16 @@ public partial class World
             foreach (var part in variants[variant])
             {
                 if (part.Bone < 0 || part.Bone >= skel.GetBoneCount()) continue;
-                var attach = new BoneAttachment3D { Name = $"{HandFxNodePrefix}{hand}_{part.Fx}" };
+                string name = $"{HandFxNodePrefix}{hand}_{part.Fx}";
+                string look = $"{itemId}/{variant}/{part.Bone}";
+                if (worn.Remove(name, out var kept))
+                {
+                    if (kept.GetMeta(HandFxLookMeta, "").AsString() == look) continue;
+                    skel.RemoveChild(kept);
+                    kept.QueueFree();
+                }
+                var attach = new BoneAttachment3D { Name = name };
+                attach.SetMeta(HandFxLookMeta, look);
                 skel.AddChild(attach);
                 attach.BoneIdx = part.Bone;
                 var spawned = Fx.Spawn(part.Fx, attach, part.Pos, oneShot: false,

@@ -169,7 +169,12 @@ public class ItemMoveService(
         var sourceItemIdBeforeMove = sourceItem.ItemId;
         var destinationItemIdBeforeMove = destinationItem.ItemId;
 
-        if (!destinationItem.IsEmpty)
+        if (ItemStackRule.Merges(direction, sourceItem, destinationItem, itemData))
+        {
+            destinationItem.Count += sourceItem.Count;
+            sourceItem.Clear();
+        }
+        else if (!destinationItem.IsEmpty)
             SwapItems(sourceItem, destinationItem);
         else
             MoveItem(sourceItem, destinationItem);

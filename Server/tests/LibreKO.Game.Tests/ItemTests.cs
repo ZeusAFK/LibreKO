@@ -795,6 +795,45 @@ public class ItemTests : GameTestBase
         session.Inventory[InventoryConstants.MagicBagStart + bagPosition].ItemId.Should().Be(storedItemId);
     }
 
+    [Theory]
+    [InlineData(1, 7, 3, 10, 0)]
+    [InlineData(0, 1, 1, 1, 1)]
+    [InlineData(1, 9990, 20, 20, 9990)]
+    public async Task ItemPacketCoordinator_HandleMoveAsync_StacksTheSameItemInAMagicBag(
+        byte countable, ushort stored, ushort carried, ushort storedAfter, ushort carriedAfter)
+    {
+        const int bagItemId = 700011;
+        const int potionId = 389010000;
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetCoefficient(101).Returns(CreateBasicCoefficient(101));
+                gameData.GetItem(bagItemId).Returns(new ItemData { Num = bagItemId, Slot = 25, Kind = 11, Duration = 10 });
+                gameData.GetItem(potionId).Returns(new ItemData { Num = potionId, Slot = 15, Kind = 255, Countable = countable });
+            });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 462, accountId: 472);
+        session.Class = 101;
+        session.Inventory[InventoryConstants.BagSlotFor(0)].ItemId = bagItemId;
+        session.Inventory[InventoryConstants.BagSlotFor(0)].Count = 1;
+        session.Inventory[InventoryConstants.MagicBagStart].ItemId = potionId;
+        session.Inventory[InventoryConstants.MagicBagStart].Count = stored;
+        session.Inventory[InventoryConstants.InventoryStart].ItemId = potionId;
+        session.Inventory[InventoryConstants.InventoryStart].Count = carried;
+
+        await provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(client, BuildMagicBagMove(potionId, 0));
+
+        session.Inventory[InventoryConstants.MagicBagStart].Count.Should().Be(storedAfter);
+        session.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(carriedAfter);
+        session.Inventory[InventoryConstants.InventoryStart].IsEmpty.Should().Be(carriedAfter == 0);
+    }
+
     private static Packet BuildMagicBagMove(int itemId, byte destinationPosition)
     {
         var packet = new Packet(GameOpcodes.GS_ITEM_MOVE);

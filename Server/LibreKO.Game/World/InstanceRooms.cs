@@ -180,6 +180,7 @@ public sealed class InstanceEntryService(
 
     public void Populate(InstanceRoom room)
     {
+        var nestLevel = MonsterStoneRules.FamilyLevel(room.ZoneId, room.Set);
         foreach (var pos in gameData.NpcPositions)
         {
             if (pos.ZoneId != room.ZoneId || pos.Room != room.Set)
@@ -198,6 +199,9 @@ public sealed class InstanceEntryService(
                 var npc = NpcInstance.FromData(npcData, pos, 0);
                 npc.Room = room.Id;
                 npc.RespawnType = NpcRespawnType.Never;
+                if (!npc.IsMonster && npc.IsNationOwned)
+                    npc.Nation = EntityNation.None;
+                NestBalance.Apply(npc, nestLevel, npcData.IsBoss);
                 aggression.Apply(npc);
                 var height = sessionManager.Maps?.GetHeight(npc.ZoneId, npc.X, npc.Z) ?? 0f;
                 npc.Y = height;

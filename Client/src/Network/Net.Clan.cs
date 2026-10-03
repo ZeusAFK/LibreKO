@@ -30,6 +30,7 @@ public partial class Net
     public event Action<int, int, string, byte, byte, byte, int, int>? EntityClanEvent;
     public event Action<int>? EntityClanClearedEvent;
     public event Action<int, int, byte>? ClanFameEvent;
+    public event Action? RemovedFromClanEvent;
     public event Action<int, int, string>? ClanInviteEvent;
     public event Action<int, int>? ClanResultEvent;
     public event Action<int>? ClanNoticeRefusedEvent;
@@ -217,7 +218,12 @@ public partial class Net
                 byte fame = p.ReadByte();
                 if (charId == MyCharId)
                 {
-                    if (clanId == 0) ClearMyClan();
+                    if (clanId == 0)
+                    {
+                        bool expelled = MyClan.InClan;
+                        ClearMyClan();
+                        if (expelled) RemovedFromClanEvent?.Invoke();
+                    }
                     else
                     {
                         var mine = MyClan;

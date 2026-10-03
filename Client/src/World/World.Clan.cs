@@ -82,6 +82,7 @@ public partial class World
         Net.I.ClanHandoverListEvent += OnClanHandoverList;
         Net.I.ClanHandoverEvent += OnClanHandover;
         Net.I.ClanFameEvent += OnClanFame;
+        Net.I.RemovedFromClanEvent += OnRemovedFromClan;
         Net.I.ClanMemberPresenceEvent += OnClanMemberPresence;
         Net.I.ClanStandingEvent += OnClanStanding;
         Net.I.EntityClanEvent += OnEntityClan;
@@ -107,6 +108,7 @@ public partial class World
         Net.I.ClanHandoverListEvent -= OnClanHandoverList;
         Net.I.ClanHandoverEvent -= OnClanHandover;
         Net.I.ClanFameEvent -= OnClanFame;
+        Net.I.RemovedFromClanEvent -= OnRemovedFromClan;
         Net.I.ClanMemberPresenceEvent -= OnClanMemberPresence;
         Net.I.ClanStandingEvent -= OnClanStanding;
         Net.I.EntityClanEvent -= OnEntityClan;
@@ -726,13 +728,15 @@ public partial class World
         Net.I.SendClanMembersRequest();
     }
 
+    private void OnRemovedFromClan() => Chat.Info(ClanMsgBanned);
+
     private void OnClanFame(int charId, int clanId, byte fame)
     {
         if (charId == _myId)
         {
-            if (clanId == 0) Chat.Info(ClanMsgBanned);
-            else Chat.Info($"You are now {ClanRanks.Name(fame)} of the clan.");
-            if (clanId != 0 && ClanPageVisible) Net.I.SendClanMembersRequest();
+            if (clanId == 0) return;
+            Chat.Info($"You are now {ClanRanks.Name(fame)} of the clan.");
+            if (ClanPageVisible) Net.I.SendClanMembersRequest();
             return;
         }
 
