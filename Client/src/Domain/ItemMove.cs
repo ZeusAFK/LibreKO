@@ -23,6 +23,8 @@ public static class ItemMove
 
     public enum Region { Equip, Grid, Cospre, BagSlot, MagicBag }
 
+    public static bool IsCarried(int abs) => RegionOf(abs) is Region.Grid or Region.MagicBag;
+
     public static Region RegionOf(int abs)
     {
         if (abs < InventoryConstants.InventoryStart) return Region.Equip;

@@ -37,7 +37,7 @@ public partial class World
         _rebirthLayer = new CanvasLayer { Layer = 74 };
         AddChild(_rebirthLayer);
 
-        _rebirthPanel = new HudWindow("rebirth", "Rebirth", new Vector2(220, 130), 320) { Visible = false };
+        _rebirthPanel = new HudWindow("rebirth", "Rebirth", bodyMinWidth: 320) { Visible = false };
         _rebirthPanel.Closed += CloseRebirth;
         _rebirthLayer.AddChild(_rebirthPanel);
 

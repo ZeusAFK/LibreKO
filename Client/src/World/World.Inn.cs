@@ -22,7 +22,7 @@ public partial class World
         _innLayer = new CanvasLayer { Layer = 74 };
         AddChild(_innLayer);
 
-        _innPanel = new HudWindow("inn", "Inn", new Vector2(200, 150)) { Visible = false };
+        _innPanel = new HudWindow("inn", "Inn") { Visible = false };
         _innPanel.Closed += CloseInn;
         _innLayer.AddChild(_innPanel);
 

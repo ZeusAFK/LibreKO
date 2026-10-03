@@ -478,7 +478,7 @@ public partial class World : Node3D
         if (gained > 0)
         {
             Floaters?.Gold(gained);
-            CombatLogAdd($"You picked up {gained:n0} coins.", CombatLogKind.Resource);
+            CombatLogAdd($"You picked up {gained:n0} gold.", CombatLogKind.Resource);
         }
         RefreshStatsUI();
     }

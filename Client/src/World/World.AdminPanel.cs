@@ -505,7 +505,7 @@ public partial class World
     {
         if (!long.TryParse(_admCoinsInput.Text.Trim().Replace(",", ""), out long amount) || amount == 0)
         {
-            SetAdminStatus("Enter a coin amount.", true);
+            SetAdminStatus("Enter a gold amount.", true);
             return;
         }
         long signed = System.Math.Clamp(amount * sign, int.MinValue, int.MaxValue);

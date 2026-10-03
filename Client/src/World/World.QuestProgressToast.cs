@@ -4,7 +4,6 @@ namespace LibreKO;
 
 public partial class World
 {
-    private const float QuestToastTop = 112f;
     private const double QuestToastSeconds = 3.2;
     private const double QuestToastFadeSeconds = 0.55;
 
@@ -62,7 +61,7 @@ public partial class World
         lines.AddChild(_questToastLine);
         rows.AddChild(QuestToastRule());
 
-        _questToastPanel.Resized += CentreQuestToast;
+        AddEventPlate(_questToastPanel);
     }
 
     internal static StyleBoxTexture QuestToastStyle()
@@ -117,13 +116,6 @@ public partial class World
         };
     }
 
-    private void CentreQuestToast()
-    {
-        if (_questToastPanel?.GetParent() is not Control anchor) return;
-        _questToastPanel.Position = new Vector2(
-            Mathf.Round((anchor.Size.X - _questToastPanel.Size.X) * 0.5f), QuestToastTop + NestTimerOffset());
-    }
-
     private void ShowQuestProgressToast(string questName, string objective, int current, int target)
     {
         if (target <= 0) return;
@@ -139,7 +131,6 @@ public partial class World
         _questToastPanel.Modulate = Colors.White;
         _questToastLeft = QuestToastSeconds;
         _questToastPanel.ResetSize();
-        CentreQuestToast();
     }
 
     private void TickQuestToast(double delta)

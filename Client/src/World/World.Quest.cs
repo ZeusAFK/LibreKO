@@ -97,7 +97,7 @@ public partial class World
     private void OnQuestRewardRefused(QuestRewardRefusal reason) => CombatNotice(reason switch
     {
         QuestRewardRefusal.WeightExceeded => "You are carrying too much to take the reward.",
-        QuestRewardRefusal.CoinsExceeded => "You are carrying too many coins to take the reward.",
+        QuestRewardRefusal.CoinsExceeded => "You are carrying too much gold to take the reward.",
         _ => "Your inventory is full.",
     });
 
@@ -518,9 +518,12 @@ public partial class World
             _questObjectiveBox.AddChild(QuestObjectiveRow(
                 $"{ItemData.DisplayName(want.ItemId)} {Mathf.Min(Inv.CountOf(want.ItemId), want.Count)}/{want.Count}"));
         if (_questObjectiveBox.GetChildCount() == 0)
-            _questObjectiveBox.AddChild(QuestObjectiveRow(state == QuestStateReadyToTurnIn
-                ? "Ready to turn in"
-                : QuestTalkToLine(questId, state)));
+            _questObjectiveBox.AddChild(QuestObjectiveRow(state switch
+            {
+                QuestStateReadyToTurnIn => "Ready to turn in",
+                QuestStateCompleted => "You have finished this quest.",
+                _ => QuestTalkToLine(questId, state),
+            }));
 
         foreach (var c in _questRewardBox.GetChildren()) { _questRewardBox.RemoveChild(c); c.QueueFree(); }
         foreach (var reward in QuestRewards(questId))

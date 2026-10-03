@@ -44,6 +44,7 @@ public partial class World
 
         Net.I.NpcDialogEvent += OnNpcDialog;
         Net.I.NpcSayEvent += OnNpcSay;
+        Net.I.NpcSayTextEvent += ShowNpcBalloon;
         Net.I.NpcMsgEvent += OnNpcMsg;
         Net.I.NpcWindowEvent += OnNpcWindow;
     }
@@ -52,6 +53,7 @@ public partial class World
     {
         Net.I.NpcDialogEvent -= OnNpcDialog;
         Net.I.NpcSayEvent -= OnNpcSay;
+        Net.I.NpcSayTextEvent -= ShowNpcBalloon;
         Net.I.NpcMsgEvent -= OnNpcMsg;
         Net.I.NpcWindowEvent -= OnNpcWindow;
     }
@@ -166,7 +168,7 @@ public partial class World
         _npcLayer = new CanvasLayer { Layer = 73 };
         AddChild(_npcLayer);
 
-        _npcPanel = new HudWindow("npc_dialog", "NPC", new Vector2(430, 160), 420) { Visible = false };
+        _npcPanel = new HudWindow("npc_dialog", "NPC", bodyMinWidth: 420) { Visible = false };
         _npcPanel.Closed += CloseNpcDialog;
         _npcLayer.AddChild(_npcPanel);
 
@@ -398,7 +400,12 @@ public partial class World
             string s = QuestText.Talk(id, selfName);
             if (s.Length > 0) lines.Add(s);
         }
-        if (lines.Count == 0) return;
+        ShowNpcBalloon(lines.ToArray());
+    }
+
+    private void ShowNpcBalloon(string[] lines)
+    {
+        if (lines.Length == 0) return;
 
         string text = string.Join("\n", lines);
         _balloonLabel.Text = text;

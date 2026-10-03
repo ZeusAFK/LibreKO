@@ -145,7 +145,7 @@ public partial class World
         var actions = new HBoxContainer();
         actions.AddThemeConstantOverride("separation", 6);
         actionsMargin.AddChild(actions);
-        _mailClaimBtn = UiTheme.ActionButton("Claim attachments", "Move the attached items and coins into your inventory");
+        _mailClaimBtn = UiTheme.ActionButton("Claim attachments", "Move the attached items and gold into your inventory");
         _mailClaimBtn.Pressed += () => { if (_mailSelectedId > 0) Net.I.SendMailClaim(_mailSelectedId); };
         actions.AddChild(_mailClaimBtn);
         _mailDeleteBtn = UiTheme.SmallButton("Delete", "Delete this mail");

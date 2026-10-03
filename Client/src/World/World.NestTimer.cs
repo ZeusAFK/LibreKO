@@ -6,7 +6,6 @@ namespace LibreKO;
 
 public partial class World
 {
-    private const float NestTimerGap = 6f;
     private const string NestTimerFallbackTitle = "Monster Stone";
     private const string DrakiTimerTitle = "Draki's Tower";
 
@@ -66,7 +65,7 @@ public partial class World
         lines.AddChild(_nestTimerLine);
         rows.AddChild(QuestToastRule());
 
-        _nestTimerPanel.Resized += CentreNestTimer;
+        AddEventPlate(_nestTimerPanel);
     }
 
     private static Label NestTimerLabel(int size, Color color)
@@ -77,16 +76,6 @@ public partial class World
         label.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.85f));
         return label;
     }
-
-    private void CentreNestTimer()
-    {
-        if (_nestTimerPanel?.GetParent() is not Control anchor) return;
-        _nestTimerPanel.Position = new Vector2(
-            Mathf.Round((anchor.Size.X - _nestTimerPanel.Size.X) * 0.5f), QuestToastTop);
-    }
-
-    private float NestTimerOffset() =>
-        _nestTimerPanel is { Visible: true } panel ? panel.Size.Y + NestTimerGap : 0f;
 
     private void TickNestTimer()
     {
@@ -126,7 +115,6 @@ public partial class World
             _nestTimerDone.Visible = showMiddle;
             _nestTimerLine!.Text = line;
             _nestTimerPanel!.ResetSize();
-            CentreNestTimer();
         }
         if (!_nestTimerPanel!.Visible) _nestTimerPanel.Visible = true;
     }

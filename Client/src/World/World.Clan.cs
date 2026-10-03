@@ -53,6 +53,8 @@ public partial class World
 
     private PopupMenu _clanMemberMenu = null!;
     private ConfirmationDialog _clanInviteAsk = null!, _clanDisbandAsk = null!, _clanLeaveAsk = null!, _clanRemoveAsk = null!, _clanAllianceAsk = null!;
+    private ConfirmationDialog _clanConfirmAsk = null!;
+    private Action? _clanConfirmed;
     private CanvasLayer _clanDialogLayer = null!;
     private string _ctxMember = "";
     private int _clanInviterId;
@@ -168,6 +170,16 @@ public partial class World
         _clanRemoveAsk.Confirmed += () => { if (_ctxMember.Length > 0) Net.I.SendClanKick(_ctxMember); };
         _clanDialogLayer.AddChild(_clanRemoveAsk);
 
+        _clanConfirmAsk = new ConfirmationDialog { Exclusive = false };
+        _clanConfirmAsk.Confirmed += () =>
+        {
+            var confirmed = _clanConfirmed;
+            _clanConfirmed = null;
+            confirmed?.Invoke();
+        };
+        _clanConfirmAsk.Canceled += () => _clanConfirmed = null;
+        _clanDialogLayer.AddChild(_clanConfirmAsk);
+
         _clanAllianceAsk = new ConfirmationDialog { Title = "Alliance", Exclusive = false };
         _clanAllianceAsk.GetOkButton().Text = "Accept";
         _clanAllianceAsk.GetCancelButton().Text = "Refuse";
@@ -278,7 +290,7 @@ public partial class World
         _clanJoinBox.AddChild(intro);
         var how = UiTheme.Text(
             "A chief can invite you from your character, or you can found a clan at an Inn Hostess "
-            + $"for {ClanTypes.CreationCoins:n0} coins at level {ClanTypes.CreationLevel} or above.",
+            + $"for {ClanTypes.CreationCoins:n0} gold at level {ClanTypes.CreationLevel} or above.",
             12, UiTheme.TextLo);
         how.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         how.CustomMinimumSize = new Vector2(1, 0);
@@ -498,7 +510,14 @@ public partial class World
             case 2: InvitePlayerToParty(_ctxMember); break;
             case 3: RequestUserInformation(_ctxMember); break;
             case 4: Net.I.SendClanPromoteVice(_ctxMember); break;
-            case 5: Net.I.SendClanHandover(_ctxMember); break;
+            case 5:
+            {
+                string heir = _ctxMember;
+                AskClanConfirm("Hand over leadership", "Hand over",
+                    $"Hand the clan over to {heir}? You will no longer be its chief.",
+                    () => Net.I.SendClanHandover(heir));
+                break;
+            }
             case 6:
                 _clanRemoveAsk.DialogText = $"Do you really want to expel {_ctxMember}?";
                 _clanRemoveAsk.PopupCentered();
@@ -603,7 +622,7 @@ public partial class World
         {
             2 => "Sorry. A weakling like you are not fit to become a leader!!",
             3 => "Oh~ I'm sorry, but somebody else is already using that name. Try a different name.",
-            4 => $"Sorry. You need {ClanTypes.CreationCoins:n0} Coins in order to create a clan.",
+            4 => $"Sorry. You need {ClanTypes.CreationCoins:n0} gold in order to create a clan.",
             5 => "You can't create a clan because you're already in another clan.",
             7 => "You cannot create a clan today.",
             8 => "Creating a clan is only allowed in the 1st server group.",
@@ -788,10 +807,27 @@ public partial class World
         if (wasMine && ClanPageVisible) Net.I.SendClanMembersRequest();
     }
 
+    private void AskClanConfirm(string title, string ok, string text, Action confirmed)
+    {
+        _clanConfirmed = confirmed;
+        _clanConfirmAsk.Title = title;
+        _clanConfirmAsk.GetOkButton().Text = ok;
+        _clanConfirmAsk.DialogText = text;
+        _clanConfirmAsk.PopupCentered();
+    }
+
     private void OnAllianceButton()
     {
         if (!MyClan.IsChief) return;
-        if (MyClan.AllianceId > 0) { Net.I.SendAllianceLeave(); return; }
+        if (MyClan.AllianceId > 0)
+        {
+            AskClanConfirm("Leave alliance", "Leave",
+                MyClan.AllianceId == MyClan.ClanId
+                    ? "Your clan leads this alliance. Leave it anyway?"
+                    : "Leave the alliance?",
+                Net.I.SendAllianceLeave);
+            return;
+        }
 
         if (_selectedId <= 0 || !_ents.TryGetValue(_selectedId, out var target) || target.IsNpc)
         {
@@ -847,8 +883,10 @@ public partial class World
             if (MyClan.IsChief && MyClan.AllianceId == MyClan.ClanId && clan.Id != MyClan.ClanId)
             {
                 int punishId = clan.Id;
+                string punishName = clan.Name;
                 var kick = new Button { Text = "Expel", FocusMode = Control.FocusModeEnum.None };
-                kick.Pressed += () => Net.I.SendAlliancePunish(punishId);
+                kick.Pressed += () => AskClanConfirm("Expel from alliance", "Expel",
+                    $"Expel {punishName} from the alliance?", () => Net.I.SendAlliancePunish(punishId));
                 head.AddChild(kick);
             }
             var officers = new List<string>();

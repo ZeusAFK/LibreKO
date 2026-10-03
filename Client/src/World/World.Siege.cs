@@ -42,7 +42,7 @@ public partial class World
         _siegeLayer = new CanvasLayer { Layer = 74 };
         AddChild(_siegeLayer);
 
-        _siegePanel = new HudWindow("siege", "Castle Siege War", new Vector2(200, 110)) { Visible = false };
+        _siegePanel = new HudWindow("siege", "Castle Siege War") { Visible = false };
         _siegePanel.Closed += CloseSiege;
         _siegeLayer.AddChild(_siegePanel);
 

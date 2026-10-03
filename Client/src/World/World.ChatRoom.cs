@@ -21,7 +21,7 @@ public partial class World
     {
         _chatRoomLayer = new CanvasLayer { Layer = 68 };
         AddChild(_chatRoomLayer);
-        _chatRoomPanel = new HudWindow("chatrooms", "Chat Rooms", new Vector2(200, 120)) { Visible = false };
+        _chatRoomPanel = new HudWindow("chatrooms", "Chat Rooms") { Visible = false };
         _chatRoomPanel.Closed += CloseChatRoom;
         _chatRoomLayer.AddChild(_chatRoomPanel);
 

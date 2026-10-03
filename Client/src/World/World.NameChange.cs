@@ -31,7 +31,7 @@ public partial class World
         _nameChangeLayer = new CanvasLayer { Layer = 74 };
         AddChild(_nameChangeLayer);
 
-        _nameChangePanel = new HudWindow("namechange", "Change Name", new Vector2(220, 140)) { Visible = false };
+        _nameChangePanel = new HudWindow("namechange", "Change Name") { Visible = false };
         _nameChangePanel.Closed += CloseNameChange;
         _nameChangeLayer.AddChild(_nameChangePanel);
 

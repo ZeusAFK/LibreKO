@@ -16,7 +16,7 @@ public partial class World
     {
         _disguiseLayer = new CanvasLayer { Layer = 74 };
         AddChild(_disguiseLayer);
-        _disguisePanel = new HudWindow("disguise", "Disguise", new Vector2(190, 130)) { Visible = false };
+        _disguisePanel = new HudWindow("disguise", "Disguise") { Visible = false };
         _disguisePanel.Closed += CloseDisguise;
         _disguiseLayer.AddChild(_disguisePanel);
         var root = _disguisePanel.Body;

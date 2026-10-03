@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
 
@@ -284,9 +284,9 @@ public partial class World
             0 or 200 => ItemData.Text(TextAttendanceClaimFailed, "Failed to obtain the item."),
             Net.AttendanceClaimInventoryFull => "Your inventory is full. Free a slot and claim again.",
             Net.AttendanceClaimTooHeavy => "You are carrying too much to take this reward.",
-            2 => ItemData.Text(TextAttendanceNoNoah, "You don't have enough noah."),
+            2 => ItemData.Text(TextAttendanceNoNoah, "You don't have enough gold."),
             20 => ItemData.Text(TextAttendanceNoNoahItem,
-                "Failed to obtain the item due to not enough Noah."),
+                "Failed to obtain the item due to not enough gold."),
             _ => ItemData.Text(TextAttendanceClaimFailedCode, "Failed to obtain the item. (%d)")
                 .Replace("%d", result.ToString()),
         };

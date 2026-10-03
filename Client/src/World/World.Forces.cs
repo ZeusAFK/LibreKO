@@ -23,7 +23,7 @@ public partial class World
     {
         _forcesLayer = new CanvasLayer { Layer = 63 };
         AddChild(_forcesLayer);
-        _forcesPanel = new HudWindow("forces", "Nation Force", new Vector2(200, 140)) { Visible = false };
+        _forcesPanel = new HudWindow("forces", "Nation Force") { Visible = false };
         _forcesPanel.Closed += CloseForces;
         _forcesLayer.AddChild(_forcesPanel);
 

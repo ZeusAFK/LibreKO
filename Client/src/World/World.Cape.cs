@@ -51,7 +51,7 @@ public partial class World
         _capeLayer = new CanvasLayer { Layer = 74 };
         AddChild(_capeLayer);
 
-        _capePanel = new HudWindow("cape", "Clan Cape", new Vector2(220, 130), bodyMinWidth: CapePanelWidth)
+        _capePanel = new HudWindow("cape", "Clan Cape", bodyMinWidth: CapePanelWidth)
         { Visible = false };
         _capePanel.Closed += CloseCape;
         _capeLayer.AddChild(_capePanel);

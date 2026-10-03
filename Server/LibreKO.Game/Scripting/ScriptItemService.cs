@@ -172,7 +172,7 @@ public class ScriptItemService(
         {
             if (session.Money < count)
             {
-                context.FailAction("You do not have enough coins.");
+                context.FailAction("You do not have enough gold.");
                 return false;
             }
 
@@ -235,7 +235,7 @@ public class ScriptItemService(
 
         if (amount > session.Money)
         {
-            context.FailAction("You do not have enough coins.");
+            context.FailAction("You do not have enough gold.");
             return;
         }
 

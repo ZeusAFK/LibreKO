@@ -20,7 +20,7 @@ public partial class World
         _clanCreateLayer = new CanvasLayer { Layer = 75 };
         AddChild(_clanCreateLayer);
 
-        _clanCreatePanel = new HudWindow("creat_clan", "Create a Clan", new Vector2(300, 200), bodyMinWidth: ClanCreatePanelWidth)
+        _clanCreatePanel = new HudWindow("creat_clan", "Create a Clan", bodyMinWidth: ClanCreatePanelWidth)
         { Visible = false };
         _clanCreatePanel.Closed += CloseClanCreate;
         _clanCreateLayer.AddChild(_clanCreatePanel);
@@ -66,7 +66,7 @@ public partial class World
         }
         if (Sheet.Gold < ClanTypes.CreationCoins)
         {
-            CombatNotice($"Sorry.  You need {ClanTypes.CreationCoins:n0} Coins in order to create a clan.");
+            CombatNotice($"Sorry.  You need {ClanTypes.CreationCoins:n0} gold in order to create a clan.");
             return;
         }
         if (MyClan.InClan)
@@ -75,7 +75,7 @@ public partial class World
             return;
         }
 
-        OpenClanCreate($"Name your clan. Founding it costs {ClanTypes.CreationCoins:n0} coins and makes you its chief.");
+        OpenClanCreate($"Name your clan. Founding it costs {ClanTypes.CreationCoins:n0} gold and makes you its chief.");
     }
 
     private void OpenClanCreate(string message)

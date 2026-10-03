@@ -19,7 +19,7 @@ public partial class World
     {
         _tournamentLayer = new CanvasLayer { Layer = 74 };
         AddChild(_tournamentLayer);
-        _tournamentPanel = new HudWindow("tournament", "Arena Tournament", new Vector2(200, 130)) { Visible = false };
+        _tournamentPanel = new HudWindow("tournament", "Arena Tournament") { Visible = false };
         _tournamentPanel.Closed += CloseTournament;
         _tournamentLayer.AddChild(_tournamentPanel);
 

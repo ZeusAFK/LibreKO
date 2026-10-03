@@ -70,6 +70,7 @@ public partial class Net
         uint seconds = p.ReadUInt();
         if (eventId != NestFinishEvent)
         {
+            BorderWar.Finish(winner, seconds, DateTime.UtcNow);
             TempleEventFinishEvent?.Invoke(eventId, winner, seconds);
             return;
         }

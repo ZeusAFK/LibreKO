@@ -39,7 +39,7 @@ public partial class World
         _changeHairLayer = new CanvasLayer { Layer = 74 };
         AddChild(_changeHairLayer);
 
-        _changeHairPanel = new HudWindow("changehair", "Beauty Shop", new Vector2(220, 130)) { Visible = false };
+        _changeHairPanel = new HudWindow("changehair", "Beauty Shop") { Visible = false };
         _changeHairPanel.Closed += CloseChangeHair;
         _changeHairLayer.AddChild(_changeHairPanel);
 

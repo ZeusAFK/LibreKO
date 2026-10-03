@@ -18,7 +18,7 @@ public partial class World
     {
         _instanceLayer = new CanvasLayer { Layer = 74 };
         AddChild(_instanceLayer);
-        _instancePanel = new HudWindow("instance", "Instance Dungeons", new Vector2(200, 130)) { Visible = false };
+        _instancePanel = new HudWindow("instance", "Instance Dungeons") { Visible = false };
         _instancePanel.Closed += CloseInstance;
         _instanceLayer.AddChild(_instancePanel);
         var root = _instancePanel.Body;

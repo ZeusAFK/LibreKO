@@ -18,7 +18,7 @@ public partial class World
     {
         _auctionLayer = new CanvasLayer { Layer = 74 };
         AddChild(_auctionLayer);
-        _auctionPanel = new HudWindow("auction", "Auction House", new Vector2(190, 90)) { Visible = false };
+        _auctionPanel = new HudWindow("auction", "Auction House") { Visible = false };
         _auctionPanel.Closed += CloseAuction;
         _auctionLayer.AddChild(_auctionPanel);
 

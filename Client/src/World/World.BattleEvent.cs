@@ -11,11 +11,7 @@ public partial class World
     private Label _battleeventBannerLbl = null!;
     private int _battleeventBannerToken;
 
-    private PanelContainer _battleeventBoard = null!;
-    private Label _battleeventZoneLbl = null!;
-    private Label _battleeventKarusLbl = null!;
-    private Label _battleeventElmoLbl = null!;
-    private Label _battleeventTimerLbl = null!;
+    private WarScoreStrip _battleeventBoard = null!;
     private Godot.Timer _battleeventPoll = null!;
 
     private PanelContainer _battleeventResult = null!;
@@ -25,8 +21,9 @@ public partial class World
     private bool _battleeventActive;
     private int _battleeventRemaining;
 
-    private static readonly Color BattleKarusCol = new("d05a4a");
-    private static readonly Color BattleElmoCol  = new("4a82d0");
+    private const string BattleBoardTooltip = "War Zone";
+    private const string BattleBannerLayoutId = "hud_battle_banner";
+    private const string BattleBoardLayoutId = "hud_battle_score";
 
     private void BattleEventInit()
     {
@@ -63,13 +60,7 @@ public partial class World
 
     private void BuildBattleEventBanner()
     {
-        _battleeventBanner = new PanelContainer
-        {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0, AnchorBottom = 0,
-            GrowHorizontal = Control.GrowDirection.Both,
-            OffsetTop = 140,
-            Visible = false,
-        };
+        _battleeventBanner = new PanelContainer { Visible = false };
         _battleeventBanner.AddThemeStyleboxOverride("panel", UiTheme.Panel(7, true));
         _battleeventLayer.AddChild(_battleeventBanner);
 
@@ -79,56 +70,20 @@ public partial class World
         _battleeventBannerLbl = UiTheme.Text("", 17, UiTheme.GoldBright, HorizontalAlignment.Center);
         _battleeventBannerLbl.AddThemeConstantOverride("outline_size", 5);
         m.AddChild(_battleeventBannerLbl);
-        HudLayout.Attach(_battleeventBanner, "hud_battle_banner", _battleeventBannerLbl,
-            () => _battleeventBanner.Position);
+        var layout = HudLayout.Attach(_battleeventBanner, BattleBannerLayoutId, _battleeventBannerLbl,
+            () => EventPlateSpot(_battleeventBanner));
+        AddEventPlate(_battleeventBanner, layout, BattleBannerLayoutId);
     }
 
     private void BuildBattleEventBoard()
     {
-        _battleeventBoard = new PanelContainer
-        {
-            AnchorLeft = 0, AnchorRight = 0, AnchorTop = 0, AnchorBottom = 0,
-            OffsetLeft = 14, OffsetTop = 120,
-            Visible = false,
-        };
-        _battleeventBoard.AddThemeStyleboxOverride("panel", UiTheme.Panel(6));
+        _battleeventBoard = new WarScoreStrip(withStatus: false) { Visible = false, TooltipText = BattleBoardTooltip };
         _battleeventLayer.AddChild(_battleeventBoard);
+        UpdateBattleTimerLabel();
 
-        var m = new MarginContainer();
-        UiTheme.Margins(m, 12, 8, 12, 8);
-        _battleeventBoard.AddChild(m);
-
-        var col = new VBoxContainer { CustomMinimumSize = new Vector2(176, 0) };
-        col.AddThemeConstantOverride("separation", 3);
-        m.AddChild(col);
-
-        _battleeventZoneLbl = UiTheme.SectionTitle("War Zone");
-        col.AddChild(_battleeventZoneLbl);
-        col.AddChild(new HSeparator());
-
-        _battleeventKarusLbl = ScoreRow(col, "Karus", BattleKarusCol);
-        _battleeventElmoLbl  = ScoreRow(col, "El Morad", BattleElmoCol);
-
-        col.AddChild(new HSeparator());
-        _battleeventTimerLbl = UiTheme.Text("--:--", 13, UiTheme.TextHi, HorizontalAlignment.Center);
-        col.AddChild(_battleeventTimerLbl);
-
-        HudLayout.Attach(_battleeventBoard, "hud_battle_score", _battleeventZoneLbl,
-            () => _battleeventBoard.Position);
-    }
-
-    private static Label ScoreRow(VBoxContainer parent, string name, Color col)
-    {
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 8);
-        var nameLbl = UiTheme.Text(name, 13, col);
-        nameLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        row.AddChild(nameLbl);
-        var valLbl = UiTheme.Text("0", 14, UiTheme.TextHi, HorizontalAlignment.Right);
-        valLbl.CustomMinimumSize = new Vector2(48, 0);
-        row.AddChild(valLbl);
-        parent.AddChild(row);
-        return valLbl;
+        var layout = HudLayout.Attach(_battleeventBoard, BattleBoardLayoutId, _battleeventBoard,
+            () => EventPlateSpot(_battleeventBoard));
+        AddEventPlate(_battleeventBoard, layout, BattleBoardLayoutId);
     }
 
     private void BuildBattleEventResult()
@@ -198,15 +153,14 @@ public partial class World
     private void OnBattleScore(int eventType, int karus, int elmo)
     {
         if (!_battleeventActive) return;
-        _battleeventKarusLbl.Text = karus.ToString();
-        _battleeventElmoLbl.Text  = elmo.ToString();
+        _battleeventBoard.SetScores(karus, elmo);
     }
 
     private void StartBattleScoreboard(int zone, int remaining)
     {
         _battleeventActive = true;
         _battleeventRemaining = remaining;
-        _battleeventZoneLbl.Text = BattleZoneName(zone);
+        _battleeventBoard.TooltipText = BattleZoneName(zone);
         UpdateBattleTimerLabel();
         _battleeventBoard.Visible = true;
         if (_battleeventPoll.IsStopped()) _battleeventPoll.Start();
@@ -233,10 +187,10 @@ public partial class World
 
     private void UpdateBattleTimerLabel()
     {
-        if (_battleeventRemaining <= 0) { _battleeventTimerLbl.Text = "--:--"; return; }
+        if (_battleeventRemaining <= 0) { _battleeventBoard.Centre = "--:--"; return; }
         int m = _battleeventRemaining / 60;
         int s = _battleeventRemaining % 60;
-        _battleeventTimerLbl.Text = $"{m:00}:{s:00}";
+        _battleeventBoard.Centre = $"{m:00}:{s:00}";
     }
 
     private void ShowBattleBanner(string text)

@@ -105,7 +105,7 @@ public partial class World
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             Modulate = UiTheme.GoldBright,
         });
-        goldRow.AddChild(UiTheme.Text("Coins", 12, UiTheme.TextLo));
+        goldRow.AddChild(UiTheme.Text("Gold", 12, UiTheme.TextLo));
         _mailGold = new MoneyEdit(MailGoldMax, 160);
         goldRow.AddChild(_mailGold);
 

@@ -1,4 +1,6 @@
-﻿using Godot;
+﻿using System;
+using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -6,22 +8,14 @@ namespace LibreKO;
 public partial class World
 {
     private CanvasLayer _bdwHudLayer = null!;
-    private PanelContainer _bdwScoreBanner = null!;
-    private Label _bdwKarusScoreLbl = null!;
-    private Label _bdwElmoScoreLbl = null!;
-    private Label _bdwAltarStatusLbl = null!;
-    private Godot.Timer _bdwAltarTimer = null!;
-
-    private int _bdwKarusScore;
-    private int _bdwElmoScore;
-    private int _bdwAltarSeconds;
-    private string _bdwAltarCarrier = string.Empty;
-    private int _bdwReturnSeconds;
-    private string? _bdwResult;
+    private WarScoreStrip _bdwScoreBanner = null!;
+    private Godot.Timer _bdwTick = null!;
 
     private const byte BdwZone = 84;
     private const int BdwVictorySound = 340119;
     private const int BdwDefeatSound = 340118;
+    private const string BdwCentre = "VS";
+    private const string BdwAltarStands = "Altar of Manes: Active in Center";
 
     private void BorderDefenseWarInit()
     {
@@ -30,16 +24,22 @@ public partial class World
 
         BuildBdwScoreBanner();
 
-        _bdwAltarTimer = new Godot.Timer { WaitTime = 1.0, Autostart = false, OneShot = false };
-        _bdwAltarTimer.Timeout += OnBdwAltarTick;
-        _bdwHudLayer.AddChild(_bdwAltarTimer);
+        _bdwTick = new Godot.Timer { WaitTime = 1.0, Autostart = false, OneShot = false };
+        _bdwTick.Timeout += RefreshBdwHud;
+        _bdwHudLayer.AddChild(_bdwTick);
 
         Net.I.TempleScreenScoreEvent += OnBdwScoresReceived;
         Net.I.AltarFlagEvent += OnBdwAltarFlagReceived;
         Net.I.AltarTimerEvent += OnBdwAltarTimerReceived;
         Net.I.TempleEventFinishEvent += OnBdwFinishReceived;
 
-        UpdateBdwHudVisibility();
+        if (_zone != BdwZone)
+        {
+            Net.I.BorderWar.Reset();
+            return;
+        }
+        _bdwScoreBanner.Visible = true;
+        RefreshBdwHud();
     }
 
     private void BorderDefenseWarDispose()
@@ -49,186 +49,83 @@ public partial class World
         Net.I.AltarTimerEvent -= OnBdwAltarTimerReceived;
         Net.I.TempleEventFinishEvent -= OnBdwFinishReceived;
 
-        _bdwAltarTimer?.Stop();
+        _bdwTick?.Stop();
         if (_bdwHudLayer != null && IsInstanceValid(_bdwHudLayer))
             _bdwHudLayer.QueueFree();
     }
 
     private void BuildBdwScoreBanner()
     {
-        _bdwScoreBanner = new PanelContainer
+        _bdwScoreBanner = new WarScoreStrip(withStatus: true)
         {
-            CustomMinimumSize = new Vector2(340, 60),
+            Visible = false,
             MouseFilter = Control.MouseFilterEnum.Ignore,
-            Visible = false
+            Centre = BdwCentre,
         };
-
-        _bdwScoreBanner.AnchorLeft = 0.5f;
-        _bdwScoreBanner.AnchorRight = 0.5f;
-        _bdwScoreBanner.AnchorTop = 0f;
-        _bdwScoreBanner.AnchorBottom = 0f;
-        _bdwScoreBanner.OffsetLeft = -170f;
-        _bdwScoreBanner.OffsetRight = 170f;
-        _bdwScoreBanner.OffsetTop = 15f;
-        _bdwScoreBanner.OffsetBottom = 75f;
-
-        var panelBox = UiTheme.Panel(6, true);
-        panelBox.BgColor = new Color(0.08f, 0.08f, 0.12f, 0.90f);
-        panelBox.BorderColor = UiTheme.Gold;
-        _bdwScoreBanner.AddThemeStyleboxOverride("panel", panelBox);
-
-        var margin = new MarginContainer();
-        margin.AddThemeConstantOverride("margin_left", 12);
-        margin.AddThemeConstantOverride("margin_right", 12);
-        margin.AddThemeConstantOverride("margin_top", 6);
-        margin.AddThemeConstantOverride("margin_bottom", 6);
-        _bdwScoreBanner.AddChild(margin);
-
-        var vbox = new VBoxContainer();
-        margin.AddChild(vbox);
-
-        var scoreRow = new HBoxContainer();
-        scoreRow.Alignment = BoxContainer.AlignmentMode.Center;
-        vbox.AddChild(scoreRow);
-
-        _bdwKarusScoreLbl = UiTheme.Text("KARUS: 0", 14, new Color("ff4d4d"), HorizontalAlignment.Left);
-        _bdwKarusScoreLbl.AddThemeConstantOverride("outline_size", 2);
-        _bdwKarusScoreLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        scoreRow.AddChild(_bdwKarusScoreLbl);
-
-        var vsLbl = UiTheme.Text("VS", 12, UiTheme.GoldBright, HorizontalAlignment.Center);
-        vsLbl.AddThemeConstantOverride("outline_size", 2);
-        scoreRow.AddChild(vsLbl);
-
-        _bdwElmoScoreLbl = UiTheme.Text("0 :EL MORAD", 14, new Color("4da6ff"), HorizontalAlignment.Right);
-        _bdwElmoScoreLbl.AddThemeConstantOverride("outline_size", 2);
-        _bdwElmoScoreLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        scoreRow.AddChild(_bdwElmoScoreLbl);
-
-        _bdwAltarStatusLbl = UiTheme.Text("Altar of Manes: Active in Center", 11, UiTheme.TextHi, HorizontalAlignment.Center);
-        _bdwAltarStatusLbl.AddThemeConstantOverride("outline_size", 1);
-        vbox.AddChild(_bdwAltarStatusLbl);
-
         _bdwHudLayer.AddChild(_bdwScoreBanner);
+        AddEventPlate(_bdwScoreBanner);
     }
 
-    private void UpdateBdwHudVisibility()
-    {
-        if (_bdwScoreBanner != null && IsInstanceValid(_bdwScoreBanner))
-        {
-            _bdwScoreBanner.Visible = _zone == BdwZone;
-        }
-    }
+    private void OnBdwScoresReceived(int karus, int elmo) => RefreshBdwHud();
 
-    private void OnBdwScoresReceived(int karus, int elmo)
-    {
-        _bdwKarusScore = karus;
-        _bdwElmoScore = elmo;
+    private void OnBdwAltarFlagReceived(string playerName, byte nation) => RefreshBdwHud();
 
-        if (_bdwKarusScoreLbl != null && IsInstanceValid(_bdwKarusScoreLbl))
-            _bdwKarusScoreLbl.Text = $"KARUS: {karus}";
-
-        if (_bdwElmoScoreLbl != null && IsInstanceValid(_bdwElmoScoreLbl))
-            _bdwElmoScoreLbl.Text = $"{elmo} :EL MORAD";
-
-        UpdateBdwHudVisibility();
-    }
-
-    private void OnBdwAltarFlagReceived(string playerName, byte nation)
-    {
-        _bdwAltarCarrier = playerName;
-        _bdwAltarTimer.Stop();
-
-        string nationStr = nation == 1 ? "Karus" : "El Morad";
-        Color nationCol = nation == 1 ? new Color("ff4d4d") : new Color("4da6ff");
-
-        if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
-        {
-            _bdwAltarStatusLbl.Text = $"Carrier: {playerName} ({nationStr})";
-            _bdwAltarStatusLbl.AddThemeColorOverride("font_color", nationCol);
-        }
-
-        UpdateBdwHudVisibility();
-    }
+    private void OnBdwAltarTimerReceived(int seconds) => RefreshBdwHud();
 
     private void OnBdwFinishReceived(int eventId, int winnerNation, uint seconds)
     {
         bool won = winnerNation != 0 && winnerNation == Net.I.LastEnter.Nation;
-        string result = won ? "Your nation has won the battle." : "Your nation has lost the battle.";
         Audio.PlayUi(won ? BdwVictorySound : BdwDefeatSound);
-        CombatNotice(result);
-        if (_zone != BdwZone) return;
-
-        _bdwResult = result;
-        _bdwReturnSeconds = (int)seconds;
-        _bdwAltarCarrier = string.Empty;
-        if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
-        {
-            _bdwAltarStatusLbl.AddThemeColorOverride("font_color", won ? UiTheme.Good : UiTheme.Bad);
-            ShowBdwReturnCountdown();
-        }
-        if (_bdwReturnSeconds > 0) _bdwAltarTimer.Start();
-        UpdateBdwHudVisibility();
+        CombatNotice(BdwResultLine(winnerNation));
+        RefreshBdwHud();
     }
 
-    private void ShowBdwReturnCountdown() =>
-        _bdwAltarStatusLbl.Text = $"{_bdwResult}  {_bdwReturnSeconds / 60}:{_bdwReturnSeconds % 60:00}";
+    private static string BdwResultLine(int winnerNation) =>
+        winnerNation == 0 ? "The battle ended in a draw."
+        : winnerNation == Net.I.LastEnter.Nation ? "Your nation has won the battle."
+        : "Your nation has lost the battle.";
 
-    private void OnBdwAltarTimerReceived(int seconds)
+    private void RefreshBdwHud()
     {
-        if (_bdwResult != null) return;
-        _bdwAltarSeconds = seconds;
-        _bdwAltarCarrier = string.Empty;
-
-        if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
+        if (_zone != BdwZone || !IsInstanceValid(_bdwScoreBanner))
         {
-            _bdwAltarStatusLbl.Text = $"Altar respawning in {seconds}s";
-            _bdwAltarStatusLbl.AddThemeColorOverride("font_color", UiTheme.GoldBright);
-        }
-
-        if (seconds > 0)
-        {
-            _bdwAltarTimer.Start();
-        }
-        else
-        {
-            _bdwAltarTimer.Stop();
-            if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
-            {
-                _bdwAltarStatusLbl.Text = "Altar of Manes: Active in Center";
-                _bdwAltarStatusLbl.AddThemeColorOverride("font_color", UiTheme.Good);
-            }
-        }
-
-        UpdateBdwHudVisibility();
-    }
-
-    private void OnBdwAltarTick()
-    {
-        if (_bdwResult != null)
-        {
-            if (_bdwReturnSeconds > 0) _bdwReturnSeconds--;
-            else _bdwAltarTimer.Stop();
-            if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
-                ShowBdwReturnCountdown();
+            _bdwTick.Stop();
             return;
         }
-        if (_bdwAltarSeconds > 0)
+
+        var war = Net.I.BorderWar;
+        var now = DateTime.UtcNow;
+        _bdwScoreBanner.SetScores(war.KarusScore, war.ElmoradScore);
+        bool counting = false;
+        if (war.Winner is { } winner)
         {
-            _bdwAltarSeconds--;
-            if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
-            {
-                _bdwAltarStatusLbl.Text = $"Altar respawning in {_bdwAltarSeconds}s";
-            }
+            int home = war.HomeSecondsLeft(now);
+            var colour = winner == 0 ? UiTheme.TextHi : winner == Net.I.LastEnter.Nation ? UiTheme.Good : UiTheme.Bad;
+            _bdwScoreBanner.SetStatus($"{BdwResultLine(winner)}  {home / 60}:{home % 60:00}", colour);
+            counting = home > 0;
+        }
+        else if (war.Carrier.Length > 0)
+        {
+            ShowBdwCarrier(war.Carrier, war.CarrierNation);
+        }
+        else if (war.AltarSecondsLeft(now) is > 0 and var altar)
+        {
+            _bdwScoreBanner.SetStatus($"Altar respawning in {altar}s", UiTheme.GoldBright);
+            counting = true;
         }
         else
         {
-            _bdwAltarTimer.Stop();
-            if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
-            {
-                _bdwAltarStatusLbl.Text = "Altar of Manes: Active in Center";
-                _bdwAltarStatusLbl.AddThemeColorOverride("font_color", UiTheme.Good);
-            }
+            _bdwScoreBanner.SetStatus(BdwAltarStands, UiTheme.Good);
         }
+
+        if (!counting) _bdwTick.Stop();
+        else if (_bdwTick.IsStopped()) _bdwTick.Start();
+    }
+
+    private void ShowBdwCarrier(string carrier, byte nation)
+    {
+        bool karus = nation == Nations.Karus;
+        _bdwScoreBanner.SetStatus($"Carrier: {carrier} ({(karus ? "Karus" : "El Morad")})",
+            karus ? WarScoreStrip.KarusColour : WarScoreStrip.ElmoradColour);
     }
 }

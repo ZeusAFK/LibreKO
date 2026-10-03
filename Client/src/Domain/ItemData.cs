@@ -54,6 +54,11 @@ public static class ItemData
     public static int ShownCount(Item? def, ItemSlot slot) =>
         def is { IsChargeItem: true } ? slot.Durability : slot.Count;
 
+    public static int MaxDurability(Item? def, Ext? ext) => (def?.Duration ?? 0) + (ext?.DurationBonus ?? 0);
+
+    public static short MaxDurabilityOf(int itemId) =>
+        (short)Math.Min(MaxDurability(Get(itemId), ExtFor(itemId)), short.MaxValue);
+
     public static int CarriedUnits(Item? def, ItemSlot slot) =>
         def is { IsChargeItem: true } ? 1 : slot.Count;
 

@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Godot;
+﻿using Godot;
+using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -40,24 +40,59 @@ public partial class World
     private const int EquipSlotLast = 14;
     private const int EtcKindFirst = 95;
     private const int EtcKindLast = 99;
+    private const int AccessorySocketCount = 3;
+    private const int AccessoryBenchSlots = AccessorySocketCount + 2;
+    private const int SlotEarring = 10;
+    private const int SlotNecklace = 11;
+    private const int SlotRing = 12;
+    private const int SlotBelt = 14;
+    private const float AnvilItemSocketSize = 56f;
+    private const float AnvilMaterialSocketSize = 44f;
+    private const int AnvilSocketGap = 5;
+    private const int AnvilBodyMinWidth = 470;
+    private const int AnvilLidEdge = 2;
+    private const float AnvilSeamHalf = 5f;
+    private const double AnvilLidSeconds = 0.25;
+    private const double AnvilScanSeconds = 1.9;
+    private const double AnvilRevealSeconds = 0.8;
+    private const string AnvilHint = "Right-click a bag item to place it";
+    private static readonly Color AnvilLidColour = new(0.045f, 0.045f, 0.055f);
+    private const string AnvilSelectText =
+        "You can upgrade your item at the magic anvil. Please select what you want to upgrade.";
+
+    private enum AnvilBench { Item, Accessory }
 
     private CanvasLayer _upgradeLayer = null!;
     private HudWindow _upgradePanel = null!;
-    private VBoxContainer _upgradeBackpackGrid = null!;
-    private Label _upgradeStatus = null!;
-    private Label _upgradeTarget = null!;
+    private ServiceTabs _anvilTabs = null!;
+    private VBoxContainer _anvilBenches = null!;
+    private DetailStrip _anvilStrip = null!;
+    private FooterBand _anvilFooter = null!;
     private Button _upgradeBtn = null!;
-    private UpgradeSocket _upgradeResultSocket = null!;
+    private ItemSlotView _upgradeResultSocket = null!;
+    private ItemSlotView _itemResultSocket = null!;
+    private ItemSlotView _accessoryResultSocket = null!;
+    private Control _itemBench = null!;
+    private Control _accessoryBench = null!;
+    private Control _anvilLids = null!;
+    private Panel _anvilLidTop = null!;
+    private Panel _anvilLidBottom = null!;
+    private TextureRect _anvilSeam = null!;
+    private Tween? _upgradeScanTween;
+    private UpgradeResult? _upgradePendingResult;
+    private BagCompanion? _anvilCompanion;
+    private AnvilBench _anvilBench = AnvilBench.Item;
     private bool _upgradeShown;
-    private bool _upgradeBusy;
+    private readonly UpgradeSession _upgradeSession = new();
     private int _upgradeAnvilId;
     private int _upgradePreviewId;
     private Notice? _upgradeConfirm;
 
     private readonly int[] _upgradeItemIds = new int[UpgradeSlotCount];
     private readonly int[] _upgradePositions = new int[UpgradeSlotCount];
-    private readonly UpgradeSocket[] _upgradeSockets = new UpgradeSocket[UpgradeSlotCount];
-    private readonly System.Collections.Generic.List<UpgradeBackpackCell> _upgradeBackpackCells = new();
+    private readonly ItemSlotView?[] _itemSockets = new ItemSlotView?[UpgradeSlotCount];
+    private readonly ItemSlotView?[] _accessorySockets = new ItemSlotView?[UpgradeSlotCount];
+    private ItemSlotView?[] _upgradeSockets = null!;
 
     private void UpgradeInit()
     {
@@ -81,101 +116,99 @@ public partial class World
         _upgradeLayer = new CanvasLayer { Layer = 75 };
         AddChild(_upgradeLayer);
 
-        _upgradePanel = new HudWindow("anvil", "Magic Anvil", new Vector2(120, 105), 800) { Visible = false };
+        _upgradePanel = new HudWindow("anvil", "Magic Anvil", bodyMinWidth: AnvilBodyMinWidth) { Visible = false };
         _upgradePanel.Closed += CloseUpgrade;
         _upgradeLayer.AddChild(_upgradePanel);
 
         var root = _upgradePanel.Body;
-        root.AddThemeConstantOverride("separation", 10);
+        root.AddThemeConstantOverride("separation", 6);
 
-        var cols = new HBoxContainer();
-        cols.AddThemeConstantOverride("separation", 14);
-        root.AddChild(cols);
+        _anvilTabs = new ServiceTabs();
+        _anvilTabs.SetTabs(new[] { "Upgrade Item", "Compound Accessory" }, (int)AnvilBench.Item);
+        _anvilTabs.Selected += OnAnvilTab;
+        root.AddChild(_anvilTabs);
 
-        var ritualPanel = UiTheme.Section();
-        ritualPanel.CustomMinimumSize = new Vector2(500, 0);
-        cols.AddChild(ritualPanel);
+        var well = ServiceKit.Well();
+        root.AddChild(well);
+        _anvilBenches = new VBoxContainer();
+        well.AddChild(_anvilBenches);
+        _upgradeSockets = _itemSockets;
+        _itemBench = BuildUpgradeBench();
+        _anvilBenches.AddChild(_itemBench);
+        _accessoryBench = BuildAccessoryBench();
+        _accessoryBench.Visible = false;
+        _anvilBenches.AddChild(_accessoryBench);
+        _upgradeResultSocket = _itemResultSocket;
+        well.AddChild(BuildAnvilLids());
 
-        var ritual = new VBoxContainer();
-        ritual.AddThemeConstantOverride("separation", 10);
-        ritualPanel.AddChild(ritual);
-        ritual.AddChild(BuildUpgradeBench());
-
-        _upgradeTarget = UiTheme.Text("Place the item to upgrade.", 14, UiTheme.TextHi, HorizontalAlignment.Center);
-        _upgradeTarget.CustomMinimumSize = new Vector2(0, 30);
-        ritual.AddChild(_upgradeTarget);
-
-        _upgradeStatus = UiTheme.Text("", 12, UiTheme.TextLo, HorizontalAlignment.Center);
-        _upgradeStatus.CustomMinimumSize = new Vector2(0, 22);
-        _upgradeStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        ritual.AddChild(_upgradeStatus);
-
-        _upgradeBtn = new Button
-        {
-            Text = "Upgrade",
-            FocusMode = Control.FocusModeEnum.None,
-            CustomMinimumSize = new Vector2(0, 38),
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-        };
+        _anvilStrip = new DetailStrip(AnvilItemSocketSize);
+        _anvilStrip.Slot.Visible = false;
+        _upgradeBtn = UiTheme.ActionButton("Upgrade", "Upgrade the item on the anvil");
+        _upgradeBtn.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
         _upgradeBtn.Pressed += ConfirmUpgrade;
-        ritual.AddChild(_upgradeBtn);
+        _anvilStrip.Right.AddChild(_upgradeBtn);
+        root.AddChild(_anvilStrip);
 
-        var bagPanel = UiTheme.Section();
-        bagPanel.CustomMinimumSize = new Vector2(280, 0);
-        cols.AddChild(bagPanel);
-        var bag = new VBoxContainer();
-        bag.AddThemeConstantOverride("separation", 7);
-        bagPanel.AddChild(bag);
-        bag.AddChild(UiTheme.SectionTitle("Inventory"));
-        _upgradeBackpackGrid = new VBoxContainer();
-        _upgradeBackpackGrid.AddThemeConstantOverride("separation", 4);
-        bag.AddChild(_upgradeBackpackGrid);
+        _anvilFooter = new FooterBand { Hint = AnvilHint };
+        root.AddChild(_anvilFooter);
 
         ClearUpgradeSockets();
-        RefreshUpgradeBackpack();
-        RefreshUpgradeActions();
+        ShowAnvilPrompt();
     }
 
     private Control BuildUpgradeBench()
     {
-        var bench = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        bench.AddThemeConstantOverride("separation", 16);
-
-        bench.AddChild(BuildUpgradeColumn("Item", BuildUpgradeTargetSocket()));
-        bench.AddChild(UiTheme.Text("+", 26, UiTheme.GoldDark));
+        var bench = BenchRow();
+        bench.AddChild(BuildUpgradeColumn("Item", BenchSocket(_itemSockets, 0, AnvilItemSocketSize)));
+        bench.AddChild(BenchSign("+"));
 
         var materials = new GridContainer { Columns = 3 };
-        materials.AddThemeConstantOverride("h_separation", 5);
-        materials.AddThemeConstantOverride("v_separation", 5);
-        for (int i = 1; i < _upgradeSockets.Length; i++)
-        {
-            int idx = i;
-            var socket = new UpgradeSocket("", 50);
-            socket.Cleared += () => ClearUpgradeSocket(idx);
-            socket.Hovered += held => ShowItemTooltip(UpgradeSocketSlot(idx), held);
-            socket.Unhovered += HideItemTooltip;
-            _upgradeSockets[i] = socket;
-            materials.AddChild(socket);
-        }
+        materials.AddThemeConstantOverride("h_separation", AnvilSocketGap);
+        materials.AddThemeConstantOverride("v_separation", AnvilSocketGap);
+        for (int i = 1; i < UpgradeSlotCount; i++)
+            materials.AddChild(BenchSocket(_itemSockets, i, AnvilMaterialSocketSize));
         bench.AddChild(BuildUpgradeColumn("Materials", materials));
 
-        bench.AddChild(UiTheme.Text("=", 26, UiTheme.GoldDark));
-        _upgradeResultSocket = new UpgradeSocket("?", 64, interactive: false);
-        _upgradeResultSocket.Hovered += held => ShowItemTooltip(-1, held);
-        _upgradeResultSocket.Unhovered += HideItemTooltip;
-        bench.AddChild(BuildUpgradeColumn("Result", _upgradeResultSocket));
+        bench.AddChild(BenchSign("="));
+        _itemResultSocket = BuildResultSocket();
+        bench.AddChild(BuildUpgradeColumn("Result", _itemResultSocket));
         return bench;
     }
 
-    private Control BuildUpgradeTargetSocket()
+    private Control BuildAccessoryBench()
     {
-        var socket = new UpgradeSocket("", 64);
-        socket.Cleared += () => ClearUpgradeSocket(0);
-        socket.Hovered += held => ShowItemTooltip(UpgradeSocketSlot(0), held);
-        socket.Unhovered += HideItemTooltip;
-        _upgradeSockets[0] = socket;
-        return socket;
+        var bench = BenchRow();
+        var accessories = new HBoxContainer();
+        accessories.AddThemeConstantOverride("separation", AnvilSocketGap);
+        for (int i = 0; i < AccessorySocketCount; i++)
+            accessories.AddChild(BenchSocket(_accessorySockets, i, AnvilItemSocketSize));
+        bench.AddChild(BuildUpgradeColumn("Accessories", accessories));
+        bench.AddChild(BenchSign("+"));
+
+        var materials = new HBoxContainer();
+        materials.AddThemeConstantOverride("separation", AnvilSocketGap);
+        for (int i = AccessorySocketCount; i < AccessoryBenchSlots; i++)
+            materials.AddChild(BenchSocket(_accessorySockets, i, AnvilMaterialSocketSize));
+        bench.AddChild(BuildUpgradeColumn("Materials", materials));
+
+        bench.AddChild(BenchSign("="));
+        _accessoryResultSocket = BuildResultSocket();
+        bench.AddChild(BuildUpgradeColumn("Result", _accessoryResultSocket));
+        return bench;
     }
+
+    private static HBoxContainer BenchRow()
+    {
+        var bench = new HBoxContainer
+        {
+            Alignment = BoxContainer.AlignmentMode.Center,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        bench.AddThemeConstantOverride("separation", 14);
+        return bench;
+    }
+
+    private static Control BenchSign(string sign) => BuildUpgradeColumn(" ", UiTheme.Text(sign, 22, UiTheme.GoldDark));
 
     private static Control BuildUpgradeColumn(string caption, Control body)
     {
@@ -188,28 +221,162 @@ public partial class World
         return col;
     }
 
+    private ItemSlotView BenchSocket(ItemSlotView?[] bench, int index, float size)
+    {
+        var socket = new ItemSlotView(size) { Index = index };
+        socket.RightClicked += _ => ClearUpgradeSocket(index);
+        socket.DoubleClicked += _ => ClearUpgradeSocket(index);
+        socket.Hovered += s => ShowItemTooltip(UpgradeSocketSlot(index), s.Item);
+        socket.Unhovered += _ => HideItemTooltip();
+        socket.DragOut = _ => new Godot.Collections.Dictionary { { "companionFrom", index } };
+        socket.CanDrop = (_, data) => CanStageDrop(index, data);
+        socket.Dropped = (_, data) => StageDrop(index, data);
+        bench[index] = socket;
+        return socket;
+    }
+
+    private ItemSlotView BuildResultSocket()
+    {
+        var socket = new ItemSlotView(AnvilItemSocketSize);
+        socket.Hovered += s => ShowItemTooltip(-1, s.Item);
+        socket.Unhovered += _ => HideItemTooltip();
+        return socket;
+    }
+
+    private Control BuildAnvilLids()
+    {
+        _anvilLids = new Control { MouseFilter = Control.MouseFilterEnum.Stop, ClipContents = true };
+        _anvilLidTop = AnvilLid(top: true);
+        _anvilLids.AddChild(_anvilLidTop);
+        _anvilLidBottom = AnvilLid(top: false);
+        _anvilLids.AddChild(_anvilLidBottom);
+
+        var glow = new Gradient
+        {
+            Offsets = new[] { 0f, 0.5f, 1f },
+            Colors = new[] { new Color(UiTheme.GoldVivid, 0f), UiTheme.GoldBright, new Color(UiTheme.GoldVivid, 0f) },
+        };
+        _anvilSeam = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = glow, Width = 1, Height = 16,
+                FillFrom = new Vector2(0, 0), FillTo = new Vector2(0, 1),
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.Scale,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            AnchorTop = 0.5f, AnchorBottom = 0.5f,
+            OffsetTop = -AnvilSeamHalf, OffsetBottom = AnvilSeamHalf,
+        };
+        _anvilLids.AddChild(_anvilSeam);
+        ResetAnvilLids();
+        return _anvilLids;
+    }
+
+    private static Panel AnvilLid(bool top)
+    {
+        var style = new StyleBoxFlat { BgColor = AnvilLidColour, BorderColor = UiTheme.Gold };
+        if (top) style.BorderWidthBottom = AnvilLidEdge;
+        else style.BorderWidthTop = AnvilLidEdge;
+        var lid = new Panel { MouseFilter = Control.MouseFilterEnum.Ignore, AnchorRight = 1f };
+        lid.AddThemeStyleboxOverride("panel", style);
+        return lid;
+    }
+
+    private void SetAnvilBench(AnvilBench bench)
+    {
+        ClearUpgradeSockets();
+        _anvilBench = bench;
+        _itemBench.Visible = bench == AnvilBench.Item;
+        _accessoryBench.Visible = bench == AnvilBench.Accessory;
+        _upgradeSockets = bench == AnvilBench.Item ? _itemSockets : _accessorySockets;
+        _upgradeResultSocket = bench == AnvilBench.Item ? _itemResultSocket : _accessoryResultSocket;
+        _upgradeBtn.Text = bench == AnvilBench.Item ? "Upgrade" : "Compound";
+        ShowAnvilPrompt();
+    }
+
+    private void OnAnvilTab(int index)
+    {
+        var bench = (AnvilBench)index;
+        if (_upgradeSession.Locked || _upgradePendingResult != null)
+        {
+            _anvilTabs.Select((int)_anvilBench, notify: false);
+            return;
+        }
+        if (bench == _anvilBench) return;
+        SetAnvilBench(bench);
+        RefreshBagFit();
+    }
+
+    private void HoldBenchHeight()
+    {
+        if (_anvilBenches.CustomMinimumSize.Y > 0 || !_itemBench.IsInsideTree()) return;
+        _anvilBenches.CustomMinimumSize = new Vector2(0, _itemBench.GetCombinedMinimumSize().Y);
+    }
+
+    private string BenchPrompt => _anvilBench == AnvilBench.Item
+        ? "Place the item to upgrade."
+        : "Place three identical accessories.";
+
+    private string BenchFollowUp => _anvilBench == AnvilBench.Item
+        ? "Then add the scrolls or materials it needs."
+        : "Then add a compound scroll.";
+
+    private void ShowAnvilPrompt() => SetAnvilStrip(BenchPrompt, BenchFollowUp, UiTheme.TextLo);
+
+    private void SetAnvilStrip(string title, string sub, Color tone)
+    {
+        _anvilStrip.Title.Text = title;
+        _anvilStrip.Sub.Text = sub;
+        _anvilStrip.Sub.AddThemeColorOverride("font_color", tone);
+    }
+
     private void OnUpgradeOpen(int anvilId)
     {
         _upgradeAnvilId = anvilId;
-        _upgradeBusy = false;
-        ClearUpgradeSockets();
-        RefreshUpgradeBackpack();
-        _upgradeTarget.Text = "Place the item to upgrade.";
-        SetUpgradeStatus("", false);
+        CloseVendor();
+        ShowAnvilChoice();
+    }
+
+    private void ShowAnvilChoice()
+    {
+        BeginNpcDialog("Magic Anvil", AnvilSelectText);
+        AddNpcMenuButton("1.   Upgrade Item", () => OpenAnvilBench(AnvilBench.Item));
+        AddNpcMenuButton("2.   Compound Accessory", () => OpenAnvilBench(AnvilBench.Accessory));
+        AddNpcMenuButton("3.   Walk away", CloseNpcDialog);
+        EndNpcDialog(3);
+    }
+
+    private void OpenAnvilBench(AnvilBench bench)
+    {
+        CloseNpcDialog();
+        _anvilTabs.Select((int)bench, notify: false);
+        SetAnvilBench(bench);
+        _anvilFooter.ResetStatus();
         _upgradePanel.Visible = true;
         _upgradeShown = true;
-        CloseNpcDialog();
-        CloseVendor();
+        _anvilCompanion ??= new BagCompanion(AnvilTakeFromBag, AnvilBagFit, _ => "", CloseUpgrade, AnvilIntoBag);
+        AttachBagCompanion(_anvilCompanion);
+        HoldBenchHeight();
+        RefreshUpgradeActions();
     }
 
     private void CloseUpgrade()
     {
         if (!_upgradeShown) return;
         _upgradeShown = false;
+        _upgradeSession.Closed();
+        _upgradeScanTween?.Kill();
+        _upgradeScanTween = null;
+        if (_upgradePendingResult != null) FinishUpgradeScan();
+        ResetAnvilLids();
+        ReleaseBagHold();
         _upgradePanel.Visible = false;
-        _upgradeBusy = false;
         HideItemTooltip();
         DismissUpgradeConfirm();
+        ClearUpgradeSockets();
+        if (_anvilCompanion != null) DetachBagCompanion(_anvilCompanion);
     }
 
     private void DismissUpgradeConfirm()
@@ -219,70 +386,42 @@ public partial class World
         _upgradeConfirm = null;
     }
 
-    private void RefreshUpgradeBackpack()
+    private bool AnvilTakeFromBag(int abs)
     {
-        if (_upgradeBackpackGrid == null) return;
-        HideItemTooltip();
-        _upgradeBackpackCells.Clear();
-        foreach (var c in _upgradeBackpackGrid.GetChildren()) c.QueueFree();
-
-        var grid = new GridContainer { Columns = 5 };
-        grid.AddThemeConstantOverride("h_separation", 4);
-        grid.AddThemeConstantOverride("v_separation", 4);
-        _upgradeBackpackGrid.AddChild(grid);
-
-        var usable = UsableBackpackSlots(id => IsUpgradeTarget(id) || IsUpgradeMaterial(id));
-        foreach (int abs in usable)
-        {
-            int slot = abs;
-            var cell = new UpgradeBackpackCell(slot, Inv[slot], IsUpgradeSlotStaged(slot));
-            _upgradeBackpackCells.Add(cell);
-            cell.Pressed += () => PlaceUpgradeItem(slot);
-            cell.Hovered += (slot, item) => ShowItemTooltip(slot, item);
-            cell.Unhovered += HideItemTooltip;
-            grid.AddChild(cell);
-        }
-        for (int i = usable.Count; i < FilteredBackpackMinCells; i++)
-            grid.AddChild(new UpgradeBackpackCell(-1, default, false));
-
-        var footer = new HBoxContainer();
-        footer.AddThemeConstantOverride("separation", 6);
-        footer.AddChild(UiTheme.Pill($"{usable.Count} usable", UiTheme.Gold));
-        footer.AddChild(UiTheme.Pill($"{BackpackUsedCount()}/{GridCount}", UiTheme.Edge));
-        footer.AddChild(UiTheme.Text($"{Sheet.Gold:n0} gold", 12, UiTheme.Gold, HorizontalAlignment.Right));
-        _upgradeBackpackGrid.AddChild(footer);
+        if (!InMainBag(abs)) return false;
+        PlaceUpgradeItem(abs);
+        return true;
     }
+
+    private BagFit AnvilBagFit(int abs)
+    {
+        if (abs < GridStart) return BagFit.Normal;
+        if (IsUpgradeSlotStaged(abs)) return BagFit.Staged;
+        return InMainBag(abs) && UsableOnBench(Inv[abs].ItemId) ? BagFit.Normal : BagFit.Unfit;
+    }
+
+    private bool AnvilIntoBag(int socket, int abs)
+    {
+        ClearUpgradeSocket(socket);
+        return true;
+    }
+
+    private bool UsableOnBench(int itemId) => _anvilBench == AnvilBench.Item
+        ? IsUpgradeTarget(itemId) || IsUpgradeMaterial(itemId)
+        : IsAccessory(itemId) || IsAccessoryMaterial(itemId);
 
     private bool IsUpgradeSlotStaged(int absSlot)
     {
+        if (!InMainBag(absSlot)) return false;
         int rel = absSlot - GridStart;
         foreach (int pos in _upgradePositions)
             if (pos == rel) return true;
         return false;
     }
 
-    private const int FilteredBackpackMinCells = 10;
-
-    private List<int> UsableBackpackSlots(System.Func<int, bool> usable)
-    {
-        var slots = new List<int>();
-        for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
-            if (!Inv[abs].IsEmpty && usable(Inv[abs].ItemId)) slots.Add(abs);
-        return slots;
-    }
-
-    private int BackpackUsedCount()
-    {
-        int used = 0;
-        for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
-            if (!Inv[abs].IsEmpty) used++;
-        return used;
-    }
-
     private void PlaceUpgradeItem(int absSlot)
     {
-        if (_upgradeBusy || absSlot < GridStart || absSlot >= Inv.Length || Inv[absSlot].IsEmpty)
-            return;
+        if (_upgradeSession.Locked || !InMainBag(absSlot) || Inv[absSlot].IsEmpty) return;
 
         int rel = absSlot - GridStart;
         for (int i = 0; i < _upgradePositions.Length; i++)
@@ -292,46 +431,124 @@ public partial class World
                 return;
             }
 
-        var item = Inv[absSlot];
-        int target;
-        if (_upgradeItemIds[0] == 0 && IsUpgradeTarget(item.ItemId))
+        int itemId = Inv[absSlot].ItemId;
+        string problem;
+        int target = _anvilBench == AnvilBench.Accessory
+            ? AccessorySocketFor(itemId, out problem)
+            : ItemSocketFor(itemId, out problem);
+        if (target < 0)
         {
-            target = 0;
-        }
-        else if (IsUpgradeMaterial(item.ItemId)
-                 || (_upgradeItemIds[0] != 0 && item.ItemId == _upgradeItemIds[0]))
-        {
-            target = -1;
-            for (int i = 1; i < _upgradeItemIds.Length; i++)
-                if (_upgradeItemIds[i] == 0) { target = i; break; }
-
-            if (target < 0)
-            {
-                SetUpgradeStatus("All material sockets are full.", true);
-                return;
-            }
-        }
-        else
-        {
-            SetUpgradeStatus(UpgradePlacementError(item.ItemId), true);
+            _anvilFooter.Status(problem, bad: true);
             return;
         }
+        StageInSocket(target, absSlot);
+    }
 
-        _upgradeItemIds[target] = item.ItemId;
-        _upgradePositions[target] = rel;
-        _upgradeSockets[target].Set(item.ItemId, item.Count, item.Durability);
-        RefreshUpgradeBackpack();
+    private int ItemSocketFor(int itemId, out string problem)
+    {
+        problem = "";
+        if (_upgradeItemIds[0] == 0 && IsUpgradeTarget(itemId)) return 0;
+        if (IsUpgradeMaterial(itemId) || (_upgradeItemIds[0] != 0 && itemId == _upgradeItemIds[0]))
+        {
+            int free = FirstEmptySocket(1, UpgradeSlotCount);
+            if (free < 0) problem = "All material sockets are full.";
+            return free;
+        }
+        problem = UpgradePlacementError(itemId);
+        return -1;
+    }
+
+    private int AccessorySocketFor(int itemId, out string problem)
+    {
+        problem = "";
+        if (IsAccessory(itemId))
+        {
+            if (!AccessoryMatches(itemId, -1))
+            {
+                problem = "Compounding needs three identical accessories.";
+                return -1;
+            }
+            int free = FirstEmptySocket(0, AccessorySocketCount);
+            if (free < 0) problem = "All three accessory slots are full.";
+            return free;
+        }
+        if (IsAccessoryMaterial(itemId))
+        {
+            int free = FirstEmptySocket(AccessorySocketCount, AccessoryBenchSlots);
+            if (free < 0) problem = "All material sockets are full.";
+            return free;
+        }
+        problem = "Only accessories can be compounded.";
+        return -1;
+    }
+
+    private bool AccessoryMatches(int itemId, int except)
+    {
+        for (int i = 0; i < AccessorySocketCount; i++)
+            if (i != except && _upgradeItemIds[i] != 0 && _upgradeItemIds[i] != itemId) return false;
+        return true;
+    }
+
+    private bool SocketAccepts(int socket, int itemId)
+    {
+        if (_anvilBench == AnvilBench.Accessory)
+            return socket < AccessorySocketCount
+                ? IsAccessory(itemId) && AccessoryMatches(itemId, socket)
+                : socket < AccessoryBenchSlots && IsAccessoryMaterial(itemId);
+        if (socket == 0) return IsUpgradeTarget(itemId);
+        return IsUpgradeMaterial(itemId) || (_upgradeItemIds[0] != 0 && itemId == _upgradeItemIds[0]);
+    }
+
+    private bool CanStageDrop(int socket, Variant data)
+    {
+        if (_upgradeSession.Locked || data.VariantType != Variant.Type.Dictionary) return false;
+        var d = data.AsGodotDictionary();
+        if (!d.ContainsKey("invFrom")) return false;
+        int abs = d["invFrom"].AsInt32();
+        return InMainBag(abs) && !Inv[abs].IsEmpty && !IsUpgradeSlotStaged(abs) && SocketAccepts(socket, Inv[abs].ItemId);
+    }
+
+    private void StageDrop(int socket, Variant data)
+    {
+        if (!CanStageDrop(socket, data)) return;
+        StageInSocket(socket, data.AsGodotDictionary()["invFrom"].AsInt32());
+    }
+
+    private void StageInSocket(int socket, int absSlot)
+    {
+        var item = Inv[absSlot];
+        _upgradeItemIds[socket] = item.ItemId;
+        _upgradePositions[socket] = absSlot - GridStart;
+        _upgradeSockets[socket]?.Set(item);
+        RefreshBagFit();
         OnUpgradeBenchChanged();
     }
 
+    private int FirstEmptySocket(int from, int to)
+    {
+        for (int i = from; i < to; i++)
+            if (_upgradeItemIds[i] == 0) return i;
+        return -1;
+    }
+
+    private static bool IsAccessory(int itemId) =>
+        ItemData.Get(itemId) is { Countable: 0 } def
+        && def.Slot is SlotEarring or SlotNecklace or SlotRing or SlotBelt;
+
+    private static bool IsAccessoryMaterial(int itemId) =>
+        itemId is >= AccessoryCompoundScrollFirst and <= AccessoryCompoundScrollLast or TrinaPieceAccessory;
+
+    private int MaterialFirst => _anvilBench == AnvilBench.Item ? 1 : AccessorySocketCount;
+    private int MaterialEnd => _anvilBench == AnvilBench.Item ? UpgradeSlotCount : AccessoryBenchSlots;
+
     private void ClearUpgradeSocket(int index)
     {
-        if (index < 0 || index >= _upgradeItemIds.Length || _upgradeBusy) return;
+        if (index < 0 || index >= _upgradeItemIds.Length || _upgradeSession.Locked) return;
         if (_upgradeItemIds[index] == 0) return;
         _upgradeItemIds[index] = 0;
         _upgradePositions[index] = -1;
         _upgradeSockets[index]?.Clear();
-        RefreshUpgradeBackpack();
+        RefreshBagFit();
         OnUpgradeBenchChanged();
     }
 
@@ -344,39 +561,50 @@ public partial class World
             _upgradeSockets[i]?.Clear();
         }
         _upgradePreviewId = 0;
-        _upgradeResultSocket?.Clear();
+        ClearResultSocket();
         RefreshUpgradeActions();
+    }
+
+    private void ClearResultSocket()
+    {
+        _upgradeResultSocket.Clear();
+        _upgradeResultSocket.Look = SlotLook.Normal;
+    }
+
+    private void ShowResultItem(int itemId, SlotLook look)
+    {
+        _upgradeResultSocket.Set(new ItemSlot { ItemId = itemId, Count = 1, Durability = ItemData.MaxDurabilityOf(itemId) });
+        _upgradeResultSocket.Look = look;
     }
 
     private void OnUpgradeBenchChanged()
     {
         _upgradePreviewId = 0;
-        _upgradeResultSocket.Clear();
+        ClearResultSocket();
 
         if (_upgradeItemIds[0] == 0)
         {
-            _upgradeTarget.Text = "Place the item to upgrade.";
-            SetUpgradeStatus("", false);
+            ShowAnvilPrompt();
             RefreshUpgradeActions();
             return;
         }
 
-        _upgradeTarget.Text = ItemData.DisplayName(_upgradeItemIds[0]);
-        if (!HasUpgradeMaterial())
+        string name = ItemData.DisplayName(_upgradeItemIds[0]);
+        if (_anvilBench == AnvilBench.Accessory && FirstEmptySocket(0, AccessorySocketCount) >= 0)
+            SetAnvilStrip(name, "Compounding needs three identical accessories.", UiTheme.TextLo);
+        else if (!HasUpgradeMaterial())
+            SetAnvilStrip(name, _anvilBench == AnvilBench.Item ? "Add the upgrade materials." : "Add the compound materials.", UiTheme.TextLo);
+        else
         {
-            SetUpgradeStatus("Add the upgrade materials.", false);
-            RefreshUpgradeActions();
-            return;
+            SetAnvilStrip(name, "Checking the recipe...", UiTheme.TextLo);
+            Net.I.SendUpgradeRequest(_upgradeAnvilId, _upgradeItemIds, _upgradePositions, preview: true);
         }
-
-        SetUpgradeStatus($"Checking {UpgradeOperationName()} recipe...", false);
         RefreshUpgradeActions();
-        Net.I.SendUpgradeRequest(_upgradeAnvilId, _upgradeItemIds, _upgradePositions, preview: true);
     }
 
     private bool HasUpgradeMaterial()
     {
-        for (int i = 1; i < _upgradeItemIds.Length; i++)
+        for (int i = MaterialFirst; i < MaterialEnd; i++)
             if (_upgradeItemIds[i] != 0) return true;
         return false;
     }
@@ -467,14 +695,16 @@ public partial class World
     {
         _upgradeConfirm = null;
         if (!CanSendUpgrade()) return;
-        _upgradeBusy = true;
+        _upgradeSession.Sent();
+        foreach (int pos in _upgradePositions)
+            if (pos >= 0) _bagHold.Hold(GridStart + pos, Inv[GridStart + pos]);
         RefreshUpgradeActions();
-        SetUpgradeStatus($"{UpgradeOperationName()} in progress...", false);
+        SetAnvilStrip(_anvilStrip.Title.Text, $"{UpgradeOperationName()} in progress...", UiTheme.TextLo);
         Net.I.SendUpgradeRequest(_upgradeAnvilId, _upgradeItemIds, _upgradePositions, preview: false);
     }
 
     private bool CanSendUpgrade()
-        => _upgradeShown && !_upgradeBusy && _upgradeAnvilId != 0
+        => _upgradeShown && _upgradeSession.CanSend && _upgradeAnvilId != 0
            && _upgradeItemIds[0] != 0 && _upgradePreviewId != 0;
 
     private void OnUpgradeResult(UpgradeResult result)
@@ -484,54 +714,123 @@ public partial class World
             OnUpgradePreviewResult(result);
             return;
         }
+        bool watched = _upgradeSession.Answered() == UpgradeAnswerView.Reveal;
+        if (watched && _upgradeShown && result.ResultCode is UpgradeResultSucceeded or UpgradeResultFailed)
+        {
+            StartUpgradeScan(result);
+            return;
+        }
+        ApplyUpgradeResult(result, onBench: watched);
+    }
 
-        _upgradeBusy = false;
+    private void StartUpgradeScan(UpgradeResult result)
+    {
+        _upgradePendingResult = result;
+        _upgradeScanTween?.Kill();
+        ResetAnvilLids();
+        _anvilLids.Visible = true;
+        var tween = CreateTween();
+        tween.TweenProperty(_anvilLidTop, "anchor_bottom", 0.5f, AnvilLidSeconds);
+        tween.Parallel().TweenProperty(_anvilLidBottom, "anchor_top", 0.5f, AnvilLidSeconds);
+        tween.TweenProperty(_anvilSeam, "anchor_right", 1f, AnvilScanSeconds);
+        tween.TweenCallback(Callable.From(FinishUpgradeScan));
+        _upgradeScanTween = tween;
+    }
+
+    private void FinishUpgradeScan()
+    {
+        _upgradeScanTween = null;
+        if (_upgradePendingResult is not { } result) return;
+        _upgradePendingResult = null;
+        ApplyUpgradeResult(result, onBench: true);
+        if (_upgradeShown) OpenAnvilLids();
+    }
+
+    private void OpenAnvilLids()
+    {
+        _anvilSeam.AnchorRight = 0f;
+        var tween = CreateTween().SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Quad);
+        tween.TweenProperty(_anvilLidTop, "anchor_bottom", 0f, AnvilRevealSeconds);
+        tween.Parallel().TweenProperty(_anvilLidBottom, "anchor_top", 1f, AnvilRevealSeconds);
+        tween.TweenCallback(Callable.From(ResetAnvilLids));
+        _upgradeScanTween = tween;
+    }
+
+    private void ResetAnvilLids()
+    {
+        _anvilLids.Visible = false;
+        _anvilLidTop.AnchorTop = 0f;
+        _anvilLidTop.AnchorBottom = 0f;
+        _anvilLidBottom.AnchorTop = 1f;
+        _anvilLidBottom.AnchorBottom = 1f;
+        _anvilSeam.AnchorRight = 0f;
+    }
+
+    private void ApplyUpgradeResult(UpgradeResult result, bool onBench)
+    {
+        _bagHold.Release();
         int resultItemId = result.Slots.Length > 0 ? result.Slots[0].ItemId : 0;
+        if (onBench) ShowUpgradeOutcome(result.ResultCode, resultItemId);
 
         switch (result.ResultCode)
         {
             case UpgradeResultSucceeded when resultItemId != 0:
-                _upgradeTarget.Text = ItemData.DisplayName(resultItemId);
-                _upgradeResultSocket.Set(resultItemId, 1, ResultDurability(resultItemId));
-                SetUpgradeStatus("Upgrade succeeded.", false);
                 CombatNotice($"Upgrade succeeded: {ItemData.DisplayName(resultItemId)}");
                 break;
             case UpgradeResultFailed:
-                SetUpgradeStatus("Upgrade failed — the item was destroyed.", true);
                 CombatNotice("The upgrade failed and the item was destroyed.");
                 break;
-            default:
-                SetUpgradeStatus(UpgradeError(result.ResultCode), true);
+            case not UpgradeResultSucceeded when !onBench:
+                CombatNotice(UpgradeError(result.ResultCode));
                 break;
         }
 
-        if (result.ResultCode is UpgradeResultSucceeded or UpgradeResultFailed)
-        {
-            ClearUpgradeSockets();
-            _upgradeTarget.Text = "Place the item to upgrade.";
-            if (result.ResultCode == UpgradeResultSucceeded && resultItemId != 0)
-                _upgradeResultSocket.Set(resultItemId, 1, ResultDurability(resultItemId));
-        }
-
-        RefreshUpgradeBackpack();
+        RefreshBagFit();
         RefreshUpgradeActions();
         if (CharTabOpen()) RefreshInventoryUI();
     }
 
+    private void ShowUpgradeOutcome(byte code, int resultItemId)
+    {
+        string before = _upgradeItemIds[0] != 0 ? ItemData.DisplayName(_upgradeItemIds[0]) : BenchPrompt;
+        string operation = UpgradeOperationName();
+        if (code is UpgradeResultSucceeded or UpgradeResultFailed) ClearUpgradeSockets();
+
+        switch (code)
+        {
+            case UpgradeResultSucceeded when resultItemId != 0:
+                ShowResultItem(resultItemId, SlotLook.Normal);
+                SetAnvilStrip(ItemData.DisplayName(resultItemId), $"{operation} succeeded.", UiTheme.Good);
+                break;
+            case UpgradeResultSucceeded:
+                SetAnvilStrip(before, $"{operation} succeeded.", UiTheme.Good);
+                break;
+            case UpgradeResultFailed:
+                SetAnvilStrip(before, $"{operation} failed — the item was destroyed.", UiTheme.Bad);
+                break;
+            default:
+                SetAnvilStrip(before, UpgradeError(code), UiTheme.Bad);
+                break;
+        }
+    }
+
     private void OnUpgradePreviewResult(UpgradeResult result)
     {
+        if (_upgradeItemIds[0] == 0) return;
         int previewId = result.Slots.Length > 0 ? result.Slots[0].ItemId : 0;
+        string name = ItemData.DisplayName(_upgradeItemIds[0]);
         if (result.ResultCode == UpgradeResultSucceeded && previewId != 0)
         {
             _upgradePreviewId = previewId;
-            _upgradeResultSocket.Set(previewId, 1, ResultDurability(previewId));
-            SetUpgradeStatus($"Upgrades to {ItemData.DisplayName(previewId)}.", false);
+            ShowResultItem(previewId, SlotLook.Ghost);
+            SetAnvilStrip($"{name} → {ItemData.DisplayName(previewId)}",
+                $"{UpgradeOperationName()} · the item may be destroyed", UiTheme.Warning);
         }
         else
         {
             _upgradePreviewId = 0;
-            _upgradeResultSocket.Clear();
-            SetUpgradeStatus(UpgradeError(result.ResultCode), true);
+            ClearResultSocket();
+            SetAnvilStrip(name, UpgradeError(result.ResultCode), UiTheme.Bad);
         }
         RefreshUpgradeActions();
     }
@@ -539,17 +838,11 @@ public partial class World
     private static string UpgradeError(byte code) => code switch
     {
         UpgradeResultTrading => "Cannot upgrade while trading.",
-        UpgradeResultNeedCoins => "You don't have enough coins.",
+        UpgradeResultNeedCoins => "You don't have enough gold.",
         UpgradeResultNoMatch => "The items required for upgrade do not match.",
         UpgradeResultSealed => "That item is sealed or rented.",
         _ => "Cannot perform item upgrade.",
     };
-
-    private void SetUpgradeStatus(string text, bool warn)
-    {
-        _upgradeStatus.Text = text;
-        _upgradeStatus.AddThemeColorOverride("font_color", warn ? UiTheme.Bad : UiTheme.TextLo);
-    }
 
     private void RefreshUpgradeActions()
     {
@@ -581,23 +874,13 @@ public partial class World
     {
         if (_upgradeItemIds[0] != 0 && _upgradeSockets[0] is { } staged)
             return staged.GetGlobalRect().GetCenter();
-        if (_upgradePreviewId != 0 && _upgradeResultSocket != null)
+        if (_upgradePreviewId != 0)
             return _upgradeResultSocket.GetGlobalRect().GetCenter();
-        foreach (var cell in _upgradeBackpackCells)
-            if (GodotObject.IsInstanceValid(cell) && cell.HasItem)
-                return cell.GetGlobalRect().GetCenter();
         return Vector2.Zero;
     }
 
     private int UpgradeSocketSlot(int index)
         => _upgradePositions[index] >= 0 ? GridStart + _upgradePositions[index] : -1;
-
-    private static short ResultDurability(int itemId)
-    {
-        var def = ItemData.Get(itemId);
-        int durability = (def?.Duration ?? 0) + (ItemData.ExtFor(itemId)?.DurationBonus ?? 0);
-        return (short)Mathf.Min(durability, short.MaxValue);
-    }
 
     private string UpgradeBagReport()
     {
@@ -616,153 +899,36 @@ public partial class World
 
     private void OnUpgradeInventorySlot(int absSlot, ItemSlot item)
     {
-        if (!_upgradeShown) return;
-        if (absSlot < GridStart || absSlot >= GridStart + GridCount) return;
-
-        int rel = absSlot - GridStart;
-        bool dropped = false;
-        for (int i = 0; i < _upgradePositions.Length; i++)
-        {
-            if (_upgradePositions[i] != rel) continue;
-            if (item.IsEmpty || item.ItemId != _upgradeItemIds[i])
-            {
-                _upgradeItemIds[i] = 0;
-                _upgradePositions[i] = -1;
-                _upgradeSockets[i]?.Clear();
-                dropped = true;
-            }
-        }
-        RefreshUpgradeBackpack();
-        if (dropped && !_upgradeBusy) OnUpgradeBenchChanged();
+        if (_upgradeShown && InMainBag(absSlot)) DropStaleSockets();
     }
 
     private void OnUpgradeInventoryGrid(ItemSlot[] items)
     {
-        if (!_upgradeShown) return;
-        RefreshUpgradeBackpack();
+        if (_upgradeShown) DropStaleSockets();
     }
 
-    private sealed partial class UpgradeSocket : PanelContainer
+    private void DropStaleSockets()
     {
-        public event System.Action? Cleared;
-        public event System.Action<ItemSlot>? Hovered;
-        public event System.Action? Unhovered;
-        private readonly TextureRect _icon;
-        private readonly Label _label;
-        private readonly Label _count;
-        private readonly UpgradeBadge _plus;
-        private readonly bool _interactive;
-        private ItemSlot _held;
-
-        public UpgradeSocket(string label, float size, bool interactive = true)
+        if (_upgradeSession.Locked) return;
+        bool dropped = false;
+        for (int i = 0; i < _upgradePositions.Length; i++)
         {
-            _interactive = interactive;
-            CustomMinimumSize = new Vector2(size, size);
-            AddThemeStyleboxOverride("panel", UiTheme.Slot());
-
-            _label = UiTheme.Text(label, 11, UiTheme.TextDim, HorizontalAlignment.Center);
-            _label.SetAnchorsPreset(LayoutPreset.FullRect);
-            _label.VerticalAlignment = VerticalAlignment.Center;
-            _label.MouseFilter = MouseFilterEnum.Ignore;
-            AddChild(_label);
-
-            _icon = new TextureRect
+            int pos = _upgradePositions[i];
+            if (pos < 0) continue;
+            int abs = GridStart + pos;
+            var held = abs < Inv.Length ? Inv[abs] : default;
+            if (!held.IsEmpty && held.ItemId == _upgradeItemIds[i])
             {
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                MouseFilter = MouseFilterEnum.Ignore,
-            };
-            _icon.SetAnchorsPreset(LayoutPreset.FullRect);
-            AddChild(_icon);
-
-            _count = HudStyle.Label(11, HorizontalAlignment.Right);
-            _count.SetAnchorsPreset(LayoutPreset.BottomRight);
-            _count.MouseFilter = MouseFilterEnum.Ignore;
-            AddChild(_count);
-
-            _plus = UpgradeBadge.Attach(this);
-
-            MouseEntered += () => { if (!_held.IsEmpty) Hovered?.Invoke(_held); };
-            MouseExited += () => Unhovered?.Invoke();
-        }
-
-        public void Set(int itemId, short count, short durability)
-        {
-            _held = new ItemSlot { ItemId = itemId, Count = count, Durability = durability };
-            _icon.Texture = ItemData.Icon(itemId);
-            _label.Visible = false;
-            _count.Text = count > 1 ? count.ToString() : "";
-            _plus.Set(itemId);
-            AddThemeStyleboxOverride("panel", UiTheme.Slot(UiTheme.Gold));
-        }
-
-        public void Clear()
-        {
-            _held = default;
-            _icon.Texture = null;
-            _label.Visible = true;
-            _count.Text = "";
-            _plus.Clear();
-            AddThemeStyleboxOverride("panel", UiTheme.Slot());
-            Unhovered?.Invoke();
-        }
-
-        public override void _GuiInput(InputEvent ev)
-        {
-            if (!_interactive) return;
-            if (ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right }
-                or InputEventMouseButton { Pressed: true, DoubleClick: true, ButtonIndex: MouseButton.Left })
-                Cleared?.Invoke();
-        }
-    }
-
-    private sealed partial class UpgradeBackpackCell : PanelContainer
-    {
-        public event System.Action? Pressed;
-        public event System.Action<int, ItemSlot>? Hovered;
-        public event System.Action? Unhovered;
-        private readonly ItemSlot _item;
-
-        public bool HasItem => !_item.IsEmpty;
-
-        public UpgradeBackpackCell(int absSlot, ItemSlot item, bool staged)
-        {
-            _item = item;
-            MouseEntered += () => { if (!_item.IsEmpty) Hovered?.Invoke(absSlot, _item); };
-            MouseExited += () => Unhovered?.Invoke();
-            CustomMinimumSize = new Vector2(48, 48);
-            AddThemeStyleboxOverride("panel",
-                item.IsEmpty ? UiTheme.Slot() : UiTheme.Slot(staged ? UiTheme.Gold : UiTheme.Edge));
-
-            if (item.IsEmpty)
-                return;
-
-            var icon = new TextureRect
-            {
-                Texture = ItemData.Icon(item.ItemId),
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                MouseFilter = MouseFilterEnum.Ignore,
-                Modulate = staged ? new Color(1f, 1f, 1f, 0.4f) : Colors.White,
-            };
-            icon.SetAnchorsPreset(LayoutPreset.FullRect);
-            AddChild(icon);
-            if (UpgradeBadge.Show(this, item.ItemId) is { } badge) badge.Modulate = icon.Modulate;
-
-            if (item.Count > 1)
-            {
-                var count = HudStyle.Label(11, HorizontalAlignment.Right);
-                count.Text = item.Count.ToString();
-                count.SetAnchorsPreset(LayoutPreset.BottomRight);
-                count.MouseFilter = MouseFilterEnum.Ignore;
-                AddChild(count);
+                _upgradeSockets[i]?.Set(held);
+                continue;
             }
+            _upgradeItemIds[i] = 0;
+            _upgradePositions[i] = -1;
+            _upgradeSockets[i]?.Clear();
+            dropped = true;
         }
-
-        public override void _GuiInput(InputEvent ev)
-        {
-            if (!_item.IsEmpty && ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
-                Pressed?.Invoke();
-        }
+        if (!dropped) return;
+        RefreshBagFit();
+        OnUpgradeBenchChanged();
     }
 }

@@ -9,6 +9,7 @@ public partial class World : Node3D
     private void InventoryContext(int absSlot)
     {
         if (absSlot < 0 || absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
+        if (_bagCompanion != null && _bagCompanion.Take(absSlot)) return;
         var def = ItemData.Get(Inv[absSlot].ItemId);
         if (def == null) return;
 
@@ -33,6 +34,7 @@ public partial class World : Node3D
     {
         if (_moveInFlight || _moveQueue.Count > 0 || _selfDead) return;
         if (absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
+        if (RefuseItemInUse(absSlot)) return;
         var def = ItemData.Get(Inv[absSlot].ItemId);
         if (def == null) return;
 
@@ -164,6 +166,7 @@ public partial class World : Node3D
         if (_moveInFlight || _moveQueue.Count > 0 || _selfDead) return;
         if (from == to || from < 0 || to < 0 || from >= Inv.Length || to >= Inv.Length) return;
         if (Inv[from].IsEmpty) return;
+        if (RefuseItemInUse(from, to)) return;
 
         var fromRegion = ItemMove.RegionOf(from);
         var toRegion = ItemMove.RegionOf(to);

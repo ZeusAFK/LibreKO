@@ -24,6 +24,7 @@ public partial class World
     private Button _joinModalCloseBtn = null!;
 
     private bool _bifrostActive;
+    private bool _bifrostSignUp;
     private int _bifrostRemaining;
     private int _bifrostMaxSeen;
     private bool _bifrostPromptShown;
@@ -70,9 +71,6 @@ public partial class World
     {
         _bifrostBanner = new PanelContainer
         {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0, AnchorBottom = 0,
-            GrowHorizontal = Control.GrowDirection.Both,
-            OffsetTop = 80,
             Visible = false,
             MouseFilter = Control.MouseFilterEnum.Stop,
             MouseDefaultCursorShape = Control.CursorShape.PointingHand,
@@ -85,6 +83,7 @@ public partial class World
                 BifrostShowJoinPrompt();
         };
         _bifrostLayer.AddChild(_bifrostBanner);
+        AddEventPlate(_bifrostBanner);
 
         var m = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         UiTheme.Margins(m, 10, 4, 10, 5);
@@ -260,6 +259,7 @@ public partial class World
 
         bool wasActive = _bifrostActive;
         _bifrostActive = true;
+        _bifrostSignUp = eventType != TempleEventType.None;
         _bifrostRemaining = remaining;
         if (remaining > _bifrostMaxSeen) _bifrostMaxSeen = remaining;
 
@@ -267,7 +267,7 @@ public partial class World
         UpdateBifrostBanner();
         if (_bifrostTick.IsStopped()) _bifrostTick.Start();
 
-        if (!wasActive)
+        if (!wasActive && _bifrostSignUp)
         {
             Chat.Info($"[{_eventTitle}] Registration is open ({remaining} seconds)!");
             OfferBifrostJoin();
@@ -334,7 +334,7 @@ public partial class World
 
     private void EndBifrostEvent()
     {
-        if (_bifrostActive) Chat.Info($"[{_eventTitle}] Event registration has ended.");
+        if (_bifrostActive && _bifrostSignUp) Chat.Info($"[{_eventTitle}] Event registration has ended.");
         _bifrostActive = false;
         _bifrostRemaining = 0;
         _bifrostMaxSeen = 0;
@@ -400,13 +400,13 @@ public partial class World
 
     private void BifrostToggleJoin()
     {
-        if (!_bifrostActive) return;
+        if (!_bifrostActive || !_bifrostSignUp) return;
         BifrostShowJoinPrompt();
     }
 
     private void BifrostShowJoinPrompt()
     {
-        if (!_bifrostActive) return;
+        if (!_bifrostActive || !_bifrostSignUp) return;
         if (_joinModalTitle != null && IsInstanceValid(_joinModalTitle))
             _joinModalTitle.Text = FormatModalTitle(_eventTitle);
         if (_bifrostTitleLbl != null && IsInstanceValid(_bifrostTitleLbl))

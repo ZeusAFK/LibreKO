@@ -79,7 +79,7 @@ public partial class World
 
     private void BuildMerchantMenu()
     {
-        _merchantMenu = new HudWindow("merchantmenu", "Merchant", new Vector2(260, 150)) { Visible = false };
+        _merchantMenu = new HudWindow("merchantmenu", "Merchant") { Visible = false };
         _merchantMenu.Closed += CloseMerchantMenu;
         _mctLayer.AddChild(_merchantMenu);
 
@@ -104,7 +104,7 @@ public partial class World
 
     private void BuildSellStallPanel()
     {
-        _sellStallPanel = new HudWindow("sellstall", "Selling Merchant", new Vector2(120, 70)) { Visible = false };
+        _sellStallPanel = new HudWindow("sellstall", "Selling Merchant") { Visible = false };
         _sellStallPanel.Closed += CloseSellStall;
         _mctLayer.AddChild(_sellStallPanel);
 
@@ -160,7 +160,7 @@ public partial class World
 
     private void BuildShopPanel()
     {
-        _shopPanel = new HudWindow("shop", "Shop", new Vector2(420, 110)) { Visible = false };
+        _shopPanel = new HudWindow("shop", "Shop") { Visible = false };
         _shopPanel.Closed += CloseShop;
         _mctLayer.AddChild(_shopPanel);
 

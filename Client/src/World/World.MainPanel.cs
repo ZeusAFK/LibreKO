@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace LibreKO;
@@ -131,6 +132,7 @@ public partial class World
             Visible = false,
         };
         window.Closed += SyncMainWindowState;
+        if (LeftDocked.Contains(key) || RightDocked.Contains(key)) window.ShowDockPin(() => Redock(key));
         window.Body.AddChild(content);
         _mainLayer.AddChild(window);
         Callable.From(window.ResetSize).CallDeferred();
@@ -143,6 +145,7 @@ public partial class World
 
     private void ToggleMainWindow(string key)
     {
+        if (key == "Inventory") _bagPairing.PlayerTouched();
         if (!_mainWindows.TryGetValue(key, out HudWindow? window)) return;
         if (window.Visible)
         {
@@ -157,6 +160,14 @@ public partial class World
             RefreshMainWindow(key);
             Audio.PlayUi(Sfx.InventoryOpen);
         }
+        SyncMainWindowState();
+    }
+
+    private void HideMainWindow(string key)
+    {
+        if (!_mainWindows.TryGetValue(key, out HudWindow? window) || !window.Visible) return;
+        window.Visible = false;
+        if (key == "Inventory") { HideItemTooltip(); HideDeletePrompt(); }
         SyncMainWindowState();
     }
 

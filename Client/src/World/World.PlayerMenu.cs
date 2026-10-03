@@ -143,8 +143,7 @@ public partial class World
                 break;
 
             case PlayerMenuAction.Duel:
-                ToggleDuel();
-                CombatNotice($"Create or join a duel to fight {name}.");
+                ChallengeByName(name);
                 break;
 
             case PlayerMenuAction.EquipmentView:

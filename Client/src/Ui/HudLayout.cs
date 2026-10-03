@@ -8,6 +8,8 @@ public sealed partial class HudLayout : Node
     public enum Corner { TopLeft, TopRight, BottomLeft, BottomRight }
 
     public static bool EditMode { get; set; }
+
+    public event Action? Placed;
     public static bool PersistLayouts { get; set; } = true;
 
     private readonly Control _target;
@@ -39,6 +41,10 @@ public sealed partial class HudLayout : Node
     private Vector2 _resizeOriginSize;
     private Vector2 _resizeOriginPosition;
     private ResizeCorner? _corner;
+    private bool? _overlayShown;
+    private bool _gripShown;
+    private Rect2 _overlayRect;
+    private Vector2 _gripSize, _cornerSize;
     private MoveGrip? _moveGrip;
 
     private HudLayout(
@@ -127,6 +133,8 @@ public sealed partial class HudLayout : Node
     }
 
     private void ClampAfterResize() => Callable.From(ClampOnScreen).CallDeferred();
+
+    internal void ReapplyDefault() => FollowDefaultOnScreen();
 
     private void FollowDefaultOnScreen()
     {
@@ -242,15 +250,28 @@ public sealed partial class HudLayout : Node
     public override void _Process(double delta)
     {
         using var scope = Perf.Measure(Perf.Section.Ui);
+        if (_moveGrip == null && _corner == null) return;
+        bool shown = _target.IsVisibleInTree();
+        bool gripShown = shown && (_moveGripAlwaysVisible || EditMode);
+        var rect = new Rect2(_target.GlobalPosition, _target.Size);
+        Vector2 gripSize = _moveGrip?.Size ?? Vector2.Zero, cornerSize = _corner?.Size ?? Vector2.Zero;
+        if (shown == _overlayShown && gripShown == _gripShown && rect == _overlayRect
+            && gripSize == _gripSize && cornerSize == _cornerSize)
+            return;
+        _overlayShown = shown;
+        _gripShown = gripShown;
+        _overlayRect = rect;
+        _gripSize = gripSize;
+        _cornerSize = cornerSize;
         if (_moveGrip != null)
         {
-            _moveGrip.Visible = (_moveGripAlwaysVisible || EditMode) && _target.IsVisibleInTree();
-            _moveGrip.GlobalPosition = OverlayPosition(_moveGrip.Size, _moveCorner);
+            _moveGrip.Visible = gripShown;
+            if (gripShown) _moveGrip.GlobalPosition = OverlayPosition(gripSize, _moveCorner);
         }
         if (_corner != null)
         {
-            _corner.Visible = _target.IsVisibleInTree();
-            _corner.GlobalPosition = OverlayPosition(_corner.Size, _resizeCorner) + _resizeGripOffset;
+            _corner.Visible = shown;
+            if (shown) _corner.GlobalPosition = OverlayPosition(cornerSize, _resizeCorner) + _resizeGripOffset;
         }
     }
 
@@ -301,6 +322,7 @@ public sealed partial class HudLayout : Node
         }
         ClampOnScreen();
         if (_persist) Config.SaveWindowPos(_id, _target.Position);
+        Placed?.Invoke();
     }
 
     internal void CycleBackgroundOpacity()

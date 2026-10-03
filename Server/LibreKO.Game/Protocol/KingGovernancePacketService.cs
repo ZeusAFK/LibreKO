@@ -213,7 +213,7 @@ public class KingGovernancePacketService(
 
         await session.Client.SendPacket(KingPacketWriter.FlagWithValue(KingPacketConstants.Event, KingPacketConstants.EventNoah, 1, amount));
 
-        var notice = KingPacketWriter.Notice(1, $"The King has activated a {amount}% Noah drop bonus for 30 minutes!");
+        var notice = KingPacketWriter.Notice(1, $"The King has activated a {amount}% gold drop bonus for 30 minutes!");
         await kingSystemRuntimeService.BroadcastToNationAsync(session.Nation, notice);
     }
 

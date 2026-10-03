@@ -220,7 +220,7 @@ public partial class World : Node3D
         row.AddChild(pack);
 
         row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
-        row.AddChild(UiIcons.Image("system/coins", new Vector2(15, 15), new Color(UiTheme.Gold, 0.9f), "Noah"));
+        row.AddChild(UiIcons.Image("system/coins", new Vector2(15, 15), new Color(UiTheme.Gold, 0.9f), "Gold"));
         _invGoldLbl = UiTheme.Text("", 13, UiTheme.Gold, HorizontalAlignment.Right);
         _invGoldLbl.AddThemeColorOverride("font_color", UiTheme.Gold);
         row.AddChild(_invGoldLbl);
@@ -259,6 +259,7 @@ public partial class World : Node3D
                 OnContext = InventoryContext,
                 OnHoverChanged = InventoryHover,
                 OnDropItem = MoveBetween,
+                OnCompanionDrop = CompanionIntoBag,
             };
             _invBagCells.Add(cell);
             grid.AddChild(cell);
@@ -411,11 +412,20 @@ public partial class World : Node3D
         SetMeter(_invSlotBar, total > 0 ? Mathf.Clamp((float)used / total, 0f, 1f) : 0f);
     }
 
+    private static readonly Dictionary<Color, StyleBoxFlat> MeterFills = Shutdown.Track(new Dictionary<Color, StyleBoxFlat>());
+
     private static void SetMeter(ProgressBar bar, float load)
     {
         if (!GodotObject.IsInstanceValid(bar)) return;
         bar.Value = load * bar.MaxValue;
-        bar.AddThemeStyleboxOverride("fill", UiTheme.MeterFill(MeterTint(load)));
+        bar.AddThemeStyleboxOverride("fill", CachedMeterFill(MeterTint(load)));
+    }
+
+    private static StyleBoxFlat CachedMeterFill(Color tint)
+    {
+        if (!MeterFills.TryGetValue(tint, out var fill))
+            MeterFills[tint] = fill = UiTheme.MeterFill(tint);
+        return fill;
     }
 
     private (int Used, int Total) InventorySlotUsage()
@@ -466,7 +476,7 @@ public partial class World : Node3D
             _invGoldLbl = null;
             return;
         }
-        _invGoldLbl.Text = $"{total:n0} gold";
+        _invGoldLbl.Text = $"{total:n0}";
     }
 
     private void RefreshInventoryUI()
@@ -508,11 +518,12 @@ public partial class World : Node3D
             if (!CharTabOpen() || _hoverCell.Current.IsEmpty)
                 HideItemTooltip();
             else
-                ShowItemTooltip(_hoverCell.Slot, _hoverCell.Current);
+                ShowItemTooltip(_hoverCell.Slot, _hoverCell.Current, _bagCompanion?.Note(_hoverCell.Slot) ?? "");
         }
+        ApplyBagFit();
     }
 
-    private ItemSlot SlotAt(int abs) => abs >= 0 && abs < Inv.Length ? Inv[abs] : default;
+    private ItemSlot SlotAt(int abs) => abs >= 0 && abs < Inv.Length ? _bagHold.Shown(abs, Inv[abs]) : default;
 
     private void GhostOtherHand(int held, int other)
     {
@@ -602,6 +613,7 @@ public partial class World : Node3D
     {
         if (absSlot < 0 || absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
         if (absSlot >= InventoryConstants.CospreStart) return;
+        if (RefuseItemInUse(absSlot)) return;
 
         _invDelSlot = absSlot;
         _invDelItemId = Inv[absSlot].ItemId;
@@ -719,6 +731,7 @@ public partial class World : Node3D
         public System.Action<int>? OnClick;
         public System.Action<ItemCell, bool>? OnHoverChanged;
         public System.Action<int, int>? OnDropItem;
+        public System.Func<int, int, bool>? OnCompanionDrop;
         public ItemSlot Current { get; private set; }
         private readonly TextureRect _icon;
         private readonly LockGlyph _lockIcon;
@@ -743,6 +756,18 @@ public partial class World : Node3D
         private StyleBoxFlat _normal;
         private StyleBoxFlat _hover;
         private readonly StyleBoxFlat _lockedStyle = LockedStyle();
+        private static readonly Color UnfitTint = new(1f, 0.6f, 0.6f, 0.45f);
+        private static readonly Color StagedTint = new(1f, 1f, 1f, 0.45f);
+
+        public BagFit Fit
+        {
+            set => Modulate = value switch
+            {
+                BagFit.Unfit => UnfitTint,
+                BagFit.Staged => StagedTint,
+                _ => Colors.White,
+            };
+        }
 
         public ItemCell(int slot, float size = 46f)
         {
@@ -933,7 +958,7 @@ public partial class World : Node3D
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             };
             UpgradeBadge.Show(preview, Current.ItemId);
-            SetDragPreview(GmItemId.Wrap(preview, Current.ItemId));
+            DragLayer.Show(this, GmItemId.Wrap(preview, Current.ItemId));
             return new Godot.Collections.Dictionary
             {
                 { "id", Current.ItemId },
@@ -946,6 +971,7 @@ public partial class World : Node3D
             if (Locked || Slot < 0 || OnDropItem == null) return false;
             if (data.VariantType != Variant.Type.Dictionary) return false;
             var d = data.AsGodotDictionary();
+            if (d.ContainsKey("companionFrom")) return OnCompanionDrop != null;
             if (!d.ContainsKey("invFrom")) return false;
             int from = d["invFrom"].AsInt32();
             return from >= 0 && from != Slot;
@@ -954,7 +980,9 @@ public partial class World : Node3D
         public override void _DropData(Vector2 atPosition, Variant data)
         {
             AddThemeStyleboxOverride("panel", _normal);
-            OnDropItem?.Invoke(data.AsGodotDictionary()["invFrom"].AsInt32(), Slot);
+            var d = data.AsGodotDictionary();
+            if (d.ContainsKey("companionFrom")) OnCompanionDrop?.Invoke(d["companionFrom"].AsInt32(), Slot);
+            else OnDropItem?.Invoke(d["invFrom"].AsInt32(), Slot);
         }
     }
 

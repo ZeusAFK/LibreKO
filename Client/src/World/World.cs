@@ -215,12 +215,6 @@ public partial class World : Node3D, IWorldContext
                 if (k.Keycode == Key.Escape) { Chat.Close(); GetViewport().SetInputAsHandled(); }
                 return;
             }
-            if (_buyAmountShown && k.Keycode is Key.Escape or Key.Enter or Key.KpEnter)
-            {
-                if (k.Keycode == Key.Escape) CloseBuyAmount(); else ConfirmBuyAmount();
-                GetViewport().SetInputAsHandled();
-                return;
-            }
             if (k.Keycode == Key.Escape && TryMinimizeFocusedWhisper())
             { GetViewport().SetInputAsHandled(); return; }
             if (GetViewport().GuiGetFocusOwner() is LineEdit or TextEdit or SpinBox) return;

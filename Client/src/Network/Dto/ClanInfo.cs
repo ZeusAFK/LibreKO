@@ -68,6 +68,7 @@ public static class ClanRanks
     public const byte ViceChief = 2;
     public const byte Officer = 3;
     public const byte Trainee = 5;
+    public const byte CommandCaptain = 100;
 
     public static string Name(byte fame) => fame switch
     {

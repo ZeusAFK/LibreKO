@@ -15,7 +15,7 @@ public partial class World
     {
         _dqLayer = new CanvasLayer { Layer = 73 };
         AddChild(_dqLayer);
-        _dqPanel = new HudWindow("dailyquest", "Daily Quests", new Vector2(170, 120)) { Visible = false };
+        _dqPanel = new HudWindow("dailyquest", "Daily Quests") { Visible = false };
         _dqPanel.Closed += CloseDailyQuest;
         _dqLayer.AddChild(_dqPanel);
         var root = _dqPanel.Body;

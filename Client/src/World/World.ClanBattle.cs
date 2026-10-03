@@ -5,7 +5,7 @@ namespace LibreKO;
 
 public partial class World
 {
-    private CanvasLayer _clanBattleLayer = null!;
+    private PanelContainer _clanBattlePanel = null!;
     private Label _clanBattleLabel = null!;
     private int _clanBattleToken;
 
@@ -26,17 +26,13 @@ public partial class World
 
     private void BuildClanBattleBanner()
     {
-        _clanBattleLayer = new CanvasLayer { Layer = 67, Visible = false };
-        AddChild(_clanBattleLayer);
+        var layer = new CanvasLayer { Layer = 67 };
+        AddChild(layer);
 
-        var panel = new PanelContainer
-        {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0, AnchorBottom = 0,
-            GrowHorizontal = Control.GrowDirection.Both,
-            OffsetTop = 204,
-        };
+        var panel = new PanelContainer { Visible = false };
         panel.AddThemeStyleboxOverride("panel", UiTheme.Panel(7, true));
-        _clanBattleLayer.AddChild(panel);
+        layer.AddChild(panel);
+        _clanBattlePanel = panel;
 
         var m = new MarginContainer();
         UiTheme.Margins(m, 18, 9, 18, 9);
@@ -45,17 +41,18 @@ public partial class World
         _clanBattleLabel = UiTheme.Text("", 16, ClanBattleGold, HorizontalAlignment.Center);
         _clanBattleLabel.AddThemeConstantOverride("outline_size", 5);
         m.AddChild(_clanBattleLabel);
+        AddEventPlate(panel);
     }
 
     private void ShowClanBattleBanner(string text, Color colour)
     {
         _clanBattleLabel.Text = text;
         _clanBattleLabel.AddThemeColorOverride("font_color", colour);
-        _clanBattleLayer.Visible = true;
+        _clanBattlePanel.Visible = true;
 
         int token = ++_clanBattleToken;
         double secs = Mathf.Clamp(3.5 + text.Length * 0.045, 4.0, 12.0);
-        GetTree().CreateTimer(secs).Timeout += () => { if (_clanBattleToken == token) _clanBattleLayer.Visible = false; };
+        GetTree().CreateTimer(secs).Timeout += () => { if (_clanBattleToken == token) _clanBattlePanel.Visible = false; };
     }
 
     private void OnClanBattleNotify()

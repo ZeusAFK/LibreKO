@@ -37,7 +37,7 @@ public partial class World
         _reportLayer = new CanvasLayer { Layer = 77 };
         AddChild(_reportLayer);
 
-        _reportPanel = new HudWindow("report", "Sheriff Reports", new Vector2(170, 110)) { Visible = false };
+        _reportPanel = new HudWindow("report", "Sheriff Reports") { Visible = false };
         _reportPanel.Closed += CloseReport;
         _reportLayer.AddChild(_reportPanel);
         var r = _reportPanel.Body;

@@ -213,7 +213,7 @@ public class AdminPanelPacketCoordinator(
 
         PersistInBackground(session);
         await SendStateAsync(session, granted: true);
-        await SendResultAsync(session, true, $"Coins {(delta >= 0 ? "+" : "")}{delta:n0} — now {total:n0}.");
+        await SendResultAsync(session, true, $"Gold {(delta >= 0 ? "+" : "")}{delta:n0} — now {total:n0}.");
         logger.LogInformation("GM {Name} adjusted own coins by {Delta} (now {Total})", session.Name, delta, total);
     }
 

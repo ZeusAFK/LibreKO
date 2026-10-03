@@ -71,7 +71,7 @@ public partial class World
         _vipWhLayer = new CanvasLayer { Layer = 74 };
         AddChild(_vipWhLayer);
 
-        _vipWhPanel = new HudWindow("vipwarehouse", "VIP Vault", new Vector2(170, 100)) { Visible = false };
+        _vipWhPanel = new HudWindow("vipwarehouse", "VIP Vault") { Visible = false };
         _vipWhPanel.Closed += CloseVipWarehouse;
         _vipWhLayer.AddChild(_vipWhPanel);
 

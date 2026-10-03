@@ -28,6 +28,7 @@ public partial class World
     private StatBar _hpBar = null!, _mpBar = null!;
 
     private MiniMap _miniMap = null!;
+    private Control? _statusHud;
     private readonly List<MiniMap.Blip> _blipScratch = new();
     private const float QuestTargetBlipRadius = 4.5f;
     private Label _kcLabel = null!;
@@ -77,6 +78,7 @@ public partial class World
             Position = StatusHudPos,
             CustomMinimumSize = VitalsSize,
         };
+        _statusHud = status;
         layer.AddChild(status);
         _statusRoot = status;
 

@@ -55,6 +55,21 @@ public partial class Net
         _conn.Send(p);
     }
 
+    private const byte WarehouseMoveSub = 4;
+
+    public void SendWarehouseMoveInside(int npcId, int itemId, byte page, byte srcPos, byte dstPage, byte dstPos)
+    {
+        var p = new Packet(GameOpcodes.GS_WAREHOUSE);
+        p.WriteByte(WarehouseMoveSub);
+        p.WriteInt(npcId);
+        p.WriteInt(itemId);
+        p.WriteByte(page);
+        p.WriteByte(srcPos);
+        p.WriteByte(dstPos);
+        p.WriteByte(dstPage);
+        _conn.Send(p);
+    }
+
     public void SendWarehouseInput(int npcId, int itemId, byte page, byte srcInvPos, byte dstWhPos, int count)
         => SendWarehouseMove(2, npcId, itemId, page, srcInvPos, dstWhPos, count);
 

@@ -21,7 +21,7 @@ public partial class World
     {
         _ringUpLayer = new CanvasLayer { Layer = 62 };
         AddChild(_ringUpLayer);
-        _ringUpPanel = new HudWindow("ring_upgrade", "Ring Upgrade", new Vector2(220, 150)) { Visible = false };
+        _ringUpPanel = new HudWindow("ring_upgrade", "Ring Upgrade") { Visible = false };
         _ringUpPanel.Closed += CloseRingUpgrade;
         _ringUpLayer.AddChild(_ringUpPanel);
 

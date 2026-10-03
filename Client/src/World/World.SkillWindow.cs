@@ -438,7 +438,7 @@ public partial class World
             if (icon != null)
                 preview.AddChild(new TextureRect { Texture = icon, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered });
             else { var l = HudStyle.Label(11, HorizontalAlignment.Center); l.Text = Skill.Name; preview.AddChild(l); }
-            SetDragPreview(preview);
+            DragLayer.Show(this, preview);
             return new Godot.Collections.Dictionary { { "id", Skill.Id } };
         }
     }

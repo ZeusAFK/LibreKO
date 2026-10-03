@@ -17,7 +17,7 @@ public partial class World
     {
         _msgrLayer = new CanvasLayer { Layer = 74 };
         AddChild(_msgrLayer);
-        _msgrPanel = new HudWindow("messenger", "Messenger", new Vector2(200, 130)) { Visible = false };
+        _msgrPanel = new HudWindow("messenger", "Messenger") { Visible = false };
         _msgrPanel.Closed += CloseMessenger;
         _msgrLayer.AddChild(_msgrPanel);
         var root = _msgrPanel.Body;

@@ -26,7 +26,7 @@ public partial class World
         _classChangeLayer = new CanvasLayer { Layer = 74 };
         AddChild(_classChangeLayer);
 
-        _classChangePanel = new HudWindow("class_change", "Redistribution", new Vector2(300, 150), RedistributionPanelWidth) { Visible = false };
+        _classChangePanel = new HudWindow("class_change", "Redistribution", bodyMinWidth: RedistributionPanelWidth) { Visible = false };
         _classChangePanel.Closed += CloseClassChange;
         _classChangeLayer.AddChild(_classChangePanel);
 

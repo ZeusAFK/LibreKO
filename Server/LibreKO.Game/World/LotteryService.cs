@@ -162,7 +162,7 @@ public class LotteryService : ILotteryService
             if (reqItemId == InventoryConstants.ItemGold)
             {
                 if (player.Money < reqItemCount)
-                    return (false, $"Not enough Noah. ({reqItemCount:N0} Noah required)", active.TicketsFor(player.CharacterId), active.TotalTickets);
+                    return (false, $"Not enough gold. ({reqItemCount:N0} gold required)", active.TicketsFor(player.CharacterId), active.TotalTickets);
 
                 player.Money -= reqItemCount;
             }
@@ -213,7 +213,7 @@ public class LotteryService : ILotteryService
 
         var eventData = active.EventData;
         var reqName = eventData.ReqItemId == InventoryConstants.ItemGold
-            ? "Noah"
+            ? "Gold"
             : (_gameDataService.GetItem(eventData.ReqItemId)?.Name ?? "Item");
 
         var rewards = _gameDataService.LotteryRewardsByEvent[eventData.Id]
@@ -373,7 +373,7 @@ public class LotteryService : ILotteryService
     private string GetRewardName(int itemId) =>
         itemId switch
         {
-            InventoryConstants.ItemGold => "Noah",
+            InventoryConstants.ItemGold => "Gold",
             InventoryConstants.ItemExperience => "Experience",
             InventoryConstants.ItemLadderPoint => "National Points",
             _ => _gameDataService.GetItem(itemId)?.Name ?? $"Item {itemId}",

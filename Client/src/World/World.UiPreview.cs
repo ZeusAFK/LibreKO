@@ -15,11 +15,17 @@ public partial class World
     private const int PreviewMonsterStone = 900144023;
     private const int PreviewNestTimeLeft = 1786;
     private const int PreviewNestGraceLeft = 11;
+    private const int PreviewBattleSecondsLeft = 1325;
     private const int PreviewUpgradedWeapon = 156210008;
     private const int PreviewUpgradedResult = 156210009;
     private const int PreviewReverseWeapon = 156211038;
     private const int PreviewUniqueRing = 330620433;
     private const int PreviewKrowazBoots = 208005000;
+    private const int PreviewKrowazTop = 208001000;
+    private const int PreviewNoRepairHelmet = 202013000;
+    private const int PreviewNonStorableTattoo = 810433000;
+    private const int PreviewCompoundRing = 340947000;
+    private const float PreviewScanShare = 0.6f;
     private const int PreviewSealStone = 810890000;
 
     internal Node3D? SelfVisual => _self;
@@ -514,6 +520,22 @@ public partial class World
         return DetachPreviewControl(_upgradePanel);
     }
 
+    internal Control BuildRepairUiPreview()
+    {
+        ItemData.EnsureLoaded();
+        Sheet.SeedWealth(gold: 1_180_000, np: 2_450);
+        Inv.EnsureLength(GridStart + GridCount);
+        Inv[GridStart] = PreviewItem(PreviewUpgradedWeapon, 1, 1_100);
+        Inv[GridStart + 1] = PreviewItem(PreviewKrowazTop, 1, 8_200);
+        Inv[GridStart + 2] = PreviewItem(PreviewKrowazBoots, 1, 15_900);
+        Inv[GridStart + 3] = PreviewItem(PreviewNoRepairHelmet, 1, 3_000);
+        BuildInventoryPanel();
+        BuildRepairPanel();
+        _vendorNpcName = "[Blacksmith] Hepa";
+        OpenRepair();
+        return DetachPreviewControl(_repairPanel);
+    }
+
     internal Control BuildWarehouseUiPreview()
     {
         ItemData.EnsureLoaded();
@@ -522,6 +544,7 @@ public partial class World
         Inv[GridStart] = PreviewItem(PreviewUpgradedWeapon, 1, 7000);
         Inv[GridStart + 1] = PreviewItem(PreviewPotion, 24, 1);
         Inv[GridStart + 2] = PreviewItem(UpgradeScrollHighBlessed, 3, 1);
+        Inv[GridStart + 3] = PreviewItem(PreviewNonStorableTattoo, 1, 1);
         BuildInventoryPanel();
         BuildWarehousePanel();
         _whShown = true;
@@ -530,16 +553,34 @@ public partial class World
         _warehouse[0] = PreviewItem(PreviewReverseWeapon, 1, 6200);
         _warehouse[1] = PreviewItem(PreviewUniqueRing, 1, 1);
         _warehouse[2] = PreviewItem(PreviewUpgradedResult, 1, 7000);
-        _warehouse[3] = PreviewItem(TrinaPiece, 12, 1);
+        _warehouse[3] = PreviewItem(PreviewPotion, 40, 1);
+        _warehouse[30] = PreviewItem(PreviewUpgradedWeapon, 1, 7000);
+        _warehouse[60] = PreviewItem(TrinaPiece, 12, 1);
         RefreshWarehouse();
+        _whStatus.Status($"Stored {WhItemLine(PreviewPotion, 10)}.", bad: false);
         return DetachPreviewControl(_whPanel);
+    }
+
+    internal string SetWarehouseSearchUiPreview(string query)
+    {
+        _whSearch.Text = query;
+        RefreshWarehouse();
+        return $"search={query} hits={_whHits.Count}";
+    }
+
+    internal QuantityPrompt OpenWarehouseAmountUiPreview()
+    {
+        DepositSlot(GridStart + 1, -1);
+        RemoveChild(_whAmount);
+        foreach (var node in _whAmount.GetChildren())
+            if (node is Control control) control.Theme = HudTheme.Shared;
+        return _whAmount;
     }
 
     internal Control? HoverWarehouseCellUiPreview(bool bag, int index)
     {
-        var cells = bag ? _whBagCells : _whCells;
-        if (index < 0 || index >= cells.Length) return null;
-        cells[index].EmitSignal(Control.SignalName.MouseEntered);
+        if (index < 0 || index >= _whCells.Length) return null;
+        _whCells[index].EmitSignal(Control.SignalName.MouseEntered);
         return _itemTipPanel.Visible ? DetachPreviewControl(_itemTipPanel) : null;
     }
 
@@ -562,6 +603,62 @@ public partial class World
             Durability = (short)Mathf.Min(durability, short.MaxValue),
         });
         return DetachPreviewControl(_itemTipPanel);
+    }
+
+    internal Control BuildAnvilChoiceUiPreview()
+    {
+        QuestText.EnsureLoaded();
+        BuildNpcDialog();
+        ShowAnvilChoice();
+        return DetachPreviewControl(_npcPanel);
+    }
+
+    internal Control BuildAnvilAccessoryUiPreview()
+    {
+        ItemData.EnsureLoaded();
+        Sheet.SeedWealth(gold: 1_180_000, np: 2_450);
+        Inv.EnsureLength(GridStart + GridCount);
+        Inv[GridStart] = PreviewItem(PreviewCompoundRing, 1, 1);
+        Inv[GridStart + 1] = PreviewItem(PreviewCompoundRing, 1, 1);
+        Inv[GridStart + 2] = PreviewItem(PreviewCompoundRing, 1, 1);
+        Inv[GridStart + 3] = PreviewItem(AccessoryCompoundScrollFirst, 4, 1);
+        Inv[GridStart + 4] = PreviewItem(PreviewUpgradedWeapon, 1, 7000);
+        BuildUpgradePanel();
+        _upgradeAnvilId = 1;
+        _anvilTabs.Select((int)AnvilBench.Accessory, notify: false);
+        SetAnvilBench(AnvilBench.Accessory);
+        _upgradeShown = true;
+        _upgradePanel.Visible = true;
+        PlaceUpgradeItem(GridStart);
+        PlaceUpgradeItem(GridStart + 1);
+        PlaceUpgradeItem(GridStart + 3);
+        PlaceUpgradeItem(GridStart + 4);
+        Callable.From(HoldBenchHeight).CallDeferred();
+        return DetachPreviewControl(_upgradePanel);
+    }
+
+    internal Control BuildAnvilScanUiPreview()
+    {
+        var panel = BuildUpgradeUiPreview();
+        _upgradeSession.Sent();
+        SetAnvilStrip(_anvilStrip.Title.Text, "Upgrade in progress...", UiTheme.TextLo);
+        _anvilLids.Visible = true;
+        _anvilLidTop.AnchorBottom = 0.5f;
+        _anvilLidBottom.AnchorTop = 0.5f;
+        _anvilSeam.AnchorRight = PreviewScanShare;
+        RefreshUpgradeActions();
+        return panel;
+    }
+
+    internal Control BuildAnvilOutcomeUiPreview(bool succeeded)
+    {
+        var panel = BuildUpgradeUiPreview();
+        _upgradeSession.Sent();
+        _upgradeSession.Answered();
+        ApplyUpgradeResult(new UpgradeResult(2, UpgradeTypeNormal,
+            succeeded ? UpgradeResultSucceeded : UpgradeResultFailed,
+            new[] { new UpgradeSlotResult(succeeded ? PreviewUpgradedResult : 0, 0) }), onBench: true);
+        return panel;
     }
 
     internal Control BuildNpcServiceChoiceUiPreview()
@@ -809,7 +906,7 @@ public partial class World
             ? new QuestView(71, 18004, 21, true, true, false, false,
                 QuestViewState.Available, 0, "1st job change",
                 "I have to pay [Grand Merchant] Kaishan for the job change.",
-                "So you want to change jobs? It costs 3,000 coins to register the change with the guild.",
+                "So you want to change jobs? It costs 3,000 gold to register the change with the guild.",
                 new QuestObjectives(71, false, []), [],
                 [
                     new QuestTransfer(true, 1, 0, 3000, 0),
@@ -867,6 +964,28 @@ public partial class World
     {
         ShowQuestProgressToast(quest, objective, done, needed);
         return DetachPreviewControl(_questToastPanel!);
+    }
+
+    internal Control BuildBattleBoardUiPreview(int zone, int karus, int elmo)
+    {
+        BuildBattleEventUi();
+        _battleeventBoard.TooltipText = BattleZoneName(zone);
+        _battleeventBoard.SetScores(karus, elmo);
+        _battleeventRemaining = PreviewBattleSecondsLeft;
+        UpdateBattleTimerLabel();
+        _battleeventBoard.Visible = true;
+        return DetachPreviewControl(_battleeventBoard);
+    }
+
+    internal Control BuildBorderWarUiPreview(int karus, int elmorad, string carrier, byte nation)
+    {
+        _bdwHudLayer = new CanvasLayer();
+        AddChild(_bdwHudLayer);
+        BuildBdwScoreBanner();
+        _bdwScoreBanner.SetScores(karus, elmorad);
+        ShowBdwCarrier(carrier, nation);
+        _bdwScoreBanner.Visible = true;
+        return DetachPreviewControl(_bdwScoreBanner);
     }
 
     internal Control BuildNestTimerUiPreview(bool completed)
@@ -1094,7 +1213,7 @@ public partial class World
             dlg.HeaderText = "Choose your reward.";
             dlg.Buttons.Clear();
             dlg.Buttons.Add((0, 0, "1,500,000 experience"));
-            dlg.Buttons.Add((1, 0, "100,000 coins"));
+            dlg.Buttons.Add((1, 0, "100,000 gold"));
             dlg.Buttons.Add((2, 0, "Cancel"));
         }
         OnNpcDialog(dlg);
@@ -1116,28 +1235,45 @@ public partial class World
         return DetachPreviewControl(_vendorPanel);
     }
 
-    internal Control? HoverVendorRowUiPreview(bool sell, int index)
+    internal string SetVendorSearchUiPreview(string query)
     {
-        var rows = (sell ? _vendorSellList : _vendorBuyList).GetChildren();
-        if (index < 0 || index >= rows.Count || rows[index] is not Control row) return null;
-        row.EmitSignal(Control.SignalName.MouseEntered);
+        _vendorSearch.Text = query;
+        OnVendorSearch();
+        return $"search={query} shown={_vendorResults.Count}";
+    }
+
+    internal string SetVendorGroupUiPreview(int group)
+    {
+        OpenVendor(group);
+        return $"group={group} pages={_vendorCatalogue.Pages.Count} items={_vendorCatalogue.Count}";
+    }
+
+    internal Control? HoverVendorCellUiPreview(int index)
+    {
+        if (index < 0 || index >= _vendorCells.Length) return null;
+        _vendorCells[index].EmitSignal(Control.SignalName.MouseEntered);
         return _itemTipPanel.Visible ? DetachPreviewControl(_itemTipPanel) : null;
     }
 
-    internal Control BuildBuyAmountUiPreview()
+    internal QuantityPrompt OpenVendorSellPromptUiPreview()
     {
-        ItemData.EnsureLoaded();
-        Sheet.SeedWealth(gold: 1_180_000, np: 2_450);
-        Sheet.SetMaxWeight(4_500);
-        Inv.EnsureLength(GridStart + GridCount);
-        Inv[GridStart] = PreviewItem(811182000, 35, 1);
-        BuildBuyAmountPrompt();
-        var entry = new ItemData.SellEntry { Id = 389013000, Line = 0, List = 0 };
-        OpenBuyAmount(entry, ItemData.Get(entry.Id)!);
-        SetBuyAmount(25);
-        var box = DetachPreviewControl(_buyAmountBox);
-        Callable.From(() => box.Size = box.GetCombinedMinimumSize()).CallDeferred();
-        return box;
+        AskSell(GridStart);
+        return DetachTradePrompt();
+    }
+
+    internal QuantityPrompt OpenVendorBuyPromptUiPreview()
+    {
+        int stackable = System.Linq.Enumerable.FirstOrDefault(_vendorCellIds, id => ItemData.Get(id) is { Countable: not 0 });
+        AskBuy(stackable, -1);
+        return DetachTradePrompt();
+    }
+
+    private QuantityPrompt DetachTradePrompt()
+    {
+        RemoveChild(_tradePrompt);
+        foreach (var node in _tradePrompt.GetChildren())
+            if (node is Control control) control.Theme = HudTheme.Shared;
+        return _tradePrompt;
     }
 
     internal Control BuildFamiliarUiPreview(bool summoned)

@@ -242,6 +242,13 @@ public partial class World
     {
         bool fishing = sub == Net.SubFishingStart;
 
+        if (code == Net.MiningAlready && !_gathering)
+        {
+            if (fishing) Net.I.SendFishingStop(); else Net.I.SendMiningStop();
+            CombatNotice(fishing ? "Fishing stopped." : "Mining stopped.");
+            return;
+        }
+
         if (code != Net.MiningSuccess)
         {
             ReportGatherFailure(sub, code);

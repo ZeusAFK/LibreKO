@@ -16,7 +16,7 @@ public partial class World
     {
         _fortuneLayer = new CanvasLayer { Layer = 73 };
         AddChild(_fortuneLayer);
-        _fortunePanel = new HudWindow("fortune", "Daily Fortune", new Vector2(360, 240)) { Visible = false };
+        _fortunePanel = new HudWindow("fortune", "Daily Fortune") { Visible = false };
         _fortunePanel.Closed += CloseFortune;
         _fortuneLayer.AddChild(_fortunePanel);
         var root = _fortunePanel.Body;

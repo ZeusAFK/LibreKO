@@ -15,7 +15,7 @@ public partial class World
     {
         _itemCombineLayer = new CanvasLayer { Layer = 73 };
         AddChild(_itemCombineLayer);
-        _itemCombinePanel = new HudWindow("itemcombine", "Item Combine", new Vector2(180, 120)) { Visible = false };
+        _itemCombinePanel = new HudWindow("itemcombine", "Item Combine") { Visible = false };
         _itemCombinePanel.Closed += CloseItemCombine;
         _itemCombineLayer.AddChild(_itemCombinePanel);
         var root = _itemCombinePanel.Body;

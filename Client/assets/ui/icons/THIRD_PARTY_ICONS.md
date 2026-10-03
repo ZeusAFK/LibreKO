@@ -71,6 +71,9 @@ drawn as a single filled silhouette so it survives being tinted and scaled to 20
 `system/level.svg` is an original bar chart drawn for GKO on the same grid, for the GM panel's Level
 section: three rounded bars rising left to right.
 
+`system/pin.svg` is an original push-pin silhouette drawn for GKO on the same grid, for the dock button in
+window headers: cap, flared body, crossbar and needle as one filled shape.
+
 ### Touch interaction icons (Phosphor, MIT)
 
 | Local file | Source in phosphor-icons/core | Author |

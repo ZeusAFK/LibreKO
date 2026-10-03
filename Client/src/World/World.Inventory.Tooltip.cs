@@ -55,7 +55,7 @@ public partial class World : Node3D
         }
         if (cell.Current.IsEmpty) return;
         _hoverCell = cell;
-        ShowItemTooltip(cell.Slot, cell.Current);
+        ShowItemTooltip(cell.Slot, cell.Current, _bagCompanion?.Note(cell.Slot) ?? "");
     }
 
     public bool ItemTooltipVisible => _itemTipPanel is { Visible: true };
@@ -184,7 +184,7 @@ public partial class World : Node3D
             lines.Add(TooltipLine.Rule());
         }
 
-        int maxDurability = def.Duration + (ext?.DurationBonus ?? 0);
+        int maxDurability = ItemData.MaxDurability(def, ext);
         if (maxDurability > 1 && !def.IsChargeItem)
         {
             int current = item.Durability;

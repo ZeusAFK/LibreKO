@@ -48,7 +48,7 @@ public partial class World
         _clanWhLayer = new CanvasLayer { Layer = 74 };
         AddChild(_clanWhLayer);
 
-        _clanWhPanel = new HudWindow("clanwarehouse", "Clan Warehouse", new Vector2(150, 90)) { Visible = false };
+        _clanWhPanel = new HudWindow("clanwarehouse", "Clan Warehouse") { Visible = false };
         _clanWhPanel.Closed += CloseClanWarehouse;
         _clanWhLayer.AddChild(_clanWhPanel);
 

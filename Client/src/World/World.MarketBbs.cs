@@ -19,7 +19,7 @@ public partial class World
     {
         _mbbsLayer = new CanvasLayer { Layer = 73 };
         AddChild(_mbbsLayer);
-        _mbbsPanel = new HudWindow("marketbbs", "Trade Board", new Vector2(150, 90)) { Visible = false };
+        _mbbsPanel = new HudWindow("marketbbs", "Trade Board") { Visible = false };
         _mbbsPanel.Closed += CloseMarketBbs;
         _mbbsLayer.AddChild(_mbbsPanel);
         var root = _mbbsPanel.Body;

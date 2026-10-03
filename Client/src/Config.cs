@@ -694,6 +694,24 @@ public static class Config
         ReportWindowsSave(cfg.Save(WindowsPath()));
     }
 
+    public static void ForgetWindowPos(string id)
+    {
+        var cfg = WindowsCfg();
+        if (!cfg.HasSectionKey("pos", id)) return;
+        cfg.EraseSectionKey("pos", id);
+        ReportWindowsSave(cfg.Save(WindowsPath()));
+    }
+
+    public static void ForgetWindowPositionsOnce(string migration, System.Collections.Generic.IEnumerable<string> ids)
+    {
+        var cfg = WindowsCfg();
+        if (cfg.HasSectionKey("migrations", migration)) return;
+        foreach (string id in ids)
+            if (cfg.HasSectionKey("pos", id)) cfg.EraseSectionKey("pos", id);
+        cfg.SetValue("migrations", migration, true);
+        ReportWindowsSave(cfg.Save(WindowsPath()));
+    }
+
     public static Vector2 GetWindowSize(string id, Vector2 fallback)
     {
         var cfg = WindowsCfg();

@@ -15,7 +15,7 @@ public partial class World
     {
         _eventQuestLayer = new CanvasLayer { Layer = 62 };
         AddChild(_eventQuestLayer);
-        _eventQuestPanel = new HudWindow("eventquests", "Event Quests", new Vector2(200, 130)) { Visible = false };
+        _eventQuestPanel = new HudWindow("eventquests", "Event Quests") { Visible = false };
         _eventQuestPanel.Closed += CloseEventQuests;
         _eventQuestLayer.AddChild(_eventQuestPanel);
         var root = _eventQuestPanel.Body;

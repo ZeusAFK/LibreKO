@@ -1,4 +1,5 @@
 ﻿using Godot;
+using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -9,6 +10,21 @@ public partial class HudWindow : PanelContainer
     public string Id { get; }
 
     public bool PluginReplaced { get; }
+
+    public HudLayout Layout { get; }
+
+    private System.Func<Vector2>? _dock;
+
+    public void DockTo(System.Func<Vector2> position) => _dock = position;
+
+    private const ulong CentreSettleMsec = 300;
+    private readonly bool _opensCentred;
+    private ulong _centreSettlesAt;
+
+    private static readonly System.Collections.Generic.HashSet<string> _centredIds =
+        new(System.StringComparer.OrdinalIgnoreCase);
+
+    internal static System.Collections.Generic.IReadOnlyCollection<string> CentredIds => _centredIds;
 
     private static readonly System.Collections.Generic.Dictionary<string, HudWindow> _byId =
         new(System.StringComparer.OrdinalIgnoreCase);
@@ -31,6 +47,7 @@ public partial class HudWindow : PanelContainer
                 break;
             case NotificationVisibilityChanged:
                 if (_pluginHidden && Visible) { Visible = false; break; }
+                if (_opensCentred && Visible) _centreSettlesAt = Time.GetTicksMsec() + CentreSettleMsec;
                 if (_host == null) break;
                 if (Visible) _host.RaiseShown(); else _host.RaiseHidden();
                 break;
@@ -69,6 +86,9 @@ public partial class HudWindow : PanelContainer
     private Button? _minimizeBtn;
     private PanelContainer? _header;
     private Label? _marker;
+    private HBoxContainer? _headerBar;
+    private Button? _closeButton;
+    private Button? _dockPin;
 
     public void SetHeaderAccent(Color fill, Color border, Color marker)
     {
@@ -78,6 +98,41 @@ public partial class HudWindow : PanelContainer
         sb.BorderColor = border;
         _header.AddThemeStyleboxOverride("panel", sb);
         _marker?.AddThemeColorOverride("font_color", marker);
+    }
+
+    private const float DockPinDockedAlpha = 0.42f;
+    private const float DockPinHoverAlpha = 0.30f;
+    private const float DockPinFreeAlpha = 0.4f;
+
+    private static StyleBoxFlat PinChip(float alpha)
+    {
+        var chip = new StyleBoxFlat { BgColor = new Color(0.06f, 0.05f, 0.035f, alpha) };
+        chip.SetCornerRadiusAll(3);
+        return chip;
+    }
+
+    public void ShowDockPin(System.Action redock)
+    {
+        if (PluginReplaced || _headerBar == null || _dockPin != null) return;
+        _dockPin = UiTheme.IconButton(UiIcons.Get("system/pin"), "Dock to the screen edge");
+        _dockPin.CustomMinimumSize = HeaderButtonSize;
+        _dockPin.AddThemeConstantOverride("icon_max_width", Platform.Pick(12, 22));
+        _dockPin.AddThemeColorOverride("icon_hover_color", Colors.White);
+        _dockPin.AddThemeColorOverride("icon_pressed_color", Colors.White);
+        _dockPin.AddThemeStyleboxOverride("hover", PinChip(DockPinHoverAlpha));
+        _dockPin.AddThemeStyleboxOverride("pressed", PinChip(DockPinHoverAlpha));
+        _dockPin.Pressed += redock;
+        _headerBar.AddChild(_dockPin);
+        if (_closeButton != null) _headerBar.MoveChild(_dockPin, _closeButton.GetIndex());
+        SetDocked(true);
+    }
+
+    public void SetDocked(bool docked)
+    {
+        if (_dockPin == null) return;
+        _dockPin.AddThemeColorOverride("icon_normal_color", docked ? Colors.White : new Color(UiTheme.TextHi, DockPinFreeAlpha));
+        _dockPin.AddThemeStyleboxOverride("normal", docked ? PinChip(DockPinDockedAlpha) : new StyleBoxEmpty());
+        _dockPin.TooltipText = docked ? "Docked to the screen edge" : "Dock to the screen edge";
     }
 
     public void SetMinimized(bool minimized)
@@ -126,6 +181,37 @@ public partial class HudWindow : PanelContainer
         Texture2D? titleIcon = null,
         bool minimizable = false,
         bool closable = true)
+        : this(id, title, (Vector2?)defaultPos, bodyMinWidth, resizable, minimumSize, persistLayout, titleIcon,
+            minimizable, closable)
+    {
+    }
+
+    public HudWindow(
+        string id,
+        string title,
+        int bodyMinWidth = 0,
+        bool resizable = false,
+        Vector2 minimumSize = default,
+        bool persistLayout = true,
+        Texture2D? titleIcon = null,
+        bool minimizable = false,
+        bool closable = true)
+        : this(id, title, (Vector2?)null, bodyMinWidth, resizable, minimumSize, persistLayout, titleIcon,
+            minimizable, closable)
+    {
+    }
+
+    private HudWindow(
+        string id,
+        string title,
+        Vector2? defaultPos,
+        int bodyMinWidth,
+        bool resizable,
+        Vector2 minimumSize,
+        bool persistLayout,
+        Texture2D? titleIcon,
+        bool minimizable,
+        bool closable)
     {
         Id = id;
         var rule = PluginHost.Ui.RuleFor(id);
@@ -172,6 +258,7 @@ public partial class HudWindow : PanelContainer
         };
         bar.AddThemeConstantOverride("separation", 6);
         header.AddChild(bar);
+        _headerBar = bar;
 
         if (titleIcon != null)
         {
@@ -231,6 +318,7 @@ public partial class HudWindow : PanelContainer
             close.AddThemeStyleboxOverride("pressed", closeHover);
             close.Pressed += () => { Visible = false; Closed?.Invoke(); Audio.PlayUi(Sfx.InventoryClose); };
             bar.AddChild(close);
+            _closeButton = close;
         }
 
         var content = new MarginContainer();
@@ -264,12 +352,32 @@ public partial class HudWindow : PanelContainer
                 foreach (var extend in rule.Extenders) extend(Body);
         }
 
-        HudLayout.Attach(
-            this, id, dragHandle, () => defaultPos,
+        Layout = HudLayout.Attach(
+            this, id, dragHandle, () => _dock?.Invoke() ?? defaultPos ?? CentredSpot(),
             resizable: resizable,
             minimumSize: minimumSize,
             persist: persistLayout);
 
         if (!resizable) MinimumSizeChanged += QueueFit;
+        if (defaultPos == null)
+        {
+            _opensCentred = true;
+            _centredIds.Add(id);
+            Resized += RecentreWhileSettling;
+        }
+    }
+
+    private Vector2 CentredSpot()
+    {
+        if (!IsInsideTree()) return Position;
+        Vector2 min = GetCombinedMinimumSize();
+        Vector2 footprint = new Vector2(Mathf.Max(Size.X, min.X), Mathf.Max(Size.Y, min.Y)) * Scale;
+        return WindowPlacement.Centre(GetViewportRect().Size, footprint);
+    }
+
+    private void RecentreWhileSettling()
+    {
+        if (Visible && Time.GetTicksMsec() < _centreSettlesAt && IsInstanceValid(Layout))
+            Callable.From(Layout.ReapplyDefault).CallDeferred();
     }
 }

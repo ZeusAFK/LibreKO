@@ -92,7 +92,7 @@ public partial class World
 
         var totalRow = UiTheme.Section();
         root.AddChild(totalRow);
-        totalRow.AddChild(MoneyRow("Noah", out _wishTotal, UiTheme.GoldBright));
+        totalRow.AddChild(MoneyRow("Gold", out _wishTotal, UiTheme.GoldBright));
 
         _wishStatus = UiTheme.Text("", 12, UiTheme.TextLo);
         _wishStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -132,7 +132,7 @@ public partial class World
 
     private void BuildWantedPanel()
     {
-        _wantedPanel = new HudWindow("wantedstall", "Buying Merchant", new Vector2(120, 70)) { Visible = false };
+        _wantedPanel = new HudWindow("wantedstall", "Buying Merchant") { Visible = false };
         _wantedPanel.Closed += CloseWantedStall;
         _mctLayer.AddChild(_wantedPanel);
 
@@ -211,7 +211,7 @@ public partial class World
         int most = stackable ? MerchantWishMaxStack : 1;
         var preview = new ItemSlot { ItemId = hit.Id, Count = 1, Durability = (short)hit.Def.Duration };
 
-        AskAmount(preview, "Wish Noah Amount to Purchase", ItemData.BuyPrice(hit.Id), most, stackable,
+        AskAmount(preview, "Gold Offered per Item", ItemData.BuyPrice(hit.Id), most, stackable,
             (wantCount, price) =>
             {
                 _wishes[slot] = new MerchantWishItem { ItemId = hit.Id, Count = wantCount, Price = price };
@@ -238,7 +238,7 @@ public partial class World
             long line = (long)wish.Price * wish.Count;
             total += line;
             _wishSummary.AddChild(UiTheme.Text(
-                $"{ItemData.DisplayName(wish.ItemId)}   [{Money(wish.Price)} Coin] x {wish.Count}",
+                $"{ItemData.DisplayName(wish.ItemId)}   [{Money(wish.Price)} gold] x {wish.Count}",
                 12, UiTheme.TextHi));
         }
 

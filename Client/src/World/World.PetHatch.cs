@@ -49,7 +49,7 @@ public partial class World
         _petHatchLayer = new CanvasLayer { Layer = 74 };
         AddChild(_petHatchLayer);
 
-        _petHatchPanel = new HudWindow("pethatch", "Familiar Hatching", new Vector2(220, 150), 320) { Visible = false };
+        _petHatchPanel = new HudWindow("pethatch", "Familiar Hatching", bodyMinWidth: 320) { Visible = false };
         _petHatchPanel.Closed += ClosePetHatch;
         _petHatchLayer.AddChild(_petHatchPanel);
 

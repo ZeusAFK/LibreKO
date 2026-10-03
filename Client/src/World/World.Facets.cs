@@ -48,6 +48,9 @@ public partial class World : Node3D
         Facet(NpcInit, NpcDispose);
         Facet(QuestInit, QuestDispose);
         Facet(MainPanelInit);
+        Facet(BagCompanionInit);
+        Facet(DockInit, DockDispose);
+        Facet(EventPlatesInit, EventPlatesDispose);
         Facet(() => BuildHudLauncher());
         if (Platform.TouchUi) Facet(TouchHudInit, TouchHudDispose);
         Facet(VendorInit, VendorDispose);
@@ -72,6 +75,7 @@ public partial class World : Node3D
         Facet(PetInit, PetDispose);
         Facet(RebirthInit, RebirthDispose);
         Facet(BifrostInit, BifrostDispose);
+        Facet(BorderDefenseWarInit, BorderDefenseWarDispose);
         Facet(CapeInit, CapeDispose);
         Facet(NameChangeInit, NameChangeDispose);
         Facet(KingInit, KingDispose);
@@ -132,6 +136,7 @@ public partial class World : Node3D
         Facet(AdminPanelInit, AdminPanelDispose);
         Facet(GmFxInit, GmFxDispose);
         Facet(FxLayerInit, FxLayerDispose);
+        Facet(CentredWindowsInit);
         Facet(BuildAudio, TeardownAudio);
     }
 

@@ -501,7 +501,7 @@ public class CollectionRaceService : ICollectionRaceService
     {
         return itemId switch
         {
-            InventoryConstants.ItemGold => "Noah (Gold)",
+            InventoryConstants.ItemGold => "Gold",
             InventoryConstants.ItemExperience => "Experience",
             InventoryConstants.ItemLadderPoint => "National Points",
             _ => gameDataService.GetItem(itemId)?.Name ?? $"Item {itemId}"

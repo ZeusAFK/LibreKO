@@ -395,7 +395,6 @@ public partial class Net : Node
             case GameOpcodes.GS_FORCES:            HandleForces(p); break;
             case GameOpcodes.GS_INSTANCE:          HandleInstance(p); break;
             case GameOpcodes.GS_CHATROOM:          HandleChatRoom(p); break;
-            case GameOpcodes.GS_NATION_TAX:        HandleNationTax(p); break;
             case GameOpcodes.GS_FORTUNE:           HandleFortune(p); break;
             case GameOpcodes.GS_ITEM_COMBINE:      HandleItemCombine(p); break;
             case GameOpcodes.GS_FISHING_HALL:      HandleFishingHall(p); break;

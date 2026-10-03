@@ -72,7 +72,7 @@ public partial class World
         _exLayer = new CanvasLayer { Layer = 75 };
         AddChild(_exLayer);
 
-        _exPanel = new HudWindow("exchange", "Trade", new Vector2(220, 90)) { Visible = false };
+        _exPanel = new HudWindow("exchange", "Trade") { Visible = false };
         _exPanel.Closed += () => { if (_exShown) AbortExchange(local: true); };
         _exLayer.AddChild(_exPanel);
 

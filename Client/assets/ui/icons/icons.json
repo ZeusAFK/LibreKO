@@ -38,6 +38,7 @@
     "user": "system/user.svg",
     "storefront": "system/storefront.svg",
     "gem": "system/gem.svg",
-    "ticket": "system/ticket.svg"
+    "ticket": "system/ticket.svg",
+    "pin": "system/pin.svg"
   }
 }

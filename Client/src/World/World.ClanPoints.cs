@@ -22,7 +22,7 @@ public partial class World
         _clanPointsLayer = new CanvasLayer { Layer = 74 };
         AddChild(_clanPointsLayer);
 
-        _clanPointsPanel = new HudWindow("clanpoint", "Clan Contribution", new Vector2(240, 140), bodyMinWidth: ClanPointsPanelWidth)
+        _clanPointsPanel = new HudWindow("clanpoint", "Clan Contribution", bodyMinWidth: ClanPointsPanelWidth)
         { Visible = false };
         _clanPointsPanel.Closed += CloseClanPoints;
         _clanPointsLayer.AddChild(_clanPointsPanel);

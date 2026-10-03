@@ -15,7 +15,7 @@ public partial class World
     {
         _itemExchangeLayer = new CanvasLayer { Layer = 64 };
         AddChild(_itemExchangeLayer);
-        _itemExchangePanel = new HudWindow("itemexchange", "Item Exchange", new Vector2(200, 130)) { Visible = false };
+        _itemExchangePanel = new HudWindow("itemexchange", "Item Exchange") { Visible = false };
         _itemExchangePanel.Closed += CloseItemExchange;
         _itemExchangeLayer.AddChild(_itemExchangePanel);
         var root = _itemExchangePanel.Body;
@@ -29,11 +29,21 @@ public partial class World
         scroll.AddChild(_itemExchangeList);
 
         Net.I.ItemExchangeListEvent += OnItemExchangeList;
+        Net.I.ItemExchangeResultEvent += OnItemExchangeResult;
     }
 
     private void ItemExchangeDispose()
     {
         Net.I.ItemExchangeListEvent -= OnItemExchangeList;
+        Net.I.ItemExchangeResultEvent -= OnItemExchangeResult;
+    }
+
+    private void OnItemExchangeResult(bool ok, int outputItemId)
+    {
+        CombatNotice(ok
+            ? $"Exchanged for {ItemData.DisplayName(outputItemId)}."
+            : "The exchange failed: check the materials and your bag space.");
+        if (_itemExchangeShown) Net.I.SendItemExchangeList();
     }
 
     private void ToggleItemExchange()
@@ -74,7 +84,9 @@ public partial class World
 
             string inName = ItemData.DisplayName(r.InputItemId);
             string outName = ItemData.DisplayName(r.OutputItemId);
-            vb.AddChild(UiTheme.Text($"Give {r.InputCount} x {inName}  ->  {outName}", 12, UiTheme.TextLo));
+            int owned = Inv.CountOf(r.InputItemId);
+            vb.AddChild(UiTheme.Text($"Give {r.InputCount} x {inName} (you have {owned})  ->  {outName}", 12,
+                owned >= r.InputCount ? UiTheme.TextLo : UiTheme.Bad));
 
             _itemExchangeList.AddChild(row);
         }

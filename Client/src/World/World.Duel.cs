@@ -18,7 +18,7 @@ public partial class World
     {
         _duelLayer = new CanvasLayer { Layer = 60 };
         AddChild(_duelLayer);
-        _duelPanel = new HudWindow("duel", "Duel Lobby", new Vector2(220, 130)) { Visible = false };
+        _duelPanel = new HudWindow("duel", "Duel Lobby") { Visible = false };
         _duelPanel.Closed += CloseDuel;
         _duelLayer.AddChild(_duelPanel);
         var root = _duelPanel.Body;

@@ -15,7 +15,7 @@ public partial class World
     {
         _fishHallLayer = new CanvasLayer { Layer = 74 };
         AddChild(_fishHallLayer);
-        _fishHallPanel = new HudWindow("fishinghall", "Fishing Hall of Fame", new Vector2(190, 130)) { Visible = false };
+        _fishHallPanel = new HudWindow("fishinghall", "Fishing Hall of Fame") { Visible = false };
         _fishHallPanel.Closed += CloseFishingHall;
         _fishHallLayer.AddChild(_fishHallPanel);
         var root = _fishHallPanel.Body;

@@ -18,7 +18,11 @@ public class WarehousePacketCoordinator(
     IUserNotificationService userNotificationService,
     ILogger<WarehousePacketCoordinator> logger) : IWarehousePacketCoordinator
 {
-    private const int ItemNoTrade = 900000001;
+    private const int NonStorableRace = 73;
+    private const int VaultTicketRaceFirst = 77;
+    private const int VaultTicketRaceLast = 79;
+    private const int NonStorableIdFirst = 900_000_000;
+    private const int NonStorableIdLast = 999_999_999;
     private const int CoinMax = 2_100_000_000;
     private const int WarehousePageSize = 24;
 
@@ -93,7 +97,7 @@ public class WarehousePacketCoordinator(
         if (itemData == null
             || srcPos >= InventoryConstants.HaveMax
             || dstPos >= WarehousePageSize
-            || itemId >= ItemNoTrade
+            || !Storable(itemData)
             || count <= 0
             || (itemData.Countable == 0 && count != 1))
         {
@@ -226,7 +230,7 @@ public class WarehousePacketCoordinator(
         var page = packet.ReadByte();
         var srcPos = packet.ReadByte();
         var dstPos = packet.ReadByte();
-
+        var dstPage = packet.RemainingBytes >= 1 ? packet.ReadByte() : page;
 
         if (srcPos >= WarehousePageSize || dstPos >= WarehousePageSize)
         {
@@ -235,7 +239,7 @@ public class WarehousePacketCoordinator(
         }
 
         var realSrc = page * WarehousePageSize + srcPos;
-        var realDst = page * WarehousePageSize + dstPos;
+        var realDst = dstPage * WarehousePageSize + dstPos;
         if (realSrc >= UserSession.WarehouseMax || realDst >= UserSession.WarehouseMax)
         {
             await session.Client.SendPacket(WarehousePacketWriter.Result(WarehouseSubOpcode.Move, WarehousePacketWriter.Failed));
@@ -295,6 +299,11 @@ public class WarehousePacketCoordinator(
 
         await session.Client.SendPacket(WarehousePacketWriter.Result(WarehouseSubOpcode.InventoryMove, moved ? WarehousePacketWriter.Succeeded : WarehousePacketWriter.Failed));
     }
+
+    private static bool Storable(ItemData itemData) =>
+        itemData.Race != NonStorableRace
+        && itemData.Race is < VaultTicketRaceFirst or > VaultTicketRaceLast
+        && itemData.Num is < NonStorableIdFirst or > NonStorableIdLast;
 
     private static bool CanMergeOrPlace(ItemData itemData, ItemSlot destination, int itemId, int count)
     {

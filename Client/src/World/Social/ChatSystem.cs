@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using LibreKO.Network;
 
@@ -38,11 +39,17 @@ internal sealed class ChatSystem
     internal const byte WhisperChannel = 2;
     private const byte ChatRoomChannel = 33;
     private const byte ClanRecruitChannel = 34;
+    private const byte CommanderChannel = 13;
 
     private byte _sendChannel = 1;
     private string _whisperName = "";
     private string? _pendingWhisper;
     private string _pendingWhisperTo = "";
+    private string _lastWhisperFrom = "";
+
+    private static readonly HashSet<string> ReplyCommands = new(StringComparer.OrdinalIgnoreCase) { "r", "reply" };
+    private static readonly HashSet<string> WhisperCommands = new(StringComparer.OrdinalIgnoreCase) { "w", "tell" };
+    private static readonly HashSet<string> CommandsOpenToEveryone = new(StringComparer.OrdinalIgnoreCase) { "setlevel" };
 
     private readonly Queue<string> _log = new();
     private readonly Dictionary<byte, Button> _channelButtons = new();
@@ -70,7 +77,7 @@ internal sealed class ChatSystem
         7  => ("GM",       "ffe24a"),
         8  => ("GM",       "ffe24a"),
         12 => ("GM",       "ffe24a"),
-        13 => ("nation",   "c8e66b"),
+        13 => ("commander", "c8e66b"),
         14 => ("trade",    "d2b48c"),
         15 => ("alliance", "6fb7ff"),
         19 => ("zone",     "9aa0a6"),
@@ -84,7 +91,7 @@ internal sealed class ChatSystem
     private static string ChanName(byte type) => type switch
     {
         1 => "General", 2 => "Whisper", 3 => "Party", 5 => "Shout", 6 => "Clan",
-        13 => "Nation", 15 => "Alliance", 23 => "Officer", _ => "General",
+        13 => "Commander", 15 => "Alliance", 23 => "Officer", _ => "General",
     };
 
     internal void SendText(string text) => Submit(text);
@@ -117,7 +124,7 @@ internal sealed class ChatSystem
         bar.AddThemeConstantOverride("separation", 4);
         _root.AddChild(bar);
         foreach (var (label, type) in new (string, byte)[]
-                 { ("All", 1), ("Shout", 5), ("Party", 3), ("Clan", 6), ("Nation", 13), ("Alliance", 15) })
+                 { ("All", 1), ("Shout", 5), ("Party", 3), ("Clan", 6), ("Commander", 13), ("Alliance", 15) })
         {
             byte t = type;
             var b = new Button
@@ -204,7 +211,7 @@ internal sealed class ChatSystem
         {
             MaxLength = 128,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            PlaceholderText = "Enter to chat — @name whisper · ! shout · # party · $ clan · % nation · & alliance · / command",
+            PlaceholderText = "Enter to chat — @name whisper · ! shout · # party · $ clan · % commander · & alliance · / command",
         };
         _input.TextSubmitted += Submit;
         _inputRow.AddChild(_input);
@@ -303,13 +310,10 @@ internal sealed class ChatSystem
 
     private void ShowServerLine(ChatLine line)
     {
-        if (line.Type != ClanChannel)
-        {
-            OnNotice(line.Message);
-            return;
-        }
         var (tag, col) = ChanStyle(line.Type);
-        Append($"[color=#{col}][lb]{tag}[rb] {BbCode.Esc(line.Message)}[/color]");
+        Append(line.Type == ClanChannel
+            ? $"[color=#{col}][lb]{tag}[rb] {BbCode.Esc(line.Message)}[/color]"
+            : $"[color=#{col}]{BbCode.Esc(line.Message)}[/color]");
     }
 
     private void OnNotice(string msg)
@@ -401,6 +405,7 @@ internal sealed class ChatSystem
         if (text.Length == 0) { Close(); return; }
 
         if (text[0] == '/' && LocalCommand?.Invoke(text.Substring(1).Trim()) == true) { Close(); return; }
+        if (text[0] == '/' && RunSlashCommand(text.Substring(1).Trim())) { Close(); return; }
 
         var (chan, body, target) = Parse(text);
 
@@ -422,7 +427,9 @@ internal sealed class ChatSystem
         }
         else if (body.Length > 0)
         {
-            if (chan == ChatRoomChannel)
+            if (chan == CommanderChannel && Net.I.MyClan.Fame != ClanRanks.CommandCaptain)
+                Info("Only war captains can use commander chat.");
+            else if (chan == ChatRoomChannel)
                 Net.I.SendChatRoomSay(body);
             else if (chan == ClanRecruitChannel)
                 Info("Clan recruitment chat is not available yet.");
@@ -431,6 +438,36 @@ internal sealed class ChatSystem
         }
 
         Close();
+    }
+
+    private bool RunSlashCommand(string command)
+    {
+        int sp = command.IndexOf(' ');
+        string word = sp < 0 ? command : command[..sp];
+        string args = sp < 0 ? "" : command[(sp + 1)..].Trim();
+
+        if (ReplyCommands.Contains(word))
+        {
+            if (_lastWhisperFrom.Length == 0) Info("No one has whispered you yet.");
+            else if (args.Length == 0) WhisperOpened?.Invoke(_lastWhisperFrom);
+            else SendWhisper(_lastWhisperFrom, args);
+            return true;
+        }
+
+        if (WhisperCommands.Contains(word))
+        {
+            int gap = args.IndexOf(' ');
+            string name = gap < 0 ? args : args[..gap];
+            string message = gap < 0 ? "" : args[(gap + 1)..].Trim();
+            if (name.Length == 0) Info($"Usage: /{word} <name> <message>");
+            else if (message.Length == 0) WhisperOpened?.Invoke(name);
+            else SendWhisper(name, message);
+            return true;
+        }
+
+        if (Net.I.IsGm || CommandsOpenToEveryone.Contains(word)) return false;
+        Info($"Unknown command: /{word}");
+        return true;
     }
 
     internal Action<string, string>? WhisperEcho;
@@ -474,7 +511,12 @@ internal sealed class ChatSystem
 
     private void OnChat(ChatLine line)
     {
-        if (line.Type == WhisperChannel) return;
+        if (line.Type == WhisperChannel)
+        {
+            if (line.Name.Length > 0 && !string.Equals(line.Name, Net.I.LastEnter.Name, StringComparison.OrdinalIgnoreCase))
+                _lastWhisperFrom = line.Name;
+            return;
+        }
 
         if (line.CharId < 0 && line.Name.Length == 0)
         {
@@ -756,15 +798,13 @@ internal sealed class ChatSystem
         _log.Enqueue(bbcode);
         PluginHost.Game.RaiseChatLine(bbcode);
         UpdateChatPeek(bbcode);
-        if (_log.Count > LogMax)
+        if (_log.Count > 1) _scroll.AppendText("\n");
+        _scroll.AppendText(bbcode);
+        while (_log.Count > LogMax)
         {
-            while (_log.Count > LogMax) _log.Dequeue();
-            _scroll.Text = string.Join("\n", _log);
-        }
-        else
-        {
-            if (_scroll.GetParsedText().Length > 0) _scroll.AppendText("\n");
-            _scroll.AppendText(bbcode);
+            string dropped = _log.Dequeue();
+            for (int lines = dropped.Count(c => c == '\n'); lines >= 0; lines--)
+                _scroll.RemoveParagraph(0);
         }
     }
 }

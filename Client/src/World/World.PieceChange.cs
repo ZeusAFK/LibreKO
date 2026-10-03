@@ -63,7 +63,7 @@ public partial class World
         _pieceLayer = new CanvasLayer { Layer = 75 };
         AddChild(_pieceLayer);
 
-        _piecePanel = new HudWindow("piecechange", "Chaotic Generator", new Vector2(150, 120), 640) { Visible = false };
+        _piecePanel = new HudWindow("piecechange", "Chaotic Generator", bodyMinWidth: 640) { Visible = false };
         _piecePanel.Closed += ClosePieceChange;
         _pieceLayer.AddChild(_piecePanel);
 
@@ -430,4 +430,146 @@ public partial class World
     public void StartPieceSpinForTest() => StartPieceSpin();
 
     public void StopPieceSpinForTest() => StopPieceSpin();
+
+    private const int FilteredBackpackMinCells = 10;
+
+    private List<int> UsableBackpackSlots(System.Func<int, bool> usable)
+    {
+        var slots = new List<int>();
+        for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
+            if (!Inv[abs].IsEmpty && usable(Inv[abs].ItemId)) slots.Add(abs);
+        return slots;
+    }
+
+    private int BackpackUsedCount()
+    {
+        int used = 0;
+        for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
+            if (!Inv[abs].IsEmpty) used++;
+        return used;
+    }
+
+    private sealed partial class UpgradeSocket : PanelContainer
+    {
+        public event System.Action? Cleared;
+        public event System.Action<ItemSlot>? Hovered;
+        public event System.Action? Unhovered;
+        private readonly TextureRect _icon;
+        private readonly Label _label;
+        private readonly Label _count;
+        private readonly UpgradeBadge _plus;
+        private readonly bool _interactive;
+        private ItemSlot _held;
+
+        public UpgradeSocket(string label, float size, bool interactive = true)
+        {
+            _interactive = interactive;
+            CustomMinimumSize = new Vector2(size, size);
+            AddThemeStyleboxOverride("panel", UiTheme.Slot());
+
+            _label = UiTheme.Text(label, 11, UiTheme.TextDim, HorizontalAlignment.Center);
+            _label.SetAnchorsPreset(LayoutPreset.FullRect);
+            _label.VerticalAlignment = VerticalAlignment.Center;
+            _label.MouseFilter = MouseFilterEnum.Ignore;
+            AddChild(_label);
+
+            _icon = new TextureRect
+            {
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                MouseFilter = MouseFilterEnum.Ignore,
+            };
+            _icon.SetAnchorsPreset(LayoutPreset.FullRect);
+            AddChild(_icon);
+
+            _count = HudStyle.Label(11, HorizontalAlignment.Right);
+            _count.SetAnchorsPreset(LayoutPreset.BottomRight);
+            _count.MouseFilter = MouseFilterEnum.Ignore;
+            AddChild(_count);
+
+            _plus = UpgradeBadge.Attach(this);
+
+            MouseEntered += () => { if (!_held.IsEmpty) Hovered?.Invoke(_held); };
+            MouseExited += () => Unhovered?.Invoke();
+        }
+
+        public void Set(int itemId, short count, short durability)
+        {
+            _held = new ItemSlot { ItemId = itemId, Count = count, Durability = durability };
+            _icon.Texture = ItemData.Icon(itemId);
+            _label.Visible = false;
+            _count.Text = count > 1 ? count.ToString() : "";
+            _plus.Set(itemId);
+            AddThemeStyleboxOverride("panel", UiTheme.Slot(UiTheme.Gold));
+        }
+
+        public void Clear()
+        {
+            _held = default;
+            _icon.Texture = null;
+            _label.Visible = true;
+            _count.Text = "";
+            _plus.Clear();
+            AddThemeStyleboxOverride("panel", UiTheme.Slot());
+            Unhovered?.Invoke();
+        }
+
+        public override void _GuiInput(InputEvent ev)
+        {
+            if (!_interactive) return;
+            if (ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right }
+                or InputEventMouseButton { Pressed: true, DoubleClick: true, ButtonIndex: MouseButton.Left })
+                Cleared?.Invoke();
+        }
+    }
+
+    private sealed partial class UpgradeBackpackCell : PanelContainer
+    {
+        public event System.Action? Pressed;
+        public event System.Action<int, ItemSlot>? Hovered;
+        public event System.Action? Unhovered;
+        private readonly ItemSlot _item;
+
+        public bool HasItem => !_item.IsEmpty;
+
+        public UpgradeBackpackCell(int absSlot, ItemSlot item, bool staged)
+        {
+            _item = item;
+            MouseEntered += () => { if (!_item.IsEmpty) Hovered?.Invoke(absSlot, _item); };
+            MouseExited += () => Unhovered?.Invoke();
+            CustomMinimumSize = new Vector2(48, 48);
+            AddThemeStyleboxOverride("panel",
+                item.IsEmpty ? UiTheme.Slot() : UiTheme.Slot(staged ? UiTheme.Gold : UiTheme.Edge));
+
+            if (item.IsEmpty)
+                return;
+
+            var icon = new TextureRect
+            {
+                Texture = ItemData.Icon(item.ItemId),
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                MouseFilter = MouseFilterEnum.Ignore,
+                Modulate = staged ? new Color(1f, 1f, 1f, 0.4f) : Colors.White,
+            };
+            icon.SetAnchorsPreset(LayoutPreset.FullRect);
+            AddChild(icon);
+            if (UpgradeBadge.Show(this, item.ItemId) is { } badge) badge.Modulate = icon.Modulate;
+
+            if (item.Count > 1)
+            {
+                var count = HudStyle.Label(11, HorizontalAlignment.Right);
+                count.Text = item.Count.ToString();
+                count.SetAnchorsPreset(LayoutPreset.BottomRight);
+                count.MouseFilter = MouseFilterEnum.Ignore;
+                AddChild(count);
+            }
+        }
+
+        public override void _GuiInput(InputEvent ev)
+        {
+            if (!_item.IsEmpty && ev is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+                Pressed?.Invoke();
+        }
+    }
 }

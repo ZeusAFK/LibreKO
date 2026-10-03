@@ -17,7 +17,7 @@ public partial class World
     {
         _rentLayer = new CanvasLayer { Layer = 73 };
         AddChild(_rentLayer);
-        _rentPanel = new HudWindow("rental", "Rentals", new Vector2(160, 120)) { Visible = false };
+        _rentPanel = new HudWindow("rental", "Rentals") { Visible = false };
         _rentPanel.Closed += CloseRental;
         _rentLayer.AddChild(_rentPanel);
         var root = _rentPanel.Body;

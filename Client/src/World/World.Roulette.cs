@@ -17,7 +17,7 @@ public partial class World
     {
         _rouletteLayer = new CanvasLayer { Layer = 78 };
         AddChild(_rouletteLayer);
-        _roulettePanel = new HudWindow("roulette", "Event Roulette", new Vector2(220, 150)) { Visible = false };
+        _roulettePanel = new HudWindow("roulette", "Event Roulette") { Visible = false };
         _roulettePanel.Closed += CloseRoulette;
         _rouletteLayer.AddChild(_roulettePanel);
 

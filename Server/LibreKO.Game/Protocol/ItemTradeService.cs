@@ -22,6 +22,7 @@ public class ItemTradeService(
     private const int ItemNoTrade = 900000001;
     private const int LoyaltyMerchantSellingGroup = 249000;
     private const int SaleTypeFull = 1;
+    private const int SaleTypeNoRepair = 2;
     private const int SellPriceDivisor = 6;
     private const int ItemBaseIdStep = 1000;
 
@@ -37,7 +38,7 @@ public class ItemTradeService(
         var itemId = packet.ReadInt();
 
         var npc = sessionManager.Regions.GetNpc(npcId);
-        if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc))
+        if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc) || !RepairsItems(npc))
         {
             await SendRepairResponseAsync(session, ItemRepairResult.Failed);
             return;
@@ -71,7 +72,7 @@ public class ItemTradeService(
         }
 
         var itemData = gameDataService.GetItem(itemId);
-        if (itemData == null || itemData.Duration <= 1)
+        if (itemData == null || itemData.Duration <= 1 || itemData.SellPrice == SaleTypeNoRepair)
         {
             await SendRepairResponseAsync(session, ItemRepairResult.Failed);
             return;
@@ -208,8 +209,12 @@ public class ItemTradeService(
         byte type,
         List<NpcTradeEntry> entries)
     {
+        var loyaltyShop = npc.SellingGroup == LoyaltyMerchantSellingGroup;
         var outcome = session.WithLock(s =>
         {
+            if (type == 2 && loyaltyShop)
+                return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+
             var usedPositions = new HashSet<byte>();
             var totalPrice = 0;
             ItemData? lastItemData = null;
@@ -241,7 +246,7 @@ public class ItemTradeService(
                     }
 
                     var entryPrice = checked(itemData.BuyPrice * entry.Count);
-                    if (s.Money < totalPrice + entryPrice)
+                    if ((loyaltyShop ? s.Loyalty : s.Money) < totalPrice + entryPrice)
                         return (Error: ItemTradeRefusal.NotEnoughCoins, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
 
                     var totalWeight = s.Stats.ItemWeight + entries.Sum(candidate =>
@@ -282,7 +287,9 @@ public class ItemTradeService(
             if (lastItemData == null)
                 return (Error: ItemTradeRefusal.None, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
 
-            if (type == 1)
+            if (type == 1 && loyaltyShop)
+                s.Loyalty -= totalPrice;
+            else if (type == 1)
                 s.Money -= totalPrice;
             else
                 s.Money += totalPrice;
@@ -303,11 +310,10 @@ public class ItemTradeService(
 
         await userNotificationService.SendWeightChangeAsync(session);
 
-        var isLoyaltyMerchant = npc.SellingGroup == LoyaltyMerchantSellingGroup;
         return ItemTradePacketWriter.Traded(
-            isLoyaltyMerchant ? outcome.Loyalty : outcome.Money,
+            loyaltyShop ? outcome.Loyalty : outcome.Money,
             outcome.Price,
-            isLoyaltyMerchant ? outcome.SellingGroup : null);
+            loyaltyShop ? outcome.SellingGroup : null);
     }
 
     private int SellUnitPrice(ItemData itemData)
@@ -317,6 +323,9 @@ public class ItemTradeService(
         var price = saleType == SaleTypeFull ? itemData.BuyPrice : itemData.BuyPrice / SellPriceDivisor;
         return price < 1 ? 0 : price;
     }
+
+    private static bool RepairsItems(NpcInstance npc) =>
+        npc.NpcType is NpcData.TypeTradeMerchant or NpcData.TypeRepairMerchant;
 
     private static bool IsInNpcRange(UserSession session, NpcInstance npc)
     {

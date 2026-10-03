@@ -15,11 +15,12 @@ public partial class World : Node3D
     {
         EscapeCloses(() => AimingAreaSkill, () => CancelAreaCast());
         EscapeCloses(() => _fullMapShown, () => ToggleFullMap());
-        EscapeCloses(() => _buyAmountShown, () => CloseBuyAmount());
         EscapeCloses(() => _questNotifications.Count > 0, () => DismissQuestNotifications());
         EscapeCloses(() => _npcDialogShown, () => CloseNpcDialog());
+        EscapeCloses(() => _tradePrompt.Visible, () => _tradePrompt.Close());
         EscapeCloses(() => _vendorShown, () => CloseVendor());
         EscapeCloses(() => _repairShown, () => CloseRepair());
+        EscapeCloses(() => _whAmount.Visible, () => _whAmount.Close());
         EscapeCloses(() => _whShown, () => CloseWarehouse());
         EscapeCloses(() => _upgradeShown, () => CloseUpgrade());
         EscapeCloses(() => _classChangeShown, () => CloseClassChange());

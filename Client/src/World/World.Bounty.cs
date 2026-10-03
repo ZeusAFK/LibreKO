@@ -17,7 +17,7 @@ public partial class World
     {
         _bountyLayer = new CanvasLayer { Layer = 74 };
         AddChild(_bountyLayer);
-        _bountyPanel = new HudWindow("bounty", "Bounty Board", new Vector2(200, 120)) { Visible = false };
+        _bountyPanel = new HudWindow("bounty", "Bounty Board") { Visible = false };
         _bountyPanel.Closed += CloseBounty;
         _bountyLayer.AddChild(_bountyPanel);
         var root = _bountyPanel.Body;

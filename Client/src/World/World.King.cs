@@ -48,7 +48,7 @@ public partial class World
         _kingLayer = new CanvasLayer { Layer = 75 };
         AddChild(_kingLayer);
 
-        _kingPanel = new HudWindow("king", "Nation King", new Vector2(170, 90)) { Visible = false };
+        _kingPanel = new HudWindow("king", "Nation King") { Visible = false };
         _kingPanel.Closed += CloseKing;
         _kingLayer.AddChild(_kingPanel);
         var r = _kingPanel.Body;

@@ -309,7 +309,7 @@ public partial class World
 
     private static string QuestRewardName(int displayItemId) => displayItemId switch
     {
-        QuestData.CoinItemId => "Coins",
+        QuestData.CoinItemId => "Gold",
         QuestData.ExpItemId => "Experience",
         QuestData.LadderPointItemId => "Ladder points",
         _ => ItemData.DisplayName(displayItemId)

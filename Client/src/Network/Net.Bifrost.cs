@@ -1,4 +1,5 @@
 ﻿using System;
+using LibreKO.Domain;
 
 namespace LibreKO.Network;
 
@@ -43,6 +44,8 @@ public partial class Net
     public event Action<bool, int>? BifrostJoinEvent;
 
     public event Action? BifrostDisbandEvent;
+
+    public BorderWarState BorderWar { get; } = new();
 
     public event Action<int, int>? TempleScreenScoreEvent;
     public event Action<int>? AltarTimerEvent;
@@ -96,6 +99,7 @@ public partial class Net
             {
                 int karus = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
                 int elmo = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
+                BorderWar.SetScores(karus, elmo);
                 TempleScreenScoreEvent?.Invoke(karus, elmo);
                 break;
             }
@@ -103,12 +107,14 @@ public partial class Net
             {
                 string name = p.RemainingBytes >= 1 ? p.ReadSByteString() : string.Empty;
                 byte nation = p.RemainingBytes >= 1 ? p.ReadByte() : (byte)0;
+                BorderWar.FragmentTaken(name, nation);
                 AltarFlagEvent?.Invoke(name, nation);
                 break;
             }
             case AltarTimerSub:
             {
                 int secs = p.RemainingBytes >= 2 ? p.ReadUShort() : 0;
+                BorderWar.AltarTimer(secs, DateTime.UtcNow);
                 AltarTimerEvent?.Invoke(secs);
                 break;
             }

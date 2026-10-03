@@ -11,7 +11,6 @@ public partial class World
 
     private void BuildInteractionDialogs()
     {
-        InteractionCloses(() => _buyAmountShown, () => CloseBuyAmount());
         InteractionCloses(() => _npcDialogShown, () => CloseNpcDialog());
         InteractionCloses(() => _vendorShown, () => CloseVendor());
         InteractionCloses(() => _repairShown, () => CloseRepair());

@@ -233,7 +233,7 @@ public partial class World
         _warpLayer = new CanvasLayer { Layer = 74 };
         AddChild(_warpLayer);
 
-        _warpPanel = new HudWindow("warp", "Warp List", new Vector2(220, 110)) { Visible = false };
+        _warpPanel = new HudWindow("warp", "Warp List") { Visible = false };
         _warpPanel.Closed += CloseWarp;
         _warpLayer.AddChild(_warpPanel);
 

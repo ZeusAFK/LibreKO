@@ -111,7 +111,7 @@ public partial class World
 
         _sealPrompt.Text = held.IsEmpty || action != ItemSealType.Seal
             ? ""
-            : $"{SealFee:n0} coins";
+            : $"{SealFee:n0} gold";
 
         _sealConfirm.Disabled = held.IsEmpty
             || (_sealMode == SealMode.Secret && _sealCode.Length != SealCodeLength);
@@ -139,7 +139,7 @@ public partial class World
         _sealAskText.Text = action switch
         {
             ItemSealType.Seal =>
-                $"It costs {SealFee:n0} coins and the item cannot be traded, upgraded or destroyed "
+                $"It costs {SealFee:n0} gold and the item cannot be traded, upgraded or destroyed "
                 + "until unsealed. Seal it now?",
             ItemSealType.Unseal => "Lift the seal?",
             ItemSealType.Bind => "Bind this item to you?",
@@ -226,7 +226,7 @@ public partial class World
         _sealLayer = new CanvasLayer { Layer = 75 };
         AddChild(_sealLayer);
 
-        _sealPanel = new HudWindow("seal", "Item Seal / Unseal", new Vector2(210, 110))
+        _sealPanel = new HudWindow("seal", "Item Seal / Unseal")
         {
             Visible = false,
         };
@@ -320,7 +320,7 @@ public partial class World
 
         var footer = new HBoxContainer();
         bagBox.AddChild(footer);
-        var goldLabel = UiTheme.Text("Coins", 12, UiTheme.TextLo);
+        var goldLabel = UiTheme.Text("Gold", 12, UiTheme.TextLo);
         goldLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         footer.AddChild(goldLabel);
         _sealGold = UiTheme.Text("", 12, UiTheme.Gold, HorizontalAlignment.Right);

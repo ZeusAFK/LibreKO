@@ -34,7 +34,7 @@ public partial class World
         _rankLayer = new CanvasLayer { Layer = 75 };
         AddChild(_rankLayer);
 
-        _rankPanel = new HudWindow("rank", "Rankings", new Vector2(220, 90)) { Visible = false };
+        _rankPanel = new HudWindow("rank", "Rankings") { Visible = false };
         _rankPanel.Closed += CloseRank;
         _rankLayer.AddChild(_rankPanel);
 
