@@ -1286,6 +1286,7 @@ public partial class World
             MaxHp = 168, Hp = 131, MaxMp = 190, Mp = 190, Satisfaction = 7240, Attack = 51, Defence = 110,
             Mode = PetSheet.ModeAttack,
         };
+        sheet.Items[0] = new ItemSlot { ItemId = PreviewAutomaticLooting, Count = 1, Durability = 1 };
         ShowPetSheet(summoned ? sheet : null);
         if (summoned) SetPetStatus("50.00% satisfaction rate increase", false);
         _petPanel.Visible = true;
@@ -1304,7 +1305,30 @@ public partial class World
         return DetachPreviewControl(_petHatchPanel);
     }
 
+    internal Control BuildFamiliarBarUiPreview(int page)
+    {
+        ItemData.EnsureLoaded();
+        SkillData.EnsureLoaded();
+        _petBarLayer = new CanvasLayer();
+        AddChild(_petBarLayer);
+        BuildPetBar();
+        var sheet = new PetSheet
+        {
+            Index = 1, Name = "Kauly", Class = 101, Level = 32, MaxHp = 420, Hp = 400, MaxMp = 190, Mp = 150,
+        };
+        Net.I.SeedPreviewPet(sheet);
+        OnPetBarSummoned(sheet);
+        _petBarPage = page;
+        RefreshPetBar();
+        double now = Now();
+        _petSkillReadyAt[PetSkills.DesignatedAttack] = now + 0.6;
+        if (_petBarSkills.Count > 1) _petSkillReadyAt[_petBarSkills[1]] = now + 2.5;
+        PetBarTick(now);
+        return DetachPreviewControl(_petBar);
+    }
+
     private const int PreviewEggItem = 600001000;
+    private const int PreviewAutomaticLooting = 700012000;
     private const int PreviewTrainerNpc = 13016;
 
     internal Control BuildClassChangeUiPreview()

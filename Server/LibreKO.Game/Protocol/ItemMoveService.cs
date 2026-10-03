@@ -19,6 +19,7 @@ public class ItemMoveService(
     IItemInventoryRuleService itemInventoryRuleService,
     IItemEquipmentEffectService itemEquipmentEffectService,
     IUserNotificationService userNotificationService,
+    IPetService petService,
     ILogger<ItemMoveService> logger) : IItemMoveService
 {
     private enum ItemMoveRequest : byte
@@ -111,6 +112,16 @@ public class ItemMoveService(
         {
             logger.LogDebug("Rejected item move for {Name}: item {ItemId} not found", session.Name, itemId);
             await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
+        if (direction is ItemMoveDirection.InventoryToPet or ItemMoveDirection.PetToInventory)
+        {
+            var moved = await petService.MoveItemAsync(
+                session, direction == ItemMoveDirection.InventoryToPet, itemId, sourcePosition, destinationPosition);
+            await SendItemMoveResponseAsync(session, moved ? (byte)1 : (byte)0);
+            if (moved)
+                await userNotificationService.SendWeightChangeAsync(session);
             return;
         }
 

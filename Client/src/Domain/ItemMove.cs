@@ -13,8 +13,10 @@ public static class ItemMove
     public const byte InventoryToMagicBag = 9;
     public const byte MagicBagToInventory = 10;
     public const byte MagicBagToMagicBag = 11;
-    public const byte InventoryToBagSlot = 12;
-    public const byte BagSlotToInventory = 13;
+    public const byte InventoryToPet = 12;
+    public const byte PetToInventory = 13;
+    public const byte InventoryToBagSlot = 14;
+    public const byte BagSlotToInventory = 15;
 
     public const byte MoveRequest = 1;
     public const byte ArrangeRequest = 2;

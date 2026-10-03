@@ -203,7 +203,15 @@ public partial class World : Node3D
 
     private void Enqueue(byte dir, int itemId, byte src, byte dst, int from, int to)
     {
-        _moveQueue.Enqueue(new MoveStep { Dir = dir, ItemId = itemId, Src = src, Dst = dst, From = from, To = to });
+        _moveQueue.Enqueue(new MoveStep { Dir = dir, ItemId = itemId, Src = src, Dst = dst, From = from, To = to, PetPos = NoPetSlot });
+        PumpMoves();
+    }
+
+    private const int NoPetSlot = -1;
+
+    private void EnqueuePetMove(byte dir, int itemId, byte src, byte dst, int bagAbs, int petPos)
+    {
+        _moveQueue.Enqueue(new MoveStep { Dir = dir, ItemId = itemId, Src = src, Dst = dst, From = bagAbs, To = bagAbs, PetPos = petPos });
         PumpMoves();
     }
 
@@ -223,6 +231,16 @@ public partial class World : Node3D
         {
             _moveQueue.Clear();
             RefreshInventoryUI();
+            return;
+        }
+
+        if (_moveCur.PetPos != NoPetSlot)
+        {
+            if (Net.I.Pet is { } pet && _moveCur.PetPos < pet.Items.Length)
+                (Inv[_moveCur.From], pet.Items[_moveCur.PetPos]) = (pet.Items[_moveCur.PetPos], Inv[_moveCur.From]);
+            PumpMoves();
+            RefreshInventoryUI();
+            RefreshPetUI();
             return;
         }
 

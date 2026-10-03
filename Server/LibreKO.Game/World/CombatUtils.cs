@@ -14,7 +14,7 @@ public static class CombatUtils
     private const float NpcDamageSpread = 0.3f;
     private const float NpcDamageCeiling = 2.6f;
 
-    public static int NpcStrikeDamage(int totalHit, int defenderAc, float hitRate, float evadeRate)
+    public static int NpcStrikeDamage(int totalHit, int defenderAc, float hitRate, float evadeRate, bool sureHit = false)
     {
         if (totalHit <= 0)
             return 0;
@@ -23,7 +23,7 @@ public static class CombatUtils
         if (hitBase <= 0)
             return 0;
 
-        var hit = GetHitRate(Math.Max(1f, hitRate) / Math.Max(1f, evadeRate));
+        var hit = sureHit ? AttackHitResult.Success : GetHitRate(Math.Max(1f, hitRate) / Math.Max(1f, evadeRate));
         if (hit == AttackHitResult.Fail)
             return 0;
 

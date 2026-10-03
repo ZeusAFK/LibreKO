@@ -73,6 +73,7 @@ public partial class World : Node3D
         Facet(ShoppingMallInit, ShoppingMallDispose);
         Facet(BattleEventInit, BattleEventDispose);
         Facet(PetInit, PetDispose);
+        Facet(PetBarInit, PetBarDispose);
         Facet(RebirthInit, RebirthDispose);
         Facet(BifrostInit, BifrostDispose);
         Facet(BorderDefenseWarInit, BorderDefenseWarDispose);

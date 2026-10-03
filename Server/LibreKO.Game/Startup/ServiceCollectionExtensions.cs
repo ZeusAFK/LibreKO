@@ -214,6 +214,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGuardSummonAiService, GuardSummonAiService>();
         services.AddSingleton<IPetService, PetService>();
         services.AddSingleton<IPetAiService, PetAiService>();
+        services.AddSingleton<IPetSkillService, PetSkillService>();
         services.AddSingleton<INpcAiDeathService, NpcAiDeathService>();
         services.AddSingleton<INpcAiMagicService, NpcAiMagicService>();
         services.AddSingleton<INpcAiMovementService, NpcAiMovementService>();

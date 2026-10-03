@@ -27,6 +27,14 @@ public class PetTests : GameTestBase
     private const int FrailMonsterHp = 1;
     private const string PetName = "Kauly";
     private const int FamiliarSummonScroll = 389_191_000;
+    private const int Slap = 301_001;
+    private const byte SlapLevel = 10;
+    private const short SlapMana = 4;
+    private const int OtherClassPage = 1020;
+    private const int KaulClassPage = KaulClass * PetSkills.ClassPageDivisor;
+    private const int AutomaticLooting = 700_012_000;
+    private const int SecondLooting = 700_012_001;
+    private const int Sword = 110_110_001;
 
     private static readonly PetLevelData LevelOne = new()
     {
@@ -311,6 +319,165 @@ public class PetTests : GameTestBase
         sent.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_PET && Function(p) == PetFunction.Exp);
     }
 
+    [Theory]
+    [InlineData(Slap, PetSkills.SharedPageFirst, SlapLevel, SlapLevel, true)]
+    [InlineData(Slap, PetSkills.SharedPageFirst, SlapLevel, SlapLevel - 1, false)]
+    [InlineData(301_050, KaulClassPage, 1, 1, true)]
+    [InlineData(301_050, OtherClassPage, 1, 1, false)]
+    [InlineData(300_101, PetSkills.SharedPageFirst, 1, 1, false)]
+    public void AFamiliarKnowsTheSharedPageAndItsClassPageUpToItsLevel(int skillId, int page, int required, int level, bool knows)
+    {
+        PetSkills.Knows(skillId, page, required, KaulClass, level).Should().Be(knows);
+    }
+
+    [Fact]
+    public async Task AFamiliarSkillStrikesTheTargetSpendsManaAndSatisfactionAndWaitsForItsCooldown()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        await provider.GetRequiredService<IPetService>().SummonAsync(owner);
+        var state = owner.Pet!;
+        state.Record.Level = SlapLevel;
+        var npc = state.Npc!;
+        npc.Attack1 = short.MaxValue;
+        var monster = Monster(sessions, npc.X + 1, npc.Z, SturdyMonsterHp);
+        var satisfaction = state.Record.Satisfaction;
+        var mana = npc.Mp;
+        sent.Clear();
+
+        var skills = provider.GetRequiredService<IPetSkillService>();
+        await skills.UseAsync(owner, Request(MagicProcessOpcode.Effecting, Slap, npc.UniqueId, monster.UniqueId));
+
+        monster.Hp.Should().BeLessThan(SturdyMonsterHp);
+        npc.Mp.Should().Be(mana - SlapMana);
+        state.Record.Satisfaction.Should().Be((short)(satisfaction - PetSkills.SatisfactionPerSkill));
+        state.Mode.Should().Be(PetMode.Attack, "using a skill on a monster sends the familiar into the fight");
+        sent.Should().Contain(p => Function(p) == PetFunction.Mp);
+        sent.Should().Contain(p => MagicStage(p) == MagicProcessOpcode.Effecting);
+
+        sent.Clear();
+        var hp = monster.Hp;
+        await skills.UseAsync(owner, Request(MagicProcessOpcode.Effecting, Slap, npc.UniqueId, monster.UniqueId));
+        monster.Hp.Should().Be(hp, "the skill is still cooling down");
+        sent.Should().ContainSingle(p => MagicStage(p) == MagicProcessOpcode.Fail);
+    }
+
+    [Fact]
+    public async Task AFamiliarRefusesASkillAboveItsLevelOrFromSomeoneElsesFamiliar()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, _) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        await provider.GetRequiredService<IPetService>().SummonAsync(owner);
+        var npc = owner.Pet!.Npc!;
+        var monster = Monster(sessions, npc.X + 1, npc.Z, SturdyMonsterHp);
+        var skills = provider.GetRequiredService<IPetSkillService>();
+
+        await skills.UseAsync(owner, Request(MagicProcessOpcode.Effecting, Slap, npc.UniqueId, monster.UniqueId));
+        await skills.UseAsync(owner, Request(MagicProcessOpcode.Effecting, PetSkills.DesignatedAttack, npc.UniqueId + 1, monster.UniqueId));
+
+        monster.Hp.Should().Be(SturdyMonsterHp);
+        owner.Pet!.Mode.Should().Be(PetMode.Defence);
+    }
+
+    [Fact]
+    public async Task TheAttackOrderSendsTheFamiliarAtTheOwnersTarget()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, _) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        await provider.GetRequiredService<IPetService>().SummonAsync(owner);
+        var npc = owner.Pet!.Npc!;
+        var monster = Monster(sessions, npc.X + 10, npc.Z, SturdyMonsterHp);
+
+        await provider.GetRequiredService<IPetSkillService>().UseAsync(owner,
+            Request(MagicProcessOpcode.Effecting, PetSkills.DesignatedAttack, npc.UniqueId, monster.UniqueId));
+
+        owner.Pet!.Mode.Should().Be(PetMode.Attack);
+        owner.Pet.TargetNpcId.Should().Be(monster.UniqueId);
+    }
+
+    [Fact]
+    public async Task AFamiliarRegainsATenthOfItsManaEveryTenSeconds()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        var pets = provider.GetRequiredService<IPetService>();
+        await pets.SummonAsync(owner);
+        var npc = owner.Pet!.Npc!;
+        npc.Mp = 0;
+        sent.Clear();
+
+        await pets.TickAsync(owner, owner.Pet.LastRegenTicks + PetService.RegenInterval.Ticks);
+
+        npc.Mp.Should().Be(LevelOne.MaxMp * PetService.RegenPercent / 100);
+        sent.Should().Contain(p => Function(p) == PetFunction.Mp);
+    }
+
+    [Fact]
+    public async Task TheFamiliarsBagTakesOneOfEachFamiliarItemAndGivesItBack()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, _) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        var pets = provider.GetRequiredService<IPetService>();
+        await pets.SummonAsync(owner);
+        Carry(owner, 0, AutomaticLooting);
+        Carry(owner, 1, SecondLooting);
+        Carry(owner, 2, Sword);
+
+        (await pets.MoveItemAsync(owner, intoPet: true, AutomaticLooting, 0, 0)).Should().BeTrue();
+        (await pets.MoveItemAsync(owner, intoPet: true, SecondLooting, 1, 1)).Should().BeFalse("one of each kind");
+        (await pets.MoveItemAsync(owner, intoPet: true, Sword, 2, 2)).Should().BeFalse("only familiar items fit");
+        owner.Pet!.Items[0].ItemId.Should().Be(AutomaticLooting);
+        owner.Inventory[InventoryConstants.SlotMax].IsEmpty.Should().BeTrue();
+        PetBag.Loots(owner.Pet.Items, id => id == AutomaticLooting
+            ? new ItemData { Kind = PetBag.AutomaticLootingKind, Slot = PetBag.ItemSlotCode } : null).Should().BeTrue();
+
+        (await pets.MoveItemAsync(owner, intoPet: false, AutomaticLooting, 0, 5)).Should().BeTrue();
+        owner.Inventory[InventoryConstants.SlotMax + 5].ItemId.Should().Be(AutomaticLooting);
+        owner.Pet.Items[0].IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TheFamiliarsBagIsClosedWhileTheFamiliarIsAway()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, _) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        Carry(owner, 0, AutomaticLooting);
+
+        (await provider.GetRequiredService<IPetService>().MoveItemAsync(owner, intoPet: true, AutomaticLooting, 0, 0))
+            .Should().BeFalse();
+    }
+
+    private static void Carry(UserSession owner, int bagPosition, int itemId)
+    {
+        var slot = owner.Inventory[InventoryConstants.SlotMax + bagPosition];
+        slot.ItemId = itemId;
+        slot.Count = 1;
+        slot.Durability = 1;
+    }
+
+    private static PetSkillRequest Request(MagicProcessOpcode stage, int skillId, int casterId, int targetId) =>
+        new((byte)stage, skillId, casterId, targetId, new int[5]);
+
+    private static MagicProcessOpcode? MagicStage(Packet packet)
+    {
+        if (packet.GetOpcode() != (byte)GameOpcodes.GS_MAGIC_PROCESS)
+            return null;
+        var data = packet.GetData();
+        return data.Length >= 1 ? (MagicProcessOpcode)data[0] : null;
+    }
+
     [Fact]
     public async Task InDefenceModeTheFamiliarStaysOutOfTheFight()
     {
@@ -494,7 +661,24 @@ public class PetTests : GameTestBase
         {
             Num = FamiliarSummonScroll, Kind = 97, Slot = 15, Countable = 1, Effect1 = PetService.FamiliarSummonSkill,
         });
+        gameData.GetMagic(Slap).Returns(new MagicData
+        {
+            Id = Slap, Type1 = (byte)MagicSkillType.Melee, Moral = 7, SkillLevel = SlapLevel, Skill = PetSkills.SharedPageFirst,
+            Msp = SlapMana, ReCastTime = 40, Range = 1,
+        });
+        gameData.GetMagic(PetSkills.DesignatedAttack).Returns(new MagicData
+        {
+            Id = PetSkills.DesignatedAttack, Type1 = (byte)MagicSkillType.Area, Moral = 7, SkillLevel = 1,
+            Skill = PetSkills.SharedPageFirst, ReCastTime = 10, Range = 40,
+        });
+        gameData.MagicType1Table.Returns(new Dictionary<int, MagicType1Data>
+        {
+            [Slap] = new() { Id = Slap, HitRate = 100, Hit = 120, HitType = 1 },
+        });
         gameData.PetLevelTable.Returns(new Dictionary<byte, PetLevelData> { [1] = LevelOne, [2] = LevelTwo });
+        gameData.GetItem(AutomaticLooting).Returns(new ItemData { Num = AutomaticLooting, Kind = PetBag.AutomaticLootingKind, Slot = PetBag.ItemSlotCode });
+        gameData.GetItem(SecondLooting).Returns(new ItemData { Num = SecondLooting, Kind = PetBag.AutomaticLootingKind, Slot = PetBag.ItemSlotCode });
+        gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Kind = 21, Slot = 1 });
         gameData.GetItem(EggId).Returns(new ItemData { Num = EggId, Kind = (byte)ItemKind.PetEgg, Slot = 15, Countable = 1 });
         gameData.GetItem(KaulId).Returns(new ItemData
         {

@@ -21,6 +21,8 @@ public interface IPetService
     Task SetModeAsync(UserSession session, PetMode mode);
     Task FeedAsync(UserSession session, byte bagSlot, int itemId);
     Task TickAsync(UserSession session, long nowTicks);
+    Task ChangeSatisfactionAsync(UserSession session, short delta);
+    Task<bool> MoveItemAsync(UserSession session, bool intoPet, int itemId, byte sourcePosition, byte destinationPosition);
     Task AwardKillAsync(NpcInstance monster);
     Task SaveAsync(UserSession session);
 }
@@ -39,6 +41,9 @@ public sealed class PetService(
     public const short SatisfactionDecayPerMinute = 100;
     public const short ResummonSatisfaction = 500;
     public static readonly TimeSpan SatisfactionDecayInterval = TimeSpan.FromMinutes(1);
+    public static readonly TimeSpan RegenInterval = TimeSpan.FromSeconds(10);
+    public const int RegenPercent = 10;
+    private const int PercentScale = 100;
     private const char FirstNameCharacter = '!';
     private const char LastNameCharacter = '~';
 
@@ -281,6 +286,7 @@ public sealed class PetService(
         if (session.Pet is not { IsSummoned: true } state)
             return;
 
+        await RegenerateAsync(session, state, nowTicks);
         if (nowTicks - state.LastSatisfactionTicks < SatisfactionDecayInterval.Ticks)
             return;
 
@@ -295,6 +301,87 @@ public sealed class PetService(
 
         await SendSatisfactionAsync(session, state);
     }
+
+    public async Task ChangeSatisfactionAsync(UserSession session, short delta)
+    {
+        if (session.Pet is not { IsSummoned: true } state)
+            return;
+
+        state.Record.Satisfaction = (short)Math.Clamp(state.Record.Satisfaction + delta, 0, Pet.MaxSatisfaction);
+        if (state.Record.Satisfaction <= 0)
+        {
+            await DismissAsync(session);
+            return;
+        }
+
+        await SendSatisfactionAsync(session, state);
+    }
+
+    public async Task<bool> MoveItemAsync(UserSession session, bool intoPet, int itemId, byte sourcePosition, byte destinationPosition)
+    {
+        if (session.Pet is not { IsSummoned: true } state)
+            return false;
+
+        var bagPosition = intoPet ? sourcePosition : destinationPosition;
+        var petPosition = intoPet ? destinationPosition : sourcePosition;
+        if (bagPosition >= InventoryConstants.HaveMax || petPosition >= Pet.InventorySize)
+            return false;
+
+        var moved = session.WithLock(s =>
+        {
+            var bagSlot = s.Inventory[InventoryConstants.SlotMax + bagPosition];
+            var petSlot = state.Items[petPosition];
+            if ((intoPet ? bagSlot : petSlot).ItemId != itemId)
+                return false;
+            if (!bagSlot.IsEmpty
+                && (bagSlot.IsLinked || gameData.GetItem(bagSlot.ItemId) is not { } incoming
+                    || !PetBag.Fits(state.Items, petPosition, incoming, gameData.GetItem)))
+                return false;
+
+            Swap(bagSlot, petSlot);
+            return true;
+        });
+
+        if (!moved)
+            return false;
+
+        state.SaveItems();
+        await PersistAsync(state);
+        return true;
+    }
+
+    private static void Swap(ItemSlot a, ItemSlot b)
+    {
+        (a.ItemId, b.ItemId) = (b.ItemId, a.ItemId);
+        (a.Durability, b.Durability) = (b.Durability, a.Durability);
+        (a.Count, b.Count) = (b.Count, a.Count);
+        (a.Flag, b.Flag) = (b.Flag, a.Flag);
+        (a.ExpiresAt, b.ExpiresAt) = (b.ExpiresAt, a.ExpiresAt);
+        (a.UniqueId, b.UniqueId) = (b.UniqueId, a.UniqueId);
+    }
+
+    private async Task RegenerateAsync(UserSession session, PetState state, long nowTicks)
+    {
+        if (state.Npc is not { } npc || nowTicks - state.LastRegenTicks < RegenInterval.Ticks)
+            return;
+
+        state.LastRegenTicks = nowTicks;
+        if (npc.Hp < npc.MaxHp)
+        {
+            npc.Hp = Math.Min(npc.MaxHp, npc.Hp + Regen(npc.MaxHp));
+            state.Record.Hp = (short)npc.Hp;
+            await session.Client.SendPacket(PetPacketWriter.HpChanged((short)npc.MaxHp, (short)npc.Hp, npc.UniqueId));
+        }
+
+        if (npc.Mp < npc.MaxMp)
+        {
+            npc.Mp = Math.Min(npc.MaxMp, npc.Mp + Regen(npc.MaxMp));
+            state.Record.Mp = (short)npc.Mp;
+            await session.Client.SendPacket(PetPacketWriter.MpChanged((short)npc.MaxMp, (short)npc.Mp, npc.UniqueId));
+        }
+    }
+
+    private static int Regen(int max) => Math.Max(1, (max * RegenPercent + PercentScale - 1) / PercentScale);
 
     public async Task AwardKillAsync(NpcInstance monster)
     {

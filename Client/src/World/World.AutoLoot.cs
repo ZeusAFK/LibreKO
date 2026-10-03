@@ -21,7 +21,7 @@ public partial class World
 
     private void AutoLootTick()
     {
-        if (_self == null || _selfDead || _openBundleId >= 0 || _boxes.Count == 0 || !WearsAutoLootFairy()) return;
+        if (_self == null || _selfDead || _openBundleId >= 0 || _boxes.Count == 0 || !(WearsAutoLootFairy() || FamiliarLoots())) return;
 
         var me = _self.Position;
         foreach (var (id, box) in _boxes)

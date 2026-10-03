@@ -15,7 +15,10 @@ public partial class World
     private StatBar _petHpBar = null!, _petMpBar = null!, _petExpBar = null!, _petSatBar = null!;
     private Button _petAttackBtn = null!, _petDefendBtn = null!, _petLootBtn = null!;
     private Button _petFeedBtn = null!, _petDismissBtn = null!;
+    private readonly ItemSlotView[] _petBagCells = new ItemSlotView[PetSheet.InventorySize];
     private bool _petShown;
+    private const float PetBagCellSize = 44f;
+    private const string PetBagHint = "Familiar items only, one of each kind. Automatic Looting lets Looting mode pick up loot.";
 
     private void PetInit()
     {
@@ -78,6 +81,19 @@ public partial class World
         _petAttackBtn = PetModeButton(modes, "Attack", PetSheet.ModeAttack);
         _petDefendBtn = PetModeButton(modes, "Defend", PetSheet.ModeDefence);
         _petLootBtn = PetModeButton(modes, "Loot", PetSheet.ModeLooting);
+
+        root.AddChild(UiTheme.Rule());
+        root.AddChild(UiTheme.SectionTitle("Bag"));
+        var bag = new HBoxContainer { TooltipText = PetBagHint };
+        bag.AddThemeConstantOverride("separation", 6);
+        root.AddChild(bag);
+        for (int i = 0; i < _petBagCells.Length; i++)
+        {
+            var cell = new ItemSlotView(PetBagCellSize) { Index = i, CanDrop = CanDropOnPetBag, Dropped = DropOnPetBag };
+            cell.RightClicked += c => TakeFromPetBag(c.Index);
+            _petBagCells[i] = cell;
+            bag.AddChild(cell);
+        }
 
         root.AddChild(UiTheme.Rule());
         var actions = new HBoxContainer();
@@ -276,7 +292,42 @@ public partial class World
         _petExpBar.SetFraction(pet.ExpFraction, $"{pet.ExpPercent / 100f:0.00}%");
         _petSatBar.SetFraction(pet.SatisfactionFraction, $"{pet.Satisfaction / 100f:0.00}%");
         HighlightPetMode(pet.Mode);
+        for (int i = 0; i < _petBagCells.Length && i < pet.Items.Length; i++) _petBagCells[i].Set(pet.Items[i]);
     }
+
+    private bool CanDropOnPetBag(ItemSlotView cell, Variant data)
+    {
+        if (Net.I.Pet is not { } pet || data.VariantType != Variant.Type.Dictionary) return false;
+        var d = data.AsGodotDictionary();
+        if (!d.ContainsKey("invFrom")) return false;
+        int abs = d["invFrom"].AsInt32();
+        return abs >= GridStart && abs < GridStart + GridCount && abs < Inv.Length && !Inv[abs].IsEmpty
+               && ItemData.Get(Inv[abs].ItemId) is { } item
+               && PetBag.Fits(pet.Items, cell.Index, item, ItemData.Get);
+    }
+
+    private void DropOnPetBag(ItemSlotView cell, Variant data)
+    {
+        if (!CanDropOnPetBag(cell, data) || _moveInFlight || _moveQueue.Count > 0) return;
+        int abs = data.AsGodotDictionary()["invFrom"].AsInt32();
+        EnqueuePetMove(ItemMove.InventoryToPet, Inv[abs].ItemId, (byte)(abs - GridStart), (byte)cell.Index, abs, cell.Index);
+    }
+
+    private void TakeFromPetBag(int petPos)
+    {
+        if (Net.I.Pet is not { } pet || petPos >= pet.Items.Length || pet.Items[petPos].IsEmpty) return;
+        if (_moveInFlight || _moveQueue.Count > 0) return;
+        int free = Inv.FirstFreeGridSlot();
+        if (free < 0)
+        {
+            SetPetStatus("Your bag is full.", true);
+            return;
+        }
+        EnqueuePetMove(ItemMove.PetToInventory, pet.Items[petPos].ItemId, (byte)petPos, (byte)(free - GridStart), free, petPos);
+    }
+
+    private bool FamiliarLoots() =>
+        Net.I.Pet is { Mode: PetSheet.ModeLooting } pet && PetBag.Loots(pet.Items, ItemData.Get);
 
     private void HighlightPetMode(int mode)
     {

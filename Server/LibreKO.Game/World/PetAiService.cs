@@ -6,6 +6,8 @@ namespace LibreKO.Game.World;
 public interface IPetAiService
 {
     Task TickAsync(NpcInstance pet, long nowTicks);
+    Task<AttackResult> StrikeAsync(UserSession owner, NpcInstance pet, NpcInstance target, int totalHit, bool sureHit);
+    Task SettleKillAsync(UserSession owner, PetState state, NpcInstance target);
 }
 
 public sealed class PetAiService(
@@ -78,27 +80,34 @@ public sealed class PetAiService(
             return;
 
         state.LastAttackTicks = nowTicks;
-        var damage = CombatUtils.NpcStrikeDamage(pet.TotalHit, target.TotalAc, pet.HitRate, target.EvadeRate);
-        var result = AttackResult.Failed;
-        if (damage > 0)
-        {
-            target.Hp = Math.Max(0, target.Hp - damage);
-            target.RecordDamage(owner.CharacterId, damage, owner, sessionManager.GetByCharacterId);
-            target.PetDamage.AddOrUpdate(owner.CharacterId, damage, (_, total) => total + damage);
-            await combatLifecycleService.SendNpcTargetHpAsync(owner, target, damage);
-            await owner.Client.SendPacket(PetPacketWriter.TargetHp(
-                target.UniqueId, target.MaxHp, target.Hp, (short)Math.Clamp(-damage, short.MinValue, 0)));
-            result = target.Hp > 0 ? AttackResult.Succeeded : AttackResult.TargetDead;
-        }
+        var result = await StrikeAsync(owner, pet, target, pet.TotalHit, sureHit: false);
 
         await sessionManager.Regions.BroadcastFromNpc(
             pet, AttackPacketWriter.Create(AttackPacketWriter.TypeMelee, result, pet.UniqueId, target.UniqueId));
 
         if (result == AttackResult.TargetDead)
-        {
-            state.TargetNpcId = PetState.NoTarget;
-            await combatLifecycleService.HandleNpcDeathAsync(target, owner);
-        }
+            await SettleKillAsync(owner, state, target);
+    }
+
+    public async Task<AttackResult> StrikeAsync(UserSession owner, NpcInstance pet, NpcInstance target, int totalHit, bool sureHit)
+    {
+        var damage = CombatUtils.NpcStrikeDamage(totalHit, target.TotalAc, pet.HitRate, target.EvadeRate, sureHit);
+        if (damage <= 0)
+            return AttackResult.Failed;
+
+        target.Hp = Math.Max(0, target.Hp - damage);
+        target.RecordDamage(owner.CharacterId, damage, owner, sessionManager.GetByCharacterId);
+        target.PetDamage.AddOrUpdate(owner.CharacterId, damage, (_, total) => total + damage);
+        await combatLifecycleService.SendNpcTargetHpAsync(owner, target, damage);
+        await owner.Client.SendPacket(PetPacketWriter.TargetHp(
+            target.UniqueId, target.MaxHp, target.Hp, (short)Math.Clamp(-damage, short.MinValue, 0)));
+        return target.Hp > 0 ? AttackResult.Succeeded : AttackResult.TargetDead;
+    }
+
+    public async Task SettleKillAsync(UserSession owner, PetState state, NpcInstance target)
+    {
+        state.TargetNpcId = PetState.NoTarget;
+        await combatLifecycleService.HandleNpcDeathAsync(target, owner);
     }
 
     private async Task FollowAsync(UserSession owner, NpcInstance pet)

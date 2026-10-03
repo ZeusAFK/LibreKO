@@ -7,6 +7,7 @@ namespace LibreKO.Network;
 public partial class Net
 {
     private const byte PetSubFunction = 1;
+    private const byte PetSubSkill = 2;
     private const byte PetFunctionMode = 5;
     private const byte PetFunctionHp = 7;
     private const byte PetFunctionTargetHp = 8;
@@ -205,4 +206,23 @@ public partial class Net
     }
 
     public void SendPetDismiss() => SendMagic(MagicSub.Cancel, FamiliarSummonSkill, MyCharId);
+
+    internal void SeedPreviewPet(PetSheet sheet) => Pet = sheet;
+
+    public void SendPetSkill(int stage, int skillId, int casterId, int targetId, int x, int y, int z)
+    {
+        var p = new Packet(GameOpcodes.GS_PET);
+        p.WriteByte(PetSubSkill);
+        p.WriteByte((byte)stage);
+        p.WriteInt(skillId);
+        p.WriteInt(casterId);
+        p.WriteInt(targetId);
+        p.WriteInt(x);
+        p.WriteInt(y);
+        p.WriteInt(z);
+        p.WriteInt(0);
+        p.WriteInt(0);
+        p.WriteInt(0);
+        _conn.Send(p);
+    }
 }

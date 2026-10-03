@@ -13,6 +13,8 @@ public enum ItemMoveDirection : byte
     InventoryToMagicBag = 9,
     MagicBagToInventory = 10,
     MagicBagToMagicBag = 11,
-    InventoryToBagSlot = 12,
-    BagSlotToInventory = 13,
+    InventoryToPet = 12,
+    PetToInventory = 13,
+    InventoryToBagSlot = 14,
+    BagSlotToInventory = 15,
 }
