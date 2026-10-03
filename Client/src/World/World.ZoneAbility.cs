@@ -45,7 +45,7 @@ public partial class World
         var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         _zoneabilityChip.AddChild(row);
 
-        _zoneabilityTypeLbl = UiTheme.Text("Safe Zone", 13, UiTheme.Good, HorizontalAlignment.Center);
+        _zoneabilityTypeLbl = UiTheme.Text(Localization.Loc.Tr("Safe Zone"), 13, UiTheme.Good, HorizontalAlignment.Center);
         _zoneabilityTypeLbl.MouseFilter = Control.MouseFilterEnum.Ignore;
         row.AddChild(_zoneabilityTypeLbl);
 
@@ -78,7 +78,7 @@ public partial class World
         var col = info.ZoneType == ZoneAbilityInfo.Neutral
             ? UiTheme.Good
             : info.IsSiege ? UiTheme.Neutral : UiTheme.Bad;
-        _zoneabilityTypeLbl.Text = info.TypeLabel;
+        _zoneabilityTypeLbl.Text = Localization.Loc.Tr(info.TypeLabel);
         _zoneabilityTypeLbl.AddThemeColorOverride("font_color", col);
         _zoneabilityChip.Visible = info.IsPvp;
 
@@ -91,10 +91,10 @@ public partial class World
         if (announce && !arenaStep && (!_zoneabilityHavePrev || _zoneabilityPrevType != info.ZoneType))
         {
             CombatNotice(info.ZoneType == ZoneAbilityInfo.Neutral
-                ? "You have entered a safe zone. PK is disabled here."
+                ? Localization.Loc.Tr("You have entered a safe zone. PK is disabled here.")
                 : info.IsSiege
-                    ? "You have entered a siege zone."
-                    : "You have entered a PK zone. Watch your back.");
+                    ? Localization.Loc.Tr("You have entered a siege zone.")
+                    : Localization.Loc.Tr("You have entered a PK zone. Watch your back."));
         }
         _zoneabilityHavePrev = true;
         _zoneabilityPrevType = info.ZoneType;

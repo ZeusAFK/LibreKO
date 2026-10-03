@@ -57,10 +57,10 @@ public partial class World
         switch (type)
         {
             case Net.ObjectEventBind when success:
-                Chat.Info("Recall point set.");
+                Chat.Info(Localization.Loc.Tr("Recall point set."));
                 break;
             case Net.ObjectEventRemoveBind when success:
-                Chat.Info("Recall point cleared.");
+                Chat.Info(Localization.Loc.Tr("Recall point cleared."));
                 break;
         }
     }

@@ -54,9 +54,9 @@ public partial class World
 
     private static string CharacterPageName(CharacterPage page) => page switch
     {
-        CharacterPage.Character => "Character",
-        CharacterPage.Clan => "Clan",
-        _ => "Friends",
+        CharacterPage.Character => Localization.Loc.Tr("Character"),
+        CharacterPage.Clan => Localization.Loc.Tr("Clan"),
+        _ => Localization.Loc.Tr("Friends"),
     };
 
     private void OpenCharacterPage(CharacterPage page)
@@ -82,19 +82,19 @@ public partial class World
         AddChild(_mainLayer);
 
         AddMainWindow(
-            "Character", "character_info", "Character Info", new Vector2(64, 82),
+            "Character", "character_info", Localization.Loc.Tr("Character Info"), new Vector2(64, 82),
             BuildCharacterPages(), CharacterPageWidth, UiIcons.Get("game/helmet"));
         AddMainWindow(
-            "Inventory", "inventory", "INVENTORY", new Vector2(334, 66),
+            "Inventory", "inventory", Localization.Loc.Tr("INVENTORY"), new Vector2(334, 66),
             _invContent, 0, UiIcons.Get("system/bag")).SetBackgroundAlpha(UiTheme.TranslucentWindowAlpha);
         AddMainWindow(
-            "Skills", "skills", "Skills", new Vector2(120, 84),
+            "Skills", "skills", Localization.Loc.Tr("Skills"), new Vector2(120, 84),
             _skillsContent, 330, UiIcons.Get("game/main-hand"));
         AddMainWindow(
-            "Quests", "quests", "QUESTS", new Vector2(170, 86),
+            "Quests", "quests", Localization.Loc.Tr("QUESTS"), new Vector2(170, 86),
             _questsContent, 420, UiIcons.Get("system/scroll"));
         AddMainWindow(
-            "Party", "party", "Party", new Vector2(1060, 82),
+            "Party", "party", Localization.Loc.Tr("Party"), new Vector2(1060, 82),
             _partyContent, 252, UiIcons.Get("system/users-three"));
 
         RestoreMainWindows();

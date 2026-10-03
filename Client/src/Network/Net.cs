@@ -296,6 +296,7 @@ public partial class Net : Node
             case GameOpcodes.GS_MSP_CHANGE:    HandleMspChange(p); break;
             case GameOpcodes.GS_REGENE:        HandleRegene(p); break;
             case GameOpcodes.GS_SKILLDATA:     HandleSkillData(p); break;
+            case GameOpcodes.GS_PARTY_DPS:     HandlePartyDps(p); break;
 
             case GameOpcodes.GS_ITEM_MOVE:         HandleItemMove(p); break;
             case GameOpcodes.GS_ITEM_COUNT_CHANGE: HandleItemCountChange(p); break;

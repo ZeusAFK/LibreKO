@@ -106,8 +106,8 @@ public partial class MiniMap : Control
         _coordLabel.AddThemeColorOverride("font_color", UiTheme.TextLo);
         chip.AddChild(_coordLabel);
 
-        var zin = UiTheme.IconButton("+", "Zoom in");
-        var zout = UiTheme.IconButton("−", "Zoom out");
+        var zin = UiTheme.IconButton("+", Localization.Loc.Tr("Zoom in"));
+        var zout = UiTheme.IconButton("−", Localization.Loc.Tr("Zoom out"));
         if (Platform.TouchUi)
             foreach (var button in new[] { zin, zout })
                 foreach (string state in new[] { "normal", "hover", "pressed", "focus", "disabled" })
@@ -173,7 +173,7 @@ public partial class MiniMap : Control
     {
         var button = new Button
         {
-            TooltipText = "Show/hide map",
+            TooltipText = Localization.Loc.Tr("Show/hide map"),
             FocusMode = FocusModeEnum.None,
             Position = new Vector2(2f, (HeaderHeight - HeaderCell) * 0.5f),
             Size = Vector2.One * HeaderCell,
@@ -411,7 +411,7 @@ public partial class MiniMap : Control
 
         if (!_hasMap)
         {
-            var noMap = "No map data";
+            var noMap = Localization.Loc.Tr("No map data");
             var font = c.GetThemeDefaultFont();
             c.DrawString(font, ctr + new Vector2(-44, 4), noMap, HorizontalAlignment.Left, -1, 13,
                 UiTheme.TextLo);

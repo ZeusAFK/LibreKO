@@ -194,7 +194,7 @@ public static class TouchControls
             Visible = false,
         });
         attack.GetNode<Control>(StopGlyphName).SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        attack.TooltipText = "Auto attack";
+        attack.TooltipText = Localization.Loc.Tr("Auto attack");
         AddOuterRing(attack);
         Place(attack, hub, PrimaryAngle, PrimaryOrbit, PrimarySize);
         attack.Pressed += onAttack;
@@ -203,7 +203,7 @@ public static class TouchControls
         var pageButton = Button("", Px(PageButtonSize), UiTheme.Bronze);
         pageButton.AddChild(Glyph(PageIconId, Px(PageButtonSize), 0.28f,
                                   new Color(UiTheme.GoldBright, 0.90f)));
-        pageButton.TooltipText = "Next skill page";
+        pageButton.TooltipText = Localization.Loc.Tr("Next skill page");
         Place(pageButton, hub, PageButtonAngle, Orbit, PageButtonSize);
         AddOuterRing(pageButton);
         pageButton.Pressed += () => onPage(1);
@@ -211,19 +211,19 @@ public static class TouchControls
 
         var interactionCluster = BuildInteractionCluster(parent, out var interactionHub);
         var lootButton = InteractionButton(interactionCluster, interactionHub, LootButtonAngle,
-            "package", "Open nearest loot box", onLootOpen);
+            "package", Localization.Loc.Tr("Open nearest loot box"), onLootOpen);
         var npcButton = InteractionButton(interactionCluster, interactionHub, NpcButtonAngle,
-            "chat-circle", "Interact with nearest NPC", onNpcInteract);
+            "chat-circle", Localization.Loc.Tr("Interact with nearest NPC"), onNpcInteract);
         var anvilButton = InteractionButton(interactionCluster, interactionHub, AnvilButtonAngle,
-            "hammer", "Use nearest Magic Anvil", onAnvilOpen);
+            "hammer", Localization.Loc.Tr("Use nearest Magic Anvil"), onAnvilOpen);
         var teleportButton = InteractionButton(interactionCluster, interactionHub, TeleportButtonAngle,
-            "door", "Use nearest Warp Gate", onTeleportOpen);
+            "door", Localization.Loc.Tr("Use nearest Warp Gate"), onTeleportOpen);
         var userButton = InteractionButton(interactionCluster, interactionHub, UserButtonAngle,
-            "user", "Open player menu", null);
+            "user", Localization.Loc.Tr("Open player menu"), null);
         userButton.Pressed += () => onUserOpen?.Invoke(
             userButton.GetGlobalRect().Position + new Vector2(userButton.Size.X, 0));
         var marketButton = InteractionButton(interactionCluster, interactionHub, MarketButtonAngle,
-            "storefront", "Browse player shop", onMarketBrowse);
+            "storefront", Localization.Loc.Tr("Browse player shop"), onMarketBrowse);
 
         var bar = new TouchActionBar(cluster, slots, iconFor, BuildPageIndicator(parent),
                                     attack, attackGlyph, hub, npcButton, lootButton,
@@ -588,7 +588,7 @@ public partial class PageIndicator : Control
         row.SetAnchorsPreset(LayoutPreset.FullRect);
         AddChild(row);
 
-        _label = UiTheme.Text("Page 1", FontSize, UiTheme.TextHi);
+        _label = UiTheme.Text($"{Localization.Loc.Tr("Page")} 1", FontSize, UiTheme.TextHi);
         _label.AddThemeColorOverride("font_outline_color", Colors.Black);
         _label.AddThemeConstantOverride("outline_size", 4);
         _label.VerticalAlignment = VerticalAlignment.Center;
@@ -616,7 +616,7 @@ public partial class PageIndicator : Control
 
     public void Show(int page)
     {
-        _label.Text = $"Page {page + 1}";
+        _label.Text = $"{Localization.Loc.Tr("Page")} {page + 1}";
         for (int i = 0; i < _dots.GetChildCount(); i++)
             if (_dots.GetChild(i) is PageDot dot) dot.Active = i == page;
     }
@@ -720,9 +720,9 @@ public sealed class TouchActionBar
             stop.Visible = state == 2;
         _attack.TooltipText = state switch
         {
-            0 => "Auto attack (no target)",
-            1 => "Start auto attack",
-            _ => "Stop auto attack",
+            0 => Localization.Loc.Tr("Auto attack (no target)"),
+            1 => Localization.Loc.Tr("Start auto attack"),
+            _ => Localization.Loc.Tr("Stop auto attack"),
         };
     }
 

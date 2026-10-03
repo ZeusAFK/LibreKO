@@ -18,8 +18,8 @@ public partial class SettingsPanel : CanvasLayer
 
         var hint = new Label
         {
-            Text = "Click a binding, then press a controller button. Hold the left or right trigger "
-                   + "while pressing to bind a trigger combination. Right-click a binding to clear it.",
+            Text = Localization.Loc.Tr("Click a binding, then press a controller button. Hold the left or right trigger "
+                   + "while pressing to bind a trigger combination. Right-click a binding to clear it."),
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         };
         hint.AddThemeFontSizeOverride("font_size", 12);
@@ -32,7 +32,7 @@ public partial class SettingsPanel : CanvasLayer
         RefreshPadStatus();
         Input.Singleton.JoyConnectionChanged += OnPadConnectionChanged;
 
-        var filter = new LineEdit { PlaceholderText = "Search actions…", Name = "pad_filter" };
+        var filter = new LineEdit { PlaceholderText = Localization.Loc.Tr("Search actions…"), Name = "pad_filter" };
         Ui.StyleField(filter);
         filter.TextChanged += ApplyPadFilter;
         vb.AddChild(filter);
@@ -53,7 +53,7 @@ public partial class SettingsPanel : CanvasLayer
         }
 
         vb.AddChild(new HSeparator());
-        var reset = new Button { Text = "Reset All Bindings" };
+        var reset = new Button { Text = Localization.Loc.Tr("Reset All Bindings") };
         reset.Pressed += () =>
         {
             CancelPadCapture();
@@ -71,8 +71,8 @@ public partial class SettingsPanel : CanvasLayer
         int device = KeyBinds.PadDevice();
         bool on = device >= 0;
         _padStatus.Text = on
-            ? $"Connected: {Input.GetJoyName(device)}"
-            : "No controller detected — bindings can still be edited.";
+            ? $"{Localization.Loc.Tr("Connected:")} {Input.GetJoyName(device)}"
+            : Localization.Loc.Tr("No controller detected — bindings can still be edited.");
         _padStatus.AddThemeColorOverride("font_color", on ? UiTheme.Good : UiTheme.TextLo);
     }
 
@@ -82,7 +82,7 @@ public partial class SettingsPanel : CanvasLayer
         row.AddThemeConstantOverride("separation", 10);
         row.AddChild(new Label
         {
-            Text = entry.Label,
+            Text = Localization.Loc.Tr(entry.Label),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         });
 
@@ -91,7 +91,7 @@ public partial class SettingsPanel : CanvasLayer
             Name = $"pad_{entry.Action}",
             CustomMinimumSize = new Vector2(BindButtonWidth, 0),
             FocusMode = Control.FocusModeEnum.None,
-            TooltipText = $"{entry.Label} — default {KeyBinds.PadDefault(entry.Action).Text}",
+            TooltipText = $"{Localization.Loc.Tr(entry.Label)} — {Localization.Loc.Tr("default")} {KeyBinds.PadDefault(entry.Action).Text}",
         };
         button.Pressed += () => BeginPadCapture(entry.Action);
         button.Cleared += () =>
@@ -126,7 +126,7 @@ public partial class SettingsPanel : CanvasLayer
         CancelPadCapture();
         CancelCapture();
         _capturingPad = action;
-        if (_padButtons.TryGetValue(action, out var button)) button.Text = "Press a button…";
+        if (_padButtons.TryGetValue(action, out var button)) button.Text = Localization.Loc.Tr("Press a button…");
     }
 
     private void CancelPadCapture()
@@ -192,7 +192,7 @@ public partial class SettingsPanel : CanvasLayer
     {
         if (!_padButtons.TryGetValue(action, out var button)) return;
         var chord = KeyBinds.GetPad(action);
-        button.Text = chord.Text;
+        button.Text = Localization.Loc.Tr(chord.Text);
         button.AddThemeColorOverride("font_color",
             chord.Assigned ? UiTheme.TextHi : new Color(0.55f, 0.55f, 0.58f));
     }

@@ -22,6 +22,7 @@ public class CombatPacketCoordinator(
     IMagicItemUsageService magicItemUsageService,
     ICombatLifecycleService combatLifecycleService,
     IStealthService stealthService,
+    ICombatNotificationService combatNotificationService,
     ILogger<CombatPacketCoordinator> logger) : ICombatPacketCoordinator
 {
     private const short MaxSwingInterval = 500;
@@ -101,6 +102,7 @@ public class CombatPacketCoordinator(
                 target.MarkCombat();
                 await combatLifecycleService.SendHpChangeAsync(target, session.CharacterId);
                 await combatLifecycleService.SendPlayerTargetHpAsync(session, target, damage);
+                await combatNotificationService.SendPartyDamageAsync(session, damage);
 
                 if (target.Hp <= 0)
                 {
@@ -128,6 +130,7 @@ public class CombatPacketCoordinator(
                     npcTarget.Hp = Math.Max(0, npcTarget.Hp - damage);
                     npcTarget.RecordDamage(session.CharacterId, damage, session, id => sessionManager.GetByCharacterId(id));
                     await combatLifecycleService.SendNpcTargetHpAsync(session, npcTarget, damage);
+                    await combatNotificationService.SendPartyDamageAsync(session, damage);
 
                     if (npcTarget.Hp <= 0)
                     {

@@ -21,14 +21,14 @@ public partial class World
     {
         _chatRoomLayer = new CanvasLayer { Layer = 68 };
         AddChild(_chatRoomLayer);
-        _chatRoomPanel = new HudWindow("chatrooms", "Chat Rooms", new Vector2(200, 120)) { Visible = false };
+        _chatRoomPanel = new HudWindow("chatrooms", Localization.Loc.Tr("Chat Rooms"), new Vector2(200, 120)) { Visible = false };
         _chatRoomPanel.Closed += CloseChatRoom;
         _chatRoomLayer.AddChild(_chatRoomPanel);
 
         var root = _chatRoomPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
 
-        root.AddChild(UiTheme.SectionTitle("Rooms"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Rooms")));
         var listScroll = new ScrollContainer { CustomMinimumSize = new Vector2(360, 150), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(listScroll);
         _chatRoomList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -37,20 +37,20 @@ public partial class World
 
         var createRow = new HBoxContainer(); createRow.AddThemeConstantOverride("separation", 6);
         root.AddChild(createRow);
-        _chatRoomNameInput = new LineEdit { PlaceholderText = "New room name", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 30 };
+        _chatRoomNameInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("New room name"), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 30 };
         _chatRoomNameInput.TextSubmitted += _ => DoChatRoomCreate();
         createRow.AddChild(_chatRoomNameInput);
-        var createBtn = new Button { Text = "Create", FocusMode = Control.FocusModeEnum.None };
+        var createBtn = new Button { Text = Localization.Loc.Tr("Create"), FocusMode = Control.FocusModeEnum.None };
         createBtn.Pressed += DoChatRoomCreate;
         createRow.AddChild(createBtn);
-        var refreshBtn = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
+        var refreshBtn = new Button { Text = Localization.Loc.Tr("Refresh"), FocusMode = Control.FocusModeEnum.None };
         refreshBtn.Pressed += () => Net.I.SendChatRoomList();
         createRow.AddChild(refreshBtn);
 
-        _chatRoomStatus = UiTheme.Text("Not in a room.", 12, UiTheme.TextLo);
+        _chatRoomStatus = UiTheme.Text(Localization.Loc.Tr("Not in a room."), 12, UiTheme.TextLo);
         root.AddChild(_chatRoomStatus);
 
-        root.AddChild(UiTheme.SectionTitle("Chat"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Chat")));
         _chatRoomLogScroll = new ScrollContainer { CustomMinimumSize = new Vector2(360, 140), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(_chatRoomLogScroll);
         _chatRoomLog = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -59,13 +59,13 @@ public partial class World
 
         var sayRow = new HBoxContainer(); sayRow.AddThemeConstantOverride("separation", 6);
         root.AddChild(sayRow);
-        _chatRoomSayInput = new LineEdit { PlaceholderText = "Message", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 128 };
+        _chatRoomSayInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("Message"), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 128 };
         _chatRoomSayInput.TextSubmitted += _ => DoChatRoomSay();
         sayRow.AddChild(_chatRoomSayInput);
-        var sayBtn = new Button { Text = "Send", FocusMode = Control.FocusModeEnum.None };
+        var sayBtn = new Button { Text = Localization.Loc.Tr("Send"), FocusMode = Control.FocusModeEnum.None };
         sayBtn.Pressed += DoChatRoomSay;
         sayRow.AddChild(sayBtn);
-        var leaveBtn = new Button { Text = "Leave", FocusMode = Control.FocusModeEnum.None };
+        var leaveBtn = new Button { Text = Localization.Loc.Tr("Leave"), FocusMode = Control.FocusModeEnum.None };
         leaveBtn.Pressed += () => Net.I.SendChatRoomLeave();
         sayRow.AddChild(leaveBtn);
 
@@ -132,12 +132,12 @@ public partial class World
             hb.AddChild(UiTheme.Text($"{r.MemberCount}", 12, UiTheme.Gold));
             if (r.RoomId == _chatRoomCurrentId)
             {
-                hb.AddChild(UiTheme.Text("Joined", 12, UiTheme.Gold));
+                hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Joined"), 12, UiTheme.Gold));
             }
             else
             {
                 int id = r.RoomId;
-                var btn = new Button { Text = "Join", FocusMode = Control.FocusModeEnum.None };
+                var btn = new Button { Text = Localization.Loc.Tr("Join"), FocusMode = Control.FocusModeEnum.None };
                 btn.Pressed += () => Net.I.SendChatRoomJoin(id);
                 hb.AddChild(btn);
             }
@@ -145,7 +145,7 @@ public partial class World
         }
         if (_chatRoomList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No rooms yet — create one.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No rooms yet — create one.");
             _chatRoomList.AddChild(e);
         }
     }
@@ -156,7 +156,7 @@ public partial class World
         {
             _chatRoomCurrentId = roomId;
             UpdateChatRoomStatus();
-            AppendChatRoomLine("System", "Room created. You can chat now.", UiTheme.Gold);
+            AppendChatRoomLine(Localization.Loc.Tr("System"), Localization.Loc.Tr("Room created. You can chat now."), UiTheme.Gold);
             Net.I.SendChatRoomList();
         }
     }
@@ -167,7 +167,7 @@ public partial class World
         {
             _chatRoomCurrentId = roomId;
             UpdateChatRoomStatus();
-            AppendChatRoomLine("System", "Joined the room.", UiTheme.Gold);
+            AppendChatRoomLine(Localization.Loc.Tr("System"), Localization.Loc.Tr("Joined the room."), UiTheme.Gold);
             Net.I.SendChatRoomList();
         }
         else
@@ -180,7 +180,7 @@ public partial class World
     {
         if (ok)
         {
-            AppendChatRoomLine("System", "Left the room.", UiTheme.TextLo);
+            AppendChatRoomLine(Localization.Loc.Tr("System"), Localization.Loc.Tr("Left the room."), UiTheme.TextLo);
             _chatRoomCurrentId = 0;
             UpdateChatRoomStatus();
         }
@@ -209,6 +209,6 @@ public partial class World
 
     private void UpdateChatRoomStatus()
     {
-        _chatRoomStatus.Text = _chatRoomCurrentId == 0 ? "Not in a room." : $"In room #{_chatRoomCurrentId}.";
+        _chatRoomStatus.Text = _chatRoomCurrentId == 0 ? Localization.Loc.Tr("Not in a room.") : $"{Localization.Loc.Tr("In room")} #{_chatRoomCurrentId}.";
     }
 }

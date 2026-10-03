@@ -79,7 +79,7 @@ public partial class World
 
     private void BuildMerchantMenu()
     {
-        _merchantMenu = new HudWindow("merchantmenu", "Merchant", new Vector2(260, 150)) { Visible = false };
+        _merchantMenu = new HudWindow("merchantmenu", Localization.Loc.Tr("Merchant"), new Vector2(260, 150)) { Visible = false };
         _merchantMenu.Closed += CloseMerchantMenu;
         _mctLayer.AddChild(_merchantMenu);
 
@@ -87,9 +87,9 @@ public partial class World
         root.AddThemeConstantOverride("separation", 8);
         root.CustomMinimumSize = new Vector2(250, 0);
 
-        root.AddChild(MenuButton("Selling Merchant", OpenSellStall));
-        root.AddChild(MenuButton("Buying Merchant", OpenWishList));
-        root.AddChild(MenuButton("Market Price", OpenMarketPrice));
+        root.AddChild(MenuButton(Localization.Loc.Tr("Selling Merchant"), OpenSellStall));
+        root.AddChild(MenuButton(Localization.Loc.Tr("Buying Merchant"), OpenWishList));
+        root.AddChild(MenuButton(Localization.Loc.Tr("Market Price"), OpenMarketPrice));
 
     }
 
@@ -104,14 +104,14 @@ public partial class World
 
     private void BuildSellStallPanel()
     {
-        _sellStallPanel = new HudWindow("sellstall", "Selling Merchant", new Vector2(120, 70)) { Visible = false };
+        _sellStallPanel = new HudWindow("sellstall", Localization.Loc.Tr("Selling Merchant"), new Vector2(120, 70)) { Visible = false };
         _sellStallPanel.Closed += CloseSellStall;
         _mctLayer.AddChild(_sellStallPanel);
 
         var root = _sellStallPanel.Body;
         root.AddThemeConstantOverride("separation", 8);
 
-        root.AddChild(UiTheme.SectionTitle("On the stall"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("On the stall")));
         _sellStallCells = BuildMerchantGrid(root, StallSlots, StallColumns, null,
             dragKey: "stallFrom", acceptKey: "bagFrom", onDropFrom: (bag, _) => StageStallItem(bag));
 
@@ -120,21 +120,21 @@ public partial class World
         var moneyBox = new VBoxContainer();
         moneyBox.AddThemeConstantOverride("separation", 3);
         money.AddChild(moneyBox);
-        moneyBox.AddChild(MoneyRow("Total Selling Price", out _sellTotal, UiTheme.GoldBright));
-        moneyBox.AddChild(MoneyRow("Current Balance", out _sellBalance, UiTheme.TextHi));
+        moneyBox.AddChild(MoneyRow(Localization.Loc.Tr("Total Selling Price"), out _sellTotal, UiTheme.GoldBright));
+        moneyBox.AddChild(MoneyRow(Localization.Loc.Tr("Current Balance"), out _sellBalance, UiTheme.TextHi));
 
-        root.AddChild(UiTheme.SectionTitle("Your bags"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Your bags")));
         _sellBagCells = BuildMerchantGrid(root, GridCount, StallBagColumns, null,
             dragKey: "bagFrom", acceptKey: "stallFrom", onDropFrom: (stall, _) => UnstageStallItem(stall));
 
         var advertRow = new HBoxContainer();
         advertRow.AddThemeConstantOverride("separation", 6);
         root.AddChild(advertRow);
-        var advertLabel = UiTheme.Text("Shop name", 12, UiTheme.TextLo);
+        var advertLabel = UiTheme.Text(Localization.Loc.Tr("Shop name"), 12, UiTheme.TextLo);
         advertRow.AddChild(advertLabel);
         _sellAdvert = new LineEdit
         {
-            PlaceholderText = "optional",
+            PlaceholderText = Localization.Loc.Tr("optional"),
             MaxLength = MerchantAdvertMax,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
@@ -148,11 +148,11 @@ public partial class World
         footer.AddThemeConstantOverride("separation", 8);
         footer.Alignment = BoxContainer.AlignmentMode.Center;
         root.AddChild(footer);
-        var confirm = new Button { Text = "Confirm", FocusMode = Control.FocusModeEnum.None };
+        var confirm = new Button { Text = Localization.Loc.Tr("Confirm"), FocusMode = Control.FocusModeEnum.None };
         confirm.CustomMinimumSize = new Vector2(104, 28);
         confirm.Pressed += ConfirmSellStall;
         footer.AddChild(confirm);
-        var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        var cancel = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         cancel.CustomMinimumSize = new Vector2(104, 28);
         cancel.Pressed += CloseSellStall;
         footer.AddChild(cancel);
@@ -160,22 +160,22 @@ public partial class World
 
     private void BuildShopPanel()
     {
-        _shopPanel = new HudWindow("shop", "Shop", new Vector2(420, 110)) { Visible = false };
+        _shopPanel = new HudWindow("shop", Localization.Loc.Tr("Shop"), new Vector2(420, 110)) { Visible = false };
         _shopPanel.Closed += CloseShop;
         _mctLayer.AddChild(_shopPanel);
 
         var root = _shopPanel.Body;
         root.AddThemeConstantOverride("separation", 8);
 
-        root.AddChild(UiTheme.SectionTitle("For sale"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("For sale")));
         _shopCells = BuildMerchantGrid(root, StallSlots, StallColumns, BuyFromStall,
             dragKey: "shopFrom");
 
         var money = UiTheme.Section();
         root.AddChild(money);
-        money.AddChild(MoneyRow("Current Balance", out _shopBalance, UiTheme.TextHi));
+        money.AddChild(MoneyRow(Localization.Loc.Tr("Current Balance"), out _shopBalance, UiTheme.TextHi));
 
-        root.AddChild(UiTheme.SectionTitle("Your bags"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Your bags")));
         _shopBagCells = BuildMerchantGrid(root, GridCount, StallBagColumns, null,
             acceptKey: "shopFrom", onDropFrom: (shopSlot, _) => BuyFromStall(shopSlot));
 
@@ -222,7 +222,7 @@ public partial class World
     private void OpenMarketPrice()
     {
         CloseMerchantMenu();
-        CombatNotice("Market prices are not available on this server yet.");
+        CombatNotice(Localization.Loc.Tr("Market prices are not available on this server yet."));
     }
 
     private void OnMerchantOpenResult(int status)
@@ -231,11 +231,11 @@ public partial class World
         {
             CombatNotice(status switch
             {
-                Net.MerchantOpenUnderLevelled => "You must be level 30 to open a shop.",
-                Net.MerchantOpenWhileDead => "You can't open a shop right now.",
-                Net.MerchantOpenWhileTrading => "Finish your trade first.",
-                Net.MerchantOpenWhileMerchanting => "Your shop is already open.",
-                _ => "Couldn't open a shop.",
+                Net.MerchantOpenUnderLevelled => Localization.Loc.Tr("You must be level 30 to open a shop."),
+                Net.MerchantOpenWhileDead => Localization.Loc.Tr("You can't open a shop right now."),
+                Net.MerchantOpenWhileTrading => Localization.Loc.Tr("Finish your trade first."),
+                Net.MerchantOpenWhileMerchanting => Localization.Loc.Tr("Your shop is already open."),
+                _ => Localization.Loc.Tr("Couldn't open a shop."),
             });
             return;
         }
@@ -261,7 +261,7 @@ public partial class World
     {
         int staged = 0;
         foreach (var slot in _myStall) if (!slot.IsEmpty) staged++;
-        if (staged == 0) { SetSellStatus("Put at least one item on the stall.", true); return; }
+        if (staged == 0) { SetSellStatus(Localization.Loc.Tr("Put at least one item on the stall."), true); return; }
 
         _sellStallShown = false;
         _sellStallPanel.Visible = false;
@@ -276,13 +276,13 @@ public partial class World
         if (absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
         if (System.Array.IndexOf(_myStallSrc, absSlot) >= 0)
         {
-            SetSellStatus("That one is already on the stall.", true);
+            SetSellStatus(Localization.Loc.Tr("That one is already on the stall."), true);
             return;
         }
 
         int dst = -1;
         for (int i = 0; i < _myStall.Length; i++) if (_myStall[i].IsEmpty) { dst = i; break; }
-        if (dst < 0) { SetSellStatus($"The stall only holds {StallSlots} items.", true); return; }
+        if (dst < 0) { SetSellStatus($"{Localization.Loc.Tr("The stall only holds")} {StallSlots} {Localization.Loc.Tr("items.")}", true); return; }
 
         var slot = Inv[absSlot];
         AskStallPrice(slot, absSlot, dst);
@@ -296,7 +296,7 @@ public partial class World
 
     private void OnMerchantItemAdd(bool ok, int itemId, int count, short dura, int price, int srcPos, int dstPos)
     {
-        if (!ok) { SetSellStatus("That item can't be sold from a stall.", true); return; }
+        if (!ok) { SetSellStatus(Localization.Loc.Tr("That item can't be sold from a stall."), true); return; }
         if (dstPos >= 0 && dstPos < _myStall.Length)
         {
             _myStall[dstPos] = new MerchantStallItem
@@ -324,7 +324,7 @@ public partial class World
         for (int i = 0; i < _sellStallCells.Length; i++)
         {
             var item = _myStall[i];
-            _sellStallCells[i].Set(StallSlot(item), PriceNote("Asking", item.Price, item.Count));
+            _sellStallCells[i].Set(StallSlot(item), PriceNote(Localization.Loc.Tr("Asking"), item.Price, item.Count));
             if (!item.IsEmpty) total += (long)item.Price * item.Count;
         }
         _sellTotal.Text = total.ToString("n0");
@@ -341,7 +341,7 @@ public partial class World
             bool listed = System.Array.IndexOf(_myStallSrc, absSlot) >= 0;
             var cell = _sellBagCells[i];
             cell.TipSlot = absSlot;
-            cell.Set(slot, listed ? "listed" : "");
+            cell.Set(slot, listed ? Localization.Loc.Tr("listed") : "");
             cell.Modulate = listed ? new Color(1, 1, 1, 0.45f) : Colors.White;
         }
     }
@@ -349,14 +349,14 @@ public partial class World
     private void OnMerchantSold(int itemId, string buyerName)
     {
         string who = buyerName.Length > 0 ? buyerName : "Someone";
-        CombatNotice($"{who} bought {ItemData.DisplayName(itemId)} from your shop.");
+        CombatNotice($"{who} {Localization.Loc.Tr("bought")} {ItemData.DisplayName(itemId)} {Localization.Loc.Tr("from your shop.")}");
     }
 
     private void OnMerchantInserted(bool ok, int charId, string advert, byte flags, int[] itemIds)
     {
         if (!ok)
         {
-            SetSellStatus("The shop could not be opened.", true);
+            SetSellStatus(Localization.Loc.Tr("The shop could not be opened."), true);
             _sellStallShown = true;
             _sellStallPanel.Visible = true;
             return;
@@ -376,7 +376,7 @@ public partial class World
         _sellStallPanel.Visible = false;
         HideItemTooltip();
         SetMerchantLock(true);
-        CombatNotice("Your shop is open. You cannot move while it is.");
+        CombatNotice(Localization.Loc.Tr("Your shop is open. You cannot move while it is."));
     }
 
     private void OnMerchantStallClosed(int charId)
@@ -457,11 +457,11 @@ public partial class World
         for (int i = 0; i < _shopCells.Length; i++)
         {
             var item = _shopItems[i];
-            _shopCells[i].Set(StallSlot(item), PriceNote("Price", item.Price, item.Count));
+            _shopCells[i].Set(StallSlot(item), PriceNote(Localization.Loc.Tr("Price"), item.Price, item.Count));
             if (!item.IsEmpty) listed++;
         }
         _shopBalance.Text = Sheet.Gold.ToString("n0");
-        if (listed == 0) SetShopStatus("This shop has nothing left.", false);
+        if (listed == 0) SetShopStatus(Localization.Loc.Tr("This shop has nothing left."), false);
     }
 
     private void BuyFromStall(int merchantSlot)
@@ -469,7 +469,7 @@ public partial class World
         if (merchantSlot < 0 || merchantSlot >= _shopItems.Length) return;
         var item = _shopItems[merchantSlot];
         if (item.IsEmpty) return;
-        if (item.Price > Sheet.Gold) { SetShopStatus("You don't have enough gold.", true); return; }
+        if (item.Price > Sheet.Gold) { SetShopStatus(Localization.Loc.Tr("You don't have enough gold."), true); return; }
 
         int most = System.Math.Max(1, item.Count);
         var def = ItemData.Get(item.ItemId);
@@ -477,21 +477,21 @@ public partial class World
 
         string itemName = ItemData.DisplayName(item.ItemId);
         string hint = countable
-            ? $"Buy {itemName} for {Money(item.Price)} each?"
-            : $"Buy {itemName} for {Money(item.Price)}?";
+            ? $"{Localization.Loc.Tr("Buy")} {itemName} {Localization.Loc.Tr("for")} {Money(item.Price)} {Localization.Loc.Tr("each?")}"
+            : $"{Localization.Loc.Tr("Buy")} {itemName} {Localization.Loc.Tr("for")} {Money(item.Price)}?";
 
         AskTrade(StallSlot(item), hint, item.Price, most, countable,
             (count, _) =>
             {
                 int buyerSlot = Inv.FirstFreeGridSlot();
-                if (buyerSlot < 0) { SetShopStatus("Your bags are full.", true); return; }
+                if (buyerSlot < 0) { SetShopStatus(Localization.Loc.Tr("Your bags are full."), true); return; }
                 Net.I.SendMerchantBuy(item.ItemId, count, (byte)merchantSlot, (byte)(buyerSlot - GridStart));
             });
     }
 
     private void OnMerchantBuy(bool ok, int itemId, int remaining, int merchantSlot, int buyerSlot)
     {
-        if (!ok) { SetShopStatus("That purchase was refused.", true); return; }
+        if (!ok) { SetShopStatus(Localization.Loc.Tr("That purchase was refused."), true); return; }
 
         int abs = GridStart + buyerSlot;
         var def = ItemData.Get(itemId);
@@ -514,7 +514,7 @@ public partial class World
 
         if (CharTabOpen()) RefreshInventoryUI();
         RefreshShop();
-        SetShopStatus($"Bought {ItemData.DisplayName(itemId)} for {Money(price)}.", false);
+        SetShopStatus($"{Localization.Loc.Tr("Bought")} {ItemData.DisplayName(itemId)} {Localization.Loc.Tr("for")} {Money(price)}.", false);
     }
 
     private void CloseShop()
@@ -531,7 +531,7 @@ public partial class World
 
     private static string PriceNote(string caption, int price, int count) =>
         count > 1
-            ? $"{caption} {Money(price)} each   ({Money((long)price * count)} total)"
+            ? $"{caption} {Money(price)} {Localization.Loc.Tr("each")}   ({Money((long)price * count)} {Localization.Loc.Tr("total")})"
             : $"{caption} {Money(price)}";
 
     private void SetSellStatus(string text, bool warn)

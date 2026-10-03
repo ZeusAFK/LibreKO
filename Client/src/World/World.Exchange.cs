@@ -72,7 +72,7 @@ public partial class World
         _exLayer = new CanvasLayer { Layer = 75 };
         AddChild(_exLayer);
 
-        _exPanel = new HudWindow("exchange", "Trade", new Vector2(220, 90)) { Visible = false };
+        _exPanel = new HudWindow("exchange", Localization.Loc.Tr("Trade"), new Vector2(220, 90)) { Visible = false };
         _exPanel.Closed += () => { if (_exShown) AbortExchange(local: true); };
         _exLayer.AddChild(_exPanel);
 
@@ -82,23 +82,23 @@ public partial class World
         var cols = new HBoxContainer();
         cols.AddThemeConstantOverride("separation", 16);
         root.AddChild(cols);
-        cols.AddChild(BuildOfferColumn("You offer", out _exMineList, out _exMineGold));
-        cols.AddChild(BuildOfferColumn("Partner offers", out _exTheirsList, out _exTheirsGold));
+        cols.AddChild(BuildOfferColumn(Localization.Loc.Tr("You offer"), out _exMineList, out _exMineGold));
+        cols.AddChild(BuildOfferColumn(Localization.Loc.Tr("Partner offers"), out _exTheirsList, out _exTheirsGold));
 
         root.AddChild(new HSeparator());
 
         var goldRow = new HBoxContainer();
         goldRow.AddThemeConstantOverride("separation", 6);
-        var goldLbl = HudStyle.Label(13); goldLbl.Text = "Gold:";
+        var goldLbl = HudStyle.Label(13); goldLbl.Text = Localization.Loc.Tr("Gold:");
         goldRow.AddChild(goldLbl);
-        _exGoldEdit = new LineEdit { PlaceholderText = "amount", CustomMinimumSize = new Vector2(110, 0) };
+        _exGoldEdit = new LineEdit { PlaceholderText = Localization.Loc.Tr("amount"), CustomMinimumSize = new Vector2(110, 0) };
         goldRow.AddChild(_exGoldEdit);
-        var addGoldBtn = new Button { Text = "Add gold", FocusMode = Control.FocusModeEnum.None };
+        var addGoldBtn = new Button { Text = Localization.Loc.Tr("Add gold"), FocusMode = Control.FocusModeEnum.None };
         addGoldBtn.Pressed += OnAddGold;
         goldRow.AddChild(addGoldBtn);
         root.AddChild(goldRow);
 
-        root.AddChild(UiTheme.SectionTitle("My backpack"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("My backpack")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(360, 200), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _exBagList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -108,10 +108,10 @@ public partial class World
         root.AddChild(new HSeparator());
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 8);
-        _exConfirmBtn = new Button { Text = "Confirm", FocusMode = Control.FocusModeEnum.None };
+        _exConfirmBtn = new Button { Text = Localization.Loc.Tr("Confirm"), FocusMode = Control.FocusModeEnum.None };
         _exConfirmBtn.Pressed += OnExchangeConfirm;
         footer.AddChild(_exConfirmBtn);
-        _exCancelBtn = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        _exCancelBtn = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         _exCancelBtn.Pressed += () => AbortExchange(local: true);
         footer.AddChild(_exCancelBtn);
         _exStatus = HudStyle.Label(13, HorizontalAlignment.Right);
@@ -119,9 +119,9 @@ public partial class World
         footer.AddChild(_exStatus);
         root.AddChild(footer);
 
-        _exAskDialog = new ConfirmationDialog { Title = "Trade request" };
-        _exAskDialog.GetOkButton().Text = "Accept";
-        _exAskDialog.GetCancelButton().Text = "Decline";
+        _exAskDialog = new ConfirmationDialog { Title = Localization.Loc.Tr("Trade request") };
+        _exAskDialog.GetOkButton().Text = Localization.Loc.Tr("Accept");
+        _exAskDialog.GetCancelButton().Text = Localization.Loc.Tr("Decline");
         _exAskDialog.Confirmed += () => AnswerExchangeRequest(true);
         _exAskDialog.Canceled += () => AnswerExchangeRequest(false);
         _exLayer.AddChild(_exAskDialog);
@@ -160,7 +160,7 @@ public partial class World
         var buttons = new HBoxContainer();
         buttons.Alignment = BoxContainer.AlignmentMode.Center;
         root.AddChild(buttons);
-        var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        var cancel = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         cancel.Pressed += CancelExchangeRequest;
         buttons.AddChild(cancel);
     }
@@ -213,7 +213,7 @@ public partial class World
         var amountRow = new HBoxContainer();
         amountRow.AddThemeConstantOverride("separation", 8);
         root.AddChild(amountRow);
-        var amountLbl = UiTheme.Text("Quantity", 13, UiTheme.TextLo);
+        var amountLbl = UiTheme.Text(Localization.Loc.Tr("Quantity"), 13, UiTheme.TextLo);
         amountLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         amountRow.AddChild(amountLbl);
         _exAmountSpin = new SpinBox
@@ -231,10 +231,10 @@ public partial class World
         buttons.AddThemeConstantOverride("separation", 8);
         buttons.Alignment = BoxContainer.AlignmentMode.End;
         root.AddChild(buttons);
-        var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        var cancel = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         cancel.Pressed += CloseExchangeAmount;
         buttons.AddChild(cancel);
-        var ok = new Button { Text = "Offer", FocusMode = Control.FocusModeEnum.None };
+        var ok = new Button { Text = Localization.Loc.Tr("Offer"), FocusMode = Control.FocusModeEnum.None };
         ok.Pressed += ConfirmExchangeAmount;
         buttons.AddChild(ok);
     }
@@ -254,7 +254,7 @@ public partial class World
 
     private void TryTradeNearest()
     {
-        if (_exShown) { SetExStatus("Already trading.", true); return; }
+        if (_exShown) { SetExStatus(Localization.Loc.Tr("Already trading."), true); return; }
         if (_selfDead) return;
         if (TryBrowseNearestMerchant()) return;
         int bestId = -1; float bestD = TradeRange;
@@ -265,7 +265,7 @@ public partial class World
             float d = e.Body.Position.DistanceTo(_self.Position);
             if (d < bestD) { bestD = d; bestId = kv.Key; }
         }
-        if (bestId < 0) { CombatNotice("No player nearby to trade with."); return; }
+        if (bestId < 0) { CombatNotice(Localization.Loc.Tr("No player nearby to trade with.")); return; }
         BeginTradeRequest(bestId, _ents.TryGetValue(bestId, out var pe) ? pe.Name : "Player");
     }
 
@@ -275,14 +275,14 @@ public partial class World
             && partner.Nation != Net.I.Nation
             && !Net.I.CurrentZoneAbility.CanTrade)
         {
-            CombatNotice("The two nations cannot trade here.");
+            CombatNotice(Localization.Loc.Tr("The two nations cannot trade here."));
             return;
         }
 
         _exPartnerId = charId;
         _exPartnerName = name;
         Net.I.SendExchangeRequest(charId);
-        ShowExchangeWait($"Waiting for {name} to accept the trade…");
+        ShowExchangeWait($"{Localization.Loc.Tr("Waiting for")} {name} {Localization.Loc.Tr("to accept the trade…")}");
     }
 
     private void ShowExchangeWait(string text)
@@ -306,7 +306,7 @@ public partial class World
         Net.I.SendExchangeCancel();
         ResetExchangeState();
         _exPartnerId = -1;
-        CombatNotice("Trade request cancelled.");
+        CombatNotice(Localization.Loc.Tr("Trade request cancelled."));
     }
 
     private void OnExchangeRequest(int requesterCharId)
@@ -315,9 +315,9 @@ public partial class World
         _exPartnerId = requesterCharId;
         _exPartnerName = _ents.TryGetValue(requesterCharId, out var e) ? e.Name : "Player";
         _exRequestPending = true;
-        _exAskDialog.DialogText = $"{_exPartnerName} wants to trade.\nAccept?";
+        _exAskDialog.DialogText = $"{_exPartnerName} {Localization.Loc.Tr("wants to trade.")}\n{Localization.Loc.Tr("Accept?")}";
         _exAskDialog.PopupCentered();
-        CombatNotice($"{_exPartnerName} wants to trade. (Press T to trade)");
+        CombatNotice($"{_exPartnerName} {Localization.Loc.Tr("wants to trade.")} {Localization.Loc.Tr("(Press T to trade)")}");
     }
 
     private void AnswerExchangeRequest(bool accept)
@@ -332,15 +332,15 @@ public partial class World
     {
         HideExchangeWait();
         if (accepted) OpenExchange();
-        else { CombatNotice($"{_exPartnerName} declined the trade."); ResetExchangeState(); }
+        else { CombatNotice($"{_exPartnerName} {Localization.Loc.Tr("declined the trade.")}"); ResetExchangeState(); }
     }
 
     private void OpenExchange()
     {
         ResetExchangeState();
-        _exPanel.Title = $"Trade — {_exPartnerName}";
+        _exPanel.Title = $"{Localization.Loc.Tr("Trade")} — {_exPartnerName}";
         _exConfirmBtn.Disabled = false;
-        _exConfirmBtn.Text = "Confirm";
+        _exConfirmBtn.Text = Localization.Loc.Tr("Confirm");
         SetExStatus("", false);
         RefreshExchangeBag();
         RefreshExchangeOffers();
@@ -388,12 +388,12 @@ public partial class World
             var def = ItemData.Get(slot.ItemId);
             string sub = def != null && def.Weight > 0 ? $"{def.Weight * ItemData.CarriedUnits(def, slot)} wt" : "";
             _exBagList.AddChild(BuildTradeRow(
-                slot.ItemId, sub, "Offer",
+                slot.ItemId, sub, Localization.Loc.Tr("Offer"),
                 () => OfferSlot(absSlot), () => OfferSlot(absSlot), absSlot, slot, slot.Count));
         }
         if (_exBagList.GetChildCount() == 0)
         {
-            var empty = HudStyle.Label(13); empty.Text = "Your bags are empty.";
+            var empty = HudStyle.Label(13); empty.Text = Localization.Loc.Tr("Your bags are empty.");
             _exBagList.AddChild(empty);
         }
     }
@@ -402,8 +402,8 @@ public partial class World
     {
         RefreshOfferColumn(_exMineList, _exMyOffer);
         RefreshOfferColumn(_exTheirsList, _exTheirOffer);
-        _exMineGold.Text = _exMyGoldOffer > 0 ? $"+ {_exMyGoldOffer:n0} gold" : "";
-        _exTheirsGold.Text = _exTheirGoldOffer > 0 ? $"+ {_exTheirGoldOffer:n0} gold" : "";
+        _exMineGold.Text = _exMyGoldOffer > 0 ? $"+ {_exMyGoldOffer:n0} {Localization.Loc.Tr("gold")}" : "";
+        _exTheirsGold.Text = _exTheirGoldOffer > 0 ? $"+ {_exTheirGoldOffer:n0} {Localization.Loc.Tr("gold")}" : "";
     }
 
     private static void RefreshOfferColumn(VBoxContainer list, List<ExOfferItem> offer)
@@ -429,10 +429,10 @@ public partial class World
 
     private void OfferSlot(int absSlot)
     {
-        if (_exConfirmedByMe) { SetExStatus("You already confirmed.", true); return; }
+        if (_exConfirmedByMe) { SetExStatus(Localization.Loc.Tr("You already confirmed."), true); return; }
         if (_exAddInFlight) return;
         if (absSlot < 0 || absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
-        if (_exMyOffer.Count >= 12) { SetExStatus("Offer is full (12 items).", true); return; }
+        if (_exMyOffer.Count >= 12) { SetExStatus(Localization.Loc.Tr("Offer is full (12 items)."), true); return; }
         var slot = Inv[absSlot];
         int have = Mathf.Max(1, (int)slot.Count);
 
@@ -464,7 +464,7 @@ public partial class World
         int itemId = Inv[absSlot].ItemId;
         _exAmountIcon.Texture = ItemData.Icon(itemId);
         _exAmountName.Text = ItemData.DisplayName(itemId);
-        _exAmountHint.Text = $"You have {max:n0}";
+        _exAmountHint.Text = $"{Localization.Loc.Tr("You have")} {max:n0}";
         _exAmountSpin.MaxValue = max;
         _exAmountSpin.Value = max;
         _exAmountSpin.GetLineEdit().Text = max.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -495,10 +495,10 @@ public partial class World
 
     private void OnAddGold()
     {
-        if (_exConfirmedByMe) { SetExStatus("You already confirmed.", true); return; }
+        if (_exConfirmedByMe) { SetExStatus(Localization.Loc.Tr("You already confirmed."), true); return; }
         if (_exAddInFlight) return;
-        if (!int.TryParse(_exGoldEdit.Text.Trim(), out int amount) || amount <= 0) { SetExStatus("Enter a gold amount.", true); return; }
-        if (amount > Sheet.Gold) { SetExStatus("Not enough gold.", true); return; }
+        if (!int.TryParse(_exGoldEdit.Text.Trim(), out int amount) || amount <= 0) { SetExStatus(Localization.Loc.Tr("Enter a gold amount."), true); return; }
+        if (amount > Sheet.Gold) { SetExStatus(Localization.Loc.Tr("Not enough gold."), true); return; }
 
         _exPending = new PendingExAdd { IsGold = true, Count = amount };
         _exAddInFlight = true;
@@ -509,7 +509,7 @@ public partial class World
     {
         if (!_exAddInFlight) return;
         _exAddInFlight = false;
-        if (!committed) { SetExStatus("That item can't be traded.", true); return; }
+        if (!committed) { SetExStatus(Localization.Loc.Tr("That item can't be traded."), true); return; }
 
         if (_exPending.IsGold)
         {
@@ -554,15 +554,15 @@ public partial class World
         if (!_exShown || _exConfirmedByMe) return;
         _exConfirmedByMe = true;
         _exConfirmBtn.Disabled = true;
-        _exConfirmBtn.Text = "Confirmed";
-        SetExStatus("Waiting for partner…", false);
+        _exConfirmBtn.Text = Localization.Loc.Tr("Confirmed");
+        SetExStatus(Localization.Loc.Tr("Waiting for partner…"), false);
         Net.I.SendExchangeDecide();
     }
 
     private void OnExchangeOtherDecide()
     {
         if (!_exShown) return;
-        SetExStatus(_exConfirmedByMe ? "Finalising…" : "Partner confirmed — press Confirm.", false);
+        SetExStatus(_exConfirmedByMe ? Localization.Loc.Tr("Finalising…") : Localization.Loc.Tr("Partner confirmed — press Confirm."), false);
     }
 
     private void OnExchangeDone(bool ok, int money, List<(byte DstPos, ItemSlot Slot)> received)
@@ -570,7 +570,7 @@ public partial class World
         if (!_exShown) return;
         if (!ok)
         {
-            SetExStatus("Trade failed (bags full / overweight).", true);
+            SetExStatus(Localization.Loc.Tr("Trade failed (bags full / overweight)."), true);
             RestoreMyOffer();
             CloseExchangeWindow();
             return;
@@ -589,7 +589,7 @@ public partial class World
         if (goldGained > 0) Floaters?.Gold(goldGained);
         Sheet.SetGold(money);
         if (CharTabOpen()) RefreshInventoryUI();
-        CombatNotice($"Trade with {_exPartnerName} complete.");
+        CombatNotice($"{Localization.Loc.Tr("Trade with")} {_exPartnerName} {Localization.Loc.Tr("complete.")}");
         CloseExchangeWindow();
     }
 
@@ -599,7 +599,7 @@ public partial class World
         {
             HideExchangeWait();
             ResetExchangeState();
-            CombatNotice($"{_exPartnerName} is not available to trade.");
+            CombatNotice($"{_exPartnerName} {Localization.Loc.Tr("is not available to trade.")}");
             return;
         }
         if (_exRequestPending)
@@ -607,11 +607,11 @@ public partial class World
             _exRequestPending = false;
             _exAskDialog.Hide();
             ResetExchangeState();
-            CombatNotice("The trade request was withdrawn.");
+            CombatNotice(Localization.Loc.Tr("The trade request was withdrawn."));
             return;
         }
         if (!_exShown) return;
-        CombatNotice("The trade was cancelled.");
+        CombatNotice(Localization.Loc.Tr("The trade was cancelled."));
         RestoreMyOffer();
         CloseExchangeWindow();
     }

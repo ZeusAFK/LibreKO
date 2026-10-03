@@ -79,9 +79,9 @@ public partial class World
     private void OnShoutUpgrade(bool ok, string name, int itemId, int rank)
     {
         string item = ItemData.DisplayName(itemId);
-        if (string.IsNullOrEmpty(item)) item = $"item {itemId}";
-        string verb = ok ? "successfully forged" : "failed to forge";
-        string line = $"{name} has {verb} {item}!";
+        if (string.IsNullOrEmpty(item)) item = $"{Localization.Loc.Tr("item")} {itemId}";
+        string verb = ok ? Localization.Loc.Tr("successfully forged") : Localization.Loc.Tr("failed to forge");
+        string line = $"{name} {Localization.Loc.Tr("has")} {verb} {item}!";
 
         ShowShoutBanner(line, ok ? ShoutGold : new Color("ff8a5c"));
         var colHex = ok ? "ffd98a" : "ff9a6a";
@@ -91,8 +91,8 @@ public partial class World
     private void OnShoutRareItem(string finder, int itemId, byte nation)
     {
         string item = ItemData.DisplayName(itemId);
-        if (string.IsNullOrEmpty(item)) item = $"item {itemId}";
-        string line = $"{finder} has obtained {item}!";
+        if (string.IsNullOrEmpty(item)) item = $"{Localization.Loc.Tr("item")} {itemId}";
+        string line = $"{finder} {Localization.Loc.Tr("has obtained")} {item}!";
         var colour = nation == Nations.Karus ? ShoutKarus
             : nation == Nations.ElMorad ? ShoutElmorad : ShoutGold;
 
@@ -106,10 +106,10 @@ public partial class World
 
         Chat.Info(result switch
         {
-            Net.ShoutRegisterNoItem => "You need a Logos Shout scroll to shout server-wide.",
-            Net.ShoutRegisterChatRestricted => "You cannot shout while chat is restricted.",
-            Net.ShoutRegisterLevelTooLow => "Shouting is available at level 30 or above.",
-            _ => "Could not register your message. Please try again later.",
+            Net.ShoutRegisterNoItem => Localization.Loc.Tr("You need a Logos Shout scroll to shout server-wide."),
+            Net.ShoutRegisterChatRestricted => Localization.Loc.Tr("You cannot shout while chat is restricted."),
+            Net.ShoutRegisterLevelTooLow => Localization.Loc.Tr("Shouting is available at level 30 or above."),
+            _ => Localization.Loc.Tr("Could not register your message. Please try again later."),
         });
     }
 

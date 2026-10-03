@@ -35,7 +35,7 @@ public partial class CharSelect : Node3D
         LoginNet.I.LoginResultEvent += OnReturnLoginResult;
         LoginNet.I.ErrorEvent += OnLoginServerError;
 
-        _status.Text = "Loading characters…";
+        _status.Text = Localization.Loc.Tr("Loading characters…");
         Net.I.RequestCharList();
         Callable.From(() => GlyphWarmer.Warm(this)).CallDeferred();
     }
@@ -76,7 +76,7 @@ public partial class CharSelect : Node3D
         content.AddThemeConstantOverride("separation", 10);
         margin.AddChild(content);
 
-        content.AddChild(Ui.Legend("Select Character", 22, UiTheme.GoldBright));
+        content.AddChild(Ui.Legend(Localization.Loc.Tr("Select Character"), 22, UiTheme.GoldBright));
 
         _status = Ui.Legend("", 13, UiTheme.TextLo);
         _status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -93,13 +93,13 @@ public partial class CharSelect : Node3D
         _characterList.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(_characterList);
 
-        _enterButton = Ui.MenuButton("Enter World", 46, 20);
+        _enterButton = Ui.MenuButton(Localization.Loc.Tr("Enter World"), 46, 20);
         _enterButton.Disabled = true;
         _enterButton.Pressed += EnterSelectedCharacter;
         content.AddChild(_enterButton);
 
         var group = Ui.ActionGroup(content,
-            ("Create Character", OpenCreate), ("Back to servers", ReturnToServerSelection));
+            (Localization.Loc.Tr("Create Character"), OpenCreate), (Localization.Loc.Tr("Back to servers"), ReturnToServerSelection));
         _createButton = group[0];
         _backButton = group[1];
 
@@ -134,7 +134,7 @@ public partial class CharSelect : Node3D
 
         var line = new Label
         {
-            Text = $"Level {c.Level}  ·  {ClassLabel(c.Class)}",
+            Text = $"{Localization.Loc.Tr("Level")} {c.Level}  ·  {ClassLabel(c.Class)}",
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         line.AddThemeFontSizeOverride("font_size", 13);
@@ -162,7 +162,7 @@ public partial class CharSelect : Node3D
 
         if (_characters.Count == 0)
         {
-            _status.Text = "No characters yet — create one.";
+            _status.Text = Localization.Loc.Tr("No characters yet — create one.");
             _enterButton.Disabled = true;
             _createButton.Disabled = false;
             OpenCreate();
@@ -180,8 +180,8 @@ public partial class CharSelect : Node3D
     {
         if (_returningToServers) return;
         _selected = character;
-        _status.Text = _characters.Count == 1 ? "1 character on this account."
-                                             : $"{_characters.Count} characters on this account.";
+        _status.Text = _characters.Count == 1 ? Localization.Loc.Tr("1 character on this account.")
+                                             : $"{_characters.Count} {Localization.Loc.Tr("characters on this account.")}";
         _enterButton.Disabled = false;
 
         foreach (var (button, entry) in _buttons)
@@ -195,7 +195,7 @@ public partial class CharSelect : Node3D
 
         if (_characterModel == null)
         {
-            _status.Text = $"Character assets are unavailable for race {character.Race}.";
+            _status.Text = $"{Localization.Loc.Tr("Character assets are unavailable for race")} {character.Race}.";
             return;
         }
 
@@ -287,14 +287,14 @@ public partial class CharSelect : Node3D
     private void EnterSelectedCharacter()
     {
         if (_selected == null || _returningToServers) return;
-        _status.Text = $"Entering world as {_selected.Name}…";
+        _status.Text = $"{Localization.Loc.Tr("Entering world as")} {_selected.Name}…";
         SetActionsDisabled(true);
 
         _enterStartedAt = Time.GetTicksMsec() / 1000.0;
         GD.Print("[enter] requesting character");
         _entering = new LoadingScreen();
         AddChild(_entering);
-        _entering.Set("Entering world…", 0.04, _selected.Name);
+        _entering.Set(Localization.Loc.Tr("Entering world…"), 0.04, _selected.Name);
 
         Net.I.SelectChar(_selected.Name);
     }
@@ -312,7 +312,7 @@ public partial class CharSelect : Node3D
         if (_returningToServers) return;
         _returningToServers = true;
         SetActionsDisabled(true);
-        _status.Text = "Returning to server selection…";
+        _status.Text = Localization.Loc.Tr("Returning to server selection…");
 
         Net.I.Disconnect(expected: true);
 
@@ -330,7 +330,7 @@ public partial class CharSelect : Node3D
         {
             _returningToServers = false;
             SetActionsDisabled(false);
-            _status.Text = $"Could not return to server list (login code {result}).";
+            _status.Text = $"{Localization.Loc.Tr("Could not return to server list (login code")} {result}).";
             return;
         }
         Login.StartAtServers = true;
@@ -342,7 +342,7 @@ public partial class CharSelect : Node3D
         if (!_returningToServers) return;
         _returningToServers = false;
         SetActionsDisabled(false);
-        _status.Text = "Login server error: " + error;
+        _status.Text = Localization.Loc.Tr("Login server error: ") + error;
     }
 
     private void SetActionsDisabled(bool disabled)
@@ -392,7 +392,7 @@ public partial class CharSelect : Node3D
     {
         double now = Time.GetTicksMsec() / 1000.0;
         GD.Print($"[enter] server replied (+{now - _enterStartedAt:0.0}s), swapping scene");
-        _entering?.Set("Entering world…", 0.08, info.Name);
+        _entering?.Set(Localization.Loc.Tr("Entering world…"), 0.08, info.Name);
         GetTree().ChangeSceneToFile("res://scenes/World.tscn");
     }
 
@@ -402,7 +402,7 @@ public partial class CharSelect : Node3D
         if (!_returningToServers)
         {
             SetActionsDisabled(false);
-            _status.Text = "Error: " + error;
+            _status.Text = Localization.Loc.Tr("Error: ") + error;
         }
     }
 

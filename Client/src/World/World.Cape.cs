@@ -51,7 +51,7 @@ public partial class World
         _capeLayer = new CanvasLayer { Layer = 74 };
         AddChild(_capeLayer);
 
-        _capePanel = new HudWindow("cape", "Clan Cape", new Vector2(220, 130), bodyMinWidth: CapePanelWidth)
+        _capePanel = new HudWindow("cape", Localization.Loc.Tr("Clan Cape"), new Vector2(220, 130), bodyMinWidth: CapePanelWidth)
         { Visible = false };
         _capePanel.Closed += CloseCape;
         _capeLayer.AddChild(_capePanel);
@@ -59,13 +59,13 @@ public partial class World
         var r = _capePanel.Body;
         r.AddThemeConstantOverride("separation", 8);
 
-        r.AddChild(UiTheme.SectionTitle("Pattern"));
+        r.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Pattern")));
         _capePatternRow = new GridContainer { Columns = CapeColourColumns };
         _capePatternRow.AddThemeConstantOverride("h_separation", 4);
         _capePatternRow.AddThemeConstantOverride("v_separation", 4);
         r.AddChild(_capePatternRow);
 
-        r.AddChild(UiTheme.SectionTitle("Colour"));
+        r.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Colour")));
         var colourScroll = new ScrollContainer
         {
             CustomMinimumSize = new Vector2(1, 132),
@@ -91,25 +91,25 @@ public partial class World
         var chosenCol = new VBoxContainer();
         chosenCol.AddThemeConstantOverride("separation", 1);
         chosenMargin.AddChild(chosenCol);
-        _capeChosenLbl = UiTheme.Text("Pick a pattern, then a colour", 14, UiTheme.GoldBright);
+        _capeChosenLbl = UiTheme.Text(Localization.Loc.Tr("Pick a pattern, then a colour"), 14, UiTheme.GoldBright);
         chosenCol.AddChild(_capeChosenLbl);
-        _capeReqLbl = UiTheme.Text("Every cape has a clan rank it needs.", 12, UiTheme.TextLo);
+        _capeReqLbl = UiTheme.Text(Localization.Loc.Tr("Every cape has a clan rank it needs."), 12, UiTheme.TextLo);
         chosenCol.AddChild(_capeReqLbl);
-        _capePriceLbl = UiTheme.Text("Dyeing the one you own costs clan points.", 12, UiTheme.TextLo);
+        _capePriceLbl = UiTheme.Text(Localization.Loc.Tr("Dyeing the one you own costs clan points."), 12, UiTheme.TextLo);
         chosenCol.AddChild(_capePriceLbl);
         chosen.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
 
-        r.AddChild(UiTheme.SectionTitle("Dye"));
+        r.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Dye")));
 
         _capeR = BuildColorRow(r, "R", out _capeRVal);
         _capeG = BuildColorRow(r, "G", out _capeGVal);
         _capeB = BuildColorRow(r, "B", out _capeBVal);
 
-        _capeTicket = new CheckBox { Text = "Pay with a castellan ticket", FocusMode = Control.FocusModeEnum.None };
+        _capeTicket = new CheckBox { Text = Localization.Loc.Tr("Pay with a castellan ticket"), FocusMode = Control.FocusModeEnum.None };
         r.AddChild(_capeTicket);
 
         var actionRow = new HBoxContainer(); actionRow.AddThemeConstantOverride("separation", 8);
-        _capeBuyBtn = new Button { Text = "Buy / Apply", FocusMode = Control.FocusModeEnum.None };
+        _capeBuyBtn = new Button { Text = Localization.Loc.Tr("Buy / Apply"), FocusMode = Control.FocusModeEnum.None };
         _capeBuyBtn.Pressed += OnCapeBuyPressed;
         actionRow.AddChild(_capeBuyBtn);
         r.AddChild(actionRow);
@@ -180,20 +180,20 @@ public partial class World
     private void OnCapeBuyPressed()
     {
         if (_capeRequestInFlight) return;
-        if (!CapeImChief) { SetCapeStatus("Only the clan chief can change the cape.", true); return; }
+        if (!CapeImChief) { SetCapeStatus(Localization.Loc.Tr("Only the clan chief can change the cape."), true); return; }
 
         int capeId = _capeChoice;
         byte rr = (byte)_capeR.Value, gg = (byte)_capeG.Value, bb = (byte)_capeB.Value;
         if (capeId < 0 && rr == 0 && gg == 0 && bb == 0)
         {
-            SetCapeStatus("Pick a cape, or choose a dye colour to repaint the one you have.", true);
+            SetCapeStatus(Localization.Loc.Tr("Pick a cape, or choose a dye colour to repaint the one you have."), true);
             return;
         }
 
         byte op = _capeTicket.ButtonPressed ? Net.CapeOpTicket : Net.CapeOpBuy;
         _capeRequestInFlight = true;
         _capeBuyBtn.Disabled = true;
-        SetCapeStatus("Requesting…", false);
+        SetCapeStatus(Localization.Loc.Tr("Requesting…"), false);
         Net.I.SendCapeBuy(op, capeId, rr, gg, bb);
     }
 
@@ -211,22 +211,22 @@ public partial class World
             DressCape(_selfVisual, capeId >= 0 ? capeId : me.CapeId, rr, gg, bb, false, me.Race);
             _capePreviewing = true;
             _capeCurrent = capeId >= 0 ? capeId : _capeCurrent;
-            string what = capeId >= 0 ? $"cape #{capeId}" : "cape dye";
-            SetCapeStatus($"Applied {what}.", false);
-            Chat.Info($"[Clan] Cape updated ({what}).");
+            string what = capeId >= 0 ? $"{Localization.Loc.Tr("cape")} #{capeId}" : Localization.Loc.Tr("cape dye");
+            SetCapeStatus($"{Localization.Loc.Tr("Applied")} {what}.", false);
+            Chat.Info($"{Localization.Loc.Tr("[Clan] Cape updated")} ({what}).");
         }
         else
         {
             SetCapeStatus(a switch
             {
-                -2 => "You're not in a clan.",
-                -5 => "That cape design isn't available.",
-                -6 => "Your clan's rank is too low.",
-                -7 => "Not enough gold.",
-                -8 => "You need a castellan ticket for that.",
-                -9 => "Not enough clan points in the fund.",
-                -10 => "A castellan can't use that.",
-                _ => "The cape change was refused (chief-only, promoted clan, and not while busy).",
+                -2 => Localization.Loc.Tr("You're not in a clan."),
+                -5 => Localization.Loc.Tr("That cape design isn't available."),
+                -6 => Localization.Loc.Tr("Your clan's rank is too low."),
+                -7 => Localization.Loc.Tr("Not enough gold."),
+                -8 => Localization.Loc.Tr("You need a castellan ticket for that."),
+                -9 => Localization.Loc.Tr("Not enough clan points in the fund."),
+                -10 => Localization.Loc.Tr("A castellan can't use that."),
+                _ => Localization.Loc.Tr("The cape change was refused (chief-only, promoted clan, and not while busy)."),
             }, true);
         }
     }
@@ -241,16 +241,16 @@ public partial class World
 
     private static string CapeNeedName(Cape.CapeDef def) =>
         def.Ranking <= ClanTypes.Promoted && def.Grade > 0
-            ? $"{CapeRankName(def.Ranking)} grade {def.Grade}"
+            ? $"{CapeRankName(def.Ranking)} {Localization.Loc.Tr("grade")} {def.Grade}"
             : CapeRankName(def.Ranking);
 
     private static string CapeRankName(int rank) => rank switch
     {
-        <= 1 => "Clan",
-        2 => "Training Knights",
-        <= 7 => $"Accredited Knights grade {8 - rank}",
-        <= 12 => $"Royal Knights grade {13 - rank}",
-        _ => "Unknown",
+        <= 1 => Localization.Loc.Tr("Clan"),
+        2 => Localization.Loc.Tr("Training Knights"),
+        <= 7 => $"{Localization.Loc.Tr("Accredited Knights")} {Localization.Loc.Tr("grade")} {8 - rank}",
+        <= 12 => $"{Localization.Loc.Tr("Royal Knights")} {Localization.Loc.Tr("grade")} {13 - rank}",
+        _ => Localization.Loc.Tr("Unknown"),
     };
 
     private static Control CapeSwatch(int c, int m, Color dye, bool locked)
@@ -307,7 +307,7 @@ public partial class World
                 ToggleMode = true,
                 FocusMode = Control.FocusModeEnum.None,
                 CustomMinimumSize = new Vector2(CapeSwatchSize, CapeSwatchSize),
-                TooltipText = pattern == 0 ? "Plain" : $"Pattern {pattern}",
+                TooltipText = pattern == 0 ? Localization.Loc.Tr("Plain") : $"{Localization.Loc.Tr("Pattern")} {pattern}",
             };
             var art = CapeSwatch(CapePatternSampleColour, pattern, Colors.White, locked: false);
             art.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
@@ -354,7 +354,7 @@ public partial class World
             cell.AddChild(art);
             if (locked)
             {
-                var bar = UiTheme.Text("locked", 10, UiTheme.TextDim);
+                var bar = UiTheme.Text(Localization.Loc.Tr("locked"), 10, UiTheme.TextDim);
                 bar.MouseFilter = Control.MouseFilterEnum.Ignore;
                 bar.HorizontalAlignment = HorizontalAlignment.Center;
                 bar.VerticalAlignment = VerticalAlignment.Bottom;
@@ -371,9 +371,9 @@ public partial class World
 
     private string CapeCellTip(Cape.CapeDef def, bool locked)
     {
-        string cost = def.Points > 0 ? $"{def.Points:n0} clan points" : $"{def.Price:n0} gold";
-        string need = $"needs {CapeNeedName(def)}";
-        return locked ? $"{def.Name}\n{cost}\n{need} — your clan is {ClanTypes.Standing(MyClan.Flag, MyClan.Grade)}"
+        string cost = def.Points > 0 ? $"{def.Points:n0} {Localization.Loc.Tr("clan points")}" : $"{def.Price:n0} {Localization.Loc.Tr("gold")}";
+        string need = $"{Localization.Loc.Tr("needs")} {CapeNeedName(def)}";
+        return locked ? $"{def.Name}\n{cost}\n{need} — {Localization.Loc.Tr("your clan is")} {ClanTypes.Standing(MyClan.Flag, MyClan.Grade)}"
                       : $"{def.Name}\n{cost}\n{need}";
     }
 
@@ -395,11 +395,11 @@ public partial class World
             index++;
         }
 
-        _capeChosenLbl.Text = def.M > 0 ? $"{def.Name} (pattern {def.M})" : def.Name;
-        _capeReqLbl.Text = $"Requires {CapeNeedName(def)}";
+        _capeChosenLbl.Text = def.M > 0 ? $"{def.Name} ({Localization.Loc.Tr("pattern")} {def.M})" : def.Name;
+        _capeReqLbl.Text = $"{Localization.Loc.Tr("Requires")} {CapeNeedName(def)}";
         _capePriceLbl.Text = def.Points > 0
-            ? $"{def.Points:n0} clan points"
-            : $"{def.Price:n0} gold";
+            ? $"{def.Points:n0} {Localization.Loc.Tr("clan points")}"
+            : $"{def.Price:n0} {Localization.Loc.Tr("gold")}";
 
         bool locked = MyClan.InClan && !CapeAllowed(def);
         _capeReqLbl.AddThemeColorOverride("font_color", locked ? UiTheme.Bad : UiTheme.TextLo);
@@ -418,7 +418,7 @@ public partial class World
     private void RefreshCapePreview()
     {
         if (_capeBuyBtn != null)
-            _capeBuyBtn.Text = _capeChoice >= 0 ? "Buy cape" : "Apply dye";
+            _capeBuyBtn.Text = _capeChoice >= 0 ? Localization.Loc.Tr("Buy cape") : Localization.Loc.Tr("Apply dye");
 
         if (!_capeShown || _selfVisual == null) return;
 
@@ -443,13 +443,13 @@ public partial class World
         bool chief = CapeImChief;
         _capeBuyBtn.Disabled = !chief || _capeRequestInFlight;
         if (!MyClan.InClan)
-            _capeHint.Text = "Join a clan to buy a cape.";
+            _capeHint.Text = Localization.Loc.Tr("Join a clan to buy a cape.");
         else if (!chief)
-            _capeHint.Text = "Only the clan chief can change the cape.";
+            _capeHint.Text = Localization.Loc.Tr("Only the clan chief can change the cape.");
         else if (MyClan.Flag < ClanTypes.Promoted)
-            _capeHint.Text = "Your clan must be promoted (Official) before buying a cape.";
+            _capeHint.Text = Localization.Loc.Tr("Your clan must be promoted (Official) before buying a cape.");
         else
-            _capeHint.Text = "Custom dye costs 36,000 clan points.";
+            _capeHint.Text = Localization.Loc.Tr("Custom dye costs 36,000 clan points.");
     }
 
     private void SetCapeStatus(string text, bool warn)
@@ -460,15 +460,15 @@ public partial class World
 
     private void BuildCapeTab(VBoxContainer col)
     {
-        col.AddChild(new Label { Text = "Cape" });
+        col.AddChild(new Label { Text = Localization.Loc.Tr("Cape") });
 
         var enabled = new CheckBox
         {
-            Text = "Enable capes",
+            Text = Localization.Loc.Tr("Enable capes"),
             ButtonPressed = Cape.Enabled,
             FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Off frees every attached cape (self + everyone in range), "
-                        + "so the cloth simulation stops costing frame time too.",
+            TooltipText = Localization.Loc.Tr("Off frees every attached cape (self + everyone in range), ")
+                        + Localization.Loc.Tr("so the cloth simulation stops costing frame time too."),
         };
         enabled.Toggled += on =>
         {
@@ -477,13 +477,13 @@ public partial class World
         };
         col.AddChild(enabled);
 
-        var dbg = new CheckBox { Text = "Show collider + drape", FocusMode = Control.FocusModeEnum.None };
+        var dbg = new CheckBox { Text = Localization.Loc.Tr("Show collider + drape"), FocusMode = Control.FocusModeEnum.None };
         dbg.Toggled += on => Cape.DrawDebug = on;
         col.AddChild(dbg);
         col.AddChild(new Label
         {
-            Text = "green = body capsules\nyellow = equipment contacts\n"
-                 + "cyan = simulated cloth grid",
+            Text = Localization.Loc.Tr("green = body capsules\nyellow = equipment contacts\n")
+                 + Localization.Loc.Tr("cyan = simulated cloth grid"),
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         });
         _capeStats = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
@@ -506,10 +506,10 @@ public partial class World
         if (_capeStats == null) return;
         var cape = _selfVisual?.GetNodeOrNull<Cape>("Cape");
         _capeStats.Text = cape == null
-            ? "no cape on self"
-            : $"cloth {cape.Resolution}\ncollider {cape.ColliderSegments()} shapes\n"
-            + $"inside body {cape.PenetrationDepth() * 100f:0.0} cm\n"
-            + $"swing off drape {cape.DeviationNow() * 100f:0.0} cm";
+            ? Localization.Loc.Tr("no cape on self")
+            : $"{Localization.Loc.Tr("cloth")} {cape.Resolution}\n{Localization.Loc.Tr("collider")} {cape.ColliderSegments()} {Localization.Loc.Tr("shapes")}\n"
+            + $"{Localization.Loc.Tr("inside body")} {cape.PenetrationDepth() * 100f:0.0} cm\n"
+            + $"{Localization.Loc.Tr("swing off drape")} {cape.DeviationNow() * 100f:0.0} cm";
     }
 
     private static (int Id, Color Dye) ResolveCape(int capeId, int r, int g, int b, bool isGm)

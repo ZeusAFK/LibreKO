@@ -83,8 +83,8 @@ internal sealed class ChatSystem
 
     private static string ChanName(byte type) => type switch
     {
-        1 => "General", 2 => "Whisper", 3 => "Party", 5 => "Shout", 6 => "Clan",
-        13 => "Nation", 15 => "Alliance", 23 => "Officer", _ => "General",
+        1 => Localization.Loc.Tr("General"), 2 => Localization.Loc.Tr("Whisper"), 3 => Localization.Loc.Tr("Party"), 5 => Localization.Loc.Tr("Shout"), 6 => Localization.Loc.Tr("Clan"),
+        13 => Localization.Loc.Tr("Nation"), 15 => Localization.Loc.Tr("Alliance"), 23 => Localization.Loc.Tr("Officer"), _ => Localization.Loc.Tr("General"),
     };
 
     internal void SendText(string text) => Submit(text);
@@ -122,7 +122,7 @@ internal sealed class ChatSystem
             byte t = type;
             var b = new Button
             {
-                Text = label,
+                Text = Localization.Loc.Tr(label),
                 FocusMode = Control.FocusModeEnum.None,
                 ToggleMode = true,
             };
@@ -151,7 +151,7 @@ internal sealed class ChatSystem
         {
             Text = "◐",
             FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Background opacity",
+            TooltipText = Localization.Loc.Tr("Background opacity"),
         };
         dim.AddThemeFontSizeOverride("font_size", 11);
         dim.AddThemeColorOverride("font_color", new Color("#d4d5d7"));
@@ -204,7 +204,7 @@ internal sealed class ChatSystem
         {
             MaxLength = 128,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            PlaceholderText = "Enter to chat — @name whisper · ! shout · # party · $ clan · % nation · & alliance · / command",
+            PlaceholderText = Localization.Loc.Tr("Enter to chat — @name whisper · ! shout · # party · $ clan · % nation · & alliance · / command"),
         };
         _input.TextSubmitted += Submit;
         _inputRow.AddChild(_input);
@@ -213,7 +213,7 @@ internal sealed class ChatSystem
         if (Platform.TouchUi) BuildChatPeek();
         AttachLayout(_root);
 
-        Info("Welcome to LibreKO. Press Enter to chat.");
+        Info(Localization.Loc.Tr("Welcome to LibreKO. Press Enter to chat."));
 
         BuildNoticeBanner();
 
@@ -390,7 +390,7 @@ internal sealed class ChatSystem
     private void UpdateChanIndicator()
     {
         var (_, col) = ChanStyle(_sendChannel);
-        string name = _sendChannel == WhisperChannel && _whisperName.Length > 0 ? $"To {_whisperName}" : ChanName(_sendChannel);
+        string name = _sendChannel == WhisperChannel && _whisperName.Length > 0 ? $"{Localization.Loc.Tr("To")} {_whisperName}" : ChanName(_sendChannel);
         _chanLabel.Text = $"[{name}]";
         _chanLabel.AddThemeColorOverride("font_color", new Color("#" + col));
     }
@@ -413,7 +413,7 @@ internal sealed class ChatSystem
         else if (chan == WhisperChannel)
         {
             if (_whisperName.Length == 0)
-                Info("No whisper target. Use @name message to start a whisper.");
+                Info(Localization.Loc.Tr("No whisper target. Use @name message to start a whisper."));
             else if (body.Length > 0)
             {
                 Net.I.SendChat(body, WhisperChannel);
@@ -425,7 +425,7 @@ internal sealed class ChatSystem
             if (chan == ChatRoomChannel)
                 Net.I.SendChatRoomSay(body);
             else if (chan == ClanRecruitChannel)
-                Info("Clan recruitment chat is not available yet.");
+                Info(Localization.Loc.Tr("Clan recruitment chat is not available yet."));
             else
                 Net.I.SendChat(body, chan);
         }
@@ -664,19 +664,19 @@ internal sealed class ChatSystem
                 WhisperOpened?.Invoke(name);
                 break;
             case Net.ChatTargetNotFound:
-                WhisperNotice?.Invoke(_pendingWhisperTo, "Player not found.");
+                WhisperNotice?.Invoke(_pendingWhisperTo, Localization.Loc.Tr("Player not found."));
                 _pendingWhisper = null;
                 break;
             case Net.ChatTargetBlocked:
-                WhisperNotice?.Invoke(_pendingWhisperTo, "That player is blocking whispers.");
+                WhisperNotice?.Invoke(_pendingWhisperTo, Localization.Loc.Tr("That player is blocking whispers."));
                 _pendingWhisper = null;
                 break;
             case Net.ChatTargetCrossNation:
-                WhisperNotice?.Invoke(_pendingWhisperTo, "You cannot whisper between nations in this zone.");
+                WhisperNotice?.Invoke(_pendingWhisperTo, Localization.Loc.Tr("You cannot whisper between nations in this zone."));
                 _pendingWhisper = null;
                 break;
             case Net.ChatTargetSenderBlocked:
-                WhisperNotice?.Invoke(_pendingWhisperTo, "You have blocked whispers.");
+                WhisperNotice?.Invoke(_pendingWhisperTo, Localization.Loc.Tr("You have blocked whispers."));
                 _pendingWhisper = null;
                 break;
         }

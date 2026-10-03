@@ -233,7 +233,7 @@ public partial class World
         _warpLayer = new CanvasLayer { Layer = 74 };
         AddChild(_warpLayer);
 
-        _warpPanel = new HudWindow("warp", "Warp List", new Vector2(220, 110)) { Visible = false };
+        _warpPanel = new HudWindow("warp", Localization.Loc.Tr("Warp List"), new Vector2(220, 110)) { Visible = false };
         _warpPanel.Closed += CloseWarp;
         _warpLayer.AddChild(_warpPanel);
 
@@ -276,7 +276,7 @@ public partial class World
         _warpList.AddThemeConstantOverride("separation", 2);
         scroll.AddChild(_warpList);
 
-        root.AddChild(UiTheme.SectionTitle("Warning"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Warning")));
         var descBox = new PanelContainer();
         descBox.AddThemeStyleboxOverride("panel", UiTheme.Inset());
         root.AddChild(descBox);
@@ -303,11 +303,11 @@ public partial class World
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         buttons.AddThemeConstantOverride("separation", 12);
         root.AddChild(buttons);
-        _warpTravel = new Button { Text = "Travel", FocusMode = Control.FocusModeEnum.None };
+        _warpTravel = new Button { Text = Localization.Loc.Tr("Travel"), FocusMode = Control.FocusModeEnum.None };
         _warpTravel.CustomMinimumSize = new Vector2(120, 0);
         _warpTravel.Pressed += TravelSelectedWarp;
         buttons.AddChild(_warpTravel);
-        var close = new Button { Text = "Close", FocusMode = Control.FocusModeEnum.None };
+        var close = new Button { Text = Localization.Loc.Tr("Close"), FocusMode = Control.FocusModeEnum.None };
         close.CustomMinimumSize = new Vector2(120, 0);
         close.Pressed += CloseWarp;
         buttons.AddChild(close);
@@ -372,7 +372,7 @@ public partial class World
         margin.MouseFilter = Control.MouseFilterEnum.Ignore;
         row.AddChild(margin);
 
-        var label = UiTheme.Text(info.Name, 13, WarpRowColor(info, false));
+        var label = UiTheme.Text(info.DisplayName, 13, WarpRowColor(info, false));
         label.MouseFilter = Control.MouseFilterEnum.Ignore;
         margin.AddChild(label);
 
@@ -415,20 +415,20 @@ public partial class World
         _warpLevels.Text = info.MinLevel > 0 || info.MaxLevel > 0
             ? $"lv{info.MinLevel}  ~  lv{info.MaxLevel}"
             : "";
-        _warpDesc.Text = info.Description;
+        _warpDesc.Text = info.DisplayDesc;
         string? blocked = WarpBlockReason(entry, info);
-        SetWarpStatus(blocked ?? $"Fee  {entry.Fee:n0} Noahs", blocked != null);
+        SetWarpStatus(blocked ?? $"{Localization.Loc.Tr("Fee")}  {entry.Fee:n0} {Localization.Loc.Tr("Noahs")}", blocked != null);
         _warpTravel.Disabled = blocked != null;
     }
 
     private string? WarpBlockReason(Net.WarpListEntry entry, WarpData.Destination info)
     {
         if (info.MinLevel > 0 && Sheet.Level < info.MinLevel)
-            return $"Requires level {info.MinLevel}.";
+            return $"{Localization.Loc.Tr("Requires level")} {info.MinLevel}.";
         if (info.MaxLevel > 0 && Sheet.Level > info.MaxLevel)
-            return $"Level {info.MaxLevel} and below only.";
+            return $"{Localization.Loc.Tr("Level")} {info.MaxLevel} {Localization.Loc.Tr("and below only.")}";
         if (entry.Fee > Sheet.Gold)
-            return $"Need {entry.Fee:n0} Noahs.";
+            return $"{Localization.Loc.Tr("Need")} {entry.Fee:n0} {Localization.Loc.Tr("Noahs.")}";
         return null;
     }
 
@@ -447,8 +447,8 @@ public partial class World
 
         Net.I.SendWarpSelect(_warpSourceId, entry.WarpId);
         Chat.Info(entry.Fee > 0
-            ? $"Travelling to {info.Name} (−{entry.Fee:n0} Noahs)…"
-            : $"Travelling to {info.Name}…");
+            ? $"{Localization.Loc.Tr("Travelling to")} {info.DisplayName} (−{entry.Fee:n0} {Localization.Loc.Tr("Noahs")})…"
+            : $"{Localization.Loc.Tr("Travelling to")} {info.DisplayName}…");
         CloseWarp();
     }
 
@@ -472,7 +472,7 @@ public partial class World
         Net.WarpResultClanGrade => ItemData.Text(7669, "You cannot enter because your clan grade is too low"),
         Net.WarpResultSameAddress => ItemData.Text(6621, "Attending event with multiple characters from the same IP, is not allowed."),
         Net.WarpResultCaptcha => ItemData.Text(6622, "Failed to enter (Reason: Captcha penalty)"),
-        _ => "The gatekeeper won't send you there.",
+        _ => Localization.Loc.Tr("The gatekeeper won't send you there."),
     };
 
     private void OnWarpGold(int total)
@@ -482,7 +482,7 @@ public partial class World
         SelectWarpRow(_warpSelected);
     }
 
-    private void RefreshWarpGold() => _warpGoldLbl.Text = $"Noahs  {Sheet.Gold:n0}";
+    private void RefreshWarpGold() => _warpGoldLbl.Text = $"{Localization.Loc.Tr("Noahs")}  {Sheet.Gold:n0}";
 
     private void SetWarpStatus(string text, bool warn)
     {

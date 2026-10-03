@@ -31,30 +31,30 @@ public partial class World
         _nameChangeLayer = new CanvasLayer { Layer = 74 };
         AddChild(_nameChangeLayer);
 
-        _nameChangePanel = new HudWindow("namechange", "Change Name", new Vector2(220, 140)) { Visible = false };
+        _nameChangePanel = new HudWindow("namechange", Localization.Loc.Tr("Change Name"), new Vector2(220, 140)) { Visible = false };
         _nameChangePanel.Closed += CloseNameChange;
         _nameChangeLayer.AddChild(_nameChangePanel);
 
         var r = _nameChangePanel.Body;
         r.AddThemeConstantOverride("separation", 8);
 
-        r.AddChild(UiTheme.SectionTitle("Rename Character"));
+        r.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Rename Character")));
 
         var hint = HudStyle.Label(12);
-        hint.Text = "Requires a Scroll of Identity. 3-20 characters.";
+        hint.Text = Localization.Loc.Tr("Requires a Scroll of Identity. 3-20 characters.");
         r.AddChild(hint);
 
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
         _nameChangeEdit = new LineEdit
         {
-            PlaceholderText = "new name",
+            PlaceholderText = Localization.Loc.Tr("new name"),
             MaxLength = 20,
             CustomMinimumSize = new Vector2(200, 0),
         };
         _nameChangeEdit.TextSubmitted += _ => SubmitNameChange();
         row.AddChild(_nameChangeEdit);
-        _nameChangeBtn = new Button { Text = "Rename", FocusMode = Control.FocusModeEnum.None };
+        _nameChangeBtn = new Button { Text = Localization.Loc.Tr("Rename"), FocusMode = Control.FocusModeEnum.None };
         _nameChangeBtn.Pressed += SubmitNameChange;
         row.AddChild(_nameChangeBtn);
         r.AddChild(row);
@@ -92,24 +92,24 @@ public partial class World
         string name = _nameChangeEdit.Text.Trim();
         if (name.Length is < 3 or > 20)
         {
-            SetNameChangeStatus("Name must be 3-20 characters.", true);
+            SetNameChangeStatus(Localization.Loc.Tr("Name must be 3-20 characters."), true);
             return;
         }
         if (name == (Net.I.LastEnter.Name ?? ""))
         {
-            SetNameChangeStatus("That's already your name.", true);
+            SetNameChangeStatus(Localization.Loc.Tr("That's already your name."), true);
             return;
         }
         _nameChangePending = name;
-        SetNameChangeStatus("Renaming…", false);
+        SetNameChangeStatus(Localization.Loc.Tr("Renaming…"), false);
         Net.I.SendNameChangeConfirm(name);
     }
 
     private void OnNameChangeSuccess(string newName)
     {
         if (string.IsNullOrEmpty(newName)) newName = _nameChangePending;
-        Chat.Info($"Your character is now named \"{newName}\".");
-        SetNameChangeStatus("Name changed!", false);
+        Chat.Info($"{Localization.Loc.Tr("Your character is now named")} \"{newName}\".");
+        SetNameChangeStatus(Localization.Loc.Tr("Name changed!"), false);
         CloseNameChange();
     }
 
@@ -119,18 +119,18 @@ public partial class World
         {
             case Net.NameChangeShowDialog:
                 if (_nameChangeShown)
-                    SetNameChangeStatus("You need a Scroll of Identity to rename.", true);
+                    SetNameChangeStatus(Localization.Loc.Tr("You need a Scroll of Identity to rename."), true);
                 else
                     OpenNameChange();
                 break;
             case Net.NameChangeInvalid:
-                SetNameChangeStatus("That name is taken or invalid.", true);
+                SetNameChangeStatus(Localization.Loc.Tr("That name is taken or invalid."), true);
                 break;
             case Net.NameChangeInClan:
-                SetNameChangeStatus("Leave your clan before renaming.", true);
+                SetNameChangeStatus(Localization.Loc.Tr("Leave your clan before renaming."), true);
                 break;
             default:
-                SetNameChangeStatus("Couldn't change the name.", true);
+                SetNameChangeStatus(Localization.Loc.Tr("Couldn't change the name."), true);
                 break;
         }
     }

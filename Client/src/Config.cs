@@ -595,6 +595,7 @@ public static class Config
             return;
         Language = language;
         Save();
+        Localization.Loc.Refresh();
     }
 
     public static void SetUiScale(float scale)

@@ -78,10 +78,9 @@ gko_look_down={
 }
 
 [rendering]
-driver/threads/thread_model=2
 
 rendering_device/driver.windows="d3d12"
-
+driver/threads/thread_model=0
 textures/vram_compression/import_etc2_astc=true
 lights_and_shadows/directional_shadow/size=2048
 environment/ssao/quality=1

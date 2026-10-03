@@ -146,7 +146,7 @@ public partial class World : Node3D
         var def = ItemData.Get(item.ItemId);
         if (def == null)
         {
-            lines.Add(new TooltipLine($"Item {item.ItemId}", 0));
+            lines.Add(new TooltipLine($"{Localization.Loc.Tr("Item")} {Localization.Loc.Num(item.ItemId)}", 0));
             return lines;
         }
 
@@ -156,7 +156,7 @@ public partial class World : Node3D
 
         if (_isGm)
         {
-            lines.Add(new TooltipLine($"Item ID: {item.ItemId}", TooltipColorGmItemId));
+            lines.Add(new TooltipLine($"{Localization.Loc.Tr("Item ID")}：{Localization.Loc.Num(item.ItemId)}", TooltipColorGmItemId));
         }
 
         string marker = RarityMarker(rarity);
@@ -179,8 +179,8 @@ public partial class World : Node3D
         if (item.IsLinked && Net.I.PetItems.TryGetValue(item.UniqueId, out var pet))
         {
             lines.Add(new TooltipLine(pet.Name, TooltipColorMerchant));
-            lines.Add(new TooltipLine($"Level {pet.Level}  EXP {pet.ExpPercent / 100f:0.00}%", 0));
-            lines.Add(new TooltipLine($"Satisfaction {pet.Satisfaction / 100f:0.00}%", 0));
+            lines.Add(new TooltipLine($"{Localization.Loc.Tr("Level")} {pet.Level}  {Localization.Loc.Tr("EXP")} {pet.ExpPercent / 100f:0.00}%", 0));
+            lines.Add(new TooltipLine($"{Localization.Loc.Tr("Satisfaction")} {pet.Satisfaction / 100f:0.00}%", 0));
             lines.Add(TooltipLine.Rule());
         }
 
@@ -272,7 +272,7 @@ public partial class World : Node3D
 
         int shownCount = ItemData.ShownCount(def, item);
         if (shownCount > 1)
-            lines.Add(new TooltipLine($"Count {shownCount}", 0));
+            lines.Add(new TooltipLine($"{Localization.Loc.Tr("Count")} {shownCount}", 0));
 
         if (def.ReqCls > 0)
             lines.Add(new TooltipLine(" -" + ItemData.Text(EquipRules.ClassNameTextId(def.ReqCls), UnknownClassName),

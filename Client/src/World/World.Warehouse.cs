@@ -50,7 +50,7 @@ public partial class World
         _whLayer = new CanvasLayer { Layer = 74 };
         AddChild(_whLayer);
 
-        _whPanel = new HudWindow("warehouse", "Warehouse", new Vector2(150, 90)) { Visible = false };
+        _whPanel = new HudWindow("warehouse", Localization.Loc.Tr("Warehouse"), new Vector2(150, 90)) { Visible = false };
         _whPanel.Closed += CloseWarehouse;
         _whLayer.AddChild(_whPanel);
 
@@ -61,7 +61,7 @@ public partial class World
         var whCol = new VBoxContainer();
         whCol.AddThemeConstantOverride("separation", 6);
         body.AddChild(whCol);
-        whCol.AddChild(UiTheme.SectionTitle("Warehouse"));
+        whCol.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Warehouse")));
 
         var whGrid = new GridContainer { Columns = 4 };
         whGrid.AddThemeConstantOverride("h_separation", 4);
@@ -92,7 +92,7 @@ public partial class World
 
         whCol.AddChild(new HSeparator());
         var storedRow = new HBoxContainer();
-        var sl = UiTheme.Text("Stored gold", 12, UiTheme.TextLo); sl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        var sl = UiTheme.Text(Localization.Loc.Tr("Stored gold"), 12, UiTheme.TextLo); sl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         storedRow.AddChild(sl);
         _whStoredGold = UiTheme.Text("0", 13, UiTheme.Gold, HorizontalAlignment.Right);
         storedRow.AddChild(_whStoredGold);
@@ -100,11 +100,11 @@ public partial class World
 
         var goldRow = new HBoxContainer();
         goldRow.AddThemeConstantOverride("separation", 6);
-        _whGoldInput = new LineEdit { PlaceholderText = "amount", CustomMinimumSize = new Vector2(110, 0) };
+        _whGoldInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("amount"), CustomMinimumSize = new Vector2(110, 0) };
         goldRow.AddChild(_whGoldInput);
-        var depBtn = new Button { Text = "Deposit", FocusMode = Control.FocusModeEnum.None };
+        var depBtn = new Button { Text = Localization.Loc.Tr("Deposit"), FocusMode = Control.FocusModeEnum.None };
         depBtn.Pressed += () => GoldTransfer(deposit: true);
-        var wdrBtn = new Button { Text = "Withdraw", FocusMode = Control.FocusModeEnum.None };
+        var wdrBtn = new Button { Text = Localization.Loc.Tr("Withdraw"), FocusMode = Control.FocusModeEnum.None };
         wdrBtn.Pressed += () => GoldTransfer(deposit: false);
         goldRow.AddChild(depBtn); goldRow.AddChild(wdrBtn);
         whCol.AddChild(goldRow);
@@ -112,7 +112,7 @@ public partial class World
         var bagCol = new VBoxContainer();
         bagCol.AddThemeConstantOverride("separation", 6);
         body.AddChild(bagCol);
-        bagCol.AddChild(UiTheme.SectionTitle("Inventory"));
+        bagCol.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Inventory")));
 
         var bagGrid = new GridContainer { Columns = 5 };
         bagGrid.AddThemeConstantOverride("h_separation", 4);
@@ -131,24 +131,24 @@ public partial class World
         }
         bagCol.AddChild(new HSeparator());
         var carriedRow = new HBoxContainer();
-        var cl = UiTheme.Text("Carried gold", 12, UiTheme.TextLo); cl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        var cl = UiTheme.Text(Localization.Loc.Tr("Carried gold"), 12, UiTheme.TextLo); cl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         carriedRow.AddChild(cl);
         _whCarriedGold = UiTheme.Text("0", 13, UiTheme.Gold, HorizontalAlignment.Right);
         carriedRow.AddChild(_whCarriedGold);
         bagCol.AddChild(carriedRow);
-        _whStatus = UiTheme.Text("Right-click to store / withdraw", 11, new Color(UiTheme.TextLo, 0.7f));
+        _whStatus = UiTheme.Text(Localization.Loc.Tr("Right-click to store / withdraw"), 11, new Color(UiTheme.TextLo, 0.7f));
         bagCol.AddChild(_whStatus);
     }
 
     private void OnWarehouseOpen()
     {
         ShowNpcServiceChoice(
-            "Shall we start the day at our inn and end it at our inn as well?",
-            ("Use storage", OpenWarehouseStorage),
-            ("Use [VIP] storage", ToggleVipWarehouse),
-            ("Create a Clan", CreateClanFromInn),
-            ("Seal / Cancel (anti-theft)", () => OpenSealWindow(SealMode.Secret)),
-            ("Seal / Cancel", () => OpenSealWindow(SealMode.Bind)));
+            Localization.Loc.Tr("Shall we start the day at our inn and end it at our inn as well?"),
+            (Localization.Loc.Tr("Use storage"), OpenWarehouseStorage),
+            (Localization.Loc.Tr("Use [VIP] storage"), ToggleVipWarehouse),
+            (Localization.Loc.Tr("Create a Clan"), CreateClanFromInn),
+            (Localization.Loc.Tr("Seal / Cancel (anti-theft)"), () => OpenSealWindow(SealMode.Secret)),
+            (Localization.Loc.Tr("Seal / Cancel"), () => OpenSealWindow(SealMode.Bind)));
     }
 
     private void OpenWarehouseStorage()
@@ -156,7 +156,7 @@ public partial class World
         CloseNpcDialog();
         _whInFlight = false;
         _whPage = 0;
-        _whStatus.Text = "Right-click to store / withdraw";
+        _whStatus.Text = Localization.Loc.Tr("Right-click to store / withdraw");
         _whPanel.Visible = true;
         _whShown = true;
         System.Array.Clear(_warehouse, 0, _warehouse.Length);
@@ -207,7 +207,7 @@ public partial class World
     {
         if (_whInFlight || abs < 0 || abs >= Inv.Length || Inv[abs].IsEmpty) return;
         int whIdx = FirstFreeWarehouse();
-        if (whIdx < 0) { _whStatus.Text = "Warehouse is full."; return; }
+        if (whIdx < 0) { _whStatus.Text = Localization.Loc.Tr("Warehouse is full."); return; }
         var slot = Inv[abs];
         _whPending = new WhPending { Op = 2, InvAbs = abs, WhIdx = whIdx, Count = slot.Count };
         _whInFlight = true;
@@ -221,7 +221,7 @@ public partial class World
         int absWh = _whPage * WhPageSize + whIdx;
         if (absWh < 0 || absWh >= WhSlots || _warehouse[absWh].IsEmpty) return;
         int free = Inv.FirstFreeGridSlot();
-        if (free < 0) { _whStatus.Text = "Your bags are full."; return; }
+        if (free < 0) { _whStatus.Text = Localization.Loc.Tr("Your bags are full."); return; }
         var slot = _warehouse[absWh];
         _whPending = new WhPending { Op = 3, InvAbs = free, WhIdx = absWh, Count = slot.Count };
         _whInFlight = true;
@@ -233,9 +233,9 @@ public partial class World
     {
         if (_whInFlight) return;
         if (!int.TryParse(_whGoldInput.Text.Replace(",", "").Trim(), out int amount) || amount <= 0)
-        { _whStatus.Text = "Enter an amount."; return; }
-        if (deposit && amount > Sheet.Gold) { _whStatus.Text = "Not enough carried gold."; return; }
-        if (!deposit && amount > _whMoney) { _whStatus.Text = "Not enough stored gold."; return; }
+        { _whStatus.Text = Localization.Loc.Tr("Enter an amount."); return; }
+        if (deposit && amount > Sheet.Gold) { _whStatus.Text = Localization.Loc.Tr("Not enough carried gold."); return; }
+        if (!deposit && amount > _whMoney) { _whStatus.Text = Localization.Loc.Tr("Not enough stored gold."); return; }
 
         _whPending = new WhPending { Op = (byte)(deposit ? 2 : 3), Gold = true, Count = amount };
         _whInFlight = true;
@@ -247,7 +247,7 @@ public partial class World
     {
         if (!_whInFlight) return;
         _whInFlight = false;
-        if (!ok) { _whStatus.Text = "Transfer failed."; if (_whShown) RefreshWarehouse(); return; }
+        if (!ok) { _whStatus.Text = Localization.Loc.Tr("Transfer failed."); if (_whShown) RefreshWarehouse(); return; }
 
         var p = _whPending;
         if (p.Gold)

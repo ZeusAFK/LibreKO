@@ -14,7 +14,7 @@ public partial class World
 
     private void BuildGeniePotionSelector(VBoxContainer parent, int target)
     {
-        var button = new Button { Text = "Automatic (strongest)",
+        var button = new Button { Text = Localization.Loc.Tr("Automatic (strongest)"),
             CustomMinimumSize = new Vector2(210, 30), ExpandIcon = true,
             TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
             FocusMode = Control.FocusModeEnum.None };
@@ -36,7 +36,7 @@ public partial class World
     {
         _geniePotionTarget = target;
         _geniePotionPicker.Clear();
-        _geniePotionPicker.AddItem("Automatic (strongest)", 0);
+        _geniePotionPicker.AddItem(Localization.Loc.Tr("Automatic (strongest)"), 0);
         var seen = new HashSet<int>();
         for (int i = GridStart; i < Inv.Length; i++)
         {
@@ -60,10 +60,10 @@ public partial class World
     private void RefreshGeniePotionSelector(Button button, int id)
     {
         button.Icon = id > 0 ? ItemData.Icon(id) : null;
-        button.Text = id > 0 ? $"{ItemData.DisplayName(id)} ({CountInBackpack(id)})" : "Automatic (strongest)";
+        button.Text = id > 0 ? $"{ItemData.DisplayName(id)} ({CountInBackpack(id)})" : Localization.Loc.Tr("Automatic (strongest)");
         button.TooltipText = id > 0
-            ? $"{ItemData.DisplayName(id)}\nUses only this potion. Stops when it runs out."
-            : "Automatically chooses the strongest available potion.";
+            ? $"{ItemData.DisplayName(id)}\n{Localization.Loc.Tr("Uses only this potion. Stops when it runs out.")}"
+            : Localization.Loc.Tr("Automatically chooses the strongest available potion.");
     }
 
     private void UseGeniePotion(int target)

@@ -89,8 +89,8 @@ public partial class World
         if (Inv[slot].Durability <= 0)
         {
             CombatNotice(fishing
-                ? "Durability of fishing rod becomes 0."
-                : "The durability of pickaxe is 0");
+                ? Localization.Loc.Tr("Durability of fishing rod becomes 0.")
+                : Localization.Loc.Tr("The durability of pickaxe is 0"));
             return true;
         }
 
@@ -296,11 +296,11 @@ public partial class World
         bool fishing = sub is Net.SubFishingStart or Net.SubFishingAttempt or Net.SubFishingStop;
         CombatNotice(code switch
         {
-            Net.MiningAlready => fishing ? "On fishing." : "You are mining already",
-            Net.MiningNotArea => fishing ? "This is not a fishing area." : "Not mining area",
-            Net.MiningNoTool => fishing ? "Fishing rod is not equipped." : "A pickaxe is not equipped",
-            Net.MiningNoBait => "No Earthworm.",
-            _ => fishing ? "Fishing has been failed." : "Mining failed",
+            Net.MiningAlready => fishing ? Localization.Loc.Tr("On fishing.") : Localization.Loc.Tr("You are mining already"),
+            Net.MiningNotArea => fishing ? Localization.Loc.Tr("This is not a fishing area.") : Localization.Loc.Tr("Not mining area"),
+            Net.MiningNoTool => fishing ? Localization.Loc.Tr("Fishing rod is not equipped.") : Localization.Loc.Tr("A pickaxe is not equipped"),
+            Net.MiningNoBait => Localization.Loc.Tr("No Earthworm."),
+            _ => fishing ? Localization.Loc.Tr("Fishing has been failed.") : Localization.Loc.Tr("Mining failed"),
         });
         StopGather(sendStop: false);
     }
@@ -344,8 +344,8 @@ public partial class World
         if (_gathering && position == _gatherToolSlot && dura <= 0)
         {
             CombatNotice(_gatherFishing
-                ? "Durability of fishing rod becomes 0."
-                : "The durability of pickaxe is 0");
+                ? Localization.Loc.Tr("Durability of fishing rod becomes 0.")
+                : Localization.Loc.Tr("The durability of pickaxe is 0"));
             StopGather(sendStop: true);
         }
     }

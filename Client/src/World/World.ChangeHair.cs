@@ -39,25 +39,25 @@ public partial class World
         _changeHairLayer = new CanvasLayer { Layer = 74 };
         AddChild(_changeHairLayer);
 
-        _changeHairPanel = new HudWindow("changehair", "Beauty Shop", new Vector2(220, 130)) { Visible = false };
+        _changeHairPanel = new HudWindow("changehair", Localization.Loc.Tr("Beauty Shop"), new Vector2(220, 130)) { Visible = false };
         _changeHairPanel.Closed += CloseChangeHair;
         _changeHairLayer.AddChild(_changeHairPanel);
 
         var r = _changeHairPanel.Body;
         r.AddThemeConstantOverride("separation", 8);
 
-        r.AddChild(UiTheme.SectionTitle("Restyle Appearance"));
+        r.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Restyle Appearance")));
 
         var hint = HudStyle.Label(12);
-        hint.Text = "Pick a new hair and face, then Apply.";
+        hint.Text = Localization.Loc.Tr("Pick a new hair and face, then Apply.");
         r.AddChild(hint);
 
-        _changeHairHairLbl = AddChangeHairRow(r, "Hair",
+        _changeHairHairLbl = AddChangeHairRow(r, Localization.Loc.Tr("Hair"),
             () => StepChangeHairHair(-1), () => StepChangeHairHair(1));
-        _changeHairFaceLbl = AddChangeHairRow(r, "Face",
+        _changeHairFaceLbl = AddChangeHairRow(r, Localization.Loc.Tr("Face"),
             () => StepChangeHairFace(-1), () => StepChangeHairFace(1));
 
-        var apply = new Button { Text = "Apply", FocusMode = Control.FocusModeEnum.None };
+        var apply = new Button { Text = Localization.Loc.Tr("Apply"), FocusMode = Control.FocusModeEnum.None };
         apply.Pressed += SubmitChangeHair;
         r.AddChild(apply);
 
@@ -145,7 +145,7 @@ public partial class World
 
     private void SubmitChangeHair()
     {
-        SetChangeHairStatus("Applying…", false);
+        SetChangeHairStatus(Localization.Loc.Tr("Applying…"), false);
         Net.I.SendChangeHair(HairCode.Pack(_changeHairHair, HairCode.ColourOf(_selfHair)), _changeHairFace);
     }
 
@@ -156,13 +156,13 @@ public partial class World
             _selfHair = hair;
             _selfFace = face;
             RerenderSelfEquipment();
-            Chat.Info($"Your new look is ready (hair {HairCode.StyleOf(hair)}, face {face}).");
-            SetChangeHairStatus("Looking good!", false);
+            Chat.Info($"{Localization.Loc.Tr("Your new look is ready (hair")} {HairCode.StyleOf(hair)}, {Localization.Loc.Tr("face")} {face}).");
+            SetChangeHairStatus(Localization.Loc.Tr("Looking good!"), false);
             CloseChangeHair();
         }
         else
         {
-            SetChangeHairStatus("The stylist couldn't apply that.", true);
+            SetChangeHairStatus(Localization.Loc.Tr("The stylist couldn't apply that."), true);
         }
     }
 

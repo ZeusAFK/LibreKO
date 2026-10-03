@@ -52,17 +52,17 @@ public partial class World
         hb.AddThemeConstantOverride("separation", 12);
         m.AddChild(hb);
 
-        hb.AddChild(UiTheme.SectionTitle("Nation Tax"));
+        hb.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Nation Tax")));
         hb.AddChild(NationTaxSeparator());
-        hb.AddChild(UiTheme.Text("Sell", 12, UiTheme.TextLo));
+        hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Sell"), 12, UiTheme.TextLo));
         _nationTaxSellLabel = UiTheme.Text("—", 12, UiTheme.TextHi);
         hb.AddChild(_nationTaxSellLabel);
         hb.AddChild(NationTaxSeparator());
-        hb.AddChild(UiTheme.Text("Tariff", 12, UiTheme.TextLo));
+        hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Tariff"), 12, UiTheme.TextLo));
         _nationTaxZoneLabel = UiTheme.Text("—", 12, UiTheme.TextHi);
         hb.AddChild(_nationTaxZoneLabel);
         hb.AddChild(NationTaxSeparator());
-        hb.AddChild(UiTheme.Text("Treasury", 12, UiTheme.TextLo));
+        hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Treasury"), 12, UiTheme.TextLo));
         _nationTaxTreasuryLabel = UiTheme.Text("—", 12, UiTheme.Gold);
         hb.AddChild(_nationTaxTreasuryLabel);
 

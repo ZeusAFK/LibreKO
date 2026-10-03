@@ -113,7 +113,7 @@ public partial class World
         _lastClockMin = tm; _lastClockWeather = w;
         bool day = frac >= 0.25f && frac < 0.75f;
         string tc = day ? "#ffe08a" : "#9fb8e6";
-        string ww = w switch { Weather.Rainy => "Rain", Weather.Snow => "Snow", Weather.Windy => "Windy", _ => "Clear" };
+        string ww = w switch { Weather.Rainy => Localization.Loc.Tr("Rain"), Weather.Snow => Localization.Loc.Tr("Snow"), Weather.Windy => Localization.Loc.Tr("Windy"), _ => Localization.Loc.Tr("Clear") };
         _clockLabel.Text = $"[right][color={tc}]{tm / 60:00}:{tm % 60:00}[/color]  [color=#ccd6e6]{ww}[/color][/right]";
         SetExpBarClock($"{tm / 60:00}:{tm % 60:00}   {ww}");
     }

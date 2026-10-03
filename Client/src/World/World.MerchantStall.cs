@@ -189,7 +189,7 @@ public partial class World
             }
         }
 
-        string note = stall.IsBuying ? "Wanted by this shop" : "For sale at this shop";
+        string note = stall.IsBuying ? Localization.Loc.Tr("Wanted by this shop") : Localization.Loc.Tr("For sale at this shop");
         for (int i = 0; i < stall.SignCells.Length; i++)
         {
             int itemId = i < stall.ItemIds.Length ? stall.ItemIds[i] : 0;
@@ -258,7 +258,7 @@ public partial class World
         Select(id, target);
         if (_self != null && FlatDistance(_self.Position, target.Body.Position) > TradeRange)
         {
-            CombatNotice("You are too far from that shop.");
+            CombatNotice(Localization.Loc.Tr("You are too far from that shop."));
             return true;
         }
 
@@ -287,12 +287,12 @@ public partial class World
         if (_merchantMoveConfirm != null) return;
         _merchantMoveConfirm = Notice.Confirm(
             this,
-            "Moving closes your stall. Leave merchant mode?",
-            "Leave",
-            "Stay",
+            Localization.Loc.Tr("Moving closes your stall. Leave merchant mode?"),
+            Localization.Loc.Tr("Leave"),
+            Localization.Loc.Tr("Stay"),
             LeaveMerchantMode,
             DismissMerchantMoveConfirm,
-            "Merchant");
+            Localization.Loc.Tr("Merchant"));
     }
 
     private void LeaveMerchantMode()

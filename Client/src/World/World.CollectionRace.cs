@@ -57,7 +57,7 @@ public partial class World
         var pos = new Vector2(
             Math.Max(CollectionRaceScreenMargin, viewport.X - CollectionRaceBodyWidth - 2 * CollectionRaceScreenMargin),
             CollectionRaceTop);
-        _crWindow = new HudWindow("collectionrace", "Collection Race", pos, bodyMinWidth: CollectionRaceBodyWidth, minimizable: true, closable: false)
+        _crWindow = new HudWindow("collectionrace", Localization.Loc.Tr("Collection Race"), pos, bodyMinWidth: CollectionRaceBodyWidth, minimizable: true, closable: false)
         {
             Visible = false
         };
@@ -70,13 +70,13 @@ public partial class World
         var info = UiTheme.Section();
         var infoBox = new VBoxContainer();
         infoBox.AddThemeConstantOverride("separation", 8);
-        var completing = QuestValueRow("Completing", "0", UiTheme.TextLo);
+        var completing = QuestValueRow(Localization.Loc.Tr("Completing"), "0", UiTheme.TextLo);
         _crCompletingLabel = completing.GetChild<Label>(completing.GetChildCount() - 1);
         infoBox.AddChild(completing);
-        _crWinnersRow = QuestValueRow("Winners", "0 / 0", UiTheme.TextHi);
+        _crWinnersRow = QuestValueRow(Localization.Loc.Tr("Winners"), "0 / 0", UiTheme.TextHi);
         _crWinnersLabel = _crWinnersRow.GetChild<Label>(_crWinnersRow.GetChildCount() - 1);
         infoBox.AddChild(_crWinnersRow);
-        var time = QuestValueRow("Event time", "00 : 00", UiTheme.GoldBright);
+        var time = QuestValueRow(Localization.Loc.Tr("Event time"), "00 : 00", UiTheme.GoldBright);
         _crTimerDigits = time.GetChild<Label>(time.GetChildCount() - 1);
         infoBox.AddChild(time);
         info.AddChild(infoBox);
@@ -84,7 +84,7 @@ public partial class World
 
         (_crHuntBlock, _crHuntBox) = CollectionRaceSection(body, QuestObjectiveHeading(true, false));
         (_crCollectBlock, _crCollectBox) = CollectionRaceSection(body, QuestObjectiveHeading(false, true));
-        (_crRewardsBlock, _crRewardsBox) = CollectionRaceSection(body, "Rewards");
+        (_crRewardsBlock, _crRewardsBox) = CollectionRaceSection(body, Localization.Loc.Tr("Rewards"));
 
         _crCompleteBanner = new VBoxContainer { Visible = false };
         _crCompleteBanner.AddThemeConstantOverride("separation", 2);
@@ -141,10 +141,10 @@ public partial class World
         _crRemainingSeconds = state.RemainingSeconds;
         PaintCollectionRaceTimer();
 
-        _crWindow.Title = string.IsNullOrWhiteSpace(state.Name) ? "Collection Race" : state.Name;
+        _crWindow.Title = string.IsNullOrWhiteSpace(state.Name) ? Localization.Loc.Tr("Collection Race") : state.Name;
 
         if (state.IsCompleted)
-            PaintCollectionRaceComplete("Collection Race complete!");
+            PaintCollectionRaceComplete(Localization.Loc.Tr("Collection Race complete!"));
         else
         {
             _crCompletingLabel.Text = "0";
@@ -246,12 +246,12 @@ public partial class World
 
     private static string CollectionRaceTargetName(CollectionRaceObjective objective) =>
         !string.IsNullOrEmpty(objective.Name) ? objective.Name
-        : objective.Kind == CollectionRaceObjectiveKind.EnemyPlayer ? "Enemy players"
-        : $"Monster {objective.TargetId}";
+        : objective.Kind == CollectionRaceObjectiveKind.EnemyPlayer ? Localization.Loc.Tr("Enemy players")
+        : $"{Localization.Loc.Tr("Monster")} {objective.TargetId}";
 
     private static string CollectionRaceItemName(CollectionRaceObjective objective) =>
         ItemData.Get(objective.TargetId) != null ? ItemData.DisplayName(objective.TargetId)
-        : string.IsNullOrEmpty(objective.Name) ? $"Item {objective.TargetId}" : objective.Name;
+        : string.IsNullOrEmpty(objective.Name) ? $"{Localization.Loc.Tr("Item")} {objective.TargetId}" : objective.Name;
 
     private void RenderRewards()
     {

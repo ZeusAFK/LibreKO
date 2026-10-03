@@ -38,9 +38,9 @@ public partial class World
         _challengeLayer = new CanvasLayer { Layer = 76 };
         AddChild(_challengeLayer);
 
-        _challengeAskDialog = new ConfirmationDialog { Title = "Duel challenge" };
-        _challengeAskDialog.GetOkButton().Text = "Accept";
-        _challengeAskDialog.GetCancelButton().Text = "Decline";
+        _challengeAskDialog = new ConfirmationDialog { Title = Localization.Loc.Tr("Duel challenge") };
+        _challengeAskDialog.GetOkButton().Text = Localization.Loc.Tr("Accept");
+        _challengeAskDialog.GetCancelButton().Text = Localization.Loc.Tr("Decline");
         _challengeAskDialog.Confirmed += () => AnswerChallenge(true);
         _challengeAskDialog.Canceled += () => AnswerChallenge(false);
         _challengeLayer.AddChild(_challengeAskDialog);
@@ -62,9 +62,9 @@ public partial class World
             float d = e.Body.Position.DistanceTo(_self.Position);
             if (d < bestD) { bestD = d; bestId = kv.Key; }
         }
-        if (bestId < 0) { Chat.Info("No player nearby to challenge."); return; }
+        if (bestId < 0) { Chat.Info(Localization.Loc.Tr("No player nearby to challenge.")); return; }
 
-        _challengeOpponent = _ents.TryGetValue(bestId, out var pe) && pe.Name.Length > 0 ? pe.Name : "Player";
+        _challengeOpponent = _ents.TryGetValue(bestId, out var pe) && pe.Name.Length > 0 ? pe.Name : Localization.Loc.Tr("Player");
         ChallengeByName(_challengeOpponent);
     }
 
@@ -74,7 +74,7 @@ public partial class World
         if (_selfDead || _challengeOutgoing || _challengeRequestPending) return;
         _challengeOpponent = targetName;
         Net.I.SendChallengeRequest(targetName);
-        Chat.Info($"Challenging {targetName} to a duel…");
+        Chat.Info($"{Localization.Loc.Tr("Challenging")} {targetName} {Localization.Loc.Tr("to a duel…")}");
     }
 
     private void ChallengeCancelOutgoing()
@@ -82,36 +82,36 @@ public partial class World
         if (!_challengeOutgoing) return;
         Net.I.SendChallengeCancel();
         _challengeOutgoing = false;
-        Chat.Info("You cancelled the duel challenge.");
+        Chat.Info(Localization.Loc.Tr("You cancelled the duel challenge."));
     }
 
     private void OnChallengeSent(string targetName)
     {
         _challengeOpponent = targetName;
         _challengeOutgoing = true;
-        Chat.Info($"Waiting for {targetName} to accept the duel…");
+        Chat.Info($"{Localization.Loc.Tr("Waiting for")} {targetName} {Localization.Loc.Tr("to accept the duel…")}");
     }
 
     private void OnChallengeRejected()
     {
         _challengeOutgoing = false;
-        Chat.Info($"{_challengeOpponent} declined the duel.");
+        Chat.Info($"{_challengeOpponent} {Localization.Loc.Tr("declined the duel.")}");
     }
 
     private void OnChallengeError()
     {
         _challengeOutgoing = false;
-        Chat.Info("The duel challenge failed (target unavailable).");
+        Chat.Info(Localization.Loc.Tr("The duel challenge failed (target unavailable)."));
     }
 
     private void OnChallengeRequest(string challengerName)
     {
         if (_challengeRequestPending || _challengeOutgoing) { Net.I.SendChallengeReject(); return; }
-        _challengeOpponent = string.IsNullOrEmpty(challengerName) ? "Someone" : challengerName;
+        _challengeOpponent = string.IsNullOrEmpty(challengerName) ? Localization.Loc.Tr("Someone") : challengerName;
         _challengeRequestPending = true;
-        _challengeAskDialog.DialogText = $"{_challengeOpponent} challenges you to a duel.\nAccept and warp to the arena?";
+        _challengeAskDialog.DialogText = $"{_challengeOpponent} {Localization.Loc.Tr("challenges you to a duel.\nAccept and warp to the arena?")}";
         _challengeAskDialog.PopupCentered();
-        Chat.Info($"{_challengeOpponent} challenges you to a duel.");
+        Chat.Info($"{_challengeOpponent} {Localization.Loc.Tr("challenges you to a duel.")}");
     }
 
     private void AnswerChallenge(bool accept)
@@ -121,12 +121,12 @@ public partial class World
         if (accept)
         {
             Net.I.SendChallengeAccept();
-            Chat.Info($"You accepted {_challengeOpponent}'s duel — warping to the arena…");
+            Chat.Info($"{Localization.Loc.Tr("You accepted")} {_challengeOpponent}{Localization.Loc.Tr("'s duel — warping to the arena…")}");
         }
         else
         {
             Net.I.SendChallengeReject();
-            Chat.Info($"You declined {_challengeOpponent}'s duel.");
+            Chat.Info($"{Localization.Loc.Tr("You declined")} {_challengeOpponent}{Localization.Loc.Tr("'s duel.")}");
         }
     }
 
@@ -138,6 +138,6 @@ public partial class World
             _challengeAskDialog.Hide();
         }
         _challengeOutgoing = false;
-        Chat.Info($"{_challengeOpponent} cancelled the duel challenge.");
+        Chat.Info($"{_challengeOpponent} {Localization.Loc.Tr("cancelled the duel challenge.")}");
     }
 }

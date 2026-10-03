@@ -30,7 +30,7 @@ public partial class World
         _mailIconLayer = new CanvasLayer { Layer = 66 };
         AddChild(_mailIconLayer);
 
-        _mailIconButton = TopIconButton(_mailIconLayer, "system/envelope", "Mail", ToggleMail, out _mailIconImage);
+        _mailIconButton = TopIconButton(_mailIconLayer, "system/envelope", Localization.Loc.Tr("Mail"), ToggleMail, out _mailIconImage);
 
         var badge = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         badge.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
@@ -62,6 +62,6 @@ public partial class World
         _mailIconBadge.Visible = waiting;
         _mailIconCount.Text = unread > MailIconMaxBadge ? $"{MailIconMaxBadge}+" : unread.ToString();
         _mailIconImage.SelfModulate = TopIconColor(waiting);
-        _mailIconButton.TooltipText = waiting ? $"Mail — {unread} unread" : "Mail";
+        _mailIconButton.TooltipText = waiting ? $"{Localization.Loc.Tr("Mail")} — {unread} {Localization.Loc.Tr("unread")}" : Localization.Loc.Tr("Mail");
     }
 }

@@ -46,19 +46,19 @@ public partial class ItemSearchPanel : VBoxContainer
         if (resultsSize == default) resultsSize = new Vector2(470, 320);
         CustomMinimumSize = new Vector2(resultsSize.X, 0);
 
-        AddChild(UiTheme.SectionTitle("Item search", UiIcons.Get("system/bag")));
+        AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Item search"), UiIcons.Get("system/bag")));
 
         var findRow = new HBoxContainer();
         findRow.AddThemeConstantOverride("separation", 5);
         AddChild(findRow);
         _query = new LineEdit
         {
-            PlaceholderText = "item name",
+            PlaceholderText = Localization.Loc.Tr("item name"),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
         };
         _query.TextSubmitted += _ => Run();
         findRow.AddChild(_query);
-        var search = new Button { Text = "Search", FocusMode = FocusModeEnum.None };
+        var search = new Button { Text = Localization.Loc.Tr("Search"), FocusMode = FocusModeEnum.None };
         search.Pressed += Run;
         findRow.AddChild(search);
 
@@ -68,7 +68,7 @@ public partial class ItemSearchPanel : VBoxContainer
         foreach (string label in ItemSearch.Tabs)
         {
             string key = label;
-            var button = new Button { Text = label, ToggleMode = true, FocusMode = FocusModeEnum.None };
+            var button = new Button { Text = Localization.Loc.Tr(label), ToggleMode = true, FocusMode = FocusModeEnum.None };
             button.AddThemeFontSizeOverride("font_size", 12);
             button.Pressed += () => SelectTab(key);
             _tabButtons[key] = button;
@@ -92,7 +92,7 @@ public partial class ItemSearchPanel : VBoxContainer
         _level.ItemSelected += _ => Refresh();
         pickRow.AddChild(_level);
 
-        _summary = UiTheme.Text("Type an item name and press Search.", 12, UiTheme.TextLo);
+        _summary = UiTheme.Text(Localization.Loc.Tr("Type an item name and press Search."), 12, UiTheme.TextLo);
         AddChild(_summary);
 
         var scroll = new ScrollContainer
@@ -149,13 +149,13 @@ public partial class ItemSearchPanel : VBoxContainer
             _results.AddChild(BuildRow(shown[i]));
 
         _summary.Text = _names.Count == 0
-            ? "No item matches that name."
+            ? Localization.Loc.Tr("No item matches that name.")
             : shown.Count switch
             {
-                0 => $"Nothing on the {_tab} tab for this item.",
-                _ when shown.Count > listed => $"{shown.Count:n0} variants — showing the first {listed}.",
-                1 => "1 variant.",
-                _ => $"{shown.Count:n0} variants.",
+                0 => $"{Localization.Loc.Tr("Nothing on the")} {_tab} {Localization.Loc.Tr("tab for this item.")}",
+                _ when shown.Count > listed => $"{shown.Count:n0} {Localization.Loc.Tr("variants — showing the first")} {listed}.",
+                1 => Localization.Loc.Tr("1 variant."),
+                _ => $"{shown.Count:n0} {Localization.Loc.Tr("variants.")}",
             };
     }
 
@@ -200,7 +200,7 @@ public partial class ItemSearchPanel : VBoxContainer
     {
         _groups.Clear();
         _group.Clear();
-        _group.AddItem("All");
+        _group.AddItem(Localization.Loc.Tr("All"));
 
         var groups = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var hit in TabHits()) groups.Add(hit.VariantLabel);
@@ -220,7 +220,7 @@ public partial class ItemSearchPanel : VBoxContainer
     {
         _levels.Clear();
         _level.Clear();
-        _level.AddItem("Any +");
+        _level.AddItem(Localization.Loc.Tr("Any +"));
 
         var levels = new SortedSet<int>();
         foreach (var hit in GroupHits()) levels.Add(hit.Plus);
@@ -302,7 +302,7 @@ public partial class ItemSearchPanel : VBoxContainer
             line.AddChild(quantity);
         }
 
-        var action = new Button { Text = _actionText, FocusMode = FocusModeEnum.None };
+        var action = new Button { Text = Localization.Loc.Tr(_actionText), FocusMode = FocusModeEnum.None };
         action.AddThemeFontSizeOverride("font_size", 12);
         action.Pressed += () => _onAction(hit, quantity == null ? 1 : (int)quantity.Value);
         line.AddChild(action);

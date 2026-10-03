@@ -16,14 +16,14 @@ public partial class World
     {
         _genieLayer = new CanvasLayer { Layer = 61 };
         AddChild(_genieLayer);
-        _geniePanel = new HudWindow("genie", "Advanced Genie", new Vector2(220, 100), bodyMinWidth: 510) { Visible = false };
+        _geniePanel = new HudWindow("genie", Localization.Loc.Tr("Advanced Genie"), new Vector2(220, 100), bodyMinWidth: 510) { Visible = false };
         _geniePanel.SetHeaderAccent(new Color("10383b"), UiTheme.Gold, UiTheme.GoldBright);
         _geniePanel.Closed += CloseGenie;
         _genieLayer.AddChild(_geniePanel);
 
         var root = BuildAdvancedGenie(_geniePanel.Body);
         root.AddThemeConstantOverride("separation", 8);
-        root.AddChild(UiTheme.SectionTitle("Your Genie"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Your Genie")));
 
         _genieTip = UiTheme.Text("...", 13, UiTheme.TextHi);
         _genieTip.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -33,7 +33,7 @@ public partial class World
         _genieStatus = UiTheme.Text("", 12, UiTheme.TextLo);
         root.AddChild(_genieStatus);
 
-        _genieClaimBtn = new Button { Text = "Claim Daily Reward", FocusMode = Control.FocusModeEnum.None };
+        _genieClaimBtn = new Button { Text = Localization.Loc.Tr("Claim Daily Reward"), FocusMode = Control.FocusModeEnum.None };
         _genieClaimBtn.Pressed += () => Net.I.SendGenieClaim();
         root.AddChild(_genieClaimBtn);
 
@@ -71,13 +71,13 @@ public partial class World
         _genieTip.Text = tip;
         if (rewardAvail)
         {
-            _genieStatus.Text = "A daily reward is waiting for you!";
+            _genieStatus.Text = Localization.Loc.Tr("A daily reward is waiting for you!");
             _genieStatus.AddThemeColorOverride("font_color", UiTheme.Gold);
             _genieClaimBtn.Disabled = false;
         }
         else
         {
-            _genieStatus.Text = "Daily reward already claimed. Come back tomorrow.";
+            _genieStatus.Text = Localization.Loc.Tr("Daily reward already claimed. Come back tomorrow.");
             _genieStatus.AddThemeColorOverride("font_color", UiTheme.TextLo);
             _genieClaimBtn.Disabled = true;
         }
@@ -87,7 +87,7 @@ public partial class World
     {
         if (ok)
         {
-            Chat.Info($"Your genie granted you {rewardGold} gold.");
+            Chat.Info($"{Localization.Loc.Tr("Your genie granted you")} {rewardGold} {Localization.Loc.Tr("gold.")}");
             Net.I.SendGenieStatus();
         }
     }

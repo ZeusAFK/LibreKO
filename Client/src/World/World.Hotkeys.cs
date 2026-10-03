@@ -116,6 +116,7 @@ public partial class World : Node3D
         Bound(KeyAction.Rentals, () => ToggleRental());
         Bound(KeyAction.TownRecall, () => TownRecallTryOpen());
         Bound(KeyAction.GmPanel, ToggleAdminPanel);
+        Bound(KeyAction.DpsPanel, ToggleDps);
 
         if (Config.Development)
         {
@@ -134,7 +135,7 @@ public partial class World : Node3D
         Floaters.Exp(4820);
         Floaters.Gold(1350);
         Floaters.Item(379006000, 3);
-        Floaters.Notice("You have no Water of Favors left.");
+        Floaters.Notice(Localization.Loc.Tr("You have no Water of Favors left."));
         int victim = _selectedId;
         if (victim < 0)
             foreach (var (id, _) in _ents) { victim = id; break; }

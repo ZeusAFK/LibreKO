@@ -71,7 +71,7 @@ public partial class World
         _mailLayer = new CanvasLayer { Layer = MailLayerIndex };
         AddChild(_mailLayer);
 
-        _mailWindow = new HudWindow("mail", "Mail", new Vector2(180, 110), bodyMinWidth: MailBodyWidth) { Visible = false };
+        _mailWindow = new HudWindow("mail", Localization.Loc.Tr("Mail"), new Vector2(180, 110), bodyMinWidth: MailBodyWidth) { Visible = false };
         _mailWindow.Closed += () => _mailShown = false;
         _mailLayer.AddChild(_mailWindow);
 
@@ -81,13 +81,13 @@ public partial class World
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 6);
         body.AddChild(head);
-        var compose = UiTheme.SmallButton("New mail", "Write a mail to another character");
+        var compose = UiTheme.SmallButton(Localization.Loc.Tr("New mail"), Localization.Loc.Tr("Write a mail to another character"));
         compose.Pressed += OpenMailCompose;
         head.AddChild(compose);
-        var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), "Refresh the inbox");
+        var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), Localization.Loc.Tr("Refresh the inbox"));
         refresh.Pressed += () => Net.I.SendMailList();
         head.AddChild(refresh);
-        _mailUnreadOnly = new CheckButton { Text = "Unread", FocusMode = Control.FocusModeEnum.None };
+        _mailUnreadOnly = new CheckButton { Text = Localization.Loc.Tr("Unread"), FocusMode = Control.FocusModeEnum.None };
         _mailUnreadOnly.AddThemeFontSizeOverride("font_size", 12);
         _mailUnreadOnly.Toggled += _ =>
         {
@@ -119,7 +119,7 @@ public partial class World
 
     private void BuildMailReadWindow()
     {
-        _mailReadWindow = new HudWindow("mailread", "Mail", new Vector2(640, 110), bodyMinWidth: MailBodyWidth) { Visible = false };
+        _mailReadWindow = new HudWindow("mailread", Localization.Loc.Tr("Mail"), new Vector2(640, 110), bodyMinWidth: MailBodyWidth) { Visible = false };
         _mailReadWindow.Closed += () => _mailSelectedId = -1;
         _mailLayer.AddChild(_mailReadWindow);
 
@@ -145,10 +145,10 @@ public partial class World
         var actions = new HBoxContainer();
         actions.AddThemeConstantOverride("separation", 6);
         actionsMargin.AddChild(actions);
-        _mailClaimBtn = UiTheme.ActionButton("Claim attachments", "Move the attached items and coins into your inventory");
+        _mailClaimBtn = UiTheme.ActionButton(Localization.Loc.Tr("Claim attachments"), Localization.Loc.Tr("Move the attached items and coins into your inventory"));
         _mailClaimBtn.Pressed += () => { if (_mailSelectedId > 0) Net.I.SendMailClaim(_mailSelectedId); };
         actions.AddChild(_mailClaimBtn);
-        _mailDeleteBtn = UiTheme.SmallButton("Delete", "Delete this mail");
+        _mailDeleteBtn = UiTheme.SmallButton(Localization.Loc.Tr("Delete"), Localization.Loc.Tr("Delete this mail"));
         _mailDeleteBtn.Pressed += () => { if (_mailSelectedId > 0) Net.I.SendMailDelete(_mailSelectedId); };
         actions.AddChild(_mailDeleteBtn);
     }
@@ -171,7 +171,7 @@ public partial class World
     private void OnMailUnread(int count)
     {
         if (_mailUnreadPill == null || !IsInstanceValid(_mailUnreadPill)) return;
-        _mailUnreadPill.Text = count > 0 ? $"{count} unread" : "";
+        _mailUnreadPill.Text = count > 0 ? $"{count} {Localization.Loc.Tr("unread")}" : "";
         if (_mailShown) Net.I.SendMailList();
     }
 
@@ -196,7 +196,7 @@ public partial class World
         ClearChildren(_mailList);
         if (_mails.Count == 0)
         {
-            _mailList.AddChild(UiTheme.Text("Your mailbox is empty.", 12, UiTheme.TextLo, HorizontalAlignment.Center));
+            _mailList.AddChild(UiTheme.Text(Localization.Loc.Tr("Your mailbox is empty."), 12, UiTheme.TextLo, HorizontalAlignment.Center));
             return;
         }
 
@@ -209,7 +209,7 @@ public partial class World
             shown++;
         }
         if (shown == 0)
-            _mailList.AddChild(UiTheme.Text("No unread mail.", 12, UiTheme.TextLo, HorizontalAlignment.Center));
+            _mailList.AddChild(UiTheme.Text(Localization.Loc.Tr("No unread mail."), 12, UiTheme.TextLo, HorizontalAlignment.Center));
     }
 
     private Control BuildMailRow(MailEntry mail)
@@ -228,7 +228,7 @@ public partial class World
         text.AddThemeConstantOverride("separation", 0);
         row.AddChild(text);
         text.AddChild(UiTheme.Text(mail.Subject, 13, mail.Read ? UiTheme.TextLo : UiTheme.TextHi));
-        text.AddChild(UiTheme.Text($"from {mail.Sender}", 11, UiTheme.TextDim));
+        text.AddChild(UiTheme.Text($"{Localization.Loc.Tr("from")} {mail.Sender}", 11, UiTheme.TextDim));
         if (mail.Attachments == MailAttachmentState.Pending)
         {
             var gift = new TextureRect
@@ -238,7 +238,7 @@ public partial class World
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
                 Modulate = UiTheme.GoldBright,
-                TooltipText = "Attachments waiting to be claimed",
+                TooltipText = Localization.Loc.Tr("Attachments waiting to be claimed"),
             };
             row.AddChild(gift);
         }
@@ -265,7 +265,7 @@ public partial class World
         if (mail == null) return;
         _mailSelectedId = mailId;
         _mailReadSubject.Text = mail.Subject;
-        _mailReadMeta.Text = $"From {mail.Sender}  ·  {mail.SentAt.ToLocalTime():dd MMM yyyy HH:mm}";
+        _mailReadMeta.Text = $"{Localization.Loc.Tr("From")} {mail.Sender}  ·  {mail.SentAt.ToLocalTime():dd MMM yyyy HH:mm}";
         _mailReadBody.Text = "";
         RenderMailAttachments(mail);
         PaintMailActions(mail);
@@ -280,7 +280,7 @@ public partial class World
     {
         ClearChildren(_mailReadAttachments);
         if (mail.Items.Count == 0) return;
-        _mailReadAttachments.AddChild(UiTheme.SectionTitle(mail.Attachments == MailAttachmentState.Claimed ? "Attachments (claimed)" : "Attachments"));
+        _mailReadAttachments.AddChild(UiTheme.SectionTitle(mail.Attachments == MailAttachmentState.Claimed ? Localization.Loc.Tr("Attachments (claimed)") : Localization.Loc.Tr("Attachments")));
         foreach (var attachment in mail.Items)
         {
             var displayId = MailDisplayItemId(attachment);
@@ -301,13 +301,13 @@ public partial class World
     {
         _mailClaimBtn.Visible = mail.Attachments == MailAttachmentState.Pending;
         _mailDeleteBtn.Disabled = mail.Attachments == MailAttachmentState.Pending;
-        _mailDeleteBtn.TooltipText = mail.Attachments == MailAttachmentState.Pending ? "Claim the attachments first" : "Delete this mail";
+        _mailDeleteBtn.TooltipText = mail.Attachments == MailAttachmentState.Pending ? Localization.Loc.Tr("Claim the attachments first") : Localization.Loc.Tr("Delete this mail");
     }
 
     private void OnMailRead(int mailId, bool ok, string body)
     {
         if (mailId != _mailSelectedId) return;
-        _mailReadBody.Text = ok ? body : "This mail is no longer available.";
+        _mailReadBody.Text = ok ? body : Localization.Loc.Tr("This mail is no longer available.");
         var mail = _mails.FirstOrDefault(m => m.Id == mailId);
         if (mail != null && !mail.Read)
         {
@@ -319,7 +319,7 @@ public partial class World
 
     private void OnMailDeleteResult(int mailId, bool ok, string message)
     {
-        _mailStatus.Text = ok ? "Mail deleted." : message;
+        _mailStatus.Text = ok ? Localization.Loc.Tr("Mail deleted.") : message;
         if (ok && mailId == _mailSelectedId)
         {
             _mailSelectedId = -1;

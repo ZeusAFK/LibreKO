@@ -35,7 +35,7 @@ public partial class World
             target.ZoneId == _zone ? _miniMap?.MapTexture : null,
             _miniMap?.MapExtent ?? 0f,
             target.ZoneId == _zone && target.HasCoordinates ? new Vector2(target.X, target.Z) : null,
-            target.ZoneId == _zone ? "" : $"In {MapName(target.ZoneId)}");
+            target.ZoneId == _zone ? "" : $"{Localization.Loc.Tr("In")} {MapName(target.ZoneId)}");
         _questTargetWindow.Visible = true;
     }
 
@@ -44,7 +44,7 @@ public partial class World
         if (_questTargetWindow != null) return;
         var layer = new CanvasLayer { Layer = 75 };
         AddChild(layer);
-        _questTargetWindow = new HudWindow("quest_target", "Target", new Vector2(320, 150), TargetMapSide) { Visible = false };
+        _questTargetWindow = new HudWindow("quest_target", Localization.Loc.Tr("Target"), new Vector2(320, 150), TargetMapSide) { Visible = false };
         layer.AddChild(_questTargetWindow);
 
         var body = _questTargetWindow.Body;
@@ -68,7 +68,7 @@ public partial class World
         };
         body.AddChild(_questTargetMap);
 
-        var close = new Button { Text = "Close", CustomMinimumSize = new Vector2(0, 36) };
+        var close = new Button { Text = Localization.Loc.Tr("Close"), CustomMinimumSize = new Vector2(0, 36) };
         close.Pressed += () => _questTargetWindow.Visible = false;
         body.AddChild(close);
     }
@@ -79,7 +79,7 @@ public partial class World
         {
             var layer = new CanvasLayer { Layer = 76 };
             AddChild(layer);
-            _questReceiptWindow = new HudWindow("quest_receipt", "Reward", new Vector2(480, 220), 300) { Visible = false };
+            _questReceiptWindow = new HudWindow("quest_receipt", Localization.Loc.Tr("Reward"), new Vector2(480, 220), 300) { Visible = false };
             layer.AddChild(_questReceiptWindow);
         }
 
@@ -87,7 +87,7 @@ public partial class World
         foreach (var child in body.GetChildren()) { body.RemoveChild(child); child.QueueFree(); }
         body.AddThemeConstantOverride("separation", 8);
         body.AddChild(UiTheme.Text(
-            _questStrings.TryGetValue(receipt.QuestId, out var strings) ? strings.Title : "Quest complete",
+            _questStrings.TryGetValue(receipt.QuestId, out var strings) ? strings.Title : Localization.Loc.Tr("Quest complete"),
             13, UiTheme.Gold));
 
         var rewards = UiTheme.Section();
@@ -99,7 +99,7 @@ public partial class World
             list.AddChild(QuestItemRow(entry.ItemId, ItemData.DisplayName(entry.ItemId),
                 entry.Count.ToString("n0"), UiTheme.GoldBright));
 
-        var confirm = new Button { Text = "Confirm", CustomMinimumSize = new Vector2(0, 36) };
+        var confirm = new Button { Text = Localization.Loc.Tr("Confirm"), CustomMinimumSize = new Vector2(0, 36) };
         confirm.Pressed += () => { HideItemTooltip(); _questReceiptWindow.Visible = false; };
         body.AddChild(confirm);
         _questReceiptWindow.Visible = true;

@@ -166,7 +166,7 @@ public partial class ContentDownloadScreen : Control
         };
         col.AddThemeConstantOverride("separation", 9);
 
-        _detail = Text("Preparing", 19, Amber);
+        _detail = Text(Localization.Loc.Tr("Preparing"), 19, Amber);
         _detail.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         col.AddChild(_detail);
 
@@ -231,9 +231,9 @@ public partial class ContentDownloadScreen : Control
 
     private string ActionLabel(ContentInstall.Snapshot s) => s.Stage switch
     {
-        ContentStage.Failed => "Retry",
-        ContentStage.AppOutdated => _install.AppUpdateUrl.Length > 0 ? "Get the new app" : "Check again",
-        ContentStage.NeedsConsent => $"Download {Bytes(s.Total - s.Done)}",
+        ContentStage.Failed => Localization.Loc.Tr("Retry"),
+        ContentStage.AppOutdated => _install.AppUpdateUrl.Length > 0 ? Localization.Loc.Tr("Get the new app") : Localization.Loc.Tr("Check again"),
+        ContentStage.NeedsConsent => $"{Localization.Loc.Tr("Download")} {Bytes(s.Total - s.Done)}",
         _ => "",
     };
 
@@ -279,14 +279,14 @@ public partial class ContentDownloadScreen : Control
         _percent.Text = ((int)(frac * 100f)).ToString();
         _fill.AnchorRight = frac;
         _detail.Text = s.Stage == ContentStage.Downloading && !moving
-            ? "Waiting for the server…"
-            : s.Detail.Length > 0 ? s.Detail : "Preparing";
+            ? Localization.Loc.Tr("Waiting for the server…")
+            : s.Detail.Length > 0 ? s.Detail : Localization.Loc.Tr("Preparing");
 
         _transfer.Text = s.Total > 0
-            ? $"{Bytes(s.Done)} of {Bytes(s.Total)}" + (flowing ? $"   {Bytes((long)s.BytesPerSecond)}/s" : "")
+            ? $"{Bytes(s.Done)} {Localization.Loc.Tr("of")} {Bytes(s.Total)}" + (flowing ? $"   {Bytes((long)s.BytesPerSecond)}/s" : "")
             : "";
         _eta.Text = flowing && s.Stage == ContentStage.Downloading && s.Total > s.Done
-            ? $"about {Eta((s.Total - s.Done) / s.BytesPerSecond)} left"
+            ? $"{Localization.Loc.Tr("about")} {Eta((s.Total - s.Done) / s.BytesPerSecond)} {Localization.Loc.Tr("left")}"
             : "";
 
         if (s.Stage != _shownStage)

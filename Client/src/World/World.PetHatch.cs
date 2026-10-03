@@ -49,24 +49,24 @@ public partial class World
         _petHatchLayer = new CanvasLayer { Layer = 74 };
         AddChild(_petHatchLayer);
 
-        _petHatchPanel = new HudWindow("pethatch", "Familiar Hatching", new Vector2(220, 150), 320) { Visible = false };
+        _petHatchPanel = new HudWindow("pethatch", Localization.Loc.Tr("Familiar Hatching"), new Vector2(220, 150), 320) { Visible = false };
         _petHatchPanel.Closed += ClosePetHatch;
         _petHatchLayer.AddChild(_petHatchPanel);
 
         var root = _petHatchPanel.Body;
         root.AddThemeConstantOverride("separation", 8);
 
-        root.AddChild(UiTheme.Text("Would you like to incubate the egg?", 14, UiTheme.GoldBright));
-        root.AddChild(UiTheme.SectionTitle("Egg"));
+        root.AddChild(UiTheme.Text(Localization.Loc.Tr("Would you like to incubate the egg?"), 14, UiTheme.GoldBright));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Egg")));
         _petHatchEggs = new HBoxContainer();
         _petHatchEggs.AddThemeConstantOverride("separation", 6);
         root.AddChild(_petHatchEggs);
 
-        root.AddChild(UiTheme.SectionTitle("Bestow a name to the Familiar"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Bestow a name to the Familiar")));
         _petHatchName = new LineEdit
         {
             MaxLength = PetNameMaxLength,
-            PlaceholderText = "Name",
+            PlaceholderText = Localization.Loc.Tr("Name"),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         _petHatchName.TextChanged += _ => RefreshPetHatchUI();
@@ -77,10 +77,10 @@ public partial class World
         var actions = new HBoxContainer();
         actions.AddThemeConstantOverride("separation", 8);
         root.AddChild(actions);
-        _petHatchBtn = UiTheme.ActionButton("Hatch", "Hatch the chosen egg");
+        _petHatchBtn = UiTheme.ActionButton(Localization.Loc.Tr("Hatch"), Localization.Loc.Tr("Hatch the chosen egg"));
         _petHatchBtn.Pressed += OnPetHatchPressed;
         actions.AddChild(_petHatchBtn);
-        var close = UiTheme.ActionButton("Close", "");
+        var close = UiTheme.ActionButton(Localization.Loc.Tr("Close"), "");
         close.Pressed += ClosePetHatch;
         actions.AddChild(close);
 
@@ -133,7 +133,7 @@ public partial class World
         }
 
         if (!any)
-            _petHatchEggs.AddChild(UiTheme.Text("You have no familiar egg.", 12, UiTheme.TextDim));
+            _petHatchEggs.AddChild(UiTheme.Text(Localization.Loc.Tr("You have no familiar egg."), 12, UiTheme.TextDim));
     }
 
     private Control PetEggSlot(int abs)
@@ -191,13 +191,13 @@ public partial class World
     private void OnPetHatched(int absSlot, PetItemInfo info)
     {
         _petHatchInFlight = false;
-        CombatNotice($"{info.Name} hatched from the egg.");
+        CombatNotice($"{info.Name} {Localization.Loc.Tr("hatched from the egg.")}");
         _petHatchSlot = FirstEggSlot();
         _petHatchName.Text = "";
         if (_petHatchShown)
         {
             RebuildPetHatchEggs();
-            SetPetHatchStatus($"{info.Name} hatched. Equip it, then use a Familiar Summon.", false);
+            SetPetHatchStatus($"{info.Name} {Localization.Loc.Tr("hatched. Equip it, then use a Familiar Summon.")}", false);
         }
         RefreshPetHatchUI();
     }
@@ -205,7 +205,7 @@ public partial class World
     private void OnPetHatchFailed(int code)
     {
         _petHatchInFlight = false;
-        SetPetHatchStatus(PetHatchFailures.TryGetValue(code, out var text) ? text : PetHatchFailures[1], true);
+        SetPetHatchStatus(PetHatchFailures.TryGetValue(code, out var text) ? Localization.Loc.Tr(text) : Localization.Loc.Tr(PetHatchFailures[1]), true);
         RefreshPetHatchUI();
     }
 

@@ -15,12 +15,12 @@ public partial class World
     {
         _eventQuestLayer = new CanvasLayer { Layer = 62 };
         AddChild(_eventQuestLayer);
-        _eventQuestPanel = new HudWindow("eventquests", "Event Quests", new Vector2(200, 130)) { Visible = false };
+        _eventQuestPanel = new HudWindow("eventquests", Localization.Loc.Tr("Event Quests"), new Vector2(200, 130)) { Visible = false };
         _eventQuestPanel.Closed += CloseEventQuests;
         _eventQuestLayer.AddChild(_eventQuestPanel);
         var root = _eventQuestPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Limited-Time Event Quests"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Limited-Time Event Quests")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(360, 320), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _eventQuestList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -70,18 +70,18 @@ public partial class World
             if (q.Claimable)
             {
                 int id = q.Id;
-                var btn = new Button { Text = "Claim", FocusMode = Control.FocusModeEnum.None };
+                var btn = new Button { Text = Localization.Loc.Tr("Claim"), FocusMode = Control.FocusModeEnum.None };
                 btn.Pressed += () => Net.I.SendEventQuestClaim(id);
                 hb.AddChild(btn);
             }
             else if (q.Accepted)
             {
-                hb.AddChild(UiTheme.Text("Accepted", 12, UiTheme.Gold));
+                hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Accepted"), 12, UiTheme.Gold));
             }
             else
             {
                 int id = q.Id;
-                var btn = new Button { Text = "Accept", FocusMode = Control.FocusModeEnum.None };
+                var btn = new Button { Text = Localization.Loc.Tr("Accept"), FocusMode = Control.FocusModeEnum.None };
                 btn.Pressed += () => Net.I.SendEventQuestAccept(id);
                 hb.AddChild(btn);
             }
@@ -89,7 +89,7 @@ public partial class World
         }
         if (_eventQuestList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No event quests are active.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No event quests are active.");
             _eventQuestList.AddChild(e);
         }
     }

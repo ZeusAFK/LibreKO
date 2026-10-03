@@ -91,7 +91,7 @@ public partial class World
         scoreRow.Alignment = BoxContainer.AlignmentMode.Center;
         vbox.AddChild(scoreRow);
 
-        _bdwKarusScoreLbl = UiTheme.Text("KARUS: 0", 14, new Color("ff4d4d"), HorizontalAlignment.Left);
+        _bdwKarusScoreLbl = UiTheme.Text($"{Localization.Loc.Tr("KARUS")}: 0", 14, new Color("ff4d4d"), HorizontalAlignment.Left);
         _bdwKarusScoreLbl.AddThemeConstantOverride("outline_size", 2);
         _bdwKarusScoreLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         scoreRow.AddChild(_bdwKarusScoreLbl);
@@ -100,12 +100,12 @@ public partial class World
         vsLbl.AddThemeConstantOverride("outline_size", 2);
         scoreRow.AddChild(vsLbl);
 
-        _bdwElmoScoreLbl = UiTheme.Text("0 :EL MORAD", 14, new Color("4da6ff"), HorizontalAlignment.Right);
+        _bdwElmoScoreLbl = UiTheme.Text($"0 :{Localization.Loc.Tr("EL MORAD")}", 14, new Color("4da6ff"), HorizontalAlignment.Right);
         _bdwElmoScoreLbl.AddThemeConstantOverride("outline_size", 2);
         _bdwElmoScoreLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         scoreRow.AddChild(_bdwElmoScoreLbl);
 
-        _bdwAltarStatusLbl = UiTheme.Text("Altar of Manes: Active in Center", 11, UiTheme.TextHi, HorizontalAlignment.Center);
+        _bdwAltarStatusLbl = UiTheme.Text(Localization.Loc.Tr("Altar of Manes: Active in Center"), 11, UiTheme.TextHi, HorizontalAlignment.Center);
         _bdwAltarStatusLbl.AddThemeConstantOverride("outline_size", 1);
         vbox.AddChild(_bdwAltarStatusLbl);
 
@@ -126,10 +126,10 @@ public partial class World
         _bdwElmoScore = elmo;
 
         if (_bdwKarusScoreLbl != null && IsInstanceValid(_bdwKarusScoreLbl))
-            _bdwKarusScoreLbl.Text = $"KARUS: {karus}";
+            _bdwKarusScoreLbl.Text = $"{Localization.Loc.Tr("KARUS")}: {karus}";
 
         if (_bdwElmoScoreLbl != null && IsInstanceValid(_bdwElmoScoreLbl))
-            _bdwElmoScoreLbl.Text = $"{elmo} :EL MORAD";
+            _bdwElmoScoreLbl.Text = $"{elmo} :{Localization.Loc.Tr("EL MORAD")}";
 
         UpdateBdwHudVisibility();
     }
@@ -139,12 +139,12 @@ public partial class World
         _bdwAltarCarrier = playerName;
         _bdwAltarTimer.Stop();
 
-        string nationStr = nation == 1 ? "Karus" : "El Morad";
+        string nationStr = nation == 1 ? Localization.Loc.Tr("Karus") : Localization.Loc.Tr("El Morad");
         Color nationCol = nation == 1 ? new Color("ff4d4d") : new Color("4da6ff");
 
         if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
         {
-            _bdwAltarStatusLbl.Text = $"Carrier: {playerName} ({nationStr})";
+            _bdwAltarStatusLbl.Text = $"{Localization.Loc.Tr("Carrier")}: {playerName} ({nationStr})";
             _bdwAltarStatusLbl.AddThemeColorOverride("font_color", nationCol);
         }
 
@@ -154,7 +154,7 @@ public partial class World
     private void OnBdwFinishReceived(int eventId, int winnerNation, uint seconds)
     {
         bool won = winnerNation != 0 && winnerNation == Net.I.LastEnter.Nation;
-        string result = won ? "Your nation has won the battle." : "Your nation has lost the battle.";
+        string result = won ? Localization.Loc.Tr("Your nation has won the battle.") : Localization.Loc.Tr("Your nation has lost the battle.");
         Audio.PlayUi(won ? BdwVictorySound : BdwDefeatSound);
         CombatNotice(result);
         if (_zone != BdwZone) return;
@@ -182,7 +182,7 @@ public partial class World
 
         if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
         {
-            _bdwAltarStatusLbl.Text = $"Altar respawning in {seconds}s";
+            _bdwAltarStatusLbl.Text = $"{Localization.Loc.Tr("Altar respawning in")} {seconds}s";
             _bdwAltarStatusLbl.AddThemeColorOverride("font_color", UiTheme.GoldBright);
         }
 
@@ -195,7 +195,7 @@ public partial class World
             _bdwAltarTimer.Stop();
             if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
             {
-                _bdwAltarStatusLbl.Text = "Altar of Manes: Active in Center";
+                _bdwAltarStatusLbl.Text = Localization.Loc.Tr("Altar of Manes: Active in Center");
                 _bdwAltarStatusLbl.AddThemeColorOverride("font_color", UiTheme.Good);
             }
         }
@@ -218,7 +218,7 @@ public partial class World
             _bdwAltarSeconds--;
             if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
             {
-                _bdwAltarStatusLbl.Text = $"Altar respawning in {_bdwAltarSeconds}s";
+                _bdwAltarStatusLbl.Text = $"{Localization.Loc.Tr("Altar respawning in")} {_bdwAltarSeconds}s";
             }
         }
         else
@@ -226,7 +226,7 @@ public partial class World
             _bdwAltarTimer.Stop();
             if (_bdwAltarStatusLbl != null && IsInstanceValid(_bdwAltarStatusLbl))
             {
-                _bdwAltarStatusLbl.Text = "Altar of Manes: Active in Center";
+                _bdwAltarStatusLbl.Text = Localization.Loc.Tr("Altar of Manes: Active in Center");
                 _bdwAltarStatusLbl.AddThemeColorOverride("font_color", UiTheme.Good);
             }
         }

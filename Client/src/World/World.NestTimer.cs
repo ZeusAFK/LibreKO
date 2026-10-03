@@ -93,7 +93,7 @@ public partial class World
         int draki = Net.I.DrakiSecondsLeft;
         if (draki > 0)
         {
-            ShowTimerPlate(DrakiTimerTitle, $"Stage {Net.I.DrakiStage}-{Net.I.DrakiSubStage}",
+            ShowTimerPlate(Localization.Loc.Tr(DrakiTimerTitle), $"{Localization.Loc.Tr("Stage")} {Net.I.DrakiStage}-{Net.I.DrakiSubStage}",
                            $"{draki / 60}:{draki % 60:00}");
             return;
         }
@@ -108,7 +108,7 @@ public partial class World
 
     private void ShowNestTimer(int stoneItemId, int secondsLeft, bool completed)
     {
-        string title = stoneItemId != 0 ? ItemData.DisplayName(stoneItemId) : NestTimerFallbackTitle;
+        string title = stoneItemId != 0 ? ItemData.DisplayName(stoneItemId) : Localization.Loc.Tr(NestTimerFallbackTitle);
         ShowTimerPlate(title, completed ? NestDungeon.CompletedLine : null,
                        NestDungeon.TerminationLine(secondsLeft, completed));
     }

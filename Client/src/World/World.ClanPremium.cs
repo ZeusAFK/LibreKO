@@ -56,7 +56,7 @@ public partial class World
         dotWrap.AddChild(_clanPremiumDot);
         row.AddChild(dotWrap);
 
-        _clanPremiumLabel = UiTheme.Text("Clan: No Premium", 12, UiTheme.TextLo);
+        _clanPremiumLabel = UiTheme.Text(Localization.Loc.Tr("Clan: No Premium"), 12, UiTheme.TextLo);
         _clanPremiumLabel.MouseFilter = Control.MouseFilterEnum.Ignore;
         row.AddChild(_clanPremiumLabel);
 
@@ -90,13 +90,13 @@ public partial class World
 
         if (Net.I.ClanPremiumActive)
         {
-            _clanPremiumLabel.Text = "Clan Premium";
+            _clanPremiumLabel.Text = Localization.Loc.Tr("Clan Premium");
             _clanPremiumLabel.AddThemeColorOverride("font_color", UiTheme.GoldBright);
             SetClanPremiumDot(UiTheme.Gold);
         }
         else
         {
-            _clanPremiumLabel.Text = "Clan: No Premium";
+            _clanPremiumLabel.Text = Localization.Loc.Tr("Clan: No Premium");
             _clanPremiumLabel.AddThemeColorOverride("font_color", UiTheme.TextLo);
             SetClanPremiumDot(UiTheme.TextDim);
         }

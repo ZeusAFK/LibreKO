@@ -73,14 +73,14 @@ public partial class World
 
     private void BuildWishPanel()
     {
-        _wishPanel = new HudWindow("wishlist", "Item Wish List", new Vector2(160, 90)) { Visible = false };
+        _wishPanel = new HudWindow("wishlist", Localization.Loc.Tr("Item Wish List"), new Vector2(160, 90)) { Visible = false };
         _wishPanel.Closed += CloseWishList;
         _mctLayer.AddChild(_wishPanel);
 
         var root = _wishPanel.Body;
         root.AddThemeConstantOverride("separation", 8);
 
-        root.AddChild(UiTheme.SectionTitle("What you want to buy"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("What you want to buy")));
         _wishCells = BuildMerchantGrid(root, StallSlots, StallColumns, OnWishSlotClicked);
 
         var summary = UiTheme.Section();
@@ -92,7 +92,7 @@ public partial class World
 
         var totalRow = UiTheme.Section();
         root.AddChild(totalRow);
-        totalRow.AddChild(MoneyRow("Noah", out _wishTotal, UiTheme.GoldBright));
+        totalRow.AddChild(MoneyRow(Localization.Loc.Tr("Noah"), out _wishTotal, UiTheme.GoldBright));
 
         _wishStatus = UiTheme.Text("", 12, UiTheme.TextLo);
         _wishStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -103,11 +103,11 @@ public partial class World
         footer.AddThemeConstantOverride("separation", 8);
         footer.Alignment = BoxContainer.AlignmentMode.Center;
         root.AddChild(footer);
-        var ok = new Button { Text = "O  K", FocusMode = Control.FocusModeEnum.None };
+        var ok = new Button { Text = Localization.Loc.Tr("O  K"), FocusMode = Control.FocusModeEnum.None };
         ok.CustomMinimumSize = new Vector2(104, 28);
         ok.Pressed += ConfirmWishList;
         footer.AddChild(ok);
-        var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        var cancel = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         cancel.CustomMinimumSize = new Vector2(104, 28);
         cancel.Pressed += CloseWishList;
         footer.AddChild(cancel);
@@ -115,13 +115,13 @@ public partial class World
 
     private void BuildWishFindPanel()
     {
-        _wishFindPanel = new HudWindow("wishfind", "Item Search", new Vector2(520, 90)) { Visible = false };
+        _wishFindPanel = new HudWindow("wishfind", Localization.Loc.Tr("Item Search"), new Vector2(520, 90)) { Visible = false };
         _wishFindPanel.Closed += CloseWishFind;
         _mctLayer.AddChild(_wishFindPanel);
 
         _wishFind = new ItemSearchPanel(
             tradeableOnly: true,
-            actionText: "Registration",
+            actionText: Localization.Loc.Tr("Registration"),
             onAction: OnWishItemPicked,
             showTooltip: itemId => ShowItemTooltip(-1, TooltipItem(itemId)),
             hideTooltip: HideItemTooltip,
@@ -132,22 +132,22 @@ public partial class World
 
     private void BuildWantedPanel()
     {
-        _wantedPanel = new HudWindow("wantedstall", "Buying Merchant", new Vector2(120, 70)) { Visible = false };
+        _wantedPanel = new HudWindow("wantedstall", Localization.Loc.Tr("Buying Merchant"), new Vector2(120, 70)) { Visible = false };
         _wantedPanel.Closed += CloseWantedStall;
         _mctLayer.AddChild(_wantedPanel);
 
         var root = _wantedPanel.Body;
         root.AddThemeConstantOverride("separation", 8);
 
-        root.AddChild(UiTheme.SectionTitle("Wanted"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Wanted")));
         _wantedCells = BuildMerchantGrid(root, StallSlots, StallColumns, null,
             acceptKey: "bagFrom", onDropFrom: SellToWanted);
 
         var money = UiTheme.Section();
         root.AddChild(money);
-        money.AddChild(MoneyRow("Current Balance", out _wantedBalance, UiTheme.TextHi));
+        money.AddChild(MoneyRow(Localization.Loc.Tr("Current Balance"), out _wantedBalance, UiTheme.TextHi));
 
-        root.AddChild(UiTheme.SectionTitle("Your bags"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Your bags")));
         _wantedBagCells = BuildMerchantGrid(root, GridCount, StallBagColumns, null,
             dragKey: "bagFrom");
 
@@ -211,7 +211,7 @@ public partial class World
         int most = stackable ? MerchantWishMaxStack : 1;
         var preview = new ItemSlot { ItemId = hit.Id, Count = 1, Durability = (short)hit.Def.Duration };
 
-        AskAmount(preview, "Wish Noah Amount to Purchase", ItemData.BuyPrice(hit.Id), most, stackable,
+        AskAmount(preview, Localization.Loc.Tr("Wish Noah Amount to Purchase"), ItemData.BuyPrice(hit.Id), most, stackable,
             (wantCount, price) =>
             {
                 _wishes[slot] = new MerchantWishItem { ItemId = hit.Id, Count = wantCount, Price = price };
@@ -231,19 +231,19 @@ public partial class World
         {
             var wish = _wishes[i];
             var slot = new ItemSlot { ItemId = wish.ItemId, Count = (short)wish.Count };
-            _wishCells[i].Set(slot, PriceNote("Offering", wish.Price, wish.Count));
+            _wishCells[i].Set(slot, PriceNote(Localization.Loc.Tr("Offering"), wish.Price, wish.Count));
             if (wish.IsEmpty) continue;
 
             filled++;
             long line = (long)wish.Price * wish.Count;
             total += line;
             _wishSummary.AddChild(UiTheme.Text(
-                $"{ItemData.DisplayName(wish.ItemId)}   [{Money(wish.Price)} Coin] x {wish.Count}",
+                $"{ItemData.DisplayName(wish.ItemId)}   [{Money(wish.Price)} {Localization.Loc.Tr("Coin")}] x {wish.Count}",
                 12, UiTheme.TextHi));
         }
 
         if (filled == 0)
-            _wishSummary.AddChild(UiTheme.Text("Nothing on the list yet.", 12, UiTheme.TextDim));
+            _wishSummary.AddChild(UiTheme.Text(Localization.Loc.Tr("Nothing on the list yet."), 12, UiTheme.TextDim));
 
         _wishTotal.Text = total.ToString("n0");
         _wishTotal.AddThemeColorOverride("font_color", total > Sheet.Gold ? UiTheme.Bad : UiTheme.GoldBright);
@@ -260,8 +260,8 @@ public partial class World
             total += (long)wish.Price * wish.Count;
         }
 
-        if (wanted.Count == 0) { SetWishStatus("Add at least one item first.", true); return; }
-        if (total > Sheet.Gold) { SetWishStatus("You are not carrying that much gold.", true); return; }
+        if (wanted.Count == 0) { SetWishStatus(Localization.Loc.Tr("Add at least one item first."), true); return; }
+        if (total > Sheet.Gold) { SetWishStatus(Localization.Loc.Tr("You are not carrying that much gold."), true); return; }
 
         _pendingWishes = wanted;
         Net.I.SendBuyMerchantOpen();
@@ -300,7 +300,7 @@ public partial class World
         if (wanted != null)
             foreach (var wish in wanted) ids.Add(wish.ItemId);
         PlaceStall(_myId, isBuying: true, flags: 0, ids.ToArray());
-        CombatNotice("Your buying stall is open. You cannot move while it is.");
+        CombatNotice(Localization.Loc.Tr("Your buying stall is open. You cannot move while it is."));
     }
 
     private void OnBuyMerchantClosed(int charId)
@@ -310,7 +310,7 @@ public partial class World
         if (charId == _myId)
         {
             SetMerchantLock(false);
-            CombatNotice("Your buying stall closed.");
+            CombatNotice(Localization.Loc.Tr("Your buying stall closed."));
         }
     }
 
@@ -342,7 +342,7 @@ public partial class World
         for (int i = 0; i < _wantedCells.Length; i++)
         {
             var item = _wantedItems[i];
-            _wantedCells[i].Set(StallSlot(item), PriceNote("Pays", item.Price, item.Count));
+            _wantedCells[i].Set(StallSlot(item), PriceNote(Localization.Loc.Tr("Pays"), item.Price, item.Count));
         }
         for (int i = 0; i < _wantedBagCells.Length; i++)
         {
@@ -374,7 +374,7 @@ public partial class World
         var held = Inv[absSlot];
         if (wanted.IsEmpty || held.ItemId != wanted.ItemId)
         {
-            SetWantedStatus("That is not the item they asked for.", true);
+            SetWantedStatus(Localization.Loc.Tr("That is not the item they asked for."), true);
             return;
         }
 
@@ -382,7 +382,7 @@ public partial class World
         var def = ItemData.Get(held.ItemId);
         bool countable = def != null && def.Countable != 0 && most > 1;
 
-        AskTrade(held, "Sell to this shop", wanted.Price, most, countable,
+        AskTrade(held, Localization.Loc.Tr("Sell to this shop"), wanted.Price, most, countable,
             (count, _) => Net.I.SendBuyMerchantSell((byte)gridIndex, (byte)wantedSlot, count));
     }
 
@@ -411,7 +411,7 @@ public partial class World
             if (wantedSlot >= 0 && wantedSlot < _wantedItems.Length && sold > 0)
             {
                 long paid = (long)_wantedItems[wantedSlot].Price * sold;
-                SetWantedStatus($"Sold {sold} x {ItemData.DisplayName(itemId)} for {Money(paid)}.", false);
+                SetWantedStatus($"{Localization.Loc.Tr("Sold")} {sold} x {ItemData.DisplayName(itemId)} {Localization.Loc.Tr("for")} {Money(paid)}.", false);
             }
         }
 
@@ -429,27 +429,27 @@ public partial class World
     {
         string who = sellerName.Length > 0 ? sellerName : "Someone";
         CombatNotice(remaining > 0
-            ? $"{who} sold to your stall — {remaining} still wanted."
-            : $"{who} filled one of your orders.");
+            ? $"{who} {Localization.Loc.Tr("sold to your stall —")} {remaining} {Localization.Loc.Tr("still wanted.")}"
+            : $"{who} {Localization.Loc.Tr("filled one of your orders.")}");
     }
 
     private static string BuyMerchantMessage(byte result) => result switch
     {
-        Net.BuyMerchantWhileDead => "You can't do that right now.",
-        Net.BuyMerchantWhileMerchanting => "You are already running a stall.",
-        Net.BuyMerchantNotAllowedHere => "A buying stall can only be opened in Moradon.",
-        Net.BuyMerchantWrongItemSetup => "One of those items can't be bought this way.",
-        Net.BuyMerchantWrongStallSetup => "That stall is no longer open.",
-        Net.BuyMerchantWrongPurchaseCount => "That quantity isn't allowed.",
-        Net.BuyMerchantNoSuchItemWanted => "They don't want that item.",
-        Net.BuyMerchantSellerFundsTooLow => "You are not carrying that much gold.",
-        Net.BuyMerchantBuyerFundsTooLow => "The buyer ran out of gold.",
-        Net.BuyMerchantItemNotSellable => "That item can't be sold.",
-        Net.BuyMerchantInventoryFull => "Their bags are full.",
-        Net.BuyMerchantOverMaxLimit => "That would take you over the gold limit.",
-        Net.BuyMerchantNeedsRepair => "Repair it first.",
-        Net.BuyMerchantUnderLevelled => "You must be level 35 to open a buying stall.",
-        _ => "The stall refused that.",
+        Net.BuyMerchantWhileDead => Localization.Loc.Tr("You can't do that right now."),
+        Net.BuyMerchantWhileMerchanting => Localization.Loc.Tr("You are already running a stall."),
+        Net.BuyMerchantNotAllowedHere => Localization.Loc.Tr("A buying stall can only be opened in Moradon."),
+        Net.BuyMerchantWrongItemSetup => Localization.Loc.Tr("One of those items can't be bought this way."),
+        Net.BuyMerchantWrongStallSetup => Localization.Loc.Tr("That stall is no longer open."),
+        Net.BuyMerchantWrongPurchaseCount => Localization.Loc.Tr("That quantity isn't allowed."),
+        Net.BuyMerchantNoSuchItemWanted => Localization.Loc.Tr("They don't want that item."),
+        Net.BuyMerchantSellerFundsTooLow => Localization.Loc.Tr("You are not carrying that much gold."),
+        Net.BuyMerchantBuyerFundsTooLow => Localization.Loc.Tr("The buyer ran out of gold."),
+        Net.BuyMerchantItemNotSellable => Localization.Loc.Tr("That item can't be sold."),
+        Net.BuyMerchantInventoryFull => Localization.Loc.Tr("Their bags are full."),
+        Net.BuyMerchantOverMaxLimit => Localization.Loc.Tr("That would take you over the gold limit."),
+        Net.BuyMerchantNeedsRepair => Localization.Loc.Tr("Repair it first."),
+        Net.BuyMerchantUnderLevelled => Localization.Loc.Tr("You must be level 35 to open a buying stall."),
+        _ => Localization.Loc.Tr("The stall refused that."),
     };
 
     private void SetWishStatus(string text, bool warn)

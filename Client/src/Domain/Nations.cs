@@ -14,5 +14,5 @@ public static class Nations
 
     public static int ClassBase(int nation) => nation == Karus ? KarusClassBase : ElMoradClassBase;
 
-    public static string Name(int nation) => nation == Karus ? "Karus" : "El Morad";
+    public static string Name(int nation) => nation == Karus ? Localization.Loc.Tr("Karus") : Localization.Loc.Tr("El Morad");
 }

@@ -90,7 +90,7 @@ public partial class World
         AddChild(_admLayer);
 
         _admPanel = new HudWindow(
-            "admin_panel", "Game Master", new Vector2(150, 70),
+            "admin_panel", Localization.Loc.Tr("Game Master"), new Vector2(150, 70),
             titleIcon: UiIcons.Get("system/lock")) { Visible = false };
         _admPanel.Closed += CloseAdminPanel;
         _admLayer.AddChild(_admPanel);
@@ -142,13 +142,13 @@ public partial class World
     {
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 10);
-        row.AddChild(AdminFieldLabel("Collision", 0));
+        row.AddChild(AdminFieldLabel(Localization.Loc.Tr("Collision"), 0));
 
         _admCollisionSwitch = new CheckButton
         {
             ButtonPressed = !_collisionsOff,
             FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Walk through terrain objects, monsters and players (GM only) — /collision on|off",
+            TooltipText = Localization.Loc.Tr("Walk through terrain objects, monsters and players (GM only) — /collision on|off"),
         };
         _admCollisionSwitch.Toggled += on => SetCollisions(on);
         row.AddChild(_admCollisionSwitch);
@@ -166,7 +166,7 @@ public partial class World
     {
         _admTabPark.AddChild(body);
         _admTabs[label] = body;
-        var button = UiTheme.UnderlineTabButton(label);
+        var button = UiTheme.UnderlineTabButton(Localization.Loc.Tr(label));
         button.Pressed += () => SelectAdminTab(label);
         _admTabBtns[label] = button;
         tabBar.AddChild(button);
@@ -223,7 +223,7 @@ public partial class World
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 7);
 
-        row.AddChild(AdminHeading("Coins", "system/coins"));
+        row.AddChild(AdminHeading(Localization.Loc.Tr("Coins"), "system/coins"));
         _admCoinsLbl = UiTheme.Text("", 15, UiTheme.TextHi);
         _admCoinsLbl.VerticalAlignment = VerticalAlignment.Center;
         row.AddChild(_admCoinsLbl);
@@ -239,7 +239,7 @@ public partial class World
 
         _admCoinsInput = new LineEdit
         {
-            PlaceholderText = "amount",
+            PlaceholderText = Localization.Loc.Tr("amount"),
             Text = "1000000",
             CustomMinimumSize = new Vector2(96, AdminControlHeight),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
@@ -247,10 +247,10 @@ public partial class World
         _admCoinsInput.AddThemeFontSizeOverride("font_size", 14);
         row.AddChild(_admCoinsInput);
 
-        var give = AdminButton("Give", 60);
+        var give = AdminButton(Localization.Loc.Tr("Give"), 60);
         give.Pressed += () => SendAdminCoinDelta(1);
         row.AddChild(give);
-        var take = AdminButton("Take", 60);
+        var take = AdminButton(Localization.Loc.Tr("Take"), 60);
         take.Pressed += () => SendAdminCoinDelta(-1);
         row.AddChild(take);
         return row;
@@ -260,7 +260,7 @@ public partial class World
     {
         var box = new VBoxContainer();
         box.AddThemeConstantOverride("separation", 7);
-        box.AddChild(AdminHeading("Stats", "game/chest"));
+        box.AddChild(AdminHeading(Localization.Loc.Tr("Stats"), "game/chest"));
 
         for (int i = 0; i < CharacterSheet.StatCount; i++)
             _admStatSpins[i] = AdminSpin(1, 255, AdminSpinWidth);
@@ -272,27 +272,27 @@ public partial class World
             int right = i + rows;
             box.AddChild(right < CharacterSheet.StatCount
                 ? AdminStatRow(StatLabels[i], _admStatSpins[i], StatLabels[right], _admStatSpins[right])
-                : AdminStatRow(StatLabels[i], _admStatSpins[i], "Free", _admPointsSpin));
+                : AdminStatRow(StatLabels[i], _admStatSpins[i], Localization.Loc.Tr("Free"), _admPointsSpin));
         }
 
         var npRow = new HBoxContainer();
         npRow.AddThemeConstantOverride("separation", 0);
         npRow.AddChild(AdminFieldLabel("NP"));
         _admNpSpin = AdminSpin(0, int.MaxValue, AdminSpinWidth * 2 + AdminColumnGap + AdminLabelWidth);
-        _admNpSpin.TooltipText = "National points";
+        _admNpSpin.TooltipText = Localization.Loc.Tr("National points");
         npRow.AddChild(_admNpSpin);
         box.AddChild(npRow);
 
         var actions = new HBoxContainer();
         actions.AddThemeConstantOverride("separation", 7);
         box.AddChild(actions);
-        var apply = AdminButton("Apply stats", 108);
+        var apply = AdminButton(Localization.Loc.Tr("Apply stats"), 108);
         apply.Pressed += OnAdminApplyStats;
         actions.AddChild(apply);
-        var revert = AdminButton("Revert", 76);
+        var revert = AdminButton(Localization.Loc.Tr("Revert"), 76);
         revert.Pressed += LoadAdminStatSpins;
         actions.AddChild(revert);
-        var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), "Re-read state from the server");
+        var refresh = UiTheme.IconButton(UiIcons.Get("system/refresh"), Localization.Loc.Tr("Re-read state from the server"));
         refresh.CustomMinimumSize = new Vector2(36, AdminControlHeight);
         refresh.Pressed += () => Net.I.SendAdminStateRequest();
         actions.AddChild(refresh);
@@ -352,20 +352,20 @@ public partial class World
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(640, 0) };
         box.AddThemeConstantOverride("separation", 7);
 
-        box.AddChild(UiTheme.SectionTitle("Specialization", UiIcons.Get("game/main-hand")));
+        box.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Specialization"), UiIcons.Get("game/main-hand")));
         _admClassLbl = UiTheme.Text("", 14, UiTheme.GoldBright);
         box.AddChild(_admClassLbl);
 
         box.AddChild(BuildAdminTransformSection());
 
         box.AddChild(new HSeparator());
-        box.AddChild(UiTheme.SectionTitle("Valid changes for this class"));
+        box.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Valid changes for this class")));
         _admClassList = new VBoxContainer();
         _admClassList.AddThemeConstantOverride("separation", 4);
         box.AddChild(_admClassList);
 
         var note = UiTheme.Text(
-            "A change refunds every mastery point, clears the branches and empties the skill bar.",
+            Localization.Loc.Tr("A change refunds every mastery point, clears the branches and empties the skill bar."),
             11, UiTheme.Warning);
         note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         note.CustomMinimumSize = new Vector2(340, 0);
@@ -384,7 +384,7 @@ public partial class World
         _admShown = true;
         _admPanel.Visible = true;
         _admPanel.GetParent()?.MoveChild(_admPanel, _admPanel.GetParent().GetChildCount() - 1);
-        SetAdminStatus("Requesting state…", false);
+        SetAdminStatus(Localization.Loc.Tr("Requesting state…"), false);
         Net.I.SendAdminStateRequest();
     }
 
@@ -402,7 +402,7 @@ public partial class World
         if (!state.Granted)
         {
             CloseAdminPanel();
-            Chat.Info("The server refused the GM panel for this account.");
+            Chat.Info(Localization.Loc.Tr("The server refused the GM panel for this account."));
             return;
         }
 
@@ -455,7 +455,7 @@ public partial class World
         if (_admState.ClassOptions is not { Length: > 0 })
         {
             _admClassList.AddChild(UiTheme.Text(
-                "The server offers no alternate specialization for this class.", 12, UiTheme.TextLo));
+                Localization.Loc.Tr("The server offers no alternate specialization for this class."), 12, UiTheme.TextLo));
             return;
         }
 
@@ -473,7 +473,7 @@ public partial class World
             line.AddChild(name);
             line.AddChild(UiTheme.Pill(CharacterClassCatalog.TierName(target), UiTheme.Gold));
 
-            var change = new Button { Text = "Change", FocusMode = Control.FocusModeEnum.None };
+            var change = new Button { Text = Localization.Loc.Tr("Change"), FocusMode = Control.FocusModeEnum.None };
             change.AddThemeFontSizeOverride("font_size", 12);
             change.Pressed += () => Net.I.SendAdminSetClass(target);
             line.AddChild(change);
@@ -498,14 +498,14 @@ public partial class World
             (int)_admStatSpins[0].Value, (int)_admStatSpins[1].Value, (int)_admStatSpins[2].Value,
             (int)_admStatSpins[3].Value, (int)_admStatSpins[4].Value, (int)_admPointsSpin.Value,
             (int)_admNpSpin.Value);
-        SetAdminStatus("Applying stats…", false);
+        SetAdminStatus(Localization.Loc.Tr("Applying stats…"), false);
     }
 
     private void SendAdminCoinDelta(int sign)
     {
         if (!long.TryParse(_admCoinsInput.Text.Trim().Replace(",", ""), out long amount) || amount == 0)
         {
-            SetAdminStatus("Enter a coin amount.", true);
+            SetAdminStatus(Localization.Loc.Tr("Enter a coin amount."), true);
             return;
         }
         long signed = System.Math.Clamp(amount * sign, int.MinValue, int.MaxValue);

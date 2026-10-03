@@ -19,6 +19,7 @@ public partial class Boot : Control
         }
 
         Config.ApplyVideo();
+        Localization.Loc.EnsureCjkFont();
         GameCursor.Enable();
         GlyphWarmer.Watch(GetTree());
         GlyphWarmer.Warm(this);

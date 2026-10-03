@@ -13,7 +13,7 @@ public partial class World
     private const float AdminFindSpotWidth = 96;
     private const float AdminFindGoWidth = 58;
     private const float AdminFindEditWidth = 58;
-    private static readonly string[] AdminFindKinds = ["NPC", "Monster", "Player"];
+    private static readonly string[] AdminFindKinds = [Localization.Loc.Tr("NPC"), Localization.Loc.Tr("Monster"), Localization.Loc.Tr("Player")];
 
     private OptionButton _admFindKind = null!;
     private LineEdit _admFindQuery = null!;
@@ -27,7 +27,7 @@ public partial class World
     {
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(AdminFindListWidth, 0) };
         box.AddThemeConstantOverride("separation", 6);
-        box.AddChild(UiTheme.SectionTitle("Find", UiIcons.Get("system/search")));
+        box.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Find"), UiIcons.Get("system/search")));
 
         var findRow = new HBoxContainer();
         findRow.AddThemeConstantOverride("separation", 5);
@@ -37,16 +37,16 @@ public partial class World
         findRow.AddChild(_admFindKind);
         _admFindQuery = new LineEdit
         {
-            PlaceholderText = "name or id, part of it is enough",
+            PlaceholderText = Localization.Loc.Tr("name or id, part of it is enough"),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         _admFindQuery.TextSubmitted += _ => SendAdminFind();
         findRow.AddChild(_admFindQuery);
-        var search = UiTheme.IconButton(UiIcons.Get("system/search"), "Search");
+        var search = UiTheme.IconButton(UiIcons.Get("system/search"), Localization.Loc.Tr("Search"));
         search.Pressed += SendAdminFind;
         findRow.AddChild(search);
 
-        _admFindSummary = UiTheme.Text("Search the live world: every placed NPC or monster, or every player online.", 12, UiTheme.TextLo);
+        _admFindSummary = UiTheme.Text(Localization.Loc.Tr("Search the live world: every placed NPC or monster, or every player online."), 12, UiTheme.TextLo);
         box.AddChild(_admFindSummary);
 
         box.AddChild(BuildAdminFindHeader());
@@ -62,7 +62,7 @@ public partial class World
         scroll.AddChild(_admFindList);
 
         box.AddChild(UiTheme.Text(
-            "Go lands you on the spot the list shows; a monster may have wandered since.", 11, UiTheme.TextLo));
+            Localization.Loc.Tr("Go lands you on the spot the list shows; a monster may have wandered since."), 11, UiTheme.TextLo));
 
         if (Net.I != null) Net.I.AdminFindEvent += OnAdminFind;
         return box;
@@ -72,10 +72,10 @@ public partial class World
     {
         var line = new HBoxContainer();
         line.AddThemeConstantOverride("separation", 8);
-        line.AddChild(AdminFindHeaderCell("Name", 0, expand: true));
-        line.AddChild(AdminFindHeaderCell("Level", AdminFindLevelWidth));
-        line.AddChild(AdminFindHeaderCell("Map", AdminFindMapWidth));
-        line.AddChild(AdminFindHeaderCell("Location", AdminFindSpotWidth));
+        line.AddChild(AdminFindHeaderCell(Localization.Loc.Tr("Name"), 0, expand: true));
+        line.AddChild(AdminFindHeaderCell(Localization.Loc.Tr("Level"), AdminFindLevelWidth));
+        line.AddChild(AdminFindHeaderCell(Localization.Loc.Tr("Map"), AdminFindMapWidth));
+        line.AddChild(AdminFindHeaderCell(Localization.Loc.Tr("Location"), AdminFindSpotWidth));
         line.AddChild(AdminFindHeaderCell("", AdminFindEditWidth));
         line.AddChild(AdminFindHeaderCell("", AdminFindGoWidth));
         return line;
@@ -94,11 +94,11 @@ public partial class World
         string query = _admFindQuery.Text.Trim();
         if (query.Length == 0)
         {
-            SetAdminStatus("Type a name or an id to search for.", true);
+            SetAdminStatus(Localization.Loc.Tr("Type a name or an id to search for."), true);
             return;
         }
         _admFindLastQuery = query;
-        SetAdminStatus($"Searching for “{query}”…", false);
+        SetAdminStatus($"{Localization.Loc.Tr("Searching for")} “{query}”…", false);
         Net.I.SendAdminFind(_admFindKind.Selected, query);
     }
 
@@ -117,17 +117,17 @@ public partial class World
 
         string what = _admFindKind.Selected switch
         {
-            Net.AdminFindPlayers => "player",
-            Net.AdminFindMonsters => "monster",
-            _ => "NPC",
+            Net.AdminFindPlayers => Localization.Loc.Tr("player"),
+            Net.AdminFindMonsters => Localization.Loc.Tr("monster"),
+            _ => Localization.Loc.Tr("NPC"),
         };
         _admFindSummary.Text = _admFindHits.Count switch
         {
-            0 => $"No {what} matches “{_admFindLastQuery}”.",
+            0 => $"{Localization.Loc.Tr("No")} {what} {Localization.Loc.Tr("matches")} “{_admFindLastQuery}”.",
             _ when _admFindTotal > _admFindHits.Count =>
-                $"{_admFindTotal} matches for “{_admFindLastQuery}”, showing the first {_admFindHits.Count}. Narrow the search.",
-            1 => $"1 match for “{_admFindLastQuery}”.",
-            _ => $"{_admFindHits.Count} matches for “{_admFindLastQuery}”.",
+                $"{_admFindTotal} {Localization.Loc.Tr("matches for")} “{_admFindLastQuery}”, {Localization.Loc.Tr("showing the first")} {_admFindHits.Count}. {Localization.Loc.Tr("Narrow the search.")}",
+            1 => $"{Localization.Loc.Tr("1 match for")} “{_admFindLastQuery}”.",
+            _ => $"{_admFindHits.Count} {Localization.Loc.Tr("matches for")} “{_admFindLastQuery}”.",
         };
 
         foreach (var hit in _admFindHits)
@@ -155,7 +155,7 @@ public partial class World
         nameCell.AddChild(id);
         if (hit.Bot)
         {
-            var tag = UiTheme.Pill("bot", UiTheme.TextDim);
+            var tag = UiTheme.Pill(Localization.Loc.Tr("bot"), UiTheme.TextDim);
             tag.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
             nameCell.AddChild(tag);
         }
@@ -176,32 +176,32 @@ public partial class World
 
         var edit = new Button
         {
-            Text = "Edit",
+            Text = Localization.Loc.Tr("Edit"),
             FocusMode = Control.FocusModeEnum.None,
             CustomMinimumSize = new Vector2(AdminFindEditWidth, 0),
-            TooltipText = hit.SpawnRow > 0 ? $"Edit spawn row {hit.SpawnRow}" : "Not placed by a spawn row",
+            TooltipText = hit.SpawnRow > 0 ? $"{Localization.Loc.Tr("Edit spawn row")} {hit.SpawnRow}" : Localization.Loc.Tr("Not placed by a spawn row"),
             Disabled = hit.SpawnRow <= 0,
             Visible = _admFindKind.Selected != Net.AdminFindPlayers,
         };
         edit.AddThemeFontSizeOverride("font_size", 12);
         edit.Pressed += () =>
         {
-            SetAdminStatus($"Loading spawn row {hit.SpawnRow}…", false);
+            SetAdminStatus($"{Localization.Loc.Tr("Loading spawn row")} {hit.SpawnRow}…", false);
             Net.I.SendAdminSpawnRowRequest(hit.SpawnRow);
         };
         line.AddChild(edit);
 
         var go = new Button
         {
-            Text = "Go",
+            Text = Localization.Loc.Tr("Go"),
             FocusMode = Control.FocusModeEnum.None,
             CustomMinimumSize = new Vector2(AdminFindGoWidth, 0),
-            TooltipText = $"Travel to {hit.Name} in {AdminZoneName(hit.Zone)}",
+            TooltipText = $"{Localization.Loc.Tr("Travel to")} {hit.Name} {Localization.Loc.Tr("in")} {AdminZoneName(hit.Zone)}",
         };
         go.AddThemeFontSizeOverride("font_size", 12);
         go.Pressed += () =>
         {
-            SetAdminStatus($"Moving to {hit.Name}…", false);
+            SetAdminStatus($"{Localization.Loc.Tr("Moving to")} {hit.Name}…", false);
             Net.I.SendAdminGo(hit.Zone, hit.X, hit.Z);
         };
         line.AddChild(go);

@@ -73,7 +73,7 @@ public partial class World
         _attendanceGiftLayer = new CanvasLayer { Layer = 66 };
         AddChild(_attendanceGiftLayer);
 
-        _attendanceGift = TopIconButton(_attendanceGiftLayer, "system/gift", "Daily attendance",
+        _attendanceGift = TopIconButton(_attendanceGiftLayer, "system/gift", Localization.Loc.Tr("Daily attendance"),
             OpenAttendance, out _attendanceGiftIcon);
 
         var badge = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -110,8 +110,8 @@ public partial class World
         _attendanceGiftCount.Text = claimable > 9 ? "9+" : claimable.ToString();
         _attendanceGiftIcon.SelfModulate = TopIconColor(waiting);
         _attendanceGift.TooltipText = waiting
-            ? "Daily attendance — a reward is waiting"
-            : "Daily attendance";
+            ? Localization.Loc.Tr("Daily attendance — a reward is waiting")
+            : Localization.Loc.Tr("Daily attendance");
 
         if (_attendanceGiftBlink != null && _attendanceGiftBlink.IsValid())
             _attendanceGiftBlink.Kill();
@@ -155,7 +155,7 @@ public partial class World
     {
         _attendanceLayer = new CanvasLayer { Layer = 74 };
         AddChild(_attendanceLayer);
-        _attendancePanel = new HudWindow("attendance", "Attendance", new Vector2(200, 110),
+        _attendancePanel = new HudWindow("attendance", Localization.Loc.Tr("Attendance"), new Vector2(200, 110),
             AttendanceBodyWidth, persistLayout: false) { Visible = false };
         _attendancePanel.Closed += CloseAttendance;
         _attendancePanel.Resized += CenterAttendancePanel;
@@ -165,7 +165,7 @@ public partial class World
         root.AddThemeConstantOverride("separation", 8);
 
         var header = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        header.AddChild(UiTheme.SectionTitle("Daily Rewards"));
+        header.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Daily Rewards")));
         _attendanceCountLabel = UiTheme.Text("", 12, UiTheme.TextLo, HorizontalAlignment.Right);
         _attendanceCountLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         header.AddChild(_attendanceCountLabel);
@@ -180,7 +180,7 @@ public partial class World
         _attendanceGrid = AttendanceCellGrid(AttendanceDailyColumns);
         root.AddChild(AttendanceSection(_attendanceGrid));
 
-        root.AddChild(UiTheme.SectionTitle("Cumulative Rewards"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Cumulative Rewards")));
 
         _attendanceBonusRow = AttendanceCellGrid(AttendanceBonusColumns);
         root.AddChild(AttendanceSection(_attendanceBonusRow));
@@ -282,8 +282,8 @@ public partial class World
         return result switch
         {
             0 or 200 => ItemData.Text(TextAttendanceClaimFailed, "Failed to obtain the item."),
-            Net.AttendanceClaimInventoryFull => "Your inventory is full. Free a slot and claim again.",
-            Net.AttendanceClaimTooHeavy => "You are carrying too much to take this reward.",
+            Net.AttendanceClaimInventoryFull => Localization.Loc.Tr("Your inventory is full. Free a slot and claim again."),
+            Net.AttendanceClaimTooHeavy => Localization.Loc.Tr("You are carrying too much to take this reward."),
             2 => ItemData.Text(TextAttendanceNoNoah, "You don't have enough noah."),
             20 => ItemData.Text(TextAttendanceNoNoahItem,
                 "Failed to obtain the item due to not enough Noah."),
@@ -444,9 +444,9 @@ public partial class World
     {
         var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         row.AddThemeConstantOverride("separation", 16);
-        row.AddChild(AttendanceLegendItem(AttendanceGlyph.Kind.Check, AttendanceClaimedColor, "Acquired"));
-        row.AddChild(AttendanceLegendItem(null, UiTheme.GoldBright, "Ready to claim"));
-        row.AddChild(AttendanceLegendItem(AttendanceGlyph.Kind.Lock, UiTheme.TextLo, "Not yet"));
+        row.AddChild(AttendanceLegendItem(AttendanceGlyph.Kind.Check, AttendanceClaimedColor, Localization.Loc.Tr("Acquired")));
+        row.AddChild(AttendanceLegendItem(null, UiTheme.GoldBright, Localization.Loc.Tr("Ready to claim")));
+        row.AddChild(AttendanceLegendItem(AttendanceGlyph.Kind.Lock, UiTheme.TextLo, Localization.Loc.Tr("Not yet")));
         return row;
     }
 

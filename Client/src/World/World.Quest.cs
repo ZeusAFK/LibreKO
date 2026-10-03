@@ -96,9 +96,9 @@ public partial class World
 
     private void OnQuestRewardRefused(QuestRewardRefusal reason) => CombatNotice(reason switch
     {
-        QuestRewardRefusal.WeightExceeded => "You are carrying too much to take the reward.",
-        QuestRewardRefusal.CoinsExceeded => "You are carrying too many coins to take the reward.",
-        _ => "Your inventory is full.",
+        QuestRewardRefusal.WeightExceeded => Localization.Loc.Tr("You are carrying too much to take the reward."),
+        QuestRewardRefusal.CoinsExceeded => Localization.Loc.Tr("You are carrying too many coins to take the reward."),
+        _ => Localization.Loc.Tr("Your inventory is full."),
     });
 
     private void BuildQuestLog()
@@ -119,7 +119,7 @@ public partial class World
                  })
         {
             int f = filter;
-            var b = UiTheme.TopTabButton(label, 13);
+            var b = UiTheme.TopTabButton(Localization.Loc.Tr(label), 13);
             b.ButtonGroup = statusGroup;
             b.Pressed += () => SetQuestFilter(f);
             _questSubBtns[label] = b;
@@ -139,7 +139,7 @@ public partial class World
                  })
         {
             var k = kind;
-            var b = UiTheme.TopTabButton(label, 11);
+            var b = UiTheme.TopTabButton(Localization.Loc.Tr(label), 11);
             b.ButtonGroup = kindGroup;
             b.Pressed += () => SetQuestKind(k);
             _questKindBtns[label] = b;
@@ -174,7 +174,7 @@ public partial class World
         box.AddThemeConstantOverride("separation", 7);
         panel.AddChild(box);
 
-        _questDetailEmpty = UiTheme.Text("Select a quest to see its details.", 12, UiTheme.TextDim,
+        _questDetailEmpty = UiTheme.Text(Localization.Loc.Tr("Select a quest to see its details."), 12, UiTheme.TextDim,
             HorizontalAlignment.Center);
         _questDetailEmpty.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         _questDetailEmpty.CustomMinimumSize = new Vector2(QuestDetailWidth, 0);
@@ -199,13 +199,13 @@ public partial class World
         detail.AddChild(_questDetailDesc);
 
         detail.AddChild(new HSeparator());
-        _questObjectiveTitle = UiTheme.SectionTitle("Objectives");
+        _questObjectiveTitle = UiTheme.SectionTitle(Localization.Loc.Tr("Objectives"));
         detail.AddChild(_questObjectiveTitle);
         _questObjectiveBox = new VBoxContainer();
         _questObjectiveBox.AddThemeConstantOverride("separation", 3);
         detail.AddChild(_questObjectiveBox);
 
-        _questRewardTitle = UiTheme.SectionTitle("Rewards");
+        _questRewardTitle = UiTheme.SectionTitle(Localization.Loc.Tr("Rewards"));
         detail.AddChild(_questRewardTitle);
         _questRewardBox = new HBoxContainer();
         _questRewardBox.AddThemeConstantOverride("separation", 5);
@@ -216,13 +216,13 @@ public partial class World
         var buttons = new HBoxContainer();
         buttons.AddThemeConstantOverride("separation", 5);
         detail.AddChild(buttons);
-        _questCompleteBtn = QuestActionButton("Turn in", "Talk to the quest NPC, then turn in your completed objectives");
+        _questCompleteBtn = QuestActionButton(Localization.Loc.Tr("Turn in"), Localization.Loc.Tr("Talk to the quest NPC, then turn in your completed objectives"));
         _questCompleteBtn.Pressed += CompleteSelectedQuest;
         buttons.AddChild(_questCompleteBtn);
-        _questAbandonBtn = QuestActionButton("Abandon", "Give up this quest");
+        _questAbandonBtn = QuestActionButton(Localization.Loc.Tr("Abandon"), Localization.Loc.Tr("Give up this quest"));
         _questAbandonBtn.Pressed += AbandonSelectedQuest;
         buttons.AddChild(_questAbandonBtn);
-        _questTrackBtn = QuestActionButton("Track", "Show this quest in the on-screen tracker");
+        _questTrackBtn = QuestActionButton(Localization.Loc.Tr("Track"), Localization.Loc.Tr("Show this quest in the on-screen tracker"));
         _questTrackBtn.Pressed += ToggleTrackSelectedQuest;
         buttons.AddChild(_questTrackBtn);
 
@@ -325,9 +325,9 @@ public partial class World
             var hint = UiTheme.Text(
                 _questFilter switch
                 {
-                    QuestFilterCompleted => "Nothing finished yet.",
-                    QuestFilterAvailable => "No quests are open to you right now.",
-                    _ => "No quests in progress.\nTalk to NPCs to find some.",
+                    QuestFilterCompleted => Localization.Loc.Tr("Nothing finished yet."),
+                    QuestFilterAvailable => Localization.Loc.Tr("No quests are open to you right now."),
+                    _ => Localization.Loc.Tr("No quests in progress.\nTalk to NPCs to find some."),
                 },
                 13, UiTheme.TextLo, HorizontalAlignment.Center);
             hint.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -362,9 +362,9 @@ public partial class World
 
     private static string QuestZoneName(int zone)
     {
-        if (zone == 0) return "Anywhere";
+        if (zone == 0) return Localization.Loc.Tr("Anywhere");
         foreach (var z in ZoneCatalog.All) if (z.Id == zone) return z.Name;
-        return $"Zone {zone}";
+        return $"{Localization.Loc.Tr("Zone")} {zone}";
     }
 
     private Control BuildQuestRow(int questId, int state, string selfName)
@@ -397,7 +397,7 @@ public partial class World
         row.AddChild(name);
 
         var facts = QuestFacts(questId);
-        var level = UiTheme.Text(facts.Level > 0 ? $"Lv. {facts.Level}" : "", 11, UiTheme.TextDim,
+        var level = UiTheme.Text(facts.Level > 0 ? $"{Localization.Loc.Tr("Lv.")} {facts.Level}" : "", 11, UiTheme.TextDim,
             HorizontalAlignment.Right);
         level.CustomMinimumSize = new Vector2(46, 0);
         level.MouseFilter = Control.MouseFilterEnum.Ignore;
@@ -411,7 +411,7 @@ public partial class World
         row.AddChild(progress);
 
         var track = UiTheme.FlatCheck("", _questTracked.Contains(questId));
-        track.TooltipText = "Track this quest on screen";
+        track.TooltipText = Localization.Loc.Tr("Track this quest on screen");
         track.Disabled = state is not (QuestStateActive or QuestStateReadyToTurnIn);
         track.Toggled += on => SetQuestTracked(questId, on);
         row.AddChild(track);
@@ -498,9 +498,9 @@ public partial class World
         var facts = QuestFacts(questId);
 
         _questDetailTitle.Text = QuestName(questId, selfName);
-        var sub = new List<string> { facts.Kind.ToString() };
-        if (facts.Level > 0) sub.Add($"Lv. {facts.Level}");
-        sub.Add(_questViews.TryGetValue(questId, out var view) ? view.StateLabel : StateName(state));
+        var sub = new List<string> { Localization.Loc.Tr(facts.Kind.ToString()) };
+        if (facts.Level > 0) sub.Add($"{Localization.Loc.Tr("Lv.")} {facts.Level}");
+        sub.Add(_questViews.TryGetValue(questId, out var view) ? view.StateLabel : Localization.Loc.Tr(StateName(state)));
         _questDetailSub.Text = string.Join("  ·  ", sub);
         _questDetailDesc.Text = QuestMarkup.Rich(QuestJournalSource(questId, selfName), selfName);
 
@@ -508,7 +508,7 @@ public partial class World
         _questObjectiveTitle.Text = QuestObjectiveHeading(
             QuestGroups(questId).Length > 0, QuestHandIns(questId).Any());
         if (_questObjectives.TryGetValue(questId, out var objectives) && objectives.AnyWillDo)
-            _questObjectiveBox.AddChild(QuestObjectiveRow("Complete any one:"));
+            _questObjectiveBox.AddChild(QuestObjectiveRow(Localization.Loc.Tr("Complete any one:")));
         var lines = KillProgressLines(questId);
         for (var group = 0; group < lines.Count; group++)
             _questObjectiveBox.AddChild(QuestObjectiveTarget(QuestObjectiveRow(lines[group]), questId, group,
@@ -519,7 +519,7 @@ public partial class World
                 $"{ItemData.DisplayName(want.ItemId)} {Mathf.Min(Inv.CountOf(want.ItemId), want.Count)}/{want.Count}"));
         if (_questObjectiveBox.GetChildCount() == 0)
             _questObjectiveBox.AddChild(QuestObjectiveRow(state == QuestStateReadyToTurnIn
-                ? "Ready to turn in"
+                ? Localization.Loc.Tr("Ready to turn in")
                 : QuestTalkToLine(questId, state)));
 
         foreach (var c in _questRewardBox.GetChildren()) { _questRewardBox.RemoveChild(c); c.QueueFree(); }
@@ -527,7 +527,7 @@ public partial class World
             _questRewardBox.AddChild(QuestRewardTile(reward.ItemId, reward.Count));
         _questRewardTitle.Visible = _questRewardBox.GetChildCount() > 0;
 
-        _questTrackBtn.Text = _questTracked.Contains(questId) ? "Untrack" : "Track";
+        _questTrackBtn.Text = _questTracked.Contains(questId) ? Localization.Loc.Tr("Untrack") : Localization.Loc.Tr("Track");
         _questTrackBtn.Disabled = state is not (QuestStateActive or QuestStateReadyToTurnIn);
         _questAbandonBtn.Disabled = state is not (QuestStateActive or QuestStateReadyToTurnIn)
             || _questViews.TryGetValue(questId, out var autoView) && autoView.AutoAccepted;
@@ -540,9 +540,9 @@ public partial class World
     {
         var npcs = _questViews.TryGetValue(questId, out var view)
             ? new[] { view.NpcId } : QuestData.NpcsForState(questId, state);
-        if (npcs.Length == 0) return "See the quest text";
+        if (npcs.Length == 0) return Localization.Loc.Tr("See the quest text");
         string who = NpcDisplayName(npcs[0]);
-        return state == 0 ? $"Ask {who} for this quest" : $"Report to {who}";
+        return state == 0 ? $"{Localization.Loc.Tr("Ask")} {who} {Localization.Loc.Tr("for this quest")}" : $"{Localization.Loc.Tr("Report to")} {who}";
     }
 
     private Control QuestRewardTile(int itemId, int count)
@@ -641,7 +641,7 @@ public partial class World
         foreach (var q in TrackedQuests())
         {
             bool done = q.State == QuestStateReadyToTurnIn;
-            var lines = done ? new List<string> { "Ready to turn in" } : KillProgressLines(q.QuestId);
+            var lines = done ? new List<string> { Localization.Loc.Tr("Ready to turn in") } : KillProgressLines(q.QuestId);
             if (lines.Count == 0) lines.Add(ShortObjective(q.QuestId, selfName));
             list.Add(new LibreKO.Plugins.GameQuestTrack(q.QuestId, QuestName(q.QuestId, selfName), done, lines));
         }
@@ -703,7 +703,7 @@ public partial class World
         button.AddThemeStyleboxOverride("hover", hover);
         button.AddThemeStyleboxOverride("focus", plate);
 
-        var label = TrackerText(done ? "Ready to turn in" : ShortObjective(questId, selfName),
+        var label = TrackerText(done ? Localization.Loc.Tr("Ready to turn in") : ShortObjective(questId, selfName),
                                 13, done ? UiTheme.Good : Colors.White);
         label.AutowrapMode = TextServer.AutowrapMode.Off;
         label.MouseFilter = Control.MouseFilterEnum.Ignore;
@@ -725,16 +725,16 @@ public partial class World
     private string ShortObjective(int questId, string selfName)
     {
         var kills = KillProgressLines(questId);
-        if (kills.Count > 0) return Clip($"Kill {kills[0]}");
+        if (kills.Count > 0) return Clip($"{Localization.Loc.Tr("Kill")} {kills[0]}");
 
         foreach (var want in QuestHandIns(questId))
-            return Clip($"Bring {ItemData.DisplayName(want.ItemId)} "
+            return Clip($"{Localization.Loc.Tr("Bring")} {ItemData.DisplayName(want.ItemId)} "
                         + $"{Mathf.Min(Inv.CountOf(want.ItemId), want.Count)}/{want.Count}");
 
         var npcs = _questViews.TryGetValue(questId, out var view)
             ? new[] { view.NpcId } : QuestData.NpcsForState(questId, QuestStateActive);
         if (npcs.Length > 0)
-            return Clip($"Talk to {NpcDisplayName(npcs[0])}");
+            return Clip($"{Localization.Loc.Tr("Talk to")} {NpcDisplayName(npcs[0])}");
 
         string text = QuestJournal(questId, selfName);
         if (string.IsNullOrWhiteSpace(text)) text = QuestName(questId, selfName);
@@ -801,7 +801,7 @@ public partial class World
 
         if (q.State == 3)
         {
-            objectiveBox.AddChild(TrackerObjective("Ready to turn in", UiTheme.Good));
+            objectiveBox.AddChild(TrackerObjective(Localization.Loc.Tr("Ready to turn in"), UiTheme.Good));
         }
         else
         {
@@ -832,7 +832,7 @@ public partial class World
         };
         pager.AddThemeConstantOverride("separation", 5);
 
-        var prev = UiTheme.IconButton("<", "Previous quest page");
+        var prev = UiTheme.IconButton("<", Localization.Loc.Tr("Previous quest page"));
         prev.CustomMinimumSize = new Vector2(28, 22);
         prev.AddThemeFontSizeOverride("font_size", 12);
         prev.Disabled = _trackerPage <= 0;
@@ -850,7 +850,7 @@ public partial class World
         page.MouseFilter = Control.MouseFilterEnum.Ignore;
         pager.AddChild(page);
 
-        var next = UiTheme.IconButton(">", "Next quest page");
+        var next = UiTheme.IconButton(">", Localization.Loc.Tr("Next quest page"));
         next.CustomMinimumSize = new Vector2(28, 22);
         next.AddThemeFontSizeOverride("font_size", 12);
         next.Disabled = _trackerPage >= _trackerPageCount - 1;
@@ -894,7 +894,7 @@ public partial class World
             int firstNpc = groups[g].Npcs[0];
             string mob = _questObjectives.TryGetValue(questId, out var goals) && goals.Groups[g].Name is { } named
                 ? named
-                : firstNpc is Nations.Karus or Nations.ElMorad ? $"{Nations.Name(firstNpc)} players"
+                : firstNpc is Nations.Karus or Nations.ElMorad ? $"{Nations.Name(firstNpc)} {Localization.Loc.Tr("players")}"
                 : GameData.I != null ? GameData.I.NpcName(firstNpc, true) : $"#{firstNpc}";
             lines.Add($"{mob} {Mathf.Min(cur, target)}/{target}");
         }
@@ -1090,7 +1090,7 @@ public partial class World
             int firstNpc = groups[g].Npcs[0];
             string mob = _questObjectives.TryGetValue(questId, out var goals) && goals.Groups[g].Name is { } named
                 ? named
-                : firstNpc is Nations.Karus or Nations.ElMorad ? $"{Nations.Name(firstNpc)} players"
+                : firstNpc is Nations.Karus or Nations.ElMorad ? $"{Nations.Name(firstNpc)} {Localization.Loc.Tr("players")}"
                 : GameData.I != null ? GameData.I.NpcName(firstNpc, true) : $"#{firstNpc}";
             int cur = counts != null && g < counts.Length ? counts[g] : 0;
             yield return (mob, Mathf.Min(cur, groups[g].Count), groups[g].Count);
@@ -1140,7 +1140,7 @@ public partial class World
 
     private string QuestNameSource(int questId, string selfName) =>
         _questViews.TryGetValue(questId, out var view)
-            ? string.IsNullOrEmpty(view.Title) ? $"Quest {questId}" : view.Title
+            ? string.IsNullOrEmpty(view.Title) ? $"{Localization.Loc.Tr("Quest")} {questId}" : view.Title
         : _questStrings.TryGetValue(questId, out var text) && text.Title.Length > 0
             ? text.Title
             : QuestData.Name(questId, selfName);

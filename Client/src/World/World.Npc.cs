@@ -123,7 +123,7 @@ public partial class World
         _vendorNpcId = npcUniqueId;
         _vendorNpcName = e.Name.Length > 0
             ? e.Name
-            : GameData.I != null ? GameData.I.NpcName(e.NpcId, false) : "Merchant";
+            : GameData.I != null ? GameData.I.NpcName(e.NpcId, false) : Localization.Loc.Tr("Merchant");
 
         Net.I.SendNpcEvent(npcUniqueId);
         Net.I.SendWarpListRequest(e.NpcId);
@@ -166,7 +166,7 @@ public partial class World
         _npcLayer = new CanvasLayer { Layer = 73 };
         AddChild(_npcLayer);
 
-        _npcPanel = new HudWindow("npc_dialog", "NPC", new Vector2(430, 160), 420) { Visible = false };
+        _npcPanel = new HudWindow("npc_dialog", Localization.Loc.Tr("NPC"), new Vector2(430, 160), 420) { Visible = false };
         _npcPanel.Closed += CloseNpcDialog;
         _npcLayer.AddChild(_npcPanel);
 
@@ -229,7 +229,7 @@ public partial class World
         _npcDialogScript = dlg.ScriptFile;
         if (dlg.HeaderText is { Length: > 0 } body)
             BeginNpcDialog(
-                GameData.I != null ? GameData.I.NpcName(dlg.NpcId, false) : $"NPC #{dlg.NpcId}",
+                GameData.I != null ? GameData.I.NpcName(dlg.NpcId, false) : $"{Localization.Loc.Tr("NPC")} #{dlg.NpcId}",
                 body);
         else
             BeginNpcDialog(dlg.NpcId, dlg.HeaderTextId);
@@ -244,7 +244,7 @@ public partial class World
         }
 
         if (shown == 0 && !_npcBodyEmpty)
-            AddNpcMenuButton($"{++shown}.   Close", CloseNpcDialog);
+            AddNpcMenuButton($"{++shown}.   {Localization.Loc.Tr("Close")}", CloseNpcDialog);
         EndNpcDialog(shown);
     }
 
@@ -255,7 +255,7 @@ public partial class World
             npcId, QuestStateOf, Sheet.Level, _selfClass, Net.I.LastEnter.Nation, _zone);
         _npcOfferPage = 0;
         _npcOfferHeader = QuestText.Talk(textId, Net.I.LastEnter.Name ?? "");
-        _npcOfferTitle = GameData.I != null ? GameData.I.NpcName(npcId, false) : $"NPC #{npcId}";
+        _npcOfferTitle = GameData.I != null ? GameData.I.NpcName(npcId, false) : $"{Localization.Loc.Tr("NPC")} #{npcId}";
         ShowNpcOfferPage();
     }
 
@@ -265,7 +265,7 @@ public partial class World
         if (_npcOffers.Count == 0)
         {
             if (_npcBodyEmpty) { CloseNpcDialog(); return; }
-            AddNpcMenuButton("Close", CloseNpcDialog);
+            AddNpcMenuButton(Localization.Loc.Tr("Close"), CloseNpcDialog);
             EndNpcDialog(1);
             return;
         }
@@ -280,14 +280,14 @@ public partial class World
             string name = QuestData.Name(offer.QuestId, Net.I.LastEnter.Name ?? "");
             string tag = offer.State switch
             {
-                QuestStateActive => "[In progress] ",
-                QuestStateReadyToTurnIn => "[Ready] ",
+                QuestStateActive => Localization.Loc.Tr("[In progress] "),
+                QuestStateReadyToTurnIn => Localization.Loc.Tr("[Ready] "),
                 _ => "",
             };
             AddNpcMenuButton($"{++shown}.   {tag}{name}", () => AcceptNpcOffer(offer));
         }
         if (pages > 1)
-            AddNpcMenuButton($"{++shown}.   Next page  ({_npcOfferPage + 1}/{pages})",
+            AddNpcMenuButton($"{++shown}.   {Localization.Loc.Tr("Next page")}  ({_npcOfferPage + 1}/{pages})",
                 () => { _npcOfferPage++; ShowNpcOfferPage(); });
 
         EndNpcDialog(shown);
@@ -301,7 +301,7 @@ public partial class World
 
     private void BeginNpcDialog(int npcId, int textId) =>
         BeginNpcDialog(
-            GameData.I != null ? GameData.I.NpcName(npcId, false) : $"NPC #{npcId}",
+            GameData.I != null ? GameData.I.NpcName(npcId, false) : $"{Localization.Loc.Tr("NPC")} #{npcId}",
             QuestText.Talk(textId, Net.I.LastEnter.Name ?? ""));
 
     private void BeginNpcDialog(string title, string body)
@@ -325,7 +325,7 @@ public partial class World
             var run = act;
             AddNpcMenuButton($"{++shown}.   {label}", () => { CloseNpcDialog(); run(); });
         }
-        AddNpcMenuButton($"{++shown}.   Close", CloseNpcDialog);
+        AddNpcMenuButton($"{++shown}.   {Localization.Loc.Tr("Close")}", CloseNpcDialog);
         EndNpcDialog(shown);
     }
 
@@ -419,6 +419,6 @@ public partial class World
 
     private void OnNpcWindow(GameOpcodes op)
     {
-        Chat.Info("This NPC's service isn't available yet.");
+        Chat.Info(Localization.Loc.Tr("This NPC's service isn't available yet."));
     }
 }

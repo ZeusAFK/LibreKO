@@ -18,14 +18,14 @@ public partial class World
     {
         _instanceLayer = new CanvasLayer { Layer = 74 };
         AddChild(_instanceLayer);
-        _instancePanel = new HudWindow("instance", "Instance Dungeons", new Vector2(200, 130)) { Visible = false };
+        _instancePanel = new HudWindow("instance", Localization.Loc.Tr("Instance Dungeons"), new Vector2(200, 130)) { Visible = false };
         _instancePanel.Closed += CloseInstance;
         _instanceLayer.AddChild(_instancePanel);
         var root = _instancePanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Instance Dungeons"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Instance Dungeons")));
 
-        _instanceStatus = UiTheme.Text("Not inside an instance.", 12, UiTheme.TextLo);
+        _instanceStatus = UiTheme.Text(Localization.Loc.Tr("Not inside an instance."), 12, UiTheme.TextLo);
         root.AddChild(_instanceStatus);
 
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(360, 320), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
@@ -76,47 +76,47 @@ public partial class World
             vb.AddThemeConstantOverride("separation", 1);
             bool eligible = _instanceMyLevel >= inst.MinLevel;
             vb.AddChild(UiTheme.Text(inst.Name, 13, eligible ? UiTheme.TextHi : UiTheme.TextLo));
-            vb.AddChild(UiTheme.Text($"Lv {inst.MinLevel}+   Party {inst.PartySize}", 11, UiTheme.TextLo));
+            vb.AddChild(UiTheme.Text($"Lv {inst.MinLevel}+   {Localization.Loc.Tr("Party")} {inst.PartySize}", 11, UiTheme.TextLo));
             hb.AddChild(vb);
 
             if (_instanceCurrent == inst.Id)
             {
-                hb.AddChild(UiTheme.Text("Inside", 12, UiTheme.Gold));
+                hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Inside"), 12, UiTheme.Gold));
             }
             else if (_instanceCurrent != 0)
             {
-                hb.AddChild(UiTheme.Text("Busy", 12, UiTheme.TextLo));
+                hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Busy"), 12, UiTheme.TextLo));
             }
             else if (eligible)
             {
                 int id = inst.Id;
-                var btn = new Button { Text = "Enter", FocusMode = Control.FocusModeEnum.None };
+                var btn = new Button { Text = Localization.Loc.Tr("Enter"), FocusMode = Control.FocusModeEnum.None };
                 btn.Pressed += () => Net.I.SendInstanceEnter(id);
                 hb.AddChild(btn);
             }
             else
             {
-                hb.AddChild(UiTheme.Text("Locked", 12, UiTheme.TextLo));
+                hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Locked"), 12, UiTheme.TextLo));
             }
             _instanceList.AddChild(row);
         }
 
         if (_instanceCurrent != 0)
         {
-            var leave = new Button { Text = "Leave Instance", FocusMode = Control.FocusModeEnum.None };
+            var leave = new Button { Text = Localization.Loc.Tr("Leave Instance"), FocusMode = Control.FocusModeEnum.None };
             leave.Pressed += () => Net.I.SendInstanceLeave();
             _instanceList.AddChild(leave);
         }
 
         if (_instanceList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No instances available.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No instances available.");
             _instanceList.AddChild(e);
         }
 
         _instanceStatus.Text = _instanceCurrent != 0
-            ? $"Inside instance #{_instanceCurrent}."
-            : "Not inside an instance.";
+            ? $"{Localization.Loc.Tr("Inside instance")} #{_instanceCurrent}."
+            : Localization.Loc.Tr("Not inside an instance.");
     }
 
     private void OnInstanceEnter(int instanceId, bool ok)

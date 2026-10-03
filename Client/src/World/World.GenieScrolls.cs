@@ -21,8 +21,8 @@ public partial class World
 
     private void BuildGenieScrollOptions(VBoxContainer parent)
     {
-        parent.AddChild(UiTheme.SectionTitle("Automatic Scrolls"));
-        _genieAutoScrolls = new CheckButton { Text = "Use Selected Scrolls" };
+        parent.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Automatic Scrolls")));
+        _genieAutoScrolls = new CheckButton { Text = Localization.Loc.Tr("Use Selected Scrolls") };
         parent.AddChild(_genieAutoScrolls);
         var row = new HBoxContainer();
         parent.AddChild(row);
@@ -36,8 +36,8 @@ public partial class World
             row.AddChild(button);
             _genieScrollButtons[i] = button;
         }
-        parent.AddChild(UiTheme.Text("Select inventory buff scrolls. Reapplies only after the buff expires.", 11, UiTheme.TextLo));
-        _genieScrollStatus = UiTheme.Text("Scroll automation is off.", 11, UiTheme.TextLo);
+        parent.AddChild(UiTheme.Text(Localization.Loc.Tr("Select inventory buff scrolls. Reapplies only after the buff expires."), 11, UiTheme.TextLo));
+        _genieScrollStatus = UiTheme.Text(Localization.Loc.Tr("Scroll automation is off."), 11, UiTheme.TextLo);
         parent.AddChild(_genieScrollStatus);
         _genieScrollPicker = new PopupMenu();
         _genieLayer.AddChild(_genieScrollPicker);
@@ -65,7 +65,7 @@ public partial class World
     {
         _genieScrollEditing = slot;
         _genieScrollPicker.Clear();
-        _genieScrollPicker.AddItem("Clear Slot", 0);
+        _genieScrollPicker.AddItem(Localization.Loc.Tr("Clear Slot"), 0);
         var added = new HashSet<int>();
         int choices = 0;
         for (int i = GridStart; i < Inv.Length; i++)
@@ -75,7 +75,7 @@ public partial class World
             choices++;
             _genieScrollPicker.AddIconItem(ItemData.Icon(id), $"{ItemData.DisplayName(id)} ({CountInBackpack(id)})", id);
         }
-        if (choices == 0) _genieScrollStatus.Text = "No scrolls found in your inventory.";
+        if (choices == 0) _genieScrollStatus.Text = Localization.Loc.Tr("No scrolls found in your inventory.");
         _genieScrollPicker.Position = (Vector2I)_genieScrollButtons[slot].GetGlobalRect().End;
         _genieScrollPicker.Popup();
     }
@@ -88,12 +88,12 @@ public partial class World
             _genieScrollButtons[i].Icon = id > 0 ? ItemData.Icon(id) : null;
             _genieScrollButtons[i].Text = id > 0 ? "" : "+";
             _genieScrollButtons[i].TooltipText = id > 0
-                ? $"{ItemData.DisplayName(id)} — {CountInBackpack(id)} remaining"
-                : "Select a buff scroll from your inventory";
+                ? $"{ItemData.DisplayName(id)} — {CountInBackpack(id)} {Localization.Loc.Tr("remaining")}"
+                : Localization.Loc.Tr("Select a buff scroll from your inventory");
         }
         _genieScrollStatus.Text = _genieAutoScrolls.ButtonPressed
-            ? "Selected scrolls will be used while Genie is running."
-            : "Scroll automation is off.";
+            ? Localization.Loc.Tr("Selected scrolls will be used while Genie is running.")
+            : Localization.Loc.Tr("Scroll automation is off.");
     }
 
     private void SaveGenieScrollSettings(ConfigFile config)
@@ -137,7 +137,7 @@ public partial class World
             var skill = GenieScrollSkill(itemId);
             if (skill == null || GenieHasActiveBuff(skill, now)) continue;
             if (CountInBackpack(itemId) <= 0)
-            { _genieScrollStatus.Text = $"Out of scrolls: {ItemData.DisplayName(itemId)}"; continue; }
+            { _genieScrollStatus.Text = $"{Localization.Loc.Tr("Out of scrolls:")} {ItemData.DisplayName(itemId)}"; continue; }
             if (_genieScrollRetryAt.TryGetValue(skill.Id, out double retry) && retry > now) continue;
             if (!SkillRequirementMet(skill) || !SkillData.IsGranted(skill.Tree, SelfTransformModel())
                 || !SkillReady(skill, now)) continue;
@@ -151,7 +151,7 @@ public partial class World
             _selectedId = _myId;
             try { UseHotItem(itemId); }
             finally { _selectedId = selected; }
-            _genieScrollStatus.Text = $"Using {ItemData.DisplayName(itemId)}…";
+            _genieScrollStatus.Text = $"{Localization.Loc.Tr("Using")} {ItemData.DisplayName(itemId)}…";
             return true;
         }
         return false;

@@ -187,7 +187,7 @@ public partial class World
     private void UpdateStatusHud()
     {
         if (_kcLabel == null || !IsInstanceValid(_kcLabel)) return;
-        _kcLabel.Text = $"KC {Sheet.KnightCash:n0}";
+        _kcLabel.Text = $"{Localization.Loc.Tr("KC")} {Sheet.KnightCash:n0}";
     }
 
     private static string MapName(int zone) => ZoneCatalog.Name(zone);

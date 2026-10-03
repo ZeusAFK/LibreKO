@@ -8,6 +8,15 @@ An open-source game server and client for a classic MMORPG, written in C# (.NET 
 Both are licensed under the GNU Affero General Public License v3.0, see [LICENSE](LICENSE).
 Third-party notices for the server are in [Server/NOTICES.md](Server/NOTICES.md).
 
+## Localization
+
+The client ships with an in-game language switcher supporting **English**, **Español** and
+**简体中文**. The Simplified Chinese dictionaries (UI, items, mobs, NPC names, skills, quests,
+texts and zones) live in `Client/assets/localization/` and are committed to this repository, so
+Chinese is available out of the box. Switch languages from the Settings screen (Settings → Language),
+or set `language=2` under `[game]` in `settings.cfg`. Chinese characters (names, chat, clan names)
+are supported end to end — both the client and the server encode packet strings as UTF-8.
+
 ## Requirements
 
 - .NET 10 SDK

@@ -30,7 +30,7 @@ public partial class World
         var headerRow = new HBoxContainer();
         headerRow.AddThemeConstantOverride("separation", 8);
         header.AddChild(headerRow);
-        var title = UiTheme.Text("Menu", 18, UiTheme.TextHi);
+        var title = UiTheme.Text(Localization.Loc.Tr("Menu"), 18, UiTheme.TextHi);
         title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         headerRow.AddChild(title);
 
@@ -42,14 +42,14 @@ public partial class World
         vb.AddThemeConstantOverride("separation", 6);
         margin.AddChild(vb);
 
-        AddEscButton(vb, "Resume", () => ToggleEsc(false), "Return to the world");
-        AddEscButton(vb, "Change Character", () =>
+        AddEscButton(vb, Localization.Loc.Tr("Resume"), () => ToggleEsc(false), Localization.Loc.Tr("Return to the world"));
+        AddEscButton(vb, Localization.Loc.Tr("Change Character"), () =>
         {
             Net.I.ReturnToCharSelect();
             GetTree().ChangeSceneToFile("res://scenes/CharSelect.tscn");
-        }, "Return to character selection");
-        AddEscButton(vb, "Settings", () => { ToggleEsc(false); SettingsPanel.Open(this); }, "Open graphics and game settings");
-        AddEscButton(vb, "Exit", OnExitGame, "Close the game");
+        }, Localization.Loc.Tr("Return to character selection"));
+        AddEscButton(vb, Localization.Loc.Tr("Settings"), () => { ToggleEsc(false); SettingsPanel.Open(this); }, Localization.Loc.Tr("Open graphics and game settings"));
+        AddEscButton(vb, Localization.Loc.Tr("Exit"), OnExitGame, Localization.Loc.Tr("Close the game"));
 
         _hudEditLayer = new CanvasLayer { Layer = 109, Visible = false };
         AddChild(_hudEditLayer);
@@ -64,7 +64,7 @@ public partial class World
         editBanner.AddThemeStyleboxOverride("panel", UiTheme.Chip());
         _hudEditLayer.AddChild(editBanner);
         var editText = UiTheme.Text(
-            "HUD LAYOUT  ·  Drag the gold grips  ·  ESC to finish",
+            Localization.Loc.Tr("HUD LAYOUT  ·  Drag the gold grips  ·  ESC to finish"),
             13, UiTheme.GoldBright, HorizontalAlignment.Center);
         editText.MouseFilter = Control.MouseFilterEnum.Ignore;
         editBanner.AddChild(editText);

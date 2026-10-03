@@ -66,13 +66,13 @@ public partial class World : Node3D
     }
 
     private void OnClassEligibility(int code) =>
-        Chat.Info(code == 1 ? "You are eligible to change class." : "You cannot change class yet.");
+        Chat.Info(code == 1 ? Localization.Loc.Tr("You are eligible to change class.") : Localization.Loc.Tr("You cannot change class yet."));
 
     private void OnClassPromoted(int charId, int newClass)
     {
         if (charId != _myId && charId != Net.I.LastEnter.CharId) return;
         ApplyClassChange(newClass);
-        Chat.Info($"You are now a {CharacterClassCatalog.SpecializationName(newClass)}!");
+        Chat.Info($"{Localization.Loc.Tr("You are now a")} {CharacterClassCatalog.SpecializationName(newClass)}!");
     }
 
     private void ApplyClassChange(int newClass)
@@ -87,10 +87,10 @@ public partial class World : Node3D
     {
         Chat.Info(code switch
         {
-            1 => "Class changed!",
-            4 => "Take off your equipment before changing class.",
-            6 => "You need a job-change scroll (and a different class).",
-            _ => "Class change failed.",
+            1 => Localization.Loc.Tr("Class changed!"),
+            4 => Localization.Loc.Tr("Take off your equipment before changing class."),
+            6 => Localization.Loc.Tr("You need a job-change scroll (and a different class)."),
+            _ => Localization.Loc.Tr("Class change failed."),
         });
     }
 
@@ -175,7 +175,7 @@ public partial class World : Node3D
         _stTitleBtn = new Button
         {
             FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Choose the title shown above your name",
+            TooltipText = Localization.Loc.Tr("Choose the title shown above your name"),
             Alignment = HorizontalAlignment.Left,
             SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin,
         };
@@ -185,10 +185,10 @@ public partial class World : Node3D
 
         var presetBtn = new Button
         {
-            Text = "Stat Preset",
+            Text = Localization.Loc.Tr("Stat Preset"),
             FocusMode = Control.FocusModeEnum.None,
             SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
-            TooltipText = "Plan a stat or mastery spread",
+            TooltipText = Localization.Loc.Tr("Plan a stat or mastery spread"),
         };
         presetBtn.Pressed += TogglePreset;
         header.AddChild(presetBtn);
@@ -196,21 +196,21 @@ public partial class World : Node3D
 
     private void BuildStatsProgress(VBoxContainer root)
     {
-        var section = StatsSection(root, "Progress", out _);
+        var section = StatsSection(root, Localization.Loc.Tr("Progress"), out _);
 
         var top = new HBoxContainer();
         top.AddThemeConstantOverride("separation", 10);
         section.AddChild(top);
-        _stLevelLbl = StatsPairField(top, "Level");
+        _stLevelLbl = StatsPairField(top, Localization.Loc.Tr("Level"));
         top.AddChild(new VSeparator());
-        _stNationLbl = StatsPairField(top, "Nation");
+        _stNationLbl = StatsPairField(top, Localization.Loc.Tr("Nation"));
 
         section.AddChild(StatsRule());
 
         var expRow = new HBoxContainer();
         expRow.AddThemeConstantOverride("separation", 10);
         section.AddChild(expRow);
-        var expCaption = UiTheme.Text("EXP", 13, UiTheme.TextLo);
+        var expCaption = UiTheme.Text(Localization.Loc.Tr("EXP"), 13, UiTheme.TextLo);
         expCaption.CustomMinimumSize = new Vector2(70, 0);
         expRow.AddChild(expCaption);
 
@@ -234,7 +234,7 @@ public partial class World : Node3D
         section.AddChild(_stExpLbl);
 
         section.AddChild(StatsRule());
-        _stNpLbl = StatsCaptionRow(section, "Contribution");
+        _stNpLbl = StatsCaptionRow(section, Localization.Loc.Tr("Contribution"));
     }
 
     private void BuildStatsCombat(HBoxContainer parent)
@@ -245,11 +245,11 @@ public partial class World : Node3D
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
         };
         parent.AddChild(column);
-        var section = StatsSection(column, "Combat", out _, fill: true);
+        var section = StatsSection(column, Localization.Loc.Tr("Combat"), out _, fill: true);
 
-        _stApLbl = StatsCombatEntry(section, "system/combat-attack", "Attack", UiTheme.GoldBright);
+        _stApLbl = StatsCombatEntry(section, "system/combat-attack", Localization.Loc.Tr("Attack"), UiTheme.GoldBright);
         section.AddChild(StatsRule());
-        _stAcLbl = StatsCombatEntry(section, "system/combat-defence", "Defence", UiTheme.TextLo);
+        _stAcLbl = StatsCombatEntry(section, "system/combat-defence", Localization.Loc.Tr("Defence"), UiTheme.TextLo);
     }
 
     private static Label StatsCombatEntry(VBoxContainer section, string icon, string caption, Color tint)
@@ -273,9 +273,9 @@ public partial class World : Node3D
     {
         var column = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         parent.AddChild(column);
-        var section = StatsSection(column, "Attributes", out var titleRow);
+        var section = StatsSection(column, Localization.Loc.Tr("Attributes"), out var titleRow);
 
-        titleRow.AddChild(UiTheme.Text("Stat Point", 12, UiTheme.TextLo));
+        titleRow.AddChild(UiTheme.Text(Localization.Loc.Tr("Stat Point"), 12, UiTheme.TextLo));
         _stBonusLbl = UiTheme.Text("0", 13, UiTheme.GoldBright, HorizontalAlignment.Center);
         _stBonusLbl.CustomMinimumSize = new Vector2(26, 0);
         var pointFrame = new PanelContainer();
@@ -298,7 +298,7 @@ public partial class World : Node3D
             line.AddChild(UiIcons.Image(
                 StatIcons[row], new Vector2(StatsIconSize, StatsIconSize), StatIconTints[row]));
 
-            var name = UiTheme.Text(StatLabels[row], 13, UiTheme.GoldBright);
+            var name = UiTheme.Text(Localization.Loc.Tr(StatLabels[row]), 13, UiTheme.GoldBright);
             name.CustomMinimumSize = new Vector2(42, 0);
             line.AddChild(name);
 
@@ -315,7 +315,7 @@ public partial class World : Node3D
                 Text = "+",
                 CustomMinimumSize = new Vector2(30, 24),
                 FocusMode = Control.FocusModeEnum.None,
-                TooltipText = $"Spend a point on {StatLabels[row]}",
+                TooltipText = $"{Localization.Loc.Tr("Spend a point on")} {Localization.Loc.Tr(StatLabels[row])}",
             };
             btn.Pressed += () => OnAllocate(index);
             _statBtns[row] = btn;
@@ -326,7 +326,7 @@ public partial class World : Node3D
 
     private void BuildStatsResistance(VBoxContainer parent)
     {
-        var section = StatsSection(parent, "Resistance", out _, fill: true);
+        var section = StatsSection(parent, Localization.Loc.Tr("Resistance"), out _, fill: true);
         for (int index = 0; index < CharacterSheet.ResistCount; index++)
         {
             if (index > 0) section.AddChild(StatsRule());
@@ -340,7 +340,7 @@ public partial class World : Node3D
         line.AddThemeConstantOverride("separation", 8);
         line.AddChild(UiIcons.Image(
             ResistIcons[index], new Vector2(StatsResistIconSize, StatsResistIconSize), ResistTints[index]));
-        line.AddChild(UiTheme.Text(ResistLabels[index], 12, UiTheme.TextLo));
+        line.AddChild(UiTheme.Text(Localization.Loc.Tr(ResistLabels[index]), 12, UiTheme.TextLo));
 
         _resistLbls[index] = UiTheme.Text("0", 13, UiTheme.TextHi, HorizontalAlignment.Right);
         _resistLbls[index].SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
@@ -419,7 +419,7 @@ public partial class World : Node3D
 
         if (_stHeaderName == null) return;
         var info = Net.I.LastEnter;
-        _stHeaderName.Text = $"{info.Name}    Lv {Sheet.LevelLabel}";
+        _stHeaderName.Text = $"{info.Name}    {Localization.Loc.Tr("Lv")} {Sheet.LevelLabel}";
         _stHeaderSub.Text = $"{ClassName(info.Class)}   •   {Nations.Name(info.Nation)}";
         RefreshTitleButton();
 
@@ -478,7 +478,7 @@ public partial class World : Node3D
         if (gained > 0)
         {
             Floaters?.Gold(gained);
-            CombatLogAdd($"You picked up {gained:n0} coins.", CombatLogKind.Resource);
+            CombatLogAdd($"{Localization.Loc.Tr("You picked up")} {gained:n0} {Localization.Loc.Tr("coins")}.", CombatLogKind.Resource);
         }
         RefreshStatsUI();
     }
@@ -497,7 +497,7 @@ public partial class World : Node3D
         if (gained > 0)
         {
             Floaters?.Exp(gained);
-            CombatLogAdd($"You gained {gained:n0} experience.", CombatLogKind.Resource);
+            CombatLogAdd($"{Localization.Loc.Tr("You gained")} {gained:n0} {Localization.Loc.Tr("experience")}.", CombatLogKind.Resource);
         }
         RefreshStatsUI();
     }
@@ -536,8 +536,8 @@ public partial class World : Node3D
         Sheet.ApplyLoyalty(np);
         if (gained != 0 && Sheet.Level > 0)
             CombatLogAdd(gained > 0
-                ? $"You gained {gained:n0} National Points."
-                : $"You lost {-gained:n0} National Points.", CombatLogKind.Resource);
+                ? $"{Localization.Loc.Tr("You gained")} {gained:n0} {Localization.Loc.Tr("National Points")}."
+                : $"{Localization.Loc.Tr("You lost")} {-gained:n0} {Localization.Loc.Tr("National Points")}.", CombatLogKind.Resource);
         RefreshStatsUI();
     }
 

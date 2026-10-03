@@ -49,7 +49,7 @@ public partial class World
         _petLayer = new CanvasLayer { Layer = 75 };
         AddChild(_petLayer);
 
-        _petPanel = new HudWindow("pet", "Familiar", new Vector2(90, 140), 280) { Visible = false };
+        _petPanel = new HudWindow("pet", Localization.Loc.Tr("Familiar"), new Vector2(90, 140), 280) { Visible = false };
         _petPanel.Closed += ClosePet;
         _petLayer.AddChild(_petPanel);
 
@@ -65,28 +65,28 @@ public partial class World
         _petLevelLbl = UiTheme.Text("", 13, UiTheme.TextLo, HorizontalAlignment.Right);
         header.AddChild(_petLevelLbl);
 
-        _petHpBar = PetBar(root, "HP", UiTheme.Hp);
-        _petMpBar = PetBar(root, "MP", UiTheme.Mp);
-        _petExpBar = PetBar(root, "EXP", UiTheme.Gold);
-        _petSatBar = PetBar(root, "Satisfaction", UiTheme.Good);
+        _petHpBar = PetBar(root, Localization.Loc.Tr("HP"), UiTheme.Hp);
+        _petMpBar = PetBar(root, Localization.Loc.Tr("MP"), UiTheme.Mp);
+        _petExpBar = PetBar(root, Localization.Loc.Tr("EXP"), UiTheme.Gold);
+        _petSatBar = PetBar(root, Localization.Loc.Tr("Satisfaction"), UiTheme.Good);
 
         root.AddChild(UiTheme.Rule());
-        root.AddChild(UiTheme.SectionTitle("Mode"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Mode")));
         var modes = new HBoxContainer();
         modes.AddThemeConstantOverride("separation", 6);
         root.AddChild(modes);
-        _petAttackBtn = PetModeButton(modes, "Attack", PetSheet.ModeAttack);
-        _petDefendBtn = PetModeButton(modes, "Defend", PetSheet.ModeDefence);
-        _petLootBtn = PetModeButton(modes, "Loot", PetSheet.ModeLooting);
+        _petAttackBtn = PetModeButton(modes, Localization.Loc.Tr("Attack"), PetSheet.ModeAttack);
+        _petDefendBtn = PetModeButton(modes, Localization.Loc.Tr("Defend"), PetSheet.ModeDefence);
+        _petLootBtn = PetModeButton(modes, Localization.Loc.Tr("Loot"), PetSheet.ModeLooting);
 
         root.AddChild(UiTheme.Rule());
         var actions = new HBoxContainer();
         actions.AddThemeConstantOverride("separation", 8);
         root.AddChild(actions);
-        _petFeedBtn = UiTheme.ActionButton("Feed", "Give your familiar the most filling food in your bag");
+        _petFeedBtn = UiTheme.ActionButton(Localization.Loc.Tr("Feed"), Localization.Loc.Tr("Give your familiar the most filling food in your bag"));
         _petFeedBtn.Pressed += FeedPet;
         actions.AddChild(_petFeedBtn);
-        _petDismissBtn = UiTheme.ActionButton("Dismiss", "Send your familiar away");
+        _petDismissBtn = UiTheme.ActionButton(Localization.Loc.Tr("Dismiss"), Localization.Loc.Tr("Send your familiar away"));
         _petDismissBtn.Pressed += DismissPet;
         actions.AddChild(_petDismissBtn);
 
@@ -153,14 +153,14 @@ public partial class World
         if (Net.I.Pet is not { } pet) return;
         if (pet.Satisfaction >= PetSheet.MaxSatisfaction)
         {
-            SetPetStatus("Your familiar is already full.", false);
+            SetPetStatus(Localization.Loc.Tr("Your familiar is already full."), false);
             return;
         }
 
         int slot = BestPetFoodSlot();
         if (slot < 0)
         {
-            SetPetStatus("You have no familiar food.", true);
+            SetPetStatus(Localization.Loc.Tr("You have no familiar food."), true);
             return;
         }
         Net.I.SendPetFeed(slot - GridStart, Inv[slot].ItemId);
@@ -189,7 +189,7 @@ public partial class World
     private void OnPetSummoned(PetSheet pet)
     {
         SetPetStatus("", false);
-        CombatNotice($"{pet.Name} answers your call.");
+        CombatNotice($"{pet.Name} {Localization.Loc.Tr("answers your call.")}");
         RefreshPetUI();
     }
 
@@ -203,33 +203,33 @@ public partial class World
     {
         CombatNotice(mode switch
         {
-            PetSheet.ModeAttack => "Familiar Attack Mode",
-            PetSheet.ModeLooting => "Familiar Looting Mode",
-            _ => "Familiar Defense Mode",
+            PetSheet.ModeAttack => Localization.Loc.Tr("Familiar Attack Mode"),
+            PetSheet.ModeLooting => Localization.Loc.Tr("Familiar Looting Mode"),
+            _ => Localization.Loc.Tr("Familiar Defense Mode"),
         });
         RefreshPetUI();
     }
 
     private void OnPetExp(long gained)
     {
-        if (gained > 0) CombatNotice($"Familiar awarded {gained} EXP.");
-        else if (gained < 0) CombatNotice($"Familiar has lost {-gained} EXP.");
+        if (gained > 0) CombatNotice($"{Localization.Loc.Tr("Familiar awarded")} {gained} {Localization.Loc.Tr("EXP")}.");
+        else if (gained < 0) CombatNotice($"{Localization.Loc.Tr("Familiar has lost")} {-gained} {Localization.Loc.Tr("EXP")}.");
         RefreshPetUI();
     }
 
     private void OnPetFed(int bagSlot, int itemId, int countLeft, int increase)
     {
-        SetPetStatus($"{increase / 100f:0.00}% satisfaction rate increase", false);
+        SetPetStatus($"{increase / 100f:0.00}% {Localization.Loc.Tr("satisfaction rate increase")}", false);
         RefreshPetUI();
     }
 
     private void OnPetFoodRefused(int itemId) =>
-        SetPetStatus($"Your familiar would not eat the {ItemData.DisplayName(itemId)}.", true);
+        SetPetStatus($"{Localization.Loc.Tr("Your familiar would not eat the")} {ItemData.DisplayName(itemId)}.", true);
 
     private void OnPetStrike(int targetId, int damage)
     {
         if (damage <= 0 || !_ents.TryGetValue(targetId, out var target)) return;
-        CombatNotice($"Familiar on {target.Name} inflicted {damage} damage.");
+        CombatNotice($"{Localization.Loc.Tr("Familiar on")} {target.Name} {Localization.Loc.Tr("inflicted")} {damage} {Localization.Loc.Tr("damage.")}");
     }
 
     private void RefreshPetUI() => ShowPetSheet(Net.I.Pet);
@@ -250,13 +250,13 @@ public partial class World
             if (equipped.IsLinked && Net.I.PetItems.TryGetValue(equipped.UniqueId, out var info))
             {
                 _petNameLbl.Text = info.Name;
-                _petLevelLbl.Text = $"Lv {info.Level}";
+                _petLevelLbl.Text = $"{Localization.Loc.Tr("Lv")} {info.Level}";
                 _petExpBar.SetFraction(info.ExpPercent / (float)PetSheet.ExpPercentScale, $"{info.ExpPercent / 100f:0.00}%");
                 _petSatBar.SetFraction(info.Satisfaction / (float)PetSheet.MaxSatisfaction, $"{info.Satisfaction / 100f:0.00}%");
             }
             else
             {
-                _petNameLbl.Text = "Familiar";
+                _petNameLbl.Text = Localization.Loc.Tr("Familiar");
                 _petLevelLbl.Text = "";
                 _petExpBar.SetFraction(0f, "");
                 _petSatBar.SetFraction(0f, "");
@@ -264,13 +264,13 @@ public partial class World
             _petHpBar.SetFraction(0f, "");
             _petMpBar.SetFraction(0f, "");
             HighlightPetMode(-1);
-            if (_petStatus.Text.Length == 0) SetPetStatus(PetNoneText, false);
+            if (_petStatus.Text.Length == 0) SetPetStatus(Localization.Loc.Tr(PetNoneText), false);
             return;
         }
 
-        if (_petStatus.Text == PetNoneText) SetPetStatus("", false);
+        if (_petStatus.Text == Localization.Loc.Tr(PetNoneText)) SetPetStatus("", false);
         _petNameLbl.Text = pet.Name;
-        _petLevelLbl.Text = $"Lv {pet.Level}";
+        _petLevelLbl.Text = $"{Localization.Loc.Tr("Lv")} {pet.Level}";
         _petHpBar.Set(pet.Hp, pet.MaxHp);
         _petMpBar.Set(pet.Mp, pet.MaxMp);
         _petExpBar.SetFraction(pet.ExpFraction, $"{pet.ExpPercent / 100f:0.00}%");

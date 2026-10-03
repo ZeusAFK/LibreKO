@@ -65,9 +65,9 @@ public partial class World
     private void OnUpgradeNotice(bool ok, string name, int itemId)
     {
         string item = ItemData.DisplayName(itemId);
-        if (string.IsNullOrEmpty(item)) item = $"item {itemId}";
-        string verb = ok ? "successfully upgraded" : "failed to upgrade";
-        string line = $"{name} has {verb} {item}!";
+        if (string.IsNullOrEmpty(item)) item = $"{Localization.Loc.Tr("item")} {itemId}";
+        string verb = ok ? Localization.Loc.Tr("successfully upgraded") : Localization.Loc.Tr("failed to upgrade");
+        string line = $"{name} {Localization.Loc.Tr("has")} {verb} {item}!";
 
         ShowUpgradeNoticeBanner(line, ok ? UpgradeNoticeGold : UpgradeNoticeFail);
         string colHex = ok ? "ffd98a" : "ff9a6a";

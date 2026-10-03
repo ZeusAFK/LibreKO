@@ -27,23 +27,23 @@ public partial class World
         if (Platform.TouchUi) BuildTownButton();
         else
             _hudLauncher.AddChild(LauncherButton(
-                "system/home", "Go to town", TownRecallPress, town: true));
+                "system/home", Localization.Loc.Tr("Go to town"), TownRecallPress, town: true));
         _hudLauncher.AddChild(LauncherButton(
-            "game/helmet", "Character Info", () => ToggleMainWindow("Character")));
+            "game/helmet", Localization.Loc.Tr("Character Info"), () => ToggleMainWindow("Character")));
         _hudLauncher.AddChild(LauncherButton(
-            "game/main-hand", "Skills", () => ToggleMainWindow("Skills")));
+            "game/main-hand", Localization.Loc.Tr("Skills"), () => ToggleMainWindow("Skills")));
         _hudLauncher.AddChild(LauncherButton(
-            "system/bag", "Inventory", () => ToggleMainWindow("Inventory")));
+            "system/bag", Localization.Loc.Tr("Inventory"), () => ToggleMainWindow("Inventory")));
         _hudLauncher.AddChild(LauncherButton(
-            "system/users-three", "Party", ToggleParty));
+            "system/users-three", Localization.Loc.Tr("Party"), ToggleParty));
         _hudLauncher.AddChild(LauncherButton(
-            "system/sparkle", "Genie", ToggleGenie));
+            "system/sparkle", Localization.Loc.Tr("Genie"), ToggleGenie));
 
         if (Platform.TouchUi)
         {
             _hudLauncher.AddChild(LauncherButton(
-                "system/scroll", "Quest Journal", () => ToggleMainWindow("Quests")));
-            _hudLauncher.AddChild(LauncherMenuButton("Settings", () => SettingsPanel.Open(this)));
+                "system/scroll", Localization.Loc.Tr("Quest Journal"), () => ToggleMainWindow("Quests")));
+            _hudLauncher.AddChild(LauncherMenuButton(Localization.Loc.Tr("Settings"), () => SettingsPanel.Open(this)));
         }
 
         int slots = _hudLauncher.GetChildCount();
@@ -60,7 +60,7 @@ public partial class World
 
     private void BuildTownButton()
     {
-        _townButton = LauncherButton("system/home", "Go to town",
+        _townButton = LauncherButton("system/home", Localization.Loc.Tr("Go to town"),
                                      TownRecallPress, town: true);
         _hudLauncherLayer.AddChild(_townButton);
         HudPlacement.TownButton.ApplyTo(_townButton);

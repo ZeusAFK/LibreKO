@@ -15,19 +15,19 @@ public partial class World
     {
         _globalMapLayer = new CanvasLayer { Layer = 74 };
         AddChild(_globalMapLayer);
-        _globalMapPanel = new HudWindow("globalmap", "World Map", new Vector2(180, 120)) { Visible = false };
+        _globalMapPanel = new HudWindow("globalmap", Localization.Loc.Tr("World Map"), new Vector2(180, 120)) { Visible = false };
         _globalMapPanel.Closed += CloseGlobalMap;
         _globalMapLayer.AddChild(_globalMapPanel);
 
         var root = _globalMapPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("World Map"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("World Map")));
 
         var header = new HBoxContainer();
         header.AddThemeConstantOverride("separation", 8);
-        var hZone = UiTheme.Text("Zone", 12, UiTheme.TextLo); hZone.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        var hPop = UiTheme.Text("Players", 12, UiTheme.TextLo); hPop.CustomMinimumSize = new Vector2(70, 0);
-        var hOwner = UiTheme.Text("Nation", 12, UiTheme.TextLo); hOwner.CustomMinimumSize = new Vector2(90, 0);
+        var hZone = UiTheme.Text(Localization.Loc.Tr("Zone"), 12, UiTheme.TextLo); hZone.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        var hPop = UiTheme.Text(Localization.Loc.Tr("Players"), 12, UiTheme.TextLo); hPop.CustomMinimumSize = new Vector2(70, 0);
+        var hOwner = UiTheme.Text(Localization.Loc.Tr("Nation"), 12, UiTheme.TextLo); hOwner.CustomMinimumSize = new Vector2(90, 0);
         header.AddChild(hZone);
         header.AddChild(hPop);
         header.AddChild(hOwner);
@@ -92,21 +92,21 @@ public partial class World
 
         if (_globalMapList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No zones available.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No zones available.");
             _globalMapList.AddChild(e);
         }
         else
         {
-            var footer = UiTheme.Text($"Total players online: {total}", 12, UiTheme.Gold);
+            var footer = UiTheme.Text($"{Localization.Loc.Tr("Total players online")}: {total}", 12, UiTheme.Gold);
             _globalMapList.AddChild(footer);
         }
     }
 
     private static string GlobalMapNationName(byte nation) => nation switch
     {
-        1 => "Karus",
-        2 => "El Morad",
-        _ => "Neutral",
+        1 => Localization.Loc.Tr("Karus"),
+        2 => Localization.Loc.Tr("El Morad"),
+        _ => Localization.Loc.Tr("Neutral"),
     };
 
     private Color GlobalMapNationColor(byte nation) => nation switch

@@ -247,7 +247,7 @@ public partial class World
         _collisionsOff = !on;
         ApplyCollisionPolicy();
         RefreshAdminCollisionSwitch();
-        Chat.Info(on ? "Collision enabled." : "Collision disabled — you now walk through everything.");
+        Chat.Info(on ? Localization.Loc.Tr("Collision enabled.") : Localization.Loc.Tr("Collision disabled — you now walk through everything."));
     }
 
     private bool RunLocalCommand(string command)

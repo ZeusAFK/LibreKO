@@ -59,8 +59,8 @@ public partial class Notice : CanvasLayer
     {
         if (PluginHost.Ui.DialogBuilder is { } pluginDialog)
         {
-            _request = new DialogRequest(title, message, confirmText ?? "OK",
-                confirmText == null ? null : cancelText ?? "Cancel", dismissable, Accept, Decline, Close);
+            _request = new DialogRequest(Localization.Loc.Tr(title), Localization.Loc.Tr(message), confirmText ?? Localization.Loc.Tr("OK"),
+                confirmText == null ? null : cancelText ?? Localization.Loc.Tr("Cancel"), dismissable, Accept, Decline, Close);
             AddChild(pluginDialog(_request));
             return;
         }
@@ -102,7 +102,7 @@ public partial class Notice : CanvasLayer
         bar.AddThemeStyleboxOverride("panel", barBox);
         vb.AddChild(bar);
 
-        var heading = new Label { Text = title, HorizontalAlignment = HorizontalAlignment.Center };
+        var heading = new Label { Text = Localization.Loc.Tr(title), HorizontalAlignment = HorizontalAlignment.Center };
         heading.AddThemeFontSizeOverride("font_size", 17);
         heading.AddThemeColorOverride("font_color", UiTheme.GoldBright);
         bar.AddChild(heading);
@@ -115,7 +115,7 @@ public partial class Notice : CanvasLayer
 
         _message = new Label
         {
-            Text = message,
+            Text = Localization.Loc.Tr(message),
             HorizontalAlignment = HorizontalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         };
@@ -130,7 +130,7 @@ public partial class Notice : CanvasLayer
 
         if (confirmText == null)
         {
-            _ok = Ui.MenuButton("OK (ENTER)", height: 36, fontSize: 16);
+            _ok = Ui.MenuButton(Localization.Loc.Tr("OK (ENTER)"), height: 36, fontSize: 16);
             _ok.Pressed += Close;
             footer.AddChild(_ok);
             return;
@@ -145,7 +145,7 @@ public partial class Notice : CanvasLayer
         _ok.Pressed += Accept;
         row.AddChild(_ok);
 
-        _cancel = Ui.MenuButton(cancelText ?? "Cancel", height: 36, fontSize: 16);
+        _cancel = Ui.MenuButton(cancelText ?? Localization.Loc.Tr("Cancel"), height: 36, fontSize: 16);
         _cancel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _cancel.Pressed += Decline;
         row.AddChild(_cancel);

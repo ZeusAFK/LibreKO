@@ -67,7 +67,7 @@ public static class ZoneCatalog
     public static string Name(int zoneId)
     {
         foreach (var z in All)
-            if (z.Id == zoneId) return z.Name;
+            if (z.Id == zoneId) return Localization.Loc.ZoneName(zoneId, z.Name);
         return $"Zone {zoneId}";
     }
 

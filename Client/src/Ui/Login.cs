@@ -70,7 +70,7 @@ public partial class Login : Control
         if (StartAtServers)
         {
             StartAtServers = false;
-            EnterServerMode("Loading servers…");
+            EnterServerMode(Localization.Loc.Tr("Loading servers…"));
             LoginNet.I.RequestServerList();
         }
         else if (SavedAccount.Any)
@@ -82,7 +82,7 @@ public partial class Login : Control
         {
             string message = PendingNotice;
             PendingNotice = "";
-            Notice.Show(this, message, "Disconnected");
+            Notice.Show(this, message, Localization.Loc.Tr("Disconnected"));
         }
     }
 
@@ -92,24 +92,24 @@ public partial class Login : Control
         _card.AddThemeConstantOverride("separation", 8);
         parent.AddChild(_card);
 
-        _card.AddChild(Ui.Legend("Welcome to LibreKO", 30, UiTheme.GoldBright));
+        _card.AddChild(Ui.Legend(Localization.Loc.Tr("Welcome to LibreKO"), 30, UiTheme.GoldBright));
         if (Platform.PointerUi)
         {
-            _card.AddChild(Ui.Legend("Enter your credentials", 15, UiTheme.TextHi));
+            _card.AddChild(Ui.Legend(Localization.Loc.Tr("Enter your credentials"), 15, UiTheme.TextHi));
             _card.AddChild(Spacer(10));
         }
 
-        _card.AddChild(FieldLabel("Username"));
-        _card.AddChild(_user = new LineEdit { PlaceholderText = "username" });
-        _card.AddChild(FieldLabel("Password"));
-        _card.AddChild(_pass = new LineEdit { PlaceholderText = "password", Secret = true });
+        _card.AddChild(FieldLabel(Localization.Loc.Tr("Username")));
+        _card.AddChild(_user = new LineEdit { PlaceholderText = Localization.Loc.Tr("username") });
+        _card.AddChild(FieldLabel(Localization.Loc.Tr("Password")));
+        _card.AddChild(_pass = new LineEdit { PlaceholderText = Localization.Loc.Tr("password"), Secret = true });
         Ui.StyleField(_user);
         Ui.StyleField(_pass);
         _card.AddChild(BuildRememberRow());
         if (Platform.PointerUi) _card.AddChild(Spacer(6));
 
-        AddMenuButton(_card, "Login", OnLoginPressed);
-        Ui.ActionGroup(_card, ("Settings", OpenSettings), ("Exit", OnExit));
+        AddMenuButton(_card, Localization.Loc.Tr("Login"), OnLoginPressed);
+        Ui.ActionGroup(_card, (Localization.Loc.Tr("Settings"), OpenSettings), (Localization.Loc.Tr("Exit"), OnExit));
 
         Ui.SoftScrim(_card);
         _user.Text = SavedAccount.Name;
@@ -123,7 +123,7 @@ public partial class Login : Control
     {
         _remember = new CheckButton
         {
-            Text = "Keep me signed in",
+            Text = Localization.Loc.Tr("Keep me signed in"),
             ButtonPressed = SavedAccount.Any,
             FocusMode = FocusModeEnum.None,
             CustomMinimumSize = new Vector2(0, Platform.Pick(30, Ui.TouchButtonHeight)),
@@ -145,17 +145,17 @@ public partial class Login : Control
         _session.AddThemeConstantOverride("separation", 8);
         parent.AddChild(_session);
 
-        _session.AddChild(Ui.Legend("Welcome back", 30, UiTheme.GoldBright));
+        _session.AddChild(Ui.Legend(Localization.Loc.Tr("Welcome back"), 30, UiTheme.GoldBright));
         _session.AddChild(Ui.Legend(SavedAccount.Name, 20, UiTheme.Gold));
         _sessionStatus = Ui.Legend("", 14, UiTheme.TextLo);
         _sessionStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         _sessionStatus.CustomMinimumSize = new Vector2(0, 40);
         _session.AddChild(_sessionStatus);
 
-        _continue = AddMenuButton(_session, "Continue", OnContinue);
+        _continue = AddMenuButton(_session, Localization.Loc.Tr("Continue"), OnContinue);
         _continue.Disabled = true;
-        Ui.ActionGroup(_session, ("Log out", OnForgetAccount), ("Settings", OpenSettings),
-                       ("Close game", OnExit));
+        Ui.ActionGroup(_session, (Localization.Loc.Tr("Log out"), OnForgetAccount), (Localization.Loc.Tr("Settings"), OpenSettings),
+                       (Localization.Loc.Tr("Close game"), OnExit));
 
         Ui.SoftScrim(_session);
     }
@@ -168,7 +168,7 @@ public partial class Login : Control
         _card.Visible = false;
         _session.Visible = true;
         _continue.Disabled = true;
-        _sessionStatus.Text = "Signing in…";
+        _sessionStatus.Text = Localization.Loc.Tr("Signing in…");
         LoginNet.I.ConnectToLoginServer();
     }
 
@@ -186,7 +186,7 @@ public partial class Login : Control
     private void OnServerListShown()
     {
         int count = _serverBox.GetChildCount();
-        _serverStatus.Text = count == 1 ? "1 server available." : $"{count} servers available.";
+        _serverStatus.Text = count == 1 ? Localization.Loc.Tr("1 server available.") : $"{count} {Localization.Loc.Tr("servers available.")}";
     }
 
     private void OnForgetAccount() => SignOut(clearUser: true);
@@ -226,7 +226,7 @@ public partial class Login : Control
         vb.AddThemeConstantOverride("separation", 10);
         margin.AddChild(vb);
 
-        vb.AddChild(Ui.Legend("Game Servers", 22, UiTheme.GoldBright));
+        vb.AddChild(Ui.Legend(Localization.Loc.Tr("Game Servers"), 22, UiTheme.GoldBright));
 
         _serverStatus = Ui.Legend("", 13, UiTheme.TextLo);
         _serverStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -243,7 +243,7 @@ public partial class Login : Control
         _serverBox.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(_serverBox);
 
-        Ui.ActionGroup(vb, ("Settings", OpenSettings), ("Logout", OnLogout), ("Exit game", OnExit));
+        Ui.ActionGroup(vb, (Localization.Loc.Tr("Settings"), OpenSettings), (Localization.Loc.Tr("Logout"), OnLogout), (Localization.Loc.Tr("Exit game"), OnExit));
         return panel;
     }
 
@@ -295,7 +295,7 @@ public partial class Login : Control
 
         var pop = new Label
         {
-            Text = full ? "FULL" : $"{players} / {max} online",
+            Text = full ? Localization.Loc.Tr("FULL") : $"{players} / {max} {Localization.Loc.Tr("online")}",
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             VerticalAlignment = VerticalAlignment.Center,
         };
@@ -304,7 +304,7 @@ public partial class Login : Control
         row.AddChild(pop);
 
         var chosen = s;
-        var pick = Ui.MenuButton("Select", height: 30, fontSize: 15);
+        var pick = Ui.MenuButton(Localization.Loc.Tr("Select"), height: 30, fontSize: 15);
         pick.CustomMinimumSize = new Vector2(96, 30);
         pick.Pressed += () => Pick(chosen);
         Audio.HookButton(pick);
@@ -319,12 +319,12 @@ public partial class Login : Control
         if (_loginPending) return;
         if (_user.Text.StripEdges().Length == 0)
         {
-            Notice.Show(this, "Please enter a username.");
+            Notice.Show(this, Localization.Loc.Tr("Please enter a username."));
             return;
         }
 
         _loginPending = true;
-        _busy = Notice.Busy(this, $"Connecting to {Config.ServerHost}:{Config.ServerPort} …");
+        _busy = Notice.Busy(this, $"{Localization.Loc.Tr("Connecting to")} {Config.ServerHost}:{Config.ServerPort} …");
         LoginNet.I.ConnectToLoginServer();
     }
 
@@ -333,11 +333,11 @@ public partial class Login : Control
         if (!_loginPending) return;
         if (_resuming)
         {
-            _sessionStatus.Text = $"Server online (v{v}). Signing in…";
+            _sessionStatus.Text = $"{Localization.Loc.Tr("Server online")} (v{v}). {Localization.Loc.Tr("Signing in…")}";
             LoginNet.I.Login(SavedAccount.Name, SavedAccount.Password);
             return;
         }
-        _busy?.SetMessage($"Server online (v{v}). Signing in…");
+        _busy?.SetMessage($"{Localization.Loc.Tr("Server online")} (v{v}). {Localization.Loc.Tr("Signing in…")}");
         LoginNet.I.Login(_user.Text.StripEdges(), _pass.Text);
     }
 
@@ -351,12 +351,12 @@ public partial class Login : Control
             if (!ok)
             {
                 _sessionStatus.Text = LoginResults.Describe(result)
-                                      + " Log out to sign in with different details.";
-                _continue.Text = "Try again";
+                                      + Localization.Loc.Tr(" Log out to sign in with different details.");
+                _continue.Text = Localization.Loc.Tr("Try again");
                 _continue.Disabled = false;
                 return;
             }
-            _sessionStatus.Text = "Loading servers…";
+            _sessionStatus.Text = Localization.Loc.Tr("Loading servers…");
             LoginNet.I.RequestServerList();
             return;
         }
@@ -368,7 +368,7 @@ public partial class Login : Control
         }
         if (_remember.ButtonPressed) SavedAccount.Save(_user.Text.StripEdges(), _pass.Text);
         else SavedAccount.Forget();
-        EnterServerMode("Loading servers…");
+        EnterServerMode(Localization.Loc.Tr("Loading servers…"));
         LoginNet.I.RequestServerList();
     }
 
@@ -377,17 +377,17 @@ public partial class Login : Control
         _loginPending = false;
         CloseBusy();
         Notice.Confirm(this,
-            info.Describe() + "\n\nDisconnect it and continue?",
-            "Disconnect it", "Cancel",
+            info.Describe() + "\n\n" + Localization.Loc.Tr("Disconnect it and continue?"),
+            Localization.Loc.Tr("Disconnect it"), Localization.Loc.Tr("Cancel"),
             () => KickThenSignIn(info),
             null,
-            "Account already in use");
+            Localization.Loc.Tr("Account already in use"));
     }
 
     private void KickThenSignIn(AccountInUse info)
     {
         _loginPending = true;
-        _busy = Notice.Busy(this, $"Closing the session on {info.Where}…");
+        _busy = Notice.Busy(this, $"{Localization.Loc.Tr("Closing the session on")} {info.Where}…");
         var (account, password) = LoginNet.I.Credentials();
         AccountKick.Request(this, Config.GameHostFor(info.Host), info.Port, account, password,
             code => OnLoginServerKickResult(code, info));
@@ -399,7 +399,7 @@ public partial class Login : Control
 
         if (code is AccountKickCode.Done or AccountKickCode.NotOnline)
         {
-            _busy = Notice.Busy(this, "Signing in…");
+            _busy = Notice.Busy(this, Localization.Loc.Tr("Signing in…"));
             LoginNet.I.RetryLogin();
             return;
         }
@@ -408,36 +408,36 @@ public partial class Login : Control
 
         if (code == AccountKickCode.Rejected)
         {
-            Notice.Show(this, $"{info.Where} refused the request — the account or password did not match.");
+            Notice.Show(this, $"{info.Where} {Localization.Loc.Tr("refused the request — the account or password did not match.")}");
             return;
         }
 
         Notice.Confirm(this,
-            $"{info.Where} did not answer, so the other session could not be closed.\n\nSign in anyway?",
-            "Sign in anyway", "Cancel",
+            $"{info.Where} {Localization.Loc.Tr("did not answer, so the other session could not be closed.\n\nSign in anyway?")}",
+            Localization.Loc.Tr("Sign in anyway"), Localization.Loc.Tr("Cancel"),
             () =>
             {
                 _loginPending = true;
-                _busy = Notice.Busy(this, "Signing in…");
+                _busy = Notice.Busy(this, Localization.Loc.Tr("Signing in…"));
                 LoginNet.I.RetryLogin(LoginRequestFlags.IgnoreOnlineClaim);
             },
             null,
-            "Server unreachable");
+            Localization.Loc.Tr("Server unreachable"));
     }
 
     private void OnGameAccountInUse(AccountInUse info)
     {
         CloseBusy();
         Notice.Confirm(this,
-            info.Describe() + "\n\nDisconnect it and continue?",
-            "Disconnect it", "Cancel",
+            info.Describe() + "\n\n" + Localization.Loc.Tr("Disconnect it and continue?"),
+            Localization.Loc.Tr("Disconnect it"), Localization.Loc.Tr("Cancel"),
             () =>
             {
-                _busy = Notice.Busy(this, "Closing the other session…");
+                _busy = Notice.Busy(this, Localization.Loc.Tr("Closing the other session…"));
                 Net.I.SendKickOut();
             },
             () => Net.I.Disconnect(expected: true),
-            "Account already in use");
+            Localization.Loc.Tr("Account already in use"));
     }
 
     private void OnKickResult(AccountKickCode code)
@@ -446,13 +446,13 @@ public partial class Login : Control
 
         if (code is AccountKickCode.Done or AccountKickCode.NotOnline)
         {
-            _busy = Notice.Busy(this, "Signing in…");
+            _busy = Notice.Busy(this, Localization.Loc.Tr("Signing in…"));
             Net.I.RetryLogin();
             return;
         }
 
         Net.I.Disconnect(expected: true);
-        Notice.Show(this, "The server refused the takeover request.");
+        Notice.Show(this, Localization.Loc.Tr("The server refused the takeover request."));
     }
 
     private void OnServerList(List<LoginNet.ServerEntry> servers)
@@ -461,22 +461,22 @@ public partial class Login : Control
         _serversReady = servers.Count > 0;
         if (servers.Count == 0)
         {
-            _serverStatus.Text = "No servers online.";
-            if (_session.Visible) _sessionStatus.Text = "No servers are online right now.";
+            _serverStatus.Text = Localization.Loc.Tr("No servers online.");
+            if (_session.Visible) _sessionStatus.Text = Localization.Loc.Tr("No servers are online right now.");
             return;
         }
         foreach (var s in servers) _serverBox.AddChild(BuildServerCard(s));
         OnServerListShown();
 
         if (!_session.Visible) return;
-        _sessionStatus.Text = "Continue to server selection.";
-        _continue.Text = "Continue";
+        _sessionStatus.Text = Localization.Loc.Tr("Continue to server selection.");
+        _continue.Text = Localization.Loc.Tr("Continue");
         _continue.Disabled = false;
     }
 
     private void Pick(LoginNet.ServerEntry server)
     {
-        _busy = Notice.Busy(this, $"Connecting to {server.Name}…");
+        _busy = Notice.Busy(this, $"{Localization.Loc.Tr("Connecting to")} {server.Name}…");
         var (account, password) = LoginNet.I.Credentials();
         LoginNet.I.Disconnect(expected: true);
         Net.I.BeginGameLogin(Config.GameHostFor(server.Address), server.Port, account, password);
@@ -487,7 +487,7 @@ public partial class Login : Control
         CloseBusy();
         if (!ok)
         {
-            Notice.Show(this, "Game-server login failed.");
+            Notice.Show(this, Localization.Loc.Tr("Game-server login failed."));
             return;
         }
         GetTree().ChangeSceneToFile(nation == Nations.NotSelected
@@ -576,7 +576,7 @@ public partial class Login : Control
 
         var legal = new Label
         {
-            Text = Disclaimer,
+            Text = Localization.Loc.Tr(Disclaimer),
             MouseFilter = MouseFilterEnum.Ignore,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
@@ -591,7 +591,7 @@ public partial class Login : Control
         string text = $"v{Build.Version}";
         if (Config.Development) text += "  [dev]";
         if (Packs.Missing.Count > 0)
-            text += $"\nINCOMPLETE INSTALL — missing {string.Join(", ", Packs.Missing)}";
+            text += "\n" + Localization.Loc.Tr("INCOMPLETE INSTALL — missing ") + string.Join(", ", Packs.Missing);
 
         var label = new Label
         {
@@ -617,11 +617,11 @@ public partial class Login : Control
         if (_resuming && _session.Visible)
         {
             _sessionStatus.Text = e;
-            _continue.Text = "Try again";
+            _continue.Text = Localization.Loc.Tr("Try again");
             _continue.Disabled = false;
             return;
         }
-        Notice.Show(this, "Error: " + e);
+        Notice.Show(this, Localization.Loc.Tr("Error: ") + e);
     }
 
     private static Control Spacer(int h) => new() { CustomMinimumSize = new Vector2(0, h) };

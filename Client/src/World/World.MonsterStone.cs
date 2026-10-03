@@ -35,7 +35,7 @@ public partial class World
 
         DismissNestConfirm();
         string explain = ItemData.Get(itemId)?.Desc is { Length: > 0 } desc ? desc : skill.Name;
-        _nestConfirm = Notice.Confirm(this, explain, "Enter", "Cancel",
+        _nestConfirm = Notice.Confirm(this, explain, Localization.Loc.Tr("Enter"), Localization.Loc.Tr("Cancel"),
             () => ConfirmNestDungeon(itemId), () => _nestConfirm = null, name);
     }
 

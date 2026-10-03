@@ -15,12 +15,12 @@ public partial class World
     {
         _itemCombineLayer = new CanvasLayer { Layer = 73 };
         AddChild(_itemCombineLayer);
-        _itemCombinePanel = new HudWindow("itemcombine", "Item Combine", new Vector2(180, 120)) { Visible = false };
+        _itemCombinePanel = new HudWindow("itemcombine", Localization.Loc.Tr("Item Combine"), new Vector2(180, 120)) { Visible = false };
         _itemCombinePanel.Closed += CloseItemCombine;
         _itemCombineLayer.AddChild(_itemCombinePanel);
         var root = _itemCombinePanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Combine Items"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Combine Items")));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(360, 320), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
         _itemCombineList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -63,14 +63,14 @@ public partial class World
             name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             hb.AddChild(name);
             int recipeId = r.RecipeId;
-            var btn = new Button { Text = "Combine", FocusMode = Control.FocusModeEnum.None };
+            var btn = new Button { Text = Localization.Loc.Tr("Combine"), FocusMode = Control.FocusModeEnum.None };
             btn.Pressed += () => Net.I.SendItemCombine(recipeId);
             hb.AddChild(btn);
             _itemCombineList.AddChild(row);
         }
         if (_itemCombineList.GetChildCount() == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No recipes available.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No recipes available.");
             _itemCombineList.AddChild(e);
         }
     }

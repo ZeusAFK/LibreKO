@@ -55,18 +55,18 @@ public partial class World
         switch (_seasonalState)
         {
             case 1:
-                _seasonalLabel.Text = "❄  Santa Claus is flying over the realm!  ❄";
+                _seasonalLabel.Text = Localization.Loc.Tr("❄  Santa Claus is flying over the realm!  ❄");
                 _seasonalLayer.Visible = true;
-                if (announce) Chat.Info("A holiday event has begun — Santa Claus is flying overhead!");
+                if (announce) Chat.Info(Localization.Loc.Tr("A holiday event has begun — Santa Claus is flying overhead!"));
                 break;
             case 2:
-                _seasonalLabel.Text = "✧  An Angel descends upon the battlefield!  ✧";
+                _seasonalLabel.Text = Localization.Loc.Tr("✧  An Angel descends upon the battlefield!  ✧");
                 _seasonalLayer.Visible = true;
-                if (announce) Chat.Info("A holiday event has begun — an Angel graces the realm!");
+                if (announce) Chat.Info(Localization.Loc.Tr("A holiday event has begun — an Angel graces the realm!"));
                 break;
             default:
                 _seasonalLayer.Visible = false;
-                if (announce && _seasonalState == 0) Chat.Info("The holiday event has ended.");
+                if (announce && _seasonalState == 0) Chat.Info(Localization.Loc.Tr("The holiday event has ended."));
                 break;
         }
     }

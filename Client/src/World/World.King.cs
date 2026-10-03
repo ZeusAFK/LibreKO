@@ -48,33 +48,33 @@ public partial class World
         _kingLayer = new CanvasLayer { Layer = 75 };
         AddChild(_kingLayer);
 
-        _kingPanel = new HudWindow("king", "Nation King", new Vector2(170, 90)) { Visible = false };
+        _kingPanel = new HudWindow("king", Localization.Loc.Tr("Nation King"), new Vector2(170, 90)) { Visible = false };
         _kingPanel.Closed += CloseKing;
         _kingLayer.AddChild(_kingPanel);
         var r = _kingPanel.Body;
         r.AddThemeConstantOverride("separation", 8);
 
-        r.AddChild(UiTheme.SectionTitle("Election"));
+        r.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Election")));
         _kingScheduleLbl = HudStyle.Label(13);
-        _kingScheduleLbl.Text = "Checking election schedule...";
+        _kingScheduleLbl.Text = Localization.Loc.Tr("Checking election schedule...");
         r.AddChild(_kingScheduleLbl);
 
         var nomRow = new HBoxContainer(); nomRow.AddThemeConstantOverride("separation", 6);
-        _kingNomineeEdit = new LineEdit { PlaceholderText = "clan-chief name to nominate", CustomMinimumSize = new Vector2(200, 0) };
+        _kingNomineeEdit = new LineEdit { PlaceholderText = Localization.Loc.Tr("clan-chief name to nominate"), CustomMinimumSize = new Vector2(200, 0) };
         nomRow.AddChild(_kingNomineeEdit);
-        _kingNominateBtn = new Button { Text = "Nominate", FocusMode = Control.FocusModeEnum.None };
+        _kingNominateBtn = new Button { Text = Localization.Loc.Tr("Nominate"), FocusMode = Control.FocusModeEnum.None };
         _kingNominateBtn.Pressed += OnNominatePressed;
         nomRow.AddChild(_kingNominateBtn);
-        _kingResignBtn = new Button { Text = "Resign", FocusMode = Control.FocusModeEnum.None };
+        _kingResignBtn = new Button { Text = Localization.Loc.Tr("Resign"), FocusMode = Control.FocusModeEnum.None };
         _kingResignBtn.Pressed += () => Net.I.SendKingResign();
         nomRow.AddChild(_kingResignBtn);
         r.AddChild(nomRow);
 
         var candRow = new HBoxContainer(); candRow.AddThemeConstantOverride("separation", 6);
-        var candTitle = UiTheme.SectionTitle("Candidates");
+        var candTitle = UiTheme.SectionTitle(Localization.Loc.Tr("Candidates"));
         candTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         candRow.AddChild(candTitle);
-        var refreshBtn = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
+        var refreshBtn = new Button { Text = Localization.Loc.Tr("Refresh"), FocusMode = Control.FocusModeEnum.None };
         refreshBtn.Pressed += RefreshKing;
         candRow.AddChild(refreshBtn);
         r.AddChild(candRow);
@@ -83,19 +83,19 @@ public partial class World
 
         r.AddChild(new HSeparator());
 
-        r.AddChild(UiTheme.SectionTitle("Nation & King"));
+        r.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Nation & King")));
         _kingInfoLbl = HudStyle.Label(13);
-        _kingInfoLbl.Text = "King: (unknown)";
+        _kingInfoLbl.Text = $"{Localization.Loc.Tr("King")}: (unknown)";
         r.AddChild(_kingInfoLbl);
 
         var taxRow = new HBoxContainer(); taxRow.AddThemeConstantOverride("separation", 6);
-        _kingCollectBtn = new Button { Text = "Collect Tax", FocusMode = Control.FocusModeEnum.None };
+        _kingCollectBtn = new Button { Text = Localization.Loc.Tr("Collect Tax"), FocusMode = Control.FocusModeEnum.None };
         _kingCollectBtn.Pressed += () => Net.I.SendKingCollectTax();
         taxRow.AddChild(_kingCollectBtn);
-        var tariffLbl = HudStyle.Label(13); tariffLbl.Text = "Tariff %:"; taxRow.AddChild(tariffLbl);
+        var tariffLbl = HudStyle.Label(13); tariffLbl.Text = Localization.Loc.Tr("Tariff %:"); taxRow.AddChild(tariffLbl);
         _kingTariffEdit = new LineEdit { PlaceholderText = "0-10", CustomMinimumSize = new Vector2(60, 0) };
         taxRow.AddChild(_kingTariffEdit);
-        _kingSetTariffBtn = new Button { Text = "Set", FocusMode = Control.FocusModeEnum.None };
+        _kingSetTariffBtn = new Button { Text = Localization.Loc.Tr("Set"), FocusMode = Control.FocusModeEnum.None };
         _kingSetTariffBtn.Pressed += OnSetTariffPressed;
         taxRow.AddChild(_kingSetTariffBtn);
         r.AddChild(taxRow);
@@ -103,7 +103,7 @@ public partial class World
         _kingStatus = HudStyle.Label(13);
         r.AddChild(_kingStatus);
 
-        _kingNoticeView = new ConfirmationDialog { Title = "Campaign notice" };
+        _kingNoticeView = new ConfirmationDialog { Title = Localization.Loc.Tr("Campaign notice") };
         _kingNoticeView.GetCancelButton().Visible = false;
         _kingLayer.AddChild(_kingNoticeView);
     }
@@ -146,7 +146,7 @@ public partial class World
     private void OnNominatePressed()
     {
         string n = _kingNomineeEdit.Text.Trim();
-        if (n.Length < 2) { SetKingStatus("Enter the clan-chief's name to nominate.", true); return; }
+        if (n.Length < 2) { SetKingStatus(Localization.Loc.Tr("Enter the clan-chief's name to nominate."), true); return; }
         Net.I.SendKingNominate(n);
     }
 
@@ -155,14 +155,14 @@ public partial class World
         if (int.TryParse(_kingTariffEdit.Text.Trim(), out int t) && t >= 0 && t <= 10)
             Net.I.SendKingSetTariff(t);
         else
-            SetKingStatus("Tariff must be 0-10.", true);
+            SetKingStatus(Localization.Loc.Tr("Tariff must be 0-10."), true);
     }
 
     private void OnKingSchedule(bool active, int month, int day, int hour, int minute)
     {
         _kingScheduleLbl.Text = active
-            ? $"Next election: {month:00}/{day:00}  {hour:00}:{minute:00}"
-            : "No election is scheduled (no royal term active).";
+            ? $"{Localization.Loc.Tr("Next election")}: {month:00}/{day:00}  {hour:00}:{minute:00}"
+            : Localization.Loc.Tr("No election is scheduled (no royal term active).");
     }
 
     private void OnKingPollList(List<Net.KingCandidate> candidates)
@@ -171,7 +171,7 @@ public partial class World
         foreach (var c in _kingCandidateList.GetChildren()) c.QueueFree();
         if (candidates.Count == 0)
         {
-            var e = HudStyle.Label(13); e.Text = "No candidates have been nominated yet.";
+            var e = HudStyle.Label(13); e.Text = Localization.Loc.Tr("No candidates have been nominated yet.");
             _kingCandidateList.AddChild(e);
             return;
         }
@@ -185,12 +185,12 @@ public partial class World
             var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
             info.AddThemeConstantOverride("separation", -2);
             info.AddChild(UiTheme.Text(cand.Name, 13, UiTheme.TextHi));
-            info.AddChild(UiTheme.Text(cand.Clan.Length > 0 ? $"Clan: {cand.Clan}" : "No clan", 11, UiTheme.TextLo));
+            info.AddChild(UiTheme.Text(cand.Clan.Length > 0 ? $"{Localization.Loc.Tr("Clan")}: {cand.Clan}" : Localization.Loc.Tr("No clan"), 11, UiTheme.TextLo));
             hb.AddChild(info);
-            var noticeBtn = new Button { Text = "Notice", FocusMode = Control.FocusModeEnum.None };
+            var noticeBtn = new Button { Text = Localization.Loc.Tr("Notice"), FocusMode = Control.FocusModeEnum.None };
             noticeBtn.Pressed += () => Net.I.SendKingBoardRead(name);
             hb.AddChild(noticeBtn);
-            var voteBtn = new Button { Text = "Vote", FocusMode = Control.FocusModeEnum.None };
+            var voteBtn = new Button { Text = Localization.Loc.Tr("Vote"), FocusMode = Control.FocusModeEnum.None };
             voteBtn.Pressed += () => Net.I.SendKingVote(name);
             hb.AddChild(voteBtn);
             _kingCandidateList.AddChild(row);
@@ -201,11 +201,11 @@ public partial class World
     {
         SetKingStatus(result switch
         {
-            1  => "Nomination accepted.",
-            -2 => "Nominations aren't open right now.",
-            -3 => "You and the nominee must both be clan chiefs.",
-            -4 => "That candidate is already nominated.",
-            _  => "Nomination failed.",
+            1  => Localization.Loc.Tr("Nomination accepted."),
+            -2 => Localization.Loc.Tr("Nominations aren't open right now."),
+            -3 => Localization.Loc.Tr("You and the nominee must both be clan chiefs."),
+            -4 => Localization.Loc.Tr("That candidate is already nominated."),
+            _  => Localization.Loc.Tr("Nomination failed."),
         }, result != 1);
         if (result == 1) { _kingNomineeEdit.Text = ""; Net.I.SendKingPollList(); }
     }
@@ -214,12 +214,12 @@ public partial class World
     {
         SetKingStatus(result switch
         {
-            1  => "Your vote has been counted!",
-            -1 => "Voting isn't open (not in the election phase).",
-            -2 => "That candidate is no longer running.",
-            -3 => "You've already voted.",
-            -4 => "You must be level 20 to vote.",
-            _  => "Your vote couldn't be cast.",
+            1  => Localization.Loc.Tr("Your vote has been counted!"),
+            -1 => Localization.Loc.Tr("Voting isn't open (not in the election phase)."),
+            -2 => Localization.Loc.Tr("That candidate is no longer running."),
+            -3 => Localization.Loc.Tr("You've already voted."),
+            -4 => Localization.Loc.Tr("You must be level 20 to vote."),
+            _  => Localization.Loc.Tr("Your vote couldn't be cast."),
         }, result != 1);
     }
 
@@ -227,18 +227,18 @@ public partial class World
     {
         SetKingStatus(result switch
         {
-            1  => "You withdrew your candidacy.",
-            -1 => "You can only resign during the nomination phase.",
-            -2 => "You aren't a candidate.",
-            _  => "Couldn't resign.",
+            1  => Localization.Loc.Tr("You withdrew your candidacy."),
+            -1 => Localization.Loc.Tr("You can only resign during the nomination phase."),
+            -2 => Localization.Loc.Tr("You aren't a candidate."),
+            _  => Localization.Loc.Tr("Couldn't resign."),
         }, result != 1);
         if (result == 1) Net.I.SendKingPollList();
     }
 
     private void OnKingBoard(List<string> names, string notice)
     {
-        if (notice == "__write_ok__") { SetKingStatus("Campaign notice posted.", false); return; }
-        if (notice == "__write_fail__") { SetKingStatus("Couldn't post your campaign notice.", true); return; }
+        if (notice == "__write_ok__") { SetKingStatus(Localization.Loc.Tr("Campaign notice posted."), false); return; }
+        if (notice == "__write_fail__") { SetKingStatus(Localization.Loc.Tr("Couldn't post your campaign notice."), true); return; }
 
         if (notice.Length > 0)
         {
@@ -247,21 +247,21 @@ public partial class World
         }
         else if (names.Count == 0)
         {
-            SetKingStatus("This candidate hasn't posted a campaign notice.", false);
+            SetKingStatus(Localization.Loc.Tr("This candidate hasn't posted a campaign notice."), false);
         }
     }
 
     private void OnKingNpc(string kingName)
     {
         if (kingName.Length > 0)
-            Chat.Info($"[Kingdom] The reigning king is {kingName}.");
+            Chat.Info($"[Kingdom] {Localization.Loc.Tr("The reigning king is")} {kingName}.");
     }
 
     private void OnKingNationIntro(string kingName, int treasury, int tariff)
     {
         _kingInfoLbl.Text = kingName.Length > 0
-            ? $"King: {kingName}\nNational treasury: {treasury:n0} gold    Territory tariff: {tariff}%"
-            : $"King: (no king — interregnum)\nNational treasury: {treasury:n0} gold    Territory tariff: {tariff}%";
+            ? $"{Localization.Loc.Tr("King")}: {kingName}\n{Localization.Loc.Tr("National treasury")}: {treasury:n0} {Localization.Loc.Tr("gold")}    {Localization.Loc.Tr("Territory tariff")}: {tariff}%"
+            : $"{Localization.Loc.Tr("King")}: ({Localization.Loc.Tr("no king — interregnum")})\n{Localization.Loc.Tr("National treasury")}: {treasury:n0} {Localization.Loc.Tr("gold")}    {Localization.Loc.Tr("Territory tariff")}: {tariff}%";
         _kingTariffEdit.Text = tariff.ToString();
     }
 
@@ -272,18 +272,18 @@ public partial class World
             switch (op)
             {
                 case 2:
-                    SetKingStatus(ok ? $"Collected {value:n0} gold in territory tax." : "No tax to collect (king only).", !ok);
+                    SetKingStatus(ok ? $"{Localization.Loc.Tr("Collected")} {value:n0} {Localization.Loc.Tr("gold in territory tax.")}" : Localization.Loc.Tr("No tax to collect (king only)."), !ok);
                     break;
                 case 3:
                     if (ok) { _kingTariffEdit.Text = value.ToString(); }
                     break;
                 case 4:
-                    SetKingStatus(ok ? $"Territory tariff set to {value}%." : "Couldn't set the tariff (king only, 0-10%).", !ok);
+                    SetKingStatus(ok ? $"{Localization.Loc.Tr("Territory tariff set to")} {value}%." : Localization.Loc.Tr("Couldn't set the tariff (king only, 0-10%)."), !ok);
                     break;
             }
             return;
         }
-        SetKingStatus(ok ? "Royal command issued." : "That royal command failed (king only / not enough treasury).", !ok);
+        SetKingStatus(ok ? Localization.Loc.Tr("Royal command issued.") : Localization.Loc.Tr("That royal command failed (king only / not enough treasury)."), !ok);
     }
 
     private void SetKingStatus(string text, bool warn)

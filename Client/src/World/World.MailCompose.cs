@@ -42,15 +42,15 @@ public partial class World
 
     private void BuildMailComposeWindow()
     {
-        _mailComposeWindow = new HudWindow("mailcompose", "New mail", new Vector2(640, 110), bodyMinWidth: MailComposeWidth) { Visible = false };
+        _mailComposeWindow = new HudWindow("mailcompose", Localization.Loc.Tr("New mail"), new Vector2(640, 110), bodyMinWidth: MailComposeWidth) { Visible = false };
         _mailComposeWindow.Closed += () => _mailComposeShown = false;
         _mailLayer.AddChild(_mailComposeWindow);
 
         var body = _mailComposeWindow.Body;
         body.AddThemeConstantOverride("separation", 6);
 
-        body.AddChild(UiTheme.Text("To", 12, UiTheme.TextLo));
-        _mailTo = new LineEdit { PlaceholderText = "character name", MaxLength = 20 };
+        body.AddChild(UiTheme.Text(Localization.Loc.Tr("To"), 12, UiTheme.TextLo));
+        _mailTo = new LineEdit { PlaceholderText = Localization.Loc.Tr("character name"), MaxLength = 20 };
         _mailTo.TextChanged += _ => _mailToDebounce.Start();
         _mailTo.FocusEntered += () => _mailToDebounce.Start();
         _mailTo.FocusExited += () => Callable.From(() => { if (!_mailTo.HasFocus()) _mailToSuggest.Visible = false; }).CallDeferred();
@@ -62,13 +62,13 @@ public partial class World
         _mailToSuggest.AddThemeConstantOverride("separation", 2);
         body.AddChild(_mailToSuggest);
 
-        body.AddChild(UiTheme.Text("Subject", 12, UiTheme.TextLo));
-        _mailSubject = new LineEdit { PlaceholderText = "subject", MaxLength = Net.MailSubjectMax };
+        body.AddChild(UiTheme.Text(Localization.Loc.Tr("Subject"), 12, UiTheme.TextLo));
+        _mailSubject = new LineEdit { PlaceholderText = Localization.Loc.Tr("subject"), MaxLength = Net.MailSubjectMax };
         body.AddChild(_mailSubject);
 
         var messageHead = new HBoxContainer();
         body.AddChild(messageHead);
-        var messageLabel = UiTheme.Text("Message", 12, UiTheme.TextLo);
+        var messageLabel = UiTheme.Text(Localization.Loc.Tr("Message"), 12, UiTheme.TextLo);
         messageLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         messageHead.AddChild(messageLabel);
         _mailBodyRemaining = UiTheme.Text(Net.MailBodyMax.ToString(), 11, UiTheme.TextDim);
@@ -77,7 +77,7 @@ public partial class World
         {
             CustomMinimumSize = new Vector2(MailComposeWidth, MailComposeBodyHeight),
             WrapMode = TextEdit.LineWrappingMode.Boundary,
-            PlaceholderText = "write your message",
+            PlaceholderText = Localization.Loc.Tr("write your message"),
         };
         var inputBox = new StyleBoxFlat { BgColor = new Color(0.04f, 0.03f, 0.02f, 0.9f), BorderColor = new Color(UiTheme.Edge, 0.7f) };
         inputBox.SetBorderWidthAll(1);
@@ -105,7 +105,7 @@ public partial class World
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             Modulate = UiTheme.GoldBright,
         });
-        goldRow.AddChild(UiTheme.Text("Coins", 12, UiTheme.TextLo));
+        goldRow.AddChild(UiTheme.Text(Localization.Loc.Tr("Coins"), 12, UiTheme.TextLo));
         _mailGold = new MoneyEdit(MailGoldMax, 160);
         goldRow.AddChild(_mailGold);
 
@@ -122,10 +122,10 @@ public partial class World
         var actions = new HBoxContainer();
         actions.AddThemeConstantOverride("separation", 6);
         body.AddChild(MailComposeGapAbove(actions));
-        _mailSendBtn = UiTheme.ActionButton("Send", "Send the mail");
+        _mailSendBtn = UiTheme.ActionButton(Localization.Loc.Tr("Send"), Localization.Loc.Tr("Send the mail"));
         _mailSendBtn.Pressed += SendComposedMail;
         actions.AddChild(_mailSendBtn);
-        var cancel = UiTheme.SmallButton("Cancel", "Discard this mail");
+        var cancel = UiTheme.SmallButton(Localization.Loc.Tr("Cancel"), Localization.Loc.Tr("Discard this mail"));
         cancel.Pressed += CloseMailCompose;
         actions.AddChild(cancel);
 
@@ -260,7 +260,7 @@ public partial class World
         var slot = Inv[abs];
         if (!MailItemTradable(slot))
         {
-            _mailComposeStatus.Text = $"{ItemData.DisplayName(slot.ItemId)} cannot be traded, so it cannot be mailed.";
+            _mailComposeStatus.Text = $"{ItemData.DisplayName(slot.ItemId)} {Localization.Loc.Tr("cannot be traded, so it cannot be mailed.")}";
             return;
         }
         _mailComposeStatus.Text = "";
@@ -270,7 +270,7 @@ public partial class World
 
     private void RenderMailAttachments()
     {
-        _mailAttachTitle.Text = $"Attachments ({_mailAttachments.Count} / {Net.MailItemAttachmentsMax})";
+        _mailAttachTitle.Text = $"{Localization.Loc.Tr("Attachments")} ({_mailAttachments.Count} / {Net.MailItemAttachmentsMax})";
         ClearChildren(_mailAttachRows);
         _mailDropZone.SetHintVisible(_mailAttachments.Count < Net.MailItemAttachmentsMax);
         for (var i = 0; i < _mailAttachments.Count; i++)
@@ -300,7 +300,7 @@ public partial class World
                 spin.ValueChanged += value => _mailAttachments[index] = (abs, (int)value);
                 row.AddChild(spin);
             }
-            var remove = UiTheme.IconButton(UiIcons.Get("system/close"), "Remove");
+            var remove = UiTheme.IconButton(UiIcons.Get("system/close"), Localization.Loc.Tr("Remove"));
             remove.Pressed += () => { _mailAttachments.RemoveAt(index); RenderMailAttachments(); };
             row.AddChild(remove);
             row.MouseFilter = Control.MouseFilterEnum.Pass;
@@ -317,14 +317,14 @@ public partial class World
         var subject = _mailSubject.Text.Trim();
         if (to.Length == 0 || subject.Length == 0)
         {
-            _mailComposeStatus.Text = "A recipient and a subject are required.";
+            _mailComposeStatus.Text = Localization.Loc.Tr("A recipient and a subject are required.");
             return;
         }
 
         var gold = (int)Math.Clamp(_mailGold.Value, 0, MailGoldMax);
         if (gold > Sheet.Gold)
         {
-            _mailComposeStatus.Text = "You do not carry that much gold.";
+            _mailComposeStatus.Text = Localization.Loc.Tr("You do not carry that much gold.");
             return;
         }
 
@@ -334,7 +334,7 @@ public partial class World
             .ToList();
 
         _mailSendBtn.Disabled = true;
-        _mailComposeStatus.Text = "Sending…";
+        _mailComposeStatus.Text = Localization.Loc.Tr("Sending…");
         Net.I.SendMailSend(to, subject, _mailBody.Text, gold, items);
     }
 
@@ -381,7 +381,7 @@ public partial class World
             Rows = new VBoxContainer { MouseFilter = MouseFilterEnum.Pass };
             Rows.AddThemeConstantOverride("separation", MailAttachRowGap);
             stack.AddChild(Rows);
-            _hint = UiTheme.Text("Drag items here from your inventory", 12, UiTheme.TextLo, HorizontalAlignment.Center);
+            _hint = UiTheme.Text(Localization.Loc.Tr("Drag items here from your inventory"), 12, UiTheme.TextLo, HorizontalAlignment.Center);
             _hint.VerticalAlignment = VerticalAlignment.Center;
             _hint.CustomMinimumSize = new Vector2(0, QuestRowIconSide);
             _hint.MouseFilter = MouseFilterEnum.Ignore;

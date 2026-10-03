@@ -364,8 +364,14 @@ public partial class Net
     public void SendPartyBbsWanted(int wantedClass, int pageIndex, string message)
     {
         message ??= "";
-        if (message.Length > 255) message = message.Substring(0, 255);
-        var bytes = System.Text.Encoding.ASCII.GetBytes(message);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(message);
+        if (bytes.Length > byte.MaxValue)
+        {
+            // Trim at a UTF-8 sequence boundary so the byte-prefixed string stays well-formed.
+            int n = byte.MaxValue;
+            while (n > 0 && (bytes[n - 1] & 0xC0) == 0x80) n--;
+            bytes = bytes[..n];
+        }
         var p = new Packet(GameOpcodes.GS_PARTY_BBS);
         p.WriteByte(PartyBbsModeNormal);
         p.WriteByte(0x04);

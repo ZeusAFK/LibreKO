@@ -43,10 +43,10 @@ public partial class World
 
         var addRow = new HBoxContainer();
         addRow.AddThemeConstantOverride("separation", 6);
-        _friendAddInput = new LineEdit { PlaceholderText = "Character name", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 20 };
+        _friendAddInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("Character name"), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MaxLength = 20 };
         _friendAddInput.TextSubmitted += _ => DoFriendAdd();
         addRow.AddChild(_friendAddInput);
-        var addBtn = new Button { Text = "Add", FocusMode = Control.FocusModeEnum.None };
+        var addBtn = new Button { Text = Localization.Loc.Tr("Add"), FocusMode = Control.FocusModeEnum.None };
         addBtn.Pressed += DoFriendAdd;
         addRow.AddChild(addBtn);
         root.AddChild(addRow);
@@ -67,7 +67,7 @@ public partial class World
         _friendStatus = UiTheme.Text("", 12, UiTheme.TextLo);
         _friendStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         footer.AddChild(_friendStatus);
-        var refresh = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
+        var refresh = new Button { Text = Localization.Loc.Tr("Refresh"), FocusMode = Control.FocusModeEnum.None };
         refresh.Pressed += () => Net.I.SendFriendListRequest();
         footer.AddChild(refresh);
         root.AddChild(footer);
@@ -84,7 +84,7 @@ public partial class World
     {
         string name = _friendAddInput.Text.Trim();
         if (name.Length == 0) return;
-        if (name == (Net.I.LastEnter.Name ?? "")) { SetFriendStatus("You can't add yourself.", true); return; }
+        if (name == (Net.I.LastEnter.Name ?? "")) { SetFriendStatus(Localization.Loc.Tr("You can't add yourself."), true); return; }
         Net.I.SendFriendAdd(name);
         _friendAddInput.Clear();
     }
@@ -104,12 +104,12 @@ public partial class World
             _friends.RemoveAll(f => string.Equals(f.Name, name, System.StringComparison.OrdinalIgnoreCase));
             _friends.Add(entry.Name.Length > 0 ? entry : new FriendEntry { Name = name, CharId = entry.CharId, Status = entry.Status });
             RefreshFriends();
-            outcome = $"Added {name}.";
+            outcome = $"{Localization.Loc.Tr("Added")} {name}.";
             SetFriendStatus(outcome, false);
         }
         else
         {
-            outcome = code == 2 ? "Friend list is full." : $"Couldn't add {name}.";
+            outcome = code == 2 ? Localization.Loc.Tr("Friend list is full.") : $"{Localization.Loc.Tr("Couldn't add")} {name}.";
             SetFriendStatus(outcome, true);
         }
         if (!FriendsPageVisible) CombatNotice(outcome);
@@ -121,11 +121,11 @@ public partial class World
         {
             _friends.RemoveAll(f => string.Equals(f.Name, name, System.StringComparison.OrdinalIgnoreCase));
             RefreshFriends();
-            SetFriendStatus($"Removed {name}.", false);
+            SetFriendStatus($"{Localization.Loc.Tr("Removed")} {name}.", false);
         }
         else
         {
-            SetFriendStatus(code == 2 ? $"{name} isn't on your list." : "Couldn't remove.", true);
+            SetFriendStatus(code == 2 ? $"{name} {Localization.Loc.Tr("isn't on your list.")}" : Localization.Loc.Tr("Couldn't remove."), true);
         }
     }
 
@@ -140,8 +140,8 @@ public partial class World
             _friendsList.AddChild(BuildFriendRow(f));
         }
         if (_friends.Count == 0)
-            _friendsList.AddChild(UiTheme.Text("No friends yet. Add one above.", 12, UiTheme.TextLo, HorizontalAlignment.Center));
-        _friendHeader.Text = $"Friends  ({online} online)";
+            _friendsList.AddChild(UiTheme.Text(Localization.Loc.Tr("No friends yet. Add one above."), 12, UiTheme.TextLo, HorizontalAlignment.Center));
+        _friendHeader.Text = $"{Localization.Loc.Tr("Friends")}  ({online} {Localization.Loc.Tr("online")})";
     }
 
     private Control BuildFriendRow(FriendEntry f)
@@ -166,8 +166,8 @@ public partial class World
         string n = f.Name;
         var whisper = new Button
         {
-            Text = "Whisper",
-            TooltipText = $"Whisper {f.Name}",
+            Text = Localization.Loc.Tr("Whisper"),
+            TooltipText = $"{Localization.Loc.Tr("Whisper")} {f.Name}",
             FocusMode = Control.FocusModeEnum.None,
             Disabled = !f.IsOnline,
         };
@@ -175,7 +175,7 @@ public partial class World
         whisper.Pressed += () => OpenWhisperWith(n);
         hb.AddChild(whisper);
 
-        var rm = UiTheme.IconButton("×", $"Remove {f.Name}");
+        var rm = UiTheme.IconButton("×", $"{Localization.Loc.Tr("Remove")} {f.Name}");
         rm.CustomMinimumSize = new Vector2(22, 22);
         rm.Pressed += () => Net.I.SendFriendRemove(n);
         hb.AddChild(rm);
@@ -189,8 +189,8 @@ public partial class World
         if (f.Class > 0) parts.Add(ClassName(f.Class));
         if (f.Nation is Nations.Karus or Nations.ElMorad) parts.Add(Nations.Name(f.Nation));
 
-        if (f.InParty) parts.Add("in party");
-        else if (!f.IsOnline) parts.Add("offline");
+        if (f.InParty) parts.Add(Localization.Loc.Tr("in party"));
+        else if (!f.IsOnline) parts.Add(Localization.Loc.Tr("offline"));
         else parts.Add(FriendZoneName(f.ZoneId));
 
         return string.Join("   ·   ", parts);
@@ -198,10 +198,10 @@ public partial class World
 
     private static string FriendZoneName(int zoneId)
     {
-        if (zoneId <= 0) return "online";
+        if (zoneId <= 0) return Localization.Loc.Tr("online");
         foreach (var zone in ZoneCatalog.All)
             if (zone.Id == zoneId) return zone.Name;
-        return $"zone {zoneId}";
+        return $"{Localization.Loc.Tr("zone")} {zoneId}";
     }
 
     private void SetFriendStatus(string text, bool warn)

@@ -49,7 +49,7 @@ public partial class World
         dotWrap.AddChild(_premiumDot);
         row.AddChild(dotWrap);
 
-        _premiumLabel = UiTheme.Text("No Premium", 12, UiTheme.TextLo);
+        _premiumLabel = UiTheme.Text(Localization.Loc.Tr("No Premium"), 12, UiTheme.TextLo);
         _premiumLabel.MouseFilter = Control.MouseFilterEnum.Ignore;
         row.AddChild(_premiumLabel);
 
@@ -68,13 +68,13 @@ public partial class World
         bool active = accountStatus != 0 && remainingHours > 0;
         if (!active)
         {
-            _premiumLabel.Text = "No Premium";
+            _premiumLabel.Text = Localization.Loc.Tr("No Premium");
             _premiumLabel.AddThemeColorOverride("font_color", UiTheme.TextLo);
             SetPremiumDot(UiTheme.TextDim);
             return;
         }
 
-        string prefix = accountStatus == 2 ? "PC Room" : "Premium";
+        string prefix = accountStatus == 2 ? Localization.Loc.Tr("PC Room") : Localization.Loc.Tr("Premium");
         _premiumLabel.Text = $"{prefix}: {FormatPremiumTime(remainingHours)}";
         _premiumLabel.AddThemeColorOverride("font_color", UiTheme.GoldBright);
         SetPremiumDot(UiTheme.Gold);

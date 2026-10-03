@@ -285,8 +285,8 @@ public partial class World : Node3D
         footer.AddThemeConstantOverride("separation", 10);
         var meters = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         meters.AddThemeConstantOverride("separation", 4);
-        meters.AddChild(BuildMeterRow("system/weight", "Weight", out _invWeightLbl, out _invWeightBar));
-        meters.AddChild(BuildMeterRow("system/bag", "Inventory Slot", out _invSlotLbl, out _invSlotBar));
+        meters.AddChild(BuildMeterRow("system/weight", Localization.Loc.Tr("Weight"), out _invWeightLbl, out _invWeightBar));
+        meters.AddChild(BuildMeterRow("system/bag", Localization.Loc.Tr("Inventory Slot"), out _invSlotLbl, out _invSlotBar));
         footer.AddChild(meters);
         _invTrash = new TrashSlot { OnDropItem = AskDeleteItem };
         footer.AddChild(_invTrash);
@@ -586,11 +586,11 @@ public partial class World : Node3D
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 8);
         root.AddChild(buttons);
-        var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+        var cancel = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
         cancel.AddThemeFontSizeOverride("font_size", 12);
         cancel.Pressed += HideDeletePrompt;
         buttons.AddChild(cancel);
-        var destroy = new Button { Text = "Destroy", FocusMode = Control.FocusModeEnum.None };
+        var destroy = new Button { Text = Localization.Loc.Tr("Destroy"), FocusMode = Control.FocusModeEnum.None };
         destroy.AddThemeFontSizeOverride("font_size", 12);
         destroy.AddThemeColorOverride("font_color", new Color(1f, 0.72f, 0.66f));
         destroy.AddThemeColorOverride("font_hover_color", new Color(1f, 0.86f, 0.82f));
@@ -973,7 +973,7 @@ public partial class World : Node3D
         public TrashSlot()
         {
             CustomMinimumSize = new Vector2(64, 52);
-            TooltipText = "Drop an item here to destroy it";
+            TooltipText = Localization.Loc.Tr("Drop an item here to destroy it");
             MouseFilter = MouseFilterEnum.Stop;
 
             var icon = new TextureRect

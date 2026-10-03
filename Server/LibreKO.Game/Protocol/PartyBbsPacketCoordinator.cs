@@ -137,7 +137,7 @@ public class PartyBbsPacketCoordinator(SessionManager sessionManager) : IPartyBb
                 var bytes = new byte[messageLength];
                 for (var i = 0; i < messageLength; i++)
                     bytes[i] = packet.ReadByte();
-                session.PartyBbsMessage = System.Text.Encoding.ASCII.GetString(bytes);
+                session.PartyBbsMessage = System.Text.Encoding.UTF8.GetString(bytes);
             }
         }
 

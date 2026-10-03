@@ -42,6 +42,7 @@ public static class HudPlacement
     public static Slot MailIcon => SideIcon(3);
     public static Slot PowerUpStoreIcon => SideIcon(4);
     public static Slot LotteryIcon => SideIcon(5);
+    public static Slot DpsIcon => SideIcon(6);
 
     public static Slot QuestTracker => Platform.TouchUi
         ? new(HudAnchor.Spot.TopRight,

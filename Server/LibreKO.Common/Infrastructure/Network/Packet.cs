@@ -91,7 +91,7 @@ public class Packet(byte opcode)
         if (length < 0)
             throw new InvalidDataException($"Packet string has negative length: {length}");
         EnsureReadable(length);
-        var str = Encoding.ASCII.GetString(_stream.GetBuffer(), _readOffset, length);
+        var str = Encoding.UTF8.GetString(_stream.GetBuffer(), _readOffset, length);
         _readOffset += length;
         return str;
     }
@@ -174,7 +174,7 @@ public class Packet(byte opcode)
 
     public void WriteString(string value)
     {
-        var bytes = Encoding.ASCII.GetBytes(value);
+        var bytes = Encoding.UTF8.GetBytes(value);
         if (bytes.Length > short.MaxValue)
             throw new ArgumentException($"String too long for WriteString: {bytes.Length} bytes (max {short.MaxValue})");
         WriteShort((short)bytes.Length);
@@ -183,9 +183,14 @@ public class Packet(byte opcode)
 
     public void WriteSByteString(string value)
     {
-        var bytes = Encoding.ASCII.GetBytes(value);
+        var bytes = Encoding.UTF8.GetBytes(value);
         if (bytes.Length > byte.MaxValue)
-            throw new ArgumentException($"String too long for WriteSByteString: {bytes.Length} bytes (max {byte.MaxValue})");
+        {
+            // Trim at a UTF-8 sequence boundary so the byte-prefixed string stays well-formed.
+            int n = byte.MaxValue;
+            while (n > 0 && (bytes[n - 1] & 0xC0) == 0x80) n--;
+            bytes = bytes[..n];
+        }
         WriteByte((byte)bytes.Length);
         _stream.Write(bytes);
     }
@@ -194,7 +199,7 @@ public class Packet(byte opcode)
     {
         var length = ReadByte();
         EnsureReadable(length);
-        var str = Encoding.ASCII.GetString(_stream.GetBuffer(), _readOffset, length);
+        var str = Encoding.UTF8.GetString(_stream.GetBuffer(), _readOffset, length);
         _readOffset += length;
         return str;
     }

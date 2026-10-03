@@ -316,7 +316,7 @@ public partial class World
             ent.OriginalTagY = nameLabel.Position.Y;
             if (ent.Sitting || _stalls.ContainsKey(info.Id))
             {
-                nameLabel.Position = new Vector3(nameLabel.Position.X, SittingNameTagHeight, nameLabel.Position.Z);
+                nameLabel.Position = new Vector3(nameLabel.Position.X, ent.OriginalTagY - SitDrop, nameLabel.Position.Z);
             }
             ent.NameTag = nameLabel;
             ent.PlateRoot = nameLabel.GetParent() as Node3D;
@@ -700,7 +700,7 @@ public partial class World
     }
 
     private static string TitleTextOf(int titleId) =>
-        titleId != 0 && AchievementData.TitleOf(titleId) is { } title ? title.Name : "";
+        titleId != 0 && AchievementData.TitleOf(titleId) is { } title ? Localization.Loc.Tr(title.Name) : "";
 
     private void OnEntityTitle(int charId, int titleId)
     {
@@ -769,8 +769,9 @@ public partial class World
         int shown = damage != 0 ? Mathf.Abs(damage) : Mathf.Max(0, old - hp);
         if (shown > 0)
         {
-            CombatLogAdd($"You hit {e.Name} for {shown:n0} damage.", CombatLogKind.Damage);
+            CombatLogAdd($"{Localization.Loc.Tr("You hit")} {e.Name} {Localization.Loc.Tr("for")} {shown:n0} {Localization.Loc.Tr("damage.")}", CombatLogKind.Damage);
             Floaters?.Damage(id, shown);
+            DpsNoteSelf(shown);
             if (hp > 0 && !e.Dead)
             {
                 AudioStruck(id);
@@ -778,7 +779,7 @@ public partial class World
         }
         else if (hp - old > 0 && old > 0)
         {
-            CombatLogAdd($"{e.Name} recovered {hp - old:n0} HP.", CombatLogKind.Recovery);
+            CombatLogAdd($"{e.Name} {Localization.Loc.Tr("recovered")} {hp - old:n0} {Localization.Loc.Tr("HP.")}", CombatLogKind.Recovery);
             Floaters?.Cure(id, hp - old);
         }
     }

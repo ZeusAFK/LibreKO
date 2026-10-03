@@ -39,7 +39,7 @@ public partial class World
                 _anvilRoot = new Node3D { Name = "Anvils" };
                 AddChild(_anvilRoot);
             }
-            var tag = NamePlate.MapObject("Magic Anvil");
+            var tag = NamePlate.MapObject(Localization.Loc.Tr("Magic Anvil"));
             tag.Modulate = UiTheme.GoldBright;
             tag.Position = o.Origin + new Vector3(0f, AnvilTagHeight, 0f);
             _anvilRoot.AddChild(tag);
@@ -153,7 +153,7 @@ public partial class World
         if (!_worldReady || _self == null || _selfDead) return;
         if (FlatDistance(_self.Position, anvil.Tag.GlobalPosition) > AnvilInteractRange)
         {
-            CombatNotice("Move closer to the anvil.");
+            CombatNotice(Localization.Loc.Tr("Move closer to the anvil."));
             return;
         }
         StopForInteraction();

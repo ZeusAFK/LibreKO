@@ -16,10 +16,10 @@ public partial class World
         _townRecallLayer = new CanvasLayer { Layer = 76 };
         AddChild(_townRecallLayer);
 
-        _townRecallDialog = new ConfirmationDialog { Title = "Town Recall" };
-        _townRecallDialog.DialogText = "Recall to town?\n(You must be above 50% HP.)";
-        _townRecallDialog.GetOkButton().Text = "Recall";
-        _townRecallDialog.GetCancelButton().Text = "Cancel";
+        _townRecallDialog = new ConfirmationDialog { Title = Localization.Loc.Tr("Town Recall") };
+        _townRecallDialog.DialogText = Localization.Loc.Tr("Recall to town?\n(You must be above 50% HP.)");
+        _townRecallDialog.GetOkButton().Text = Localization.Loc.Tr("Recall");
+        _townRecallDialog.GetCancelButton().Text = Localization.Loc.Tr("Cancel");
         _townRecallDialog.Confirmed += TownRecallPress;
         _townRecallLayer.AddChild(_townRecallDialog);
     }
@@ -48,7 +48,7 @@ public partial class World
     private void TownRecallConfirm()
     {
         Net.I.SendTownRecall();
-        CombatNotice("Recalling to town…");
+        CombatNotice(Localization.Loc.Tr("Recalling to town…"));
         Audio.Play(Sfx.WarpZone, _self.GlobalPosition);
     }
 }

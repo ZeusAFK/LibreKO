@@ -18,13 +18,13 @@ public partial class World
     {
         _auctionLayer = new CanvasLayer { Layer = 74 };
         AddChild(_auctionLayer);
-        _auctionPanel = new HudWindow("auction", "Auction House", new Vector2(190, 90)) { Visible = false };
+        _auctionPanel = new HudWindow("auction", Localization.Loc.Tr("Auction House"), new Vector2(190, 90)) { Visible = false };
         _auctionPanel.Closed += CloseAuction;
         _auctionLayer.AddChild(_auctionPanel);
 
         var root = _auctionPanel.Body;
         root.AddThemeConstantOverride("separation", 6);
-        root.AddChild(UiTheme.SectionTitle("Open Lots"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Open Lots")));
 
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(420, 300), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
@@ -32,19 +32,19 @@ public partial class World
         _auctionList.AddThemeConstantOverride("separation", 3);
         scroll.AddChild(_auctionList);
 
-        root.AddChild(UiTheme.SectionTitle("Register a Lot"));
+        root.AddChild(UiTheme.SectionTitle(Localization.Loc.Tr("Register a Lot")));
         var form = new HBoxContainer();
         form.AddThemeConstantOverride("separation", 4);
         root.AddChild(form);
-        _auctionItemInput = new LineEdit { PlaceholderText = "itemId", CustomMinimumSize = new Vector2(80, 0) };
-        _auctionStartInput = new LineEdit { PlaceholderText = "start", CustomMinimumSize = new Vector2(70, 0) };
-        _auctionBuyoutInput = new LineEdit { PlaceholderText = "buyout", CustomMinimumSize = new Vector2(70, 0) };
-        _auctionCountInput = new LineEdit { PlaceholderText = "count", CustomMinimumSize = new Vector2(55, 0) };
+        _auctionItemInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("itemId"), CustomMinimumSize = new Vector2(80, 0) };
+        _auctionStartInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("start"), CustomMinimumSize = new Vector2(70, 0) };
+        _auctionBuyoutInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("buyout"), CustomMinimumSize = new Vector2(70, 0) };
+        _auctionCountInput = new LineEdit { PlaceholderText = Localization.Loc.Tr("count"), CustomMinimumSize = new Vector2(55, 0) };
         form.AddChild(_auctionItemInput);
         form.AddChild(_auctionStartInput);
         form.AddChild(_auctionBuyoutInput);
         form.AddChild(_auctionCountInput);
-        var regBtn = new Button { Text = "Register", FocusMode = Control.FocusModeEnum.None };
+        var regBtn = new Button { Text = Localization.Loc.Tr("Register"), FocusMode = Control.FocusModeEnum.None };
         regBtn.Pressed += OnAuctionRegisterPressed;
         form.AddChild(regBtn);
 
@@ -102,10 +102,10 @@ public partial class World
 
             hb.AddChild(UiTheme.Text(lot.Seller, 12, UiTheme.TextLo));
 
-            string bidTxt = lot.CurrentBid > 0 ? $"Bid {lot.CurrentBid:n0}" : "No bid";
+            string bidTxt = lot.CurrentBid > 0 ? $"{Localization.Loc.Tr("Bid")} {lot.CurrentBid:n0}" : Localization.Loc.Tr("No bid");
             hb.AddChild(UiTheme.Text(bidTxt, 12, UiTheme.Gold));
             if (lot.Buyout > 0)
-                hb.AddChild(UiTheme.Text($"Buy {lot.Buyout:n0}", 12, UiTheme.Gold));
+                hb.AddChild(UiTheme.Text($"{Localization.Loc.Tr("Buy")} {lot.Buyout:n0}", 12, UiTheme.Gold));
 
             int id = lot.AuctionId;
             bool mine = lot.SellerId == myId;
@@ -113,23 +113,23 @@ public partial class World
             {
                 if (lot.CurrentBid <= 0)
                 {
-                    var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
+                    var cancel = new Button { Text = Localization.Loc.Tr("Cancel"), FocusMode = Control.FocusModeEnum.None };
                     cancel.Pressed += () => Net.I.SendAuctionCancel(id);
                     hb.AddChild(cancel);
                 }
                 else
                 {
-                    hb.AddChild(UiTheme.Text("Yours", 12, UiTheme.TextLo));
+                    hb.AddChild(UiTheme.Text(Localization.Loc.Tr("Yours"), 12, UiTheme.TextLo));
                 }
             }
             else
             {
-                var bid = new Button { Text = "Bid", FocusMode = Control.FocusModeEnum.None };
+                var bid = new Button { Text = Localization.Loc.Tr("Bid"), FocusMode = Control.FocusModeEnum.None };
                 bid.Pressed += () => Net.I.SendAuctionBid(id, NextBidFor(id));
                 hb.AddChild(bid);
                 if (lot.Buyout > 0)
                 {
-                    var buy = new Button { Text = "Buy", FocusMode = Control.FocusModeEnum.None };
+                    var buy = new Button { Text = Localization.Loc.Tr("Buy"), FocusMode = Control.FocusModeEnum.None };
                     buy.Pressed += () => Net.I.SendAuctionBuyout(id);
                     hb.AddChild(buy);
                 }
@@ -140,7 +140,7 @@ public partial class World
         if (_auctionList.GetChildCount() == 0)
         {
             var e = HudStyle.Label(13);
-            e.Text = "No open lots.";
+            e.Text = Localization.Loc.Tr("No open lots.");
             _auctionList.AddChild(e);
         }
     }
@@ -154,23 +154,23 @@ public partial class World
     private void OnAuctionRegisterPressed()
     {
         if (!int.TryParse(_auctionItemInput.Text, out int itemId) || itemId <= 0)
-        { _auctionStatus.Text = "Bad item id."; return; }
+        { _auctionStatus.Text = Localization.Loc.Tr("Bad item id."); return; }
         if (!int.TryParse(_auctionStartInput.Text, out int start) || start < 0)
-        { _auctionStatus.Text = "Bad start price."; return; }
+        { _auctionStatus.Text = Localization.Loc.Tr("Bad start price."); return; }
         if (!int.TryParse(_auctionBuyoutInput.Text, out int buyout) || buyout < 0)
             buyout = 0;
         if (!int.TryParse(_auctionCountInput.Text, out int count) || count <= 0)
             count = 1;
         if (buyout > 0 && buyout < start)
-        { _auctionStatus.Text = "Buyout below start price."; return; }
+        { _auctionStatus.Text = Localization.Loc.Tr("Buyout below start price."); return; }
 
         Net.I.SendAuctionRegister(itemId, start, buyout, count);
-        _auctionStatus.Text = "Registering...";
+        _auctionStatus.Text = Localization.Loc.Tr("Registering...");
     }
 
     private void OnAuctionRegister(int auctionId, bool ok)
     {
-        _auctionStatus.Text = ok ? $"Listed as lot #{auctionId}." : "Could not list that item.";
+        _auctionStatus.Text = ok ? $"{Localization.Loc.Tr("Listed as lot")} #{auctionId}." : Localization.Loc.Tr("Could not list that item.");
         if (ok)
         {
             _auctionItemInput.Text = "";
