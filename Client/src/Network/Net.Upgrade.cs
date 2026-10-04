@@ -59,6 +59,9 @@ public partial class Net
             case PetHatchSub:
                 HandlePetHatch(p);
                 break;
+            case PetTransformSub:
+                HandlePetTransform(p);
+                break;
             default:
                 NpcWindowEvent?.Invoke(GameOpcodes.GS_ITEM_UPGRADE);
                 break;

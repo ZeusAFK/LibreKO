@@ -32,6 +32,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     // Static game data
     public DbSet<LevelUpData> LevelUp { get; set; }
     public DbSet<PetLevelData> PetLevels { get; set; }
+    public DbSet<PetTransformData> PetTransforms { get; set; }
     public DbSet<CoefficientData> Coefficients { get; set; }
     public DbSet<StartPositionData> StartPositions { get; set; }
     public DbSet<HomeData> Homes { get; set; }

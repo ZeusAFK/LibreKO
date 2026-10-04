@@ -32,6 +32,7 @@ internal static class ModelBuilderExtensions
         Configure<CoefficientData>(modelBuilder, "Coefficients");
         Configure<LevelUpData>(modelBuilder, "LevelUp");
         Configure<PetLevelData>(modelBuilder, "PetLevels");
+        Configure<PetTransformData>(modelBuilder, "PetTransforms");
         Configure<HomeData>(modelBuilder, "Homes");
 
         Configure<ItemData>(modelBuilder, "Items");

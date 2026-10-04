@@ -129,6 +129,9 @@ public class ItemUpgradeService(
             case ItemUpgradeSubOpcode.PetHatching:
                 await HandlePetHatchingAsync(session, packet);
                 break;
+            case ItemUpgradeSubOpcode.PetTransform:
+                await HandlePetTransformAsync(session, packet);
+                break;
             default:
                 logger.LogDebug("Unhandled item upgrade sub-opcode {SubOpcode} from {Name}", subOpcode, session.Name);
                 break;
@@ -147,6 +150,23 @@ public class ItemUpgradeService(
         var bagSlot = packet.ReadByte();
         var name = packet.ReadString();
         await petService.HatchAsync(session, npcId, eggItemId, bagSlot, name);
+    }
+
+    private const int PetTransformMaterialSlots = 3;
+    private const int PetTransformRequestBytes = 24;
+
+    private async Task HandlePetTransformAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < PetTransformRequestBytes)
+            return;
+
+        var npcId = packet.ReadInt();
+        var petItemId = packet.ReadInt();
+        var petSlot = packet.ReadByte();
+        var materials = new PetMaterial[PetTransformMaterialSlots];
+        for (var i = 0; i < materials.Length; i++)
+            materials[i] = new PetMaterial(packet.ReadInt(), packet.ReadByte());
+        await petService.TransformAsync(session, npcId, petItemId, petSlot, materials);
     }
 
     private async Task HandleStandardUpgradeAsync(UserSession session, Packet packet, ItemUpgradeSubOpcode responseSubOpcode)

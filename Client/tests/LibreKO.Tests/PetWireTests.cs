@@ -8,6 +8,8 @@ public class PetWireTests
 {
     private const int Kaul = 610001000;
     private const string Name = "Kauly";
+    private const int Etaroth = 610015000;
+    private const int EtarothScroll = 700019001;
 
     private static Packet ItemRecord(int itemId, int uniqueId)
     {
@@ -120,6 +122,34 @@ public class PetWireTests
         Assert.Equal(9, hatched.Info.Index);
         Assert.Equal(Name, hatched.Info.Name);
         Assert.Equal(9000, hatched.Info.Satisfaction);
+    }
+
+    [Fact]
+    public void ATransformedFamiliarComesBackWithTheSpentScroll()
+    {
+        var p = new Packet(GameOpcodes.GS_PET);
+        p.WriteByte(PetWire.HatchSucceeded);
+        p.WriteInt(Etaroth);
+        p.WriteByte(4);
+        p.WriteInt(9);
+        p.WriteString(Name);
+        p.WriteByte(115);
+        p.WriteByte(12);
+        p.WriteUShort(4200);
+        p.WriteShort(7300);
+        p.WriteByte(0);
+        p.WriteInt(EtarothScroll);
+        p.WriteByte(7);
+        p.ResetOffset();
+
+        Assert.True(PetWire.TryReadTransform(p, out var transformed, out _));
+        Assert.Equal(Etaroth, transformed.Pet.ItemId);
+        Assert.Equal(4, transformed.Pet.BagSlot);
+        Assert.Equal(9, transformed.Pet.Info.Index);
+        Assert.Equal(12, transformed.Pet.Info.Level);
+        Assert.Equal(EtarothScroll, transformed.MaterialItemId);
+        Assert.Equal(7, transformed.MaterialSlot);
+        Assert.Equal(0, p.RemainingBytes);
     }
 
     [Theory]

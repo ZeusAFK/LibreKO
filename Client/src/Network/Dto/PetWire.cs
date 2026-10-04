@@ -4,6 +4,8 @@ namespace LibreKO.Network;
 
 public readonly record struct HatchedPet(int ItemId, int BagSlot, PetItemInfo Info);
 
+public readonly record struct TransformedPet(HatchedPet Pet, int MaterialItemId, int MaterialSlot);
+
 public static class PetWire
 {
     public const int ItemRecordBytes = 19;
@@ -11,6 +13,7 @@ public static class PetWire
     public const byte HatchNameTaken = 2;
     public const int NameTakenCode = -1;
     private const int HatchSuccessBytes = 9;
+    private const int TransformTailBytes = 6;
 
     public static ItemSlot ReadItemRecord(Packet p, out PetItemInfo? pet)
     {
@@ -85,6 +88,22 @@ public static class PetWire
         int expPercent = p.ReadUShort();
         int satisfaction = p.ReadShort();
         hatched = new HatchedPet(itemId, bagSlot, new PetItemInfo(index, name, attack, level, expPercent, satisfaction));
+        return true;
+    }
+
+    public static bool TryReadTransform(Packet p, out TransformedPet transformed, out int failure)
+    {
+        transformed = default;
+        if (!TryReadHatch(p, out var pet, out failure)) return false;
+        if (p.RemainingBytes < TransformTailBytes)
+        {
+            transformed = new TransformedPet(pet, 0, 0);
+            return true;
+        }
+        p.ReadByte();
+        int materialItemId = p.ReadInt();
+        int materialSlot = p.ReadByte();
+        transformed = new TransformedPet(pet, materialItemId, materialSlot);
         return true;
     }
 }

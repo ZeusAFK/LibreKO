@@ -21,6 +21,8 @@ public partial class Net
     private const byte PetFoodTrailFlag = 1;
     private const byte PetFoodTrailPad = 0;
     private const byte PetHatchSub = 6;
+    private const byte PetTransformSub = 10;
+    private const int PetTransformMaterialSlots = 3;
     public const int PetHatchNameTakenCode = PetWire.NameTakenCode;
     public const int FamiliarSummonSkill = 500117;
 
@@ -38,6 +40,8 @@ public partial class Net
     public event Action<int>? PetLevelUpEvent;
     public event Action<int, PetItemInfo>? PetHatchedEvent;
     public event Action<int>? PetHatchFailedEvent;
+    public event Action<int, PetItemInfo>? PetTransformedEvent;
+    public event Action<int>? PetTransformFailedEvent;
 
     private void HandlePet(Packet p)
     {
@@ -152,12 +156,42 @@ public partial class Net
             return;
         }
 
-        PetItems[hatched.Info.Index] = hatched.Info;
-        int abs = InventoryConstants.InventoryStart + hatched.BagSlot;
-        var item = new ItemSlot { ItemId = hatched.ItemId, Count = 1, Durability = 1, UniqueId = hatched.Info.Index };
+        PetHatchedEvent?.Invoke(PlaceFamiliarItem(hatched), hatched.Info);
+    }
+
+    private void HandlePetTransform(Packet p)
+    {
+        if (!PetWire.TryReadTransform(p, out var transformed, out int failure))
+        {
+            PetTransformFailedEvent?.Invoke(failure);
+            return;
+        }
+
+        int abs = PlaceFamiliarItem(transformed.Pet);
+        if (transformed.MaterialItemId != 0)
+            SpendBagItem(InventoryConstants.InventoryStart + transformed.MaterialSlot, transformed.MaterialItemId);
+        PetTransformedEvent?.Invoke(abs, transformed.Pet.Info);
+    }
+
+    private int PlaceFamiliarItem(HatchedPet pet)
+    {
+        PetItems[pet.Info.Index] = pet.Info;
+        int abs = InventoryConstants.InventoryStart + pet.BagSlot;
+        var item = new ItemSlot { ItemId = pet.ItemId, Count = 1, Durability = 1, UniqueId = pet.Info.Index };
         SetLastInventorySlot(abs, item);
         InventorySlotEvent?.Invoke(abs, item);
-        PetHatchedEvent?.Invoke(abs, hatched.Info);
+        return abs;
+    }
+
+    private void SpendBagItem(int abs, int itemId)
+    {
+        var inv = LastEnter.Inventory;
+        if (inv == null || abs < 0 || abs >= inv.Length || inv[abs].ItemId != itemId) return;
+        var left = inv[abs];
+        left.Count--;
+        if (left.Count <= 0) left = default;
+        SetLastInventorySlot(abs, left);
+        InventorySlotEvent?.Invoke(abs, left);
     }
 
     private ItemSlot ReadItemRecord(Packet p)
@@ -181,6 +215,23 @@ public partial class Net
         p.WriteInt(eggItemId);
         p.WriteByte((byte)bagSlot);
         p.WriteString(name);
+        _conn.Send(p);
+    }
+
+    public void SendPetTransform(int npcId, int petItemId, int petSlot, int materialItemId, int materialSlot)
+    {
+        var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
+        p.WriteByte(PetTransformSub);
+        p.WriteInt(npcId);
+        p.WriteInt(petItemId);
+        p.WriteByte((byte)petSlot);
+        p.WriteInt(materialItemId);
+        p.WriteByte((byte)materialSlot);
+        for (int i = 1; i < PetTransformMaterialSlots; i++)
+        {
+            p.WriteInt(0);
+            p.WriteByte(0);
+        }
         _conn.Send(p);
     }
 

@@ -7,6 +7,7 @@ public interface IGameDataService
 {
     IReadOnlyDictionary<byte, long> LevelUpTable { get; }
     IReadOnlyDictionary<byte, PetLevelData> PetLevelTable { get; }
+    ILookup<int, PetTransformData> PetTransformsByMaterial { get; }
     IReadOnlyDictionary<short, CoefficientData> CoefficientTable { get; }
     IReadOnlyDictionary<short, StartPositionData> StartPositionTable { get; }
     IReadOnlyDictionary<int, ItemData> ItemTable { get; }

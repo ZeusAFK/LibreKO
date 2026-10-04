@@ -1,0 +1,418 @@
+[
+  {
+    "Id": 1,
+    "Material": 700017000,
+    "Result": 610004000,
+    "ModelId": 200,
+    "Size": 40,
+    "Weight": 910
+  },
+  {
+    "Id": 2,
+    "Material": 700017000,
+    "Result": 610005000,
+    "ModelId": 800,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 3,
+    "Material": 700017000,
+    "Result": 610006000,
+    "ModelId": 4300,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 4,
+    "Material": 700017000,
+    "Result": 610008000,
+    "ModelId": 2010,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 5,
+    "Material": 700017000,
+    "Result": 610007000,
+    "ModelId": 100,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 6,
+    "Material": 700017000,
+    "Result": 610009000,
+    "ModelId": 4100,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 7,
+    "Material": 700017000,
+    "Result": 610010000,
+    "ModelId": 600,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 8,
+    "Material": 700017000,
+    "Result": 610011000,
+    "ModelId": 2400,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 9,
+    "Material": 700017000,
+    "Result": 610012000,
+    "ModelId": 2200,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 10,
+    "Material": 700017000,
+    "Result": 610013000,
+    "ModelId": 1102,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 11,
+    "Material": 700017000,
+    "Result": 610014000,
+    "ModelId": 2000,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 12,
+    "Material": 700013000,
+    "Result": 610004000,
+    "ModelId": 200,
+    "Size": 40,
+    "Weight": 910
+  },
+  {
+    "Id": 13,
+    "Material": 700013000,
+    "Result": 610005000,
+    "ModelId": 800,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 14,
+    "Material": 700013000,
+    "Result": 610006000,
+    "ModelId": 4300,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 15,
+    "Material": 700013000,
+    "Result": 610007000,
+    "ModelId": 100,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 16,
+    "Material": 700013000,
+    "Result": 610008000,
+    "ModelId": 2010,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 17,
+    "Material": 700013000,
+    "Result": 610009000,
+    "ModelId": 4100,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 18,
+    "Material": 700013000,
+    "Result": 610010000,
+    "ModelId": 600,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 19,
+    "Material": 700013000,
+    "Result": 610011000,
+    "ModelId": 2400,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 20,
+    "Material": 700013000,
+    "Result": 610012000,
+    "ModelId": 2200,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 21,
+    "Material": 700013000,
+    "Result": 610013000,
+    "ModelId": 1102,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 22,
+    "Material": 700013000,
+    "Result": 610014000,
+    "ModelId": 2000,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 23,
+    "Material": 700018000,
+    "Result": 610005000,
+    "ModelId": 800,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 24,
+    "Material": 700018000,
+    "Result": 610004000,
+    "ModelId": 200,
+    "Size": 40,
+    "Weight": 910
+  },
+  {
+    "Id": 25,
+    "Material": 700018000,
+    "Result": 610006000,
+    "ModelId": 4300,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 26,
+    "Material": 700018000,
+    "Result": 610007000,
+    "ModelId": 100,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 27,
+    "Material": 700018000,
+    "Result": 610008000,
+    "ModelId": 2010,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 28,
+    "Material": 700018000,
+    "Result": 610009000,
+    "ModelId": 4100,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 29,
+    "Material": 700018000,
+    "Result": 610010000,
+    "ModelId": 600,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 30,
+    "Material": 700018000,
+    "Result": 610012000,
+    "ModelId": 2200,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 31,
+    "Material": 700018000,
+    "Result": 610011000,
+    "ModelId": 2400,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 32,
+    "Material": 700018000,
+    "Result": 610013000,
+    "ModelId": 1102,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 33,
+    "Material": 700018000,
+    "Result": 610014000,
+    "ModelId": 2000,
+    "Size": 40,
+    "Weight": 909
+  },
+  {
+    "Id": 34,
+    "Material": 810633000,
+    "Result": 810634000,
+    "ModelId": 9816,
+    "Size": 60,
+    "Weight": 10000
+  },
+  {
+    "Id": 35,
+    "Material": 810631000,
+    "Result": 810632000,
+    "ModelId": 6201,
+    "Size": 5,
+    "Weight": 10000
+  },
+  {
+    "Id": 37,
+    "Material": 700019000,
+    "Result": 610015000,
+    "ModelId": 3900,
+    "Size": 40,
+    "Weight": 10000
+  },
+  {
+    "Id": 38,
+    "Material": 700033000,
+    "Result": 610016000,
+    "ModelId": 21901,
+    "Size": 40,
+    "Weight": 10000
+  },
+  {
+    "Id": 39,
+    "Material": 700034000,
+    "Result": 610017000,
+    "ModelId": 21900,
+    "Size": 40,
+    "Weight": 10000
+  },
+  {
+    "Id": 40,
+    "Material": 700035000,
+    "Result": 610018000,
+    "ModelId": 21902,
+    "Size": 40,
+    "Weight": 10000
+  },
+  {
+    "Id": 41,
+    "Material": 700044000,
+    "Result": 508266000,
+    "ModelId": 20518,
+    "Size": 20,
+    "Weight": 10000
+  },
+  {
+    "Id": 42,
+    "Material": 700045000,
+    "Result": 508267000,
+    "ModelId": 20506,
+    "Size": 40,
+    "Weight": 10000
+  },
+  {
+    "Id": 45,
+    "Material": 700036000,
+    "Result": 610019000,
+    "ModelId": 5829,
+    "Size": 60,
+    "Weight": 10000
+  },
+  {
+    "Id": 46,
+    "Material": 820634000,
+    "Result": 820635000,
+    "ModelId": 9917,
+    "Size": 120,
+    "Weight": 909
+  },
+  {
+    "Id": 47,
+    "Material": 820634000,
+    "Result": 820636000,
+    "ModelId": 9918,
+    "Size": 120,
+    "Weight": 909
+  },
+  {
+    "Id": 48,
+    "Material": 820634000,
+    "Result": 820637000,
+    "ModelId": 9916,
+    "Size": 120,
+    "Weight": 909
+  },
+  {
+    "Id": 49,
+    "Material": 508120000,
+    "Result": 508140000,
+    "ModelId": 5901,
+    "Size": 80,
+    "Weight": 10000
+  },
+  {
+    "Id": 50,
+    "Material": 508130000,
+    "Result": 508170000,
+    "ModelId": 5902,
+    "Size": 80,
+    "Weight": 10000
+  },
+  {
+    "Id": 51,
+    "Material": 700046000,
+    "Result": 508268000,
+    "ModelId": 20519,
+    "Size": 60,
+    "Weight": 10000
+  },
+  {
+    "Id": 52,
+    "Material": 508180000,
+    "Result": 508089000,
+    "ModelId": 30800,
+    "Size": 60,
+    "Weight": 10000
+  },
+  {
+    "Id": 53,
+    "Material": 800165000,
+    "Result": 508098000,
+    "ModelId": 5875,
+    "Size": 60,
+    "Weight": 10000
+  },
+  {
+    "Id": 54,
+    "Material": 810447000,
+    "Result": 810448000,
+    "ModelId": 9711,
+    "Size": 15,
+    "Weight": 10000
+  },
+  {
+    "Id": 55,
+    "Material": 700048000,
+    "Result": 687006000,
+    "ModelId": 20529,
+    "Size": 5,
+    "Weight": 10000
+  }
+]

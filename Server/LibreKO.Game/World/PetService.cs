@@ -16,6 +16,7 @@ public interface IPetService
     Task<IReadOnlyDictionary<int, PetItemInfo>> DescribeAsync(IEnumerable<ItemSlot> slots);
     PetItemInfo? ItemInfo(UserSession session, ItemSlot slot);
     Task HatchAsync(UserSession session, int npcId, int eggItemId, byte bagSlot, string name);
+    Task TransformAsync(UserSession session, int npcId, int petItemId, byte petSlot, IReadOnlyList<PetMaterial> materials);
     Task<bool> SummonAsync(UserSession session);
     Task DismissAsync(UserSession session);
     Task SetModeAsync(UserSession session, PetMode mode);
@@ -97,9 +98,7 @@ public sealed class PetService(
             return;
         }
 
-        var trainerNearby = sessionManager.Regions.GetNearbyNpcs(session)
-            .Any(npc => npc.NpcId == npcId && npc.IsAlive && npc.ZoneId == session.ZoneId && IsInRange(session, npc));
-        if (!trainerNearby || bagSlot >= InventoryConstants.HaveMax)
+        if (!TrainerNearby(session, npcId) || bagSlot >= InventoryConstants.HaveMax)
         {
             await session.Client.SendPacket(PetPacketWriter.HatchRefused(HatchRefusal.Failed));
             return;
@@ -171,6 +170,73 @@ public sealed class PetService(
         await session.Client.SendPacket(PetPacketWriter.Hatched(
             HatchedPetItem, bagSlot, pet.Id, pet.Name, pet.Class, pet.Level,
             PetItemInfo.ExpPercentOf(pet.Exp, level), pet.Satisfaction));
+    }
+
+    public async Task TransformAsync(UserSession session, int npcId, int petItemId, byte petSlot, IReadOnlyList<PetMaterial> materials)
+    {
+        var material = materials.FirstOrDefault(m => m.ItemId != 0);
+        if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.IsGathering || session.Hp <= 0
+            || !TrainerNearby(session, npcId) || petSlot >= InventoryConstants.HaveMax
+            || material.ItemId == 0 || material.BagSlot >= InventoryConstants.HaveMax || material.BagSlot == petSlot)
+        {
+            await session.Client.SendPacket(PetPacketWriter.TransformRefused(HatchRefusal.Failed));
+            return;
+        }
+
+        var petItem = session.Inventory[InventoryConstants.SlotMax + petSlot];
+        var scroll = session.Inventory[InventoryConstants.SlotMax + material.BagSlot];
+        var scrollItemId = scroll.ItemId;
+        if (petItem.ItemId != petItemId || !petItem.IsLinked || gameData.GetItem(petItemId)?.Kind != (byte)ItemKind.PetItem
+            || petItem.State is ItemFlag.Sealed or ItemFlag.Duplicate or ItemFlag.Rented
+            || scroll.Count == 0 || PetTransforms.MaterialOf(scrollItemId) != PetTransforms.MaterialOf(material.ItemId)
+            || scroll.State is ItemFlag.Sealed or ItemFlag.Duplicate or ItemFlag.Rented)
+        {
+            await session.Client.SendPacket(PetPacketWriter.TransformRefused(HatchRefusal.Failed));
+            return;
+        }
+
+        await CacheAsync([petItem]);
+        var candidates = gameData.PetTransformsByMaterial[PetTransforms.MaterialOf(scrollItemId)]
+            .Where(candidate => gameData.GetItem(candidate.Result)?.Kind == (byte)ItemKind.PetItem)
+            .ToList();
+        if (!_pets.TryGetValue(petItem.UniqueId, out var pet) || PetTransforms.Pick(candidates, Random.Shared) is not { } choice)
+        {
+            await session.Client.SendPacket(PetPacketWriter.TransformRefused(HatchRefusal.Failed));
+            return;
+        }
+
+        var result = gameData.GetItem(choice.Result)!;
+        var applied = session.WithLock(s =>
+        {
+            var current = s.Inventory[InventoryConstants.SlotMax + petSlot];
+            var spent = s.Inventory[InventoryConstants.SlotMax + material.BagSlot];
+            if (current.ItemId != petItemId || current.UniqueId != pet.Id || spent.ItemId != scrollItemId || spent.Count == 0)
+                return false;
+
+            spent.Count--;
+            if (spent.Count == 0)
+                spent.Clear();
+            current.ItemId = choice.Result;
+            current.Durability = result.Duration;
+            return true;
+        });
+
+        if (!applied)
+        {
+            await session.Client.SendPacket(PetPacketWriter.TransformRefused(HatchRefusal.Failed));
+            return;
+        }
+
+        pet.ModelId = choice.ModelId;
+        pet.Size = choice.Size;
+        pet.Class = (byte)result.Damage;
+        await SaveRecordAsync(pet);
+
+        logger.LogInformation("{Name} transformed familiar {PetName} (#{PetId}) into {ItemId} with {Scroll}",
+            session.Name, pet.Name, pet.Id, choice.Result, scrollItemId);
+        await session.Client.SendPacket(PetPacketWriter.Transformed(
+            choice.Result, petSlot, pet.Id, pet.Name, pet.Class, pet.Level,
+            PetItemInfo.ExpPercentOf(pet.Exp, LevelOf(pet.Level)), pet.Satisfaction, scrollItemId, material.BagSlot));
     }
 
     public async Task<bool> SummonAsync(UserSession session)
@@ -447,18 +513,23 @@ public sealed class PetService(
     private Task SendSatisfactionAsync(UserSession session, PetState state) =>
         session.Client.SendPacket(PetPacketWriter.Satisfaction(state.Record.Satisfaction, state.Npc?.UniqueId ?? 0));
 
-    private async Task PersistAsync(PetState state)
+    private Task PersistAsync(PetState state)
     {
         state.SaveItems();
+        return SaveRecordAsync(state.Record);
+    }
+
+    private async Task SaveRecordAsync(Pet pet)
+    {
         try
         {
             using var scope = scopeFactory.CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IPetRepository>();
-            await repository.UpdateAsync(state.Record);
+            await repository.UpdateAsync(pet);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Saving familiar #{PetId} failed", state.Record.Id);
+            logger.LogError(ex, "Saving familiar #{PetId} failed", pet.Id);
         }
     }
 
@@ -508,6 +579,10 @@ public sealed class PetService(
 
     private PetLevelData? LevelOf(byte level) =>
         gameData.PetLevelTable.TryGetValue(level, out var data) ? data : null;
+
+    private bool TrainerNearby(UserSession session, int npcId) =>
+        sessionManager.Regions.GetNearbyNpcs(session)
+            .Any(npc => npc.NpcId == npcId && npc.IsAlive && npc.ZoneId == session.ZoneId && IsInRange(session, npc));
 
     private static bool IsInRange(UserSession session, NpcInstance npc)
     {

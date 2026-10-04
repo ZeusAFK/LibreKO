@@ -1293,12 +1293,25 @@ public partial class World
         return DetachPreviewControl(_petPanel);
     }
 
-    internal Control BuildFamiliarHatchUiPreview()
+    internal Control BuildFamiliarHatchUiPreview(bool transform)
     {
         ItemData.EnsureLoaded();
         BuildPetHatchPanel();
-        Inv.ApplySlotUpdate(GridStart + 2, new ItemSlot { ItemId = PreviewEggItem, Count = 1, Durability = 1 });
-        Inv.ApplySlotUpdate(GridStart + 6, new ItemSlot { ItemId = PreviewEggItem, Count = 1, Durability = 1 });
+        if (transform)
+        {
+            Net.I.PetItems[PreviewPetIndex] = new PetItemInfo(PreviewPetIndex, "Kauly", 101, 12, 4200, 7300);
+            Inv.ApplySlotUpdate(GridStart + 1, new ItemSlot
+            {
+                ItemId = PreviewKaulItem, Count = 1, Durability = 1, UniqueId = PreviewPetIndex,
+            });
+            Inv.ApplySlotUpdate(GridStart + 4, new ItemSlot { ItemId = PreviewImageChange, Count = 1, Durability = 1 });
+            Inv.ApplySlotUpdate(GridStart + 9, new ItemSlot { ItemId = PreviewEtarothScroll, Count = 1, Durability = 1 });
+        }
+        else
+        {
+            Inv.ApplySlotUpdate(GridStart + 2, new ItemSlot { ItemId = PreviewEggItem, Count = 1, Durability = 1 });
+            Inv.ApplySlotUpdate(GridStart + 6, new ItemSlot { ItemId = PreviewEggItem, Count = 1, Durability = 1 });
+        }
         OpenPetHatch(PreviewTrainerNpc);
         _petHatchName.Text = "Kauly";
         RefreshPetHatchUI();
@@ -1328,6 +1341,10 @@ public partial class World
     }
 
     private const int PreviewEggItem = 600001000;
+    private const int PreviewKaulItem = 610001000;
+    private const int PreviewPetIndex = 1;
+    private const int PreviewImageChange = 700017000;
+    private const int PreviewEtarothScroll = 700019001;
     private const int PreviewAutomaticLooting = 700012000;
     private const int PreviewTrainerNpc = 13016;
 

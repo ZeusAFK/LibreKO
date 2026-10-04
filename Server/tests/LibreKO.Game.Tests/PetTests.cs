@@ -35,6 +35,15 @@ public class PetTests : GameTestBase
     private const int AutomaticLooting = 700_012_000;
     private const int SecondLooting = 700_012_001;
     private const int Sword = 110_110_001;
+    private const int EtarothScroll = 700_019_001;
+    private const int EtarothScrollBase = 700_019_000;
+    private const int EtarothId = 610_015_000;
+    private const byte EtarothClass = 115;
+    private const short EtarothModel = 3900;
+    private const short EtarothSize = 40;
+    private const short CertainWeight = 10_000;
+    private const int LunarScroll = 508_090_000;
+    private const int TransformMaterialSlots = 3;
 
     private static readonly PetLevelData LevelOne = new()
     {
@@ -207,6 +216,79 @@ public class PetTests : GameTestBase
 
         owner.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(EggId);
         RefusalOf(sent).Should().Be(HatchRefusal.Failed);
+    }
+
+    [Theory]
+    [InlineData(EtarothScroll, EtarothScroll)]
+    [InlineData(EtarothScrollBase, EtarothScroll)]
+    public async Task ATransformationScrollTurnsTheFamiliarIntoItsResult(int carried, int named)
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        var kate = Kate(sessions);
+        var pet = await LinkPet(provider, owner.Inventory[InventoryConstants.SlotMax]);
+        PutItem(owner, 1, carried);
+
+        await provider.GetRequiredService<IItemUpgradeService>()
+            .HandleUpgradeAsync(owner.Client, TransformRequest(kate.NpcId, 0, named, 1));
+
+        var familiar = owner.Inventory[InventoryConstants.SlotMax];
+        familiar.ItemId.Should().Be(EtarothId);
+        familiar.UniqueId.Should().Be(pet.Id);
+        owner.Inventory[InventoryConstants.SlotMax + 1].IsEmpty.Should().BeTrue();
+        var saved = await Repository(provider).GetById(pet.Id);
+        saved!.ModelId.Should().Be(EtarothModel);
+        saved.Size.Should().Be(EtarothSize);
+        saved.Class.Should().Be(EtarothClass);
+
+        var reply = sent.Single(p => p.GetOpcode() == (byte)GameOpcodes.GS_ITEM_UPGRADE);
+        reply.ResetOffset();
+        reply.ReadByte().Should().Be((byte)ItemUpgradeSubOpcode.PetTransform);
+        reply.ReadByte().Should().Be((byte)HatchResult.Succeeded);
+        reply.ReadInt().Should().Be(EtarothId);
+        reply.ReadByte().Should().Be(0);
+        reply.ReadInt().Should().Be(pet.Id);
+        reply.ReadString().Should().Be(PetName);
+        reply.ReadByte().Should().Be(EtarothClass);
+        reply.ReadByte().Should().Be(Pet.StartLevel);
+        reply.ReadUShort().Should().Be(0);
+        reply.ReadShort().Should().Be(Pet.HatchedSatisfaction);
+        reply.ReadByte().Should().Be(PetPacketWriter.TransformedPad, "the 2619 reader skips a byte after the familiar");
+        reply.ReadInt().Should().Be(carried);
+        reply.ReadByte().Should().Be(1);
+        reply.RemainingBytes.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AScrollWithoutATransformationIsRefused()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        var kate = Kate(sessions);
+        var pet = await LinkPet(provider, owner.Inventory[InventoryConstants.SlotMax]);
+        PutItem(owner, 1, LunarScroll);
+
+        await provider.GetRequiredService<IItemUpgradeService>()
+            .HandleUpgradeAsync(owner.Client, TransformRequest(kate.NpcId, 0, LunarScroll, 1));
+
+        owner.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(KaulId);
+        owner.Inventory[InventoryConstants.SlotMax + 1].ItemId.Should().Be(LunarScroll);
+        (await Repository(provider).GetById(pet.Id))!.ModelId.Should().Be(PetService.HatchedModelId);
+        RefusalOf(sent).Should().Be(HatchRefusal.Failed);
+    }
+
+    [Fact]
+    public void ATransformationIsPickedByWeight()
+    {
+        var never = new PetTransformData { Id = 1, Weight = 0 };
+        var always = new PetTransformData { Id = 2, Weight = CertainWeight };
+        var random = new Random(7);
+
+        Enumerable.Range(0, 100).Select(_ => PetTransforms.Pick([never, always], random))
+            .Should().OnlyContain(pick => pick == always);
+        PetTransforms.Pick([], random).Should().BeNull();
     }
 
     [Fact]
@@ -688,19 +770,33 @@ public class PetTests : GameTestBase
         {
             Num = LeafId, Kind = (byte)ItemKind.PetFood, Slot = 15, Damage = LeafSatisfaction, Countable = 1,
         });
+        gameData.GetItem(EtarothId).Returns(new ItemData
+        {
+            Num = EtarothId, Kind = (byte)ItemKind.PetItem, Slot = KaulItemSlot, Damage = EtarothClass, Duration = 1,
+        });
+        gameData.PetTransformsByMaterial.Returns(new[]
+        {
+            new PetTransformData
+            {
+                Id = 37, Material = EtarothScrollBase, Result = EtarothId, ModelId = EtarothModel, Size = EtarothSize,
+                Weight = CertainWeight,
+            },
+        }.ToLookup(transform => transform.Material));
     });
 
     private static IPetRepository Repository(ServiceProvider provider) =>
         provider.CreateScope().ServiceProvider.GetRequiredService<IPetRepository>();
 
-    private static async Task<Pet> EquipPet(ServiceProvider provider, UserSession owner)
+    private static Task<Pet> EquipPet(ServiceProvider provider, UserSession owner) =>
+        LinkPet(provider, owner.Inventory[InventoryConstants.Pet]);
+
+    private static async Task<Pet> LinkPet(ServiceProvider provider, ItemSlot slot)
     {
         var pet = await Repository(provider).CreateAsync(new Pet
         {
             Name = PetName, Level = Pet.StartLevel, Hp = LevelOne.MaxHp, Mp = LevelOne.MaxMp,
             ModelId = PetService.HatchedModelId, Size = PetService.HatchedSize, Class = KaulClass,
         });
-        var slot = owner.Inventory[InventoryConstants.Pet];
         slot.ItemId = KaulId;
         slot.Count = 1;
         slot.Durability = 1;
@@ -708,11 +804,31 @@ public class PetTests : GameTestBase
         return pet;
     }
 
-    private static void PutEgg(UserSession owner, int bagSlot)
+    private static void PutEgg(UserSession owner, int bagSlot) => PutItem(owner, bagSlot, EggId);
+
+    private static void PutItem(UserSession owner, int bagSlot, int itemId)
     {
         var slot = owner.Inventory[InventoryConstants.SlotMax + bagSlot];
-        slot.ItemId = EggId;
+        slot.ItemId = itemId;
         slot.Count = 1;
+    }
+
+    private static Packet TransformRequest(int npcId, byte petSlot, int materialItemId, byte materialSlot)
+    {
+        var packet = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
+        packet.WriteByte((byte)ItemUpgradeSubOpcode.PetTransform);
+        packet.WriteInt(npcId);
+        packet.WriteInt(KaulId);
+        packet.WriteByte(petSlot);
+        packet.WriteInt(materialItemId);
+        packet.WriteByte(materialSlot);
+        for (var i = 1; i < TransformMaterialSlots; i++)
+        {
+            packet.WriteInt(0);
+            packet.WriteByte(0);
+        }
+        packet.ResetOffset();
+        return packet;
     }
 
     private static NpcInstance Kate(SessionManager sessions) =>

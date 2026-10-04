@@ -45,6 +45,11 @@ public class PetLevelSeed : SnapshotJsonSeed<PetLevelData>
     protected override string JsonFileName => "PetLevels.json";
 }
 
+public class PetTransformSeed : SnapshotJsonSeed<PetTransformData>
+{
+    protected override string JsonFileName => "PetTransforms.json";
+}
+
 public class CoefficientSeed : SnapshotJsonSeed<CoefficientData>
 {
     protected override string JsonFileName => "Coefficients.json";

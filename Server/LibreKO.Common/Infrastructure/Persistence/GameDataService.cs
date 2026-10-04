@@ -14,6 +14,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
 
     public IReadOnlyDictionary<byte, long> LevelUpTable { get; private set; } = new Dictionary<byte, long>();
     public IReadOnlyDictionary<byte, PetLevelData> PetLevelTable { get; private set; } = new Dictionary<byte, PetLevelData>();
+    public ILookup<int, PetTransformData> PetTransformsByMaterial { get; private set; } = Enumerable.Empty<PetTransformData>().ToLookup(x => x.Material);
     public IReadOnlyDictionary<short, CoefficientData> CoefficientTable { get; private set; } = new Dictionary<short, CoefficientData>();
     public IReadOnlyDictionary<short, StartPositionData> StartPositionTable { get; private set; } = new Dictionary<short, StartPositionData>();
     public IReadOnlyDictionary<int, ItemData> ItemTable { get; private set; } = new Dictionary<int, ItemData>();
@@ -240,6 +241,8 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
             LevelUpTable = await LoadDictionaryAsync(db.LevelUp, x => x.Level, x => x.Exp, "level-up entries", cancellationToken);
             WarnOnIncompleteLevelTable();
             PetLevelTable = await LoadDictionaryAsync(db.PetLevels, x => x.Level, "pet level entries", cancellationToken);
+            var petTransforms = await LoadListAsync(db.PetTransforms, "pet transform entries", cancellationToken);
+            PetTransformsByMaterial = petTransforms.ToLookup(x => x.Material);
             CoefficientTable = await LoadDictionaryAsync(db.Coefficients, x => x.ClassId, "coefficient entries", cancellationToken);
             StartPositionTable = await LoadDictionaryAsync(db.StartPositions, x => x.ZoneId, "start position entries", cancellationToken);
             ItemTable = await LoadDictionaryAsync(db.Items, x => x.Num, "item entries", cancellationToken);

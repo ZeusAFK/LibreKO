@@ -32,6 +32,7 @@ public static class PetPacketWriter
     public const byte TargetHpTail = 0;
     public const int NameTakenFillerInt = 0;
     public const byte NameTakenFillerByte = 0;
+    public const byte TransformedPad = 0;
 
     public readonly record struct SummonInfo(
         int Index, string Name, byte Class, byte Level, ushort ExpPercent,
@@ -154,7 +155,47 @@ public static class PetPacketWriter
     public static Packet Hatched(int itemId, byte slot, int index, string name, byte petClass, byte level,
         ushort expPercent, short satisfaction)
     {
-        var packet = HatchHeader(HatchResult.Succeeded);
+        var packet = UpgradeHeader(ItemUpgradeSubOpcode.PetHatching, HatchResult.Succeeded);
+        WriteFamiliarItem(packet, itemId, slot, index, name, petClass, level, expPercent, satisfaction);
+        return packet;
+    }
+
+    public static Packet HatchRefused(HatchRefusal refusal)
+    {
+        var packet = UpgradeHeader(ItemUpgradeSubOpcode.PetHatching, HatchResult.Refused);
+        packet.WriteByte((byte)refusal);
+        return packet;
+    }
+
+    public static Packet HatchNameTaken()
+    {
+        var packet = UpgradeHeader(ItemUpgradeSubOpcode.PetHatching, HatchResult.NameTaken);
+        packet.WriteInt(NameTakenFillerInt);
+        packet.WriteByte(NameTakenFillerByte);
+        return packet;
+    }
+
+    public static Packet Transformed(int itemId, byte slot, int index, string name, byte petClass, byte level,
+        ushort expPercent, short satisfaction, int materialItemId, byte materialSlot)
+    {
+        var packet = UpgradeHeader(ItemUpgradeSubOpcode.PetTransform, HatchResult.Succeeded);
+        WriteFamiliarItem(packet, itemId, slot, index, name, petClass, level, expPercent, satisfaction);
+        packet.WriteByte(TransformedPad);
+        packet.WriteInt(materialItemId);
+        packet.WriteByte(materialSlot);
+        return packet;
+    }
+
+    public static Packet TransformRefused(HatchRefusal refusal)
+    {
+        var packet = UpgradeHeader(ItemUpgradeSubOpcode.PetTransform, HatchResult.Refused);
+        packet.WriteByte((byte)refusal);
+        return packet;
+    }
+
+    private static void WriteFamiliarItem(Packet packet, int itemId, byte slot, int index, string name, byte petClass,
+        byte level, ushort expPercent, short satisfaction)
+    {
         packet.WriteInt(itemId);
         packet.WriteByte(slot);
         packet.WriteInt(index);
@@ -163,28 +204,12 @@ public static class PetPacketWriter
         packet.WriteByte(level);
         packet.WriteUShort(expPercent);
         packet.WriteShort(satisfaction);
-        return packet;
     }
 
-    public static Packet HatchRefused(HatchRefusal refusal)
-    {
-        var packet = HatchHeader(HatchResult.Refused);
-        packet.WriteByte((byte)refusal);
-        return packet;
-    }
-
-    public static Packet HatchNameTaken()
-    {
-        var packet = HatchHeader(HatchResult.NameTaken);
-        packet.WriteInt(NameTakenFillerInt);
-        packet.WriteByte(NameTakenFillerByte);
-        return packet;
-    }
-
-    private static Packet HatchHeader(HatchResult result)
+    private static Packet UpgradeHeader(ItemUpgradeSubOpcode subOpcode, HatchResult result)
     {
         var packet = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
-        packet.WriteByte((byte)ItemUpgradeSubOpcode.PetHatching);
+        packet.WriteByte((byte)subOpcode);
         packet.WriteByte((byte)result);
         return packet;
     }
