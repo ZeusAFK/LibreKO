@@ -662,6 +662,10 @@ public sealed class QuestInterpreter
                 _host.OpenFamiliarPanel();
                 break;
 
+            case QuestActionKind.OpenFamiliarShop:
+                _host.OpenFamiliarShop();
+                break;
+
             case QuestActionKind.OpenStatSkillPanel:
                 _host.OpenStatSkillPanel();
                 break;

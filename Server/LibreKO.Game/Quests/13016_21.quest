@@ -8,10 +8,14 @@ On greeting
 On topics
     If quest 78 is completed
         Topic "Familiar Hatching and transform" goto hatching
+        Topic "Familiar Shop" goto shop
         Topic "Use Voucher" goto vouchers
 
 On hatching
     Open familiar panel
+
+On shop
+    Open familiar shop
 
 On vouchers
     Say if_you_bring_a

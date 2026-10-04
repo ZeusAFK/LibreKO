@@ -312,6 +312,7 @@ public sealed class QuestScriptHost(
     public void OpenClanRenamePanel() => context.Dialog.SendClanNameChange();
     public void OpenRebirthPanel() => context.Dialog.SendRebirthPanel();
     public void OpenFamiliarPanel() => context.Dialog.SendFamiliarPanel();
+    public void OpenFamiliarShop() => context.Dialog.SendFamiliarShop();
 
     public void Unsupported(string what)
     {

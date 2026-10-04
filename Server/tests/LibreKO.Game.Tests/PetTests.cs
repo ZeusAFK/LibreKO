@@ -4,6 +4,7 @@ using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
@@ -44,6 +45,9 @@ public class PetTests : GameTestBase
     private const short CertainWeight = 10_000;
     private const int LunarScroll = 508_090_000;
     private const int TransformMaterialSlots = 3;
+    private const int ImageChangeLow = 700_013_000;
+    private const int ImageChangeMiddle = 700_017_000;
+    private const int ImageChangeHigh = 700_018_000;
 
     private static readonly PetLevelData LevelOne = new()
     {
@@ -277,6 +281,38 @@ public class PetTests : GameTestBase
         owner.Inventory[InventoryConstants.SlotMax + 1].ItemId.Should().Be(LunarScroll);
         (await Repository(provider).GetById(pet.Id))!.ModelId.Should().Be(PetService.HatchedModelId);
         RefusalOf(sent).Should().Be(HatchRefusal.Failed);
+    }
+
+    [Fact]
+    public async Task AScrollNeverRollsTheFormTheFamiliarAlreadyHas()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        var kate = Kate(sessions);
+        var familiar = owner.Inventory[InventoryConstants.SlotMax];
+        await LinkPet(provider, familiar);
+        familiar.ItemId = EtarothId;
+        PutItem(owner, 1, EtarothScroll);
+
+        await provider.GetRequiredService<IItemUpgradeService>()
+            .HandleUpgradeAsync(owner.Client, TransformRequest(kate.NpcId, 0, EtarothScroll, 1, EtarothId));
+
+        owner.Inventory[InventoryConstants.SlotMax + 1].ItemId.Should().Be(EtarothScroll, "a scroll that would change nothing is kept");
+        RefusalOf(sent).Should().Be(HatchRefusal.Failed);
+    }
+
+    [Fact]
+    public void ImageChangeScrollsOfferTieredForms()
+    {
+        var transforms = new PetTransformSeed().GetSeedData().ToList();
+        var tiers = new[] { ImageChangeLow, ImageChangeMiddle, ImageChangeHigh }
+            .Select(scroll => transforms.Where(t => t.Material == scroll).ToList())
+            .ToList();
+
+        tiers.Should().AllSatisfy(tier => tier.Sum(t => t.Weight).Should().Be(CertainWeight));
+        tiers.SelectMany(tier => tier.Select(t => t.Result)).Should().OnlyHaveUniqueItems("each form belongs to one tier");
+        tiers.Select(tier => tier.Count).Should().Equal(4, 4, 3);
     }
 
     [Fact]
@@ -813,12 +849,13 @@ public class PetTests : GameTestBase
         slot.Count = 1;
     }
 
-    private static Packet TransformRequest(int npcId, byte petSlot, int materialItemId, byte materialSlot)
+    private static Packet TransformRequest(int npcId, byte petSlot, int materialItemId, byte materialSlot,
+        int petItemId = KaulId)
     {
         var packet = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
         packet.WriteByte((byte)ItemUpgradeSubOpcode.PetTransform);
         packet.WriteInt(npcId);
-        packet.WriteInt(KaulId);
+        packet.WriteInt(petItemId);
         packet.WriteByte(petSlot);
         packet.WriteInt(materialItemId);
         packet.WriteByte(materialSlot);

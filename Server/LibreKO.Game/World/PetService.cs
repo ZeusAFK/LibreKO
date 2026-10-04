@@ -197,7 +197,8 @@ public sealed class PetService(
 
         await CacheAsync([petItem]);
         var candidates = gameData.PetTransformsByMaterial[PetTransforms.MaterialOf(scrollItemId)]
-            .Where(candidate => gameData.GetItem(candidate.Result)?.Kind == (byte)ItemKind.PetItem)
+            .Where(candidate => candidate.Result != petItemId
+                && gameData.GetItem(candidate.Result)?.Kind == (byte)ItemKind.PetItem)
             .ToList();
         if (!_pets.TryGetValue(petItem.UniqueId, out var pet) || PetTransforms.Pick(candidates, Random.Shared) is not { } choice)
         {

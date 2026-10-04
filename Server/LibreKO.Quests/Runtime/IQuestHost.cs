@@ -92,6 +92,7 @@ public interface IQuestHost
     void OpenClanRenamePanel();
     void OpenRebirthPanel();
     void OpenFamiliarPanel();
+    void OpenFamiliarShop();
 
     void Unsupported(string what);
 }

@@ -12,6 +12,7 @@ public sealed class NpcDialogPacketWriter
     public const byte ObjectEventShown = 1;
     public const byte RebirthPanelStyle = 48;
     public const byte FamiliarPanelStyle = 9;
+    public const byte FamiliarShopStyle = 14;
 
     public static Packet NpcSay(IReadOnlyList<int> textIds) => NpcSay(textIds, null);
 
@@ -93,6 +94,9 @@ public sealed class NpcDialogPacketWriter
 
     public static Packet FamiliarPanel(int npcId, string scriptFile) =>
         SelectMessage(npcId, FamiliarPanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
+
+    public static Packet FamiliarShop(int npcId, string scriptFile) =>
+        SelectMessage(npcId, FamiliarShopStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
 
     public static Packet Effect(int entityId, int effectId)
     {

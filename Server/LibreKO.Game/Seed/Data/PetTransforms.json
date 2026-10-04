@@ -1,27 +1,11 @@
 [
   {
-    "Id": 1,
-    "Material": 700017000,
-    "Result": 610004000,
-    "ModelId": 200,
-    "Size": 40,
-    "Weight": 910
-  },
-  {
-    "Id": 2,
-    "Material": 700017000,
-    "Result": 610005000,
-    "ModelId": 800,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
     "Id": 3,
     "Material": 700017000,
     "Result": 610006000,
     "ModelId": 4300,
     "Size": 40,
-    "Weight": 909
+    "Weight": 2500
   },
   {
     "Id": 4,
@@ -29,15 +13,7 @@
     "Result": 610008000,
     "ModelId": 2010,
     "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 5,
-    "Material": 700017000,
-    "Result": 610007000,
-    "ModelId": 100,
-    "Size": 40,
-    "Weight": 909
+    "Weight": 2500
   },
   {
     "Id": 6,
@@ -45,31 +21,7 @@
     "Result": 610009000,
     "ModelId": 4100,
     "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 7,
-    "Material": 700017000,
-    "Result": 610010000,
-    "ModelId": 600,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 8,
-    "Material": 700017000,
-    "Result": 610011000,
-    "ModelId": 2400,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 9,
-    "Material": 700017000,
-    "Result": 610012000,
-    "ModelId": 2200,
-    "Size": 40,
-    "Weight": 909
+    "Weight": 2500
   },
   {
     "Id": 10,
@@ -77,15 +29,7 @@
     "Result": 610013000,
     "ModelId": 1102,
     "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 11,
-    "Material": 700017000,
-    "Result": 610014000,
-    "ModelId": 2000,
-    "Size": 40,
-    "Weight": 909
+    "Weight": 2500
   },
   {
     "Id": 12,
@@ -93,7 +37,7 @@
     "Result": 610004000,
     "ModelId": 200,
     "Size": 40,
-    "Weight": 910
+    "Weight": 2500
   },
   {
     "Id": 13,
@@ -101,15 +45,7 @@
     "Result": 610005000,
     "ModelId": 800,
     "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 14,
-    "Material": 700013000,
-    "Result": 610006000,
-    "ModelId": 4300,
-    "Size": 40,
-    "Weight": 909
+    "Weight": 2500
   },
   {
     "Id": 15,
@@ -117,23 +53,7 @@
     "Result": 610007000,
     "ModelId": 100,
     "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 16,
-    "Material": 700013000,
-    "Result": 610008000,
-    "ModelId": 2010,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 17,
-    "Material": 700013000,
-    "Result": 610009000,
-    "ModelId": 4100,
-    "Size": 40,
-    "Weight": 909
+    "Weight": 2500
   },
   {
     "Id": 18,
@@ -141,95 +61,7 @@
     "Result": 610010000,
     "ModelId": 600,
     "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 19,
-    "Material": 700013000,
-    "Result": 610011000,
-    "ModelId": 2400,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 20,
-    "Material": 700013000,
-    "Result": 610012000,
-    "ModelId": 2200,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 21,
-    "Material": 700013000,
-    "Result": 610013000,
-    "ModelId": 1102,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 22,
-    "Material": 700013000,
-    "Result": 610014000,
-    "ModelId": 2000,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 23,
-    "Material": 700018000,
-    "Result": 610005000,
-    "ModelId": 800,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 24,
-    "Material": 700018000,
-    "Result": 610004000,
-    "ModelId": 200,
-    "Size": 40,
-    "Weight": 910
-  },
-  {
-    "Id": 25,
-    "Material": 700018000,
-    "Result": 610006000,
-    "ModelId": 4300,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 26,
-    "Material": 700018000,
-    "Result": 610007000,
-    "ModelId": 100,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 27,
-    "Material": 700018000,
-    "Result": 610008000,
-    "ModelId": 2010,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 28,
-    "Material": 700018000,
-    "Result": 610009000,
-    "ModelId": 4100,
-    "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 29,
-    "Material": 700018000,
-    "Result": 610010000,
-    "ModelId": 600,
-    "Size": 40,
-    "Weight": 909
+    "Weight": 2500
   },
   {
     "Id": 30,
@@ -237,7 +69,7 @@
     "Result": 610012000,
     "ModelId": 2200,
     "Size": 40,
-    "Weight": 909
+    "Weight": 3333
   },
   {
     "Id": 31,
@@ -245,15 +77,7 @@
     "Result": 610011000,
     "ModelId": 2400,
     "Size": 40,
-    "Weight": 909
-  },
-  {
-    "Id": 32,
-    "Material": 700018000,
-    "Result": 610013000,
-    "ModelId": 1102,
-    "Size": 40,
-    "Weight": 909
+    "Weight": 3333
   },
   {
     "Id": 33,
@@ -261,7 +85,7 @@
     "Result": 610014000,
     "ModelId": 2000,
     "Size": 40,
-    "Weight": 909
+    "Weight": 3334
   },
   {
     "Id": 34,

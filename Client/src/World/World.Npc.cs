@@ -26,6 +26,7 @@ public partial class World
     private const int OffersPerPage = 10;
     private const int MenuRowsVisible = OffersPerPage + 1;
     private const float MenuRowHeight = 39f;
+    private const int FamiliarShopGroup = 232000;
 
     private System.Collections.Generic.List<QuestData.Offer> _npcOffers = new();
     private int _npcOfferPage;
@@ -225,6 +226,12 @@ public partial class World
         {
             CloseNpcDialog();
             OpenPetHatch(dlg.NpcId);
+            return;
+        }
+
+        if (dlg.Flag == NpcDialog.FamiliarShopFlag)
+        {
+            OpenVendor(FamiliarShopGroup);
             return;
         }
 
