@@ -62,7 +62,7 @@ public partial class World
             float d = e.Body.Position.DistanceTo(_self.Position);
             if (d < bestD) { bestD = d; bestId = kv.Key; }
         }
-        if (bestId < 0) { Chat.Info("No player nearby to challenge."); return; }
+        if (bestId < 0) { CombatNotice("No player nearby to challenge."); return; }
 
         _challengeOpponent = _ents.TryGetValue(bestId, out var pe) && pe.Name.Length > 0 ? pe.Name : "Player";
         ChallengeByName(_challengeOpponent);
@@ -74,7 +74,7 @@ public partial class World
         if (_selfDead || _challengeOutgoing || _challengeRequestPending) return;
         _challengeOpponent = targetName;
         Net.I.SendChallengeRequest(targetName);
-        Chat.Info($"Challenging {targetName} to a duel…");
+        CombatNotice($"Challenging {targetName} to a duel…");
     }
 
     private void ChallengeCancelOutgoing()
@@ -82,26 +82,26 @@ public partial class World
         if (!_challengeOutgoing) return;
         Net.I.SendChallengeCancel();
         _challengeOutgoing = false;
-        Chat.Info("You cancelled the duel challenge.");
+        CombatNotice("You cancelled the duel challenge.");
     }
 
     private void OnChallengeSent(string targetName)
     {
         _challengeOpponent = targetName;
         _challengeOutgoing = true;
-        Chat.Info($"Waiting for {targetName} to accept the duel…");
+        CombatNotice($"Waiting for {targetName} to accept the duel…");
     }
 
     private void OnChallengeRejected()
     {
         _challengeOutgoing = false;
-        Chat.Info($"{_challengeOpponent} declined the duel.");
+        CombatNotice($"{_challengeOpponent} declined the duel.");
     }
 
     private void OnChallengeError()
     {
         _challengeOutgoing = false;
-        Chat.Info("The duel challenge failed (target unavailable).");
+        CombatNotice("The duel challenge failed (target unavailable).");
     }
 
     private void OnChallengeRequest(string challengerName)
@@ -111,7 +111,7 @@ public partial class World
         _challengeRequestPending = true;
         _challengeAskDialog.DialogText = $"{_challengeOpponent} challenges you to a duel.\nAccept and warp to the arena?";
         _challengeAskDialog.PopupCentered();
-        Chat.Info($"{_challengeOpponent} challenges you to a duel.");
+        CombatNotice($"{_challengeOpponent} challenges you to a duel.");
     }
 
     private void AnswerChallenge(bool accept)
@@ -121,12 +121,12 @@ public partial class World
         if (accept)
         {
             Net.I.SendChallengeAccept();
-            Chat.Info($"You accepted {_challengeOpponent}'s duel — warping to the arena…");
+            CombatNotice($"You accepted {_challengeOpponent}'s duel — warping to the arena…");
         }
         else
         {
             Net.I.SendChallengeReject();
-            Chat.Info($"You declined {_challengeOpponent}'s duel.");
+            CombatNotice($"You declined {_challengeOpponent}'s duel.");
         }
     }
 
@@ -138,6 +138,6 @@ public partial class World
             _challengeAskDialog.Hide();
         }
         _challengeOutgoing = false;
-        Chat.Info($"{_challengeOpponent} cancelled the duel challenge.");
+        CombatNotice($"{_challengeOpponent} cancelled the duel challenge.");
     }
 }

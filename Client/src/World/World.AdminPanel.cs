@@ -402,7 +402,7 @@ public partial class World
         if (!state.Granted)
         {
             CloseAdminPanel();
-            Chat.Info("The server refused the GM panel for this account.");
+            CombatNotice("The server refused the GM panel for this account.");
             return;
         }
 
@@ -433,7 +433,7 @@ public partial class World
     {
         if (!_admEnabled) return;
         SetAdminStatus(message, !ok);
-        if (!ok) Chat.Info(message);
+        if (!ok) CombatNotice(message);
     }
 
     private void RefreshAdminCharacterTab()

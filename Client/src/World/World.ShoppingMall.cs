@@ -361,7 +361,7 @@ public partial class World
     {
         if (ok)
         {
-            Chat.Info("Gift claimed from your mailbox.");
+            CombatNotice("Gift claimed from your mailbox.");
             RequestLetterList();
             Net.I.SendShoppingMallUnread();
         }
@@ -470,7 +470,7 @@ public partial class World
         if (ok)
         {
             SetShoppingMallStatus("Letter sent.", false);
-            Chat.Info("Your letter was delivered.");
+            CombatNotice("Your letter was delivered.");
             _shoppingmallToEdit.Text = "";
             _shoppingmallSubjectEdit.Text = "";
             _shoppingmallMsgEdit.Text = "";
@@ -494,7 +494,7 @@ public partial class World
 
             _pusBasketStatus.Text = "Purchase complete.";
             _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-            Chat.Info("Power-Up Store purchase complete.");
+            CombatNotice("Power-Up Store purchase complete.");
             return;
         }
 
@@ -740,7 +740,7 @@ public partial class World
 
         _pusBasketStatus.Text = $"Purchase request sent for {total:n0} KC. Server validation pending.";
         _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-        Chat.Info($"Power-Up Store purchase request sent: {total:n0} KC.");
+        CombatNotice($"Power-Up Store purchase request sent: {total:n0} KC.");
         _pusBasket.Clear();
         RefreshPusView();
     }

@@ -66,13 +66,13 @@ public partial class World : Node3D
     }
 
     private void OnClassEligibility(int code) =>
-        Chat.Info(code == 1 ? "You are eligible to change class." : "You cannot change class yet.");
+        CombatNotice(code == 1 ? "You are eligible to change class." : "You cannot change class yet.");
 
     private void OnClassPromoted(int charId, int newClass)
     {
         if (charId != _myId && charId != Net.I.LastEnter.CharId) return;
         ApplyClassChange(newClass);
-        Chat.Info($"You are now a {CharacterClassCatalog.SpecializationName(newClass)}!");
+        CombatNotice($"You are now a {CharacterClassCatalog.SpecializationName(newClass)}!");
     }
 
     private void ApplyClassChange(int newClass)
@@ -85,7 +85,7 @@ public partial class World : Node3D
 
     private void OnJobChangeResult(int code)
     {
-        Chat.Info(code switch
+        CombatNotice(code switch
         {
             1 => "Class changed!",
             4 => "Take off your equipment before changing class.",

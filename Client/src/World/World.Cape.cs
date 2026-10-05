@@ -213,7 +213,7 @@ public partial class World
             _capeCurrent = capeId >= 0 ? capeId : _capeCurrent;
             string what = capeId >= 0 ? $"cape #{capeId}" : "cape dye";
             SetCapeStatus($"Applied {what}.", false);
-            Chat.Info($"[Clan] Cape updated ({what}).");
+            CombatNotice($"[Clan] Cape updated ({what}).");
         }
         else
         {

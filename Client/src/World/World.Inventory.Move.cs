@@ -9,6 +9,7 @@ public partial class World : Node3D
     private void InventoryContext(int absSlot)
     {
         if (absSlot < 0 || absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
+        if (Input.IsKeyPressed(Key.Shift) && Chat.InsertItemLink(Inv[absSlot].ItemId)) return;
         if (_bagCompanion != null && _bagCompanion.Take(absSlot)) return;
         var def = ItemData.Get(Inv[absSlot].ItemId);
         if (def == null) return;

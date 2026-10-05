@@ -670,7 +670,7 @@ public partial class World : Node3D
 
     private void OnItemRemoveResult(bool ok)
     {
-        if (!ok) { Chat.Info("That item could not be destroyed."); return; }
+        if (!ok) { CombatNotice("That item could not be destroyed."); return; }
         RefreshInventoryUI();
     }
 

@@ -59,15 +59,14 @@ public partial class World
     {
         const string line = "Clan battle status has changed.";
         ShowClanBattleBanner(line, ClanBattleGold);
-        Chat.Append($"[color=#46d3c0][lb]clan battle[rb] [/color][color=#ecd9a6]{BbCode.Esc(line)}[/color]");
+        CombatLogAdd(line, CombatLogKind.Status);
     }
 
     private void OnClanBattlePoints(int sub)
     {
         var (line, disband) = ClanBattleMessage(sub);
         ShowClanBattleBanner(line, disband ? new Color("ff8a5c") : ClanBattleGold);
-        var colHex = disband ? "ff9a6a" : "ecd9a6";
-        Chat.Append($"[color=#46d3c0][lb]clan battle[rb] [/color][color=#{colHex}]{BbCode.Esc(line)}[/color]");
+        CombatLogAdd(line, CombatLogKind.Status);
     }
 
     private static (string Line, bool Disband) ClanBattleMessage(int sub) => sub switch

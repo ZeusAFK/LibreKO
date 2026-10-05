@@ -108,7 +108,7 @@ public partial class World
     private void OnNameChangeSuccess(string newName)
     {
         if (string.IsNullOrEmpty(newName)) newName = _nameChangePending;
-        Chat.Info($"Your character is now named \"{newName}\".");
+        CombatNotice($"Your character is now named \"{newName}\".");
         SetNameChangeStatus("Name changed!", false);
         CloseNameChange();
     }

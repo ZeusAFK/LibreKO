@@ -102,7 +102,7 @@ public partial class World
         if (!_guardPetActive)
         {
             _guardPetBar.Visible = false;
-            if (wasActive) Chat.Info("Your guard pet is no longer deployed.");
+            if (wasActive) CombatNotice("Your guard pet is no longer deployed.");
             return;
         }
 
@@ -114,7 +114,7 @@ public partial class World
 
         if (!wasActive)
         {
-            Chat.Info("Your guard pet is deployed.");
+            CombatNotice("Your guard pet is deployed.");
         }
     }
 }

@@ -4,11 +4,18 @@ namespace LibreKO;
 
 public sealed partial class HudLogText : RichTextLabel
 {
+    public const float ScrollbarGutter = 12f;
     private const float ScrollbarWidth = 6f;
     private const float ScrollbarTopInset = 5f;
-    private const float ScrollbarBottomInset = 22f;
+    public const float DefaultScrollbarBottomInset = 22f;
+    private const float TextEdgePadding = 5f;
+    private const float TextTopPadding = 3f;
+    private const float TextBottomPadding = 4f;
     public bool ScrollbarOnLeft { get; init; }
+    public float ScrollbarBottomInset { get; init; } = DefaultScrollbarBottomInset;
+    private float _reservedBottom;
     private bool? _wasScrollable;
+    private bool _syncQueued;
 
     public override void _Ready()
     {
@@ -16,63 +23,54 @@ public sealed partial class HudLogText : RichTextLabel
         TextDirection = Control.TextDirection.Ltr;
         StyleTextPadding();
         StyleScrollbar();
-        ConstrainScrollbar();
+        VScrollBar bar = GetVScrollBar();
+        bar.ItemRectChanged += QueueSync;
+        bar.VisibilityChanged += QueueSync;
+        bar.Changed += QueueSync;
+        Resized += QueueSync;
+        Sync();
     }
 
-    public override void _Process(double delta)
+    private void QueueSync()
     {
+        if (_syncQueued) return;
+        _syncQueued = true;
+        Callable.From(Sync).CallDeferred();
+    }
+
+    private void Sync()
+    {
+        _syncQueued = false;
         ConstrainScrollbar();
         VScrollBar bar = GetVScrollBar();
         bool scrollable = bar.MaxValue > bar.Page + 0.5;
-        if (_wasScrollable != scrollable)
-        {
-            _wasScrollable = scrollable;
-            StyleScrollbarThumb(scrollable);
-        }
+        if (_wasScrollable == scrollable) return;
+        _wasScrollable = scrollable;
+        UiTheme.ThinScrollbarThumb(bar, scrollable);
     }
 
     private void StyleScrollbar()
     {
         VScrollBar bar = GetVScrollBar();
         bar.Show();
-
-        bar.AddThemeStyleboxOverride("scroll", Fill(new Color(0.018f, 0.020f, 0.025f, 0.72f), 3));
-        StyleScrollbarThumb(false);
-    }
-
-    private void StyleScrollbarThumb(bool scrollable)
-    {
-        VScrollBar bar = GetVScrollBar();
-        if (!scrollable)
-        {
-            var clear = Fill(new Color(0, 0, 0, 0), 2);
-            bar.AddThemeStyleboxOverride("grabber", clear);
-            bar.AddThemeStyleboxOverride("grabber_highlight", clear);
-            bar.AddThemeStyleboxOverride("grabber_pressed", clear);
-            return;
-        }
-
-        bar.AddThemeStyleboxOverride("grabber", Fill(new Color("#b8793f"), 2));
-        bar.AddThemeStyleboxOverride("grabber_highlight", Fill(new Color("#dfa35d"), 2));
-        bar.AddThemeStyleboxOverride("grabber_pressed", Fill(new Color("#f0bd76"), 2));
-    }
-
-    private static StyleBoxFlat Fill(Color color, int radius)
-    {
-        var style = new StyleBoxFlat { BgColor = color };
-        style.SetCornerRadiusAll(radius);
-        style.ContentMarginLeft = style.ContentMarginRight = 1;
-        return style;
+        UiTheme.ThinScrollbar(bar);
     }
 
     private void StyleTextPadding()
     {
         var content = new StyleBoxFlat { BgColor = Colors.Transparent };
-        content.ContentMarginTop = 3;
-        content.ContentMarginBottom = 4;
-        content.ContentMarginLeft = ScrollbarOnLeft ? 12 : 5;
-        content.ContentMarginRight = ScrollbarOnLeft ? 5 : 12;
+        content.ContentMarginTop = TextTopPadding;
+        content.ContentMarginBottom = TextBottomPadding + _reservedBottom;
+        content.ContentMarginLeft = ScrollbarOnLeft ? ScrollbarGutter : TextEdgePadding;
+        content.ContentMarginRight = ScrollbarOnLeft ? TextEdgePadding : ScrollbarGutter;
         AddThemeStyleboxOverride("normal", content);
+    }
+
+    public void ReserveBottom(float height)
+    {
+        if (Mathf.IsEqualApprox(_reservedBottom, height)) return;
+        _reservedBottom = height;
+        if (IsNodeReady()) StyleTextPadding();
     }
 
     private void ConstrainScrollbar()

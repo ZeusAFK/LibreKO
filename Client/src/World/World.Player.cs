@@ -62,7 +62,7 @@ public partial class World
 
         if (_selfDead) { _selfMoving = false; _moveSent = false; return; }
         bool typing = GetViewport().GuiGetFocusOwner() is LineEdit or TextEdit or SpinBox;
-        if (typing && !WhisperInputHasFocus()) { _selfMoving = false; SendMoveStop(); return; }
+        if (typing && !WhisperInputHasFocus() && !Chat.IsActive) { _selfMoving = false; SendMoveStop(); return; }
 
         if (_selfSitting)
         {
@@ -247,7 +247,7 @@ public partial class World
         _collisionsOff = !on;
         ApplyCollisionPolicy();
         RefreshAdminCollisionSwitch();
-        Chat.Info(on ? "Collision enabled." : "Collision disabled — you now walk through everything.");
+        CombatNotice(on ? "Collision enabled." : "Collision disabled — you now walk through everything.");
     }
 
     private bool RunLocalCommand(string command)

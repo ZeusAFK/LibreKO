@@ -108,16 +108,79 @@ public partial class World
         Chat = new ChatSystem(this);
         Chat.Build();
         Chat.DetachNetwork();
-        Chat.Append("[color=#e8e8e8]Zeus:[/color] Anyone hunting worms?");
-        Chat.Append("[color=#5fd95f][Party][/color] Rin: Ready when you are.");
-        Chat.Append("[color=#ff9a3c][Shout][/color] Moradon market is open!");
-        for (int i = 0; i < 13; i++)
-            Chat.Append($"[color=#bfc2c6]Nearby adventurer {i + 1} entered Moradon.[/color]");
+        foreach (var line in PreviewChatLines()) Chat.PreviewLine(line);
+        Chat.PreviewSent("Tester10", "yep, west side by the bridge");
+        Chat.ShowNoticePreview("The Moradon market opens in 5 minutes.");
         return DetachPreviewControl(Chat.Panel);
     }
 
-    internal void AttachChatUiPreviewLayout(Control chat) =>
-        Chat.AttachLayout(chat, persist: false);
+    private static IEnumerable<ChatLine> PreviewChatLines()
+    {
+        yield return new ChatLine(1, 0, 9001, "Arwen", "Anyone hunting worms near the bridge?", false);
+        yield return new ChatLine(3, 1, 9002, "Rin", "Ready when you are.", false);
+        yield return new ChatLine(5, 0, 9003, "Kaito", $"Selling {ChatItemLink.Token(PreviewUpgradedWeapon)} cheap, whisper me", false);
+        yield return new ChatLine(6, 1, 9004, "Mira", "Clan war practice tonight.", false);
+        yield return new ChatLine(15, 2, 9005, "Borin", "Alliance meeting at the castle.", false);
+        yield return new ChatLine(2, 2, 9006, "Tester10", "hey, are you farming Ronark?", false);
+        yield return new ChatLine(14, 0, 9007, "Nightwalker", $"WTS {ChatItemLink.Token(PreviewUniqueRing)}", false);
+        yield return new ChatLine(1, 0, 9008, "GameMaster", "Welcome to Moradon.", true);
+    }
+
+    internal void AttachChatUiPreviewLayout(Control chat) => Chat.AttachPreviewLayout(chat);
+
+    internal void SetChatLookUiPreview(string tab, bool timestamps, int font, int background, bool locked) =>
+        Chat.PreviewLook(tab, timestamps, font, background, locked);
+
+    internal void TypeChatUiPreview(string text, bool link, string tail) =>
+        Chat.PreviewTyped(text, link ? PreviewUpgradedWeapon : 0, tail);
+
+    internal void ScrollChatUpUiPreview(int fresh)
+    {
+        var lines = new List<ChatLine>();
+        for (int i = 0; i < fresh; i++)
+            lines.Add(new ChatLine(1, 0, 9100 + i, "Arwen", $"Still looking for a party, try {i + 1}.", false));
+        Chat.PreviewScrolledUp(lines);
+    }
+
+    internal void OpenChatMenuUiPreview(string which) => Chat.PreviewMenu(which);
+
+    internal void ShowNearbyUiPreview(bool shown) => Chat.PreviewNearbyShown(shown);
+
+    internal void FillNearbyUiPreview()
+    {
+        _nearbyCard = new NearbyCard();
+        Chat.DockNearby(_nearbyCard);
+        var me = new NearbyViewer("Zeus", 1, 7, 267, 303, false);
+        var seen = new List<NearbySeen>
+        {
+            new(101, "Rin", 1, 62, 0, 0, 270, 309, false),
+            new(102, "Mira", 1, 70, 0, 7, 255, 290, false),
+            new(103, "Arwen", 1, 55, 0, 0, 290, 330, false),
+            new(104, "Kaito", 2, 71, 0, 0, 240, 280, false),
+            new(105, "Borin", 1, 48, 0, 0, 300, 302, false),
+        };
+        var listed = new List<NearbyListed>
+        {
+            new("Nightwalker", 2, 412, 515, 0),
+            new("Tester10", 2, 120, 90, 0),
+            new("Ophelia", 1, 600, 150, 0),
+            new("Seraphine", 1, 350, 700, 9),
+        };
+        var party = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Rin" };
+        _nearbyRows = NearbyRoster.Build(me, listed, seen, party);
+        _nearbyCard.SetRows(_nearbyRows);
+    }
+
+    internal Control BuildChatColorsUiPreview()
+    {
+        OpenChatColors();
+        return DetachPreviewControl(_chatColorsWindow!);
+    }
+
+    internal void OpenChatPaletteUiPreview(int slot)
+    {
+        if (_chatColorSwatches[slot]?.GetParent() is Control anchor) OpenChatPalette(slot, anchor);
+    }
 
     internal void SetChatUiPreviewState(bool inputActive, byte channel) =>
         Chat.SetPreviewState(inputActive, channel);
@@ -132,7 +195,7 @@ public partial class World
     internal Control BuildCombatLogUiPreview()
     {
         BuildCombatLog();
-        _combatLogRoot.Visible = true;
+        _combatLogFrame.Visible = true;
         for (int i = 0; i < 6; i++)
             CombatLogAdd($"You recovered {i + 2} MP.", CombatLogKind.Resource);
         CombatLogAdd("You recovered 42 HP.", CombatLogKind.Recovery);
@@ -140,7 +203,7 @@ public partial class World
         CombatLogAdd("Worm hit you for 3 damage.", CombatLogKind.Incoming);
         CombatLogAdd("You hit Worm for 21 damage.", CombatLogKind.Damage);
         CombatLogAdd("You defeated Worm.", CombatLogKind.Outgoing);
-        return DetachPreviewControl(_combatLogRoot);
+        return DetachPreviewControl(_combatLogFrame);
     }
 
     internal void AttachCombatLogUiPreviewLayout(Control combatLog, Vector2 position) =>

@@ -50,6 +50,7 @@ public partial class World : Node3D
         Facet(MainPanelInit);
         Facet(BagCompanionInit);
         Facet(DockInit, DockDispose);
+        Facet(ChatHostInit, ChatHostDispose);
         Facet(EventPlatesInit, EventPlatesDispose);
         Facet(() => BuildHudLauncher());
         if (Platform.TouchUi) Facet(TouchHudInit, TouchHudDispose);

@@ -274,6 +274,7 @@ public partial class World
         var bubble = new PanelContainer();
         bubble.AddThemeStyleboxOverride("panel", WhisperBubbleStyle(mine));
 
+        text = ChatSystem.PlainText(text);
         var label = UiTheme.Text(text, 12, mine ? new Color("fff0fa") : UiTheme.TextHi);
         if (text.Length > WhisperWrapThreshold)
         {

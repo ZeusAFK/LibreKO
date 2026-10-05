@@ -234,7 +234,6 @@ public class WorldVisibilityService(
 
     private const byte BottomUserListHeaderSub = 1;
 
-    private const float BottomUserListMaxDistanceSq = 300f;
     private const int BottomUserListMaxResults = 800;
 
     public async Task HandleBottomUserListAsync(IClient client, Packet packet)
@@ -292,15 +291,19 @@ public class WorldVisibilityService(
     {
         return sessionManager.GetAll()
             .Where(u => u.ZoneId == session.ZoneId
+                        && u.Room == session.Room
                         && u.CharacterId != session.CharacterId
-                        && (session.IsGM || !u.IsGM))
+                        && ListedFor(session, u))
             .Select(u => (User: u, DistSq: SquaredDistance(session, u)))
-            .Where(x => session.IsGM || x.DistSq <= BottomUserListMaxDistanceSq)
             .OrderBy(x => x.DistSq)
             .Take(BottomUserListMaxResults)
             .Select(x => x.User)
             .ToList();
     }
+
+    private static bool ListedFor(UserSession viewer, UserSession user) =>
+        viewer.IsGM
+        || (!user.IsGM && !user.IsInfiltrating && (!user.IsInvisible || user.Nation == viewer.Nation));
 
     private static float SquaredDistance(UserSession a, UserSession b)
     {

@@ -104,8 +104,8 @@ public partial class World
 
     private void OnBbsRegister(bool ok)
     {
-        if (ok) { _seeking = true; Chat.Info("You are now listed as looking for a party."); }
-        else Chat.Info("Can't seek a party while you're already in one.");
+        if (ok) { _seeking = true; CombatNotice("You are now listed as looking for a party."); }
+        else CombatNotice("Can't seek a party while you're already in one.");
         UpdateSeekStatus();
         if (_seekShown) Net.I.SendPartyBbsList(_seekPage);
     }
@@ -113,12 +113,12 @@ public partial class World
     private void OnBbsDelete()
     {
         _seeking = false;
-        Chat.Info("Removed your seek-party listing.");
+        CombatNotice("Removed your seek-party listing.");
         UpdateSeekStatus();
         if (_seekShown) Net.I.SendPartyBbsList(_seekPage);
     }
 
-    private void OnBbsWantedFail() => Chat.Info("Only the party leader can post a recruiting message.");
+    private void OnBbsWantedFail() => CombatNotice("Only the party leader can post a recruiting message.");
 
     private void OnBbsList(int page, int total, List<PartyBbsEntry> entries)
     {
@@ -176,7 +176,7 @@ public partial class World
         inviteBtn.Pressed += () =>
         {
             if (InParty) Net.I.SendPartyInvite(name); else Net.I.SendPartyCreate(name);
-            Chat.Info($"Inviting {name} to your party…");
+            CombatNotice($"Inviting {name} to your party…");
         };
         return panel;
     }

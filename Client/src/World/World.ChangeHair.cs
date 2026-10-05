@@ -156,7 +156,7 @@ public partial class World
             _selfHair = hair;
             _selfFace = face;
             RerenderSelfEquipment();
-            Chat.Info($"Your new look is ready (hair {HairCode.StyleOf(hair)}, face {face}).");
+            CombatNotice($"Your new look is ready (hair {HairCode.StyleOf(hair)}, face {face}).");
             SetChangeHairStatus("Looking good!", false);
             CloseChangeHair();
         }

@@ -57,16 +57,16 @@ public partial class World
             case 1:
                 _seasonalLabel.Text = "❄  Santa Claus is flying over the realm!  ❄";
                 _seasonalLayer.Visible = true;
-                if (announce) Chat.Info("A holiday event has begun — Santa Claus is flying overhead!");
+                if (announce) CombatNotice("A holiday event has begun — Santa Claus is flying overhead!");
                 break;
             case 2:
                 _seasonalLabel.Text = "✧  An Angel descends upon the battlefield!  ✧";
                 _seasonalLayer.Visible = true;
-                if (announce) Chat.Info("A holiday event has begun — an Angel graces the realm!");
+                if (announce) CombatNotice("A holiday event has begun — an Angel graces the realm!");
                 break;
             default:
                 _seasonalLayer.Visible = false;
-                if (announce && _seasonalState == 0) Chat.Info("The holiday event has ended.");
+                if (announce && _seasonalState == 0) CombatNotice("The holiday event has ended.");
                 break;
         }
     }

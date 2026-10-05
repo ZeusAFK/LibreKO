@@ -24,6 +24,10 @@ public partial class Net
 
     public event Action<List<NearbyPlayer>>? NearbyPlayersEvent;
 
+    private byte _nearbyRequested = NearbyPlayersSignSub;
+
+    public static bool IsNearbyListHeader(byte sub, byte requested, int count) => count == 0 && sub != requested;
+
     private void HandleNearbyPlayers(Packet p, byte sub)
     {
         if (sub is not (NearbyPlayersSignSub or NearbyPlayersRefreshSub)) return;
@@ -32,6 +36,7 @@ public partial class Net
         p.ReadShort();
         p.ReadByte();
         int count = p.ReadUShort();
+        if (IsNearbyListHeader(sub, _nearbyRequested, count)) return;
 
         var list = new List<NearbyPlayer>(count);
         for (int i = 0; i < count && p.RemainingBytes >= 1; i++)
@@ -53,8 +58,9 @@ public partial class Net
 
     public void SendNearbyPlayersRequest(bool first = false)
     {
+        _nearbyRequested = first ? NearbyPlayersSignSub : NearbyPlayersRefreshSub;
         var p = new Packet(GameOpcodes.GS_USER_INFO);
-        p.WriteByte(first ? NearbyPlayersSignSub : NearbyPlayersRefreshSub);
+        p.WriteByte(_nearbyRequested);
         _conn.Send(p);
     }
 }

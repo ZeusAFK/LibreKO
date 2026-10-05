@@ -1,5 +1,6 @@
 ﻿using System;
 using Godot;
+using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -20,12 +21,13 @@ public sealed partial class HudLayout : Node
     private Vector2 _anchorMargin;
     private readonly Vector2 _anchorSize;
     private readonly Vector2 _defaultSize;
-    private readonly Vector2 _minimumSize;
+    private Vector2 _minimumSize;
     private readonly bool _resizable;
     private readonly bool _persist;
     private readonly Corner _resizeCorner;
     private readonly Corner _moveCorner;
     private readonly bool _moveGripAlwaysVisible;
+    private readonly bool _moveGripOverlay;
     private readonly Vector2 _resizeGripOffset;
     private readonly Action<float>? _backgroundOpacityChanged;
     private int _backgroundOpacityIndex = -1;
@@ -41,8 +43,9 @@ public sealed partial class HudLayout : Node
     private Vector2 _resizeOriginSize;
     private Vector2 _resizeOriginPosition;
     private ResizeCorner? _corner;
-    private bool? _overlayShown;
+    private bool? _cornerShown;
     private bool _gripShown;
+    private bool _locked;
     private Rect2 _overlayRect;
     private Vector2 _gripSize, _cornerSize;
     private MoveGrip? _moveGrip;
@@ -63,7 +66,8 @@ public sealed partial class HudLayout : Node
         Action<float>? backgroundOpacityChanged,
         HudAnchor.Spot? anchor,
         Vector2 anchorMargin,
-        Vector2 anchorSize)
+        Vector2 anchorSize,
+        bool moveGripOverlay)
     {
         _target = target;
         _id = id;
@@ -79,9 +83,23 @@ public sealed partial class HudLayout : Node
         _resizeCorner = resizeCorner;
         _moveCorner = moveCorner;
         _moveGripAlwaysVisible = moveGripAlwaysVisible;
+        _moveGripOverlay = moveGripOverlay;
         _resizeGripOffset = resizeGripOffset;
         _backgroundOpacityChanged = backgroundOpacityChanged;
     }
+
+    public bool Locked
+    {
+        get => _locked;
+        set
+        {
+            if (_locked == value) return;
+            _locked = value;
+            _cornerShown = null;
+        }
+    }
+
+    private bool Frozen => _locked && !EditMode;
 
     public static HudLayout Attach(
         Control target,
@@ -99,12 +117,13 @@ public sealed partial class HudLayout : Node
         Action<float>? backgroundOpacityChanged = null,
         HudAnchor.Spot? anchor = null,
         Vector2 anchorMargin = default,
-        Vector2 anchorSize = default)
+        Vector2 anchorSize = default,
+        bool moveGripOverlay = true)
     {
         var behavior = new HudLayout(
             target, id, dragHandle, defaultPosition, resizable, defaultSize, minimumSize, persist,
             resizeCorner, moveCorner, moveGripAlwaysVisible, resizeGripOffset, backgroundOpacityChanged,
-            anchor, anchorMargin, anchorSize);
+            anchor, anchorMargin, anchorSize, moveGripOverlay);
         target.AddChild(behavior);
         return behavior;
     }
@@ -136,6 +155,25 @@ public sealed partial class HudLayout : Node
 
     internal void ReapplyDefault() => FollowDefaultOnScreen();
 
+    internal Vector2 MinimumSize
+    {
+        get => _minimumSize;
+        set => _minimumSize = value;
+    }
+
+    internal void Place(Vector2 position, Vector2 size)
+    {
+        _target.Size = size;
+        _target.Position = position;
+        ClampOnScreen();
+        if (_persist)
+        {
+            Config.SaveWindowPos(_id, _target.Position);
+            Config.SaveWindowSize(_id, _target.Size);
+        }
+        Placed?.Invoke();
+    }
+
     private void FollowDefaultOnScreen()
     {
         if (!GodotObject.IsInstanceValid(_target)) return;
@@ -148,7 +186,7 @@ public sealed partial class HudLayout : Node
     {
         if (!GodotObject.IsInstanceValid(_target) || _target.GetParent() == null) return;
 
-        if (_anchor == null)
+        if (_anchor == null && _moveGripOverlay)
         {
             _moveGrip = new MoveGrip(this);
             _target.AddSibling(_moveGrip);
@@ -221,7 +259,7 @@ public sealed partial class HudLayout : Node
             Vector2 requested = _resizeOriginSize + new Vector2(
                 fromLeft ? -delta.X : delta.X,
                 fromTop ? -delta.Y : delta.Y);
-            Vector2 size = ClampSize(requested);
+            Vector2 size = ClampSize(requested, fromLeft, fromTop);
             Vector2 position = _resizeOriginPosition;
             if (fromLeft) position.X += _resizeOriginSize.X - size.X;
             if (fromTop) position.Y += _resizeOriginSize.Y - size.Y;
@@ -252,13 +290,15 @@ public sealed partial class HudLayout : Node
         using var scope = Perf.Measure(Perf.Section.Ui);
         if (_moveGrip == null && _corner == null) return;
         bool shown = _target.IsVisibleInTree();
-        bool gripShown = shown && (_moveGripAlwaysVisible || EditMode);
+        bool frozen = Frozen;
+        bool gripShown = shown && !frozen && (_moveGripAlwaysVisible || EditMode);
+        bool cornerShown = shown && !frozen;
         var rect = new Rect2(_target.GlobalPosition, _target.Size);
         Vector2 gripSize = _moveGrip?.Size ?? Vector2.Zero, cornerSize = _corner?.Size ?? Vector2.Zero;
-        if (shown == _overlayShown && gripShown == _gripShown && rect == _overlayRect
+        if (cornerShown == _cornerShown && gripShown == _gripShown && rect == _overlayRect
             && gripSize == _gripSize && cornerSize == _cornerSize)
             return;
-        _overlayShown = shown;
+        _cornerShown = cornerShown;
         _gripShown = gripShown;
         _overlayRect = rect;
         _gripSize = gripSize;
@@ -270,8 +310,8 @@ public sealed partial class HudLayout : Node
         }
         if (_corner != null)
         {
-            _corner.Visible = shown;
-            if (shown) _corner.GlobalPosition = OverlayPosition(cornerSize, _resizeCorner) + _resizeGripOffset;
+            _corner.Visible = cornerShown;
+            if (cornerShown) _corner.GlobalPosition = OverlayPosition(cornerSize, _resizeCorner) + _resizeGripOffset;
         }
     }
 
@@ -303,6 +343,7 @@ public sealed partial class HudLayout : Node
 
     private void BeginDrag(Vector2 mouse)
     {
+        if (Frozen) return;
         _dragging = true;
         _dragMoved = false;
         _dragOriginMouse = mouse;
@@ -334,6 +375,7 @@ public sealed partial class HudLayout : Node
 
     private void BeginResize(Vector2 mouse)
     {
+        if (Frozen) return;
         _resizing = true;
         _resizeOriginMouse = mouse;
         _resizeOriginSize = _target.Size;
@@ -349,13 +391,14 @@ public sealed partial class HudLayout : Node
         Config.SaveWindowSize(_id, _target.Size);
     }
 
-    private Vector2 ClampSize(Vector2 requested)
+    private Vector2 ClampSize(Vector2 requested, bool fromLeft = false, bool fromTop = false)
     {
         var vp = GetViewport().GetVisibleRect().Size;
         float minX = Mathf.Max(120f, _minimumSize.X);
         float minY = Mathf.Max(80f, _minimumSize.Y);
-        float maxX = Mathf.Max(minX, vp.X - Mathf.Max(0f, _target.Position.X));
-        float maxY = Mathf.Max(minY, vp.Y - Mathf.Max(0f, _target.Position.Y));
+        var limit = HudResize.Limit(vp, _target.Position, new Rect2(_resizeOriginPosition, _resizeOriginSize), fromLeft, fromTop);
+        float maxX = Mathf.Max(minX, limit.X);
+        float maxY = Mathf.Max(minY, limit.Y);
         return new Vector2(
             Mathf.Clamp(requested.X, minX, maxX),
             Mathf.Clamp(requested.Y, minY, maxY));
@@ -377,31 +420,47 @@ public sealed partial class HudLayout : Node
 
     private sealed partial class ResizeCorner : Control
     {
+        private const float GripSize = 24f;
+        private const float StrokeWidth = 2.5f;
+        private static readonly Color Stroke = new(UiTheme.Gold, 0.95f);
+        private static readonly Color Shade = new(0f, 0f, 0f, 0.7f);
+        private static readonly Vector2[][] Strokes =
+        {
+            new[] { new Vector2(9, 22), new Vector2(22, 9) },
+            new[] { new Vector2(14, 22), new Vector2(22, 14) },
+            new[] { new Vector2(19, 22), new Vector2(22, 19) },
+        };
+
         private readonly HudLayout _owner;
         private readonly Corner _placement;
+        private bool _hot;
 
         public ResizeCorner(HudLayout owner, Corner placement)
         {
             _owner = owner;
             _placement = placement;
-            CustomMinimumSize = new Vector2(20, 20);
+            CustomMinimumSize = new Vector2(GripSize, GripSize);
             Size = CustomMinimumSize;
             MouseFilter = MouseFilterEnum.Stop;
             MouseDefaultCursorShape = placement is Corner.TopRight or Corner.BottomLeft
                 ? CursorShape.Bdiagsize
                 : CursorShape.Fdiagsize;
+            TooltipText = "Drag to resize";
             ZIndex = 100;
+            MouseEntered += () => { _hot = true; QueueRedraw(); };
+            MouseExited += () => { _hot = false; QueueRedraw(); };
         }
 
         public override void _Draw()
         {
-            var color = new Color(0.78f, 0.80f, 0.82f, 0.90f);
             Vector2 Mirror(Vector2 p) => new(
                 _placement is Corner.TopRight or Corner.BottomRight ? p.X : Size.X - p.X,
                 _placement is Corner.BottomLeft or Corner.BottomRight ? p.Y : Size.Y - p.Y);
-            DrawLine(Mirror(new Vector2(7, 18)), Mirror(new Vector2(18, 7)), color, 2);
-            DrawLine(Mirror(new Vector2(12, 18)), Mirror(new Vector2(18, 12)), color, 2);
-            DrawLine(Mirror(new Vector2(17, 18)), Mirror(new Vector2(18, 17)), color, 2);
+            var shadeOffset = new Vector2(1, 1);
+            foreach (var stroke in Strokes)
+                DrawLine(Mirror(stroke[0]) + shadeOffset, Mirror(stroke[1]) + shadeOffset, Shade, StrokeWidth);
+            foreach (var stroke in Strokes)
+                DrawLine(Mirror(stroke[0]), Mirror(stroke[1]), _hot ? UiTheme.GoldBright : Stroke, StrokeWidth);
         }
 
         public override void _GuiInput(InputEvent ev)

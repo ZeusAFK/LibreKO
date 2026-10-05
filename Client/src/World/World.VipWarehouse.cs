@@ -206,7 +206,7 @@ public partial class World
 
     private void OnVipWarehouseExpired()
     {
-        Chat.Info("Your VIP vault rental has expired. Renew it with a vault key.");
+        CombatNotice("Your VIP vault rental has expired. Renew it with a vault key.");
         if (_vipWhShown) { _vipWhStatus.Text = "Vault rental expired."; RefreshVipWarehouse(); }
     }
 
@@ -330,17 +330,17 @@ public partial class World
     {
         if (sub == Net.VipWhEnterPinSub)
         {
-            if (ok) Chat.Info("Vault unlocked.");
+            if (ok) CombatNotice("Vault unlocked.");
             else { ShowVipPinDialog(Net.VipWhEnterPinSub, "Wrong PIN. Try again:"); }
             return;
         }
         if (sub == Net.VipWhSetPinSub || sub == Net.VipWhChangePinSub)
         {
-            Chat.Info(ok ? "Vault PIN updated." : "Couldn't set the PIN (must be 4 digits).");
+            CombatNotice(ok ? "Vault PIN updated." : "Couldn't set the PIN (must be 4 digits).");
             return;
         }
         if (sub == Net.VipWhCancelPinSub)
-            Chat.Info(ok ? "Vault PIN cleared." : "Couldn't clear the PIN.");
+            CombatNotice(ok ? "Vault PIN cleared." : "Couldn't clear the PIN.");
     }
 
     private static bool IsAllDigits(string s)

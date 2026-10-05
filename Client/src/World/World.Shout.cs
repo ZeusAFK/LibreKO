@@ -73,7 +73,7 @@ public partial class World
         if (lum < 0.18f) colour = ShoutGold;
 
         ShowShoutBanner(message, colour);
-        Chat.Append($"[color=#ff9a3c][lb]shout[rb] [/color][color=#ffd98a]{BbCode.Esc(message)}[/color]");
+        Chat.AppendShout(message);
     }
 
     private void OnShoutUpgrade(bool ok, string name, int itemId, int rank)
@@ -85,7 +85,7 @@ public partial class World
 
         ShowShoutBanner(line, ok ? ShoutGold : new Color("ff8a5c"));
         var colHex = ok ? "ffd98a" : "ff9a6a";
-        Chat.Append($"[color=#c8a45a][lb]anvil[rb] [/color][color=#{colHex}]{BbCode.Esc(line)}[/color]");
+        CombatLogAdd(line, CombatLogKind.Status);
     }
 
     private void OnShoutRareItem(string finder, int itemId, byte nation)
@@ -97,14 +97,14 @@ public partial class World
             : nation == Nations.ElMorad ? ShoutElmorad : ShoutGold;
 
         ShowShoutBanner(line, colour);
-        Chat.Append($"[color=#c8a45a][lb]rare[rb] [/color][color=#{colour.ToHtml(false)}]{BbCode.Esc(line)}[/color]");
+        CombatLogAdd(line, CombatLogKind.Status);
     }
 
     private void OnShoutResult(int result)
     {
         if (result == Net.ShoutRegisterAccepted) return;
 
-        Chat.Info(result switch
+        CombatNotice(result switch
         {
             Net.ShoutRegisterNoItem => "You need a Logos Shout scroll to shout server-wide.",
             Net.ShoutRegisterChatRestricted => "You cannot shout while chat is restricted.",

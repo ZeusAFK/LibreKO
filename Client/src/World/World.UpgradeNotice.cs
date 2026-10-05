@@ -70,8 +70,7 @@ public partial class World
         string line = $"{name} has {verb} {item}!";
 
         ShowUpgradeNoticeBanner(line, ok ? UpgradeNoticeGold : UpgradeNoticeFail);
-        string colHex = ok ? "ffd98a" : "ff9a6a";
-        Chat.Append($"[color=#c8a45a][lb]upgrade[rb] [/color][color=#{colHex}]{BbCode.Esc(line)}[/color]");
+        CombatLogAdd(line, CombatLogKind.Status);
     }
 
     public void WatchUpgrade(int itemId) => Net.I.SendWatchUpgrade(itemId);

@@ -292,6 +292,32 @@ public static class UiTheme
         return sb;
     }
 
+    private static readonly Color ScrollTrack = new(0.018f, 0.020f, 0.025f, 0.72f);
+    private static readonly Color ScrollThumb = new("#b8793f");
+    private static readonly Color ScrollThumbHover = new("#dfa35d");
+    private static readonly Color ScrollThumbPressed = new("#f0bd76");
+
+    public static void ThinScrollbar(ScrollBar bar)
+    {
+        bar.AddThemeStyleboxOverride("scroll", ScrollFill(ScrollTrack, 3));
+        ThinScrollbarThumb(bar, false);
+    }
+
+    public static void ThinScrollbarThumb(ScrollBar bar, bool scrollable)
+    {
+        bar.AddThemeStyleboxOverride("grabber", ScrollFill(scrollable ? ScrollThumb : Colors.Transparent, 2));
+        bar.AddThemeStyleboxOverride("grabber_highlight", ScrollFill(scrollable ? ScrollThumbHover : Colors.Transparent, 2));
+        bar.AddThemeStyleboxOverride("grabber_pressed", ScrollFill(scrollable ? ScrollThumbPressed : Colors.Transparent, 2));
+    }
+
+    private static StyleBoxFlat ScrollFill(Color color, int radius)
+    {
+        var style = new StyleBoxFlat { BgColor = color };
+        style.SetCornerRadiusAll(radius);
+        style.ContentMarginLeft = style.ContentMarginRight = 1;
+        return style;
+    }
+
     public static StyleBoxFlat Chip()
     {
         var sb = new StyleBoxFlat

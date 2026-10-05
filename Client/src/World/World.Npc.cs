@@ -433,6 +433,6 @@ public partial class World
 
     private void OnNpcWindow(GameOpcodes op)
     {
-        Chat.Info("This NPC's service isn't available yet.");
+        CombatNotice("This NPC's service isn't available yet.");
     }
 }

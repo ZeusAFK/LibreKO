@@ -118,7 +118,7 @@ public partial class World
                  {
                      _miniMap, _clockLabel, _hudLauncherRoot, _townButton, _trophy, _attendanceGift,
                      _mailIconButton, _powerUpStoreIcon, _lotteryIcon, _statusHud, _hotbarBox, _buffPanel,
-                     _premiumChip, _combatLogRoot, Chat?.Panel,
+                     _premiumChip, _combatLogFrame, Chat?.Panel,
                  })
             if (hud != null && GodotObject.IsInstanceValid(hud) && hud.IsVisibleInTree())
                 rects.Add(hud.GetGlobalRect());

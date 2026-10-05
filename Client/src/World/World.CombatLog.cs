@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Godot;
+using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -8,7 +9,18 @@ public partial class World
 {
     private enum CombatLogKind { Damage, Outgoing, Incoming, Recovery, Resource, Status }
 
+    private VBoxContainer _combatLogFrame = null!;
     private PanelContainer _combatLogRoot = null!;
+    private Button _combatLogMove = null!;
+    private Button _combatLogLock = null!;
+    private HudLayout? _combatLogLayout;
+    private const float CombatLogToolRow = 22f;
+    private const float CombatLogToolGap = 4f;
+    private static readonly Vector2 CombatLogPanelSize = new(420, 205);
+    private static readonly Vector2 CombatLogPanelMinimum = new(290, 135);
+    private static readonly Vector2 CombatLogEdge = new(12, 77);
+    private static readonly Vector2 CombatLogFrameExtra = new(0, CombatLogToolRow + CombatLogToolGap);
+    private static readonly Color CombatLogEdgeColour = new(UiTheme.Edge, 0.46f);
     private HudLogText _combatLogText = null!;
     private StyleBoxFlat _combatLogPanelStyle = null!;
     private readonly Queue<string> _combatLogLines = new();
@@ -24,22 +36,44 @@ public partial class World
         AddChild(layer);
         PluginHudSeam(layer, LibreKO.Plugins.HudPart.CombatLog);
 
+        _combatLogFrame = new VBoxContainer
+        {
+            Size = CombatLogPanelSize + CombatLogFrameExtra,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _combatLogFrame.AddThemeConstantOverride("separation", (int)CombatLogToolGap);
+        layer.AddChild(_combatLogFrame);
+
+        var tools = new HBoxContainer
+        {
+            Alignment = BoxContainer.AlignmentMode.End,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            CustomMinimumSize = new Vector2(0, CombatLogToolRow),
+        };
+        tools.AddThemeConstantOverride("separation", 3);
+        var background = HudToolButton.Create("◐", null, "Background opacity");
+        background.Pressed += CycleCombatLogBackground;
+        tools.AddChild(background);
+        _combatLogMove = HudToolButton.Create("", "system/move", "Drag to move the combat log");
+        tools.AddChild(_combatLogMove);
+        _combatLogLock = HudToolButton.Create("", "system/unlock", "Lock position and size");
+        _combatLogLock.Pressed += () => SetCombatLogLocked(!Config.CombatLogLocked);
+        tools.AddChild(_combatLogLock);
+        _combatLogFrame.AddChild(tools);
+
         _combatLogRoot = new PanelContainer
         {
-            Size = new Vector2(420, 205),
-            CustomMinimumSize = new Vector2(290, 135),
+            CustomMinimumSize = CombatLogPanelMinimum,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
         };
-        _combatLogPanelStyle = new StyleBoxFlat
-        {
-            BgColor = new Color(0, 0, 0, 0.50f),
-            BorderColor = new Color(UiTheme.Edge, 0.46f),
-        };
+        _combatLogPanelStyle = new StyleBoxFlat { BorderColor = CombatLogEdgeColour };
         _combatLogPanelStyle.SetBorderWidthAll(1);
         _combatLogPanelStyle.SetCornerRadiusAll(4);
         foreach (var side in new[] { "left", "right", "top", "bottom" })
             _combatLogPanelStyle.Set($"content_margin_{side}", 7f);
         _combatLogRoot.AddThemeStyleboxOverride("panel", _combatLogPanelStyle);
-        layer.AddChild(_combatLogRoot);
+        _combatLogFrame.AddChild(_combatLogRoot);
+        ApplyCombatLogBackground();
 
         _combatLogText = new HudLogText
         {
@@ -57,15 +91,9 @@ public partial class World
         _combatLogText.AddThemeColorOverride("default_color", new Color("#d4d1c9"));
         _combatLogRoot.AddChild(_combatLogText);
 
-        AttachCombatLogLayout(
-            _combatLogRoot,
-            () =>
-            {
-                Vector2 vp = GetViewport().GetVisibleRect().Size;
-                return new Vector2(Mathf.Max(0f, vp.X - 432f), Mathf.Max(0f, vp.Y - 282f));
-            });
+        AttachCombatLogLayout(_combatLogFrame, () => CombatLogSpot(GetViewport().GetVisibleRect().Size));
 
-        _combatLogRoot.Visible = Config.CombatLog;
+        _combatLogFrame.Visible = Config.CombatLog;
         Config.EffectsChanged += ApplyCombatLogVisibility;
         Net.I.DeathNoticeEvent += OnDeathNotice;
     }
@@ -95,27 +123,58 @@ public partial class World
 
     private void ApplyCombatLogVisibility()
     {
-        if (_combatLogRoot != null && GodotObject.IsInstanceValid(_combatLogRoot))
-            _combatLogRoot.Visible = Config.CombatLog;
+        if (_combatLogFrame != null && GodotObject.IsInstanceValid(_combatLogFrame))
+            _combatLogFrame.Visible = Config.CombatLog;
+    }
+
+    internal static Vector2 CombatLogSpot(Vector2 viewport)
+    {
+        Vector2 size = CombatLogPanelSize + CombatLogFrameExtra;
+        return new Vector2(
+            Mathf.Max(0f, viewport.X - CombatLogEdge.X - size.X),
+            Mathf.Max(0f, viewport.Y - CombatLogEdge.Y - size.Y));
+    }
+
+    private void CycleCombatLogBackground()
+    {
+        Config.SetCombatLogBackground((Config.CombatLogBackground + 1) % ChatPrefs.Backgrounds.Length);
+        ApplyCombatLogBackground();
+    }
+
+    private void ApplyCombatLogBackground()
+    {
+        float alpha = ChatPrefs.Backgrounds[Config.CombatLogBackground];
+        _combatLogPanelStyle.BgColor = new Color(0, 0, 0, alpha);
+        _combatLogPanelStyle.BorderColor = alpha > 0 ? CombatLogEdgeColour : Colors.Transparent;
+    }
+
+    private void SetCombatLogLocked(bool locked)
+    {
+        Config.SetCombatLogLocked(locked);
+        ApplyCombatLogLock();
+    }
+
+    private void ApplyCombatLogLock()
+    {
+        bool locked = Config.CombatLogLocked;
+        if (_combatLogLayout != null) _combatLogLayout.Locked = locked;
+        _combatLogMove.Visible = !locked;
+        HudToolButton.ShowLocked(_combatLogLock, locked);
     }
 
     private void AttachCombatLogLayout(Control target, Func<Vector2> defaultPosition, bool persist = true)
     {
         target.Modulate = Colors.White;
-        HudLayout.Attach(
-            target, persist ? "hud_combat_log" : "uilab_actual_combat_log", null, defaultPosition,
+        _combatLogLayout = HudLayout.Attach(
+            target, persist ? "hud_combat_log" : "uilab_actual_combat_log", _combatLogMove, defaultPosition,
             resizable: true,
-            defaultSize: new Vector2(420, 205),
-            minimumSize: new Vector2(290, 135),
+            defaultSize: CombatLogPanelSize + CombatLogFrameExtra,
+            minimumSize: CombatLogPanelMinimum + CombatLogFrameExtra,
             persist: persist,
             resizeCorner: HudLayout.Corner.TopLeft,
-            moveCorner: HudLayout.Corner.BottomRight,
-            moveGripAlwaysVisible: true,
-            backgroundOpacityChanged: alpha =>
-            {
-                _combatLogPanelStyle.BgColor = new Color(0, 0, 0, alpha);
-                GD.Print($"[hud] combat black background opacity={alpha:0.00}");
-            });
+            resizeGripOffset: CombatLogFrameExtra,
+            moveGripOverlay: false);
+        ApplyCombatLogLock();
     }
 
     private void CombatLogAdd(string message, CombatLogKind kind)

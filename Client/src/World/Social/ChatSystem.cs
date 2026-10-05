@@ -1,226 +1,175 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
 
-internal sealed class ChatSystem
+internal sealed partial class ChatSystem
 {
     private readonly IWorldContext _ctx;
 
+    private HBoxContainer _frame = null!;
     private VBoxContainer _root = null!;
-    private HBoxContainer _tabBar = null!;
     private PanelContainer _logPanel = null!;
     private Button? _peek;
     private RichTextLabel? _peekText;
     private bool _chatExpanded;
 
+    private const int ChatLayer = 66;
+    private const int NoticeLayer = 69;
     private const float PeekWidth = 404f;
     private const float PeekHeight = 46f;
     private const float PeekPad = 12f;
     private const float PeekGlyphSize = 26f;
+    private const float EdgeMargin = 12f;
+    private const int NoticeTop = 60;
+    private const double NoticeBaseSeconds = 3.5;
+    private const double NoticeSecondsPerChar = 0.04;
+    private const double NoticeMinSeconds = 4.0;
+    private const double NoticeMaxSeconds = 12.0;
+    private static readonly Vector2 DefaultSize = new(490, 238);
+    private static readonly Vector2 MinimumSize = new(330, 170);
+    private static readonly Vector2 ResizeGripOffset = new(0, 23);
+
     private HudLogText _scroll = null!;
     private HBoxContainer _inputRow = null!;
     private LineEdit _input = null!;
-    private Label _chanLabel = null!;
     private StyleBoxFlat _panelStyle = null!;
     private HudLayout _layout = null!;
     private bool _active;
-    private const float RestAlpha = 0.50f;
-    private const int NoticeTop = 60;
-    private float _backgroundAlpha = RestAlpha;
 
     private CanvasLayer _noticeLayer = null!;
     private Label _noticeLabel = null!;
+    private readonly NoticeQueue _notices = new();
     private int _noticeToken;
 
-    internal const byte WhisperChannel = 2;
-    private const byte ChatRoomChannel = 33;
-    private const byte ClanRecruitChannel = 34;
-    private const byte CommanderChannel = 13;
+    internal const byte WhisperChannel = ChatType.Private;
+    private const byte GeneralChannel = ChatType.General;
+    private const byte ClanChannel = ChatType.Clan;
+    private const byte ChatRoomChannel = ChatType.ChatRoom;
+    private const byte ClanRecruitChannel = ChatType.ClanRecruit;
+    private const byte CommanderChannel = ChatType.Command;
 
-    private byte _sendChannel = 1;
+    private byte _sendChannel = GeneralChannel;
     private string _whisperName = "";
     private string? _pendingWhisper;
     private string _pendingWhisperTo = "";
     private string _lastWhisperFrom = "";
 
     private static readonly HashSet<string> ReplyCommands = new(StringComparer.OrdinalIgnoreCase) { "r", "reply" };
-    private static readonly HashSet<string> WhisperCommands = new(StringComparer.OrdinalIgnoreCase) { "w", "tell" };
+    private static readonly HashSet<string> WhisperCommands = new(StringComparer.OrdinalIgnoreCase) { "w", "tell", "whisper" };
     private static readonly HashSet<string> CommandsOpenToEveryone = new(StringComparer.OrdinalIgnoreCase) { "setlevel" };
 
-    private readonly Queue<string> _log = new();
-    private readonly Dictionary<byte, Button> _channelButtons = new();
-    private const int LogMax = 200;
+    private readonly ChatPrefs _prefs = ChatPrefs.Parse(Config.ChatLook);
+    private ChatColors _colors = ChatColors.Parse(Config.ChatColors);
 
     internal ChatSystem(IWorldContext ctx) => _ctx = ctx;
 
     internal Func<string, bool>? LocalCommand;
+    internal Action<string, Vector2>? NameMenu;
+    internal Action<int>? ItemTipShow;
+    internal Action? ItemTipHide;
+    internal Func<string, bool>? IsFriend;
+    internal Action? ColorsRequested;
+    internal Action<string>? StatusNotice;
+    internal event Action? LayoutChanged;
 
     internal bool IsActive => _active || PluginTyping;
 
     internal bool PluginTyping { get; set; }
 
-    internal IReadOnlyList<string> History => _log.ToArray();
+    internal Control Panel => _frame;
 
-    internal Control Panel => _root;
+    private static bool DocksNearby => !Platform.TouchUi;
 
-    private static (string Tag, string Col) ChanStyle(byte type) => type switch
+    private static readonly Vector2 NearbyColumnWidth = new(NearbyDock.Width + NearbyDock.Gap, 0);
+
+    private Vector2 NearbyColumn => DocksNearby && _prefs.NearbyShown ? NearbyColumnWidth : Vector2.Zero;
+
+    private Vector2 FrameDefaultSize => DefaultSize + NearbyColumn;
+
+    private Vector2 FrameMinimumSize => MinimumSize + NearbyColumn;
+
+    private NearbyCard? _nearby;
+
+    internal void DockNearby(NearbyCard list)
     {
-        1  => ("",         "e8e8e8"),
-        2  => ("whisper",  "ff7ad9"),
-        3  => ("party",    "5fd95f"),
-        5  => ("shout",    "ff9a3c"),
-        6  => ("clan",     "46d3c0"),
-        7  => ("GM",       "ffe24a"),
-        8  => ("GM",       "ffe24a"),
-        12 => ("GM",       "ffe24a"),
-        13 => ("commander", "c8e66b"),
-        14 => ("trade",    "d2b48c"),
-        15 => ("alliance", "6fb7ff"),
-        19 => ("zone",     "9aa0a6"),
-        23 => ("officer",  "b48cff"),
-        _  => ("",         "e8e8e8"),
-    };
+        _nearby = list;
+        list.CustomMinimumSize = new Vector2(NearbyDock.Width, 0);
+        list.Visible = _prefs.NearbyShown;
+        _frame.AddChild(list);
+        _frame.MoveChild(list, 0);
+        ApplyBackground();
+    }
 
-    private static string NationCol(int nation, bool isGm) =>
-        isGm ? "ffd24a" : nation switch { 1 => "e06666", 2 => "6fa8ff", _ => "dddddd" };
+    internal void PreviewNearbyShown(bool shown) => SetNearbyShown(shown, save: false);
 
-    private static string ChanName(byte type) => type switch
+    private void SetNearbyShown(bool shown, bool save = true)
     {
-        1 => "General", 2 => "Whisper", 3 => "Party", 5 => "Shout", 6 => "Clan",
-        13 => "Commander", 15 => "Alliance", 23 => "Officer", _ => "General",
+        if (_prefs.NearbyShown == shown) return;
+        _prefs.NearbyShown = shown;
+        if (save) SavePrefs();
+        if (_nearby == null || _layout == null) return;
+        _nearby.Visible = shown;
+        _layout.MinimumSize = FrameMinimumSize;
+        Vector2 shift = shown ? -NearbyColumnWidth : NearbyColumnWidth;
+        _layout.Place(
+            new Vector2(Mathf.Max(0, _frame.Position.X + shift.X), _frame.Position.Y),
+            _frame.Size - shift);
+    }
+
+    internal ChatColors Colors => _colors;
+
+    private static string ChanTag(byte type) => type switch
+    {
+        ChatType.Private => "whisper",
+        ChatType.Party => "party",
+        ChatType.Shout => "shout",
+        ChatType.Clan => "clan",
+        ChatType.Public or ChatType.WarSystem or ChatType.GameMaster => "GM",
+        ChatType.Command => "commander",
+        ChatType.Merchant => "trade",
+        ChatType.Alliance => "alliance",
+        ChatType.SeekingParty => "zone",
+        ChatType.ClanOfficer => "officer",
+        _ => "",
     };
 
     internal void SendText(string text) => Submit(text);
 
     internal void Build()
     {
-        var layer = new CanvasLayer { Layer = 66 };
+        var layer = new CanvasLayer { Layer = ChatLayer };
         _ctx.Root.AddChild(layer);
         if (PluginHost.Ui.HudHidden(LibreKO.Plugins.HudPart.Chat))
         {
             layer.Visible = false;
             if (PluginHost.Ui.HudReplacement(LibreKO.Plugins.HudPart.Chat) is { } build)
             {
-                var pluginLayer = new CanvasLayer { Layer = 66 };
+                var pluginLayer = new CanvasLayer { Layer = ChatLayer };
                 _ctx.Root.AddChild(pluginLayer);
                 pluginLayer.AddChild(build());
             }
         }
 
-        _root = new VBoxContainer
-        {
-            Size = new Vector2(490, 238),
-            CustomMinimumSize = new Vector2(330, 170),
-        };
+        _frame = new HBoxContainer { Size = FrameDefaultSize };
+        _frame.AddThemeConstantOverride("separation", (int)NearbyDock.Gap);
+        layer.AddChild(_frame);
+        _root = new VBoxContainer { CustomMinimumSize = MinimumSize, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         _root.AddThemeConstantOverride("separation", 4);
-        layer.AddChild(_root);
+        _frame.AddChild(_root);
 
-        var bar = new HBoxContainer();
-        _tabBar = bar;
-        bar.AddThemeConstantOverride("separation", 4);
-        _root.AddChild(bar);
-        foreach (var (label, type) in new (string, byte)[]
-                 { ("All", 1), ("Shout", 5), ("Party", 3), ("Clan", 6), ("Commander", 13), ("Alliance", 15) })
-        {
-            byte t = type;
-            var b = new Button
-            {
-                Text = label,
-                FocusMode = Control.FocusModeEnum.None,
-                ToggleMode = true,
-            };
-            b.AddThemeFontSizeOverride("font_size", 11);
-            b.AddThemeColorOverride("font_color", new Color("#d4d5d7"));
-            b.AddThemeColorOverride("font_hover_color", Colors.White);
-            b.AddThemeColorOverride("font_pressed_color", new Color("#f0c879"));
-            b.AddThemeStyleboxOverride("normal", ChannelButtonStyle(
-                new Color(0.025f, 0.028f, 0.034f, 0.88f), new Color(0.34f, 0.37f, 0.41f, 0.65f)));
-            b.AddThemeStyleboxOverride("hover", ChannelButtonStyle(
-                new Color(0.055f, 0.060f, 0.070f, 0.94f), new Color(0.68f, 0.71f, 0.75f, 0.85f)));
-            b.AddThemeStyleboxOverride("pressed", ChannelButtonStyle(
-                new Color(0.095f, 0.082f, 0.050f, 0.98f), new Color("#c7984b")));
-            b.Pressed += () => SetChannel(t);
-            bar.AddChild(b);
-            _channelButtons[t] = b;
-        }
-        RefreshChannelButtons();
-
-        bar.AddChild(new Control
-        {
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-        });
-        var dim = new Button
-        {
-            Text = "◐",
-            FocusMode = Control.FocusModeEnum.None,
-            TooltipText = "Background opacity",
-        };
-        dim.AddThemeFontSizeOverride("font_size", 11);
-        dim.AddThemeColorOverride("font_color", new Color("#d4d5d7"));
-        dim.AddThemeColorOverride("font_hover_color", Colors.White);
-        dim.AddThemeStyleboxOverride("normal", ChannelButtonStyle(
-            new Color(0.025f, 0.028f, 0.034f, 0.88f), new Color(0.34f, 0.37f, 0.41f, 0.65f)));
-        dim.AddThemeStyleboxOverride("hover", ChannelButtonStyle(
-            new Color(0.055f, 0.060f, 0.070f, 0.94f), new Color(0.68f, 0.71f, 0.75f, 0.85f)));
-        dim.Pressed += () => _layout.CycleBackgroundOpacity();
-        bar.AddChild(dim);
-
-        var panel = new PanelContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
-        _logPanel = panel;
-        _panelStyle = new StyleBoxFlat { BgColor = new Color(0, 0, 0, RestAlpha) };
-        foreach (var s in new[] { "left", "right", "top", "bottom" }) _panelStyle.Set($"content_margin_{s}", 7f);
-        _panelStyle.SetCornerRadiusAll(6);
-        _panelStyle.SetBorderWidthAll(1);
-        _panelStyle.BorderColor = new Color(UiTheme.Edge, 0.25f);
-        panel.AddThemeStyleboxOverride("panel", _panelStyle);
-        _root.AddChild(panel);
-
-        _scroll = new HudLogText
-        {
-            ScrollbarOnLeft = true,
-            BbcodeEnabled = true,
-            ScrollActive = true,
-            ScrollFollowing = true,
-            FitContent = false,
-            SelectionEnabled = true,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(0, 110),
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-        };
-        _scroll.AddThemeFontSizeOverride("normal_font_size", 13);
-        panel.AddChild(_scroll);
-
-        _inputRow = new HBoxContainer();
-        _inputRow.AddThemeConstantOverride("separation", 6);
-        _root.AddChild(_inputRow);
-        _inputRow.AddChild(new Control
-        {
-            CustomMinimumSize = new Vector2(18, 0),
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-        });
-        _chanLabel = new Label { VerticalAlignment = VerticalAlignment.Center };
-        _chanLabel.AddThemeFontSizeOverride("font_size", 13);
-        _inputRow.AddChild(_chanLabel);
-        _input = new LineEdit
-        {
-            MaxLength = 128,
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            PlaceholderText = "Enter to chat — @name whisper · ! shout · # party · $ clan · % commander · & alliance · / command",
-        };
-        _input.TextSubmitted += Submit;
-        _inputRow.AddChild(_input);
+        _root.AddChild(BuildTabBar());
+        BuildLogPanel();
+        BuildInputRow();
         SetInputRowActive(false);
 
         if (Platform.TouchUi) BuildChatPeek();
-        AttachLayout(_root);
-
-        Info("Welcome to LibreKO. Press Enter to chat.");
+        AttachLayout(_frame, Platform.TouchUi ? null : DefaultSpot);
+        _frame.Resized += () => LayoutChanged?.Invoke();
+        ApplyLook();
 
         BuildNoticeBanner();
 
@@ -238,42 +187,33 @@ internal sealed class ChatSystem
 
     internal void Dispose() => DetachNetwork();
 
-    private static StyleBoxFlat ChannelButtonStyle(Color background, Color edge)
+    private Vector2 DefaultSpot()
     {
-        var style = new StyleBoxFlat { BgColor = background, BorderColor = edge };
-        style.SetBorderWidthAll(1);
-        style.SetCornerRadiusAll(5);
-        style.ContentMarginLeft = style.ContentMarginRight = 9;
-        style.ContentMarginTop = style.ContentMarginBottom = 4;
-        return style;
+        float height = _frame.IsInsideTree() ? _frame.GetViewportRect().Size.Y : FrameDefaultSize.Y + EdgeMargin * 2;
+        return new Vector2(EdgeMargin, height - EdgeMargin - Mathf.Max(_frame.Size.Y, FrameMinimumSize.Y));
     }
 
     internal void AttachLayout(Control target, Func<Vector2>? floating = null, bool persist = true)
     {
-        target.Modulate = Colors.White;
+        target.Modulate = Godot.Colors.White;
         _layout = HudLayout.Attach(
-            target, persist ? "hud_chat" : "uilab_actual_chat", null, floating,
+            target, persist ? "hud_chat" : "uilab_actual_chat", floating != null ? _moveTool : null, floating,
             resizable: !Platform.TouchUi,
-            defaultSize: new Vector2(490, 238),
-            minimumSize: Platform.TouchUi ? Vector2.Zero : new Vector2(330, 170),
+            defaultSize: FrameDefaultSize,
+            minimumSize: Platform.TouchUi ? Vector2.Zero : FrameMinimumSize,
             persist: persist,
             resizeCorner: HudLayout.Corner.TopRight,
-            moveCorner: HudLayout.Corner.BottomLeft,
-            moveGripAlwaysVisible: floating != null,
-            resizeGripOffset: new Vector2(0, 23),
-            backgroundOpacityChanged: alpha =>
-            {
-                _backgroundAlpha = alpha;
-                _panelStyle.BgColor = new Color(0, 0, 0, alpha);
-                GD.Print($"[hud] chat black background opacity={alpha:0.00}");
-            },
+            resizeGripOffset: ResizeGripOffset,
             anchor: floating == null ? HudPlacement.ChatAnchor : null,
-            anchorMargin: HudPlacement.ChatMargin);
+            anchorMargin: HudPlacement.ChatMargin,
+            moveGripOverlay: false);
+        _layout.Locked = _prefs.Locked;
+        _layout.Placed += () => LayoutChanged?.Invoke();
     }
 
     private void BuildNoticeBanner()
     {
-        _noticeLayer = new CanvasLayer { Layer = 69, Visible = false };
+        _noticeLayer = new CanvasLayer { Layer = NoticeLayer, Visible = false };
         _ctx.Root.AddChild(_noticeLayer);
 
         var panel = new PanelContainer
@@ -306,28 +246,26 @@ internal sealed class ChatSystem
 
     internal void ShowNoticePreview(string msg) => OnNotice(msg);
 
-    private const byte ClanChannel = 6;
-
-    private void ShowServerLine(ChatLine line)
-    {
-        var (tag, col) = ChanStyle(line.Type);
-        Append(line.Type == ClanChannel
-            ? $"[color=#{col}][lb]{tag}[rb] {BbCode.Esc(line.Message)}[/color]"
-            : $"[color=#{col}]{BbCode.Esc(line.Message)}[/color]");
-    }
-
     private void OnNotice(string msg)
     {
-        Info(msg);
+        AddEntry(ChatEntry.Plain(ChatCategory.Notice, NoticeType, msg));
+        if (_notices.Enqueue(msg)) ShowNotice(msg);
+    }
+
+    private const byte NoticeType = ChatType.WarSystem;
+
+    private void ShowNotice(string msg)
+    {
         _noticeLabel.Text = msg;
         _noticeLayer.Visible = true;
         int token = ++_noticeToken;
-        double secs = Mathf.Clamp(3.5 + msg.Length * 0.04, 4.0, 12.0);
-        var tree = _ctx.Root.GetTree();
-        if (tree == null) return;
-        tree.CreateTimer(secs).Timeout += () => {
-            if (_noticeToken == token && _noticeLayer != null && GodotObject.IsInstanceValid(_noticeLayer))
-                _noticeLayer.Visible = false;
+        double secs = Mathf.Clamp(NoticeBaseSeconds + msg.Length * NoticeSecondsPerChar, NoticeMinSeconds, NoticeMaxSeconds);
+        if (!_ctx.Root.IsInsideTree()) return;
+        _ctx.Root.GetTree().CreateTimer(secs).Timeout += () =>
+        {
+            if (_noticeToken != token || _noticeLayer == null || !GodotObject.IsInstanceValid(_noticeLayer)) return;
+            if (_notices.Advance() is { } next) ShowNotice(next);
+            else _noticeLayer.Visible = false;
         };
     }
 
@@ -340,10 +278,16 @@ internal sealed class ChatSystem
         }
         _active = true;
         SetInputRowActive(true);
-        _panelStyle.BgColor = new Color(0, 0, 0, _backgroundAlpha);
-        UpdateChanIndicator();
-        _input.Clear();
+        UpdateInputColour();
         _input.GrabFocus();
+        _input.CaretColumn = _input.Text.Length;
+        UpdateCounter();
+    }
+
+    internal void OpenWith(string text)
+    {
+        Open();
+        ShowTyped(text);
     }
 
     internal void Close()
@@ -351,23 +295,36 @@ internal sealed class ChatSystem
         _active = false;
         _input.ReleaseFocus();
         _input.Clear();
+        _lastInputText = "";
+        _linkDraft.Clear();
+        ApplyInputLimit();
+        _history.StopBrowsing();
         SetInputRowActive(false);
-        _panelStyle.BgColor = new Color(0, 0, 0, _backgroundAlpha);
+        UpdateCounter();
+    }
+
+    private void Suspend()
+    {
+        if (!_active || _settingsMenu.Visible || _input.HasFocus()) return;
+        if (_input.Text.Length == 0)
+        {
+            Close();
+            return;
+        }
+        _active = false;
+        SetInputRowActive(false);
+        UpdateCounter();
     }
 
     private void SetInputRowActive(bool active)
     {
-        _inputRow.Modulate = active ? Colors.White : new Color(1, 1, 1, 0);
-        _inputRow.MouseFilter = active
-            ? Control.MouseFilterEnum.Pass
-            : Control.MouseFilterEnum.Ignore;
-        _input.MouseFilter = active
-            ? Control.MouseFilterEnum.Stop
-            : Control.MouseFilterEnum.Ignore;
+        bool clickToType = !Platform.TouchUi;
+        _inputRow.Modulate = active ? Godot.Colors.White : new Color(1, 1, 1, clickToType ? IdleInputAlpha : 0);
+        _inputRow.MouseFilter = active || clickToType ? Control.MouseFilterEnum.Pass : Control.MouseFilterEnum.Ignore;
+        _input.MouseFilter = active || clickToType ? Control.MouseFilterEnum.Stop : Control.MouseFilterEnum.Ignore;
         _input.Editable = active;
-        _input.FocusMode = active
-            ? Control.FocusModeEnum.All
-            : Control.FocusModeEnum.None;
+        _input.FocusMode = active ? Control.FocusModeEnum.All : Control.FocusModeEnum.None;
+        ApplyInputStyle();
     }
 
     internal void SetPreviewState(bool inputActive, byte channel)
@@ -375,39 +332,47 @@ internal sealed class ChatSystem
         _active = inputActive;
         SetChannel(channel);
         SetInputRowActive(inputActive);
-        if (inputActive) UpdateChanIndicator();
+        if (inputActive) UpdateInputColour();
+    }
+
+    internal void AttachPreviewLayout(Control target) =>
+        AttachLayout(target, Platform.TouchUi ? null : DefaultSpot, persist: false);
+
+    internal void PreviewLine(ChatLine line) => OnChat(line);
+
+    internal void PreviewSent(string name, string text) => AppendWhisperEcho(name, text);
+
+    internal void PreviewTyped(string text, int itemId, string tail)
+    {
+        Open();
+        ShowTyped(text);
+        if (itemId > 0) InsertItemLink(itemId);
+        if (tail.Length > 0) ShowTyped(_input.Text + tail);
+    }
+
+    internal void PreviewScrolledUp(IEnumerable<ChatLine> fresh)
+    {
+        _scroll.ScrollToLine(0);
+        foreach (var line in fresh) OnChat(line);
     }
 
     internal void SetChannel(byte channel)
     {
         _sendChannel = channel;
-        RefreshChannelButtons();
-        if (_active) UpdateChanIndicator();
-    }
-
-    private void RefreshChannelButtons()
-    {
-        foreach (var (channel, button) in _channelButtons)
-            button.SetPressedNoSignal(channel == _sendChannel);
-    }
-
-    private void UpdateChanIndicator()
-    {
-        var (_, col) = ChanStyle(_sendChannel);
-        string name = _sendChannel == WhisperChannel && _whisperName.Length > 0 ? $"To {_whisperName}" : ChanName(_sendChannel);
-        _chanLabel.Text = $"[{name}]";
-        _chanLabel.AddThemeColorOverride("font_color", new Color("#" + col));
+        UpdateInputColour();
     }
 
     private void Submit(string text)
     {
-        text = text.TrimEnd();
-        if (text.Length == 0) { Close(); return; }
+        string visible = text.TrimEnd();
+        if (visible.Length == 0) { Close(); return; }
+        _history.Push(visible);
+        string wire = _linkDraft.ToWire(visible);
 
-        if (text[0] == '/' && LocalCommand?.Invoke(text.Substring(1).Trim()) == true) { Close(); return; }
-        if (text[0] == '/' && RunSlashCommand(text.Substring(1).Trim())) { Close(); return; }
+        if (visible[0] == '/' && LocalCommand?.Invoke(visible.Substring(1).Trim()) == true) { Close(); return; }
+        if (visible[0] == '/' && RunSlashCommand(visible.Substring(1).Trim())) { Close(); return; }
 
-        var (chan, body, target) = Parse(text);
+        var (chan, body, target) = Parse(wire);
 
         if (target.Length > 0)
         {
@@ -495,55 +460,46 @@ internal sealed class ChatSystem
                 string msg = sp < 0 ? "" : rest.Substring(sp + 1);
                 return (WhisperChannel, msg, name);
             }
-            case '!': return (5, rest, "");
-            case '#': return (3, rest, "");
-            case '$': return (6, rest, "");
-            case '%': return (13, rest, "");
-            case '&': return (15, rest, "");
-            case '~': return (23, rest, "");
-            case '|': return (34, rest, "");
-            case '\\': return (33, rest, "");
-            case '/': return (1, "+" + text.Substring(1), "");
-            case '+': return (1, text, "");
-            default:  return (_sendChannel, text, "");
+            case '/': return (GeneralChannel, "+" + text.Substring(1), "");
+            case '+': return (GeneralChannel, text, "");
         }
+        byte prefixed = ChatPrefixes.ChannelFor(text, ChatPrefixes.NotChat);
+        return prefixed == ChatPrefixes.NotChat ? (_sendChannel, text, "") : (prefixed, rest, "");
     }
 
     private void OnChat(ChatLine line)
     {
         if (line.Type == WhisperChannel)
         {
-            if (line.Name.Length > 0 && !string.Equals(line.Name, Net.I.LastEnter.Name, StringComparison.OrdinalIgnoreCase))
-                _lastWhisperFrom = line.Name;
+            if (line.Name.Length == 0 || IsSelf(line.Name)) return;
+            _lastWhisperFrom = line.Name;
+            var side = IsFriend?.Invoke(line.Name) == true ? WhisperSide.ReceivedFromFriend : WhisperSide.Received;
+            AddEntry(ChatEntry.Whisper(side, line.Name, line.Nation, line.IsGm, line.Message));
             return;
         }
 
         if (line.CharId < 0 && line.Name.Length == 0)
         {
-            ShowServerLine(line);
+            var category = ChatCategories.Of(line.Type, false);
+            if (category == ChatCategory.Notice) StatusNotice?.Invoke(line.Message);
+            else AddEntry(ChatEntry.Plain(category, line.Type, line.Message));
             return;
         }
 
         string text = Understandable(line) ? line.Message : Garble(line.Message);
-
-        var (tag, col) = ChanStyle(line.Type);
-        string nameCol = NationCol(line.Nation, line.IsGm);
-        var b = new System.Text.StringBuilder();
-        if (tag.Length > 0) b.Append($"[color=#{col}][lb]{tag}[rb] [/color]");
-        b.Append($"[color=#{nameCol}]{BbCode.Esc(line.Name)}[/color]");
-        b.Append(line.Type == WhisperChannel ? "[color=#ff7ad9] » [/color]" : ": ");
-        b.Append($"[color=#{col}]{BbCode.Esc(text)}[/color]");
-        Append(b.ToString());
-
-        ShowBubble(line.CharId, line.Type, text);
+        AddEntry(ChatEntry.Player(line.Type, line.Name, line.Nation, line.IsGm, text));
+        ShowBubble(line.CharId, line.Type, PlainText(text));
     }
+
+    private static bool IsSelf(string name) =>
+        string.Equals(name, Net.I.LastEnter.Name, StringComparison.OrdinalIgnoreCase);
 
     private static bool Understandable(ChatLine line)
         => line.IsGm
         || line.Nation == 0
         || line.Nation == Net.I.Nation
         || Net.I.CurrentZoneAbility.CanTalk
-        || line.Type is not (1 or 5 or 14);
+        || line.Type is not (ChatType.General or ChatType.Shout or ChatType.Merchant);
 
     private static string Garble(string message)
     {
@@ -552,144 +508,6 @@ internal sealed class ChatSystem
             scrambled[i] = (char)(GD.Randi() % 10 + 33);
         return new string(scrambled);
     }
-
-    private const double BubbleDur = 6.0;
-    private const double BubbleFade = 1.2;
-    private const float BubbleHeadY = 2.35f;
-    private const float BubbleWrap = 360f;
-
-    private sealed class Bubble
-    {
-        public Node3D Holder = null!;
-        public Label3D Label = null!;
-        public StandardMaterial3D? BgMat, BorderMat;
-        public double Start;
-        public bool Sized;
-    }
-
-    private readonly Dictionary<int, Bubble> _bubbles = new();
-
-    private readonly List<int> _expiredBubbles = new();
-
-    private void ShowBubble(int charId, byte type, string message)
-    {
-        Node3D? host = _ctx.BodyOf(charId);
-        if (host == null || message.Length == 0) return;
-
-        if (_bubbles.TryGetValue(charId, out var old))
-        {
-            if (GodotObject.IsInstanceValid(old.Holder)) old.Holder.QueueFree();
-            _bubbles.Remove(charId);
-        }
-
-        var col = new Color("#" + ChanStyle(type).Col);
-        var holder = new Node3D { Position = new Vector3(0, BubbleHeadY, 0) };
-        var label = new Label3D
-        {
-            Text = message,
-            Width = BubbleWrap,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
-            NoDepthTest = true,
-            FontSize = 48,
-            OutlineSize = 10,
-            PixelSize = 0.005f,
-            Modulate = col,
-            OutlineModulate = new Color(0, 0, 0, 0.95f),
-            RenderPriority = 12,
-        };
-        holder.AddChild(label);
-        host.AddChild(holder);
-        _bubbles[charId] = new Bubble { Holder = holder, Label = label, Start = _ctx.Now };
-    }
-
-    internal void TickBubbles(double now)
-    {
-        if (_bubbles.Count == 0) return;
-        var done = _expiredBubbles;
-        done.Clear();
-        foreach (var (id, b) in _bubbles)
-        {
-            if (!GodotObject.IsInstanceValid(b.Holder) || !GodotObject.IsInstanceValid(b.Label))
-            { done.Add(id); continue; }
-
-            double t = now - b.Start;
-            if (t >= BubbleDur) { b.Holder.QueueFree(); done.Add(id); continue; }
-
-            if (!b.Sized) SizeBubble(b);
-
-            float a = t > BubbleDur - BubbleFade
-                ? Mathf.Clamp((float)((BubbleDur - t) / BubbleFade), 0f, 1f) : 1f;
-            var m = b.Label.Modulate; m.A = a; b.Label.Modulate = m;
-            var o = b.Label.OutlineModulate; o.A = 0.95f * a; b.Label.OutlineModulate = o;
-            if (b.BgMat != null) { var c = b.BgMat.AlbedoColor; c.A = 0.62f * a; b.BgMat.AlbedoColor = c; }
-            if (b.BorderMat != null) { var c = b.BorderMat.AlbedoColor; c.A = 0.92f * a; b.BorderMat.AlbedoColor = c; }
-        }
-        foreach (var id in done) _bubbles.Remove(id);
-    }
-
-    private void SizeBubble(Bubble b)
-    {
-        var aabb = b.Label.GetAabb();
-        if (aabb.Size.X <= 0f || aabb.Size.Y <= 0f) return;
-
-        var cx = aabb.Position.X + aabb.Size.X / 2f;
-        var cy = aabb.Position.Y + aabb.Size.Y / 2f;
-        const float pad = 0.09f, frame = 0.035f;
-        var col = b.Label.Modulate;
-
-        b.BorderMat = BubbleMat(new Color(col.R, col.G, col.B, 0.92f), 10);
-        b.Holder.AddChild(BubbleQuad(b.BorderMat,
-            aabb.Size.X + (pad + frame) * 2f, aabb.Size.Y + (pad + frame) * 2f, cx, cy, -0.002f));
-
-        b.BgMat = BubbleMat(new Color(0.05f, 0.05f, 0.07f, 0.62f), 11);
-        b.Holder.AddChild(BubbleQuad(b.BgMat,
-            aabb.Size.X + pad * 2f, aabb.Size.Y + pad * 2f, cx, cy, -0.001f));
-
-        b.Sized = true;
-    }
-
-    private static StandardMaterial3D BubbleMat(Color c, int renderPriority) => new()
-    {
-        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-        AlbedoColor = c,
-        AlbedoTexture = BubbleTexture(),
-        Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-        BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
-        NoDepthTest = true,
-        RenderPriority = renderPriority,
-        CullMode = BaseMaterial3D.CullModeEnum.Disabled,
-        TextureFilter = BaseMaterial3D.TextureFilterEnum.Linear,
-    };
-
-    private static ImageTexture? _bubbleTex;
-    private static ImageTexture BubbleTexture()
-    {
-        if (_bubbleTex != null) return _bubbleTex;
-        const int s = 96;
-        const float r = 18f;
-        var img = Image.CreateEmpty(s, s, false, Image.Format.Rgba8);
-        float h = s * 0.5f;
-        for (int y = 0; y < s; y++)
-            for (int x = 0; x < s; x++)
-            {
-                float dx = Mathf.Max(Mathf.Abs(x + 0.5f - h) - (h - r), 0f);
-                float dy = Mathf.Max(Mathf.Abs(y + 0.5f - h) - (h - r), 0f);
-                float dist = Mathf.Sqrt(dx * dx + dy * dy) - r;
-                float a = Mathf.Clamp(0.5f - dist, 0f, 1f);
-                img.SetPixel(x, y, new Color(1f, 1f, 1f, a));
-            }
-        _bubbleTex = ImageTexture.CreateFromImage(img);
-        return _bubbleTex;
-    }
-
-    private static MeshInstance3D BubbleQuad(Material mat, float w, float h, float cx, float cy, float z) => new()
-    {
-        Mesh = new QuadMesh { Size = new Vector2(w, h), CenterOffset = new Vector3(cx, cy, z) },
-        MaterialOverride = mat,
-    };
 
     private void OnChatTarget(int result, string name)
     {
@@ -724,7 +542,11 @@ internal sealed class ChatSystem
         }
     }
 
-    private void AppendWhisperEcho(string name, string msg) => WhisperEcho?.Invoke(name, msg);
+    private void AppendWhisperEcho(string name, string msg)
+    {
+        AddEntry(ChatEntry.Whisper(WhisperSide.Sent, name, 0, false, msg));
+        WhisperEcho?.Invoke(name, msg);
+    }
 
     private void BuildChatPeek()
     {
@@ -791,20 +613,7 @@ internal sealed class ChatSystem
         _peekText.Text = bbcode;
     }
 
-    internal void Info(string msg) => Append($"[color=#ffe24a]{BbCode.Esc(msg)}[/color]");
+    private void Info(string msg) => StatusNotice?.Invoke(msg);
 
-    internal void Append(string bbcode)
-    {
-        _log.Enqueue(bbcode);
-        PluginHost.Game.RaiseChatLine(bbcode);
-        UpdateChatPeek(bbcode);
-        if (_log.Count > 1) _scroll.AppendText("\n");
-        _scroll.AppendText(bbcode);
-        while (_log.Count > LogMax)
-        {
-            string dropped = _log.Dequeue();
-            for (int lines = dropped.Count(c => c == '\n'); lines >= 0; lines--)
-                _scroll.RemoveParagraph(0);
-        }
-    }
+    internal void AppendShout(string message) => AddEntry(ChatEntry.Plain(ChatCategory.Shout, ChatType.Shout, message));
 }

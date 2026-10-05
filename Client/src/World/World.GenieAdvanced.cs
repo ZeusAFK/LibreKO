@@ -127,7 +127,7 @@ public partial class World
         {
             if (_selectedId >= 0 && _ents.TryGetValue(_selectedId, out var e) && e.IsMonster)
             { _genieMonsters.Add(e.Name); RefreshGenieMonsters(); }
-            else Chat.Info("Select a monster first.");
+            else CombatNotice("Select a monster first.");
         });
         GenieButton(actions, "Remove", () =>
         {
@@ -280,7 +280,7 @@ public partial class World
         SaveGenieScrollSettings(config);
         config.SetValue("genie", "auto_hammer", _genieAutoHammer.ButtonPressed);
         config.SetValue("genie", "hammer_threshold", _genieHammerThreshold.Value);
-        if (config.Save(GenieSettingsPath) != Error.Ok) Chat.Info("Could not save Genie settings to disk.");
+        if (config.Save(GenieSettingsPath) != Error.Ok) CombatNotice("Could not save Genie settings to disk.");
         Net.I.SendGenieSystem(Net.GenieSaveOptions, GenieOptionBytes());
     }
 

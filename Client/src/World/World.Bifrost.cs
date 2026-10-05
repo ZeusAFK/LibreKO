@@ -230,7 +230,7 @@ public partial class World
 
         if (_bifrostActive)
         {
-            Chat.Info($"[{_eventTitle}] Window closed. Click the top timer banner anytime to reopen.");
+            CombatNotice($"[{_eventTitle}] Window closed. Click the top timer banner anytime to reopen.");
         }
     }
 
@@ -269,7 +269,7 @@ public partial class World
 
         if (!wasActive && _bifrostSignUp)
         {
-            Chat.Info($"[{_eventTitle}] Registration is open ({remaining} seconds)!");
+            CombatNotice($"[{_eventTitle}] Registration is open ({remaining} seconds)!");
             OfferBifrostJoin();
         }
     }
@@ -317,11 +317,11 @@ public partial class World
         UpdateJoinModalState();
         if (joined)
         {
-            Chat.Info($"[{_eventTitle}] You have registered! Prepare for battle.");
+            CombatNotice($"[{_eventTitle}] You have registered! Prepare for battle.");
         }
         else
         {
-            Chat.Info($"[{_eventTitle}] Unable to register for the event at this time.");
+            CombatNotice($"[{_eventTitle}] Unable to register for the event at this time.");
         }
     }
 
@@ -329,12 +329,12 @@ public partial class World
     {
         _isEventRegistered = false;
         UpdateJoinModalState();
-        Chat.Info($"[{_eventTitle}] You cancelled your event registration.");
+        CombatNotice($"[{_eventTitle}] You cancelled your event registration.");
     }
 
     private void EndBifrostEvent()
     {
-        if (_bifrostActive && _bifrostSignUp) Chat.Info($"[{_eventTitle}] Event registration has ended.");
+        if (_bifrostActive && _bifrostSignUp) CombatNotice($"[{_eventTitle}] Event registration has ended.");
         _bifrostActive = false;
         _bifrostRemaining = 0;
         _bifrostMaxSeen = 0;

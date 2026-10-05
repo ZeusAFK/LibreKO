@@ -176,7 +176,7 @@ public partial class World
             _clanPointsMineLbl.Text = $"{np:n0}";
             _clanPointsFundLbl.Text = $"{fund:n0}   ({fund / ClanTypes.NationalPointsPerClanPoint:n0} points)";
             SetClanPointsStatus($"You have saved up {amount:n0} Contribution for the clan", false);
-            Chat.Info($"You have saved up {amount:n0} Contribution for the clan");
+            CombatNotice($"You have saved up {amount:n0} Contribution for the clan");
             ApplyMyClan();
             if (ClanPageVisible && _clanTab == ClanTab.Points) Net.I.SendClanDonationList();
             return;

@@ -101,6 +101,10 @@ public static class Config
     };
 
     public static bool ShowStats { get; private set; } = true;
+    public static string ChatLook { get; private set; } = "";
+    public static string ChatColors { get; private set; } = "";
+    public static int CombatLogBackground { get; private set; } = LibreKO.Domain.ChatPrefs.DefaultBackground;
+    public static bool CombatLogLocked { get; private set; }
 
     public const float CamTurnSpeedMin = 90f;
     public const float CamTurnSpeedMax = 1080f;
@@ -300,6 +304,11 @@ public static class Config
         if (shipped && Platform.TouchUi) FpsLimit = FpsMobileDefault;
         else FpsLimit = ReadEnum(cfg, "graphics", "fps_limit", FpsLimit);
         ShowStats = cfg.GetValue("hud", "show_stats", ShowStats).AsBool();
+        ChatLook = cfg.GetValue("hud", "chat_look", ChatLook).AsString();
+        ChatColors = cfg.GetValue("hud", "chat_colors", ChatColors).AsString();
+        CombatLogBackground = Mathf.Clamp(cfg.GetValue("hud", "combat_log_bg", CombatLogBackground).AsInt32(),
+            0, LibreKO.Domain.ChatPrefs.Backgrounds.Length - 1);
+        CombatLogLocked = cfg.GetValue("hud", "combat_log_lock", CombatLogLocked).AsBool();
         CamTurnSpeed = Mathf.Clamp((float)cfg.GetValue("controls", "cam_turn_speed", CamTurnSpeed).AsDouble(),
             CamTurnSpeedMin, CamTurnSpeedMax);
         CamEdgePan = cfg.GetValue("controls", "cam_edge_pan", CamEdgePan).AsBool();
@@ -396,6 +405,10 @@ public static class Config
         cfg.SetValue("video", "vsync", VSync);
         cfg.SetValue("graphics", "fps_limit", (int)FpsLimit);
         cfg.SetValue("hud", "show_stats", ShowStats);
+        cfg.SetValue("hud", "chat_look", ChatLook);
+        cfg.SetValue("hud", "chat_colors", ChatColors);
+        cfg.SetValue("hud", "combat_log_bg", CombatLogBackground);
+        cfg.SetValue("hud", "combat_log_lock", CombatLogLocked);
         cfg.SetValue("hotbar", "locked", HotbarLocked);
         cfg.SetValue("hotbar", "vertical", HotbarVertical);
         cfg.SetValue("hotbar", "extra_bars", HotbarExtraBars);
@@ -492,6 +505,34 @@ public static class Config
         CombatLog = combatLog;
         Save();
         EffectsChanged?.Invoke();
+    }
+
+    public static void SetChatLook(string look)
+    {
+        if (ChatLook == look) return;
+        ChatLook = look;
+        Save();
+    }
+
+    public static void SetChatColors(string colors)
+    {
+        if (ChatColors == colors) return;
+        ChatColors = colors;
+        Save();
+    }
+
+    public static void SetCombatLogBackground(int level)
+    {
+        if (CombatLogBackground == level) return;
+        CombatLogBackground = level;
+        Save();
+    }
+
+    public static void SetCombatLogLocked(bool locked)
+    {
+        if (CombatLogLocked == locked) return;
+        CombatLogLocked = locked;
+        Save();
     }
 
     public static void SetShowStats(bool show)

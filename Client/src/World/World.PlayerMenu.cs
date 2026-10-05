@@ -15,6 +15,7 @@ public partial class World
         Duel,
         EquipmentView,
         ClanInvite,
+        CopyName,
     }
 
     private PopupMenu _playerMenu = null!;
@@ -60,6 +61,32 @@ public partial class World
         _playerMenu.AddItem("Equipment View", (int)PlayerMenuAction.EquipmentView);
         if (MyClan.CanInvite && target.KnightsId == 0)
             _playerMenu.AddItem("Clan invite", (int)PlayerMenuAction.ClanInvite);
+        _playerMenu.AddItem("Copy name", (int)PlayerMenuAction.CopyName);
+        _playerMenu.ResetSize();
+        _playerMenu.Position = (Vector2I)at;
+        _playerMenu.Popup();
+    }
+
+    private void ShowPlayerMenuByName(string name, Vector2 at)
+    {
+        foreach (var (id, e) in _ents)
+        {
+            if (e.IsNpc || e.Dead || id == _myId) continue;
+            if (!string.Equals(e.Name, name, System.StringComparison.OrdinalIgnoreCase)) continue;
+            ShowPlayerMenu(id, e, at);
+            return;
+        }
+
+        _playerMenuId = -1;
+        _playerMenuName = name;
+        _playerMenu.Clear();
+        _playerMenu.AddItem("Whisper", (int)PlayerMenuAction.Whisper);
+        _playerMenu.AddItem("Add friend", (int)PlayerMenuAction.AddFriend);
+        _playerMenu.AddItem("Request a party", (int)PlayerMenuAction.RequestParty);
+        _playerMenu.AddItem("User Information", (int)PlayerMenuAction.UserInformation);
+        _playerMenu.AddItem("Equipment View", (int)PlayerMenuAction.EquipmentView);
+        _playerMenu.AddItem("Report", (int)PlayerMenuAction.Report);
+        _playerMenu.AddItem("Copy name", (int)PlayerMenuAction.CopyName);
         _playerMenu.ResetSize();
         _playerMenu.Position = (Vector2I)at;
         _playerMenu.Popup();
@@ -153,6 +180,11 @@ public partial class World
             case PlayerMenuAction.ClanInvite:
                 Net.I.SendClanInvite(id);
                 CombatNotice($"Inviting {name} to the clan…");
+                break;
+
+            case PlayerMenuAction.CopyName:
+                DisplayServer.ClipboardSet(name);
+                CombatNotice($"Copied {name}.");
                 break;
         }
     }
