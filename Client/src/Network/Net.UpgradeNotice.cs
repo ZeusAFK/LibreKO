@@ -14,11 +14,4 @@ public partial class Net
         _upgradeNoticeWired = true;
         ShoutUpgradeEvent += (ok, name, itemId, _) => UpgradeNoticeEvent?.Invoke(ok, name, itemId);
     }
-
-    public void SendWatchUpgrade(int itemId)
-    {
-        var p = new Packet(GameOpcodes.GS_UPGRADE_NOTICE);
-        p.WriteInt(itemId);
-        _conn.Send(p);
-    }
 }

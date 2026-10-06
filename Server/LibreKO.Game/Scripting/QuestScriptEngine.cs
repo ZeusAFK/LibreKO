@@ -30,7 +30,10 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
     private readonly TimeProvider _clock;
     private DateTimeOffset _nextFileCheck;
 
-    private sealed record CachedProgram(QuestProgram Program, DateTime WrittenAt, string Path);
+    private sealed record CachedProgram(QuestProgram Program, DateTime WrittenAt, string Path)
+    {
+        public IReadOnlyList<(Diagnostic Diagnostic, string Rendered)> Withheld { get; init; } = [];
+    }
 
     private readonly Lock _indexGate = new();
     private Dictionary<(int Npc, int Zone), List<string>>? _npcIndex;
@@ -425,6 +428,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                 }
             }
 
+            LogFamilyWarnings();
             return _npcIndex = index;
         }
     }
@@ -571,6 +575,22 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         }
     }
 
+    private void LogFamilyWarnings()
+    {
+        var compiled = _files!.Select(file => _cache.GetValueOrDefault(file)).OfType<CachedProgram>().ToList();
+        var reached = QuestProgramLinks.Reachable(compiled.Select(cached => cached.Program).ToList());
+        foreach (var cached in compiled)
+        foreach (var (diagnostic, rendered) in cached.Withheld)
+            if (!QuestProgramLinks.ReachedThroughSibling(cached.Program, diagnostic, reached))
+                _logger.Log(LevelOf(diagnostic), "{Diagnostic}", rendered);
+    }
+
+    private static LogLevel LevelOf(Diagnostic diagnostic) =>
+        diagnostic.Severity == DiagnosticSeverity.Error ? LogLevel.Error : LogLevel.Warning;
+
+    private static bool ReachableFromSiblings(Diagnostic diagnostic) =>
+        diagnostic.Id is DiagnosticId.UnreachableEvent or DiagnosticId.NoGreeting;
+
     private CachedProgram? ResolveFile(string path)
     {
         if (_cache.TryGetValue(path, out var cached))
@@ -586,10 +606,14 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         try
         {
             var compilation = QuestCompilation.CreateFromFile(path, BuildCatalog());
+            var withheld = new List<(Diagnostic Diagnostic, string Rendered)>();
             foreach (var diagnostic in compilation.Diagnostics)
             {
-                var level = diagnostic.Severity == DiagnosticSeverity.Error ? LogLevel.Error : LogLevel.Warning;
-                _logger.Log(level, "{Diagnostic}", DiagnosticFormatter.Render(diagnostic, compilation.Source).TrimEnd());
+                var rendered = DiagnosticFormatter.Render(diagnostic, compilation.Source).TrimEnd();
+                if (compilation.Succeeded && ReachableFromSiblings(diagnostic))
+                    withheld.Add((diagnostic, rendered));
+                else
+                    _logger.Log(LevelOf(diagnostic), "{Diagnostic}", rendered);
             }
 
             if (!compilation.Succeeded)
@@ -600,7 +624,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
             _logger.LogInformation("Compiled quest script {File}: {Events} event(s) for NPC {Npc}",
                 fileName, compilation.Program.Events.Count, compilation.Program.NpcId);
-            return new CachedProgram(compilation.Program, LastWriteTime(path), path);
+            return new CachedProgram(compilation.Program, LastWriteTime(path), path) { Withheld = withheld };
         }
         catch (IOException exception)
         {

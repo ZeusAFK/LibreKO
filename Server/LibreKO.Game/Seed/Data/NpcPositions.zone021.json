@@ -4919,5 +4919,24 @@
     "SpecialType": 0,
     "TrapNumber": 0,
     "Room": 0
+  },
+  {
+    "Index": 8312,
+    "ZoneId": 21,
+    "NpcId": 31774,
+    "ActType": 100,
+    "DotCnt": 0,
+    "Path": null,
+    "LeftX": 830,
+    "TopZ": 668,
+    "NumNPC": 1,
+    "RegTime": 60,
+    "Direction": 180,
+    "SpawnRange": 0,
+    "RegenType": 0,
+    "DungeonFamily": 0,
+    "SpecialType": 0,
+    "TrapNumber": 0,
+    "Room": 0
   }
 ]

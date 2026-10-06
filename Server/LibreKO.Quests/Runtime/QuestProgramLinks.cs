@@ -1,9 +1,20 @@
 ﻿using LibreKO.Quests.Binding;
+using LibreKO.Quests.Text;
 
 namespace LibreKO.Quests.Runtime;
 
 public static class QuestProgramLinks
 {
+    public static bool ReachedThroughSibling(
+        QuestProgram program, Diagnostic diagnostic, IReadOnlySet<(QuestProgram Program, int Event)> reached) =>
+        diagnostic.Id switch
+        {
+            DiagnosticId.NoGreeting => reached.Any(node => node.Program == program),
+            DiagnosticId.UnreachableEvent => program.Events.Values.Any(entry =>
+                entry.Span == diagnostic.Span && reached.Contains((program, entry.Id))),
+            _ => false,
+        };
+
     public static QuestProgram? Resolve(
         QuestProgram source, BorrowedEvent borrow, IReadOnlyList<QuestProgram> programs, out string? problem)
     {

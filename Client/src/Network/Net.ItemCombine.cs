@@ -1,57 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
+using LibreKO.Domain;
 
 namespace LibreKO.Network;
 
 public partial class Net
 {
-    public event Action<List<ItemCombineRecipe>>? ItemCombineListEvent;
-    public event Action<bool, int>? ItemCombineResultEvent;
+    public const byte ItemCombineSub = 11;
+    private const byte CombineEffectSub = 1;
 
-    private void HandleItemCombine(Packet p)
+    public event Action<CombineReply>? ItemCombineReplyEvent;
+    public event Action<CombineEffect>? CombineEffectEvent;
+
+    public void SendItemCombine(int npcRuntimeId, int shadowItem, int shadowBagSlot, IReadOnlyList<CombineEntry> ordered)
     {
-        if (p.RemainingBytes < 1) return;
-        byte sub = p.ReadByte();
-        if (sub == 1)
+        var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
+        p.WriteByte(ItemCombineSub);
+        p.WriteInt(npcRuntimeId);
+        p.WriteInt(shadowItem);
+        p.WriteByte((byte)shadowBagSlot);
+        p.WriteByte((byte)ordered.Count);
+        foreach (var entry in ordered)
+            p.WriteByte((byte)entry.BagSlot);
+        p.WriteSByteString(ItemCombine.MaterialText(ordered));
+        _conn.Send(p);
+    }
+
+    private void HandleItemCombineReply(Packet p)
+    {
+        byte result = p.ReadByte();
+        short row = 0;
+        byte slot = 0;
+        if (ItemCombine.IsDone(result))
         {
-            var list = new List<ItemCombineRecipe>();
-            int count = p.RemainingBytes >= 2 ? p.ReadUShort() : 0;
-            for (int i = 0; i < count && p.RemainingBytes >= 4; i++)
+            row = p.ReadShort();
+            if (result == ItemCombine.Succeeded)
             {
-                int recipeId = p.ReadInt();
-                string name = p.ReadSByteString();
-                int outputItemId = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
-                list.Add(new ItemCombineRecipe { RecipeId = recipeId, Name = name, OutputItemId = outputItemId });
+                p.ReadInt();
+                slot = p.ReadByte();
             }
-            ItemCombineListEvent?.Invoke(list);
         }
-        else if (sub == 2)
-        {
-            bool ok = (p.RemainingBytes >= 1 ? p.ReadByte() : 0) == 1;
-            int outputItemId = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
-            ItemCombineResultEvent?.Invoke(ok, outputItemId);
-        }
+        ItemCombineReplyEvent?.Invoke(new CombineReply(result, row, slot));
     }
 
-    public void SendItemCombineList()
+    private void HandleNpcEvent(Packet p)
     {
-        var p = new Packet(GameOpcodes.GS_ITEM_COMBINE);
-        p.WriteByte(1);
-        _conn.Send(p);
+        if (p.RemainingBytes < 1 || p.ReadByte() != CombineEffectSub) return;
+        bool success = p.ReadByte() == ItemCombine.Succeeded;
+        int npc = p.ReadShort();
+        int row = p.ReadUShort();
+        CombineEffectEvent?.Invoke(new CombineEffect(success, npc, row));
     }
-
-    public void SendItemCombine(int recipeId)
-    {
-        var p = new Packet(GameOpcodes.GS_ITEM_COMBINE);
-        p.WriteByte(2);
-        p.WriteInt(recipeId);
-        _conn.Send(p);
-    }
-}
-
-public struct ItemCombineRecipe
-{
-    public int RecipeId;
-    public string Name;
-    public int OutputItemId;
 }

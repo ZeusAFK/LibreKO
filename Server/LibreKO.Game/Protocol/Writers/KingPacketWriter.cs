@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -6,7 +6,7 @@ public sealed class KingPacketWriter
 {
     public const short Accepted = 1;
 
-    public readonly record struct PollCandidate(string Name, string ClanName);
+    public readonly record struct PollCandidate(byte Number, string Name, string ClanName);
 
     public static Packet Result(byte sub, byte subType, short result)
     {
@@ -30,93 +30,38 @@ public sealed class KingPacketWriter
         return packet;
     }
 
-    public static Packet FlagWithAmount(byte sub, byte subType, byte result, int amount)
-    {
-        var packet = Sub(sub, subType);
-        packet.WriteByte(result);
-        packet.WriteInt(amount);
-        return packet;
-    }
-
-    public static Packet NationIntro(byte sub, byte result, string kingName, int treasury, byte tariff)
-    {
-        var packet = new Packet(GameOpcodes.GS_KING);
-        packet.WriteByte(sub);
-        packet.WriteByte(result);
-        packet.WriteSByteString(kingName);
-        packet.WriteInt(treasury);
-        packet.WriteByte(tariff);
-        return packet;
-    }
-
-    public static Packet KingNpc(byte sub, string kingName)
-    {
-        var packet = new Packet(GameOpcodes.GS_KING);
-        packet.WriteByte(sub);
-        packet.WriteSByteString(kingName);
-        return packet;
-    }
-
-    public static Packet ResultWithName(byte sub, byte subType, short result, string name)
-    {
-        var packet = Sub(sub, subType);
-        packet.WriteShort(result);
-        packet.WriteString(name);
-        return packet;
-    }
-
-    public static Packet ImpeachmentState(
-        byte sub, byte subType, short result, short impeachmentType, short extra)
-    {
-        var packet = Sub(sub, subType);
-        packet.WriteShort(result);
-        packet.WriteShort(impeachmentType);
-        packet.WriteShort(extra);
-        return packet;
-    }
-
-    public static Packet Flags(byte sub, byte subType, byte first, byte second)
-    {
-        var packet = Sub(sub, subType);
-        packet.WriteByte(first);
-        packet.WriteByte(second);
-        return packet;
-    }
-
-    public static Packet Acknowledge(byte sub, byte subType) => Sub(sub, subType);
-
-    public static Packet TaxRate(byte sub, byte subType, string name, int amount, byte rate)
-    {
-        var packet = Sub(sub, subType);
-        packet.WriteSByteString(name);
-        packet.WriteInt(amount);
-        packet.WriteByte(rate);
-        return packet;
-    }
-
-    public static Packet Treasury(byte sub, string name, byte first, byte second, int amount)
-    {
-        var packet = new Packet(GameOpcodes.GS_KING);
-        packet.WriteByte(sub);
-        packet.WriteSByteString(name);
-        packet.WriteByte(first);
-        packet.WriteByte(second);
-        packet.WriteInt(amount);
-        return packet;
-    }
-
     public static Packet Notice(byte sub, string message)
         => sub == NoticePacketWriter.LoginNotice
             ? NoticePacketWriter.Login([(string.Empty, message)])
             : NoticePacketWriter.Screen(message);
 
-    public static Packet Election(byte electionOpcode, byte election) => Sub(election, electionOpcode);
-
-    public static Packet ElectionSchedule(
-        byte electionOpcode, byte election, byte month, byte day, byte hour, byte minute)
+    public static Packet ElectionOfficer(string kingName)
     {
-        var packet = Sub(election, electionOpcode);
-        packet.WriteByte(1);
+        var packet = new Packet(GameOpcodes.GS_KING);
+        packet.WriteByte(KingPacketConstants.ElectionOfficer);
+        packet.WriteSByteString(kingName);
+        return packet;
+    }
+
+    public static Packet KingTreasury(uint kingsFund, uint nationalTreasury)
+    {
+        var packet = Result(KingPacketConstants.Tax, KingPacketConstants.TaxTreasury, KingPacketConstants.TreasuryKing);
+        packet.WriteUInt(kingsFund);
+        packet.WriteUInt(nationalTreasury);
+        return packet;
+    }
+
+    public static Packet CitizenTreasury(uint nationalTreasury)
+    {
+        var packet = Result(KingPacketConstants.Tax, KingPacketConstants.TaxTreasury, KingPacketConstants.TreasuryCitizen);
+        packet.WriteUInt(nationalTreasury);
+        return packet;
+    }
+
+    public static Packet ElectionSchedule(byte kind, byte month, byte day, byte hour, byte minute)
+    {
+        var packet = Sub(KingPacketConstants.Election, KingPacketConstants.ElectionSchedule);
+        packet.WriteByte(kind);
         packet.WriteByte(month);
         packet.WriteByte(day);
         packet.WriteByte(hour);
@@ -124,43 +69,48 @@ public sealed class KingPacketWriter
         return packet;
     }
 
-    public static Packet NoticeBoardResult(
-        byte boardOpcode, byte election, byte noticeBoard, short result)
+    public static Packet NoElectionSchedule(byte impeachmentState)
     {
-        var packet = NoticeBoard(boardOpcode, election, noticeBoard);
+        var packet = Sub(KingPacketConstants.Election, KingPacketConstants.ElectionSchedule);
+        packet.WriteByte(KingPacketConstants.ScheduleNone);
+        packet.WriteByte(impeachmentState);
+        return packet;
+    }
+
+    public static Packet PlanWriteResult(short result)
+    {
+        var packet = Sub(KingPacketConstants.Election, KingPacketConstants.ElectionNoticeBoard);
+        packet.WriteByte(KingPacketConstants.CandidacyBoardWrite);
         packet.WriteShort(result);
         return packet;
     }
 
-    public static Packet NoticeBoardEntry(
-        byte boardOpcode, byte election, byte noticeBoard, byte readSubOpcode)
+    public static Packet Plan(byte[] plan)
     {
-        var packet = NoticeBoard(boardOpcode, election, noticeBoard);
-        packet.WriteByte(readSubOpcode);
+        var packet = PlanRead(Accepted);
+        packet.WriteUShort((ushort)plan.Length);
+        packet.WriteBytes(plan);
         return packet;
     }
 
-    public static Packet PollEntry(byte election, byte poll, byte pollOpcode)
-    {
-        var packet = Sub(election, poll);
-        packet.WriteByte(pollOpcode);
-        return packet;
-    }
+    public static Packet PlanRefused(short result) => PlanRead(result);
 
-    public static Packet PollResult(byte election, byte poll, byte pollOpcode, short result)
+    private static Packet PlanRead(short result)
     {
-        var packet = PollEntry(election, poll, pollOpcode);
+        var packet = Sub(KingPacketConstants.Election, KingPacketConstants.ElectionNoticeBoard);
+        packet.WriteByte(KingPacketConstants.CandidacyBoardRead);
+        packet.WriteByte(KingPacketConstants.BoardReadPlan);
         packet.WriteShort(result);
         return packet;
     }
 
-    public static Packet PollCandidates(
-        byte election, byte poll, byte pollOpcode, IReadOnlyCollection<PollCandidate> candidates)
+    public static Packet PollCandidates(IReadOnlyCollection<PollCandidate> candidates)
     {
-        var packet = PollResult(election, poll, pollOpcode, Accepted);
+        var packet = PollResult(KingPacketConstants.PollCandidateList, Accepted);
         packet.WriteByte((byte)candidates.Count);
         foreach (var candidate in candidates)
         {
+            packet.WriteByte(candidate.Number);
             packet.WriteSByteString(candidate.Name);
             packet.WriteSByteString(candidate.ClanName);
         }
@@ -168,34 +118,47 @@ public sealed class KingPacketWriter
         return packet;
     }
 
-    public static Packet CandidateList(
-        byte boardOpcode, byte election, byte noticeBoard, byte readSubOpcode,
-        IReadOnlyCollection<string> names)
+    public static Packet PollResult(byte pollOpcode, short result)
     {
-        var packet = NoticeBoardEntry(boardOpcode, election, noticeBoard, readSubOpcode);
-        packet.WriteByte((byte)names.Count);
-        foreach (var name in names)
-            packet.WriteSByteString(name);
+        var packet = Sub(KingPacketConstants.Election, KingPacketConstants.ElectionPoll);
+        packet.WriteByte(pollOpcode);
+        packet.WriteShort(result);
         return packet;
     }
 
-    public static Packet CandidateNotice(
-        byte boardOpcode, byte election, byte noticeBoard, byte readSubOpcode,
-        short noticeLength, byte[] notice)
+    public static Packet ImpeachmentSupporters(IReadOnlyCollection<string> senators)
     {
-        var packet = NoticeBoard(boardOpcode, election, noticeBoard);
-        packet.WriteByte(readSubOpcode);
-        packet.WriteShort(noticeLength);
-        packet.WriteBytes(notice);
+        var packet = Result(KingPacketConstants.Impeachment, KingPacketConstants.ImpeachmentList, Accepted);
+        packet.WriteByte((byte)senators.Count);
+        foreach (var senator in senators)
+            packet.WriteSByteString(senator);
         return packet;
     }
 
-    public static Packet NoticeBoard(byte boardOpcode, byte election, byte noticeBoard)
+    public static Packet KingsFundCollected(uint newCoins, uint collected)
     {
-        var packet = Sub(election, noticeBoard);
-        packet.WriteByte(boardOpcode);
+        var packet = Result(KingPacketConstants.Tax, KingPacketConstants.TaxCollect, Accepted);
+        packet.WriteUInt(newCoins);
+        packet.WriteUInt(collected);
         return packet;
     }
+
+    public static Packet Tariff(byte taxOpcode, byte tariff)
+    {
+        var packet = Result(KingPacketConstants.Tax, taxOpcode, Accepted);
+        packet.WriteByte(tariff);
+        return packet;
+    }
+
+    public static Packet NationIntro(string intro)
+    {
+        var packet = Sub(KingPacketConstants.NationIntro, KingPacketConstants.NationIntroRead);
+        packet.WriteString(intro);
+        return packet;
+    }
+
+    public static Packet NationIntroWritten(byte result) =>
+        Flag(KingPacketConstants.NationIntro, KingPacketConstants.NationIntroWrite, result);
 
     private static Packet Sub(byte sub, byte subType)
     {

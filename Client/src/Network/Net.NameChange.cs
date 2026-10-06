@@ -10,6 +10,7 @@ public partial class Net
     public const byte NameChangeInvalid = 2;
     public const byte NameChangeSuccess = 3;
     public const byte NameChangeInClan = 4;
+    public const byte NameChangeAuctionOpen = 11;
 
     public const byte ClanNameChangeShowDialog = 1;
     public const byte ClanNameChangeInvalid = 2;

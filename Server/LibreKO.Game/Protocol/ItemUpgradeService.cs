@@ -21,6 +21,7 @@ public class ItemUpgradeService(
     IGlobalAnvilRateService globalAnvilRateService,
     IChaoticGeneratorService chaoticGeneratorService,
     IPetService petService,
+    IItemCombineService itemCombineService,
     ILogger<ItemUpgradeService> logger) : IItemUpgradeService
 {
 
@@ -131,6 +132,9 @@ public class ItemUpgradeService(
                 break;
             case ItemUpgradeSubOpcode.PetTransform:
                 await HandlePetTransformAsync(session, packet);
+                break;
+            case ItemUpgradeSubOpcode.Combine:
+                await itemCombineService.HandleAsync(session, packet);
                 break;
             default:
                 logger.LogDebug("Unhandled item upgrade sub-opcode {SubOpcode} from {Name}", subOpcode, session.Name);

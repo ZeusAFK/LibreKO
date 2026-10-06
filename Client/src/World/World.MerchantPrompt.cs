@@ -80,6 +80,16 @@ public partial class World
         root.AddChild(_amountTotalRow);
         _amountTotalRow.AddChild(MoneyRow("Total", out _amountTotal, UiTheme.GoldBright));
 
+        _amountMarketRow = new HBoxContainer { Visible = false };
+        _amountMarketRow.AddThemeConstantOverride("separation", 8);
+        root.AddChild(_amountMarketRow);
+        _amountMarketHint = UiTheme.Text("", 12, UiTheme.TextDim);
+        _amountMarketHint.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        _amountMarketRow.AddChild(_amountMarketHint);
+        var marketPrice = UiTheme.SmallButton("Market Price", MarketPriceText(MarketPriceSearchTipText, "Search the price of selected item"));
+        marketPrice.Pressed += () => OpenMarketPrice(_amountMarketItem);
+        _amountMarketRow.AddChild(marketPrice);
+
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 8);
         footer.Alignment = BoxContainer.AlignmentMode.Center;
@@ -100,7 +110,7 @@ public partial class World
         AskAmount(slot, "Price this item", suggested, slot.Count, slot.Count > 1,
             (count, price) => Net.I.SendMerchantAddItem(
                 slot.ItemId, count, price, (byte)(absSlot - GridStart), (byte)stallSlot),
-            defaultCount: slot.Count);
+            defaultCount: slot.Count, marketPriceItem: slot.ItemId);
     }
 
     private void AskTrade(
@@ -112,7 +122,7 @@ public partial class World
 
     private void AskAmount(
         ItemSlot slot, string hint, int price, int maxCount, bool countable,
-        System.Action<int, int> accept, bool priceEditable = true, int defaultCount = 0)
+        System.Action<int, int> accept, bool priceEditable = true, int defaultCount = 0, int marketPriceItem = 0)
     {
         _amountAccept = accept;
         _amountIcon.Texture = ItemData.Icon(slot.ItemId);
@@ -137,6 +147,7 @@ public partial class World
         RefreshAmountTotal();
         _amountConfirmBtn.Text = priceEditable ? "Confirm" : "Yes";
         _amountLayer.Visible = true;
+        ShowStallPriceHint(marketPriceItem);
     }
 
     private void RefreshAmountTotal()
@@ -144,6 +155,7 @@ public partial class World
         long count = (long)_amountCount.Value;
         long price = _amountPriceRow.Visible ? _amountPrice.Value : 0;
         _amountTotal.Text = Money(count * price);
+        RefreshStallPriceHint();
     }
 
     private void AcceptAmount()

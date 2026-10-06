@@ -670,6 +670,19 @@ public sealed class QuestInterpreter
                 _host.OpenGenderChangePanel();
                 break;
 
+            case QuestActionKind.OpenFortunePanel:
+                _host.OpenFortunePanel();
+                break;
+            case QuestActionKind.OpenSpecialAuctionPanel:
+                _host.OpenSpecialAuctionPanel();
+                break;
+            case QuestActionKind.OpenItemCombinePanel:
+                _host.OpenItemCombinePanel();
+                break;
+            case QuestActionKind.OpenCombineRecipeBook:
+                _host.OpenCombineRecipeBook();
+                break;
+
             case QuestActionKind.OpenNationTransferPanel:
                 _host.OpenNationTransferPanel();
                 break;

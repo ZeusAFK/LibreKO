@@ -1,317 +1,244 @@
 ﻿using System;
-using System.Collections.Generic;
+using LibreKO.Domain;
 
 namespace LibreKO.Network;
 
 public partial class Net
 {
-    private const byte KingElection = 1, KingImpeachment = 2, KingTax = 3, KingEvent = 4, KingNpc = 5, KingNationIntro = 6;
-    private const byte KingElSchedule = 1, KingElNominate = 2, KingElNoticeBoard = 3, KingElPoll = 4, KingElResign = 5;
-    private const byte KingBoardWrite = 1, KingBoardRead = 2;
-    private const byte KingImRequest = 1, KingImRequestElect = 2, KingImList = 3, KingImElect = 4,
-        KingImRequestUiOpen = 8, KingImElectionUiOpen = 9;
-
-    public struct KingCandidate
-    {
-        public string Name;
-        public string Clan;
-    }
-
-    public event Action<bool, int, int, int, int>? KingScheduleEvent;
-    public event Action<int>? KingNominateEvent;
-    public event Action<List<KingCandidate>>? KingPollListEvent;
-    public event Action<int>? KingVoteEvent;
-    public event Action<int>? KingResignEvent;
-    public event Action<List<string>, string>? KingBoardEvent;
-    public event Action<int, int, string>? KingImpeachmentEvent;
-    public event Action<string>? KingNpcEvent;
-    public event Action<string, int, int>? KingNationIntroEvent;
-    public event Action<int, int, bool, int>? KingGovernanceEvent;
+    public event Action<string>? KingElectionOpenEvent;
+    public event Action<KingSchedule>? KingScheduleEvent;
+    public event Action<KingReply, short>? KingResultEvent;
+    public event Action<KingCandidates>? KingCandidatesEvent;
+    public event Action<KingPlan>? KingPlanEvent;
+    public event Action<KingShout>? KingShoutEvent;
+    public event Action<KingSenators>? KingSenatorsEvent;
+    public event Action? KingImpeachmentProposedEvent;
+    public event Action<KingTreasury>? KingTreasuryEvent;
+    public event Action<KingCoins>? KingFundEvent;
+    public event Action<KingTariff>? KingTariffReadEvent;
+    public event Action<KingTariff>? KingTariffSetEvent;
+    public event Action<KingCoins>? KingReserveEvent;
+    public event Action<string>? KingIntroEvent;
+    public event Action<bool>? KingIntroSavedEvent;
+    public event Action<KingTreasuryNotice>? KingTreasuryNoticeEvent;
 
     private void HandleKing(Packet p)
     {
         if (p.RemainingBytes < 1) return;
-        byte main = p.ReadByte();
-        switch (main)
+        switch (p.ReadByte())
         {
-            case KingElection:      HandleKingElection(p); break;
-            case KingImpeachment:   HandleKingImpeachment(p); break;
-            case KingTax:           HandleKingTax(p); break;
-            case KingEvent:         HandleKingEvent(p); break;
-            case KingNpc:
-                KingNpcEvent?.Invoke(p.RemainingBytes >= 1 ? p.ReadSByteString().Trim() : "");
+            case KingElection.Election:
+                HandleKingElection(p);
                 break;
-            case KingNationIntro:
-            {
-                if (p.RemainingBytes >= 1) p.ReadByte();
-                string kingName = p.RemainingBytes >= 1 ? p.ReadSByteString().Trim() : "";
-                int treasury = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
-                int tariff = p.RemainingBytes >= 1 ? p.ReadByte() : 0;
-                KingNationIntroEvent?.Invoke(kingName, treasury, tariff);
+            case KingElection.Impeachment:
+                HandleKingImpeachment(p);
                 break;
-            }
+            case KingElection.Tax:
+                HandleKingTax(p);
+                break;
+            case KingElection.ElectionOfficer:
+                KingElectionOpenEvent?.Invoke(KingWire.Str8(p));
+                break;
+            case KingElection.NationIntro:
+                HandleKingIntro(p);
+                break;
+            case KingElection.TreasuryNotice:
+                KingTreasuryNoticeEvent?.Invoke(KingWire.ReadTreasuryNotice(p));
+                break;
         }
     }
 
     private void HandleKingElection(Packet p)
     {
-        if (p.RemainingBytes < 1) return;
-        byte op = p.ReadByte();
-        switch (op)
+        switch (KingWire.U8(p))
         {
-            case KingElSchedule:
-            {
-                byte active = p.RemainingBytes >= 1 ? p.ReadByte() : (byte)0;
-                if (active == 1 && p.RemainingBytes >= 4)
-                {
-                    int month = p.ReadByte(), day = p.ReadByte(), hour = p.ReadByte(), minute = p.ReadByte();
-                    KingScheduleEvent?.Invoke(true, month, day, hour, minute);
-                }
-                else KingScheduleEvent?.Invoke(false, 0, 0, 0, 0);
+            case KingElection.Schedule:
+                KingScheduleEvent?.Invoke(KingWire.ReadSchedule(p));
                 break;
-            }
-            case KingElNominate:
-                KingNominateEvent?.Invoke(p.RemainingBytes >= 2 ? p.ReadShort() : 0);
+            case KingElection.Nominate:
+                KingResultEvent?.Invoke(KingReply.Nominate, KingWire.I16(p));
                 break;
-            case KingElResign:
-                KingResignEvent?.Invoke(p.RemainingBytes >= 2 ? p.ReadShort() : 0);
+            case KingElection.Plan:
+                HandleKingPlan(p);
                 break;
-            case KingElNoticeBoard:
-                HandleKingNoticeBoard(p);
-                break;
-            case KingElPoll:
+            case KingElection.Poll:
                 HandleKingPoll(p);
+                break;
+            case KingElection.Withdraw:
+                KingResultEvent?.Invoke(KingReply.Withdraw, KingWire.I16(p));
                 break;
         }
     }
 
-    private void HandleKingNoticeBoard(Packet p)
+    private void HandleKingPlan(Packet p)
     {
-        if (p.RemainingBytes < 1) return;
-        byte boardOp = p.ReadByte();
-        if (boardOp == KingBoardWrite)
+        switch (KingWire.U8(p))
         {
-            short res = p.RemainingBytes >= 2 ? p.ReadShort() : (short)0;
-            KingBoardEvent?.Invoke(new List<string>(), res == 1 ? "__write_ok__" : "__write_fail__");
-            return;
-        }
-        if (boardOp != KingBoardRead) return;
-
-        if (p.RemainingBytes < 1) return;
-        byte readSub = p.ReadByte();
-        if (readSub == 1)
-        {
-            var names = new List<string>();
-            int count = p.RemainingBytes >= 1 ? p.ReadByte() : 0;
-            for (int i = 0; i < count && p.RemainingBytes >= 1; i++)
-                names.Add(p.ReadSByteString());
-            KingBoardEvent?.Invoke(names, "");
-        }
-        else if (readSub == 2)
-        {
-            short len = p.RemainingBytes >= 2 ? p.ReadShort() : (short)0;
-            string notice = "";
-            if (len > 0 && p.RemainingBytes >= len)
-                notice = System.Text.Encoding.ASCII.GetString(p.ReadBytes(len));
-            KingBoardEvent?.Invoke(new List<string>(), notice);
+            case KingElection.PlanWrite:
+                KingResultEvent?.Invoke(KingReply.PlanPosted, KingWire.I16(p));
+                break;
+            case KingElection.PlanRead:
+                switch (KingWire.U8(p))
+                {
+                    case KingElection.PlanText:
+                        KingPlanEvent?.Invoke(KingWire.ReadPlan(p));
+                        break;
+                    case KingElection.PlanShout:
+                        KingShoutEvent?.Invoke(KingWire.ReadShout(p));
+                        break;
+                }
+                break;
+            case KingElection.PlanBoard:
+                KingResultEvent?.Invoke(KingReply.Board, KingWire.I16(p));
+                break;
         }
     }
 
     private void HandleKingPoll(Packet p)
     {
-        if (p.RemainingBytes < 1) return;
-        byte pollOp = p.ReadByte();
-        if (pollOp == 1)
+        switch (KingWire.U8(p))
         {
-            short ok = p.RemainingBytes >= 2 ? p.ReadShort() : (short)0;
-            var list = new List<KingCandidate>();
-            if (ok == 1 && p.RemainingBytes >= 1)
-            {
-                int count = p.ReadByte();
-                for (int i = 0; i < count && p.RemainingBytes >= 1; i++)
-                {
-                    string name = p.ReadSByteString();
-                    string clan = p.RemainingBytes >= 1 ? p.ReadSByteString() : "";
-                    list.Add(new KingCandidate { Name = name, Clan = clan });
-                }
-            }
-            KingPollListEvent?.Invoke(list);
-        }
-        else if (pollOp == 2)
-        {
-            KingVoteEvent?.Invoke(p.RemainingBytes >= 2 ? p.ReadShort() : 0);
+            case KingElection.PollList:
+                KingCandidatesEvent?.Invoke(KingWire.ReadCandidates(p));
+                break;
+            case KingElection.PollVote:
+                KingResultEvent?.Invoke(KingReply.Vote, KingWire.I16(p));
+                break;
+            case KingElection.PollKingChange:
+                KingWire.ReadKingChange(p);
+                break;
         }
     }
 
     private void HandleKingImpeachment(Packet p)
     {
-        if (p.RemainingBytes < 1) return;
-        byte op = p.ReadByte();
-        if (op == KingImList)
+        switch (KingWire.U8(p))
         {
-            short res = p.RemainingBytes >= 2 ? p.ReadShort() : (short)0;
-            string kingName = res == 1 && p.RemainingBytes >= 2 ? p.ReadString() : "";
-            KingImpeachmentEvent?.Invoke(op, res, kingName);
-        }
-        else
-        {
-            KingImpeachmentEvent?.Invoke(op, p.RemainingBytes >= 2 ? p.ReadShort() : 0, "");
+            case KingElection.ImpeachPropose:
+                KingResultEvent?.Invoke(KingReply.Propose, KingWire.I16(p));
+                break;
+            case KingElection.ImpeachSenatorVote:
+                KingResultEvent?.Invoke(KingReply.SenatorVote, KingWire.I16(p));
+                break;
+            case KingElection.ImpeachSenators:
+                KingSenatorsEvent?.Invoke(KingWire.ReadSenators(p));
+                break;
+            case KingElection.ImpeachPublicVote:
+                KingResultEvent?.Invoke(KingReply.PublicVote, KingWire.I16(p));
+                break;
+            case KingElection.ImpeachProposed:
+                KingImpeachmentProposedEvent?.Invoke();
+                break;
+            case KingElection.ImpeachSenatorBallot:
+                KingResultEvent?.Invoke(KingReply.SenatorBallot, KingWire.I16(p));
+                break;
+            case KingElection.ImpeachPublicBallot:
+                KingResultEvent?.Invoke(KingReply.PublicBallot, KingWire.I16(p));
+                break;
         }
     }
 
     private void HandleKingTax(Packet p)
     {
-        if (p.RemainingBytes < 1) return;
-        byte op = p.ReadByte();
-        bool ok = (p.RemainingBytes >= 1 ? p.ReadByte() : 0) == 1;
-        int value = 0;
-        if (ok)
+        switch (KingWire.U8(p))
         {
-            switch (op)
-            {
-                case 2: value = p.RemainingBytes >= 4 ? p.ReadInt() : 0; break;
-                case 3: value = p.RemainingBytes >= 1 ? p.ReadByte() : 0; break;
-                case 4: value = p.RemainingBytes >= 1 ? p.ReadByte() : 0; break;
-            }
+            case KingElection.TaxOpen:
+                KingTreasuryEvent?.Invoke(KingWire.ReadTreasury(p));
+                break;
+            case KingElection.TaxFund:
+                KingFundEvent?.Invoke(KingWire.ReadCoins(p));
+                break;
+            case KingElection.TaxRateRead:
+                KingTariffReadEvent?.Invoke(KingWire.ReadTariff(p));
+                break;
+            case KingElection.TaxRateSet:
+                var tariff = KingWire.ReadTariff(p);
+                if (tariff.Result == KingElection.Success) SetZoneTariff(tariff.Tariff);
+                KingTariffSetEvent?.Invoke(tariff);
+                break;
+            case KingElection.TaxReserve:
+                KingReserveEvent?.Invoke(KingWire.ReadCoins(p));
+                break;
+            case KingElection.TaxKingItem:
+                KingResultEvent?.Invoke(KingReply.KingItem, KingWire.I16(p));
+                break;
+            case KingElection.TaxChannelOnly:
+                KingResultEvent?.Invoke(KingReply.ChannelOnly, KingWire.I16(p));
+                break;
         }
-        KingGovernanceEvent?.Invoke(KingTax, op, ok, value);
     }
 
-    private void HandleKingEvent(Packet p)
+    private void HandleKingIntro(Packet p)
     {
-        if (p.RemainingBytes < 1) return;
-        byte op = p.ReadByte();
-        bool ok = (p.RemainingBytes >= 1 ? p.ReadByte() : 0) == 1;
-        int value = ok && p.RemainingBytes >= 1 ? p.ReadByte() : 0;
-        KingGovernanceEvent?.Invoke(KingEvent, op, ok, value);
+        switch (KingWire.U8(p))
+        {
+            case KingElection.IntroRead:
+                KingIntroEvent?.Invoke(KingWire.Str16(p));
+                break;
+            case KingElection.IntroWrite:
+                KingIntroSavedEvent?.Invoke(KingWire.U8(p) == KingElection.IntroSaved);
+                break;
+        }
     }
 
-    public void SendKingSchedule() => SendKingElection(KingElSchedule);
-
-    public void SendKingPollList()
+    public void SetZoneTariff(int tariff)
     {
-        var p = NewKing(KingElection);
-        p.WriteByte(KingElPoll);
-        p.WriteByte(1);
-        _conn.Send(p);
+        var zone = CurrentZoneAbility;
+        zone.Tariff = tariff;
+        CurrentZoneAbility = zone;
     }
 
-    public void SendKingVote(string candidateName)
-    {
-        var p = NewKing(KingElection);
-        p.WriteByte(KingElPoll);
-        p.WriteByte(2);
-        p.WriteSByteString(candidateName);
-        _conn.Send(p);
-    }
+    public void SendKingSchedule() => _conn.Send(KingWire.Request(KingElection.Election, KingElection.Schedule));
 
-    public void SendKingNominate(string nomineeName)
-    {
-        var p = NewKing(KingElection);
-        p.WriteByte(KingElNominate);
-        p.WriteSByteString(nomineeName);
-        _conn.Send(p);
-    }
+    public void SendKingNominate(string name) =>
+        _conn.Send(KingWire.Named(name, KingElection.Election, KingElection.Nominate));
 
-    public void SendKingResign() => SendKingElection(KingElResign);
+    public void SendKingPlan(string plan) => _conn.Send(KingWire.Plan(plan));
 
-    public void SendKingBoardList()
-    {
-        var p = NewKing(KingElection);
-        p.WriteByte(KingElNoticeBoard);
-        p.WriteByte(KingBoardRead);
-        p.WriteByte(1);
-        _conn.Send(p);
-    }
+    public void SendKingPlanList() =>
+        _conn.Send(KingWire.Request(KingElection.Election, KingElection.Plan, KingElection.PlanRead, KingElection.PlanList));
 
-    public void SendKingBoardRead(string candidateName)
-    {
-        var p = NewKing(KingElection);
-        p.WriteByte(KingElNoticeBoard);
-        p.WriteByte(KingBoardRead);
-        p.WriteByte(2);
-        p.WriteSByteString(candidateName);
-        _conn.Send(p);
-    }
+    public void SendKingPlanShoutAgain() =>
+        _conn.Send(KingWire.Request(KingElection.Election, KingElection.Plan, KingElection.PlanRead, KingElection.PlanShout));
 
-    public void SendKingBoardWrite(string notice)
-    {
-        var p = NewKing(KingElection);
-        p.WriteByte(KingElNoticeBoard);
-        p.WriteByte(KingBoardWrite);
-        p.WriteSByteString(notice);
-        _conn.Send(p);
-    }
+    public void SendKingPlanRead(string candidate) =>
+        _conn.Send(KingWire.Named(candidate, KingElection.Election, KingElection.Plan, KingElection.PlanRead, KingElection.PlanText));
 
-    public void SendKingNpc() => SendKingMain(KingNpc);
+    public void SendKingCandidates() =>
+        _conn.Send(KingWire.Request(KingElection.Election, KingElection.Poll, KingElection.PollList));
 
-    public void SendKingNationIntro() => SendKingMain(KingNationIntro);
+    public void SendKingVote(string candidate) =>
+        _conn.Send(KingWire.Named(candidate, KingElection.Election, KingElection.Poll, KingElection.PollVote));
 
-    public void SendKingCollectTax() => SendKingTax(2);
+    public void SendKingWithdraw() => _conn.Send(KingWire.Request(KingElection.Election, KingElection.Withdraw));
 
-    public void SendKingTariffRead() => SendKingTax(3);
+    public void SendKingImpeachmentPropose() =>
+        _conn.Send(KingWire.Request(KingElection.Impeachment, KingElection.ImpeachPropose));
 
-    public void SendKingSetTariff(int tariff)
-    {
-        var p = NewKing(KingTax);
-        p.WriteByte(4);
-        p.WriteByte((byte)tariff);
-        _conn.Send(p);
-    }
+    public void SendKingSenatorVote(bool inFavour) =>
+        _conn.Send(KingWire.Request(KingElection.Impeachment, KingElection.ImpeachSenatorVote, KingWire.Ballot(inFavour)));
 
-    public void SendKingImpeachmentUiOpen(bool electionStage)
-    {
-        var p = NewKing(KingImpeachment);
-        p.WriteByte(electionStage ? KingImElectionUiOpen : KingImRequestUiOpen);
-        _conn.Send(p);
-    }
+    public void SendKingSenators() => _conn.Send(KingWire.Request(KingElection.Impeachment, KingElection.ImpeachSenators));
 
-    public void SendKingImpeachmentRequest()
-    {
-        var p = NewKing(KingImpeachment);
-        p.WriteByte(KingImRequest);
-        _conn.Send(p);
-    }
+    public void SendKingPublicVote(bool inFavour) =>
+        _conn.Send(KingWire.Request(KingElection.Impeachment, KingElection.ImpeachPublicVote, KingWire.Ballot(inFavour)));
 
-    public void SendKingImpeachmentVote(bool electionStage, bool yes)
-    {
-        var p = NewKing(KingImpeachment);
-        p.WriteByte(electionStage ? KingImElect : KingImRequestElect);
-        p.WriteByte((byte)(yes ? 1 : 0));
-        _conn.Send(p);
-    }
+    public void SendKingSenatorBallot() =>
+        _conn.Send(KingWire.Request(KingElection.Impeachment, KingElection.ImpeachSenatorBallot));
 
-    public void SendKingImpeachmentList()
-    {
-        var p = NewKing(KingImpeachment);
-        p.WriteByte(KingImList);
-        _conn.Send(p);
-    }
+    public void SendKingPublicBallot() =>
+        _conn.Send(KingWire.Request(KingElection.Impeachment, KingElection.ImpeachPublicBallot));
 
-    private void SendKingElection(byte electionOp)
-    {
-        var p = NewKing(KingElection);
-        p.WriteByte(electionOp);
-        _conn.Send(p);
-    }
+    public void SendKingFund() => _conn.Send(KingWire.Request(KingElection.Tax, KingElection.TaxFund));
 
-    private void SendKingTax(byte taxOp)
-    {
-        var p = NewKing(KingTax);
-        p.WriteByte(taxOp);
-        _conn.Send(p);
-    }
+    public void SendKingTariffRead() => _conn.Send(KingWire.Request(KingElection.Tax, KingElection.TaxRateRead));
 
-    private void SendKingMain(byte main)
-    {
-        var p = NewKing(main);
-        _conn.Send(p);
-    }
+    public void SendKingTariff(int tariff) =>
+        _conn.Send(KingWire.Request(KingElection.Tax, KingElection.TaxRateSet, (byte)tariff));
 
-    private static Packet NewKing(byte main)
-    {
-        var p = new Packet(GameOpcodes.GS_KING);
-        p.WriteByte(main);
-        return p;
-    }
+    public void SendKingItem() => _conn.Send(KingWire.Request(KingElection.Tax, KingElection.TaxKingItem));
+
+    public void SendKingIntroRead() => _conn.Send(KingWire.Request(KingElection.NationIntro, KingElection.IntroRead));
+
+    public void SendKingIntro(string text) => _conn.Send(KingWire.Intro(text));
 }

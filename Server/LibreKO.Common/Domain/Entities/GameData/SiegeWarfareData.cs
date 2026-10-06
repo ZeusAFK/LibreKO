@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LibreKO.Common.Domain.Entities.GameData;
@@ -31,6 +31,7 @@ public class SiegeWarfareData
     public short MoradonTariff { get; set; }
     public short DellosTariff { get; set; }
     public int DungeonCharge { get; set; }
+    public int DungeonEntranceFee { get; set; }
     public int MoradonTax { get; set; }
     public int DellosTax { get; set; }
     public short RequestList1 { get; set; }

@@ -7,7 +7,11 @@ public sealed class NpcDialog
     public const int RebirthPanelFlag = 48;
     public const int FamiliarPanelFlag = 9;
     public const int FamiliarShopFlag = 14;
-    public const int GenderChangePanelFlag = 52;
+    public const int GenderChangePanelFlag = 53;
+    public const int FortunePanelFlag = 16;
+    public const int SpecialAuctionPanelFlag = 58;
+    public const int ItemCombinePanelFlag = 18;
+    public const int CombineRecipeBookFlag = 21;
 
     public int NpcId;
     public int Flag;

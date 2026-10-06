@@ -80,8 +80,7 @@ public class UserSession
     // Last NPC the player killed; quest scripts read it.
     public int LastKilledNpcId { get; set; }
 
-    // Item ID the client has subscribed to upgrade-notice broadcasts for (WIZ_UPGRADE_NOTICE 0xB8).
-    public int WatchedUpgradeItem { get; set; }
+    public DateTime MarketPriceAskedAt { get; set; }
 
     // Position (stored as game coords * 10)
     public float X { get; set; }

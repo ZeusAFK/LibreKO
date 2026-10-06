@@ -1,0 +1,3602 @@
+[
+  {
+    "Id": 1,
+    "NpcId": 19073,
+    "DisplayRow": 1,
+    "ResultItemId": 128410901,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 2,
+    "NpcId": 19073,
+    "DisplayRow": 2,
+    "ResultItemId": 127410284,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 3,
+    "NpcId": 19073,
+    "DisplayRow": 3,
+    "ResultItemId": 139410284,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 4,
+    "NpcId": 19073,
+    "DisplayRow": 4,
+    "ResultItemId": 159410312,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 5,
+    "NpcId": 19073,
+    "DisplayRow": 5,
+    "ResultItemId": 180410899,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 6,
+    "NpcId": 19073,
+    "DisplayRow": 6,
+    "ResultItemId": 182410312,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 7,
+    "NpcId": 19073,
+    "DisplayRow": 7,
+    "ResultItemId": 183410315,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 8,
+    "NpcId": 19073,
+    "DisplayRow": 8,
+    "ResultItemId": 184410318,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 9,
+    "NpcId": 19073,
+    "DisplayRow": 9,
+    "ResultItemId": 198410898,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 10,
+    "NpcId": 19073,
+    "DisplayRow": 10,
+    "ResultItemId": 197410192,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 11,
+    "NpcId": 19073,
+    "DisplayRow": 11,
+    "ResultItemId": 208001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 12,
+    "NpcId": 19073,
+    "DisplayRow": 12,
+    "ResultItemId": 208002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 13,
+    "NpcId": 19073,
+    "DisplayRow": 13,
+    "ResultItemId": 208003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 14,
+    "NpcId": 19073,
+    "DisplayRow": 14,
+    "ResultItemId": 208004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 15,
+    "NpcId": 19073,
+    "DisplayRow": 15,
+    "ResultItemId": 208005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 16,
+    "NpcId": 32530,
+    "DisplayRow": 16,
+    "ResultItemId": 379400000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 64,
+    "NpcId": 31510,
+    "DisplayRow": 64,
+    "ResultItemId": 399150000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 65,
+    "NpcId": 31510,
+    "DisplayRow": 65,
+    "ResultItemId": 910014000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 66,
+    "NpcId": 19073,
+    "DisplayRow": 66,
+    "ResultItemId": 191640779,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 67,
+    "NpcId": 19073,
+    "DisplayRow": 67,
+    "ResultItemId": 136320001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 68,
+    "NpcId": 19073,
+    "DisplayRow": 68,
+    "ResultItemId": 136330001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 69,
+    "NpcId": 19073,
+    "DisplayRow": 69,
+    "ResultItemId": 136340001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 70,
+    "NpcId": 19073,
+    "DisplayRow": 70,
+    "ResultItemId": 136350001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 71,
+    "NpcId": 19073,
+    "DisplayRow": 71,
+    "ResultItemId": 136360001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 72,
+    "NpcId": 19073,
+    "DisplayRow": 72,
+    "ResultItemId": 136370001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 73,
+    "NpcId": 19073,
+    "DisplayRow": 73,
+    "ResultItemId": 136380001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 74,
+    "NpcId": 19073,
+    "DisplayRow": 74,
+    "ResultItemId": 136390001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 75,
+    "NpcId": 19073,
+    "DisplayRow": 75,
+    "ResultItemId": 136400001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 76,
+    "NpcId": 19073,
+    "DisplayRow": 76,
+    "ResultItemId": 136410001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 77,
+    "NpcId": 19073,
+    "DisplayRow": 77,
+    "ResultItemId": 136420001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 78,
+    "NpcId": 19073,
+    "DisplayRow": 78,
+    "ResultItemId": 136430001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 79,
+    "NpcId": 19073,
+    "DisplayRow": 79,
+    "ResultItemId": 136440001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 80,
+    "NpcId": 19073,
+    "DisplayRow": 80,
+    "ResultItemId": 136450001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 81,
+    "NpcId": 19073,
+    "DisplayRow": 81,
+    "ResultItemId": 136460001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 82,
+    "NpcId": 19073,
+    "DisplayRow": 82,
+    "ResultItemId": 136470001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 83,
+    "NpcId": 19073,
+    "DisplayRow": 83,
+    "ResultItemId": 136480001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 84,
+    "NpcId": 19073,
+    "DisplayRow": 84,
+    "ResultItemId": 136490001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 85,
+    "NpcId": 19073,
+    "DisplayRow": 85,
+    "ResultItemId": 136500001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 86,
+    "NpcId": 19073,
+    "DisplayRow": 86,
+    "ResultItemId": 136510001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 87,
+    "NpcId": 19073,
+    "DisplayRow": 87,
+    "ResultItemId": 136520001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 88,
+    "NpcId": 19073,
+    "DisplayRow": 88,
+    "ResultItemId": 136530001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 89,
+    "NpcId": 19073,
+    "DisplayRow": 89,
+    "ResultItemId": 136540001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 90,
+    "NpcId": 19073,
+    "DisplayRow": 90,
+    "ResultItemId": 136550001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 91,
+    "NpcId": 19073,
+    "DisplayRow": 91,
+    "ResultItemId": 136560001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 92,
+    "NpcId": 19073,
+    "DisplayRow": 92,
+    "ResultItemId": 136570001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 93,
+    "NpcId": 19073,
+    "DisplayRow": 93,
+    "ResultItemId": 136580001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 94,
+    "NpcId": 19073,
+    "DisplayRow": 94,
+    "ResultItemId": 136590001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 95,
+    "NpcId": 19073,
+    "DisplayRow": 95,
+    "ResultItemId": 136600001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 96,
+    "NpcId": 19073,
+    "DisplayRow": 96,
+    "ResultItemId": 136610001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 97,
+    "NpcId": 19073,
+    "DisplayRow": 97,
+    "ResultItemId": 136620001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 98,
+    "NpcId": 19073,
+    "DisplayRow": 98,
+    "ResultItemId": 136630001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 99,
+    "NpcId": 19073,
+    "DisplayRow": 99,
+    "ResultItemId": 136640001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 100,
+    "NpcId": 19073,
+    "DisplayRow": 100,
+    "ResultItemId": 136650001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 101,
+    "NpcId": 19073,
+    "DisplayRow": 101,
+    "ResultItemId": 136660001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 102,
+    "NpcId": 19073,
+    "DisplayRow": 102,
+    "ResultItemId": 136670001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 103,
+    "NpcId": 19073,
+    "DisplayRow": 103,
+    "ResultItemId": 136680001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 104,
+    "NpcId": 19073,
+    "DisplayRow": 104,
+    "ResultItemId": 136690001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 105,
+    "NpcId": 19073,
+    "DisplayRow": 105,
+    "ResultItemId": 136700001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 106,
+    "NpcId": 19073,
+    "DisplayRow": 106,
+    "ResultItemId": 136710001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 107,
+    "NpcId": 19073,
+    "DisplayRow": 107,
+    "ResultItemId": 136720001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 108,
+    "NpcId": 19073,
+    "DisplayRow": 108,
+    "ResultItemId": 136730001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 109,
+    "NpcId": 19073,
+    "DisplayRow": 109,
+    "ResultItemId": 136740001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 110,
+    "NpcId": 19073,
+    "DisplayRow": 110,
+    "ResultItemId": 514001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 111,
+    "NpcId": 19073,
+    "DisplayRow": 111,
+    "ResultItemId": 514002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 112,
+    "NpcId": 19073,
+    "DisplayRow": 112,
+    "ResultItemId": 514003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 113,
+    "NpcId": 19073,
+    "DisplayRow": 113,
+    "ResultItemId": 514004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 114,
+    "NpcId": 19073,
+    "DisplayRow": 114,
+    "ResultItemId": 514005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 115,
+    "NpcId": 19073,
+    "DisplayRow": 115,
+    "ResultItemId": 515001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 116,
+    "NpcId": 19073,
+    "DisplayRow": 116,
+    "ResultItemId": 515002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 117,
+    "NpcId": 19073,
+    "DisplayRow": 117,
+    "ResultItemId": 515003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 118,
+    "NpcId": 19073,
+    "DisplayRow": 118,
+    "ResultItemId": 515004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 119,
+    "NpcId": 19073,
+    "DisplayRow": 119,
+    "ResultItemId": 515005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 120,
+    "NpcId": 19073,
+    "DisplayRow": 120,
+    "ResultItemId": 516001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 121,
+    "NpcId": 19073,
+    "DisplayRow": 121,
+    "ResultItemId": 516002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 122,
+    "NpcId": 19073,
+    "DisplayRow": 122,
+    "ResultItemId": 516003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 123,
+    "NpcId": 19073,
+    "DisplayRow": 123,
+    "ResultItemId": 516004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 124,
+    "NpcId": 19073,
+    "DisplayRow": 124,
+    "ResultItemId": 516005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 125,
+    "NpcId": 19073,
+    "DisplayRow": 125,
+    "ResultItemId": 519001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 126,
+    "NpcId": 19073,
+    "DisplayRow": 126,
+    "ResultItemId": 519002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 127,
+    "NpcId": 19073,
+    "DisplayRow": 127,
+    "ResultItemId": 519003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 128,
+    "NpcId": 19073,
+    "DisplayRow": 128,
+    "ResultItemId": 519004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 129,
+    "NpcId": 19073,
+    "DisplayRow": 129,
+    "ResultItemId": 519005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 130,
+    "NpcId": 19073,
+    "DisplayRow": 130,
+    "ResultItemId": 520001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 131,
+    "NpcId": 19073,
+    "DisplayRow": 131,
+    "ResultItemId": 520002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 132,
+    "NpcId": 19073,
+    "DisplayRow": 132,
+    "ResultItemId": 520003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 133,
+    "NpcId": 19073,
+    "DisplayRow": 133,
+    "ResultItemId": 520004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 134,
+    "NpcId": 19073,
+    "DisplayRow": 134,
+    "ResultItemId": 520005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 135,
+    "NpcId": 19073,
+    "DisplayRow": 135,
+    "ResultItemId": 521001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 136,
+    "NpcId": 19073,
+    "DisplayRow": 136,
+    "ResultItemId": 521002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 137,
+    "NpcId": 19073,
+    "DisplayRow": 137,
+    "ResultItemId": 521003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 138,
+    "NpcId": 19073,
+    "DisplayRow": 138,
+    "ResultItemId": 521004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 139,
+    "NpcId": 19073,
+    "DisplayRow": 139,
+    "ResultItemId": 521005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 140,
+    "NpcId": 19073,
+    "DisplayRow": 140,
+    "ResultItemId": 522001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 141,
+    "NpcId": 19073,
+    "DisplayRow": 141,
+    "ResultItemId": 522002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 142,
+    "NpcId": 19073,
+    "DisplayRow": 142,
+    "ResultItemId": 522003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 143,
+    "NpcId": 19073,
+    "DisplayRow": 143,
+    "ResultItemId": 522004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 144,
+    "NpcId": 19073,
+    "DisplayRow": 144,
+    "ResultItemId": 522005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 145,
+    "NpcId": 19073,
+    "DisplayRow": 145,
+    "ResultItemId": 523001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 146,
+    "NpcId": 19073,
+    "DisplayRow": 146,
+    "ResultItemId": 523002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 147,
+    "NpcId": 19073,
+    "DisplayRow": 147,
+    "ResultItemId": 523003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 148,
+    "NpcId": 19073,
+    "DisplayRow": 148,
+    "ResultItemId": 523004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 149,
+    "NpcId": 19073,
+    "DisplayRow": 149,
+    "ResultItemId": 523005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 150,
+    "NpcId": 19073,
+    "DisplayRow": 150,
+    "ResultItemId": 1110422001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 151,
+    "NpcId": 19073,
+    "DisplayRow": 151,
+    "ResultItemId": 1110423001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 152,
+    "NpcId": 19073,
+    "DisplayRow": 152,
+    "ResultItemId": 1110424001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 153,
+    "NpcId": 19073,
+    "DisplayRow": 153,
+    "ResultItemId": 1110425001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 154,
+    "NpcId": 19073,
+    "DisplayRow": 154,
+    "ResultItemId": 1110426001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 155,
+    "NpcId": 19073,
+    "DisplayRow": 155,
+    "ResultItemId": 1110427001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 156,
+    "NpcId": 19073,
+    "DisplayRow": 156,
+    "ResultItemId": 1110428001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 157,
+    "NpcId": 19073,
+    "DisplayRow": 157,
+    "ResultItemId": 210001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 158,
+    "NpcId": 19073,
+    "DisplayRow": 158,
+    "ResultItemId": 210002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 159,
+    "NpcId": 19073,
+    "DisplayRow": 159,
+    "ResultItemId": 210003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 160,
+    "NpcId": 19073,
+    "DisplayRow": 160,
+    "ResultItemId": 210004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 161,
+    "NpcId": 19073,
+    "DisplayRow": 161,
+    "ResultItemId": 210005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 162,
+    "NpcId": 19073,
+    "DisplayRow": 162,
+    "ResultItemId": 211001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 163,
+    "NpcId": 19073,
+    "DisplayRow": 163,
+    "ResultItemId": 211002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 164,
+    "NpcId": 19073,
+    "DisplayRow": 164,
+    "ResultItemId": 211003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 165,
+    "NpcId": 19073,
+    "DisplayRow": 165,
+    "ResultItemId": 211004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 166,
+    "NpcId": 19073,
+    "DisplayRow": 166,
+    "ResultItemId": 211005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 167,
+    "NpcId": 19073,
+    "DisplayRow": 167,
+    "ResultItemId": 212001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 168,
+    "NpcId": 19073,
+    "DisplayRow": 168,
+    "ResultItemId": 212002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 169,
+    "NpcId": 19073,
+    "DisplayRow": 169,
+    "ResultItemId": 212003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 170,
+    "NpcId": 19073,
+    "DisplayRow": 170,
+    "ResultItemId": 212004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 171,
+    "NpcId": 19073,
+    "DisplayRow": 171,
+    "ResultItemId": 212005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 172,
+    "NpcId": 19073,
+    "DisplayRow": 172,
+    "ResultItemId": 213001001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 173,
+    "NpcId": 19073,
+    "DisplayRow": 173,
+    "ResultItemId": 213002001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 174,
+    "NpcId": 19073,
+    "DisplayRow": 174,
+    "ResultItemId": 213003001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 175,
+    "NpcId": 19073,
+    "DisplayRow": 175,
+    "ResultItemId": 213004001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 176,
+    "NpcId": 19073,
+    "DisplayRow": 176,
+    "ResultItemId": 213005001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 177,
+    "NpcId": 19073,
+    "DisplayRow": 177,
+    "ResultItemId": 508164000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 178,
+    "NpcId": 19073,
+    "DisplayRow": 178,
+    "ResultItemId": 508164000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 179,
+    "NpcId": 19073,
+    "DisplayRow": 179,
+    "ResultItemId": 508164000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 180,
+    "NpcId": 19073,
+    "DisplayRow": 180,
+    "ResultItemId": 508164000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 181,
+    "NpcId": 19073,
+    "DisplayRow": 181,
+    "ResultItemId": 508165000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 182,
+    "NpcId": 19073,
+    "DisplayRow": 182,
+    "ResultItemId": 508165000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 183,
+    "NpcId": 19073,
+    "DisplayRow": 183,
+    "ResultItemId": 128410901,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 184,
+    "NpcId": 19073,
+    "DisplayRow": 184,
+    "ResultItemId": 128410901,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 185,
+    "NpcId": 19073,
+    "DisplayRow": 185,
+    "ResultItemId": 128410901,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 249,
+    "NpcId": 19073,
+    "DisplayRow": 249,
+    "ResultItemId": 900444000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 250,
+    "NpcId": 19073,
+    "DisplayRow": 250,
+    "ResultItemId": 900447000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 251,
+    "NpcId": 19073,
+    "DisplayRow": 251,
+    "ResultItemId": 900448000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 252,
+    "NpcId": 19073,
+    "DisplayRow": 252,
+    "ResultItemId": 900449000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 253,
+    "NpcId": 19073,
+    "DisplayRow": 253,
+    "ResultItemId": 191640000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 254,
+    "NpcId": 19073,
+    "DisplayRow": 254,
+    "ResultItemId": 531511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 255,
+    "NpcId": 19073,
+    "DisplayRow": 255,
+    "ResultItemId": 531512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 256,
+    "NpcId": 19073,
+    "DisplayRow": 256,
+    "ResultItemId": 531513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 257,
+    "NpcId": 19073,
+    "DisplayRow": 257,
+    "ResultItemId": 531514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 258,
+    "NpcId": 19073,
+    "DisplayRow": 258,
+    "ResultItemId": 531515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 259,
+    "NpcId": 19073,
+    "DisplayRow": 259,
+    "ResultItemId": 139442521,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 260,
+    "NpcId": 19073,
+    "DisplayRow": 260,
+    "ResultItemId": 1111466452,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 261,
+    "NpcId": 19073,
+    "DisplayRow": 261,
+    "ResultItemId": 1111467452,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 262,
+    "NpcId": 19073,
+    "DisplayRow": 262,
+    "ResultItemId": 1111469452,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 263,
+    "NpcId": 19073,
+    "DisplayRow": 263,
+    "ResultItemId": 1111468452,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 264,
+    "NpcId": 19073,
+    "DisplayRow": 264,
+    "ResultItemId": 1111473452,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 265,
+    "NpcId": 19073,
+    "DisplayRow": 265,
+    "ResultItemId": 1111470691,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 266,
+    "NpcId": 19073,
+    "DisplayRow": 266,
+    "ResultItemId": 1111470692,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 267,
+    "NpcId": 19073,
+    "DisplayRow": 267,
+    "ResultItemId": 1111470693,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 268,
+    "NpcId": 19073,
+    "DisplayRow": 268,
+    "ResultItemId": 1111471452,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 269,
+    "NpcId": 19073,
+    "DisplayRow": 269,
+    "ResultItemId": 1111472452,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 270,
+    "NpcId": 19073,
+    "DisplayRow": 270,
+    "ResultItemId": 810668000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 271,
+    "NpcId": 19073,
+    "DisplayRow": 271,
+    "ResultItemId": 810668000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 272,
+    "NpcId": 19073,
+    "DisplayRow": 272,
+    "ResultItemId": 810668000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 273,
+    "NpcId": 19073,
+    "DisplayRow": 273,
+    "ResultItemId": 810673000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 274,
+    "NpcId": 19073,
+    "DisplayRow": 274,
+    "ResultItemId": 998030718,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 275,
+    "NpcId": 19073,
+    "DisplayRow": 275,
+    "ResultItemId": 998040719,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 276,
+    "NpcId": 19073,
+    "DisplayRow": 276,
+    "ResultItemId": 998050720,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 277,
+    "NpcId": 19073,
+    "DisplayRow": 277,
+    "ResultItemId": 810593000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 278,
+    "NpcId": 19073,
+    "DisplayRow": 278,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 279,
+    "NpcId": 19073,
+    "DisplayRow": 279,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 280,
+    "NpcId": 19073,
+    "DisplayRow": 280,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 281,
+    "NpcId": 19073,
+    "DisplayRow": 281,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 282,
+    "NpcId": 19073,
+    "DisplayRow": 282,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 283,
+    "NpcId": 19073,
+    "DisplayRow": 283,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 284,
+    "NpcId": 19073,
+    "DisplayRow": 284,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 285,
+    "NpcId": 19073,
+    "DisplayRow": 285,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 286,
+    "NpcId": 19073,
+    "DisplayRow": 286,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 287,
+    "NpcId": 19073,
+    "DisplayRow": 287,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 288,
+    "NpcId": 19073,
+    "DisplayRow": 288,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 289,
+    "NpcId": 19073,
+    "DisplayRow": 289,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 290,
+    "NpcId": 19073,
+    "DisplayRow": 290,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 291,
+    "NpcId": 19073,
+    "DisplayRow": 291,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 292,
+    "NpcId": 19073,
+    "DisplayRow": 292,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 293,
+    "NpcId": 19073,
+    "DisplayRow": 293,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 294,
+    "NpcId": 19073,
+    "DisplayRow": 294,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 295,
+    "NpcId": 19073,
+    "DisplayRow": 295,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 296,
+    "NpcId": 19073,
+    "DisplayRow": 296,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 297,
+    "NpcId": 19073,
+    "DisplayRow": 297,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 298,
+    "NpcId": 19073,
+    "DisplayRow": 298,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 299,
+    "NpcId": 19073,
+    "DisplayRow": 299,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 300,
+    "NpcId": 19073,
+    "DisplayRow": 300,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 301,
+    "NpcId": 19073,
+    "DisplayRow": 301,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 302,
+    "NpcId": 19073,
+    "DisplayRow": 302,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 303,
+    "NpcId": 19073,
+    "DisplayRow": 303,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 304,
+    "NpcId": 19073,
+    "DisplayRow": 304,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 305,
+    "NpcId": 19073,
+    "DisplayRow": 305,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 306,
+    "NpcId": 19073,
+    "DisplayRow": 306,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 307,
+    "NpcId": 19073,
+    "DisplayRow": 307,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 308,
+    "NpcId": 19073,
+    "DisplayRow": 308,
+    "ResultItemId": 810593000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 309,
+    "NpcId": 19073,
+    "DisplayRow": 309,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 310,
+    "NpcId": 19073,
+    "DisplayRow": 310,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 311,
+    "NpcId": 19073,
+    "DisplayRow": 311,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 312,
+    "NpcId": 19073,
+    "DisplayRow": 312,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 313,
+    "NpcId": 19073,
+    "DisplayRow": 313,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 314,
+    "NpcId": 19073,
+    "DisplayRow": 314,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 315,
+    "NpcId": 19073,
+    "DisplayRow": 315,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 316,
+    "NpcId": 19073,
+    "DisplayRow": 316,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 317,
+    "NpcId": 19073,
+    "DisplayRow": 317,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 318,
+    "NpcId": 19073,
+    "DisplayRow": 318,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 319,
+    "NpcId": 19073,
+    "DisplayRow": 319,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 320,
+    "NpcId": 19073,
+    "DisplayRow": 320,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 321,
+    "NpcId": 19073,
+    "DisplayRow": 321,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 322,
+    "NpcId": 19073,
+    "DisplayRow": 322,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 323,
+    "NpcId": 19073,
+    "DisplayRow": 323,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 324,
+    "NpcId": 19073,
+    "DisplayRow": 324,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 325,
+    "NpcId": 19073,
+    "DisplayRow": 325,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 326,
+    "NpcId": 19073,
+    "DisplayRow": 326,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 327,
+    "NpcId": 19073,
+    "DisplayRow": 327,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 328,
+    "NpcId": 19073,
+    "DisplayRow": 328,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 329,
+    "NpcId": 19073,
+    "DisplayRow": 329,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 330,
+    "NpcId": 19073,
+    "DisplayRow": 330,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 331,
+    "NpcId": 19073,
+    "DisplayRow": 331,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 332,
+    "NpcId": 19073,
+    "DisplayRow": 332,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 333,
+    "NpcId": 19073,
+    "DisplayRow": 333,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 334,
+    "NpcId": 19073,
+    "DisplayRow": 334,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 335,
+    "NpcId": 19073,
+    "DisplayRow": 335,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 336,
+    "NpcId": 19073,
+    "DisplayRow": 336,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 337,
+    "NpcId": 19073,
+    "DisplayRow": 337,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 338,
+    "NpcId": 19073,
+    "DisplayRow": 338,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 339,
+    "NpcId": 19073,
+    "DisplayRow": 339,
+    "ResultItemId": 810593000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 340,
+    "NpcId": 19073,
+    "DisplayRow": 340,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 341,
+    "NpcId": 19073,
+    "DisplayRow": 341,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 342,
+    "NpcId": 19073,
+    "DisplayRow": 342,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 343,
+    "NpcId": 19073,
+    "DisplayRow": 343,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 344,
+    "NpcId": 19073,
+    "DisplayRow": 344,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 345,
+    "NpcId": 19073,
+    "DisplayRow": 345,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 346,
+    "NpcId": 19073,
+    "DisplayRow": 346,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 347,
+    "NpcId": 19073,
+    "DisplayRow": 347,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 348,
+    "NpcId": 19073,
+    "DisplayRow": 348,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 349,
+    "NpcId": 19073,
+    "DisplayRow": 349,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 350,
+    "NpcId": 19073,
+    "DisplayRow": 350,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 351,
+    "NpcId": 19073,
+    "DisplayRow": 351,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 352,
+    "NpcId": 19073,
+    "DisplayRow": 352,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 353,
+    "NpcId": 19073,
+    "DisplayRow": 353,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 354,
+    "NpcId": 19073,
+    "DisplayRow": 354,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 355,
+    "NpcId": 19073,
+    "DisplayRow": 355,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 356,
+    "NpcId": 19073,
+    "DisplayRow": 356,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 357,
+    "NpcId": 19073,
+    "DisplayRow": 357,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 358,
+    "NpcId": 19073,
+    "DisplayRow": 358,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 359,
+    "NpcId": 19073,
+    "DisplayRow": 359,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 360,
+    "NpcId": 19073,
+    "DisplayRow": 360,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 361,
+    "NpcId": 19073,
+    "DisplayRow": 361,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 362,
+    "NpcId": 19073,
+    "DisplayRow": 362,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 363,
+    "NpcId": 19073,
+    "DisplayRow": 363,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 364,
+    "NpcId": 19073,
+    "DisplayRow": 364,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 365,
+    "NpcId": 19073,
+    "DisplayRow": 365,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 366,
+    "NpcId": 19073,
+    "DisplayRow": 366,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 367,
+    "NpcId": 19073,
+    "DisplayRow": 367,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 368,
+    "NpcId": 19073,
+    "DisplayRow": 368,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 369,
+    "NpcId": 19073,
+    "DisplayRow": 369,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 370,
+    "NpcId": 19073,
+    "DisplayRow": 370,
+    "ResultItemId": 810593000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 371,
+    "NpcId": 19073,
+    "DisplayRow": 371,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 372,
+    "NpcId": 19073,
+    "DisplayRow": 372,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 373,
+    "NpcId": 19073,
+    "DisplayRow": 373,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 374,
+    "NpcId": 19073,
+    "DisplayRow": 374,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 375,
+    "NpcId": 19073,
+    "DisplayRow": 375,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 376,
+    "NpcId": 19073,
+    "DisplayRow": 376,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 377,
+    "NpcId": 19073,
+    "DisplayRow": 377,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 378,
+    "NpcId": 19073,
+    "DisplayRow": 378,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 379,
+    "NpcId": 19073,
+    "DisplayRow": 379,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 380,
+    "NpcId": 19073,
+    "DisplayRow": 380,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 381,
+    "NpcId": 19073,
+    "DisplayRow": 381,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 382,
+    "NpcId": 19073,
+    "DisplayRow": 382,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 383,
+    "NpcId": 19073,
+    "DisplayRow": 383,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 384,
+    "NpcId": 19073,
+    "DisplayRow": 384,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 385,
+    "NpcId": 19073,
+    "DisplayRow": 385,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 386,
+    "NpcId": 19073,
+    "DisplayRow": 386,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 387,
+    "NpcId": 19073,
+    "DisplayRow": 387,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 388,
+    "NpcId": 19073,
+    "DisplayRow": 388,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 389,
+    "NpcId": 19073,
+    "DisplayRow": 389,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 390,
+    "NpcId": 19073,
+    "DisplayRow": 390,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 391,
+    "NpcId": 19073,
+    "DisplayRow": 391,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 392,
+    "NpcId": 19073,
+    "DisplayRow": 392,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 393,
+    "NpcId": 19073,
+    "DisplayRow": 393,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 394,
+    "NpcId": 19073,
+    "DisplayRow": 394,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 395,
+    "NpcId": 19073,
+    "DisplayRow": 395,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 396,
+    "NpcId": 19073,
+    "DisplayRow": 396,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 397,
+    "NpcId": 19073,
+    "DisplayRow": 397,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 398,
+    "NpcId": 19073,
+    "DisplayRow": 398,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 399,
+    "NpcId": 19073,
+    "DisplayRow": 399,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 400,
+    "NpcId": 19073,
+    "DisplayRow": 400,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 401,
+    "NpcId": 19073,
+    "DisplayRow": 401,
+    "ResultItemId": 810593000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 402,
+    "NpcId": 19073,
+    "DisplayRow": 402,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 403,
+    "NpcId": 19073,
+    "DisplayRow": 403,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 404,
+    "NpcId": 19073,
+    "DisplayRow": 404,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 405,
+    "NpcId": 19073,
+    "DisplayRow": 405,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 406,
+    "NpcId": 19073,
+    "DisplayRow": 406,
+    "ResultItemId": 810693000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 407,
+    "NpcId": 19073,
+    "DisplayRow": 407,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 408,
+    "NpcId": 19073,
+    "DisplayRow": 408,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 409,
+    "NpcId": 19073,
+    "DisplayRow": 409,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 410,
+    "NpcId": 19073,
+    "DisplayRow": 410,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 411,
+    "NpcId": 19073,
+    "DisplayRow": 411,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 412,
+    "NpcId": 19073,
+    "DisplayRow": 412,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 413,
+    "NpcId": 19073,
+    "DisplayRow": 413,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 414,
+    "NpcId": 19073,
+    "DisplayRow": 414,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 415,
+    "NpcId": 19073,
+    "DisplayRow": 415,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 416,
+    "NpcId": 19073,
+    "DisplayRow": 416,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 417,
+    "NpcId": 19073,
+    "DisplayRow": 417,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 418,
+    "NpcId": 19073,
+    "DisplayRow": 418,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 419,
+    "NpcId": 19073,
+    "DisplayRow": 419,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 420,
+    "NpcId": 19073,
+    "DisplayRow": 420,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 421,
+    "NpcId": 19073,
+    "DisplayRow": 421,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 422,
+    "NpcId": 19073,
+    "DisplayRow": 422,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 423,
+    "NpcId": 19073,
+    "DisplayRow": 423,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 424,
+    "NpcId": 19073,
+    "DisplayRow": 424,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 425,
+    "NpcId": 19073,
+    "DisplayRow": 425,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 426,
+    "NpcId": 19073,
+    "DisplayRow": 426,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 427,
+    "NpcId": 19073,
+    "DisplayRow": 427,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 428,
+    "NpcId": 19073,
+    "DisplayRow": 428,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 429,
+    "NpcId": 19073,
+    "DisplayRow": 429,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 430,
+    "NpcId": 19073,
+    "DisplayRow": 430,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 431,
+    "NpcId": 19073,
+    "DisplayRow": 431,
+    "ResultItemId": 810694000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 432,
+    "NpcId": 19073,
+    "DisplayRow": 432,
+    "ResultItemId": 231511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 433,
+    "NpcId": 19073,
+    "DisplayRow": 433,
+    "ResultItemId": 231512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 434,
+    "NpcId": 19073,
+    "DisplayRow": 434,
+    "ResultItemId": 231513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 435,
+    "NpcId": 19073,
+    "DisplayRow": 435,
+    "ResultItemId": 231514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 436,
+    "NpcId": 19073,
+    "DisplayRow": 436,
+    "ResultItemId": 231515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 437,
+    "NpcId": 19073,
+    "DisplayRow": 437,
+    "ResultItemId": 232511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 438,
+    "NpcId": 19073,
+    "DisplayRow": 438,
+    "ResultItemId": 232512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 439,
+    "NpcId": 19073,
+    "DisplayRow": 439,
+    "ResultItemId": 232513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 440,
+    "NpcId": 19073,
+    "DisplayRow": 440,
+    "ResultItemId": 232514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 441,
+    "NpcId": 19073,
+    "DisplayRow": 441,
+    "ResultItemId": 232515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 442,
+    "NpcId": 19073,
+    "DisplayRow": 442,
+    "ResultItemId": 233511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 443,
+    "NpcId": 19073,
+    "DisplayRow": 443,
+    "ResultItemId": 233512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 444,
+    "NpcId": 19073,
+    "DisplayRow": 444,
+    "ResultItemId": 233513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 445,
+    "NpcId": 19073,
+    "DisplayRow": 445,
+    "ResultItemId": 233514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 446,
+    "NpcId": 19073,
+    "DisplayRow": 446,
+    "ResultItemId": 233515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 447,
+    "NpcId": 19073,
+    "DisplayRow": 447,
+    "ResultItemId": 234511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 448,
+    "NpcId": 19073,
+    "DisplayRow": 448,
+    "ResultItemId": 234512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 449,
+    "NpcId": 19073,
+    "DisplayRow": 449,
+    "ResultItemId": 234513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 450,
+    "NpcId": 19073,
+    "DisplayRow": 450,
+    "ResultItemId": 234514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 451,
+    "NpcId": 19073,
+    "DisplayRow": 451,
+    "ResultItemId": 234515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 452,
+    "NpcId": 19073,
+    "DisplayRow": 452,
+    "ResultItemId": 239511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 453,
+    "NpcId": 19073,
+    "DisplayRow": 453,
+    "ResultItemId": 239512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 454,
+    "NpcId": 19073,
+    "DisplayRow": 454,
+    "ResultItemId": 239513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 455,
+    "NpcId": 19073,
+    "DisplayRow": 455,
+    "ResultItemId": 239514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 456,
+    "NpcId": 19073,
+    "DisplayRow": 456,
+    "ResultItemId": 239515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 457,
+    "NpcId": 19073,
+    "DisplayRow": 457,
+    "ResultItemId": 930520722,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 458,
+    "NpcId": 19073,
+    "DisplayRow": 458,
+    "ResultItemId": 930530723,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 459,
+    "NpcId": 19073,
+    "DisplayRow": 459,
+    "ResultItemId": 930540724,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 460,
+    "NpcId": 19073,
+    "DisplayRow": 460,
+    "ResultItemId": 231511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 461,
+    "NpcId": 19073,
+    "DisplayRow": 461,
+    "ResultItemId": 231512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 462,
+    "NpcId": 19073,
+    "DisplayRow": 462,
+    "ResultItemId": 231513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 463,
+    "NpcId": 19073,
+    "DisplayRow": 463,
+    "ResultItemId": 231514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 464,
+    "NpcId": 19073,
+    "DisplayRow": 464,
+    "ResultItemId": 231515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 465,
+    "NpcId": 19073,
+    "DisplayRow": 465,
+    "ResultItemId": 232511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 466,
+    "NpcId": 19073,
+    "DisplayRow": 466,
+    "ResultItemId": 232512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 467,
+    "NpcId": 19073,
+    "DisplayRow": 467,
+    "ResultItemId": 232513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 468,
+    "NpcId": 19073,
+    "DisplayRow": 468,
+    "ResultItemId": 232514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 469,
+    "NpcId": 19073,
+    "DisplayRow": 469,
+    "ResultItemId": 232515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 470,
+    "NpcId": 19073,
+    "DisplayRow": 470,
+    "ResultItemId": 233511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 471,
+    "NpcId": 19073,
+    "DisplayRow": 471,
+    "ResultItemId": 233512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 472,
+    "NpcId": 19073,
+    "DisplayRow": 472,
+    "ResultItemId": 233513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 473,
+    "NpcId": 19073,
+    "DisplayRow": 473,
+    "ResultItemId": 233514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 474,
+    "NpcId": 19073,
+    "DisplayRow": 474,
+    "ResultItemId": 233515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 475,
+    "NpcId": 19073,
+    "DisplayRow": 475,
+    "ResultItemId": 234511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 476,
+    "NpcId": 19073,
+    "DisplayRow": 476,
+    "ResultItemId": 234512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 477,
+    "NpcId": 19073,
+    "DisplayRow": 477,
+    "ResultItemId": 234513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 478,
+    "NpcId": 19073,
+    "DisplayRow": 478,
+    "ResultItemId": 234514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 479,
+    "NpcId": 19073,
+    "DisplayRow": 479,
+    "ResultItemId": 234515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 480,
+    "NpcId": 19073,
+    "DisplayRow": 480,
+    "ResultItemId": 239511001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 481,
+    "NpcId": 19073,
+    "DisplayRow": 481,
+    "ResultItemId": 239512001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 482,
+    "NpcId": 19073,
+    "DisplayRow": 482,
+    "ResultItemId": 239513001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 483,
+    "NpcId": 19073,
+    "DisplayRow": 483,
+    "ResultItemId": 239514001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 484,
+    "NpcId": 19073,
+    "DisplayRow": 484,
+    "ResultItemId": 239515001,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 485,
+    "NpcId": 19073,
+    "DisplayRow": 485,
+    "ResultItemId": 978008000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 486,
+    "NpcId": 19073,
+    "DisplayRow": 486,
+    "ResultItemId": 978009000,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 487,
+    "NpcId": 19073,
+    "DisplayRow": 487,
+    "ResultItemId": 128410901,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 488,
+    "NpcId": 19073,
+    "DisplayRow": 488,
+    "ResultItemId": 127410284,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 489,
+    "NpcId": 19073,
+    "DisplayRow": 489,
+    "ResultItemId": 139410284,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 490,
+    "NpcId": 19073,
+    "DisplayRow": 490,
+    "ResultItemId": 159410312,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 491,
+    "NpcId": 19073,
+    "DisplayRow": 491,
+    "ResultItemId": 180410899,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 492,
+    "NpcId": 19073,
+    "DisplayRow": 492,
+    "ResultItemId": 182410312,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 493,
+    "NpcId": 19073,
+    "DisplayRow": 493,
+    "ResultItemId": 183410315,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 494,
+    "NpcId": 19073,
+    "DisplayRow": 494,
+    "ResultItemId": 184410318,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 495,
+    "NpcId": 19073,
+    "DisplayRow": 495,
+    "ResultItemId": 198410898,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 496,
+    "NpcId": 19073,
+    "DisplayRow": 496,
+    "ResultItemId": 197410192,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 497,
+    "NpcId": 19073,
+    "DisplayRow": 497,
+    "ResultItemId": 139442521,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1001,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340410115,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1002,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330110255,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1003,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330910140,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1004,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 399430840,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1005,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 399440840,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1006,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330610259,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1007,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330610260,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1008,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330610265,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1009,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330610263,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1010,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310610102,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1011,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310610106,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1012,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310610108,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1013,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320610125,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1014,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340110101,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1015,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340110255,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1016,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340110114,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1017,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310310006,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1018,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320110115,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1019,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320110116,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1020,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320110117,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1021,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330150257,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1022,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310510104,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1023,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310510110,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1024,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330110258,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1025,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340310102,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1026,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340310103,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1027,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340310108,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1028,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340410104,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1029,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340510110,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1030,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340510112,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1031,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340510105,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1032,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310110103,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1033,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320310124,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1034,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320310130,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1035,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310310005,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1036,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340610106,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1037,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340610111,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1038,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340610116,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1039,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310310004,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1040,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330920141,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1041,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330930142,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1042,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 340410113,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1043,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310410109,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1044,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320310122,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1045,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320510127,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1046,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320510120,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1047,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320510123,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1048,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320510118,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1049,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320610119,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1050,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310310007,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1051,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330110262,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1052,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330110266,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1053,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330410267,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1054,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320310121,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1055,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320310129,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1056,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330610264,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1057,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320610128,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1058,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310110101,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1059,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310410105,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1060,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 310410107,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1061,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320510131,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1062,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 320510132,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  },
+  {
+    "Id": 1063,
+    "NpcId": 31402,
+    "DisplayRow": 17,
+    "ResultItemId": 330410261,
+    "ResultCount": 1,
+    "SuccessRate": 3000
+  }
+]

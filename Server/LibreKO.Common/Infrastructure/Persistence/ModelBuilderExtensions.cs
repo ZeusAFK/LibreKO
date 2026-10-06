@@ -15,6 +15,9 @@ internal static class ModelBuilderExtensions
         Configure<MailBox>(modelBuilder, "MailBoxes");
         Configure<Mail>(modelBuilder, "Mails");
         Configure<MailAttachment>(modelBuilder, "MailAttachments");
+        Configure<MarketPriceDay>(modelBuilder, "MarketPriceDays");
+        Configure<AuctionBid>(modelBuilder, "AuctionBids");
+        Configure<AuctionResult>(modelBuilder, "AuctionResults");
         Configure<UserDailyOp>(modelBuilder, "UserDailyOps");
         Configure<Pet>(modelBuilder, "Pets");
         Configure<Warehouse>(modelBuilder, "Warehouses");
@@ -33,6 +36,9 @@ internal static class ModelBuilderExtensions
         Configure<LevelUpData>(modelBuilder, "LevelUp");
         Configure<PetLevelData>(modelBuilder, "PetLevels");
         Configure<PetTransformData>(modelBuilder, "PetTransforms");
+        Configure<SpecialAuctionLotData>(modelBuilder, "SpecialAuctionLots");
+        Configure<ItemCombineRecipeData>(modelBuilder, "ItemCombineRecipes");
+        Configure<ItemCombineMaterialData>(modelBuilder, "ItemCombineMaterials");
         Configure<HomeData>(modelBuilder, "Homes");
 
         Configure<ItemData>(modelBuilder, "Items");

@@ -50,6 +50,21 @@ public class PetTransformSeed : SnapshotJsonSeed<PetTransformData>
     protected override string JsonFileName => "PetTransforms.json";
 }
 
+public class SpecialAuctionLotSeed : SnapshotJsonSeed<SpecialAuctionLotData>
+{
+    protected override string JsonFileName => "SpecialAuctionLots.json";
+}
+
+public class ItemCombineRecipeSeed : SnapshotJsonSeed<ItemCombineRecipeData>
+{
+    protected override string JsonFileName => "ItemCombineRecipes.json";
+}
+
+public class ItemCombineMaterialSeed : SnapshotJsonSeed<ItemCombineMaterialData>
+{
+    protected override string JsonFileName => "ItemCombineMaterials.json";
+}
+
 public class CoefficientSeed : SnapshotJsonSeed<CoefficientData>
 {
     protected override string JsonFileName => "Coefficients.json";

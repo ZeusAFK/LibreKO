@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -23,6 +23,7 @@ public class MerchantBuyingService(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IUserNotificationService userNotificationService,
+    IMarketPriceService marketPriceService,
     ILogger<MerchantBuyingService> logger) : IMerchantBuyingService
 {
     public async Task OpenAsync(UserSession session)
@@ -160,7 +161,8 @@ public class MerchantBuyingService(
 
         var wantedItem = merchant!.Trade.BuyMerchantItems[wantedSlot];
         var sellerItem = session.Inventory[InventoryConstants.SlotMax + sellerSlot];
-        var price = (int)((long)wantedItem.Price * stackSize);
+        var unitPrice = wantedItem.Price;
+        var price = (int)((long)unitPrice * stackSize);
 
         var merchantSlot = merchant.FindSlotForItem(wantedItem.ItemId, gameDataService, stackSize);
         if (merchantSlot < 0)
@@ -213,6 +215,7 @@ public class MerchantBuyingService(
         await userNotificationService.SendGoldLossAsync(merchant, price);
         await userNotificationService.SendWeightChangeAsync(session);
         await userNotificationService.SendWeightChangeAsync(merchant);
+        await marketPriceService.RecordAsync(merchant, session, merchantItem.ItemId, unitPrice, stackSize);
 
         if (merchant.Trade.BuyMerchantItems.All(entry => entry == null || entry.IsEmpty))
             await CloseAsync(merchant, broadcast: true);

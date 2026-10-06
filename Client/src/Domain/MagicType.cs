@@ -28,6 +28,8 @@ public static class MagicSub
     public const int DurationExpired = 5;
     public const int Cancel = 6;
     public const int CancelTransformation = 7;
+    public const int TransformationList = 9;
+    public const int TransformationRefused = 10;
 }
 
 public static class HealTarget

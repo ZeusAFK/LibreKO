@@ -1,19 +1,31 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
 public sealed class SiegePacketWriter
 {
     public const byte NoMasterClan = 0;
+    public const short Accepted = 1;
 
     public readonly record struct ClanBanner(ushort ClanId, ushort MarkVersion, byte Flag, byte Grade);
 
-    public readonly record struct WarSchedule(byte Day, byte Hour, byte Minute);
+    public readonly record struct WarSchedule(byte WarType, byte Weekday, byte Hour, byte Minute);
+
+    public readonly record struct ClanRow(string Name, byte Nation, byte Members);
+
+    public readonly record struct RegistrationPeriod(byte StartWeekday, byte StartHour, byte StartMinute, byte EndWeekday);
 
     public static Packet Result(byte sub, byte subType)
     {
         var packet = Sub(sub);
         packet.WriteByte(subType);
+        return packet;
+    }
+
+    public static Packet Result(byte sub, byte subType, short result)
+    {
+        var packet = Result(sub, subType);
+        packet.WriteShort(result);
         return packet;
     }
 
@@ -40,70 +52,82 @@ public sealed class SiegePacketWriter
         return packet;
     }
 
-    public static Packet CastleSchedule(
-        byte sub, byte subType, ushort castleIndex, byte siegeType, WarSchedule schedule)
+    public static Packet WarfareNpc() => Result(SiegePacketConstants.WarfareNpc, SiegePacketConstants.WarfareOpen);
+
+    public static Packet Schedule(IReadOnlyCollection<WarSchedule> wars)
     {
-        var packet = Sub(sub);
-        packet.WriteByte(subType);
-        packet.WriteUShort(castleIndex);
-        packet.WriteUShort(siegeType);
-        packet.WriteByte(schedule.Day);
-        packet.WriteByte(schedule.Hour);
-        packet.WriteByte(schedule.Minute);
+        var packet = Result(SiegePacketConstants.WarfareNpc, SiegePacketConstants.WarfareSchedule, Accepted);
+        packet.WriteByte((byte)wars.Count);
+        foreach (var war in wars)
+        {
+            packet.WriteByte(war.WarType);
+            packet.WriteByte(war.Weekday);
+            packet.WriteByte(war.Hour);
+            packet.WriteByte(war.Minute);
+        }
+
         return packet;
     }
 
-    public static Packet CastleApplicants(
-        byte sub, byte subType, ushort castleIndex, string clanName, byte nation, ushort members,
-        WarSchedule schedule)
+    public static Packet Challengers(
+        IReadOnlyCollection<ClanRow> clans, byte chosen, uint signUpFee, RegistrationPeriod period)
     {
-        var packet = Sub(sub);
-        packet.WriteByte(subType);
-        packet.WriteUShort(castleIndex);
-        packet.WriteByte(1);
-        packet.WriteString(clanName);
-        packet.WriteByte(nation);
-        packet.WriteUShort(members);
-        packet.WriteByte(schedule.Day);
-        packet.WriteByte(schedule.Hour);
-        packet.WriteByte(schedule.Minute);
+        var packet = Result(SiegePacketConstants.WarfareNpc, SiegePacketConstants.WarfareChallengers, Accepted);
+        WriteClans(packet, clans);
+        packet.WriteByte((byte)clans.Count);
+        packet.WriteByte(chosen);
+        packet.WriteUInt(signUpFee);
+        packet.WriteByte(period.StartWeekday);
+        packet.WriteByte(period.StartHour);
+        packet.WriteByte(period.StartMinute);
+        packet.WriteByte(period.EndWeekday);
         return packet;
     }
 
-    public static Packet CastleOwner(
-        byte sub, byte subType, ushort castleIndex, byte siegeType, string clanName, byte nation,
-        ushort members)
+    public static Packet DefendingUnion(IReadOnlyCollection<ClanRow> clans)
     {
-        var packet = Sub(sub);
-        packet.WriteByte(subType);
-        packet.WriteUShort(castleIndex);
-        packet.WriteByte(siegeType);
-        packet.WriteString(clanName);
-        packet.WriteByte(nation);
-        packet.WriteUShort(members);
+        var packet = Result(SiegePacketConstants.WarfareNpc, SiegePacketConstants.WarfareDefendingUnion, Accepted);
+        WriteClans(packet, clans);
         return packet;
     }
 
-    public static Packet Tariffs(
-        byte sub, byte subType, ushort castleIndex, ushort moradonTariff, ushort delosTariff,
-        int dungeonCharge)
+    public static Packet CastleManager(uint collectable, uint moradonTax)
     {
-        var packet = Sub(sub);
-        packet.WriteByte(subType);
-        packet.WriteUShort(castleIndex);
-        packet.WriteUShort(moradonTariff);
-        packet.WriteUShort(delosTariff);
-        packet.WriteInt(dungeonCharge);
+        var packet = Result(SiegePacketConstants.CastleManager, SiegePacketConstants.ManagerOpen);
+        packet.WriteUInt(collectable);
+        packet.WriteUInt(moradonTax);
         return packet;
     }
 
-    public static Packet TariffChanged(byte sub, byte subType, ushort tariff, byte zoneId)
+    public static Packet TaxCollected(int newCoins, int collected)
     {
-        var packet = Sub(sub);
-        packet.WriteByte(subType);
-        packet.WriteUShort(1);
-        packet.WriteUShort(tariff);
-        packet.WriteByte(zoneId);
+        var packet = Result(SiegePacketConstants.CastleManager, SiegePacketConstants.ManagerCollect, Accepted);
+        packet.WriteInt(newCoins);
+        packet.WriteInt(collected);
+        return packet;
+    }
+
+    public static Packet Tariffs(short moradonTariff, short delosTariff, int dungeonFee)
+    {
+        var packet = Result(SiegePacketConstants.CastleManager, SiegePacketConstants.ManagerTariffs, Accepted);
+        packet.WriteShort(moradonTariff);
+        packet.WriteShort(delosTariff);
+        packet.WriteInt(dungeonFee);
+        return packet;
+    }
+
+    public static Packet TariffChanged(byte subType, short tariff, short zoneId)
+    {
+        var packet = Result(SiegePacketConstants.CastleManager, subType, Accepted);
+        packet.WriteShort(tariff);
+        packet.WriteShort(zoneId);
+        return packet;
+    }
+
+    public static Packet DungeonFeeChanged(int fee)
+    {
+        var packet = Result(SiegePacketConstants.CastleManager, SiegePacketConstants.ManagerDungeonFee, Accepted);
+        packet.WriteInt(fee);
         return packet;
     }
 
@@ -113,6 +137,17 @@ public sealed class SiegePacketWriter
         packet.WriteByte(subType);
         packet.WriteByte(count);
         return packet;
+    }
+
+    private static void WriteClans(Packet packet, IReadOnlyCollection<ClanRow> clans)
+    {
+        packet.WriteByte((byte)clans.Count);
+        foreach (var clan in clans)
+        {
+            packet.WriteSByteString(clan.Name);
+            packet.WriteByte(clan.Nation);
+            packet.WriteByte(clan.Members);
+        }
     }
 
     private static Packet Sub(byte sub)

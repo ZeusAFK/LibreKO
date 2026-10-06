@@ -1,0 +1,16 @@
+Bind Npc 19005 Zone 21
+
+On topics
+    Topic "Keep talking" goto fortune
+
+On fortune
+    If player gold >= 10000
+        Say "Okay, great. Shall we begin?"
+        Topic "Give 10,000 Noah" do
+            Transaction
+                Take 10000 coins
+                Open fortune panel
+        Topic "Back" goto close
+    Else
+        Say "Yeah, well, we could start, but you don't seem to have the 10,000 Noah..."
+        Topic "Back" goto close

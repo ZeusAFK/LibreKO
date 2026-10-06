@@ -179,8 +179,7 @@ public partial class World
         line.Move.Pressed += () => { if (line.Row is { } row) MoveToMerchant(row); };
         line.Root.AddChild(line.Move);
         line.View = MerchantSearchRowButton(MerchantSearchText(MerchantSearchViewText, "View"));
-        line.View.Disabled = true;
-        line.View.TooltipText = "Price history is not available yet.";
+        line.View.Pressed += () => { if (line.Row is { } row) RequestMarketPriceWindow(row.ItemId); };
         line.Root.AddChild(line.View);
         line.Icon = new TextureRect
         {

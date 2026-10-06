@@ -79,6 +79,7 @@ public partial class World : Node3D
         Facet(GenderChangeInit, GenderChangeDispose);
         Facet(NationTransferInit, NationTransferDispose);
         Facet(MerchantSearchInit, MerchantSearchDispose);
+        Facet(MarketPriceInit, MarketPriceDispose);
         Facet(BifrostInit, BifrostDispose);
         Facet(BorderDefenseWarInit, BorderDefenseWarDispose);
         Facet(CapeInit, CapeDispose);
@@ -102,7 +103,7 @@ public partial class World : Node3D
         Facet(NestTimerInit, NestTimerDispose);
         Facet(UpgradeNoticeInit, UpgradeNoticeDispose);
         Facet(MailInit, MailDispose);
-        Facet(AuctionInit, AuctionDispose);
+        Facet(SpecialAuctionInit, SpecialAuctionDispose);
         Facet(AttendanceInit, AttendanceDispose);
         Facet(AchievementInit, AchievementDispose);
         Facet(MailIconInit, MailIconDispose);
@@ -113,18 +114,12 @@ public partial class World : Node3D
         Facet(PresetInit, PresetDispose);
         Facet(MessengerInit, MessengerDispose);
         Facet(ForcesInit, ForcesDispose);
-        Facet(InstanceInit, InstanceDispose);
         Facet(ChatRoomInit, ChatRoomDispose);
         Facet(FortuneInit, FortuneDispose);
         Facet(ItemCombineInit, ItemCombineDispose);
         Facet(RouletteInit, RouletteDispose);
         Facet(FishingHallInit, FishingHallDispose);
-        Facet(MarketBbsInit, MarketBbsDispose);
-        Facet(DuelInit, DuelDispose);
-        Facet(ItemExchangeInit, ItemExchangeDispose);
-        Facet(RingUpgradeInit, RingUpgradeDispose);
         Facet(PluginBridgeInit, PluginBridgeDispose);
-        Facet(InnInit, InnDispose);
         Facet(GuardPetInit, GuardPetDispose);
         Facet(EventQuestInit, EventQuestDispose);
         Facet(GlobalMapInit, GlobalMapDispose);

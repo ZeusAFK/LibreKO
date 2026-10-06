@@ -15,6 +15,9 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
     public IReadOnlyDictionary<byte, long> LevelUpTable { get; private set; } = new Dictionary<byte, long>();
     public IReadOnlyDictionary<byte, PetLevelData> PetLevelTable { get; private set; } = new Dictionary<byte, PetLevelData>();
     public ILookup<int, PetTransformData> PetTransformsByMaterial { get; private set; } = Enumerable.Empty<PetTransformData>().ToLookup(x => x.Material);
+    public ILookup<int, SpecialAuctionLotData> SpecialAuctionLotsByRow { get; private set; } = Enumerable.Empty<SpecialAuctionLotData>().ToLookup(x => x.Row);
+    public IReadOnlyList<ItemCombineRecipeData> ItemCombineRecipes { get; private set; } = [];
+    public ILookup<int, ItemCombineMaterialData> ItemCombineMaterialsByRecipe { get; private set; } = Enumerable.Empty<ItemCombineMaterialData>().ToLookup(x => x.RecipeId);
     public IReadOnlyDictionary<short, CoefficientData> CoefficientTable { get; private set; } = new Dictionary<short, CoefficientData>();
     public IReadOnlyDictionary<short, StartPositionData> StartPositionTable { get; private set; } = new Dictionary<short, StartPositionData>();
     public IReadOnlyDictionary<int, ItemData> ItemTable { get; private set; } = new Dictionary<int, ItemData>();
@@ -243,6 +246,11 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
             PetLevelTable = await LoadDictionaryAsync(db.PetLevels, x => x.Level, "pet level entries", cancellationToken);
             var petTransforms = await LoadListAsync(db.PetTransforms, "pet transform entries", cancellationToken);
             PetTransformsByMaterial = petTransforms.ToLookup(x => x.Material);
+            var auctionLots = await LoadListAsync(db.SpecialAuctionLots, "special auction lots", cancellationToken);
+            SpecialAuctionLotsByRow = auctionLots.ToLookup(x => x.Row);
+            ItemCombineRecipes = (await LoadListAsync(db.ItemCombineRecipes, "item combine recipes", cancellationToken)).OrderBy(x => x.Id).ToList();
+            var combineMaterials = await LoadListAsync(db.ItemCombineMaterials, "item combine materials", cancellationToken);
+            ItemCombineMaterialsByRecipe = combineMaterials.ToLookup(x => x.RecipeId);
             CoefficientTable = await LoadDictionaryAsync(db.Coefficients, x => x.ClassId, "coefficient entries", cancellationToken);
             StartPositionTable = await LoadDictionaryAsync(db.StartPositions, x => x.ZoneId, "start position entries", cancellationToken);
             ItemTable = await LoadDictionaryAsync(db.Items, x => x.Num, "item entries", cancellationToken);

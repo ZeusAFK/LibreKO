@@ -24,6 +24,13 @@ public partial class Net
         PremiumEvent?.Invoke(accountStatus, premiumType, premiumHours);
     }
 
+    internal void SeedPreviewPremium(int accountStatus, int premiumType, int premiumHours)
+    {
+        PremiumAccountStatus = accountStatus;
+        PremiumType = premiumType;
+        PremiumHours = premiumHours;
+    }
+
     public void SendPremiumRequest()
     {
         var p = new Packet(GameOpcodes.GS_PREMIUM);

@@ -1,10 +1,13 @@
 ﻿using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
 
 public partial class World
 {
+    private const int NameChangeAuctionOpenText = 43715;
+
     private CanvasLayer _nameChangeLayer = null!;
     private HudWindow _nameChangePanel = null!;
     private LineEdit _nameChangeEdit = null!;
@@ -123,6 +126,9 @@ public partial class World
                 break;
             case Net.NameChangeInClan:
                 SetNameChangeStatus("Leave your clan before renaming.", true);
+                break;
+            case Net.NameChangeAuctionOpen:
+                SetNameChangeStatus(ItemData.Text(NameChangeAuctionOpenText, "You are already bidding or have items to claim"), true);
                 break;
             default:
                 SetNameChangeStatus("Couldn't change the name.", true);

@@ -37,6 +37,7 @@ public partial class Net
     private void HandleMagicProcess(Packet p)
     {
         byte sub = p.ReadByte();
+        if (HandleTransformationMagic(sub, p)) return;
         if (sub == MagicSub.DurationExpired)
         {
             if (p.RemainingBytes >= 1) BuffExpiredEvent?.Invoke(p.ReadByte());

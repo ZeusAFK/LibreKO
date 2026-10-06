@@ -217,7 +217,7 @@ public partial class World
                 _wishes[slot] = new MerchantWishItem { ItemId = hit.Id, Count = wantCount, Price = price };
                 CloseWishFind();
                 RefreshWishList();
-            }, defaultCount: 1);
+            }, defaultCount: 1, marketPriceItem: hit.Id);
     }
 
     private void RefreshWishList()

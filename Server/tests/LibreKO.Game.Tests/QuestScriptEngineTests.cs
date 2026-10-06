@@ -60,6 +60,47 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private sealed class RecordingLogger : ILogger<QuestScriptEngine>
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Messages.Add(formatter(state, exception));
+    }
+
+    [Fact]
+    public void AnEventOnlyAnotherFileBorrowsIsNotReportedAsDead()
+    {
+        File.Delete(Path.Combine(_directory, ScriptName));
+        File.WriteAllText(Path.Combine(_directory, "16079_21_0.quest"), """
+            Bind Npc 16079 Zone 21
+            On greeting
+                Say "Hello."
+            On payout
+                Give 23 coins
+            On forgotten
+                Give 1 coins
+            """);
+        File.WriteAllText(Path.Combine(_directory, "16079_21_61.quest"), """
+            Bind Npc 16079 Zone 21
+            payout = event from 16079_21_0
+            Quest 61
+            On accept
+                Goto payout
+            """);
+        var logger = new RecordingLogger();
+        var (engine, _, _) = CreateHarness(logger: logger);
+
+        engine.TryGetEntry(NpcId, 21, QuestProgram.AcceptEvent, 61, out _, out _);
+
+        logger.Messages.Should().NotContain(message => message.Contains("Nothing leads to \"payout\""));
+        logger.Messages.Should().Contain(message => message.Contains("Nothing leads to \"forgotten\""));
+    }
+
     [Fact]
     public async Task AQuestFileReachesAnEventDeclaredAsSharedAndAnsweredByItsNpcsOtherFile()
     {
@@ -865,7 +906,8 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     private static string BakedQuestPath(string name, [System.Runtime.CompilerServices.CallerFilePath] string source = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, "..", "..", "LibreKO.Game", "Quests", name));
 
-    private (QuestScriptEngine Engine, UserSession Session, List<Packet> Sent) CreateHarness(TimeProvider? clock = null, bool manifestOnly = false)
+    private (QuestScriptEngine Engine, UserSession Session, List<Packet> Sent) CreateHarness(
+        TimeProvider? clock = null, bool manifestOnly = false, ILogger<QuestScriptEngine>? logger = null)
     {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
@@ -900,7 +942,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
             LibreKO.Quests.Localization.QuestTranslations.Empty,
             TestHostEnvironmentFactory.Create(_directory),
             settings,
-            Substitute.For<ILogger<QuestScriptEngine>>(), clock);
+            logger ?? Substitute.For<ILogger<QuestScriptEngine>>(), clock);
 
         return (engine, session, sent);
     }

@@ -58,6 +58,26 @@ public class ScriptDialogService(
         queuedPackets.Add(NpcDialogPacketWriter.GenderChangePanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
     }
 
+    public void SendFortunePanel()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.FortunePanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
+
+    public void SendSpecialAuctionPanel()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.SpecialAuctionPanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
+
+    public void SendItemCombinePanel()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.ItemCombinePanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
+
+    public void SendCombineRecipeBook()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.CombineRecipeBook(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
+
     public void SendFamiliarPanel()
     {
         queuedPackets.Add(NpcDialogPacketWriter.FamiliarPanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));

@@ -24,6 +24,9 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         await Seed(new LevelUpSeed());
         await Seed(new PetLevelSeed());
         await Seed(new PetTransformSeed());
+        await Seed(new SpecialAuctionLotSeed());
+        await Seed(new ItemCombineRecipeSeed());
+        await Seed(new ItemCombineMaterialSeed());
         await Seed(new CoefficientSeed());
         await Seed(new StartPositionSeed());
         await Seed(new HomeSeed());

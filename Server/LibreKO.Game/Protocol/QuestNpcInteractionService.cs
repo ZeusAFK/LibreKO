@@ -23,6 +23,7 @@ public class QuestNpcInteractionService(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IQuestDialogRunner dialogRunner,
+    IKingSystemRuntimeService kingSystemRuntimeService,
     ILogger<QuestNpcInteractionService> logger) : IQuestNpcInteractionService
 {
     private const byte WarehouseRequest = 0x10;
@@ -174,7 +175,7 @@ public class QuestNpcInteractionService(
         if (npcData == null)
             return;
 
-        if (await TryHandleNpcUiAsync(client, npc, npcData))
+        if (await TryHandleNpcUiAsync(session, npc, npcData))
             return;
 
         if (!await dialogRunner.TryGreetAsync(session, npc))
@@ -182,7 +183,7 @@ public class QuestNpcInteractionService(
                 session.Name, npc.NpcId);
     }
 
-    private static async Task<bool> TryHandleNpcUiAsync(IClient client, NpcInstance npc, NpcData npcData)
+    private async Task<bool> TryHandleNpcUiAsync(UserSession session, NpcInstance npc, NpcData npcData)
     {
         Packet? response = npc.NpcId == NpcData.MakeupArtist ? PreGamePacketWriter.ChangeHairShop() : npcData.NpcType switch
         {
@@ -193,14 +194,43 @@ public class QuestNpcInteractionService(
             NpcData.TypeWarehouse => BuildWarehousePacket(),
             NpcData.TypeClassChange => BuildClassChangePacket(),
             NpcData.TypeChaoticGenerator => BuildChaoticGeneratorPacket(npc),
+            NpcData.TypeRental => RentalPacketWriter.NpcState(RentalPacketWriter.Unavailable, npcData.SellingGroup),
+            NpcData.TypeElectionOfficer => BuildElectionOfficerPacket(session),
+            NpcData.TypeGrandChamberlain => BuildTreasuryPacket(session),
+            NpcData.TypeSiegeWarfare => SiegePacketWriter.WarfareNpc(),
+            NpcData.TypeCastleManager => BuildCastleManagerPacket(session),
             _ => null
         };
 
         if (response == null)
             return false;
 
-        await client.SendPacket(response);
+        await session.Client.SendPacket(response);
         return true;
+    }
+
+    private Packet BuildElectionOfficerPacket(UserSession session) =>
+        KingPacketWriter.ElectionOfficer(kingSystemRuntimeService.GetKingData(session.Nation)?.KingName?.Trim() ?? string.Empty);
+
+    private Packet BuildTreasuryPacket(UserSession session)
+    {
+        var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
+        var treasury = (uint)Math.Max(kingData?.NationalTreasury ?? 0, 0);
+        if (kingData == null || !kingSystemRuntimeService.IsKing(session, kingData))
+            return KingPacketWriter.CitizenTreasury(treasury);
+
+        var kingsFund = (long)Math.Max(kingData.Tribute, 0) + Math.Max(kingData.TerritoryTax, 0);
+        return KingPacketWriter.KingTreasury((uint)Math.Min(kingsFund, uint.MaxValue), treasury);
+    }
+
+    private Packet? BuildCastleManagerPacket(UserSession session)
+    {
+        var siege = gameDataService.SiegeWarfare;
+        if (siege == null || !SiegeRules.IsCastleLord(session, siege))
+            return null;
+
+        return SiegePacketWriter.CastleManager(
+            (uint)Math.Max(siege.DungeonCharge, 0), (uint)Math.Max(siege.MoradonTax, 0));
     }
 
     private static bool IsBusy(UserSession session) =>

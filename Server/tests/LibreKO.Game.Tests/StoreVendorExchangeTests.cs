@@ -39,60 +39,6 @@ public class StoreVendorExchangeTests
     private const int GryphonHelmetCertificate = 800230000;
     private const int ScrollOfIdentity = 800032000;
 
-    private static string QuestPath(string name, [System.Runtime.CompilerServices.CallerFilePath] string source = "") =>
-        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, "..", "..", "LibreKO.Game", "Quests", name));
-
-    private sealed class Talk
-    {
-        private readonly QuestProgram program;
-        public readonly IQuestHost Host;
-        public IReadOnlyList<DialogButton> Shown = [];
-        public DialogLine? Header;
-
-        public Talk(int npc, int nation, params int[] carried) : this($"{npc}_{Moradon}.quest", null, npc, nation, carried)
-        {
-        }
-
-        public Talk(string file, string? startEvent, int npc, int nation, params int[] carried)
-        {
-            var compilation = QuestCompilation.CreateFromFile(QuestPath(file));
-            compilation.Succeeded.Should().BeTrue(compilation.RenderDiagnostics());
-            program = QuestProgramComposer.Compose("vendor", npc, Moradon, [compilation.Program]);
-            Host = Substitute.For<IQuestHost>();
-            Host.PlayerZone.Returns(Moradon);
-            Host.PlayerLevel.Returns(70);
-            Host.PlayerNation.Returns(nation);
-            foreach (var item in carried)
-                Host.ItemCount(item).Returns(1);
-            Host.HasRoomForItem(Arg.Any<int>(), Arg.Any<int>()).Returns(true);
-            Host.CanReceiveStacks(Arg.Any<int>()).Returns(true);
-            Host.When(h => h.ShowDialog(Arg.Any<DialogStyle>(), Arg.Any<int>(), Arg.Any<DialogLine>(), Arg.Any<IReadOnlyList<DialogButton>>()))
-                .Do(c =>
-                {
-                    Header = c.ArgAt<DialogLine>(2);
-                    Shown = c.ArgAt<IReadOnlyList<DialogButton>>(3);
-                });
-            int start;
-            if (startEvent == null)
-                program.TryGetGreeting(out start).Should().BeTrue();
-            else
-                program.EventNames.TryGetValue(startEvent, out start).Should().BeTrue();
-            new QuestInterpreter(program, Host).Run(start).Failure.Should().BeNull();
-        }
-
-        public Talk Follow(params string[] labels)
-        {
-            foreach (var label in labels)
-            {
-                var button = Shown.Single(b => b.Label.Text == label);
-                new QuestInterpreter(program, Host).Run(button.TargetEvent).Failure.Should().BeNull();
-            }
-            return this;
-        }
-
-        public IReadOnlyList<string> Labels => Shown.Select(b => b.Label.Text ?? string.Empty).ToList();
-    }
-
     private static bool Takes(IReadOnlyList<BoundStatement.Action> actions, int item, int count = 1) =>
         actions.Any(a => a.Kind == QuestActionKind.TakeItem && a.Arguments.GetInt("item") == item
             && a.Arguments.GetInt("amount", a.Arguments.GetInt("count", 1)) == count);
@@ -109,7 +55,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void KairaGreetsWithTheStoreExchanges()
     {
-        var talk = new Talk(Kaira, Karus);
+        var talk = new QuestTalk(Kaira, Karus);
 
         talk.Labels.Should().Equal("[Premium Item Use]", "[Exchange][Minerva Package]", "[Exchange][Pathos Glove Package]",
             "[Seal Exchange Coupon]", "[Exchange][Dragon's Wings]", "Exchanging items");
@@ -122,7 +68,7 @@ public class StoreVendorExchangeTests
     [InlineData(OlderMinervaPackage)]
     public void TheMinervaPackageOpensIntoBothCertificates(int package)
     {
-        var talk = new Talk(Kaira, Karus, package).Follow("[Exchange][Minerva Package]", "Exchange");
+        var talk = new QuestTalk(Kaira, Karus, package).Follow("[Exchange][Minerva Package]", "Exchange");
 
         talk.Host.Received(1).ApplyReward(Arg.Is<IReadOnlyList<BoundStatement.Action>>(actions =>
             actions.Count == 3 && Takes(actions, package)
@@ -132,7 +78,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void ThePathosPackageOpensIntoTwoCertificates()
     {
-        var talk = new Talk(Kaira, Karus, PathosPackage).Follow("[Exchange][Pathos Glove Package]", "Exchange");
+        var talk = new QuestTalk(Kaira, Karus, PathosPackage).Follow("[Exchange][Pathos Glove Package]", "Exchange");
 
         talk.Host.Received(1).ApplyReward(Arg.Is<IReadOnlyList<BoundStatement.Action>>(actions =>
             actions.Count == 3 && Takes(actions, PathosPackage) && Gives(actions, PathosCertificate) == 2));
@@ -143,7 +89,7 @@ public class StoreVendorExchangeTests
     [InlineData("[Seal 50 voucher]", MediumSealCoupon, 50)]
     public void ASealCouponTurnsIntoSealedItems(string topic, int coupon, int sealedItems)
     {
-        var talk = new Talk(Kaira, Karus, coupon).Follow("[Seal Exchange Coupon]", topic, "Yes");
+        var talk = new QuestTalk(Kaira, Karus, coupon).Follow("[Seal Exchange Coupon]", topic, "Yes");
 
         ShouldTrade(talk.Host, coupon, SealedItem, sealedItems);
     }
@@ -159,7 +105,7 @@ public class StoreVendorExchangeTests
     [InlineData("Base Experience for Monster Kills +9%", ElMorad, 810179842)]
     public void TheDragonCouponGivesTheNationsWingWithTheChosenAttribute(string attribute, int nation, int wing)
     {
-        var talk = new Talk(Kaira, nation, DragonWingCoupon).Follow("[Exchange][Dragon's Wings]", attribute);
+        var talk = new QuestTalk(Kaira, nation, DragonWingCoupon).Follow("[Exchange][Dragon's Wings]", attribute);
 
         ShouldTrade(talk.Host, DragonWingCoupon, wing, hours: ThirtyDays);
     }
@@ -167,7 +113,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void WithoutTheCouponKairaPointsAtTheStore()
     {
-        var talk = new Talk(Kaira, Karus).Follow("[Exchange][Dragon's Wings]");
+        var talk = new QuestTalk(Kaira, Karus).Follow("[Exchange][Dragon's Wings]");
 
         talk.Header!.Text.Should().StartWith("You don't seem to have [Dragon's Wings Vouchers].");
         talk.Labels.Should().Equal(StoreHint);
@@ -177,7 +123,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void TheMenissiahCouponRentsTheListForThirtyDays()
     {
-        var talk = new Talk(Kaira, Karus, MenissiahCoupon)
+        var talk = new QuestTalk(Kaira, Karus, MenissiahCoupon)
             .Follow("Exchanging items", "[Exchange][Menissiah's Trade Paper]", "Exchange");
 
         ShouldTrade(talk.Host, MenissiahCoupon, MenissiahList, hours: ThirtyDays);
@@ -188,7 +134,7 @@ public class StoreVendorExchangeTests
     [InlineData("Special Nereids (Attack) Exchange", 811136000, 1340712000)]
     public void ASpecialNereidsVoucherWakesItsSpirit(string topic, int voucher, int spirit)
     {
-        var talk = new Talk(Kaira, ElMorad, voucher).Follow("Exchanging items", "[Exchange] [Spirit's help]", topic, "Yes");
+        var talk = new QuestTalk(Kaira, ElMorad, voucher).Follow("Exchanging items", "[Exchange] [Spirit's help]", topic, "Yes");
 
         ShouldTrade(talk.Host, voucher, spirit, hours: ThirtyDays);
     }
@@ -196,7 +142,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void TheWarTattooVoucherGivesTheTattoo()
     {
-        var talk = new Talk(Kaira, Karus, WarTattooVoucher).Follow("Exchanging items", "War Tattoo (30 Days)", "Yes");
+        var talk = new QuestTalk(Kaira, Karus, WarTattooVoucher).Follow("Exchanging items", "War Tattoo (30 Days)", "Yes");
 
         ShouldTrade(talk.Host, WarTattooVoucher, WarTattoo, hours: ThirtyDays);
     }
@@ -204,7 +150,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void HemesGreetsWithTheCertificateServices()
     {
-        new Talk(Hemes, Karus).Labels.Should().Equal("Change ID", "Minerva Clothing", "Existing Minerva Clothing", "Pathos' Glove");
+        new QuestTalk(Hemes, Karus).Labels.Should().Equal("Change ID", "Minerva Clothing", "Existing Minerva Clothing", "Pathos' Glove");
     }
 
     [Theory]
@@ -218,7 +164,7 @@ public class StoreVendorExchangeTests
     [InlineData("Gryphon's Helmet", GryphonHelmetCertificate, "Base Noah for Monster Kills  drop rate +3%", 508473456)]
     public void AGryphonCertificateGivesThePieceWithTheChosenOption(string piece, int certificate, string option, int item)
     {
-        var talk = new Talk(Hemes, Karus, certificate).Follow("Existing Minerva Clothing", piece, option, "Receive item");
+        var talk = new QuestTalk(Hemes, Karus, certificate).Follow("Existing Minerva Clothing", piece, option, "Receive item");
 
         ShouldTrade(talk.Host, certificate, item, hours: ThirtyDays);
     }
@@ -226,7 +172,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void WithoutTheGryphonCertificateHemesPointsAtTheStore()
     {
-        var talk = new Talk(Hemes, Karus).Follow("Existing Minerva Clothing", "Gryphon's Armor");
+        var talk = new QuestTalk(Hemes, Karus).Follow("Existing Minerva Clothing", "Gryphon's Armor");
 
         talk.Header!.Text.Should().StartWith("You need a [Gryphon's Armor Voucher]");
         talk.Labels.Should().Equal(StoreHint);
@@ -242,7 +188,7 @@ public class StoreVendorExchangeTests
     [InlineData("Transparent Minerva Helmet", MinervaHelmetCertificate, "HP +100", 508065591)]
     public void AMinervaCertificateBecomesTheChosenLook(string look, int certificate, string option, int item)
     {
-        var talk = new Talk(Hemes, ElMorad, certificate).Follow("Minerva Clothing", look, option, "Receive item");
+        var talk = new QuestTalk(Hemes, ElMorad, certificate).Follow("Minerva Clothing", look, option, "Receive item");
 
         ShouldTrade(talk.Host, certificate, item, hours: ThirtyDays);
     }
@@ -254,7 +200,7 @@ public class StoreVendorExchangeTests
     [InlineData("Defense Aurora", "3% defense increase against Magician Class", 513573473)]
     public void APathosCertificateGivesTheChosenGlove(string aurora, string option, int glove)
     {
-        var talk = new Talk(Hemes, Karus, PathosCertificate).Follow("Pathos' Glove", aurora, option, "Receive item");
+        var talk = new QuestTalk(Hemes, Karus, PathosCertificate).Follow("Pathos' Glove", aurora, option, "Receive item");
 
         ShouldTrade(talk.Host, PathosCertificate, glove, hours: ThirtyDays);
         talk.Header!.Text.Should().Be("Thank you. Enjoy your adventure");
@@ -263,7 +209,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void TheScrollOfIdentityOpensTheRenameWindow()
     {
-        var talk = new Talk(Hemes, Karus, ScrollOfIdentity).Follow("Change ID");
+        var talk = new QuestTalk(Hemes, Karus, ScrollOfIdentity).Follow("Change ID");
 
         talk.Host.Received(1).OpenRenamePanel();
     }
@@ -271,7 +217,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void WithoutTheScrollHemesExplainsWhereToBuyIt()
     {
-        var talk = new Talk(Hemes, Karus).Follow("Change ID");
+        var talk = new QuestTalk(Hemes, Karus).Follow("Change ID");
 
         talk.Host.DidNotReceive().OpenRenamePanel();
         talk.Header!.Text.Should().StartWith("To change your ID you need the [ID Change Scroll].");
@@ -280,7 +226,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void KellyOpensTheGenderWindowForTheItem()
     {
-        var talk = new Talk(Kelly, ElMorad, GenderChangeItem);
+        var talk = new QuestTalk(Kelly, ElMorad, GenderChangeItem);
 
         talk.Labels.Should().Equal("Gender Change");
         talk.Follow("Gender Change").Host.Received(1).OpenGenderChangePanel();
@@ -289,25 +235,25 @@ public class StoreVendorExchangeTests
     [Fact]
     public void WithoutTheItemKellyPointsAtTheStore()
     {
-        var talk = new Talk(Kelly, ElMorad).Follow("Gender Change");
+        var talk = new QuestTalk(Kelly, ElMorad).Follow("Gender Change");
 
         talk.Host.DidNotReceive().OpenGenderChangePanel();
         talk.Labels.Should().Equal(StoreHint);
     }
 
     [Fact]
-    public void TheGenderWindowIsDialogStyleFiftyTwo()
+    public void TheGenderWindowIsDialogStyleFiftyThree()
     {
         var packet = LibreKO.Game.Protocol.Writers.NpcDialogPacketWriter.GenderChangePanel(Kelly, "31525_21");
         packet.ResetOffset();
         packet.ReadInt();
-        packet.ReadByte().Should().Be(52);
+        packet.ReadByte().Should().Be(53);
     }
 
     [Fact]
     public void KaishanOpensTheTransferForTheCertificate()
     {
-        var talk = new Talk("18004_21_76.quest", "event_699", Kaishan, Karus, NationTransferItem);
+        var talk = new QuestTalk("18004_21_76.quest", "event_699", Kaishan, Karus, NationTransferItem);
 
         talk.Labels.Should().Equal("Move out", "Reconsider");
         talk.Follow("Move out").Host.Received(1).OpenNationTransferPanel();
@@ -316,7 +262,7 @@ public class StoreVendorExchangeTests
     [Fact]
     public void WithoutTheCertificateKaishanPointsAtTheStore()
     {
-        var talk = new Talk("18004_21_76.quest", "event_699", Kaishan, Karus);
+        var talk = new QuestTalk("18004_21_76.quest", "event_699", Kaishan, Karus);
 
         talk.Labels.Should().Equal(StoreHint);
         talk.Host.DidNotReceive().OpenNationTransferPanel();

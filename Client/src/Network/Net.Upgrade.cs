@@ -62,6 +62,9 @@ public partial class Net
             case PetTransformSub:
                 HandlePetTransform(p);
                 break;
+            case ItemCombineSub:
+                HandleItemCombineReply(p);
+                break;
             default:
                 NpcWindowEvent?.Invoke(GameOpcodes.GS_ITEM_UPGRADE);
                 break;

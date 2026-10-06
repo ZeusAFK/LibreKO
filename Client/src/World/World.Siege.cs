@@ -1,207 +1,168 @@
 ﻿using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
 
 public partial class World
 {
+    private const int SiegeLayerIndex = 75;
+    private const int SiegeGuardWidth = 360;
+    private const float SiegeSpeechHeight = 64f;
+    private const int SiegeTableInset = 16;
+    private const string CastleGuardTitle = "Castle Guard";
+    private const string GuardGreeting = "I'm the guard of Delos Castle Arendil !!";
+    private const string GuardQuestion = "What is it that you want?";
+    private const string ChallengerLabel = "Challenger";
+    private const string ScheduleLabel = "Castle Siege War Schedule";
+    private const string AssaultLabel = "Assault";
+    private const string WalkAwayLabel = "Walk away";
+
     private CanvasLayer _siegeLayer = null!;
-    private HudWindow _siegePanel = null!;
-    private Label _siegeOwnerLbl = null!, _siegeScheduleLbl = null!, _siegeStatusLbl = null!,
-        _siegeMasterLbl = null!, _siegeHint = null!;
-    private bool _siegeShown;
-
-    private SiegeCastleOwner _siegeOwner;
-    private SiegeSchedule _siegeSchedule;
-    private SiegeMasterInfo _siegeMaster;
-    private SiegeStatus _siegeStatus;
-    private bool _haveOwner, _haveSchedule, _haveMaster, _haveStatus;
-
-    private static readonly string[] SiegeDayNames =
-        { "—", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+    private HudWindow _siegeGuardPanel = null!;
+    private bool _siegeGuardShown;
 
     private void SiegeInit()
     {
-        BuildSiegePanel();
-        Net.I.SiegeCastleFlagEvent += OnSiegeCastleFlag;
+        BuildSiegeWindows();
+
+        Net.I.SiegeGuardEvent += OpenSiegeGuard;
         Net.I.SiegeScheduleEvent += OnSiegeSchedule;
-        Net.I.SiegeMasterEvent += OnSiegeMaster;
-        Net.I.SiegeStatusEvent += OnSiegeStatus;
+        Net.I.SiegeApplyEvent += OnSiegeApply;
+        Net.I.SiegeChallengersEvent += OnSiegeChallengers;
+        Net.I.SiegeDefendersEvent += OnSiegeDefenders;
+        Net.I.SiegeOfficeEvent += OpenSiegeOffice;
+        Net.I.SiegeCollectedEvent += OnSiegeCollected;
+        Net.I.SiegeTaxRatesEvent += OnSiegeTaxRates;
+        Net.I.SiegeRateChangedEvent += OnSiegeRateChanged;
     }
 
     private void SiegeDispose()
     {
-        Net.I.SiegeCastleFlagEvent -= OnSiegeCastleFlag;
+        Net.I.SiegeGuardEvent -= OpenSiegeGuard;
         Net.I.SiegeScheduleEvent -= OnSiegeSchedule;
-        Net.I.SiegeMasterEvent -= OnSiegeMaster;
-        Net.I.SiegeStatusEvent -= OnSiegeStatus;
+        Net.I.SiegeApplyEvent -= OnSiegeApply;
+        Net.I.SiegeChallengersEvent -= OnSiegeChallengers;
+        Net.I.SiegeDefendersEvent -= OnSiegeDefenders;
+        Net.I.SiegeOfficeEvent -= OpenSiegeOffice;
+        Net.I.SiegeCollectedEvent -= OnSiegeCollected;
+        Net.I.SiegeTaxRatesEvent -= OnSiegeTaxRates;
+        Net.I.SiegeRateChangedEvent -= OnSiegeRateChanged;
     }
 
-    private void BuildSiegePanel()
+    private void BuildSiegeWindows()
     {
-        _siegeLayer = new CanvasLayer { Layer = 74 };
+        _siegeLayer = new CanvasLayer { Layer = SiegeLayerIndex };
         AddChild(_siegeLayer);
-
-        _siegePanel = new HudWindow("siege", "Castle Siege War") { Visible = false };
-        _siegePanel.Closed += CloseSiege;
-        _siegeLayer.AddChild(_siegePanel);
-
-        var r = _siegePanel.Body;
-        r.AddThemeConstantOverride("separation", 8);
-        r.CustomMinimumSize = new Vector2(320, 0);
-
-        r.AddChild(UiTheme.SectionTitle("Castle Owner"));
-        _siegeOwnerLbl = HudStyle.Label(13);
-        _siegeOwnerLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        r.AddChild(_siegeOwnerLbl);
-
-        r.AddChild(new HSeparator());
-
-        r.AddChild(UiTheme.SectionTitle("War Schedule"));
-        _siegeScheduleLbl = HudStyle.Label(13);
-        _siegeScheduleLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        r.AddChild(_siegeScheduleLbl);
-
-        r.AddChild(new HSeparator());
-
-        r.AddChild(UiTheme.SectionTitle("Castellan Clan"));
-        _siegeMasterLbl = HudStyle.Label(13);
-        _siegeMasterLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        r.AddChild(_siegeMasterLbl);
-
-        r.AddChild(new HSeparator());
-
-        r.AddChild(UiTheme.SectionTitle("War Status"));
-        _siegeStatusLbl = HudStyle.Label(13);
-        _siegeStatusLbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        r.AddChild(_siegeStatusLbl);
-
-        r.AddChild(new HSeparator());
-
-        var footer = new HBoxContainer();
-        footer.AddThemeConstantOverride("separation", 8);
-        _siegeHint = HudStyle.Label(12);
-        _siegeHint.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        footer.AddChild(_siegeHint);
-        var refresh = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
-        refresh.AddThemeFontSizeOverride("font_size", 12);
-        refresh.Pressed += RequestSiegeData;
-        footer.AddChild(refresh);
-        r.AddChild(footer);
-
-        RenderSiegeBoard();
+        BuildSiegeGuard();
+        BuildSiegeSchedule();
+        BuildSiegeChallengers();
+        BuildSiegeDefenders();
+        BuildSiegeOffice();
+        BuildSiegeTaxList();
+        BuildSiegeTaxRate();
     }
 
-    private void ToggleSiege()
+    private static string SiegeTitle => KingText(SiegeWarfare.CastleWarText, "Castle Siege War");
+
+    private void SiegeMessage(int textId, params object[] args)
     {
-        if (_siegeShown) CloseSiege();
-        else OpenSiege();
+        if (textId != 0) Notice.Show(this, KingFill(textId, "", args), SiegeTitle);
     }
 
-    private void OpenSiege()
+    private void BuildSiegeGuard()
     {
-        _siegePanel.Visible = true;
-        _siegeShown = true;
-        RequestSiegeData();
+        _siegeGuardPanel = ServiceWindow(_siegeLayer, "siegeguard", CastleGuardTitle, SiegeGuardWidth, CloseSiegeGuard);
+        var body = _siegeGuardPanel.Body;
+        body.AddChild(NpcSpeech(SiegeSpeechHeight, out var greeting, out var question));
+        SetSpeech(greeting, GuardGreeting);
+        SetSpeech(question, GuardQuestion);
+
+        var options = new VBoxContainer();
+        options.AddThemeConstantOverride("separation", 5);
+        body.AddChild(options);
+        options.AddChild(NpcOption(ChallengerLabel, AskSiegeChallengers));
+        options.AddChild(NpcOption(ScheduleLabel, () => Net.I.SendSiegeSchedule()));
+        options.AddChild(NpcOption(AssaultLabel, () => Net.I.SendSiegeAssault()));
+        options.AddChild(NpcOption(WalkAwayLabel, CloseSiegeGuard));
     }
 
-    private void CloseSiege()
+    private void OpenSiegeGuard()
     {
-        if (!_siegeShown) return;
-        _siegeShown = false;
-        _siegePanel.Visible = false;
+        _siegeGuardPanel.Title = NpcWindowTitle(CastleGuardTitle);
+        _siegeGuardShown = true;
+        _siegeGuardPanel.Visible = true;
     }
 
-    private void RequestSiegeData()
+    private void CloseSiegeGuard()
     {
-        _siegeHint.Text = "Requesting war data…";
-        Net.I.SendSiegeCastleFlag();
-        Net.I.SendSiegeSchedule();
-        Net.I.SendSiegeMaster();
-        Net.I.SendSiegeStatus();
+        _siegeGuardShown = false;
+        _siegeGuardPanel.Visible = false;
     }
 
-    private void OnSiegeCastleFlag(SiegeCastleOwner owner)
+    private void AskSiegeChallengers()
     {
-        _siegeOwner = owner;
-        _haveOwner = true;
-        if (_siegeShown) RenderSiegeBoard();
+        CloseSiegeGuard();
+        Net.I.SendSiegeChallengers();
     }
 
-    private void OnSiegeSchedule(SiegeSchedule schedule)
+    private static Label SiegeCell(string text, float width, Color colour, bool expand = false)
     {
-        _siegeSchedule = schedule;
-        _haveSchedule = true;
-        if (_siegeShown) RenderSiegeBoard();
+        var cell = UiTheme.Text(text, 13, colour);
+        cell.VerticalAlignment = VerticalAlignment.Center;
+        cell.CustomMinimumSize = new Vector2(width, 0);
+        cell.ClipText = true;
+        if (expand) cell.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        return cell;
     }
 
-    private void OnSiegeMaster(SiegeMasterInfo master)
+    private static VBoxContainer SiegeTable(VBoxContainer body, float height, (string Title, float Width)[] columns)
     {
-        _siegeMaster = master;
-        _haveMaster = true;
-        if (_siegeShown) RenderSiegeBoard();
-    }
-
-    private void OnSiegeStatus(SiegeStatus status)
-    {
-        _siegeStatus = status;
-        _haveStatus = true;
-        if (_siegeShown) RenderSiegeBoard();
-    }
-
-    private void RenderSiegeBoard()
-    {
-        if (!_haveOwner)
-            _siegeOwnerLbl.Text = "No data yet.";
-        else if (_siegeOwner.HasOwner)
-            _siegeOwnerLbl.Text = $"Held by clan #{_siegeOwner.ClanId}  (grade {_siegeOwner.Grade}, flag {_siegeOwner.Flag})";
-        else
-            _siegeOwnerLbl.Text = "The castle is unclaimed.";
-
-        if (!_haveSchedule)
-            _siegeScheduleLbl.Text = "No data yet.";
-        else if (_siegeSchedule.Scheduled)
-            _siegeScheduleLbl.Text =
-                $"Castle {_siegeSchedule.CastleIndex}: {SiegeDayName(_siegeSchedule.WarDay)} " +
-                $"{_siegeSchedule.WarHour:00}:{_siegeSchedule.WarMinute:00}";
-        else
-            _siegeScheduleLbl.Text = "No war is currently scheduled.";
-
-        if (!_haveMaster)
-            _siegeMasterLbl.Text = "No data yet.";
-        else if (string.IsNullOrEmpty(_siegeMaster.ClanName))
-            _siegeMasterLbl.Text = "No castellan clan.";
-        else
+        var head = new HBoxContainer();
+        head.AddThemeConstantOverride("separation", 8);
+        var headPad = new MarginContainer();
+        UiTheme.Margins(headPad, SiegeTableInset, 0, SiegeTableInset, 0);
+        headPad.AddChild(head);
+        body.AddChild(headPad);
+        for (int i = 0; i < columns.Length; i++)
         {
-            string req = (_siegeMaster.RequestDay != 0 || _siegeMaster.RequestHour != 0 || _siegeMaster.RequestMinute != 0)
-                ? $"  •  requested {SiegeDayName(_siegeMaster.RequestDay)} {_siegeMaster.RequestHour:00}:{_siegeMaster.RequestMinute:00}"
-                : "";
-            _siegeMasterLbl.Text =
-                $"{_siegeMaster.ClanName}  ({SiegeNationName(_siegeMaster.Nation)}, {_siegeMaster.Members} members){req}";
+            var title = UiTheme.SectionTitle(columns[i].Title);
+            title.CustomMinimumSize = new Vector2(columns[i].Width, 0);
+            if (i == 0) title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            head.AddChild(title);
         }
 
-        if (!_haveStatus)
-            _siegeStatusLbl.Text = "No data yet.";
-        else
+        var frame = UiTheme.Section();
+        body.AddChild(frame);
+        var scroll = new ScrollContainer
         {
-            string phase = _siegeStatus.SiegeType == 0 ? "Peace — no war in progress" : $"War in progress (type {_siegeStatus.SiegeType})";
-            string clan = string.IsNullOrEmpty(_siegeStatus.ClanName)
-                ? ""
-                : $"\nDefenders: {_siegeStatus.ClanName} ({SiegeNationName(_siegeStatus.Nation)}, {_siegeStatus.Members} members)";
-            _siegeStatusLbl.Text = phase + clan;
-        }
-
-        if (_haveOwner || _haveSchedule || _haveMaster || _haveStatus)
-            _siegeHint.Text = "Press Z to close.";
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            CustomMinimumSize = new Vector2(0, height),
+        };
+        UiTheme.ThinScrollbar(scroll.GetVScrollBar());
+        frame.AddChild(scroll);
+        var rows = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        rows.AddThemeConstantOverride("separation", 3);
+        scroll.AddChild(rows);
+        return rows;
     }
 
-    private static string SiegeDayName(byte day) =>
-        day < SiegeDayNames.Length ? SiegeDayNames[day] : day.ToString();
-
-    private static string SiegeNationName(byte nation) => nation switch
+    private static void ClearSiegeRows(VBoxContainer rows)
     {
-        1 => "Karus",
-        2 => "El Morad",
-        _ => "Neutral",
-    };
+        foreach (var child in rows.GetChildren())
+        {
+            rows.RemoveChild(child);
+            child.QueueFree();
+        }
+    }
+
+    private static PanelContainer SiegeRow(params Label[] cells)
+    {
+        var panel = UiTheme.RowPanel();
+        var line = new HBoxContainer();
+        line.AddThemeConstantOverride("separation", 8);
+        panel.AddChild(line);
+        foreach (var cell in cells) line.AddChild(cell);
+        return panel;
+    }
 }

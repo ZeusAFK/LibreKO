@@ -66,7 +66,8 @@ public abstract class GameTestBase
     protected static ServiceProvider CreateProvider(
         Action<AppDbContext> seed,
         Action<IGameDataService>? configureGameData = null,
-        Action<GameServerSettings>? configureSettings = null)
+        Action<GameServerSettings>? configureSettings = null,
+        Action<IServiceCollection>? configureServices = null)
     {
         var dbRoot = new InMemoryDatabaseRoot();
         var dbName = $"GameTests_{Guid.NewGuid():N}";
@@ -135,6 +136,7 @@ public abstract class GameTestBase
         services.AddSingleton<IItemTradeService, ItemTradeService>();
         services.AddSingleton<IGlobalAnvilRateService, GlobalAnvilRateService>();
         services.AddSingleton<IChaoticGeneratorService, ChaoticGeneratorService>();
+        services.AddSingleton<IItemCombineService, ItemCombineService>();
         services.AddSingleton<IItemUpgradeService, ItemUpgradeService>();
         services.AddSingleton<IKingElectionPacketService, KingElectionPacketService>();
         services.AddSingleton<IKingGovernancePacketService, KingGovernancePacketService>();
@@ -202,6 +204,7 @@ public abstract class GameTestBase
         gameData.KingSystemTable.Returns(new Dictionary<byte, KingSystemData>());
         configureGameData?.Invoke(gameData);
         services.AddSingleton(gameData);
+        configureServices?.Invoke(services);
 
         var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();

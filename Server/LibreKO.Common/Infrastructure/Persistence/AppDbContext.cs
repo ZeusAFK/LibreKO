@@ -23,6 +23,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MailBox> MailBoxes { get; set; }
     public DbSet<Mail> Mails { get; set; }
     public DbSet<MailAttachment> MailAttachments { get; set; }
+    public DbSet<MarketPriceDay> MarketPriceDays { get; set; }
+    public DbSet<AuctionBid> AuctionBids { get; set; }
+    public DbSet<AuctionResult> AuctionResults { get; set; }
     public DbSet<KingElectionList> KingElectionList { get; set; }
     public DbSet<KingCandidacyNoticeBoard> KingCandidacyNoticeBoard { get; set; }
     public DbSet<KingBallotBox> KingBallotBox { get; set; }
@@ -33,6 +36,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LevelUpData> LevelUp { get; set; }
     public DbSet<PetLevelData> PetLevels { get; set; }
     public DbSet<PetTransformData> PetTransforms { get; set; }
+    public DbSet<SpecialAuctionLotData> SpecialAuctionLots { get; set; }
+    public DbSet<ItemCombineRecipeData> ItemCombineRecipes { get; set; }
+    public DbSet<ItemCombineMaterialData> ItemCombineMaterials { get; set; }
     public DbSet<CoefficientData> Coefficients { get; set; }
     public DbSet<StartPositionData> StartPositions { get; set; }
     public DbSet<HomeData> Homes { get; set; }

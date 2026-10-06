@@ -16,9 +16,14 @@ public class NpcData
     public const byte TypeRepairMerchant = 22;
     public const byte TypeAnvil = 24;
     public const byte TypeClanCape = 25;
+    public const byte TypeCastleManager = 27;
     public const byte TypeWarehouse = 31;
     public const byte TypeClassChange = 35;
     public const byte TypeHealer = 40;
+    public const byte TypeSiegeWarfare = 44;
+    public const byte TypeRental = 78;
+    public const byte TypeElectionOfficer = 79;
+    public const byte TypeGrandChamberlain = 80;
     public const byte TypeGate = 50;
     public const byte TypeTalk = 64;
     public const byte TypeRankerKarusFirst = 82;

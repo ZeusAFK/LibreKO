@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
@@ -39,16 +39,16 @@ public class NationPacketWriterTests
     }
 
     [Fact]
-    public void CastleScheduleCarriesDayHourMinute()
+    public void TheSiegeScheduleListsEachWarAsTypeWeekdayHourMinute()
     {
-        var packet = SiegePacketWriter.CastleSchedule(
-            SiegeSub, 2, 1, 4, new SiegePacketWriter.WarSchedule(6, 20, 30));
+        var packet = SiegePacketWriter.Schedule([new SiegePacketWriter.WarSchedule(2, 6, 20, 30)]);
         packet.ResetOffset();
 
         packet.ReadByte().Should().Be(SiegeSub);
         packet.ReadByte().Should().Be(2);
-        packet.ReadUShort().Should().Be(1);
-        packet.ReadUShort().Should().Be(4);
+        packet.ReadShort().Should().Be(1);
+        packet.ReadByte().Should().Be(1);
+        packet.ReadByte().Should().Be(2);
         packet.ReadByte().Should().Be(6);
         packet.ReadByte().Should().Be(20);
         packet.ReadByte().Should().Be(30);
@@ -56,16 +56,16 @@ public class NationPacketWriterTests
     }
 
     [Fact]
-    public void TariffChangedAlwaysReportsSuccess()
+    public void ATariffChangeCarriesTheRateAndTheZoneAsShorts()
     {
-        var packet = SiegePacketWriter.TariffChanged(SiegeSub, 4, 15, 21);
+        var packet = SiegePacketWriter.TariffChanged(4, 15, 21);
         packet.ResetOffset();
 
-        packet.ReadByte().Should().Be(SiegeSub);
         packet.ReadByte().Should().Be(4);
-        packet.ReadUShort().Should().Be(1);
-        packet.ReadUShort().Should().Be(15);
-        packet.ReadByte().Should().Be(21);
+        packet.ReadByte().Should().Be(4);
+        packet.ReadShort().Should().Be(1);
+        packet.ReadShort().Should().Be(15);
+        packet.ReadShort().Should().Be(21);
         packet.RemainingBytes.Should().Be(0);
     }
 

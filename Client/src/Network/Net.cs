@@ -330,6 +330,7 @@ public partial class Net : Node
             case GameOpcodes.GS_DURATION:          HandleDuration(p); break;
 
             case GameOpcodes.GS_MERCHANT:          HandleMerchant(p); break;
+            case GameOpcodes.GS_MARKET_PRICE:      HandleMarketPrice(p); break;
             case GameOpcodes.GS_MERCHANT_INOUT:    HandleMerchantInOut(p); break;
 
             case GameOpcodes.GS_LEVEL_CHANGE:      HandleLevelChange(p); break;
@@ -391,20 +392,12 @@ public partial class Net : Node
             case GameOpcodes.GS_EVENT_BOARD:       HandleEventBoard(p); break;
             case GameOpcodes.GS_BOUNTY:            HandleBounty(p); break;
             case GameOpcodes.GS_TOURNAMENT:        HandleTournament(p); break;
-            case GameOpcodes.GS_DISGUISE:          HandleDisguise(p); break;
             case GameOpcodes.GS_PRESET:            HandlePreset(p); break;
             case GameOpcodes.GS_MESSENGER:         HandleMessenger(p); break;
             case GameOpcodes.GS_FORCES:            HandleForces(p); break;
-            case GameOpcodes.GS_INSTANCE:          HandleInstance(p); break;
             case GameOpcodes.GS_CHATROOM:          HandleChatRoom(p); break;
-            case GameOpcodes.GS_FORTUNE:           HandleFortune(p); break;
-            case GameOpcodes.GS_ITEM_COMBINE:      HandleItemCombine(p); break;
+            case GameOpcodes.GS_NPC_EVENT:         HandleNpcEvent(p); break;
             case GameOpcodes.GS_FISHING_HALL:      HandleFishingHall(p); break;
-            case GameOpcodes.GS_MARKET_BBS:        HandleMarketBbs(p); break;
-            case GameOpcodes.GS_DUEL:              HandleDuel(p); break;
-            case GameOpcodes.GS_ITEM_EXCHANGE:     HandleItemExchange(p); break;
-            case GameOpcodes.GS_RING_UPGRADE:      HandleRingUpgrade(p); break;
-            case GameOpcodes.GS_INN:               HandleInn(p); break;
             case GameOpcodes.GS_GUARD_PET:         HandleGuardPet(p); break;
             case GameOpcodes.GS_EVENT_QUEST:       HandleEventQuest(p); break;
             case GameOpcodes.GS_GLOBAL_MAP:        HandleGlobalMap(p); break;

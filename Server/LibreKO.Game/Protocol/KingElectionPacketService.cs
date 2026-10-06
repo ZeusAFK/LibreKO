@@ -1,6 +1,7 @@
-﻿using System.Text;
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,8 +20,22 @@ public class KingElectionPacketService(
     SessionManager sessionManager,
     IServiceScopeFactory scopeFactory,
     IKingSystemRuntimeService kingSystemRuntimeService,
-    ILogger<KingElectionPacketService> logger) : IKingElectionPacketService
+    ILogger<KingElectionPacketService> logger,
+    TimeProvider? clock = null) : IKingElectionPacketService
 {
+    private const byte MinimumVoterLevel = 50;
+    private const int MinimumImpeachmentVoterLoyalty = 10_000;
+    private const int MaxPlanLength = 500;
+    private const int MaxCandidates = 10;
+    private const int ImpeachmentCost = 30_000_000;
+    private const int ImpeachmentBlackoutDays = 5;
+    private const int LastHour = 23;
+    private const int LastMinute = 59;
+
+    private TimeProvider Clock => clock ?? TimeProvider.System;
+
+    private readonly record struct Nominee(string Name, AccountNation Nation, short KnightsId, bool LeadsAClan);
+
     public async Task HandleElectionAsync(UserSession session, Packet packet)
     {
         if (packet.RemainingBytes < 1)
@@ -59,22 +74,24 @@ public class KingElectionPacketService(
         switch (imOpcode)
         {
             case KingPacketConstants.ImpeachmentRequest:
-                await HandleImpeachmentRequestAsync(session);
+                await HandleImpeachmentProposalAsync(session);
                 break;
             case KingPacketConstants.ImpeachmentRequestElect:
-                await HandleImpeachmentVoteAsync(session, packet, KingPacketConstants.ImpeachmentRequestElect);
+                await HandleSenatorVoteAsync(session, packet);
                 break;
             case KingPacketConstants.ImpeachmentList:
-                await HandleImpeachmentListAsync(session);
+                await SendImpeachmentSupportersAsync(session);
                 break;
             case KingPacketConstants.ImpeachmentElect:
-                await HandleImpeachmentVoteAsync(session, packet, KingPacketConstants.ImpeachmentElect);
+                await HandlePublicVoteAsync(session, packet);
                 break;
             case KingPacketConstants.ImpeachmentRequestUiOpen:
-                await HandleImpeachmentUiOpenAsync(session, isElectionStage: false);
+                await SendImpeachmentVoteOpenAsync(
+                    session, KingPacketConstants.ImpeachmentRequestUiOpen, KingPacketConstants.ImpeachmentTypeRequest);
                 break;
             case KingPacketConstants.ImpeachmentElectionUiOpen:
-                await HandleImpeachmentUiOpenAsync(session, isElectionStage: true);
+                await SendImpeachmentVoteOpenAsync(
+                    session, KingPacketConstants.ImpeachmentElectionUiOpen, KingPacketConstants.ImpeachmentTypeElection);
                 break;
             default:
                 logger.LogDebug("WIZ_KING IMPEACHMENT: unhandled sub-opcode {Sub}", imOpcode);
@@ -82,176 +99,219 @@ public class KingElectionPacketService(
         }
     }
 
-    private async Task HandleImpeachmentRequestAsync(UserSession session)
+    private async Task HandleImpeachmentProposalAsync(UserSession session)
     {
-
         var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
-        if (kingData == null || kingData.ImType != KingPacketConstants.ImpeachmentTypeRequest)
+        var result = ProposalResult(session, kingData);
+        if (result != KingPacketWriter.Accepted || kingData == null)
         {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, KingPacketConstants.ImpeachmentRequest, -1));
+            await SendImpeachmentResultAsync(session, KingPacketConstants.ImpeachmentRequest, result);
             return;
         }
 
+        logger.LogInformation("{Name} proposed impeaching the king of nation {Nation}; impeachment votes are not run yet",
+            session.Name, session.Nation);
+    }
+
+    private short ProposalResult(UserSession session, KingSystemData? kingData)
+    {
         if (!IsSenator(session))
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, KingPacketConstants.ImpeachmentRequest, -2));
-            return;
-        }
-
-        kingData.ImType = KingPacketConstants.ImpeachmentTypeElection;
-        await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, KingPacketConstants.ImpeachmentRequest, 1));
-
-        logger.LogInformation("{Name} requested impeachment in nation {Nation}", session.Name, session.Nation);
+            return KingPacketConstants.ProposeNotSenator;
+        if (kingData == null || string.IsNullOrWhiteSpace(kingData.KingName))
+            return KingPacketConstants.ProposeNoKing;
+        if (kingData.ImType != KingPacketConstants.ImpeachmentTypeNone)
+            return KingPacketConstants.ProposeInProgress;
+        if (ElectionIsNear(kingData))
+            return KingPacketConstants.ProposeTooCloseToElection;
+        if (session.Money < ImpeachmentCost)
+            return KingPacketConstants.ProposeNotEnoughCoins;
+        return KingPacketWriter.Accepted;
     }
 
-    private async Task HandleImpeachmentVoteAsync(UserSession session, Packet packet, byte responseSub)
+    private bool ElectionIsNear(KingSystemData kingData)
     {
+        if (kingData.Type is >= KingPacketConstants.ElectionTypeNomination and <= KingPacketConstants.ElectionTypeElection)
+            return true;
 
+        var election = ElectionDate(kingData);
+        if (election == null)
+            return false;
+
+        var now = Clock.GetLocalNow().DateTime;
+        return now >= election.Value.AddDays(-ImpeachmentBlackoutDays) && now <= election.Value;
+    }
+
+    private static DateTime? ElectionDate(KingSystemData kingData)
+    {
+        if (kingData.Year < DateTime.MinValue.Year || kingData.Year > DateTime.MaxValue.Year
+            || kingData.Month is < 1 or > 12
+            || kingData.Day < 1 || kingData.Day > DateTime.DaysInMonth(kingData.Year, kingData.Month)
+            || kingData.Hour > LastHour || kingData.Minute > LastMinute)
+            return null;
+
+        return new DateTime(kingData.Year, kingData.Month, kingData.Day, kingData.Hour, kingData.Minute, 0);
+    }
+
+    private async Task HandleSenatorVoteAsync(UserSession session, Packet packet)
+    {
         if (packet.RemainingBytes < 1)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, responseSub, -1));
             return;
-        }
-        _ = packet.ReadByte(); // vote — recorded as opaque ack for now
 
+        var vote = packet.ReadByte();
         var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
-        if (kingData == null) return;
+        var result = kingData?.ImType != KingPacketConstants.ImpeachmentTypeRequest
+            ? KingPacketConstants.SenatorVoteClosed
+            : !IsSenator(session)
+                ? KingPacketConstants.SenatorVoteNotSenator
+                : KingPacketWriter.Accepted;
 
-        var requiredPhase = responseSub == KingPacketConstants.ImpeachmentRequestElect
-            ? KingPacketConstants.ImpeachmentTypeRequest
-            : KingPacketConstants.ImpeachmentTypeElection;
+        if (result == KingPacketWriter.Accepted)
+            logger.LogInformation("Senator {Name} cast impeachment vote {Vote} in nation {Nation}", session.Name, vote, session.Nation);
 
-        if (kingData.ImType != requiredPhase)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, responseSub, -1));
-            return;
-        }
-
-        const byte MinLevelVoter = 50;
-        const int MinNpVoter = 10_000;
-        if (session.Level < MinLevelVoter || session.Loyalty < MinNpVoter)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, responseSub, -2));
-            return;
-        }
-
-        await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, responseSub, 1));
+        await SendImpeachmentResultAsync(session, KingPacketConstants.ImpeachmentRequestElect, result);
     }
 
-    private async Task HandleImpeachmentListAsync(UserSession session)
+    private async Task HandlePublicVoteAsync(UserSession session, Packet packet)
     {
+        if (packet.RemainingBytes < 1)
+            return;
 
+        var vote = packet.ReadByte();
         var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
-        if (kingData == null || kingData.ImType != KingPacketConstants.ImpeachmentTypeElection)
+        var result = kingData?.ImType != KingPacketConstants.ImpeachmentTypeElection
+            ? KingPacketConstants.PublicVoteClosed
+            : session.Level < MinimumVoterLevel || session.Loyalty < MinimumImpeachmentVoterLoyalty
+                ? KingPacketConstants.PublicVoteLevelTooLow
+                : KingPacketWriter.Accepted;
+
+        if (result == KingPacketWriter.Accepted)
+            logger.LogInformation("{Name} cast impeachment vote {Vote} in nation {Nation}", session.Name, vote, session.Nation);
+
+        await SendImpeachmentResultAsync(session, KingPacketConstants.ImpeachmentElect, result);
+    }
+
+    private async Task SendImpeachmentSupportersAsync(UserSession session)
+    {
+        var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
+        if (kingData == null || kingData.ImType == KingPacketConstants.ImpeachmentTypeNone)
         {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, KingPacketConstants.ImpeachmentList, -1));
+            await SendImpeachmentResultAsync(session, KingPacketConstants.ImpeachmentList, KingPacketConstants.SupportersClosed);
             return;
         }
 
-        await session.Client.SendPacket(KingPacketWriter.ResultWithName(
-            KingPacketConstants.Impeachment, KingPacketConstants.ImpeachmentList,
-            KingPacketWriter.Accepted, kingData.KingName ?? string.Empty));
+        var proposer = kingData.ImRequestId?.Trim();
+        IReadOnlyCollection<string> supporters = string.IsNullOrEmpty(proposer) ? [] : [proposer];
+        await session.Client.SendPacket(KingPacketWriter.ImpeachmentSupporters(supporters));
     }
+
+    private async Task SendImpeachmentVoteOpenAsync(UserSession session, byte subType, byte requiredStage)
+    {
+        var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
+        var result = kingData?.ImType == requiredStage
+            ? KingPacketWriter.Accepted
+            : KingPacketConstants.ImpeachmentVoteClosed;
+
+        await SendImpeachmentResultAsync(session, subType, result);
+    }
+
+    private static Task SendImpeachmentResultAsync(UserSession session, byte subType, short result) =>
+        session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Impeachment, subType, result));
 
     private static bool IsSenator(UserSession session)
-        => session.KnightsId > 0 && session.KnightsFame == 1;
-
-    private async Task HandleImpeachmentUiOpenAsync(UserSession session, bool isElectionStage)
-    {
-        var subType = isElectionStage
-            ? KingPacketConstants.ImpeachmentElectionUiOpen
-            : KingPacketConstants.ImpeachmentRequestUiOpen;
-
-        var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
-        var imType = kingData?.ImType ?? 0;
-
-        short result;
-        if (isElectionStage)
-        {
-            result = imType != KingPacketConstants.ImpeachmentTypeElection ? (short)-1 : (short)1;
-        }
-        else if (imType != KingPacketConstants.ImpeachmentTypeRequest)
-        {
-            result = -1;
-        }
-        else if (session.Fame != SenatorFame)
-        {
-            result = -2;
-        }
-        else
-        {
-            result = 1;
-        }
-
-        await session.Client.SendPacket(KingPacketWriter.Result(
-            KingPacketConstants.Impeachment, subType, result));
-    }
+        => session.KnightsId > 0 && session.KnightsFame == ClanRules.FameChief;
 
     private async Task SendElectionScheduleAsync(UserSession session)
     {
         var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
+        await session.Client.SendPacket(ScheduleFor(kingData));
+    }
 
-        var response = kingData == null || kingData.Type == KingPacketConstants.ElectionTypeNoTerm
-            ? KingPacketWriter.Flag(
-                KingPacketConstants.Election, KingPacketConstants.ElectionSchedule, 0)
-            : KingPacketWriter.ElectionSchedule(
-                KingPacketConstants.ElectionSchedule, KingPacketConstants.Election,
-                kingData.Month, kingData.Day, kingData.Hour, kingData.Minute);
+    private static Packet ScheduleFor(KingSystemData? kingData)
+    {
+        if (kingData == null)
+            return KingPacketWriter.NoElectionSchedule(KingPacketConstants.ScheduleNoImpeachment);
 
-        await session.Client.SendPacket(response);
+        return kingData.ImType switch
+        {
+            KingPacketConstants.ImpeachmentTypeRequest =>
+                KingPacketWriter.NoElectionSchedule(KingPacketConstants.ScheduleSenatorVote),
+            KingPacketConstants.ImpeachmentTypeElection => KingPacketWriter.ElectionSchedule(
+                KingPacketConstants.ScheduleImpeachmentVote,
+                kingData.ImMonth, kingData.ImDay, kingData.ImHour, kingData.ImMinute),
+            _ => ElectionDate(kingData) == null
+                ? KingPacketWriter.NoElectionSchedule(KingPacketConstants.ScheduleNoImpeachment)
+                : KingPacketWriter.ElectionSchedule(
+                    KingPacketConstants.ScheduleKingElection,
+                    kingData.Month, kingData.Day, kingData.Hour, kingData.Minute),
+        };
     }
 
     private async Task HandleElectionNominateAsync(UserSession session, Packet packet)
     {
-        var response = CreateElectionResponse(KingPacketConstants.ElectionNominate);
+        if (packet.RemainingBytes < 1)
+            return;
+
+        var nomineeName = packet.ReadSByteString().Trim();
+        var result = await NominateAsync(session, nomineeName);
+        await session.Client.SendPacket(
+            KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionNominate, result));
+    }
+
+    private async Task<short> NominateAsync(UserSession session, string nomineeName)
+    {
         var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
         if (kingData == null || kingData.Type != KingPacketConstants.ElectionTypeNomination)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionNominate, -2));
-            return;
-        }
+            return KingPacketConstants.NominateClosed;
 
-        if (session.KnightsId <= 0 || session.KnightsFame != 1)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionNominate, -3));
-            return;
-        }
-
-        if (packet.RemainingBytes < 2)
-            return;
-
-        var nomineeName = packet.ReadSByteString();
-        var nominee = sessionManager.GetAll().FirstOrDefault(candidate =>
-            string.Equals(candidate.Name, nomineeName, StringComparison.OrdinalIgnoreCase)
-            && candidate.Nation == session.Nation);
-
-        if (nominee == null || nominee.KnightsId <= 0 || nominee.KnightsFame != 1)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionNominate, -3));
-            return;
-        }
+        if (!IsSenator(session))
+            return KingPacketConstants.NominateNoAuthority;
 
         using var scope = scopeFactory.CreateScope();
-        var repo = scope.ServiceProvider.GetRequiredService<IKingElectionRepository>();
-        var existing = await repo.FindCandidateAsync((byte)session.Nation, KingPacketConstants.ElectionListCandidate, nomineeName);
+        var found = await FindNomineeAsync(scope.ServiceProvider, nomineeName);
+        if (found is not { } nominee)
+            return KingPacketConstants.NominateUnknownId;
+        if (!nominee.LeadsAClan)
+            return KingPacketConstants.NominateFailed;
+        if (nominee.Nation != session.Nation)
+            return KingPacketConstants.NominateOtherNation;
 
-        if (existing != null)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionNominate, -4));
-            return;
-        }
+        var nation = (byte)session.Nation;
+        var repo = scope.ServiceProvider.GetRequiredService<IKingElectionRepository>();
+        if (await repo.FindCandidateAsync(nation, KingPacketConstants.ElectionListCandidate, nominee.Name) != null)
+            return KingPacketConstants.NominateAlreadyNominated;
+
+        var candidates = await repo.GetCandidatesAsync(nation, KingPacketConstants.ElectionListCandidate);
+        if (candidates.Count >= MaxCandidates)
+            return KingPacketConstants.NominateListFull;
 
         await repo.AddCandidateAsync(new KingElectionList
         {
-            Nation = (byte)session.Nation,
+            Nation = nation,
             Type = KingPacketConstants.ElectionListCandidate,
             Name = nominee.Name,
             Knights = nominee.KnightsId,
             Money = 0
         });
         logger.LogInformation("{Name} nominated {NomineeName} for king election in nation {Nation}", session.Name, nominee.Name, session.Nation);
+        return KingPacketWriter.Accepted;
+    }
 
-        await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionNominate, 1));
+    private async Task<Nominee?> FindNomineeAsync(IServiceProvider services, string name)
+    {
+        if (sessionManager.GetByName(name) is { } online)
+            return new Nominee(
+                online.Name, online.Nation, online.KnightsId,
+                online.KnightsId > 0 && online.KnightsFame == ClanRules.FameChief);
+
+        var clan = sessionManager.Knights.GetAll()
+            .FirstOrDefault(entry => string.Equals(entry.Chief?.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (clan != null)
+            return new Nominee(clan.Chief.Trim(), (AccountNation)clan.Nation, clan.Id, LeadsAClan: true);
+
+        var character = await services.GetRequiredService<ICharacterRepository>().GetByName(name);
+        return character == null
+            ? null
+            : new Nominee(character.Name, AccountNation.None, character.KnightsId, LeadsAClan: false);
     }
 
     private async Task HandleElectionNoticeBoardAsync(UserSession session, Packet packet)
@@ -263,7 +323,7 @@ public class KingElectionPacketService(
         switch (boardOpcode)
         {
             case KingPacketConstants.CandidacyBoardWrite:
-                await HandleCandidateBoardWriteAsync(session, packet);
+                await HandleCandidatePlanWriteAsync(session, packet);
                 break;
 
             case KingPacketConstants.CandidacyBoardRead:
@@ -272,47 +332,41 @@ public class KingElectionPacketService(
         }
     }
 
-    private async Task HandleCandidateBoardWriteAsync(UserSession session, Packet packet)
+    private async Task HandleCandidatePlanWriteAsync(UserSession session, Packet packet)
     {
-        var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
-        if (kingData == null
-            || kingData.Type < KingPacketConstants.ElectionTypeNomination
-            || kingData.Type > KingPacketConstants.ElectionTypeElection)
-        {
-            await session.Client.SendPacket(BoardWriteResult(BoardWriteWrongStage));
-            return;
-        }
-
-        if (packet.RemainingBytes < 2)
+        if (packet.RemainingBytes < sizeof(ushort))
             return;
 
-        var noticeText = packet.ReadSByteString();
-        var noticeBytes = Encoding.UTF8.GetBytes(noticeText);
-        if (noticeBytes.Length > MaxNoticeLength)
-        {
-            await session.Client.SendPacket(BoardWriteResult(BoardWriteNoticeTooLong));
+        var length = packet.ReadUShort();
+        if (packet.RemainingBytes < length)
             return;
-        }
+
+        var plan = packet.ReadBytes(length);
+        var result = await WritePlanAsync(session, plan);
+        await session.Client.SendPacket(KingPacketWriter.PlanWriteResult(result));
+    }
+
+    private async Task<short> WritePlanAsync(UserSession session, byte[] plan)
+    {
+        if (!IsElectionRunning(kingSystemRuntimeService.GetKingData(session.Nation)))
+            return KingPacketConstants.PlanWriteClosed;
+
+        if (plan.Length > MaxPlanLength)
+            return KingPacketConstants.PlanWriteTooLong;
 
         using var scope = scopeFactory.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<IKingElectionRepository>();
-        var isCandidate = await repo.IsCandidateAsync((byte)session.Nation, KingPacketConstants.ElectionListCandidate, session.Name);
-
-        if (!isCandidate)
-        {
-            await session.Client.SendPacket(BoardWriteResult(BoardWriteNotACandidate));
-            return;
-        }
+        if (!await repo.IsCandidateAsync((byte)session.Nation, KingPacketConstants.ElectionListCandidate, session.Name))
+            return KingPacketConstants.PlanWriteNotANominee;
 
         await repo.UpsertNoticeBoardAsync(new KingCandidacyNoticeBoard
         {
             UserId = session.Name,
             Nation = (byte)session.Nation,
-            NoticeLen = (short)noticeBytes.Length,
-            Notice = noticeBytes
+            NoticeLen = (short)plan.Length,
+            Notice = plan
         });
-
-        await session.Client.SendPacket(BoardWriteResult(KingPacketWriter.Accepted));
+        return KingPacketWriter.Accepted;
     }
 
     private async Task HandleCandidateBoardReadAsync(UserSession session, Packet packet)
@@ -321,42 +375,63 @@ public class KingElectionPacketService(
             return;
 
         var readSubOpcode = packet.ReadByte();
-        var response = KingPacketWriter.NoticeBoardEntry(
-            KingPacketConstants.CandidacyBoardRead, KingPacketConstants.Election,
-            KingPacketConstants.ElectionNoticeBoard, readSubOpcode);
+        switch (readSubOpcode)
+        {
+            case KingPacketConstants.BoardReadCandidateList:
+                await SendCandidateListAsync(session);
+                break;
+
+            case KingPacketConstants.BoardReadPlan when packet.RemainingBytes >= 1:
+                await SendCandidatePlanAsync(session, packet.ReadSByteString().Trim());
+                break;
+        }
+    }
+
+    private async Task SendCandidatePlanAsync(UserSession session, string candidateName)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IKingElectionRepository>();
+        var nation = (byte)session.Nation;
+
+        if (!await repo.IsCandidateAsync(nation, KingPacketConstants.ElectionListCandidate, candidateName))
+        {
+            await session.Client.SendPacket(KingPacketWriter.PlanRefused(KingPacketConstants.PlanReadNotANominee));
+            return;
+        }
+
+        var entry = await repo.GetNoticeBoardEntryAsync(nation, candidateName);
+        await session.Client.SendPacket(entry == null || entry.Notice.Length == 0
+            ? KingPacketWriter.PlanRefused(KingPacketConstants.PlanReadEmpty)
+            : KingPacketWriter.Plan(entry.Notice));
+    }
+
+    private async Task SendCandidateListAsync(UserSession session)
+    {
+        if (!IsElectionRunning(kingSystemRuntimeService.GetKingData(session.Nation)))
+        {
+            await session.Client.SendPacket(KingPacketWriter.PollResult(
+                KingPacketConstants.PollCandidateList, KingPacketConstants.PollClosed));
+            return;
+        }
 
         using var scope = scopeFactory.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<IKingElectionRepository>();
+        var candidates = await repo.GetCandidatesAsync((byte)session.Nation, KingPacketConstants.ElectionListCandidate);
 
-        if (readSubOpcode == BoardReadCandidateList)
-        {
-            var candidates = await repo.GetCandidatesAsync((byte)session.Nation, KingPacketConstants.ElectionListCandidate);
+        var listed = candidates
+            .OrderBy(candidate => candidate.Id)
+            .Take(MaxCandidates)
+            .Select((candidate, index) => new KingPacketWriter.PollCandidate(
+                (byte)(index + 1),
+                candidate.Name,
+                sessionManager.Knights.GetClan(candidate.Knights)?.Name ?? string.Empty))
+            .ToList();
 
-            response = KingPacketWriter.CandidateList(
-                KingPacketConstants.CandidacyBoardRead, KingPacketConstants.Election,
-                KingPacketConstants.ElectionNoticeBoard, readSubOpcode,
-                candidates.Select(candidate => candidate.Name).ToList());
-        }
-        else if (readSubOpcode == BoardReadNotice)
-        {
-            if (packet.RemainingBytes < 2)
-                return;
-
-            var candidateName = packet.ReadSByteString();
-            var notice = await repo.GetNoticeBoardEntryAsync((byte)session.Nation, candidateName);
-
-            response = notice != null && notice.NoticeLen > 0
-                ? KingPacketWriter.CandidateNotice(
-                    KingPacketConstants.CandidacyBoardRead, KingPacketConstants.Election,
-                    KingPacketConstants.ElectionNoticeBoard, readSubOpcode,
-                    notice.NoticeLen, notice.Notice)
-                : KingPacketWriter.CandidateNotice(
-                    KingPacketConstants.CandidacyBoardRead, KingPacketConstants.Election,
-                    KingPacketConstants.ElectionNoticeBoard, readSubOpcode, 0, []);
-        }
-
-        await session.Client.SendPacket(response);
+        await session.Client.SendPacket(KingPacketWriter.PollCandidates(listed));
     }
+
+    private static bool IsElectionRunning(KingSystemData? kingData) =>
+        kingData is { Type: >= KingPacketConstants.ElectionTypeNomination and <= KingPacketConstants.ElectionTypeElection };
 
     private async Task HandleElectionPollAsync(UserSession session, Packet packet)
     {
@@ -364,126 +439,73 @@ public class KingElectionPacketService(
             return;
 
         var pollOpcode = packet.ReadByte();
+        switch (pollOpcode)
+        {
+            case KingPacketConstants.PollCandidateList:
+                await SendCandidateListAsync(session);
+                break;
+
+            case KingPacketConstants.PollCastVote when packet.RemainingBytes >= 1:
+                var result = await CastVoteAsync(session, packet.ReadSByteString().Trim());
+                await session.Client.SendPacket(KingPacketWriter.PollResult(KingPacketConstants.PollCastVote, result));
+                break;
+
+            default:
+                logger.LogDebug("WIZ_KING POLL: unhandled sub-opcode {Sub}", pollOpcode);
+                break;
+        }
+    }
+
+    private async Task<short> CastVoteAsync(UserSession session, string candidateName)
+    {
+        var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
+        if (kingData == null || kingData.Type != KingPacketConstants.ElectionTypeElection)
+            return KingPacketConstants.PollClosed;
+
+        if (session.Level < MinimumVoterLevel)
+            return KingPacketConstants.PollLevelTooLow;
 
         using var scope = scopeFactory.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<IKingElectionRepository>();
+        var nation = (byte)session.Nation;
 
-        if (pollOpcode == PollCandidateList)
-        {
-            var candidates = await repo.GetCandidatesAsync((byte)session.Nation, KingPacketConstants.ElectionListCandidate);
+        if (await repo.FindCandidateAsync(nation, KingPacketConstants.ElectionListCandidate, candidateName) == null)
+            return KingPacketConstants.PollNotANominee;
 
-            var listed = candidates
-                .Select(listedCandidate => new KingPacketWriter.PollCandidate(
-                    listedCandidate.Name,
-                    sessionManager.Knights.GetClan(listedCandidate.Knights)?.Name ?? string.Empty))
-                .ToList();
-
-            await session.Client.SendPacket(KingPacketWriter.PollCandidates(
-                KingPacketConstants.Election, KingPacketConstants.ElectionPoll, pollOpcode, listed));
-            return;
-        }
-
-        if (pollOpcode != PollCastVote)
-        {
-            await session.Client.SendPacket(KingPacketWriter.PollEntry(
-                KingPacketConstants.Election, KingPacketConstants.ElectionPoll, pollOpcode));
-            return;
-        }
-
-        var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
-        if (kingData == null || kingData.Type != KingPacketConstants.ElectionTypeElection)
-        {
-            await session.Client.SendPacket(PollResult(pollOpcode, PollWrongStage));
-            return;
-        }
-
-        if (session.Level < MinimumVoterLevel)
-        {
-            await session.Client.SendPacket(PollResult(pollOpcode, PollLevelTooLow));
-            return;
-        }
-
-        if (packet.RemainingBytes < 2)
-            return;
-
-        var candidateName = packet.ReadSByteString();
-        var candidate = await repo.FindCandidateAsync((byte)session.Nation, KingPacketConstants.ElectionListCandidate, candidateName);
-
-        if (candidate == null)
-        {
-            await session.Client.SendPacket(PollResult(pollOpcode, PollUnknownCandidate));
-            return;
-        }
-
-        var alreadyVoted = await repo.HasVotedAsync((byte)session.Nation, session.Name);
-
-        if (alreadyVoted)
-        {
-            await session.Client.SendPacket(PollResult(pollOpcode, PollAlreadyVoted));
-            return;
-        }
+        if (await repo.HasVotedAsync(nation, session.Name))
+            return KingPacketConstants.PollAlreadyVoted;
 
         await repo.AddVoteAsync(new KingBallotBox
         {
             AccountId = session.AccountId.ToString(),
             CharId = session.Name,
-            Nation = (byte)session.Nation,
+            Nation = nation,
             CandidacyId = candidateName
         });
         logger.LogInformation("{Name} voted for {CandidateName} in nation {Nation}", session.Name, candidateName, session.Nation);
-
-        await session.Client.SendPacket(PollResult(pollOpcode, KingPacketWriter.Accepted));
+        return KingPacketWriter.Accepted;
     }
 
     private async Task HandleElectionResignAsync(UserSession session)
     {
-        var response = CreateElectionResponse(KingPacketConstants.ElectionResign);
+        var result = await ResignAsync(session);
+        await session.Client.SendPacket(
+            KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionResign, result));
+    }
+
+    private async Task<short> ResignAsync(UserSession session)
+    {
         var kingData = kingSystemRuntimeService.GetKingData(session.Nation);
         if (kingData == null || kingData.Type != KingPacketConstants.ElectionTypeNomination)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionResign, -1));
-            return;
-        }
+            return KingPacketConstants.ResignClosed;
 
         using var scope = scopeFactory.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<IKingElectionRepository>();
         var candidateEntry = await repo.FindCandidateAsync((byte)session.Nation, KingPacketConstants.ElectionListCandidate, session.Name);
-
         if (candidateEntry == null)
-        {
-            await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionResign, -2));
-            return;
-        }
+            return KingPacketConstants.ResignNotANominee;
 
         await repo.RemoveCandidateAsync(candidateEntry);
-
-        await session.Client.SendPacket(KingPacketWriter.Result(KingPacketConstants.Election, KingPacketConstants.ElectionResign, 1));
+        return KingPacketWriter.Accepted;
     }
-
-    private const byte SenatorFame = 2;
-    private const byte BoardReadCandidateList = 1;
-    private const byte BoardReadNotice = 2;
-    private const byte PollCandidateList = 1;
-    private const byte PollCastVote = 2;
-    private const byte MinimumVoterLevel = 20;
-    private const int MaxNoticeLength = 480;
-    private const short BoardWriteWrongStage = -1;
-    private const short BoardWriteNoticeTooLong = -2;
-    private const short BoardWriteNotACandidate = -3;
-    private const short PollWrongStage = -1;
-    private const short PollUnknownCandidate = -2;
-    private const short PollAlreadyVoted = -3;
-    private const short PollLevelTooLow = -4;
-
-    private static Packet CreateElectionResponse(byte electionOpcode) =>
-        KingPacketWriter.Election(electionOpcode, KingPacketConstants.Election);
-
-    private static Packet BoardWriteResult(short result) =>
-        KingPacketWriter.NoticeBoardResult(
-            KingPacketConstants.CandidacyBoardWrite, KingPacketConstants.Election,
-            KingPacketConstants.ElectionNoticeBoard, result);
-
-    private static Packet PollResult(byte pollOpcode, short result) =>
-        KingPacketWriter.PollResult(
-            KingPacketConstants.Election, KingPacketConstants.ElectionPoll, pollOpcode, result);
 }

@@ -1,0 +1,26 @@
+Bind Npc 31402 Zone 21
+
+On topics
+    Topic "Chatting" goto chatting
+    Topic "Accessories combination ask" goto asking
+    Topic "Assemble" goto start
+    Topic "Assemble View" goto recipes
+
+On chatting
+    Say "Hi, they call me jewel. Why am I here you ask? It's a bit of a long story ... but I will tell you, <selfname>. I have been taught to craft magical jewelry as a part of my family's business, but greed has corrupted my family and I ran away. I travelled around the world before ending up here in Moradon. Now I use my jeweling skills here to combine old accessories to help people. My skills have yet to be perfected, but sometimes I get lucky!"
+    Topic "Previous Page" goto greeting
+
+On asking
+    Say "Combining three old accessories into a new accessory is the greatest skill a jewel crafter can possess. These old accessories now can have a new life and make their owner feel reborn in the process! Oh how wonderful! Bring me 3 identical Old Accesory, Nest Scrap (5), Scrap of Steel (50) and Soft Stone (1), and I will make you a new accessory. Be aware that my skills are not perfected yet, so I cannot guarantee results. I have a higher probability to fail than succeed. Haha!"
+    Topic "Previous Page" goto greeting
+
+On start
+    Say "Are you going to start production? Finally! Let's do it~"
+    Topic "Yes, I ask" goto combine
+    Topic "No, I will come back later" goto close
+
+On combine
+    Open item combine panel
+
+On recipes
+    Open combine recipe book

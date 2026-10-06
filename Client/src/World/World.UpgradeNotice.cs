@@ -72,6 +72,4 @@ public partial class World
         ShowUpgradeNoticeBanner(line, ok ? UpgradeNoticeGold : UpgradeNoticeFail);
         CombatLogAdd(line, CombatLogKind.Status);
     }
-
-    public void WatchUpgrade(int itemId) => Net.I.SendWatchUpgrade(itemId);
 }

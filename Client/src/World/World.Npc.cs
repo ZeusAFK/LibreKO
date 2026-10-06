@@ -236,6 +236,34 @@ public partial class World
             return;
         }
 
+        if (dlg.Flag == NpcDialog.FortunePanelFlag)
+        {
+            CloseNpcDialog();
+            OpenFortune();
+            return;
+        }
+
+        if (dlg.Flag == NpcDialog.SpecialAuctionPanelFlag)
+        {
+            CloseNpcDialog();
+            OpenSpecialAuction();
+            return;
+        }
+
+        if (dlg.Flag == NpcDialog.ItemCombinePanelFlag)
+        {
+            CloseNpcDialog();
+            OpenItemCombine(dlg.NpcId);
+            return;
+        }
+
+        if (dlg.Flag == NpcDialog.CombineRecipeBookFlag)
+        {
+            CloseNpcDialog();
+            OpenCombineRecipeBook();
+            return;
+        }
+
         if (dlg.Flag == NpcDialog.FamiliarShopFlag)
         {
             OpenVendor(FamiliarShopGroup);

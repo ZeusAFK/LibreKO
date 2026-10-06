@@ -21,6 +21,7 @@ public class GameServerSettings
     public string MapDirectory { get; set; } = "Map";
     public string QuestsDirectory { get; set; } = "Quests";
     public string? QuestManifest { get; set; }
+    public int SpecialAuctionGroup { get; set; } = 1;
     public int BotSimControlPort { get; set; } = DefaultBotSimControlPort;
     public WelcomeSettings Welcome { get; set; } = new();
     public PlayerSettings Player { get; set; } = new();

@@ -99,6 +99,100 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("Accounts", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.AuctionBid", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CharacterName")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("varchar(21)");
+
+                    b.Property<int>("Checks")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long>("Coins")
+                        .HasColumnType("bigint");
+
+                    b.Property<short>("Count")
+                        .HasColumnType("smallint");
+
+                    b.Property<byte>("Day")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PlacedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Serial")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Slot")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId", "ClosedAt");
+
+                    b.HasIndex("Channel", "Serial", "Slot");
+
+                    b.ToTable("AuctionBids", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.AuctionResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Price")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Serial")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SettledAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<byte>("Slot")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Channel", "Serial");
+
+                    b.ToTable("AuctionResults", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Character", b =>
                 {
                     b.Property<int>("Id")
@@ -914,6 +1008,50 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("Homes", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemCombineMaterialData", b =>
+                {
+                    b.Property<int>("RecipeId")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Position")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RecipeId", "Position");
+
+                    b.ToTable("ItemCombineMaterials", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemCombineRecipeData", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<short>("DisplayRow")
+                        .HasColumnType("smallint");
+
+                    b.Property<int>("NpcId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResultCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResultItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SuccessRate")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ItemCombineRecipes", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemData", b =>
                 {
                     b.Property<int>("Num")
@@ -1441,6 +1579,10 @@ namespace LibreKO.Common.Migrations
 
                     b.Property<short>("ImYear")
                         .HasColumnType("smallint");
+
+                    b.Property<string>("IntroMessage")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("KingName")
                         .IsRequired()
@@ -2721,6 +2863,9 @@ namespace LibreKO.Common.Migrations
                     b.Property<int>("DungeonCharge")
                         .HasColumnType("int");
 
+                    b.Property<int>("DungeonEntranceFee")
+                        .HasColumnType("int");
+
                     b.Property<byte>("GuerrillaWarDay")
                         .HasColumnType("tinyint unsigned");
 
@@ -2793,6 +2938,34 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("CastleIndex");
 
                     b.ToTable("SiegeWarfare", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.SpecialAuctionLotData", b =>
+                {
+                    b.Property<int>("Row")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Slot")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Secret")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<long>("StartPrice")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Step")
+                        .HasColumnType("int");
+
+                    b.HasKey("Row", "Slot");
+
+                    b.ToTable("SpecialAuctionLots", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.StartPositionData", b =>
@@ -3396,6 +3569,39 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("LetterId");
 
                     b.ToTable("MailBoxes", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.MarketPriceDay", b =>
+                {
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("LastTradeAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long>("MaxPrice")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("MinPrice")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Quantity")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Total")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Trades")
+                        .HasColumnType("int");
+
+                    b.HasKey("ItemId", "Day");
+
+                    b.HasIndex("Day");
+
+                    b.ToTable("MarketPriceDays", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Patch", b =>

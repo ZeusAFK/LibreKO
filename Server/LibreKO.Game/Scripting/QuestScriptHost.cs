@@ -314,6 +314,10 @@ public sealed class QuestScriptHost(
     public void OpenFamiliarPanel() => context.Dialog.SendFamiliarPanel();
     public void OpenFamiliarShop() => context.Dialog.SendFamiliarShop();
     public void OpenGenderChangePanel() => context.Dialog.SendGenderChangePanel();
+    public void OpenFortunePanel() => context.Dialog.SendFortunePanel();
+    public void OpenSpecialAuctionPanel() => context.Dialog.SendSpecialAuctionPanel();
+    public void OpenItemCombinePanel() => context.Dialog.SendItemCombinePanel();
+    public void OpenCombineRecipeBook() => context.Dialog.SendCombineRecipeBook();
     public void OpenNationTransferPanel() => context.RequestNationTransfer();
 
     public void Unsupported(string what)

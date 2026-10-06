@@ -1,0 +1,31 @@
+Bind Npc 31774 Zone 21
+
+On greeting
+    Say "Which info do you wish to learn?"
+    Topic "[Akara Altar]" goto welcome
+
+On welcome
+    Say "Welcome! I'm a goddess \"Akara.\" Do you wish to earn my accessories? Check out \"Akara's Altar\" now. Do you wish to proceed?"
+    Topic "[Akara Altar] How to Use" goto how_to_use
+    Topic "Yes, count me in!" goto altar
+
+On how_to_use
+    Say "Welcome! I'm a goddess \"Akara.\" Do you wish to earn my accessories? Check out \"Akara's Altar\" now. Do you wish to proceed?"
+    Topic "[Akara Altar] Basic Info" goto basic_info
+    Topic "Bidding and Claim" goto bidding
+    Topic "[Akara Altar] Time" goto time
+
+On altar
+    Open special auction panel
+
+On basic_info
+    Say "Akara's Altar is an auction house where you can earn various of items and anyone can join. If you would like to join, I can tell you how and guide you though it. Once you place a bid, you cannot withdraw so please be careful when you place a bid. *Auction House is operated in each channel separately.*"
+    Topic "Confirm" goto close
+
+On bidding
+    Say "In order to join Akara's Altar, you need to purchase Mithril Check from Chief NPC and place a bid. Also, you can check the available bid prices for each items, so try placing bid according to available bid prices. You can refresh bid price using Refresh button. *Note* You cannot use Mithril Check earned from Merchant Union Fund for Akara's Altar"
+    Topic "Confirm" goto close
+
+On time
+    Say "Akara's Altar Bidding is available 23:05 ~ 22:55 next day. You cannot check items during 23:00 ~ 23:05 (Preparation time). Please be aware of this and place your bid."
+    Topic "Confirm" goto close

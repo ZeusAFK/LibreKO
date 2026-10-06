@@ -23,6 +23,7 @@ public class MerchantListingService(
     IGameDataService gameDataService,
     IUserNotificationService userNotificationService,
     IMerchantLifecycleService merchantLifecycleService,
+    IMarketPriceService marketPriceService,
     ILogger<MerchantListingService> logger) : IMerchantListingService
 {
     public async Task AddItemAsync(UserSession session, Packet packet)
@@ -176,7 +177,8 @@ public class MerchantListingService(
             return;
         }
 
-        var totalCost = (long)merchantItem.Price * count;
+        var unitPrice = merchantItem.Price;
+        var totalCost = (long)unitPrice * count;
         if (!IsSanePrice(totalCost) || totalCost > session.Money || !CanReceive(merchant, totalCost))
         {
             await RefuseBuyAsync(session);
@@ -235,6 +237,7 @@ public class MerchantListingService(
         var soldNotify = MerchantPacketWriter.ItemSold(
             MerchantSubOpcode.ItemPurchased, itemId, session.Name);
         await merchant.Client.SendPacket(soldNotify);
+        await marketPriceService.RecordAsync(session, merchant, itemId, unitPrice, count);
 
         if (merchant.Trade.MerchantItems.All(entry => entry == null || entry.IsEmpty))
             await merchantLifecycleService.CloseAsync(merchant, MerchantInOut.StallClosed);

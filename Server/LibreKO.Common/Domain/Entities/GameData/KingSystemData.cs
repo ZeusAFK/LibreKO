@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LibreKO.Common.Domain.Entities.GameData;
@@ -35,6 +35,7 @@ public class KingSystemData
     public string KingName { get; set; } = string.Empty;
     public string Notice { get; set; } = string.Empty;
     public string ImRequestId { get; set; } = string.Empty;
+    public string IntroMessage { get; set; } = string.Empty;
 
     internal class EntityConfiguration : IEntityTypeConfiguration<KingSystemData>
     {

@@ -1,0 +1,26 @@
+Bind Npc 19073 Zone 21
+
+On topics
+    Topic "Chatting" goto chatting
+    Topic "Asking for manufacturing" goto asking
+    Topic "Manufacturing" goto start
+    Topic "Check Manufacturing recipe" goto recipes
+
+On chatting
+    Say "Hi! Eh? You don't know me? I'm Shojin, one of the heroes of the Adonisian Continent's past. Hahaha~you recognize me, now? That's okay. I can put up with that rudeness. Why am I here? Um~I would like to revive the Hero Weapon, so I have been learning blacksmith skills from Heppa. But that's not everything. I want to combine blacksmith skill with the alchemy that I learned from an alchemist in my heroic days. I could develop my alchemy further thanks to the experience. Why? Do you want anything born out of alchemy? Alright, I will do that. However, the rule of equivalent exchange requires you to get some materials."
+    Topic "Previous Page" goto greeting
+
+On asking
+    Say "Um~Production literally means combining many items. It's a type of alchemy! Well, I have repeatedly failed as my EXP is not high enough. But the weapons and armors made out of it have incredible abilities.  Are you interested? I can try if you want, but as I told you just before, there's a possibility of failure. Just get the materials."
+    Topic "Previous Page" goto greeting
+
+On start
+    Say "Are you going to start production? Finally! Let's do it~"
+    Topic "Yes, please show me your power" goto combine
+    Topic "No, I will come back later" goto close
+
+On combine
+    Open item combine panel
+
+On recipes
+    Open combine recipe book

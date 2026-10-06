@@ -94,6 +94,10 @@ public interface IQuestHost
     void OpenFamiliarPanel();
     void OpenFamiliarShop();
     void OpenGenderChangePanel();
+    void OpenFortunePanel();
+    void OpenSpecialAuctionPanel();
+    void OpenItemCombinePanel();
+    void OpenCombineRecipeBook();
     void OpenNationTransferPanel();
 
     void Unsupported(string what);

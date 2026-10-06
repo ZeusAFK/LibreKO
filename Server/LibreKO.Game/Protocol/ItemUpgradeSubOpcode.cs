@@ -1,4 +1,4 @@
-namespace LibreKO.Game.Protocol;
+﻿namespace LibreKO.Game.Protocol;
 
 public enum ItemUpgradeSubOpcode : byte
 {
@@ -11,4 +11,5 @@ public enum ItemUpgradeSubOpcode : byte
     UpgradeRebirth = 7,
     ItemSeal = 8,
     PetTransform = 10,
+    Combine = 11,
 }

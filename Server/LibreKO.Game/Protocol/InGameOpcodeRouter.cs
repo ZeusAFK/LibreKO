@@ -33,6 +33,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         IMerchantPacketCoordinator merchant,
         IMiscPacketCoordinator misc,
         IGenderChangePacketCoordinator genderChange,
+        IMarketPriceService marketPrice,
         INationTransferService nationTransfer,
         INationSystemsPacketCoordinator nation,
         IQuestPacketCoordinator quest,
@@ -48,23 +49,15 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         IShoppingMallPacketCoordinator mall,
         IAchievementPacketCoordinator achievement,
         IMailPacketCoordinator mail,
-        IAuctionPacketCoordinator auction,
+        ISpecialAuctionService specialAuction,
         IEventBoardPacketCoordinator eventBoard,
         IBountyPacketCoordinator bounty,
         ITournamentPacketCoordinator tournament,
-        IDisguisePacketCoordinator disguise,
         IMessengerPacketCoordinator messenger,
         IForcesPacketCoordinator forces,
-        IInstancePacketCoordinator instance,
         IChatRoomPacketCoordinator chatRoom,
         INationTaxPacketCoordinator nationTax,
-        IFortunePacketCoordinator fortune,
-        IItemCombinePacketCoordinator itemCombine,
         IFishingHallPacketCoordinator fishingHall,
-        IDuelPacketCoordinator duel,
-        IItemExchangePacketCoordinator itemExchange,
-        IRingUpgradePacketCoordinator ringUpgrade,
-        IInnPacketCoordinator inn,
         IGuardPetPacketCoordinator guardPet,
         IEventQuestPacketCoordinator eventQuest,
         IGlobalMapPacketCoordinator globalMap,
@@ -103,24 +96,16 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_OBJECT_EVENT] = world.HandleObjectEventAsync,
             [GameOpcodes.GS_ACHIEVEMENT] = achievement.HandleAsync,
             [GameOpcodes.GS_MAIL] = mail.HandleAsync,
-            [GameOpcodes.GS_AUCTION] = auction.HandleAsync,
+            [GameOpcodes.GS_AUCTION] = specialAuction.HandleAsync,
             [GameOpcodes.GS_EVENT_BOARD] = eventBoard.HandleAsync,
             [GameOpcodes.GS_BOUNTY] = bounty.HandleAsync,
             [GameOpcodes.GS_TOURNAMENT] = tournament.HandleAsync,
-            [GameOpcodes.GS_DISGUISE] = disguise.HandleAsync,
             [GameOpcodes.GS_PRESET] = characterDev.HandlePresetAsync,
             [GameOpcodes.GS_MESSENGER] = messenger.HandleAsync,
             [GameOpcodes.GS_FORCES] = forces.HandleAsync,
-            [GameOpcodes.GS_INSTANCE] = instance.HandleAsync,
             [GameOpcodes.GS_CHATROOM] = chatRoom.HandleAsync,
             [GameOpcodes.GS_NATION_TAX] = nationTax.HandleAsync,
-            [GameOpcodes.GS_FORTUNE] = fortune.HandleAsync,
-            [GameOpcodes.GS_ITEM_COMBINE] = itemCombine.HandleAsync,
             [GameOpcodes.GS_FISHING_HALL] = fishingHall.HandleAsync,
-            [GameOpcodes.GS_DUEL] = duel.HandleAsync,
-            [GameOpcodes.GS_ITEM_EXCHANGE] = itemExchange.HandleAsync,
-            [GameOpcodes.GS_RING_UPGRADE] = ringUpgrade.HandleAsync,
-            [GameOpcodes.GS_INN] = inn.HandleAsync,
             [GameOpcodes.GS_GUARD_PET] = guardPet.HandleAsync,
             [GameOpcodes.GS_EVENT_QUEST] = eventQuest.HandleAsync,
             [GameOpcodes.GS_GLOBAL_MAP] = globalMap.HandleAsync,
@@ -203,12 +188,11 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_PREMIUM] = (c, _) => misc.HandlePremiumAsync(c),
             [GameOpcodes.GS_AUTHORITY_CHANGE] = misc.HandleAuthorityChangeAsync,
             [GameOpcodes.GS_CORPSE] = misc.HandleCorpseAsync,
-            [GameOpcodes.GS_MARKET_BBS] = misc.HandleMarketBbsAsync,
             [GameOpcodes.GS_NAME_CHANGE] = misc.HandleNameChangeAsync,
             [GameOpcodes.GS_GENDER_CHANGE] = genderChange.HandleAsync,
+            [GameOpcodes.GS_MARKET_PRICE] = marketPrice.HandleAsync,
             [GameOpcodes.GS_NATION_TRANSFER] = nationTransfer.HandleAsync,
             [GameOpcodes.GS_SANTA] = (c, _) => misc.HandleSantaAsync(c),
-            [GameOpcodes.GS_RENTAL] = misc.HandleRentalAsync,
             [GameOpcodes.GS_MINING] = mining.HandleAsync,
 
             [GameOpcodes.GS_SPEEDHACK_CHECK] = world.HandleSpeedHackCheckAsync,
@@ -220,9 +204,6 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_CAPE] = knightsCape.HandleAsync,
 
             // No-ops (acknowledged but no server action)
-            // Item-upgrade observation: store the item the client wants to watch.
-            // Real upgrade-result notices are pushed via WIZ_LOGOSSHOUT later.
-            [GameOpcodes.GS_UPGRADE_NOTICE] = (c, p) => WatchUpgradeAsync(sessionManager, c, p),
             // Awakening 0xCB is purely S2C visual; drop any C2S silently.
             [GameOpcodes.GS_AWAKEN] = NoOp,
             // because there's no daily-quest DB table yet. Same posture here — accept
@@ -246,13 +227,4 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         => _handlers.GetValueOrDefault(opcode);
 
     private static Task NoOp(IClient client, Packet packet) => Task.CompletedTask;
-
-    private static Task WatchUpgradeAsync(SessionManager sessionManager, IClient client, Packet packet)
-    {
-        var session = sessionManager.GetByClientId(client.Id);
-        if (session == null) return Task.CompletedTask;
-        if (packet.RemainingBytes >= 4)
-            session.WatchedUpgradeItem = packet.ReadInt();
-        return Task.CompletedTask;
-    }
 }

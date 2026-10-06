@@ -1,294 +1,286 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
 
 public partial class World
 {
+    private const int KingLayerIndex = 75;
+    private const string KingElectionTitle = "King Election";
+    private const string NationTreasuryTitle = "National Treasury";
+    private const string CancelLabel = "Cancel";
+    private const float NpcOptionHeight = 34f;
+    private const int NpcOptionFontSize = 13;
+    private const float FooterButtonWidth = 110f;
+    private const float FooterButtonHeight = 30f;
+
     private CanvasLayer _kingLayer = null!;
-    private HudWindow _kingPanel = null!;
-    private Label _kingScheduleLbl = null!, _kingStatus = null!, _kingInfoLbl = null!;
-    private LineEdit _kingNomineeEdit = null!, _kingTariffEdit = null!;
-    private VBoxContainer _kingCandidateList = null!;
-    private Button _kingNominateBtn = null!, _kingResignBtn = null!, _kingCollectBtn = null!, _kingSetTariffBtn = null!;
-    private ConfirmationDialog _kingNoticeView = null!;
-    private bool _kingShown;
-    private bool _kingInPoll;
+    private bool _kingBoxOpen;
 
     private void KingInit()
     {
-        BuildKingPanel();
+        BuildKingWindows();
+
+        Net.I.KingElectionOpenEvent += OpenKingElection;
         Net.I.KingScheduleEvent += OnKingSchedule;
-        Net.I.KingNominateEvent += OnKingNominate;
-        Net.I.KingPollListEvent += OnKingPollList;
-        Net.I.KingVoteEvent += OnKingVote;
-        Net.I.KingResignEvent += OnKingResign;
-        Net.I.KingBoardEvent += OnKingBoard;
-        Net.I.KingNpcEvent += OnKingNpc;
-        Net.I.KingNationIntroEvent += OnKingNationIntro;
-        Net.I.KingGovernanceEvent += OnKingGovernance;
+        Net.I.KingResultEvent += OnKingResult;
+        Net.I.KingCandidatesEvent += OnKingCandidates;
+        Net.I.KingPlanEvent += OnKingPlan;
+        Net.I.KingShoutEvent += OnKingShout;
+        Net.I.KingSenatorsEvent += OnKingSenators;
+        Net.I.KingImpeachmentProposedEvent += OnKingImpeachmentProposed;
+        Net.I.KingTreasuryEvent += OnKingTreasury;
+        Net.I.KingFundEvent += OnKingFund;
+        Net.I.KingTariffReadEvent += OnKingTariffRead;
+        Net.I.KingTariffSetEvent += OnKingTariffSet;
+        Net.I.KingReserveEvent += OnKingReserve;
+        Net.I.KingIntroEvent += OpenNationIntro;
+        Net.I.KingIntroSavedEvent += OnNationIntroSaved;
+        Net.I.KingTreasuryNoticeEvent += OnKingTreasuryNotice;
     }
 
     private void KingDispose()
     {
+        Net.I.KingElectionOpenEvent -= OpenKingElection;
         Net.I.KingScheduleEvent -= OnKingSchedule;
-        Net.I.KingNominateEvent -= OnKingNominate;
-        Net.I.KingPollListEvent -= OnKingPollList;
-        Net.I.KingVoteEvent -= OnKingVote;
-        Net.I.KingResignEvent -= OnKingResign;
-        Net.I.KingBoardEvent -= OnKingBoard;
-        Net.I.KingNpcEvent -= OnKingNpc;
-        Net.I.KingNationIntroEvent -= OnKingNationIntro;
-        Net.I.KingGovernanceEvent -= OnKingGovernance;
+        Net.I.KingResultEvent -= OnKingResult;
+        Net.I.KingCandidatesEvent -= OnKingCandidates;
+        Net.I.KingPlanEvent -= OnKingPlan;
+        Net.I.KingShoutEvent -= OnKingShout;
+        Net.I.KingSenatorsEvent -= OnKingSenators;
+        Net.I.KingImpeachmentProposedEvent -= OnKingImpeachmentProposed;
+        Net.I.KingTreasuryEvent -= OnKingTreasury;
+        Net.I.KingFundEvent -= OnKingFund;
+        Net.I.KingTariffReadEvent -= OnKingTariffRead;
+        Net.I.KingTariffSetEvent -= OnKingTariffSet;
+        Net.I.KingReserveEvent -= OnKingReserve;
+        Net.I.KingIntroEvent -= OpenNationIntro;
+        Net.I.KingIntroSavedEvent -= OnNationIntroSaved;
+        Net.I.KingTreasuryNoticeEvent -= OnKingTreasuryNotice;
     }
 
-    private void BuildKingPanel()
+    private void BuildKingWindows()
     {
-        _kingLayer = new CanvasLayer { Layer = 75 };
+        _kingLayer = new CanvasLayer { Layer = KingLayerIndex };
         AddChild(_kingLayer);
-
-        _kingPanel = new HudWindow("king", "Nation King") { Visible = false };
-        _kingPanel.Closed += CloseKing;
-        _kingLayer.AddChild(_kingPanel);
-        var r = _kingPanel.Body;
-        r.AddThemeConstantOverride("separation", 8);
-
-        r.AddChild(UiTheme.SectionTitle("Election"));
-        _kingScheduleLbl = HudStyle.Label(13);
-        _kingScheduleLbl.Text = "Checking election schedule...";
-        r.AddChild(_kingScheduleLbl);
-
-        var nomRow = new HBoxContainer(); nomRow.AddThemeConstantOverride("separation", 6);
-        _kingNomineeEdit = new LineEdit { PlaceholderText = "clan-chief name to nominate", CustomMinimumSize = new Vector2(200, 0) };
-        nomRow.AddChild(_kingNomineeEdit);
-        _kingNominateBtn = new Button { Text = "Nominate", FocusMode = Control.FocusModeEnum.None };
-        _kingNominateBtn.Pressed += OnNominatePressed;
-        nomRow.AddChild(_kingNominateBtn);
-        _kingResignBtn = new Button { Text = "Resign", FocusMode = Control.FocusModeEnum.None };
-        _kingResignBtn.Pressed += () => Net.I.SendKingResign();
-        nomRow.AddChild(_kingResignBtn);
-        r.AddChild(nomRow);
-
-        var candRow = new HBoxContainer(); candRow.AddThemeConstantOverride("separation", 6);
-        var candTitle = UiTheme.SectionTitle("Candidates");
-        candTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        candRow.AddChild(candTitle);
-        var refreshBtn = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
-        refreshBtn.Pressed += RefreshKing;
-        candRow.AddChild(refreshBtn);
-        r.AddChild(candRow);
-
-        _kingCandidateList = KingScroll(r, 170);
-
-        r.AddChild(new HSeparator());
-
-        r.AddChild(UiTheme.SectionTitle("Nation & King"));
-        _kingInfoLbl = HudStyle.Label(13);
-        _kingInfoLbl.Text = "King: (unknown)";
-        r.AddChild(_kingInfoLbl);
-
-        var taxRow = new HBoxContainer(); taxRow.AddThemeConstantOverride("separation", 6);
-        _kingCollectBtn = new Button { Text = "Collect Tax", FocusMode = Control.FocusModeEnum.None };
-        _kingCollectBtn.Pressed += () => Net.I.SendKingCollectTax();
-        taxRow.AddChild(_kingCollectBtn);
-        var tariffLbl = HudStyle.Label(13); tariffLbl.Text = "Tariff %:"; taxRow.AddChild(tariffLbl);
-        _kingTariffEdit = new LineEdit { PlaceholderText = "0-10", CustomMinimumSize = new Vector2(60, 0) };
-        taxRow.AddChild(_kingTariffEdit);
-        _kingSetTariffBtn = new Button { Text = "Set", FocusMode = Control.FocusModeEnum.None };
-        _kingSetTariffBtn.Pressed += OnSetTariffPressed;
-        taxRow.AddChild(_kingSetTariffBtn);
-        r.AddChild(taxRow);
-
-        _kingStatus = HudStyle.Label(13);
-        r.AddChild(_kingStatus);
-
-        _kingNoticeView = new ConfirmationDialog { Title = "Campaign notice" };
-        _kingNoticeView.GetCancelButton().Visible = false;
-        _kingLayer.AddChild(_kingNoticeView);
+        BuildKingElection();
+        BuildKingNominate();
+        BuildKingPlanEditor();
+        BuildKingVote();
+        BuildNationTax();
+        BuildNationIntro();
+        BuildNationTaxRate();
+        BuildKingBallot();
     }
 
-    private static VBoxContainer KingScroll(VBoxContainer parent, int height)
+    private static string KingText(int id, string fallback = "") => ItemData.Text(id, fallback);
+
+    private static string KingFill(int id, string fallback, params object[] args) =>
+        TextTemplate.Fill(ItemData.Text(id, fallback), args);
+
+    private string NpcWindowTitle(string fallback) =>
+        _npcTalkId >= 0 && _vendorNpcName.Length > 0 ? _vendorNpcName : fallback;
+
+    private static HudWindow ServiceWindow(CanvasLayer layer, string id, string title, int width, Action closed)
     {
-        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(360, height), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
-        parent.AddChild(scroll);
-        var list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        list.AddThemeConstantOverride("separation", 3);
-        scroll.AddChild(list);
-        return list;
+        var window = new HudWindow(id, title, bodyMinWidth: width) { Visible = false };
+        window.Closed += closed;
+        layer.AddChild(window);
+        window.Body.AddThemeConstantOverride("separation", 8);
+        return window;
     }
 
-    private void ToggleKing()
+    private static PanelContainer NpcSpeech(float minHeight, out Label upper, out Label lower)
     {
-        if (_kingShown) { CloseKing(); return; }
-        _kingPanel.Visible = true;
-        _kingShown = true;
-        SetKingStatus("", false);
-        RefreshKing();
+        var box = UiTheme.Section();
+        box.CustomMinimumSize = new Vector2(0, minHeight);
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 6);
+        box.AddChild(column);
+        upper = SpeechLabel(UiTheme.TextHi);
+        column.AddChild(upper);
+        lower = SpeechLabel(UiTheme.TextLo);
+        column.AddChild(lower);
+        return box;
     }
 
-    private void CloseKing()
+    private static Label SpeechLabel(Color colour)
     {
-        if (!_kingShown) return;
-        _kingShown = false;
-        _kingPanel.Visible = false;
+        var label = UiTheme.Text("", 13, colour);
+        label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        label.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        label.CustomMinimumSize = new Vector2(1, 0);
+        return label;
     }
 
-    private void RefreshKing()
+    private static void SetSpeech(Label label, string text)
     {
-        Net.I.SendKingSchedule();
-        Net.I.SendKingPollList();
-        Net.I.SendKingNationIntro();
-        Net.I.SendKingNpc();
-        Net.I.SendKingTariffRead();
+        label.Text = text;
+        label.Visible = text.Length > 0;
     }
 
-    private void OnNominatePressed()
+    private static Button NpcOption(string text, Action pressed)
     {
-        string n = _kingNomineeEdit.Text.Trim();
-        if (n.Length < 2) { SetKingStatus("Enter the clan-chief's name to nominate.", true); return; }
-        Net.I.SendKingNominate(n);
-    }
-
-    private void OnSetTariffPressed()
-    {
-        if (int.TryParse(_kingTariffEdit.Text.Trim(), out int t) && t >= 0 && t <= 10)
-            Net.I.SendKingSetTariff(t);
-        else
-            SetKingStatus("Tariff must be 0-10.", true);
-    }
-
-    private void OnKingSchedule(bool active, int month, int day, int hour, int minute)
-    {
-        _kingScheduleLbl.Text = active
-            ? $"Next election: {month:00}/{day:00}  {hour:00}:{minute:00}"
-            : "No election is scheduled (no royal term active).";
-    }
-
-    private void OnKingPollList(List<Net.KingCandidate> candidates)
-    {
-        _kingInPoll = candidates.Count > 0;
-        foreach (var c in _kingCandidateList.GetChildren()) c.QueueFree();
-        if (candidates.Count == 0)
+        var button = new Button
         {
-            var e = HudStyle.Label(13); e.Text = "No candidates have been nominated yet.";
-            _kingCandidateList.AddChild(e);
+            Text = text,
+            FocusMode = Control.FocusModeEnum.None,
+            Alignment = HorizontalAlignment.Left,
+            CustomMinimumSize = new Vector2(0, NpcOptionHeight),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
+        button.AddThemeFontSizeOverride("font_size", NpcOptionFontSize);
+        button.Pressed += pressed;
+        return button;
+    }
+
+    private static HBoxContainer FooterButtons(params Button[] buttons)
+    {
+        var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        row.AddThemeConstantOverride("separation", 10);
+        foreach (var button in buttons)
+        {
+            button.CustomMinimumSize = new Vector2(FooterButtonWidth, FooterButtonHeight);
+            row.AddChild(button);
+        }
+        return row;
+    }
+
+    private void KingMessage(string text, string title = KingElectionTitle)
+    {
+        if (text.Length > 0) Notice.Show(this, text, title);
+    }
+
+    private void KingResultMessage(KingReply reply, short result, string title = KingElectionTitle)
+    {
+        int id = KingElection.ResultText(reply, result);
+        if (id == KingElection.UnknownResult) KingMessage(KingElection.UnknownResultLine(result), title);
+        else if (id != 0) KingMessage(KingText(id), title);
+    }
+
+    private void KingConfirm(KingBox box, string text, string subject = "", bool fromPush = false)
+    {
+        _kingBoxOpen = true;
+        if (KingElection.TwoChoices(box))
+        {
+            OpenKingBallot(box, text, fromPush);
             return;
         }
-        foreach (var cand in candidates)
+        string title = box == KingBox.Fund ? NationTreasuryTitle : KingElectionTitle;
+        Notice.Confirm(this, text, KingText(KingElection.OkText, "OK"), CancelLabel,
+            () => { _kingBoxOpen = false; KingBoxAccepted(box, subject); },
+            () => { _kingBoxOpen = false; KingBoxCancelled(box); },
+            title);
+    }
+
+    private void KingBoxAccepted(KingBox box, string subject)
+    {
+        switch (box)
         {
-            string name = cand.Name;
-            var row = new PanelContainer();
-            row.AddThemeStyleboxOverride("panel", UiTheme.Row());
-            var hb = new HBoxContainer(); hb.AddThemeConstantOverride("separation", 8);
-            row.AddChild(hb);
-            var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-            info.AddThemeConstantOverride("separation", -2);
-            info.AddChild(UiTheme.Text(cand.Name, 13, UiTheme.TextHi));
-            info.AddChild(UiTheme.Text(cand.Clan.Length > 0 ? $"Clan: {cand.Clan}" : "No clan", 11, UiTheme.TextLo));
-            hb.AddChild(info);
-            var noticeBtn = new Button { Text = "Notice", FocusMode = Control.FocusModeEnum.None };
-            noticeBtn.Pressed += () => Net.I.SendKingBoardRead(name);
-            hb.AddChild(noticeBtn);
-            var voteBtn = new Button { Text = "Vote", FocusMode = Control.FocusModeEnum.None };
-            voteBtn.Pressed += () => Net.I.SendKingVote(name);
-            hb.AddChild(voteBtn);
-            _kingCandidateList.AddChild(row);
+            case KingBox.Nominate:
+                Net.I.SendKingNominate(subject);
+                break;
+            case KingBox.TurnDown:
+                _kingBusy = true;
+                Net.I.SendKingWithdraw();
+                break;
+            case KingBox.Fund:
+                _nationTaxBusy = true;
+                Net.I.SendKingFund();
+                break;
+            case KingBox.Propose:
+                Net.I.SendKingImpeachmentPropose();
+                break;
         }
     }
 
-    private void OnKingNominate(int result)
+    private void KingBoxCancelled(KingBox box)
     {
-        SetKingStatus(result switch
+        switch (box)
         {
-            1  => "Nomination accepted.",
-            -2 => "Nominations aren't open right now.",
-            -3 => "You and the nominee must both be clan chiefs.",
-            -4 => "That candidate is already nominated.",
-            _  => "Nomination failed.",
-        }, result != 1);
-        if (result == 1) { _kingNomineeEdit.Text = ""; Net.I.SendKingPollList(); }
-    }
-
-    private void OnKingVote(int result)
-    {
-        SetKingStatus(result switch
-        {
-            1  => "Your vote has been counted!",
-            -1 => "Voting isn't open (not in the election phase).",
-            -2 => "That candidate is no longer running.",
-            -3 => "You've already voted.",
-            -4 => "You must be level 20 to vote.",
-            _  => "Your vote couldn't be cast.",
-        }, result != 1);
-    }
-
-    private void OnKingResign(int result)
-    {
-        SetKingStatus(result switch
-        {
-            1  => "You withdrew your candidacy.",
-            -1 => "You can only resign during the nomination phase.",
-            -2 => "You aren't a candidate.",
-            _  => "Couldn't resign.",
-        }, result != 1);
-        if (result == 1) Net.I.SendKingPollList();
-    }
-
-    private void OnKingBoard(List<string> names, string notice)
-    {
-        if (notice == "__write_ok__") { SetKingStatus("Campaign notice posted.", false); return; }
-        if (notice == "__write_fail__") { SetKingStatus("Couldn't post your campaign notice.", true); return; }
-
-        if (notice.Length > 0)
-        {
-            _kingNoticeView.DialogText = notice;
-            _kingNoticeView.PopupCentered();
-        }
-        else if (names.Count == 0)
-        {
-            SetKingStatus("This candidate hasn't posted a campaign notice.", false);
+            case KingBox.Nominate:
+                ShowKingNominate();
+                break;
+            case KingBox.TurnDown:
+                ShowKingElectionPage(ElectionPage.Election);
+                break;
+            case KingBox.Fund:
+                ShowNationTax();
+                break;
+            case KingBox.Propose:
+            case KingBox.SenatorBallot:
+                ShowKingElectionPage(ElectionPage.Impeachment, ElectionPage.Proposal);
+                break;
+            case KingBox.PublicBallot:
+                ShowKingElectionPage(ElectionPage.Impeachment);
+                break;
         }
     }
 
-    private void OnKingNpc(string kingName)
+    private void OnKingResult(KingReply reply, short result)
     {
-        if (kingName.Length > 0)
-            CombatNotice($"[Kingdom] The reigning king is {kingName}.");
-    }
-
-    private void OnKingNationIntro(string kingName, int treasury, int tariff)
-    {
-        _kingInfoLbl.Text = kingName.Length > 0
-            ? $"King: {kingName}\nNational treasury: {treasury:n0} gold    Territory tariff: {tariff}%"
-            : $"King: (no king — interregnum)\nNational treasury: {treasury:n0} gold    Territory tariff: {tariff}%";
-        _kingTariffEdit.Text = tariff.ToString();
-    }
-
-    private void OnKingGovernance(int main, int op, bool ok, int value)
-    {
-        if (main == 3)
+        switch (reply)
         {
-            switch (op)
-            {
-                case 2:
-                    SetKingStatus(ok ? $"Collected {value:n0} gold in territory tax." : "No tax to collect (king only).", !ok);
+            case KingReply.Nominate:
+            case KingReply.Withdraw:
+            case KingReply.Propose:
+            case KingReply.SenatorVote:
+            case KingReply.PublicVote:
+                _kingBusy = false;
+                KingResultMessage(reply, result);
+                break;
+            case KingReply.PlanPosted:
+                _kingPlanBusy = false;
+                if (result == KingElection.Success) CloseKingPlanEditor();
+                KingResultMessage(reply, result);
+                break;
+            case KingReply.Board:
+                _kingBusy = false;
+                if (result == KingElection.Success) ShowKingElectionPage(ElectionPage.Board);
+                else KingResultMessage(reply, result);
+                break;
+            case KingReply.Vote:
+                _kingVoteBusy = false;
+                CloseKingVote();
+                KingResultMessage(reply, result);
+                break;
+            case KingReply.SenatorBallot:
+            case KingReply.PublicBallot:
+                _kingBusy = false;
+                if (result != KingElection.Success)
+                {
+                    KingResultMessage(reply, result);
                     break;
-                case 3:
-                    if (ok) { _kingTariffEdit.Text = value.ToString(); }
-                    break;
-                case 4:
-                    SetKingStatus(ok ? $"Territory tariff set to {value}%." : "Couldn't set the tariff (king only, 0-10%).", !ok);
-                    break;
-            }
-            return;
+                }
+                HideKingElection();
+                bool senators = reply == KingReply.SenatorBallot;
+                KingConfirm(senators ? KingBox.SenatorBallot : KingBox.PublicBallot,
+                    KingText(senators ? KingElection.SenatorBallotText : KingElection.PublicBallotText));
+                break;
+            case KingReply.KingItem:
+                _nationTaxBusy = false;
+                CloseNationTax();
+                KingResultMessage(reply, result, NationTreasuryTitle);
+                break;
+            case KingReply.ChannelOnly:
+                _nationTaxBusy = false;
+                KingResultMessage(reply, result, NationTreasuryTitle);
+                break;
         }
-        SetKingStatus(ok ? "Royal command issued." : "That royal command failed (king only / not enough treasury).", !ok);
     }
 
-    private void SetKingStatus(string text, bool warn)
+    private void OnKingImpeachmentProposed()
     {
-        _kingStatus.Text = text;
-        _kingStatus.AddThemeColorOverride("font_color", warn ? new Color("ff6a6a") : Colors.White);
+        HideKingElection();
+        KingConfirm(KingBox.SenatorBallot, KingText(KingElection.SenatorBallotText), fromPush: true);
+    }
+
+    private void OnKingTreasuryNotice(KingTreasuryNotice notice)
+    {
+        if (!notice.Shown) return;
+        CombatNotice(KingFill(NationTreasury.TreasuryUsedText, "", notice.Used));
+        CombatNotice(KingFill(NationTreasury.TreasuryLeftText, "", notice.Left));
     }
 }

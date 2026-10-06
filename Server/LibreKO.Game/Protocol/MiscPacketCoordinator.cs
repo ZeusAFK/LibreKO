@@ -18,11 +18,9 @@ public interface IMiscPacketCoordinator
     Task SendPremiumInfoAsync(UserSession session);
     Task HandleAuthorityChangeAsync(IClient client, Packet packet);
     Task HandleCorpseAsync(IClient client, Packet packet);
-    Task HandleMarketBbsAsync(IClient client, Packet packet);
     Task HandleNameChangeAsync(IClient client, Packet packet);
     Task HandleSantaAsync(IClient client);
     Task SetSantaOrAngelStateAsync(byte state);
-    Task HandleRentalAsync(IClient client, Packet packet);
     Task HandleConcurrentUserAsync(IClient client, Packet packet);
     Task HandleZoneConcurrentAsync(IClient client, Packet packet);
     Task HandleLogosShoutAsync(IClient client, Packet packet);
@@ -35,16 +33,11 @@ public class MiscPacketCoordinator(
     IWorldPacketCoordinator worldPacketCoordinator,
     IKnightsRuntimeService knightsRuntimeService,
     IMagicItemUsageService magicItemUsageService,
+    ISpecialAuctionService specialAuctionService,
     ILogger<MiscPacketCoordinator> logger) : IMiscPacketCoordinator
 {
-    private const byte RentalNpc = 3;
     private const short NoSummonedFamiliars = 0;
     private const byte CommandAuthority = 0x01;
-
-    private const byte MarketBbsRegister = 0x01;
-    private const byte MarketBbsDelete = 0x02;
-    private const byte MarketBbsReport = 0x03;
-    private const byte MarketBbsOpen = 0x04;
 
     private const byte NameChangeRequest = 0;
     private const byte ClanNameChangeRequest = 16;
@@ -53,17 +46,12 @@ public class MiscPacketCoordinator(
     private const byte NameChangeSuccess = 3;
     private const byte ClanNameNotClan = 4;
     private const byte NameChangeInClan = 4;
+    private const byte NameChangeAuctionOpen = 11;
     private const byte ClanNameSuccess = 16;
     private const int ScrollOfIdentity = 800032000;
     private const int ClanNameScroll = 800086000;
 
     private byte santaOrAngelState;
-
-    // In-memory trade-ad board (GS_MARKET_BBS). Persisted for the server lifetime; ads expire after a week.
-    private static readonly List<MarketAd> marketAds = new();
-    private static int nextMarketAdId = 1;
-    private const int MarketBbsMaxAds = 200;
-    private const int MarketBbsAdDays = 7;
 
     public async Task HandlePremiumAsync(IClient client)
     {
@@ -115,115 +103,6 @@ public class MiscPacketCoordinator(
         await session.Client.SendPacket(result);
     }
 
-    public async Task HandleMarketBbsAsync(IClient client, Packet packet)
-    {
-        var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || packet.RemainingBytes < 1)
-            return;
-
-        var subOpcode = packet.ReadByte();
-        switch (subOpcode)
-        {
-            case MarketBbsOpen:
-                await SendMarketBbsListAsync(session, packet);
-                break;
-
-            case MarketBbsRegister:
-                await HandleMarketBbsRegisterAsync(session, packet);
-                break;
-
-            case MarketBbsDelete:
-                await HandleMarketBbsDeleteAsync(session, packet);
-                break;
-
-            case MarketBbsReport:
-            {
-                // Acknowledge a report (no moderation backend yet).
-                var result = MarketBbsPacketWriter.Result(
-                    MarketBbsReport, MarketBbsPacketWriter.Succeeded);
-                await session.Client.SendPacket(result);
-                break;
-            }
-        }
-    }
-
-    private async Task SendMarketBbsListAsync(UserSession session, Packet packet)
-    {
-        byte filter = packet.RemainingBytes >= 1 ? packet.ReadByte() : (byte)0;
-        PruneMarketAds();
-        var ads = marketAds.Where(a => filter == 0 || a.BuyType == filter).ToList();
-
-        var result = MarketBbsPacketWriter.AdvertList(
-            MarketBbsOpen,
-            ads.Select(ad => new MarketBbsPacketWriter.Advert(
-                ad.AdId, ad.SellerId, ad.Seller, ad.ItemId, ad.Price,
-                (ushort)ad.Count, ad.BuyType, MarketBbsAdDays)).ToList());
-        await session.Client.SendPacket(result);
-    }
-
-    private async Task HandleMarketBbsRegisterAsync(UserSession session, Packet packet)
-    {
-        PruneMarketAds();
-        if (packet.RemainingBytes < 11 || marketAds.Count >= MarketBbsMaxAds)
-        {
-            await session.Client.SendPacket(MarketBbsPacketWriter.Registered(
-                MarketBbsRegister, MarketBbsPacketWriter.Failed, 0));
-            return;
-        }
-
-        int itemId = packet.ReadInt();
-        int price = packet.ReadInt();
-        int count = packet.ReadUShort();
-        byte buyType = packet.RemainingBytes >= 1 ? packet.ReadByte() : (byte)1;
-        string memo = packet.RemainingBytes >= 1 ? packet.ReadSByteString() : string.Empty;
-
-        var ad = new MarketAd
-        {
-            AdId = nextMarketAdId++,
-            SellerId = session.CharacterId,
-            Seller = session.Name,
-            ItemId = itemId,
-            Price = price,
-            Count = count,
-            BuyType = buyType == 2 ? (byte)2 : (byte)1,
-            Memo = memo,
-        };
-        marketAds.Add(ad);
-        logger.LogDebug("Market ad #{Id} by {Name}: item {Item} x{Count} @ {Price}", ad.AdId, session.Name, itemId, count, price);
-
-        await session.Client.SendPacket(MarketBbsPacketWriter.Registered(
-            MarketBbsRegister, MarketBbsPacketWriter.Succeeded, ad.AdId));
-    }
-
-    private async Task HandleMarketBbsDeleteAsync(UserSession session, Packet packet)
-    {
-        var result = new Packet(GameOpcodes.GS_MARKET_BBS);
-        int adId = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
-        int removed = marketAds.RemoveAll(a => a.AdId == adId && a.SellerId == session.CharacterId);
-        await session.Client.SendPacket(MarketBbsPacketWriter.Result(
-            MarketBbsDelete,
-            removed > 0 ? MarketBbsPacketWriter.Succeeded : MarketBbsPacketWriter.Failed));
-    }
-
-    private static void PruneMarketAds()
-    {
-        // Drop ads whose seller's character no longer exists is out of scope without a clock; cap the board size.
-        if (marketAds.Count > MarketBbsMaxAds)
-            marketAds.RemoveRange(0, marketAds.Count - MarketBbsMaxAds);
-    }
-
-    private sealed class MarketAd
-    {
-        public int AdId;
-        public int SellerId;
-        public string Seller = string.Empty;
-        public int ItemId;
-        public int Price;
-        public int Count;
-        public byte BuyType;   // 1 = selling, 2 = want-to-buy
-        public string Memo = string.Empty;
-    }
-
     public async Task HandleNameChangeAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
@@ -260,6 +139,12 @@ public class MiscPacketCoordinator(
         if (session.KnightsId > 0)
         {
             await SendNameChangeResultAsync(session, NameChangeInClan);
+            return;
+        }
+
+        if (await specialAuctionService.HasOpenAuctionAsync(session.CharacterId))
+        {
+            await SendNameChangeResultAsync(session, NameChangeAuctionOpen);
             return;
         }
 
@@ -382,71 +267,6 @@ public class MiscPacketCoordinator(
         foreach (var session in sessionManager.GetAll())
             await session.Client.SendPacket(packet);
     }
-
-    public async Task HandleRentalAsync(IClient client, Packet packet)
-    {
-        var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || packet.RemainingBytes < 1)
-            return;
-
-        var subOpcode = packet.ReadByte();
-        switch (subOpcode)
-        {
-            case RentalList:
-            {
-                // [1][ushort count]{ int itemId, int days, int cost }
-                var result = RentalPacketWriter.Catalog(
-                    RentalList,
-                    RentalCatalog
-                        .Select(entry => new RentalPacketWriter.CatalogEntry(
-                            entry.ItemId, entry.Days, entry.Cost))
-                        .ToList());
-                await client.SendPacket(result);
-                break;
-            }
-
-            case RentalRent:
-            {
-                // [2][int itemId] -> [2][byte result][int itemId]
-                int itemId = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
-                var entry = System.Array.Find(RentalCatalog, r => r.ItemId == itemId);
-                var rented = entry.ItemId != 0 && session.Money >= entry.Cost;
-                if (rented)
-                {
-                    session.Money -= entry.Cost;
-                    await serviceProvider.GetRequiredService<IUserNotificationService>().SendGoldLossAsync(session, entry.Cost);
-                    logger.LogDebug("{Name} rented item {Item} for {Days}d ({Cost} gold)", session.Name, itemId, entry.Days, entry.Cost);
-                }
-
-                await client.SendPacket(RentalPacketWriter.RentResult(
-                    RentalRent,
-                    rented ? RentalPacketWriter.Succeeded : RentalPacketWriter.Failed,
-                    itemId));
-                break;
-            }
-
-            case RentalNpc:
-            {
-                await client.SendPacket(RentalPacketWriter.NpcOpened(RentalNpc));
-                break;
-            }
-
-            default:
-                logger.LogDebug("Unhandled rental sub-opcode {SubOpcode} from {CharId}", subOpcode, session.CharacterId);
-                break;
-        }
-    }
-
-    private const byte RentalList = 1;
-    private const byte RentalRent = 2;
-
-    // In-memory rental catalog: (itemId, rental days, gold cost). Item delivery is the follow-up.
-    private static readonly (int ItemId, int Days, int Cost)[] RentalCatalog =
-    {
-        (810024000, 7, 200000),    // 7-day mount
-        (900020000, 3, 50000),     // 3-day premium buff scroll
-        (810025000, 30, 700000),   // 30-day mount
-    };
 
     private static async Task SendNameChangeResultAsync(UserSession session, byte resultCode) =>
         await session.Client.SendPacket(MiscPacketWriter.NameChangeResult(resultCode));
