@@ -8,6 +8,7 @@ namespace LibreKO;
 public partial class World
 {
     private const string WeaponNodePrefix = "weapon_";
+    private const int ExtRowSpan = 1000;
 
     private void AttachWeapons(Node3D body, int[]? gear, int npcType = 0, int npcId = 0)
     {
@@ -44,8 +45,8 @@ public partial class World
             uint? glowTrace = AttachWeaponGlow(mesh, gear[slot]);
             ItemShine.Apply(mesh, gear[slot], slot);
             if (slot == 6 && w.TraceSteps > 0)
-                WeaponTrail.Create(body, BodyAnim(body), skel, bone,
-                                   mesh.Transform, w.Trace0, w.Trace1, glowTrace ?? w.TraceColor);
+                WeaponTrail.Create(body, BodyAnim(body), skel, bone, mesh.Transform, w.Trace0, w.Trace1,
+                                   glowTrace ?? w.TraceColor, TrailElement(gear[slot]));
         }
     }
 
@@ -113,6 +114,15 @@ public partial class World
 
     private static string LoadableFx(int fxId) =>
         Fx.NameForId(fxId) is { } name && Fx.Has(name) ? name : "";
+
+    internal static int TrailElement(int itemId)
+    {
+        if (itemId <= 0 || ItemData.Get(itemId) is not { } def) return WeaponTrailRule.Normal;
+        int extId = ItemData.ExtIdFor(itemId);
+        return extId % ExtRowSpan != 0 && ItemData.ExtRow(def.Cat, extId) is { } ext
+            ? WeaponTrailRule.Element(ext.FireDamage, ext.IceDamage, ext.LightningDamage, ext.PoisonDamage)
+            : WeaponTrailRule.Normal;
+    }
 
     private static string? WeaponElement(int itemId)
     {

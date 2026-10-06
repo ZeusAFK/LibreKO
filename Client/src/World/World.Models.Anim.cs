@@ -43,7 +43,7 @@ public partial class World
         if (DoubleSidedScenes.Add(scenePath)) ForceDoubleSided(inst);
     }
 
-    private static void RegisterAnimationMetadata(AnimationPlayer anim, string path)
+    internal static void RegisterAnimationMetadata(AnimationPlayer anim, string path)
     {
         if (AnimationMetaByPath.TryGetValue(path, out var shared))
         {

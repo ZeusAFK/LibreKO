@@ -9,6 +9,7 @@ public partial class WeaponTrail : Node3D
     private const float FrameStep = 0.111f;
     private const float TeleportJump = 6f;
     private const int Raw = 24;
+    private const float InnerEdgeShade = 0.25f;
 
     private Skeleton3D _skel = null!;
     private int _bone;
@@ -16,6 +17,9 @@ public partial class WeaponTrail : Node3D
     private float _tr0, _tr1;
     private Color _rgb;
     private float _alpha;
+    private bool _textured;
+    private bool _live;
+    private float _fade;
     private AnimationPlayer? _anim;
 
     private MeshInstance3D _mi = null!;
@@ -25,15 +29,16 @@ public partial class WeaponTrail : Node3D
     private readonly Vector3[] _a = new Vector3[Raw];
     private readonly Vector3[] _b = new Vector3[Raw];
     private readonly double[] _t = new double[Raw];
+    private readonly Vector3[] _lastA = new Vector3[Steps];
+    private readonly Vector3[] _lastB = new Vector3[Steps];
     private int _n;
     private string _clip = "";
 
     public static WeaponTrail? Create(Node3D body, AnimationPlayer? anim, Skeleton3D skel, int bone,
-                                      Transform3D plug, float tr0, float tr1, uint traceColor)
+                                      Transform3D plug, float tr0, float tr1, uint traceColor, int element)
     {
         if (tr1 <= tr0) return null;
-        var tex = Texture();
-        if (tex == null) return null;
+        var tex = Texture(element);
 
         var t = new WeaponTrail
         {
@@ -46,6 +51,7 @@ public partial class WeaponTrail : Node3D
             _rgb = new Color(((traceColor >> 16) & 0xFF) / 255f, ((traceColor >> 8) & 0xFF) / 255f,
                              (traceColor & 0xFF) / 255f),
             _alpha = ((traceColor >> 24) & 0xFF) / 255f,
+            _textured = tex != null,
             _anim = anim,
         };
         t._mat = FxShading.SurfaceMaterial(FxShading.RfAlphaBlending | Fx.RfDoubleSided | Fx.RfNotZWrite,
@@ -83,6 +89,8 @@ public partial class WeaponTrail : Node3D
         if (_anim == null || !GodotObject.IsInstanceValid(_anim)
             || !GodotObject.IsInstanceValid(_skel) || !_skel.IsInsideTree() || !_anim.Active)
         {
+            _live = false;
+            _fade = 0f;
             SetShown(false);
             return;
         }
@@ -98,26 +106,43 @@ public partial class WeaponTrail : Node3D
             // for the frames between an entity spawning and its first clip starting.
             _clip = "";
             _n = 0;
-            SetShown(false);
+            _live = false;
+            Fade(delta);
             return;
         }
-        if (clip != _clip) { _clip = clip; _n = 0; }
+        if (clip != _clip) { _clip = clip; _n = 0; _live = false; }
 
         if (!World.TraceWindow(_anim, clip, out float t0, out float t1, out float fps)
             || pos < t0 - TraceLeadFrames / fps || pos > t1)
         {
-            SetShown(false);
+            if (_live && _textured && pos > t1) _fade = 1f;
+            _live = false;
+            Fade(delta);
             return;
         }
         var edge = _skel.GlobalTransform * _skel.GetBoneGlobalPose(_bone) * _plug;
         Push(pos, edge * new Vector3(0f, _tr0, 0f), edge * new Vector3(0f, _tr1, 0f));
         if (pos < t0 || _n < 2)
         {
-            SetShown(false);
+            Fade(delta);
             return;
         }
 
+        _live = true;
+        _fade = 0f;
         Rebuild(pos, FrameStep / fps);
+        SetShown(true);
+    }
+
+    private void Fade(double delta)
+    {
+        if (_fade > 0f) _fade = Mathf.Max(0f, _fade - (float)delta * WeaponTrailRule.AfterimageFadePerSecond);
+        if (_fade <= 0f)
+        {
+            SetShown(false);
+            return;
+        }
+        Emit(_fade);
         SetShown(true);
     }
 
@@ -159,34 +184,63 @@ public partial class WeaponTrail : Node3D
     private void Rebuild(double pos, double stepSeconds)
     {
         var inv = GlobalTransform.AffineInverse();
+        for (int i = 0; i < Steps; i++)
+        {
+            Sample(Mathf.Max(pos - i * stepSeconds, 0.0), out var a, out var b);
+            _lastA[i] = inv * a;
+            _lastB[i] = inv * b;
+        }
+        Emit(1f);
+    }
+
+    private void Emit(float alpha)
+    {
         _mesh.ClearSurfaces();
         _mesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip, _mat);
         for (int i = 0; i < Steps; i++)
         {
-            Sample(Mathf.Max(pos - i * stepSeconds, 0.0), out var a, out var b);
-            float k = (Steps - i) / (float)Steps;
-            var outer = new Color(_rgb.R * k, _rgb.G * k, _rgb.B * k, _alpha);
-            var inner = new Color(outer.R * 0.25f, outer.G * 0.25f, outer.B * 0.25f, _alpha);
+            StepColours(i, alpha, out var inner, out var outer);
             float u = i / (float)Steps;
 
             _mesh.SurfaceSetColor(inner);
             _mesh.SurfaceSetUV(new Vector2(u, 0f));
-            _mesh.SurfaceAddVertex(inv * a);
+            _mesh.SurfaceAddVertex(_lastA[i]);
             _mesh.SurfaceSetColor(outer);
             _mesh.SurfaceSetUV(new Vector2(u, 1f));
-            _mesh.SurfaceAddVertex(inv * b);
+            _mesh.SurfaceAddVertex(_lastB[i]);
         }
         _mesh.SurfaceEnd();
     }
 
-    private static Texture2D? _tex;
-    private static bool _texTried;
-    private static Texture2D? Texture()
+    private void StepColours(int i, float alpha, out Color inner, out Color outer)
     {
-        if (_texTried) return _tex;
-        _texTried = true;
-        const string path = "res://assets/fx/tex/weapon_trail.png";
-        if (ResourceLoader.Exists(path)) _tex = ResourceLoader.Load<Texture2D>(path);
-        return _tex;
+        if (_textured)
+        {
+            inner = outer = new Color(1f, 1f, 1f, alpha);
+            return;
+        }
+        float k = (Steps - i) / (float)Steps;
+        outer = new Color(_rgb.R * k, _rgb.G * k, _rgb.B * k, _alpha);
+        inner = new Color(outer.R * InnerEdgeShade, outer.G * InnerEdgeShade, outer.B * InnerEdgeShade, _alpha);
+    }
+
+    private static readonly string[] TexturePaths =
+    {
+        "res://assets/fx/tex/weapon_trail.png",
+        "res://assets/fx/tex/weapon_trail_fire.png",
+        "res://assets/fx/tex/weapon_trail_ice.png",
+        "res://assets/fx/tex/weapon_trail_lightning.png",
+        "res://assets/fx/tex/weapon_trail_poison.png",
+    };
+    private static readonly Texture2D?[] Textures = new Texture2D?[WeaponTrailRule.Count];
+    private static readonly bool[] TexturesTried = new bool[WeaponTrailRule.Count];
+
+    private static Texture2D? Texture(int element)
+    {
+        int i = element is >= 0 and < WeaponTrailRule.Count ? element : WeaponTrailRule.Normal;
+        if (TexturesTried[i]) return Textures[i];
+        TexturesTried[i] = true;
+        if (ResourceLoader.Exists(TexturePaths[i])) Textures[i] = ResourceLoader.Load<Texture2D>(TexturePaths[i]);
+        return Textures[i];
     }
 }
