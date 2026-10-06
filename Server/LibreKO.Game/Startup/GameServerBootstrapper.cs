@@ -2,6 +2,7 @@
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Configuration;
+using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +56,7 @@ public class GameServerBootstrapper(
             await accountLockService.ClearOwnClaimsAsync();
 
             LogPublicDemoGrants();
+            await WarnAboutStoreSeedAsync(cancellationToken);
 
             _initialized = true;
         }
@@ -77,6 +79,16 @@ public class GameServerBootstrapper(
         logger.LogWarning(
             "PUBLIC DEMO MODE: every account gets {Grants}. Turn off GameServer:PublicDemo before launch",
             string.Join(" + ", granted));
+    }
+
+    private async Task WarnAboutStoreSeedAsync(CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var items = await db.PusItems.AsNoTracking().ToListAsync(cancellationToken);
+        var discounts = await db.PusDiscounts.AsNoTracking().ToListAsync(cancellationToken);
+        foreach (var problem in PowerUpStoreCatalog.SeedProblems(items, discounts, itemId => gameDataService.GetItem(itemId) != null))
+            logger.LogWarning("{Problem}", problem);
     }
 
     private void InitializeMaps(IGameDataService gameData)

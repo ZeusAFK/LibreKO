@@ -62,6 +62,7 @@ public partial class Net
 {
     private const byte AdminReqState = 1;
     private const byte AdminReqCoins = 2;
+    private const byte AdminReqCash = 19;
     private const byte AdminReqStats = 3;
     private const byte AdminReqGiveItem = 4;
     private const byte AdminReqSetClass = 5;
@@ -186,6 +187,14 @@ public partial class Net
     }
 
     public void SendAdminStateRequest() => SendAdminByte(AdminReqState);
+
+    public void SendAdminCash(int amount)
+    {
+        var p = new Packet(GameOpcodes.GS_ADMIN_PANEL);
+        p.WriteByte(AdminReqCash);
+        p.WriteInt(amount);
+        _conn.Send(p);
+    }
 
     public void SendAdminCoins(int amount)
     {

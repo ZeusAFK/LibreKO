@@ -79,6 +79,11 @@ public class PusItemSeed : SnapshotJsonSeed<PusItemData>
     protected override string JsonFileName => "PusItems.json";
 }
 
+public class PusDiscountSeed : SnapshotJsonSeed<PusDiscountData>
+{
+    protected override string JsonFileName => "PusDiscounts.json";
+}
+
 public class PusCategorySeed : SnapshotJsonSeed<PusCategoryData>
 {
     protected override string JsonFileName => "PusCategories.json";

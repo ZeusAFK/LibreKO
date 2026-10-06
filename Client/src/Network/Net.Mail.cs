@@ -11,10 +11,12 @@ public partial class Net
     public const byte MailSubDelete = 4;
     public const byte MailSubClaim = 5;
     public const byte MailSubUnread = 6;
+    public const byte MailSubClaimAttachment = 7;
 
     public const int MailSubjectMax = 64;
     public const int MailBodyMax = 512;
     public const int MailItemAttachmentsMax = 4;
+    private const int MailAttachmentWireSize = sizeof(byte) + sizeof(int) * 3;
 
     public event Action<List<MailEntry>>? MailListEvent;
     public event Action<int, bool, string>? MailReadEvent;
@@ -48,15 +50,17 @@ public partial class Net
                         SentAt = DateTimeOffset.FromUnixTimeSeconds(p.ReadLong()).UtcDateTime,
                     };
                     int attachmentCount = p.ReadByte();
-                    for (int a = 0; a < attachmentCount && p.RemainingBytes >= 9; a++)
+                    for (int a = 0; a < attachmentCount && p.RemainingBytes >= MailAttachmentWireSize; a++)
                     {
                         entry.Items.Add(new MailAttachment
                         {
                             Kind = (MailAttachmentKind)p.ReadByte(),
                             ItemId = p.ReadInt(),
                             Count = p.ReadInt(),
+                            Claimed = p.ReadInt(),
                         });
                     }
+                    if (p.RemainingBytes >= 1) entry.Kind = (MailKind)p.ReadByte();
                     list.Add(entry);
                 }
                 MailListEvent?.Invoke(list);
@@ -111,6 +115,15 @@ public partial class Net
 
     public void SendMailClaim(int mailId) => SendMailId(MailSubClaim, mailId);
 
+    public void SendMailClaimAttachment(int mailId, int attachmentIndex)
+    {
+        var p = new Packet(GameOpcodes.GS_MAIL);
+        p.WriteByte(MailSubClaimAttachment);
+        p.WriteInt(mailId);
+        p.WriteByte((byte)attachmentIndex);
+        _conn.Send(p);
+    }
+
     public void SendMailSend(string recipient, string subject, string body, int gold, IReadOnlyList<MailItemPick> items)
     {
         var p = new Packet(GameOpcodes.GS_MAIL);
@@ -164,9 +177,19 @@ public class MailAttachment
     public MailAttachmentKind Kind;
     public int ItemId;
     public int Count;
+    public int Claimed;
+
+    public int Remaining => System.Math.Max(0, Count - Claimed);
 }
 
 public readonly record struct MailItemPick(byte Slot, ushort Count);
+
+public enum MailKind : byte
+{
+    Player = 0,
+    System = 1,
+    Store = 2,
+}
 
 public class MailEntry
 {
@@ -175,6 +198,7 @@ public class MailEntry
     public string Subject = string.Empty;
     public bool Read;
     public MailAttachmentState Attachments;
+    public MailKind Kind;
     public DateTime SentAt;
     public List<MailAttachment> Items = [];
 }

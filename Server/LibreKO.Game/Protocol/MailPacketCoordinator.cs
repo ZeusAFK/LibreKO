@@ -37,6 +37,9 @@ public class MailPacketCoordinator(
             case MailPacketWriter.SubClaim when packet.RemainingBytes >= 4:
                 await mailService.ClaimAsync(session, packet.ReadInt());
                 break;
+            case MailPacketWriter.SubClaimAttachment when packet.RemainingBytes >= 5:
+                await mailService.ClaimAttachmentAsync(session, packet.ReadInt(), packet.ReadByte());
+                break;
             case MailPacketWriter.SubUnread:
                 await mailService.SendUnreadAsync(session);
                 break;

@@ -39,6 +39,9 @@
     "storefront": "system/storefront.svg",
     "gem": "system/gem.svg",
     "ticket": "system/ticket.svg",
-    "pin": "system/pin.svg"
+    "pin": "system/pin.svg",
+    "clock": "system/clock.svg",
+    "cart": "system/cart.svg",
+    "star": "system/star.svg"
   }
 }

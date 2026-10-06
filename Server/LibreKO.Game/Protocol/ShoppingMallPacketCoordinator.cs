@@ -17,7 +17,7 @@ public class ShoppingMallPacketCoordinator(
 {
     private const byte StoreOpen = 1;
     private const byte StoreClose = 2;
-    private const byte StoreBuy = 8;
+    private const byte StorePurchase = ShoppingMallStoreService.StorePurchase;
     private const byte StoreLetter = 6;
 
     public async Task HandleAsync(IClient client, Packet packet)
@@ -36,8 +36,8 @@ public class ShoppingMallPacketCoordinator(
                 await shoppingMallStoreService.HandleOpenAsync(session);
                 break;
 
-            case StoreBuy:
-                await shoppingMallStoreService.HandleBuyAsync(session, packet);
+            case StorePurchase:
+                await shoppingMallStoreService.HandlePurchaseAsync(session, packet);
                 break;
 
             case StoreClose:

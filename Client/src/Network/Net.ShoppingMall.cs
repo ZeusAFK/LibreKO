@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LibreKO.Domain;
 
 namespace LibreKO.Network;
 
@@ -7,62 +8,32 @@ public partial class Net
 {
     private const byte SmStoreOpen = 1;
     private const byte SmStoreClose = 2;
-    private const byte SmStoreBuy = 8;
-    private const byte SmStoreLetter = 6;
     private const byte SmStoreCatalog = 3;
     private const byte SmStoreCategories = 4;
     private const byte SmStoreBalance = 5;
+    private const byte SmStorePurchase = 8;
+    private const byte SmPurchaseCart = 1;
+    private const byte SmPurchaseCheckRecipient = 2;
 
-    private const byte SmBuyItemSubcommand = 1;
-    private const byte SmBuyItemKind = 1;
-    private const int SmCatalogEntryMinimumSize = sizeof(int) + sizeof(int) + sizeof(byte) + sizeof(int);
-
-    private const byte SmLetterUnread = 1;
-    private const byte SmLetterList = 2;
-    private const byte SmLetterHistory = 3;
-    private const byte SmLetterGetItem = 4;
-    private const byte SmLetterRead = 5;
-    private const byte SmLetterSend = 6;
-    private const byte SmLetterDelete = 7;
-
-    public const int ShoppingMallLetterCost = 1000;
-    public const int ShoppingMallGiftCost = 10000;
+    private const int SmCatalogEntrySize = sizeof(int) + sizeof(int) + sizeof(byte) + sizeof(int) + sizeof(byte) + sizeof(int) + sizeof(long);
 
     public event Action<short, short>? ShoppingMallOpenEvent;
-    public event Action<List<ShoppingMallCatalogEntry>>? ShoppingMallCatalogEvent;
+    public event Action<List<PowerUpStoreEntry>>? ShoppingMallCatalogEvent;
     public event Action<List<ShoppingMallCategory>>? ShoppingMallCategoriesEvent;
     public event Action<int>? ShoppingMallBalanceEvent;
-
-    public event Action<int>? ShoppingMallUnreadEvent;
-
-    public event Action<List<ShoppingMallLetter>, bool>? ShoppingMallLetterListEvent;
-
-    public event Action<bool, int, string>? ShoppingMallLetterReadEvent;
-
-    public event Action<bool, int, int>? ShoppingMallGiftResultEvent;
-
-    public event Action<bool, int>? ShoppingMallSendResultEvent;
-
-    public event Action<List<int>, bool>? ShoppingMallDeleteEvent;
-
-    public event Action<bool, int>? ShoppingMallBuyResultEvent;
-
-    private int _smPendingGiftLetterId;
+    public event Action<PowerUpStoreResult, int>? ShoppingMallPurchaseEvent;
+    public event Action<PowerUpStoreResult, string, int, int>? ShoppingMallRecipientEvent;
 
     private void HandleShoppingMall(Packet p)
     {
         if (p.RemainingBytes < 1) return;
-        byte channel = (byte)p.ReadByte();
-        switch (channel)
+        switch ((byte)p.ReadByte())
         {
             case SmStoreOpen:
                 HandleShoppingMallOpen(p);
                 break;
-            case SmStoreBuy:
-                HandleShoppingMallBuy(p);
-                break;
-            case SmStoreLetter:
-                HandleShoppingMallLetter(p);
+            case SmStorePurchase:
+                HandleShoppingMallPurchase(p);
                 break;
         }
     }
@@ -94,31 +65,44 @@ public partial class Net
         ShoppingMallOpenEvent?.Invoke(error, freeSlot);
     }
 
-    private void HandleShoppingMallBuy(Packet p)
+    private void HandleShoppingMallPurchase(Packet p)
     {
-        if (p.RemainingBytes < 1) return;
-
+        if (p.RemainingBytes < 2) return;
         byte sub = (byte)p.ReadByte();
-        if (sub != SmBuyItemSubcommand || p.RemainingBytes < 1) return;
-
-        int result = p.ReadByte();
-        int knightCash = p.RemainingBytes >= 4 ? p.ReadInt() : -1;
-        ShoppingMallBuyResultEvent?.Invoke(result == 1, knightCash);
+        var result = (PowerUpStoreResult)p.ReadByte();
+        switch (sub)
+        {
+            case SmPurchaseCart:
+                ShoppingMallPurchaseEvent?.Invoke(result, p.RemainingBytes >= 4 ? p.ReadInt() : -1);
+                break;
+            case SmPurchaseCheckRecipient:
+                if (result == PowerUpStoreResult.Succeeded && p.RemainingBytes >= 1)
+                {
+                    string name = p.ReadSByteString();
+                    int level = p.RemainingBytes >= 1 ? p.ReadByte() : 0;
+                    int cls = p.RemainingBytes >= 2 ? p.ReadUShort() : 0;
+                    ShoppingMallRecipientEvent?.Invoke(result, name, level, cls);
+                }
+                else ShoppingMallRecipientEvent?.Invoke(result, "", 0, 0);
+                break;
+        }
     }
 
     private void HandleShoppingMallCatalog(Packet p)
     {
-        var entries = new List<ShoppingMallCatalogEntry>();
+        var entries = new List<PowerUpStoreEntry>();
         int count = p.RemainingBytes >= 2 ? p.ReadUShort() : 0;
-        for (var i = 0; i < count && p.RemainingBytes >= SmCatalogEntryMinimumSize; i++)
+        for (var i = 0; i < count && p.RemainingBytes >= SmCatalogEntrySize; i++)
         {
-            entries.Add(new ShoppingMallCatalogEntry(
-                p.ReadInt(),
-                p.ReadInt(),
-                p.ReadSByteString(),
-                p.ReadSByteString(),
-                (byte)p.ReadByte(),
-                p.ReadInt()));
+            int id = p.ReadInt();
+            int itemId = p.ReadInt();
+            int category = p.ReadByte();
+            int price = p.ReadInt();
+            bool featured = p.ReadByte() != 0;
+            int discountPrice = p.ReadInt();
+            long endsAt = p.ReadLong();
+            entries.Add(new PowerUpStoreEntry(id, itemId, "", "", category, price, featured, discountPrice,
+                endsAt > 0 ? DateTimeOffset.FromUnixTimeSeconds(endsAt).UtcDateTime : null));
         }
 
         ShoppingMallCatalogEvent?.Invoke(entries);
@@ -130,170 +114,38 @@ public partial class Net
         int count = p.RemainingBytes >= 1 ? p.ReadByte() : 0;
         for (var i = 0; i < count && p.RemainingBytes >= 1; i++)
         {
-            categories.Add(new ShoppingMallCategory(
-                (byte)p.ReadByte(),
-                p.ReadSByteString(),
-                p.ReadSByteString()));
+            categories.Add(new ShoppingMallCategory((byte)p.ReadByte(), p.ReadSByteString()));
         }
 
         ShoppingMallCategoriesEvent?.Invoke(categories);
-    }
-
-    private void HandleShoppingMallLetter(Packet p)
-    {
-        if (p.RemainingBytes < 1) return;
-        byte sub = (byte)p.ReadByte();
-        switch (sub)
-        {
-            case SmLetterUnread:
-                ShoppingMallUnreadEvent?.Invoke(p.RemainingBytes >= 1 ? p.ReadByte() : 0);
-                break;
-
-            case SmLetterList:
-            case SmLetterHistory:
-                ParseLetterList(p, history: sub == SmLetterHistory);
-                break;
-
-            case SmLetterRead:
-            {
-                bool ok = p.RemainingBytes >= 1 && p.ReadByte() == 1;
-                if (ok && p.RemainingBytes >= 4)
-                {
-                    int id = p.ReadInt();
-                    string msg = p.RemainingBytes >= 1 ? p.ReadSByteString() : "";
-                    ShoppingMallLetterReadEvent?.Invoke(true, id, msg);
-                }
-                else ShoppingMallLetterReadEvent?.Invoke(false, 0, "");
-                break;
-            }
-
-            case SmLetterGetItem:
-            {
-                int code = p.RemainingBytes >= 1 ? (sbyte)p.ReadByte() : 0;
-                ShoppingMallGiftResultEvent?.Invoke(code == 1, _smPendingGiftLetterId, code);
-                break;
-            }
-
-            case SmLetterSend:
-            {
-                int code = p.RemainingBytes >= 1 ? (sbyte)p.ReadByte() : 0;
-                ShoppingMallSendResultEvent?.Invoke(code == 1, code);
-                break;
-            }
-
-            case SmLetterDelete:
-            {
-                int code = p.RemainingBytes >= 1 ? (sbyte)p.ReadByte() : 0;
-                if (code < 0)
-                {
-                    ShoppingMallDeleteEvent?.Invoke(new List<int>(), true);
-                    break;
-                }
-                int count = code;
-                var ids = new List<int>(count);
-                for (int i = 0; i < count && p.RemainingBytes >= 4; i++)
-                    ids.Add(p.ReadInt());
-                ShoppingMallDeleteEvent?.Invoke(ids, false);
-                break;
-            }
-        }
-    }
-
-    private void ParseLetterList(Packet p, bool history)
-    {
-        var rows = new List<ShoppingMallLetter>();
-        if (p.RemainingBytes >= 1) p.ReadByte();
-        int count = p.RemainingBytes >= 1 ? (sbyte)p.ReadByte() : 0;
-        for (int i = 0; i < count; i++)
-        {
-            if (p.RemainingBytes < 4) break;
-            var row = new ShoppingMallLetter
-            {
-                LetterId = p.ReadInt(),
-                Status = (byte)p.ReadByte(),
-                Subject = p.ReadSByteString(),
-                Sender = p.ReadSByteString(),
-                Type = (byte)p.ReadByte(),
-            };
-            if (row.Type == 2)
-            {
-                if (p.RemainingBytes < 10) break;
-                row.ItemId = p.ReadInt();
-                row.Count = p.ReadUShort();
-                row.Coins = p.ReadInt();
-            }
-            if (p.RemainingBytes >= 4) row.Date = p.ReadInt();
-            if (p.RemainingBytes >= 2) row.DaysLeft = p.ReadUShort();
-            rows.Add(row);
-        }
-        ShoppingMallLetterListEvent?.Invoke(rows, history);
     }
 
     public void SendShoppingMallOpen() => SendShoppingMallByte(SmStoreOpen);
 
     public void SendShoppingMallClose() => SendShoppingMallByte(SmStoreClose);
 
-    public void SendShoppingMallUnread() => SendLetterByte(SmLetterUnread);
-
-    public void SendShoppingMallLetterList() => SendLetterByte(SmLetterList);
-
-    public void SendShoppingMallLetterHistory() => SendLetterByte(SmLetterHistory);
-
-    public void SendShoppingMallReadLetter(int letterId)
-    {
-        var p = NewLetterPacket(SmLetterRead);
-        p.WriteInt(letterId);
-        _conn.Send(p);
-    }
-
-    public void SendShoppingMallGetGift(int letterId)
-    {
-        _smPendingGiftLetterId = letterId;
-        var p = NewLetterPacket(SmLetterGetItem);
-        p.WriteInt(letterId);
-        _conn.Send(p);
-    }
-
-    public void SendShoppingMallDelete(IReadOnlyList<int> letterIds)
-    {
-        var p = NewLetterPacket(SmLetterDelete);
-        int n = letterIds.Count > 5 ? 5 : letterIds.Count;
-        p.WriteByte((byte)n);
-        for (int i = 0; i < n; i++) p.WriteInt(letterIds[i]);
-        _conn.Send(p);
-    }
-
-    public void SendShoppingMallTextLetter(string recipient, string subject, string message)
-    {
-        var p = NewLetterPacket(SmLetterSend);
-        p.WriteSByteString(recipient);
-        p.WriteSByteString(subject);
-        p.WriteByte(1);
-        p.WriteString(message);
-        _conn.Send(p);
-    }
-
-    public void SendShoppingMallGiftLetter(string recipient, string subject, string message, int itemId, byte srcPos)
-    {
-        var p = NewLetterPacket(SmLetterSend);
-        p.WriteSByteString(recipient);
-        p.WriteSByteString(subject);
-        p.WriteByte(2);
-        p.WriteInt(itemId);
-        p.WriteByte(srcPos);
-        p.WriteInt(0);
-        p.WriteString(message);
-        _conn.Send(p);
-    }
-
-    public void SendPowerUpStoreBuy(int catalogEntryId, int count)
+    public void SendPowerUpStorePurchase(string recipient, IReadOnlyList<PowerUpStoreCart.Line> lines)
     {
         var p = new Packet(GameOpcodes.GS_SHOPPING_MALL);
-        p.WriteByte(SmStoreBuy);
-        p.WriteByte(SmBuyItemSubcommand);
-        p.WriteByte(SmBuyItemKind);
-        p.WriteInt(catalogEntryId);
-        p.WriteByte((byte)Math.Clamp(count, 1, 255));
+        p.WriteByte(SmStorePurchase);
+        p.WriteByte(SmPurchaseCart);
+        p.WriteSByteString(recipient);
+        p.WriteByte((byte)lines.Count);
+        foreach (var line in lines)
+        {
+            p.WriteInt(line.Entry.Id);
+            p.WriteUShort((ushort)line.Count);
+            p.WriteInt(line.Entry.Price);
+        }
+        _conn.Send(p);
+    }
+
+    public void SendPowerUpStoreCheckRecipient(string name)
+    {
+        var p = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        p.WriteByte(SmStorePurchase);
+        p.WriteByte(SmPurchaseCheckRecipient);
+        p.WriteSByteString(name);
         _conn.Send(p);
     }
 
@@ -303,28 +155,6 @@ public partial class Net
         p.WriteByte(channel);
         _conn.Send(p);
     }
-
-    private void SendLetterByte(byte sub)
-    {
-        var p = NewLetterPacket(sub);
-        _conn.Send(p);
-    }
-
-    private static Packet NewLetterPacket(byte sub)
-    {
-        var p = new Packet(GameOpcodes.GS_SHOPPING_MALL);
-        p.WriteByte(SmStoreLetter);
-        p.WriteByte(sub);
-        return p;
-    }
 }
 
-public readonly record struct ShoppingMallCatalogEntry(
-    int Id,
-    int ItemId,
-    string Name,
-    string Description,
-    byte Category,
-    int Price);
-
-public readonly record struct ShoppingMallCategory(byte Id, string Name, string Description);
+public readonly record struct ShoppingMallCategory(byte Id, string Name);

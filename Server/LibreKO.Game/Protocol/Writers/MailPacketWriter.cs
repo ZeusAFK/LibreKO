@@ -12,6 +12,7 @@ public sealed class MailPacketWriter
     public const byte SubDelete = 4;
     public const byte SubClaim = 5;
     public const byte SubUnread = 6;
+    public const byte SubClaimAttachment = 7;
 
     public const byte Failed = 0;
     public const byte Succeeded = 1;
@@ -35,12 +36,15 @@ public sealed class MailPacketWriter
                 : AttachmentsPending);
             packet.WriteLong(new DateTimeOffset(mail.SentAt, TimeSpan.Zero).ToUnixTimeSeconds());
             packet.WriteByte((byte)mail.Attachments.Count);
-            foreach (var attachment in mail.Attachments)
+            foreach (var attachment in mail.Attachments.OrderBy(a => a.Id))
             {
                 packet.WriteByte((byte)attachment.Kind);
                 packet.WriteInt(attachment.ItemId);
                 packet.WriteInt(attachment.Count);
+                packet.WriteInt(mail.ClaimedAt != null ? attachment.Count : attachment.ClaimedCount);
             }
+
+            packet.WriteByte((byte)mail.Kind);
         }
 
         return packet;

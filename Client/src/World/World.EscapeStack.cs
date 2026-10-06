@@ -39,7 +39,8 @@ public partial class World : Node3D
         EscapeCloses(() => _warpShown, () => CloseWarp());
         EscapeCloses(() => _rankShown, () => ToggleRank());
         EscapeCloses(() => _petShown, () => TogglePet());
-        EscapeCloses(() => _shoppingmallShown, () => ToggleShoppingMall());
+        EscapeCloses(() => _pusShown && _pusModal != PusModal.None, ClosePusModal);
+        EscapeCloses(() => _pusShown, CloseShoppingMall);
         EscapeCloses(() => _rebirthShown, () => CloseRebirth());
         EscapeCloses(() => _admSpawnShown, CloseAdminSpawn);
         EscapeCloses(() => _kingShown, () => CloseKing());

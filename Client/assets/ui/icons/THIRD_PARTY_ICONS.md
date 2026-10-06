@@ -59,6 +59,15 @@ size, so it is left out.
 `system/trophy.svg` is an original cup silhouette drawn for GKO on the same grid, for the achievement
 window and its HUD button.
 
+`system/clock.svg` is an original clock face drawn for GKO on the same grid -- a ring and two hands --
+for the time-limited prices in the Power-Up Store.
+
+`system/star.svg` is an original five-point star drawn for GKO on the same grid, for the Power-Up
+Store's Featured badge.
+
+`system/cart.svg` is an original shopping-cart silhouette drawn for GKO on the same grid -- handle, basket
+and two wheels -- for the Power-Up Store's in-cart marker.
+
 `system/envelope.svg` is an original envelope silhouette drawn for GKO on the same grid, for the mail
 HUD button: a rounded body with the flap cut as a single V so it still reads at HUD icon size.
 

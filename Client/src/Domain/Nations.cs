@@ -15,4 +15,6 @@ public static class Nations
     public static int ClassBase(int nation) => nation == Karus ? KarusClassBase : ElMoradClassBase;
 
     public static string Name(int nation) => nation == Karus ? "Karus" : "El Morad";
+
+    public static int OfClass(int classCode) => classCode >= ElMoradClassBase ? ElMorad : Karus;
 }

@@ -1,6 +1,7 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
@@ -8,6 +9,7 @@ using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
 namespace LibreKO.Game.Tests;
@@ -231,156 +233,356 @@ public class ShoppingMallTests : GameTestBase
         sentPackets[3].ReadInt().Should().Be(250);
     }
 
-    [Fact]
-    public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyUsesAccountCurrencyAndGivesItem()
-    {
-        const int itemId = 800079000;
+    private const int BuyerId = 27;
+    private const int FriendId = 28;
+    private const int StrangerId = 29;
+    private const int ClanmateId = 30;
+    private const short BuyerClan = 5;
+    private const int FirstStoreItemId = 800079000;
+    private const int NonCountableItemId = 810039000;
 
+    private static ServiceProvider StoreProvider(int entries, int price = 100, params PusDiscountData[] discounts) => CreateProvider(
+        db =>
+        {
+            for (var id = 1; id <= entries; id++)
+                db.PusItems.Add(new PusItemData { Id = id, ItemId = FirstStoreItemId + id * 1000, Price = price, Category = 1, Featured = id == 1 });
+            db.PusItems.Add(new PusItemData { Id = 100, ItemId = NonCountableItemId, Price = price, Category = 2 });
+            db.PusDiscounts.AddRange(discounts);
+            db.Characters.AddRange(
+                new Character { Id = BuyerId, AccountId = 37, Name = "Buyer", Level = 60, Class = 105 },
+                new Character { Id = FriendId, AccountId = 38, Name = "Friend", Level = 72, Class = 211 },
+                new Character { Id = StrangerId, AccountId = 39, Name = "Stranger", Level = 40, Class = 101 },
+                new Character { Id = ClanmateId, AccountId = 40, Name = "Clanmate", Level = 55, Class = 103, KnightsId = BuyerClan });
+            db.Friendships.Add(new Friendship { CharacterId = BuyerId, FriendCharacterId = FriendId, AddedAt = DateTime.UtcNow });
+        },
+        gameData => gameData.GetItem(Arg.Any<int>()).Returns(call => new ItemData
+        {
+            Num = call.Arg<int>(),
+            Countable = (byte)(call.Arg<int>() == NonCountableItemId ? 0 : 1),
+            Duration = 1,
+        }));
+
+    private static (UserSession Session, List<Packet> Sent) StoreBuyer(ServiceProvider provider, int knightCash)
+    {
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sent = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sent.Add(packet)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, BuyerId, 37);
+        session.Name = "Buyer";
+        session.Hp = 100;
+        session.KnightCash = knightCash;
+        session.KnightsId = BuyerClan;
+        return (session, sent);
+    }
+
+    private static Packet CartRequest(string recipient, params (int CatalogId, ushort Count)[] lines) =>
+        PricedCartRequest(recipient, lines.Select(line => (line.CatalogId, line.Count, 100)).ToArray());
+
+    private static Packet PricedCartRequest(string recipient, params (int CatalogId, ushort Count, int UnitPrice)[] lines)
+    {
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(ShoppingMallStoreService.StorePurchase);
+        request.WriteByte(ShoppingMallStoreService.PurchaseCart);
+        request.WriteSByteString(recipient);
+        request.WriteByte((byte)lines.Length);
+        foreach (var (catalogId, count, unitPrice) in lines)
+        {
+            request.WriteInt(catalogId);
+            request.WriteUShort(count);
+            request.WriteInt(unitPrice);
+        }
+
+        return request;
+    }
+
+    private static Packet RecipientCheckRequest(string name)
+    {
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(ShoppingMallStoreService.StorePurchase);
+        request.WriteByte(ShoppingMallStoreService.PurchaseCheckRecipient);
+        request.WriteSByteString(name);
+        return request;
+    }
+
+    private static Packet PurchaseReply(List<Packet> sent, byte sub)
+    {
+        var packet = sent.Last(p => p.GetOpcode() == (byte)GameOpcodes.GS_SHOPPING_MALL
+            && p.GetData()[0] == ShoppingMallStoreService.StorePurchase && p.GetData()[1] == sub);
+        packet.ResetOffset();
+        packet.ReadByte();
+        packet.ReadByte();
+        return packet;
+    }
+
+    private static async Task<List<Mail>> MailsAsync(ServiceProvider provider)
+    {
+        using var scope = provider.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.Include(m => m.Attachments).ToListAsync();
+    }
+
+    [Fact]
+    public async Task Purchase_ChargesTheCartTotalOnce_AndMailsEveryLineInOneMail()
+    {
+        using var provider = StoreProvider(entries: 6);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 2_000);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client,
+            CartRequest("", (1, 2), (2, 1), (3, 1), (4, 1), (5, 1), (6, 3)));
+
+        var reply = PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart);
+        reply.ReadByte().Should().Be((byte)PowerUpStoreResult.Succeeded);
+        reply.ReadInt().Should().Be(1_100);
+        buyer.KnightCash.Should().Be(1_100);
+        buyer.Inventory.Should().OnlyContain(slot => slot.IsEmpty);
+
+        var mail = (await MailsAsync(provider)).Should().ContainSingle().Subject;
+        mail.RecipientCharacterId.Should().Be(BuyerId);
+        mail.SenderName.Should().Be(MailLimits.SystemSenderName);
+        mail.Kind.Should().Be(MailKind.Store);
+        mail.Attachments.Select(a => (a.Kind, a.ItemId, a.Count)).Should().Equal(
+            (MailAttachmentKind.Item, FirstStoreItemId + 1000, 2),
+            (MailAttachmentKind.Item, FirstStoreItemId + 2000, 1),
+            (MailAttachmentKind.Item, FirstStoreItemId + 3000, 1),
+            (MailAttachmentKind.Item, FirstStoreItemId + 4000, 1),
+            (MailAttachmentKind.Item, FirstStoreItemId + 5000, 1),
+            (MailAttachmentKind.Item, FirstStoreItemId + 6000, 3));
+    }
+
+    [Fact]
+    public async Task Purchase_KeepsSeveralUnitsOfANonCountableItemOnOneAttachment()
+    {
+        using var provider = StoreProvider(entries: 0);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, CartRequest("", (100, 3)));
+
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.Succeeded);
+        buyer.KnightCash.Should().Be(700);
+        var attachment = (await MailsAsync(provider)).Single().Attachments.Should().ContainSingle().Subject;
+        (attachment.ItemId, attachment.Count).Should().Be((NonCountableItemId, 3));
+    }
+
+    [Fact]
+    public async Task Purchase_RefusesACartOverTheBalance_AndChargesNothing()
+    {
+        using var provider = StoreProvider(entries: 2, price: 600);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, PricedCartRequest("", (1, 1, 600), (2, 1, 600)));
+
+        var reply = PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart);
+        reply.ReadByte().Should().Be((byte)PowerUpStoreResult.NotEnoughCash);
+        reply.ReadInt().Should().Be(1_000);
+        buyer.KnightCash.Should().Be(1_000);
+        (await MailsAsync(provider)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Purchase_RefusesAnUnknownCatalogEntry_AndChargesNothing()
+    {
+        using var provider = StoreProvider(entries: 1);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, CartRequest("", (1, 1), (42, 1)));
+
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.Unavailable);
+        buyer.KnightCash.Should().Be(1_000);
+        (await MailsAsync(provider)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Purchase_RefusesAPriceThePlayerDidNotSee_AndChargesNothing()
+    {
+        using var provider = StoreProvider(entries: 1);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, PricedCartRequest("", (1, 1, 75)));
+
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.PriceChanged);
+        buyer.KnightCash.Should().Be(1_000);
+        (await MailsAsync(provider)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Purchase_ChargesTheActiveDiscount()
+    {
+        var discount = new PusDiscountData { Id = 1, PusItemId = 1, Price = 75, StartsAt = DateTime.UtcNow.AddHours(-1), Duration = 5 };
+        using var provider = StoreProvider(1, 100, discount);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, PricedCartRequest("", (1, 2, 75)));
+
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.Succeeded);
+        buyer.KnightCash.Should().Be(850);
+    }
+
+    [Fact]
+    public async Task StoreOpen_TheCatalogueCarriesFeaturedAndTheActiveDiscount_AndLeavesOutUnknownItems()
+    {
+        var discount = new PusDiscountData { Id = 1, PusItemId = 1, Price = 75, StartsAt = DateTime.UtcNow.AddHours(-1), Duration = 5 };
         using var provider = CreateProvider(
             db =>
             {
-                db.PusItems.Add(new PusItemData
-                {
-                    Id = 1,
-                    ItemId = itemId,
-                    Name = "HP Scroll 60%",
-                    Price = 500,
-                    Category = 1,
-                    Description = "HP recovery",
-                });
+                db.PusItems.AddRange(
+                    new PusItemData { Id = 1, ItemId = FirstStoreItemId, Price = 100, Category = 1, Featured = true },
+                    new PusItemData { Id = 2, ItemId = NonCountableItemId, Price = 100, Category = 1 });
+                db.PusDiscounts.Add(discount);
             },
-            gameData =>
-            {
-                gameData.GetItem(itemId).Returns(new ItemData
-                {
-                    Num = itemId,
-                    Race = 1,
-                    Countable = 1,
-                    Duration = 0,
-                    Kind = 1,
-                });
-            });
-
-        var client = Substitute.For<IClient>();
-        client.Id.Returns(Guid.NewGuid());
-        var sentPackets = new List<Packet>();
-        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
-
-        var sessionManager = provider.GetRequiredService<SessionManager>();
-        var session = sessionManager.CreateSession(client, characterId: 27, accountId: 37);
-        session.Name = "Buyer";
-        session.KnightCash = 1000;
-
+            gameData => gameData.GetItem(FirstStoreItemId).Returns(new ItemData { Num = FirstStoreItemId, Countable = 1 }));
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 0);
         var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
-        request.WriteByte(8);
-        request.WriteByte(1);
-        request.WriteByte(1);
-        request.WriteInt(1);
         request.WriteByte(1);
 
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, request);
+
+        var catalogue = sent[1];
+        catalogue.ResetOffset();
+        catalogue.ReadByte().Should().Be(1);
+        catalogue.ReadByte().Should().Be(3);
+        catalogue.ReadUShort().Should().Be(1);
+        catalogue.ReadInt().Should().Be(1);
+        catalogue.ReadInt().Should().Be(FirstStoreItemId);
+        catalogue.ReadByte().Should().Be(1);
+        catalogue.ReadInt().Should().Be(100);
+        catalogue.ReadByte().Should().Be(1);
+        catalogue.ReadInt().Should().Be(75);
+        catalogue.ReadLong().Should().Be(new DateTimeOffset(discount.EndsAt!.Value, TimeSpan.Zero).ToUnixTimeSeconds());
+    }
+
+    [Fact]
+    public async Task Purchase_AsAGift_MailsTheRecipient_AndChargesTheBuyer()
+    {
+        using var provider = StoreProvider(entries: 1);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, CartRequest("Friend", (1, 2)));
+
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.Succeeded);
+        buyer.KnightCash.Should().Be(800);
+        var mail = (await MailsAsync(provider)).Should().ContainSingle().Subject;
+        mail.RecipientCharacterId.Should().Be(FriendId);
+        mail.Subject.Should().Contain("Buyer");
+        mail.Attachments.Single().Count.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Purchase_AsAGift_RefusesAnUnknownRecipient_AndYourself()
+    {
+        using var provider = StoreProvider(entries: 1);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
         var coordinator = provider.GetRequiredService<IShoppingMallPacketCoordinator>();
-        await coordinator.HandleAsync(client, request);
 
-        session.KnightCash.Should().Be(500);
-        var index = Array.FindIndex(session.Inventory, slot => slot.ItemId == itemId);
-        index.Should().BeGreaterThanOrEqualTo(InventoryConstants.SlotMax);
-        session.Inventory[index].Count.Should().Be(1);
+        await coordinator.HandleAsync(buyer.Client, CartRequest("Nobody", (1, 1)));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientNotFound);
 
-        sentPackets.Should().HaveCount(2);
-        var sentPacket = sentPackets.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_SHOPPING_MALL);
-        sentPacket.ResetOffset();
-        sentPacket.ReadByte().Should().Be(8);
-        sentPacket.ReadByte().Should().Be(1);
-        sentPacket.ReadByte().Should().Be(1);
-        sentPacket.ReadInt().Should().Be(500);
+        await coordinator.HandleAsync(buyer.Client, CartRequest("Buyer", (1, 1)));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientIsSelf);
+
+        buyer.KnightCash.Should().Be(1_000);
+        (await MailsAsync(provider)).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyUsesRequestedCatalogEntry()
+    public async Task Purchase_WhenTheMailCannotBeWritten_RefundsAndReportsAFailure()
     {
-        const int itemId = 800079000;
+        using var provider = StoreProvider(entries: 1);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+        var mail = Substitute.For<IMailService>();
+        mail.SendSystemMailAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>(), Arg.Any<MailKind>())
+            .Returns(Task.FromException(new InvalidOperationException("database down")));
+        var store = new ShoppingMallStoreService(
+            provider.GetRequiredService<ICharacterStatePersister>(),
+            provider.GetRequiredService<IGameDataService>(),
+            mail,
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            NullLogger<ShoppingMallStoreService>.Instance);
+        var request = CartRequest("", (1, 1));
+        request.ReadByte();
 
-        using var provider = CreateProvider(
-            db => db.PusItems.AddRange(
-                new PusItemData
-                {
-                    Id = 2,
-                    ItemId = itemId,
-                    Name = "Standard listing",
-                    Price = 1000,
-                    Category = 1,
-                    Description = "Standard listing",
-                },
-                new PusItemData
-                {
-                    Id = 3,
-                    ItemId = itemId,
-                    Name = "Sale listing",
-                    Price = 100,
-                    Category = 3,
-                    Description = "Sale listing",
-                }),
-            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1, Duration = 1 }));
+        await store.HandlePurchaseAsync(buyer, request);
 
-        var client = Substitute.For<IClient>();
-        client.Id.Returns(Guid.NewGuid());
-        var sentPackets = new List<Packet>();
-        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
-
-        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, 29, 39);
-        session.KnightCash = 1000;
-        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
-        request.WriteByte(8);
-        request.WriteByte(1);
-        request.WriteByte(1);
-        request.WriteInt(2);
-        request.WriteByte(1);
-
-        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
-
-        session.KnightCash.Should().Be(0);
-        sentPackets.Should().HaveCount(2);
+        var reply = PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart);
+        reply.ReadByte().Should().Be((byte)PowerUpStoreResult.Failed);
+        reply.ReadInt().Should().Be(1_000);
+        buyer.KnightCash.Should().Be(1_000);
     }
 
     [Fact]
-    public async Task ShoppingMallPacketCoordinator_HandleAsync_BuyRejectsMultipleNonCountableItems()
+    public async Task CheckRecipient_ReturnsTheCharactersNameLevelAndClass()
     {
-        const int itemId = 800079000;
+        using var provider = StoreProvider(entries: 0);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 0);
 
-        using var provider = CreateProvider(
-            db => db.PusItems.Add(new PusItemData
-            {
-                Id = 4,
-                ItemId = itemId,
-                Name = "Non-countable item",
-                Price = 100,
-                Category = 1,
-                Description = "Non-countable item",
-            }),
-            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 0, Duration = 1 }));
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, RecipientCheckRequest("Friend"));
 
-        var client = Substitute.For<IClient>();
-        client.Id.Returns(Guid.NewGuid());
-        var sentPackets = new List<Packet>();
-        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
+        var reply = PurchaseReply(sent, ShoppingMallStoreService.PurchaseCheckRecipient);
+        reply.ReadByte().Should().Be((byte)PowerUpStoreResult.Succeeded);
+        reply.ReadSByteString().Should().Be("Friend");
+        reply.ReadByte().Should().Be(72);
+        reply.ReadUShort().Should().Be(211);
+    }
 
-        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, 29, 39);
-        session.KnightCash = 1000;
+    [Fact]
+    public async Task Purchase_AsAGift_RefusesSomeoneWhoIsNeitherAFriendNorInTheClan()
+    {
+        using var provider = StoreProvider(entries: 1);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, CartRequest("Stranger", (1, 1)));
+
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientNotAllowed);
+        buyer.KnightCash.Should().Be(1_000);
+        (await MailsAsync(provider)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CheckRecipient_AcceptsAClanMate_AndRefusesAStranger()
+    {
+        using var provider = StoreProvider(entries: 0);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 0);
+        var coordinator = provider.GetRequiredService<IShoppingMallPacketCoordinator>();
+
+        await coordinator.HandleAsync(buyer.Client, RecipientCheckRequest("Clanmate"));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCheckRecipient).ReadByte().Should().Be((byte)PowerUpStoreResult.Succeeded);
+
+        await coordinator.HandleAsync(buyer.Client, RecipientCheckRequest("Stranger"));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCheckRecipient).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientNotAllowed);
+    }
+
+    [Fact]
+    public async Task CheckRecipient_RefusesAnUnknownName_AndYourself()
+    {
+        using var provider = StoreProvider(entries: 0);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 0);
+        var coordinator = provider.GetRequiredService<IShoppingMallPacketCoordinator>();
+
+        await coordinator.HandleAsync(buyer.Client, RecipientCheckRequest("Nobody"));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCheckRecipient).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientNotFound);
+
+        await coordinator.HandleAsync(buyer.Client, RecipientCheckRequest("Buyer"));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCheckRecipient).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientIsSelf);
+    }
+
+    [Fact]
+    public async Task StoreOpen_WithAFullBag_StillOpens()
+    {
+        using var provider = StoreProvider(entries: 1);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 0);
+        for (var i = InventoryConstants.SlotMax; i < InventoryConstants.InventoryTotal; i++)
+        {
+            buyer.Inventory[i].ItemId = NonCountableItemId;
+            buyer.Inventory[i].Count = 1;
+        }
+
         var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
-        request.WriteByte(8);
         request.WriteByte(1);
-        request.WriteByte(1);
-        request.WriteInt(4);
-        request.WriteByte(2);
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(buyer.Client, request);
 
-        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
-
-        session.KnightCash.Should().Be(1000);
-        session.Inventory.Should().OnlyContain(slot => slot.IsEmpty);
-        sentPackets.Should().ContainSingle();
+        var opened = sent.First();
+        opened.ResetOffset();
+        opened.ReadByte().Should().Be(1);
+        opened.ReadShort().Should().Be(1);
     }
 
     [Fact]

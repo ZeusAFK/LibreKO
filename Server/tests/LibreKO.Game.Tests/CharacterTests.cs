@@ -19,6 +19,8 @@ namespace LibreKO.Game.Tests;
 
 public class CharacterTests : GameTestBase
 {
+    private const byte ExpPremium = 11;
+
     [Fact]
     public async Task CharacterCreateCommand_UsesMoradonStartPositionAndRejectsOccupiedSlot()
     {
@@ -1308,6 +1310,7 @@ public class CharacterTests : GameTestBase
                     Password = "pw",
                     Nation = AccountNation.Karus,
                     Authority = AccountAuthority.Normal,
+                    PremiumType = ExpPremium,
                     PremiumDate = DateTime.UtcNow.AddHours(12)
                 });
                 db.SaveChanges();

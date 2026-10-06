@@ -17,13 +17,14 @@ public readonly record struct MailItemPick(byte Slot, ushort Count);
 
 public interface IMailService
 {
-    Task SendSystemMailAsync(int recipientCharacterId, string subject, string body, IReadOnlyList<MailAttachmentDraft> attachments);
+    Task SendSystemMailAsync(int recipientCharacterId, string subject, string body, IReadOnlyList<MailAttachmentDraft> attachments, MailKind kind = MailKind.System);
     Task SendInboxAsync(UserSession session);
     Task SendUnreadAsync(UserSession session);
     Task ReadAsync(UserSession session, int mailId);
     Task SendAsync(UserSession session, string recipientName, string subject, string body, int gold, IReadOnlyList<MailItemPick> items);
     Task DeleteAsync(UserSession session, int mailId);
     Task ClaimAsync(UserSession session, int mailId);
+    Task ClaimAttachmentAsync(UserSession session, int mailId, int attachmentIndex);
 }
 
 public class MailService(
@@ -35,11 +36,11 @@ public class MailService(
     ILoyaltyService loyaltyService,
     ILogger<MailService> logger) : IMailService
 {
-    public async Task SendSystemMailAsync(int recipientCharacterId, string subject, string body, IReadOnlyList<MailAttachmentDraft> attachments)
+    public async Task SendSystemMailAsync(int recipientCharacterId, string subject, string body, IReadOnlyList<MailAttachmentDraft> attachments, MailKind kind = MailKind.System)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        db.Mails.Add(NewMail(null, MailLimits.SystemSenderName, recipientCharacterId, subject, body, attachments));
+        db.Mails.Add(NewMail(null, MailLimits.SystemSenderName, recipientCharacterId, subject, body, attachments, kind));
         await db.SaveChangesAsync();
 
         var recipient = sessionManager.GetByCharacterId(recipientCharacterId);
@@ -181,7 +182,7 @@ public class MailService(
             await userNotificationService.SendWeightChangeAsync(session);
         }
 
-        db.Mails.Add(NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts));
+        db.Mails.Add(NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts, MailKind.Player));
         await db.SaveChangesAsync();
 
         logger.LogInformation("{Sender} mailed {Recipient}: '{Subject}' with {Attachments} attachments", session.Name, recipient.Name, subject, drafts.Count);
@@ -214,70 +215,94 @@ public class MailService(
         await session.Client.SendPacket(MailPacketWriter.DeleteResult(true, mailId, string.Empty));
     }
 
-    public async Task ClaimAsync(UserSession session, int mailId)
+    public Task ClaimAsync(UserSession session, int mailId) =>
+        ClaimAsync(session, mailId, attachmentIndex: null);
+
+    public Task ClaimAttachmentAsync(UserSession session, int mailId, int attachmentIndex) =>
+        ClaimAsync(session, mailId, (int?)attachmentIndex);
+
+    private async Task ClaimAsync(UserSession session, int mailId, int? attachmentIndex)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var mail = await InboxQuery(db, session.CharacterId).FirstOrDefaultAsync(m => m.Id == mailId);
-        if (mail == null || !mail.HasUnclaimedAttachments)
+        var ordered = mail?.Attachments.OrderBy(a => a.Id).ToList() ?? [];
+        var chosen = attachmentIndex is { } index
+            ? ordered.Where((_, position) => position == index).ToList()
+            : ordered;
+        if (mail == null || !mail.HasUnclaimedAttachments || chosen.All(a => a.Remaining == 0))
         {
             await session.Client.SendPacket(MailPacketWriter.ClaimResult(false, mailId, "Nothing to claim."));
             return;
         }
 
-        var itemAttachments = mail.Attachments.Where(a => a.Kind == MailAttachmentKind.Item).ToList();
-        if (itemAttachments.Count > FreeGridSlots(session))
-        {
-            await session.Client.SendPacket(MailPacketWriter.ClaimResult(false, mailId, "Not enough room in your inventory."));
-            return;
-        }
-
-        foreach (var attachment in mail.Attachments)
+        var delivered = false;
+        var itemsDelivered = false;
+        foreach (var attachment in chosen.Where(a => a.Remaining > 0))
         {
             switch (attachment.Kind)
             {
                 case MailAttachmentKind.Gold:
-                    var newMoney = Math.Min((long)session.Money + attachment.Count, int.MaxValue);
+                    var newMoney = Math.Min((long)session.Money + attachment.Remaining, int.MaxValue);
                     var delta = (int)(newMoney - session.Money);
                     session.Money = (int)newMoney;
                     if (delta > 0)
                         await userNotificationService.SendGoldGainAsync(session, delta);
+                    attachment.ClaimedCount = attachment.Count;
+                    delivered = true;
                     break;
                 case MailAttachmentKind.Experience:
-                    await playerProgressionService.AwardExperienceAsync(session, attachment.Count);
+                    await playerProgressionService.AwardExperienceAsync(session, attachment.Remaining);
+                    attachment.ClaimedCount = attachment.Count;
+                    delivered = true;
                     break;
                 case MailAttachmentKind.NationalPoints:
-                    await loyaltyService.ChangeAsync(session, attachment.Count);
+                    await loyaltyService.ChangeAsync(session, attachment.Remaining);
+                    attachment.ClaimedCount = attachment.Count;
+                    delivered = true;
                     break;
                 default:
-                    await DeliverItemAsync(session, attachment);
+                    if (await DeliverItemAsync(session, attachment))
+                        delivered = itemsDelivered = true;
                     break;
             }
         }
 
-        mail.ClaimedAt = DateTime.UtcNow;
-        mail.ReadAt ??= mail.ClaimedAt;
+        if (itemsDelivered)
+        {
+            session.RecalculateStatsWithBuffs(gameDataService);
+            await userNotificationService.SendWeightChangeAsync(session);
+        }
+
+        var complete = mail.Attachments.All(a => a.Remaining == 0);
+        if (complete)
+            mail.ClaimedAt = DateTime.UtcNow;
+        if (delivered)
+            mail.ReadAt ??= DateTime.UtcNow;
         await db.SaveChangesAsync();
 
-        await session.Client.SendPacket(MailPacketWriter.ClaimResult(true, mailId, "Attachments claimed."));
+        var message = complete ? "Attachments claimed."
+            : delivered ? "Some attachments are still waiting. Make room in your inventory and claim again."
+            : "Not enough room in your inventory.";
+        await session.Client.SendPacket(MailPacketWriter.ClaimResult(delivered, mailId, message));
     }
 
-    private async Task DeliverItemAsync(UserSession session, MailAttachment attachment)
+    private async Task<bool> DeliverItemAsync(UserSession session, MailAttachment attachment)
     {
         var itemData = gameDataService.GetItem(attachment.ItemId);
         if (itemData == null)
-            return;
-
-        var remaining = attachment.Count;
-        while (remaining > 0)
         {
-            var portion = itemData.Countable == 0 ? 1 : remaining;
+            attachment.ClaimedCount = attachment.Count;
+            return false;
+        }
+
+        var delivered = false;
+        while (attachment.Remaining > 0)
+        {
+            var portion = itemData.Countable == 0 ? 1 : attachment.Remaining;
             var slot = session.FindSlotForItem(attachment.ItemId, gameDataService, (ushort)Math.Min(portion, ushort.MaxValue));
             if (slot < 0)
-            {
-                await SendNoticeAsync(session, "Inventory is full! Some attachments could not be delivered.");
-                return;
-            }
+                return delivered;
 
             var entry = session.Inventory[slot];
             var isNew = entry.IsEmpty;
@@ -286,23 +311,11 @@ public class MailService(
             if (isNew)
                 entry.Durability = attachment.Durability > 0 ? attachment.Durability : itemData.Duration;
             await userNotificationService.SendStackChangeAsync(session, (byte)slot, entry.ItemId, entry.Count, entry.Durability, isNew);
-            remaining -= portion;
+            attachment.ClaimedCount += portion;
+            delivered = true;
         }
 
-        session.RecalculateStatsWithBuffs(gameDataService);
-        await userNotificationService.SendWeightChangeAsync(session);
-    }
-
-    private static int FreeGridSlots(UserSession session)
-    {
-        var free = 0;
-        for (var index = InventoryConstants.InventoryStart; index < InventoryConstants.InventoryStart + InventoryConstants.HaveMax; index++)
-        {
-            if (session.Inventory[index].IsEmpty)
-                free++;
-        }
-
-        return free;
+        return delivered;
     }
 
     private async Task NotifyNewMailAsync(UserSession recipient, string senderName, AppDbContext db)
@@ -317,9 +330,10 @@ public class MailService(
     private static IQueryable<Mail> InboxQuery(AppDbContext db, int characterId) =>
         db.Mails.Include(m => m.Attachments).Where(m => m.RecipientCharacterId == characterId && !m.Deleted);
 
-    private static Mail NewMail(int? senderCharacterId, string senderName, int recipientCharacterId, string subject, string body, IReadOnlyList<MailAttachmentDraft> attachments) =>
+    private static Mail NewMail(int? senderCharacterId, string senderName, int recipientCharacterId, string subject, string body, IReadOnlyList<MailAttachmentDraft> attachments, MailKind kind) =>
         new()
         {
+            Kind = kind,
             SenderCharacterId = senderCharacterId,
             SenderName = Truncate(senderName, MailLimits.SenderNameMax),
             RecipientCharacterId = recipientCharacterId,
@@ -335,7 +349,4 @@ public class MailService(
 
     private static Task Fail(UserSession session, string message) =>
         session.Client.SendPacket(MailPacketWriter.SendResult(false, message));
-
-    private static Task SendNoticeAsync(UserSession session, string message) =>
-        session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, message));
 }

@@ -1,0 +1,127 @@
+Bind Npc 29056 Zone 21
+
+On greeting
+    Say "May the gods bless you..."
+    Topic "[Premium Item Use]" goto event_400
+    Goto close
+
+On event_400
+    Say "Which [Premium] item did you bring?"
+    Topic "[DC Premium]" goto event_401
+    Topic "[EXP Premium]" goto event_402
+    Topic "[WAR Premium]" goto event_403
+    Topic "[Switching Premium]" goto event_404
+    Topic "[Platinum Premium]" goto event_405
+    Topic "[Gold Premium]" goto event_406
+    Topic "[Bronze Premium]" goto event_407
+    Topic "Cancel" goto close
+
+On event_401
+    Say "Would you like to use the [DC Premium] benefit for 30 days?"
+    Topic "Yes" goto event_411
+    Topic "No" goto close
+
+On event_411
+    If player has 399281000
+        Take 1 of 399281000
+        Give dc premium for 30 days
+    Else if player has 399281685
+        Take 1 of 399281685
+        Give dc premium for 30 days
+    Else
+        Say "You do not have a [DC Premium]. You can buy one in the Power-Up Store."
+        Topic "Confirm" goto close
+    Goto close
+
+On event_402
+    Say "Would you like to use the [EXP Premium] benefit for 30 days?"
+    Topic "Yes" goto event_412
+    Topic "No" goto close
+
+On event_412
+    If player has 399282000
+        Take 1 of 399282000
+        Give exp premium for 30 days
+    Else if player has 399282686
+        Take 1 of 399282686
+        Give exp premium for 30 days
+    Else
+        Say "You do not have a [EXP Premium]. You can buy one in the Power-Up Store."
+        Topic "Confirm" goto close
+    Goto close
+
+On event_403
+    Say "Would you like to use the [WAR Premium] benefit for 30 days?"
+    Topic "Yes" goto event_413
+    Topic "No" goto close
+
+On event_413
+    If player has 399292000
+        Take 1 of 399292000
+        Give war premium for 30 days
+    Else if player has 399292764
+        Take 1 of 399292764
+        Give war premium for 30 days
+    Else
+        Say "You do not have a [WAR Premium]. You can buy one in the Power-Up Store."
+        Topic "Confirm" goto close
+    Goto close
+
+On event_404
+    Say "Would you like to use the [Switching Premium] benefit for 30 days?"
+    Topic "Yes" goto event_414
+    Topic "No" goto close
+
+On event_414
+    If player has 399295000
+        Take 1 of 399295000
+        Give switch premium for 30 days
+    Else if player has 399295859
+        Take 1 of 399295859
+        Give switch premium for 30 days
+    Else
+        Say "You do not have a [Switching Premium]. You can buy one in the Power-Up Store."
+        Topic "Confirm" goto close
+    Goto close
+
+On event_405
+    Say "Would you like to use the [Platinum Premium] benefit for 30 days?"
+    Topic "Yes" goto event_415
+    Topic "No" goto close
+
+On event_415
+    If player has 800880000
+        Take 1 of 800880000
+        Give platinum premium for 30 days
+    Else
+        Say "You do not have a [Platinum Premium]. You can buy one in the Power-Up Store."
+        Topic "Confirm" goto close
+    Goto close
+
+On event_406
+    Say "Would you like to use the [Gold Premium] benefit for 30 days?"
+    Topic "Yes" goto event_416
+    Topic "No" goto close
+
+On event_416
+    If player has 800080000
+        Take 1 of 800080000
+        Give gold premium for 30 days
+    Else
+        Say "You do not have a [Gold Premium]. You can buy one in the Power-Up Store."
+        Topic "Confirm" goto close
+    Goto close
+
+On event_407
+    Say "Would you like to use the [Bronze Premium] benefit for 30 days?"
+    Topic "Yes" goto event_417
+    Topic "No" goto close
+
+On event_417
+    If player has 814042000
+        Take 1 of 814042000
+        Give bronze premium for 30 days
+    Else
+        Say "You do not have a [Bronze Premium]. You can buy one in the Power-Up Store."
+        Topic "Confirm" goto close
+    Goto close

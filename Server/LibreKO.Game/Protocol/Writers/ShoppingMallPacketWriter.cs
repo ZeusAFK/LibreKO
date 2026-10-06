@@ -23,15 +23,15 @@ public sealed class ShoppingMallPacketWriter
     public readonly record struct CatalogEntry(
         int Id,
         int ItemId,
-        string Name,
-        string Description,
         byte Category,
-        int Price);
+        int Price,
+        bool Featured,
+        int DiscountPrice,
+        DateTime? DiscountEndsAt);
 
     public readonly record struct Category(
         byte Id,
-        string Name,
-        string Description);
+        string Name);
 
     public static Packet Result(byte storeOpcode, byte sub, byte result)
     {
@@ -104,10 +104,13 @@ public sealed class ShoppingMallPacketWriter
         {
             packet.WriteInt(entry.Id);
             packet.WriteInt(entry.ItemId);
-            packet.WriteSByteString(entry.Name);
-            packet.WriteSByteString(entry.Description);
             packet.WriteByte(entry.Category);
             packet.WriteInt(entry.Price);
+            packet.WriteByte((byte)(entry.Featured ? 1 : 0));
+            packet.WriteInt(entry.DiscountPrice);
+            packet.WriteLong(entry.DiscountEndsAt is { } endsAt
+                ? new DateTimeOffset(DateTime.SpecifyKind(endsAt, DateTimeKind.Utc)).ToUnixTimeSeconds()
+                : 0);
         }
 
         return packet;
@@ -121,7 +124,6 @@ public sealed class ShoppingMallPacketWriter
         {
             packet.WriteByte(category.Id);
             packet.WriteSByteString(category.Name);
-            packet.WriteSByteString(category.Description);
         }
 
         return packet;
@@ -138,6 +140,15 @@ public sealed class ShoppingMallPacketWriter
     {
         var packet = Result(storeOpcode, sub, result);
         packet.WriteInt(knightCash);
+        return packet;
+    }
+
+    public static Packet Recipient(byte storeOpcode, byte sub, string name, byte level, short characterClass)
+    {
+        var packet = Result(storeOpcode, sub, Succeeded);
+        packet.WriteSByteString(name);
+        packet.WriteByte(level);
+        packet.WriteUShort((ushort)characterClass);
         return packet;
     }
 

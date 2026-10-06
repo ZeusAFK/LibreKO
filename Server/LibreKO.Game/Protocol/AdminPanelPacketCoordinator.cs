@@ -3,6 +3,7 @@ using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Configuration;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,6 +55,7 @@ public class AdminPanelPacketCoordinator(
     private const byte ReqSpawnRow = 16;
     private const byte ReqSpawnSet = 17;
     private const byte ReqSpawnPersist = 18;
+    private const byte ReqCash = 19;
 
     private static readonly HashSet<byte> GameMasterOnlySubs =
     [
@@ -123,6 +125,10 @@ public class AdminPanelPacketCoordinator(
 
             case ReqCoins:
                 await HandleCoinsAsync(session, packet);
+                break;
+
+            case ReqCash:
+                await HandleCashAsync(session, packet);
                 break;
 
             case ReqStats:
@@ -215,6 +221,44 @@ public class AdminPanelPacketCoordinator(
         await SendStateAsync(session, granted: true);
         await SendResultAsync(session, true, $"Gold {(delta >= 0 ? "+" : "")}{delta:n0} — now {total:n0}.");
         logger.LogInformation("GM {Name} adjusted own coins by {Delta} (now {Total})", session.Name, delta, total);
+    }
+
+    private async Task HandleCashAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 4)
+            return;
+
+        var amount = packet.ReadInt();
+        if (amount == 0)
+            return;
+
+        var total = (int)Math.Clamp((long)session.KnightCash + amount, 0L, int.MaxValue);
+        var delta = total - session.KnightCash;
+        session.KnightCash = total;
+
+        _ = PersistCashAsync(session);
+        await session.Client.SendPacket(ShoppingMallStoreService.BalancePacket(total));
+        await SendResultAsync(session, true, $"Cash {(delta >= 0 ? "+" : "")}{delta:n0} — now {total:n0}.");
+        logger.LogInformation("GM {Name} adjusted own cash by {Delta} (now {Total})", session.Name, delta, total);
+    }
+
+    private async Task PersistCashAsync(UserSession session)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var account = await db.Accounts.FindAsync(session.AccountId);
+            if (account == null)
+                return;
+
+            account.KnightCash = session.KnightCash;
+            await db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Admin-panel cash persist failed for {Name}", session.Name);
+        }
     }
 
     private async Task HandleStatsAsync(UserSession session, Packet packet)

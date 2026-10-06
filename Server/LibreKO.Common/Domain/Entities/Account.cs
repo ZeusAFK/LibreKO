@@ -31,9 +31,9 @@ public class Account : Entity
 
     public DateTime? OnlineSince { get; set; }
 
-    public byte ActivePremiumType => RemainingHoursUntil(PremiumDate) > 0 ? PremiumType : (byte)0;
+    public byte ActivePremiumType => RemainingPremiumHours > 0 ? PremiumType : (byte)0;
 
-    public short RemainingPremiumHours => RemainingHoursUntil(PremiumDate);
+    public short RemainingPremiumHours => PremiumType > 0 ? RemainingHoursUntil(PremiumDate) : (short)0;
 
     public static short RemainingHoursUntil(DateTime? expiry)
     {

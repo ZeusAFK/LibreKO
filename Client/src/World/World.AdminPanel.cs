@@ -7,6 +7,7 @@ namespace LibreKO;
 public partial class World
 {
     private static readonly int[] AdminCoinPresets = { 1_000_000, 10_000_000, 100_000_000 };
+    private static readonly int[] AdminCashPresets = { 1_000, 10_000, 100_000 };
 
     private const float AdminLabelWidth = 58;
     private const float AdminSpinWidth = 110;
@@ -27,6 +28,8 @@ public partial class World
     private Label _admStatusLbl = null!;
     private Label _admCoinsLbl = null!;
     private LineEdit _admCoinsInput = null!;
+    private Label _admCashLbl = null!;
+    private LineEdit _admCashInput = null!;
     private readonly SpinBox[] _admStatSpins = new SpinBox[CharacterSheet.StatCount];
     private SpinBox _admPointsSpin = null!;
     private SpinBox _admNpSpin = null!;
@@ -204,6 +207,7 @@ public partial class World
         box.AddThemeConstantOverride("separation", 10);
 
         box.AddChild(BuildAdminCoinRow());
+        box.AddChild(BuildAdminCashRow());
         box.AddChild(UiTheme.Rule());
 
         var columns = new HBoxContainer();
@@ -252,6 +256,44 @@ public partial class World
         row.AddChild(give);
         var take = AdminButton("Take", 60);
         take.Pressed += () => SendAdminCoinDelta(-1);
+        row.AddChild(take);
+        return row;
+    }
+
+    private Control BuildAdminCashRow()
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 7);
+
+        row.AddChild(AdminHeading("Cash", "system/gem"));
+        _admCashLbl = UiTheme.Text("", 15, UiTheme.Premium);
+        _admCashLbl.VerticalAlignment = VerticalAlignment.Center;
+        row.AddChild(_admCashLbl);
+        row.AddChild(new Control { CustomMinimumSize = new Vector2(4, 0) });
+
+        foreach (int preset in AdminCashPresets)
+        {
+            int amount = preset;
+            var button = AdminButton($"+{FormatCoinShort(amount)}");
+            button.Pressed += () => Net.I.SendAdminCash(amount);
+            row.AddChild(button);
+        }
+
+        _admCashInput = new LineEdit
+        {
+            PlaceholderText = "amount",
+            Text = "1000",
+            CustomMinimumSize = new Vector2(96, AdminControlHeight),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
+        _admCashInput.AddThemeFontSizeOverride("font_size", 14);
+        row.AddChild(_admCashInput);
+
+        var give = AdminButton("Give", 60);
+        give.Pressed += () => SendAdminCashDelta(1);
+        row.AddChild(give);
+        var take = AdminButton("Take", 60);
+        take.Pressed += () => SendAdminCashDelta(-1);
         row.AddChild(take);
         return row;
     }
@@ -384,7 +426,8 @@ public partial class World
         _admShown = true;
         _admPanel.Visible = true;
         _admPanel.GetParent()?.MoveChild(_admPanel, _admPanel.GetParent().GetChildCount() - 1);
-        SetAdminStatus("Requesting state…", false);
+        SetAdminStatus("", false);
+        RefreshAdminCash();
         Net.I.SendAdminStateRequest();
     }
 
@@ -440,6 +483,13 @@ public partial class World
     {
         if (_admCoinsLbl == null) return;
         _admCoinsLbl.Text = $"{_admState.Gold:n0}";
+        RefreshAdminCash();
+    }
+
+    private void RefreshAdminCash()
+    {
+        if (_admCashLbl == null || !IsInstanceValid(_admCashLbl)) return;
+        _admCashLbl.Text = $"{Sheet.KnightCash:n0}";
     }
 
     private void RefreshAdminClassTab()
@@ -510,6 +560,17 @@ public partial class World
         }
         long signed = System.Math.Clamp(amount * sign, int.MinValue, int.MaxValue);
         Net.I.SendAdminCoins((int)signed);
+    }
+
+    private void SendAdminCashDelta(int sign)
+    {
+        if (!long.TryParse(_admCashInput.Text.Trim().Replace(",", ""), out long amount) || amount == 0)
+        {
+            SetAdminStatus("Enter a cash amount.", true);
+            return;
+        }
+        long signed = System.Math.Clamp(amount * sign, int.MinValue, int.MaxValue);
+        Net.I.SendAdminCash((int)signed);
     }
 
     private void SetAdminStatus(string text, bool warn)

@@ -37,6 +37,7 @@ public static class UiTheme
     public static readonly Color Hp         = new("b5352f");
     public static readonly Color Mp         = new("3a6bbf");
     public static readonly Color Warning    = new("d9a441");
+    public static readonly Color Premium    = new("8fd3f0");
 
     public const float WindowPanelAlpha = 0.965f;
     public const float TranslucentWindowAlpha = 0.86f;

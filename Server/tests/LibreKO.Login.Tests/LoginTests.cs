@@ -12,6 +12,8 @@ namespace LibreKO.Login.Tests;
 
 public class LoginTests : ServerTest
 {
+    private const byte ExpPremium = 11;
+
     protected override void SeedDatabase(AppDbContext db)
     {
         var testAccount = new Account
@@ -20,6 +22,7 @@ public class LoginTests : ServerTest
             Password = "password",
             Nation = AccountNation.None,
             Authority = AccountAuthority.Normal,
+            PremiumType = ExpPremium,
             PremiumDate = DateTime.UtcNow.AddHours(12)
         };
         db.Accounts.Add(testAccount);
@@ -198,6 +201,7 @@ public class LoginTests : ServerTest
         var account = new Account
         {
             Login = "premium-user",
+            PremiumType = ExpPremium,
             PremiumDate = premiumHoursFromNow is { } hours
                 ? DateTime.UtcNow.AddHours(hours).AddMinutes(1)
                 : null
@@ -216,7 +220,7 @@ public class LoginTests : ServerTest
     [Fact]
     public void RemainingPremiumHours_ClampsAVeryLongPremiumInsteadOfOverflowing()
     {
-        var account = new Account { PremiumDate = DateTime.UtcNow.AddYears(10) };
+        var account = new Account { PremiumType = ExpPremium, PremiumDate = DateTime.UtcNow.AddYears(10) };
 
         account.RemainingPremiumHours.Should().Be(short.MaxValue,
             "an overflowing cast would wrap to a negative value and read as no premium at all");

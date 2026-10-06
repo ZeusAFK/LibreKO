@@ -1,77 +1,59 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
-using LibreKO.Network;
 using LibreKO.Domain;
+using LibreKO.Network;
 
 namespace LibreKO;
 
 public partial class World
 {
-    private CanvasLayer _shoppingmallLayer = null!;
-    private HudWindow _shoppingmallPanel = null!;
-    private bool _shoppingmallShown;
+    private const int PusLayerIndex = 73;
+    private const string PusRechargeUrl = "https://libreko.org";
+    private const int PusColumnGap = 10;
+    private const int PusCashIconSize = 15;
+    private const int PusCashFontSize = 14;
+    private const double PusTimerTickSeconds = 15;
+    private const float PusStrikeWidth = 1.5f;
+    private const float PusStrikeHeight = 0.55f;
 
-    private Label _shoppingmallStoreStatus = null!;
+    private static readonly Color PusWindowFill = new(0.066f, 0.068f, 0.075f, 0.975f);
+    private static readonly Color PusWellFill = new(0.022f, 0.022f, 0.027f, 0.8f);
+    private static readonly Color PusCardFill = new(0.072f, 0.071f, 0.080f, 0.9f);
 
-    private Button _shoppingmallInboxTab = null!;
-    private Button _shoppingmallHistoryTab = null!;
-    private VBoxContainer _shoppingmallList = null!;
-    private bool _shoppingmallHistoryView;
-    private readonly List<ShoppingMallLetter> _shoppingmallLetters = new();
-    private int _shoppingmallUnread;
+    private enum PusPurchase { None, Cart, BuyNow }
 
-    private Label _shoppingmallReadTitle = null!;
-    private Label _shoppingmallReadBody = null!;
+    private sealed record PusRecipient(string Name, int Level, int Class);
 
-    private LineEdit _shoppingmallToEdit = null!;
-    private LineEdit _shoppingmallSubjectEdit = null!;
-    private TextEdit _shoppingmallMsgEdit = null!;
-    private OptionButton _shoppingmallGiftPick = null!;
-    private Label _shoppingmallStatus = null!;
+    private CanvasLayer _pusLayer = null!;
+    private HudWindow _pusWindow = null!;
+    private Viewport? _pusViewport;
+    private Label _pusCashValue = null!;
+    private Godot.Timer _pusTicker = null!;
+    private bool _pusShown;
 
-    private readonly List<PusCatalogEntry> _pusCatalog = new();
+    private readonly List<PowerUpStoreEntry> _pusCatalog = new();
     private readonly List<ShoppingMallCategory> _pusCategories = new();
-    private readonly List<PusBasketEntry> _pusBasket = new();
-    private byte _pusSelectedCategory;
-    private HBoxContainer _pusCategoryTabs = null!;
-    private VBoxContainer _pusItemList = null!;
-    private VBoxContainer _pusBasketList = null!;
-    private Label _pusSummary = null!;
-    private Label _pusWallet = null!;
-    private Label _pusBasketStatus = null!;
-    private Button _pusBuyButton = null!;
-    private Button _pusClearButton = null!;
-
-    private sealed class PusCatalogEntry
-    {
-        public int Id;
-        public int ItemId;
-        public string Name = "";
-        public string Description = "";
-        public int Category;
-        public int Price;
-    }
-
-    private sealed class PusBasketEntry
-    {
-        public PusCatalogEntry Item = null!;
-        public int Count;
-    }
+    private readonly PowerUpStoreCart _pusCart = new();
+    private bool _pusLoaded;
+    private bool _pusRefreshing;
+    private string _pusStoreError = "";
+    private PusPurchase _pusPending;
 
     private void ShoppingMallInit()
     {
-        BuildShoppingMallPanel();
+        BuildPowerUpStore();
         Net.I.ShoppingMallOpenEvent += OnShoppingMallOpen;
         Net.I.ShoppingMallCatalogEvent += OnShoppingMallCatalog;
         Net.I.ShoppingMallCategoriesEvent += OnShoppingMallCategories;
         Net.I.ShoppingMallBalanceEvent += OnShoppingMallBalance;
-        Net.I.ShoppingMallUnreadEvent += OnShoppingMallUnread;
-        Net.I.ShoppingMallLetterListEvent += OnShoppingMallLetterList;
-        Net.I.ShoppingMallLetterReadEvent += OnShoppingMallLetterRead;
-        Net.I.ShoppingMallGiftResultEvent += OnShoppingMallGiftResult;
-        Net.I.ShoppingMallSendResultEvent += OnShoppingMallSendResult;
-        Net.I.ShoppingMallDeleteEvent += OnShoppingMallDelete;
-        Net.I.ShoppingMallBuyResultEvent += OnShoppingMallBuyResult;
+        Net.I.ShoppingMallPurchaseEvent += OnShoppingMallPurchase;
+        Net.I.ShoppingMallRecipientEvent += OnShoppingMallRecipient;
+        Net.I.FriendListEvent += OnPusFriends;
+        Net.I.ClanMembersEvent += OnPusClanMembers;
+        _pusViewport = GetViewport();
+        if (_pusViewport != null) _pusViewport.SizeChanged += FitPowerUpStore;
     }
 
     private void ShoppingMallDispose()
@@ -80,144 +62,110 @@ public partial class World
         Net.I.ShoppingMallCatalogEvent -= OnShoppingMallCatalog;
         Net.I.ShoppingMallCategoriesEvent -= OnShoppingMallCategories;
         Net.I.ShoppingMallBalanceEvent -= OnShoppingMallBalance;
-        Net.I.ShoppingMallUnreadEvent -= OnShoppingMallUnread;
-        Net.I.ShoppingMallLetterListEvent -= OnShoppingMallLetterList;
-        Net.I.ShoppingMallLetterReadEvent -= OnShoppingMallLetterRead;
-        Net.I.ShoppingMallGiftResultEvent -= OnShoppingMallGiftResult;
-        Net.I.ShoppingMallSendResultEvent -= OnShoppingMallSendResult;
-        Net.I.ShoppingMallDeleteEvent -= OnShoppingMallDelete;
-        Net.I.ShoppingMallBuyResultEvent -= OnShoppingMallBuyResult;
+        Net.I.ShoppingMallPurchaseEvent -= OnShoppingMallPurchase;
+        Net.I.ShoppingMallRecipientEvent -= OnShoppingMallRecipient;
+        Net.I.FriendListEvent -= OnPusFriends;
+        Net.I.ClanMembersEvent -= OnPusClanMembers;
+        if (_pusViewport != null && IsInstanceValid(_pusViewport))
+            _pusViewport.SizeChanged -= FitPowerUpStore;
+        _pusViewport = null;
     }
 
-    private void BuildShoppingMallPanel()
+    private void BuildPowerUpStore()
     {
-        _shoppingmallLayer = new CanvasLayer { Layer = 73 };
-        AddChild(_shoppingmallLayer);
+        _pusLayer = new CanvasLayer { Layer = PusLayerIndex };
+        AddChild(_pusLayer);
 
-        _shoppingmallPanel = new HudWindow("shoppingmall", "Power-Up Store", new Vector2(220, 120)) { Visible = false };
-        _shoppingmallPanel.Closed += CloseShoppingMall;
-        _shoppingmallLayer.AddChild(_shoppingmallPanel);
+        _pusWindow = new HudWindow("shoppingmall", "Power-Up Store", persistLayout: false) { Visible = false };
+        var panel = UiTheme.WindowPanel();
+        panel.BgColor = PusWindowFill;
+        _pusWindow.AddThemeStyleboxOverride("panel", panel);
+        _pusWindow.Closed += CloseShoppingMall;
+        _pusLayer.AddChild(_pusWindow);
 
-        var root = _shoppingmallPanel.Body;
-        root.AddThemeConstantOverride("separation", 8);
+        var columns = new HBoxContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        columns.AddThemeConstantOverride("separation", PusColumnGap);
+        _pusWindow.Body.AddChild(columns);
+        columns.AddChild(BuildPusCategoryColumn());
+        columns.AddChild(BuildPusGridColumn());
+        columns.AddChild(BuildPusCartColumn());
 
-        root.AddChild(UiTheme.SectionTitle("Cash Shop"));
-        var storeRow = new HBoxContainer();
-        storeRow.AddThemeConstantOverride("separation", 8);
-        _shoppingmallStoreStatus = HudStyle.Label(13);
-        _shoppingmallStoreStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        _shoppingmallStoreStatus.Text = "Store closed.";
-        storeRow.AddChild(_shoppingmallStoreStatus);
-        var openBtn = new Button { Text = "Open Store", FocusMode = Control.FocusModeEnum.None };
-        openBtn.AddThemeFontSizeOverride("font_size", 12);
-        openBtn.Pressed += () => Net.I.SendShoppingMallOpen();
-        storeRow.AddChild(openBtn);
-        root.AddChild(storeRow);
+        BuildPusModal();
 
-        root.AddChild(new HSeparator());
+        _pusTicker = new Godot.Timer { WaitTime = PusTimerTickSeconds };
+        _pusTicker.Timeout += TickPusTimers;
+        _pusLayer.AddChild(_pusTicker);
+    }
 
-        BuildPusSection(root);
+    private Control BuildPusCashRow()
+    {
+        var row = new HBoxContainer { SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+        row.AddThemeConstantOverride("separation", 6);
+        var pill = new PanelContainer { TooltipText = "Your cash", MouseFilter = Control.MouseFilterEnum.Pass };
+        var style = UiTheme.Chip();
+        style.ContentMarginTop = style.ContentMarginBottom = 2;
+        pill.AddThemeStyleboxOverride("panel", style);
+        var cash = new HBoxContainer();
+        cash.AddThemeConstantOverride("separation", 5);
+        pill.AddChild(cash);
+        cash.AddChild(PusGem(PusCashIconSize));
+        _pusCashValue = UiTheme.Text("0", PusCashFontSize, UiTheme.TextHi);
+        cash.AddChild(_pusCashValue);
+        row.AddChild(pill);
+        var recharge = UiTheme.IconButton("+", "Get more cash on libreko.org");
+        recharge.Pressed += () => OS.ShellOpen(PusRechargeUrl);
+        row.AddChild(recharge);
+        return row;
+    }
 
-        root.AddChild(new HSeparator());
+    private static TextureRect PusGem(int size) => new()
+    {
+        Texture = UiIcons.Get("system/gem"),
+        CustomMinimumSize = new Vector2(size, size),
+        ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+        StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+        SelfModulate = UiTheme.Premium,
+        SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
+        MouseFilter = Control.MouseFilterEnum.Ignore,
+    };
 
-        root.AddChild(UiTheme.SectionTitle("Gift Letters"));
+    private static HBoxContainer PusPrice(long amount, int fontSize, Color? color = null)
+    {
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 4);
+        row.AddChild(PusGem(fontSize));
+        row.AddChild(UiTheme.Text(amount.ToString("n0"), fontSize, color ?? UiTheme.Premium));
+        return row;
+    }
 
-        var tabs = new HBoxContainer();
-        tabs.AddThemeConstantOverride("separation", 6);
-        _shoppingmallInboxTab = MakeTab("Inbox", () => SwitchLetterView(false));
-        _shoppingmallHistoryTab = MakeTab("History", () => SwitchLetterView(true));
-        tabs.AddChild(_shoppingmallInboxTab);
-        tabs.AddChild(_shoppingmallHistoryTab);
-        var refresh = new Button { Text = "Refresh", FocusMode = Control.FocusModeEnum.None };
-        refresh.AddThemeFontSizeOverride("font_size", 12);
-        refresh.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        refresh.Pressed += RequestLetterList;
-        tabs.AddChild(refresh);
-        root.AddChild(tabs);
-
-        var listScroll = new ScrollContainer
+    private static HBoxContainer PusPriceTag(PowerUpStoreEntry entry, int fontSize, Color? color = null)
+    {
+        if (!entry.Discounted) return PusPrice(entry.Price, fontSize, color);
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 4);
+        row.AddChild(PusGem(fontSize));
+        var was = UiTheme.Text(entry.BasePrice.ToString("n0"), fontSize - 2, UiTheme.TextDim);
+        was.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        var strike = new ColorRect
         {
-            CustomMinimumSize = new Vector2(420, 220),
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            Color = UiTheme.TextDim,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            AnchorRight = 1f,
+            AnchorTop = PusStrikeHeight,
+            AnchorBottom = PusStrikeHeight,
+            OffsetTop = -PusStrikeWidth / 2,
+            OffsetBottom = PusStrikeWidth / 2,
         };
-        root.AddChild(listScroll);
-        _shoppingmallList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _shoppingmallList.AddThemeConstantOverride("separation", 3);
-        listScroll.AddChild(_shoppingmallList);
-
-        var readPanel = UiTheme.Section();
-        var readBox = new VBoxContainer();
-        readBox.AddThemeConstantOverride("separation", 2);
-        readPanel.AddChild(readBox);
-        _shoppingmallReadTitle = UiTheme.Text("Select a letter to read.", 13, UiTheme.GoldBright);
-        readBox.AddChild(_shoppingmallReadTitle);
-        _shoppingmallReadBody = UiTheme.Text("", 12, UiTheme.TextLo);
-        _shoppingmallReadBody.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        _shoppingmallReadBody.CustomMinimumSize = new Vector2(420, 44);
-        readBox.AddChild(_shoppingmallReadBody);
-        root.AddChild(readPanel);
-
-        root.AddChild(new HSeparator());
-
-        root.AddChild(UiTheme.SectionTitle("Send a Letter"));
-        _shoppingmallToEdit = MakeField(root, "To", 16);
-        _shoppingmallSubjectEdit = MakeField(root, "Subject", 31);
-
-        var msgLbl = UiTheme.Text("Message", 12, UiTheme.TextLo);
-        root.AddChild(msgLbl);
-        _shoppingmallMsgEdit = new TextEdit
-        {
-            CustomMinimumSize = new Vector2(420, 56),
-            PlaceholderText = "Write your message…",
-            WrapMode = TextEdit.LineWrappingMode.Boundary,
-        };
-        root.AddChild(_shoppingmallMsgEdit);
-
-        var giftRow = new HBoxContainer();
-        giftRow.AddThemeConstantOverride("separation", 8);
-        giftRow.AddChild(UiTheme.Text("Attach", 12, UiTheme.TextLo));
-        _shoppingmallGiftPick = new OptionButton { FocusMode = Control.FocusModeEnum.None };
-        _shoppingmallGiftPick.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        giftRow.AddChild(_shoppingmallGiftPick);
-        root.AddChild(giftRow);
-
-        var sendRow = new HBoxContainer();
-        sendRow.AddThemeConstantOverride("separation", 8);
-        _shoppingmallStatus = HudStyle.Label(12);
-        _shoppingmallStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        sendRow.AddChild(_shoppingmallStatus);
-        var sendBtn = new Button { Text = "Send", FocusMode = Control.FocusModeEnum.None };
-        sendBtn.AddThemeFontSizeOverride("font_size", 12);
-        sendBtn.Pressed += SendComposedLetter;
-        sendRow.AddChild(sendBtn);
-        root.AddChild(sendRow);
-    }
-
-    private Button MakeTab(string text, System.Action onPressed)
-    {
-        var b = new Button { Text = text, ToggleMode = true, FocusMode = Control.FocusModeEnum.None };
-        b.AddThemeFontSizeOverride("font_size", 12);
-        b.Pressed += () => onPressed();
-        return b;
-    }
-
-    private LineEdit MakeField(VBoxContainer parent, string label, int maxLen)
-    {
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 8);
-        var lbl = UiTheme.Text(label, 12, UiTheme.TextLo);
-        lbl.CustomMinimumSize = new Vector2(60, 0);
-        row.AddChild(lbl);
-        var edit = new LineEdit { MaxLength = maxLen };
-        edit.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        row.AddChild(edit);
-        parent.AddChild(row);
-        return edit;
+        was.AddChild(strike);
+        row.AddChild(was);
+        row.AddChild(UiTheme.Text("→", fontSize - 2, UiTheme.TextDim));
+        row.AddChild(UiTheme.Text(entry.Price.ToString("n0"), fontSize, color ?? UiTheme.Premium));
+        return row;
     }
 
     public void ToggleShoppingMall()
     {
-        if (_shoppingmallShown) CloseShoppingMall();
+        if (_pusShown) CloseShoppingMall();
         else OpenShoppingMall();
     }
 
@@ -225,465 +173,105 @@ public partial class World
 
     public void OpenShoppingMall()
     {
-        if (_shoppingmallShown) return;
-        _shoppingmallShown = true;
-        _shoppingmallPanel.Visible = true;
-        RefreshPusView();
-        SwitchLetterView(_shoppingmallHistoryView);
-        RebuildGiftPicker();
-        RequestLetterList();
-        Net.I.SendShoppingMallUnread();
+        if (_pusShown) return;
+        _pusShown = true;
+        _pusStoreError = "";
+        _pusWindow.Visible = true;
+        UpdatePusWallet();
+        RenderPusCategories();
+        RenderPusGrid();
+        RenderPusCart();
+        _pusTicker.Start();
+        Callable.From(FitPowerUpStore).CallDeferred();
         Net.I.SendShoppingMallOpen();
     }
 
     public void CloseShoppingMall()
     {
-        if (!_shoppingmallShown) return;
-        _shoppingmallShown = false;
-        _shoppingmallPanel.Visible = false;
+        if (!_pusShown) return;
+        _pusShown = false;
+        _pusGiftChecking = "";
+        ShowPusModal(PusModal.None);
+        _pusTicker.Stop();
+        _pusWindow.Visible = false;
         Net.I.SendShoppingMallClose();
     }
 
-    private void SwitchLetterView(bool history)
+    private void FitPowerUpStore()
     {
-        _shoppingmallHistoryView = history;
-        _shoppingmallInboxTab.ButtonPressed = !history;
-        _shoppingmallHistoryTab.ButtonPressed = history;
-        if (_shoppingmallShown) RequestLetterList();
+        if (!_pusShown || !IsInstanceValid(_pusWindow) || !_pusWindow.IsInsideTree()) return;
+        var target = PowerUpStoreLayout.WindowSize(_pusWindow.GetViewportRect().Size, Platform.TouchUi);
+        var chrome = _pusWindow.GetCombinedMinimumSize() - _pusWindow.Body.GetCombinedMinimumSize();
+        _pusWindow.Body.CustomMinimumSize = (target - chrome).Max(Vector2.Zero);
+        _pusWindow.ResetSize();
+        CentrePowerUpStore();
+        _pusWindow.GetTree().Connect(SceneTree.SignalName.ProcessFrame, Callable.From(CentrePowerUpStore),
+            (uint)ConnectFlags.OneShot);
     }
 
-    private void RequestLetterList()
+    private void CentrePowerUpStore()
     {
-        if (_shoppingmallHistoryView) Net.I.SendShoppingMallLetterHistory();
-        else Net.I.SendShoppingMallLetterList();
-    }
-
-    private void OnShoppingMallLetterList(List<ShoppingMallLetter> letters, bool history)
-    {
-        if (!_shoppingmallShown) return;
-        if (history != _shoppingmallHistoryView) return;
-        _shoppingmallLetters.Clear();
-        _shoppingmallLetters.AddRange(letters);
-        RebuildLetterList();
-    }
-
-    private void RebuildLetterList()
-    {
-        foreach (var c in _shoppingmallList.GetChildren()) c.QueueFree();
-        if (_shoppingmallLetters.Count == 0)
-        {
-            var empty = HudStyle.Label(13);
-            empty.Text = _shoppingmallHistoryView ? "No past letters." : "Your mailbox is empty.";
-            _shoppingmallList.AddChild(empty);
-            return;
-        }
-        foreach (var letter in _shoppingmallLetters)
-            _shoppingmallList.AddChild(BuildLetterRow(letter));
-    }
-
-    private Control BuildLetterRow(ShoppingMallLetter letter)
-    {
-        var row = UiTheme.RowPanel();
-        var hb = new HBoxContainer();
-        hb.AddThemeConstantOverride("separation", 8);
-        row.AddChild(hb);
-
-        if (letter.HasGift && letter.ItemId != 0)
-        {
-            hb.AddChild(new TextureRect
-            {
-                Texture = ItemData.Icon(letter.ItemId),
-                CustomMinimumSize = new Vector2(30, 30),
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-            });
-        }
-        else
-        {
-            var glyph = UiTheme.Text(letter.HasGift ? "$" : "✉", 18, UiTheme.Gold, HorizontalAlignment.Center);
-            glyph.CustomMinimumSize = new Vector2(30, 30);
-            hb.AddChild(glyph);
-        }
-
-        var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        info.AddThemeConstantOverride("separation", -2);
-        var subject = UiTheme.Text("", 13, letter.Status == 1 ? UiTheme.TextHi : UiTheme.TextLo);
-        subject.Text = string.IsNullOrEmpty(letter.Subject) ? "(no subject)" : letter.Subject;
-        info.AddChild(subject);
-        string gift = letter.HasGift
-            ? (letter.ItemId != 0
-                ? $"  ·  {ItemData.DisplayName(letter.ItemId)}" + (letter.Count > 1 ? $" x{letter.Count}" : "")
-                : "") + (letter.Coins > 0 ? $"  ·  {letter.Coins:n0} gold" : "")
-            : "";
-        var meta = UiTheme.Text($"from {letter.Sender}{gift}   ({letter.DaysLeft}d left)", 11, UiTheme.TextDim);
-        info.AddChild(meta);
-        hb.AddChild(info);
-
-        int id = letter.LetterId;
-        var readBtn = new Button { Text = "Read", FocusMode = Control.FocusModeEnum.None };
-        readBtn.AddThemeFontSizeOverride("font_size", 11);
-        readBtn.Pressed += () => Net.I.SendShoppingMallReadLetter(id);
-        hb.AddChild(readBtn);
-
-        if (letter.HasGift)
-        {
-            var getBtn = new Button { Text = "Get", FocusMode = Control.FocusModeEnum.None };
-            getBtn.AddThemeFontSizeOverride("font_size", 11);
-            getBtn.Pressed += () => Net.I.SendShoppingMallGetGift(id);
-            hb.AddChild(getBtn);
-        }
-
-        var delBtn = new Button { Text = "×", FocusMode = Control.FocusModeEnum.None, TooltipText = "Delete" };
-        delBtn.AddThemeFontSizeOverride("font_size", 13);
-        delBtn.Pressed += () => Net.I.SendShoppingMallDelete(new[] { id });
-        hb.AddChild(delBtn);
-
-        return row;
-    }
-
-    private void OnShoppingMallLetterRead(bool ok, int letterId, string message)
-    {
-        if (!ok)
-        {
-            _shoppingmallReadTitle.Text = "That letter is no longer available.";
-            _shoppingmallReadBody.Text = "";
-            return;
-        }
-        var subject = "Letter";
-        foreach (var l in _shoppingmallLetters)
-            if (l.LetterId == letterId) { subject = string.IsNullOrEmpty(l.Subject) ? "Letter" : l.Subject; break; }
-        _shoppingmallReadTitle.Text = subject;
-        _shoppingmallReadBody.Text = message;
-    }
-
-    private void OnShoppingMallGiftResult(bool ok, int letterId, int code)
-    {
-        if (ok)
-        {
-            CombatNotice("Gift claimed from your mailbox.");
-            RequestLetterList();
-            Net.I.SendShoppingMallUnread();
-        }
-        else
-        {
-            SetShoppingMallStatus(code switch
-            {
-                -2 => "That gift was already claimed.",
-                _  => "Couldn't claim the gift (bags full or too heavy).",
-            }, true);
-        }
-    }
-
-    private void OnShoppingMallDelete(List<int> deletedIds, bool overflow)
-    {
-        if (overflow)
-        {
-            SetShoppingMallStatus("Delete up to 5 letters at a time.", true);
-            return;
-        }
-        if (deletedIds.Count > 0)
-        {
-            RequestLetterList();
-            Net.I.SendShoppingMallUnread();
-        }
-    }
-
-    private void OnShoppingMallUnread(int count)
-    {
-        _shoppingmallUnread = count;
-        _shoppingmallInboxTab.Text = count > 0 ? $"Inbox ({count})" : "Inbox";
+        if (!_pusShown || !IsInstanceValid(_pusWindow)) return;
+        _pusWindow.Position = WindowPlacement.Centre(_pusWindow.GetViewportRect().Size, _pusWindow.Size);
     }
 
     private void OnShoppingMallOpen(short error, short freeSlot)
     {
-        if (error == 1)
+        _pusStoreError = error switch
         {
-            _shoppingmallStoreStatus.Text = "Store open — catalogue loaded from the server.";
-            _shoppingmallStoreStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-        }
-        else
-        {
-            string reason = error switch
-            {
-                -2 => "You can't shop while dead.",
-                -3 => "Close your trade first.",
-                -4 => "Close your stall first.",
-                -5 => "The store is closed in this zone.",
-                -8 => "Make a free inventory slot first.",
-                _  => "The store couldn't open.",
-            };
-            _shoppingmallStoreStatus.Text = reason;
-            _shoppingmallStoreStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
-        }
-    }
-
-    private void RebuildGiftPicker()
-    {
-        _shoppingmallGiftPick.Clear();
-        _shoppingmallGiftPick.AddItem("None", 0);
-        _shoppingmallGiftPick.SetItemMetadata(0, -1);
-        int idx = 1;
-        for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
-        {
-            if (Inv[abs].IsEmpty) continue;
-            string name = ItemData.DisplayName(Inv[abs].ItemId);
-            if (Inv[abs].Count > 1) name += $" x{Inv[abs].Count}";
-            _shoppingmallGiftPick.AddItem(name, idx);
-            _shoppingmallGiftPick.SetItemMetadata(idx, abs);
-            idx++;
-        }
-        _shoppingmallGiftPick.Selected = 0;
-    }
-
-    private void SendComposedLetter()
-    {
-        string to = _shoppingmallToEdit.Text.Trim();
-        string subject = _shoppingmallSubjectEdit.Text.Trim();
-        string message = _shoppingmallMsgEdit.Text.Trim();
-
-        if (to.Length == 0) { SetShoppingMallStatus("Enter a recipient.", true); return; }
-        if (subject.Length == 0) { SetShoppingMallStatus("Enter a subject.", true); return; }
-        if (message.Length == 0) { SetShoppingMallStatus("Write a message.", true); return; }
-
-        int sel = _shoppingmallGiftPick.Selected;
-        int absSlot = sel > 0 ? (int)_shoppingmallGiftPick.GetItemMetadata(sel) : -1;
-
-        if (absSlot >= 0 && absSlot < Inv.Length && !Inv[absSlot].IsEmpty)
-        {
-            int cost = Net.ShoppingMallGiftCost;
-            if (Sheet.Gold < cost) { SetShoppingMallStatus($"Sending a gift costs {cost:n0} gold.", true); return; }
-            byte srcPos = (byte)(absSlot - GridStart);
-            Net.I.SendShoppingMallGiftLetter(to, subject, message, Inv[absSlot].ItemId, srcPos);
-        }
-        else
-        {
-            int cost = Net.ShoppingMallLetterCost;
-            if (Sheet.Gold < cost) { SetShoppingMallStatus($"Sending a letter costs {cost:n0} gold.", true); return; }
-            Net.I.SendShoppingMallTextLetter(to, subject, message);
-        }
-        SetShoppingMallStatus("Sending…", false);
-    }
-
-    private void OnShoppingMallSendResult(bool ok, int code)
-    {
-        if (ok)
-        {
-            SetShoppingMallStatus("Letter sent.", false);
-            CombatNotice("Your letter was delivered.");
-            _shoppingmallToEdit.Text = "";
-            _shoppingmallSubjectEdit.Text = "";
-            _shoppingmallMsgEdit.Text = "";
-            RebuildGiftPicker();
-            return;
-        }
-        SetShoppingMallStatus(code switch
-        {
-            -6  => "You can't mail yourself.",
-            -32 => "That item can't be mailed.",
-            _   => "Couldn't send (check the name / your gold).",
-        }, true);
-    }
-
-    private void OnShoppingMallBuyResult(bool ok, int knightCash)
-    {
-        if (ok)
-        {
-            if (knightCash >= 0)
-                OnShoppingMallBalance(knightCash);
-
-            _pusBasketStatus.Text = "Purchase complete.";
-            _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-            CombatNotice("Power-Up Store purchase complete.");
-            return;
-        }
-
-        _pusBasketStatus.Text = "Purchase failed. Check your KC balance and try again.";
-        _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
-    }
-
-    private void SetShoppingMallStatus(string text, bool warn)
-    {
-        _shoppingmallStatus.Text = text;
-        _shoppingmallStatus.AddThemeColorOverride("font_color", warn ? UiTheme.Bad : UiTheme.Good);
-    }
-
-    private void BuildPusSection(VBoxContainer root)
-    {
-        var pusRoot = new VBoxContainer { CustomMinimumSize = new Vector2(420, 0) };
-        pusRoot.AddThemeConstantOverride("separation", 8);
-        root.AddChild(pusRoot);
-
-        _pusCategoryTabs = new HBoxContainer();
-        _pusCategoryTabs.AddThemeConstantOverride("separation", 6);
-        pusRoot.AddChild(_pusCategoryTabs);
-
-        var content = new HBoxContainer();
-        content.AddThemeConstantOverride("separation", 10);
-        pusRoot.AddChild(content);
-
-        var listScroll = new ScrollContainer
-        {
-            CustomMinimumSize = new Vector2(260, 220),
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            1 => "",
+            -2 => "You can't shop while dead.",
+            -3 => "Close your trade first.",
+            -4 => "Close your stall first.",
+            -5 => "The store is closed in this zone.",
+            _ => "The store couldn't open.",
         };
-        _pusItemList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _pusItemList.AddThemeConstantOverride("separation", 4);
-        listScroll.AddChild(_pusItemList);
-        content.AddChild(listScroll);
-
-        var basketPanel = new VBoxContainer { CustomMinimumSize = new Vector2(150, 220) };
-        basketPanel.AddThemeConstantOverride("separation", 6);
-        basketPanel.AddChild(UiTheme.Text("Basket", 12, UiTheme.TextHi));
-        _pusWallet = UiTheme.Text($"KC {Sheet.KnightCash:n0}", 12, UiTheme.GoldBright);
-        basketPanel.AddChild(_pusWallet);
-        _pusBasketList = new VBoxContainer();
-        _pusBasketList.AddThemeConstantOverride("separation", 4);
-        basketPanel.AddChild(_pusBasketList);
-
-        _pusSummary = UiTheme.Text("Total 0 KC", 12, UiTheme.GoldBright);
-        basketPanel.AddChild(_pusSummary);
-        _pusBasketStatus = UiTheme.Text("", 11, UiTheme.TextLo);
-        _pusBasketStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        basketPanel.AddChild(_pusBasketStatus);
-
-        var basketButtons = new HBoxContainer();
-        basketButtons.AddThemeConstantOverride("separation", 6);
-        _pusClearButton = new Button { Text = "Clear", FocusMode = Control.FocusModeEnum.None };
-        _pusClearButton.Pressed += ClearPusBasket;
-        basketButtons.AddChild(_pusClearButton);
-        _pusBuyButton = new Button { Text = "Buy", FocusMode = Control.FocusModeEnum.None };
-        _pusBuyButton.Pressed += BuyPusBasket;
-        basketButtons.AddChild(_pusBuyButton);
-        basketPanel.AddChild(basketButtons);
-
-        content.AddChild(basketPanel);
+        RenderPusGrid();
     }
 
-    private void RefreshPusView()
-    {
-        foreach (var node in _pusItemList.GetChildren()) node.QueueFree();
-        foreach (var node in _pusBasketList.GetChildren()) node.QueueFree();
-
-        var rows = _pusCatalog.Where(i => i.Category == _pusSelectedCategory).ToList();
-        if (rows.Count == 0)
-        {
-            _pusItemList.AddChild(UiTheme.Text("No items in this category.", 12, UiTheme.TextLo));
-        }
-        else
-        {
-            foreach (var item in rows)
-            {
-                var row = UiTheme.RowPanel();
-                var hb = new HBoxContainer();
-                hb.AddThemeConstantOverride("separation", 8);
-                row.AddChild(hb);
-
-                var icon = new TextureRect
-                {
-                    Texture = ItemData.Icon(item.ItemId),
-                    CustomMinimumSize = new Vector2(30, 30),
-                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                    MouseFilter = Control.MouseFilterEnum.Ignore,
-                };
-                hb.AddChild(icon);
-
-                var info = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-                info.AddThemeConstantOverride("separation", -2);
-                info.AddChild(UiTheme.Text(item.Name, 12, UiTheme.TextHi));
-                info.AddChild(UiTheme.Text(item.Description, 11, UiTheme.TextLo));
-                info.AddChild(UiTheme.Text(
-                    $"{item.Price:n0} Knight Cash",
-                    11,
-                    UiTheme.GoldBright));
-                hb.AddChild(info);
-
-                var add = new Button { Text = "+", FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(28, 28) };
-                add.Pressed += () => AddToPusBasket(item);
-                hb.AddChild(add);
-
-                _pusItemList.AddChild(row);
-            }
-        }
-
-        if (_pusBasket.Count == 0)
-        {
-            _pusBasketStatus.Text = "Basket empty.";
-            _pusSummary.Text = "Total 0 KC";
-        }
-        else
-        {
-            int total = 0;
-            foreach (var basket in _pusBasket)
-            {
-                total += basket.Item.Price * basket.Count;
-                var row = UiTheme.RowPanel();
-                var hb = new HBoxContainer();
-                hb.AddThemeConstantOverride("separation", 6);
-                row.AddChild(hb);
-                hb.AddChild(UiTheme.Text(basket.Item.Name, 11, UiTheme.TextHi));
-                var qty = UiTheme.Text($"x{basket.Count}", 11, UiTheme.TextLo);
-                qty.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-                hb.AddChild(qty);
-                var remove = new Button { Text = "-", FocusMode = Control.FocusModeEnum.None };
-                remove.Pressed += () => RemoveFromPusBasket(basket.Item);
-                hb.AddChild(remove);
-                _pusBasketList.AddChild(row);
-            }
-            _pusSummary.Text = $"Total {total:n0} Knight Cash";
-            _pusBasketStatus.Text = "Ready to buy.";
-        }
-
-        _pusBuyButton.Disabled = _pusBasket.Count == 0;
-        _pusClearButton.Disabled = _pusBasket.Count == 0;
-    }
-
-    private void UpdatePusWallet()
-    {
-        if (_pusWallet == null || !IsInstanceValid(_pusWallet)) return;
-        _pusWallet.Text = $"KC {Sheet.KnightCash:n0}";
-    }
-
-    private void OnShoppingMallCatalog(List<ShoppingMallCatalogEntry> entries)
+    private void OnShoppingMallCatalog(List<PowerUpStoreEntry> entries)
     {
         _pusCatalog.Clear();
         foreach (var entry in entries)
         {
-            _pusCatalog.Add(new PusCatalogEntry
+            var item = ItemData.Get(entry.ItemId);
+            if (item == null) continue;
+            _pusCatalog.Add(entry with
             {
-                Id = entry.Id,
-                ItemId = entry.ItemId,
-                Name = entry.Name,
-                Description = entry.Description,
-                Category = entry.Category,
-                Price = entry.Price,
+                Name = ItemData.DisplayName(entry.ItemId),
+                Description = string.Join("\n", SplitDescription(item.Desc)),
             });
         }
-
-        RefreshPusView();
+        _pusLoaded = true;
+        var repriced = _pusCart.Reprice(_pusCatalog);
+        if (_pusRefreshing && repriced)
+            SetPusCartStatus("Prices changed. Check your cart before buying.", true);
+        _pusRefreshing = false;
+        if (!_pusCatalog.Exists(e => e.Featured) && _pusCategory == PowerUpStoreCatalog.FeaturedCategory && _pusCategories.Count > 0)
+            _pusCategory = _pusCategories[0].Id;
+        RenderPusCategories();
+        RenderPusGrid();
+        RenderPusCart();
     }
 
     private void OnShoppingMallCategories(List<ShoppingMallCategory> categories)
     {
         _pusCategories.Clear();
         _pusCategories.AddRange(categories);
-        _pusSelectedCategory = _pusCategories.FirstOrDefault().Id;
-        foreach (var node in _pusCategoryTabs.GetChildren())
-            node.QueueFree();
-        foreach (var category in _pusCategories)
-        {
-            var tab = new Button { Text = category.Name, ToggleMode = true, FocusMode = Control.FocusModeEnum.None };
-            tab.ButtonPressed = category.Id == _pusSelectedCategory;
-            tab.Pressed += () =>
-            {
-                _pusSelectedCategory = category.Id;
-                RefreshPusView();
-            };
-            _pusCategoryTabs.AddChild(tab);
-        }
+        if (_pusCategory != PowerUpStoreCatalog.FeaturedCategory
+            && !_pusCategories.Exists(c => c.Id == _pusCategory) && _pusCategories.Count > 0)
+            _pusCategory = _pusCategories[0].Id;
+        if (!_pusCatalog.Exists(e => e.Featured) && _pusCategory == PowerUpStoreCatalog.FeaturedCategory && _pusCategories.Count > 0)
+            _pusCategory = _pusCategories[0].Id;
+        RenderPusCategories();
+        RenderPusGrid();
+    }
 
-        RefreshPusView();
+    private void RefreshPusCatalogue()
+    {
+        if (_pusRefreshing) return;
+        _pusRefreshing = true;
+        Net.I.SendShoppingMallOpen();
     }
 
     private void OnShoppingMallBalance(int knightCash)
@@ -691,57 +279,82 @@ public partial class World
         Sheet.SetKnightCash(knightCash);
         UpdateStatusHud();
         UpdatePusWallet();
+        RefreshAdminCash();
+        RenderPusCart();
+        RenderPusDetails();
     }
 
-    private void AddToPusBasket(PusCatalogEntry item)
+    private void UpdatePusWallet()
     {
-        var existing = _pusBasket.FirstOrDefault(x => x.Item.Id == item.Id);
-        var itemData = ItemData.Get(item.ItemId);
-        if (existing != null && itemData?.Countable != 0)
-            existing.Count++;
-        else _pusBasket.Add(new PusBasketEntry { Item = item, Count = 1 });
-        RefreshPusView();
+        if (!IsInstanceValid(_pusCashValue)) return;
+        _pusCashValue.Text = Sheet.KnightCash.ToString("n0");
     }
 
-    private void RemoveFromPusBasket(PusCatalogEntry item)
+    private void TickPusTimers()
     {
-        var existing = _pusBasket.FirstOrDefault(x => x.Item.Id == item.Id);
-        if (existing == null) return;
-        if (existing.Count > 1) existing.Count--;
-        else _pusBasket.Remove(existing);
-        RefreshPusView();
-    }
-
-    private void ClearPusBasket()
-    {
-        _pusBasket.Clear();
-        RefreshPusView();
-    }
-
-    private void BuyPusBasket()
-    {
-        if (_pusBasket.Count == 0)
+        var now = DateTime.UtcNow;
+        var ended = false;
+        var timers = _pusDetailsTimer is { } details ? _pusTimerLabels.Append(details) : _pusTimerLabels;
+        foreach (var (label, endsAt) in timers)
         {
-            _pusBasketStatus.Text = "Basket is empty.";
-            _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Bad);
+            if (!IsInstanceValid(label)) continue;
+            var text = PowerUpStoreTimer.Label(endsAt - now);
+            label.Text = text;
+            ended |= text.Length == 0;
+        }
+        if (ended && _pusShown) RefreshPusCatalogue();
+    }
+
+    private void OnShoppingMallPurchase(PowerUpStoreResult result, int knightCash)
+    {
+        var pending = _pusPending;
+        _pusPending = PusPurchase.None;
+        if (knightCash >= 0) OnShoppingMallBalance(knightCash);
+
+        if (result == PowerUpStoreResult.Succeeded)
+        {
+            string message;
+            if (pending == PusPurchase.BuyNow)
+            {
+                ShowPusModal(PusModal.None);
+                message = "Bought. The item is waiting in your mailbox.";
+            }
+            else if (_pusGiftRecipient is { } recipient)
+            {
+                message = $"Gift sent. {recipient.Name} receives it by mail.";
+                _pusCart.Clear();
+                _pusGiftRecipient = null;
+            }
+            else
+            {
+                message = "Bought. Your items are waiting in your mailbox.";
+                _pusCart.Clear();
+            }
+            SetPusCartStatus(message, false);
+            CombatNotice(message);
+            RenderPusCart();
             return;
         }
 
-        int total = 0;
-        foreach (var entry in _pusBasket)
-        {
-            total += entry.Item.Price * entry.Count;
-        }
-
-        foreach (var entry in _pusBasket)
-        {
-            Net.I.SendPowerUpStoreBuy(entry.Item.Id, entry.Count);
-        }
-
-        _pusBasketStatus.Text = $"Purchase request sent for {total:n0} KC. Server validation pending.";
-        _pusBasketStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-        CombatNotice($"Power-Up Store purchase request sent: {total:n0} KC.");
-        _pusBasket.Clear();
-        RefreshPusView();
+        if (result == PowerUpStoreResult.PriceChanged)
+            RefreshPusCatalogue();
+        var failure = PusFailureText(result, pending);
+        if (pending == PusPurchase.BuyNow) SetPusDetailsStatus(failure);
+        else SetPusCartStatus(failure, true);
+        RenderPusCart();
+        RenderPusDetails();
     }
+
+    private static string PusFailureText(PowerUpStoreResult result, PusPurchase pending) => result switch
+    {
+        PowerUpStoreResult.NotEnoughCash => "You don't have enough cash for this.",
+        PowerUpStoreResult.Unavailable => pending == PusPurchase.BuyNow
+            ? "This item is no longer sold."
+            : "Something in your cart is no longer sold. Remove it and try again.",
+        PowerUpStoreResult.RecipientNotFound => "The gift recipient no longer exists. Choose the recipient again.",
+        PowerUpStoreResult.RecipientIsSelf => "You can't send a gift to yourself.",
+        PowerUpStoreResult.RecipientNotAllowed => "Gifts go only to friends and clan members. Choose the recipient again.",
+        PowerUpStoreResult.PriceChanged => "A price changed. The store was refreshed; check the price and buy again.",
+        _ => "The purchase didn't go through. Try again.",
+    };
 }

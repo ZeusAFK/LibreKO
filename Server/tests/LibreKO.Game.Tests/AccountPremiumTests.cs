@@ -117,4 +117,22 @@ public class AccountPremiumTests
 
         loss.Should().Be(MaxExpForLevel / 20);
     }
+
+    [Fact]
+    public void AnAccountExpiryWithoutAPremiumTypeIsNoPremium()
+    {
+        var account = new Account { PremiumType = 0, PremiumDate = DateTime.UtcNow.AddDays(30) };
+
+        account.RemainingPremiumHours.Should().Be(0);
+        account.ActivePremiumType.Should().Be(0);
+    }
+
+    [Fact]
+    public void ASessionExpiryWithoutAPremiumTypeShowsNoTime()
+    {
+        var session = Victim(premiumType: 0, hoursLeft: 24 * 30);
+
+        session.PremiumTime.Should().Be(0);
+        session.PremiumType.Should().Be(0);
+    }
 }

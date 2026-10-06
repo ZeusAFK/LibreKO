@@ -11,7 +11,13 @@ public partial class World
 {
     private const int MailBodyWidth = 440;
     private const int MailListHeight = 240;
+    private const int MailListHeightMax = 760;
+    private const float MailListScreenShare = 0.6f;
+    private const int MailRowIconSize = 16;
     private const int MailActionsTopPadding = 8;
+    private const int MailAttachmentRowsVisible = 5;
+    private const int MailAttachmentRowGap = 3;
+    private const int MailAttachmentScrollGutter = 12;
     private const int MailLayerIndex = 71;
     private const string MailUnreadGlyph = "●";
     private const string MailReadGlyph = "○";
@@ -19,6 +25,7 @@ public partial class World
     private CanvasLayer _mailLayer = null!;
     private HudWindow _mailWindow = null!;
     private VBoxContainer _mailList = null!;
+    private ScrollContainer _mailListScroll = null!;
     private Label _mailUnreadPill = null!;
     private CheckButton _mailUnreadOnly = null!;
     private Label _mailStatus = null!;
@@ -26,6 +33,8 @@ public partial class World
     private Label _mailReadSubject = null!;
     private Label _mailReadMeta = null!;
     private Label _mailReadBody = null!;
+    private Label _mailReadAttachmentTitle = null!;
+    private ScrollContainer _mailReadAttachmentScroll = null!;
     private VBoxContainer _mailReadAttachments = null!;
     private Button _mailClaimBtn = null!;
     private Button _mailDeleteBtn = null!;
@@ -105,6 +114,7 @@ public partial class World
             CustomMinimumSize = new Vector2(MailBodyWidth, MailListHeight),
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
         };
+        _mailListScroll = scroll;
         body.AddChild(scroll);
         _mailList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         _mailList.AddThemeConstantOverride("separation", 3);
@@ -135,9 +145,17 @@ public partial class World
         _mailReadBody.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         _mailReadBody.CustomMinimumSize = new Vector2(MailBodyWidth, 0);
         pane.AddChild(_mailReadBody);
-        _mailReadAttachments = new VBoxContainer();
-        _mailReadAttachments.AddThemeConstantOverride("separation", 3);
-        pane.AddChild(_mailReadAttachments);
+        _mailReadAttachmentTitle = UiTheme.SectionTitle("");
+        pane.AddChild(_mailReadAttachmentTitle);
+        _mailReadAttachmentScroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        UiTheme.ThinScrollbar(_mailReadAttachmentScroll.GetVScrollBar());
+        pane.AddChild(_mailReadAttachmentScroll);
+        var gutter = new MarginContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        gutter.AddThemeConstantOverride("margin_right", MailAttachmentScrollGutter);
+        _mailReadAttachmentScroll.AddChild(gutter);
+        _mailReadAttachments = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        _mailReadAttachments.AddThemeConstantOverride("separation", MailAttachmentRowGap);
+        gutter.AddChild(_mailReadAttachments);
 
         var actionsMargin = new MarginContainer();
         actionsMargin.AddThemeConstantOverride("margin_top", MailActionsTopPadding);
@@ -157,9 +175,18 @@ public partial class World
     {
         if (_mailShown) { CloseMail(); return; }
         _mailShown = true;
+        FitMailList();
         _mailWindow.Visible = true;
         _mailStatus.Text = "";
         Net.I.SendMailList();
+    }
+
+    private void FitMailList()
+    {
+        if (!_mailWindow.IsInsideTree()) return;
+        var height = Mathf.Clamp(_mailWindow.GetViewportRect().Size.Y * MailListScreenShare, MailListHeight, MailListHeightMax);
+        _mailListScroll.CustomMinimumSize = new Vector2(MailBodyWidth, height);
+        Callable.From(_mailWindow.ResetSize).CallDeferred();
     }
 
     private void CloseMail()
@@ -186,7 +213,9 @@ public partial class World
         }
         else if (_mailSelectedId > 0)
         {
-            PaintMailActions(mails.First(m => m.Id == _mailSelectedId));
+            var selected = mails.First(m => m.Id == _mailSelectedId);
+            RenderMailAttachments(selected);
+            PaintMailActions(selected);
         }
         Callable.From(_mailWindow.ResetSize).CallDeferred();
     }
@@ -214,7 +243,9 @@ public partial class World
 
     private Control BuildMailRow(MailEntry mail)
     {
-        var panel = UiTheme.RowPanel(mail.Id == _mailSelectedId, mail.Read);
+        var store = mail.Kind == MailKind.Store;
+        var panel = UiTheme.RowPanel(mail.Id == _mailSelectedId, mail.Read && !store);
+        if (store) panel.AddThemeStyleboxOverride("panel", MailStoreRow(mail.Id == _mailSelectedId));
         panel.MouseFilter = Control.MouseFilterEnum.Stop;
         var margin = new MarginContainer();
         UiTheme.Margins(margin, 8, 4, 8, 4);
@@ -229,28 +260,39 @@ public partial class World
         row.AddChild(text);
         text.AddChild(UiTheme.Text(mail.Subject, 13, mail.Read ? UiTheme.TextLo : UiTheme.TextHi));
         text.AddChild(UiTheme.Text($"from {mail.Sender}", 11, UiTheme.TextDim));
-        if (mail.Attachments == MailAttachmentState.Pending)
+        if (store || mail.Attachments == MailAttachmentState.Pending)
         {
-            var gift = new TextureRect
+            var marker = new TextureRect
             {
-                Texture = UiIcons.Get("system/gift"),
-                CustomMinimumSize = new Vector2(16, 16),
+                Texture = UiIcons.Get(store ? "system/gem" : "system/gift"),
+                CustomMinimumSize = new Vector2(MailRowIconSize, MailRowIconSize),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                Modulate = UiTheme.GoldBright,
-                TooltipText = "Attachments waiting to be claimed",
+                Modulate = store ? UiTheme.Premium : UiTheme.GoldBright,
+                TooltipText = store
+                    ? mail.Attachments == MailAttachmentState.Pending ? "Power-Up Store items waiting to be claimed" : "From the Power-Up Store"
+                    : "Attachments waiting to be claimed",
             };
-            row.AddChild(gift);
+            row.AddChild(marker);
         }
         row.AddChild(UiTheme.Text(MailDate(mail.SentAt), 11, UiTheme.TextDim));
 
         var mailId = mail.Id;
         panel.GuiInput += e =>
         {
-            if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
-                SelectMail(mailId);
+            if (e is not InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) return;
+            panel.AcceptEvent();
+            Callable.From(() => SelectMail(mailId)).CallDeferred();
         };
         return panel;
+    }
+
+    private static StyleBoxFlat MailStoreRow(bool selected)
+    {
+        var style = UiTheme.Row(selected);
+        style.BgColor = selected ? new Color(0.26f, 0.20f, 0.09f, 0.95f) : new Color(0.19f, 0.15f, 0.07f, 0.92f);
+        style.BorderColor = selected ? UiTheme.GoldBright : new Color(UiTheme.GoldVivid, 0.75f);
+        return style;
     }
 
     private static string MailDate(DateTime utc)
@@ -279,14 +321,44 @@ public partial class World
     private void RenderMailAttachments(MailEntry mail)
     {
         ClearChildren(_mailReadAttachments);
-        if (mail.Items.Count == 0) return;
-        _mailReadAttachments.AddChild(UiTheme.SectionTitle(mail.Attachments == MailAttachmentState.Claimed ? "Attachments (claimed)" : "Attachments"));
-        foreach (var attachment in mail.Items)
+        var count = mail.Items.Count;
+        _mailReadAttachmentTitle.Visible = _mailReadAttachmentScroll.Visible = count > 0;
+        if (count == 0) return;
+        var claimed = mail.Attachments == MailAttachmentState.Claimed;
+        _mailReadAttachmentTitle.Text = claimed ? $"Attachments ({count}, claimed)"
+            : $"Attachments ({count}) - click one to claim just that";
+        for (var index = 0; index < count; index++)
         {
+            var attachment = mail.Items[index];
             var displayId = MailDisplayItemId(attachment);
-            _mailReadAttachments.AddChild(QuestItemRow(displayId, QuestRewardName(displayId), $"{attachment.Count:n0}",
-                mail.Attachments == MailAttachmentState.Claimed ? UiTheme.TextDim : UiTheme.GoldBright));
+            var done = claimed || attachment.Remaining == 0;
+            var value = !done && attachment.Claimed > 0
+                ? $"{attachment.Remaining:n0} of {attachment.Count:n0} left"
+                : $"{attachment.Count:n0}";
+            var row = QuestItemRow(displayId, QuestRewardName(displayId), value, done ? UiTheme.TextDim : UiTheme.GoldBright);
+            _mailReadAttachments.AddChild(done ? row : MailClaimableRow(row, mail.Id, index));
         }
+        var rows = Math.Min(count, MailAttachmentRowsVisible);
+        _mailReadAttachmentScroll.CustomMinimumSize = new Vector2(0, rows * QuestRowIconSide + (rows - 1) * MailAttachmentRowGap);
+    }
+
+    private Control MailClaimableRow(Control row, int mailId, int index)
+    {
+        var frame = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Stop, TooltipText = "" };
+        var idle = new StyleBoxEmpty();
+        var hover = UiTheme.Row(selected: true);
+        hover.ContentMarginLeft = hover.ContentMarginRight = hover.ContentMarginTop = hover.ContentMarginBottom = 0;
+        frame.AddThemeStyleboxOverride("panel", idle);
+        frame.MouseEntered += () => frame.AddThemeStyleboxOverride("panel", hover);
+        frame.MouseExited += () => frame.AddThemeStyleboxOverride("panel", idle);
+        frame.GuiInput += e =>
+        {
+            if (e is not InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) return;
+            frame.AcceptEvent();
+            Net.I.SendMailClaimAttachment(mailId, index);
+        };
+        frame.AddChild(row);
+        return frame;
     }
 
     private static int MailDisplayItemId(MailAttachment attachment) => attachment.Kind switch
@@ -330,7 +402,7 @@ public partial class World
 
     private void OnMailClaimResult(int mailId, bool ok, string message)
     {
-        _mailStatus.Text = message;
+        _mailStatus.Text = ok ? "" : message;
         Net.I.SendMailList();
     }
 }

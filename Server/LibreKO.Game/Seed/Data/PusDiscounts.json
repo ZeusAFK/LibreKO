@@ -1,0 +1,4 @@
+[
+  { "Id": 1, "PusItemId": 1, "Price": 640, "StartsAt": "2026-10-06T00:00:00Z", "Duration": 0 },
+  { "Id": 2, "PusItemId": 31, "Price": 69, "StartsAt": "2026-10-06T00:00:00Z", "Duration": 168 }
+]

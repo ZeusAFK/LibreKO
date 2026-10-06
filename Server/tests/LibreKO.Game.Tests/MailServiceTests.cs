@@ -19,12 +19,45 @@ public class MailServiceTests : GameTestBase
     private const int AliceId = 1;
     private const int BobId = 2;
     private const int Apple = 810418000;
+    private const int Sword = 110110001;
 
     private static ServiceProvider Provider() => CreateProvider(
         db => db.Characters.AddRange(
             new Character { Id = AliceId, AccountId = 1, Name = "Alice" },
             new Character { Id = BobId, AccountId = 2, Name = "Bob" }),
-        gameData => gameData.GetItem(Apple).Returns(new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 }));
+        gameData =>
+        {
+            gameData.GetItem(Apple).Returns(new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 });
+            gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Name = "Sword", Countable = 0, Duration = 5000, Weight = 1 });
+        });
+
+    private static void FillBagLeaving(UserSession session, int freeSlots)
+    {
+        for (var i = 0; i < InventoryConstants.HaveMax - freeSlots; i++)
+        {
+            var slot = session.Inventory[InventoryConstants.InventoryStart + i];
+            slot.ItemId = Sword;
+            slot.Count = 1;
+        }
+    }
+
+    private static void EmptyBag(UserSession session)
+    {
+        for (var i = 0; i < InventoryConstants.HaveMax; i++)
+            session.Inventory[InventoryConstants.InventoryStart + i].Clear();
+    }
+
+    private static int CountInBag(UserSession session, int itemId) =>
+        session.Inventory.Skip(InventoryConstants.InventoryStart).Take(InventoryConstants.HaveMax)
+            .Where(s => s.ItemId == itemId).Sum(s => (int)s.Count);
+
+    private static async Task<int> FirstMailIdAsync(IMailService mail, UserSession session, List<Packet> sent)
+    {
+        await mail.SendInboxAsync(session);
+        var inbox = MailPacket(sent, MailPacketWriter.SubList);
+        inbox.ReadUShort();
+        return inbox.ReadInt();
+    }
 
     private static (UserSession Session, List<Packet> Sent) Online(ServiceProvider provider, int characterId, string name)
     {
@@ -164,6 +197,139 @@ public class MailServiceTests : GameTestBase
         MailPacket(bobSent, MailPacketWriter.SubDelete).ReadByte().Should().Be(MailPacketWriter.Succeeded);
         await mail.SendInboxAsync(bob);
         MailPacket(bobSent, MailPacketWriter.SubList).ReadUShort().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ClaimAsync_DeliversWhatFits_AndKeepsTheRestForTheNextClaim()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        FillBagLeaving(bob, 2);
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your items.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, Sword, 3),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Succeeded);
+        CountInBag(bob, Apple).Should().Be(0);
+        CountInBag(bob, Sword).Should().Be(InventoryConstants.HaveMax);
+
+        EmptyBag(bob);
+        await mail.ClaimAsync(bob, mailId);
+
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Succeeded);
+        CountInBag(bob, Sword).Should().Be(1);
+        CountInBag(bob, Apple).Should().Be(4);
+
+        await mail.ClaimAsync(bob, mailId);
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Failed);
+    }
+
+    [Fact]
+    public async Task ClaimAsync_WithAFullBag_DeliversNothing_AndKeepsTheMailPending()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        FillBagLeaving(bob, 0);
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your items.", [new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4)]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Failed);
+        await mail.SendInboxAsync(bob);
+        var inbox = MailPacket(bobSent, MailPacketWriter.SubList);
+        inbox.ReadUShort();
+        inbox.ReadInt();
+        inbox.ReadSByteString();
+        inbox.ReadSByteString();
+        inbox.ReadByte();
+        inbox.ReadByte().Should().Be(MailPacketWriter.AttachmentsPending);
+    }
+
+    [Fact]
+    public async Task SendInboxAsync_WritesHowManyOfEachAttachmentAreClaimed()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        FillBagLeaving(bob, 1);
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your items.", [new MailAttachmentDraft(MailAttachmentKind.Item, Sword, 3)]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+        await mail.SendInboxAsync(bob);
+
+        var inbox = MailPacket(bobSent, MailPacketWriter.SubList);
+        inbox.ReadUShort().Should().Be(1);
+        inbox.ReadInt();
+        inbox.ReadSByteString();
+        inbox.ReadSByteString();
+        inbox.ReadByte();
+        inbox.ReadByte().Should().Be(MailPacketWriter.AttachmentsPending);
+        inbox.ReadLong();
+        inbox.ReadByte().Should().Be(1);
+        inbox.ReadByte().Should().Be((byte)MailAttachmentKind.Item);
+        inbox.ReadInt().Should().Be(Sword);
+        inbox.ReadInt().Should().Be(3);
+        inbox.ReadInt().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ClaimAttachmentAsync_ClaimsOnlyThatAttachment_ThenClaimAsyncTakesTheRest()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your items.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, Sword, 2),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAttachmentAsync(bob, mailId, 1);
+
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Succeeded);
+        CountInBag(bob, Apple).Should().Be(4);
+        CountInBag(bob, Sword).Should().Be(0);
+
+        await mail.ClaimAsync(bob, mailId);
+        CountInBag(bob, Sword).Should().Be(2);
+        await mail.ClaimAttachmentAsync(bob, mailId, 0);
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Failed);
+    }
+
+    [Fact]
+    public async Task SendInboxAsync_EndsEachMailWithItsKind()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your items.", [new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 1)], MailKind.Store);
+
+        await mail.SendInboxAsync(bob);
+
+        var inbox = MailPacket(bobSent, MailPacketWriter.SubList);
+        inbox.ReadUShort().Should().Be(1);
+        inbox.ReadInt();
+        inbox.ReadSByteString();
+        inbox.ReadSByteString();
+        inbox.ReadByte();
+        inbox.ReadByte();
+        inbox.ReadLong();
+        inbox.ReadByte().Should().Be(1);
+        inbox.ReadByte();
+        inbox.ReadInt();
+        inbox.ReadInt();
+        inbox.ReadInt();
+        inbox.ReadByte().Should().Be((byte)MailKind.Store);
     }
 
     [Fact]

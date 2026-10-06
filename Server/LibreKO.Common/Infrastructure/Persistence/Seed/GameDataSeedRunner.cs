@@ -30,6 +30,7 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         await Seed(new ItemSeed());
         await Seed(new PusItemSeed());
         await Seed(new PusCategorySeed());
+        await Seed(new PusDiscountSeed());
         // Warps loaded from SMD map files, not DB. See MapManager.GetWarpList().
         await Seed(new NpcSeed());
         await Seed(new NpcPosSeed());

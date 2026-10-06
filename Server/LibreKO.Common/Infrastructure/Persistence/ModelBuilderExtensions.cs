@@ -45,6 +45,7 @@ internal static class ModelBuilderExtensions
         Configure<PremiumItemExpData>(modelBuilder, "PremiumItemExps");
         Configure<PusItemData>(modelBuilder, "PusItems");
         Configure<PusCategoryData>(modelBuilder, "PusCategories");
+        Configure<PusDiscountData>(modelBuilder, "PusDiscounts");
         Configure<SetItemData>(modelBuilder, "SetItems");
 
         Configure<MagicData>(modelBuilder, "Magic");

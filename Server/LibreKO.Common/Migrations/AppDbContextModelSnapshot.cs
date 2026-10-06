@@ -2522,10 +2522,6 @@ namespace LibreKO.Common.Migrations
                     b.Property<byte>("Id")
                         .HasColumnType("tinyint unsigned");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -2538,6 +2534,30 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("PusCategories", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PusDiscountData", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PusItemId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PusItemId");
+
+                    b.ToTable("PusDiscounts", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.PusItemData", b =>
                 {
                     b.Property<int>("Id")
@@ -2546,16 +2566,11 @@ namespace LibreKO.Common.Migrations
                     b.Property<byte>("Category")
                         .HasColumnType("tinyint unsigned");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<bool>("Featured")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<int>("ItemId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.Property<int>("Price")
                         .HasColumnType("int");
@@ -3240,6 +3255,9 @@ namespace LibreKO.Common.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<byte>("Kind")
+                        .HasColumnType("tinyint unsigned");
+
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("datetime(6)");
 
@@ -3276,6 +3294,9 @@ namespace LibreKO.Common.Migrations
                         .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClaimedCount")
+                        .HasColumnType("int");
 
                     b.Property<int>("Count")
                         .HasColumnType("int");

@@ -160,7 +160,7 @@ public class UserSession
     public DateTime? PremiumExpiry { get; set; }
     public byte PremiumService { get; set; }
 
-    public short PremiumTime => Account.RemainingHoursUntil(PremiumExpiry);
+    public short PremiumTime => PremiumService > 0 ? Account.RemainingHoursUntil(PremiumExpiry) : (short)0;
     public byte PremiumType => PremiumTime > 0 ? PremiumService : (byte)0;
 
     public const byte DrakiStageMin = 1;

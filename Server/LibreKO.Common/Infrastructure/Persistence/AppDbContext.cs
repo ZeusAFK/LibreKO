@@ -67,6 +67,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PremiumItemExpData> PremiumItemExps { get; set; }
     public DbSet<PusItemData> PusItems { get; set; }
     public DbSet<PusCategoryData> PusCategories { get; set; }
+    public DbSet<PusDiscountData> PusDiscounts { get; set; }
     public DbSet<KnightsCapeData> KnightsCapes { get; set; }
     public DbSet<KingSystemData> KingSystem { get; set; }
     public DbSet<MonsterSummonData> MonsterSummons { get; set; }

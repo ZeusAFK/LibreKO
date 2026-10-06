@@ -1,11 +1,13 @@
 ﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.World;
 using LibreKO.Game.Protocol.Writers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.Protocol;
 
@@ -13,22 +15,33 @@ public interface IShoppingMallStoreService
 {
     Task HandleOpenAsync(UserSession session);
     Task HandleCloseAsync(UserSession session);
-    Task HandleBuyAsync(UserSession session, Packet packet);
+    Task HandlePurchaseAsync(UserSession session, Packet packet);
     Task SendBalanceAsync(UserSession session);
 }
 
 public class ShoppingMallStoreService(
     ICharacterStatePersister characterStatePersister,
     IGameDataService gameData,
-    IServiceScopeFactory scopeFactory) : IShoppingMallStoreService
+    IMailService mailService,
+    IServiceScopeFactory scopeFactory,
+    ILogger<ShoppingMallStoreService> logger) : IShoppingMallStoreService
 {
+    public const byte StorePurchase = 8;
+    public const byte PurchaseCart = 1;
+    public const byte PurchaseCheckRecipient = 2;
+    public const int LineCountMax = 999;
+
     private const byte StoreOpen = 1;
-    private const byte StoreBuy = 8;
-    private const byte StoreBuyItem = 1;
     private const byte StoreCatalog = 3;
     private const byte StoreCategories = 4;
     private const byte StoreBalance = 5;
-    private const int BuyRequestSize = 6;
+    private const int CartLineSize = sizeof(int) + sizeof(ushort) + sizeof(int);
+    private const string PurchaseSubject = "Power-Up Store purchase";
+    private const string PurchaseBody = "Your Power-Up Store items are attached to this mail.";
+
+    private readonly record struct CartLine(PusItemData Entry, int Count, int UnitPrice);
+
+    private readonly record struct Recipient(int CharacterId, string Name, byte Level, short Class, short KnightsId);
 
     public async Task HandleOpenAsync(UserSession session)
     {
@@ -61,9 +74,6 @@ public class ShoppingMallStoreService(
                     break;
                 }
             }
-
-            if (freeSlot < 0)
-                errorCode = -8;
         }
 
         await session.Client.SendPacket(
@@ -77,15 +87,24 @@ public class ShoppingMallStoreService(
         var categories = await db.PusCategories.AsNoTracking()
             .Where(x => x.Status != 0)
             .OrderBy(x => x.Id)
-            .Select(x => new ShoppingMallPacketWriter.Category(x.Id, x.Name, x.Description))
+            .Select(x => new ShoppingMallPacketWriter.Category(x.Id, x.Name))
             .ToListAsync();
-        var catalog = await db.PusItems.AsNoTracking()
+        var items = await db.PusItems.AsNoTracking()
             .Where(x => x.Price > 0)
             .OrderBy(x => x.Id)
-            .Select(x => new ShoppingMallPacketWriter.CatalogEntry(
-                x.Id, x.ItemId, x.Name, x.Description,
-                x.Category, x.Price))
             .ToListAsync();
+        var discounts = await db.PusDiscounts.AsNoTracking().ToListAsync();
+        var now = DateTime.UtcNow;
+        var catalog = items
+            .Where(x => gameData.GetItem(x.ItemId) != null)
+            .Select(x =>
+            {
+                var price = PowerUpStoreCatalog.PriceOf(x, discounts, now);
+                return new ShoppingMallPacketWriter.CatalogEntry(
+                    x.Id, x.ItemId, x.Category, x.Price, x.Featured,
+                    price.Discounted ? price.Price : 0, price.Discounted ? price.DiscountEndsAt : null);
+            })
+            .ToList();
 
         await session.Client.SendPacket(ShoppingMallPacketWriter.Catalog(StoreOpen, StoreCatalog, catalog));
         await session.Client.SendPacket(ShoppingMallPacketWriter.Categories(StoreOpen, StoreCategories, categories));
@@ -93,94 +112,146 @@ public class ShoppingMallStoreService(
     }
 
     public Task SendBalanceAsync(UserSession session) =>
-        session.Client.SendPacket(ShoppingMallPacketWriter.Balance(
-            StoreOpen, StoreBalance, session.KnightCash));
+        session.Client.SendPacket(BalancePacket(session.KnightCash));
 
-    public async Task HandleBuyAsync(UserSession session, Packet packet)
+    public static Packet BalancePacket(int knightCash) =>
+        ShoppingMallPacketWriter.Balance(StoreOpen, StoreBalance, knightCash);
+
+    public async Task HandlePurchaseAsync(UserSession session, Packet packet)
     {
         if (packet.RemainingBytes < 1)
-        {
-            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, StoreBuyItem, 0));
             return;
+
+        switch (packet.ReadByte())
+        {
+            case PurchaseCart:
+                var result = await BuyCartAsync(session, packet);
+                await session.Client.SendPacket(ShoppingMallPacketWriter.PurchaseResult(
+                    StorePurchase, PurchaseCart, (byte)result, session.KnightCash));
+                break;
+            case PurchaseCheckRecipient:
+                await CheckRecipientAsync(session, packet);
+                break;
+        }
+    }
+
+    private async Task<PowerUpStoreResult> BuyCartAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 1)
+            return PowerUpStoreResult.Failed;
+
+        var recipientName = packet.ReadSByteString().Trim();
+        if (packet.RemainingBytes < 1)
+            return PowerUpStoreResult.Failed;
+
+        int lineCount = packet.ReadByte();
+        if (lineCount == 0 || packet.RemainingBytes < lineCount * CartLineSize)
+            return PowerUpStoreResult.Failed;
+
+        var requested = new List<(int CatalogId, int Count, int UnitPrice)>(lineCount);
+        for (var i = 0; i < lineCount; i++)
+            requested.Add((packet.ReadInt(), packet.ReadUShort(), packet.ReadInt()));
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var recipientId = session.CharacterId;
+        var gift = recipientName.Length > 0;
+        if (gift)
+        {
+            var (lookup, recipient) = await FindRecipientAsync(db, session, recipientName);
+            if (lookup != PowerUpStoreResult.Succeeded)
+                return lookup;
+            recipientId = recipient.CharacterId;
         }
 
-        var sub = packet.ReadByte();
-        if (sub != StoreBuyItem)
+        var catalogIds = requested.Select(line => line.CatalogId).Distinct().ToList();
+        var entries = await db.PusItems.AsNoTracking()
+            .Where(x => catalogIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id);
+        var discounts = await db.PusDiscounts.AsNoTracking()
+            .Where(x => catalogIds.Contains(x.PusItemId))
+            .ToListAsync();
+        var now = DateTime.UtcNow;
+
+        var lines = new List<CartLine>(lineCount);
+        long total = 0;
+        foreach (var (catalogId, count, seenPrice) in requested)
         {
-            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
+            if (count is < 1 or > LineCountMax
+                || !entries.TryGetValue(catalogId, out var entry)
+                || entry.Price <= 0
+                || gameData.GetItem(entry.ItemId) == null)
+                return PowerUpStoreResult.Unavailable;
+
+            var unitPrice = PowerUpStoreCatalog.PriceOf(entry, discounts, now).Price;
+            if (unitPrice != seenPrice)
+                return PowerUpStoreResult.PriceChanged;
+
+            lines.Add(new CartLine(entry, count, unitPrice));
+            total += (long)unitPrice * count;
+        }
+
+        if (total > session.KnightCash)
+            return PowerUpStoreResult.NotEnoughCash;
+
+        var attachments = lines
+            .Select(line => new MailAttachmentDraft(
+                MailAttachmentKind.Item, line.Entry.ItemId, line.Count, gameData.GetItem(line.Entry.ItemId)!.Duration))
+            .ToList();
+
+        session.KnightCash -= (int)total;
+        try
+        {
+            if (gift)
+                await mailService.SendSystemMailAsync(recipientId, $"A gift from {session.Name}",
+                    $"{session.Name} sent you a gift from the Power-Up Store. It is attached to this mail.", attachments, MailKind.Store);
+            else
+                await mailService.SendSystemMailAsync(recipientId, PurchaseSubject, PurchaseBody, attachments, MailKind.Store);
+        }
+        catch (Exception ex)
+        {
+            session.KnightCash += (int)total;
+            logger.LogError(ex, "Power-Up Store mail for {Buyer} failed; {Total} cash refunded", session.Name, total);
+            return PowerUpStoreResult.Failed;
+        }
+
+        await characterStatePersister.SaveAsync(session);
+        return PowerUpStoreResult.Succeeded;
+    }
+
+    private async Task CheckRecipientAsync(UserSession session, Packet packet)
+    {
+        if (packet.RemainingBytes < 1)
             return;
-        }
 
-        if (packet.RemainingBytes < BuyRequestSize)
-        {
-            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
-            return;
-        }
+        var name = packet.ReadSByteString().Trim();
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (result, recipient) = await FindRecipientAsync(db, session, name);
+        await session.Client.SendPacket(result == PowerUpStoreResult.Succeeded
+            ? ShoppingMallPacketWriter.Recipient(StorePurchase, PurchaseCheckRecipient, recipient.Name, recipient.Level, recipient.Class)
+            : ShoppingMallPacketWriter.Result(StorePurchase, PurchaseCheckRecipient, (byte)result));
+    }
 
-        var buyKind = packet.ReadByte();
-        var catalogEntryId = packet.ReadInt();
-        var count = packet.ReadByte();
-        if (buyKind != StoreBuyItem || catalogEntryId <= 0 || count <= 0)
-        {
-            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
-            return;
-        }
+    private static async Task<(PowerUpStoreResult Result, Recipient Recipient)> FindRecipientAsync(
+        AppDbContext db, UserSession session, string name)
+    {
+        if (name.Length == 0)
+            return (PowerUpStoreResult.RecipientNotFound, default);
 
-        using (var scope = scopeFactory.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var pusItem = await db.PusItems.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == catalogEntryId);
-            if (pusItem == null)
-            {
-                await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
-                return;
-            }
-
-            var itemData = gameData.GetItem(pusItem.ItemId);
-            if (itemData == null
-                || itemData.Countable == 0 && count > 1)
-            {
-                await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
-                return;
-            }
-
-            var totalCost = pusItem.Price * count;
-            if (totalCost <= 0 || session.KnightCash < totalCost)
-            {
-                await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
-                return;
-            }
-
-            var slot = session.FindSlotForItem(pusItem.ItemId, gameData, count);
-            if (slot < 0)
-            {
-                await session.Client.SendPacket(ShoppingMallPacketWriter.Result(StoreBuy, sub, 0));
-                return;
-            }
-
-            session.KnightCash -= totalCost;
-
-            var inventorySlot = session.Inventory[slot];
-            var isNewItem = inventorySlot.IsEmpty;
-            if (isNewItem)
-            {
-                inventorySlot.ItemId = pusItem.ItemId;
-                inventorySlot.Durability = itemData.Duration;
-                inventorySlot.Count = 0;
-                inventorySlot.Flag = 0;
-                inventorySlot.ExpiresAt = 0;
-            }
-
-            inventorySlot.Count = (ushort)Math.Min(InventoryConstants.MaxStackCount, inventorySlot.Count + count);
-
-            await characterStatePersister.SaveAsync(session);
-            await session.Client.SendPacket(new ItemCountChangePacketWriter()
-                .Add((byte)slot, pusItem.ItemId, inventorySlot.Count, inventorySlot.Durability, isNewItem)
-                .Build());
-            await session.Client.SendPacket(ShoppingMallPacketWriter.PurchaseResult(
-                StoreBuy, sub, ShoppingMallPacketWriter.Succeeded, session.KnightCash));
-        }
+        var found = await db.Characters.AsNoTracking()
+            .Where(c => c.Name == name)
+            .Select(c => new Recipient(c.Id, c.Name, c.Level, c.Class, c.KnightsId))
+            .FirstOrDefaultAsync();
+        if (found.Name == null)
+            return (PowerUpStoreResult.RecipientNotFound, default);
+        if (found.CharacterId == session.CharacterId)
+            return (PowerUpStoreResult.RecipientIsSelf, default);
+        var clanmate = session.KnightsId > 0 && found.KnightsId == session.KnightsId;
+        if (!clanmate && !await db.Friendships.AnyAsync(f => f.CharacterId == session.CharacterId && f.FriendCharacterId == found.CharacterId))
+            return (PowerUpStoreResult.RecipientNotAllowed, default);
+        return (PowerUpStoreResult.Succeeded, found);
     }
 
     public async Task HandleCloseAsync(UserSession session)

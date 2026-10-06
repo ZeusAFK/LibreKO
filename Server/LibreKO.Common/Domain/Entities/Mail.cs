@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using LibreKO.Common.Enums;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LibreKO.Common.Domain.Entities;
@@ -25,6 +26,7 @@ public class Mail
     public DateTime? ReadAt { get; set; }
     public DateTime? ClaimedAt { get; set; }
     public bool Deleted { get; set; }
+    public MailKind Kind { get; set; }
     public List<MailAttachment> Attachments { get; set; } = [];
 
     public bool HasUnclaimedAttachments => Attachments.Count > 0 && ClaimedAt == null;
