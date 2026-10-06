@@ -26,12 +26,14 @@ public interface IPetService
     Task<bool> MoveItemAsync(UserSession session, bool intoPet, int itemId, byte sourcePosition, byte destinationPosition);
     Task AwardKillAsync(NpcInstance monster);
     Task SaveAsync(UserSession session);
+    Task TakeDamageAsync(NpcInstance pet, int damage);
 }
 
 public sealed class PetService(
     SessionManager sessionManager,
     IGameDataService gameData,
     IServiceScopeFactory scopeFactory,
+    IUserNotificationService notifications,
     ILogger<PetService> logger) : IPetService
 {
     public const int HatchedPetItem = 610_001_000;
@@ -273,6 +275,7 @@ public sealed class PetService(
         sessionManager.Regions.SpawnNpc(npc);
         await sessionManager.Regions.BroadcastFromNpc(npc, NpcPacketMapper.BuildInOutPacket(npc, InOutType.In));
         await session.Client.SendPacket(PetPacketWriter.Summoned(PetPacketWriter.InfoOf(state, level)));
+        await RefreshOwnerAsync(session, state);
 
         logger.LogDebug("{Name} summoned familiar {PetName} as NPC {NpcId}", session.Name, pet.Name, npc.UniqueId);
         return true;
@@ -293,7 +296,19 @@ public sealed class PetService(
         }
 
         await session.Client.SendPacket(PetPacketWriter.Died(state.Record.Id));
+        await RefreshOwnerAsync(session, state);
         await PersistAsync(state);
+    }
+
+    private async Task RefreshOwnerAsync(UserSession owner, PetState state)
+    {
+        if (!PetBag.OwnerScrolls(state.Items, gameData.GetItem).Any())
+            return;
+
+        owner.RecalculateStatsWithBuffs(gameData);
+        if (owner.Hp > owner.MaxHp)
+            owner.Hp = owner.MaxHp;
+        await notifications.SendStatUpdateAsync(owner);
     }
 
     public async Task SetModeAsync(UserSession session, PetMode mode)
@@ -413,6 +428,13 @@ public sealed class PetService(
             return false;
 
         state.SaveItems();
+        if (gameData.GetItem(itemId)?.Kind is PetBag.AttackPacketKind or PetBag.DefencePacketKind
+            && state.Npc is { } pet && LevelOf(state.Record.Level) is { } level)
+        {
+            ApplyLevel(pet, state, level);
+            await session.Client.SendPacket(PetPacketWriter.Summoned(PetPacketWriter.InfoOf(state, level)));
+        }
+
         await PersistAsync(state);
         return true;
     }
@@ -469,6 +491,21 @@ public sealed class PetService(
         monster.PetDamage.Clear();
     }
 
+    public async Task TakeDamageAsync(NpcInstance pet, int damage)
+    {
+        if (sessionManager.GetByCharacterId(pet.OwnerCharId) is not { Pet: { } state } owner || state.Npc != pet || damage <= 0)
+            return;
+
+        pet.Hp = Math.Max(0, pet.Hp - damage);
+        state.Record.Hp = (short)pet.Hp;
+        await owner.Client.SendPacket(PetPacketWriter.HpChanged((short)pet.MaxHp, (short)pet.Hp, pet.UniqueId));
+        if (pet.Hp > 0)
+            return;
+
+        logger.LogDebug("Familiar of {Name} was killed", owner.Name);
+        await DismissAsync(owner);
+    }
+
     public async Task SaveAsync(UserSession session)
     {
         if (session.Pet is { } state)
@@ -502,7 +539,7 @@ public sealed class PetService(
         {
             pet.Hp = level.MaxHp;
             pet.Mp = level.MaxMp;
-            ApplyLevel(npc, pet, level);
+            ApplyLevel(npc, state, level);
             await sessionManager.Regions.BroadcastFromNpc(npc, PetPacketWriter.LevelUp(npc.UniqueId));
             await owner.Client.SendPacket(PetPacketWriter.Summoned(PetPacketWriter.InfoOf(state, level)));
         }
@@ -563,19 +600,20 @@ public sealed class PetService(
             EvadeRate = PetAiService.HitRate,
             Direction = 0,
         };
-        ApplyLevel(npc, state.Record, level);
+        ApplyLevel(npc, state, level);
         return npc;
     }
 
-    private static void ApplyLevel(NpcInstance npc, Pet pet, PetLevelData level)
+    private void ApplyLevel(NpcInstance npc, PetState state, PetLevelData level)
     {
+        var pet = state.Record;
         npc.Level = pet.Level;
         npc.MaxHp = level.MaxHp;
         npc.Hp = Math.Max(1, (int)pet.Hp);
         npc.MaxMp = level.MaxMp;
         npc.Mp = pet.Mp;
-        npc.Attack1 = level.Attack;
-        npc.Ac = level.Defence;
+        npc.Attack1 = PetBag.Boost(level.Attack, state.Items, PetBag.AttackPacketKind, gameData.GetItem);
+        npc.Ac = PetBag.Boost(level.Defence, state.Items, PetBag.DefencePacketKind, gameData.GetItem);
     }
 
     private PetLevelData? LevelOf(byte level) =>

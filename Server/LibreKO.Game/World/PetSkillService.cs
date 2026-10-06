@@ -9,9 +9,12 @@ namespace LibreKO.Game.World;
 
 public readonly record struct PetSkillRequest(byte Stage, int SkillId, int CasterId, int TargetId, int[] Data);
 
+public sealed record HeldPetSkill(PetSkillRequest Request, long SinceTicks);
+
 public interface IPetSkillService
 {
     Task UseAsync(UserSession session, PetSkillRequest request);
+    Task ResumeAsync(NpcInstance pet, long nowTicks);
 }
 
 public sealed class PetSkillService(
@@ -23,6 +26,7 @@ public sealed class PetSkillService(
     ILogger<PetSkillService> logger) : IPetSkillService
 {
     public const float MeleeReach = PetAiService.StrikeReach + 1f;
+    public static readonly TimeSpan HeldSkillTimeout = TimeSpan.FromSeconds(10);
     private const int MissMarkerSlot = 3;
     private const int MissMarker = -100;
     private const int MillisecondsPerTenth = 100;
@@ -61,6 +65,30 @@ public sealed class PetSkillService(
         }
     }
 
+    public async Task ResumeAsync(NpcInstance pet, long nowTicks)
+    {
+        if (sessionManager.GetByCharacterId(pet.OwnerCharId) is not { Pet: { HeldSkill: { } held } state } owner
+            || state.Npc != pet)
+            return;
+
+        var target = HostileTarget(owner, pet, held.Request.TargetId);
+        if (target == null
+            || state.Mode != PetMode.Attack
+            || state.TargetNpcId != target.UniqueId
+            || nowTicks - held.SinceTicks > HeldSkillTimeout.Ticks)
+        {
+            state.HeldSkill = null;
+            return;
+        }
+
+        if (DistanceSq(pet.X, pet.Z, target.X, target.Z) > MeleeReach * MeleeReach)
+            return;
+
+        state.HeldSkill = null;
+        if (gameData.GetMagic(held.Request.SkillId) is { } magic)
+            await EffectAsync(owner, state, pet, magic, held.Request);
+    }
+
     private async Task EffectAsync(UserSession owner, PetState state, NpcInstance pet, MagicData magic, PetSkillRequest request)
     {
         var now = DateTime.UtcNow.Ticks;
@@ -70,45 +98,53 @@ public sealed class PetSkillService(
             return;
         }
 
-        bool used;
+        SkillUse use;
         if (magic.Id == PetSkills.DesignatedAttack)
-            used = await OrderAttackAsync(owner, state, pet, magic, request);
+            use = await OrderAttackAsync(owner, state, pet, magic, request);
         else
-            used = magic.PrimaryType switch
+            use = magic.PrimaryType switch
             {
-                MagicSkillType.Melee => await StrikeAsync(owner, state, pet, magic, request),
+                MagicSkillType.Melee => await StrikeAsync(owner, state, pet, magic, request, now),
                 MagicSkillType.Buff when magic.Moral == PetSkills.OwnerMoral => await BuffOwnerAsync(owner, magic, request),
-                _ => false,
+                _ => SkillUse.Refused,
             };
 
-        if (!used)
+        switch (use)
         {
-            await FailAsync(owner, pet, magic.Id);
-            return;
+            case SkillUse.Refused:
+                await FailAsync(owner, pet, magic.Id);
+                break;
+            case SkillUse.Done:
+                await SpendAsync(owner, state, pet, magic, now);
+                break;
         }
-
-        await SpendAsync(owner, state, pet, magic, now);
     }
 
-    private async Task<bool> OrderAttackAsync(UserSession owner, PetState state, NpcInstance pet, MagicData magic, PetSkillRequest request)
+    private async Task<SkillUse> OrderAttackAsync(UserSession owner, PetState state, NpcInstance pet, MagicData magic, PetSkillRequest request)
     {
         if (HostileTarget(owner, pet, request.TargetId) is not { } target)
-            return false;
+            return SkillUse.Refused;
 
         await EngageAsync(owner, state, target);
         await sessionManager.Regions.BroadcastFromNpc(
             pet, MagicProcessPacketWriter.CreateEffecting(magic.Id, pet.UniqueId, target.UniqueId, request.Data));
-        return true;
+        return SkillUse.Done;
     }
 
-    private async Task<bool> StrikeAsync(UserSession owner, PetState state, NpcInstance pet, MagicData magic, PetSkillRequest request)
+    private async Task<SkillUse> StrikeAsync(UserSession owner, PetState state, NpcInstance pet, MagicData magic,
+        PetSkillRequest request, long now)
     {
         if (HostileTarget(owner, pet, request.TargetId) is not { } target
-            || DistanceSq(pet.X, pet.Z, target.X, target.Z) > MeleeReach * MeleeReach
             || !MagicTypeLookup.TryResolve(gameData.MagicType1Table, magic, magic.Id, out var type1))
-            return false;
+            return SkillUse.Refused;
 
         await EngageAsync(owner, state, target);
+        if (DistanceSq(pet.X, pet.Z, target.X, target.Z) > MeleeReach * MeleeReach)
+        {
+            state.HeldSkill = new HeldPetSkill(request, now);
+            return SkillUse.Held;
+        }
+
         var totalHit = pet.TotalHit * type1.Hit / PercentScale + type1.AddDamage;
         var result = await petAi.StrikeAsync(owner, pet, target, totalHit, sureHit: type1.HitType != 0);
 
@@ -120,16 +156,16 @@ public sealed class PetSkillService(
 
         if (result == AttackResult.TargetDead)
             await petAi.SettleKillAsync(owner, state, target);
-        return true;
+        return SkillUse.Done;
     }
 
-    private async Task<bool> BuffOwnerAsync(UserSession owner, MagicData magic, PetSkillRequest request)
+    private async Task<SkillUse> BuffOwnerAsync(UserSession owner, MagicData magic, PetSkillRequest request)
     {
         if (owner.Hp <= 0)
-            return false;
+            return SkillUse.Refused;
 
         await statusEffects.ExecuteAsync(owner, magic, MagicSkillType.Buff, magic.Id, owner.CharacterId, request.Data);
-        return true;
+        return SkillUse.Done;
     }
 
     private async Task EngageAsync(UserSession owner, PetState state, NpcInstance target)
@@ -173,5 +209,12 @@ public sealed class PetSkillService(
         var dx = ax - bx;
         var dz = az - bz;
         return dx * dx + dz * dz;
+    }
+
+    private enum SkillUse
+    {
+        Refused,
+        Held,
+        Done,
     }
 }

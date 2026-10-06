@@ -169,6 +169,7 @@ public class CombatLifecycleService(
         npc.DeathTimeTicks = DateTime.UtcNow.Ticks;
         npc.State = NpcState.Dead;
         npc.TargetUserId = 0;
+        npc.TargetPetId = 0;
         npc.IsMoving = false;
         npc.WakeTicks = 0;
         sessionManager.Regions.MarkNpcIdle(npc);

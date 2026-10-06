@@ -162,6 +162,7 @@ public class NpcAiTargetingService(
     public void LoseTarget(NpcInstance npc, long nowTicks)
     {
         npc.TargetUserId = 0;
+        npc.TargetPetId = 0;
         npc.IsMoving = false;
         npc.IsTracing = false;
 

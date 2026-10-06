@@ -31,6 +31,7 @@ public sealed class NpcLifecycleService(
             target.DeathTimeTicks = DateTime.UtcNow.Ticks;
             target.State = NpcState.Dead;
             target.TargetUserId = 0;
+            target.TargetPetId = 0;
             target.IsMoving = false;
             target.WakeTicks = 0;
         });

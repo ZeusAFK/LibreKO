@@ -119,6 +119,8 @@ public class ItemMoveService(
         {
             var moved = await petService.MoveItemAsync(
                 session, direction == ItemMoveDirection.InventoryToPet, itemId, sourcePosition, destinationPosition);
+            if (moved)
+                session.RecalculateStatsWithBuffs(gameDataService);
             await SendItemMoveResponseAsync(session, moved ? (byte)1 : (byte)0);
             if (moved)
                 await userNotificationService.SendWeightChangeAsync(session);

@@ -97,6 +97,8 @@ public sealed class PetAiService(
 
         target.Hp = Math.Max(0, target.Hp - damage);
         target.RecordDamage(owner.CharacterId, damage, owner, sessionManager.GetByCharacterId);
+        if (target.IsMonster && !target.IsScarecrow)
+            target.TargetPetId = pet.UniqueId;
         target.PetDamage.AddOrUpdate(owner.CharacterId, damage, (_, total) => total + damage);
         await combatLifecycleService.SendNpcTargetHpAsync(owner, target, damage);
         await owner.Client.SendPacket(PetPacketWriter.TargetHp(

@@ -43,7 +43,8 @@ public static class PetPacketWriter
         pet.Record.Id, pet.Record.Name, pet.Record.Class, pet.Record.Level,
         PetItemInfo.ExpPercentOf(pet.Record.Exp, level),
         level?.MaxHp ?? pet.Record.Hp, pet.Record.Hp, level?.MaxMp ?? pet.Record.Mp, pet.Record.Mp,
-        pet.Record.Satisfaction, level?.Attack ?? 0, level?.Defence ?? 0, level?.Resist ?? 0, pet.Items);
+        pet.Record.Satisfaction, pet.Npc?.Attack1 ?? level?.Attack ?? 0, pet.Npc?.Ac ?? level?.Defence ?? 0,
+        level?.Resist ?? 0, pet.Items);
 
     public static Packet Summoned(SummonInfo info)
     {

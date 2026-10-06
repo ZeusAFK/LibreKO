@@ -18,6 +18,7 @@ public sealed class PetState(Pet record, int itemId)
     public long LastAttackTicks { get; set; }
     public long LastRegenTicks { get; set; } = DateTime.UtcNow.Ticks;
     public Dictionary<int, long> SkillReadyTicks { get; } = [];
+    public HeldPetSkill? HeldSkill { get; set; }
 
     public bool IsSummoned => Npc is { IsAlive: true };
 

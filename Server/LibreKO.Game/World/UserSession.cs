@@ -357,8 +357,22 @@ public class UserSession
             UserSessionMagicState.BuffStatBonus(this),
             UserSessionMagicState.WeaponDamageBonus(this));
         UserSessionMagicState.ApplyBuffBonuses(this);
+        ApplyFamiliarScrolls(coefficient, gameData);
         MaxHp = Stats.MaxHp;
         MaxMp = Stats.MaxMp;
+    }
+
+    private void ApplyFamiliarScrolls(CoefficientData coefficient, IGameDataService gameData)
+    {
+        if (Pet is not { IsSummoned: true } familiar)
+            return;
+
+        foreach (var scroll in PetBag.OwnerScrolls(familiar.Items, gameData.GetItem))
+        {
+            Stats.MaxHp = (short)Math.Min(AbilityCalculator.MaxPlayerHp, Stats.MaxHp + scroll.MaxHpB);
+            Stats.TotalAc = (short)(Stats.TotalAc + coefficient.Ac * scroll.Ac);
+            Stats.TotalHit = (ushort)Math.Min(ushort.MaxValue, Stats.TotalHit + scroll.Damage);
+        }
     }
 
     public byte GetStat(StatType stat) => stat switch

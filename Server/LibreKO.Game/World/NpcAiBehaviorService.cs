@@ -14,7 +14,8 @@ public class NpcAiBehaviorService(
     INpcAiMovementService npcAiMovementService,
     INpcAiCombatService npcAiCombatService,
     IGuardSummonAiService guardSummonAiService,
-    IPetAiService petAiService) : INpcAiBehaviorService
+    IPetAiService petAiService,
+    IPetSkillService petSkillService) : INpcAiBehaviorService
 {
     public async Task ProcessNpcAsync(NpcInstance npc, long nowTicks)
     {
@@ -33,8 +34,14 @@ public class NpcAiBehaviorService(
         if (npc.IsPet)
         {
             await petAiService.TickAsync(npc, nowTicks);
+            await petSkillService.ResumeAsync(npc, nowTicks);
             return;
         }
+
+        if (npc.TargetPetId != 0
+            && npc.State is NpcState.Standing or NpcState.Attacking or NpcState.Fighting
+            && await npcAiCombatService.FightFamiliarAsync(npc, nowTicks))
+            return;
 
         switch (npc.State)
         {

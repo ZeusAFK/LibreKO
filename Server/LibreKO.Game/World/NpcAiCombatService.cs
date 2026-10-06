@@ -14,6 +14,7 @@ public interface INpcAiCombatService
     Task HandleCastingAsync(NpcInstance npc, long nowTicks);
     Task ExecuteAttackAsync(NpcInstance npc, UserSession target, long nowTicks);
     Task StartHealCastAsync(NpcInstance healer, NpcInstance target, long nowTicks);
+    Task<bool> FightFamiliarAsync(NpcInstance npc, long nowTicks);
 }
 
 public class NpcAiCombatService(
@@ -24,8 +25,53 @@ public class NpcAiCombatService(
     INpcAiMagicService npcAiMagicService,
     INpcAiDeathService npcAiDeathService,
     ICombatNotificationService combatNotificationService,
+    IPetService petService,
     ILogger<NpcAiCombatService> logger) : INpcAiCombatService
 {
+    public const int FamiliarDamageDivisor = 2;
+
+    public async Task<bool> FightFamiliarAsync(NpcInstance npc, long nowTicks)
+    {
+        if (FamiliarTarget(npc) is not { } pet)
+        {
+            npc.TargetPetId = 0;
+            return false;
+        }
+
+        if (npcAiTargetingService.DistanceSqToPoint(npc, pet.X, pet.Z) > npc.AttackDistance * npc.AttackDistance)
+        {
+            npc.State = NpcState.Attacking;
+            npc.BeginTracing();
+            await npcAiMovementService.MoveTowardPointAsync(npc, pet.X, pet.Z, nowTicks);
+            return true;
+        }
+
+        npc.State = NpcState.Fighting;
+        npc.IsMoving = false;
+        if (nowTicks - npc.LastAttackTicks < TimeSpan.FromMilliseconds(npc.AttackDelay).Ticks)
+            return true;
+
+        npc.LastAttackTicks = nowTicks;
+        var damage = CombatUtils.NpcStrikeDamage(npc.TotalHit, pet.TotalAc, npc.HitRate, pet.EvadeRate) / FamiliarDamageDivisor;
+        var result = damage <= 0 ? AttackResult.Failed
+            : pet.Hp > damage ? AttackResult.Succeeded
+            : AttackResult.TargetDead;
+        await sessionManager.Regions.BroadcastFromNpc(
+            npc, AttackPacketWriter.Create(AttackPacketWriter.TypeMelee, result, npc.UniqueId, pet.UniqueId));
+        if (damage > 0)
+            await petService.TakeDamageAsync(pet, damage);
+        return true;
+    }
+
+    private NpcInstance? FamiliarTarget(NpcInstance npc) =>
+        sessionManager.Regions.GetNpc(npc.TargetPetId) is { IsPet: true, IsAlive: true } pet
+        && pet.ZoneId == npc.ZoneId
+        && pet.Room == npc.Room
+        && npcAiTargetingService.DistanceSqToPoint(npc, pet.X, pet.Z)
+            <= NpcInstance.LostTargetDistance * NpcInstance.LostTargetDistance
+            ? pet
+            : null;
+
     public async Task HandleFightingAsync(NpcInstance npc, long nowTicks)
     {
         var target = sessionManager.GetByCharacterId(npc.TargetUserId);

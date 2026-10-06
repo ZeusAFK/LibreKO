@@ -45,6 +45,13 @@ public class PetTests : GameTestBase
     private const short CertainWeight = 10_000;
     private const int LunarScroll = 508_090_000;
     private const int TransformMaterialSlots = 3;
+    private const float FarMonsterDistance = 10f;
+    private const int HpScroll = 978_011_036;
+    private const short HpScrollBonus = 200;
+    private const int AttackPacket = 700_014_000;
+    private const short PlayerClass = 203;
+    private const int Percent = 100;
+    private const short MonsterAttack = 400;
     private const int ImageChangeLow = 700_013_000;
     private const int ImageChangeMiddle = 700_017_000;
     private const int ImageChangeHigh = 700_018_000;
@@ -483,6 +490,136 @@ public class PetTests : GameTestBase
     }
 
     [Fact]
+    public async Task AStrikeOnAFarMonsterSendsTheFamiliarThereAndLandsOnArrival()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        await provider.GetRequiredService<IPetService>().SummonAsync(owner);
+        var state = owner.Pet!;
+        state.Record.Level = SlapLevel;
+        var npc = state.Npc!;
+        npc.Attack1 = short.MaxValue;
+        var monster = Monster(sessions, npc.X + FarMonsterDistance, npc.Z, SturdyMonsterHp);
+        var mana = npc.Mp;
+        sent.Clear();
+
+        var skills = provider.GetRequiredService<IPetSkillService>();
+        await skills.UseAsync(owner, Request(MagicProcessOpcode.Effecting, Slap, npc.UniqueId, monster.UniqueId));
+
+        monster.Hp.Should().Be(SturdyMonsterHp, "the familiar has not reached the monster yet");
+        sent.Should().NotContain(p => MagicStage(p) == MagicProcessOpcode.Fail);
+        state.Mode.Should().Be(PetMode.Attack);
+        state.TargetNpcId.Should().Be(monster.UniqueId);
+        npc.Mp.Should().Be(mana, "nothing is spent until the strike lands");
+
+        npc.X = monster.X - 1;
+        npc.Z = monster.Z;
+        await skills.ResumeAsync(npc, DateTime.UtcNow.Ticks);
+
+        monster.Hp.Should().BeLessThan(SturdyMonsterHp);
+        npc.Mp.Should().Be(mana - SlapMana);
+        state.HeldSkill.Should().BeNull();
+        sent.Should().Contain(p => MagicStage(p) == MagicProcessOpcode.Effecting);
+    }
+
+    [Fact]
+    public async Task AMonsterTheFamiliarHitsTurnsOnTheFamiliar()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, _) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        await provider.GetRequiredService<IPetService>().SummonAsync(owner);
+        var npc = owner.Pet!.Npc!;
+        var monster = Monster(sessions, npc.X + 1, npc.Z, SturdyMonsterHp);
+
+        await provider.GetRequiredService<IPetAiService>().StrikeAsync(owner, npc, monster, short.MaxValue, sureHit: true);
+
+        monster.TargetPetId.Should().Be(npc.UniqueId);
+    }
+
+    [Fact]
+    public async Task AMonsterWoundsTheFamiliarForHalfAndKillsItAtNoHp()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        var pets = provider.GetRequiredService<IPetService>();
+        await pets.SummonAsync(owner);
+        var npc = owner.Pet!.Npc!;
+        npc.Hp = npc.MaxHp = short.MaxValue;
+        var monster = Monster(sessions, npc.X + 1, npc.Z, SturdyMonsterHp);
+        monster.Attack1 = MonsterAttack;
+        monster.HitRate = short.MaxValue;
+        monster.TargetPetId = npc.UniqueId;
+        sent.Clear();
+
+        var combat = provider.GetRequiredService<INpcAiCombatService>();
+        for (var i = 0; i < 20 && npc.Hp == npc.MaxHp; i++)
+        {
+            monster.LastAttackTicks = 0;
+            (await combat.FightFamiliarAsync(monster, DateTime.UtcNow.Ticks)).Should().BeTrue();
+        }
+
+        npc.Hp.Should().BeLessThan(npc.MaxHp);
+        (npc.MaxHp - npc.Hp).Should().BeLessThanOrEqualTo(MonsterAttack, "a familiar takes half of a blow");
+        sent.Should().Contain(p => Function(p) == PetFunction.Hp);
+
+        await pets.TakeDamageAsync(npc, npc.Hp);
+
+        owner.Pet.Should().BeNull("a familiar at no HP is gone");
+        npc.IsAlive.Should().BeFalse();
+        (await combat.FightFamiliarAsync(monster, DateTime.UtcNow.Ticks)).Should().BeFalse();
+        monster.TargetPetId.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AUserBuffScrollInTheFamiliarsBagRaisesItsOwnersHpWhileTheFamiliarIsOut()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var gameData = provider.GetRequiredService<IGameDataService>();
+        var (owner, _) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        owner.RecalculateStatsWithBuffs(gameData);
+        var baseline = owner.MaxHp;
+        var pets = provider.GetRequiredService<IPetService>();
+        await pets.SummonAsync(owner);
+        Carry(owner, 0, HpScroll);
+
+        (await pets.MoveItemAsync(owner, intoPet: true, HpScroll, 0, 0)).Should().BeTrue();
+        owner.RecalculateStatsWithBuffs(gameData);
+        owner.MaxHp.Should().Be((short)(baseline + HpScrollBonus));
+
+        await pets.DismissAsync(owner);
+
+        owner.MaxHp.Should().Be(baseline, "the scroll only works while the familiar is out");
+    }
+
+    [Fact]
+    public async Task AnAttackPacketInTheBagRaisesTheFamiliarsAttack()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        var pets = provider.GetRequiredService<IPetService>();
+        await pets.SummonAsync(owner);
+        var npc = owner.Pet!.Npc!;
+        var attack = npc.Attack1;
+        Carry(owner, 0, AttackPacket);
+        sent.Clear();
+
+        (await pets.MoveItemAsync(owner, intoPet: true, AttackPacket, 0, 0)).Should().BeTrue();
+
+        npc.Attack1.Should().Be((short)(attack * (Percent + PetBag.PacketBonusPercent) / Percent));
+        sent.Should().Contain(p => Function(p) == PetFunction.Mode, "the familiar window gets the new attack");
+    }
+
+    [Fact]
     public async Task AFamiliarRefusesASkillAboveItsLevelOrFromSomeoneElsesFamiliar()
     {
         using var provider = Provider();
@@ -806,6 +943,12 @@ public class PetTests : GameTestBase
         {
             Num = LeafId, Kind = (byte)ItemKind.PetFood, Slot = 15, Damage = LeafSatisfaction, Countable = 1,
         });
+        gameData.GetItem(HpScroll).Returns(new ItemData
+        {
+            Num = HpScroll, Kind = PetBag.OwnerHpScrollKind, Slot = PetBag.ItemSlotCode, MaxHpB = HpScrollBonus,
+        });
+        gameData.GetItem(AttackPacket).Returns(new ItemData { Num = AttackPacket, Kind = PetBag.AttackPacketKind, Slot = PetBag.ItemSlotCode });
+        gameData.GetCoefficient(PlayerClass).Returns(new CoefficientData { ClassId = PlayerClass, Hp = 1, Mp = 1, Ac = 1 });
         gameData.GetItem(EtarothId).Returns(new ItemData
         {
             Num = EtarothId, Kind = (byte)ItemKind.PetItem, Slot = KaulItemSlot, Damage = EtarothClass, Duration = 1,

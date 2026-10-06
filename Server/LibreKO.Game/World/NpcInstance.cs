@@ -132,6 +132,7 @@ public class NpcInstance
     // AI runtime state
     public NpcState State { get; set; } = NpcState.Standing;
     public int TargetUserId { get; set; }   // CharacterId of aggro target
+    public int TargetPetId { get; set; }
     public long LastAttackTicks { get; set; }
     public long WakeTicks { get; set; }
     public long StateChangeTicks { get; set; }
@@ -353,6 +354,7 @@ public class NpcInstance
         IsMoving = false;
         State = NpcState.Standing;
         TargetUserId = 0;
+        TargetPetId = 0;
         LastAttackTicks = 0;
         WakeTicks = 0;
         StateChangeTicks = 0;
