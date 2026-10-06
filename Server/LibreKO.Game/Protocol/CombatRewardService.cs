@@ -29,6 +29,7 @@ public class CombatRewardService(
     IJuraidMountainService juraidMountainService,
     IBorderDefenseWarService borderDefenseWarService,
     IMonsterStoneService monsterStoneService,
+    IUnderTheCastleService underTheCastleService,
     ILogger<CombatRewardService> logger) : ICombatRewardService
 {
     private const int CoinRollMinPercent = 70;
@@ -75,6 +76,9 @@ public class CombatRewardService(
 
         if (MonsterStoneRules.IsNestZone(npc.ZoneId))
             await monsterStoneService.OnNpcKilledAsync(npc);
+
+        if (npc.ZoneId == (byte)ZoneId.UnderCastle)
+            await underTheCastleService.OnNpcKilledAsync(npc, killer);
 
         var damagerIds = npc.WithLock(n => n.DamageMap.Keys.ToArray());
         foreach (var charId in damagerIds)

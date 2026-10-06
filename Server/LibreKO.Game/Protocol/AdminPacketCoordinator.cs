@@ -45,6 +45,7 @@ public class AdminPacketCoordinator(
     ILotteryService lotteryService,
     IMerchantBotService merchantBotService,
     IJuraidMountainService juraidMountainService,
+    IUnderTheCastleService underTheCastleService,
     IItemGrantService itemGrantService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
@@ -292,6 +293,28 @@ public class AdminPacketCoordinator(
 
             case "chaos":
                 await HandleTempleEventCommandAsync(session, TempleEvent.Chaos, ZoneId.ChaosDungeon, "Chaos Dungeon", arg);
+                break;
+
+            case "utc":
+            case "underthecastle":
+                if (arg is "1" or "open")
+                {
+                    underTheCastleService.Start();
+                    await SendNoticeAsync(session, "[Under The Castle] Event opened!");
+                }
+                else if (arg is "2" or "close" or "cancel")
+                {
+                    underTheCastleService.Close();
+                    await SendNoticeAsync(session, "[Under The Castle] Event closed!");
+                }
+                else if (arg is "enter" or "warp")
+                {
+                    await underTheCastleService.EnterAsync(session);
+                }
+                else
+                {
+                    await HandleTempleEventCommandAsync(session, TempleEvent.UnderTheCastle, ZoneId.UnderCastle, "Under The Castle", arg);
+                }
                 break;
 
             case "jrcancel":
@@ -1451,6 +1474,14 @@ public class AdminPacketCoordinator(
             {
                 await juraidMountainService.StartMatchForCallerAsync(session);
                 await SendNoticeAsync(session, $"[{eventName}] Started instant Juraid Mountain room instance with monsters & bridges!");
+                return;
+            }
+
+            if (contest == TempleEvent.UnderTheCastle)
+            {
+                underTheCastleService.Start();
+                await underTheCastleService.EnterAsync(session);
+                await SendNoticeAsync(session, $"[{eventName}] Started instant Under The Castle event!");
                 return;
             }
 
