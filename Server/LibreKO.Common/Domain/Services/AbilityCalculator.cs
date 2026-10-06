@@ -200,12 +200,14 @@ public static class AbilityCalculator
         stats.MaxWeight = ((totalStr + level) * 50) + setTotals.MaxWeightBonus;
 
         // Attack power
+        var intelligenceAttack = IsPriest(classId)
+            && GetEquippedItemProto(inventory, InventoryConstants.RightHand, gameData)?.Category == ItemKind.Mace;
         stats.TotalHit = CalculateTotalHitCore(
             level,
-            strength,
+            intelligenceAttack ? intelligence : strength,
             dexterity,
             classId,
-            itemStrB,
+            intelligenceAttack ? itemIntB : itemStrB,
             itemDexB,
             itemDamage,
             hitCoefficient);
@@ -276,6 +278,7 @@ public static class AbilityCalculator
     private static bool IsWarrior(short classId) => JobOf(classId) is 1 or 5 or 6;
 
     private static bool IsRogue(short classId) => JobOf(classId) is 2 or 7 or 8;
+    private static bool IsPriest(short classId) => JobOf(classId) is 4 or 11 or 12;
 
     private static bool CheckSkillPoint(byte[] skillPoints, int skillIndex, int min, int max)
     {
