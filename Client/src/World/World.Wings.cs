@@ -86,7 +86,7 @@ public partial class World
     private HoverClips? _selfHover;
     private readonly string?[] _selfWingClips = new string?[WingSlotCount];
 
-    private static bool IsKurianRace(int race) => race == 6 || race == 14;
+    private static bool IsKurianRace(int race) => PlayerRig.IsKurian(race);
 
     internal static AnimationPlayer?[] AttachWings(Node3D body, int[]? gear, int race, int zone,
                                                   bool enableShine = true, bool shineShadow = false)

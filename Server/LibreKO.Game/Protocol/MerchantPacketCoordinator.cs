@@ -15,6 +15,7 @@ public class MerchantPacketCoordinator(
     IMerchantLifecycleService merchantLifecycleService,
     IMerchantListingService merchantListingService,
     IMerchantBuyingService merchantBuyingService,
+    IMerchantSearchService merchantSearchService,
     ILogger<MerchantPacketCoordinator> logger) : IMerchantPacketCoordinator
 {
     public async Task HandleAsync(IClient client, Packet packet)
@@ -86,6 +87,10 @@ public class MerchantPacketCoordinator(
             case MerchantSubOpcode.BuyingStallRequest:
             case MerchantSubOpcode.BuyingStallOpen:
                 await merchantLifecycleService.RequestStallAsync(session, packet, sub);
+                break;
+
+            case MerchantSubOpcode.OfficialList:
+                await merchantSearchService.HandleAsync(session, packet);
                 break;
 
             case MerchantSubOpcode.StallList:

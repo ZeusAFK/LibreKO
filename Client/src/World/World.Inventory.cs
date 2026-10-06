@@ -714,14 +714,13 @@ public partial class World : Node3D
         RestorePartDefaults(_self, _selfDefaultParts);
         GraftEquipment(_self, _selfRace, _selfFace, gear, _selfHair, Net.I.HelmetHidden);
         AttachWeapons(_self, gear);
-        _selfWingAnims = AttachWings(_self, gear, _selfRace, _zone, shineShadow: true);
+        _selfWingAnims = DressAccessories(_self, gear, _selfRace, shineShadow: true);
         System.Array.Clear(_selfWingClips);
         if (_selfSitting)
         {
             _selfHover = ResolveHoverClips(_self, _selfAnim);
             _selfClip = null;
         }
-        AttachHandFx(_self, gear, _selfRace, _zone);
         RearmWornLook(_self, gear);
     }
 

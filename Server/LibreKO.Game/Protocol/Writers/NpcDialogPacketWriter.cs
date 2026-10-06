@@ -13,6 +13,7 @@ public sealed class NpcDialogPacketWriter
     public const byte RebirthPanelStyle = 48;
     public const byte FamiliarPanelStyle = 9;
     public const byte FamiliarShopStyle = 14;
+    public const byte GenderChangePanelStyle = 52;
 
     public static Packet NpcSay(IReadOnlyList<int> textIds) => NpcSay(textIds, null);
 
@@ -94,6 +95,9 @@ public sealed class NpcDialogPacketWriter
 
     public static Packet FamiliarPanel(int npcId, string scriptFile) =>
         SelectMessage(npcId, FamiliarPanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
+
+    public static Packet GenderChangePanel(int npcId, string scriptFile) =>
+        SelectMessage(npcId, GenderChangePanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
 
     public static Packet FamiliarShop(int npcId, string scriptFile) =>
         SelectMessage(npcId, FamiliarShopStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);

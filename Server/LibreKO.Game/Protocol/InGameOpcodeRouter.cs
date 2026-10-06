@@ -32,6 +32,8 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         ILootPacketCoordinator loot,
         IMerchantPacketCoordinator merchant,
         IMiscPacketCoordinator misc,
+        IGenderChangePacketCoordinator genderChange,
+        INationTransferService nationTransfer,
         INationSystemsPacketCoordinator nation,
         IQuestPacketCoordinator quest,
         IWarehousePacketCoordinator warehouse,
@@ -203,6 +205,8 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_CORPSE] = misc.HandleCorpseAsync,
             [GameOpcodes.GS_MARKET_BBS] = misc.HandleMarketBbsAsync,
             [GameOpcodes.GS_NAME_CHANGE] = misc.HandleNameChangeAsync,
+            [GameOpcodes.GS_GENDER_CHANGE] = genderChange.HandleAsync,
+            [GameOpcodes.GS_NATION_TRANSFER] = nationTransfer.HandleAsync,
             [GameOpcodes.GS_SANTA] = (c, _) => misc.HandleSantaAsync(c),
             [GameOpcodes.GS_RENTAL] = misc.HandleRentalAsync,
             [GameOpcodes.GS_MINING] = mining.HandleAsync,
@@ -216,17 +220,11 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_CAPE] = knightsCape.HandleAsync,
 
             // No-ops (acknowledged but no server action)
-            // (title sub-system), NOT GenderChange. Sending a real S2C response causes
-            // the client to misinterpret it as title data. Drop silently.
-            [GameOpcodes.GS_GENDER_CHANGE] = NoOp,
             // Item-upgrade observation: store the item the client wants to watch.
             // Real upgrade-result notices are pushed via WIZ_LOGOSSHOUT later.
             [GameOpcodes.GS_UPGRADE_NOTICE] = (c, p) => WatchUpgradeAsync(sessionManager, c, p),
             // Awakening 0xCB is purely S2C visual; drop any C2S silently.
             [GameOpcodes.GS_AWAKEN] = NoOp,
-            // NOT NationTransfer. Sending real S2C nation-transfer packets makes the
-            // client display title strings instead. Drop silently.
-            [GameOpcodes.GS_NATION_TRANSFER] = NoOp,
             // because there's no daily-quest DB table yet. Same posture here — accept
             // the C2S to suppress unhandled-opcode warnings; S2C builders land when the
             // table does.

@@ -467,7 +467,7 @@ public class CharacterTests : GameTestBase
     }
 
     [Fact]
-    public async Task AllCharacterInfoNameChange_UpdatesOwnedCharacterNameAndReturnsSuccess()
+    public async Task AllCharacterInfoNameChange_IsRefusedBecauseARenameNeedsTheScroll()
     {
         using var provider = CreateProvider(
             db =>
@@ -508,15 +508,13 @@ public class CharacterTests : GameTestBase
 
         response.Should().NotBeNull();
         response!.ReadByte().Should().Be((byte)AllCharacterInfoOpcode.NameChange);
-        response.ReadByte().Should().Be((byte)SelectingCharacterNameChangeResult.Success);
-        response.ReadUShort().Should().Be(0);
-        response.ReadString().Should().Be("After");
+        response.ReadByte().Should().Be((byte)SelectingCharacterNameChangeResult.Failed);
         response.RemainingBytes.Should().Be(0);
 
         await using var verifyScope = provider.CreateAsyncScope();
         var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
-        (await db.Characters.AnyAsync(character => character.Name == "After")).Should().BeTrue();
-        (await db.Characters.AnyAsync(character => character.Name == "Before")).Should().BeFalse();
+        (await db.Characters.AnyAsync(character => character.Name == "Before")).Should().BeTrue();
+        (await db.Characters.AnyAsync(character => character.Name == "After")).Should().BeFalse();
     }
 
     [Fact]

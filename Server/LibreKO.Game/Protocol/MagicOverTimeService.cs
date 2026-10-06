@@ -23,6 +23,9 @@ public class MagicOverTimeService(
     private const int ItemGrantedSkillIdBase = 400000;
     private const int PercentScale = 100;
     private const int ManaDrainCasterShare = 2;
+    private const int HealthMaestroPotion = 810117000;
+    private const int ManaMaestroPotion = 810118000;
+    private const int MaestroMinimumCoins = 100_000;
 
     public static bool IsHealOverTime(MagicType3Data type3Data) =>
         type3Data.Duration > 0
@@ -58,6 +61,12 @@ public class MagicOverTimeService(
                 await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
                 return;
             }
+        }
+
+        if (IsPurchase((MagicDirectType)type3Data.DirectType) && !CanBuyRestoration(caster, (MagicDirectType)type3Data.DirectType))
+        {
+            await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
+            return;
         }
 
         if ((MagicDirectType)type3Data.DirectType == MagicDirectType.AngerExplosion)
@@ -352,8 +361,8 @@ public class MagicOverTimeService(
     private async Task RestorePlayerAsync(
         UserSession caster, UserSession target, MagicType3Data type3Data, MagicDirectType directType)
     {
-        if (directType is MagicDirectType.HealthPurchase or MagicDirectType.ManaPurchase)
-            await ChargeRestorationAsync(caster, type3Data.TimeDamage);
+        if (IsPurchase(directType))
+            await ChargeRestorationAsync(caster, RestorationPrice(directType));
 
         if (directType is MagicDirectType.Mana or MagicDirectType.ManaShell or MagicDirectType.ManaPurchase)
         {
@@ -376,6 +385,19 @@ public class MagicOverTimeService(
             await combatLifecycleService.SendHpChangeAsync(target);
         }
     }
+
+    private static bool IsPurchase(MagicDirectType directType) =>
+        directType is MagicDirectType.HealthPurchase or MagicDirectType.ManaPurchase;
+
+    private static int MaestroPotion(MagicDirectType directType) =>
+        directType == MagicDirectType.HealthPurchase ? HealthMaestroPotion : ManaMaestroPotion;
+
+    private int RestorationPrice(MagicDirectType directType) =>
+        gameDataService.GetItem(MaestroPotion(directType))?.BuyPrice ?? 0;
+
+    private bool CanBuyRestoration(UserSession caster, MagicDirectType directType) =>
+        magicItemUsageService.CanUseItem(caster, MaestroPotion(directType))
+        && caster.Money >= Math.Max(MaestroMinimumCoins, RestorationPrice(directType));
 
     private async Task ChargeRestorationAsync(UserSession caster, int cost)
     {

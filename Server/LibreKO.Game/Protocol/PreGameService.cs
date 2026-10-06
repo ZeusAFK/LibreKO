@@ -17,7 +17,6 @@ public interface IPreGameService
     Task<GameLoginResult> LoginAsync(string login, string password);
     Task<Packet> SelectNationAsync(int accountId, AccountNation nation);
     Task<Packet> GetAllCharacterInfoAsync(int accountId);
-    Task<Packet> ChangeSelectingCharacterNameAsync(int accountId, ushort charRanking, string oldCharacterName, string newCharacterName);
     Task<Packet> LoadingLoginAsync(byte subOpcode);
     Task<Packet> CreateCharacterAsync(int accountId, byte slot, string name, byte race, short @class, byte face, int hair, byte strength, byte stamina, byte dexterity, byte intelligence, byte magic);
     Task<Packet> DeleteCharacterAsync(int accountId, byte slot, string name, string socNo);
@@ -86,31 +85,6 @@ public class PreGameService(
     {
         var characters = (await characterRepository.GetCharactersByAccount(accountId)).ToList();
         return CharacterPacketMapper.BuildAllCharacterInfo(characters);
-    }
-
-    public async Task<Packet> ChangeSelectingCharacterNameAsync(int accountId, ushort charRanking, string oldCharacterName, string newCharacterName)
-    {
-        _ = charRanking;
-
-        if (string.IsNullOrWhiteSpace(oldCharacterName)
-            || string.IsNullOrWhiteSpace(newCharacterName)
-            || oldCharacterName.Length > MaxCharacterNameLength
-            || newCharacterName.Length > MaxCharacterNameLength
-            || string.Equals(oldCharacterName, newCharacterName, StringComparison.OrdinalIgnoreCase))
-        {
-            return PreGamePacketWriter.NameChangeRefused();
-        }
-
-        var character = await characterRepository.GetByName(oldCharacterName);
-        if (character == null || character.AccountId != accountId || await characterRepository.IsNameTaken(newCharacterName))
-        {
-            return PreGamePacketWriter.NameChangeRefused();
-        }
-
-        character.Name = newCharacterName;
-        await characterRepository.UpdateAsync(character);
-
-        return PreGamePacketWriter.NameChanged((ushort)character.Slot, newCharacterName);
     }
 
     public Task<Packet> LoadingLoginAsync(byte subOpcode)

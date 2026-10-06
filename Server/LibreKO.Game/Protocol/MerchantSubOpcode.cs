@@ -23,6 +23,7 @@ public enum MerchantSubOpcode : byte
     BuyRegionInsert = 0x28,
     BuyingStallRequest = 0x51,
     BuyingStallOpen = 0x52,
+    OfficialList = 0x30,
     StallList = 0x31,
 }
 

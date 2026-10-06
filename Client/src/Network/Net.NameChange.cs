@@ -52,11 +52,11 @@ public partial class Net
         ClanRenamedEvent?.Invoke(p.RemainingBytes >= 2 ? p.ReadString() : "");
     }
 
-    public void SendNameChangeRequest()
+    public void ApplyOwnName(string name)
     {
-        var p = new Packet(GameOpcodes.GS_NAME_CHANGE);
-        p.WriteByte(NameChangeCharSub);
-        _conn.Send(p);
+        var info = LastEnter;
+        info.Name = name;
+        LastEnter = info;
     }
 
     public void SendNameChangeConfirm(string newName)

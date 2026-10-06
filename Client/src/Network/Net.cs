@@ -367,6 +367,8 @@ public partial class Net : Node
             case GameOpcodes.GS_USER_INFO:         HandleUserInfoOpcode(p); break;
             case GameOpcodes.GS_CAPE:              HandleCape(p); break;
             case GameOpcodes.GS_NAME_CHANGE:       HandleNameChange(p); break;
+            case GameOpcodes.GS_GENDER_CHANGE:     HandleGenderChange(p); break;
+            case GameOpcodes.GS_NATION_TRANSFER:   HandleNationTransfer(p); break;
             case GameOpcodes.GS_KING:              HandleKing(p); break;
             case GameOpcodes.GS_SIEGE:             HandleSiege(p); break;
             case GameOpcodes.GS_PVP:               HandlePvp(p); break;

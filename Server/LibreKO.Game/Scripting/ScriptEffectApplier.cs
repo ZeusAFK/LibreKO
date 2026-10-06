@@ -48,6 +48,9 @@ public sealed class ScriptEffectApplier(
         await ApplyPendingClanZoneChangeAsync(session, context, scriptName);
         await ApplyPendingZoneChangeAsync(session, context, scriptName);
 
+        if (context.NationTransferRequested && !context.ActionFailed)
+            await serviceProvider.GetRequiredService<Protocol.INationTransferService>().OpenAsync(session);
+
         if (context.ActionFailed && context.FailureReason is { } reason)
         {
             logger.LogInformation(

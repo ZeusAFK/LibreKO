@@ -349,6 +349,8 @@ public partial class World
                 CombatNotice(problem);
                 return true;
             }
+            if (MerchantSearch.OpensWith(def.Effect1))
+                return RequestMerchantSearch(itemId);
             if (SkillData.Get(def.Effect1) is { } skill && OpensNestDungeon(skill))
             {
                 OpenNestDungeon(itemId, skill);
@@ -394,6 +396,11 @@ public partial class World
         if (!EquipRules.UseAllows(_selfClass, def.Class))
         {
             problem = $"Your class cannot use {name}.";
+            return false;
+        }
+        if (!MaestroPotions.CanUse(itemId, Sheet.Gold))
+        {
+            problem = $"{name} needs at least {MaestroPotions.MinimumCoins:n0} Noah.";
             return false;
         }
         return true;

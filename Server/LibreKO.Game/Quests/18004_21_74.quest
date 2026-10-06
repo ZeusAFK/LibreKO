@@ -1,0 +1,33 @@
+include locations/global
+
+Bind Npc 18004 Zone 21
+
+Quest 74 "Submission of the Exile Application Form"
+    Journal "He will exchange your Exile Application Form with the item needed for the nation transfer."
+
+On topics
+    Topic "Submission of the Exile Application Form" goto event_410
+
+On accept
+    Goto event_410
+
+On event_410
+    Say "Well, I was looking for migrants, too! To win the next Lunar War, they're recruiting many soldiers. Are you ready for migration?"
+    Topic "Submit." goto event_411
+    Topic "Reconsider" goto close
+
+On event_411
+    Say "This definitely is an Exile Application Form."
+    Topic "Confirm" goto event_412
+
+On event_412
+    Say "Then I will change the Exile Application Form to the items you need for migration and give them to you, are you ready?"
+    Topic "Yes" goto event_413
+    Topic "No" goto close
+
+On event_413
+    If player has 800360000
+        Trade 1 of 800360000 for 1 of 810096000 for 1 days
+    Else
+        Say "Well... To transfer your nation, you should bring the Nation Transfer Certificate. You can buy the Exile Application Form at the Power-up store."
+        Topic "Confirm" goto close

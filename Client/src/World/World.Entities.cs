@@ -659,14 +659,13 @@ public partial class World
         RestorePartDefaults(e.Body, e.DefaultParts);
         GraftEquipment(e.Body, e.Race, e.Face, e.Gear, e.Hair, e.HelmetHidden);
         AttachWeapons(e.Body, e.Gear);
-        e.WingAnims = AttachWings(e.Body, e.Gear, e.Race, _zone);
+        e.WingAnims = DressAccessories(e.Body, e.Gear, e.Race);
         System.Array.Clear(e.WingClips);
         if (e.Sitting)
         {
             e.Hover = ResolveHoverClips(e.Body, e.Anim);
             e.Clip = null;
         }
-        AttachHandFx(e.Body, e.Gear, e.Race, _zone);
         RearmWornLook(e.Body, e.Gear);
         ApplyEntityRenderCost(e.Body);
         if (!e.IsNpc && Config.MergeCharacters) CharacterMerge.Apply(e.Body);

@@ -270,6 +270,10 @@ public partial class Net
                 break;
             }
 
+            case MerchantSubOfficialList:
+                HandleMerchantSearch(p);
+                break;
+
             case MerchantSubStallList:
             {
                 if (p.RemainingBytes < 7) return;

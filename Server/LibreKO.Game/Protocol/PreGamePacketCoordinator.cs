@@ -44,21 +44,13 @@ public class PreGamePacketCoordinator(
         return subOpcode switch
         {
             (byte)AllCharacterInfoOpcode.CharacterList => await preGameService.GetAllCharacterInfoAsync(client.AccountId),
-            (byte)AllCharacterInfoOpcode.NameChange => await HandleAllCharacterNameChangeAsync(packet, client),
+            (byte)AllCharacterInfoOpcode.NameChange => PreGamePacketWriter.NameChangeRefused(),
             (byte)AllCharacterInfoOpcode.ArrangeOpen => null,
             (byte)AllCharacterInfoOpcode.ArrangeReceive => null,
             _ => null,
         };
     }
 
-    private async Task<Packet> HandleAllCharacterNameChangeAsync(Packet packet, IClient client)
-    {
-        var charRanking = packet.ReadUShort();
-        var oldCharacterName = packet.ReadString();
-        var newCharacterName = packet.ReadString();
-
-        return await preGameService.ChangeSelectingCharacterNameAsync(client.AccountId, charRanking, oldCharacterName, newCharacterName);
-    }
 
     private async Task<Packet> HandleCreateCharacterAsync(Packet packet, IClient client)
     {

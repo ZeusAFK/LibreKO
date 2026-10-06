@@ -1,9 +1,191 @@
+include locations/global
+
 Bind Npc 29056 Zone 21
 
 On greeting
     Say "May the gods bless you..."
     Topic "[Premium Item Use]" goto event_400
+    Topic "[Exchange][Minerva Package]" goto minerva_package
+    Topic "[Exchange][Pathos Glove Package]" goto pathos_package
+    Topic "[Seal Exchange Coupon]" goto seal_coupons
+    Topic "[Exchange][Dragon's Wings]" goto dragon_wings
+    Topic "Exchanging items" goto exchanging_items
     Goto close
+
+On exchanging_items
+    Say "May the gods bless you..."
+    Topic "[Exchange][Menissiah's Trade Paper]" goto menissiah_list
+    Topic "[Exchange] [Spirit's help]" goto spirits_help
+    Topic "War Tattoo (30 Days)" goto war_tattoo
+    Topic "Cancel" goto close
+
+On minerva_package
+    If player has 508073000 or player has 508112000
+        Say "You purchased the [Minerva Package]. Would you like to exchange to [Voucher for a Minerva Helmet] and [Voucher for a Minerva Armor]?"
+        Topic "Exchange" goto minerva_package_exchange
+        Topic "Cancel" goto close
+    Else
+        Say "You don not have the [Minerva Package]. Please come back when you have purchased the [Minerva Package]."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On minerva_package_exchange
+    If player has 508073000
+        Transaction
+            Take 1 of 508073000
+            Give 1 of 508056000
+            Give 1 of 508057000
+    Else
+        Transaction
+            Take 1 of 508112000
+            Give 1 of 508056000
+            Give 1 of 508057000
+
+On pathos_package
+    If player has 508070000 or player has 508074000
+        Say "You purchased the [Pathos Glove Package]. Would you like to exchange to 2EA of [Voucher for a Pathos Glove]?"
+        Topic "Exchange" goto pathos_package_exchange
+        Topic "Cancel" goto close
+    Else
+        Say "You don't have the [Pathos Glove Package]. Please come back when you have purchased the [Pathos Glove Package]."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On pathos_package_exchange
+    If player has 508070000
+        Transaction
+            Take 1 of 508070000
+            Give 1 of 800250000
+            Give 1 of 800250000
+    Else
+        Transaction
+            Take 1 of 508074000
+            Give 1 of 800250000
+            Give 1 of 800250000
+
+On seal_coupons
+    Say "You can get [Seal Item]. If you have purchased the [Seal Exchange Coupon] from the Power Up Store, you'll be able to receive the item."
+    Topic "[Seal 10 voucher]" goto seal_10
+    Topic "[Seal 50 voucher]" goto seal_50
+
+On seal_10
+    If player has 810520000
+        Say "You have selected [10 Seal Exchange]. Would you like to receive the item?"
+        Topic "Yes" goto seal_10_exchange
+        Topic "No" goto close
+    Else
+        Say "You can get [Seal Item]. If you have purchased the [Seal Exchange Coupon] from the Power Up Store, you'll be able to receive the item."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On seal_10_exchange
+    Trade 1 of 810520000 for 10 of 810890000
+
+On seal_50
+    If player has 810700000
+        Say "You have selected [50 Seal Exchange]. Would you like to receive the item?"
+        Topic "Yes" goto seal_50_exchange
+        Topic "No" goto close
+    Else
+        Say "You can get [Seal Item]. If you have purchased the [Seal Exchange Coupon] from the Power Up Store, you'll be able to receive the item."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On seal_50_exchange
+    Trade 1 of 810700000 for 50 of 810890000
+
+On dragon_wings
+    If player has 810164000
+        Say "Ah, [Dragon's Wings]!\nYou can exchange with [Dragon's Wings] which has been extracted from the corpse of dragons in the temporal space of Chaos.\nThere are 4 attributes that can be applied to you for 30 days, so choose one of them."
+        Topic "Nation Point +3 (Restrictions apply)" goto dragon_wings_points
+        Topic "Defense +50" goto dragon_wings_defense
+        Topic "HP +300" goto dragon_wings_health
+        Topic "Base Experience for Monster Kills +9%" goto dragon_wings_experience
+    Else
+        Say "You don't seem to have [Dragon's Wings Vouchers].\nPlease check one more time."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On dragon_wings_points
+    If player is karus
+        Trade 1 of 810164000 for 1 of 810178835 for 30 days
+    Else
+        Trade 1 of 810164000 for 1 of 810179839 for 30 days
+
+On dragon_wings_defense
+    If player is karus
+        Trade 1 of 810164000 for 1 of 810178836 for 30 days
+    Else
+        Trade 1 of 810164000 for 1 of 810179840 for 30 days
+
+On dragon_wings_health
+    If player is karus
+        Trade 1 of 810164000 for 1 of 810178837 for 30 days
+    Else
+        Trade 1 of 810164000 for 1 of 810179841 for 30 days
+
+On dragon_wings_experience
+    If player is karus
+        Trade 1 of 810164000 for 1 of 810178838 for 30 days
+    Else
+        Trade 1 of 810164000 for 1 of 810179842 for 30 days
+
+On menissiah_list
+    If player has 810163000
+        Say "Ah, [Menissiah's Trade Paper Voucher]!\nThis organizes the list of [Sellers/Buyers], lets you search keywords in the main list, and lets you see the prices of the searched items so you can [Whisper] or [Move] to the seller/buyer.\n*Can be used repeatedly for 30 days."
+        Topic "Exchange" goto menissiah_list_exchange
+        Topic "Cancel" goto close
+    Else
+        Say "You don't seem to have [Menissiah's Trade Paper Voucher].\nPlease check one more time."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On menissiah_list_exchange
+    Trade 1 of 810163000 for 1 of 810166000 for 30 days
+
+On spirits_help
+    Say "You have come to receive the [Spirit's Assistance].In order to receive assistance from each spirit, you will need the appropriate exchange ticket for that spirit. These exchange tickets are sold at the [PowerUp Store] or by Aset. The following types of assistance are available:\n- Dryads: Fairies who live within trees. They greatly increase Noah acquisition.\n- Oreads: Fairies who live in the mountains. They automatically collect nearby items for you.\n- Alseids: Fairies who live in the forests. They provide free buffs from the [Royal Enchanter] and allow you to rent one item for free once per day from the [Equipment Support Administrator].\n- Nereids: Fairies who live in the sea. When you win a battle against the enemy nation, you will receive additional Nation Points (Restrictions apply) and Ladder Points."
+    Topic "Special Nereids (Defense) Exchange" goto special_nereids_defense
+    Topic "Special Nereids (Attack) Exchange" goto special_nereids_attack
+
+On special_nereids_defense
+    If player has 811135000
+        Say "Would you like to exchange Special Nereids (Defense) coupon?"
+        Topic "Yes" goto special_nereids_defense_exchange
+        Topic "No" goto close
+    Else
+        Say "You do not have the Special Nereids (Defense) Coupon. Please check and try again."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On special_nereids_defense_exchange
+    Trade 1 of 811135000 for 1 of 1340711000 for 30 days
+
+On special_nereids_attack
+    If player has 811136000
+        Say "Would you like to exchange Special Nereids (Attack) coupon?"
+        Topic "Yes" goto special_nereids_attack_exchange
+        Topic "No" goto close
+    Else
+        Say "You do not have the Special Nereids (Attack) Coupon. Please check and try again."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On special_nereids_attack_exchange
+    Trade 1 of 811136000 for 1 of 1340712000 for 30 days
+
+On war_tattoo
+    If player has 814663000
+        Say "Do you really want to exchange an item? Please be aware of the fact that once you exchange it, you won't be able to cancel it or exchange to another item."
+        Topic "Yes" goto war_tattoo_exchange
+        Topic "No" goto close
+    Else
+        Say "You don't have Tatoo Exchange Voucher."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On war_tattoo_exchange
+    Trade 1 of 814663000 for 1 of 814664796 for 30 days
 
 On event_400
     Say "Which [Premium] item did you bring?"

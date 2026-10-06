@@ -63,6 +63,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMagicPacketCoordinator, MagicPacketCoordinator>();
         services.AddSingleton<IMerchantPacketCoordinator, MerchantPacketCoordinator>();
         services.AddSingleton<IMiscPacketCoordinator, MiscPacketCoordinator>();
+        services.AddSingleton<IGenderChangePacketCoordinator, GenderChangePacketCoordinator>();
+        services.AddSingleton<INationTransferService, NationTransferService>();
+        services.AddSingleton<IMerchantSearchService, MerchantSearchService>();
         services.AddSingleton<IAchievementPacketCoordinator, AchievementPacketCoordinator>();
         services.AddSingleton<IAchievementProgressService, AchievementProgressService>();
         services.AddSingleton<ILoyaltyService, LoyaltyService>();

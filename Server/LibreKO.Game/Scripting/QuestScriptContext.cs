@@ -56,6 +56,10 @@ public class QuestScriptContext
 
     public void RequestClanInstance(int zoneId, int set, float x, float z) => PendingClanInstance = (zoneId, set, x, z);
 
+    public bool NationTransferRequested { get; private set; }
+
+    public void RequestNationTransfer() => NationTransferRequested = true;
+
     public void FailAction(string reason)
     {
         ActionFailed = true;

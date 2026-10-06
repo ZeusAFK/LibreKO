@@ -313,6 +313,8 @@ public sealed class QuestScriptHost(
     public void OpenRebirthPanel() => context.Dialog.SendRebirthPanel();
     public void OpenFamiliarPanel() => context.Dialog.SendFamiliarPanel();
     public void OpenFamiliarShop() => context.Dialog.SendFamiliarShop();
+    public void OpenGenderChangePanel() => context.Dialog.SendGenderChangePanel();
+    public void OpenNationTransferPanel() => context.RequestNationTransfer();
 
     public void Unsupported(string what)
     {

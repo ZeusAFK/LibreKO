@@ -229,6 +229,13 @@ public partial class World
             return;
         }
 
+        if (dlg.Flag == NpcDialog.GenderChangePanelFlag)
+        {
+            CloseNpcDialog();
+            OpenGenderChange();
+            return;
+        }
+
         if (dlg.Flag == NpcDialog.FamiliarShopFlag)
         {
             OpenVendor(FamiliarShopGroup);

@@ -338,7 +338,7 @@ public partial class World
         ApplyMyClan();
         ApplySelfClan(info.InClan ? info.Name : "");
         if (_self != null)
-            AttachClanGauntlet(_self, Net.I.LastEnter.Race, info.InClan ? info.Grade : 0, info.InClan ? info.Ranking : 0);
+            DressClanGauntlet(_self, Net.I.LastEnter.Race, info.InClan ? info.Grade : 0, info.InClan ? info.Ranking : 0);
     }
 
     private void ApplyMyClan()
@@ -775,7 +775,7 @@ public partial class World
                 if (ent.IsNpc || ent.KnightsId != standing.ClanId) continue;
                 ent.ClanGrade = standing.Grade;
                 ent.ClanRanking = standing.Ranking;
-                AttachClanGauntlet(ent.Body, ent.Race, standing.Grade, standing.Ranking);
+                DressClanGauntlet(ent.Body, ent.Race, standing.Grade, standing.Ranking);
             }
         }
         if (ClanPageVisible) ApplyMyClan();
@@ -793,7 +793,7 @@ public partial class World
             ent.CapeId = capeId; ent.CapeR = colour & 0xFF; ent.CapeG = (colour >> 8) & 0xFF; ent.CapeB = (colour >> 16) & 0xFF;
             DressCape(ent.Body, ent.CapeId, ent.CapeR, ent.CapeG, ent.CapeB, ent.IsGm, ent.Race);
         }
-        AttachClanGauntlet(ent.Body, ent.Race, grade, ranking);
+        DressClanGauntlet(ent.Body, ent.Race, grade, ranking);
         if (MyClan.InClan && clanId == MyClan.ClanId && ClanPageVisible) Net.I.SendClanMembersRequest();
     }
 
@@ -807,7 +807,7 @@ public partial class World
         ent.CapeId = 0;
         ent.Plate?.SetClan("");
         DressCape(ent.Body, 0, 0, 0, 0, ent.IsGm, ent.Race);
-        AttachClanGauntlet(ent.Body, ent.Race, 0, 0);
+        DressClanGauntlet(ent.Body, ent.Race, 0, 0);
         if (wasMine && ClanPageVisible) Net.I.SendClanMembersRequest();
     }
 

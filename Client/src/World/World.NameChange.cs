@@ -63,13 +63,6 @@ public partial class World
         r.AddChild(_nameChangeStatus);
     }
 
-    private void ToggleNameChange()
-    {
-        if (_nameChangeShown) { CloseNameChange(); return; }
-        OpenNameChange();
-        Net.I.SendNameChangeRequest();
-    }
-
     private void OpenNameChange()
     {
         _nameChangePanel.Visible = true;
@@ -108,6 +101,8 @@ public partial class World
     private void OnNameChangeSuccess(string newName)
     {
         if (string.IsNullOrEmpty(newName)) newName = _nameChangePending;
+        Net.I.ApplyOwnName(newName);
+        if (SelfPlate() is { } plate) plate.Name.Text = newName;
         CombatNotice($"Your character is now named \"{newName}\".");
         SetNameChangeStatus("Name changed!", false);
         CloseNameChange();

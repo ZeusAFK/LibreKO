@@ -666,6 +666,14 @@ public sealed class QuestInterpreter
                 _host.OpenFamiliarShop();
                 break;
 
+            case QuestActionKind.OpenGenderChangePanel:
+                _host.OpenGenderChangePanel();
+                break;
+
+            case QuestActionKind.OpenNationTransferPanel:
+                _host.OpenNationTransferPanel();
+                break;
+
             case QuestActionKind.OpenStatSkillPanel:
                 _host.OpenStatSkillPanel();
                 break;

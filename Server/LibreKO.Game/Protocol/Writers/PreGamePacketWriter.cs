@@ -33,14 +33,6 @@ public sealed class PreGamePacketWriter
         return packet;
     }
 
-    public static Packet NameChanged(ushort slot, string name)
-    {
-        var packet = NameChangeReply(SelectingCharacterNameChangeResult.Success);
-        packet.WriteUShort(slot);
-        packet.WriteString(name);
-        return packet;
-    }
-
     public static Packet NameChangeRefused() =>
         NameChangeReply(SelectingCharacterNameChangeResult.Failed);
 

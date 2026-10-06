@@ -121,7 +121,16 @@ public class EventTests : GameTestBase
                     Hp = 200,
                     Mp = 100
                 });
-            });
+            },
+            gameData => gameData.GetItem(800032000).Returns(new ItemData
+            {
+                Num = 800032000,
+                Name = "Scroll of Identity",
+                Kind = 255,
+                Slot = 15,
+                Duration = 1,
+                ReqLevelMax = 100
+            }));
 
         var characterId = await GetCharacterIdAsync(provider, "Original");
 
@@ -137,8 +146,9 @@ public class EventTests : GameTestBase
         session.ZoneId = 1;
         session.X = 10;
         session.Z = 10;
-        session.Inventory[InventoryConstants.SlotMax].ItemId = 379090000;
+        session.Inventory[InventoryConstants.SlotMax].ItemId = 800032000;
         session.Inventory[InventoryConstants.SlotMax].Count = 1;
+        session.Inventory[InventoryConstants.SlotMax].Durability = 1;
         sessionManager.Regions.AddToRegion(session);
 
         var packet = new Packet(GameOpcodes.GS_NAME_CHANGE);
@@ -150,6 +160,8 @@ public class EventTests : GameTestBase
 
         session.Name.Should().Be("Renamed");
         session.Inventory[InventoryConstants.SlotMax].IsEmpty.Should().BeTrue();
+        sentPackets.Should().Contain(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_ITEM_COUNT_CHANGE,
+            "the client must see the scroll leave the bag");
 
         var resultPacket = sentPackets.Last(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_NAME_CHANGE);
         resultPacket.ResetOffset();

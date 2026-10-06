@@ -34,6 +34,7 @@ public class MiscPacketCoordinator(
     SessionManager sessionManager,
     IWorldPacketCoordinator worldPacketCoordinator,
     IKnightsRuntimeService knightsRuntimeService,
+    IMagicItemUsageService magicItemUsageService,
     ILogger<MiscPacketCoordinator> logger) : IMiscPacketCoordinator
 {
     private const byte RentalNpc = 3;
@@ -53,8 +54,7 @@ public class MiscPacketCoordinator(
     private const byte ClanNameNotClan = 4;
     private const byte NameChangeInClan = 4;
     private const byte ClanNameSuccess = 16;
-    private const int ScrollOfIdentity = 379090000;
-    private const int ScrollOfIdentityAlt = 800032000;
+    private const int ScrollOfIdentity = 800032000;
     private const int ClanNameScroll = 800086000;
 
     private byte santaOrAngelState;
@@ -263,8 +263,7 @@ public class MiscPacketCoordinator(
             return;
         }
 
-        var scrollSlot = FindNameChangeScrollSlot(session);
-        if (scrollSlot < 0)
+        if (!magicItemUsageService.CanUseItem(session, ScrollOfIdentity))
         {
             await SendNameChangeResultAsync(session, NameChangeShowDialog);
             return;
@@ -290,9 +289,7 @@ public class MiscPacketCoordinator(
         await characterRepository.UpdateAsync(character);
 
         session.Name = newName;
-        session.Inventory[scrollSlot].Count--;
-        if (session.Inventory[scrollSlot].Count <= 0)
-            session.Inventory[scrollSlot].Clear();
+        await magicItemUsageService.TryConsumeItemAsync(session, ScrollOfIdentity);
 
         logger.LogInformation("Player {OldName} changed name to {NewName}", oldName, newName);
 
@@ -327,9 +324,7 @@ public class MiscPacketCoordinator(
             return;
         }
 
-        // Need a clan-name scroll in the bag.
-        var scrollSlot = FindItemInBag(session, ClanNameScroll);
-        if (scrollSlot < 0)
+        if (!magicItemUsageService.CanUseItem(session, ClanNameScroll))
         {
             await SendClanNameChangeResultAsync(session, NameChangeShowDialog);
             return;
@@ -351,10 +346,7 @@ public class MiscPacketCoordinator(
         var knightsRepo = scope.ServiceProvider.GetRequiredService<IKnightsRepository>();
         await knightsRepo.UpdateAsync(clan);
 
-        // Consume scroll
-        session.Inventory[scrollSlot].Count--;
-        if (session.Inventory[scrollSlot].Count <= 0)
-            session.Inventory[scrollSlot].Clear();
+        await magicItemUsageService.TryConsumeItemAsync(session, ClanNameScroll);
 
         // Update the in-memory KnightsName for online clan members so their
         // user-info packets reflect the new clan name on next refresh.
@@ -375,16 +367,6 @@ public class MiscPacketCoordinator(
         // so their UIs flip in one shot.
         var success = MiscPacketWriter.ClanRenamed(ClanNameSuccess, newName);
         await knightsRuntimeService.NotifyOnlineClanMembersAsync(clan.Id, success);
-    }
-
-    private static int FindItemInBag(UserSession session, int itemId)
-    {
-        for (var i = InventoryConstants.SlotMax; i < InventoryConstants.SlotMax + InventoryConstants.HaveMax; i++)
-        {
-            if (session.Inventory[i].ItemId == itemId && session.Inventory[i].Count > 0)
-                return i;
-        }
-        return -1;
     }
 
     public async Task HandleSantaAsync(IClient client)
@@ -465,17 +447,6 @@ public class MiscPacketCoordinator(
         (900020000, 3, 50000),     // 3-day premium buff scroll
         (810025000, 30, 700000),   // 30-day mount
     };
-
-    private static int FindNameChangeScrollSlot(UserSession session)
-    {
-        for (var index = InventoryConstants.SlotMax; index < InventoryConstants.SlotMax + InventoryConstants.HaveMax; index++)
-        {
-            if (session.Inventory[index].ItemId == ScrollOfIdentity && session.Inventory[index].Count > 0)
-                return index;
-        }
-
-        return -1;
-    }
 
     private static async Task SendNameChangeResultAsync(UserSession session, byte resultCode) =>
         await session.Client.SendPacket(MiscPacketWriter.NameChangeResult(resultCode));

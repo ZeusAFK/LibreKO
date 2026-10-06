@@ -76,6 +76,9 @@ public partial class World : Node3D
         Facet(PetInit, PetDispose);
         Facet(PetBarInit, PetBarDispose);
         Facet(RebirthInit, RebirthDispose);
+        Facet(GenderChangeInit, GenderChangeDispose);
+        Facet(NationTransferInit, NationTransferDispose);
+        Facet(MerchantSearchInit, MerchantSearchDispose);
         Facet(BifrostInit, BifrostDispose);
         Facet(BorderDefenseWarInit, BorderDefenseWarDispose);
         Facet(CapeInit, CapeDispose);

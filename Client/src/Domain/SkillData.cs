@@ -147,6 +147,8 @@ public static class SkillData
         public float TransformScale =>
             Effect.TryGetValue("Size", out var v) && (int)v > 0 ? (int)v / 100f : 1f;
 
+        public int TransformUse => Effect.TryGetValue("UserSkillUse", out var v) ? (int)v : 0;
+
         public bool IsResurrect => SpecialKind == SpecialMagic.Resurrect;
 
         public bool IsBlink =>

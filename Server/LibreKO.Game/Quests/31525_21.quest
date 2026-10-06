@@ -1,0 +1,16 @@
+include locations/global
+
+Bind Npc 31525 Zone 21
+
+On greeting
+    Say "Some say the real beauty is in your heart but if you look beautiful wouldn't your heart also be beautiful?"
+    Topic "Gender Change" goto gender_change
+    Goto close
+
+On gender_change
+    If player has 810594000
+        Open gender change panel
+    Else
+        Say "It does not have items."
+        Topic "Where can I find it?" do
+            Map power_up_item

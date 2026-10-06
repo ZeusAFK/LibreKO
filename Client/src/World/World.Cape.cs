@@ -522,6 +522,15 @@ public partial class World
                                   bool highDetail = false)
     {
         if (body == null || !GodotObject.IsInstanceValid(body)) return;
+        var (look, lookRace) = AccessoryHostFor(body, race);
+        if (look != body && body.GetNodeOrNull<Cape>("Cape") is { } shed)
+        {
+            body.RemoveChild(shed);
+            shed.QueueFree();
+        }
+        if (look == null) return;
+        body = look;
+        race = lookRace;
         var (id, dye) = ResolveCape(capeId, r, g, b, isGm);
         var existing = body.GetNodeOrNull<Cape>("Cape");
         if (!Cape.Enabled || !Cape.IsRenderable(id))

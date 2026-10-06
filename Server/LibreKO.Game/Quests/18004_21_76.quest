@@ -1,0 +1,25 @@
+include locations/global
+
+Bind Npc 18004 Zone 21
+
+Quest 76 "Transferring Nation"
+    Journal "If you want to restore your clan after transferring, then seek [Grand Merchant] Kaishan."
+
+On topics
+    Topic "Transferring Nation" goto event_699
+
+On accept
+    Goto event_699
+
+On event_699
+    If player has 810096000
+        Say "Change your character to the nation you want, and click OK to transfer your Nation. Don't be surprised if the game automatically disconnects."
+        Topic "Move out" goto event_700
+        Topic "Reconsider" goto close
+    Else
+        Say "Well... to transfer your Nation, you should bring the Nation Transfer Certificate needed for a Nation transfer. You can buy the Nation Transfer Certificate at the PowerUP Store."
+        Topic "Where can I find it?" do
+            Map power_up_item
+
+On event_700
+    Open nation transfer panel

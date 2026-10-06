@@ -229,6 +229,7 @@ public partial class World
     }
 
     private const string TransformNodeName = "TransformModel";
+    private const string WornAccessoriesMeta = "worn_accessories";
 
     private Node3D? TransformHost(int charId) =>
         charId == _myId ? _selfBody : _ents.TryGetValue(charId, out var e) ? e.Body : null;
@@ -237,6 +238,79 @@ public partial class World
     {
         if (host.GetNodeOrNull<Node3D>(TransformNodeName) is { } worn)
             AttachWeapons(worn, gear);
+    }
+
+    private static Node3D? WornLookOf(Node3D body)
+    {
+        if (body.Name == TransformNodeName) return body;
+        if (body.GetNodeOrNull<Node3D>(TransformNodeName) is { } worn) return worn;
+        return body.GetParent() is CharacterBody3D host ? host.GetNodeOrNull<Node3D>(TransformNodeName) : null;
+    }
+
+    private static (Node3D? Body, int Race) AccessoryHostFor(Node3D body, int race)
+    {
+        if (WornLookOf(body) is not { } worn) return (body, race);
+        return worn.GetMeta(WornAccessoriesMeta, false).AsBool() ? (worn, PlayerRig.StandardRace(race)) : (null, race);
+    }
+
+    private bool WearsAccessories(SkillData.Skill skill, Node3D ownBody, int race, Node3D worn) =>
+        TransformationUse.WearsAccessories(skill.TransformUse)
+        && FindFirst<Skeleton3D>(worn) is { } wornRig
+        && PlayerRig.SameBones(StandardRigBones(ownBody, race), BoneNames(wornRig));
+
+    private string[]? _standardRigBones;
+
+    private string[] StandardRigBones(Node3D ownBody, int race)
+    {
+        if (!PlayerRig.IsKurian(race))
+            return FindFirst<Skeleton3D>(ownBody) is { } own ? BoneNames(own) : System.Array.Empty<string>();
+        if (_standardRigBones != null) return _standardRigBones;
+        var names = System.Array.Empty<string>();
+        if (ResolvePlayerScene(PlayerRig.StandardRace(race)) is { } scene)
+        {
+            var rig = scene.Instantiate<Node3D>();
+            if (FindFirst<Skeleton3D>(rig) is { } skel) names = BoneNames(skel);
+            rig.Free();
+        }
+        return _standardRigBones = names;
+    }
+
+    private static string[] BoneNames(Skeleton3D skel)
+    {
+        var names = new string[skel.GetBoneCount()];
+        for (int i = 0; i < names.Length; i++) names[i] = skel.GetBoneName(i);
+        return names;
+    }
+
+    private AnimationPlayer?[] DressAccessories(Node3D body, int[]? gear, int race, bool shineShadow = false)
+    {
+        var (look, lookRace) = AccessoryHostFor(body, race);
+        var anims = AttachWings(body, look == body ? gear : null, race, _zone, shineShadow: shineShadow);
+        AttachHandFx(body, look == body ? gear : null, race, _zone);
+        if (look == null || look == body) return anims;
+        AttachHandFx(look, gear, lookRace, _zone);
+        return AttachWings(look, gear, lookRace, _zone, shineShadow: shineShadow);
+    }
+
+    private static void DressClanGauntlet(Node3D body, int race, int clanGrade, int clanRanking)
+    {
+        var (look, lookRace) = AccessoryHostFor(body, race);
+        if (look != body) AttachClanGauntlet(body, race, 0, 0);
+        if (look != null) AttachClanGauntlet(look, lookRace, clanGrade, clanRanking);
+    }
+
+    private void DressSelfLook()
+    {
+        RerenderSelfEquipment();
+        DressSelfCape();
+        DressClanGauntlet(_self, _selfRace, MyClan.InClan ? MyClan.Grade : 0, MyClan.InClan ? MyClan.Ranking : 0);
+    }
+
+    private void DressEntityLook(Ent e)
+    {
+        RedressEntity(e);
+        DressCape(e.Body, e.CapeId, e.CapeR, e.CapeG, e.CapeB, e.IsGm, e.Race);
+        DressClanGauntlet(e.Body, e.Race, e.ClanGrade, e.ClanRanking);
     }
 
     private void WearMonsterLook(int charId, int skillId)
@@ -256,8 +330,10 @@ public partial class World
 
         RestoreOwnLook(charId);
 
+        int race = charId == _myId ? _selfRace : _ents.TryGetValue(charId, out var wearer) ? wearer.Race : 0;
         var (monster, anim) = MakeAnimatedEntity(scene, "", skill.TransformScale);
         monster.Name = TransformNodeName;
+        monster.SetMeta(WornAccessoriesMeta, WearsAccessories(skill, host, race, monster));
         host.AddChild(monster);
 
         if (charId == _myId)
@@ -266,14 +342,14 @@ public partial class World
             _selfAnim = anim;
             _selfClip = null;
             _selfTransformSkill = skillId;
-            AttachWeapons(monster, SelfGear());
+            DressSelfLook();
         }
         else if (_ents.TryGetValue(charId, out var e))
         {
             e.RigAnim ??= e.Anim;
             e.Anim = anim;
             e.Clip = null;
-            AttachWeapons(monster, e.Gear);
+            DressEntityLook(e);
         }
 
         SetOwnLookVisible(host, false);
@@ -289,6 +365,7 @@ public partial class World
 
         host.RemoveChild(worn);
         worn.QueueFree();
+        SetOwnLookVisible(host, true);
 
         if (charId == _myId)
         {
@@ -296,14 +373,14 @@ public partial class World
             _selfClip = null;
             DropBuffChip(_selfTransformSkill);
             _selfTransformSkill = 0;
+            DressSelfLook();
         }
         else if (_ents.TryGetValue(charId, out var e))
         {
             if (e.RigAnim != null) { e.Anim = e.RigAnim; e.RigAnim = null; }
             e.Clip = null;
+            DressEntityLook(e);
         }
-
-        SetOwnLookVisible(host, true);
     }
 
     private AnimationPlayer? _selfRigAnim;

@@ -93,6 +93,8 @@ public interface IQuestHost
     void OpenRebirthPanel();
     void OpenFamiliarPanel();
     void OpenFamiliarShop();
+    void OpenGenderChangePanel();
+    void OpenNationTransferPanel();
 
     void Unsupported(string what);
 }
