@@ -16,6 +16,12 @@ public static class TempleEventRules
     public const byte BorderDefenseWarDefaultMaxLevel = 83;
     public const byte UnderTheCastleDefaultMinLevel = 70;
     public const byte UnderTheCastleDefaultMaxLevel = 83;
+    public const int ForgottenTempleDurationSeconds = 2400;
+    public const byte ForgottenTempleLowMinLevel = 35;
+    public const byte ForgottenTempleLowMaxLevel = 59;
+    public const byte ForgottenTempleHighMinLevel = 60;
+    public const byte ForgottenTempleHighMaxLevel = 83;
+
 
     public const int ChaosPlayersPerRoom = 18;
     public const int StartMinuteOfHour = 0;
@@ -26,6 +32,7 @@ public static class TempleEventRules
         TempleEvent.BorderDefenseWar => (byte)ZoneId.BorderDefenseWar,
         TempleEvent.JuraidMountain => (byte)ZoneId.JuradMountain,
         TempleEvent.UnderTheCastle => (byte)ZoneId.UnderCastle,
+        TempleEvent.ForgottenTemple => (byte)ZoneId.ForgottenTemple,
         _ => 0,
     };
 
@@ -35,6 +42,7 @@ public static class TempleEventRules
         TempleEvent.BorderDefenseWar => BorderDefenseWarDurationSeconds,
         TempleEvent.JuraidMountain => JuraidMountainDurationSeconds,
         TempleEvent.UnderTheCastle => UnderTheCastleDurationSeconds,
+        TempleEvent.ForgottenTemple => ForgottenTempleDurationSeconds,
         _ => 0,
     };
 
@@ -44,6 +52,7 @@ public static class TempleEventRules
         TempleEvent.BorderDefenseWar => "Border Defense War",
         TempleEvent.JuraidMountain => "Juraid Mountain",
         TempleEvent.UnderTheCastle => "Under The Castle",
+        TempleEvent.ForgottenTemple => "Forgotten Temple",
         _ => "Event",
     };
 }

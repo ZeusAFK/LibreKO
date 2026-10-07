@@ -119,5 +119,28 @@
     "MaxLevel": 0,
     "LoyaltyPoints": 0,
     "ExpPercent": 0
+  },
+  {
+    "Id": 12,
+    "Event": "ForgottenTemple",
+    "Outcome": "Win",
+    "ItemId": 379155000,
+    "ItemCount": 1,
+    "MinLevel": 35,
+    "MaxLevel": 59,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 100
+  },
+  {
+    "Id": 13,
+    "Event": "ForgottenTemple",
+    "Outcome": "Win",
+    "ItemId": 379156000,
+    "ItemCount": 1,
+    "MinLevel": 60,
+    "MaxLevel": 83,
+    "LoyaltyPoints": 0,
+    "ExpPercent": 100
   }
 ]
+

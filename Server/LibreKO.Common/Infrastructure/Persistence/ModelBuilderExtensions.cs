@@ -88,6 +88,7 @@ internal static class ModelBuilderExtensions
         Configure<LotteryScheduleData>(modelBuilder, "LotterySchedules");
         Configure<TempleEventScheduleData>(modelBuilder, "TempleEventSchedules");
         Configure<TempleEventRewardData>(modelBuilder, "TempleEventRewards");
+        Configure<ForgottenTempleWaveData>(modelBuilder, "ForgottenTempleWaves");
         Configure<BotMerchantData>(modelBuilder, "BotMerchants");
         Configure<UserBotData>(modelBuilder, "UserBots");
 

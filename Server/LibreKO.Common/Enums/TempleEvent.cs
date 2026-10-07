@@ -10,4 +10,5 @@ public enum TempleEvent : byte
     BorderDefenseWar = 2,
     JuraidMountain = 3,
     UnderTheCastle = 4,
+    ForgottenTemple = 5,
 }

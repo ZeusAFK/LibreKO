@@ -1,0 +1,290 @@
+[
+  {
+    "Id": 1,
+    "Tier": 1,
+    "Wave": 1,
+    "StartSecond": 30,
+    "NpcId": 9800,
+    "Count": 4
+  },
+  {
+    "Id": 2,
+    "Tier": 1,
+    "Wave": 1,
+    "StartSecond": 30,
+    "NpcId": 9801,
+    "Count": 4
+  },
+  {
+    "Id": 3,
+    "Tier": 1,
+    "Wave": 1,
+    "StartSecond": 30,
+    "NpcId": 9802,
+    "Count": 4
+  },
+  {
+    "Id": 4,
+    "Tier": 1,
+    "Wave": 1,
+    "StartSecond": 30,
+    "NpcId": 9803,
+    "Count": 4
+  },
+  {
+    "Id": 5,
+    "Tier": 1,
+    "Wave": 2,
+    "StartSecond": 360,
+    "NpcId": 9808,
+    "Count": 6
+  },
+  {
+    "Id": 6,
+    "Tier": 1,
+    "Wave": 2,
+    "StartSecond": 360,
+    "NpcId": 9806,
+    "Count": 4
+  },
+  {
+    "Id": 7,
+    "Tier": 1,
+    "Wave": 2,
+    "StartSecond": 360,
+    "NpcId": 9807,
+    "Count": 4
+  },
+  {
+    "Id": 8,
+    "Tier": 1,
+    "Wave": 2,
+    "StartSecond": 360,
+    "NpcId": 9809,
+    "Count": 4
+  },
+  {
+    "Id": 9,
+    "Tier": 1,
+    "Wave": 3,
+    "StartSecond": 720,
+    "NpcId": 9811,
+    "Count": 6
+  },
+  {
+    "Id": 10,
+    "Tier": 1,
+    "Wave": 3,
+    "StartSecond": 720,
+    "NpcId": 9813,
+    "Count": 4
+  },
+  {
+    "Id": 11,
+    "Tier": 1,
+    "Wave": 3,
+    "StartSecond": 720,
+    "NpcId": 9814,
+    "Count": 4
+  },
+  {
+    "Id": 12,
+    "Tier": 1,
+    "Wave": 3,
+    "StartSecond": 720,
+    "NpcId": 9815,
+    "Count": 4
+  },
+  {
+    "Id": 13,
+    "Tier": 1,
+    "Wave": 4,
+    "StartSecond": 1140,
+    "NpcId": 9816,
+    "Count": 2
+  },
+  {
+    "Id": 14,
+    "Tier": 1,
+    "Wave": 4,
+    "StartSecond": 1140,
+    "NpcId": 9817,
+    "Count": 3
+  },
+  {
+    "Id": 15,
+    "Tier": 1,
+    "Wave": 4,
+    "StartSecond": 1140,
+    "NpcId": 9818,
+    "Count": 3
+  },
+  {
+    "Id": 16,
+    "Tier": 1,
+    "Wave": 4,
+    "StartSecond": 1140,
+    "NpcId": 9819,
+    "Count": 2
+  },
+  {
+    "Id": 17,
+    "Tier": 1,
+    "Wave": 5,
+    "StartSecond": 1620,
+    "NpcId": 9820,
+    "Count": 2
+  },
+  {
+    "Id": 18,
+    "Tier": 2,
+    "Wave": 1,
+    "StartSecond": 30,
+    "NpcId": 9800,
+    "Count": 4
+  },
+  {
+    "Id": 19,
+    "Tier": 2,
+    "Wave": 1,
+    "StartSecond": 30,
+    "NpcId": 9801,
+    "Count": 4
+  },
+  {
+    "Id": 20,
+    "Tier": 2,
+    "Wave": 1,
+    "StartSecond": 30,
+    "NpcId": 9802,
+    "Count": 4
+  },
+  {
+    "Id": 21,
+    "Tier": 2,
+    "Wave": 1,
+    "StartSecond": 30,
+    "NpcId": 9803,
+    "Count": 4
+  },
+  {
+    "Id": 22,
+    "Tier": 2,
+    "Wave": 2,
+    "StartSecond": 360,
+    "NpcId": 9808,
+    "Count": 6
+  },
+  {
+    "Id": 23,
+    "Tier": 2,
+    "Wave": 2,
+    "StartSecond": 360,
+    "NpcId": 9806,
+    "Count": 4
+  },
+  {
+    "Id": 24,
+    "Tier": 2,
+    "Wave": 2,
+    "StartSecond": 360,
+    "NpcId": 9807,
+    "Count": 4
+  },
+  {
+    "Id": 25,
+    "Tier": 2,
+    "Wave": 2,
+    "StartSecond": 360,
+    "NpcId": 9809,
+    "Count": 4
+  },
+  {
+    "Id": 26,
+    "Tier": 2,
+    "Wave": 3,
+    "StartSecond": 720,
+    "NpcId": 9811,
+    "Count": 6
+  },
+  {
+    "Id": 27,
+    "Tier": 2,
+    "Wave": 3,
+    "StartSecond": 720,
+    "NpcId": 9813,
+    "Count": 4
+  },
+  {
+    "Id": 28,
+    "Tier": 2,
+    "Wave": 3,
+    "StartSecond": 720,
+    "NpcId": 9814,
+    "Count": 4
+  },
+  {
+    "Id": 29,
+    "Tier": 2,
+    "Wave": 3,
+    "StartSecond": 720,
+    "NpcId": 9815,
+    "Count": 4
+  },
+  {
+    "Id": 30,
+    "Tier": 2,
+    "Wave": 4,
+    "StartSecond": 1140,
+    "NpcId": 9816,
+    "Count": 2
+  },
+  {
+    "Id": 31,
+    "Tier": 2,
+    "Wave": 4,
+    "StartSecond": 1140,
+    "NpcId": 9817,
+    "Count": 3
+  },
+  {
+    "Id": 32,
+    "Tier": 2,
+    "Wave": 4,
+    "StartSecond": 1140,
+    "NpcId": 9818,
+    "Count": 3
+  },
+  {
+    "Id": 33,
+    "Tier": 2,
+    "Wave": 4,
+    "StartSecond": 1140,
+    "NpcId": 9819,
+    "Count": 2
+  },
+  {
+    "Id": 34,
+    "Tier": 2,
+    "Wave": 5,
+    "StartSecond": 1620,
+    "NpcId": 9805,
+    "Count": 4
+  },
+  {
+    "Id": 35,
+    "Tier": 2,
+    "Wave": 5,
+    "StartSecond": 1620,
+    "NpcId": 9820,
+    "Count": 2
+  },
+  {
+    "Id": 36,
+    "Tier": 2,
+    "Wave": 6,
+    "StartSecond": 2100,
+    "NpcId": 9810,
+    "Count": 1
+  }
+]

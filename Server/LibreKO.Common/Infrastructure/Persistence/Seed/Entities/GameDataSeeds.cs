@@ -437,6 +437,11 @@ public class TempleEventRewardSeed : SnapshotJsonSeed<TempleEventRewardData>
     protected override string JsonFileName => "TempleEventRewards.json";
 }
 
+public class ForgottenTempleWaveSeed : SnapshotJsonSeed<ForgottenTempleWaveData>
+{
+    protected override string JsonFileName => "ForgottenTempleWaves.json";
+}
+
 public class UserBotSeed : SnapshotJsonSeed<UserBotData>
 {
     protected override string JsonFileName => "UserBots.json";

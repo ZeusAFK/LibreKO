@@ -48,5 +48,26 @@
     "MinLevel": 70,
     "MaxLevel": 83,
     "CountdownMinutes": 10
+  },
+  {
+    "Id": 6,
+    "Event": "ForgottenTemple",
+    "Day": null,
+    "Hour": 16,
+    "Minute": 0,
+    "MinLevel": 35,
+    "MaxLevel": 59,
+    "CountdownMinutes": 10
+  },
+  {
+    "Id": 7,
+    "Event": "ForgottenTemple",
+    "Day": null,
+    "Hour": 20,
+    "Minute": 0,
+    "MinLevel": 60,
+    "MaxLevel": 83,
+    "CountdownMinutes": 10
   }
 ]
+

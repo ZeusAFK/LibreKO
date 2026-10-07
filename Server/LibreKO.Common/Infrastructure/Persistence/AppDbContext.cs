@@ -89,6 +89,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LotteryScheduleData> LotterySchedules { get; set; }
     public DbSet<TempleEventScheduleData> TempleEventSchedules { get; set; }
     public DbSet<TempleEventRewardData> TempleEventRewards { get; set; }
+    public DbSet<ForgottenTempleWaveData> ForgottenTempleWaves { get; set; }
     public DbSet<BotMerchantData> BotMerchants { get; set; }
     public DbSet<UserBotData> UserBots { get; set; }
 

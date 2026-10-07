@@ -119,6 +119,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IJuraidMountainService, JuraidMountainService>();
         services.AddSingleton<IBorderDefenseWarService, BorderDefenseWarService>();
         services.AddSingleton<IUnderTheCastleService, UnderTheCastleService>();
+        services.AddSingleton<IForgottenTempleService, ForgottenTempleService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();
         services.AddSingleton<IAccountLockService, AccountLockService>();
         services.AddSingleton<IUserNotificationService, UserNotificationService>();

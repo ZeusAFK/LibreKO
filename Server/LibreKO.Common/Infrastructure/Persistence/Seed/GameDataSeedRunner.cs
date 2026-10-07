@@ -77,6 +77,7 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         await Seed(new LotteryScheduleSeed());
         await Seed(new TempleEventScheduleSeed());
         await Seed(new TempleEventRewardSeed());
+        await Seed(new ForgottenTempleWaveSeed());
         await Seed(new UserBotSeed());
 
         logger.LogInformation(
