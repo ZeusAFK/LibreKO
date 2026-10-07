@@ -83,13 +83,10 @@ public class EventSchedulerTests
             minLevel: 60,
             maxLevel: 83);
 
-        // lowPlayer (level 50) is out of range (60-83) -> receives no BifrostRemaining popup
         lowPackets.Should().NotContain(p => p.GetOpcode() == (byte)GameOpcodes.GS_BIFROST);
 
-        // highPlayer (level 70) is in range (60-83) -> receives BifrostRemaining popup
         highPackets.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_BIFROST);
     }
-
 
     [Fact]
     public async Task CallTempleEventAsync_OutOfRangeCaller_IsNotAutoJoined()
@@ -103,7 +100,6 @@ public class EventSchedulerTests
             minLevel: 60,
             maxLevel: 83);
 
-        // Out of range caller cannot be auto-joined; trying to join fails
         _scheduler.TryJoinTempleEvent(lowPlayer, out var reason).Should().BeFalse();
         reason.Should().Contain("too low");
     }
@@ -120,7 +116,6 @@ public class EventSchedulerTests
             minLevel: 60,
             maxLevel: 83);
 
-        // In range caller is auto-joined; trying to re-join indicates already registered
         _scheduler.TryJoinTempleEvent(highPlayer, out var reason).Should().BeFalse();
         reason.Should().Contain("already registered");
     }

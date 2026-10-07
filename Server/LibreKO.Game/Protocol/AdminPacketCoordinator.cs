@@ -305,17 +305,22 @@ public class AdminPacketCoordinator(
                 }
                 else if (arg is "close")
                 {
-                    bool wasScheduled = eventSchedulerService.CurrentTempleEvent == TempleEvent.UnderTheCastle;
-                    if (wasScheduled)
+                    if (eventSchedulerService.CurrentTempleEvent == TempleEvent.UnderTheCastle)
                     {
                         await eventSchedulerService.CancelTempleEventAsync();
+                        await underTheCastleService.CloseAsync();
+                        await SendNoticeAsync(session, "[Under The Castle] Event closed!");
                     }
-                    await underTheCastleService.CloseAsync();
-                    if (!wasScheduled)
+                    else if (underTheCastleService.IsActive)
                     {
+                        await underTheCastleService.CloseAsync();
                         await sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast("### [Under The Castle] Under The Castle is now over. ###"));
+                        await SendNoticeAsync(session, "[Under The Castle] Event closed!");
                     }
-                    await SendNoticeAsync(session, "[Under The Castle] Event closed!");
+                    else
+                    {
+                        await SendNoticeAsync(session, "[Under The Castle] No Under The Castle event is currently active.");
+                    }
                 }
                 else if (arg is "enter" or "warp")
                 {
@@ -374,7 +379,6 @@ public class AdminPacketCoordinator(
                     else
                         await SendNoticeAsync(session, "[Forgotten Temple] Could not spawn boss wave (event not active).");
                 }
-
                 else
                 {
                     bool isLow;
@@ -448,7 +452,6 @@ public class AdminPacketCoordinator(
                 }
                 break;
             }
-
 
             case "jrcancel":
             case "templecancel":

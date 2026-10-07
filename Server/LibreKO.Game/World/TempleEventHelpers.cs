@@ -257,5 +257,3 @@ public static class TempleEventHelpers
         return baseExp > 0 ? baseExp : ExpFallbackMinimum;
     }
 }
-
-

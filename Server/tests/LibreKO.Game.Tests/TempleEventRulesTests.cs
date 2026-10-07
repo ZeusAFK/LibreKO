@@ -34,7 +34,6 @@ public class TempleEventRulesTests
         TempleEventRules.ZoneFor(contest).Should().Be((byte)zone);
     }
 
-
     [Fact]
     public void NoContestMeansNoZoneAndNoClock()
     {

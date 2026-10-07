@@ -219,7 +219,6 @@ public sealed class ForgottenTempleService(
             var elapsed = _totalDurationSeconds - _remainingSeconds;
 
             var waves = gameDataService.ForgottenTempleWaves
-
                 .Where(w => w.Tier == (byte)_currentTier)
                 .OrderBy(w => w.Wave)
                 .ToList();

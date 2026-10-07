@@ -593,4 +593,59 @@ public class AdminTests : GameTestBase
         sentPacket.ReadSByteString();
         sentPacket.ReadString().Should().Contain("[100110001] Hero Sword(+1)");
     }
+
+    [Fact]
+    public async Task UtcClose_WithNothingRunning_TellsOnlyTheGm()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (gm, gmPackets) = RecordingSession(sessionManager, characterId: 600, isGm: true);
+        var (_, otherPackets) = RecordingSession(sessionManager, characterId: 601, isGm: false);
+
+        await provider.GetRequiredService<IAdminPacketCoordinator>().HandleGmCommandAsync(gm, "+utc close");
+
+        otherPackets.Should().BeEmpty();
+        gmPackets.Should().ContainSingle();
+        GmNoticeText(gmPackets[0]).Should().Be("[Under The Castle] No Under The Castle event is currently active.");
+    }
+
+    [Fact]
+    public async Task UtcClose_AfterUtcOpen_ClosesTheEventAndTellsEveryone()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (gm, _) = RecordingSession(sessionManager, characterId: 610, isGm: true);
+        var (_, otherPackets) = RecordingSession(sessionManager, characterId: 611, isGm: false);
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+
+        await coordinator.HandleGmCommandAsync(gm, "+utc open");
+        otherPackets.Clear();
+        await coordinator.HandleGmCommandAsync(gm, "+utc close");
+
+        provider.GetRequiredService<IUnderTheCastleService>().IsActive.Should().BeFalse();
+        otherPackets.Should().ContainSingle();
+    }
+
+    private static (UserSession Session, List<Packet> Packets) RecordingSession(SessionManager sessionManager, int characterId, bool isGm)
+    {
+        var packets = new List<Packet>();
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Do<Packet>(packets.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = sessionManager.CreateSession(client, characterId, accountId: characterId + 10);
+        session.Name = $"Player{characterId}";
+        session.IsGM = isGm;
+        return (session, packets);
+    }
+
+    private static string GmNoticeText(Packet packet)
+    {
+        packet.ResetOffset();
+        packet.GetOpcode().Should().Be((byte)GameOpcodes.GS_CHAT);
+        packet.ReadByte();
+        packet.ReadByte();
+        packet.ReadInt();
+        packet.ReadSByteString();
+        return packet.ReadString();
+    }
 }

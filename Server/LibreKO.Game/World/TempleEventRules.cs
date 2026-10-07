@@ -22,7 +22,6 @@ public static class TempleEventRules
     public const byte ForgottenTempleHighMinLevel = 60;
     public const byte ForgottenTempleHighMaxLevel = 83;
 
-
     public const int ChaosPlayersPerRoom = 18;
     public const int StartMinuteOfHour = 0;
 

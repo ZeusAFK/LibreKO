@@ -55,14 +55,11 @@ public class ForgottenTempleTests
             Countable = 1
         });
 
-
         _gameData.ForgottenTempleWaves.Returns(new List<ForgottenTempleWaveData>
         {
-            // Low tier (Tier 1)
             new() { Id = 1, Tier = 1, Wave = 1, StartSecond = 30, NpcId = 9800, Count = 1 },
             new() { Id = 2, Tier = 1, Wave = 2, StartSecond = 60, NpcId = ShaitanNpcId, Count = 1 },
 
-            // High tier (Tier 2)
             new() { Id = 3, Tier = 2, Wave = 1, StartSecond = 30, NpcId = 9800, Count = 1 },
             new() { Id = 4, Tier = 2, Wave = 2, StartSecond = 60, NpcId = VolcanicRockNpcId, Count = 1 }
         });
@@ -92,7 +89,6 @@ public class ForgottenTempleTests
                 ExpPercent = 100
             }
         });
-
 
         _npcSummon.SummonAsync(Arg.Any<int>(), Arg.Any<byte>(), Arg.Any<ushort>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<float>(), Arg.Any<Action<NpcInstance>?>())
             .Returns(callInfo =>
@@ -146,7 +142,6 @@ public class ForgottenTempleTests
     {
         _service.Start();
         var player = CreateTestSession(101, zoneId: ForgottenTempleService.FtZoneId);
-
 
         await _service.CloseAsync();
 
@@ -212,7 +207,6 @@ public class ForgottenTempleTests
         _service.Start(minLevel: 60, maxLevel: 83);
         _service.CurrentWave.Should().Be(0);
 
-        // Tick 31 times to reach StartSecond 30 for Wave 1
         for (int i = 0; i <= 30; i++)
         {
             await _service.TickAsync();
@@ -229,8 +223,6 @@ public class ForgottenTempleTests
         _service.Start(minLevel: 60, maxLevel: 83);
         var player = CreateTestSession(108, zoneId: ForgottenTempleService.FtZoneId, level: 80);
 
-
-        // Force spawn last wave (Wave 2)
         var waveSpawned = await _service.ForceSpawnWaveAsync(2);
         waveSpawned.Should().BeTrue();
 
@@ -242,10 +234,8 @@ public class ForgottenTempleTests
             IsMonster = true
         };
 
-
         await _service.OnNpcKilledAsync(bossNpc, player);
 
-        // EXP awarded for victory
         await _progression.Received(1).AwardExperienceAsync(
             player,
             Arg.Is<long>(exp => exp > 0));
