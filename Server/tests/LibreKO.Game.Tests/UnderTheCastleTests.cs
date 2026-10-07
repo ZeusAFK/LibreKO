@@ -132,7 +132,7 @@ public class UnderTheCastleTests
             NpcId = UnderTheCastleService.Gate1DoorNpcId,
             ZoneId = UnderTheCastleService.UtcZoneId,
             TrapNumber = 1,
-            RespawnType = NpcRespawnType.Default,
+            RespawnType = NpcRespawnType.Normal,
             RespawnDelayMs = 1000
         };
 
