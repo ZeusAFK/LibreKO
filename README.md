@@ -86,3 +86,17 @@ what breaks.
 
 Quests live in `Server/LibreKO.Game/Quests` as `.quest` files, a small language described by the
 `LibreKO.Quests` compiler. `quest-manifest.json` lists the files the server loads.
+
+## Support
+
+LibreKO is free and always will be. If you want to help its development:
+
+- Buy Me a Coffee: https://buymeacoffee.com/zeusafk
+- Crypto (USDT, USDC or the network's own coin):
+  - **Ethereum, BNB Smart Chain or Polygon:** `0xD8b7c496d0DdA069d6e7F5d72afBEb76C8e3D697`
+  - **Solana:** `57JWyWxcY9BuK9jinj7Hf4b2ieyVQDL7j1aXg39GF8FS`
+  - **Tron (TRC-20):** `TLg1Jhy51vL6ekity1pV3nUFNPhAJHKptP`
+
+Send only on the networks listed next to each address.
+
+Donations support development only and buy nothing in game.
