@@ -171,7 +171,7 @@ public partial class World : Node3D, IWorldContext
 
         if (!await LoadStep("Ready", 1.0f, "Welcome to LibreKO")) return;
         HideLoading();
-
+        RefreshInZoneLeaveUi();
     }
 
     private async System.Threading.Tasks.Task WaitForServerEnvironment(double timeoutSec)

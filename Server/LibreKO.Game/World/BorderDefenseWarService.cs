@@ -95,15 +95,6 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
     public const float ElmoradDeliveryMinZ = 120f;
     public const float ElmoradDeliveryMaxZ = 215f;
 
-    public const byte ExpHighLevelBandStart = 58;
-    public const byte ExpMinRewardLevel = 20;
-    public const long ExpLowBandBaseConstant = 3000L;
-    public const long ExpLowBandMultiplier = 200000L; // 100L * 2000L
-    public const long ExpHighBandLevelOffset = 55L;
-    public const long ExpHighBandBaseConstant = 20000L;
-    public const long ExpHighBandMultiplier = 100000L; // 100L * 1000L
-    public const long ExpFallbackMinimum = 50000L;
-
     private readonly SessionManager sessionManager;
     private readonly IGameDataService gameDataService;
     private readonly IMonsterAggressionPolicy aggressionPolicy;
@@ -569,7 +560,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
                 if (r.ExpPercent > 0)
                 {
-                    long baseExp = CalculateBaseExp(member.Level);
+                    long baseExp = TempleEventHelpers.CalculateBaseExp(member.Level);
                     long expAward = baseExp * r.ExpPercent / 100;
                     if (expAward > 0)
                         await playerProgressionService.AwardExperienceAsync(member, expAward);
@@ -586,22 +577,6 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
         }
 
         await CloseMatchAsync(match);
-    }
-
-    private static long CalculateBaseExp(byte level)
-    {
-        long baseExp;
-        if (level < ExpHighLevelBandStart)
-        {
-            byte effectiveLevel = Math.Max(ExpMinRewardLevel, level);
-            baseExp = (effectiveLevel - ExpMinRewardLevel) * (ExpLowBandBaseConstant + ExpLowBandMultiplier);
-        }
-        else
-        {
-            baseExp = (level + ExpHighBandLevelOffset) * (ExpHighBandBaseConstant + ExpHighBandMultiplier);
-        }
-
-        return baseExp > 0 ? baseExp : ExpFallbackMinimum;
     }
 
     private static AccountNation? DetermineWinner(BdwMatch match)

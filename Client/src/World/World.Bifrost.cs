@@ -267,6 +267,7 @@ public partial class World
             TempleEventType.BorderDefenseWar => "Border Defense War",
             TempleEventType.JuraidMountain => "Juraid Mountain",
             TempleEventType.UnderTheCastle => "Under The Castle",
+            TempleEventType.ForgottenTemple => "Forgotten Temple",
             _ => "Bifrost"
         };
 
@@ -436,13 +437,14 @@ public partial class World
         _joinModal.Visible = true;
     }
 
+    internal const byte FtZone = 55;
     internal const byte BdwZone = 84;
     internal const byte ChaosZone = 85;
     internal const byte UtcZone = 86;
     internal const byte JuraidZone = 87;
 
     internal static bool IsTempleEventZone(int zone) =>
-        zone is UtcZone or JuraidZone or BdwZone or ChaosZone;
+        zone is FtZone or UtcZone or JuraidZone or BdwZone or ChaosZone;
 
     private void BuildInZoneLeaveUi()
     {
@@ -517,19 +519,22 @@ public partial class World
         CombatNotice($"[{ZoneCatalog.Name(_zone)}] Leaving event and returning to Moradon...");
     }
 
-    private void RefreshInZoneLeaveUi()
+    internal void RefreshInZoneLeaveUi()
     {
         if (_inZoneLeaveBanner == null || !IsInstanceValid(_inZoneLeaveBanner)) return;
         if (IsTempleEventZone(_zone))
         {
-            if (_inZoneLeaveTitleLbl != null) _inZoneLeaveTitleLbl.Text = ZoneCatalog.Name(_zone);
+            if (_inZoneLeaveTitleLbl != null && IsInstanceValid(_inZoneLeaveTitleLbl))
+                _inZoneLeaveTitleLbl.Text = ZoneCatalog.Name(_zone);
             _inZoneLeaveBanner.Visible = true;
+            QueueEventPlates();
         }
         else
         {
             _inZoneLeaveBanner.Visible = false;
             if (_inZoneLeaveAsk != null && IsInstanceValid(_inZoneLeaveAsk))
                 _inZoneLeaveAsk.Visible = false;
+            QueueEventPlates();
         }
     }
 }

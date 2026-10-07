@@ -46,6 +46,7 @@ public class AdminPacketCoordinator(
     IMerchantBotService merchantBotService,
     IJuraidMountainService juraidMountainService,
     IUnderTheCastleService underTheCastleService,
+    IForgottenTempleService forgottenTempleService,
     IItemGrantService itemGrantService,
     ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
 {
@@ -325,6 +326,129 @@ public class AdminPacketCoordinator(
                     await HandleTempleEventCommandAsync(session, TempleEvent.UnderTheCastle, ZoneId.UnderCastle, "Under The Castle", arg);
                 }
                 break;
+
+            case "ft":
+            case "forgottentemple":
+            {
+                var ftLower = arg.ToLowerInvariant().Trim();
+                var tokens = ftLower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var ftFirstToken = tokens.Length > 0 ? tokens[0] : string.Empty;
+
+                if (ftFirstToken is "close" or "cancel" or "stop")
+                {
+                    bool hadSchedulerEvent = eventSchedulerService.TempleEventInProgress == TempleEvent.ForgottenTemple;
+                    if (hadSchedulerEvent)
+                    {
+                        await eventSchedulerService.CancelTempleEventAsync();
+                    }
+                    await forgottenTempleService.CloseAsync();
+                    if (!hadSchedulerEvent)
+                    {
+                        await sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast("### [EVENT] Forgotten Temple has ended! Returning participants to Moradon... ###"));
+                    }
+                    await SendNoticeAsync(session, "[Forgotten Temple] Event closed and cancelled!");
+                }
+                else if (ftFirstToken is "enter" or "warp")
+                {
+                    await forgottenTempleService.EnterAsync(session);
+                }
+                else if (ftFirstToken == "wave")
+                {
+                    if (tokens.Length > 1 && int.TryParse(tokens[1], out var wNum) && await forgottenTempleService.ForceSpawnWaveAsync(wNum))
+                    {
+                        await SendNoticeAsync(session, $"[Forgotten Temple] Forcibly spawned wave {wNum}!");
+                    }
+                    else
+                    {
+                        await SendNoticeAsync(session, "Usage: +ft wave <number> (Event must be active)");
+                    }
+                }
+                else if (ftFirstToken == "boss")
+                {
+                    var tierWaves = gameDataService.ForgottenTempleWaves
+                        .Where(w => w.Tier == (byte)forgottenTempleService.CurrentTier)
+                        .ToList();
+                    int bossWave = tierWaves.Count > 0 ? tierWaves.Max(w => w.Wave) : 1;
+                    if (await forgottenTempleService.ForceSpawnWaveAsync(bossWave))
+                        await SendNoticeAsync(session, $"[Forgotten Temple] Forcibly spawned Boss Wave {bossWave}!");
+                    else
+                        await SendNoticeAsync(session, "[Forgotten Temple] Could not spawn boss wave (event not active).");
+                }
+
+                else
+                {
+                    bool isLow;
+                    int tokenIndex = 0;
+                    if (ftFirstToken is "1" or "low")
+                    {
+                        isLow = true;
+                        tokenIndex++;
+                    }
+                    else if (ftFirstToken is "2" or "high")
+                    {
+                        isLow = false;
+                        tokenIndex++;
+                    }
+                    else
+                    {
+                        isLow = session.Level <= TempleEventRules.ForgottenTempleLowMaxLevel;
+                    }
+
+                    byte min = isLow ? TempleEventRules.ForgottenTempleLowMinLevel : TempleEventRules.ForgottenTempleHighMinLevel;
+                    byte max = isLow ? TempleEventRules.ForgottenTempleLowMaxLevel : TempleEventRules.ForgottenTempleHighMaxLevel;
+
+                    bool instant = false;
+                    int joinSec = DefaultJoinWindowSeconds;
+
+                    for (; tokenIndex < tokens.Length; tokenIndex++)
+                    {
+                        var tok = tokens[tokenIndex];
+                        if (tok == "now")
+                        {
+                            instant = true;
+                        }
+                        else if (tok.EndsWith("m") && int.TryParse(tok[..^1], out var m) && m > 0)
+                        {
+                            joinSec = m * 60;
+                        }
+                        else if (tok.EndsWith("s") && int.TryParse(tok[..^1], out var sec) && sec > 0)
+                        {
+                            joinSec = sec;
+                        }
+                        else if (int.TryParse(tok, out var s) && s > 0)
+                        {
+                            joinSec = s;
+                        }
+                    }
+
+                    if (instant)
+                    {
+                        forgottenTempleService.Start(minLevel: min, maxLevel: max);
+                        await forgottenTempleService.EnterAsync(session);
+                        await SendNoticeAsync(session, $"[Forgotten Temple] Started instant Tier {(isLow ? 1 : 2)} ({min}-{max}) event!");
+                    }
+                    else
+                    {
+                        bool isEligible = session.Level >= min && session.Level <= max;
+                        UserSession? autoJoin = isEligible ? session : null;
+                        await eventSchedulerService.CallTempleEventAsync(TempleEvent.ForgottenTemple, joinSec, autoJoin, minLevel: min, maxLevel: max);
+                        string formattedTime = joinSec >= 60 ? $"{joinSec / 60}m" : $"{joinSec}s";
+
+                        if (isEligible)
+                        {
+                            var confirmPkt = EventPacketWriter.TempleEvent((byte)TempleSubOpcode.TempleEventJoin, 1, (short)ZoneId.ForgottenTemple);
+                            await session.Client.SendPacket(confirmPkt);
+                            await SendNoticeAsync(session, $"[Forgotten Temple] Tier {(isLow ? 1 : 2)} ({min}-{max}) registration open ({formattedTime}). Pop-up modal broadcasted! You will teleport automatically.");
+                        }
+                        else
+                        {
+                            await SendNoticeAsync(session, $"[Forgotten Temple] Tier {(isLow ? 1 : 2)} ({min}-{max}) registration open ({formattedTime}). Your level ({session.Level}) is outside this tier, so you were not auto-joined.");
+                        }
+                    }
+                }
+                break;
+            }
+
 
             case "jrcancel":
             case "templecancel":

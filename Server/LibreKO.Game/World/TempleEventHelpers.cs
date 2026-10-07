@@ -231,4 +231,31 @@ public static class TempleEventHelpers
             }
         }
     }
+
+    public const byte ExpHighLevelBandStart = 58;
+    public const byte ExpMinRewardLevel = 20;
+    public const long ExpLowBandBaseConstant = 3000L;
+    public const long ExpLowBandMultiplier = 200000L; // 100L * 2000L
+    public const long ExpHighBandLevelOffset = 55L;
+    public const long ExpHighBandBaseConstant = 20000L;
+    public const long ExpHighBandMultiplier = 100000L; // 100L * 1000L
+    public const long ExpFallbackMinimum = 50000L;
+
+    public static long CalculateBaseExp(byte level)
+    {
+        long baseExp;
+        if (level < ExpHighLevelBandStart)
+        {
+            byte effectiveLevel = Math.Max(ExpMinRewardLevel, level);
+            baseExp = (effectiveLevel - ExpMinRewardLevel) * (ExpLowBandBaseConstant + ExpLowBandMultiplier);
+        }
+        else
+        {
+            baseExp = (level + ExpHighBandLevelOffset) * (ExpHighBandBaseConstant + ExpHighBandMultiplier);
+        }
+
+        return baseExp > 0 ? baseExp : ExpFallbackMinimum;
+    }
 }
+
+

@@ -61,6 +61,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
     public ILookup<int, LotteryScheduleData> LotterySchedulesByEvent { get; private set; } = Enumerable.Empty<LotteryScheduleData>().ToLookup(x => x.LotteryId);
     public IReadOnlyList<TempleEventScheduleData> TempleEventSchedules { get; private set; } = [];
     public IReadOnlyList<TempleEventRewardData> TempleEventRewards { get; private set; } = [];
+    public IReadOnlyList<ForgottenTempleWaveData> ForgottenTempleWaves { get; private set; } = [];
     public ILookup<int, ItemOpData> ItemOpsByItemId { get; private set; } = Enumerable.Empty<ItemOpData>().ToLookup(x => x.ItemId);
     public IReadOnlyDictionary<int, string> ServerResourceTable { get; private set; } = new Dictionary<int, string>();
     public IReadOnlyDictionary<byte, PremiumItemData> PremiumItemTable { get; private set; } = new Dictionary<byte, PremiumItemData>();
@@ -331,6 +332,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
             LotterySchedulesByEvent = await LoadLookupAsync(db.LotterySchedules, x => x.LotteryId, "lottery schedules", cancellationToken);
             TempleEventSchedules = await LoadListAsync(db.TempleEventSchedules.OrderBy(x => x.Id), "temple event schedules", cancellationToken);
             TempleEventRewards = await LoadListAsync(db.TempleEventRewards.OrderBy(x => x.Id), "temple event rewards", cancellationToken);
+            ForgottenTempleWaves = await LoadListAsync(db.ForgottenTempleWaves.OrderBy(x => x.Id), "forgotten temple waves", cancellationToken);
             SiegeWarfare = await db.SiegeWarfare.AsNoTracking().OrderBy(x => x.CastleIndex).FirstOrDefaultAsync(cancellationToken);
             if (SiegeWarfare != null)
                 logger.LogInformation("Loaded siege warfare data (castle owner: clan {ClanId})", SiegeWarfare.MasterKnights);

@@ -59,6 +59,7 @@ public interface IGameDataService
     ILookup<int, LotteryScheduleData> LotterySchedulesByEvent { get; }
     IReadOnlyList<TempleEventScheduleData> TempleEventSchedules { get; }
     IReadOnlyList<TempleEventRewardData> TempleEventRewards { get; }
+    IReadOnlyList<ForgottenTempleWaveData> ForgottenTempleWaves { get; }
     SiegeWarfareData? SiegeWarfare { get; }
     bool IsLoaded { get; }
 

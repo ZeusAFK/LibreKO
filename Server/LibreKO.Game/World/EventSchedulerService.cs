@@ -19,6 +19,7 @@ public class EventSchedulerService(
     IJuraidMountainService juraidMountainService,
     IBorderDefenseWarService borderDefenseWarService,
     IUnderTheCastleService underTheCastleService,
+    IForgottenTempleService forgottenTempleService,
     IGameDataService gameDataService,
     ILogger<EventSchedulerService> logger) : BackgroundService
 {
@@ -58,6 +59,7 @@ public class EventSchedulerService(
                 await juraidMountainService.TickAsync();
                 await borderDefenseWarService.TickAsync();
                 await underTheCastleService.TickAsync();
+                await forgottenTempleService.TickAsync();
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -206,7 +208,9 @@ public class EventSchedulerService(
             await WarpParticipantsToEventAsync();
         }
 
-        if (utcNow >= _templeEventEnd || (_templeEvent == TempleEvent.UnderTheCastle && !_templeEventJoinOpen && !underTheCastleService.IsActive))
+        if (utcNow >= _templeEventEnd
+            || (_templeEvent == TempleEvent.UnderTheCastle && !_templeEventJoinOpen && !underTheCastleService.IsActive)
+            || (_templeEvent == TempleEvent.ForgottenTemple && !_templeEventJoinOpen && !forgottenTempleService.IsActive))
         {
             logger.LogInformation("{Contest} in zone {Zone} ended", _templeEvent, _templeEventZone);
             await WarpParticipantsOutAsync(_templeEventZone);
@@ -234,12 +238,14 @@ public class EventSchedulerService(
             {
                 TempleEvent.JuraidMountain => TempleEventRules.JuraidMountainDefaultMinLevel,
                 TempleEvent.UnderTheCastle => TempleEventRules.UnderTheCastleDefaultMinLevel,
+                TempleEvent.ForgottenTemple => TempleEventRules.ForgottenTempleLowMinLevel,
                 _ => TempleEventRules.BorderDefenseWarDefaultMinLevel,
             };
             byte defMax = contest switch
             {
                 TempleEvent.JuraidMountain => TempleEventRules.JuraidMountainDefaultMaxLevel,
                 TempleEvent.UnderTheCastle => TempleEventRules.UnderTheCastleDefaultMaxLevel,
+                TempleEvent.ForgottenTemple => TempleEventRules.ForgottenTempleHighMaxLevel,
                 _ => TempleEventRules.BorderDefenseWarDefaultMaxLevel,
             };
 
@@ -281,7 +287,12 @@ public class EventSchedulerService(
         _templeParticipants.Clear();
         if (autoJoinSession != null)
         {
-            _templeParticipants.Add(autoJoinSession.CharacterId);
+            bool eligible = (_templeEventMinLevel == 0 || autoJoinSession.Level >= _templeEventMinLevel)
+                         && (_templeEventMaxLevel == 0 || autoJoinSession.Level <= _templeEventMaxLevel);
+            if (eligible)
+            {
+                _templeParticipants.Add(autoJoinSession.CharacterId);
+            }
         }
 
         logger.LogInformation(
@@ -295,14 +306,23 @@ public class EventSchedulerService(
             : $"{joinWindowSeconds} Seconds";
 
         string levelNotice = _templeEventMinLevel > 0
-            ? $" (Level {_templeEventMinLevel}+)"
+            ? (_templeEventMaxLevel > 0 && _templeEventMaxLevel < ProgressionTable.MaxLevel
+                ? $" (Level {_templeEventMinLevel}-{_templeEventMaxLevel})"
+                : $" (Level {_templeEventMinLevel}+)")
             : string.Empty;
 
         var noticePkt = NoticePacketWriter.Broadcast($"### [EVENT] {contestName}{levelNotice} registration is now OPEN ({timeStr})! ###");
         await sessionManager.BroadcastToAll(noticePkt);
 
         var bifrostPkt = BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, joinWindowSeconds, (byte)contest);
-        await sessionManager.BroadcastToAll(bifrostPkt);
+        foreach (var s in sessionManager.GetAll())
+        {
+            if (_templeEventMinLevel > 0 && s.Level < _templeEventMinLevel)
+                continue;
+            if (_templeEventMaxLevel > 0 && s.Level > _templeEventMaxLevel)
+                continue;
+            await s.Client.SendPacket(bifrostPkt);
+        }
     }
 
     private async Task WarpParticipantsToEventAsync()
@@ -336,6 +356,18 @@ public class EventSchedulerService(
                 var session = sessionManager.GetByCharacterId(charId);
                 if (session != null)
                     await underTheCastleService.EnterAsync(session);
+            }
+            return;
+        }
+
+        if (_templeEvent == TempleEvent.ForgottenTemple)
+        {
+            forgottenTempleService.Start(minLevel: _templeEventMinLevel, maxLevel: _templeEventMaxLevel);
+            foreach (var charId in _templeParticipants)
+            {
+                var session = sessionManager.GetByCharacterId(charId);
+                if (session != null)
+                    await forgottenTempleService.EnterAsync(session);
             }
             return;
         }
@@ -375,6 +407,11 @@ public class EventSchedulerService(
         if (_templeEvent == TempleEvent.UnderTheCastle || underTheCastleService.IsActive)
         {
             await underTheCastleService.CloseAsync();
+        }
+
+        if (_templeEvent == TempleEvent.ForgottenTemple || forgottenTempleService.IsActive)
+        {
+            await forgottenTempleService.CloseAsync();
         }
 
         var playersInEvent = sessionManager.GetAll()
@@ -450,19 +487,21 @@ public class EventSchedulerService(
         if (contest == TempleEvent.None)
             return;
 
-        if (contest is TempleEvent.JuraidMountain or TempleEvent.BorderDefenseWar or TempleEvent.UnderTheCastle)
+        if (contest is TempleEvent.JuraidMountain or TempleEvent.BorderDefenseWar or TempleEvent.UnderTheCastle or TempleEvent.ForgottenTemple)
         {
             var matchingSchedules = gameDataService.TempleEventSchedules?.Where(s => s.Event == contest).ToList();
             byte defMin = contest switch
             {
                 TempleEvent.JuraidMountain => TempleEventRules.JuraidMountainDefaultMinLevel,
                 TempleEvent.UnderTheCastle => TempleEventRules.UnderTheCastleDefaultMinLevel,
+                TempleEvent.ForgottenTemple => TempleEventRules.ForgottenTempleLowMinLevel,
                 _ => TempleEventRules.BorderDefenseWarDefaultMinLevel,
             };
             byte defMax = contest switch
             {
                 TempleEvent.JuraidMountain => TempleEventRules.JuraidMountainDefaultMaxLevel,
                 TempleEvent.UnderTheCastle => TempleEventRules.UnderTheCastleDefaultMaxLevel,
+                TempleEvent.ForgottenTemple => TempleEventRules.ForgottenTempleHighMaxLevel,
                 _ => TempleEventRules.BorderDefenseWarDefaultMaxLevel,
             };
 
@@ -531,7 +570,12 @@ public class EventSchedulerService(
             await underTheCastleService.CloseAsync();
         }
 
-        byte[] eventZones = [(byte)ZoneId.JuradMountain, (byte)ZoneId.BorderDefenseWar, (byte)ZoneId.ChaosDungeon, (byte)ZoneId.UnderCastle];
+        if (_templeEvent == TempleEvent.ForgottenTemple || forgottenTempleService.IsActive)
+        {
+            await forgottenTempleService.CloseAsync();
+        }
+
+        byte[] eventZones = [(byte)ZoneId.JuradMountain, (byte)ZoneId.BorderDefenseWar, (byte)ZoneId.ChaosDungeon, (byte)ZoneId.UnderCastle, (byte)ZoneId.ForgottenTemple];
         foreach (var ez in eventZones)
         {
             var playersInZone = sessionManager.GetAll().Where(s => s.ZoneId == ez).ToList();
