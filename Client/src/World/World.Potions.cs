@@ -80,7 +80,7 @@ public partial class World
         for (int abs = GridStart; abs < Inv.Length; abs++)
         {
             int id = Inv[abs].ItemId;
-            if (id == 0) continue;
+            if (id == 0 || !MaestroPotions.CanUse(id, Sheet.Gold)) continue;
             int heal = ItemData.PotionHeal(id, healTarget);
             if (heal <= bestHeal) continue;
             best = id;

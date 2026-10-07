@@ -70,7 +70,8 @@ public partial class World
     {
         int selected = target == HealTarget.Hp ? _genieHpItem : _genieMpItem;
         int id = selected == 0 ? BestPotion(target) : selected;
-        if (id <= 0 || CountInBackpack(id) <= 0 || ItemData.PotionHeal(id, target) <= 0) return;
+        if (id <= 0 || CountInBackpack(id) <= 0 || ItemData.PotionHeal(id, target) <= 0
+            || !MaestroPotions.CanUse(id, Sheet.Gold)) return;
         UseHotItem(id);
     }
 }
