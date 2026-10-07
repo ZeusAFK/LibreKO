@@ -669,11 +669,9 @@ public class AdminTests : GameTestBase
         gmSession.IsGM = true;
         gmSession.Class = 101;
 
-        // Equip a weapon in slot RightHand (slot 6)
         gmSession.Inventory[InventoryConstants.RightHand].ItemId = 100110001;
         gmSession.Inventory[InventoryConstants.RightHand].Count = 1;
 
-        // Put items in inventory slots 14 and 15
         gmSession.Inventory[InventoryConstants.InventoryStart].ItemId = 379155000;
         gmSession.Inventory[InventoryConstants.InventoryStart].Count = 5;
         gmSession.Inventory[InventoryConstants.InventoryStart + 1].ItemId = 379156000;
@@ -687,17 +685,13 @@ public class AdminTests : GameTestBase
         var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
         await coordinator.HandleGmCommandAsync(gmSession, "+clear");
 
-        // Inventory slots must be empty
         gmSession.Inventory[InventoryConstants.InventoryStart].IsEmpty.Should().BeTrue();
         gmSession.Inventory[InventoryConstants.InventoryStart + 1].IsEmpty.Should().BeTrue();
 
-        // Equipped weapon must stay safe and intact
         gmSession.Inventory[InventoryConstants.RightHand].ItemId.Should().Be(100110001);
         gmSession.Inventory[InventoryConstants.RightHand].Count.Should().Be(1);
 
-        // Stats.ItemWeight must be recomputed and reflect only the equipped gear
-        var weaponData = gameDataService.GetItem(100110001);
-        gmSession.Stats.ItemWeight.Should().Be(weaponData?.Weight ?? 0);
+        gmSession.Stats.ItemWeight.Should().Be(gameDataService.GetItem(100110001)!.Weight);
         gmSession.Stats.ItemWeight.Should().BeLessThan(totalWeightBefore);
     }
 
@@ -751,7 +745,7 @@ public class AdminTests : GameTestBase
         var playerSession = sessionManager.CreateSession(client2, characterId: 802, accountId: 812);
         playerSession.Name = "TradingTarget";
         playerSession.IsGM = false;
-        playerSession.Trade.ExchangeUser = 999; // Target is in a trade
+        playerSession.Trade.ExchangeUser = 999;
 
         playerSession.Inventory[InventoryConstants.InventoryStart].ItemId = 379155000;
         playerSession.Inventory[InventoryConstants.InventoryStart].Count = 1;
@@ -759,7 +753,6 @@ public class AdminTests : GameTestBase
         var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
         await coordinator.HandleGmCommandAsync(gmSession, "+clear TradingTarget");
 
-        // Inventory slot must NOT be cleared
         playerSession.Inventory[InventoryConstants.InventoryStart].IsEmpty.Should().BeFalse();
         playerSession.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(379155000);
     }
