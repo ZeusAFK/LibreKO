@@ -22,6 +22,10 @@ public partial class World
     private Label _joinModalStatus = null!;
     private Button _joinModalBtn = null!;
     private Button _joinModalCloseBtn = null!;
+    private PanelContainer? _inZoneLeaveBanner;
+    private Label? _inZoneLeaveTitleLbl;
+    private Button? _inZoneLeaveBtn;
+    private ConfirmationDialog? _inZoneLeaveAsk;
 
     private bool _bifrostActive;
     private bool _bifrostSignUp;
@@ -38,6 +42,9 @@ public partial class World
     private void BifrostInit()
     {
         BuildBifrostUi();
+        BuildInZoneLeaveUi();
+        RefreshInZoneLeaveUi();
+
         Net.I.BifrostTimeEvent    += OnBifrostTime;
         Net.I.BifrostJoinEvent    += OnBifrostJoinResult;
         Net.I.BifrostDisbandEvent += OnBifrostDisband;
@@ -50,6 +57,12 @@ public partial class World
         Net.I.BifrostTimeEvent    -= OnBifrostTime;
         Net.I.BifrostJoinEvent    -= OnBifrostJoinResult;
         Net.I.BifrostDisbandEvent -= OnBifrostDisband;
+
+        if (_bifrostLayer != null && IsInstanceValid(_bifrostLayer))
+            _bifrostLayer.QueueFree();
+        _bifrostLayer = null!;
+        _inZoneLeaveBanner = null;
+        _inZoneLeaveAsk = null;
     }
 
     private void BifrostRequestTime() => Net.I.SendBifrostTimeRequest();
@@ -83,7 +96,13 @@ public partial class World
                 BifrostShowJoinPrompt();
         };
         _bifrostLayer.AddChild(_bifrostBanner);
-        AddEventPlate(_bifrostBanner);
+        const string bifrostBannerLayoutId = "hud_bifrost";
+        var bifrostLayout = HudLayout.Attach(
+            _bifrostBanner,
+            bifrostBannerLayoutId,
+            _bifrostBanner,
+            () => EventPlateSpot(_bifrostBanner));
+        AddEventPlate(_bifrostBanner, bifrostLayout, bifrostBannerLayoutId);
 
         var m = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         UiTheme.Margins(m, 10, 4, 10, 5);
@@ -122,8 +141,6 @@ public partial class World
         _bifrostBar.AddThemeStyleboxOverride("background", track);
         _bifrostBar.AddThemeStyleboxOverride("fill", _bifrostBarFill);
         col.AddChild(_bifrostBar);
-
-        HudLayout.Attach(_bifrostBanner, "hud_bifrost", null, () => _bifrostBanner.Position);
     }
 
     private void BuildBifrostJoinDialog()
@@ -249,6 +266,7 @@ public partial class World
             TempleEventType.Chaos => "Chaos Dungeon",
             TempleEventType.BorderDefenseWar => "Border Defense War",
             TempleEventType.JuraidMountain => "Juraid Mountain",
+            TempleEventType.UnderTheCastle => "Under The Castle",
             _ => "Bifrost"
         };
 
@@ -329,7 +347,11 @@ public partial class World
     {
         _isEventRegistered = false;
         UpdateJoinModalState();
-        CombatNotice($"[{_eventTitle}] You cancelled your event registration.");
+        if (IsTempleEventZone(_zone))
+            CombatNotice($"[{ZoneCatalog.Name(_zone)}] You left the event.");
+        else
+            CombatNotice($"[{_eventTitle}] You cancelled your event registration.");
+        RefreshInZoneLeaveUi();
     }
 
     private void EndBifrostEvent()
@@ -413,4 +435,102 @@ public partial class World
             _bifrostTitleLbl.Text = _eventTitle;
         _joinModal.Visible = true;
     }
+
+    internal const byte BdwZone = 84;
+    internal const byte ChaosZone = 85;
+    internal const byte UtcZone = 86;
+    internal const byte JuraidZone = 87;
+
+    internal static bool IsTempleEventZone(int zone) =>
+        zone is UtcZone or JuraidZone or BdwZone or ChaosZone;
+
+    private void BuildInZoneLeaveUi()
+    {
+        if (_inZoneLeaveBanner != null) return;
+
+        const string inZoneLeaveLayoutId = "hud_event_inzone_leave";
+        _inZoneLeaveBanner = new PanelContainer
+        {
+            Visible = false,
+            MouseFilter = Control.MouseFilterEnum.Stop,
+            MouseDefaultCursorShape = Control.CursorShape.Move,
+            TooltipText = "Drag to move",
+        };
+        _inZoneLeaveBanner.AddThemeStyleboxOverride("panel", UiTheme.Panel(5, true));
+        _bifrostLayer.AddChild(_inZoneLeaveBanner);
+
+        var layout = HudLayout.Attach(
+            _inZoneLeaveBanner,
+            inZoneLeaveLayoutId,
+            _inZoneLeaveBanner,
+            () => EventPlateSpot(_inZoneLeaveBanner));
+        AddEventPlate(_inZoneLeaveBanner, layout, inZoneLeaveLayoutId);
+
+        var m = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        UiTheme.Margins(m, 10, 4, 10, 5);
+        _inZoneLeaveBanner.AddChild(m);
+
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 8);
+        m.AddChild(row);
+
+        var grip = UiTheme.Text("⠿", 13, UiTheme.TextDim);
+        grip.MouseFilter = Control.MouseFilterEnum.Ignore;
+        grip.VerticalAlignment = VerticalAlignment.Center;
+        row.AddChild(grip);
+
+        _inZoneLeaveTitleLbl = UiTheme.Text("", 12, UiTheme.GoldBright);
+        _inZoneLeaveTitleLbl.AddThemeConstantOverride("outline_size", 2);
+        _inZoneLeaveTitleLbl.VerticalAlignment = VerticalAlignment.Center;
+        _inZoneLeaveTitleLbl.MouseFilter = Control.MouseFilterEnum.Ignore;
+        row.AddChild(_inZoneLeaveTitleLbl);
+
+        _inZoneLeaveBtn = Ui.MenuButton("Leave", height: 22, fontSize: 10);
+        _inZoneLeaveBtn.CustomMinimumSize = new Vector2(55, 22);
+        _inZoneLeaveBtn.AddThemeColorOverride("font_color", UiTheme.Bad);
+        _inZoneLeaveBtn.TooltipText = "Leave event and return to Moradon";
+        _inZoneLeaveBtn.Pressed += OnInZoneLeavePressed;
+        row.AddChild(_inZoneLeaveBtn);
+
+        _inZoneLeaveAsk = new ConfirmationDialog
+        {
+            Title = "Leave Event",
+            Exclusive = false,
+        };
+        _inZoneLeaveAsk.GetOkButton().Text = "Leave";
+        _inZoneLeaveAsk.GetCancelButton().Text = "Cancel";
+        _inZoneLeaveAsk.Confirmed += OnInZoneLeaveConfirmed;
+        _bifrostLayer.AddChild(_inZoneLeaveAsk);
+    }
+
+    internal void OnInZoneLeavePressed()
+    {
+        if (_inZoneLeaveAsk == null || !IsInstanceValid(_inZoneLeaveAsk)) return;
+        string eventName = ZoneCatalog.Name(_zone);
+        _inZoneLeaveAsk.DialogText = $"Do you want to leave {eventName} and return to Moradon?";
+        _inZoneLeaveAsk.PopupCentered();
+    }
+
+    private void OnInZoneLeaveConfirmed()
+    {
+        Net.I.SendBifrostDisband();
+        CombatNotice($"[{ZoneCatalog.Name(_zone)}] Leaving event and returning to Moradon...");
+    }
+
+    private void RefreshInZoneLeaveUi()
+    {
+        if (_inZoneLeaveBanner == null || !IsInstanceValid(_inZoneLeaveBanner)) return;
+        if (IsTempleEventZone(_zone))
+        {
+            if (_inZoneLeaveTitleLbl != null) _inZoneLeaveTitleLbl.Text = ZoneCatalog.Name(_zone);
+            _inZoneLeaveBanner.Visible = true;
+        }
+        else
+        {
+            _inZoneLeaveBanner.Visible = false;
+            if (_inZoneLeaveAsk != null && IsInstanceValid(_inZoneLeaveAsk))
+                _inZoneLeaveAsk.Visible = false;
+        }
+    }
 }
+

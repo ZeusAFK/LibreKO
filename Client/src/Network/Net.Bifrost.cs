@@ -9,6 +9,7 @@ public enum TempleEventType : byte
     Chaos = 1,
     BorderDefenseWar = 2,
     JuraidMountain = 3,
+    UnderTheCastle = 4,
 }
 
 public partial class Net

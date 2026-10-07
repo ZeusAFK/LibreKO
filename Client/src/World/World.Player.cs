@@ -253,7 +253,19 @@ public partial class World
     private bool RunLocalCommand(string command)
     {
         string[] parts = command.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0 || !parts[0].Equals("collision", System.StringComparison.OrdinalIgnoreCase))
+        if (parts.Length == 0) return false;
+
+        if (parts[0].Equals("leave", System.StringComparison.OrdinalIgnoreCase)
+            || parts[0].Equals("exit", System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (IsTempleEventZone(_zone))
+            {
+                OnInZoneLeavePressed();
+                return true;
+            }
+        }
+
+        if (!parts[0].Equals("collision", System.StringComparison.OrdinalIgnoreCase))
             return false;
         if (!_isGm) return false;
         bool on = parts.Length < 2

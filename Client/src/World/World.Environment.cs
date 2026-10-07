@@ -233,7 +233,6 @@ public partial class World
     private const float EntityFloorProbeDown = 0.5f;
     private const float ObjectFloorProbeDown = 2f;
     private const float PitFloorProbeDown = 60f;
-    private const byte JuraidZone = 87;
     private const float GroundNormalProbe = 0.6f;
 
     private Vector3 EntityGroundPos(float koX, float koZ, float serverY, float lift)
