@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
@@ -11,7 +11,6 @@ public partial class World
     private WarScoreStrip _bdwScoreBanner = null!;
     private Godot.Timer _bdwTick = null!;
 
-    private const byte BdwZone = 84;
     private const int BdwVictorySound = 340119;
     private const int BdwDefeatSound = 340118;
     private const string BdwCentre = "VS";

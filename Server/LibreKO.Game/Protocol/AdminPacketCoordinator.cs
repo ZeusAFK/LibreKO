@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Gameplay;
@@ -297,14 +297,18 @@ public class AdminPacketCoordinator(
 
             case "utc":
             case "underthecastle":
-                if (arg is "1" or "open")
+                if (arg is "open")
                 {
                     underTheCastleService.Start();
                     await SendNoticeAsync(session, "[Under The Castle] Event opened!");
                 }
-                else if (arg is "2" or "close" or "cancel")
+                else if (arg is "close")
                 {
-                    underTheCastleService.Close();
+                    if (eventSchedulerService.CurrentTempleEvent == TempleEvent.UnderTheCastle)
+                    {
+                        await eventSchedulerService.CancelTempleEventAsync();
+                    }
+                    await underTheCastleService.CloseAsync();
                     await SendNoticeAsync(session, "[Under The Castle] Event closed!");
                 }
                 else if (arg is "enter" or "warp")
@@ -1520,7 +1524,7 @@ public class AdminPacketCoordinator(
                 joinSec = s;
             }
         }
-        else if (contest is TempleEvent.JuraidMountain or TempleEvent.BorderDefenseWar)
+        else if (contest is TempleEvent.JuraidMountain or TempleEvent.BorderDefenseWar or TempleEvent.UnderTheCastle)
         {
             var defaultMin = gameDataService.TempleEventSchedules?.FirstOrDefault(s => s.Event == contest)?.CountdownMinutes ?? TempleEventRules.DefaultCountdownMinutes;
             joinSec = defaultMin > 0 ? defaultMin * 60 : TempleEventRules.JoinWindowSeconds;

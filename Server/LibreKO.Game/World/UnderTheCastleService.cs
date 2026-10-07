@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -15,7 +15,7 @@ public interface IUnderTheCastleService
     int CurrentStage { get; }
 
     void Start(int? durationMinutes = null);
-    void Close();
+    Task CloseAsync();
     Task EnterAsync(UserSession session);
     Task OnNpcKilledAsync(NpcInstance npc, UserSession killer);
     Task TickAsync();
@@ -32,17 +32,19 @@ public sealed class UnderTheCastleService(
 {
     public const byte UtcZoneId = (byte)ZoneId.UnderCastle;
     public const int TrophyOfFlameItemId = 800149000;
-    public const int DefaultDurationMinutes = 60;
+    public const int TwinklingStarGlitterItemId = 810977000;
+    public const int DentedIronmassItemId = 508147000;
+    public const int IronPowderOfChainItemId = 508151000;
+    public const int PlwitoonsTearItemId = 508152000;
+    public const int HornOfPluwitonItemId = 810479000;
     public const int VictoryDelaySeconds = 60;
 
-    // Boss IDs from TRANCE reference / K_MONSTER
     public const int EmperorMammothNpcId = 9501;
-    public const int CreshergimmicNpcId = 9507;
-    public const int PuriousMiniNpcId = 9566;
-    public const int PuriousInvisibleNpcId = 9512;
-    public const int FluwitonFinalBossNpcId = 9515;
+    public const int CrasherGimmickNpcId = 9507;
+    public const int ShackledLordFluwitonNpcId = 9566;
+    public const int ShackledLordFluwitonAltNpcId = 9512;
+    public const int PluwitonFinalBossNpcId = 9515;
 
-    // Gate / Door NPC IDs & Trap Numbers
     public const int Gate1DoorNpcId = 9550;
     public const int Gate2DoorNpcId = 9561;
     public const int Gate3DoorNpcId = 9562;
@@ -50,8 +52,17 @@ public sealed class UnderTheCastleService(
 
     private const float UtcCampX = 69f;
     private const float UtcCampZ = 64f;
-    private const float MoradonTownX = 816f;
-    private const float MoradonTownZ = 532f;
+
+    private sealed record StageReward(float AreaX, float AreaZ, float AreaRadius, int[] Items);
+
+    private static readonly StageReward[] StageRewards =
+    [
+        new(0f, 0f, 0f, []),
+        new(121f, 297f, 80f, [TwinklingStarGlitterItemId]),
+        new(520f, 494f, 115f, [DentedIronmassItemId, TwinklingStarGlitterItemId]),
+        new(642f, 351f, 100f, [IronPowderOfChainItemId, TwinklingStarGlitterItemId]),
+        new(803f, 839f, 110f, [PlwitoonsTearItemId, HornOfPluwitonItemId, TwinklingStarGlitterItemId]),
+    ];
 
     private readonly object _stateLock = new();
     private bool _isActive;
@@ -86,7 +97,7 @@ public sealed class UnderTheCastleService(
                 return;
             }
 
-            var minutes = durationMinutes ?? DefaultDurationMinutes;
+            var minutes = durationMinutes ?? (TempleEventRules.UnderTheCastleDurationSeconds / 60);
             _remainingSeconds = minutes * 60;
             _isActive = true;
             _currentStage = 1;
@@ -98,10 +109,10 @@ public sealed class UnderTheCastleService(
         }
 
         SpawnUtcMonsters();
-        _ = BroadcastNoticeAsync("### [Under The Castle] Under the Castle has opened! You may now enter Under The Castle. ###");
+        _ = sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast("### [Under The Castle] Under the Castle has opened! You may now enter Under The Castle. ###"));
     }
 
-    public void Close()
+    public async Task CloseAsync()
     {
         bool wasActive;
         lock (_stateLock)
@@ -116,12 +127,9 @@ public sealed class UnderTheCastleService(
             return;
 
         logger.LogInformation("Under the Castle event closed");
-        _ = BroadcastNoticeAsync("### [Under The Castle] Under The Castle is now over. ###");
+        await sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast("### [Under The Castle] Under The Castle is now over. ###"));
 
-        // Kick all players in zone 86 back to Moradon
-        _ = KickOutZoneUsersAsync();
-
-        // Despawn event monsters & gates in zone 86
+        await KickOutZoneUsersAsync();
         DespawnUtcMonsters();
     }
 
@@ -164,44 +172,45 @@ public sealed class UnderTheCastleService(
             {
                 _currentStage = 2;
                 stageToUnlock = 1;
-                noticeMessage = "### [Under The Castle] Emperor Mammoth defeated! Gate 1 is now OPEN! ###";
+                noticeMessage = $"### [Under The Castle] {npc.Name} defeated! Gate 1 is now OPEN! ###";
             }
-            else if (npc.NpcId == CreshergimmicNpcId && _currentStage == 2)
+            else if (npc.NpcId == CrasherGimmickNpcId && _currentStage == 2)
             {
                 _currentStage = 3;
                 stageToUnlock = 2;
-                noticeMessage = "### [Under The Castle] Creshergimmic defeated! Gate 2 is now OPEN! ###";
+                noticeMessage = $"### [Under The Castle] {npc.Name} defeated! Gate 2 is now OPEN! ###";
             }
-            else if ((npc.NpcId == PuriousMiniNpcId || npc.NpcId == PuriousInvisibleNpcId) && _currentStage == 3)
+            else if ((npc.NpcId == ShackledLordFluwitonNpcId || npc.NpcId == ShackledLordFluwitonAltNpcId) && _currentStage == 3)
             {
                 _currentStage = 4;
                 stageToUnlock = 3;
-                noticeMessage = "### [Under The Castle] Purious defeated! Final Chamber Gate is now OPEN! ###";
+                noticeMessage = $"### [Under The Castle] {npc.Name} defeated! Final Chamber Gate is now OPEN! ###";
             }
-            else if (npc.NpcId == FluwitonFinalBossNpcId)
+            else if (npc.NpcId == PluwitonFinalBossNpcId && _currentStage == 4)
             {
+                _currentStage = 5;
                 _finalBossKilled = true;
                 _finishedAtUtc = DateTime.UtcNow;
                 victory = true;
-                noticeMessage = "### [Under The Castle] You have eliminated all the monsters in the temple! ###";
+                noticeMessage = $"### [Under The Castle] {npc.Name} has been slain! Under The Castle has been conquered! Victory! ###";
             }
         }
 
         if (stageToUnlock > 0)
         {
             await OpenGateAsync(stageToUnlock);
-            await RewardParticipantsAsync(stageToUnlock, 1);
+            await RewardParticipantsAsync(stageToUnlock, npc.X, npc.Z);
         }
 
         if (victory)
         {
-            await RewardParticipantsAsync(4, 2);
+            await RewardParticipantsAsync(4, npc.X, npc.Z);
             SpawnVictoryNpcs();
         }
 
         if (noticeMessage != null)
         {
-            await BroadcastNoticeAsync(noticeMessage);
+            await BroadcastStageNoticeAsync(noticeMessage);
         }
     }
 
@@ -228,7 +237,7 @@ public sealed class UnderTheCastleService(
                 if (!_returnNoticeSent && elapsed >= (VictoryDelaySeconds - 10))
                 {
                     _returnNoticeSent = true;
-                    _ = BroadcastNoticeAsync("### [Under The Castle] Returning to Moradon in 10 seconds... ###");
+                    _ = BroadcastStageNoticeAsync("### [Under The Castle] Returning to Moradon in 10 seconds... ###");
                 }
 
                 if (elapsed >= VictoryDelaySeconds)
@@ -238,16 +247,14 @@ public sealed class UnderTheCastleService(
 
         if (timeExpired || victoryElapsed)
         {
-            Close();
+            await CloseAsync();
         }
     }
 
     private void SpawnUtcMonsters()
     {
-        // First clean up any existing monsters in Zone 86
         DespawnUtcMonsters();
 
-        // Spawn all positions for Zone 86 where Room == 86
         var positions = gameDataService.NpcPositions
             .Where(p => p.ZoneId == UtcZoneId && p.Room == 86)
             .ToList();
@@ -256,6 +263,10 @@ public sealed class UnderTheCastleService(
         foreach (var pos in positions)
         {
             var result = npcSpawnRowService.Spawn(pos);
+            foreach (var npc in result)
+            {
+                npc.RespawnType = NpcRespawnType.Never;
+            }
             spawned += result.Count;
         }
 
@@ -265,7 +276,7 @@ public sealed class UnderTheCastleService(
     private void DespawnUtcMonsters()
     {
         var monsters = sessionManager.Regions.GetAllNpcs()
-            .Where(n => n.ZoneId == UtcZoneId && n.IsMonster)
+            .Where(n => n.ZoneId == UtcZoneId && (n.IsMonster || n.NpcId == VictoryNpcId))
             .ToList();
 
         foreach (var monster in monsters)
@@ -278,9 +289,6 @@ public sealed class UnderTheCastleService(
 
     private async Task OpenGateAsync(int gateStage)
     {
-        // Gate 1: TrapNumber 1 (Door 9550)
-        // Gate 2: TrapNumber 2 (Door 9561)
-        // Gate 3: TrapNumber 3 & 4 (Door 9562)
         var doors = sessionManager.Regions.GetAllNpcs()
             .Where(n => n.ZoneId == UtcZoneId && (
                 (gateStage == 1 && (n.TrapNumber == 1 || n.NpcId == Gate1DoorNpcId)) ||
@@ -302,7 +310,6 @@ public sealed class UnderTheCastleService(
         if (proto == null)
             return;
 
-        // Spawn victory chest/guard NPCs at final room
         (float X, float Z)[] spots = [(852f, 830f), (825f, 873f)];
         foreach (var spot in spots)
         {
@@ -312,38 +319,68 @@ public sealed class UnderTheCastleService(
                 NpcId = VictoryNpcId,
                 LeftX = (int)spot.X,
                 TopZ = (int)spot.Z,
-                ActType = 1,
+                ActType = NpcPosData.NpcSpawnActTypeBase,
                 NumNPC = 1,
                 Room = 0
             };
-            npcSpawnRowService.Spawn(pos);
+            var result = npcSpawnRowService.Spawn(pos);
+            foreach (var npc in result)
+            {
+                npc.RespawnType = NpcRespawnType.Never;
+            }
         }
     }
 
-    private async Task RewardParticipantsAsync(int stage, int itemCount)
+    private static bool IsInCircle(float px, float pz, float cx, float cz, float radius)
     {
+        var dx = px - cx;
+        var dz = pz - cz;
+        return (dx * dx + dz * dz) <= (radius * radius);
+    }
+
+    private async Task RewardParticipantsAsync(int stage, float bossX, float bossZ)
+    {
+        if (stage < 1 || stage >= StageRewards.Length)
+            return;
+
         var trophyItem = gameDataService.GetItem(TrophyOfFlameItemId);
         if (trophyItem == null)
             return;
 
+        var stageReward = StageRewards[stage];
         var players = sessionManager.GetAll()
             .Where(s => s.ZoneId == UtcZoneId)
             .ToList();
 
         foreach (var player in players)
         {
-            try
+            bool inArea = IsInCircle(player.X, player.Z, stageReward.AreaX, stageReward.AreaZ, stageReward.AreaRadius);
+            bool nearBoss = IsInCircle(player.X, player.Z, bossX, bossZ, 15f);
+
+            if (!inArea && !nearBoss)
+                continue;
+
+            int trophyCount = (inArea && nearBoss) ? 2 : 1;
+
+            var grantedTrophies = await itemGrantService.GrantAsync(player, trophyItem, trophyCount);
+            if (grantedTrophies > 0)
             {
-                var granted = await itemGrantService.GrantAsync(player, trophyItem, itemCount);
-                if (granted > 0)
-                {
-                    await player.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                        (byte)player.Nation, $"[Under The Castle] You received {granted}x {trophyItem.Name} for clearing Stage {stage}!"));
-                }
+                await player.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                    (byte)player.Nation, $"[Under The Castle] You received {grantedTrophies}x {trophyItem.Name}!"));
             }
-            catch (Exception ex)
+
+            foreach (var itemId in stageReward.Items)
             {
-                logger.LogError(ex, "Failed to grant UTC reward to {Name}", player.Name);
+                var extraItem = gameDataService.GetItem(itemId);
+                if (extraItem != null)
+                {
+                    var granted = await itemGrantService.GrantAsync(player, extraItem, 1);
+                    if (granted > 0)
+                    {
+                        await player.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                            (byte)player.Nation, $"[Under The Castle] You received {granted}x {extraItem.Name}!"));
+                    }
+                }
             }
         }
     }
@@ -358,7 +395,7 @@ public sealed class UnderTheCastleService(
         {
             try
             {
-                await zoneTransitionService.ChangeZoneAsync(player, (byte)ZoneId.Moradon, MoradonTownX, MoradonTownZ);
+                await zoneTransitionService.ChangeZoneAsync(player, (byte)ZoneId.Moradon, 0f, 0f);
             }
             catch (Exception ex)
             {
@@ -367,24 +404,22 @@ public sealed class UnderTheCastleService(
         }
     }
 
-    private Task BroadcastNoticeAsync(string message)
+    private async Task BroadcastStageNoticeAsync(string message)
     {
         var karusNotice = ChatPacketWriter.SystemNotice((byte)AccountNation.Karus, message);
         var elmoNotice = ChatPacketWriter.SystemNotice((byte)AccountNation.ElMorad, message);
 
-        foreach (var session in sessionManager.GetAll())
+        foreach (var session in sessionManager.GetAll().Where(s => s.ZoneId == UtcZoneId))
         {
             try
             {
                 var pkt = session.Nation == AccountNation.Karus ? karusNotice : elmoNotice;
-                _ = session.Client.SendPacket(pkt);
+                await session.Client.SendPacket(pkt);
             }
-            catch
+            catch (Exception ex)
             {
-                // best effort
+                logger.LogError(ex, "Failed to send stage notice to {Name}", session.Name);
             }
         }
-
-        return Task.CompletedTask;
     }
 }

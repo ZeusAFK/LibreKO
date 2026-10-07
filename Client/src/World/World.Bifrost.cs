@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -317,7 +317,7 @@ public partial class World
         {
             _joinModalStatus.Text = "✓ Registered! You will be teleported automatically.";
             _joinModalStatus.AddThemeColorOverride("font_color", UiTheme.Good);
-            _joinModalBtn.Text = "Leave";
+            _joinModalBtn.Text = "Cancel";
             _joinModalBtn.AddThemeColorOverride("font_color", UiTheme.Bad);
         }
         else
@@ -348,7 +348,7 @@ public partial class World
         _isEventRegistered = false;
         UpdateJoinModalState();
         if (IsTempleEventZone(_zone))
-            CombatNotice($"[{GetEventZoneName(_zone)}] You left the event.");
+            CombatNotice($"[{ZoneCatalog.Name(_zone)}] You left the event.");
         else
             CombatNotice($"[{_eventTitle}] You cancelled your event registration.");
         RefreshInZoneLeaveUi();
@@ -436,17 +436,13 @@ public partial class World
         _joinModal.Visible = true;
     }
 
-    internal static bool IsTempleEventZone(int zone) =>
-        zone is 86 or 87 or 84 or 85;
+    internal const byte BdwZone = 84;
+    internal const byte ChaosZone = 85;
+    internal const byte UtcZone = 86;
+    internal const byte JuraidZone = 87;
 
-    internal static string GetEventZoneName(int zone) => zone switch
-    {
-        86 => "Under The Castle",
-        87 => "Juraid Mountain",
-        84 => "Border Defense War",
-        85 => "Chaos Dungeon",
-        _ => "Event"
-    };
+    internal static bool IsTempleEventZone(int zone) =>
+        zone is UtcZone or JuraidZone or BdwZone or ChaosZone;
 
     private void BuildInZoneLeaveUi()
     {
@@ -510,7 +506,7 @@ public partial class World
     internal void OnInZoneLeavePressed()
     {
         if (_inZoneLeaveAsk == null || !IsInstanceValid(_inZoneLeaveAsk)) return;
-        string eventName = GetEventZoneName(_zone);
+        string eventName = ZoneCatalog.Name(_zone);
         _inZoneLeaveAsk.DialogText = $"Do you want to leave {eventName} and return to Moradon?";
         _inZoneLeaveAsk.PopupCentered();
     }
@@ -518,7 +514,7 @@ public partial class World
     private void OnInZoneLeaveConfirmed()
     {
         Net.I.SendBifrostDisband();
-        CombatNotice($"[{GetEventZoneName(_zone)}] Leaving event and returning to Moradon...");
+        CombatNotice($"[{ZoneCatalog.Name(_zone)}] Leaving event and returning to Moradon...");
     }
 
     private void RefreshInZoneLeaveUi()
@@ -526,7 +522,7 @@ public partial class World
         if (_inZoneLeaveBanner == null || !IsInstanceValid(_inZoneLeaveBanner)) return;
         if (IsTempleEventZone(_zone))
         {
-            if (_inZoneLeaveTitleLbl != null) _inZoneLeaveTitleLbl.Text = GetEventZoneName(_zone);
+            if (_inZoneLeaveTitleLbl != null) _inZoneLeaveTitleLbl.Text = ZoneCatalog.Name(_zone);
             _inZoneLeaveBanner.Visible = true;
         }
         else

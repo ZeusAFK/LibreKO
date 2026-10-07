@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
@@ -374,7 +374,7 @@ public class EventSchedulerService(
 
         if (_templeEvent == TempleEvent.UnderTheCastle || underTheCastleService.IsActive)
         {
-            underTheCastleService.Close();
+            await underTheCastleService.CloseAsync();
         }
 
         var playersInEvent = sessionManager.GetAll()
@@ -528,7 +528,7 @@ public class EventSchedulerService(
 
         if (_templeEvent == TempleEvent.UnderTheCastle || underTheCastleService.IsActive)
         {
-            underTheCastleService.Close();
+            await underTheCastleService.CloseAsync();
         }
 
         byte[] eventZones = [(byte)ZoneId.JuradMountain, (byte)ZoneId.BorderDefenseWar, (byte)ZoneId.ChaosDungeon, (byte)ZoneId.UnderCastle];
