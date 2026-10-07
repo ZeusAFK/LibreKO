@@ -493,6 +493,7 @@ public class AdminPacketCoordinator(
                 await SendNoticeAsync(session, "+savemerchantbots - Save active merchant bots to DB");
                 await SendNoticeAsync(session, "+loadbotmerchant - Load and spawn merchant bots from DB");
                 await SendNoticeAsync(session, "+clearmerchantbots - Clear all active merchant bots");
+                await SendNoticeAsync(session, "+clear [characterName] - Clear inventory (preserves equipped gear)");
                 await SendNoticeAsync(session, "+zone | +zone <id> - List zones / teleport to zone home");
                 await SendNoticeAsync(session, "+reloadscripts - Reload quest scripts without restart");
                 await SendNoticeAsync(session, "+reseed - Seed JSON to DB + reload (drops/NPCs/items)");
@@ -511,6 +512,12 @@ public class AdminPacketCoordinator(
             case "clearmerchantbots":
             case "clearbotmerchants":
                 await merchantBotService.ClearAllBotsAsync(session);
+                break;
+
+            case "clear":
+            case "clearinv":
+            case "inventoryclear":
+                await HandleClearInventoryAsync(session, arg);
                 break;
 
             case "item":
@@ -1667,5 +1674,62 @@ public class AdminPacketCoordinator(
         await session.Client.SendPacket(confirmPkt);
         string formattedTime = joinSec >= 60 ? $"{joinSec / 60}m" : $"{joinSec}s";
         await SendNoticeAsync(session, $"[{eventName}] Registration open ({formattedTime}). You are registered and will teleport automatically!");
+    }
+
+    private async Task HandleClearInventoryAsync(UserSession session, string arg)
+    {
+        var target = session;
+        if (!string.IsNullOrWhiteSpace(arg))
+        {
+            var found = sessionManager.GetByName(arg.Trim());
+            if (found == null)
+            {
+                await SendNoticeAsync(session, $"[Clear] Player '{arg.Trim()}' not found or is offline.");
+                return;
+            }
+            target = found;
+        }
+
+        if (target.Trade.IsTrading || target.Trade.IsMerchanting || target.IsGathering)
+        {
+            await SendNoticeAsync(session, target == session
+                ? "[Clear] Cannot clear inventory while trading, merchanting, or gathering."
+                : $"[Clear] Cannot clear inventory of {target.Name} while they are trading, merchanting, or gathering.");
+            return;
+        }
+
+        var clearedCount = target.WithLock(s =>
+        {
+            var start = InventoryConstants.InventoryStart;
+            var end = start + InventoryConstants.HaveMax;
+            int count = 0;
+
+            for (var slot = start; slot < end; slot++)
+            {
+                if (!s.Inventory[slot].IsEmpty)
+                {
+                    s.Inventory[slot].Clear();
+                    count++;
+                }
+            }
+
+            s.RecalculateStatsWithBuffs(gameDataService);
+            return count;
+        });
+
+        logger.LogInformation("GM {Gm} cleared {Count} bag slots of {Target}", session.Name, clearedCount, target.Name);
+
+        await target.Client.SendPacket(ItemMovePacketMapper.BuildArrangedResponse(target));
+        await userNotificationService.SendWeightChangeAsync(target);
+
+        if (target == session)
+        {
+            await SendNoticeAsync(session, $"[Clear] Your inventory has been cleared ({clearedCount} slot(s) emptied).");
+        }
+        else
+        {
+            await SendNoticeAsync(session, $"[Clear] Cleared inventory of {target.Name} ({clearedCount} slot(s) emptied).");
+            await SendNoticeAsync(target, "[Clear] Your inventory has been cleared by a Game Master.");
+        }
     }
 }

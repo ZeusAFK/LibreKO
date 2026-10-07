@@ -648,4 +648,119 @@ public class AdminTests : GameTestBase
         packet.ReadSByteString();
         return packet.ReadString();
     }
+
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_ClearCommandEmptiesInventorySlotsWhilePreservingEquipment()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            gameData.GetCoefficient(101).Returns(CreateBasicCoefficient(101));
+            gameData.GetItem(100110001).Returns(new ItemData { Num = 100110001, Weight = 50, Kind = (byte)ItemKind.Dagger });
+            gameData.GetItem(379155000).Returns(new ItemData { Num = 379155000, Weight = 10, Countable = 1 });
+            gameData.GetItem(379156000).Returns(new ItemData { Num = 379156000, Weight = 20, Countable = 1 });
+        });
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var gmSession = sessionManager.CreateSession(client, characterId: 601, accountId: 611);
+        gmSession.Name = "GMUser";
+        gmSession.IsGM = true;
+        gmSession.Class = 101;
+
+        // Equip a weapon in slot RightHand (slot 6)
+        gmSession.Inventory[InventoryConstants.RightHand].ItemId = 100110001;
+        gmSession.Inventory[InventoryConstants.RightHand].Count = 1;
+
+        // Put items in inventory slots 14 and 15
+        gmSession.Inventory[InventoryConstants.InventoryStart].ItemId = 379155000;
+        gmSession.Inventory[InventoryConstants.InventoryStart].Count = 5;
+        gmSession.Inventory[InventoryConstants.InventoryStart + 1].ItemId = 379156000;
+        gmSession.Inventory[InventoryConstants.InventoryStart + 1].Count = 10;
+
+        var gameDataService = provider.GetRequiredService<IGameDataService>();
+        gmSession.RecalculateStatsWithBuffs(gameDataService);
+        var totalWeightBefore = gmSession.Stats.ItemWeight;
+        totalWeightBefore.Should().BeGreaterThan(0);
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(gmSession, "+clear");
+
+        // Inventory slots must be empty
+        gmSession.Inventory[InventoryConstants.InventoryStart].IsEmpty.Should().BeTrue();
+        gmSession.Inventory[InventoryConstants.InventoryStart + 1].IsEmpty.Should().BeTrue();
+
+        // Equipped weapon must stay safe and intact
+        gmSession.Inventory[InventoryConstants.RightHand].ItemId.Should().Be(100110001);
+        gmSession.Inventory[InventoryConstants.RightHand].Count.Should().Be(1);
+
+        // Stats.ItemWeight must be recomputed and reflect only the equipped gear
+        var weaponData = gameDataService.GetItem(100110001);
+        gmSession.Stats.ItemWeight.Should().Be(weaponData?.Weight ?? 0);
+        gmSession.Stats.ItemWeight.Should().BeLessThan(totalWeightBefore);
+    }
+
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_ClearCommandTargetsAnotherPlayer()
+    {
+        using var provider = CreateProvider(_ => { });
+        var client1 = Substitute.For<IClient>();
+        client1.Id.Returns(Guid.NewGuid());
+        client1.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var client2 = Substitute.For<IClient>();
+        client2.Id.Returns(Guid.NewGuid());
+        client2.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var gmSession = sessionManager.CreateSession(client1, characterId: 701, accountId: 711);
+        gmSession.Name = "GMBoss";
+        gmSession.IsGM = true;
+
+        var playerSession = sessionManager.CreateSession(client2, characterId: 702, accountId: 712);
+        playerSession.Name = "TargetNoob";
+        playerSession.IsGM = false;
+
+        playerSession.Inventory[InventoryConstants.InventoryStart].ItemId = 379155000;
+        playerSession.Inventory[InventoryConstants.InventoryStart].Count = 1;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(gmSession, "+clear TargetNoob");
+
+        playerSession.Inventory[InventoryConstants.InventoryStart].IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AdminPacketCoordinator_HandleGmCommandAsync_ClearCommandRefusesWhenTargetIsTrading()
+    {
+        using var provider = CreateProvider(_ => { });
+        var client1 = Substitute.For<IClient>();
+        client1.Id.Returns(Guid.NewGuid());
+        client1.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var client2 = Substitute.For<IClient>();
+        client2.Id.Returns(Guid.NewGuid());
+        client2.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var gmSession = sessionManager.CreateSession(client1, characterId: 801, accountId: 811);
+        gmSession.Name = "GMBoss";
+        gmSession.IsGM = true;
+
+        var playerSession = sessionManager.CreateSession(client2, characterId: 802, accountId: 812);
+        playerSession.Name = "TradingTarget";
+        playerSession.IsGM = false;
+        playerSession.Trade.ExchangeUser = 999; // Target is in a trade
+
+        playerSession.Inventory[InventoryConstants.InventoryStart].ItemId = 379155000;
+        playerSession.Inventory[InventoryConstants.InventoryStart].Count = 1;
+
+        var coordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
+        await coordinator.HandleGmCommandAsync(gmSession, "+clear TradingTarget");
+
+        // Inventory slot must NOT be cleared
+        playerSession.Inventory[InventoryConstants.InventoryStart].IsEmpty.Should().BeFalse();
+        playerSession.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(379155000);
+    }
 }
