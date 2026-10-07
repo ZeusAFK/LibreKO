@@ -81,10 +81,8 @@ public partial class World : Node3D
         EscapeCloses(() => _itemCombineShown, () => CloseItemCombine());
         EscapeCloses(() => _rouletteShown, () => CloseRoulette());
         EscapeCloses(() => _fishHallShown, () => CloseFishingHall());
-        EscapeCloses(() => _eventQuestShown, () => CloseEventQuests());
         EscapeCloses(() => _globalMapShown, () => CloseGlobalMap());
         EscapeCloses(() => _genieShown, () => CloseGenie());
-        EscapeCloses(() => _dqShown, () => CloseDailyQuest());
         EscapeCloses(() => _admShown, () => CloseAdminPanel());
         EscapeCloses(() => _mainShown, () => SetMainShown(false));
         EscapeCloses(AnyWhisperExpanded, MinimizeAllWhispers);

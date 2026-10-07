@@ -96,9 +96,7 @@ public partial class World : Node3D
         Bound(KeyAction.ChatRooms, () => ToggleChatRoom());
         Bound(KeyAction.Roulette, () => ToggleRoulette());
         Bound(KeyAction.FishingHall, () => ToggleFishingHall());
-        Bound(KeyAction.EventQuests, () => ToggleEventQuests());
         Bound(KeyAction.Genie, () => ToggleGenie());
-        Bound(KeyAction.DailyQuests, () => ToggleDailyQuest());
         Bound(KeyAction.TownRecall, () => TownRecallTryOpen());
         Bound(KeyAction.GmPanel, ToggleAdminPanel);
 

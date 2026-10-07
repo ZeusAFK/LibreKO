@@ -399,12 +399,10 @@ public partial class Net : Node
             case GameOpcodes.GS_NPC_EVENT:         HandleNpcEvent(p); break;
             case GameOpcodes.GS_FISHING_HALL:      HandleFishingHall(p); break;
             case GameOpcodes.GS_GUARD_PET:         HandleGuardPet(p); break;
-            case GameOpcodes.GS_EVENT_QUEST:       HandleEventQuest(p); break;
             case GameOpcodes.GS_GLOBAL_MAP:        HandleGlobalMap(p); break;
             case GameOpcodes.GS_GENIE_SYSTEM:      HandleGenieSystem(p); break;
             case GameOpcodes.GS_GENIE:             HandleGenie(p); break;
             case GameOpcodes.GS_CLIENT_SETTINGS:   HandleClientSettings(p); break;
-            case GameOpcodes.GS_DAILY_QUEST:       HandleDailyQuest(p); break;
             case GameOpcodes.GS_RENTAL:            HandleRental(p); break;
             case GameOpcodes.GS_ADMIN_PANEL:       HandleAdminPanel(p); break;
             case GameOpcodes.GS_COLLECTION_RACE:   HandleCollectionRace(p); break;

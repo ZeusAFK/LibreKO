@@ -51,9 +51,7 @@ public enum KeyAction
     ChatRooms,
     Roulette,
     FishingHall,
-    EventQuests,
     Genie,
-    DailyQuests,
     TownRecall,
 
     HotPageNext,
@@ -209,9 +207,7 @@ public static partial class KeyBinds
         new(KeyAction.ChatRooms, BindGroup.Windows, "Chat Rooms", Chord(Key.Kp3)),
         new(KeyAction.Roulette, BindGroup.Windows, "Event Roulette", Chord(Key.Kp6)),
         new(KeyAction.FishingHall, BindGroup.Windows, "Fishing Hall of Fame", Chord(Key.Kp7)),
-        new(KeyAction.EventQuests, BindGroup.Windows, "Event Quests", Chord(Key.KpDivide)),
         new(KeyAction.Genie, BindGroup.Windows, "Genie", Chord(Key.KpAdd)),
-        new(KeyAction.DailyQuests, BindGroup.Windows, "Daily Quests", Chord(Key.KpPeriod)),
         new(KeyAction.TownRecall, BindGroup.Windows, "Town Recall", Ctrl(Key.H)),
 
         new(KeyAction.PerformanceOverlay, BindGroup.System, "Performance Overlay", Shift(Key.F3)),

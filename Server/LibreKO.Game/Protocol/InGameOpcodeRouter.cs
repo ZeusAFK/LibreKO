@@ -59,11 +59,9 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
         INationTaxPacketCoordinator nationTax,
         IFishingHallPacketCoordinator fishingHall,
         IGuardPetPacketCoordinator guardPet,
-        IEventQuestPacketCoordinator eventQuest,
         IGlobalMapPacketCoordinator globalMap,
         IGeniePacketCoordinator genie,
         IGenieSystemPacketCoordinator genieSystem,
-        IDailyQuestPacketCoordinator dailyQuest,
         ICollectionRacePacketCoordinator collectionRace,
         ILotteryPacketCoordinator lottery,
         SessionManager sessionManager,
@@ -107,7 +105,6 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_NATION_TAX] = nationTax.HandleAsync,
             [GameOpcodes.GS_FISHING_HALL] = fishingHall.HandleAsync,
             [GameOpcodes.GS_GUARD_PET] = guardPet.HandleAsync,
-            [GameOpcodes.GS_EVENT_QUEST] = eventQuest.HandleAsync,
             [GameOpcodes.GS_GLOBAL_MAP] = globalMap.HandleAsync,
             [GameOpcodes.GS_GENIE] = genie.HandleAsync,
             [GameOpcodes.GS_GENIE_SYSTEM] = genieSystem.HandleAsync,
@@ -206,10 +203,6 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             // No-ops (acknowledged but no server action)
             // Awakening 0xCB is purely S2C visual; drop any C2S silently.
             [GameOpcodes.GS_AWAKEN] = NoOp,
-            // because there's no daily-quest DB table yet. Same posture here — accept
-            // the C2S to suppress unhandled-opcode warnings; S2C builders land when the
-            // table does.
-            [GameOpcodes.GS_DAILY_QUEST] = dailyQuest.HandleAsync,
             [GameOpcodes.GS_COLLECTION_RACE] = collectionRace.HandleAsync,
             [GameOpcodes.GS_LOTTERY] = lottery.HandleAsync,
             [GameOpcodes.GS_HACKTOOL] = NoOp,
