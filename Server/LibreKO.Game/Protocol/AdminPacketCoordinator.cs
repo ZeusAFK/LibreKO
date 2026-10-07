@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Gameplay;
@@ -304,11 +304,16 @@ public class AdminPacketCoordinator(
                 }
                 else if (arg is "close")
                 {
-                    if (eventSchedulerService.CurrentTempleEvent == TempleEvent.UnderTheCastle)
+                    bool wasScheduled = eventSchedulerService.CurrentTempleEvent == TempleEvent.UnderTheCastle;
+                    if (wasScheduled)
                     {
                         await eventSchedulerService.CancelTempleEventAsync();
                     }
                     await underTheCastleService.CloseAsync();
+                    if (!wasScheduled)
+                    {
+                        await sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast("### [Under The Castle] Under The Castle is now over. ###"));
+                    }
                     await SendNoticeAsync(session, "[Under The Castle] Event closed!");
                 }
                 else if (arg is "enter" or "warp")

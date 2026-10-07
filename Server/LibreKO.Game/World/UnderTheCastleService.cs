@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -54,6 +54,8 @@ public sealed class UnderTheCastleService(
     private const float UtcCampZ = 64f;
 
     private sealed record StageReward(float AreaX, float AreaZ, float AreaRadius, int[] Items);
+
+    public const float BossRewardRadius = 15f;
 
     private static readonly StageReward[] StageRewards =
     [
@@ -127,7 +129,6 @@ public sealed class UnderTheCastleService(
             return;
 
         logger.LogInformation("Under the Castle event closed");
-        await sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast("### [Under The Castle] Under The Castle is now over. ###"));
 
         await KickOutZoneUsersAsync();
         DespawnUtcMonsters();
@@ -355,7 +356,7 @@ public sealed class UnderTheCastleService(
         foreach (var player in players)
         {
             bool inArea = IsInCircle(player.X, player.Z, stageReward.AreaX, stageReward.AreaZ, stageReward.AreaRadius);
-            bool nearBoss = IsInCircle(player.X, player.Z, bossX, bossZ, 15f);
+            bool nearBoss = IsInCircle(player.X, player.Z, bossX, bossZ, BossRewardRadius);
 
             if (!inArea && !nearBoss)
                 continue;

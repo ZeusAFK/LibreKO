@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -132,13 +132,17 @@ public class UnderTheCastleTests
             NpcId = UnderTheCastleService.Gate1DoorNpcId,
             ZoneId = UnderTheCastleService.UtcZoneId,
             TrapNumber = 1,
-            RespawnType = NpcRespawnType.Never,
+            RespawnType = NpcRespawnType.Default,
             RespawnDelayMs = 1000
         };
 
-        _sessionManager.Regions.SpawnNpc(gate);
+        _spawnRows.Spawn(Arg.Any<NpcPosData>()).Returns([gate]);
+
+        _service.Start(60);
+
         gate.RespawnType.Should().Be(NpcRespawnType.Never);
 
+        _sessionManager.Regions.SpawnNpc(gate);
         await realLifecycle.DespawnAsync(gate);
 
         gate.IsDead.Should().BeTrue();

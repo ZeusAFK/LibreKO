@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
@@ -206,7 +206,7 @@ public class EventSchedulerService(
             await WarpParticipantsToEventAsync();
         }
 
-        if (utcNow >= _templeEventEnd)
+        if (utcNow >= _templeEventEnd || (_templeEvent == TempleEvent.UnderTheCastle && !_templeEventJoinOpen && !underTheCastleService.IsActive))
         {
             logger.LogInformation("{Contest} in zone {Zone} ended", _templeEvent, _templeEventZone);
             await WarpParticipantsOutAsync(_templeEventZone);
