@@ -155,7 +155,7 @@ public class UnderTheCastleTests
     {
         // Mammoth is at Stage 1: Area (121, 297, radius 80)
         float bossX = 120f;
-        bossZ = 295f;
+        float bossZ = 295f;
 
         // Player 1: Inside area AND near boss (<= 15m) -> 2 Trophies + Twinkling Star Glitter
         var player1 = CreateTestSession(101, zoneId: UnderTheCastleService.UtcZoneId, x: 122f, z: 296f);
