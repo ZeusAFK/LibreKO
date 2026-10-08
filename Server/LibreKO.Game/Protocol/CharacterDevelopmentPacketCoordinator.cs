@@ -343,7 +343,8 @@ public class CharacterDevelopmentPacketCoordinator(
 
     private async Task HandleRebStatChangeAsync(UserSession session, Packet packet)
     {
-        if (packet.RemainingBytes < 5)
+        if (packet.RemainingBytes != RebirthBonus.StatCount || session.Hp <= 0 || session.Trade.IsTrading
+            || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.IsGathering)
         {
             await SendRebResultAsync(session, ClassChangeSubOpcode.RebirthStatChange, 0);
             return;

@@ -4,6 +4,7 @@ public sealed record RebirthBonus(byte Strength, byte Stamina, byte Dexterity, b
 {
     public const int PointsPerRebirth = 2;
     public const int MaxRebirthLevel = 15;
+    public const int StatCount = 5;
 
     public static readonly RebirthBonus None = new(0, 0, 0, 0, 0);
 
