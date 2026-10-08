@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -100,6 +100,7 @@ public class StarterSeedQuestTests
             Substitute.For<IMonsterStoneService>(),
             Substitute.For<IUnderTheCastleService>(),
             Substitute.For<IForgottenTempleService>(),
+            Substitute.For<IDrakiTowerService>(),
             combatRewardLogger);
 
         await service.AwardNpcKillAsync(npc, killer);

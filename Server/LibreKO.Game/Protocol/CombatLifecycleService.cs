@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
@@ -34,6 +34,7 @@ public class CombatLifecycleService(
     ISavedMagicService savedMagicService,
     IStealthService stealthService,
     IPetService petService,
+    IDrakiTowerService drakiTowerService,
     ILogger<CombatLifecycleService> logger) : ICombatLifecycleService
 {
     public const int NoKillerId = -1;
@@ -84,6 +85,16 @@ public class CombatLifecycleService(
                 "Regene requested by a live session {CharacterId}/{Name} (hp={Hp}) — re-syncing HP so the client leaves its dead state",
                 session.CharacterId, session.Name, session.Hp);
             await SendHpChangeAsync(session);
+            return;
+        }
+
+        if (session.ZoneId == DrakiTowerRules.ZoneIdValue)
+        {
+            session.KillerNpcType = 0;
+            session.DeathExpLoss = 0;
+            sessionManager.Regions.DropAggroOn(session.CharacterId);
+            await drakiTowerService.HandleTownAsync(session);
+            await SendRespawnAsync(client, session);
             return;
         }
 

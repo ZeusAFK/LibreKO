@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -44,6 +44,7 @@ public class WorldMovementService(
     IStealthService stealthService,
     ICollectionRaceService collectionRaceService,
     IBorderDefenseWarService borderDefenseWarService,
+    IDrakiTowerService drakiTowerService,
     ILogger<WorldMovementService> logger) : IWorldMovementService
 {
     private const byte MoveEchoFinish = 0;
@@ -214,6 +215,12 @@ public class WorldMovementService(
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice(
                 (byte)session.Nation,
                 "You cannot use Town recall while carrying the Fragment of Manes."));
+            return;
+        }
+
+        if (session.ZoneId == DrakiTowerRules.ZoneIdValue)
+        {
+            await drakiTowerService.HandleTownAsync(session);
             return;
         }
 

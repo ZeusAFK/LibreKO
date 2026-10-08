@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
@@ -121,6 +121,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IBorderDefenseWarService, BorderDefenseWarService>();
         services.AddSingleton<IUnderTheCastleService, UnderTheCastleService>();
         services.AddSingleton<IForgottenTempleService, ForgottenTempleService>();
+        services.AddSingleton<IDrakiTowerService, DrakiTowerService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();
         services.AddSingleton<IAccountLockService, AccountLockService>();
         services.AddSingleton<IUserNotificationService, UserNotificationService>();

@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -31,6 +31,7 @@ public class EventSystemsPacketCoordinator(
     EventSchedulerService eventSchedulerService,
     ILoyaltyService loyaltyService,
     IMonsterStoneService monsterStoneService,
+    IDrakiTowerService drakiTowerService,
     ILogger<EventSystemsPacketCoordinator> logger) : IEventSystemsPacketCoordinator
 {
     private const byte TempleEventMonsterStone = 6;
@@ -74,6 +75,18 @@ public class EventSystemsPacketCoordinator(
 
             case TempleEventDisband:
                 await HandleTempleEventDisbandAsync(session);
+                break;
+
+            case (byte)TempleSubOpcode.DrakiEnter:
+                await drakiTowerService.HandleEnterAsync(session, packet);
+                break;
+
+            case (byte)TempleSubOpcode.DrakiList:
+                await drakiTowerService.HandleListAsync(session);
+                break;
+
+            case (byte)TempleSubOpcode.DrakiTown:
+                await drakiTowerService.HandleTownAsync(session);
                 break;
         }
     }
