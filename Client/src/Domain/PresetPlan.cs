@@ -24,6 +24,40 @@ public sealed class PresetPlan
 
     public void SetTrees(int[]? values) => Copy(values, Trees);
 
+    public int StatValue(int classCode, int row) => StarterStats.BaseForClass(classCode).StatAtRow(row) + Stats[row];
+
+    public int StatBudget(int classCode, int row, int pointPool)
+    {
+        long other = 0;
+        for (int i = 0; i < Stats.Length; i++) if (i != row) other += Stats[i];
+        long cap = CharacterSheet.StatMax - StarterStats.BaseForClass(classCode).StatAtRow(row);
+        return (int)Math.Max(0, Math.Min(pointPool - other, cap));
+    }
+
+    public bool IsRedistributed(int classCode, CharacterSheet sheet)
+    {
+        var basis = StarterStats.BaseForClass(classCode);
+        for (int i = 0; i < Stats.Length; i++) if (sheet.StatAtRow(i) != basis.StatAtRow(i)) return false;
+        return true;
+    }
+
+    public bool TryStatValues(int classCode, int pointPool, out int[] values, out int remaining)
+    {
+        values = new int[CharacterSheet.StatCount];
+        remaining = pointPool;
+        if (pointPool < 0) return false;
+        var basis = StarterStats.BaseForClass(classCode);
+        for (int i = 0; i < Stats.Length; i++)
+        {
+            int allocation = Stats[i];
+            if (allocation < 0 || allocation > CharacterSheet.StatMax - basis.StatAtRow(i) || allocation > remaining)
+                return false;
+            values[i] = basis.StatAtRow(i) + allocation;
+            remaining -= allocation;
+        }
+        return true;
+    }
+
     public PresetPlan Clone()
     {
         var copy = new PresetPlan();
