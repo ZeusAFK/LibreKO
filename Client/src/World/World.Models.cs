@@ -183,90 +183,11 @@ public partial class World
 
     private readonly System.Collections.Generic.Dictionary<string, (Mesh? Mesh, Skin? Skin)> _partCache = new();
 
-    private sealed class WeaponInfo
-    {
-        public string Stem = "";
-        public int Joint;
-        public Vector3 Pos;
-        public Quaternion Quat = Quaternion.Identity;
-        public Vector3 Scale = Vector3.One;
-        public Vector3? FxPos;
-        public float FxRadius;
-        public string FxGuide = "";
-        public int TraceSteps;
-        public uint TraceColor = 0xFFFFFFFF;
-        public float Trace0, Trace1;
-    }
-    private System.Collections.Generic.Dictionary<int, WeaponInfo>? _weaponIndex;
-
-    private System.Collections.Generic.Dictionary<int, int>? _weaponCat;
-    private System.Collections.Generic.Dictionary<int, System.Collections.Generic.Dictionary<int, string>>? _glowCats;
-    private System.Collections.Generic.Dictionary<int, System.Collections.Generic.Dictionary<int, string>>? _glowTails;
-    private bool _glowLoaded;
-
     private static readonly System.Collections.Generic.HashSet<int> NoWeaponNpcIds = new()
     {
         8002, 8003,
         13013,
     };
-
-    private bool TryResolveWeaponGlow(int itemId, out int baseItemId, out string fxName, out string tailFx)
-    {
-        tailFx = "";
-        baseItemId = ResolveWeaponBaseId(itemId);
-        if (TryGlowFor(baseItemId, out fxName))
-        {
-            tailFx = TailFor(baseItemId);
-            return true;
-        }
-
-        int bestBase = 0, bestExt = int.MaxValue;
-        string? bestFx = null;
-        if (_weaponCat != null)
-        {
-            foreach (var candidate in _weaponCat.Keys)
-            {
-                int ext = itemId - candidate;
-                if (ext < 0 || ext > 9999 || ext >= bestExt) continue;
-                if (!TryGlowFor(candidate, out var candidateFx)) continue;
-                bestBase = candidate;
-                bestExt = ext;
-                bestFx = candidateFx;
-            }
-        }
-        if (bestFx == null) return false;
-        baseItemId = bestBase;
-        fxName = bestFx;
-        tailFx = TailFor(bestBase);
-        return true;
-
-        string TailFor(int candidateBase)
-        {
-            int ext = itemId - candidateBase;
-            if (_weaponCat != null && _glowTails != null
-                && _weaponCat.TryGetValue(candidateBase, out int cat)
-                && _glowTails.TryGetValue(cat, out var exts)
-                && exts.TryGetValue(ext, out var tail))
-                return tail;
-            return "";
-        }
-
-        bool TryGlowFor(int candidateBase, out string resolvedFx)
-        {
-            resolvedFx = "";
-            if (_weaponCat == null || _glowCats == null) return false;
-            int ext = itemId - candidateBase;
-            if (ext < 0 || ext > 9999) return false;
-            if (_weaponCat.TryGetValue(candidateBase, out int cat)
-                && _glowCats.TryGetValue(cat, out var exts)
-                && exts.TryGetValue(ext, out var fx))
-            {
-                resolvedFx = fx;
-                return true;
-            }
-            return false;
-        }
-    }
 
     private static readonly string[] IdleClips = { "basic", "breath", "base", "stand", "wait" };
     private static readonly string[] WalkClips = { "walk", "move", "run" };

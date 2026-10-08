@@ -243,7 +243,11 @@ public static partial class CharacterPreview
             var mesh = scene.Instantiate<Node3D>();
             mesh.Transform = new Transform3D(new Basis(w.Quat).Scaled(w.Scale), w.Pos);
             attach.AddChild(mesh);
-            if (enableShine) ItemShine.Apply(mesh, gear[slot], slot);
+            if (enableShine)
+            {
+                WeaponGlow.Attach(mesh, gear[slot]);
+                ItemShine.Apply(mesh, gear[slot], slot);
+            }
         }
     }
 
