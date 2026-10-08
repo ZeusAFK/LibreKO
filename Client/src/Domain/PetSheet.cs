@@ -8,6 +8,7 @@ public sealed class PetSheet
     public const int MaxSatisfaction = 10_000;
     public const int InventorySize = 4;
     public const int ResistanceCount = 6;
+    public const int NameMaxLength = 15;
     public const int ModeSummoned = 1;
     public const int ModeDied = 2;
     public const int ModeAttack = 3;

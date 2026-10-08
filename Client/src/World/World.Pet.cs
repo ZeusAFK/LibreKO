@@ -166,7 +166,7 @@ public partial class World
 
     private void FeedPet()
     {
-        if (Net.I.Pet is not { } pet) return;
+        if (_selfDead || Net.I.Pet is not { } pet) return;
         if (pet.Satisfaction >= PetSheet.MaxSatisfaction)
         {
             SetPetStatus("Your familiar is already full.", false);
@@ -187,7 +187,7 @@ public partial class World
         int best = -1, bestValue = -1;
         for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
         {
-            if (Inv[abs].IsEmpty || Inv[abs].Count <= 0) continue;
+            if (Inv[abs].IsEmpty || Inv[abs].Count <= 0 || Inv[abs].State == ItemFlag.Duplicate) continue;
             if (ItemData.Get(Inv[abs].ItemId) is not { Kind: PetFoodKind } food) continue;
             if (food.Damage <= bestValue) continue;
             bestValue = food.Damage;
@@ -262,6 +262,7 @@ public partial class World
 
         if (pet == null)
         {
+            foreach (var cell in _petBagCells) cell.Set(default);
             var equipped = InventoryConstants.Pet < Inv.Length ? Inv[InventoryConstants.Pet] : default;
             if (equipped.IsLinked && Net.I.PetItems.TryGetValue(equipped.UniqueId, out var info))
             {
@@ -297,11 +298,12 @@ public partial class World
 
     private bool CanDropOnPetBag(ItemSlotView cell, Variant data)
     {
-        if (Net.I.Pet is not { } pet || data.VariantType != Variant.Type.Dictionary) return false;
+        if (_selfDead || Net.I.Pet is not { } pet || data.VariantType != Variant.Type.Dictionary) return false;
         var d = data.AsGodotDictionary();
-        if (!d.ContainsKey("invFrom")) return false;
+        if (cell.Index < 0 || cell.Index >= pet.Items.Length
+            || !d.ContainsKey("invFrom") || d["invFrom"].VariantType != Variant.Type.Int) return false;
         int abs = d["invFrom"].AsInt32();
-        return abs >= GridStart && abs < GridStart + GridCount && abs < Inv.Length && !Inv[abs].IsEmpty
+        return abs >= GridStart && abs < GridStart + GridCount && abs < Inv.Length && !Inv[abs].IsEmpty && !Inv[abs].IsLinked
                && ItemData.Get(Inv[abs].ItemId) is { } item
                && PetBag.Fits(pet.Items, cell.Index, item, ItemData.Get);
     }
@@ -315,7 +317,7 @@ public partial class World
 
     private void TakeFromPetBag(int petPos)
     {
-        if (Net.I.Pet is not { } pet || petPos >= pet.Items.Length || pet.Items[petPos].IsEmpty) return;
+        if (_selfDead || Net.I.Pet is not { } pet || petPos < 0 || petPos >= pet.Items.Length || pet.Items[petPos].IsEmpty) return;
         if (_moveInFlight || _moveQueue.Count > 0) return;
         int free = Inv.FirstFreeGridSlot();
         if (free < 0)

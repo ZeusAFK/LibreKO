@@ -165,4 +165,104 @@ public class PetWireTests
         Assert.False(PetWire.TryReadHatch(p, out _, out int failure));
         Assert.Equal(expected, failure);
     }
+
+    private static byte[] HatchReply(bool transform = false)
+    {
+        var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
+        p.WriteByte(PetWire.HatchSucceeded); p.WriteInt(transform ? Etaroth : Kaul);
+        p.WriteByte(4); p.WriteInt(9); p.WriteString(Name);
+        p.WriteByte(101); p.WriteByte(12); p.WriteUShort(4200); p.WriteShort(7300);
+        if (transform) { p.WriteByte(0); p.WriteInt(EtarothScroll); p.WriteByte(7); }
+        return p.GetData();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EveryTruncatedSuccessIsIgnoredWithoutAnInventoryResult(bool transform)
+    {
+        byte[] data = HatchReply(transform);
+        for (int length = 0; length < data.Length; length++)
+        {
+            var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE); p.WriteBytes(data[..length]);
+            int failure;
+            if (transform)
+            {
+                Assert.False(PetWire.TryReadTransform(p, out var result, out failure));
+                Assert.Equal(default, result);
+            }
+            else
+            {
+                Assert.False(PetWire.TryReadHatch(p, out var result, out failure));
+                Assert.Equal(default, result);
+            }
+            Assert.Equal(PetWire.MalformedReplyCode, failure);
+        }
+    }
+
+    [Theory]
+    [InlineData(10, 255)]
+    [InlineData(10, 127)]
+    [InlineData(10, 0)]
+    [InlineData(5, InventoryConstants.HaveMax)]
+    [InlineData(6, 0)]
+    [InlineData(1, 0)]
+    public void InvalidNameLengthsAndItemAddressesAreNotAccepted(int offset, byte value)
+    {
+        byte[] data = HatchReply();
+        if (offset is 1 or 6) Array.Clear(data, offset, 4);
+        else data[offset] = value;
+        var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE); p.WriteBytes(data);
+        Assert.False(PetWire.TryReadHatch(p, out var result, out int failure));
+        Assert.Equal(default, result); Assert.Equal(PetWire.MalformedReplyCode, failure);
+    }
+
+    [Theory]
+    [InlineData(4)]
+    [InlineData(InventoryConstants.HaveMax)]
+    public void TransformCannotConsumeTheFamiliarOrAnOutsideInventorySlot(byte slot)
+    {
+        byte[] data = HatchReply(true); data[^1] = slot;
+        var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE); p.WriteBytes(data);
+        Assert.False(PetWire.TryReadTransform(p, out var result, out int failure));
+        Assert.Equal(default, result); Assert.Equal(PetWire.MalformedReplyCode, failure);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(3)]
+    [InlineData(255)]
+    public void IncompleteRefusalOrUnknownResultDoesNotCompleteAnOperation(byte resultCode)
+    {
+        var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE); p.WriteByte(resultCode);
+        Assert.False(PetWire.TryReadHatch(p, out _, out int failure));
+        Assert.Equal(PetWire.MalformedReplyCode, failure);
+    }
+
+    private static TransformedPet Transformed(int itemId = Etaroth, int slot = 4, int index = 9, int scroll = EtarothScroll, int scrollSlot = 7) =>
+        new(new HatchedPet(itemId, slot, new PetItemInfo(index, Name, 101, 12, 0, 0)), scroll, scrollSlot);
+
+    [Fact]
+    public void AHatchResultOnlyAnswersAHatchForTheSameBagSlot()
+    {
+        var request = PetIncubationRequest.Hatch(Kaul, 4);
+        Assert.True(request.Matches(new HatchedPet(Kaul, 4, new PetItemInfo(9, Name, 101, 1, 0, 0))));
+        Assert.False(request.Matches(new HatchedPet(Kaul, 5, new PetItemInfo(9, Name, 101, 1, 0, 0))));
+        Assert.False(request.Matches(Transformed()));
+    }
+
+    [Fact]
+    public void ATransformResultMustNameTheSameFamiliarScrollAndSlots()
+    {
+        var request = PetIncubationRequest.Transformation(Kaul, 4, 9, EtarothScroll, 7);
+        Assert.True(request.Matches(Transformed()));
+        Assert.False(request.Matches(Transformed(itemId: Kaul)));
+        Assert.False(request.Matches(Transformed(slot: 5)));
+        Assert.False(request.Matches(Transformed(index: 10)));
+        Assert.False(request.Matches(Transformed(scroll: EtarothScroll + 1)));
+        Assert.False(request.Matches(Transformed(scrollSlot: 8)));
+        Assert.False(request.Matches(Transformed().Pet));
+        Assert.True(PetIncubationRequest.Transformation(Kaul, 4, PetIncubationRequest.AnyFamiliar, EtarothScroll, 7)
+            .Matches(Transformed(index: 10)));
+    }
 }
