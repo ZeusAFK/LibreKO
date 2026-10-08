@@ -125,12 +125,18 @@ public partial class World
         _chatColorsWindow!.Visible = true;
     }
 
+    private void CloseChatColors()
+    {
+        _chatPalette?.Hide();
+        _chatColorsWindow!.Visible = false;
+    }
+
     private void BuildChatColors()
     {
         _chatColorsLayer = new CanvasLayer { Layer = ChatColorsLayer };
         AddChild(_chatColorsLayer);
         _chatColorsWindow = new HudWindow("chat_colors", "Chat Colours") { Visible = false };
-        _chatColorsWindow.Closed += () => _chatColorsWindow.Visible = false;
+        _chatColorsWindow.Closed += CloseChatColors;
         _chatColorsLayer.AddChild(_chatColorsWindow);
 
         var root = _chatColorsWindow.Body;
