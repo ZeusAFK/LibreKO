@@ -130,6 +130,7 @@ public partial class Net : Node
         AutoReconnect = true;
         _reconnectKickSent = false;
         ResetGenieSystem();
+        ResetCape();
         MyCharId = 0;
         PingMs = -1;
         _pingOutstanding = false;
@@ -152,6 +153,7 @@ public partial class Net : Node
             _conn.Send(logout);
         }
         ResetGenieSystem();
+        ResetCape();
         _conn.Close();
         PingMs = -1;
         _pingOutstanding = false;
@@ -167,6 +169,7 @@ public partial class Net : Node
             _conn.Send(logout);
         }
         ResetGenieSystem();
+        ResetCape();
         MyCharId = 0;
     }
 
@@ -199,6 +202,7 @@ public partial class Net : Node
         if (!_conn.Connected && _connectedFired)
         {
             ResetGenieSystem();
+            ResetCape();
             _connectedFired = false;
             PingMs = -1;
             _pingOutstanding = false;

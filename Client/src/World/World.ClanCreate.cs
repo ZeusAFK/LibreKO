@@ -14,6 +14,7 @@ public partial class World
     private Label _clanCreateMessage = null!;
     private LineEdit _clanCreateName = null!;
     private bool _clanCreateShown;
+    private Notice? _clanCreateNotice;
 
     private void ClanCreateInit()
     {
@@ -92,16 +93,39 @@ public partial class World
         if (!_clanCreateShown) return;
         _clanCreateShown = false;
         _clanCreatePanel.Visible = false;
+        DismissClanCreateNotice();
     }
 
     private void SubmitClanCreate()
     {
+        if (!_clanCreateShown || _clanCreateNotice != null) return;
         string name = _clanCreateName.Text.Trim();
         if (name.Length < ClanNameMinLength)
         {
             _clanCreateMessage.Text = $"A clan name needs {ClanNameMinLength} to {ClanNameMaxLength} characters.";
             return;
         }
-        Net.I.SendClanCreate(name);
+        _clanCreateNotice = Notice.Confirm(this,
+            $"Creating a clan costs {ClanTypes.CreationCoins:n0} gold. Do you want to create this clan?",
+            "Yes", "No",
+            () =>
+            {
+                _clanCreateNotice = null;
+                if (!_clanCreateShown) return;
+                Net.I.SendClanCreate(name);
+                CloseClanCreate();
+            },
+            () =>
+            {
+                _clanCreateNotice = null;
+                if (_clanCreateShown) _clanCreateName.GrabFocus();
+            },
+            "Create a Clan");
+    }
+
+    private void DismissClanCreateNotice()
+    {
+        if (_clanCreateNotice != null && GodotObject.IsInstanceValid(_clanCreateNotice)) _clanCreateNotice.Close();
+        _clanCreateNotice = null;
     }
 }
