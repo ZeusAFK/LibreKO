@@ -90,13 +90,14 @@ public partial class World
 
     private void OpenGenderChange()
     {
+        if (_genderInFlight) return;
         var me = Net.I.LastEnter;
         if (!GenderChange.CanChange(me.Class))
         {
             CombatNotice(ItemData.Text(GenderChange.NotForClassText, "Your class cannot change gender."));
             return;
         }
-        _genderInFlight = false;
+        _genderEditor.SetLocked(false);
         _genderEditor.Load(GenderChange.AllowedRaces(me.Class), me.Race, me.Face, me.Hair);
         DisarmGenderChange();
         ShowGenderLook();
@@ -109,11 +110,13 @@ public partial class World
         if (!_genderShown) return;
         _genderShown = false;
         _genderPanel.Visible = false;
+        _genderEditor.CloseColourPicker();
         _genderPreview.Clear();
     }
 
     private void OnGenderLookChanged()
     {
+        if (_genderInFlight) return;
         DisarmGenderChange();
         ShowGenderLook();
     }
@@ -134,7 +137,7 @@ public partial class World
 
     private void OnGenderConfirmPressed()
     {
-        if (_genderInFlight || _selfDead) return;
+        if (!_genderShown || _genderInFlight || _selfDead) return;
         if (!_genderArmed)
         {
             _genderArmed = true;
@@ -143,6 +146,7 @@ public partial class World
             return;
         }
         _genderInFlight = true;
+        _genderEditor.SetLocked(true);
         _genderConfirm.Disabled = true;
         SetGenderStatus("Changing…", false);
         Net.I.SendGenderChange(_genderEditor.Race, _genderEditor.Face, _genderEditor.Hair);
@@ -150,7 +154,9 @@ public partial class World
 
     private void OnGenderChangeRefused(int result)
     {
+        if (!_genderInFlight) return;
         _genderInFlight = false;
+        _genderEditor.SetLocked(false);
         DisarmGenderChange();
         _genderConfirm.Disabled = false;
         string text = result == Net.GenderChangeNoItem
@@ -162,7 +168,9 @@ public partial class World
 
     private void OnGenderChanged()
     {
+        if (!_genderInFlight) return;
         _genderInFlight = false;
+        _genderEditor.SetLocked(false);
         CloseGenderChange();
     }
 

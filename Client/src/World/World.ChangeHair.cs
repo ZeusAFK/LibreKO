@@ -11,15 +11,13 @@ public partial class World
     private Label _changeHairFaceLbl = null!;
     private Label _changeHairHairLbl = null!;
     private Label _changeHairStatus = null!;
-    private bool _changeHairShown;
+    private Button[] _changeHairFaceSteps = null!;
+    private Button[] _changeHairHairSteps = null!;
+    private Button _changeHairApply = null!;
+    private bool _changeHairShown, _changeHairInFlight;
 
-    private int _changeHairFace = 1;
-    private int _changeHairHair = 1;
-
-    private const int ChangeHairFaceMin = 1;
-    private const int ChangeHairFaceMax = 12;
-    private const int ChangeHairHairMin = 1;
-    private const int ChangeHairHairMax = 12;
+    private int _changeHairFace;
+    private int _changeHairHair;
 
     private void ChangeHairInit()
     {
@@ -52,20 +50,20 @@ public partial class World
         hint.Text = "Pick a new hair and face, then Apply.";
         r.AddChild(hint);
 
-        _changeHairHairLbl = AddChangeHairRow(r, "Hair",
+        (_changeHairHairLbl, _changeHairHairSteps) = AddChangeHairRow(r, "Hair",
             () => StepChangeHairHair(-1), () => StepChangeHairHair(1));
-        _changeHairFaceLbl = AddChangeHairRow(r, "Face",
+        (_changeHairFaceLbl, _changeHairFaceSteps) = AddChangeHairRow(r, "Face",
             () => StepChangeHairFace(-1), () => StepChangeHairFace(1));
 
-        var apply = new Button { Text = "Apply", FocusMode = Control.FocusModeEnum.None };
-        apply.Pressed += SubmitChangeHair;
-        r.AddChild(apply);
+        _changeHairApply = new Button { Text = "Apply", FocusMode = Control.FocusModeEnum.None };
+        _changeHairApply.Pressed += SubmitChangeHair;
+        r.AddChild(_changeHairApply);
 
         _changeHairStatus = HudStyle.Label(13);
         r.AddChild(_changeHairStatus);
     }
 
-    private static Label AddChangeHairRow(VBoxContainer parent, string caption,
+    private static (Label Value, Button[] Steps) AddChangeHairRow(VBoxContainer parent, string caption,
         System.Action onPrev, System.Action onNext)
     {
         var row = new HBoxContainer();
@@ -90,7 +88,7 @@ public partial class World
         row.AddChild(next);
 
         parent.AddChild(row);
-        return value;
+        return (value, [prev, next]);
     }
 
     private void OpenChangeHair()
@@ -101,10 +99,10 @@ public partial class World
     private void ToggleChangeHair()
     {
         if (_changeHairShown) { CloseChangeHair(); return; }
+        if (_changeHairInFlight) return;
 
-        int style = HairCode.StyleOf(_selfHair);
-        _changeHairFace = Mathf.Clamp(_selfFace == 0 ? ChangeHairFaceMin : _selfFace, ChangeHairFaceMin, ChangeHairFaceMax);
-        _changeHairHair = Mathf.Clamp(style == 0 ? ChangeHairHairMin : style, ChangeHairHairMin, ChangeHairHairMax);
+        _changeHairFace = LookVariant.Clamp(_selfFace, CharacterPreview.FaceCount(_selfRace));
+        _changeHairHair = LookVariant.Clamp(HairCode.StyleOf(_selfHair), CharacterPreview.HairCount(_selfRace));
         RefreshChangeHairLabels();
 
         _changeHairPanel.Visible = true;
@@ -121,36 +119,48 @@ public partial class World
 
     private void StepChangeHairFace(int dir)
     {
-        _changeHairFace = WrapRange(_changeHairFace + dir, ChangeHairFaceMin, ChangeHairFaceMax);
+        if (_changeHairInFlight) return;
+        _changeHairFace = LookVariant.Step(_changeHairFace, dir, CharacterPreview.FaceCount(_selfRace));
         RefreshChangeHairLabels();
     }
 
     private void StepChangeHairHair(int dir)
     {
-        _changeHairHair = WrapRange(_changeHairHair + dir, ChangeHairHairMin, ChangeHairHairMax);
+        if (_changeHairInFlight) return;
+        _changeHairHair = LookVariant.Step(_changeHairHair, dir, CharacterPreview.HairCount(_selfRace));
         RefreshChangeHairLabels();
-    }
-
-    private static int WrapRange(int v, int min, int max)
-    {
-        int span = max - min + 1;
-        return min + ((v - min) % span + span) % span;
     }
 
     private void RefreshChangeHairLabels()
     {
         _changeHairFaceLbl.Text = _changeHairFace.ToString();
         _changeHairHairLbl.Text = _changeHairHair.ToString();
+        SetChangeHairStepsDisabled(_changeHairFaceSteps, !LookVariant.CanStep(CharacterPreview.FaceCount(_selfRace)));
+        SetChangeHairStepsDisabled(_changeHairHairSteps, !LookVariant.CanStep(CharacterPreview.HairCount(_selfRace)));
+        _changeHairApply.Disabled = _changeHairInFlight;
+    }
+
+    private void SetChangeHairStepsDisabled(Button[] steps, bool unavailable)
+    {
+        foreach (var step in steps)
+            step.Disabled = unavailable || _changeHairInFlight;
     }
 
     private void SubmitChangeHair()
     {
+        if (!_changeHairShown || _changeHairInFlight || _selfDead) return;
+        _changeHairInFlight = true;
+        RefreshChangeHairLabels();
         SetChangeHairStatus("Applying…", false);
-        Net.I.SendChangeHair(HairCode.Pack(_changeHairHair, HairCode.ColourOf(_selfHair)), _changeHairFace);
+        if (!Net.I.SendChangeHair(HairCode.Pack(_changeHairHair, HairCode.ColourOf(_selfHair)), _changeHairFace))
+            OnChangeHairResult(false, _changeHairFace, _selfHair);
     }
 
     private void OnChangeHairResult(bool ok, int face, int hair)
     {
+        if (!_changeHairInFlight) return;
+        _changeHairInFlight = false;
+        RefreshChangeHairLabels();
         if (ok)
         {
             _selfHair = hair;
@@ -160,9 +170,13 @@ public partial class World
             SetChangeHairStatus("Looking good!", false);
             CloseChangeHair();
         }
-        else
+        else if (_changeHairShown)
         {
             SetChangeHairStatus("The stylist couldn't apply that.", true);
+        }
+        else
+        {
+            CombatNotice("The stylist couldn't apply that.");
         }
     }
 

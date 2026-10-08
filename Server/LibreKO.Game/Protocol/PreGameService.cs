@@ -43,9 +43,6 @@ public class PreGameService(
     private const int MaxCharacterNameLength = 20;
     private const int MaxSocialNumberLength = 15;
 
-    private const byte ChangeHairSucceeded = 0;
-    private const byte ChangeHairFailed = 1;
-
     public async Task<GameLoginResult> LoginAsync(string login, string password)
     {
         var account = await accountRepository.GetByLogin(login);
@@ -230,20 +227,27 @@ public class PreGameService(
     {
         if (subOpcode is not 0 and not 1)
         {
-            return PreGamePacketWriter.ChangeHairResult(ChangeHairFailed);
+            return PreGamePacketWriter.ChangeHairResult(PreGamePacketWriter.ChangeHairFailed);
         }
 
         var character = await characterRepository.GetByName(characterName);
         if (character == null || character.AccountId != accountId)
         {
-            return PreGamePacketWriter.ChangeHairResult(ChangeHairFailed);
+            return PreGamePacketWriter.ChangeHairResult(PreGamePacketWriter.ChangeHairFailed);
         }
 
         character.Face = face;
         character.Hair = hair;
         await characterRepository.UpdateAsync(character);
 
-        return PreGamePacketWriter.ChangeHairResult(ChangeHairSucceeded);
+        var session = sessionManager.GetByCharacterId(character.Id);
+        if (session != null && session.AccountId == accountId)
+        {
+            session.Face = face;
+            session.Hair = hair;
+        }
+
+        return PreGamePacketWriter.ChangeHairResult(PreGamePacketWriter.ChangeHairSucceeded);
     }
 
     public async Task<List<Packet>> GameStartAsync(int characterId, int accountId, byte subOpcode, UserSession? session = null)

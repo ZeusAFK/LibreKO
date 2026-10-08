@@ -64,6 +64,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMerchantPacketCoordinator, MerchantPacketCoordinator>();
         services.AddSingleton<IMiscPacketCoordinator, MiscPacketCoordinator>();
         services.AddSingleton<IGenderChangePacketCoordinator, GenderChangePacketCoordinator>();
+        services.AddSingleton<IBeautyShopPacketCoordinator, BeautyShopPacketCoordinator>();
         services.AddSingleton<IMarketPriceService, MarketPriceService>();
         services.AddSingleton<INationTransferService, NationTransferService>();
         services.AddSingleton<IMerchantSearchService, MerchantSearchService>();

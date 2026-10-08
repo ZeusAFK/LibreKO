@@ -10,7 +10,9 @@ public partial class LookEditor : VBoxContainer
     private readonly VBoxContainer _races = new();
     private readonly List<(int Race, Button Button)> _raceButtons = new();
     private readonly Label _faceLbl, _hairLbl;
+    private readonly Button[] _faceSteps, _hairSteps;
     private readonly ColorPickerButton _colour;
+    private bool _locked;
 
     public int Race { get; private set; }
     public int Face { get; private set; }
@@ -28,8 +30,8 @@ public partial class LookEditor : VBoxContainer
         _races.AddThemeConstantOverride("separation", 4);
         AddChild(_races);
         AddChild(UiTheme.SectionTitle("Appearance"));
-        _faceLbl = StepperRow("Face", dir => { Face = Wrap(Face + dir, CharacterPreview.FaceCount(Race)); Changed?.Invoke(); });
-        _hairLbl = StepperRow("Hair", dir => { HairStyle = Wrap(HairStyle + dir, CharacterPreview.HairCount(Race)); Changed?.Invoke(); });
+        (_faceLbl, _faceSteps) = StepperRow("Face", dir => { Face = LookVariant.Step(Face, dir, CharacterPreview.FaceCount(Race)); Changed?.Invoke(); });
+        (_hairLbl, _hairSteps) = StepperRow("Hair", dir => { HairStyle = LookVariant.Step(HairStyle, dir, CharacterPreview.HairCount(Race)); Changed?.Invoke(); });
 
         var colourRow = new HBoxContainer();
         colourRow.AddThemeConstantOverride("separation", 8);
@@ -43,7 +45,7 @@ public partial class LookEditor : VBoxContainer
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             EditAlpha = false,
         };
-        _colour.ColorChanged += _ => Changed?.Invoke();
+        _colour.ColorChanged += _ => { if (!_locked) Changed?.Invoke(); };
         colourRow.AddChild(_colour);
         AddChild(colourRow);
     }
@@ -72,13 +74,35 @@ public partial class LookEditor : VBoxContainer
     public void Refresh()
     {
         foreach (var (race, button) in _raceButtons)
+        {
             button.SetPressedNoSignal(race == Race);
+            button.Disabled = _locked;
+        }
         _faceLbl.Text = Face.ToString();
         _hairLbl.Text = HairStyle.ToString();
+        SetStepsDisabled(_faceSteps, _locked || !LookVariant.CanStep(CharacterPreview.FaceCount(Race)));
+        SetStepsDisabled(_hairSteps, _locked || !LookVariant.CanStep(CharacterPreview.HairCount(Race)));
+        _colour.Disabled = _locked;
+    }
+
+    public void SetLocked(bool locked)
+    {
+        _locked = locked;
+        if (locked) CloseColourPicker();
+        Refresh();
+    }
+
+    public void CloseColourPicker() => _colour.GetPopup().Hide();
+
+    private static void SetStepsDisabled(Button[] steps, bool disabled)
+    {
+        foreach (var step in steps)
+            step.Disabled = disabled;
     }
 
     private void PickRace(int race)
     {
+        if (_locked) return;
         Race = race;
         Clamp();
         Changed?.Invoke();
@@ -86,8 +110,8 @@ public partial class LookEditor : VBoxContainer
 
     private void Clamp()
     {
-        Face = Mathf.Clamp(Face, 0, Mathf.Max(0, CharacterPreview.FaceCount(Race) - 1));
-        HairStyle = Mathf.Clamp(HairStyle, 0, Mathf.Max(0, CharacterPreview.HairCount(Race) - 1));
+        Face = LookVariant.Clamp(Face, CharacterPreview.FaceCount(Race));
+        HairStyle = LookVariant.Clamp(HairStyle, CharacterPreview.HairCount(Race));
     }
 
     private static bool Contains(IReadOnlyList<int> races, int race)
@@ -97,13 +121,7 @@ public partial class LookEditor : VBoxContainer
         return false;
     }
 
-    private static int Wrap(int value, int count)
-    {
-        int n = Mathf.Max(1, count);
-        return ((value % n) + n) % n;
-    }
-
-    private Label StepperRow(string label, Action<int> step)
+    private (Label Value, Button[] Steps) StepperRow(string label, Action<int> step)
     {
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
@@ -111,13 +129,15 @@ public partial class LookEditor : VBoxContainer
         name.Text = label;
         name.CustomMinimumSize = new Vector2(80, 0);
         row.AddChild(name);
-        row.AddChild(StepButton("<", () => step(-1)));
+        var previous = StepButton("<", () => { if (!_locked) step(-1); });
+        row.AddChild(previous);
         var value = HudStyle.Label(13, HorizontalAlignment.Center);
         value.CustomMinimumSize = new Vector2(36, 0);
         row.AddChild(value);
-        row.AddChild(StepButton(">", () => step(1)));
+        var next = StepButton(">", () => { if (!_locked) step(1); });
+        row.AddChild(next);
         AddChild(row);
-        return value;
+        return (value, [previous, next]);
     }
 
     public static Button StepButton(string text, Action pressed)

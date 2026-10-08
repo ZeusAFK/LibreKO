@@ -1,4 +1,5 @@
 ﻿using System;
+using LibreKO.Domain;
 
 namespace LibreKO.Network;
 
@@ -12,21 +13,27 @@ public partial class Net
     public event Action<bool, int, int>? ChangeHairResultEvent;
     public event Action? BeautyShopEvent;
 
-    private int _changeHairReqFace;
-    private int _changeHairReqHair;
+    private readonly HairChangeRequest _changeHairRequest = new();
 
     private void HandleChangeHair(Packet p)
     {
         if (p.RemainingBytes < 1) return;
         byte result = p.ReadByte();
         if (result == ChangeHairOpenShop) { BeautyShopEvent?.Invoke(); return; }
-        ChangeHairResultEvent?.Invoke(result == ChangeHairResultOk, _changeHairReqFace, _changeHairReqHair);
+        if (result is not ChangeHairResultOk and not ChangeHairResultFail || !_changeHairRequest.TryFinish()) return;
+        if (result == ChangeHairResultOk)
+        {
+            var me = LastEnter;
+            me.Face = _changeHairRequest.Face;
+            me.Hair = _changeHairRequest.Hair;
+            LastEnter = me;
+        }
+        ChangeHairResultEvent?.Invoke(result == ChangeHairResultOk, _changeHairRequest.Face, _changeHairRequest.Hair);
     }
 
-    public void SendChangeHair(int hair, int face)
+    public bool SendChangeHair(int hair, int face)
     {
-        _changeHairReqFace = face;
-        _changeHairReqHair = hair;
+        if (string.IsNullOrEmpty(LastEnter.Name) || !_changeHairRequest.TryBegin(face, hair)) return false;
 
         var p = new Packet(GameOpcodes.GS_CHANGE_HAIR);
         p.WriteByte(ChangeHairSubDefault);
@@ -34,5 +41,12 @@ public partial class Net
         p.WriteByte((byte)face);
         p.WriteInt(hair);
         _conn.Send(p);
+        return true;
+    }
+
+    private void ResetChangeHair()
+    {
+        if (_changeHairRequest.TryFinish())
+            ChangeHairResultEvent?.Invoke(false, _changeHairRequest.Face, _changeHairRequest.Hair);
     }
 }
