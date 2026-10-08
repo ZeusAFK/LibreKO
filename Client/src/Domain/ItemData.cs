@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Text.Json;
 using Godot;
 
 namespace LibreKO.Domain;
@@ -47,6 +49,14 @@ public static class ItemData
         public int Duration;
 
         public bool IsChargeItem => Kind == ChargeItemKind && Countable == 0;
+
+        internal Item WithInventory(ItemInventoryDefinition definition)
+        {
+            var item = (Item)MemberwiseClone();
+            item.Weight = definition.Weight;
+            item.Countable = definition.Countable;
+            return item;
+        }
     }
 
     private const int ChargeItemKind = 255;
@@ -181,6 +191,8 @@ public static class ItemData
     }
 
     private static readonly Dictionary<int, Item> _items = new();
+    private static readonly Dictionary<int, ItemInventoryDefinition> _inventoryDefinitions = new();
+    private static readonly ConcurrentDictionary<int, Item> _inventoryItems = new();
     private static readonly Dictionary<int, List<SellEntry>> _sell = new();
     private static readonly Dictionary<int, int[]> _pieces = new();
     private static readonly Dictionary<int, (int ItemId, int Count)> _attendance = new();
@@ -256,6 +268,25 @@ public static class ItemData
                 Grade = Int(o, "grade"), Bound = Int(o, "bound"), Notice = Int(o, "notice"),
                 Icon = Int(o, "icon"), Duration = Int(o, "duration"),
             };
+        }
+        LoadInventoryCatalog();
+    }
+
+    private static void LoadInventoryCatalog()
+    {
+        const string path = "res://assets/items/inventory.json";
+        if (!Godot.FileAccess.FileExists(path)) return;
+        using var file = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
+        if (file == null) return;
+        try
+        {
+            var definitions = ItemInventoryCatalog.Parse(file.GetAsText());
+            foreach (var row in definitions)
+                _inventoryDefinitions[row.Key] = row.Value;
+        }
+        catch (JsonException)
+        {
+            GD.PushWarning("[items] invalid inventory.json; using item table metadata");
         }
     }
 
@@ -505,9 +536,14 @@ public static class ItemData
     public static Item? Get(int id)
     {
         EnsureLoaded();
-        if (_items.TryGetValue(id, out var it)) return it;
-        int baseId = BaseId(id);
-        return baseId != id && _items.TryGetValue(baseId, out var b) ? b : null;
+        if (!_items.TryGetValue(id, out var item))
+        {
+            int baseId = BaseId(id);
+            if (baseId == id || !_items.TryGetValue(baseId, out item)) return null;
+        }
+        return _inventoryDefinitions.TryGetValue(id, out var definition)
+            ? _inventoryItems.GetOrAdd(id, _ => item.WithInventory(definition))
+            : item;
     }
 
     public static int BaseId(int id) => id / BaseIdSpan * BaseIdSpan;
