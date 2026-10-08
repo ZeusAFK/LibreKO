@@ -227,12 +227,18 @@ public class MerchantListingService(
             session.Name, itemId, count, merchant.Name, totalCost);
 
         session.RecalculateStatsWithBuffs(gameDataService);
+        await userNotificationService.SendStackChangeAsync(session, (byte)destination,
+            destinationSlot.ItemId, destinationSlot.Count, destinationSlot.Durability);
+        await userNotificationService.SendStackChangeAsync(merchant, (byte)merchantItem.OriginalSlot,
+            sellerSlot.ItemId, sellerSlot.Count, sellerSlot.Durability);
         var buyResult = MerchantPacketWriter.ItemBought(
             MerchantSubOpcode.ItemBuy, itemId, remainingCount, merchantSlot, buyerSlot);
         await session.Client.SendPacket(buyResult);
         await userNotificationService.SendGoldLossAsync(session, (int)totalCost);
         await userNotificationService.SendGoldGainAsync(merchant, (int)totalCost);
         await userNotificationService.SendWeightChangeAsync(session);
+        merchant.RecalculateStatsWithBuffs(gameDataService);
+        await userNotificationService.SendWeightChangeAsync(merchant);
 
         var soldNotify = MerchantPacketWriter.ItemSold(
             MerchantSubOpcode.ItemPurchased, itemId, session.Name);

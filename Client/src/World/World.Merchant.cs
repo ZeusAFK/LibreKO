@@ -12,6 +12,9 @@ public partial class World
     private const int StallBagColumns = 7;
     private const int MerchantAdvertMax = 40;
 
+    private readonly record struct MerchantAction(int MerchantId, int ItemId, int Count, int Price);
+    private MerchantAction? _merchantPurchase, _wantedSale;
+
     private CanvasLayer _mctLayer = null!;
 
     private HudWindow _merchantMenu = null!;
@@ -40,6 +43,7 @@ public partial class World
     {
         BuildMerchantPanels();
         BuildBuyMerchantPanels();
+        Net.I.GoldChangeEvent += OnMerchantGold;
         Net.I.MerchantOpenResultEvent += OnMerchantOpenResult;
         Net.I.MerchantItemAddEvent += OnMerchantItemAdd;
         Net.I.MerchantItemCancelEvent += OnMerchantItemCancel;
@@ -55,6 +59,7 @@ public partial class World
 
     private void MerchantDispose()
     {
+        Net.I.GoldChangeEvent -= OnMerchantGold;
         Net.I.MerchantOpenResultEvent -= OnMerchantOpenResult;
         Net.I.MerchantItemAddEvent -= OnMerchantItemAdd;
         Net.I.MerchantItemCancelEvent -= OnMerchantItemCancel;
@@ -421,6 +426,8 @@ public partial class World
 
     private void OnMerchantList(int merchantId, MerchantStallItem[] items)
     {
+        CloseAmountPrompt();
+        SetShopStatus("", false);
         _shopTargetId = merchantId;
         _shopItems = items;
         _shopPanel.Title = ShopTitle(merchantId);
@@ -466,14 +473,18 @@ public partial class World
 
     private void BuyFromStall(int merchantSlot)
     {
-        if (merchantSlot < 0 || merchantSlot >= _shopItems.Length) return;
+        if (_merchantPurchase != null || !_shopShown || merchantSlot < 0 || merchantSlot >= _shopItems.Length) return;
         var item = _shopItems[merchantSlot];
         if (item.IsEmpty) return;
+        if (item.Price < 1) { SetShopStatus("That item has an invalid price.", true); return; }
         if (item.Price > Sheet.Gold) { SetShopStatus("You don't have enough gold.", true); return; }
 
-        int most = System.Math.Max(1, item.Count);
         var def = ItemData.Get(item.ItemId);
-        bool countable = def != null && def.Countable != 0 && most > 1;
+        bool stackable = def != null && def.Countable != 0;
+        int room = Inv.GridRoomFor(item.ItemId, stackable);
+        if (room < 1) { SetShopStatus("Your bags are full.", true); return; }
+        int most = System.Math.Max(1, System.Math.Min(System.Math.Min(item.Count, Sheet.Gold / item.Price), room));
+        bool countable = stackable && most > 1;
 
         string itemName = ItemData.DisplayName(item.ItemId);
         string hint = countable
@@ -483,42 +494,50 @@ public partial class World
         AskTrade(StallSlot(item), hint, item.Price, most, countable,
             (count, _) =>
             {
-                int buyerSlot = Inv.FirstFreeGridSlot();
+                if (!_shopShown || _merchantPurchase != null || _shopItems[merchantSlot].ItemId != item.ItemId) return;
+                int buyerSlot = Inv.GridSlotFor(item.ItemId, count, stackable);
                 if (buyerSlot < 0) { SetShopStatus("Your bags are full.", true); return; }
+                if ((long)count * item.Price > Sheet.Gold) { SetShopStatus("You don't have enough gold.", true); return; }
+                _merchantPurchase = new MerchantAction(_shopTargetId, item.ItemId, count, item.Price);
                 Net.I.SendMerchantBuy(item.ItemId, count, (byte)merchantSlot, (byte)(buyerSlot - GridStart));
             });
     }
 
+    private void OnMerchantGold(int total)
+    {
+        foreach (var label in new[] { _sellBalance, _shopBalance, _wantedBalance })
+            if (GodotObject.IsInstanceValid(label)) label.Text = Money(total);
+        long offered = 0;
+        foreach (var wish in _wishes) if (!wish.IsEmpty) offered += (long)wish.Price * wish.Count;
+        if (GodotObject.IsInstanceValid(_wishTotal))
+            _wishTotal.AddThemeColorOverride("font_color", offered > total ? UiTheme.Bad : UiTheme.GoldBright);
+    }
+
     private void OnMerchantBuy(bool ok, int itemId, int remaining, int merchantSlot, int buyerSlot)
     {
-        if (!ok) { SetShopStatus("That purchase was refused.", true); return; }
+        var request = _merchantPurchase;
+        _merchantPurchase = null;
+        if (request is not { } action) return;
+        string message = ok
+            ? $"Bought {action.Count} x {ItemData.DisplayName(action.ItemId)} for {Money((long)action.Price * action.Count)}."
+            : "That purchase was refused.";
+        if (!_shopShown || _shopTargetId != action.MerchantId) { CombatNotice(message); return; }
+        if (!ok) { SetShopStatus(message, true); return; }
 
-        int abs = GridStart + buyerSlot;
-        var def = ItemData.Get(itemId);
-        if (abs >= 0 && abs < Inv.Length)
-        {
-            if (def != null && def.Countable != 0 && Inv[abs].ItemId == itemId)
-                Inv.Stack(abs, 1);
-            else
-                Inv[abs] = new ItemSlot { ItemId = itemId, Count = 1, Durability = (short)(def?.Duration ?? 0) };
-            Net.I.MirrorInventorySlot(abs, Inv[abs]);
-        }
-
-        int price = 0;
         if (merchantSlot >= 0 && merchantSlot < _shopItems.Length && _shopItems[merchantSlot].ItemId == itemId)
         {
-            price = _shopItems[merchantSlot].Price;
             _shopItems[merchantSlot].Count = remaining;
             if (remaining <= 0) _shopItems[merchantSlot] = default;
         }
 
         if (CharTabOpen()) RefreshInventoryUI();
         RefreshShop();
-        SetShopStatus($"Bought {ItemData.DisplayName(itemId)} for {Money(price)}.", false);
+        SetShopStatus(message, false);
     }
 
     private void CloseShop()
     {
+        CloseAmountPrompt();
         HideItemTooltip();
         if (!_shopShown) return;
         _shopShown = false;

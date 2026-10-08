@@ -43,6 +43,23 @@ public sealed class Inventory
         return -1;
     }
 
+    public int GridSlotFor(int itemId, int count, bool stackable)
+    {
+        if (stackable)
+            for (int abs = GridStart; abs < GridStart + GridCount && abs < _slots.Length; abs++)
+                if (_slots[abs].ItemId == itemId && _slots[abs].Count + count <= StackMax) return abs;
+        return FirstFreeGridSlot();
+    }
+
+    public int GridRoomFor(int itemId, bool stackable)
+    {
+        int room = FirstFreeGridSlot() >= 0 ? (stackable ? StackMax : 1) : 0;
+        if (!stackable) return room;
+        for (int abs = GridStart; abs < GridStart + GridCount && abs < _slots.Length; abs++)
+            if (_slots[abs].ItemId == itemId) room = Math.Max(room, StackMax - _slots[abs].Count);
+        return room;
+    }
+
     public int CountOf(int itemId)
     {
         int total = 0;

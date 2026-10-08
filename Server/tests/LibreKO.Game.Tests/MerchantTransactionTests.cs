@@ -341,6 +341,34 @@ public class MerchantTransactionTests : GameTestBase
         CountChangePackets.Positions(ownerSent).Should().Equal(backHalfSlot);
     }
 
+    [Fact]
+    public async Task SellingStallSynchronizesMergedBuyerAndRemainingSellerStacks()
+    {
+        using var provider = Provider();
+        var manager = provider.GetRequiredService<SessionManager>();
+        var seller = Player(manager, 8450, 9450, money: 0, out var sellerSent);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        seller.Inventory[InventoryConstants.SlotMax].ItemId = StackableItem;
+        seller.Inventory[InventoryConstants.SlotMax].Count = 100;
+        seller.Trade.MerchantItems[0] = new MerchantItem
+        {
+            ItemId = StackableItem, Count = 100, Price = 10,
+            OriginalSlot = InventoryConstants.SlotMax,
+        };
+        var buyer = Player(manager, 8451, 9451, money: 10000, out var buyerSent);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        FillBags(buyer, 700000000);
+        buyer.Inventory[InventoryConstants.SlotMax + 20].ItemId = StackableItem;
+        buyer.Inventory[InventoryConstants.SlotMax + 20].Count = 7;
+        await Buy(provider, buyer, 25);
+        buyer.Inventory[InventoryConstants.SlotMax + 20].Count.Should().Be(32);
+        seller.Inventory[InventoryConstants.SlotMax].Count.Should().Be(75);
+        CountChangePackets.Positions(buyerSent).Should().Equal(20);
+        CountChangePackets.Positions(sellerSent).Should().Equal(0);
+        buyer.Money.Should().Be(9750);
+        seller.Money.Should().Be(250);
+    }
+
     private static void FillBags(UserSession session, int filler)
     {
         for (var i = 0; i < InventoryConstants.HaveMax; i++)
