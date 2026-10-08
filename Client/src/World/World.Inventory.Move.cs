@@ -212,7 +212,9 @@ public partial class World : Node3D
 
     private void EnqueuePetMove(byte dir, int itemId, byte src, byte dst, int bagAbs, int petPos)
     {
-        _moveQueue.Enqueue(new MoveStep { Dir = dir, ItemId = itemId, Src = src, Dst = dst, From = bagAbs, To = bagAbs, PetPos = petPos });
+        if (Net.I.Pet is not { } pet || petPos < 0 || petPos >= pet.Items.Length) return;
+        _moveQueue.Enqueue(new MoveStep { Dir = dir, ItemId = itemId, Src = src, Dst = dst, From = bagAbs, To = bagAbs,
+            PetPos = petPos, PetIndex = pet.Index, PetBagItem = Inv[bagAbs], PetItem = pet.Items[petPos] });
         PumpMoves();
     }
 
@@ -237,8 +239,9 @@ public partial class World : Node3D
 
         if (_moveCur.PetPos != NoPetSlot)
         {
-            if (Net.I.Pet is { } pet && _moveCur.PetPos < pet.Items.Length)
-                (Inv[_moveCur.From], pet.Items[_moveCur.PetPos]) = (pet.Items[_moveCur.PetPos], Inv[_moveCur.From]);
+            Inv.ApplySlotUpdate(_moveCur.From, _moveCur.PetItem);
+            Net.I.MirrorInventorySlot(_moveCur.From, _moveCur.PetItem);
+            Net.I.Pet?.PlaceConfirmed(_moveCur.PetIndex, _moveCur.PetPos, _moveCur.PetBagItem);
             PumpMoves();
             RefreshInventoryUI();
             RefreshPetUI();

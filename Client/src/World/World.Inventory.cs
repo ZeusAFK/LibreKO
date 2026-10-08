@@ -108,6 +108,8 @@ public partial class World : Node3D
         public byte Src, Dst;
         public int From, To;
         public int PetPos;
+        public int PetIndex;
+        public ItemSlot PetBagItem, PetItem;
     }
     private readonly Queue<MoveStep> _moveQueue = new();
     private bool _moveInFlight;

@@ -12,6 +12,14 @@ public partial class Net
     private PendingItemMove? _pendingItemMove;
     private int _pendingRemoveSlot = -1;
 
+    private void ResetInventoryRequests()
+    {
+        bool moving = _pendingItemMove.HasValue;
+        _pendingItemMove = null;
+        _pendingRemoveSlot = -1;
+        if (moving) ItemMoveResultEvent?.Invoke(false);
+    }
+
     private void HandleItemMove(Packet p)
     {
         if (p.RemainingBytes < 1) return;
@@ -215,11 +223,11 @@ public partial class Net
         if (_pendingItemMove is not { } move)
             return;
         _pendingItemMove = null;
-        if (!TryResolveMoveSlots(move.Dir, move.Src, move.Dst, out int from, out int to))
+        if (!ItemMove.TryResolveSlots(move.Dir, move.Src, move.Dst, out int from, out int to))
             return;
         EnsureLastInventoryLength(Math.Max(from, to) + 1);
         var e = LastEnter;
-        (e.Inventory[from], e.Inventory[to]) = (e.Inventory[to], e.Inventory[from]);
+        ItemMove.ApplyConfirmed(e.Inventory, move.Dir, from, to, ItemData.Get(e.Inventory[from].ItemId)?.Countable ?? 0);
         LastEnter = e;
         RefreshLastGear();
     }
@@ -244,19 +252,6 @@ public partial class Net
     {
         Vitals.ApplyMaxima(stats.MaxHp, stats.MaxMp);
         Sheet.ApplyDerived(stats);
-    }
-
-    private static bool TryResolveMoveSlots(byte dir, byte src, byte dst, out int from, out int to)
-    {
-        from = to = -1;
-        switch (dir)
-        {
-            case 1: from = InventoryConstants.InventoryStart + src; to = dst; return src < InventoryConstants.HaveMax && dst < InventoryConstants.SlotMax;
-            case 2: from = src; to = InventoryConstants.InventoryStart + dst; return src < InventoryConstants.SlotMax && dst < InventoryConstants.HaveMax;
-            case 3: from = InventoryConstants.InventoryStart + src; to = InventoryConstants.InventoryStart + dst; return src < InventoryConstants.HaveMax && dst < InventoryConstants.HaveMax;
-            case 4: from = src; to = dst; return src < InventoryConstants.SlotMax && dst < InventoryConstants.SlotMax;
-            default: return false;
-        }
     }
 
     private void ApplyLastInventoryGridRefresh(ItemSlot[] items)
