@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +25,13 @@ public class AccountRepository(AppDbContext context) : IAccountRepository
     public async Task UpdateAsync(Account account)
     {
         context.Accounts.Update(account);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task UpdateWithCharactersAsync(Account account, IReadOnlyCollection<Character> characters)
+    {
+        context.Accounts.Update(account);
+        context.Characters.UpdateRange(characters);
         await context.SaveChangesAsync();
     }
 
