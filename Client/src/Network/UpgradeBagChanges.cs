@@ -22,8 +22,14 @@ public static class UpgradeBagChanges
         if (origin.Position >= 0 && origin.Position < InventoryConstants.HaveMax)
         {
             int abs = InventoryConstants.InventoryStart + origin.Position;
-            if (result == ResultSucceeded && origin.ItemId != 0)
-                working[abs] = new ItemSlot { ItemId = origin.ItemId, Count = 1, Durability = durability(origin.ItemId) };
+            if (origin.ItemId != 0)
+            {
+                var retained = abs < inventory.Count ? inventory[abs] : default;
+                retained.ItemId = origin.ItemId;
+                retained.Count = 1;
+                if (result == ResultSucceeded) retained.Durability = durability(origin.ItemId);
+                working[abs] = retained;
+            }
             else if (result == ResultFailed)
                 working[abs] = default;
             if (working.TryGetValue(abs, out var changed)) changes.Add((abs, changed));

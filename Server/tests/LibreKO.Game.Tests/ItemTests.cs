@@ -1313,6 +1313,11 @@ public class ItemTests : GameTestBase
     private const int HighClassScroll = 379021000;
     private const int MiddleClassScroll = 379205000;
     private const int TrinaPiece = 700002000;
+    private const byte UpgradeTypeNormal = 1;
+    private const byte UpgradeTypePreview = 2;
+    private const byte UpgradeTypeUnknown = 9;
+    private const byte UpgradeResultTrading = 2;
+    private const byte UpgradeResultNoMatch = 4;
 
     private static ItemData UpgradeItem(int num, short itemType = 5, short itemClass = 3, short duration = 15)
         => new() { Num = num, Kind = 52, ItemType = (byte)itemType, ItemClass = itemClass, Duration = duration };
@@ -1485,6 +1490,49 @@ public class ItemTests : GameTestBase
 
         ReadUpgradeReply(sentPackets).Should().Be(((byte)2, (byte)2, (byte)1, upgradedItemId, (byte)0));
         sentPackets.Should().NotContain(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_OBJECT_EVENT);
+    }
+
+    [Theory]
+    [InlineData(UpgradeTypeNormal)]
+    [InlineData(UpgradeTypePreview)]
+    public async Task HandleUpgradeAsync_EarlyRefusalEchoesTheRequestedUpgradeType(byte upgradeType)
+    {
+        const int originItemId = 156210008;
+
+        using var provider = CreateProvider(_ => { });
+
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", originItemId, HighClassScroll);
+        session.Hp = 0;
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(
+            client, UpgradeRequest((byte)ItemUpgradeSubOpcode.Upgrade, upgradeType, (originItemId, 0), (HighClassScroll, 1)));
+
+        session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(originItemId);
+        ReadUpgradeReply(sentPackets).Should().Be(
+            ((byte)ItemUpgradeSubOpcode.Upgrade, upgradeType, UpgradeResultTrading, 0, ItemUpgradePacketWriter.EmptyPosition));
+    }
+
+    [Fact]
+    public async Task HandleUpgradeAsync_UnknownUpgradeTypeIsRefusedAsANormalUpgrade()
+    {
+        const int originItemId = 156210008;
+
+        using var provider = CreateProvider(_ => { });
+
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", originItemId, HighClassScroll);
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(
+            client, UpgradeRequest((byte)ItemUpgradeSubOpcode.Upgrade, UpgradeTypeUnknown, (originItemId, 0), (HighClassScroll, 1)));
+
+        session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(originItemId);
+        ReadUpgradeReply(sentPackets).Should().Be(
+            ((byte)ItemUpgradeSubOpcode.Upgrade, UpgradeTypeNormal, UpgradeResultNoMatch, 0, ItemUpgradePacketWriter.EmptyPosition));
     }
 
     [Fact]
