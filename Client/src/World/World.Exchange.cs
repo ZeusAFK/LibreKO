@@ -17,7 +17,7 @@ public partial class World
 
     private bool _exShown;
     private bool _exRequestPending;
-    private bool _exConfirmedByMe;
+    private bool _exConfirmedByMe, _exConfirmedByPartner;
     private int _exPartnerId = -1;
     private string _exPartnerName = "Player";
     private int _exMyGoldOffer, _exTheirGoldOffer;
@@ -37,6 +37,7 @@ public partial class World
     private SpinBox _exAmountSpin = null!;
     private bool _exAmountShown;
     private int _exAmountSlot = -1;
+    private int _exAmountItem;
     private int _exAmountMax = 1;
 
     private struct PendingExAdd { public bool IsGold; public int ItemId; public int SourceAbs; public int Count; public short Dura; }
@@ -311,7 +312,7 @@ public partial class World
 
     private void OnExchangeRequest(int requesterCharId)
     {
-        if (_exShown || _exWaiting) { Net.I.SendExchangeAgree(false); return; }
+        if (_exShown || _exWaiting || _exRequestPending) { Net.I.SendExchangeAgree(false); return; }
         _exPartnerId = requesterCharId;
         _exPartnerName = _ents.TryGetValue(requesterCharId, out var e) ? e.Name : "Player";
         _exRequestPending = true;
@@ -371,6 +372,7 @@ public partial class World
         _exMyGoldOffer = 0;
         _exTheirGoldOffer = 0;
         _exConfirmedByMe = false;
+        _exConfirmedByPartner = false;
         _exAddInFlight = false;
         CloseExchangeAmount();
         if (_exGoldEdit != null) _exGoldEdit.Text = "";
@@ -379,7 +381,7 @@ public partial class World
     private void RefreshExchangeBag()
     {
         HideItemTooltip();
-        foreach (var c in _exBagList.GetChildren()) c.QueueFree();
+        foreach (var c in _exBagList.GetChildren()) { _exBagList.RemoveChild(c); c.QueueFree(); }
         for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
         {
             if (Inv[abs].IsEmpty) continue;
@@ -408,7 +410,7 @@ public partial class World
 
     private static void RefreshOfferColumn(VBoxContainer list, List<ExOfferItem> offer)
     {
-        foreach (var c in list.GetChildren()) c.QueueFree();
+        foreach (var c in list.GetChildren()) { list.RemoveChild(c); c.QueueFree(); }
         foreach (var o in offer)
         {
             var hb = new HBoxContainer();
@@ -430,10 +432,10 @@ public partial class World
     private void OfferSlot(int absSlot)
     {
         if (_exConfirmedByMe) { SetExStatus("You already confirmed.", true); return; }
-        if (_exAddInFlight) return;
+        if (_exAddInFlight || _exConfirmedByPartner) return;
         if (absSlot < 0 || absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
-        if (_exMyOffer.Count >= 12) { SetExStatus("Offer is full (12 items).", true); return; }
         var slot = Inv[absSlot];
+        if (!CanOfferItem(slot)) return;
         int have = Mathf.Max(1, (int)slot.Count);
 
         if (have > 1 && (ItemData.Get(slot.ItemId)?.Countable ?? 0) != 0)
@@ -442,14 +444,33 @@ public partial class World
             return;
         }
 
-        OfferSlotAmount(absSlot, have);
+        OfferSlotAmount(absSlot, slot.ItemId, have);
     }
 
-    private void OfferSlotAmount(int absSlot, int count)
+    private bool CanOfferItem(ItemSlot slot)
     {
+        if (!slot.IsTradable) { SetExStatus("That item can't be traded.", true); return false; }
+        if (!ExchangeOffer.HasRoomFor(_exMyOffer.ConvertAll(o => o.ItemId), slot.ItemId, IsCountableItem))
+        {
+            SetExStatus($"Offer is full ({ExchangeOffer.ItemSlots} items).", true);
+            return false;
+        }
+        return true;
+    }
+
+    private static bool IsCountableItem(int itemId) => (ItemData.Get(itemId)?.Countable ?? 0) != 0;
+
+    private void OfferSlotAmount(int absSlot, int itemId, int count)
+    {
+        if (!_exShown || _exConfirmedByMe || _exConfirmedByPartner || _exAddInFlight) return;
         if (absSlot < 0 || absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
         var slot = Inv[absSlot];
-        count = Mathf.Clamp(count, 1, Mathf.Max(1, (int)slot.Count));
+        if (slot.ItemId != itemId || count < 1 || count > Mathf.Max(1, (int)slot.Count))
+        {
+            SetExStatus("The item or quantity changed. Please try again.", true);
+            return;
+        }
+        if (!CanOfferItem(slot)) return;
 
         _exPending = new PendingExAdd { IsGold = false, ItemId = slot.ItemId, SourceAbs = absSlot, Count = count, Dura = slot.Durability };
         _exAddInFlight = true;
@@ -462,6 +483,7 @@ public partial class World
         _exAmountSlot = absSlot;
         _exAmountMax = max;
         int itemId = Inv[absSlot].ItemId;
+        _exAmountItem = itemId;
         _exAmountIcon.Texture = ItemData.Icon(itemId);
         _exAmountName.Text = ItemData.DisplayName(itemId);
         _exAmountHint.Text = $"You have {max:n0}";
@@ -485,18 +507,22 @@ public partial class World
     private void ConfirmExchangeAmount()
     {
         if (!_exAmountShown || _exAmountSlot < 0) return;
-        string typed = _exAmountSpin.GetLineEdit().Text.Trim();
-        int value = int.TryParse(typed, out int parsed) ? parsed : (int)_exAmountSpin.Value;
-        int slotAbs = _exAmountSlot;
-        int count = Mathf.Clamp(value, 1, _exAmountMax);
+        if (!ExchangeOffer.TryParseAmount(_exAmountSpin.GetLineEdit().Text, _exAmountMax, out int count))
+        {
+            _exAmountHint.Text = $"Valid quantity: 1–{_exAmountMax:n0}.";
+            _exAmountSpin.GetLineEdit().GrabFocus();
+            _exAmountSpin.GetLineEdit().SelectAll();
+            return;
+        }
+        int slotAbs = _exAmountSlot, itemId = _exAmountItem;
         CloseExchangeAmount();
-        OfferSlotAmount(slotAbs, count);
+        OfferSlotAmount(slotAbs, itemId, count);
     }
 
     private void OnAddGold()
     {
         if (_exConfirmedByMe) { SetExStatus("You already confirmed.", true); return; }
-        if (_exAddInFlight) return;
+        if (_exAddInFlight || _exConfirmedByPartner) return;
         if (!int.TryParse(_exGoldEdit.Text.Trim(), out int amount) || amount <= 0) { SetExStatus("Enter a gold amount.", true); return; }
         if (amount > Sheet.Gold) { SetExStatus("Not enough gold.", true); return; }
 
@@ -552,6 +578,7 @@ public partial class World
     private void OnExchangeConfirm()
     {
         if (!_exShown || _exConfirmedByMe) return;
+        if (_exAddInFlight || _exAmountShown) { SetExStatus("Finish adding your offer before confirming.", true); return; }
         _exConfirmedByMe = true;
         _exConfirmBtn.Disabled = true;
         _exConfirmBtn.Text = "Confirmed";
@@ -562,6 +589,8 @@ public partial class World
     private void OnExchangeOtherDecide()
     {
         if (!_exShown) return;
+        _exConfirmedByPartner = true;
+        CloseExchangeAmount();
         SetExStatus(_exConfirmedByMe ? "Finalising…" : "Partner confirmed — press Confirm.", false);
     }
 
