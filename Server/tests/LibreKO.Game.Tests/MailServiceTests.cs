@@ -231,6 +231,46 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task ClaimAttachmentAsync_FillsExistingStack_AndRetainsOnlyTheUndeliveredRemainder()
+    {
+        const int stackRoom = 9;
+        const int attached = 20;
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        FillBagLeaving(bob, 0);
+        var stack = bob.Inventory[InventoryConstants.InventoryStart];
+        stack.ItemId = Apple;
+        stack.Count = InventoryConstants.MaxStackCount - stackRoom;
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Apples", "", [new MailAttachmentDraft(MailAttachmentKind.Item, Apple, attached)]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAttachmentAsync(bob, mailId, 0);
+
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Succeeded);
+        stack.Count.Should().Be(InventoryConstants.MaxStackCount);
+        using (var scope = provider.CreateScope())
+        {
+            var attachment = await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailAttachments.SingleAsync(a => a.MailId == mailId);
+            attachment.ClaimedCount.Should().Be(stackRoom);
+            attachment.Remaining.Should().Be(attached - stackRoom);
+        }
+
+        await mail.ClaimAsync(bob, mailId);
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Failed);
+        stack.Count.Should().Be(InventoryConstants.MaxStackCount);
+
+        bob.Inventory[InventoryConstants.InventoryStart + 1].Clear();
+        await mail.ClaimAsync(bob, mailId);
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Succeeded);
+        bob.Inventory[InventoryConstants.InventoryStart + 1].Count.Should().Be(attached - stackRoom);
+
+        await mail.ClaimAsync(bob, mailId);
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Failed);
+        CountInBag(bob, Apple).Should().Be(InventoryConstants.MaxStackCount - stackRoom + attached);
+    }
+
+    [Fact]
     public async Task ClaimAsync_WithAFullBag_DeliversNothing_AndKeepsTheMailPending()
     {
         using var provider = Provider();

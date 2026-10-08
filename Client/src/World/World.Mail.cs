@@ -378,14 +378,14 @@ public partial class World
 
     private void OnMailRead(int mailId, bool ok, string body)
     {
-        if (mailId != _mailSelectedId) return;
-        _mailReadBody.Text = ok ? body : "This mail is no longer available.";
         var mail = _mails.FirstOrDefault(m => m.Id == mailId);
-        if (mail != null && !mail.Read)
+        if (ok && mail != null && !mail.Read)
         {
             mail.Read = true;
             RenderMailList();
         }
+        if (mailId != _mailSelectedId) return;
+        _mailReadBody.Text = ok ? body : "This mail is no longer available.";
         Callable.From(_mailReadWindow.ResetSize).CallDeferred();
     }
 
