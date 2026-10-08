@@ -47,7 +47,8 @@ public partial class World : Node3D
                 CombatNotice(BagStillHoldsItems);
                 return;
             }
-            int free = Inv.FirstFreeGridSlot();
+            int free = region == ItemMove.Region.MagicBag
+                ? Inv.FirstStackOrFreeGridSlot(Inv[absSlot], def.Countable) : Inv.FirstFreeGridSlot();
             if (free < 0) return;
             byte back = ItemMove.DirectionFor(region, ItemMove.Region.Grid);
             if (back == ItemMove.None) return;
@@ -167,6 +168,8 @@ public partial class World : Node3D
         if (_moveInFlight || _moveQueue.Count > 0 || _selfDead) return;
         if (from == to || from < 0 || to < 0 || from >= Inv.Length || to >= Inv.Length) return;
         if (Inv[from].IsEmpty) return;
+        if (ItemMove.RegionOf(from) == ItemMove.Region.MagicBag && ItemMove.RegionOf(to) == ItemMove.Region.Grid)
+            to = Inv.PlanBagToGrid(from, to, ItemData.Get(Inv[from].ItemId)?.Countable ?? 0);
         if (RefuseItemInUse(from, to)) return;
 
         var fromRegion = ItemMove.RegionOf(from);

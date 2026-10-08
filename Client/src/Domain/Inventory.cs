@@ -66,6 +66,23 @@ public sealed class Inventory
         return room;
     }
 
+    public int FirstStackOrFreeGridSlot(ItemSlot source, int countable)
+    {
+        for (int abs = GridStart; abs < GridStart + GridCount && abs < _slots.Length; abs++)
+            if (ItemMove.Merges(ItemMove.MagicBagToInventory, source, _slots[abs], countable)) return abs;
+        return FirstFreeGridSlot();
+    }
+
+    public int PlanBagToGrid(int from, int preferred, int countable)
+    {
+        if (!InventoryConstants.IsMagicBagSlot(from) || from >= _slots.Length || _slots[from].IsEmpty) return -1;
+        bool preferredInGrid = preferred >= GridStart && preferred < GridStart + GridCount && preferred < _slots.Length;
+        if (!preferredInGrid) return FirstStackOrFreeGridSlot(_slots[from], countable);
+        if (!_slots[preferred].IsEmpty) return preferred;
+        int stack = FirstStackOrFreeGridSlot(_slots[from], countable);
+        return stack >= 0 && !_slots[stack].IsEmpty ? stack : preferred;
+    }
+
     public int CountOf(int itemId)
     {
         int total = 0;
