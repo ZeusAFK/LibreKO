@@ -47,6 +47,8 @@ public partial class World
     private Label _questObjectiveTitle = null!;
     private Label _questRewardTitle = null!;
     private HBoxContainer _questRewardBox = null!;
+    private Label _questRewardOptionTitle = null!;
+    private HBoxContainer _questRewardOptionBox = null!;
     private Control _questDetailBody = null!;
     private Label _questDetailEmpty = null!;
     private Button _questAbandonBtn = null!, _questTrackBtn = null!, _questCompleteBtn = null!;
@@ -210,6 +212,11 @@ public partial class World
         _questRewardBox = new HBoxContainer();
         _questRewardBox.AddThemeConstantOverride("separation", 5);
         detail.AddChild(_questRewardBox);
+        _questRewardOptionTitle = UiTheme.SectionTitle("Choose one");
+        detail.AddChild(_questRewardOptionTitle);
+        _questRewardOptionBox = new HBoxContainer();
+        _questRewardOptionBox.AddThemeConstantOverride("separation", 5);
+        detail.AddChild(_questRewardOptionBox);
 
         detail.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill });
 
@@ -526,9 +533,19 @@ public partial class World
             }));
 
         foreach (var c in _questRewardBox.GetChildren()) { _questRewardBox.RemoveChild(c); c.QueueFree(); }
-        foreach (var reward in QuestRewards(questId))
+        foreach (var c in _questRewardOptionBox.GetChildren()) { _questRewardOptionBox.RemoveChild(c); c.QueueFree(); }
+        var receipt = state == QuestStateCompleted && _questRewardSelection.Received(questId, out var granted) ? granted : null;
+        _questRewardTitle.Text = receipt != null ? "Received rewards" : "Rewards";
+        foreach (var reward in receipt != null ? receipt.Granted.Select(g => (g.ItemId, g.Count)) : QuestRewards(questId))
             _questRewardBox.AddChild(QuestRewardTile(reward.ItemId, reward.Count));
         _questRewardTitle.Visible = _questRewardBox.GetChildCount() > 0;
+        var options = receipt == null && _questViews.TryGetValue(questId, out var rewardView) ? rewardView.Options : [];
+        var chosen = _questRewardSelection.Chosen(questId, out var pending) && options.Contains(pending);
+        _questRewardOptionTitle.Text = chosen ? "Selected reward"
+            : state == QuestStateCompleted ? "Reward options (one awarded)" : "Choose one at turn-in";
+        foreach (var option in chosen ? new[] { pending } : options)
+            _questRewardOptionBox.AddChild(QuestRewardTile(option.DisplayItemId, option.Count));
+        _questRewardOptionTitle.Visible = _questRewardOptionBox.GetChildCount() > 0;
 
         _questTrackBtn.Text = _questTracked.Contains(questId) ? "Untrack" : "Track";
         _questTrackBtn.Disabled = state is not (QuestStateActive or QuestStateReadyToTurnIn);

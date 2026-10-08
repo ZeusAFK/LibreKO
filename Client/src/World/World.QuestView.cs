@@ -8,6 +8,7 @@ public partial class World
 {
     private readonly Dictionary<int, QuestView> _questViews = new();
     private int _questRewardChoice = -1;
+    private readonly QuestRewardSelection<QuestTransfer, QuestReceipt> _questRewardSelection = new();
     private bool _questUiRefreshQueued;
 
     private void QueueQuestUiRefresh()
@@ -27,7 +28,9 @@ public partial class World
     private void OnQuestView(QuestView view)
     {
         _questViews[view.QuestId] = view;
-        _questRewardChoice = -1;
+        _questRewardSelection.Viewed(view.QuestId,
+            view.State is QuestViewState.InProgress or QuestViewState.Claimable,
+            view.State == QuestViewState.Completed, view.Options);
         _questStrings[view.QuestId] = new QuestStrings(view.QuestId, view.Title, view.Journal);
         _questObjectives[view.QuestId] = view.Objectives;
         _questKills[view.QuestId] = view.Counts;
@@ -72,6 +75,7 @@ public partial class World
 
     private void ShowQuestView(QuestView view)
     {
+        _questRewardChoice = _questRewardSelection.ChoiceIndex(view.QuestId, view.Options);
         BeginNpcDialog(view.Title, "");
         _npcBody.GetParent<Control>().Visible = false;
         _npcQuestScroll.Visible = true;
@@ -114,8 +118,16 @@ public partial class World
         if (view.Objectives.Groups.Length == 0 && deliveries.Length == 0)
             QuestSection("Objectives").AddChild(QuestParagraph(view.StandingObjective, UiTheme.TextLo));
 
+        var receipt = view.State == QuestViewState.Completed && _questRewardSelection.Received(view.QuestId, out var granted) ? granted : null;
         var payouts = view.Transfers.Where(t => !t.Take).ToArray();
-        if (payouts.Length > 0)
+        if (receipt != null)
+        {
+            var rewards = QuestSection("Received rewards");
+            foreach (var entry in receipt.Granted)
+                rewards.AddChild(QuestItemRow(entry.ItemId, QuestRewardName(entry.ItemId),
+                    entry.Count.ToString("n0"), UiTheme.GoldBright));
+        }
+        else if (payouts.Length > 0)
         {
             var rewards = QuestSection("Rewards");
             foreach (var transfer in payouts)
@@ -123,7 +135,15 @@ public partial class World
                     transfer.Kind is 4 or 5 ? "" : transfer.Count.ToString("n0"), UiTheme.GoldBright));
         }
         System.Action? onRewardChosen = null;
-        if (view.Options.Length > 0)
+        if (receipt == null && view.Options.Length > 0 && !view.CanClaim)
+        {
+            var options = QuestSection("Reward options");
+            options.AddChild(UiTheme.Text(QuestRewardOptionsHint(view.State == QuestViewState.Completed), 12, UiTheme.TextLo));
+            foreach (var option in view.Options)
+                options.AddChild(QuestItemRow(option.DisplayItemId, QuestTransferName(option),
+                    option.Count.ToString("n0"), UiTheme.GoldBright));
+        }
+        else if (receipt == null && view.Options.Length > 0)
         {
             var choice = QuestSection("Choose one");
             var marks = new List<Label>();
@@ -133,7 +153,11 @@ public partial class World
                 var row = QuestItemRow(option.DisplayItemId, QuestTransferName(option),
                     $"{option.Count:n0}  ○", UiTheme.GoldBright);
                 marks.Add(row.GetChild<Label>(row.GetChildCount() - 1));
-                choice.AddChild(QuestRewardOption(row, index, () => onRewardChosen?.Invoke()));
+                choice.AddChild(QuestRewardOption(row, index, () =>
+                {
+                    _questRewardSelection.Choose(view.QuestId, option);
+                    onRewardChosen?.Invoke();
+                }));
             }
             void PaintChoice()
             {
@@ -214,6 +238,10 @@ public partial class World
 
     internal static string QuestObjectiveHeading(bool kills, bool deliveries) =>
         kills ? "Hunt" : deliveries ? "Collect" : "Objectives";
+
+    private static string QuestRewardOptionsHint(bool completed) => completed
+        ? "One option was awarded when this quest was turned in."
+        : "Choose one when turning in this quest.";
 
     private static RichTextLabel QuestParagraph(string text, Color color, float width = QuestParagraphWidth)
     {
@@ -322,6 +350,6 @@ public partial class World
 
     private IEnumerable<(int ItemId, int Count)> QuestRewards(int questId) =>
         _questViews.TryGetValue(questId, out var view)
-            ? view.Transfers.Where(t => !t.Take).Concat(view.Options).Select(t => (t.DisplayItemId, t.Count))
+            ? view.Transfers.Where(t => !t.Take).Select(t => (t.DisplayItemId, t.Count))
             : QuestData.Rewards(questId, _selfClass).Select(t => (t.ItemId, t.Count));
 }
