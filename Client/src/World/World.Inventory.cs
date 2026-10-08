@@ -483,6 +483,9 @@ public partial class World : Node3D
     private void RefreshInventoryUI()
     {
         PluginNotifyInventory();
+        if (_whShown) RefreshWarehouse();
+        if (_vipWhShown) RefreshVipWarehouse();
+        if (_clanWhShown) RefreshClanWarehouse();
         foreach (var (slot, cell) in _invCells)
             cell.Bind(slot, SlotAt(slot));
         GhostOtherHand(InventoryConstants.RightHand, InventoryConstants.LeftHand);

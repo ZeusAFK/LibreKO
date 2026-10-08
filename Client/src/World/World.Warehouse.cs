@@ -40,6 +40,8 @@ public partial class World
     private WhPending _whPending;
     private bool _whInFlight;
 
+    private bool StorageTransferBusy => _whInFlight || _vipWhInFlight || _clanWhInFlight || _moveInFlight || _moveQueue.Count > 0;
+
     private void WarehouseInit()
     {
         BuildWarehousePanel();
@@ -143,7 +145,7 @@ public partial class World
     private void OpenWarehouseStorage()
     {
         CloseNpcDialog();
-        _whInFlight = false;
+        if (_whInFlight) return;
         _whPage = 0;
         _whPageTabs.Select(0, notify: false);
         _whSearch.Text = "";
@@ -219,6 +221,8 @@ public partial class World
 
     private static bool IsStackable(int itemId) => ItemData.Get(itemId) is { Countable: not 0 };
 
+    private static int WholeStack(ItemSlot slot) => IsStackable(slot.ItemId) ? Mathf.Max(1, (int)slot.Count) : 1;
+
     private bool WhTakeFromBag(int abs)
     {
         if (!InMainBag(abs)) return false;
@@ -233,8 +237,7 @@ public partial class World
     }
 
     private bool FitsInWarehouse(int whIdx, int itemId, int count) =>
-        _warehouse[whIdx].IsEmpty
-        || (_warehouse[whIdx].ItemId == itemId && IsStackable(itemId) && _warehouse[whIdx].Count + count <= Inventory.StackMax);
+        StorageDestination.Fits(_warehouse[whIdx], itemId, count, IsStackable(itemId));
 
     private bool FitsInBag(int abs, int itemId, int count) =>
         InMainBag(abs) && (Inv[abs].IsEmpty
@@ -242,13 +245,9 @@ public partial class World
 
     private int WarehouseDestination(int itemId, int count, out bool merge)
     {
-        merge = false;
-        if (IsStackable(itemId))
-            for (int i = 0; i < WhSlots; i++)
-                if (_warehouse[i].ItemId == itemId && _warehouse[i].Count + count <= Inventory.StackMax)
-                { merge = true; return i; }
-        for (int i = 0; i < WhSlots; i++) if (_warehouse[i].IsEmpty) return i;
-        return -1;
+        int whIdx = StorageDestination.Find(_warehouse, itemId, count, IsStackable(itemId));
+        merge = whIdx >= 0 && !_warehouse[whIdx].IsEmpty;
+        return whIdx;
     }
 
     private int BagDestination(int itemId, int count, out bool merge)
@@ -263,10 +262,16 @@ public partial class World
 
     private bool CanDropOnWarehouse(int whIdx, Variant data)
     {
-        if (data.VariantType != Variant.Type.Dictionary) return false;
+        if (StorageTransferBusy || data.VariantType != Variant.Type.Dictionary) return false;
         var d = data.AsGodotDictionary();
-        if (d.ContainsKey("invFrom")) return InMainBag(d["invFrom"].AsInt32());
-        return d.ContainsKey("companionFrom") && d["companionFrom"].AsInt32() != whIdx;
+        if (d.ContainsKey("invFrom"))
+        {
+            int abs = d["invFrom"].AsInt32();
+            return InMainBag(abs) && !Inv[abs].IsLinked && WarehouseStorable(Inv[abs].ItemId);
+        }
+        if (!d.ContainsKey("companionFrom")) return false;
+        int from = d["companionFrom"].AsInt32();
+        return from is >= 0 and < WhSlots && from != whIdx && !_warehouse[from].IsEmpty && _warehouse[whIdx].IsEmpty;
     }
 
     private void DropOnWarehouse(int whIdx, Variant data)
@@ -278,23 +283,23 @@ public partial class World
 
     private void DepositSlot(int abs, int target)
     {
-        if (_whInFlight || !InMainBag(abs) || Inv[abs].IsEmpty) return;
+        if (StorageTransferBusy || !InMainBag(abs) || Inv[abs].IsEmpty) return;
         var slot = Inv[abs];
-        if (!WarehouseStorable(slot.ItemId))
+        if (slot.IsLinked || !WarehouseStorable(slot.ItemId))
         {
             _whStatus.Status(ItemData.Text(WarehouseRules.NonStorableText, "This item is non-storable"), bad: true);
             return;
         }
         if (IsStackable(slot.ItemId) && slot.Count > 1)
             _whAmount.Open(ItemData.Icon(slot.ItemId), $"Store {ItemData.DisplayName(slot.ItemId)}",
-                $"You carry {slot.Count:n0}", slot.Count, slot.Count, n => DepositCount(abs, (int)n, target), "Store");
+                $"You carry {slot.Count:n0}", slot.Count, slot.Count, n => { if (_whShown && Inv[abs].Equals(slot)) DepositCount(abs, (int)n, target); }, "Store");
         else
             DepositCount(abs, Mathf.Max(1, (int)slot.Count), target);
     }
 
     private void DepositCount(int abs, int count, int target)
     {
-        if (_whInFlight || !InMainBag(abs) || Inv[abs].IsEmpty || count <= 0) return;
+        if (StorageTransferBusy || !InMainBag(abs) || Inv[abs].IsEmpty || count <= 0 || target >= WhSlots) return;
         var slot = Inv[abs];
         count = Mathf.Min(count, slot.Count > 0 ? slot.Count : 1);
         int whIdx;
@@ -326,18 +331,18 @@ public partial class World
 
     private void AskWithdraw(int whIdx, int target)
     {
-        if (_whInFlight || whIdx < 0 || whIdx >= WhSlots || _warehouse[whIdx].IsEmpty) return;
+        if (StorageTransferBusy || whIdx < 0 || whIdx >= WhSlots || _warehouse[whIdx].IsEmpty) return;
         var slot = _warehouse[whIdx];
         if (IsStackable(slot.ItemId) && slot.Count > 1)
             _whAmount.Open(ItemData.Icon(slot.ItemId), $"Take out {ItemData.DisplayName(slot.ItemId)}",
-                $"Stored {slot.Count:n0}", slot.Count, slot.Count, n => WithdrawCount(whIdx, (int)n, target), "Take out");
+                $"Stored {slot.Count:n0}", slot.Count, slot.Count, n => { if (_whShown && _warehouse[whIdx].Equals(slot)) WithdrawCount(whIdx, (int)n, target); }, "Take out");
         else
             WithdrawCount(whIdx, Mathf.Max(1, (int)slot.Count), target);
     }
 
     private void WithdrawCount(int whIdx, int count, int target)
     {
-        if (_whInFlight || whIdx < 0 || whIdx >= WhSlots || _warehouse[whIdx].IsEmpty || count <= 0) return;
+        if (StorageTransferBusy || whIdx < 0 || whIdx >= WhSlots || _warehouse[whIdx].IsEmpty || count <= 0) return;
         var slot = _warehouse[whIdx];
         count = Mathf.Min(count, slot.Count > 0 ? slot.Count : 1);
         int dest;
@@ -361,7 +366,7 @@ public partial class World
 
     private void MoveInsideWarehouse(int from, int to)
     {
-        if (_whInFlight || from == to || from < 0 || to < 0 || from >= WhSlots || to >= WhSlots || _warehouse[from].IsEmpty) return;
+        if (StorageTransferBusy || from == to || from < 0 || to < 0 || from >= WhSlots || to >= WhSlots || _warehouse[from].IsEmpty) return;
         if (!_warehouse[to].IsEmpty) { _whStatus.Status("That slot is taken.", bad: true); return; }
         _whPending = new WhPending { Op = WhOpMove, WhIdx = from, WhTo = to, Count = _warehouse[from].Count };
         _whInFlight = true;
@@ -371,8 +376,8 @@ public partial class World
 
     private void AskGoldTransfer(bool deposit)
     {
-        if (_whInFlight) return;
-        long max = deposit ? Sheet.Gold : _whMoney;
+        if (StorageTransferBusy) return;
+        long max = System.Math.Min(deposit ? Sheet.Gold : _whMoney, WarehouseRules.CoinMax - (long)(deposit ? _whMoney : Sheet.Gold));
         if (max <= 0) return;
         _whAmount.Open(null, deposit ? "Deposit gold" : "Withdraw gold",
             deposit ? $"You carry {max:n0}" : $"Stored {max:n0}", max, max, n => GoldTransfer(deposit, (int)n),
@@ -381,7 +386,7 @@ public partial class World
 
     private void GoldTransfer(bool deposit, int amount)
     {
-        if (_whInFlight || amount <= 0) return;
+        if (StorageTransferBusy || amount <= 0) return;
         if (deposit && amount > Sheet.Gold) { _whStatus.Status("Not enough carried gold.", bad: true); return; }
         if (!deposit && amount > _whMoney) { _whStatus.Status("Not enough stored gold.", bad: true); return; }
 
@@ -393,7 +398,7 @@ public partial class World
 
     private void OnWarehouseResult(byte op, bool ok)
     {
-        if (!_whInFlight) return;
+        if (!_whInFlight || op != _whPending.Op) return;
         _whInFlight = false;
         if (!ok)
         {

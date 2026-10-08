@@ -8,6 +8,7 @@ public partial class World
     private const int ClanWhSlots = 192;
     private const int ClanWhPageSize = 24;
     private const int ClanWhPages = ClanWhSlots / ClanWhPageSize;
+    private const string ClanWhWithdrawRefusal = "Only the chief or vice-chief may withdraw.";
 
     private readonly ItemSlot[] _clanWh = new ItemSlot[ClanWhSlots];
     private int _clanWhMoney;
@@ -22,7 +23,7 @@ public partial class World
     private Label _clanWhPageLbl = null!, _clanWhStoredGold = null!, _clanWhCarriedGold = null!, _clanWhStatus = null!;
     private LineEdit _clanWhGoldInput = null!;
 
-    private struct ClanWhPending { public byte Op; public bool Gold; public int InvAbs; public int WhIdx; public int Count; }
+    private struct ClanWhPending { public byte Op; public bool Gold; public bool Merge; public int InvAbs; public int WhIdx; public int Count; }
     private ClanWhPending _clanWhPending;
     private bool _clanWhInFlight;
 
@@ -141,7 +142,10 @@ public partial class World
     private void ToggleClanWarehouse()
     {
         if (_clanWhShown) { CloseClanWarehouse(); return; }
-        _clanWhInFlight = false;
+        if (_clanWhInFlight) return;
+        _clanWhLoaded = false;
+        System.Array.Clear(_clanWh);
+        _clanWhMoney = 0;
         _clanWhPage = 0;
         _clanWhStatus.Text = "Deposit is open to all; only the chief / vice-chief may withdraw.";
         _clanWhPanel.Visible = true;
@@ -183,49 +187,48 @@ public partial class World
         _clanWhCarriedGold.Text = $"{Sheet.Gold:n0}";
     }
 
-    private int FirstFreeClanWarehouse()
-    {
-        for (int i = 0; i < ClanWhSlots; i++) if (_clanWh[i].IsEmpty) return i;
-        return -1;
-    }
-
     private void ClanWhDepositSlot(int abs)
     {
-        if (_clanWhInFlight || abs < 0 || abs >= Inv.Length || Inv[abs].IsEmpty) return;
+        if (StorageTransferBusy || !_clanWhShown || !InMainBag(abs) || Inv[abs].IsEmpty) return;
         if (!_clanWhLoaded) { _clanWhStatus.Text = "You're not in a clan."; return; }
-        int whIdx = FirstFreeClanWarehouse();
-        if (whIdx < 0) { _clanWhStatus.Text = "Clan warehouse is full."; return; }
         var slot = Inv[abs];
-        _clanWhPending = new ClanWhPending { Op = 2, InvAbs = abs, WhIdx = whIdx, Count = slot.Count };
+        if (slot.IsLinked || !WarehouseRules.VaultStorable(slot.ItemId)) { _clanWhStatus.Text = "This item is non-storable."; return; }
+        int count = WholeStack(slot);
+        int whIdx = StorageDestination.Find(_clanWh, slot.ItemId, count, IsStackable(slot.ItemId));
+        if (whIdx < 0) { _clanWhStatus.Text = "Clan warehouse is full."; return; }
+        _clanWhPending = new ClanWhPending { Op = WhOpInput, Merge = !_clanWh[whIdx].IsEmpty, InvAbs = abs, WhIdx = whIdx, Count = count };
         _clanWhInFlight = true;
         Net.I.SendClanWhInput(slot.ItemId, (byte)(whIdx / ClanWhPageSize),
-            (byte)(abs - GridStart), (byte)(whIdx % ClanWhPageSize), slot.Count);
+            (byte)(abs - GridStart), (byte)(whIdx % ClanWhPageSize), count);
     }
 
     private void ClanWhWithdrawSlot(int whIdx)
     {
-        if (_clanWhInFlight) return;
+        if (StorageTransferBusy || !_clanWhShown) return;
         int absWh = _clanWhPage * ClanWhPageSize + whIdx;
         if (absWh < 0 || absWh >= ClanWhSlots || _clanWh[absWh].IsEmpty) return;
-        int free = Inv.FirstFreeGridSlot();
-        if (free < 0) { _clanWhStatus.Text = "Your bags are full."; return; }
+        if (!Net.I.MyClan.CanInvite) { _clanWhStatus.Text = ClanWhWithdrawRefusal; return; }
         var slot = _clanWh[absWh];
-        _clanWhPending = new ClanWhPending { Op = 3, InvAbs = free, WhIdx = absWh, Count = slot.Count };
+        int count = WholeStack(slot);
+        int dest = BagDestination(slot.ItemId, count, out bool merge);
+        if (dest < 0) { _clanWhStatus.Text = "Your bags are full."; return; }
+        _clanWhPending = new ClanWhPending { Op = WhOpOutput, Merge = merge, InvAbs = dest, WhIdx = absWh, Count = count };
         _clanWhInFlight = true;
         Net.I.SendClanWhOutput(slot.ItemId, (byte)(absWh / ClanWhPageSize),
-            (byte)(absWh % ClanWhPageSize), (byte)(free - GridStart), slot.Count);
+            (byte)(absWh % ClanWhPageSize), (byte)(dest - GridStart), count);
     }
 
     private void ClanWhGoldTransfer(bool deposit)
     {
-        if (_clanWhInFlight) return;
+        if (StorageTransferBusy) return;
         if (!_clanWhLoaded) { _clanWhStatus.Text = "You're not in a clan."; return; }
+        if (!deposit && !Net.I.MyClan.CanInvite) { _clanWhStatus.Text = ClanWhWithdrawRefusal; return; }
         if (!int.TryParse(_clanWhGoldInput.Text.Replace(",", "").Trim(), out int amount) || amount <= 0)
         { _clanWhStatus.Text = "Enter an amount."; return; }
         if (deposit && amount > Sheet.Gold) { _clanWhStatus.Text = "Not enough carried gold."; return; }
         if (!deposit && amount > _clanWhMoney) { _clanWhStatus.Text = "Not enough clan gold."; return; }
 
-        _clanWhPending = new ClanWhPending { Op = (byte)(deposit ? 2 : 3), Gold = true, Count = amount };
+        _clanWhPending = new ClanWhPending { Op = deposit ? WhOpInput : WhOpOutput, Gold = true, Count = amount };
         _clanWhInFlight = true;
         if (deposit) Net.I.SendClanWhInput(Net.GoldItemId, 0, 0, 0, amount);
         else Net.I.SendClanWhOutput(Net.GoldItemId, 0, 0, 0, amount);
@@ -239,11 +242,11 @@ public partial class World
             return;
         }
 
-        if (!_clanWhInFlight) return;
+        if (!_clanWhInFlight || op != _clanWhPending.Op) return;
         _clanWhInFlight = false;
         if (!ok)
         {
-            _clanWhStatus.Text = op == 3 ? "Only the chief or vice-chief may withdraw." : "Transfer failed.";
+            _clanWhStatus.Text = op == WhOpOutput && !Net.I.MyClan.CanInvite ? ClanWhWithdrawRefusal : "Transfer failed.";
             if (_clanWhShown) RefreshClanWarehouse();
             return;
         }
@@ -251,22 +254,17 @@ public partial class World
         var p = _clanWhPending;
         if (p.Gold)
         {
-            if (p.Op == 2) { Sheet.Spend(p.Count); _clanWhMoney += p.Count; }
+            if (p.Op == WhOpInput) { Sheet.Spend(p.Count); _clanWhMoney += p.Count; }
             else { _clanWhMoney -= p.Count; Sheet.Receive(p.Count); }
             _clanWhGoldInput.Clear();
             Net.I.RaiseGold(Sheet.Gold);
         }
-        else if (p.Op == 2)
-        {
-            _clanWh[p.WhIdx] = Inv[p.InvAbs];
-            Inv[p.InvAbs] = default;
-            Net.I.MirrorInventorySlot(p.InvAbs, Inv[p.InvAbs]);
-            if (CharTabOpen()) RefreshInventoryUI();
-        }
         else
         {
-            Inv[p.InvAbs] = _clanWh[p.WhIdx];
-            _clanWh[p.WhIdx] = default;
+            var bag = Inv[p.InvAbs];
+            if (p.Op == WhOpInput) MoveStack(ref bag, ref _clanWh[p.WhIdx], p.Count, p.Merge);
+            else MoveStack(ref _clanWh[p.WhIdx], ref bag, p.Count, p.Merge);
+            Inv[p.InvAbs] = bag;
             Net.I.MirrorInventorySlot(p.InvAbs, Inv[p.InvAbs]);
             if (CharTabOpen()) RefreshInventoryUI();
         }

@@ -30,7 +30,7 @@ public partial class World
     private Label _vipWhPinPrompt = null!;
     private byte _vipWhPinSub;
 
-    private struct VipWhPending { public byte Op; public int InvAbs; public int VipIdx; }
+    private struct VipWhPending { public byte Op; public bool Merge; public int InvAbs; public int VipIdx; public int Count; }
     private VipWhPending _vipWhPending;
     private bool _vipWhInFlight;
 
@@ -62,6 +62,8 @@ public partial class World
             CombatNotice("The vault key could not be used.");
             return;
         }
+        _vipWhExpirySec = remainingSeconds;
+        if (_vipWhShown) RefreshVipWarehouse();
         int days = Mathf.Max(1, Mathf.RoundToInt(remainingSeconds / (float)SecondsPerDay));
         CombatNotice($"Your VIP vault is rented for {days} more day{(days == 1 ? "" : "s")}.");
     }
@@ -175,7 +177,7 @@ public partial class World
     private void ToggleVipWarehouse()
     {
         if (_vipWhShown) { CloseVipWarehouse(); return; }
-        _vipWhInFlight = false;
+        if (_vipWhInFlight) return;
         _vipWhPage = 0;
         Net.I.SendVipWarehouseOpen();
     }
@@ -206,6 +208,7 @@ public partial class World
 
     private void OnVipWarehouseExpired()
     {
+        _vipWhExpirySec = 0;
         CombatNotice("Your VIP vault rental has expired. Renew it with a vault key.");
         if (_vipWhShown) { _vipWhStatus.Text = "Vault rental expired."; RefreshVipWarehouse(); }
     }
@@ -236,59 +239,49 @@ public partial class World
         return $"{seconds / 60}m";
     }
 
-    private int FirstFreeVipWarehouse()
-    {
-        for (int i = 0; i < VipWhSlots; i++) if (_vipWh[i].IsEmpty) return i;
-        return -1;
-    }
-
     private void VipDepositSlot(int abs)
     {
-        if (_vipWhInFlight || abs < 0 || abs >= Inv.Length || Inv[abs].IsEmpty) return;
-        int vipIdx = FirstFreeVipWarehouse();
-        if (vipIdx < 0) { _vipWhStatus.Text = "The vault is full."; return; }
+        if (StorageTransferBusy || !_vipWhShown || !InMainBag(abs) || Inv[abs].IsEmpty) return;
+        if (_vipWhExpirySec <= 0) { _vipWhStatus.Text = "Vault rental expired. Renew it with a vault key."; return; }
         var slot = Inv[abs];
-        _vipWhPending = new VipWhPending { Op = 2, InvAbs = abs, VipIdx = vipIdx };
+        if (slot.IsLinked || !WarehouseRules.VaultStorable(slot.ItemId)) { _vipWhStatus.Text = "This item is non-storable."; return; }
+        int count = WholeStack(slot);
+        int vipIdx = StorageDestination.Find(_vipWh, slot.ItemId, count, IsStackable(slot.ItemId));
+        if (vipIdx < 0) { _vipWhStatus.Text = "The vault is full."; return; }
+        _vipWhPending = new VipWhPending { Op = WhOpInput, Merge = !_vipWh[vipIdx].IsEmpty, InvAbs = abs, VipIdx = vipIdx, Count = count };
         _vipWhInFlight = true;
         Net.I.SendVipWarehouseInput(slot.ItemId, (byte)(vipIdx / VipWhPageSize),
-            (byte)(abs - GridStart), (byte)(vipIdx % VipWhPageSize), slot.Count);
+            (byte)(abs - GridStart), (byte)(vipIdx % VipWhPageSize), count);
     }
 
     private void VipWithdrawSlot(int vipIdx)
     {
-        if (_vipWhInFlight) return;
+        if (StorageTransferBusy || !_vipWhShown) return;
         int absVip = _vipWhPage * VipWhPageSize + vipIdx;
         if (absVip < 0 || absVip >= VipWhSlots || _vipWh[absVip].IsEmpty) return;
-        int free = Inv.FirstFreeGridSlot();
-        if (free < 0) { _vipWhStatus.Text = "Your bags are full."; return; }
         var slot = _vipWh[absVip];
-        _vipWhPending = new VipWhPending { Op = 3, InvAbs = free, VipIdx = absVip };
+        int count = WholeStack(slot);
+        int dest = BagDestination(slot.ItemId, count, out bool merge);
+        if (dest < 0) { _vipWhStatus.Text = "Your bags are full."; return; }
+        _vipWhPending = new VipWhPending { Op = WhOpOutput, Merge = merge, InvAbs = dest, VipIdx = absVip, Count = count };
         _vipWhInFlight = true;
         Net.I.SendVipWarehouseOutput(slot.ItemId, (byte)(absVip / VipWhPageSize),
-            (byte)(absVip % VipWhPageSize), (byte)(free - GridStart), slot.Count);
+            (byte)(absVip % VipWhPageSize), (byte)(dest - GridStart), count);
     }
 
     private void OnVipWarehouseResult(byte op, bool ok)
     {
-        if (!_vipWhInFlight) return;
+        if (!_vipWhInFlight || op != _vipWhPending.Op) return;
         _vipWhInFlight = false;
         if (!ok) { _vipWhStatus.Text = "Transfer failed."; if (_vipWhShown) RefreshVipWarehouse(); return; }
 
         var p = _vipWhPending;
-        if (p.Op == 2)
-        {
-            _vipWh[p.VipIdx] = Inv[p.InvAbs];
-            Inv[p.InvAbs] = default;
-            Net.I.MirrorInventorySlot(p.InvAbs, Inv[p.InvAbs]);
-            if (CharTabOpen()) RefreshInventoryUI();
-        }
-        else
-        {
-            Inv[p.InvAbs] = _vipWh[p.VipIdx];
-            _vipWh[p.VipIdx] = default;
-            Net.I.MirrorInventorySlot(p.InvAbs, Inv[p.InvAbs]);
-            if (CharTabOpen()) RefreshInventoryUI();
-        }
+        var bag = Inv[p.InvAbs];
+        if (p.Op == WhOpInput) MoveStack(ref bag, ref _vipWh[p.VipIdx], p.Count, p.Merge);
+        else MoveStack(ref _vipWh[p.VipIdx], ref bag, p.Count, p.Merge);
+        Inv[p.InvAbs] = bag;
+        Net.I.MirrorInventorySlot(p.InvAbs, Inv[p.InvAbs]);
+        if (CharTabOpen()) RefreshInventoryUI();
         if (_vipWhShown) RefreshVipWarehouse();
     }
 
