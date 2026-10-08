@@ -162,17 +162,23 @@ public partial class World : Node3D
 
     private static bool IsTwoHanded(int itemId) { var d = ItemData.Get(itemId); return d?.Slot is 3 or 4; }
 
-    private void MoveBetween(int from, int to)
+    private void MoveBetween(int from, int to) => MoveBetween(from, to, ItemMove.WholeStack);
+
+    private void MoveBetween(int from, int to, int amount)
     {
         if (_moveInFlight || _moveQueue.Count > 0 || _selfDead) return;
         if (from == to || from < 0 || to < 0 || from >= Inv.Length || to >= Inv.Length) return;
         if (Inv[from].IsEmpty) return;
+        if (amount < ItemMove.WholeStack || amount > Inv[from].Count) return;
         if (RefuseItemInUse(from, to)) return;
 
         var fromRegion = ItemMove.RegionOf(from);
         var toRegion = ItemMove.RegionOf(to);
         byte dir = ItemMove.DirectionFor(fromRegion, toRegion);
         if (dir == ItemMove.None) return;
+        bool splits = amount != ItemMove.WholeStack && amount != Inv[from].Count;
+        if (splits && !ItemMove.Splits(dir, Inv[from], Inv[to], ItemData.Get(Inv[from].ItemId)?.Countable ?? 0, amount))
+            return;
         if (fromRegion == ItemMove.Region.BagSlot && MagicBagHasItems(from))
         {
             CombatNotice(BagStillHoldsItems);
@@ -199,12 +205,12 @@ public partial class World : Node3D
         Enqueue(dir, Inv[from].ItemId,
                 (byte)ItemMove.PositionIn(fromRegion, from),
                 (byte)ItemMove.PositionIn(toRegion, to),
-                from, to);
+                from, to, splits ? (ushort)amount : ItemMove.WholeStack);
     }
 
-    private void Enqueue(byte dir, int itemId, byte src, byte dst, int from, int to)
+    private void Enqueue(byte dir, int itemId, byte src, byte dst, int from, int to, ushort amount = ItemMove.WholeStack)
     {
-        _moveQueue.Enqueue(new MoveStep { Dir = dir, ItemId = itemId, Src = src, Dst = dst, From = from, To = to, PetPos = NoPetSlot });
+        _moveQueue.Enqueue(new MoveStep { Dir = dir, ItemId = itemId, Src = src, Dst = dst, From = from, To = to, PetPos = NoPetSlot, Amount = amount });
         PumpMoves();
     }
 
@@ -223,7 +229,7 @@ public partial class World : Node3D
         if (_moveInFlight || _moveQueue.Count == 0) return;
         _moveCur = _moveQueue.Dequeue();
         _moveInFlight = true;
-        Net.I.SendItemMove(_moveCur.Dir, _moveCur.ItemId, _moveCur.Src, _moveCur.Dst);
+        Net.I.SendItemMove(_moveCur.Dir, _moveCur.ItemId, _moveCur.Src, _moveCur.Dst, _moveCur.Amount);
     }
 
     private void OnItemMoveResult(bool ok)
@@ -249,7 +255,9 @@ public partial class World : Node3D
         }
 
         var moved = Inv[_moveCur.From];
-        if (ItemMove.Merges(_moveCur.Dir, moved, Inv[_moveCur.To], ItemData.Get(moved.ItemId)?.Countable ?? 0))
+        if (_moveCur.Amount != ItemMove.WholeStack)
+            Inv.Split(_moveCur.From, _moveCur.To, _moveCur.Amount);
+        else if (ItemMove.Merges(_moveCur.Dir, moved, Inv[_moveCur.To], ItemData.Get(moved.ItemId)?.Countable ?? 0))
         {
             Inv.Stack(_moveCur.To, moved.Count);
             Inv.Consume(_moveCur.From, moved.Count);

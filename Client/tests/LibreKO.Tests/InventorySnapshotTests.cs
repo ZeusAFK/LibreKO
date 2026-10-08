@@ -62,6 +62,29 @@ public class InventorySnapshotTests
         Assert.Equal(held, cached[InventoryConstants.RightHand]);
     }
 
+    [Fact]
+    public void APartialMoveSplitsTheCachedStack()
+    {
+        var cached = new ItemSlot[InventoryConstants.InventoryTotal];
+        int bag = InventoryConstants.MagicBagStart;
+        cached[Grid] = new ItemSlot { ItemId = Potion, Count = 10, Durability = 5, Flag = 1 };
+        ItemMove.ApplyConfirmed(cached, ItemMove.InventoryToMagicBag, Grid, bag, Stackable, 4);
+        Assert.Equal(6, cached[Grid].Count);
+        Assert.Equal(new ItemSlot { ItemId = Potion, Count = 4, Durability = 5, Flag = 1 }, cached[bag]);
+    }
+
+    [Fact]
+    public void APartialMoveTopsUpTheCachedDestinationStack()
+    {
+        var cached = new ItemSlot[InventoryConstants.InventoryTotal];
+        int bag = InventoryConstants.MagicBagStart;
+        cached[bag] = new ItemSlot { ItemId = Potion, Count = 10 };
+        cached[Grid] = new ItemSlot { ItemId = Potion, Count = 2 };
+        ItemMove.ApplyConfirmed(cached, ItemMove.MagicBagToInventory, bag, Grid, Stackable, 3);
+        Assert.Equal(7, cached[bag].Count);
+        Assert.Equal(5, cached[Grid].Count);
+    }
+
     [Theory]
     [InlineData(ItemMove.InventoryToInventory, 0, 1)]
     [InlineData(ItemMove.InventoryToMagicBag, 0, LastMagicBag)]

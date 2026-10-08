@@ -834,6 +834,141 @@ public class ItemTests : GameTestBase
         session.Inventory[InventoryConstants.InventoryStart].IsEmpty.Should().Be(carriedAfter == 0);
     }
 
+    [Theory]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag, 100, 0, 25, 75, 25)]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag, 100, 7, 25, 75, 32)]
+    [InlineData(ItemMoveDirection.MagicBagToInventory, 0, 100, 25, 25, 75)]
+    [InlineData(ItemMoveDirection.MagicBagToInventory, 7, 100, 25, 32, 75)]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag, 100, 7, 100, 0, 107)]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag, 100, 7, 101, 100, 7)]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag, 100, 9990, 25, 100, 9990)]
+    public async Task ItemPacketCoordinator_HandleMoveAsync_MovesTheRequestedAmountBetweenBagAndMagicBag(
+        ItemMoveDirection direction, ushort carried, ushort stored, ushort amount, ushort carriedAfter, ushort storedAfter)
+    {
+        var (provider, session, client, replies) = CreateMagicBagSession(countable: 1);
+        using var _ = provider;
+        var grid = session.Inventory[InventoryConstants.InventoryStart];
+        var bag = session.Inventory[InventoryConstants.MagicBagStart];
+        if (carried > 0) { grid.ItemId = MagicBagPotionId; grid.Count = carried; }
+        if (stored > 0) { bag.ItemId = MagicBagPotionId; bag.Count = stored; }
+
+        await provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(
+            client, BuildItemMove(direction, MagicBagPotionId, 0, 0, amount));
+
+        grid.Count.Should().Be(carriedAfter);
+        bag.Count.Should().Be(storedAfter);
+        grid.IsEmpty.Should().Be(carriedAfter == 0);
+        var moved = carriedAfter != carried;
+        ReadMoveResult(replies).Should().Be(moved ? ItemMoveSubOpcode.Move : ItemMoveSubOpcode.Failed);
+    }
+
+    [Fact]
+    public async Task ItemPacketCoordinator_HandleMoveAsync_SplitsAnExactCopyOfTheStackRecord()
+    {
+        var (provider, session, client, _) = CreateMagicBagSession(countable: 1);
+        using var __ = provider;
+        var source = session.Inventory[InventoryConstants.MagicBagStart];
+        source.ItemId = MagicBagPotionId;
+        source.Count = 40;
+        source.Durability = 3;
+        source.Flag = (byte)ItemFlag.Rented;
+        source.ExpiresAt = 1_900_000_000;
+
+        await provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(
+            client, BuildItemMove(ItemMoveDirection.MagicBagToMagicBag, MagicBagPotionId, 0, 1, 15));
+
+        var split = session.Inventory[InventoryConstants.MagicBagStart + 1];
+        split.Should().BeEquivalentTo(new { ItemId = MagicBagPotionId, Count = (ushort)15, Durability = (short)3,
+            Flag = (byte)ItemFlag.Rented, ExpiresAt = 1_900_000_000L, UniqueId = 0 });
+        source.Count.Should().Be(25);
+        source.ExpiresAt.Should().Be(1_900_000_000);
+    }
+
+    [Theory]
+    [InlineData(ItemMoveDirection.InventoryToInventory, 1)]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag, 0)]
+    public async Task ItemPacketCoordinator_HandleMoveAsync_RefusesAnAmountThatCannotSplit(ItemMoveDirection direction, byte countable)
+    {
+        var (provider, session, client, replies) = CreateMagicBagSession(countable);
+        using var _ = provider;
+        var grid = session.Inventory[InventoryConstants.InventoryStart];
+        grid.ItemId = MagicBagPotionId;
+        grid.Count = 10;
+
+        await provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(
+            client, BuildItemMove(direction, MagicBagPotionId, 0, 1, 4));
+
+        grid.Count.Should().Be(10);
+        session.Inventory[InventoryConstants.InventoryStart + 1].IsEmpty.Should().BeTrue();
+        session.Inventory[InventoryConstants.MagicBagStart + 1].IsEmpty.Should().BeTrue();
+        ReadMoveResult(replies).Should().Be(ItemMoveSubOpcode.Failed);
+    }
+
+    [Fact]
+    public async Task ItemPacketCoordinator_HandleMoveAsync_RefusesATruncatedAmount()
+    {
+        const byte amountLowByte = 4;
+        var (provider, session, client, replies) = CreateMagicBagSession(countable: 1);
+        using var _ = provider;
+        var grid = session.Inventory[InventoryConstants.InventoryStart];
+        grid.ItemId = MagicBagPotionId;
+        grid.Count = 10;
+        var packet = BuildMagicBagMove(MagicBagPotionId, 0);
+        packet.WriteByte(amountLowByte);
+
+        await provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(client, packet);
+
+        grid.Count.Should().Be(10);
+        session.Inventory[InventoryConstants.MagicBagStart].IsEmpty.Should().BeTrue();
+        ReadMoveResult(replies).Should().Be(ItemMoveSubOpcode.Failed);
+    }
+
+    private const int MagicBagItemId = 700011;
+    private const int MagicBagPotionId = 389010000;
+
+    private (ServiceProvider Provider, UserSession Session, IClient Client, List<Packet> Replies) CreateMagicBagSession(byte countable)
+    {
+        var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetCoefficient(101).Returns(CreateBasicCoefficient(101));
+                gameData.GetItem(MagicBagItemId).Returns(new ItemData { Num = MagicBagItemId, Slot = 25, Kind = 11, Duration = 10 });
+                gameData.GetItem(MagicBagPotionId).Returns(new ItemData { Num = MagicBagPotionId, Slot = 15, Kind = 255, Countable = countable });
+            });
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var replies = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => replies.Add(packet)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 463, accountId: 473);
+        session.Class = 101;
+        session.Inventory[InventoryConstants.BagSlotFor(0)].ItemId = MagicBagItemId;
+        session.Inventory[InventoryConstants.BagSlotFor(0)].Count = 1;
+        return (provider, session, client, replies);
+    }
+
+    private static ItemMoveSubOpcode ReadMoveResult(List<Packet> replies)
+    {
+        var reply = replies.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_ITEM_MOVE);
+        reply.ResetOffset();
+        reply.ReadByte().Should().Be((byte)ItemMoveSubOpcode.Move);
+        return (ItemMoveSubOpcode)reply.ReadByte();
+    }
+
+    private static Packet BuildItemMove(ItemMoveDirection direction, int itemId, byte sourcePosition, byte destinationPosition, ushort amount)
+    {
+        var packet = new Packet(GameOpcodes.GS_ITEM_MOVE);
+        packet.WriteByte(1);
+        packet.WriteByte((byte)direction);
+        packet.WriteInt(itemId);
+        packet.WriteByte(sourcePosition);
+        packet.WriteByte(destinationPosition);
+        packet.WriteUShort(amount);
+        return packet;
+    }
+
     private static Packet BuildMagicBagMove(int itemId, byte destinationPosition)
     {
         var packet = new Packet(GameOpcodes.GS_ITEM_MOVE);

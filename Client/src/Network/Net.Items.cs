@@ -7,7 +7,8 @@ public partial class Net
     private readonly struct PendingItemMove
     {
         public readonly byte Dir, Src, Dst;
-        public PendingItemMove(byte dir, byte src, byte dst) { Dir = dir; Src = src; Dst = dst; }
+        public readonly ushort Amount;
+        public PendingItemMove(byte dir, byte src, byte dst, ushort amount) { Dir = dir; Src = src; Dst = dst; Amount = amount; }
     }
     private PendingItemMove? _pendingItemMove;
     private int _pendingRemoveSlot = -1;
@@ -227,7 +228,7 @@ public partial class Net
             return;
         EnsureLastInventoryLength(Math.Max(from, to) + 1);
         var e = LastEnter;
-        ItemMove.ApplyConfirmed(e.Inventory, move.Dir, from, to, ItemData.Get(e.Inventory[from].ItemId)?.Countable ?? 0);
+        ItemMove.ApplyConfirmed(e.Inventory, move.Dir, from, to, ItemData.Get(e.Inventory[from].ItemId)?.Countable ?? 0, move.Amount);
         LastEnter = e;
         RefreshLastGear();
     }

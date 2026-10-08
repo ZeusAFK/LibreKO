@@ -101,6 +101,19 @@ public sealed class Inventory
         _slots[abs] = slot;
     }
 
+    public void Split(int from, int to, int amount)
+    {
+        if (_slots[to].IsEmpty)
+        {
+            var part = _slots[from];
+            part.Count = (short)amount;
+            _slots[to] = part;
+        }
+        else
+            Stack(to, amount);
+        Consume(from, amount);
+    }
+
     public void SetDurability(int abs, short durability)
     {
         var slot = _slots[abs];
