@@ -34,7 +34,7 @@ public partial class World
         root.AddThemeConstantOverride("separation", 8);
 
         var header = UiTheme.Text(
-            "Every stat or mastery point goes back into its pool, for a fee. Your inventory must be empty to redistribute stats.",
+            "Every stat or mastery point goes back into its pool, for a fee. Unequip every item to redistribute stats.",
             13, UiTheme.TextLo);
         header.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         header.CustomMinimumSize = new Vector2(RedistributionPanelWidth, 0);

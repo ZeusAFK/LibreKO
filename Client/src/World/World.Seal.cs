@@ -24,13 +24,12 @@ public partial class World
     private Label _sealGold = null!;
     private Button _sealConfirm = null!;
 
-    private PanelContainer _sealAskPanel = null!;
-    private Label _sealAskText = null!;
-
     private SealMode _sealMode = SealMode.Secret;
     private int _sealSlot = -1;
     private string _sealCode = "";
     private bool _sealShown;
+    private bool _sealWaiting;
+    private Notice? _sealNotice;
 
     private void SealInit()
     {
@@ -61,6 +60,7 @@ public partial class World
         _sealMode = mode;
         _sealSlot = -1;
         _sealCode = "";
+        DismissSealNotice();
         _sealPad.Visible = false;
         _sealPanel.Title = mode == SealMode.Secret ? "Item Seal / Unseal" : "Item Bind / Release";
         _sealPanel.Visible = true;
@@ -76,7 +76,7 @@ public partial class World
         _sealCode = "";
         _sealPanel.Visible = false;
         _sealPad.Visible = false;
-        _sealAskPanel.Visible = false;
+        DismissSealNotice();
         HideItemTooltip();
     }
 
@@ -114,11 +114,13 @@ public partial class World
             : $"{SealFee:n0} gold";
 
         _sealConfirm.Disabled = held.IsEmpty
+            || _sealWaiting
             || (_sealMode == SealMode.Secret && _sealCode.Length != SealCodeLength);
     }
 
     private void TakeSealSocket(int bagIndex)
     {
+        if (_sealWaiting || _sealNotice != null) return;
         int abs = GridStart + bagIndex;
         if (abs >= Inv.Length || Inv[abs].IsEmpty) return;
         _sealSlot = abs;
@@ -127,16 +129,18 @@ public partial class World
 
     private void ClearSealSocket()
     {
+        if (_sealWaiting || _sealNotice != null) return;
         _sealSlot = -1;
         RefreshSealWindow();
     }
 
     private void AskSealConfirm()
     {
+        if (_sealWaiting || _sealNotice != null || _sealConfirm.Disabled) return;
         if (_sealSlot < 0 || _sealSlot >= Inv.Length || Inv[_sealSlot].IsEmpty) return;
 
         var action = SealActionFor(_sealMode, Inv[_sealSlot].State);
-        _sealAskText.Text = action switch
+        string question = action switch
         {
             ItemSealType.Seal =>
                 $"It costs {SealFee:n0} gold and the item cannot be traded, upgraded or destroyed "
@@ -145,25 +149,47 @@ public partial class World
             ItemSealType.Bind => "Bind this item to you?",
             _ => "Release the binding?",
         };
-        _sealAskPanel.Visible = true;
+        int slot = _sealSlot;
+        var item = Inv[slot];
+        _sealNotice = Notice.Confirm(this, question, "Confirm", "Cancel",
+            () =>
+            {
+                _sealNotice = null;
+                SendSeal(slot, item);
+            },
+            () => _sealNotice = null,
+            "Item Seal");
         Audio.PlayUi(Sfx.MsgBoxPop);
     }
 
-    private void SendSeal()
+    private void DismissSealNotice()
     {
-        _sealAskPanel.Visible = false;
-        if (_sealSlot < 0 || _sealSlot >= Inv.Length || Inv[_sealSlot].IsEmpty) return;
+        if (_sealNotice != null && GodotObject.IsInstanceValid(_sealNotice)) _sealNotice.Close();
+        _sealNotice = null;
+    }
 
-        var slot = Inv[_sealSlot];
+    private void SendSeal(int slot, ItemSlot item)
+    {
+        if (_sealWaiting || !_sealShown) return;
+        if (_sealSlot != slot || !Inv.Holds(slot, item)
+            || (_sealMode == SealMode.Secret && _sealCode.Length != SealCodeLength))
+        {
+            RefreshSealWindow();
+            return;
+        }
+
+        _sealWaiting = true;
+        RefreshSealWindow();
         Net.I.SendItemSeal(
-            SealActionFor(_sealMode, slot.State),
-            slot.ItemId,
-            (byte)(_sealSlot - GridStart),
+            SealActionFor(_sealMode, item.State),
+            item.ItemId,
+            (byte)(slot - GridStart),
             _sealCode);
     }
 
     private void OnItemSeal(ItemSealType sealType, ItemSealResult result, int itemId, int srcPos)
     {
+        _sealWaiting = false;
         int abs = srcPos >= 0 ? GridStart + srcPos : _sealSlot;
 
         if (result != ItemSealResult.Succeeded)
@@ -174,7 +200,7 @@ public partial class World
             return;
         }
 
-        ApplySealFlag(abs, sealType);
+        if (Inv.Holds(abs, itemId)) ApplySealFlag(abs, sealType);
         CombatNotice(sealType switch
         {
             ItemSealType.Seal => "Item sealed.",
@@ -325,8 +351,6 @@ public partial class World
         footer.AddChild(goldLabel);
         _sealGold = UiTheme.Text("", 12, UiTheme.Gold, HorizontalAlignment.Right);
         footer.AddChild(_sealGold);
-
-        BuildSealAskPanel();
     }
 
     private void BuildSealKeypad()
@@ -400,42 +424,5 @@ public partial class World
 
         _sealPad.Visible = !_sealPad.Visible;
         _sealCodeField.AcceptEvent();
-    }
-
-    private void BuildSealAskPanel()
-    {
-        var centre = new CenterContainer();
-        centre.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        centre.MouseFilter = Control.MouseFilterEnum.Ignore;
-        _sealLayer.AddChild(centre);
-
-        _sealAskPanel = new PanelContainer { Visible = false };
-        _sealAskPanel.AddThemeStyleboxOverride("panel", UiTheme.WindowPanel());
-        centre.AddChild(_sealAskPanel);
-
-        var margin = new MarginContainer();
-        UiTheme.Margins(margin, 16, 13, 16, 13);
-        _sealAskPanel.AddChild(margin);
-
-        var box = new VBoxContainer { CustomMinimumSize = new Vector2(292, 0) };
-        box.AddThemeConstantOverride("separation", 12);
-        margin.AddChild(box);
-
-        _sealAskText = UiTheme.Text("", 12, UiTheme.TextHi);
-        _sealAskText.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        _sealAskText.CustomMinimumSize = new Vector2(292, 0);
-        box.AddChild(_sealAskText);
-
-        var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        buttons.AddThemeConstantOverride("separation", 10);
-        box.AddChild(buttons);
-        var yes = UiTheme.SmallButton("Confirm", "");
-        yes.CustomMinimumSize = new Vector2(96, 28);
-        yes.Pressed += SendSeal;
-        buttons.AddChild(yes);
-        var no = UiTheme.SmallButton("Cancel", "");
-        no.CustomMinimumSize = new Vector2(96, 28);
-        no.Pressed += () => _sealAskPanel.Visible = false;
-        buttons.AddChild(no);
     }
 }

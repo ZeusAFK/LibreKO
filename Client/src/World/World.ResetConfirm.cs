@@ -1,11 +1,12 @@
-using Godot;
+﻿using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
 
 public partial class World
 {
-    private byte _resetKind;
+    private readonly RedistributionRequest _reset = new();
     private Notice? _resetConfirm;
 
     private void ResetConfirmInit()
@@ -25,21 +26,21 @@ public partial class World
 
     private void RequestReset(byte kind)
     {
-        _resetKind = kind;
+        if (!_reset.TryBegin(kind)) return;
         Net.I.SendResetCostQuery(kind);
     }
 
     private void OnResetCost(int cost)
     {
-        if (_resetKind == 0) return;
+        if (!_reset.TakeCost()) return;
         DismissResetConfirm();
 
-        bool stat = _resetKind == Net.ResetKindStat;
+        bool stat = _reset.Kind == Net.ResetKindStat;
         string what = stat ? "stat points" : "mastery points";
         string body = $"Every one of your {what} goes back into the pool, and it costs "
                       + $"{cost:n0} gold.";
         if (stat)
-            body += "\n\nYour inventory must be empty.";
+            body += "\n\nUnequip every item first.";
 
         _resetConfirm = Notice.Confirm(
             this,
@@ -53,15 +54,16 @@ public partial class World
 
     private void ConfirmReset()
     {
+        if (!_reset.CanConfirm) return;
         _resetConfirm = null;
-        if (_resetKind == Net.ResetKindStat) Net.I.SendStatReset();
+        if (_reset.Kind == Net.ResetKindStat) Net.I.SendStatReset();
         else Net.I.SendSkillReset();
     }
 
     private void CancelReset()
     {
         _resetConfirm = null;
-        _resetKind = 0;
+        _reset.Clear();
     }
 
     private void DismissResetConfirm()
@@ -77,7 +79,7 @@ public partial class World
         if (!ok)
         {
             CombatNotice(money > 0
-                ? $"The redistribution needs {money:n0} gold, and an empty inventory."
+                ? $"The redistribution needs {money:n0} gold, and empty equipment slots."
                 : "There is nothing to redistribute.");
             CancelReset();
             return;
