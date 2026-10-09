@@ -114,6 +114,7 @@ public partial class World : Node3D
     private readonly Queue<MoveStep> _moveQueue = new();
     private bool _moveInFlight;
     private MoveStep _moveCur;
+    private bool InventoryMoveBusy => _moveInFlight || _moveQueue.Count > 0 || _tradeInFlight;
 
     private void CaptureSelfDefaults(Node3D selfVisual)
     {
@@ -666,7 +667,7 @@ public partial class World : Node3D
         int itemId = _invDelItemId;
         HideDeletePrompt();
         if (slot < 0 || slot >= Inv.Length || Inv[slot].ItemId != itemId) return;
-        if (_moveInFlight || _moveQueue.Count > 0 || _selfDead) return;
+        if (InventoryMoveBusy || _selfDead) return;
 
         if (slot < GridStart) Net.I.SendItemRemove(1, (byte)slot, itemId);
         else Net.I.SendItemRemove(0, (byte)(slot - GridStart), itemId);

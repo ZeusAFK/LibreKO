@@ -33,7 +33,7 @@ public partial class World : Node3D
 
     private void InventoryActivate(int absSlot)
     {
-        if (_moveInFlight || _moveQueue.Count > 0 || _selfDead) return;
+        if (InventoryMoveBusy || _selfDead) return;
         if (absSlot >= Inv.Length || Inv[absSlot].IsEmpty) return;
         if (RefuseItemInUse(absSlot)) return;
         var def = ItemData.Get(Inv[absSlot].ItemId);
@@ -165,7 +165,7 @@ public partial class World : Node3D
 
     private void MoveBetween(int from, int to)
     {
-        if (_moveInFlight || _moveQueue.Count > 0 || _selfDead) return;
+        if (InventoryMoveBusy || _selfDead) return;
         if (from == to || from < 0 || to < 0 || from >= Inv.Length || to >= Inv.Length) return;
         if (Inv[from].IsEmpty) return;
         if (RefuseItemInUse(from, to)) return;

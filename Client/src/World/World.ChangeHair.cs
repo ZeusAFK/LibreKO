@@ -149,7 +149,7 @@ public partial class World
     private void SubmitChangeHair()
     {
         if (!_changeHairShown || _changeHairInFlight || _selfDead) return;
-        if (!HasItemInBackpack(BeautyShop.Coupon))
+        if (!BeautyShop.HasCoupon(Inv))
         {
             SetChangeHairStatus(ItemData.Text(BeautyShop.NoCouponText, "You need a Makeover Coupon."), true);
             return;

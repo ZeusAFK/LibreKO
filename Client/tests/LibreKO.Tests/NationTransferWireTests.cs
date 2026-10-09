@@ -12,12 +12,9 @@ public class NationTransferWireTests
     private const int KarusPuriTuarek = 4;
     private const int ElMoradMale = 12;
     private const byte UnknownResult = 200;
-    private const byte SubmitRefusal4 = 4;
-    private const byte SubmitRefusal9 = 9;
-    private const byte SubmitRefusal10 = 10;
-    private const int SubmitRefusal4Text = 16704;
-    private const int SubmitRefusal9Text = 18906;
-    private const int SubmitRefusal10Text = 11303;
+    private const int InInvestigationTeamText = 16704;
+    private const int MakeOverActiveText = 18906;
+    private const int NotEnoughCoinsText = 11303;
     private const int InClanText = 16702;
     private const int NoItemText = 16710;
 
@@ -133,9 +130,9 @@ public class NationTransferWireTests
     }
 
     [Theory]
-    [InlineData(SubmitRefusal4, SubmitRefusal4Text)]
-    [InlineData(SubmitRefusal9, SubmitRefusal9Text)]
-    [InlineData(SubmitRefusal10, SubmitRefusal10Text)]
+    [InlineData(NationTransferWire.InInvestigationTeam, InInvestigationTeamText)]
+    [InlineData(NationTransferWire.MakeOverActive, MakeOverActiveText)]
+    [InlineData(NationTransferWire.NotEnoughCoins, NotEnoughCoinsText)]
     [InlineData(NationTransferWire.NoItem, NoItemText)]
     [InlineData(NationTransferWire.Failed, NationTransferWire.FailedText)]
     [InlineData(Net.NationTransferWarRunning, NationTransferWire.FailedText)]
@@ -151,7 +148,7 @@ public class NationTransferWireTests
 
     [Theory]
     [InlineData(UnknownResult)]
-    [InlineData(SubmitRefusal9)]
+    [InlineData(NationTransferWire.MakeOverActive)]
     public void UnknownResultsOutsideTheSubmitReplyAreIgnored(byte result)
     {
         var (sub, read) = Reply(Net.NationTransferOpenBox, result);

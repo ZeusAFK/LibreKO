@@ -34,10 +34,27 @@ public class NationTransferService(
     private const float MoradonTownZ = 532f;
     private const int RequestHeadLength = sizeof(short) * 2;
     private const int RequestTailLength = 6;
+    private const int BagEnd = InventoryConstants.InventoryStart + InventoryConstants.HaveMax;
 
     private sealed record Request(short Slot, string Name, byte Race, byte Face, int Hair);
 
-    private sealed record HeldItem(int Index, int ItemId, short Durability, ushort Count, byte Flag, long ExpiresAt, int UniqueId);
+    private sealed record HeldItem(int Index, int ItemId, short Durability, ushort Count, byte Flag, long ExpiresAt, int UniqueId)
+    {
+        public bool IsSameItem(ItemSlot slot) =>
+            slot.ItemId == ItemId && slot.UniqueId == UniqueId && slot.Flag == Flag && slot.ExpiresAt == ExpiresAt;
+
+        public void CopyTo(ItemSlot slot)
+        {
+            slot.ItemId = ItemId;
+            slot.Durability = Durability;
+            slot.Count = Count;
+            slot.Flag = Flag;
+            slot.ExpiresAt = ExpiresAt;
+            slot.UniqueId = UniqueId;
+        }
+    }
+
+    private sealed record SpentItem(HeldItem Held, bool Removed, short Durability, ushort Count);
 
     public async Task OpenAsync(UserSession session)
     {
@@ -141,9 +158,12 @@ public class NationTransferService(
             if (session.NationTransferCommitted || sessionManager.GetByClientId(session.Client.Id) != session)
                 return;
             var held = HeldCertificates(session);
+            List<SpentItem>? spent = null;
             try
             {
-                if (!await magicItemUsageService.TryConsumeItemAsync(session, NationTransferItem))
+                var consumed = await magicItemUsageService.TryConsumeItemAsync(session, NationTransferItem);
+                spent = SpentCertificates(session, held);
+                if (!consumed)
                     result = NationTransferPacketWriter.NoItem;
                 else if (await PersistAsync(session, newNation, characters, picks))
                 {
@@ -165,7 +185,7 @@ public class NationTransferService(
                 logger.LogError(exception, "Could not persist the nation transfer of account {Account}", session.AccountId);
             }
             if (result != NationTransferPacketWriter.Accepted)
-                await RestoreCertificatesAsync(session, held);
+                await RestoreCertificatesAsync(session, spent ?? SpentCertificates(session, held));
         }
         finally
         {
@@ -269,43 +289,40 @@ public class NationTransferService(
         return held;
     }
 
-    private async Task RestoreCertificatesAsync(UserSession session, List<HeldItem> held)
+    private static List<SpentItem> SpentCertificates(UserSession session, List<HeldItem> held)
     {
+        var spent = new List<SpentItem>();
         foreach (var item in held)
         {
             var slot = session.Inventory[item.Index];
-            if (slot.ItemId == item.ItemId && slot.UniqueId == item.UniqueId)
+            if (!item.IsSameItem(slot))
+                spent.Add(new SpentItem(item, true, item.Durability, item.Count));
+            else if (slot.Durability != item.Durability || slot.Count != item.Count)
+                spent.Add(new SpentItem(item, false, (short)(item.Durability - slot.Durability), (ushort)(item.Count - slot.Count)));
+        }
+        return spent;
+    }
+
+    private async Task RestoreCertificatesAsync(UserSession session, List<SpentItem> spent)
+    {
+        if (spent.Count == 0)
+            return;
+        foreach (var item in spent)
+        {
+            if (RestoreSlot(session, item) is not { } index)
             {
-                var missingCount = Math.Max(item.Count - slot.Count, 0);
-                var missingDurability = Math.Max(item.Durability - slot.Durability, 0);
-                if (missingCount == 0 && missingDurability == 0)
-                    continue;
-                if (slot.Count + missingCount > InventoryConstants.MaxStackCount)
-                {
-                    SkipRestore(session, item);
-                    continue;
-                }
-                slot.Count += (ushort)missingCount;
-                slot.Durability += (short)missingDurability;
-                await NotifySlotAsync(session, item.Index);
-            }
-            else if (slot.IsEmpty)
-            {
-                slot.ItemId = item.ItemId;
-                slot.Durability = item.Durability;
-                slot.Count = item.Count;
-                slot.Flag = item.Flag;
-                slot.ExpiresAt = item.ExpiresAt;
-                slot.UniqueId = item.UniqueId;
-                await NotifySlotAsync(session, item.Index);
-            }
-            else if (StackFor(session, item) is { } stack)
-            {
-                session.Inventory[stack].Count += item.Count;
-                await NotifySlotAsync(session, stack);
-            }
-            else
                 SkipRestore(session, item);
+                continue;
+            }
+            var slot = session.Inventory[index];
+            if (item.Removed)
+                item.Held.CopyTo(slot);
+            else
+            {
+                slot.Durability += item.Durability;
+                slot.Count += item.Count;
+            }
+            await NotifySlotAsync(session, index);
         }
         var coefficient = gameDataService.GetCoefficient(session.Class);
         if (coefficient != null)
@@ -313,15 +330,16 @@ public class NationTransferService(
         await userNotificationService.SendWeightChangeAsync(session);
     }
 
-    private int? StackFor(UserSession session, HeldItem item)
+    private static int? RestoreSlot(UserSession session, SpentItem item)
     {
-        if (item.UniqueId != 0 || gameDataService.GetItem(item.ItemId) is not { Countable: > 0 })
-            return null;
-        for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length; index++)
+        var slot = session.Inventory[item.Held.Index];
+        if (!item.Removed)
+            return item.Held.IsSameItem(slot) ? item.Held.Index : null;
+        if (slot.IsEmpty)
+            return item.Held.Index;
+        for (var index = InventoryConstants.InventoryStart; index < BagEnd; index++)
         {
-            var slot = session.Inventory[index];
-            if (slot.ItemId == item.ItemId && slot.Flag == item.Flag && slot.UniqueId == 0
-                && slot.Count + item.Count <= InventoryConstants.MaxStackCount)
+            if (session.Inventory[index].IsEmpty)
                 return index;
         }
         return null;
@@ -333,7 +351,7 @@ public class NationTransferService(
         return userNotificationService.SendStackChangeAsync(session, (byte)index, slot.ItemId, slot.Count, slot.Durability);
     }
 
-    private void SkipRestore(UserSession session, HeldItem item) =>
-        logger.LogWarning("Could not return {Count} of item {Item} to slot {Slot} of account {Account} after a failed nation transfer",
-            item.Count, item.ItemId, item.Index, session.AccountId);
+    private void SkipRestore(UserSession session, SpentItem item) =>
+        logger.LogWarning("Could not return item {Item} with {Durability} durability and {Count} count from slot {Slot} of account {Account} after a failed nation transfer",
+            item.Held.ItemId, item.Durability, item.Count, item.Held.Index, session.AccountId);
 }

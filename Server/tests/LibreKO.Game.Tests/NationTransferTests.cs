@@ -9,6 +9,7 @@ using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace LibreKO.Game.Tests;
@@ -16,6 +17,7 @@ namespace LibreKO.Game.Tests;
 public class NationTransferTests : GameTestBase
 {
     private const int TransferItem = 810096000;
+    private const short CertificateCharges = 1;
     private const byte WarStatus = 1;
     private const byte WarRunning = 8;
     private const byte OpenBox = 2;
@@ -76,11 +78,16 @@ public class NationTransferTests : GameTestBase
                 KnightsId = clanOfSecond,
             });
         },
-        gameData => gameData.GetItem(TransferItem).Returns(new ItemData
-        {
-            Num = TransferItem, Name = "Nation Transfer Certificate", Kind = 255, Slot = 15, Duration = 1, ReqLevelMax = 100,
-            Countable = 1,
-        }), configureServices: configureServices);
+        gameData => gameData.GetItem(TransferItem).Returns(Certificate()), configureServices: configureServices);
+
+    private static ItemData Certificate() => new()
+    {
+        Num = TransferItem, Name = "Nation Transfer Certificate", Kind = (byte)ItemKind.PowerUpStore, Slot = 17,
+        Duration = CertificateCharges, ReqLevelMax = 100,
+    };
+
+    [Fact]
+    public void TheCertificateIsSpentByItsCharge() => Certificate().IsChargeItem.Should().BeTrue();
 
     private static async Task<(UserSession Session, List<Packet> Sent, IClient Client)> Online(ServiceProvider provider, bool carriesItem)
     {
@@ -107,7 +114,7 @@ public class NationTransferTests : GameTestBase
         {
             session.Inventory[InventoryConstants.SlotMax].ItemId = TransferItem;
             session.Inventory[InventoryConstants.SlotMax].Count = 1;
-            session.Inventory[InventoryConstants.SlotMax].Durability = 1;
+            session.Inventory[InventoryConstants.SlotMax].Durability = CertificateCharges;
         }
         sessions.Regions.AddToRegion(session);
         return (session, sent, client);
@@ -416,8 +423,12 @@ public class NationTransferTests : GameTestBase
         }
     }
 
-    private ServiceProvider ProbedProvider(TransferSaveProbe probe) =>
-        Provider(configureServices: services => services.AddDbContext<AppDbContext>(options => options.AddInterceptors(probe)));
+    private ServiceProvider ProbedProvider(TransferSaveProbe probe, Action<IServiceCollection>? configureServices = null) =>
+        Provider(configureServices: services =>
+        {
+            services.AddDbContext<AppDbContext>(options => options.AddInterceptors(probe));
+            configureServices?.Invoke(services);
+        });
 
     [Fact]
     public async Task SuccessIsSentOnlyAfterOneCompleteMigrationSaveAndLogout()
@@ -464,10 +475,7 @@ public class NationTransferTests : GameTestBase
         var probe = new TransferSaveProbe(fail: true);
         using var provider = ProbedProvider(probe);
         var (session, sent, client) = await Online(provider, carriesItem: true);
-        var certificate = session.Inventory[InventoryConstants.SlotMax];
-        certificate.Flag = (byte)ItemFlag.Bound;
-        certificate.UniqueId = 1245;
-        certificate.ExpiresAt = 123456789;
+        MarkCertificate(session);
         var before = session.SerializeItems();
 
         await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
@@ -475,6 +483,7 @@ public class NationTransferTests : GameTestBase
         Last(sent).GetData().Should().Equal(Submit, Failed);
         probe.MigrationSaves.Should().Be(1);
         session.SerializeItems().Should().Equal(before);
+        LastCountChange(sent).Should().Be((CertificatePosition, TransferItem, 1, CertificateCharges));
         session.Nation.Should().Be(AccountNation.ElMorad);
         session.Class.Should().Be(ElMoradRogue);
         session.NationTransferCommitted.Should().BeFalse();
@@ -489,69 +498,124 @@ public class NationTransferTests : GameTestBase
 
     private const int LootItem = 389010000;
     private const ushort LootCount = 3;
-    private const ushort SpareCertificates = 2;
-    private const int SpareSlot = InventoryConstants.SlotMax + 1;
+    private const int CertificateSerial = 1245;
+    private const long CertificateExpiry = 123456789;
+    private const short StockedCharges = 3;
+    private const short SpentCharge = 1;
+    private const int FirstFreeSlot = InventoryConstants.SlotMax + 1;
+    private const int BagEnd = InventoryConstants.InventoryStart + InventoryConstants.HaveMax;
+    private const byte CertificatePosition = InventoryConstants.SlotMax - InventoryConstants.InventoryStart;
+    private const byte FirstFreePosition = FirstFreeSlot - InventoryConstants.InventoryStart;
 
-    private static void LootLandsInTheCertificateSlot(UserSession session)
+    private static void MarkCertificate(UserSession session)
     {
-        var slot = session.Inventory[InventoryConstants.SlotMax];
+        var certificate = session.Inventory[InventoryConstants.SlotMax];
+        certificate.Flag = (byte)ItemFlag.Bound;
+        certificate.UniqueId = CertificateSerial;
+        certificate.ExpiresAt = CertificateExpiry;
+    }
+
+    private static void LootLandsIn(UserSession session, int index)
+    {
+        var slot = session.Inventory[index];
         slot.ItemId = LootItem;
         slot.Count = LootCount;
         slot.Durability = 1;
     }
 
+    private static (byte Position, int ItemId, int Count, short Durability) LastCountChange(List<Packet> sent)
+    {
+        var packet = sent.Last(p => p.GetOpcode() == (byte)GameOpcodes.GS_ITEM_COUNT_CHANGE);
+        packet.ResetOffset();
+        packet.ReadShort();
+        packet.ReadByte();
+        var position = packet.ReadByte();
+        var itemId = packet.ReadInt();
+        var count = packet.ReadInt();
+        packet.ReadByte();
+        return (position, itemId, count, packet.ReadShort());
+    }
+
+    private sealed class RecordingLogger : ILogger<NationTransferService>
+    {
+        public List<string> Warnings { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == LogLevel.Warning)
+                Warnings.Add(formatter(state, exception));
+        }
+    }
+
     [Fact]
-    public async Task AFailedMigrationSaveKeepsLootThatTookTheCertificateSlot()
+    public async Task AFailedMigrationSaveGivesTheSpentChargeBackInPlace()
     {
         var probe = new TransferSaveProbe(fail: true);
         using var provider = ProbedProvider(probe);
         var (session, sent, client) = await Online(provider, carriesItem: true);
-        probe.BeforeMigrationSave = () => { LootLandsInTheCertificateSlot(session); return Task.CompletedTask; };
+        MarkCertificate(session);
+        var certificate = session.Inventory[InventoryConstants.SlotMax];
+        certificate.Durability = StockedCharges;
+        var before = session.SerializeItems();
+        short chargesDuringSave = 0;
+        probe.BeforeMigrationSave = () => { chargesDuringSave = certificate.Durability; return Task.CompletedTask; };
 
         await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
 
         Last(sent).GetData().Should().Equal(Submit, Failed);
-        var slot = session.Inventory[InventoryConstants.SlotMax];
-        slot.ItemId.Should().Be(LootItem);
-        slot.Count.Should().Be(LootCount);
-        session.Inventory.Should().NotContain(item => item.ItemId == TransferItem);
+        chargesDuringSave.Should().Be(StockedCharges - SpentCharge);
+        session.SerializeItems().Should().Equal(before);
+        LastCountChange(sent).Should().Be((CertificatePosition, TransferItem, 1, StockedCharges));
+    }
+
+    [Fact]
+    public async Task AFailedMigrationSaveMovesTheCertificateToAFreeSlotWhenLootTookItsSlot()
+    {
+        var probe = new TransferSaveProbe(fail: true);
+        using var provider = ProbedProvider(probe);
+        var (session, sent, client) = await Online(provider, carriesItem: true);
+        MarkCertificate(session);
+        probe.BeforeMigrationSave = () => { LootLandsIn(session, InventoryConstants.SlotMax); return Task.CompletedTask; };
+
+        await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
+
+        Last(sent).GetData().Should().Equal(Submit, Failed);
+        var loot = session.Inventory[InventoryConstants.SlotMax];
+        loot.ItemId.Should().Be(LootItem);
+        loot.Count.Should().Be(LootCount);
+        session.Inventory[FirstFreeSlot].Should().BeEquivalentTo(new ItemSlot
+        {
+            ItemId = TransferItem, Count = 1, Durability = CertificateCharges, Flag = (byte)ItemFlag.Bound,
+            UniqueId = CertificateSerial, ExpiresAt = CertificateExpiry,
+        });
+        session.Inventory.Count(slot => slot.ItemId == TransferItem).Should().Be(1);
+        LastCountChange(sent).Should().Be((FirstFreePosition, TransferItem, 1, CertificateCharges));
         session.Nation.Should().Be(AccountNation.ElMorad);
     }
 
     [Fact]
-    public async Task AFailedMigrationSaveReturnsTheCertificateToAStackWhenItsSlotWasTaken()
+    public async Task AFailedMigrationSaveWithAFullBagLogsTheLostCertificateAndKeepsTheLoot()
     {
         var probe = new TransferSaveProbe(fail: true);
-        using var provider = ProbedProvider(probe);
+        var log = new RecordingLogger();
+        using var provider = ProbedProvider(probe, services => services.AddSingleton<ILogger<NationTransferService>>(log));
         var (session, sent, client) = await Online(provider, carriesItem: true);
-        var spare = session.Inventory[SpareSlot];
-        spare.ItemId = TransferItem;
-        spare.Count = SpareCertificates;
-        spare.Durability = 1;
-        probe.BeforeMigrationSave = () => { LootLandsInTheCertificateSlot(session); return Task.CompletedTask; };
+        for (var index = FirstFreeSlot; index < BagEnd; index++)
+            LootLandsIn(session, index);
+        probe.BeforeMigrationSave = () => { LootLandsIn(session, InventoryConstants.SlotMax); return Task.CompletedTask; };
 
         await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
 
         Last(sent).GetData().Should().Equal(Submit, Failed);
-        session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(LootItem);
-        session.Inventory[InventoryConstants.SlotMax].Count.Should().Be(LootCount);
-        session.Inventory[SpareSlot].ItemId.Should().Be(TransferItem);
-        session.Inventory[SpareSlot].Count.Should().Be(SpareCertificates + 1);
-    }
-
-    [Fact]
-    public async Task AFailedMigrationSaveTopsUpAPartlySpentCertificateStack()
-    {
-        var probe = new TransferSaveProbe(fail: true);
-        using var provider = ProbedProvider(probe);
-        var (session, sent, client) = await Online(provider, carriesItem: true);
-        session.Inventory[InventoryConstants.SlotMax].Count = SpareCertificates;
-        var before = session.SerializeItems();
-
-        await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
-
-        Last(sent).GetData().Should().Equal(Submit, Failed);
-        session.SerializeItems().Should().Equal(before);
+        session.Inventory[InventoryConstants.InventoryStart..BagEnd]
+            .Should().OnlyContain(slot => slot.ItemId == LootItem && slot.Count == LootCount);
+        session.Inventory.Should().NotContain(slot => slot.ItemId == TransferItem);
+        log.Warnings.Should().ContainSingle();
     }
 
     [Fact]

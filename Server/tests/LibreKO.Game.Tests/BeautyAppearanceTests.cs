@@ -42,6 +42,10 @@ public class BeautyAppearanceTests : GameTestBase
     private const int InOutPacketsPerRestyle = 2;
     private const int CouponSlot = InventoryConstants.InventoryStart;
     private const ushort Coupons = 2;
+    private const ushort LastCoupon = 1;
+    private const short CouponDurability = 1;
+    private const int CouponSerial = 4242;
+    private const int WarehousedItem = 389010000;
     private const int OtherNpc = NpcData.MakeupArtist + 1;
     private const float OutOfRange = 12;
     private const byte NoSuchFace = 8;
@@ -232,11 +236,27 @@ public class BeautyAppearanceTests : GameTestBase
     }
 
     [Fact]
+    public async Task TheWarehouseIsSavedWithTheBag()
+    {
+        using var provider = Provider();
+        var (session, client, _) = await Player(provider);
+        session.Warehouse[FirstSlot].ItemId = WarehousedItem;
+
+        await Send(provider, client, Request());
+
+        await using var scope = provider.CreateAsyncScope();
+        var stored = scope.ServiceProvider.GetRequiredService<AppDbContext>().Warehouses.Single(w => w.AccountId == session.AccountId);
+        var warehouse = Enumerable.Range(0, UserSession.WarehouseMax).Select(_ => new ItemSlot()).ToArray();
+        UserSessionBinaryState.LoadWarehouse(warehouse, stored.Items);
+        warehouse[FirstSlot].ItemId.Should().Be(WarehousedItem);
+    }
+
+    [Fact]
     public async Task TheLastCouponLeavesTheBag()
     {
         using var provider = Provider();
         var (session, client, sent) = await Player(provider);
-        session.Inventory[CouponSlot].Count = 1;
+        session.Inventory[CouponSlot].Count = LastCoupon;
 
         await Send(provider, client, Request());
 
@@ -340,24 +360,6 @@ public class BeautyAppearanceTests : GameTestBase
         (await StoredCharacters(provider)).Should().OnlyContain(c => c.Face == OldFace && c.Hair == OldHair);
     }
 
-    [Fact]
-    public async Task TheStoredCharacterMustBelongToTheSessionAccount()
-    {
-        using var provider = Provider();
-        var (session, client, sent) = await Player(provider);
-        await using (var scope = provider.CreateAsyncScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Characters.Single(c => c.Name == Shopper).AccountId = db.Accounts.Single(a => a.Login == OtherAccount).Id;
-            await db.SaveChangesAsync();
-        }
-
-        await Send(provider, client, Request());
-
-        ShouldReply(sent, PreGamePacketWriter.ChangeHairFailed);
-        ShouldKeepOldLook(session);
-    }
-
     [Theory]
     [InlineData(LegacySubOpcode)]
     [InlineData(ApplySubOpcode)]
@@ -407,21 +409,34 @@ public class BeautyAppearanceTests : GameTestBase
         ShouldKeepOldLook(session);
     }
 
-    [Fact]
-    public async Task ASaveFailureKeepsTheCouponAndTheLiveLook()
+    [Theory]
+    [InlineData(Coupons, false)]
+    [InlineData(Coupons, true)]
+    [InlineData(LastCoupon, false)]
+    [InlineData(LastCoupon, true)]
+    public async Task ASaveFailureKeepsTheCouponAndTheOldLook(ushort coupons, bool throws)
     {
-        var characters = Substitute.For<ICharacterRepository>();
-        using var provider = Provider(services => services.AddScoped(_ => characters));
+        var persister = Substitute.For<ICharacterStatePersister>();
+        using var provider = Provider(services => services.AddSingleton(persister));
         var (session, client, sent) = await Player(provider);
-        characters.GetById(session.CharacterId)
-            .Returns(new Character { Id = session.CharacterId, AccountId = session.AccountId, Name = Shopper });
-        characters.UpdateAsync(Arg.Any<Character>()).Returns(Task.FromException(new IOException("save failed")));
+        var coupon = session.Inventory[CouponSlot];
+        coupon.Count = coupons;
+        coupon.Durability = CouponDurability;
+        coupon.UniqueId = CouponSerial;
+        persister.SaveAsync(session, Arg.Any<CancellationToken>()).Returns(
+            throws ? Task.FromException<bool>(new IOException("save failed")) : Task.FromResult(false));
 
         await Send(provider, client, Request());
 
+        await persister.Received(1).SaveAsync(session, Arg.Any<CancellationToken>());
         ShouldReply(sent, PreGamePacketWriter.ChangeHairFailed);
         sent.Should().ContainSingle();
-        ShouldKeepOldLook(session);
+        session.Face.Should().Be(OldFace);
+        session.Hair.Should().Be(OldHair);
+        coupon.ItemId.Should().Be(BeautyShopPacketCoordinator.MakeoverCoupon);
+        coupon.Count.Should().Be(coupons);
+        coupon.Durability.Should().Be(CouponDurability);
+        coupon.UniqueId.Should().Be(CouponSerial);
     }
 
     public static TheoryData<Action<UserSession>> BusyActivities => new()

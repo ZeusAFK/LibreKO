@@ -11,9 +11,12 @@ public static class NationTransferWire
     public const byte Failed = 0;
     public const byte InClan = 2;
     public const byte IsKing = 3;
+    public const byte InInvestigationTeam = 4;
     public const byte WrongCharacter = 5;
     public const byte NoCharacter = 6;
     public const byte NoItem = 7;
+    public const byte MakeOverActive = 9;
+    public const byte NotEnoughCoins = 10;
     public const byte SubmitCompleted = 2;
     public const int FailedText = 16700;
 
@@ -28,9 +31,9 @@ public static class NationTransferWire
 
     private static readonly Dictionary<byte, int> SubmitRefusalTexts = new()
     {
-        [4] = 16704,
-        [9] = 18906,
-        [10] = 11303,
+        [InInvestigationTeam] = 16704,
+        [MakeOverActive] = 18906,
+        [NotEnoughCoins] = 11303,
     };
 
     public static List<NationTransferCandidate>? ReadCandidates(Packet p)

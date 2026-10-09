@@ -18,7 +18,7 @@ public class PetFoodWireTests
     }
 
     [Fact]
-    public void EveryTruncatedSuccessIsIgnoredInsteadOfBecomingARefusal()
+    public void EveryTruncatedSuccessIsUnreadable()
     {
         var complete = Food().GetData();
         for (int length = 0; length < complete.Length; length++)
@@ -65,21 +65,26 @@ public class PetFoodWireTests
         for (int length = 0; length < complete.Length; length++)
         {
             var prefix = new Packet((byte)GameOpcodes.GS_PET); prefix.WriteBytes(complete[..length]);
-            Assert.True(PetWire.TryReadFoodFor(prefix, request, out var reply));
-            Assert.Equal(new PetFoodReply(false, FoodSlot, FoodItem, 0, 0), reply);
+            Assert.Equal(new PetFoodReply(false, FoodSlot, FoodItem, 0, 0), PetWire.ReadFoodFor(prefix, request));
         }
-        Assert.True(PetWire.TryReadFoodFor(Food(result: 2), request, out var invalid));
-        Assert.Equal(request.Refusal, invalid);
+        Assert.Equal(request.Refusal, PetWire.ReadFoodFor(Food(result: 2), request));
     }
 
     [Fact]
-    public void AReadableFoodReplyForAnotherFeedLeavesThePendingFeedWaiting()
+    public void TheMatchingFoodReplyAnswersThePendingFeed()
     {
         var request = new PetFeedRequest(FoodSlot, FoodItem);
-        Assert.True(PetWire.TryReadFoodFor(Food(), request, out var reply));
-        Assert.Equal(new PetFoodReply(true, FoodSlot, FoodItem, 2, 1500), reply);
-        Assert.False(PetWire.TryReadFoodFor(Food(slot: FoodSlot + 1), request, out _));
-        Assert.False(PetWire.TryReadFoodFor(Food(item: FoodItem + 1), request, out _));
+        Assert.Equal(new PetFoodReply(true, FoodSlot, FoodItem, 2, 1500), PetWire.ReadFoodFor(Food(), request));
+        Assert.Equal(new PetFoodReply(false, FoodSlot, FoodItem, 0, 0), PetWire.ReadFoodFor(Food(result: PetWire.FoodRefused), request));
+    }
+
+    [Fact]
+    public void AReadableFoodReplyForAnotherFeedRefusesThePendingFeed()
+    {
+        var request = new PetFeedRequest(FoodSlot, FoodItem);
+        Assert.Equal(request.Refusal, PetWire.ReadFoodFor(Food(slot: FoodSlot + 1), request));
+        Assert.Equal(request.Refusal, PetWire.ReadFoodFor(Food(item: FoodItem + 1), request));
+        Assert.Equal(request.Refusal, PetWire.ReadFoodFor(Food(result: PetWire.FoodRefused, slot: FoodSlot + 1), request));
     }
 
     [Theory]

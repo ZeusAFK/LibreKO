@@ -5,7 +5,6 @@ using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.Protocol;
@@ -16,9 +15,8 @@ public interface IBeautyShopPacketCoordinator
 }
 
 public class BeautyShopPacketCoordinator(
-    IServiceScopeFactory scopeFactory,
     SessionManager sessionManager,
-    IUserSessionCharacterMapper characterMapper,
+    ICharacterStatePersister statePersister,
     IUserNotificationService userNotificationService,
     IGameDataService gameDataService,
     IWorldPacketCoordinator worldPacketCoordinator,
@@ -28,8 +26,12 @@ public class BeautyShopPacketCoordinator(
     private const byte LegacyRequest = 0;
     private const byte ApplyRequest = 1;
     private const int NoCoupon = -1;
+    private const ushort CouponsPerChange = 1;
     private const int HeaderLength = sizeof(byte) + sizeof(byte);
     private const int AppearanceLength = sizeof(byte) + sizeof(int);
+
+    private sealed record Restyle(int CouponSlot, int ItemId, short Durability, byte Flag, long ExpiresAt, int UniqueId,
+        byte OldFace, int OldHair);
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -65,8 +67,8 @@ public class BeautyShopPacketCoordinator(
             return;
         }
 
-        var couponSlot = FindCoupon(session.Inventory);
-        if (couponSlot == NoCoupon)
+        var restyle = session.WithLock(active => Apply(active, face, hair));
+        if (restyle == null)
         {
             await RefuseAsync(client);
             return;
@@ -75,7 +77,7 @@ public class BeautyShopPacketCoordinator(
         bool saved;
         try
         {
-            saved = await SaveAsync(session, couponSlot, face, hair);
+            saved = await statePersister.SaveAsync(session);
         }
         catch (Exception exception)
         {
@@ -85,13 +87,12 @@ public class BeautyShopPacketCoordinator(
 
         if (!saved)
         {
+            session.WithLock(active => Undo(active, restyle));
             await RefuseAsync(client);
             return;
         }
 
-        session.Face = face;
-        session.Hair = hair;
-        await TakeCouponAsync(session, couponSlot);
+        await NotifyCouponTakenAsync(session, restyle.CouponSlot);
         await client.SendPacket(PreGamePacketWriter.ChangeHairResult(PreGamePacketWriter.ChangeHairSucceeded));
         if (sessionManager.GetByClientId(client.Id) != session)
             return;
@@ -122,29 +123,47 @@ public class BeautyShopPacketCoordinator(
         return NoCoupon;
     }
 
-    private async Task<bool> SaveAsync(UserSession session, int couponSlot, byte face, int hair)
+    private static Restyle? Apply(UserSession session, byte face, int hair)
     {
-        using var scope = scopeFactory.CreateScope();
-        var characters = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-        var character = await characters.GetById(session.CharacterId);
-        if (character == null || character.AccountId != session.AccountId)
-            return false;
+        var couponSlot = FindCoupon(session.Inventory);
+        if (couponSlot == NoCoupon)
+            return null;
 
-        var paidInventory = session.Inventory.Select(CopyOf).ToArray();
-        TakeOne(paidInventory[couponSlot]);
-
-        characterMapper.ApplyToCharacter(session, character);
-        character.Items = UserSessionBinaryState.SerializeItems(paidInventory);
-        character.Face = face;
-        character.Hair = hair;
-        await characters.UpdateAsync(character);
-        return true;
+        var slot = session.Inventory[couponSlot];
+        var restyle = new Restyle(couponSlot, slot.ItemId, slot.Durability, slot.Flag, slot.ExpiresAt, slot.UniqueId,
+            session.Face, session.Hair);
+        TakeOne(slot);
+        session.Face = face;
+        session.Hair = hair;
+        return restyle;
     }
 
-    private async Task TakeCouponAsync(UserSession session, int couponSlot)
+    private void Undo(UserSession session, Restyle restyle)
+    {
+        session.Face = restyle.OldFace;
+        session.Hair = restyle.OldHair;
+
+        var slot = session.Inventory[restyle.CouponSlot];
+        if (slot.IsEmpty)
+        {
+            slot.ItemId = restyle.ItemId;
+            slot.Durability = restyle.Durability;
+            slot.Count = CouponsPerChange;
+            slot.Flag = restyle.Flag;
+            slot.ExpiresAt = restyle.ExpiresAt;
+            slot.UniqueId = restyle.UniqueId;
+        }
+        else if (slot.ItemId == restyle.ItemId && slot.UniqueId == restyle.UniqueId
+                 && slot.Count + CouponsPerChange <= InventoryConstants.MaxStackCount)
+            slot.Count += CouponsPerChange;
+        else
+            logger.LogWarning("Could not return the makeover coupon to slot {Slot} of {Name} after a failed save",
+                restyle.CouponSlot, session.Name);
+    }
+
+    private async Task NotifyCouponTakenAsync(UserSession session, int couponSlot)
     {
         var slot = session.Inventory[couponSlot];
-        TakeOne(slot);
         await userNotificationService.SendStackChangeAsync(session, (byte)couponSlot, slot.ItemId, slot.Count, slot.Durability);
 
         var coefficient = gameDataService.GetCoefficient(session.Class);
@@ -155,20 +174,11 @@ public class BeautyShopPacketCoordinator(
 
     private static void TakeOne(ItemSlot slot)
     {
-        slot.Count--;
-        if (slot.Count == 0)
+        if (slot.Count <= CouponsPerChange)
             slot.Clear();
+        else
+            slot.Count -= CouponsPerChange;
     }
-
-    private static ItemSlot CopyOf(ItemSlot slot) => new()
-    {
-        ItemId = slot.ItemId,
-        Durability = slot.Durability,
-        Count = slot.Count,
-        Flag = slot.Flag,
-        ExpiresAt = slot.ExpiresAt,
-        UniqueId = slot.UniqueId,
-    };
 
     private static Task RefuseAsync(IClient client) =>
         client.SendPacket(PreGamePacketWriter.ChangeHairResult(PreGamePacketWriter.ChangeHairFailed));

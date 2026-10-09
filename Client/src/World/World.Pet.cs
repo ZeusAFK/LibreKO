@@ -310,7 +310,7 @@ public partial class World
 
     private void DropOnPetBag(ItemSlotView cell, Variant data)
     {
-        if (!CanDropOnPetBag(cell, data) || _moveInFlight || _moveQueue.Count > 0) return;
+        if (!CanDropOnPetBag(cell, data) || InventoryMoveBusy) return;
         int abs = data.AsGodotDictionary()["invFrom"].AsInt32();
         EnqueuePetMove(ItemMove.InventoryToPet, Inv[abs].ItemId, (byte)(abs - GridStart), (byte)cell.Index, abs, cell.Index);
     }
@@ -318,7 +318,7 @@ public partial class World
     private void TakeFromPetBag(int petPos)
     {
         if (_selfDead || Net.I.Pet is not { } pet || petPos < 0 || petPos >= pet.Items.Length || pet.Items[petPos].IsEmpty) return;
-        if (_moveInFlight || _moveQueue.Count > 0) return;
+        if (InventoryMoveBusy) return;
         int free = Inv.FirstFreeGridSlot();
         if (free < 0)
         {

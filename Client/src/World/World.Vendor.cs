@@ -184,7 +184,6 @@ public partial class World
 
     private void CloseVendor()
     {
-        _tradeInFlight = false;
         _tradePrompt.Close();
         HideItemTooltip();
         if (!_vendorShown) return;
@@ -427,17 +426,24 @@ public partial class World
         _tradeInFlight = false;
         if (!ok)
         {
-            _vendorFooter.Status(code switch
+            string refusal = code switch
             {
                 TradeRefusedNoMoney => LoyaltyShop ? "Not enough National Points." : "Not enough gold.",
                 TradeRefusedNoRoom => ItemData.Text(LootNoRoomText, "You cannot trade or pick up items because you have either exceeded the possible quantity or the weight."),
                 _ => "The merchant won't trade that.",
-            }, bad: true);
+            };
+            if (!_vendorShown)
+            {
+                CombatNotice(refusal);
+                return;
+            }
+            _vendorFooter.Status(refusal, bad: true);
             RefreshVendorDetail();
             return;
         }
         ApplyTradeToInventory(_pendingTrade);
         if (CharTabOpen()) RefreshInventoryUI();
+        if (!_vendorShown) return;
         RefreshVendorDetail();
         _vendorFooter.Status(_pendingTrade.Buy
             ? $"Bought {ItemData.DisplayName(_pendingTrade.ItemId)} (−{price:n0})"
@@ -446,7 +452,6 @@ public partial class World
 
     private void OnTradeMoved()
     {
-        _tradeInFlight = false;
         if (_vendorShown) RefreshVendorDetail();
     }
 

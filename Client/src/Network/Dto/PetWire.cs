@@ -87,15 +87,8 @@ public static class PetWire
         return true;
     }
 
-    public static bool TryReadFoodFor(Packet p, PetFeedRequest request, out PetFoodReply reply)
-    {
-        if (!TryReadFood(p, out reply))
-        {
-            reply = request.Refusal;
-            return true;
-        }
-        return request.Matches(reply);
-    }
+    public static PetFoodReply ReadFoodFor(Packet p, PetFeedRequest request) =>
+        TryReadFood(p, out var reply) && request.Matches(reply) ? reply : request.Refusal;
 
     public static ItemSlot ReadItemRecord(Packet p, out PetItemInfo? pet)
     {

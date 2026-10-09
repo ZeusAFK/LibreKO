@@ -140,8 +140,9 @@ public partial class Net
 
     private void HandlePetFood(Packet p)
     {
-        if (_petFeedRequest is not { } request || !PetWire.TryReadFoodFor(p, request, out var reply)) return;
+        if (_petFeedRequest is not { } request) return;
         _petFeedRequest = null;
+        var reply = PetWire.ReadFoodFor(p, request);
         if (!reply.Succeeded)
         {
             PetFoodRefusedEvent?.Invoke(reply.ItemId);

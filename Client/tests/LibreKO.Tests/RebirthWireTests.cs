@@ -50,6 +50,15 @@ public class RebirthWireTests
     public void ALegacyOrUnknownReplyIsNotARebirthResult(byte[] tail)
     {
         Assert.False(RebirthWire.TryRead(Reply(tail), out _));
+        Assert.Equal(RebirthWire.Busy, RebirthWire.ReadOrBusy(Reply(tail)));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x01, 0x00 }, RebirthWire.Accepted)]
+    [InlineData(new byte[] { 0xFE, 0xFF }, -2)]
+    public void AReadableReplyAnswersWithItsOwnResult(byte[] tail, short expected)
+    {
+        Assert.Equal(expected, RebirthWire.ReadOrBusy(Reply(tail)));
     }
 
     [Theory]

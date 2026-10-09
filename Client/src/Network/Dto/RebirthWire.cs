@@ -19,6 +19,8 @@ public static class RebirthWire
         return true;
     }
 
+    public static short ReadOrBusy(Packet p) => TryRead(p, out short result) ? result : Busy;
+
     public static int ResultText(short result) => result switch
     {
         Accepted => AcceptedText,
