@@ -78,7 +78,7 @@ gko_look_down={
 }
 
 [rendering]
-driver/threads/thread_model=2
+driver/threads/thread_model=1
 
 rendering_device/driver.windows="d3d12"
 
