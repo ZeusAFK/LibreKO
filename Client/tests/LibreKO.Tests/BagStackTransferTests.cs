@@ -15,6 +15,8 @@ public sealed class BagStackTransferTests
     private const int BagCount = 100;
     private const int GridCount = 200;
 
+    private static readonly Func<int, bool> NothingStaged = _ => false;
+
     private static ItemSlot Stack(int itemId, int count, byte flag = 0, int uniqueId = 0) =>
         new() { ItemId = itemId, Count = (short)count, Flag = flag, UniqueId = uniqueId };
 
@@ -33,27 +35,28 @@ public sealed class BagStackTransferTests
             if (abs != keep) inventory[abs] = Stack(OtherItem, 1);
     }
 
-    [Fact]
-    public void BlankDropTargetFillsTheExistingStack()
-    {
-        var inventory = Seed();
-        Assert.Equal(Grid + 1, inventory.PlanBagToGrid(Bag, Grid, Stackable));
-    }
+    private static int RightClick(Inventory inventory, int countable = Stackable) =>
+        inventory.FirstStackOrFreeGridSlot(inventory[Bag], countable, NothingStaged);
 
     [Fact]
     public void RightClickFillsTheExistingStack()
     {
-        var inventory = Seed();
-        Assert.Equal(Grid + 1, inventory.PlanBagToGrid(Bag, NoTarget, Stackable));
-        Assert.Equal(Grid + 1, inventory.FirstStackOrFreeGridSlot(inventory[Bag], Stackable));
+        Assert.Equal(Grid + 1, RightClick(Seed()));
     }
 
     [Fact]
-    public void ADroppedOnStackIsKept()
+    public void RightClickSkipsAStackStagedInAnOpenWindow()
     {
         var inventory = Seed();
         inventory[Grid + 2] = Stack(Potion, GridCount);
-        Assert.Equal(Grid + 2, inventory.PlanBagToGrid(Bag, Grid + 2, Stackable));
+        Assert.Equal(Grid + 2, inventory.FirstStackOrFreeGridSlot(inventory[Bag], Stackable, abs => abs == Grid + 1));
+    }
+
+    [Fact]
+    public void RightClickWithOnlyAStagedStackTakesAFreeSlot()
+    {
+        var inventory = Seed();
+        Assert.Equal(Grid, inventory.FirstStackOrFreeGridSlot(inventory[Bag], Stackable, abs => abs == Grid + 1));
     }
 
     [Fact]
@@ -61,8 +64,7 @@ public sealed class BagStackTransferTests
     {
         var inventory = Seed();
         inventory[Grid + 1] = Stack(Potion, Inventory.StackMax - BagCount + 1);
-        Assert.Equal(Grid + 2, inventory.PlanBagToGrid(Bag, Grid + 2, Stackable));
-        Assert.Equal(Grid, inventory.PlanBagToGrid(Bag, NoTarget, Stackable));
+        Assert.Equal(Grid, RightClick(inventory));
     }
 
     [Fact]
@@ -70,7 +72,7 @@ public sealed class BagStackTransferTests
     {
         var inventory = Seed();
         inventory[Grid + 1] = Stack(Potion, Inventory.StackMax - BagCount);
-        Assert.Equal(Grid + 1, inventory.PlanBagToGrid(Bag, Grid, Stackable));
+        Assert.Equal(Grid + 1, RightClick(inventory));
     }
 
     [Fact]
@@ -78,7 +80,15 @@ public sealed class BagStackTransferTests
     {
         var inventory = Seed();
         FillGrid(inventory, Grid + 1);
-        Assert.Equal(Grid + 1, inventory.PlanBagToGrid(Bag, NoTarget, Stackable));
+        Assert.Equal(Grid + 1, RightClick(inventory));
+    }
+
+    [Fact]
+    public void AFullInventoryWithOnlyAStagedStackHasNoTarget()
+    {
+        var inventory = Seed();
+        FillGrid(inventory, Grid + 1);
+        Assert.Equal(NoTarget, inventory.FirstStackOrFreeGridSlot(inventory[Bag], Stackable, abs => abs == Grid + 1));
     }
 
     [Fact]
@@ -86,7 +96,7 @@ public sealed class BagStackTransferTests
     {
         var inventory = Seed();
         FillGrid(inventory, NoTarget);
-        Assert.Equal(NoTarget, inventory.PlanBagToGrid(Bag, NoTarget, Stackable));
+        Assert.Equal(NoTarget, RightClick(inventory));
     }
 
     [Theory]
@@ -96,21 +106,12 @@ public sealed class BagStackTransferTests
     {
         var inventory = Seed();
         inventory[Grid + 1] = Stack(Potion, GridCount, flag, uniqueId);
-        Assert.Equal(Grid, inventory.PlanBagToGrid(Bag, Grid, Stackable));
+        Assert.Equal(Grid, RightClick(inventory));
     }
 
     [Fact]
-    public void ItemsThatDoNotStackKeepTheDropTarget()
+    public void ItemsThatDoNotStackTakeAFreeSlot()
     {
-        var inventory = Seed();
-        Assert.Equal(Grid, inventory.PlanBagToGrid(Bag, Grid, Single));
-    }
-
-    [Fact]
-    public void OnlyAMagicBagSourceIsPlanned()
-    {
-        var inventory = Seed();
-        Assert.Equal(NoTarget, inventory.PlanBagToGrid(Grid + 1, Grid, Stackable));
-        Assert.Equal(NoTarget, inventory.PlanBagToGrid(Bag + 1, Grid, Stackable));
+        Assert.Equal(Grid, RightClick(Seed(), Single));
     }
 }

@@ -57,6 +57,8 @@ public partial class World
         return true;
     }
 
+    private bool IsStagedSlot(int abs) => BagFitAt(abs) == BagFit.Staged;
+
     private BagFit BagFitAt(int abs) =>
         _bagCompanion == null || !ItemMove.IsCarried(abs) || abs >= Inv.Length || Inv[abs].IsEmpty
             ? BagFit.Normal
