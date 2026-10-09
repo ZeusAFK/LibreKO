@@ -173,6 +173,7 @@ public partial class Net : Node
     private void ResetPendingOperations()
     {
         ResetGenieSystem();
+        ResetInventoryRequests();
     }
 
     public Func<bool>? WindowCloseHandler;

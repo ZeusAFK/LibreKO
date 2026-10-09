@@ -28,4 +28,11 @@ public sealed class PetSheet
 
     public float ExpFraction => ExpPercent / (float)ExpPercentScale;
     public float SatisfactionFraction => Satisfaction / (float)MaxSatisfaction;
+
+    public bool PlaceConfirmed(int index, int position, ItemSlot item)
+    {
+        if (Index != index || position < 0 || position >= Items.Length) return false;
+        Items[position] = item;
+        return true;
+    }
 }

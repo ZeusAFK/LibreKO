@@ -197,6 +197,7 @@ public partial class Net
 
     public void SendItemMove(byte direction, int itemId, byte sourcePos, byte destPos)
     {
+        if (!_conn.Connected) { ItemMoveResultEvent?.Invoke(false); return; }
         var p = new Packet(GameOpcodes.GS_ITEM_MOVE);
         p.WriteByte(ItemMove.MoveRequest);
         p.WriteByte(direction);
@@ -209,6 +210,7 @@ public partial class Net
 
     public void SendItemRemove(byte type, byte position, int itemId)
     {
+        if (!_conn.Connected) return;
         var p = new Packet(GameOpcodes.GS_ITEM_REMOVE);
         p.WriteByte(type);
         p.WriteByte(position);
