@@ -562,8 +562,22 @@ public static class ItemData
     public static int PotionHeal(int id, int healTarget)
     {
         if (Get(id) is not { Effect1: not 0 } def) return 0;
-        if (SkillData.Get(def.Effect1) is not { Type1: MagicType.DotHeal } s) return 0;
-        return s.DirectType == healTarget && s.FirstDamage > 0 ? s.FirstDamage : 0;
+        if (SkillData.Get(def.Effect1) is not { } s) return 0;
+        return PotionHealFor(s.Type1, s.DirectType, s.FirstDamage, healTarget);
+    }
+
+    private const int HealthPurchase = 20, ManaPurchase = 21;
+
+    internal static int PotionHealFor(int type, int directType, int amount, int healTarget)
+    {
+        if (type != MagicType.DotHeal || amount <= 0) return 0;
+        bool restores = healTarget switch
+        {
+            HealTarget.Hp => directType is HealTarget.Hp or HealthPurchase,
+            HealTarget.Mp => directType is HealTarget.Mp or ManaPurchase,
+            _ => false,
+        };
+        return restores ? amount : 0;
     }
 
     public static int BuyPrice(int id) => (Get(id)?.BuyPrice ?? 0) * PriceMultiply(id);
