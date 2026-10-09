@@ -64,16 +64,6 @@ public class RebirthPickTests
         Assert.Equal(available, RebirthPick.Available(level, rebirthLevel));
     }
 
-    [Theory]
-    [InlineData(RebirthPick.ResultRefused, true)]
-    [InlineData(RebirthPick.ResultAccepted, true)]
-    [InlineData(2, false)]
-    [InlineData(byte.MaxValue, false)]
-    public void OnlyARefusalOrAnAcceptanceAnswersARebirth(int code, bool known)
-    {
-        Assert.Equal(known, RebirthPick.IsResult(code));
-    }
-
     [Fact]
     public void TheSheetShowsTheRebirthLevelAfterTheLevelAndFoldsThePointsIntoTheBonus()
     {

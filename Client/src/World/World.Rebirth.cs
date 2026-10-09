@@ -112,9 +112,11 @@ public partial class World
 
     private void OpenRebirthPicker()
     {
-        if (_rebirthInFlight) return;
-        _rebirthPick.Clear();
-        SetRebirthStatus("", false);
+        if (!_rebirthInFlight)
+        {
+            _rebirthPick.Clear();
+            SetRebirthStatus("", false);
+        }
         RefreshRebirthUI();
         _rebirthPanel.Visible = true;
         _rebirthShown = true;
@@ -164,7 +166,7 @@ public partial class World
         SetRebirthStatus("Reincarnating…", false);
         RefreshRebirthUI();
         if (!Net.I.SendRebirthStatChange(_rebirthSent))
-            OnRebirthStatResult(Net.ClassChangeRebirthStat, RebirthPick.ResultRefused);
+            OnRebirthStatResult(Net.ClassChangeRebirthStat, RebirthWire.Busy);
     }
 
     private void EditRebirthPoint(int row, bool add)
@@ -193,15 +195,17 @@ public partial class World
         _rebirthInFlight = false;
         byte[] sent = _rebirthSent;
         _rebirthSent = [];
-        if (code == RebirthPick.ResultAccepted)
+        short result = (short)code;
+        if (result == RebirthWire.Accepted)
         {
             Sheet.ApplyRebirth(sent);
-            CombatNotice($"Rebirth Lv {Sheet.RebirthLevel}");
+            CombatNotice(ItemData.Text(RebirthWire.AcceptedText, $"Rebirth Lv {Sheet.RebirthLevel}"));
             CloseRebirth();
             return;
         }
-        SetRebirthStatus("Mekin refused the rebirth.", true);
+        string refusal = ItemData.Text(RebirthWire.ResultText(result), "Mekin refused the rebirth.");
+        SetRebirthStatus(refusal, true);
         if (_rebirthShown) RefreshRebirthUI();
-        else CombatNotice("Mekin refused the rebirth.");
+        else CombatNotice(refusal);
     }
 }

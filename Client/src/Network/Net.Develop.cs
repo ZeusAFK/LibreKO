@@ -56,9 +56,7 @@ public partial class Net
                 else JobChangeResultEvent?.Invoke(p.RemainingBytes >= 1 ? p.ReadByte() : 0);
                 break;
             case ClassChangeRebirthStat:
-                if (!_rebirthPending || p.RemainingBytes != 1) break;
-                int result = p.ReadByte();
-                if (!Domain.RebirthPick.IsResult(result)) break;
+                if (!_rebirthPending || !RebirthWire.TryRead(p, out short result)) break;
                 _rebirthPending = false;
                 RebStatChangeEvent?.Invoke(sub, result);
                 break;
