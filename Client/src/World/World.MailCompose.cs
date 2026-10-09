@@ -39,11 +39,12 @@ public partial class World
     private readonly SortedSet<string> _mailContacts = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<(int Slot, int Count)> _mailAttachments = [];
     private bool _mailComposeShown;
+    private bool _mailSending;
 
     private void BuildMailComposeWindow()
     {
         _mailComposeWindow = new HudWindow("mailcompose", "New mail", new Vector2(640, 110), bodyMinWidth: MailComposeWidth) { Visible = false };
-        _mailComposeWindow.Closed += () => _mailComposeShown = false;
+        _mailComposeWindow.Closed += CloseMailCompose;
         _mailLayer.AddChild(_mailComposeWindow);
 
         var body = _mailComposeWindow.Body;
@@ -159,6 +160,7 @@ public partial class World
 
     private void OpenMailCompose()
     {
+        if (_mailSending) return;
         _mailComposeShown = true;
         _mailComposeWindow.Visible = true;
         _mailComposeWindow.GetParent()?.MoveChild(_mailComposeWindow, _mailComposeWindow.GetParent().GetChildCount() - 1);
@@ -313,6 +315,7 @@ public partial class World
 
     private void SendComposedMail()
     {
+        if (_mailSending) return;
         var to = _mailTo.Text.Trim();
         var subject = _mailSubject.Text.Trim();
         if (to.Length == 0 || subject.Length == 0)
@@ -334,12 +337,14 @@ public partial class World
             .ToList();
 
         _mailSendBtn.Disabled = true;
+        _mailSending = true;
         _mailComposeStatus.Text = "Sending…";
         Net.I.SendMailSend(to, subject, _mailBody.Text, gold, items);
     }
 
     private void OnMailSendResult(bool ok, string message)
     {
+        _mailSending = false;
         if (ok)
         {
             _mailStatus.Text = message;

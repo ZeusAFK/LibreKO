@@ -299,15 +299,15 @@ public class MailService(
         var delivered = false;
         while (attachment.Remaining > 0)
         {
-            var portion = itemData.Countable == 0 ? 1 : attachment.Remaining;
-            var slot = session.FindSlotForItem(attachment.ItemId, gameDataService, (ushort)Math.Min(portion, ushort.MaxValue));
+            var slot = session.FindSlotForItem(attachment.ItemId, gameDataService);
             if (slot < 0)
                 return delivered;
 
             var entry = session.Inventory[slot];
+            var portion = itemData.Countable == 0 ? 1 : Math.Min(attachment.Remaining, InventoryConstants.MaxStackCount - entry.Count);
             var isNew = entry.IsEmpty;
             entry.ItemId = attachment.ItemId;
-            entry.Count = (ushort)Math.Min(entry.Count + portion, ushort.MaxValue);
+            entry.Count += (ushort)portion;
             if (isNew)
                 entry.Durability = attachment.Durability > 0 ? attachment.Durability : itemData.Duration;
             await userNotificationService.SendStackChangeAsync(session, (byte)slot, entry.ItemId, entry.Count, entry.Durability, isNew);
