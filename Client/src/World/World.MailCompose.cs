@@ -46,7 +46,7 @@ public partial class World
     private void BuildMailComposeWindow()
     {
         _mailComposeWindow = new HudWindow("mailcompose", "New mail", new Vector2(640, 110), bodyMinWidth: MailComposeWidth) { Visible = false };
-        _mailComposeWindow.Closed += CloseMailCompose;
+        _mailComposeWindow.Closed += HideMailCompose;
         _mailLayer.AddChild(_mailComposeWindow);
 
         var body = _mailComposeWindow.Body;
@@ -172,12 +172,17 @@ public partial class World
         _mailTo.GrabFocus();
     }
 
-    private void CloseMailCompose()
+    private void HideMailCompose()
     {
         _mailComposeShown = false;
         _mailSentDraftOpen = false;
         _mailComposeWindow.Visible = false;
         _mailToSuggest.Visible = false;
+    }
+
+    private void CloseMailCompose()
+    {
+        HideMailCompose();
         ResetMailCompose();
     }
 

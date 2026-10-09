@@ -130,7 +130,7 @@ public partial class World
     private void BuildMailReadWindow()
     {
         _mailReadWindow = new HudWindow("mailread", "Mail", new Vector2(640, 110), bodyMinWidth: MailBodyWidth) { Visible = false };
-        _mailReadWindow.Closed += () => _mailSelectedId = -1;
+        _mailReadWindow.Closed += CloseMailRead;
         _mailLayer.AddChild(_mailReadWindow);
 
         var pane = _mailReadWindow.Body;
@@ -193,6 +193,12 @@ public partial class World
     {
         _mailShown = false;
         _mailWindow.Visible = false;
+    }
+
+    private void CloseMailRead()
+    {
+        _mailReadWindow.Visible = false;
+        _mailSelectedId = -1;
     }
 
     private void OnMailUnread(int count)
