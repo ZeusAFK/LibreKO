@@ -435,4 +435,27 @@ public class InventoryTests
         Assert.False(inv.Holds(Inventory.GridStart, snapshot));
         Assert.False(inv.Holds(Inventory.GridStart + 1, default(ItemSlot)));
     }
+
+    [Theory]
+    [InlineData(ItemFlag.Unsealed, true)]
+    [InlineData(ItemFlag.NotBound, true)]
+    [InlineData(ItemFlag.Rented, false)]
+    [InlineData(ItemFlag.CharacterSeal, false)]
+    [InlineData(ItemFlag.Duplicate, false)]
+    [InlineData(ItemFlag.Sealed, false)]
+    [InlineData(ItemFlag.Bound, false)]
+    public void IsTradable_FollowsTheItemFlag(ItemFlag flag, bool tradable)
+    {
+        var slot = Item(11);
+        slot.Flag = (byte)flag;
+        Assert.Equal(tradable, slot.IsTradable);
+    }
+
+    [Fact]
+    public void IsTradable_RefusesALinkedItem()
+    {
+        var slot = Item(11);
+        slot.UniqueId = 1;
+        Assert.False(slot.IsTradable);
+    }
 }

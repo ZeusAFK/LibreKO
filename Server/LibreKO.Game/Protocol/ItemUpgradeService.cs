@@ -176,20 +176,21 @@ public class ItemUpgradeService(
     private async Task HandleStandardUpgradeAsync(UserSession session, Packet packet, ItemUpgradeSubOpcode responseSubOpcode)
     {
         var requestBytes = packet.RemainingBytes;
+        var parsed = TryParseUpgradeRequest(packet, out var upgradeType, out var npcUniqueId, out var itemIds, out var positions);
 
         if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.Hp <= 0)
         {
             logger.LogWarning(
                 "Upgrade rejected for {Name}: trading={IsTrading} merchanting={IsMerchanting} hp={Hp}",
                 session.Name, session.Trade.IsTrading, session.Trade.IsMerchanting, session.Hp);
-            await SendUpgradeResultAsync(session, responseSubOpcode, UpgradeTypeNormal, UpgradeTrading, [], []);
+            await SendUpgradeResultAsync(session, responseSubOpcode, upgradeType, UpgradeTrading, [], []);
             return;
         }
 
-        if (!TryParseUpgradeRequest(packet, out var upgradeType, out var npcUniqueId, out var itemIds, out var positions))
+        if (!parsed)
         {
             logger.LogWarning("Upgrade parse failed for {Name}: bytes={Bytes}", session.Name, requestBytes);
-            await SendUpgradeResultAsync(session, responseSubOpcode, UpgradeTypeNormal, UpgradeNoMatch, [], []);
+            await SendUpgradeResultAsync(session, responseSubOpcode, upgradeType, UpgradeNoMatch, [], []);
             return;
         }
 
@@ -582,7 +583,7 @@ public class ItemUpgradeService(
         if (packet.RemainingBytes < UpgradeRequestBytes)
             return false;
 
-        upgradeType = packet.ReadByte();
+        var requestedType = packet.ReadByte();
         npcId = packet.ReadInt();
         for (var index = 0; index < UpgradeSlotCount; index++)
         {
@@ -590,7 +591,11 @@ public class ItemUpgradeService(
             positions[index] = unchecked((sbyte)packet.ReadByte());
         }
 
-        return upgradeType is UpgradeTypeNormal or UpgradeTypePreview;
+        if (requestedType is not (UpgradeTypeNormal or UpgradeTypePreview))
+            return false;
+
+        upgradeType = requestedType;
+        return true;
     }
 
     private static async Task SendUpgradeResultAsync(

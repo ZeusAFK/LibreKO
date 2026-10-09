@@ -56,6 +56,8 @@ public partial class World
     private const double AnvilScanSeconds = 1.9;
     private const double AnvilRevealSeconds = 0.8;
     private const string AnvilHint = "Right-click a bag item to place it";
+    private const string UpgradeUntradableText = "That item is sealed, rented or in use.";
+    private const string UpgradeMisfitText = "That item or material does not fit this socket.";
     private static readonly Color AnvilLidColour = new(0.045f, 0.045f, 0.055f);
     private const string AnvilSelectText =
         "You can upgrade your item at the magic anvil. Please select what you want to upgrade.";
@@ -84,6 +86,8 @@ public partial class World
     private AnvilBench _anvilBench = AnvilBench.Item;
     private bool _upgradeShown;
     private readonly UpgradeSession _upgradeSession = new();
+    private readonly UpgradePreviewGate _upgradePreviewGate = new();
+    private bool UpgradeInteractionLocked => _upgradeSession.Awaiting || _upgradePendingResult != null || _upgradeScanTween != null;
     private int _upgradeAnvilId;
     private int _upgradePreviewId;
     private Notice? _upgradeConfirm;
@@ -228,7 +232,7 @@ public partial class World
         socket.DoubleClicked += _ => ClearUpgradeSocket(index);
         socket.Hovered += s => ShowItemTooltip(UpgradeSocketSlot(index), s.Item);
         socket.Unhovered += _ => HideItemTooltip();
-        socket.DragOut = _ => new Godot.Collections.Dictionary { { "companionFrom", index } };
+        socket.DragOut = _ => UpgradeInteractionLocked ? default(Variant) : new Godot.Collections.Dictionary { { "companionFrom", index } };
         socket.CanDrop = (_, data) => CanStageDrop(index, data);
         socket.Dropped = (_, data) => StageDrop(index, data);
         bench[index] = socket;
@@ -299,7 +303,7 @@ public partial class World
     private void OnAnvilTab(int index)
     {
         var bench = (AnvilBench)index;
-        if (_upgradeSession.Locked || _upgradePendingResult != null)
+        if (UpgradeInteractionLocked)
         {
             _anvilTabs.Select((int)_anvilBench, notify: false);
             return;
@@ -371,7 +375,7 @@ public partial class World
         _upgradeScanTween = null;
         if (_upgradePendingResult != null) FinishUpgradeScan();
         ResetAnvilLids();
-        ReleaseBagHold();
+        if (!_upgradeSession.Awaiting) ReleaseBagHold();
         _upgradePanel.Visible = false;
         HideItemTooltip();
         DismissUpgradeConfirm();
@@ -421,7 +425,12 @@ public partial class World
 
     private void PlaceUpgradeItem(int absSlot)
     {
-        if (_upgradeSession.Locked || !InMainBag(absSlot) || Inv[absSlot].IsEmpty) return;
+        if (UpgradeInteractionLocked || !InMainBag(absSlot) || Inv[absSlot].IsEmpty) return;
+        if (!Inv[absSlot].IsTradable)
+        {
+            _anvilFooter.Status(UpgradeUntradableText, bad: true);
+            return;
+        }
 
         int rel = absSlot - GridStart;
         for (int i = 0; i < _upgradePositions.Length; i++)
@@ -495,17 +504,18 @@ public partial class World
             return socket < AccessorySocketCount
                 ? IsAccessory(itemId) && AccessoryMatches(itemId, socket)
                 : socket < AccessoryBenchSlots && IsAccessoryMaterial(itemId);
-        if (socket == 0) return IsUpgradeTarget(itemId);
+        if (socket == 0) return IsUpgradeTarget(itemId) && !IsAccessory(itemId);
         return IsUpgradeMaterial(itemId) || (_upgradeItemIds[0] != 0 && itemId == _upgradeItemIds[0]);
     }
 
     private bool CanStageDrop(int socket, Variant data)
     {
-        if (_upgradeSession.Locked || data.VariantType != Variant.Type.Dictionary) return false;
+        if (UpgradeInteractionLocked || data.VariantType != Variant.Type.Dictionary) return false;
         var d = data.AsGodotDictionary();
         if (!d.ContainsKey("invFrom")) return false;
         int abs = d["invFrom"].AsInt32();
-        return InMainBag(abs) && !Inv[abs].IsEmpty && !IsUpgradeSlotStaged(abs) && SocketAccepts(socket, Inv[abs].ItemId);
+        return InMainBag(abs) && !Inv[abs].IsEmpty && Inv[abs].IsTradable && !IsUpgradeSlotStaged(abs)
+               && SocketAccepts(socket, Inv[abs].ItemId);
     }
 
     private void StageDrop(int socket, Variant data)
@@ -517,8 +527,14 @@ public partial class World
     private void StageInSocket(int socket, int absSlot)
     {
         var item = Inv[absSlot];
+        if (!item.IsTradable || !SocketAccepts(socket, item.ItemId))
+        {
+            _anvilFooter.Status(UpgradeMisfitText, bad: true);
+            return;
+        }
         _upgradeItemIds[socket] = item.ItemId;
         _upgradePositions[socket] = absSlot - GridStart;
+        item.Count = 1;
         _upgradeSockets[socket]?.Set(item);
         RefreshBagFit();
         OnUpgradeBenchChanged();
@@ -543,7 +559,7 @@ public partial class World
 
     private void ClearUpgradeSocket(int index)
     {
-        if (index < 0 || index >= _upgradeItemIds.Length || _upgradeSession.Locked) return;
+        if (index < 0 || index >= _upgradeItemIds.Length || UpgradeInteractionLocked) return;
         if (_upgradeItemIds[index] == 0) return;
         _upgradeItemIds[index] = 0;
         _upgradePositions[index] = -1;
@@ -597,7 +613,8 @@ public partial class World
         else
         {
             SetAnvilStrip(name, "Checking the recipe...", UiTheme.TextLo);
-            Net.I.SendUpgradeRequest(_upgradeAnvilId, _upgradeItemIds, _upgradePositions, preview: true);
+            if (_upgradePreviewGate.Begin(_upgradeItemIds, _upgradePositions))
+                Net.I.SendUpgradeRequest(_upgradeAnvilId, _upgradeItemIds, _upgradePositions, preview: true);
         }
         RefreshUpgradeActions();
     }
@@ -681,12 +698,19 @@ public partial class World
     private void ConfirmUpgrade()
     {
         if (!CanSendUpgrade()) return;
+        var items = (int[])_upgradeItemIds.Clone();
+        var positions = (int[])_upgradePositions.Clone();
+        int preview = _upgradePreviewId;
         DismissUpgradeConfirm();
         _upgradeConfirm = Notice.Confirm(
             this,
             "The item might be destroyed while performing the upgrade. Will you continue?",
             "Upgrade", "Cancel",
-            SendUpgrade,
+            () =>
+            {
+                if (SelectionMatches(items, positions) && preview == _upgradePreviewId) SendUpgrade();
+                else _upgradeConfirm = null;
+            },
             () => _upgradeConfirm = null,
             "Magic Anvil");
     }
@@ -704,7 +728,7 @@ public partial class World
     }
 
     private bool CanSendUpgrade()
-        => _upgradeShown && _upgradeSession.CanSend && _upgradeAnvilId != 0
+        => _upgradeShown && _upgradeSession.CanSend && !UpgradeInteractionLocked && _upgradeAnvilId != 0
            && _upgradeItemIds[0] != 0 && _upgradePreviewId != 0;
 
     private void OnUpgradeResult(UpgradeResult result)
@@ -735,6 +759,7 @@ public partial class World
         tween.TweenProperty(_anvilSeam, "anchor_right", 1f, AnvilScanSeconds);
         tween.TweenCallback(Callable.From(FinishUpgradeScan));
         _upgradeScanTween = tween;
+        RefreshUpgradeActions();
     }
 
     private void FinishUpgradeScan()
@@ -754,16 +779,19 @@ public partial class World
         tween.Parallel().TweenProperty(_anvilLidBottom, "anchor_top", 1f, AnvilRevealSeconds);
         tween.TweenCallback(Callable.From(ResetAnvilLids));
         _upgradeScanTween = tween;
+        RefreshUpgradeActions();
     }
 
     private void ResetAnvilLids()
     {
+        _upgradeScanTween = null;
         _anvilLids.Visible = false;
         _anvilLidTop.AnchorTop = 0f;
         _anvilLidTop.AnchorBottom = 0f;
         _anvilLidBottom.AnchorTop = 1f;
         _anvilLidBottom.AnchorBottom = 1f;
         _anvilSeam.AnchorRight = 0f;
+        RefreshUpgradeActions();
     }
 
     private void ApplyUpgradeResult(UpgradeResult result, bool onBench)
@@ -778,7 +806,9 @@ public partial class World
                 CombatNotice($"Upgrade succeeded: {ItemData.DisplayName(resultItemId)}");
                 break;
             case UpgradeResultFailed:
-                CombatNotice("The upgrade failed and the item was destroyed.");
+                CombatNotice(resultItemId == 0
+                    ? "The upgrade failed and the item was destroyed."
+                    : $"Upgrade failed. Retained item: {ItemData.DisplayName(resultItemId)}");
                 break;
             case not UpgradeResultSucceeded when !onBench:
                 CombatNotice(UpgradeError(result.ResultCode));
@@ -805,6 +835,10 @@ public partial class World
             case UpgradeResultSucceeded:
                 SetAnvilStrip(before, $"{operation} succeeded.", UiTheme.Good);
                 break;
+            case UpgradeResultFailed when resultItemId != 0:
+                ShowResultItem(resultItemId, SlotLook.Normal);
+                SetAnvilStrip(before, $"{operation} failed — retained {ItemData.DisplayName(resultItemId)}.", UiTheme.Bad);
+                break;
             case UpgradeResultFailed:
                 SetAnvilStrip(before, $"{operation} failed — the item was destroyed.", UiTheme.Bad);
                 break;
@@ -816,6 +850,11 @@ public partial class World
 
     private void OnUpgradePreviewResult(UpgradeResult result)
     {
+        if (!_upgradePreviewGate.Complete(_upgradeItemIds, _upgradePositions))
+        {
+            if (_upgradeShown) OnUpgradeBenchChanged();
+            return;
+        }
         if (_upgradeItemIds[0] == 0) return;
         int previewId = result.Slots.Length > 0 ? result.Slots[0].ItemId : 0;
         string name = ItemData.DisplayName(_upgradeItemIds[0]);
@@ -909,7 +948,7 @@ public partial class World
 
     private void DropStaleSockets()
     {
-        if (_upgradeSession.Locked) return;
+        if (UpgradeInteractionLocked) return;
         bool dropped = false;
         for (int i = 0; i < _upgradePositions.Length; i++)
         {
@@ -917,8 +956,9 @@ public partial class World
             if (pos < 0) continue;
             int abs = GridStart + pos;
             var held = abs < Inv.Length ? Inv[abs] : default;
-            if (!held.IsEmpty && held.ItemId == _upgradeItemIds[i])
+            if (!held.IsEmpty && held.IsTradable && held.ItemId == _upgradeItemIds[i])
             {
+                held.Count = 1;
                 _upgradeSockets[i]?.Set(held);
                 continue;
             }
@@ -931,4 +971,7 @@ public partial class World
         RefreshBagFit();
         OnUpgradeBenchChanged();
     }
+
+    private bool SelectionMatches(int[] items, int[] positions)
+        => items.AsSpan().SequenceEqual(_upgradeItemIds) && positions.AsSpan().SequenceEqual(_upgradePositions);
 }

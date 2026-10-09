@@ -11,17 +11,21 @@ public class UpgradeBagChangesTests
     private const byte Failed = 0;
     private const byte Succeeded = 1;
     private const byte NeedCoins = 3;
+    private const int Raptor7 = 156210007;
     private const int Raptor8 = 156210008;
     private const int Raptor9 = 156210009;
     private const int Scroll = 379021000;
     private const short Raptor9Durability = 15000;
+    private const short Raptor8Durability = 7000;
+    private const int Raptor8Serial = 123;
+    private const int Destroyed = 0;
     private const int ItemAbs = InventoryConstants.InventoryStart;
     private const int ScrollAbs = InventoryConstants.InventoryStart + 1;
 
     private static ItemSlot[] Bag()
     {
         var bag = new ItemSlot[InventoryConstants.InventoryTotal];
-        bag[ItemAbs] = new ItemSlot { ItemId = Raptor8, Count = 1, Durability = 7000 };
+        bag[ItemAbs] = new ItemSlot { ItemId = Raptor8, Count = 1, Durability = Raptor8Durability, UniqueId = Raptor8Serial };
         bag[ScrollAbs] = new ItemSlot { ItemId = Scroll, Count = 3, Durability = 1 };
         return bag;
     }
@@ -44,13 +48,14 @@ public class UpgradeBagChangesTests
         var changes = Changes(Normal, Succeeded, Raptor9);
         Assert.Equal(2, changes.Count);
         Assert.Equal((ItemAbs, Raptor9, Raptor9Durability), (changes[0].Abs, changes[0].Slot.ItemId, changes[0].Slot.Durability));
+        Assert.Equal(Raptor8Serial, changes[0].Slot.UniqueId);
         Assert.Equal((ScrollAbs, Scroll, (short)2), (changes[1].Abs, changes[1].Slot.ItemId, changes[1].Slot.Count));
     }
 
     [Fact]
     public void AFailedUpgradeDestroysTheItemAndUsesOneScroll()
     {
-        var changes = Changes(Normal, Failed, Raptor8);
+        var changes = Changes(Normal, Failed, Destroyed);
         Assert.True(changes[0].Slot.IsEmpty);
         Assert.Equal((short)2, changes[1].Slot.Count);
     }
@@ -60,4 +65,15 @@ public class UpgradeBagChangesTests
 
     [Fact]
     public void APreviewLeavesTheBagAlone() => Assert.Empty(Changes(Preview, Succeeded, Raptor9));
+
+    [Theory]
+    [InlineData(Raptor8)]
+    [InlineData(Raptor7)]
+    public void AProtectedFailureRetainsTheReturnedItemAndConsumesOneMaterial(int returned)
+    {
+        var changes = Changes(Normal, Failed, returned);
+        Assert.Equal((ItemAbs, returned, Raptor8Durability), (changes[0].Abs, changes[0].Slot.ItemId, changes[0].Slot.Durability));
+        Assert.Equal(Raptor8Serial, changes[0].Slot.UniqueId);
+        Assert.Equal((ScrollAbs, (short)2), (changes[1].Abs, changes[1].Slot.Count));
+    }
 }
