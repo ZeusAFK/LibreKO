@@ -22,6 +22,9 @@ public partial class World
     private List<int> _petBarSkills = new();
     private int _petBarPage;
     private readonly Dictionary<int, double> _petSkillReadyAt = new();
+    private readonly Dictionary<int, (int CasterId, int Serial)> _petSkillCasts = new();
+    private int _petSkillGeneration;
+    private int _petSkillCastSerial;
 
     private void PetBarInit()
     {
@@ -32,6 +35,7 @@ public partial class World
         Net.I.PetGoneEvent += HidePetBar;
         Net.I.PetVitalsEvent += RefreshPetBar;
         Net.I.PetExpEvent += OnPetBarExp;
+        Net.I.MagicEvent += OnPetSkillMagic;
         if (Net.I.Pet is { } sheet) OnPetBarSummoned(sheet);
     }
 
@@ -41,6 +45,19 @@ public partial class World
         Net.I.PetGoneEvent -= HidePetBar;
         Net.I.PetVitalsEvent -= RefreshPetBar;
         Net.I.PetExpEvent -= OnPetBarExp;
+        Net.I.MagicEvent -= OnPetSkillMagic;
+        _petSkillGeneration++;
+        _petSkillCasts.Clear();
+    }
+
+    private void OnPetSkillMagic(int sub, int skillId, int casterId, int targetId, short[] data)
+    {
+        if (sub is not (MagicSub.Fail or MagicSub.Cancel)) return;
+        bool pending = _petSkillCasts.TryGetValue(skillId, out var cast) && cast.CasterId == casterId;
+        bool current = MyPetEntity() is { } actor && actor.Id == casterId && _petSkillReadyAt.ContainsKey(skillId);
+        if (!pending && !current) return;
+        _petSkillCasts.Remove(skillId);
+        _petSkillReadyAt.Remove(skillId);
     }
 
     private void BuildPetBar()
@@ -108,8 +125,10 @@ public partial class World
 
     private void HidePetBar()
     {
-        _petBar.Visible = false;
+        _petSkillGeneration++;
+        if (GodotObject.IsInstanceValid(_petBar)) _petBar.Visible = false;
         _petSkillReadyAt.Clear();
+        _petSkillCasts.Clear();
     }
 
     private void RefreshPetBar()
@@ -134,7 +153,7 @@ public partial class World
 
     private void PetBarTick(double now)
     {
-        if (!_petBar.Visible) return;
+        if (!GodotObject.IsInstanceValid(_petBar) || !_petBar.Visible) return;
         _petAttackCell.SetCooldown(PetCooldown(PetSkills.DesignatedAttack, now));
         foreach (var cell in _petCells)
             cell.SetCooldown(cell.SkillId == 0 ? 0f : PetCooldown(cell.SkillId, now));
@@ -157,6 +176,7 @@ public partial class World
 
     private void UsePetSkill(int skillId)
     {
+        if (!Alive || !IsInsideTree() || _selfDead || !Net.I.Connected) return;
         if (Net.I.Pet is not { } sheet || MyPetEntity() is not { } pet)
         {
             CombatNotice(SystemText(TextPetNotSummoned, "Familiar has not been summoned."));
@@ -191,19 +211,31 @@ public partial class World
         }
 
         int casterId = pet.Id, x = (int)pet.KoX, y = (int)pet.KoY, z = (int)pet.KoZ;
-        _petSkillReadyAt[skillId] = now + Mathf.Max(s.RecastSeconds, s.CastSeconds);
+        double readyAgain = now + Mathf.Max(s.RecastSeconds, s.CastSeconds);
         if (s.CastSeconds <= 0f)
         {
-            Net.I.SendPetSkill(PetSkills.StageEffecting, skillId, casterId, target, x, y, z);
+            if (Net.I.SendPetSkill(PetSkills.StageEffecting, skillId, casterId, target, x, y, z))
+                _petSkillReadyAt[skillId] = readyAgain;
             return;
         }
 
-        Net.I.SendPetSkill(PetSkills.StageCasting, skillId, casterId, target, x, y, z);
+        if (!Net.I.SendPetSkill(PetSkills.StageCasting, skillId, casterId, target, x, y, z)) return;
+        _petSkillReadyAt[skillId] = readyAgain;
+        int petIndex = sheet.Index, generation = _petSkillGeneration, serial = ++_petSkillCastSerial;
+        _petSkillCasts[skillId] = (casterId, serial);
         GetTree().CreateTimer(s.CastSeconds).Timeout += () =>
         {
-            if (Net.I.Pet != null) Net.I.SendPetSkill(PetSkills.StageEffecting, skillId, casterId, target, x, y, z);
+            if (!Alive || !_petSkillCasts.TryGetValue(skillId, out var cast) || cast != (casterId, serial)) return;
+            _petSkillCasts.Remove(skillId);
+            if (CanFinishPetSkill(petIndex, casterId, generation))
+                Net.I.SendPetSkill(PetSkills.StageEffecting, skillId, casterId, target, x, y, z);
         };
     }
+
+    private bool CanFinishPetSkill(int petIndex, int casterId, int generation) =>
+        Alive && IsInsideTree() && !_selfDead && generation == _petSkillGeneration
+        && Net.I.Connected && Net.I.Pet is { } sheet && sheet.Index == petIndex
+        && MyPetEntity() is { } caster && caster.Id == casterId;
 
     private sealed partial class PetSkillCell : PanelContainer
     {

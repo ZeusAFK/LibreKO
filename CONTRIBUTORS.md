@@ -6,3 +6,4 @@ pull request that lands your first change, with whatever contact you want to giv
 - ZeusAFK (maintainer) — https://github.com/ZeusAFK
 - d4ywalker — https://github.com/d4ywalker
 - tukuismail-cloud — https://github.com/tukuismail-cloud
+- canbolayir — https://github.com/canbolayir

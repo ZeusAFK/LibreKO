@@ -12,12 +12,13 @@ public partial class World
     private const int PetFamiliarKind = 151;
     private const int PetScrollKind = 171;
     private const int PetScrollEffect = 253;
-    private const int PetNameMaxLength = 15;
+    private const int PetNameMaxLength = PetSheet.NameMaxLength;
     private const float PetPickSlotSize = 44f;
     private const int PetHatchTab = 0;
     private const int PetTransformTab = 1;
     private const int NoPetPick = -1;
     private const string PetTransformFailed = "The familiar could not be transformed.";
+    private const string PetHatchNotSent = "Not connected. Please try again after reconnecting.";
 
     private static readonly Dictionary<int, string> PetHatchFailures = new()
     {
@@ -56,6 +57,7 @@ public partial class World
         Net.I.PetHatchFailedEvent += OnPetHatchFailed;
         Net.I.PetTransformedEvent += OnPetTransformed;
         Net.I.PetTransformFailedEvent += OnPetTransformFailed;
+        Net.I.PetResetEvent += ResetPetHatch;
     }
 
     private void PetHatchDispose()
@@ -64,6 +66,7 @@ public partial class World
         Net.I.PetHatchFailedEvent -= OnPetHatchFailed;
         Net.I.PetTransformedEvent -= OnPetTransformed;
         Net.I.PetTransformFailedEvent -= OnPetTransformFailed;
+        Net.I.PetResetEvent -= ResetPetHatch;
     }
 
     private void BuildPetHatchPanel()
@@ -144,8 +147,14 @@ public partial class World
 
     private void OpenPetHatch(int npcId)
     {
+        if (_petHatchInFlight)
+        {
+            _petHatchPanel.Visible = true;
+            _petHatchShown = true;
+            RefreshPetHatchUI();
+            return;
+        }
         _petHatchNpc = npcId;
-        _petHatchInFlight = false;
         _petHatchName.Text = "";
         SetPetHatchStatus("", false);
         _petHatchSlot = _petTransformSlot = _petScrollSlot = NoPetPick;
@@ -187,13 +196,16 @@ public partial class World
     }
 
     private static bool IsPetEgg(ItemSlot slot) =>
-        !slot.IsEmpty && ItemData.Get(slot.ItemId) is { Kind: PetEggKind };
+        PetPickAllowed(slot) && !slot.IsLinked && ItemData.Get(slot.ItemId) is { Kind: PetEggKind };
 
     private static bool IsFamiliarItem(ItemSlot slot) =>
-        !slot.IsEmpty && slot.UniqueId != 0 && ItemData.Get(slot.ItemId) is { Kind: PetFamiliarKind };
+        PetPickAllowed(slot) && slot.UniqueId != 0 && ItemData.Get(slot.ItemId) is { Kind: PetFamiliarKind };
 
     private static bool IsTransformScroll(ItemSlot slot) =>
-        !slot.IsEmpty && ItemData.Get(slot.ItemId) is { Kind: PetScrollKind, Effect2: PetScrollEffect };
+        PetPickAllowed(slot) && ItemData.Get(slot.ItemId) is { Kind: PetScrollKind, Effect2: PetScrollEffect };
+
+    private static bool PetPickAllowed(ItemSlot slot) => !slot.IsEmpty && slot.Count > 0
+        && slot.State is not (ItemFlag.Sealed or ItemFlag.Duplicate or ItemFlag.Rented);
 
     private void RebuildPetPicks()
     {
@@ -266,7 +278,7 @@ public partial class World
             ? _petTransformSlot >= 0 && IsFamiliarItem(Inv[_petTransformSlot])
               && _petScrollSlot >= 0 && IsTransformScroll(Inv[_petScrollSlot])
             : _petHatchSlot >= 0 && IsPetEgg(Inv[_petHatchSlot]) && IsValidPetName(_petHatchName.Text);
-        _petHatchBtn.Disabled = _petHatchInFlight || !ready;
+        _petHatchBtn.Disabled = _petHatchInFlight || _selfDead || !ready;
         _petHatchName.Editable = !_petHatchInFlight;
     }
 
@@ -280,14 +292,22 @@ public partial class World
 
     private void OnPetHatchPressed()
     {
+        RefreshPetHatchUI();
         if (_petHatchBtn.Disabled) return;
-        _petHatchInFlight = true;
         SetPetHatchStatus("", false);
-        if (PetTransforming)
-            Net.I.SendPetTransform(_petHatchNpc, Inv[_petTransformSlot].ItemId, _petTransformSlot - GridStart,
-                Inv[_petScrollSlot].ItemId, _petScrollSlot - GridStart);
-        else
-            Net.I.SendPetHatch(_petHatchNpc, Inv[_petHatchSlot].ItemId, _petHatchSlot - GridStart, _petHatchName.Text);
+        _petHatchInFlight = PetTransforming
+            ? Net.I.SendPetTransform(_petHatchNpc, Inv[_petTransformSlot].ItemId, _petTransformSlot - GridStart,
+                Inv[_petTransformSlot].UniqueId, Inv[_petScrollSlot].ItemId, _petScrollSlot - GridStart)
+            : Net.I.SendPetHatch(_petHatchNpc, Inv[_petHatchSlot].ItemId, _petHatchSlot - GridStart, _petHatchName.Text);
+        if (!_petHatchInFlight) SetPetHatchStatus(PetHatchNotSent, true);
+        RefreshPetHatchUI();
+    }
+
+    private void ResetPetHatch()
+    {
+        _petHatchInFlight = false;
+        ClosePetHatch();
+        _petHatchSlot = _petTransformSlot = _petScrollSlot = NoPetPick;
         RefreshPetHatchUI();
     }
 

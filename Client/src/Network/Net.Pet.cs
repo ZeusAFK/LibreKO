@@ -17,7 +17,6 @@ public partial class Net
     private const byte PetFunctionSatisfaction = 15;
     private const byte PetFunctionFood = 16;
     private const short PetResultSucceeded = 1;
-    private const byte PetFoodSucceeded = 1;
     private const byte PetFoodTrailFlag = 1;
     private const byte PetFoodTrailPad = 0;
     private const byte PetHatchSub = 6;
@@ -28,6 +27,8 @@ public partial class Net
 
     public PetSheet? Pet { get; private set; }
     public readonly Dictionary<int, PetItemInfo> PetItems = new();
+    private PetFeedRequest? _petFeedRequest;
+    private PetIncubationRequest? _petIncubationRequest;
 
     public event Action<PetSheet>? PetSummonedEvent;
     public event Action? PetGoneEvent;
@@ -42,6 +43,17 @@ public partial class Net
     public event Action<int>? PetHatchFailedEvent;
     public event Action<int, PetItemInfo>? PetTransformedEvent;
     public event Action<int>? PetTransformFailedEvent;
+    public event Action? PetResetEvent;
+
+    private void ResetPet()
+    {
+        _petFeedRequest = null;
+        _petIncubationRequest = null;
+        Pet = null;
+        PetItems.Clear();
+        PetGoneEvent?.Invoke();
+        PetResetEvent?.Invoke();
+    }
 
     private void HandlePet(Packet p)
     {
@@ -92,7 +104,7 @@ public partial class Net
                 }
                 PetVitalsEvent?.Invoke();
                 break;
-            case PetFunctionFood when p.RemainingBytes >= 6:
+            case PetFunctionFood:
                 HandlePetFood(p);
                 break;
         }
@@ -128,48 +140,46 @@ public partial class Net
 
     private void HandlePetFood(Packet p)
     {
-        bool ok = p.ReadByte() == PetFoodSucceeded;
-        int bagSlot = p.ReadByte();
-        int itemId = p.ReadInt();
-        if (!ok || p.RemainingBytes < 10)
+        if (_petFeedRequest is not { } request || !PetWire.TryReadFoodFor(p, request, out var reply)) return;
+        _petFeedRequest = null;
+        if (!reply.Succeeded)
         {
-            PetFoodRefusedEvent?.Invoke(itemId);
+            PetFoodRefusedEvent?.Invoke(reply.ItemId);
             return;
         }
-        int countLeft = p.ReadShort();
-        p.ReadShort();
-        p.ReadInt();
-        int increase = p.ReadShort();
-        int abs = InventoryConstants.InventoryStart + bagSlot;
-        var left = countLeft > 0 ? new ItemSlot { ItemId = itemId, Count = (short)countLeft } : default;
-        if (countLeft > 0) PreserveLastDurability(abs, ref left);
-        SetLastInventorySlot(abs, left);
-        InventorySlotEvent?.Invoke(abs, left);
-        PetFedEvent?.Invoke(bagSlot, itemId, countLeft, increase);
+        int abs = InventoryConstants.InventoryStart + reply.BagSlot;
+        var held = LastEnter.Inventory is { } slots && abs < slots.Length ? slots[abs] : default;
+        if (reply.TryLower(held, out var left))
+        {
+            SetLastInventorySlot(abs, left);
+            InventorySlotEvent?.Invoke(abs, left);
+        }
+        PetFedEvent?.Invoke(reply.BagSlot, reply.ItemId, reply.CountLeft, reply.Increase);
     }
 
     private void HandlePetHatch(Packet p)
     {
-        if (!PetWire.TryReadHatch(p, out var hatched, out int failure))
+        if (_petIncubationRequest is not { Transform: false } request) return;
+        _petIncubationRequest = null;
+        if (!PetWire.TryReadHatchFor(p, request, out var hatched, out int failure))
         {
             PetHatchFailedEvent?.Invoke(failure);
             return;
         }
-
         PetHatchedEvent?.Invoke(PlaceFamiliarItem(hatched), hatched.Info);
     }
 
     private void HandlePetTransform(Packet p)
     {
-        if (!PetWire.TryReadTransform(p, out var transformed, out int failure))
+        if (_petIncubationRequest is not { Transform: true } request) return;
+        _petIncubationRequest = null;
+        if (!PetWire.TryReadTransformFor(p, request, out var transformed, out int failure))
         {
             PetTransformFailedEvent?.Invoke(failure);
             return;
         }
-
         int abs = PlaceFamiliarItem(transformed.Pet);
-        if (transformed.MaterialItemId != 0)
-            SpendBagItem(InventoryConstants.InventoryStart + transformed.MaterialSlot, transformed.MaterialItemId);
+        SpendBagItem(InventoryConstants.InventoryStart + transformed.MaterialSlot, transformed.MaterialItemId);
         PetTransformedEvent?.Invoke(abs, transformed.Pet.Info);
     }
 
@@ -207,19 +217,24 @@ public partial class Net
             sheet.Index, sheet.Name, sheet.Attack, sheet.Level, sheet.ExpPercent, sheet.Satisfaction);
     }
 
-    public void SendPetHatch(int npcId, int eggItemId, int bagSlot, string name)
+    public bool SendPetHatch(int npcId, int eggItemId, int bagSlot, string name)
     {
+        if (!Connected || _petIncubationRequest != null || !IsBagSlot(bagSlot)) return false;
         var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
         p.WriteByte(PetHatchSub);
         p.WriteInt(npcId);
         p.WriteInt(eggItemId);
         p.WriteByte((byte)bagSlot);
         p.WriteString(name);
+        _petIncubationRequest = PetIncubationRequest.Hatch(eggItemId, bagSlot);
         _conn.Send(p);
+        return true;
     }
 
-    public void SendPetTransform(int npcId, int petItemId, int petSlot, int materialItemId, int materialSlot)
+    public bool SendPetTransform(int npcId, int petItemId, int petSlot, int petUniqueId, int materialItemId, int materialSlot)
     {
+        if (!Connected || _petIncubationRequest != null || !IsBagSlot(petSlot) || !IsBagSlot(materialSlot)
+            || petSlot == materialSlot) return false;
         var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
         p.WriteByte(PetTransformSub);
         p.WriteInt(npcId);
@@ -232,8 +247,12 @@ public partial class Net
             p.WriteInt(0);
             p.WriteByte(0);
         }
+        _petIncubationRequest = PetIncubationRequest.Transformation(petItemId, petSlot, petUniqueId, materialItemId, materialSlot);
         _conn.Send(p);
+        return true;
     }
+
+    private static bool IsBagSlot(int bagSlot) => bagSlot >= 0 && bagSlot < InventoryConstants.HaveMax;
 
     public void SendPetMode(int mode)
     {
@@ -244,8 +263,9 @@ public partial class Net
         _conn.Send(p);
     }
 
-    public void SendPetFeed(int bagSlot, int foodItemId)
+    public bool SendPetFeed(int bagSlot, int foodItemId)
     {
+        if (!Connected || _petFeedRequest != null || !IsBagSlot(bagSlot)) return false;
         var p = new Packet(GameOpcodes.GS_PET);
         p.WriteByte(PetSubFunction);
         p.WriteByte(PetFunctionFood);
@@ -253,15 +273,18 @@ public partial class Net
         p.WriteInt(foodItemId);
         p.WriteByte(PetFoodTrailFlag);
         p.WriteByte(PetFoodTrailPad);
+        _petFeedRequest = new PetFeedRequest(bagSlot, foodItemId);
         _conn.Send(p);
+        return true;
     }
 
     public void SendPetDismiss() => SendMagic(MagicSub.Cancel, FamiliarSummonSkill, MyCharId);
 
     internal void SeedPreviewPet(PetSheet sheet) => Pet = sheet;
 
-    public void SendPetSkill(int stage, int skillId, int casterId, int targetId, int x, int y, int z)
+    public bool SendPetSkill(int stage, int skillId, int casterId, int targetId, int x, int y, int z)
     {
+        if (!Connected) return false;
         var p = new Packet(GameOpcodes.GS_PET);
         p.WriteByte(PetSubSkill);
         p.WriteByte((byte)stage);
@@ -275,5 +298,6 @@ public partial class Net
         p.WriteInt(0);
         p.WriteInt(0);
         _conn.Send(p);
+        return true;
     }
 }
