@@ -53,6 +53,9 @@ public partial class World
 
     private static string MarketPriceText(int id, string fallback) => ItemData.Text(id, fallback);
 
+    private static string MarketPriceNoHistoryMessage =>
+        MarketPriceText(MarketPriceNoHistoryText, "There is no trade history for this item");
+
     private static string GoldAmount(long value) => $"{value:n0} gold";
 
     private void BuildMarketPricePanel()
@@ -247,6 +250,12 @@ public partial class World
 
     private void DrawMarketPrice(MarketPriceReply reply)
     {
+        if (!reply.HasHistory)
+        {
+            ClearMarketPriceChart();
+            SetMarketPriceStatus(MarketPriceNoHistoryMessage);
+            return;
+        }
         _marketPriceChart.ShowDays(reply.Days);
         _marketPriceTrades.Text = $"{reply.Trades:n0}";
         var local = reply.LastUpdate.ToLocalTime();
@@ -276,7 +285,7 @@ public partial class World
                 _marketPriceOpenOnReply = false;
                 _marketPriceCache[_marketPriceAsked] = new MarketPriceReply(MarketPrice.NoHistory, _marketPriceAsked,
                     new MarketPriceDay[MarketPrice.DaysShown], 0, default);
-                string none = MarketPriceText(MarketPriceNoHistoryText, "There is no trade history for this item");
+                string none = MarketPriceNoHistoryMessage;
                 if (_marketPriceAsked == _marketPriceItem && _marketPriceShown)
                 {
                     ClearMarketPriceChart();

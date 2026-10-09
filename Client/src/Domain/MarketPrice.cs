@@ -9,7 +9,10 @@ public readonly record struct MarketPriceDay(long Average, long Max, long Min)
     public bool HasTrades => Average > 0;
 }
 
-public sealed record MarketPriceReply(int Result, int ItemId, IReadOnlyList<MarketPriceDay> Days, int Trades, DateTime LastUpdate);
+public sealed record MarketPriceReply(int Result, int ItemId, IReadOnlyList<MarketPriceDay> Days, int Trades, DateTime LastUpdate)
+{
+    public bool HasHistory => Result == MarketPrice.History;
+}
 
 public enum MarketPriceVerdict
 {

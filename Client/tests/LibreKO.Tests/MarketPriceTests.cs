@@ -92,4 +92,14 @@ public class MarketPriceTests
         Assert.True(new MarketPriceDay(10, 12, 8).HasTrades);
         Assert.False(default(MarketPriceDay).HasTrades);
     }
+
+    [Fact]
+    public void OnlyAHistoryReplyHasHistoryToDraw()
+    {
+        var history = new MarketPriceReply(MarketPrice.History, 0, Days((100, 100, 100)), 1, DateTime.UtcNow);
+        var none = new MarketPriceReply(MarketPrice.NoHistory, 0, Days(), 0, default);
+
+        Assert.True(history.HasHistory);
+        Assert.False(none.HasHistory);
+    }
 }
