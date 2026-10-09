@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using LibreKO.Domain;
 using LibreKO.Network;
@@ -7,21 +8,9 @@ namespace LibreKO;
 
 public partial class World
 {
-    private const int NationTransferFailedText = 16700;
     private const int NationTransferDoneText = 16701;
     private const int NationTransferCertificate = 810096000;
     private const int NationTransferWarText = 16711;
-    private static readonly Dictionary<int, int> NationTransferRefusalTexts = new()
-    {
-        [2] = 16702,
-        [3] = 16703,
-        [4] = 16704,
-        [5] = 16705,
-        [6] = 16706,
-        [7] = 16710,
-        [9] = 10750,
-        [10] = 11303,
-    };
 
     private CanvasLayer _transferLayer = null!;
     private HudWindow _transferPanel = null!;
@@ -34,7 +23,9 @@ public partial class World
     private readonly Dictionary<int, NationTransferPick> _transferPicks = new();
     private NationTransferCandidate? _transferSelected;
     private int _transferNation;
-    private bool _transferShown, _transferInFlight;
+    private bool _transferShown, _transferInFlight, _transferCompleted;
+    private int _transferRevision;
+    private Notice? _transferNotice;
 
     private void NationTransferInit()
     {
@@ -43,6 +34,7 @@ public partial class World
         Net.I.NationTransferRefusedEvent += OnNationTransferRefused;
         Net.I.NationTransferDoneEvent += OnNationTransferDone;
         Net.I.NationTransferWarEvent += OnNationTransferWar;
+        Net.I.NationTransferResetEvent += OnNationTransferReset;
     }
 
     private void NationTransferDispose()
@@ -51,6 +43,7 @@ public partial class World
         Net.I.NationTransferRefusedEvent -= OnNationTransferRefused;
         Net.I.NationTransferDoneEvent -= OnNationTransferDone;
         Net.I.NationTransferWarEvent -= OnNationTransferWar;
+        Net.I.NationTransferResetEvent -= OnNationTransferReset;
     }
 
     private void BuildNationTransferPanel()
@@ -109,12 +102,13 @@ public partial class World
 
     private void OpenNationTransfer(IReadOnlyList<NationTransferCandidate> candidates)
     {
+        if (_transferInFlight || _transferNotice != null || _transferCompleted) return;
+        _transferRevision++;
         foreach (var (_, button) in _transferRows)
             button.QueueFree();
         _transferRows.Clear();
         _transferPicks.Clear();
         _transferSelected = null;
-        _transferInFlight = false;
         if (candidates.Count == 0) return;
 
         _transferNation = candidates[0].Nation;
@@ -137,6 +131,7 @@ public partial class World
 
     private void SelectTransferCharacter(NationTransferCandidate candidate)
     {
+        if (_transferInFlight || _transferNotice != null) return;
         _transferSelected = candidate;
         foreach (var (row, button) in _transferRows)
             button.SetPressedNoSignal(row.Slot == candidate.Slot);
@@ -147,6 +142,7 @@ public partial class World
 
     private void OnTransferLookChanged()
     {
+        if (_transferInFlight || _transferNotice != null) return;
         if (_transferSelected is not { } selected) return;
         _transferPicks[selected.Slot] = new NationTransferPick(selected.Slot, selected.Name,
             _transferEditor.Race, _transferEditor.Face, _transferEditor.Hair);
@@ -161,20 +157,44 @@ public partial class World
 
     private void OnTransferPressed()
     {
-        if (_transferInFlight || _transferPicks.Count == 0) return;
-        Notice.Confirm(this,
-            $"All {_transferPicks.Count} characters of your account move to {Nations.Name(_transferNation)} and your {ItemData.DisplayName(NationTransferCertificate).Trim()} is used. You return to the character screen afterwards.",
-            "Transfer", "Cancel", SendNationTransfer, title: "Nation Transfer");
+        if (!_transferShown || _transferInFlight || _transferNotice != null || _transferPicks.Count == 0) return;
+        int revision = ++_transferRevision;
+        var picks = _transferPicks.Values.OrderBy(pick => pick.Slot).ToArray();
+        SetTransferLocked(true);
+        _transferNotice = Notice.Confirm(this,
+            $"All {picks.Length} characters of your account move to {Nations.Name(_transferNation)} and your {ItemData.DisplayName(NationTransferCertificate).Trim()} is used. You return to the character screen afterwards.",
+            "Transfer", "Cancel", () => SendNationTransfer(revision, picks),
+            () => CancelTransferConfirmation(revision), title: "Nation Transfer");
     }
 
-    private void SendNationTransfer()
+    private void SendNationTransfer(int revision, IReadOnlyList<NationTransferPick> picks)
     {
+        if (revision != _transferRevision || !_transferShown || _transferInFlight || _transferNotice == null) return;
+        _transferNotice = null;
         _transferInFlight = true;
-        _transferConfirm.Disabled = true;
         SetTransferStatus("Transferring…", false);
-        var picks = new List<NationTransferPick>(_transferPicks.Values);
-        picks.Sort((a, b) => a.Slot.CompareTo(b.Slot));
-        Net.I.SendNationTransfer(picks);
+        if (!Net.I.SendNationTransfer(picks)) OnNationTransferRefused(NationTransferWire.FailedText);
+    }
+
+    private void CancelTransferConfirmation(int revision)
+    {
+        if (revision != _transferRevision || _transferInFlight || _transferNotice == null) return;
+        _transferNotice = null;
+        SetTransferLocked(false);
+    }
+
+    private void DismissTransferConfirmation()
+    {
+        _transferRevision++;
+        if (_transferNotice is { } notice && GodotObject.IsInstanceValid(notice)) notice.Close();
+        _transferNotice = null;
+    }
+
+    private void SetTransferLocked(bool locked)
+    {
+        foreach (var (_, button) in _transferRows) button.Disabled = locked;
+        _transferConfirm.Disabled = locked || _transferPicks.Count == 0;
+        if (!locked && _transferShown && _transferSelected is { } selected) SelectTransferCharacter(selected);
     }
 
     private void CancelNationTransfer()
@@ -182,25 +202,28 @@ public partial class World
         if (!_transferShown) return;
         _transferShown = false;
         _transferPanel.Visible = false;
+        DismissTransferConfirmation();
         _transferPreview.Clear();
         if (!_transferInFlight) Net.I.SendNationTransferCancel();
     }
 
-    private void OnNationTransferRefused(int result)
+    private void OnNationTransferRefused(int textId)
     {
+        DismissTransferConfirmation();
         _transferInFlight = false;
-        _transferConfirm.Disabled = false;
-        string text = ItemData.Text(
-            NationTransferRefusalTexts.TryGetValue(result, out int id) ? id : NationTransferFailedText,
-            "Transfer failed");
+        SetTransferLocked(false);
+        if (!_transferShown) Net.I.SendNationTransferCancel();
+        string text = ItemData.Text(textId, "Transfer failed");
         if (_transferShown) SetTransferStatus(text, true);
         else CombatNotice(text);
     }
 
     private void OnNationTransferWar(int karus, int elmorad)
     {
+        DismissTransferConfirmation();
         _transferInFlight = false;
-        _transferConfirm.Disabled = false;
+        SetTransferLocked(false);
+        if (!_transferShown) Net.I.SendNationTransferCancel();
         var text = new System.Text.StringBuilder(ItemData.Text(NationTransferWarText,
             "Currently nation transfer is not available. current war status Karus %d : El Morad %d"));
         foreach (int score in new[] { karus, elmorad })
@@ -214,6 +237,10 @@ public partial class World
 
     private void OnNationTransferDone()
     {
+        if (!_transferInFlight || _transferCompleted) return;
+        _transferInFlight = false;
+        _transferCompleted = true;
+        DismissTransferConfirmation();
         _transferShown = false;
         _transferPanel.Visible = false;
         _transferPreview.Clear();
@@ -223,6 +250,16 @@ public partial class World
                 Net.I.ReturnToCharSelect();
                 GetTree().ChangeSceneToFile("res://scenes/CharSelect.tscn");
             });
+    }
+
+    private void OnNationTransferReset()
+    {
+        DismissTransferConfirmation();
+        _transferInFlight = false;
+        _transferShown = false;
+        _transferPanel.Visible = false;
+        _transferPreview.Clear();
+        SetTransferLocked(false);
     }
 
     private void SetTransferStatus(string text, bool warn)

@@ -178,6 +178,7 @@ public partial class Net : Node
         ResetPet();
         ResetRebirth();
         ResetChangeHair();
+        ResetNationTransfer();
     }
 
     public Func<bool>? WindowCloseHandler;

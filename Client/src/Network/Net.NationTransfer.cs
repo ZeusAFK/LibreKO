@@ -13,7 +13,6 @@ public partial class Net
     public const byte NationTransferOpenBox = 2;
     public const byte NationTransferSubmit = 3;
     public const byte NationTransferAccepted = 1;
-    public const byte NationTransferMovedAgain = 2;
     public const byte NationTransferErrorBox = 16;
     public const byte NationTransferWarRunning = 8;
 
@@ -21,8 +20,11 @@ public partial class Net
     public event Action<int>? NationTransferRefusedEvent;
     public event Action? NationTransferDoneEvent;
     public event Action<int, int>? NationTransferWarEvent;
+    public event Action? NationTransferResetEvent;
 
     private int _nationTransferTarget;
+    private bool _nationTransferPending;
+    private IReadOnlyList<NationTransferCandidate> _nationTransferCandidates = Array.Empty<NationTransferCandidate>();
 
     private void HandleNationTransfer(Packet p)
     {
@@ -32,44 +34,36 @@ public partial class Net
         switch (sub)
         {
             case NationTransferOpenBox when result == NationTransferAccepted:
-                NationTransferOpenEvent?.Invoke(ReadNationTransferCandidates(p));
+                if (_nationTransferPending) return;
+                var candidates = NationTransferWire.ReadCandidates(p);
+                if (candidates == null) return;
+                _nationTransferCandidates = candidates;
+                _nationTransferTarget = candidates.Count == 0 ? 0 : candidates[0].Nation;
+                NationTransferOpenEvent?.Invoke(candidates);
                 break;
-            case NationTransferSubmit when result is NationTransferAccepted or NationTransferMovedAgain:
-                if (_nationTransferTarget != 0) Nation = _nationTransferTarget;
+            case NationTransferSubmit when NationTransferWire.IsSubmitSuccess(result):
+                if (!_nationTransferPending) return;
+                Nation = _nationTransferTarget;
+                ClearNationTransfer();
                 NationTransferDoneEvent?.Invoke();
                 break;
             case NationTransferWarStatus or NationTransferErrorBox when result == NationTransferWarRunning && p.RemainingBytes >= 2:
+                _nationTransferPending = false;
                 NationTransferWarEvent?.Invoke(p.ReadByte(), p.ReadByte());
                 break;
             case NationTransferWarStatus or NationTransferOpenBox or NationTransferSubmit or NationTransferErrorBox:
-                NationTransferRefusedEvent?.Invoke(result);
+                if (!NationTransferWire.IsRefusal(sub, result)) return;
+                if (sub == NationTransferSubmit && !_nationTransferPending) return;
+                _nationTransferPending = false;
+                NationTransferRefusedEvent?.Invoke(NationTransferWire.RefusalText(sub, result));
                 break;
         }
     }
 
-    private List<NationTransferCandidate> ReadNationTransferCandidates(Packet p)
+    public bool SendNationTransfer(IReadOnlyList<NationTransferPick> picks)
     {
-        var list = new List<NationTransferCandidate>();
-        if (p.RemainingBytes < 1) return list;
-        int count = p.ReadByte();
-        for (int i = 0; i < count && p.RemainingBytes >= 2; i++)
-        {
-            int slot = p.ReadShort();
-            string name = p.ReadString();
-            if (p.RemainingBytes < 9) break;
-            int race = p.ReadByte();
-            int nation = p.ReadByte();
-            int cls = p.ReadShort();
-            int face = p.ReadByte();
-            int hair = p.ReadInt();
-            list.Add(new NationTransferCandidate(slot, name, race, nation, cls, face, hair));
-        }
-        if (list.Count > 0) _nationTransferTarget = list[0].Nation;
-        return list;
-    }
-
-    public void SendNationTransfer(IReadOnlyList<NationTransferPick> picks)
-    {
+        if (_nationTransferPending || _nationTransferTarget == 0
+            || !NationTransferWire.PicksMatch(_nationTransferCandidates, picks)) return false;
         var p = new Packet(GameOpcodes.GS_NATION_TRANSFER);
         p.WriteByte(NationTransferSubmit);
         p.WriteByte(NationTransferAccepted);
@@ -82,14 +76,32 @@ public partial class Net
             p.WriteByte((byte)pick.Face);
             p.WriteInt(pick.Hair);
         }
+        _nationTransferPending = true;
         _conn.Send(p);
+        return true;
     }
 
     public void SendNationTransferCancel()
     {
+        if (_nationTransferPending) return;
+        ClearNationTransfer();
         var p = new Packet(GameOpcodes.GS_NATION_TRANSFER);
         p.WriteByte(NationTransferSubmit);
         p.WriteByte(0);
         _conn.Send(p);
+    }
+
+    private void ClearNationTransfer()
+    {
+        _nationTransferPending = false;
+        _nationTransferTarget = 0;
+        _nationTransferCandidates = Array.Empty<NationTransferCandidate>();
+    }
+
+    private void ResetNationTransfer()
+    {
+        bool hadOperation = _nationTransferPending || _nationTransferTarget != 0;
+        ClearNationTransfer();
+        if (hadOperation) NationTransferResetEvent?.Invoke();
     }
 }

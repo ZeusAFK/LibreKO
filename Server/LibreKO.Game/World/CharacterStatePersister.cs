@@ -41,6 +41,19 @@ public class CharacterStatePersister(
         if (session.IsBot)
             return false;
 
+        await session.CharacterPersistenceGate.WaitAsync(cancellationToken);
+        try
+        {
+            return await SaveUnderGateAsync(session);
+        }
+        finally
+        {
+            session.CharacterPersistenceGate.Release();
+        }
+    }
+
+    private async Task<bool> SaveUnderGateAsync(UserSession session)
+    {
         using var scope = _scopeFactory.CreateScope();
         var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
         var warehouseRepository = scope.ServiceProvider.GetRequiredService<IWarehouseRepository>();
@@ -55,7 +68,10 @@ public class CharacterStatePersister(
         var dailyOp = await dailyOpRepository.GetOrCreateByCharacterId(session.CharacterId);
         var account = await accountRepository.GetById(session.AccountId);
 
+        var destination = (character.MapId, character.X, character.Y, character.Z);
         userSessionCharacterMapper.ApplyToCharacter(session, character);
+        if (session.NationTransferCommitted)
+            (character.MapId, character.X, character.Y, character.Z) = destination;
         userSessionCharacterMapper.ApplyToWarehouse(session, warehouse);
         userSessionCharacterMapper.ApplyToDailyOps(session, dailyOp);
         if (account != null)
