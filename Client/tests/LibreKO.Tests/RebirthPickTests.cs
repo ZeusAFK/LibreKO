@@ -43,6 +43,28 @@ public class RebirthPickTests
     }
 
     [Fact]
+    public void OnlyAFullAllocationOfFiveStatsCanBeSent()
+    {
+        Assert.True(RebirthPick.IsAllocation(new byte[] { 1, 0, 0, 0, 1 }));
+        Assert.True(RebirthPick.IsAllocation(new byte[] { 0, 0, 2, 0, 0 }));
+        Assert.False(RebirthPick.IsAllocation(new byte[] { 1, 0, 0, 0, 0 }));
+        Assert.False(RebirthPick.IsAllocation(new byte[] { 2, 1, 0, 0, 0 }));
+        Assert.False(RebirthPick.IsAllocation(new byte[] { 2, 0, 0, 0 }));
+        Assert.False(RebirthPick.IsAllocation(new byte[] { 2, 0, 0, 0, 0, 0 }));
+        Assert.False(RebirthPick.IsAllocation(new RebirthPick().Payload()));
+    }
+
+    [Theory]
+    [InlineData(CharacterSheet.MaxLevel, 0, true)]
+    [InlineData(CharacterSheet.MaxLevel, RebirthPick.MaxRebirthLevel - 1, true)]
+    [InlineData(CharacterSheet.MaxLevel, RebirthPick.MaxRebirthLevel, false)]
+    [InlineData(CharacterSheet.MaxLevel - 1, 0, false)]
+    public void RebirthNeedsTheLevelCapAndARemainingRebirth(int level, int rebirthLevel, bool available)
+    {
+        Assert.Equal(available, RebirthPick.Available(level, rebirthLevel));
+    }
+
+    [Fact]
     public void TheSheetShowsTheRebirthLevelAfterTheLevelAndFoldsThePointsIntoTheBonus()
     {
         var sheet = new CharacterSheet();

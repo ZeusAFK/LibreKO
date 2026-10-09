@@ -343,9 +343,10 @@ public class CharacterDevelopmentPacketCoordinator(
 
     private async Task HandleRebStatChangeAsync(UserSession session, Packet packet)
     {
-        if (packet.RemainingBytes < 5)
+        if (packet.RemainingBytes != RebirthBonus.StatCount || session.Hp <= 0 || session.Trade.IsTrading
+            || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.IsGathering)
         {
-            await SendRebResultAsync(session, ClassChangeSubOpcode.RebirthStatChange, 0);
+            await SendRebirthResultAsync(session, RebirthResult.Unavailable);
             return;
         }
 
@@ -355,18 +356,30 @@ public class CharacterDevelopmentPacketCoordinator(
         var recInt = packet.ReadByte();
         var recCha = packet.ReadByte();
 
-        if (session.Level < ProgressionTable.MaxLevel
-            || session.RebirthLevel >= RebirthBonus.MaxRebirthLevel
+        if (session.Level < ProgressionTable.MaxLevel)
+        {
+            await SendRebirthResultAsync(session, RebirthResult.LevelTooLow);
+            return;
+        }
+
+        if (session.RebirthLevel >= RebirthBonus.MaxRebirthLevel
             || recStr + recSta + recDex + recInt + recCha != RebirthBonus.PointsPerRebirth)
         {
-            await SendRebResultAsync(session, ClassChangeSubOpcode.RebirthStatChange, 0);
+            await SendRebirthResultAsync(session, RebirthResult.Unavailable);
+            return;
+        }
+
+        if (session.Experience < RebirthBonus.RequiredExperience(
+                gameDataService.GetMaxExpForLevel(session.Level), session.RebirthLevel))
+        {
+            await SendRebirthResultAsync(session, RebirthResult.ExperienceNotFull);
             return;
         }
 
         var scrollSlot = FindRebirthScrollSlot(session);
         if (scrollSlot < 0)
         {
-            await SendRebResultAsync(session, ClassChangeSubOpcode.RebirthStatChange, 0);
+            await SendRebirthResultAsync(session, RebirthResult.NoQualification);
             return;
         }
 
@@ -383,7 +396,7 @@ public class CharacterDevelopmentPacketCoordinator(
             scroll.Clear();
         await userNotificationService.SendStackChangeAsync(session, (byte)scrollSlot, scroll.ItemId, scroll.Count, scroll.Durability);
 
-        await SendRebResultAsync(session, ClassChangeSubOpcode.RebirthStatChange, 1);
+        await SendRebirthResultAsync(session, RebirthResult.Success);
         await progression.CompleteRebirthAsync(session);
         logger.LogInformation(
             "{Name} rebirth +1 (now {Level}): +str={Str} sta={Sta} dex={Dex} int={Int} cha={Cha}",
@@ -445,6 +458,9 @@ public class CharacterDevelopmentPacketCoordinator(
         }
         return -1;
     }
+
+    private static Task SendRebirthResultAsync(UserSession session, RebirthResult result) =>
+        session.Client.SendPacket(RebirthPacketWriter.Result(result));
 
     private static async Task SendRebResultAsync(UserSession session, ClassChangeSubOpcode subOpcode, byte result)
     {

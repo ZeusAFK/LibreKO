@@ -46,6 +46,17 @@ public sealed class RebirthPick
 
     public void Clear() => Array.Clear(_picked);
 
+    public static bool Available(int level, int rebirthLevel) =>
+        level >= CharacterSheet.MaxLevel && rebirthLevel < MaxRebirthLevel;
+
+    public static bool IsAllocation(ReadOnlySpan<byte> picks)
+    {
+        if (picks.Length != StatCount) return false;
+        int total = 0;
+        foreach (byte picked in picks) total += picked;
+        return total == PointsPerRebirth;
+    }
+
     public byte[] Payload()
     {
         var bytes = new byte[StatCount];

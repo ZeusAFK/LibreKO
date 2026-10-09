@@ -21,6 +21,8 @@ public partial class Net
     public event Action<int, int>? ClassPromotedEvent;
 
     public event Action<int, int>? RebStatChangeEvent;
+    public event Action? RebirthResetEvent;
+    private bool _rebirthPending;
 
     public event Action<int>? ResetCostEvent;
 
@@ -55,7 +57,11 @@ public partial class Net
                 }
                 else JobChangeResultEvent?.Invoke(p.RemainingBytes >= 1 ? p.ReadByte() : 0);
                 break;
-            case 7:
+            case ClassChangeRebirthStat:
+                if (!_rebirthPending || !RebirthWire.TryRead(p, out short result)) break;
+                _rebirthPending = false;
+                RebStatChangeEvent?.Invoke(sub, result);
+                break;
             case 8: RebStatChangeEvent?.Invoke(sub, p.RemainingBytes >= 1 ? p.ReadByte() : 0); break;
         }
     }
@@ -110,12 +116,21 @@ public partial class Net
 
     public const byte ClassChangeRebirthStat = 7;
 
-    public void SendRebirthStatChange(byte[] picks)
+    public bool SendRebirthStatChange(byte[] picks)
     {
+        if (_rebirthPending || !Domain.RebirthPick.IsAllocation(picks)) return false;
+        _rebirthPending = true;
         var p = new Packet(GameOpcodes.GS_CLASS_CHANGE);
         p.WriteByte(ClassChangeRebirthStat);
-        for (int i = 0; i < 5; i++) p.WriteByte(i < picks.Length ? picks[i] : (byte)0);
+        foreach (byte picked in picks) p.WriteByte(picked);
         _conn.Send(p);
+        return true;
+    }
+
+    private void ResetRebirth()
+    {
+        _rebirthPending = false;
+        RebirthResetEvent?.Invoke();
     }
 
     public const byte ResetKindStat = 1;
