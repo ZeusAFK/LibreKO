@@ -75,6 +75,8 @@ public partial class World
 
     private void OnQuestReceipt(QuestReceipt receipt)
     {
+        _questRewardSelection.Receive(receipt.QuestId, receipt);
+        RefreshQuestDetail();
         if (_questReceiptWindow == null)
         {
             var layer = new CanvasLayer { Layer = 76 };
