@@ -29,13 +29,13 @@ public partial class World : Node3D
         EscapeCloses(() => _genderShown, CloseGenderChange);
         EscapeCloses(() => _transferShown, CancelNationTransfer);
         EscapeCloses(() => _nameChangeShown, CloseNameChange);
-        EscapeCloses(() => _merchantSearchShown, CloseMerchantSearch);
         EscapeCloses(() => _exAmountShown, () => CloseExchangeAmount());
         EscapeCloses(() => _exWaiting, () => CancelExchangeRequest());
         EscapeCloses(() => _exShown, () => AbortExchange(local: true));
         EscapeCloses(() => _marketPriceShown, CloseMarketPrice);
         EscapeCloses(() => _amountLayer.Visible, CloseAmountPrompt);
         EscapeCloses(() => _shopShown, () => CloseShop());
+        EscapeCloses(() => _merchantSearchShown, CloseMerchantSearch);
         EscapeCloses(() => _wishFindShown, CloseWishFind);
         EscapeCloses(() => _wishShown, CloseWishList);
         EscapeCloses(() => _wantedShown, CloseWantedStall);
@@ -73,7 +73,7 @@ public partial class World : Node3D
         EscapeCloses(() => _equipViewShown, CloseEquipView);
         EscapeCloses(() => _changeHairShown, () => CloseChangeHair());
         EscapeCloses(() => _achShown, () => CloseAchievements());
-        EscapeCloses(() => _mailComposeShown, CloseMailCompose);
+        EscapeCloses(() => _mailComposeShown, HideMailCompose);
         EscapeCloses(() => _mailReadWindow is { Visible: true }, CloseMailRead);
         EscapeCloses(() => _mailShown, () => CloseMail());
         EscapeCloses(() => _lotteryShown, () => CloseLottery());
