@@ -7,30 +7,44 @@ public static class StarterStats
     public readonly record struct Roll(int Str, int Sta, int Dex, int Int, int Mag, int Bonus)
     {
         public int Total => Str + Sta + Dex + Int + Mag;
+
+        public int StatAtRow(int row) => row switch
+        {
+            0 => Str, 1 => Sta, 2 => Dex, 3 => Int, 4 => Mag, _ => 0,
+        };
     }
 
     public const int StatFloor = 50;
     public const int RequiredTotal = 300;
 
+    public static Roll BaseForClass(int cls) => CharacterClassCatalog.Family(cls) switch
+    {
+        CharacterClassCatalog.FamilyWarrior or CharacterClassCatalog.FamilyKurian => new(65, 65, 60, 50, 50, 10),
+        CharacterClassCatalog.FamilyRogue => new(60, 60, 70, 50, 50, 10),
+        CharacterClassCatalog.FamilyMage => new(50, 50, 70, 70, 50, 10),
+        CharacterClassCatalog.FamilyPriest => new(50, 60, 60, 70, 50, 10),
+        _ => new(58, 58, 58, 58, 58, 10),
+    };
+
     private static readonly Dictionary<int, Roll> Table = new()
     {
-        [10101] = new(65, 65, 60, 50, 50, 10),
-        [20102] = new(60, 60, 70, 50, 50, 10),
-        [20104] = new(50, 60, 60, 70, 50, 10),
-        [30103] = new(50, 50, 70, 70, 50, 10),
-        [40103] = new(50, 50, 70, 70, 50, 10),
-        [40104] = new(50, 60, 60, 70, 50, 10),
-        [60113] = new(65, 65, 60, 50, 50, 10),
-        [110201] = new(65, 65, 60, 50, 50, 10),
-        [120201] = new(65, 65, 60, 50, 50, 10),
-        [120202] = new(60, 60, 70, 50, 50, 10),
-        [120203] = new(50, 50, 70, 70, 50, 10),
-        [120204] = new(50, 60, 60, 70, 50, 10),
-        [130201] = new(65, 65, 60, 50, 50, 10),
-        [130202] = new(60, 60, 70, 50, 50, 10),
-        [130203] = new(50, 50, 70, 70, 50, 10),
-        [130204] = new(50, 60, 60, 70, 50, 10),
-        [140213] = new(65, 65, 60, 50, 50, 10),
+        [10101] = BaseForClass(101),
+        [20102] = BaseForClass(102),
+        [20104] = BaseForClass(104),
+        [30103] = BaseForClass(103),
+        [40103] = BaseForClass(103),
+        [40104] = BaseForClass(104),
+        [60113] = BaseForClass(113),
+        [110201] = BaseForClass(201),
+        [120201] = BaseForClass(201),
+        [120202] = BaseForClass(202),
+        [120203] = BaseForClass(203),
+        [120204] = BaseForClass(204),
+        [130201] = BaseForClass(201),
+        [130202] = BaseForClass(202),
+        [130203] = BaseForClass(203),
+        [130204] = BaseForClass(204),
+        [140213] = BaseForClass(213),
     };
 
     private static readonly Dictionary<int, int[]> RaceClasses = new()

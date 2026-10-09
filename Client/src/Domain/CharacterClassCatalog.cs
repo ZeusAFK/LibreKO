@@ -3,6 +3,7 @@
 public static class CharacterClassCatalog
 {
     public const int TierUnknown = 0, TierBeginner = 1, TierNovice = 2, TierMaster = 3;
+    public const int FamilyWarrior = 1, FamilyRogue = 2, FamilyMage = 3, FamilyPriest = 4, FamilyKurian = 5;
 
     public static int Family(int classCode)
     {

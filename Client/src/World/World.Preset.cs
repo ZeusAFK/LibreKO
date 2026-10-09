@@ -8,7 +8,6 @@ public partial class World
 {
     private const string PresetStatKind = "stat";
     private const string PresetSkillKind = "skill";
-    private const int PresetMaxRaceBaseStat = 70;
 
     private CanvasLayer _presetLayer = null!;
     private HudWindow _presetPanel = null!;
@@ -18,6 +17,8 @@ public partial class World
     private readonly PresetPlan[] _presetPlans = new PresetPlan[PresetPlan.SlotCount];
     private readonly Button[] _presetSlotBtns = new Button[PresetPlan.SlotCount];
     private readonly Label[] _presetStatLbls = new Label[CharacterSheet.StatCount];
+    private readonly Button[] _presetStatMinusBtns = new Button[CharacterSheet.StatCount];
+    private readonly Button[] _presetStatPlusBtns = new Button[CharacterSheet.StatCount];
     private readonly Label[] _presetTreeLbls = new Label[PresetPlan.TreeCount];
     private readonly Label[] _presetTreeNameLbls = new Label[PresetPlan.TreeCount];
     private Label _presetStatPointsLbl = null!;
@@ -71,7 +72,7 @@ public partial class World
 
     private void BuildPresetStatBlock(VBoxContainer root)
     {
-        root.AddChild(UiTheme.SectionTitle("Stats"));
+        root.AddChild(UiTheme.SectionTitle("Stats (base + allocated)"));
         _presetStatPointsLbl = HudStyle.Label(13);
         root.AddChild(_presetStatPointsLbl);
 
@@ -92,8 +93,8 @@ public partial class World
             _presetStatLbls[i].CustomMinimumSize = new Vector2(74, 0);
             grid.AddChild(_presetStatLbls[i]);
 
-            grid.AddChild(PresetStepButton("-", () => PlanStat(index, -1)));
-            grid.AddChild(PresetStepButton("+", () => PlanStat(index, 1)));
+            grid.AddChild(_presetStatMinusBtns[i] = PresetStepButton("-", () => PlanStat(index, -1)));
+            grid.AddChild(_presetStatPlusBtns[i] = PresetStepButton("+", () => PlanStat(index, 1)));
         }
 
         var apply = new Button
@@ -204,17 +205,7 @@ public partial class World
         RefreshPresetUI();
     }
 
-    private int PlannedStatBudget(int index)
-    {
-        int spent = 0;
-        var stats = ActivePreset.Stats;
-        for (int i = 0; i < stats.Length; i++) if (i != index) spent += stats[i];
-        return System.Math.Min(Sheet.PointsForLevel - spent, PresetStatCap(index));
-    }
-
-    private int PresetStatCap(int index) => Sheet.AtBaseStats
-        ? CharacterSheet.StatMax - Sheet.StatAtRow(index)
-        : CharacterSheet.StatMax - PresetMaxRaceBaseStat;
+    private int PlannedStatBudget(int index) => ActivePreset.StatBudget(_selfClass, index, Sheet.PointsForLevel);
 
     private int PlannedTreeBudget(int index)
     {
@@ -241,7 +232,11 @@ public partial class World
         {
             statSpent += plan.Stats[i];
             if (_presetStatLbls[i] == null || !GodotObject.IsInstanceValid(_presetStatLbls[i])) continue;
-            _presetStatLbls[i].Text = plan.Stats[i].ToString();
+            _presetStatLbls[i].Text = plan.StatValue(_selfClass, i).ToString();
+            _presetStatLbls[i].TooltipText =
+                $"Base: {StarterStats.BaseForClass(_selfClass).StatAtRow(i)}\nAllocated: {plan.Stats[i]}";
+            _presetStatMinusBtns[i].Disabled = plan.Stats[i] <= 0;
+            _presetStatPlusBtns[i].Disabled = plan.Stats[i] >= PlannedStatBudget(i);
         }
         if (_presetStatPointsLbl != null && GodotObject.IsInstanceValid(_presetStatPointsLbl))
             _presetStatPointsLbl.Text = $"Planned {statSpent} of {Sheet.PointsForLevel} stat point(s)";
@@ -267,9 +262,11 @@ public partial class World
     private const string RedistributeAtKaishan =
         "Your points are already spent. [Grand Merchant] Kaishan in Moradon redistributes them.";
 
+    private const string StatPlanOutOfRange = "The plan exceeds your available stat points or the stat limit.";
+
     private void ApplyStatPreset()
     {
-        if (!Sheet.AtBaseStats)
+        if (!ActivePreset.IsRedistributed(_selfClass, Sheet))
         {
             CombatNotice(RedistributeAtKaishan);
             return;
@@ -279,15 +276,12 @@ public partial class World
 
     private void SendStatPlan()
     {
-        var plan = ActivePreset;
-        var values = new int[CharacterSheet.StatCount];
-        int spent = 0;
-        for (int i = 0; i < values.Length; i++)
+        if (!ActivePreset.TryStatValues(_selfClass, Sheet.Points, out var values, out int remaining))
         {
-            values[i] = Sheet.StatAtRow(i) + plan.Stats[i];
-            spent += plan.Stats[i];
+            CombatNotice(StatPlanOutOfRange);
+            return;
         }
-        Net.I.SendStatPreset(values, Sheet.Points - spent);
+        Net.I.SendStatPreset(values, remaining);
     }
 
     private void ApplySkillPreset()
