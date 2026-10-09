@@ -10,7 +10,58 @@ public class ExchangeOfferTests
     private const int Potion = 389010000;
     private const int Sword = 110110001;
 
+    private const int AnyRace = 0;
+    private const int LinkedUniqueId = 23;
+
     private static bool Countable(int itemId) => itemId is Arrow or Potion;
+
+    private static ItemSlot Held(int itemId, ItemFlag state = ItemFlag.Unsealed, int uniqueId = 0) =>
+        new() { ItemId = itemId, Count = 1, Flag = (byte)state, UniqueId = uniqueId };
+
+    private static ItemData.Item Def(int itemId, int race = AnyRace) => new() { Id = itemId, Race = race };
+
+    [Fact]
+    public void AnOrdinaryTradableItemCanBeOffered()
+    {
+        Assert.True(ExchangeOffer.IsOfferable(Held(Sword), Def(Sword)));
+    }
+
+    [Theory]
+    [InlineData(ItemData.NoTradeIdFirst)]
+    [InlineData(ItemData.NoTradeIdLast)]
+    public void NoTradeIdsAreRefusedLikeTheServer(int itemId)
+    {
+        Assert.False(ExchangeOffer.IsOfferable(Held(itemId), Def(itemId)));
+    }
+
+    [Fact]
+    public void QuestItemsAreRefusedLikeTheServer()
+    {
+        Assert.False(ExchangeOffer.IsOfferable(Held(Sword), Def(Sword, ItemData.QuestItemRace)));
+    }
+
+    [Fact]
+    public void AnItemWithoutDefinitionIsRefusedLikeTheServer()
+    {
+        Assert.False(ExchangeOffer.IsOfferable(Held(Sword), null));
+    }
+
+    [Theory]
+    [InlineData(ItemFlag.Rented)]
+    [InlineData(ItemFlag.CharacterSeal)]
+    [InlineData(ItemFlag.Duplicate)]
+    [InlineData(ItemFlag.Sealed)]
+    [InlineData(ItemFlag.Bound)]
+    public void ItemStatesTheServerRefusesCannotBeOffered(ItemFlag state)
+    {
+        Assert.False(ExchangeOffer.IsOfferable(Held(Sword, state), Def(Sword)));
+    }
+
+    [Fact]
+    public void ALinkedItemCannotBeOffered()
+    {
+        Assert.False(ExchangeOffer.IsOfferable(Held(Sword, uniqueId: LinkedUniqueId), Def(Sword)));
+    }
 
     [Fact]
     public void RepeatedCountableOffersShareOneSlotLikeTheServerStack()

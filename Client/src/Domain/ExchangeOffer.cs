@@ -8,6 +8,9 @@ public static class ExchangeOffer
 {
     public const int ItemSlots = 12;
 
+    public static bool IsOfferable(ItemSlot slot, ItemData.Item? def) =>
+        slot.IsTradable && def != null && !ItemData.IsNoTradeId(slot.ItemId) && def.Race != ItemData.QuestItemRace;
+
     public static int SlotsUsed(IEnumerable<int> offeredItemIds, Func<int, bool> countable)
     {
         var stacked = new HashSet<int>();

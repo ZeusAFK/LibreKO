@@ -44,6 +44,7 @@ public partial class World
     private struct ExOfferItem { public int ItemId; public int Count; public short Dura; public int SourceAbs; }
 
     private const float TradeRange = 8f;
+    private const int ExchangeUntradableText = 7701;
 
     private void ExchangeInit()
     {
@@ -312,7 +313,8 @@ public partial class World
 
     private void OnExchangeRequest(int requesterCharId)
     {
-        if (_exShown || _exWaiting || _exRequestPending) { Net.I.SendExchangeAgree(false); return; }
+        if (_exRequestPending) return;
+        if (_exShown || _exWaiting) { Net.I.SendExchangeAgree(false); return; }
         _exPartnerId = requesterCharId;
         _exPartnerName = _ents.TryGetValue(requesterCharId, out var e) ? e.Name : "Player";
         _exRequestPending = true;
@@ -449,7 +451,11 @@ public partial class World
 
     private bool CanOfferItem(ItemSlot slot)
     {
-        if (!slot.IsTradable) { SetExStatus("That item can't be traded.", true); return false; }
+        if (!ExchangeOffer.IsOfferable(slot, ItemData.Get(slot.ItemId)))
+        {
+            SetExStatus(ItemData.Text(ExchangeUntradableText, "That item can't be traded."), true);
+            return false;
+        }
         if (!ExchangeOffer.HasRoomFor(_exMyOffer.ConvertAll(o => o.ItemId), slot.ItemId, IsCountableItem))
         {
             SetExStatus($"Offer is full ({ExchangeOffer.ItemSlots} items).", true);

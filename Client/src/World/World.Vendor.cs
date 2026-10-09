@@ -164,7 +164,6 @@ public partial class World
 
     private void OpenVendor(int sellingGroup)
     {
-        if (_tradeInFlight) return;
         _tradePrompt.Close();
         _vendorGroup = sellingGroup;
         CloseNpcDialog();
@@ -185,6 +184,7 @@ public partial class World
 
     private void CloseVendor()
     {
+        _tradeInFlight = false;
         _tradePrompt.Close();
         HideItemTooltip();
         if (!_vendorShown) return;

@@ -563,6 +563,7 @@ public partial class World
     {
         if (_selfDead) return;
         _selfDead = true;
+        _tradeInFlight = false;
         ClearStun();
         StopAutoAttack();
         Deselect();
