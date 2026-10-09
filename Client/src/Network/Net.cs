@@ -129,7 +129,7 @@ public partial class Net : Node
         Evicted = false;
         AutoReconnect = true;
         _reconnectKickSent = false;
-        ResetGenieSystem();
+        ResetPendingOperations();
         MyCharId = 0;
         PingMs = -1;
         _pingOutstanding = false;
@@ -151,7 +151,7 @@ public partial class Net : Node
             logout.WriteByte(0);
             _conn.Send(logout);
         }
-        ResetGenieSystem();
+        ResetPendingOperations();
         _conn.Close();
         PingMs = -1;
         _pingOutstanding = false;
@@ -166,8 +166,13 @@ public partial class Net : Node
             logout.WriteByte(0);
             _conn.Send(logout);
         }
-        ResetGenieSystem();
+        ResetPendingOperations();
         MyCharId = 0;
+    }
+
+    private void ResetPendingOperations()
+    {
+        ResetGenieSystem();
     }
 
     public Func<bool>? WindowCloseHandler;
@@ -196,9 +201,15 @@ public partial class Net : Node
             ConnectedEvent?.Invoke();
             SendVersionCheck();
         }
+        while (_conn.Incoming.TryDequeue(out var p))
+        {
+            try { Handle(p); }
+            catch (Exception e) { Diag.Report($"packet 0x{p.GetOpcode():X2}", e); }
+        }
         if (!_conn.Connected && _connectedFired)
         {
-            ResetGenieSystem();
+            _conn.Close();
+            ResetPendingOperations();
             _connectedFired = false;
             PingMs = -1;
             _pingOutstanding = false;
@@ -211,11 +222,6 @@ public partial class Net : Node
             _connectFailReported = true;
             if (!TakeOverDisconnect())
                 ErrorEvent?.Invoke(_conn.LastError ?? "connection failed");
-        }
-        while (_conn.Incoming.TryDequeue(out var p))
-        {
-            try { Handle(p); }
-            catch (Exception e) { Diag.Report($"packet 0x{p.GetOpcode():X2}", e); }
         }
 
         SchedulePing(delta);
