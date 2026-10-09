@@ -14,6 +14,24 @@ public static class NationTransferWire
     public const byte WrongCharacter = 5;
     public const byte NoCharacter = 6;
     public const byte NoItem = 7;
+    public const byte SubmitCompleted = 2;
+    public const int FailedText = 16700;
+
+    private static readonly Dictionary<byte, int> RefusalTexts = new()
+    {
+        [InClan] = 16702,
+        [IsKing] = 16703,
+        [WrongCharacter] = 16705,
+        [NoCharacter] = 16706,
+        [NoItem] = 16710,
+    };
+
+    private static readonly Dictionary<byte, int> SubmitRefusalTexts = new()
+    {
+        [4] = 16704,
+        [9] = 18906,
+        [10] = 11303,
+    };
 
     public static List<NationTransferCandidate>? ReadCandidates(Packet p)
     {
@@ -60,4 +78,15 @@ public static class NationTransferWire
 
     public static bool IsRefusal(byte result) =>
         result is Failed or InClan or IsKing or WrongCharacter or NoCharacter or NoItem;
+
+    public static bool IsSubmitSuccess(byte result) =>
+        result is Net.NationTransferAccepted or SubmitCompleted;
+
+    public static bool IsRefusal(byte sub, byte result) =>
+        sub == Net.NationTransferSubmit ? !IsSubmitSuccess(result) : IsRefusal(result);
+
+    public static int RefusalText(byte sub, byte result) =>
+        sub == Net.NationTransferSubmit && SubmitRefusalTexts.TryGetValue(result, out int submitText) ? submitText
+        : RefusalTexts.TryGetValue(result, out int text) ? text
+        : FailedText;
 }

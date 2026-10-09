@@ -8,21 +8,9 @@ namespace LibreKO;
 
 public partial class World
 {
-    private const int NationTransferFailedText = 16700;
     private const int NationTransferDoneText = 16701;
     private const int NationTransferCertificate = 810096000;
     private const int NationTransferWarText = 16711;
-    private static readonly Dictionary<int, int> NationTransferRefusalTexts = new()
-    {
-        [2] = 16702,
-        [3] = 16703,
-        [4] = 16704,
-        [5] = 16705,
-        [6] = 16706,
-        [7] = 16710,
-        [9] = 10750,
-        [10] = 11303,
-    };
 
     private CanvasLayer _transferLayer = null!;
     private HudWindow _transferPanel = null!;
@@ -185,7 +173,7 @@ public partial class World
         _transferNotice = null;
         _transferInFlight = true;
         SetTransferStatus("Transferring…", false);
-        if (!Net.I.SendNationTransfer(picks)) OnNationTransferRefused(NationTransferWire.Failed);
+        if (!Net.I.SendNationTransfer(picks)) OnNationTransferRefused(NationTransferWire.FailedText);
     }
 
     private void CancelTransferConfirmation(int revision)
@@ -219,15 +207,13 @@ public partial class World
         if (!_transferInFlight) Net.I.SendNationTransferCancel();
     }
 
-    private void OnNationTransferRefused(int result)
+    private void OnNationTransferRefused(int textId)
     {
         DismissTransferConfirmation();
         _transferInFlight = false;
         SetTransferLocked(false);
         if (!_transferShown) Net.I.SendNationTransferCancel();
-        string text = ItemData.Text(
-            NationTransferRefusalTexts.TryGetValue(result, out int id) ? id : NationTransferFailedText,
-            "Transfer failed");
+        string text = ItemData.Text(textId, "Transfer failed");
         if (_transferShown) SetTransferStatus(text, true);
         else CombatNotice(text);
     }

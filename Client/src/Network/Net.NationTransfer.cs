@@ -41,7 +41,7 @@ public partial class Net
                 _nationTransferTarget = candidates.Count == 0 ? 0 : candidates[0].Nation;
                 NationTransferOpenEvent?.Invoke(candidates);
                 break;
-            case NationTransferSubmit when result == NationTransferAccepted:
+            case NationTransferSubmit when NationTransferWire.IsSubmitSuccess(result):
                 if (!_nationTransferPending) return;
                 Nation = _nationTransferTarget;
                 ClearNationTransfer();
@@ -52,10 +52,10 @@ public partial class Net
                 NationTransferWarEvent?.Invoke(p.ReadByte(), p.ReadByte());
                 break;
             case NationTransferWarStatus or NationTransferOpenBox or NationTransferSubmit or NationTransferErrorBox:
-                if (!NationTransferWire.IsRefusal(result)) return;
+                if (!NationTransferWire.IsRefusal(sub, result)) return;
                 if (sub == NationTransferSubmit && !_nationTransferPending) return;
                 _nationTransferPending = false;
-                NationTransferRefusedEvent?.Invoke(result);
+                NationTransferRefusedEvent?.Invoke(NationTransferWire.RefusalText(sub, result));
                 break;
         }
     }

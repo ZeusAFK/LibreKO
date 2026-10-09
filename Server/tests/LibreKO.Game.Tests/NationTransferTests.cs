@@ -79,6 +79,7 @@ public class NationTransferTests : GameTestBase
         gameData => gameData.GetItem(TransferItem).Returns(new ItemData
         {
             Num = TransferItem, Name = "Nation Transfer Certificate", Kind = 255, Slot = 15, Duration = 1, ReqLevelMax = 100,
+            Countable = 1,
         }), configureServices: configureServices);
 
     private static async Task<(UserSession Session, List<Packet> Sent, IClient Client)> Online(ServiceProvider provider, bool carriesItem)
@@ -169,6 +170,19 @@ public class NationTransferTests : GameTestBase
         var packet = Last(sent);
         packet.ReadByte().Should().Be(OpenBox);
         packet.ReadByte().Should().Be(InClan);
+    }
+
+    [Fact]
+    public async Task ASubmissionWithAClanMemberOnTheAccountFails()
+    {
+        using var provider = Provider(clanOfSecond: 15);
+        var (session, sent, client) = await Online(provider, carriesItem: true);
+
+        await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
+
+        Last(sent).GetData().Should().Equal(Submit, Failed);
+        session.Nation.Should().Be(AccountNation.ElMorad);
+        session.Inventory[InventoryConstants.SlotMax].Count.Should().Be(1);
     }
 
     private static Packet SubmitPacket(byte rogueRace, byte priestRace)
@@ -394,10 +408,10 @@ public class NationTransferTests : GameTestBase
             var slots = Enumerable.Range(0, InventoryConstants.InventoryTotal).Select(_ => new ItemSlot()).ToArray();
             UserSessionBinaryState.LoadItems(slots, active.Items);
             ConsumedCertificate = slots.All(item => item.ItemId != TransferItem);
-            if (fail)
-                throw new InvalidOperationException("Injected migration save failure");
             if (BeforeMigrationSave != null)
                 await BeforeMigrationSave();
+            if (fail)
+                throw new InvalidOperationException("Injected migration save failure");
             return result;
         }
     }
@@ -471,6 +485,73 @@ public class NationTransferTests : GameTestBase
         db.Characters.Single(character => character.Name == "Rover").Class.Should().Be(ElMoradRogue);
         db.Characters.Single(character => character.Name == "Healer").Class.Should().Be(ElMoradPriest);
         (await provider.GetRequiredService<ICharacterStatePersister>().SaveAsync(session)).Should().BeTrue();
+    }
+
+    private const int LootItem = 389010000;
+    private const ushort LootCount = 3;
+    private const ushort SpareCertificates = 2;
+    private const int SpareSlot = InventoryConstants.SlotMax + 1;
+
+    private static void LootLandsInTheCertificateSlot(UserSession session)
+    {
+        var slot = session.Inventory[InventoryConstants.SlotMax];
+        slot.ItemId = LootItem;
+        slot.Count = LootCount;
+        slot.Durability = 1;
+    }
+
+    [Fact]
+    public async Task AFailedMigrationSaveKeepsLootThatTookTheCertificateSlot()
+    {
+        var probe = new TransferSaveProbe(fail: true);
+        using var provider = ProbedProvider(probe);
+        var (session, sent, client) = await Online(provider, carriesItem: true);
+        probe.BeforeMigrationSave = () => { LootLandsInTheCertificateSlot(session); return Task.CompletedTask; };
+
+        await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
+
+        Last(sent).GetData().Should().Equal(Submit, Failed);
+        var slot = session.Inventory[InventoryConstants.SlotMax];
+        slot.ItemId.Should().Be(LootItem);
+        slot.Count.Should().Be(LootCount);
+        session.Inventory.Should().NotContain(item => item.ItemId == TransferItem);
+        session.Nation.Should().Be(AccountNation.ElMorad);
+    }
+
+    [Fact]
+    public async Task AFailedMigrationSaveReturnsTheCertificateToAStackWhenItsSlotWasTaken()
+    {
+        var probe = new TransferSaveProbe(fail: true);
+        using var provider = ProbedProvider(probe);
+        var (session, sent, client) = await Online(provider, carriesItem: true);
+        var spare = session.Inventory[SpareSlot];
+        spare.ItemId = TransferItem;
+        spare.Count = SpareCertificates;
+        spare.Durability = 1;
+        probe.BeforeMigrationSave = () => { LootLandsInTheCertificateSlot(session); return Task.CompletedTask; };
+
+        await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
+
+        Last(sent).GetData().Should().Equal(Submit, Failed);
+        session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(LootItem);
+        session.Inventory[InventoryConstants.SlotMax].Count.Should().Be(LootCount);
+        session.Inventory[SpareSlot].ItemId.Should().Be(TransferItem);
+        session.Inventory[SpareSlot].Count.Should().Be(SpareCertificates + 1);
+    }
+
+    [Fact]
+    public async Task AFailedMigrationSaveTopsUpAPartlySpentCertificateStack()
+    {
+        var probe = new TransferSaveProbe(fail: true);
+        using var provider = ProbedProvider(probe);
+        var (session, sent, client) = await Online(provider, carriesItem: true);
+        session.Inventory[InventoryConstants.SlotMax].Count = SpareCertificates;
+        var before = session.SerializeItems();
+
+        await provider.GetRequiredService<INationTransferService>().HandleAsync(client, ToKarus());
+
+        Last(sent).GetData().Should().Equal(Submit, Failed);
+        session.SerializeItems().Should().Equal(before);
     }
 
     [Fact]
