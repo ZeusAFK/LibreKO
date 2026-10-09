@@ -40,6 +40,7 @@ public partial class World
     private readonly Queue<int> _repairQueue = new();
     private bool _repairInFlight;
     private int _repairCur = -1;
+    private int _repairItemId;
     private int _repairSelected = -1;
 
     private void RepairInit()
@@ -331,6 +332,7 @@ public partial class World
         byte posType = (byte)(abs < GridStart ? 1 : 2);
         byte slot = (byte)(abs < GridStart ? abs : abs - GridStart);
         _repairCur = abs;
+        _repairItemId = Inv[abs].ItemId;
         _repairInFlight = true;
         _repairOneBtn.Disabled = true;
         _repairAllBtn.Disabled = true;
@@ -341,12 +343,13 @@ public partial class World
     {
         if (!_repairInFlight) return;
         _repairInFlight = false;
-        if (ok && _repairCur >= 0 && _repairCur < Inv.Length && !Inv[_repairCur].IsEmpty)
+        if (ok && Inv.Holds(_repairCur, _repairItemId))
         {
             Inv.SetDurability(_repairCur, ItemData.MaxDurabilityOf(Inv[_repairCur].ItemId));
             Net.I.MirrorInventorySlot(_repairCur, Inv[_repairCur]);
             if (CharTabOpen()) RefreshInventoryUI();
             _repairFooter.Status($"Repaired {ItemData.DisplayName(Inv[_repairCur].ItemId)}.", bad: false);
+            Audio.PlayUi(Sfx.UiRepair);
         }
         else if (!ok)
         {
@@ -354,6 +357,7 @@ public partial class World
             _repairQueue.Clear();
         }
         _repairCur = -1;
+        _repairItemId = 0;
         if (_repairShown) RefreshRepairWindow();
         PumpRepair();
     }

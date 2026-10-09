@@ -379,4 +379,31 @@ public class InventoryTests
         Assert.Equal(22, inv[InventoryConstants.RightHand].ItemId);
         Assert.Equal(11, inv[Inventory.GridStart].ItemId);
     }
+
+    [Fact]
+    public void Holds_MatchesTheRequestedItemInItsSlot()
+    {
+        var inv = Empty();
+        inv[Inventory.GridStart] = Item(11);
+
+        Assert.True(inv.Holds(Inventory.GridStart, 11));
+        Assert.False(inv.Holds(Inventory.GridStart, 22));
+        Assert.False(inv.Holds(Inventory.GridStart + 1, 0));
+        Assert.False(inv.Holds(-1, 11));
+        Assert.False(inv.Holds(inv.Length, 11));
+    }
+
+    [Fact]
+    public void Holds_ASnapshotFailsOnceTheSlotChanges()
+    {
+        var inv = Empty();
+        var snapshot = Item(11, durability: 50);
+        inv[Inventory.GridStart] = snapshot;
+
+        Assert.True(inv.Holds(Inventory.GridStart, snapshot));
+
+        inv.SetDurability(Inventory.GridStart, 60);
+        Assert.False(inv.Holds(Inventory.GridStart, snapshot));
+        Assert.False(inv.Holds(Inventory.GridStart + 1, default(ItemSlot)));
+    }
 }

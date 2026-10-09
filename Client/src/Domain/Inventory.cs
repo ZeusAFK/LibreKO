@@ -36,6 +36,12 @@ public sealed class Inventory
 
     public bool IsEquipSlot(int abs) => abs >= 0 && abs < GridStart;
 
+    public bool Holds(int abs, int itemId) =>
+        itemId != 0 && abs >= 0 && abs < _slots.Length && _slots[abs].ItemId == itemId;
+
+    public bool Holds(int abs, ItemSlot item) =>
+        !item.IsEmpty && abs >= 0 && abs < _slots.Length && _slots[abs].Equals(item);
+
     public int FirstFreeGridSlot()
     {
         for (int abs = GridStart; abs < GridStart + GridCount && abs < _slots.Length; abs++)
