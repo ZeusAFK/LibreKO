@@ -6,6 +6,8 @@ namespace LibreKO;
 
 public partial class World
 {
+    private const int ChatRoomLogLines = 100;
+
     private CanvasLayer _chatRoomLayer = null!;
     private HudWindow _chatRoomPanel = null!;
     private VBoxContainer _chatRoomList = null!;
@@ -119,7 +121,7 @@ public partial class World
 
     private void OnChatRoomList(List<ChatRoomEntry> list)
     {
-        foreach (var c in _chatRoomList.GetChildren()) c.QueueFree();
+        ClearChildren(_chatRoomList);
         foreach (var r in list)
         {
             var row = new PanelContainer();
@@ -201,8 +203,12 @@ public partial class World
         body.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         line.AddChild(body);
         _chatRoomLog.AddChild(line);
-        while (_chatRoomLog.GetChildCount() > 100)
-            _chatRoomLog.GetChild(0).QueueFree();
+        while (_chatRoomLog.GetChildCount() > ChatRoomLogLines)
+        {
+            var oldest = _chatRoomLog.GetChild(0);
+            _chatRoomLog.RemoveChild(oldest);
+            oldest.QueueFree();
+        }
         var scroll = _chatRoomLogScroll;
         Callable.From(() => scroll.ScrollVertical = (int)scroll.GetVScrollBar().MaxValue).CallDeferred();
     }

@@ -77,7 +77,7 @@ public partial class World
 
     private void OnMessengerList(List<MessengerBuddy> list)
     {
-        foreach (var c in _msgrList.GetChildren()) c.QueueFree();
+        ClearChildren(_msgrList);
         foreach (var b in list)
         {
             var row = new PanelContainer();
