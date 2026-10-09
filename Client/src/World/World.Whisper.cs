@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
+using LibreKO.Domain;
 using LibreKO.Network;
 
 namespace LibreKO;
@@ -161,6 +163,7 @@ public partial class World
         var chat = GetOrCreateWhisper(name, minimized: false);
         chat.Window.Visible = true;
         chat.Window.SetMinimized(false);
+        RaiseWhisper(chat);
         StopWhisperBlink(chat);
         chat.StickBottom = true;
         ScrollWhisperToEnd(chat);
@@ -187,13 +190,25 @@ public partial class World
 
     private void FocusWhisperAt(Vector2 screenPos)
     {
+        var shown = _whispers.Values
+            .Where(chat => GodotObject.IsInstanceValid(chat.Window) && chat.Window.Visible)
+            .OrderBy(chat => chat.Window.GetIndex())
+            .ToList();
+        int hit = WindowStack.TopmostAt(shown.Select(chat => chat.Window.GetGlobalRect()).ToList(), screenPos);
+        if (hit == WindowStack.None || shown[hit].Window.Minimized) return;
+        RaiseWhisper(shown[hit]);
+        if (!shown[hit].Input.HasFocus()) shown[hit].Input.CallDeferred(Control.MethodName.GrabFocus);
+    }
+
+    private void RaiseWhisper(WhisperChat chat) =>
+        _whisperLayer.MoveChild(chat.Window, _whisperLayer.GetChildCount() - 1);
+
+    private int FocusedWhisperIndex()
+    {
+        if (GetViewport().GuiGetFocusOwner() is not LineEdit focused) return WindowStack.None;
         foreach (var chat in _whispers.Values)
-        {
-            if (!GodotObject.IsInstanceValid(chat.Window) || !chat.Window.Visible) continue;
-            if (chat.Window.Minimized || !chat.Window.GetGlobalRect().HasPoint(screenPos)) continue;
-            if (!chat.Input.HasFocus()) chat.Input.CallDeferred(Control.MethodName.GrabFocus);
-            return;
-        }
+            if (chat.Input == focused && GodotObject.IsInstanceValid(chat.Window)) return chat.Window.GetIndex();
+        return WindowStack.None;
     }
 
     private void OnWhisperChat(ChatLine line)
@@ -204,6 +219,7 @@ public partial class World
         bool isNew = !_whispers.ContainsKey(line.Name);
         var chat = GetOrCreateWhisper(line.Name, minimized: isNew);
         chat.Window.Visible = true;
+        if (WindowStack.RaisesIncoming(FocusedWhisperIndex(), chat.Window.GetIndex())) RaiseWhisper(chat);
         AppendWhisper(chat, mine: false, notice: false, line.Message);
 
         if (chat.Window.Minimized) StartWhisperBlink(chat);
