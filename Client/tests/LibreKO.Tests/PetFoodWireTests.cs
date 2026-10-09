@@ -56,4 +56,56 @@ public class PetFoodWireTests
         Assert.False(request.Matches(new PetFoodReply(true, FoodSlot + 1, FoodItem, 1, 1500)));
         Assert.False(request.Matches(new PetFoodReply(true, FoodSlot, FoodItem + 1, 1, 1500)));
     }
+
+    [Fact]
+    public void AnUnreadableFoodReplyRefusesThePendingFeed()
+    {
+        var request = new PetFeedRequest(FoodSlot, FoodItem);
+        var complete = Food().GetData();
+        for (int length = 0; length < complete.Length; length++)
+        {
+            var prefix = new Packet((byte)GameOpcodes.GS_PET); prefix.WriteBytes(complete[..length]);
+            Assert.True(PetWire.TryReadFoodFor(prefix, request, out var reply));
+            Assert.Equal(new PetFoodReply(false, FoodSlot, FoodItem, 0, 0), reply);
+        }
+        Assert.True(PetWire.TryReadFoodFor(Food(result: 2), request, out var invalid));
+        Assert.Equal(request.Refusal, invalid);
+    }
+
+    [Fact]
+    public void AReadableFoodReplyForAnotherFeedLeavesThePendingFeedWaiting()
+    {
+        var request = new PetFeedRequest(FoodSlot, FoodItem);
+        Assert.True(PetWire.TryReadFoodFor(Food(), request, out var reply));
+        Assert.Equal(new PetFoodReply(true, FoodSlot, FoodItem, 2, 1500), reply);
+        Assert.False(PetWire.TryReadFoodFor(Food(slot: FoodSlot + 1), request, out _));
+        Assert.False(PetWire.TryReadFoodFor(Food(item: FoodItem + 1), request, out _));
+    }
+
+    [Theory]
+    [InlineData(5)]
+    [InlineData(2)]
+    [InlineData(1)]
+    public void TheServerCountLeftReplacesWhateverCountTheBagHeld(short heldCount)
+    {
+        var held = new ItemSlot { ItemId = FoodItem, Count = heldCount, Durability = 7, Flag = 1 };
+        Assert.True(new PetFoodReply(true, FoodSlot, FoodItem, 2, 1500).TryLower(held, out var left));
+        Assert.Equal(held with { Count = 2 }, left);
+    }
+
+    [Fact]
+    public void TheLastFoodClearsTheSlot()
+    {
+        var held = new ItemSlot { ItemId = FoodItem, Count = 1 };
+        Assert.True(new PetFoodReply(true, FoodSlot, FoodItem, 0, 1500).TryLower(held, out var left));
+        Assert.Equal(default, left);
+    }
+
+    [Fact]
+    public void FoodIsOnlyLoweredInASlotThatHoldsTheFedItem()
+    {
+        Assert.False(new PetFoodReply(true, FoodSlot, FoodItem, 2, 1500).TryLower(new ItemSlot { ItemId = FoodItem + 1, Count = 3 }, out _));
+        Assert.False(new PetFoodReply(true, FoodSlot, FoodItem, 2, 1500).TryLower(default, out _));
+        Assert.False(new PetFoodReply(false, FoodSlot, FoodItem, 0, 0).TryLower(new ItemSlot { ItemId = FoodItem, Count = 3 }, out _));
+    }
 }

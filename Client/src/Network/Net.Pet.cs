@@ -104,7 +104,7 @@ public partial class Net
                 }
                 PetVitalsEvent?.Invoke();
                 break;
-            case PetFunctionFood when p.RemainingBytes >= 6:
+            case PetFunctionFood:
                 HandlePetFood(p);
                 break;
         }
@@ -140,8 +140,7 @@ public partial class Net
 
     private void HandlePetFood(Packet p)
     {
-        if (!PetWire.TryReadFood(p, out var reply)) return;
-        if (_petFeedRequest is not { } request || !request.Matches(reply)) return;
+        if (_petFeedRequest is not { } request || !PetWire.TryReadFoodFor(p, request, out var reply)) return;
         _petFeedRequest = null;
         if (!reply.Succeeded)
         {
@@ -149,12 +148,9 @@ public partial class Net
             return;
         }
         int abs = InventoryConstants.InventoryStart + reply.BagSlot;
-        if (LastEnter.Inventory is { } slots && abs < slots.Length
-            && slots[abs].ItemId == reply.ItemId && slots[abs].Count > reply.CountLeft)
+        var held = LastEnter.Inventory is { } slots && abs < slots.Length ? slots[abs] : default;
+        if (reply.TryLower(held, out var left))
         {
-            var left = slots[abs];
-            left.Count = reply.CountLeft;
-            if (left.Count == 0) left = default;
             SetLastInventorySlot(abs, left);
             InventorySlotEvent?.Invoke(abs, left);
         }
@@ -164,30 +160,24 @@ public partial class Net
     private void HandlePetHatch(Packet p)
     {
         if (_petIncubationRequest is not { Transform: false } request) return;
-        if (!PetWire.TryReadHatch(p, out var hatched, out int failure))
+        _petIncubationRequest = null;
+        if (!PetWire.TryReadHatchFor(p, request, out var hatched, out int failure))
         {
-            if (failure == PetWire.MalformedReplyCode) return;
-            _petIncubationRequest = null;
             PetHatchFailedEvent?.Invoke(failure);
             return;
         }
-        if (!request.Matches(hatched)) return;
-        _petIncubationRequest = null;
         PetHatchedEvent?.Invoke(PlaceFamiliarItem(hatched), hatched.Info);
     }
 
     private void HandlePetTransform(Packet p)
     {
         if (_petIncubationRequest is not { Transform: true } request) return;
-        if (!PetWire.TryReadTransform(p, out var transformed, out int failure))
+        _petIncubationRequest = null;
+        if (!PetWire.TryReadTransformFor(p, request, out var transformed, out int failure))
         {
-            if (failure == PetWire.MalformedReplyCode) return;
-            _petIncubationRequest = null;
             PetTransformFailedEvent?.Invoke(failure);
             return;
         }
-        if (!request.Matches(transformed)) return;
-        _petIncubationRequest = null;
         int abs = PlaceFamiliarItem(transformed.Pet);
         SpendBagItem(InventoryConstants.InventoryStart + transformed.MaterialSlot, transformed.MaterialItemId);
         PetTransformedEvent?.Invoke(abs, transformed.Pet.Info);
@@ -241,7 +231,7 @@ public partial class Net
         return true;
     }
 
-    public bool SendPetTransform(int npcId, int petItemId, int petSlot, int materialItemId, int materialSlot)
+    public bool SendPetTransform(int npcId, int petItemId, int petSlot, int petUniqueId, int materialItemId, int materialSlot)
     {
         if (!Connected || _petIncubationRequest != null || !IsBagSlot(petSlot) || !IsBagSlot(materialSlot)
             || petSlot == materialSlot) return false;
@@ -257,9 +247,7 @@ public partial class Net
             p.WriteInt(0);
             p.WriteByte(0);
         }
-        int abs = InventoryConstants.InventoryStart + petSlot;
-        int uniqueId = LastEnter.Inventory is { } inventory && abs < inventory.Length ? inventory[abs].UniqueId : PetIncubationRequest.AnyFamiliar;
-        _petIncubationRequest = PetIncubationRequest.Transformation(petItemId, petSlot, uniqueId, materialItemId, materialSlot);
+        _petIncubationRequest = PetIncubationRequest.Transformation(petItemId, petSlot, petUniqueId, materialItemId, materialSlot);
         _conn.Send(p);
         return true;
     }

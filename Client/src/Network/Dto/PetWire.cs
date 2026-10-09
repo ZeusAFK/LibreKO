@@ -6,11 +6,26 @@ public readonly record struct HatchedPet(int ItemId, int BagSlot, PetItemInfo In
 
 public readonly record struct TransformedPet(HatchedPet Pet, int MaterialItemId, int MaterialSlot);
 
-public readonly record struct PetFoodReply(bool Succeeded, int BagSlot, int ItemId, short CountLeft, short Increase);
+public readonly record struct PetFoodReply(bool Succeeded, int BagSlot, int ItemId, short CountLeft, short Increase)
+{
+    public bool TryLower(ItemSlot held, out ItemSlot left)
+    {
+        left = default;
+        if (!Succeeded || held.ItemId != ItemId) return false;
+        if (CountLeft > 0)
+        {
+            left = held;
+            left.Count = CountLeft;
+        }
+        return true;
+    }
+}
 
 public readonly record struct PetFeedRequest(int BagSlot, int ItemId)
 {
     public bool Matches(PetFoodReply reply) => reply.BagSlot == BagSlot && reply.ItemId == ItemId;
+
+    public PetFoodReply Refusal => new(false, BagSlot, ItemId, 0, 0);
 }
 
 public readonly record struct PetIncubationRequest(bool Transform, int ItemId, int BagSlot, int UniqueId, int MaterialItemId, int MaterialSlot)
@@ -70,6 +85,16 @@ public static class PetWire
         if (count < 0 || count > Inventory.StackMax || increase < 0 || increase > PetSheet.MaxSatisfaction) return false;
         reply = new PetFoodReply(true, slot, item, count, increase);
         return true;
+    }
+
+    public static bool TryReadFoodFor(Packet p, PetFeedRequest request, out PetFoodReply reply)
+    {
+        if (!TryReadFood(p, out reply))
+        {
+            reply = request.Refusal;
+            return true;
+        }
+        return request.Matches(reply);
     }
 
     public static ItemSlot ReadItemRecord(Packet p, out PetItemInfo? pet)
@@ -150,6 +175,22 @@ public static class PetWire
         hatched = new HatchedPet(itemId, bagSlot, new PetItemInfo(index, name, attack, level, expPercent, satisfaction));
         failure = 0;
         return true;
+    }
+
+    public static bool TryReadHatchFor(Packet p, PetIncubationRequest request, out HatchedPet hatched, out int failure)
+    {
+        if (!TryReadHatch(p, out hatched, out failure)) return false;
+        if (request.Matches(hatched)) return true;
+        failure = MalformedReplyCode;
+        return false;
+    }
+
+    public static bool TryReadTransformFor(Packet p, PetIncubationRequest request, out TransformedPet transformed, out int failure)
+    {
+        if (!TryReadTransform(p, out transformed, out failure)) return false;
+        if (request.Matches(transformed)) return true;
+        failure = MalformedReplyCode;
+        return false;
     }
 
     public static bool TryReadTransform(Packet p, out TransformedPet transformed, out int failure)

@@ -265,4 +265,39 @@ public class PetWireTests
         Assert.True(PetIncubationRequest.Transformation(Kaul, 4, PetIncubationRequest.AnyFamiliar, EtarothScroll, 7)
             .Matches(Transformed(index: 10)));
     }
+
+    private static Packet Reply(byte[] data)
+    {
+        var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE); p.WriteBytes(data); p.ResetOffset();
+        return p;
+    }
+
+    [Fact]
+    public void AHatchReplyForTheRequestIsAcceptedAndAnyOtherReplyFailsIt()
+    {
+        Assert.True(PetWire.TryReadHatchFor(Reply(HatchReply()), PetIncubationRequest.Hatch(Kaul, 4), out var hatched, out int failure));
+        Assert.Equal(4, hatched.BagSlot); Assert.Equal(0, failure);
+
+        Assert.False(PetWire.TryReadHatchFor(Reply(HatchReply()), PetIncubationRequest.Hatch(Kaul, 5), out _, out failure));
+        Assert.Equal(PetWire.MalformedReplyCode, failure);
+        Assert.False(PetWire.TryReadHatchFor(Reply(HatchReply()[..^1]), PetIncubationRequest.Hatch(Kaul, 4), out _, out failure));
+        Assert.Equal(PetWire.MalformedReplyCode, failure);
+        Assert.False(PetWire.TryReadHatchFor(Reply(new byte[] { PetWire.HatchRefused, 3 }), PetIncubationRequest.Hatch(Kaul, 4), out _, out failure));
+        Assert.Equal(3, failure);
+    }
+
+    [Fact]
+    public void ATransformReplyForTheRequestIsAcceptedAndAnyOtherReplyFailsIt()
+    {
+        var request = PetIncubationRequest.Transformation(Kaul, 4, 9, EtarothScroll, 7);
+        Assert.True(PetWire.TryReadTransformFor(Reply(HatchReply(true)), request, out var transformed, out int failure));
+        Assert.Equal(Etaroth, transformed.Pet.ItemId); Assert.Equal(0, failure);
+
+        Assert.False(PetWire.TryReadTransformFor(Reply(HatchReply(true)), request with { UniqueId = 10 }, out _, out failure));
+        Assert.Equal(PetWire.MalformedReplyCode, failure);
+        Assert.False(PetWire.TryReadTransformFor(Reply(HatchReply(true)[..^1]), request, out _, out failure));
+        Assert.Equal(PetWire.MalformedReplyCode, failure);
+        Assert.False(PetWire.TryReadTransformFor(Reply(new byte[] { PetWire.HatchNameTaken }), request, out _, out failure));
+        Assert.Equal(PetWire.NameTakenCode, failure);
+    }
 }

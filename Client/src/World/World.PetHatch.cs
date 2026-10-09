@@ -297,7 +297,7 @@ public partial class World
         SetPetHatchStatus("", false);
         _petHatchInFlight = PetTransforming
             ? Net.I.SendPetTransform(_petHatchNpc, Inv[_petTransformSlot].ItemId, _petTransformSlot - GridStart,
-                Inv[_petScrollSlot].ItemId, _petScrollSlot - GridStart)
+                Inv[_petTransformSlot].UniqueId, Inv[_petScrollSlot].ItemId, _petScrollSlot - GridStart)
             : Net.I.SendPetHatch(_petHatchNpc, Inv[_petHatchSlot].ItemId, _petHatchSlot - GridStart, _petHatchName.Text);
         if (!_petHatchInFlight) SetPetHatchStatus(PetHatchNotSent, true);
         RefreshPetHatchUI();
