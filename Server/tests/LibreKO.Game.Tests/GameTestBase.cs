@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
@@ -163,6 +163,7 @@ public abstract class GameTestBase
         services.AddSingleton<IMagicTimingService, MagicTimingService>();
         services.AddSingleton<ISavedMagicService, SavedMagicService>();
         services.AddSingleton<IStealthService, StealthService>();
+        services.AddSingleton<IDrakiStageProvider, DrakiStageProvider>();
         services.AddSingleton<IDrakiTowerService, DrakiTowerService>();
         services.AddSingleton<IQuestNpcInteractionService, QuestNpcInteractionService>();
         services.AddSingleton<IQuestProgressionService, QuestProgressionService>();

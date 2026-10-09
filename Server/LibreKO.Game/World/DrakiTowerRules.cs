@@ -1,9 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
 using LibreKO.Common.Enums;
-using LibreKO.Common.Infrastructure.Persistence.Seed;
+using LibreKO.Game.Scripting;
 
 namespace LibreKO.Game.World;
 
@@ -26,10 +24,14 @@ public static class DrakiTowerRules
     public const int CertificateOfDrakiItem = 810377000;
     public const int DrakiSupplyBoxItem = 810596000;
     public const int SuperiorDrakiSupplyBoxItem = 810597000;
-    public const int WaveSeconds = 300;
+    public const int SuperiorBoxThresholdSeconds = 1200;
+    public const int RoomDurationMinutes = 120;
+    public static readonly TimeSpan RoomDuration = TimeSpan.FromMinutes(RoomDurationMinutes);
+    public const int WaveSeconds = ScriptCharacterService.DrakiRiftSeconds;
     public const int BreakSeconds = 180;
     public const int DrakiRiftNpcId = 25267;
     public const int FinalExitNpcId = 25266;
+    public static readonly (float X, float Z) FinalExitCoordinates = (77f, 214f);
 
     public static readonly HashSet<int> GateNpcIds =
     [
@@ -53,73 +55,16 @@ public static class DrakiTowerRules
 
     public static bool IsGateNpc(int npcId) => GateNpcIds.Contains(npcId);
 
+    public static bool IsDrakiNpc(int npcId) =>
+        npcId == DrakiRiftNpcId || npcId == FinalExitNpcId || IsGateNpc(npcId);
+
     public static void EnsureDailyLimit(UserSession session)
     {
         var today = DateTime.UtcNow.Date;
-        if (session.DrakiEntranceLimitResetDate != today)
+        if (session.DrakiEntranceLimitResetDate.Date != today)
         {
             session.DrakiEntranceLimit = MaxDailyEntrances;
             session.DrakiEntranceLimitResetDate = today;
         }
-    }
-
-    private static IReadOnlyList<DrakiStageInfo>? _cachedStages;
-    private static readonly object _lock = new();
-
-    public static IReadOnlyList<DrakiStageInfo> Stages
-    {
-        get
-        {
-            if (_cachedStages != null)
-                return _cachedStages;
-
-            lock (_lock)
-            {
-                if (_cachedStages != null)
-                    return _cachedStages;
-
-                _cachedStages = LoadStages();
-                return _cachedStages;
-            }
-        }
-    }
-
-    public static void SetStagesForTesting(IReadOnlyList<DrakiStageInfo> stages)
-    {
-        lock (_lock) { _cachedStages = stages; }
-    }
-
-    public static void ResetCache()
-    {
-        lock (_lock) { _cachedStages = null; }
-    }
-
-    private static IReadOnlyList<DrakiStageInfo> LoadStages()
-    {
-        var candidates = new[]
-        {
-            SeedDataLocation.DataPath("DrakiTowerStages.json"),
-            Path.Combine(AppContext.BaseDirectory, "Seed", "Data", "DrakiTowerStages.json"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "LibreKO.Game", "Seed", "Data", "DrakiTowerStages.json"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "Server", "LibreKO.Game", "Seed", "Data", "DrakiTowerStages.json")
-        };
-
-        foreach (var path in candidates)
-        {
-            if (File.Exists(path))
-            {
-                try
-                {
-                    var json = File.ReadAllText(path);
-                    var list = JsonSerializer.Deserialize<List<DrakiStageInfo>>(json,
-                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    if (list is { Count: > 0 })
-                        return list;
-                }
-                catch { }
-            }
-        }
-
-        return [];
     }
 }

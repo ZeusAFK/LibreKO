@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Scripting;
@@ -25,6 +25,7 @@ public class QuestNpcInteractionService(
     IQuestDialogRunner dialogRunner,
     IKingSystemRuntimeService kingSystemRuntimeService,
     IDrakiTowerService drakiTowerService,
+    IDrakiStageProvider drakiStageProvider,
     ILogger<QuestNpcInteractionService> logger) : IQuestNpcInteractionService
 {
     private const byte WarehouseRequest = 0x10;
@@ -113,10 +114,6 @@ public class QuestNpcInteractionService(
                 enterPacket.WriteByte(1);
                 await drakiTowerService.HandleEnterAsync(session, enterPacket);
             }
-            else if (eventId == DrakiActionRanking)
-            {
-                await ShowDrakiRankingDialogAsync(session, npc);
-            }
             else if (eventId == DrakiActionAdvance && npc is not null)
             {
                 await drakiTowerService.AdvanceFromGateNpcAsync(session, npc);
@@ -168,7 +165,7 @@ public class QuestNpcInteractionService(
         ResetDialog(session);
 
         var npcData = gameDataService.GetNpc(npc.NpcId, !npc.UsesNpcSpawnStyle);
-        if (npcData != null && await TryHandleNpcUiAsync(session, npc, npcData))
+        if (DrakiTowerRules.IsDrakiNpc(npc.NpcId) && npcData != null && await TryHandleNpcUiAsync(session, npc, npcData))
             return;
 
         if (!await dialogRunner.TryGreetAsync(session, npc))
@@ -349,13 +346,11 @@ public class QuestNpcInteractionService(
         Array.Fill(session.Quest.SelectMessageRewards, -1);
 
         session.Quest.SelectMessageEvents[0] = DrakiActionEnter;
-        session.Quest.SelectMessageEvents[1] = DrakiActionRanking;
 
-        var header = $"[Draki's Tower]\n\nWelcome, warrior. Through this dimensional rift lies Draki's Tower.\nConquer each stage to earn great experience and rewards!\n\nToday's Remaining Entries: {session.DrakiEntranceLimit}/3\nRequired Level: 1+";
+        var header = $"[Draki's Tower]\n\nWelcome, warrior. Through this dimensional rift lies Draki's Tower.\nConquer each stage to earn great experience and rewards!\n\nToday's Remaining Entries: {session.DrakiEntranceLimit}/{DrakiTowerRules.MaxDailyEntrances}\nRequired Level: {DrakiTowerRules.MinimumLevel}+";
         var buttonTexts = new[]
         {
-            "Enter Draki's Tower",
-            "View Records & Ranking"
+            "Enter Draki's Tower"
         };
 
         var dialogPacket = NpcDialogPacketWriter.SelectMessage(
@@ -384,11 +379,32 @@ public class QuestNpcInteractionService(
 
         session.Quest.SelectMessageEvents[0] = DrakiActionAdvance;
 
-        var nextFloor = session.DrakiStage + 1;
-        var header = $"[Captured Girl]\n\nThank you for saving me and defeating the monsters!\nThe gate behind me leads to Floor {nextFloor}.\nAre you ready to advance to the next floor?";
+        var npcData = gameDataService.GetNpc(npc.NpcId, isMonster: false);
+        var npcName = string.IsNullOrWhiteSpace(npcData?.Name) ? "Gate Keeper" : npcData.Name;
+
+        var state = drakiTowerService.GetRoomState((ushort)session.Room);
+        var stages = drakiStageProvider.Stages;
+        var nextIndex = state != null ? state.StageIndex + 1 : -1;
+        var nextStage = nextIndex >= 0 && nextIndex < stages.Count ? stages[nextIndex] : null;
+
+        string header;
+        string advanceButton;
+
+        if (nextStage != null && nextStage.Stage == session.DrakiStage)
+        {
+            header = $"[{npcName}]\n\nThank you for saving me and defeating the monsters!\nThe path ahead leads to Wave {nextStage.SubStage} of Floor {nextStage.Stage}.\nAre you ready to continue?";
+            advanceButton = $"Advance to Wave {nextStage.SubStage}";
+        }
+        else
+        {
+            var nextFloor = nextStage?.Stage ?? (session.DrakiStage + 1);
+            header = $"[{npcName}]\n\nThank you for saving me and defeating the monsters!\nThe gate behind me leads to Floor {nextFloor}.\nAre you ready to advance to the next floor?";
+            advanceButton = $"Advance to Floor {nextFloor}";
+        }
+
         var buttonTexts = new[]
         {
-            $"Advance to Floor {nextFloor}",
+            advanceButton,
             "Stay here to prepare / use Sundries"
         };
 
@@ -436,58 +452,6 @@ public class QuestNpcInteractionService(
             buttonTexts);
 
         await session.Client.SendPacket(dialogPacket);
-    }
-
-    private async Task ShowDrakiRankingDialogAsync(UserSession session, NpcInstance? npc)
-    {
-        DrakiTowerRules.EnsureDailyLimit(session);
-
-        var npcId = npc?.NpcId ?? DrakiTowerRules.DrakiRiftNpcId;
-        var npcUniqueId = npc?.UniqueId ?? session.Quest.EventNpcUniqueId;
-
-        session.Quest.EventNpcId = npcId;
-        session.Quest.EventNpcUniqueId = npcUniqueId;
-        session.Quest.ActiveQuestScript = DrakiRiftScript;
-        session.Quest.IsScriptDialog = true;
-        Array.Fill(session.Quest.SelectMessageEvents, -1);
-        Array.Fill(session.Quest.SelectMessageRewards, -1);
-
-        session.Quest.SelectMessageEvents[0] = DrakiActionEnter;
-        session.Quest.SelectMessageEvents[1] = DrakiActionRanking;
-
-        var currentStage = session.DrakiStage > 0 ? session.DrakiStage : (byte)1;
-        var currentSubStage = session.DrakiSubStage > 0 ? session.DrakiSubStage : (byte)1;
-
-        var header = $"[Draki's Tower - Hall of Records]\n\n" +
-                     $"Warrior: {session.Name} (Level {session.Level})\n" +
-                     $"Current Record: Floor {currentStage}, Wave {currentSubStage}\n" +
-                     $"Today's Remaining Entries: {session.DrakiEntranceLimit}/3\n\n" +
-                     $"Dungeon Information:\n" +
-                     $"• 5 Floors (8 Waves each, 41 Total Stages)\n" +
-                     $"• Wave Timer: 5 Minutes per monster wave\n" +
-                     $"• Safe Rest Areas: 3 Minutes break between main floors\n" +
-                     $"• Final Boss: Draki El Rasaga (Floor 5-8)\n" +
-                     $"• Death inside expels you back to your castle!";
-
-        var buttonTexts = new[]
-        {
-            "Enter Draki's Tower",
-            "Refresh Records"
-        };
-
-        var dialogPacket = NpcDialogPacketWriter.SelectMessage(
-            npcId,
-            0,
-            -1,
-            -1,
-            [-1, -1],
-            UserSession.SelectMessageEventCount,
-            DrakiRiftScript,
-            header,
-            buttonTexts);
-
-        await session.Client.SendPacket(dialogPacket);
-        await drakiTowerService.HandleListAsync(session);
     }
 }
 

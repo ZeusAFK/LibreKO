@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -168,6 +168,13 @@ public sealed class EventPacketWriter
         return packet;
     }
 
+    public const byte DrakiLeaveSubCodeFirst = 0x0C;
+    public const byte DrakiLeaveSubCodeSecond = 0x04;
+    public const byte DrakiLeaveSubCodeThird = 0x00;
+    public const byte DrakiLeaveSubCodeFourth = 0x14;
+    public const uint DrakiDefaultFinishTime = 3600;
+    public const uint DrakiDefaultStage = 1;
+
     public static Packet DrakiList(
         IReadOnlyList<(byte Rank, string Name, uint FinishTime, uint Stage)> topRanks,
         byte userRank, string userName, uint userFinishTime, uint userStage, uint userMaxStage, uint userEntranceLimit)
@@ -188,8 +195,8 @@ public sealed class EventPacketWriter
             {
                 packet.WriteByte((byte)(i + 1));
                 packet.WriteString(string.Empty);
-                packet.WriteUInt(3600);
-                packet.WriteUInt(1);
+                packet.WriteUInt(DrakiDefaultFinishTime);
+                packet.WriteUInt(DrakiDefaultStage);
             }
         }
         packet.WriteByte(userRank);
@@ -201,22 +208,25 @@ public sealed class EventPacketWriter
         return packet;
     }
 
-    public static Packet DrakiEnterResult(uint resultCode)
+    public static Packet DrakiEnterResult(DrakiEnterResult resultCode)
     {
         var packet = new Packet(GameOpcodes.GS_EVENT);
         packet.WriteByte((byte)TempleSubOpcode.DrakiEnter);
-        packet.WriteUInt(resultCode);
+        packet.WriteUInt((uint)resultCode);
         return packet;
     }
+
+    public static Packet DrakiEnterResult(uint resultCode) =>
+        DrakiEnterResult((DrakiEnterResult)resultCode);
 
     public static Packet DrakiLeaveFirst()
     {
         var packet = new Packet(GameOpcodes.GS_EVENT);
         packet.WriteByte((byte)TempleSubOpcode.DrakiLeaveFirst);
-        packet.WriteByte(0x0C);
-        packet.WriteByte(0x04);
-        packet.WriteByte(0x00);
-        packet.WriteByte(0x14);
+        packet.WriteByte(DrakiLeaveSubCodeFirst);
+        packet.WriteByte(DrakiLeaveSubCodeSecond);
+        packet.WriteByte(DrakiLeaveSubCodeThird);
+        packet.WriteByte(DrakiLeaveSubCodeFourth);
         packet.WriteUShort(0);
         packet.WriteByte(0);
         return packet;
@@ -226,8 +236,8 @@ public sealed class EventPacketWriter
     {
         var packet = new Packet(GameOpcodes.GS_EVENT);
         packet.WriteByte((byte)TempleSubOpcode.DrakiLeaveSecond);
-        packet.WriteByte(0x0C);
-        packet.WriteByte(0x04);
+        packet.WriteByte(DrakiLeaveSubCodeFirst);
+        packet.WriteByte(DrakiLeaveSubCodeSecond);
         packet.WriteUShort(stage);
         packet.WriteUShort(subStage);
         packet.WriteUInt(elapsedSeconds);
