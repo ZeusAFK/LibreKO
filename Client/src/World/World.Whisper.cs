@@ -163,7 +163,7 @@ public partial class World
         var chat = GetOrCreateWhisper(name, minimized: false);
         chat.Window.Visible = true;
         chat.Window.SetMinimized(false);
-        _whisperLayer.MoveChild(chat.Window, _whisperLayer.GetChildCount() - 1);
+        RaiseWhisper(chat);
         StopWhisperBlink(chat);
         chat.StickBottom = true;
         ScrollWhisperToEnd(chat);
@@ -196,7 +196,19 @@ public partial class World
             .ToList();
         int hit = WindowStack.TopmostAt(shown.Select(chat => chat.Window.GetGlobalRect()).ToList(), screenPos);
         if (hit == WindowStack.None || shown[hit].Window.Minimized) return;
+        RaiseWhisper(shown[hit]);
         if (!shown[hit].Input.HasFocus()) shown[hit].Input.CallDeferred(Control.MethodName.GrabFocus);
+    }
+
+    private void RaiseWhisper(WhisperChat chat) =>
+        _whisperLayer.MoveChild(chat.Window, _whisperLayer.GetChildCount() - 1);
+
+    private int FocusedWhisperIndex()
+    {
+        if (GetViewport().GuiGetFocusOwner() is not LineEdit focused) return WindowStack.None;
+        foreach (var chat in _whispers.Values)
+            if (chat.Input == focused && GodotObject.IsInstanceValid(chat.Window)) return chat.Window.GetIndex();
+        return WindowStack.None;
     }
 
     private void OnWhisperChat(ChatLine line)
@@ -207,7 +219,7 @@ public partial class World
         bool isNew = !_whispers.ContainsKey(line.Name);
         var chat = GetOrCreateWhisper(line.Name, minimized: isNew);
         chat.Window.Visible = true;
-        _whisperLayer.MoveChild(chat.Window, _whisperLayer.GetChildCount() - 1);
+        if (WindowStack.RaisesIncoming(FocusedWhisperIndex(), chat.Window.GetIndex())) RaiseWhisper(chat);
         AppendWhisper(chat, mine: false, notice: false, line.Message);
 
         if (chat.Window.Minimized) StartWhisperBlink(chat);

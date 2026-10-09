@@ -31,4 +31,13 @@ public class WindowStackTests
         Assert.Equal(WindowStack.None, WindowStack.TopmostAt(new[] { West, East }, new Vector2(10, 10)));
         Assert.Equal(WindowStack.None, WindowStack.TopmostAt(new Rect2[0], new Vector2(300, 200)));
     }
+
+    [Fact]
+    public void AnIncomingWindowIsRaisedOnlyWhileNoOtherWindowIsBeingTypedInto()
+    {
+        Assert.True(WindowStack.RaisesIncoming(WindowStack.None, 0));
+        Assert.True(WindowStack.RaisesIncoming(1, 1));
+        Assert.False(WindowStack.RaisesIncoming(1, 0));
+        Assert.False(WindowStack.RaisesIncoming(0, 1));
+    }
 }

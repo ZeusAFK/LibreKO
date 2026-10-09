@@ -13,4 +13,6 @@ public static class WindowStack
             if (frames[i].HasPoint(point)) return i;
         return None;
     }
+
+    public static bool RaisesIncoming(int focused, int incoming) => focused == None || focused == incoming;
 }
