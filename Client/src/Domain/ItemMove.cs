@@ -23,6 +23,8 @@ public static class ItemMove
 
     public const byte None = 0;
 
+    public const ushort WholeStack = 0;
+
     public enum Region { Equip, Grid, Cospre, BagSlot, MagicBag }
 
     public static bool IsCarried(int abs) => RegionOf(abs) is Region.Grid or Region.MagicBag;
@@ -52,11 +54,24 @@ public static class ItemMove
         return true;
     }
 
-    public static void ApplyConfirmed(ItemSlot[] inventory, byte direction, int from, int to, int countable)
+    public static void ApplyConfirmed(ItemSlot[] inventory, byte direction, int from, int to, int countable, ushort amount = WholeStack)
     {
         var source = inventory[from];
         var destination = inventory[to];
-        if (from != to && Merges(direction, source, destination, countable))
+        if (from != to && amount != WholeStack && amount < source.Count)
+        {
+            if (destination.IsEmpty)
+            {
+                destination = source;
+                destination.Count = (short)amount;
+            }
+            else
+                destination.Count += (short)amount;
+            source.Count -= (short)amount;
+            inventory[from] = source;
+            inventory[to] = destination;
+        }
+        else if (from != to && Merges(direction, source, destination, countable))
         {
             destination.Count += source.Count;
             inventory[to] = destination;
@@ -109,4 +124,20 @@ public static class ItemMove
         && !source.IsLinked
         && !destination.IsLinked
         && source.Count + destination.Count <= Inventory.StackMax;
+
+    public static bool SplitsAcross(byte direction) =>
+        direction is InventoryToMagicBag or MagicBagToInventory or MagicBagToMagicBag;
+
+    public static bool Splits(byte direction, ItemSlot source, ItemSlot destination, int countable, int amount) =>
+        SplitsAcross(direction)
+        && countable > 0
+        && !source.IsEmpty
+        && !source.IsLinked
+        && amount > WholeStack
+        && amount < source.Count
+        && (destination.IsEmpty
+            || destination.ItemId == source.ItemId
+            && destination.Flag == source.Flag
+            && !destination.IsLinked
+            && amount + destination.Count <= Inventory.StackMax);
 }

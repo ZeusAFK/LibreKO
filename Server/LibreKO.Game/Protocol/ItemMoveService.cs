@@ -76,6 +76,26 @@ public class ItemMoveService(
         var itemId = packet.ReadInt();
         var sourcePosition = packet.ReadByte();
         var destinationPosition = packet.ReadByte();
+        var amount = ItemStackRule.WholeStack;
+        if (packet.RemainingBytes > 0)
+        {
+            if (packet.RemainingBytes < sizeof(ushort))
+            {
+                logger.LogDebug("Rejected item move for {Name}: truncated amount", session.Name);
+                await SendItemMoveResponseAsync(session, 0);
+                return;
+            }
+
+            amount = packet.ReadUShort();
+        }
+
+        if (amount != ItemStackRule.WholeStack && !ItemStackRule.SplitsAcross(direction))
+        {
+            logger.LogDebug("Rejected item move for {Name}: amount {Amount} for direction {Direction}", session.Name, amount, direction);
+            await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
         var resolvedSourcePosition = sourcePosition;
         var resolvedDestinationPosition = destinationPosition;
 
@@ -179,10 +199,27 @@ public class ItemMoveService(
             return;
         }
 
+        var splits = amount != ItemStackRule.WholeStack && amount != sourceItem.Count;
+        if (splits && (sourceIndex == destinationIndex
+                || !ItemStackRule.Splits(direction, sourceItem, destinationItem, itemData, amount)))
+        {
+            logger.LogDebug(
+                "Rejected item move for {Name}: cannot split {Amount} of {Count} from slot {SourceIndex} to {DestinationIndex}",
+                session.Name,
+                amount,
+                sourceItem.Count,
+                sourceIndex,
+                destinationIndex);
+            await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
         var sourceItemIdBeforeMove = sourceItem.ItemId;
         var destinationItemIdBeforeMove = destinationItem.ItemId;
 
-        if (ItemStackRule.Merges(direction, sourceItem, destinationItem, itemData))
+        if (splits)
+            SplitItems(sourceItem, destinationItem, amount);
+        else if (ItemStackRule.Merges(direction, sourceItem, destinationItem, itemData))
         {
             destinationItem.Count += sourceItem.Count;
             sourceItem.Clear();
@@ -282,6 +319,23 @@ public class ItemMoveService(
         (sourceItem.Flag, destinationItem.Flag) = (destinationItem.Flag, sourceItem.Flag);
         (sourceItem.ExpiresAt, destinationItem.ExpiresAt) = (destinationItem.ExpiresAt, sourceItem.ExpiresAt);
         (sourceItem.UniqueId, destinationItem.UniqueId) = (destinationItem.UniqueId, sourceItem.UniqueId);
+    }
+
+    private static void SplitItems(ItemSlot sourceItem, ItemSlot destinationItem, ushort amount)
+    {
+        if (destinationItem.IsEmpty)
+        {
+            destinationItem.ItemId = sourceItem.ItemId;
+            destinationItem.Durability = sourceItem.Durability;
+            destinationItem.Flag = sourceItem.Flag;
+            destinationItem.ExpiresAt = sourceItem.ExpiresAt;
+            destinationItem.UniqueId = sourceItem.UniqueId;
+            destinationItem.Count = amount;
+        }
+        else
+            destinationItem.Count += amount;
+
+        sourceItem.Count -= amount;
     }
 
     private static void MoveItem(ItemSlot sourceItem, ItemSlot destinationItem)

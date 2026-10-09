@@ -100,6 +100,7 @@ public interface IGameInventory
 
     GameItem At(int slot);
     void Move(int from, int to);
+    void MoveAmount(int from, int to, int count);
     void Use(int slot);
     void Drop(int slot);
     void Arrange();
@@ -348,6 +349,7 @@ public sealed class PluginGame
         public int GridCount => Source?.GridCount ?? InventoryConstants.HaveMax;
         public GameItem At(int slot) => Source?.At(slot) ?? GameItem.Empty(slot);
         public void Move(int from, int to) => Source?.Move(from, to);
+        public void MoveAmount(int from, int to, int count) => Source?.MoveAmount(from, to, count);
         public void Use(int slot) => Source?.Use(slot);
         public void Drop(int slot) => Source?.Drop(slot);
         public void Arrange() => Source?.Arrange();

@@ -269,6 +269,8 @@ public partial class World
 
         public void Move(int from, int to) => _w.MoveBetween(from, to);
 
+        public void MoveAmount(int from, int to, int count) => _w.MoveBetween(from, to, count);
+
         public void Use(int slot) => _w.InventoryContext(slot);
 
         public void Drop(int slot) => _w.AskDeleteItem(slot);
