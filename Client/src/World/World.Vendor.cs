@@ -14,6 +14,8 @@ public partial class World
     private const int TradeRefusedNoMoney = 3;
     private const int TradeRefusedNoRoom = 4;
     private const string VendorHint = "Right-click or drag to trade";
+    private const string VendorUntradableText = "This item cannot be sold.";
+    private const string VendorStaleText = "The item or quantity changed. Please try again.";
 
     private struct PendingTrade
     {
@@ -54,6 +56,8 @@ public partial class World
 
     private bool _tradeInFlight;
     private PendingTrade _pendingTrade;
+
+    private bool VendorBlocked => _tradeInFlight || _moveInFlight || _moveQueue.Count > 0 || _selfDead;
 
     private bool VendorSearching => _vendorSearch.Text.Trim().Length > 0;
 
@@ -160,8 +164,8 @@ public partial class World
 
     private void OpenVendor(int sellingGroup)
     {
+        _tradePrompt.Close();
         _vendorGroup = sellingGroup;
-        _tradeInFlight = false;
         CloseNpcDialog();
         var entries = ItemData.SellGroup(sellingGroup).Where(e => ItemData.Get(e.Id) != null).ToList();
         _vendorEntries = entries.GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
@@ -180,6 +184,7 @@ public partial class World
 
     private void CloseVendor()
     {
+        _tradeInFlight = false;
         _tradePrompt.Close();
         HideItemTooltip();
         if (!_vendorShown) return;
@@ -285,7 +290,7 @@ public partial class World
 
     private void AskBuy(int itemId, int preferred)
     {
-        if (_tradeInFlight || _selfDead || !_vendorEntries.TryGetValue(itemId, out var entry)) return;
+        if (VendorBlocked || !_vendorEntries.TryGetValue(itemId, out var entry)) return;
         if (ItemData.Get(itemId) is not { } def) return;
         int price = ItemData.BuyPrice(itemId);
         long? freeWeight = Sheet.MaxWeight > 0 ? Sheet.MaxWeight - CarriedWeight() : null;
@@ -319,7 +324,7 @@ public partial class World
 
     private void BuyAmount(ItemData.SellEntry entry, int count, int preferred)
     {
-        if (_tradeInFlight || _selfDead) return;
+        if (VendorBlocked || !_vendorShown || !_vendorEntries.ContainsKey(entry.Id)) return;
         count = Mathf.Clamp(count, 1, Inventory.StackMax);
         if (!CanBuy(entry.Id, count, preferred, out int dest, out bool stack, out string problem))
         {
@@ -366,7 +371,7 @@ public partial class World
 
     private void AskSell(int abs)
     {
-        if (_tradeInFlight || _selfDead || !InMainBag(abs) || Inv[abs].IsEmpty) return;
+        if (VendorBlocked || !InMainBag(abs) || Inv[abs].IsEmpty) return;
         if (RefuseItemInUse(abs)) return;
         if (LoyaltyShop)
         {
@@ -374,6 +379,11 @@ public partial class World
             return;
         }
         var slot = Inv[abs];
+        if (!slot.IsTradable)
+        {
+            _vendorFooter.Status(VendorUntradableText, bad: true);
+            return;
+        }
         int unit = VendorSellUnit(slot.ItemId);
         if (unit <= 0)
         {
@@ -382,19 +392,29 @@ public partial class World
         }
         if (slot.Count <= 1 || ItemData.Get(slot.ItemId) is not { Countable: not 0 })
         {
-            SellSlot(abs, 1);
+            SellSlot(abs, 1, slot.ItemId);
             return;
         }
         _tradePrompt.Open(ItemData.Icon(slot.ItemId), $"Sell {ItemData.DisplayName(slot.ItemId)}",
-            $"{unit:n0} gold each · you carry {slot.Count:n0}", slot.Count, slot.Count, n => SellSlot(abs, (int)n),
+            $"{unit:n0} gold each · you carry {slot.Count:n0}", slot.Count, slot.Count, n => SellSlot(abs, (int)n, slot.ItemId),
             "Sell", n => $"Sells for {(long)unit * n:n0} gold");
     }
 
-    private void SellSlot(int absSlot, int count)
+    private void SellSlot(int absSlot, int count, int itemId)
     {
-        if (_tradeInFlight || _selfDead || !InMainBag(absSlot) || Inv[absSlot].IsEmpty) return;
+        if (VendorBlocked || !_vendorShown || LoyaltyShop || !InMainBag(absSlot)) return;
+        if (RefuseItemInUse(absSlot)) return;
         var slot = Inv[absSlot];
-        count = Mathf.Clamp(count, 1, Mathf.Max(1, (int)slot.Count));
+        if (slot.ItemId != itemId || count < 1 || count > Mathf.Max(1, (int)slot.Count))
+        {
+            _vendorFooter.Status(VendorStaleText, bad: true);
+            return;
+        }
+        if (!slot.IsTradable || VendorSellUnit(itemId) <= 0)
+        {
+            _vendorFooter.Status(VendorUntradableText, bad: true);
+            return;
+        }
         _pendingTrade = new PendingTrade { Buy = false, ItemId = slot.ItemId, AbsSlot = absSlot, Count = count };
         _tradeInFlight = true;
         RefreshVendorDetail();
