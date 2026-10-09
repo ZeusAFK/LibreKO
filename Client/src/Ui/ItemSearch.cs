@@ -14,9 +14,9 @@ public readonly struct ItemSearchHit
 
     public ItemSearchHit(ItemData.Item def, ItemData.Ext? ext)
     {
-        Def = def;
-        Ext = ext;
         Id = ext == null ? def.Id : ItemData.VariantId(def, ext);
+        Def = ItemData.Get(Id) ?? def;
+        Ext = ext;
         Family = ItemData.SplitUpgrade(ItemData.DisplayName(Id), out Plus);
     }
 
