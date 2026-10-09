@@ -1,5 +1,7 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
+using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
@@ -38,6 +40,13 @@ public class BeautyAppearanceTests : GameTestBase
     private const float Z = 400;
     private const int PeerId = 999;
     private const int InOutPacketsPerRestyle = 2;
+    private const int CouponSlot = InventoryConstants.InventoryStart;
+    private const ushort Coupons = 2;
+    private const int OtherNpc = NpcData.MakeupArtist + 1;
+    private const float OutOfRange = 12;
+    private const byte NoSuchFace = 8;
+    private const int NoSuchStyle = 0x07_5A_38_20;
+    private const int UnknownStyle = 0x7F_5A_38_20;
 
     private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null) => CreateProvider(db =>
     {
@@ -94,9 +103,21 @@ public class BeautyAppearanceTests : GameTestBase
         session.ZoneId = (byte)ZoneId.Moradon;
         session.X = X;
         session.Z = Z;
+        session.Inventory[CouponSlot].ItemId = BeautyShopPacketCoordinator.MakeoverCoupon;
+        session.Inventory[CouponSlot].Count = Coupons;
         sessions.Regions.AddToRegion(session);
+        session.Quest.EventNpcUniqueId = MakeupArtist(sessions).UniqueId;
         return (session, client, sent);
     }
+
+    private static NpcInstance MakeupArtist(SessionManager sessions) => sessions.Regions.SpawnNpc(new NpcInstance
+    {
+        NpcId = NpcData.MakeupArtist, Name = "Kelly", NpcType = NpcData.TypeTalk, ZoneId = (byte)ZoneId.Moradon,
+        X = X, Z = Z, SpawnX = X, SpawnZ = Z, Hp = Hp, MaxHp = Hp,
+    });
+
+    private static NpcInstance EventNpc(ServiceProvider provider, UserSession session) =>
+        provider.GetRequiredService<SessionManager>().Regions.GetNpc(session.Quest.EventNpcUniqueId)!;
 
     private static List<Packet> PeerNear(ServiceProvider provider, UserSession near)
     {
@@ -112,13 +133,13 @@ public class BeautyAppearanceTests : GameTestBase
         return sent;
     }
 
-    private static Packet Request(string name = Shopper, byte subOpcode = ApplySubOpcode)
+    private static Packet Request(string name = Shopper, byte subOpcode = ApplySubOpcode, byte face = NewFace, int hair = NewHair)
     {
         var packet = new Packet(GameOpcodes.GS_CHANGE_HAIR);
         packet.WriteByte(subOpcode);
         packet.WriteSByteString(name);
-        packet.WriteByte(NewFace);
-        packet.WriteInt(NewHair);
+        packet.WriteByte(face);
+        packet.WriteInt(hair);
         packet.ResetOffset();
         return packet;
     }
@@ -128,8 +149,7 @@ public class BeautyAppearanceTests : GameTestBase
 
     private static void ShouldReply(List<Packet> sent, byte result)
     {
-        var reply = sent.Should().ContainSingle().Subject;
-        reply.GetOpcode().Should().Be((byte)GameOpcodes.GS_CHANGE_HAIR);
+        var reply = sent.Where(p => p.GetOpcode() == (byte)GameOpcodes.GS_CHANGE_HAIR).Should().ContainSingle().Subject;
         reply.GetData().Should().Equal(result);
     }
 
@@ -137,6 +157,27 @@ public class BeautyAppearanceTests : GameTestBase
     {
         session.Face.Should().Be(OldFace);
         session.Hair.Should().Be(OldHair);
+        session.Inventory[CouponSlot].ItemId.Should().Be(BeautyShopPacketCoordinator.MakeoverCoupon);
+        session.Inventory[CouponSlot].Count.Should().Be(Coupons);
+    }
+
+    private static async Task ShouldRefuse(ServiceProvider provider, UserSession session, IClient client, List<Packet> sent, Packet request)
+    {
+        await Send(provider, client, request);
+
+        ShouldReply(sent, PreGamePacketWriter.ChangeHairFailed);
+        sent.Should().ContainSingle();
+        ShouldKeepOldLook(session);
+        var stored = (await StoredCharacters(provider)).Single(c => c.Name == Shopper);
+        stored.Face.Should().Be(OldFace);
+        stored.Hair.Should().Be(OldHair);
+    }
+
+    private static ItemSlot[] StoredInventory(Character character)
+    {
+        var inventory = Enumerable.Range(0, InventoryConstants.InventoryTotal).Select(_ => new ItemSlot()).ToArray();
+        UserSessionBinaryState.LoadItems(inventory, character.Items);
+        return inventory;
     }
 
     private static async Task<List<Character>> StoredCharacters(ServiceProvider provider)
@@ -174,6 +215,99 @@ public class BeautyAppearanceTests : GameTestBase
         var stored = (await StoredCharacters(provider)).Single(c => c.Name == Shopper);
         stored.Face.Should().Be(NewFace);
         stored.Hair.Should().Be(NewHair);
+    }
+
+    [Fact]
+    public async Task EachChangeTakesOneMakeoverCouponWithTheSave()
+    {
+        using var provider = Provider();
+        var (session, client, sent) = await Player(provider);
+
+        await Send(provider, client, Request());
+
+        session.Inventory[CouponSlot].Count.Should().Be(Coupons - 1);
+        var stored = (await StoredCharacters(provider)).Single(c => c.Name == Shopper);
+        StoredInventory(stored)[CouponSlot].Count.Should().Be(Coupons - 1);
+        sent.Should().ContainSingle(p => p.GetOpcode() == (byte)GameOpcodes.GS_ITEM_COUNT_CHANGE);
+    }
+
+    [Fact]
+    public async Task TheLastCouponLeavesTheBag()
+    {
+        using var provider = Provider();
+        var (session, client, sent) = await Player(provider);
+        session.Inventory[CouponSlot].Count = 1;
+
+        await Send(provider, client, Request());
+
+        ShouldReply(sent, PreGamePacketWriter.ChangeHairSucceeded);
+        session.Inventory[CouponSlot].IsEmpty.Should().BeTrue();
+        var stored = (await StoredCharacters(provider)).Single(c => c.Name == Shopper);
+        StoredInventory(stored)[CouponSlot].IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task WithoutACouponTheLookIsKept()
+    {
+        using var provider = Provider();
+        var (session, client, sent) = await Player(provider);
+        session.Inventory[CouponSlot].Clear();
+
+        await Send(provider, client, Request());
+
+        ShouldReply(sent, PreGamePacketWriter.ChangeHairFailed);
+        sent.Should().ContainSingle();
+        session.Face.Should().Be(OldFace);
+        session.Hair.Should().Be(OldHair);
+        (await StoredCharacters(provider)).Single(c => c.Name == Shopper).Face.Should().Be(OldFace);
+    }
+
+    public static TheoryData<Action<UserSession, NpcInstance>> AwayFromTheMakeupArtist => new()
+    {
+        (session, _) => session.Quest.EventNpcUniqueId = 0,
+        (_, npc) => npc.NpcId = OtherNpc,
+        (_, npc) => npc.X = X + OutOfRange,
+        (_, npc) => npc.Hp = 0,
+        (session, _) => session.ZoneId = (byte)ZoneId.ElMoradEslant1,
+    };
+
+    [Theory]
+    [MemberData(nameof(AwayFromTheMakeupArtist))]
+    public async Task OnlyTheMakeupArtistInRangeAcceptsAChange(Action<UserSession, NpcInstance> leave)
+    {
+        using var provider = Provider();
+        var (session, client, sent) = await Player(provider);
+        leave(session, EventNpc(provider, session));
+
+        await ShouldRefuse(provider, session, client, sent, Request());
+    }
+
+    [Theory]
+    [InlineData(NoSuchFace, NewHair)]
+    [InlineData(NewFace, NoSuchStyle)]
+    [InlineData(NewFace, UnknownStyle)]
+    public async Task ALookOutsideTheRaceIsRefused(byte face, int hair)
+    {
+        using var provider = Provider();
+        var (session, client, sent) = await Player(provider);
+
+        await ShouldRefuse(provider, session, client, sent, Request(face: face, hair: hair));
+    }
+
+    [Theory]
+    [InlineData(NoSuchFace, NewHair)]
+    [InlineData(NewFace, NoSuchStyle)]
+    public async Task ThePreGameChangeRefusesALookOutsideTheRace(byte face, int hair)
+    {
+        using var provider = Provider();
+        var accountId = await GetAccountIdAsync(provider, ShopperAccount);
+        await using var scope = provider.CreateAsyncScope();
+
+        var reply = await scope.ServiceProvider.GetRequiredService<IPreGameService>()
+            .ChangeHairAsync(accountId, ApplySubOpcode, Shopper, face, hair);
+
+        reply.GetData().Should().Equal(PreGamePacketWriter.ChangeHairFailed);
+        (await StoredCharacters(provider)).Should().OnlyContain(c => c.Face == OldFace && c.Hair == OldHair);
     }
 
     [Fact]
@@ -274,17 +408,19 @@ public class BeautyAppearanceTests : GameTestBase
     }
 
     [Fact]
-    public async Task ASaveFailureIsRefusedAndKeepsTheLiveLook()
+    public async Task ASaveFailureKeepsTheCouponAndTheLiveLook()
     {
-        var preGameService = Substitute.For<IPreGameService>();
-        preGameService.ChangeHairAsync(Arg.Any<int>(), Arg.Any<byte>(), Arg.Any<string>(), Arg.Any<byte>(), Arg.Any<int>())
-            .Returns(Task.FromException<Packet>(new IOException("save failed")));
-        using var provider = Provider(services => services.AddScoped(_ => preGameService));
+        var characters = Substitute.For<ICharacterRepository>();
+        using var provider = Provider(services => services.AddScoped(_ => characters));
         var (session, client, sent) = await Player(provider);
+        characters.GetById(session.CharacterId)
+            .Returns(new Character { Id = session.CharacterId, AccountId = session.AccountId, Name = Shopper });
+        characters.UpdateAsync(Arg.Any<Character>()).Returns(Task.FromException(new IOException("save failed")));
 
         await Send(provider, client, Request());
 
         ShouldReply(sent, PreGamePacketWriter.ChangeHairFailed);
+        sent.Should().ContainSingle();
         ShouldKeepOldLook(session);
     }
 

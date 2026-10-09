@@ -247,7 +247,7 @@ public class QuestNpcInteractionService(
         Array.Fill(session.Quest.SelectMessageRewards, -1);
     }
 
-    private static bool IsInNpcRange(UserSession session, NpcInstance npc)
+    internal static bool IsInNpcRange(UserSession session, NpcInstance npc)
     {
         var dx = session.X - npc.X;
         var dz = session.Z - npc.Z;

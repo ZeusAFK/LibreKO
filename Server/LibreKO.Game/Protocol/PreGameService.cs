@@ -231,7 +231,8 @@ public class PreGameService(
         }
 
         var character = await characterRepository.GetByName(characterName);
-        if (character == null || character.AccountId != accountId)
+        if (character == null || character.AccountId != accountId
+            || !CharacterLookRules.Allows(character.Race, face, hair, character.Hair))
         {
             return PreGamePacketWriter.ChangeHairResult(PreGamePacketWriter.ChangeHairFailed);
         }
@@ -239,13 +240,6 @@ public class PreGameService(
         character.Face = face;
         character.Hair = hair;
         await characterRepository.UpdateAsync(character);
-
-        var session = sessionManager.GetByCharacterId(character.Id);
-        if (session != null && session.AccountId == accountId)
-        {
-            session.Face = face;
-            session.Hair = hair;
-        }
 
         return PreGamePacketWriter.ChangeHairResult(PreGamePacketWriter.ChangeHairSucceeded);
     }

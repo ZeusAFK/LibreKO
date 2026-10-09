@@ -149,6 +149,11 @@ public partial class World
     private void SubmitChangeHair()
     {
         if (!_changeHairShown || _changeHairInFlight || _selfDead) return;
+        if (!HasItemInBackpack(BeautyShop.Coupon))
+        {
+            SetChangeHairStatus(ItemData.Text(BeautyShop.NoCouponText, "You need a Makeover Coupon."), true);
+            return;
+        }
         _changeHairInFlight = true;
         RefreshChangeHairLabels();
         SetChangeHairStatus("Applying…", false);
@@ -161,22 +166,22 @@ public partial class World
         if (!_changeHairInFlight) return;
         _changeHairInFlight = false;
         RefreshChangeHairLabels();
+        string text = ItemData.Text(BeautyShop.ResultText(ok), ok ? "Your appearance has changed." : "Your appearance could not be changed.");
         if (ok)
         {
             _selfHair = hair;
             _selfFace = face;
             RerenderSelfEquipment();
-            CombatNotice($"Your new look is ready (hair {HairCode.StyleOf(hair)}, face {face}).");
-            SetChangeHairStatus("Looking good!", false);
+            CombatNotice(text);
             CloseChangeHair();
         }
         else if (_changeHairShown)
         {
-            SetChangeHairStatus("The stylist couldn't apply that.", true);
+            SetChangeHairStatus(text, true);
         }
         else
         {
-            CombatNotice("The stylist couldn't apply that.");
+            CombatNotice(text);
         }
     }
 

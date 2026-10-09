@@ -445,6 +445,7 @@ public class CharacterTests : GameTestBase
                     AccountId = accountId,
                     Slot = 0,
                     Name = "Hairy",
+                    Race = (byte)CharacterRace.KarusPuriTuarek,
                     Face = 2,
                     Hair = 1234
                 });
