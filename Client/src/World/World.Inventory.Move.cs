@@ -47,7 +47,8 @@ public partial class World : Node3D
                 CombatNotice(BagStillHoldsItems);
                 return;
             }
-            int free = Inv.FirstFreeGridSlot();
+            int free = region == ItemMove.Region.MagicBag
+                ? Inv.FirstStackOrFreeGridSlot(Inv[absSlot], def.Countable, IsStagedSlot) : Inv.FirstFreeGridSlot();
             if (free < 0) return;
             byte back = ItemMove.DirectionFor(region, ItemMove.Region.Grid);
             if (back == ItemMove.None) return;

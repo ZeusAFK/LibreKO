@@ -66,6 +66,13 @@ public sealed class Inventory
         return room;
     }
 
+    public int FirstStackOrFreeGridSlot(ItemSlot source, int countable, Func<int, bool> staged)
+    {
+        for (int abs = GridStart; abs < GridStart + GridCount && abs < _slots.Length; abs++)
+            if (!staged(abs) && ItemMove.Merges(ItemMove.MagicBagToInventory, source, _slots[abs], countable)) return abs;
+        return FirstFreeGridSlot();
+    }
+
     public int CountOf(int itemId)
     {
         int total = 0;
