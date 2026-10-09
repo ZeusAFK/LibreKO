@@ -309,17 +309,12 @@ public partial class World
     private int BuyRoom(int itemId, ItemData.Item def, int preferred)
     {
         bool countable = def.Countable != 0;
-        int whole = countable ? Inventory.StackMax : 1;
         if (InMainBag(preferred))
         {
-            if (Inv[preferred].IsEmpty) return whole;
+            if (Inv[preferred].IsEmpty) return countable ? Inventory.StackMax : 1;
             if (countable && Inv[preferred].ItemId == itemId) return Inventory.StackMax - Inv[preferred].Count;
         }
-        int room = Inv.FirstFreeGridSlot() >= 0 ? whole : 0;
-        if (!countable) return room;
-        for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
-            if (Inv[abs].ItemId == itemId) room = Mathf.Max(room, Inventory.StackMax - Inv[abs].Count);
-        return room;
+        return Inv.GridRoomFor(itemId, countable);
     }
 
     private void BuyAmount(ItemData.SellEntry entry, int count, int preferred)

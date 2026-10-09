@@ -195,10 +195,11 @@ public class MerchantListingService(
 
         buyerSlot = (byte)(destination - InventoryConstants.SlotMax);
         var destinationSlot = session.Inventory[destination];
+        var destinationIsNew = destinationSlot.IsEmpty;
         session.Money -= (int)totalCost;
         merchant.Money += (int)totalCost;
 
-        if (destinationSlot.IsEmpty)
+        if (destinationIsNew)
         {
             destinationSlot.ItemId = merchantItem.ItemId;
             destinationSlot.Count = count;
@@ -228,7 +229,7 @@ public class MerchantListingService(
 
         session.RecalculateStatsWithBuffs(gameDataService);
         await userNotificationService.SendStackChangeAsync(session, (byte)destination,
-            destinationSlot.ItemId, destinationSlot.Count, destinationSlot.Durability);
+            destinationSlot.ItemId, destinationSlot.Count, destinationSlot.Durability, destinationIsNew);
         await userNotificationService.SendStackChangeAsync(merchant, (byte)merchantItem.OriginalSlot,
             sellerSlot.ItemId, sellerSlot.Count, sellerSlot.Durability);
         var buyResult = MerchantPacketWriter.ItemBought(

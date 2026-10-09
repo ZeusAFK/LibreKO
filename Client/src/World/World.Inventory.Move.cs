@@ -239,9 +239,11 @@ public partial class World : Node3D
 
         if (_moveCur.PetPos != NoPetSlot)
         {
-            Inv.ApplySlotUpdate(_moveCur.From, _moveCur.PetItem);
-            Net.I.MirrorInventorySlot(_moveCur.From, _moveCur.PetItem);
-            Net.I.Pet?.PlaceConfirmed(_moveCur.PetIndex, _moveCur.PetPos, _moveCur.PetBagItem);
+            if (Net.I.Pet?.PlaceConfirmed(_moveCur.PetIndex, _moveCur.PetPos, _moveCur.PetBagItem) == true)
+            {
+                Inv.ApplySlotUpdate(_moveCur.From, _moveCur.PetItem);
+                Net.I.MirrorInventorySlot(_moveCur.From, _moveCur.PetItem);
+            }
             PumpMoves();
             RefreshInventoryUI();
             RefreshPetUI();

@@ -21,6 +21,7 @@ public partial class World
     private const long MailGoldMax = int.MaxValue;
     private const int MailBodyWarnRemaining = 40;
     private const double MailSuggestDebounceSeconds = 0.25;
+    private const string MailSendingText = "Sending…";
 
     private HudWindow _mailComposeWindow = null!;
     private LineEdit _mailTo = null!;
@@ -40,6 +41,7 @@ public partial class World
     private readonly List<(int Slot, int Count)> _mailAttachments = [];
     private bool _mailComposeShown;
     private bool _mailSending;
+    private bool _mailSentDraftOpen;
 
     private void BuildMailComposeWindow()
     {
@@ -160,12 +162,11 @@ public partial class World
 
     private void OpenMailCompose()
     {
-        if (_mailSending) return;
         _mailComposeShown = true;
         _mailComposeWindow.Visible = true;
         _mailComposeWindow.GetParent()?.MoveChild(_mailComposeWindow, _mailComposeWindow.GetParent().GetChildCount() - 1);
-        _mailComposeStatus.Text = "";
-        _mailSendBtn.Disabled = false;
+        _mailComposeStatus.Text = _mailSending ? MailSendingText : "";
+        _mailSendBtn.Disabled = _mailSending;
         Net.I.SendFriendListRequest();
         Net.I.SendClanMembersRequest();
         _mailTo.GrabFocus();
@@ -174,6 +175,7 @@ public partial class World
     private void CloseMailCompose()
     {
         _mailComposeShown = false;
+        _mailSentDraftOpen = false;
         _mailComposeWindow.Visible = false;
         _mailToSuggest.Visible = false;
         ResetMailCompose();
@@ -338,7 +340,8 @@ public partial class World
 
         _mailSendBtn.Disabled = true;
         _mailSending = true;
-        _mailComposeStatus.Text = "Sending…";
+        _mailSentDraftOpen = true;
+        _mailComposeStatus.Text = MailSendingText;
         Net.I.SendMailSend(to, subject, _mailBody.Text, gold, items);
     }
 
@@ -348,7 +351,12 @@ public partial class World
         if (ok)
         {
             _mailStatus.Text = message;
-            CloseMailCompose();
+            if (_mailSentDraftOpen) CloseMailCompose();
+            else
+            {
+                _mailSendBtn.Disabled = false;
+                _mailComposeStatus.Text = "";
+            }
             Net.I.SendMailList();
             return;
         }

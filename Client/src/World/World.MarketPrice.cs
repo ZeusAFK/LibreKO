@@ -283,15 +283,11 @@ public partial class World
                 break;
             case MarketPrice.NoHistory:
                 _marketPriceOpenOnReply = false;
-                _marketPriceCache[_marketPriceAsked] = new MarketPriceReply(MarketPrice.NoHistory, _marketPriceAsked,
+                var none = new MarketPriceReply(MarketPrice.NoHistory, _marketPriceAsked,
                     new MarketPriceDay[MarketPrice.DaysShown], 0, default);
-                string none = MarketPriceNoHistoryMessage;
-                if (_marketPriceAsked == _marketPriceItem && _marketPriceShown)
-                {
-                    ClearMarketPriceChart();
-                    SetMarketPriceStatus(none);
-                }
-                if (!_amountLayer.Visible) CombatNotice(none);
+                _marketPriceCache[_marketPriceAsked] = none;
+                if (_marketPriceAsked == _marketPriceItem && _marketPriceShown) DrawMarketPrice(none);
+                if (!_amountLayer.Visible) CombatNotice(MarketPriceNoHistoryMessage);
                 RefreshStallPriceHint();
                 break;
             case MarketPrice.NotPremium:

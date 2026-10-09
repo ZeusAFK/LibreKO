@@ -223,7 +223,6 @@ public partial class World
     private void RefreshWishList()
     {
         HideItemTooltip();
-        long total = 0;
         int filled = 0;
         foreach (Node child in _wishSummary.GetChildren()) child.QueueFree();
 
@@ -235,8 +234,6 @@ public partial class World
             if (wish.IsEmpty) continue;
 
             filled++;
-            long line = (long)wish.Price * wish.Count;
-            total += line;
             _wishSummary.AddChild(UiTheme.Text(
                 $"{ItemData.DisplayName(wish.ItemId)}   [{Money(wish.Price)} gold] x {wish.Count}",
                 12, UiTheme.TextHi));
@@ -245,6 +242,14 @@ public partial class World
         if (filled == 0)
             _wishSummary.AddChild(UiTheme.Text("Nothing on the list yet.", 12, UiTheme.TextDim));
 
+        RefreshWishTotal();
+    }
+
+    private void RefreshWishTotal()
+    {
+        long total = 0;
+        foreach (var wish in _wishes)
+            if (!wish.IsEmpty) total += (long)wish.Price * wish.Count;
         _wishTotal.Text = total.ToString("n0");
         _wishTotal.AddThemeColorOverride("font_color", total > Sheet.Gold ? UiTheme.Bad : UiTheme.GoldBright);
     }

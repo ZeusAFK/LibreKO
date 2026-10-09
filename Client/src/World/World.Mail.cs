@@ -199,7 +199,7 @@ public partial class World
     {
         if (_mailUnreadPill == null || !IsInstanceValid(_mailUnreadPill)) return;
         _mailUnreadPill.Text = count > 0 ? $"{count} unread" : "";
-        if (_mailShown) Net.I.SendMailList();
+        if (_mailShown && count != _mails.Count(m => !m.Read)) Net.I.SendMailList();
     }
 
     private void OnMailList(List<MailEntry> mails)
@@ -402,7 +402,7 @@ public partial class World
 
     private void OnMailClaimResult(int mailId, bool ok, string message)
     {
-        _mailStatus.Text = ok ? "" : message;
+        _mailStatus.Text = message;
         Net.I.SendMailList();
     }
 }

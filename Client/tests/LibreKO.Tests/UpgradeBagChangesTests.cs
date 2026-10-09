@@ -17,7 +17,7 @@ public class UpgradeBagChangesTests
     private const int Scroll = 379021000;
     private const short Raptor9Durability = 15000;
     private const short Raptor8Durability = 7000;
-    private const int Raptor8Serial = 123;
+    private const ItemFlag Raptor8State = ItemFlag.NotBound;
     private const int Destroyed = 0;
     private const int ItemAbs = InventoryConstants.InventoryStart;
     private const int ScrollAbs = InventoryConstants.InventoryStart + 1;
@@ -25,7 +25,7 @@ public class UpgradeBagChangesTests
     private static ItemSlot[] Bag()
     {
         var bag = new ItemSlot[InventoryConstants.InventoryTotal];
-        bag[ItemAbs] = new ItemSlot { ItemId = Raptor8, Count = 1, Durability = Raptor8Durability, UniqueId = Raptor8Serial };
+        bag[ItemAbs] = new ItemSlot { ItemId = Raptor8, Count = 1, Durability = Raptor8Durability, Flag = (byte)Raptor8State };
         bag[ScrollAbs] = new ItemSlot { ItemId = Scroll, Count = 3, Durability = 1 };
         return bag;
     }
@@ -48,7 +48,7 @@ public class UpgradeBagChangesTests
         var changes = Changes(Normal, Succeeded, Raptor9);
         Assert.Equal(2, changes.Count);
         Assert.Equal((ItemAbs, Raptor9, Raptor9Durability), (changes[0].Abs, changes[0].Slot.ItemId, changes[0].Slot.Durability));
-        Assert.Equal(Raptor8Serial, changes[0].Slot.UniqueId);
+        Assert.Equal(Raptor8State, changes[0].Slot.State);
         Assert.Equal((ScrollAbs, Scroll, (short)2), (changes[1].Abs, changes[1].Slot.ItemId, changes[1].Slot.Count));
     }
 
@@ -69,11 +69,12 @@ public class UpgradeBagChangesTests
     [Theory]
     [InlineData(Raptor8)]
     [InlineData(Raptor7)]
-    public void AProtectedFailureRetainsTheReturnedItemAndConsumesOneMaterial(int returned)
+    public void AProtectedFailureKeepsTheItemStateAndDurabilityAndConsumesOneMaterial(int returned)
     {
         var changes = Changes(Normal, Failed, returned);
         Assert.Equal((ItemAbs, returned, Raptor8Durability), (changes[0].Abs, changes[0].Slot.ItemId, changes[0].Slot.Durability));
-        Assert.Equal(Raptor8Serial, changes[0].Slot.UniqueId);
+        Assert.Equal(Raptor8State, changes[0].Slot.State);
+        Assert.True(changes[0].Slot.IsTradable);
         Assert.Equal((ScrollAbs, (short)2), (changes[1].Abs, changes[1].Slot.Count));
     }
 }

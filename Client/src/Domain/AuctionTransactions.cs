@@ -2,7 +2,15 @@
 
 public sealed class AuctionTransactions
 {
-    public sealed record BidRequest(AuctionLot Lot, long Total, int Group, int Day);
+    public sealed record BidRequest(AuctionLot Lot, long Total, int Group, int Day)
+    {
+        public bool IsFor(AuctionToday today) => today.Group == Group && today.Day == Day;
+
+        public bool Raises(AuctionLot lot) => lot.Slot == Lot.Slot && lot.ItemId == Lot.ItemId && lot.Current <= Total;
+
+        public IReadOnlyList<AuctionLot> Apply(IEnumerable<AuctionLot> lots, string bidder) =>
+            lots.Select(l => Raises(l) ? l with { Current = Total, TopBidder = bidder } : l).ToList();
+    }
 
     public sealed record RowRequest(AuctionBidRow Row, bool Claim);
 

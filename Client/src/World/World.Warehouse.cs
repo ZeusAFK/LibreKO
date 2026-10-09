@@ -145,15 +145,17 @@ public partial class World
     private void OpenWarehouseStorage()
     {
         CloseNpcDialog();
-        if (_whInFlight) return;
         _whPage = 0;
         _whPageTabs.Select(0, notify: false);
         _whSearch.Text = "";
         _whStatus.ResetStatus();
         _whPanel.Visible = true;
         _whShown = true;
-        System.Array.Clear(_warehouse, 0, _warehouse.Length);
-        _whMoney = 0;
+        if (!_whInFlight)
+        {
+            System.Array.Clear(_warehouse, 0, _warehouse.Length);
+            _whMoney = 0;
+        }
         _whCompanion ??= new BagCompanion(WhTakeFromBag, WhBagFit, _ => "", CloseWarehouse, WithdrawInto);
         AttachBagCompanion(_whCompanion);
         Net.I.SendWarehouseOpen();
@@ -252,12 +254,9 @@ public partial class World
 
     private int BagDestination(int itemId, int count, out bool merge)
     {
-        merge = false;
-        if (IsStackable(itemId))
-            for (int abs = GridStart; abs < GridStart + GridCount && abs < Inv.Length; abs++)
-                if (Inv[abs].ItemId == itemId && Inv[abs].Count + count <= Inventory.StackMax)
-                { merge = true; return abs; }
-        return Inv.FirstFreeGridSlot();
+        int abs = Inv.GridSlotFor(itemId, count, IsStackable(itemId));
+        merge = abs >= 0 && !Inv[abs].IsEmpty;
+        return abs;
     }
 
     private bool CanDropOnWarehouse(int whIdx, Variant data)
@@ -267,7 +266,7 @@ public partial class World
         if (d.ContainsKey("invFrom"))
         {
             int abs = d["invFrom"].AsInt32();
-            return InMainBag(abs) && !Inv[abs].IsLinked && WarehouseStorable(Inv[abs].ItemId);
+            return InMainBag(abs) && WarehouseStorable(Inv[abs].ItemId);
         }
         if (!d.ContainsKey("companionFrom")) return false;
         int from = d["companionFrom"].AsInt32();
@@ -285,7 +284,7 @@ public partial class World
     {
         if (StorageTransferBusy || !InMainBag(abs) || Inv[abs].IsEmpty) return;
         var slot = Inv[abs];
-        if (slot.IsLinked || !WarehouseStorable(slot.ItemId))
+        if (!WarehouseStorable(slot.ItemId))
         {
             _whStatus.Status(ItemData.Text(WarehouseRules.NonStorableText, "This item is non-storable"), bad: true);
             return;

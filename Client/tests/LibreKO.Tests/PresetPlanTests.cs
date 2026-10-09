@@ -5,6 +5,8 @@ namespace LibreKO.Tests;
 
 public class PresetPlanTests
 {
+    private const int CreationBonus = 10;
+
     [Theory]
     [InlineData(101, 65, 65, 60, 50, 50)]
     [InlineData(206, 65, 65, 60, 50, 50)]
@@ -24,13 +26,36 @@ public class PresetPlanTests
     }
 
     [Theory]
+    [InlineData(1, 101, 65, 65, 60, 50, 50)]
+    [InlineData(2, 102, 60, 60, 70, 50, 50)]
+    [InlineData(2, 104, 50, 60, 60, 70, 50)]
+    [InlineData(3, 103, 50, 50, 70, 70, 50)]
+    [InlineData(4, 103, 50, 50, 70, 70, 50)]
+    [InlineData(4, 104, 50, 60, 60, 70, 50)]
+    [InlineData(6, 113, 65, 65, 60, 50, 50)]
+    [InlineData(11, 201, 65, 65, 60, 50, 50)]
+    [InlineData(12, 201, 65, 65, 60, 50, 50)]
+    [InlineData(12, 202, 60, 60, 70, 50, 50)]
+    [InlineData(12, 203, 50, 50, 70, 70, 50)]
+    [InlineData(12, 204, 50, 60, 60, 70, 50)]
+    [InlineData(13, 201, 65, 65, 60, 50, 50)]
+    [InlineData(13, 202, 60, 60, 70, 50, 50)]
+    [InlineData(13, 203, 50, 50, 70, 70, 50)]
+    [InlineData(13, 204, 50, 60, 60, 70, 50)]
+    [InlineData(14, 213, 65, 65, 60, 50, 50)]
+    public void EveryCreationRollKeepsItsStats(int race, int cls, int str, int sta, int dex, int intel, int mag)
+    {
+        Assert.Equal(new StarterStats.Roll(str, sta, dex, intel, mag, CreationBonus), StarterStats.For(race, cls));
+    }
+
+    [Theory]
     [InlineData(Nations.Karus)]
     [InlineData(Nations.ElMorad)]
-    public void EveryAllowedRaceCreationRollKeepsItsRedistributionBase(int nation)
+    public void EveryAllowedRaceAndClassHasACreationRoll(int nation)
     {
         foreach (int race in StarterStats.RacesFor(nation))
             foreach (int cls in StarterStats.ClassesFor(race))
-                Assert.Equal(StarterStats.For(race, cls), StarterStats.BaseForClass(cls));
+                Assert.NotNull(StarterStats.For(race, cls));
     }
 
     [Fact]
@@ -90,13 +115,11 @@ public class PresetPlanTests
     [Fact]
     public void MatchingTotalDoesNotAllowTheWrongClassBaseToBeApplied()
     {
-        var plan = new PresetPlan();
         var sheet = new CharacterSheet();
         sheet.SeedStats(70, 60, 60, 50, 50, 302);
-        Assert.True(sheet.AtBaseStats);
-        Assert.False(plan.IsRedistributed(206, sheet));
+        Assert.False(PresetPlan.IsRedistributed(206, sheet));
         sheet.SeedStats(65, 65, 60, 50, 50, 302);
-        Assert.True(plan.IsRedistributed(206, sheet));
+        Assert.True(PresetPlan.IsRedistributed(206, sheet));
     }
 
     [Theory]

@@ -266,7 +266,7 @@ public partial class World
 
     private void ApplyStatPreset()
     {
-        if (!ActivePreset.IsRedistributed(_selfClass, Sheet))
+        if (!PresetPlan.IsRedistributed(_selfClass, Sheet))
         {
             CombatNotice(RedistributeAtKaishan);
             return;

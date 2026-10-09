@@ -3,29 +3,29 @@
 public static class CharacterClassCatalog
 {
     public const int TierUnknown = 0, TierBeginner = 1, TierNovice = 2, TierMaster = 3;
-    public const int FamilyWarrior = 1, FamilyRogue = 2, FamilyMage = 3, FamilyPriest = 4, FamilyKurian = 5;
+    public const int FamilyUnknown = 0, FamilyWarrior = 1, FamilyRogue = 2, FamilyMage = 3, FamilyPriest = 4, FamilyKurian = 5;
 
     public static int Family(int classCode)
     {
         int local = classCode % 100;
         return local switch
         {
-            1 or 5 or 6 => 1,
-            2 or 7 or 8 => 2,
-            3 or 9 or 10 => 3,
-            4 or 11 or 12 => 4,
-            13 or 14 or 15 => 5,
-            _ => 0,
+            1 or 5 or 6 => FamilyWarrior,
+            2 or 7 or 8 => FamilyRogue,
+            3 or 9 or 10 => FamilyMage,
+            4 or 11 or 12 => FamilyPriest,
+            13 or 14 or 15 => FamilyKurian,
+            _ => FamilyUnknown,
         };
     }
 
     public static string DisplayName(int classCode) => Family(classCode) switch
     {
-        1 => "Warrior",
-        2 => "Rogue",
-        3 => "Mage",
-        4 => "Priest",
-        5 => "Kurian",
+        FamilyWarrior => "Warrior",
+        FamilyRogue => "Rogue",
+        FamilyMage => "Mage",
+        FamilyPriest => "Priest",
+        FamilyKurian => "Kurian",
         _ => $"Class {classCode}",
     };
 

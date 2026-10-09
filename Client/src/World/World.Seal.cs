@@ -9,8 +9,14 @@ public partial class World
     private const int SealFee = 1_000_000;
     private const int SealCodeLength = 8;
     private const int SealBagCells = 28;
+    private const string SealCodePrompt = "Enter your secret answer";
+    private const string SealItemChangedText = "The item in the socket changed. Check it and confirm again.";
+    private const string SealCodeChangedText = SealCodePrompt + " and confirm again.";
 
     internal enum SealMode { Secret, Bind }
+
+    private static string SealWindowTitle(SealMode mode) =>
+        mode == SealMode.Secret ? "Item Seal / Unseal" : "Item Bind / Release";
 
     private CanvasLayer _sealLayer = null!;
     private HudWindow _sealPanel = null!;
@@ -62,7 +68,7 @@ public partial class World
         _sealCode = "";
         DismissSealNotice();
         _sealPad.Visible = false;
-        _sealPanel.Title = mode == SealMode.Secret ? "Item Seal / Unseal" : "Item Bind / Release";
+        _sealPanel.Title = SealWindowTitle(mode);
         _sealPanel.Visible = true;
         _sealShown = true;
         RefreshSealWindow();
@@ -158,7 +164,7 @@ public partial class World
                 SendSeal(slot, item);
             },
             () => _sealNotice = null,
-            "Item Seal");
+            SealWindowTitle(_sealMode));
         Audio.PlayUi(Sfx.MsgBoxPop);
     }
 
@@ -171,9 +177,15 @@ public partial class World
     private void SendSeal(int slot, ItemSlot item)
     {
         if (_sealWaiting || !_sealShown) return;
-        if (_sealSlot != slot || !Inv.Holds(slot, item)
-            || (_sealMode == SealMode.Secret && _sealCode.Length != SealCodeLength))
+        if (_sealSlot != slot || !Inv.Holds(slot, item))
         {
+            CombatNotice(SealItemChangedText);
+            RefreshSealWindow();
+            return;
+        }
+        if (_sealMode == SealMode.Secret && _sealCode.Length != SealCodeLength)
+        {
+            CombatNotice(SealCodeChangedText);
             RefreshSealWindow();
             return;
         }
@@ -252,7 +264,7 @@ public partial class World
         _sealLayer = new CanvasLayer { Layer = 75 };
         AddChild(_sealLayer);
 
-        _sealPanel = new HudWindow("seal", "Item Seal / Unseal")
+        _sealPanel = new HudWindow("seal", SealWindowTitle(SealMode.Secret))
         {
             Visible = false,
         };
@@ -296,7 +308,7 @@ public partial class World
         _sealCodeRow.AddThemeConstantOverride("separation", 4);
         stageBox.AddChild(_sealCodeRow);
         _sealCodeRow.AddChild(UiTheme.Text(
-            "Enter your secret answer", 11, UiTheme.TextDim, HorizontalAlignment.Center));
+            SealCodePrompt, 11, UiTheme.TextDim, HorizontalAlignment.Center));
 
         _sealCodeField = new LineEdit
         {

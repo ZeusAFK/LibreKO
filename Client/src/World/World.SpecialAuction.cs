@@ -643,19 +643,23 @@ public partial class World
     {
         var submitted = _auctionTransactions.CompleteBid();
         if (submitted == null) return;
-        if (result == SpecialAuction.Success && _auctionToday.Group == submitted.Group && _auctionToday.Day == submitted.Day)
+        if (result == SpecialAuction.Success && submitted.IsFor(_auctionToday))
         {
-            var lot = submitted.Lot;
-            _auctionLots = _auctionLots.Select(l => l.Slot == lot.Slot && l.ItemId == lot.ItemId && l.Current <= submitted.Total
-                ? l with { Current = submitted.Total, TopBidder = AuctionPlayerName() } : l).ToList();
+            _auctionLots = submitted.Apply(_auctionLots, AuctionPlayerName());
             _auctionMillions.Value = 0;
             _auctionCheckInput.Value = 0;
             RenderAuctionLots();
         }
         RefreshAuctionBalance();
         RefreshAuctionTransactions();
-        if (!_specialAuctionShown) return;
-        Notice.Show(this, AuctionText(SpecialAuction.BidResultText(result), ""), AuctionText(SpecialAuctionTitleText, "Akara's Altar"));
+        ShowAuctionResult(SpecialAuction.BidResultText(result));
+    }
+
+    private void ShowAuctionResult(int textId)
+    {
+        string text = AuctionText(textId, "");
+        if (_specialAuctionShown) Notice.Show(this, text, AuctionText(SpecialAuctionTitleText, "Akara's Altar"));
+        else if (text.Length > 0) CombatNotice(text);
     }
 
     private void OnAuctionMyInfo(short result, IReadOnlyList<AuctionBidRow> rows)
@@ -757,8 +761,7 @@ public partial class World
         }
         RefreshAuctionBalance();
         RefreshAuctionTransactions();
-        if (!_specialAuctionShown) return;
-        Notice.Show(this, AuctionText(SpecialAuction.CollectResultText(result), ""), AuctionText(SpecialAuctionTitleText, "Akara's Altar"));
+        ShowAuctionResult(SpecialAuction.CollectResultText(result));
     }
 
     private void OnAuctionClaim(short result)
@@ -771,8 +774,7 @@ public partial class World
             RenderAuctionMyInfo();
         }
         RefreshAuctionTransactions();
-        if (!_specialAuctionShown) return;
-        Notice.Show(this, AuctionText(SpecialAuction.ClaimResultText(result), ""), AuctionText(SpecialAuctionTitleText, "Akara's Altar"));
+        ShowAuctionResult(SpecialAuction.ClaimResultText(result));
     }
 
     private void RenderAuctionSchedule()

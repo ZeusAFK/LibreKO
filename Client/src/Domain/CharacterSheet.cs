@@ -87,8 +87,6 @@ public sealed class CharacterSheet
 
     public int StatTotal => Str + Sta + Dex + Intel + Mag;
 
-    public bool AtBaseStats => StatTotal == BaseStatTotal;
-
     public int PointsForLevel => Points + StatTotal - BaseStatTotal;
 
     public void SeedStats(int str, int sta, int dex, int intel, int mag, int points)

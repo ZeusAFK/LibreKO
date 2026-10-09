@@ -26,5 +26,6 @@ internal static class ExchangePacketConstants
     public const int ItemNoTrade = 900000001;
     public const int ItemNoTradeMax = 1_000_000_000;
     public const int CoinMax = 2_100_000_000;
+    public const int MaxOfferedItems = 12;
     public const float MaxTradeDistance = 12f;
 }

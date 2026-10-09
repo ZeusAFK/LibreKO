@@ -78,13 +78,16 @@ public class MailService(
             return;
         }
 
-        if (mail.ReadAt == null)
+        var firstRead = mail.ReadAt == null;
+        if (firstRead)
         {
             mail.ReadAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
         }
 
         await session.Client.SendPacket(MailPacketWriter.ReadResult(true, mail.Id, mail.Body));
+        if (firstRead)
+            await session.Client.SendPacket(MailPacketWriter.Unread(await UnreadCountAsync(db, session.CharacterId)));
     }
 
     public async Task SendAsync(UserSession session, string recipientName, string subject, string body, int gold, IReadOnlyList<MailItemPick> items)
@@ -277,14 +280,17 @@ public class MailService(
         var complete = mail.Attachments.All(a => a.Remaining == 0);
         if (complete)
             mail.ClaimedAt = DateTime.UtcNow;
-        if (delivered)
-            mail.ReadAt ??= DateTime.UtcNow;
+        var firstRead = delivered && mail.ReadAt == null;
+        if (firstRead)
+            mail.ReadAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
         var message = complete ? "Attachments claimed."
             : delivered ? "Some attachments are still waiting. Make room in your inventory and claim again."
             : "Not enough room in your inventory.";
         await session.Client.SendPacket(MailPacketWriter.ClaimResult(delivered, mailId, message));
+        if (firstRead)
+            await session.Client.SendPacket(MailPacketWriter.Unread(await UnreadCountAsync(db, session.CharacterId)));
     }
 
     private async Task<bool> DeliverItemAsync(UserSession session, MailAttachment attachment)

@@ -10,6 +10,7 @@ internal static class WeaponCatalog
     private const string AliasesPath = "res://assets/items/weapon/visual_aliases.json";
     private const string GlowPath = "res://assets/items/weapon/glow.json";
     private const int MaxExtOffset = 9999;
+    private const uint DefaultTraceColor = 0xFFFFFFFF;
 
     internal sealed class Info
     {
@@ -22,7 +23,7 @@ internal static class WeaponCatalog
         public float FxRadius;
         public string FxGuide = "";
         public int TraceSteps;
-        public uint TraceColor = WeaponGlowRule.White;
+        public uint TraceColor = DefaultTraceColor;
         public float Trace0, Trace1;
     }
 

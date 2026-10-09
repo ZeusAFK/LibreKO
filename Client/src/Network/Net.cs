@@ -203,12 +203,13 @@ public partial class Net : Node
             ConnectedEvent?.Invoke();
             SendVersionCheck();
         }
+        bool dropped = !_conn.Connected && _connectedFired;
         while (_conn.Incoming.TryDequeue(out var p))
         {
             try { Handle(p); }
             catch (Exception e) { Diag.Report($"packet 0x{p.GetOpcode():X2}", e); }
         }
-        if (!_conn.Connected && _connectedFired)
+        if (dropped && _connectedFired)
         {
             _conn.Close();
             ResetPendingOperations();

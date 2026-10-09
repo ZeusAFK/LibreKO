@@ -8,6 +8,8 @@ public partial class Net
 
     public event Action<bool, int, int>? SkillResetEvent;
 
+    public event Action<byte, int>? ResetRefusedEvent;
+
     public event Action<bool, int, int[], int, int, int, int>? StatResetEvent;
 
     public event Action? ClassChangeNpcEvent;
@@ -71,6 +73,7 @@ public partial class Net
         else
         {
             int cost = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
+            ResetRefusedEvent?.Invoke(result, cost);
             SkillResetEvent?.Invoke(false, cost, 0);
         }
     }
@@ -94,6 +97,7 @@ public partial class Net
         else
         {
             int cost = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
+            ResetRefusedEvent?.Invoke(result, cost);
             StatResetEvent?.Invoke(false, cost, System.Array.Empty<int>(), 0, 0, 0, 0);
         }
     }

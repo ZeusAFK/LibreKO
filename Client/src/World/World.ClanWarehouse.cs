@@ -9,6 +9,10 @@ public partial class World
     private const int ClanWhPageSize = 24;
     private const int ClanWhPages = ClanWhSlots / ClanWhPageSize;
     private const string ClanWhWithdrawRefusal = "Only the chief or vice-chief may withdraw.";
+    private const string ClanWhNoClan = "You're not in a clan.";
+    private const string ClanWhHint = "Deposit is open to all; only the chief / vice-chief may withdraw.";
+    private const int ClanWhPleaseWaitText = 16103;
+    private const int ClanWhNoahCapacityText = 43702;
 
     private readonly ItemSlot[] _clanWh = new ItemSlot[ClanWhSlots];
     private int _clanWhMoney;
@@ -18,6 +22,7 @@ public partial class World
     private HudWindow _clanWhPanel = null!;
     private bool _clanWhShown;
     private bool _clanWhLoaded;
+    private bool _clanWhLoading;
     private readonly WarehouseCell[] _clanWhCells = new WarehouseCell[ClanWhPageSize];
     private readonly WarehouseCell[] _clanWhBagCells = new WarehouseCell[28];
     private Label _clanWhPageLbl = null!, _clanWhStoredGold = null!, _clanWhCarriedGold = null!, _clanWhStatus = null!;
@@ -43,6 +48,8 @@ public partial class World
     }
 
     private void OnClanWhGold(int g) { if (_clanWhShown) _clanWhCarriedGold.Text = $"{g:n0}"; }
+
+    private string ClanWhNotLoaded => _clanWhLoading ? ItemData.Text(ClanWhPleaseWaitText, "Please wait") : ClanWhNoClan;
 
     private void BuildClanWarehousePanel()
     {
@@ -135,19 +142,22 @@ public partial class World
         _clanWhCarriedGold = UiTheme.Text("0", 13, UiTheme.Gold, HorizontalAlignment.Right);
         carriedRow.AddChild(_clanWhCarriedGold);
         bagCol.AddChild(carriedRow);
-        _clanWhStatus = UiTheme.Text("Deposit is open to all; only the chief / vice-chief may withdraw.", 11, new Color(UiTheme.TextLo, 0.7f));
+        _clanWhStatus = UiTheme.Text(ClanWhHint, 11, new Color(UiTheme.TextLo, 0.7f));
         bagCol.AddChild(_clanWhStatus);
     }
 
     private void ToggleClanWarehouse()
     {
         if (_clanWhShown) { CloseClanWarehouse(); return; }
-        if (_clanWhInFlight) return;
         _clanWhLoaded = false;
-        System.Array.Clear(_clanWh);
-        _clanWhMoney = 0;
+        _clanWhLoading = true;
+        if (!_clanWhInFlight)
+        {
+            System.Array.Clear(_clanWh);
+            _clanWhMoney = 0;
+        }
         _clanWhPage = 0;
-        _clanWhStatus.Text = "Deposit is open to all; only the chief / vice-chief may withdraw.";
+        _clanWhStatus.Text = ClanWhNotLoaded;
         _clanWhPanel.Visible = true;
         _clanWhShown = true;
         Net.I.SendClanWhOpen();
@@ -166,6 +176,8 @@ public partial class World
     {
         _clanWhMoney = money;
         _clanWhLoaded = true;
+        _clanWhLoading = false;
+        _clanWhStatus.Text = ClanWhHint;
         for (int i = 0; i < ClanWhSlots && i < slots.Length; i++) _clanWh[i] = slots[i];
         if (_clanWhShown) RefreshClanWarehouse();
     }
@@ -190,9 +202,13 @@ public partial class World
     private void ClanWhDepositSlot(int abs)
     {
         if (StorageTransferBusy || !_clanWhShown || !InMainBag(abs) || Inv[abs].IsEmpty) return;
-        if (!_clanWhLoaded) { _clanWhStatus.Text = "You're not in a clan."; return; }
+        if (!_clanWhLoaded) { _clanWhStatus.Text = ClanWhNotLoaded; return; }
         var slot = Inv[abs];
-        if (slot.IsLinked || !WarehouseRules.VaultStorable(slot.ItemId)) { _clanWhStatus.Text = "This item is non-storable."; return; }
+        if (slot.IsLinked || WarehouseRules.IsNoTradeId(slot.ItemId))
+        {
+            _clanWhStatus.Text = ItemData.Text(WarehouseRules.NonStorableText, "This item is non-storable");
+            return;
+        }
         int count = WholeStack(slot);
         int whIdx = StorageDestination.Find(_clanWh, slot.ItemId, count, IsStackable(slot.ItemId));
         if (whIdx < 0) { _clanWhStatus.Text = "Clan warehouse is full."; return; }
@@ -221,12 +237,14 @@ public partial class World
     private void ClanWhGoldTransfer(bool deposit)
     {
         if (StorageTransferBusy) return;
-        if (!_clanWhLoaded) { _clanWhStatus.Text = "You're not in a clan."; return; }
+        if (!_clanWhLoaded) { _clanWhStatus.Text = ClanWhNotLoaded; return; }
         if (!deposit && !Net.I.MyClan.CanInvite) { _clanWhStatus.Text = ClanWhWithdrawRefusal; return; }
         if (!int.TryParse(_clanWhGoldInput.Text.Replace(",", "").Trim(), out int amount) || amount <= 0)
         { _clanWhStatus.Text = "Enter an amount."; return; }
         if (deposit && amount > Sheet.Gold) { _clanWhStatus.Text = "Not enough carried gold."; return; }
         if (!deposit && amount > _clanWhMoney) { _clanWhStatus.Text = "Not enough clan gold."; return; }
+        if (amount > WarehouseRules.CoinMax - (long)(deposit ? _clanWhMoney : Sheet.Gold))
+        { _clanWhStatus.Text = ItemData.Text(ClanWhNoahCapacityText, "You have reached maximum Noah capacity"); return; }
 
         _clanWhPending = new ClanWhPending { Op = deposit ? WhOpInput : WhOpOutput, Gold = true, Count = amount };
         _clanWhInFlight = true;
@@ -238,7 +256,8 @@ public partial class World
     {
         if (op == 1)
         {
-            if (_clanWhShown) _clanWhStatus.Text = "You're not in a clan.";
+            _clanWhLoading = false;
+            if (_clanWhShown) _clanWhStatus.Text = ClanWhNoClan;
             return;
         }
 

@@ -8,7 +8,7 @@ public partial class World
 {
     private readonly Dictionary<int, QuestView> _questViews = new();
     private int _questRewardChoice = -1;
-    private readonly QuestRewardSelection<QuestTransfer, QuestReceipt> _questRewardSelection = new();
+    private readonly QuestRewardSelection<QuestTransfer> _questRewardSelection = new();
     private bool _questUiRefreshQueued;
 
     private void QueueQuestUiRefresh()
@@ -29,8 +29,7 @@ public partial class World
     {
         _questViews[view.QuestId] = view;
         _questRewardSelection.Viewed(view.QuestId,
-            view.State is QuestViewState.InProgress or QuestViewState.Claimable,
-            view.State == QuestViewState.Completed, view.Options);
+            view.State is QuestViewState.InProgress or QuestViewState.Claimable, view.Options);
         _questStrings[view.QuestId] = new QuestStrings(view.QuestId, view.Title, view.Journal);
         _questObjectives[view.QuestId] = view.Objectives;
         _questKills[view.QuestId] = view.Counts;
@@ -118,16 +117,8 @@ public partial class World
         if (view.Objectives.Groups.Length == 0 && deliveries.Length == 0)
             QuestSection("Objectives").AddChild(QuestParagraph(view.StandingObjective, UiTheme.TextLo));
 
-        var receipt = view.State == QuestViewState.Completed && _questRewardSelection.Received(view.QuestId, out var granted) ? granted : null;
         var payouts = view.Transfers.Where(t => !t.Take).ToArray();
-        if (receipt != null)
-        {
-            var rewards = QuestSection("Received rewards");
-            foreach (var entry in receipt.Granted)
-                rewards.AddChild(QuestItemRow(entry.ItemId, QuestRewardName(entry.ItemId),
-                    entry.Count.ToString("n0"), UiTheme.GoldBright));
-        }
-        else if (payouts.Length > 0)
+        if (payouts.Length > 0)
         {
             var rewards = QuestSection("Rewards");
             foreach (var transfer in payouts)
@@ -135,15 +126,14 @@ public partial class World
                     transfer.Kind is 4 or 5 ? "" : transfer.Count.ToString("n0"), UiTheme.GoldBright));
         }
         System.Action? onRewardChosen = null;
-        if (receipt == null && view.Options.Length > 0 && !view.CanClaim)
+        if (view.Options.Length > 0 && !view.CanClaim)
         {
-            var options = QuestSection("Reward options");
-            options.AddChild(UiTheme.Text(QuestRewardOptionsHint(view.State == QuestViewState.Completed), 12, UiTheme.TextLo));
+            var options = QuestSection("Choose one");
             foreach (var option in view.Options)
                 options.AddChild(QuestItemRow(option.DisplayItemId, QuestTransferName(option),
                     option.Count.ToString("n0"), UiTheme.GoldBright));
         }
-        else if (receipt == null && view.Options.Length > 0)
+        else if (view.Options.Length > 0)
         {
             var choice = QuestSection("Choose one");
             var marks = new List<Label>();
@@ -238,10 +228,6 @@ public partial class World
 
     internal static string QuestObjectiveHeading(bool kills, bool deliveries) =>
         kills ? "Hunt" : deliveries ? "Collect" : "Objectives";
-
-    private static string QuestRewardOptionsHint(bool completed) => completed
-        ? "One option was awarded when this quest was turned in."
-        : "Choose one when turning in this quest.";
 
     private static RichTextLabel QuestParagraph(string text, Color color, float width = QuestParagraphWidth)
     {

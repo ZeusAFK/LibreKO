@@ -475,8 +475,7 @@ public partial class World
     {
         if (_merchantPurchase != null || !_shopShown || merchantSlot < 0 || merchantSlot >= _shopItems.Length) return;
         var item = _shopItems[merchantSlot];
-        if (item.IsEmpty) return;
-        if (item.Price < 1) { SetShopStatus("That item has an invalid price.", true); return; }
+        if (item.IsEmpty || item.Price < 1) return;
         if (item.Price > Sheet.Gold) { SetShopStatus("You don't have enough gold.", true); return; }
 
         var def = ItemData.Get(item.ItemId);
@@ -507,10 +506,7 @@ public partial class World
     {
         foreach (var label in new[] { _sellBalance, _shopBalance, _wantedBalance })
             if (GodotObject.IsInstanceValid(label)) label.Text = Money(total);
-        long offered = 0;
-        foreach (var wish in _wishes) if (!wish.IsEmpty) offered += (long)wish.Price * wish.Count;
-        if (GodotObject.IsInstanceValid(_wishTotal))
-            _wishTotal.AddThemeColorOverride("font_color", offered > total ? UiTheme.Bad : UiTheme.GoldBright);
+        if (GodotObject.IsInstanceValid(_wishTotal)) RefreshWishTotal();
     }
 
     private void OnMerchantBuy(bool ok, int itemId, int remaining, int merchantSlot, int buyerSlot)

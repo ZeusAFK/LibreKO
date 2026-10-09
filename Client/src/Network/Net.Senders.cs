@@ -210,7 +210,7 @@ public partial class Net
 
     public void SendItemRemove(byte type, byte position, int itemId)
     {
-        if (!_conn.Connected) return;
+        if (!_conn.Connected) { ItemRemoveResultEvent?.Invoke(false); return; }
         var p = new Packet(GameOpcodes.GS_ITEM_REMOVE);
         p.WriteByte(type);
         p.WriteByte(position);

@@ -895,6 +895,58 @@ public class TradeTests : GameTestBase
         giver.Money.Should().Be(9_900);
     }
 
+    [Fact]
+    public async Task ExchangeTransferService_AddAsync_RefusesAThirteenthItemWithoutTakingIt()
+    {
+        const int firstItemId = 700002000;
+        const int stackItemId = 700003000;
+        const int refusedPos = 12;
+        using var provider = CreateProvider(
+            _ => { },
+            gameData => gameData.GetItem(Arg.Any<int>()).Returns(call => new ItemData
+            {
+                Num = call.Arg<int>(),
+                Countable = (byte)(call.Arg<int>() == stackItemId ? 1 : 0),
+                Duration = 30,
+            }));
+
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (giver, giverPackets) = CreateTradingSession(sessionManager, 8109, 8209);
+        var (taker, _) = CreateTradingSession(sessionManager, 8110, 8210);
+        PairForTrade(giver, taker);
+        var transfer = provider.GetRequiredService<IExchangeTransferService>();
+
+        giver.Money = 1_000;
+        for (var pos = 0; pos < refusedPos; pos++)
+        {
+            var slot = giver.Inventory[InventoryConstants.SlotMax + pos];
+            slot.ItemId = pos == 0 ? stackItemId : firstItemId + pos;
+            slot.Count = (ushort)(pos == 0 ? 10 : 1);
+            await transfer.AddAsync(giver, AddItemPacket((byte)pos, slot.ItemId, 1));
+        }
+        var refused = giver.Inventory[InventoryConstants.SlotMax + refusedPos];
+        refused.ItemId = firstItemId + refusedPos;
+        refused.Count = 1;
+        giverPackets.Clear();
+
+        await transfer.AddAsync(giver, AddItemPacket(refusedPos, refused.ItemId, 1));
+
+        refused.Count.Should().Be(1);
+        giver.Trade.ExchangeItemList.Should().HaveCount(ExchangePacketConstants.MaxOfferedItems);
+        var reply = giverPackets.Single(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE);
+        reply.ResetOffset();
+        reply.ReadByte().Should().Be(ExchangeAddSub);
+        reply.ReadByte().Should().Be(0);
+
+        await transfer.AddAsync(giver, AddItemPacket(0, stackItemId, 2));
+        await transfer.AddAsync(giver, AddItemPacket(0, ExchangeGoldItemId, 500));
+
+        giver.Inventory[InventoryConstants.SlotMax].Count.Should().Be(7);
+        giver.Trade.ExchangeItemList.Single(entry => entry.ItemId == stackItemId).Count.Should().Be(3);
+        giver.Money.Should().Be(500);
+        giver.Trade.ExchangeItemList.Should().HaveCount(ExchangePacketConstants.MaxOfferedItems + 1);
+    }
+
     private static Packet AddItemPacket(byte pos, int itemId, int count)
     {
         var packet = new Packet(GameOpcodes.GS_EXCHANGE);

@@ -8,6 +8,7 @@ public partial class World
     private const int ClanCreatePanelWidth = 320;
     private const int ClanNameMaxLength = 20;
     private const int ClanNameMinLength = 2;
+    private const int TextClanCreationFee = 6506;
 
     private CanvasLayer _clanCreateLayer = null!;
     private HudWindow _clanCreatePanel = null!;
@@ -106,7 +107,8 @@ public partial class World
             return;
         }
         _clanCreateNotice = Notice.Confirm(this,
-            $"Creating a clan costs {ClanTypes.CreationCoins:n0} gold. Do you want to create this clan?",
+            ItemData.Text(TextClanCreationFee, "You need %d Coins to create a clan.")
+                .Replace("%d", ClanTypes.CreationCoins.ToString()),
             "Yes", "No",
             () =>
             {

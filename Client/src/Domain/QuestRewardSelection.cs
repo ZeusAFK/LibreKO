@@ -1,9 +1,8 @@
 ﻿namespace LibreKO.Domain;
 
-public sealed class QuestRewardSelection<TOption, TReceipt> where TOption : notnull
+public sealed class QuestRewardSelection<TOption> where TOption : notnull
 {
     private readonly Dictionary<int, TOption> _chosen = new();
-    private readonly Dictionary<int, TReceipt> _received = new();
 
     public void Choose(int questId, TOption option) => _chosen[questId] = option;
 
@@ -17,17 +16,10 @@ public sealed class QuestRewardSelection<TOption, TReceipt> where TOption : notn
         return -1;
     }
 
-    public bool Received(int questId, out TReceipt receipt) => _received.TryGetValue(questId, out receipt!);
+    public void TurnedIn(int questId) => _chosen.Remove(questId);
 
-    public void Receive(int questId, TReceipt receipt)
+    public void Viewed(int questId, bool choosing, IReadOnlyList<TOption> options)
     {
-        _received[questId] = receipt;
-        _chosen.Remove(questId);
-    }
-
-    public void Viewed(int questId, bool choosing, bool completed, IReadOnlyList<TOption> options)
-    {
-        if (!completed) _received.Remove(questId);
         if (!choosing || ChoiceIndex(questId, options) < 0) _chosen.Remove(questId);
     }
 }

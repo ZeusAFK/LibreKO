@@ -20,12 +20,13 @@ public class WarehouseRulesTests
     }
 
     [Theory]
-    [InlineData(810433000, true)]
+    [InlineData(810433000, false)]
     [InlineData(WarehouseRules.NonStorableIdFirst, false)]
-    [InlineData(WarehouseRules.NonStorableIdLast, false)]
-    [InlineData(WarehouseRules.NonStorableIdLast + 1, true)]
-    public void VaultStorableRefusesOnlyTheNonStorableIdRange(int itemId, bool storable)
+    [InlineData(WarehouseRules.NoTradeIdFirst, true)]
+    [InlineData(WarehouseRules.NoTradeIdLast, true)]
+    [InlineData(WarehouseRules.NoTradeIdLast + 1, false)]
+    public void IsNoTradeIdMatchesTheRangeTheVipAndClanVaultsRefuse(int itemId, bool noTrade)
     {
-        Assert.Equal(storable, WarehouseRules.VaultStorable(itemId));
+        Assert.Equal(noTrade, WarehouseRules.IsNoTradeId(itemId));
     }
 }

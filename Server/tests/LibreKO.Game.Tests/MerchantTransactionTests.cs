@@ -2,6 +2,7 @@ using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
+using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -364,9 +365,28 @@ public class MerchantTransactionTests : GameTestBase
         buyer.Inventory[InventoryConstants.SlotMax + 20].Count.Should().Be(32);
         seller.Inventory[InventoryConstants.SlotMax].Count.Should().Be(75);
         CountChangePackets.Positions(buyerSent).Should().Equal(20);
+        CountChangePackets.Flags(buyerSent).Should().Equal(ItemCountChangePacketWriter.FlagCountChanged);
         CountChangePackets.Positions(sellerSent).Should().Equal(0);
         buyer.Money.Should().Be(9750);
         seller.Money.Should().Be(250);
+    }
+
+    [Fact]
+    public async Task SellingStallPurchaseIntoAnEmptySlotIsSentAsANewItem()
+    {
+        using var provider = Provider();
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+
+        var merchant = SellingStall(sessionManager, 8452, 9452, price: 1_000, stock: 3);
+        var buyer = Player(sessionManager, 8453, 9453, money: 500_000, out var buyerSent);
+        buyer.Trade.MerchantTargetUserId = merchant.CharacterId;
+
+        await Buy(provider, buyer, count: 2);
+
+        buyer.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(StackableItem);
+        buyer.Inventory[InventoryConstants.SlotMax].Count.Should().Be(2);
+        CountChangePackets.Positions(buyerSent).Should().Equal(0);
+        CountChangePackets.Flags(buyerSent).Should().Equal(ItemCountChangePacketWriter.FlagNewItem);
     }
 
     private static void FillBags(UserSession session, int filler)

@@ -6,14 +6,25 @@ namespace LibreKO;
 
 public partial class World
 {
+    private const byte ResetRefusedNeedsCoins = 0;
+    private const byte ResetRefusedNothingToReset = 2;
+    private const byte ResetRefusedItemsEquipped = 4;
+    private const int TextResetNeedsCoins = 6086;
+    private const int TextResetNothing = 6087;
+    private const int TextResetItemsEquipped = 6112;
+
     private readonly RedistributionRequest _reset = new();
     private Notice? _resetConfirm;
+
+    private static string ResetItemsEquippedText => ItemData.Text(
+        TextResetItemsEquipped, "You cannot change your stat while there are items equipped on you.");
 
     private void ResetConfirmInit()
     {
         Net.I.ResetCostEvent += OnResetCost;
         Net.I.StatResetEvent += OnStatResetFinished;
         Net.I.SkillResetEvent += OnSkillResetFinished;
+        Net.I.ResetRefusedEvent += OnResetRefused;
     }
 
     private void ResetConfirmDispose()
@@ -21,6 +32,7 @@ public partial class World
         Net.I.ResetCostEvent -= OnResetCost;
         Net.I.StatResetEvent -= OnStatResetFinished;
         Net.I.SkillResetEvent -= OnSkillResetFinished;
+        Net.I.ResetRefusedEvent -= OnResetRefused;
         DismissResetConfirm();
     }
 
@@ -40,7 +52,7 @@ public partial class World
         string body = $"Every one of your {what} goes back into the pool, and it costs "
                       + $"{cost:n0} gold.";
         if (stat)
-            body += "\n\nUnequip every item first.";
+            body += "\n\n" + ResetItemsEquippedText;
 
         _resetConfirm = Notice.Confirm(
             this,
@@ -74,31 +86,20 @@ public partial class World
     }
 
     private void OnStatResetFinished(
-        bool ok, int money, int[] stats, int maxHp, int maxMp, int ap, int statPoints)
+        bool ok, int money, int[] stats, int maxHp, int maxMp, int ap, int statPoints) => CancelReset();
+
+    private void OnSkillResetFinished(bool ok, int money, int pool) => CancelReset();
+
+    private void OnResetRefused(byte result, int cost)
     {
-        if (!ok)
+        string text = result switch
         {
-            CombatNotice(money > 0
-                ? $"The redistribution needs {money:n0} gold, and empty equipment slots."
-                : "There is nothing to redistribute.");
-            CancelReset();
-            return;
-        }
-
-        CancelReset();
-    }
-
-    private void OnSkillResetFinished(bool ok, int money, int pool)
-    {
-        if (!ok)
-        {
-            CombatNotice(money > 0
-                ? $"The redistribution needs {money:n0} gold."
-                : "There is nothing to redistribute.");
-            CancelReset();
-            return;
-        }
-
-        CancelReset();
+            ResetRefusedNeedsCoins => ItemData.Text(TextResetNeedsCoins, "You need %d Coins")
+                .Replace("%d", cost.ToString("n0")),
+            ResetRefusedNothingToReset => ItemData.Text(TextResetNothing, "There are no points to reset."),
+            ResetRefusedItemsEquipped => ResetItemsEquippedText,
+            _ => "",
+        };
+        if (text.Length > 0) CombatNotice(text);
     }
 }

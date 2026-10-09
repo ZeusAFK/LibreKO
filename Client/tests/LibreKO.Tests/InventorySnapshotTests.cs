@@ -34,7 +34,7 @@ public class InventorySnapshotTests
     [InlineData(ItemMove.InventoryToMagicBag, LastGrid, LastMagicBag, Grid + LastGrid, MagicBag + LastMagicBag)]
     [InlineData(ItemMove.MagicBagToInventory, LastMagicBag, LastGrid, MagicBag + LastMagicBag, Grid + LastGrid)]
     [InlineData(ItemMove.MagicBagToMagicBag, 0, LastMagicBag, MagicBag, MagicBag + LastMagicBag)]
-    public void EveryConfirmedMoveSurvivesAZoneReload(byte direction, byte source, byte destination, int expectedFrom, int expectedTo)
+    public void EveryConfirmedMoveLandsTheRecordOnItsResolvedSlot(byte direction, byte source, byte destination, int expectedFrom, int expectedTo)
     {
         Assert.True(ItemMove.TryResolveSlots(direction, source, destination, out int from, out int to));
         Assert.Equal(expectedFrom, from);
@@ -67,7 +67,7 @@ public class InventorySnapshotTests
     [InlineData(ItemMove.InventoryToMagicBag, 0, LastMagicBag)]
     [InlineData(ItemMove.MagicBagToInventory, LastMagicBag, 0)]
     [InlineData(ItemMove.MagicBagToMagicBag, 0, LastMagicBag)]
-    public void StackMergesSurviveAZoneReload(byte direction, byte source, byte destination)
+    public void ConfirmedStackMergesAddTheCountIntoTheDestination(byte direction, byte source, byte destination)
     {
         Assert.True(ItemMove.TryResolveSlots(direction, source, destination, out int from, out int to));
         var cached = new ItemSlot[InventoryConstants.InventoryTotal];

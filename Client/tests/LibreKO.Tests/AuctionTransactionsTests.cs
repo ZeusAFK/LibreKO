@@ -48,6 +48,43 @@ public class AuctionTransactionsTests
         Assert.True(pending.Busy);
     }
 
+    [Fact]
+    public void AnAcceptedBidRaisesOnlyTheSubmittedLot()
+    {
+        const int OtherItem = 1310610107;
+        var submitted = new AuctionTransactions.BidRequest(Lot(1), 3 * Million, Group: 2, Day: 7);
+        AuctionLot[] lots = [Lot(1), Lot(2), Lot(1) with { ItemId = OtherItem }];
+
+        var applied = submitted.Apply(lots, "Zeus");
+
+        Assert.Equal(lots[0] with { Current = 3 * Million, TopBidder = "Zeus" }, applied[0]);
+        Assert.Equal(lots[1], applied[1]);
+        Assert.Equal(lots[2], applied[2]);
+    }
+
+    [Fact]
+    public void ALotAlreadyAboveTheBidKeepsItsTopBidder()
+    {
+        var submitted = new AuctionTransactions.BidRequest(Lot(), 3 * Million, Group: 2, Day: 7);
+
+        Assert.True(submitted.Raises(Lot() with { Current = 3 * Million }));
+        Assert.False(submitted.Raises(Lot() with { Current = 3 * Million + 1 }));
+        var outbid = Lot() with { Current = 4 * Million, TopBidder = "Zeus" };
+        Assert.Equal(outbid, submitted.Apply([outbid], "Rikka")[0]);
+    }
+
+    [Theory]
+    [InlineData(2, 7, true)]
+    [InlineData(2, 8, false)]
+    [InlineData(3, 7, false)]
+    public void ABidReplyAppliesOnlyToTheAuctionDayItWasPlacedOn(int group, int day, bool applies)
+    {
+        var submitted = new AuctionTransactions.BidRequest(Lot(), 3 * Million, Group: 2, Day: 7);
+        var today = new AuctionToday(SpecialAuction.Bidding, group, 0, day, []);
+
+        Assert.Equal(applies, submitted.IsFor(today));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

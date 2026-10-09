@@ -62,47 +62,41 @@ public class ExchangeTransferService(
             if (s.Trade.ExchangeOk)
                 return (Success: false, Duration: (short)0);
 
-            var addNew = true;
+            var isGold = itemId == InventoryConstants.ItemGold;
             var duration = (short)0;
+            ItemSlot? slot = null;
 
-            if (itemId == InventoryConstants.ItemGold)
+            if (isGold)
             {
-                if (count <= 0 || count > s.Money)
+                if (count > s.Money)
                     return (Success: false, Duration: (short)0);
-
-                var existing = s.Trade.ExchangeItemList.Find(entry => entry.ItemId == InventoryConstants.ItemGold);
-                if (existing != null)
-                {
-                    existing.Count += count;
-                    addNew = false;
-                }
-
-                s.Money -= count;
             }
             else
             {
-                var slot = s.Inventory[InventoryConstants.SlotMax + pos];
+                slot = s.Inventory[InventoryConstants.SlotMax + pos];
                 if (slot.ItemId != itemId || slot.Count < count || !slot.IsTradable)
                     return (Success: false, Duration: (short)0);
 
                 duration = slot.Durability;
-
-                if (itemData!.Countable != 0)
-                {
-                    var existing = s.Trade.ExchangeItemList.Find(entry => entry.ItemId == itemId);
-                    if (existing != null)
-                    {
-                        existing.Count += count;
-                        addNew = false;
-                    }
-                }
-
-                slot.Count -= (ushort)count;
             }
 
-            var hasGold = s.Trade.ExchangeItemList.Exists(entry => entry.ItemId == InventoryConstants.ItemGold);
-            if (s.Trade.ExchangeItemList.Count > (hasGold ? 13 : 12))
+            var existing = isGold || itemData!.Countable != 0
+                ? s.Trade.ExchangeItemList.Find(entry => entry.ItemId == itemId)
+                : null;
+            var addNew = existing == null;
+
+            if (addNew && !isGold
+                && s.Trade.ExchangeItemList.Count(entry => entry.ItemId != InventoryConstants.ItemGold)
+                    >= ExchangePacketConstants.MaxOfferedItems)
                 return (Success: false, Duration: (short)0);
+
+            if (existing != null)
+                existing.Count += count;
+
+            if (isGold)
+                s.Money -= count;
+            else
+                slot!.Count -= (ushort)count;
 
             if (addNew)
             {

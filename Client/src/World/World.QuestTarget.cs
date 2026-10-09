@@ -75,7 +75,7 @@ public partial class World
 
     private void OnQuestReceipt(QuestReceipt receipt)
     {
-        _questRewardSelection.Receive(receipt.QuestId, receipt);
+        _questRewardSelection.TurnedIn(receipt.QuestId);
         RefreshQuestDetail();
         if (_questReceiptWindow == null)
         {

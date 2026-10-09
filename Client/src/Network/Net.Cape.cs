@@ -22,14 +22,12 @@ public partial class Net
             return;
         }
 
-        if (!MyClan.InClan || reply.ClanId != MyClan.ClanId) return;
+        if (!MyClan.InClan || reply.ClanId != MyClan.ClanId)
+        {
+            ResetCape();
+            return;
+        }
         _capePending = false;
-        var me = LastEnter;
-        if (reply.CapeId != CapeWire.NoCape) me.CapeId = reply.CapeId;
-        me.CapeR = reply.R;
-        me.CapeG = reply.G;
-        me.CapeB = reply.B;
-        LastEnter = me;
         CapeResultEvent?.Invoke(true, reply.ClanId, reply.CapeId, reply.R, reply.G, reply.B);
     }
 

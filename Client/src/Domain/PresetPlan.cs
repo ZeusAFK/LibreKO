@@ -34,10 +34,10 @@ public sealed class PresetPlan
         return (int)Math.Max(0, Math.Min(pointPool - other, cap));
     }
 
-    public bool IsRedistributed(int classCode, CharacterSheet sheet)
+    public static bool IsRedistributed(int classCode, CharacterSheet sheet)
     {
         var basis = StarterStats.BaseForClass(classCode);
-        for (int i = 0; i < Stats.Length; i++) if (sheet.StatAtRow(i) != basis.StatAtRow(i)) return false;
+        for (int i = 0; i < CharacterSheet.StatCount; i++) if (sheet.StatAtRow(i) != basis.StatAtRow(i)) return false;
         return true;
     }
 

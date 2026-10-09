@@ -12,6 +12,7 @@ public partial class World
     private const int CapeSwatchSize = 46;
     private const int NoCape = -1;
     private const int CapePatternSampleColour = 1;
+    private const int CapeBusyText = 16810;
 
     private GridContainer _capePatternRow = null!;
     private GridContainer _capeColourGrid = null!;
@@ -192,7 +193,11 @@ public partial class World
         }
 
         byte op = _capeTicket.ButtonPressed ? Net.CapeOpTicket : Net.CapeOpBuy;
-        if (!Net.I.SendCapeBuy(op, capeId, rr, gg, bb)) return;
+        if (!Net.I.SendCapeBuy(op, capeId, rr, gg, bb))
+        {
+            SetCapeStatus(ItemData.Text(CapeBusyText, "Try again later"), true);
+            return;
+        }
         _capeRequestInFlight = true;
         _capeBuyBtn.Disabled = true;
         SetCapeStatus("Requesting…", false);

@@ -15,24 +15,23 @@ public class QuestRewardSelectionTests
     private static readonly QuestTransfer Sword = new(false, 0, SwordId, RewardCount, 0);
     private static readonly QuestTransfer Shield = new(false, 0, ShieldId, RewardCount, 0);
     private static readonly QuestTransfer[] Options = [Sword, Shield];
-    private static readonly QuestReceipt Receipt = new(QuestId, [new QuestReceiptEntry(ShieldId, RewardCount)]);
 
-    private static QuestRewardSelection<QuestTransfer, QuestReceipt> Chosen(QuestTransfer option)
+    private static QuestRewardSelection<QuestTransfer> Chosen(QuestTransfer option)
     {
-        var selection = new QuestRewardSelection<QuestTransfer, QuestReceipt>();
+        var selection = new QuestRewardSelection<QuestTransfer>();
         selection.Choose(QuestId, option);
         return selection;
     }
 
     [Fact]
     public void NothingIsChosenUntilThePlayerPicks() =>
-        Assert.Equal(-1, new QuestRewardSelection<QuestTransfer, QuestReceipt>().ChoiceIndex(QuestId, Options));
+        Assert.Equal(-1, new QuestRewardSelection<QuestTransfer>().ChoiceIndex(QuestId, Options));
 
     [Fact]
     public void AChoiceSurvivesARefreshOfTheClaimableQuest()
     {
         var selection = Chosen(Shield);
-        selection.Viewed(QuestId, true, false, [new QuestTransfer(false, 0, SwordId, RewardCount, 0), Shield]);
+        selection.Viewed(QuestId, true, [new QuestTransfer(false, 0, SwordId, RewardCount, 0), Shield]);
         Assert.Equal(1, selection.ChoiceIndex(QuestId, Options));
     }
 
@@ -44,7 +43,7 @@ public class QuestRewardSelectionTests
     public void AChoiceIsDroppedWhenTheOptionIsNoLongerOffered()
     {
         var selection = Chosen(Shield);
-        selection.Viewed(QuestId, true, false, [Sword]);
+        selection.Viewed(QuestId, true, [Sword]);
         Assert.False(selection.Chosen(QuestId, out _));
     }
 
@@ -52,7 +51,7 @@ public class QuestRewardSelectionTests
     public void AChoiceIsDroppedWhenTheQuestCanNoLongerBeTurnedIn()
     {
         var selection = Chosen(Shield);
-        selection.Viewed(QuestId, false, false, Options);
+        selection.Viewed(QuestId, false, Options);
         Assert.False(selection.Chosen(QuestId, out _));
     }
 
@@ -60,36 +59,16 @@ public class QuestRewardSelectionTests
     public void AChoiceBelongsToItsQuest()
     {
         var selection = Chosen(Shield);
-        selection.Viewed(OtherQuestId, false, false, Options);
+        selection.Viewed(OtherQuestId, false, Options);
         Assert.Equal(-1, selection.ChoiceIndex(OtherQuestId, Options));
         Assert.Equal(1, selection.ChoiceIndex(QuestId, Options));
     }
 
     [Fact]
-    public void AReceiptReplacesThePendingChoice()
+    public void TurningInForgetsTheChoice()
     {
         var selection = Chosen(Shield);
-        selection.Receive(QuestId, Receipt);
+        selection.TurnedIn(QuestId);
         Assert.False(selection.Chosen(QuestId, out _));
-        Assert.True(selection.Received(QuestId, out var receipt));
-        Assert.Same(Receipt, receipt);
-    }
-
-    [Fact]
-    public void AReceiptSurvivesARefreshOfTheCompletedQuest()
-    {
-        var selection = new QuestRewardSelection<QuestTransfer, QuestReceipt>();
-        selection.Receive(QuestId, Receipt);
-        selection.Viewed(QuestId, false, true, Options);
-        Assert.True(selection.Received(QuestId, out _));
-    }
-
-    [Fact]
-    public void AReceiptIsForgottenWhenTheQuestStartsAgain()
-    {
-        var selection = new QuestRewardSelection<QuestTransfer, QuestReceipt>();
-        selection.Receive(QuestId, Receipt);
-        selection.Viewed(QuestId, true, false, Options);
-        Assert.False(selection.Received(QuestId, out _));
     }
 }

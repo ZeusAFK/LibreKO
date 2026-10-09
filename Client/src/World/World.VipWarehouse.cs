@@ -177,7 +177,6 @@ public partial class World
     private void ToggleVipWarehouse()
     {
         if (_vipWhShown) { CloseVipWarehouse(); return; }
-        if (_vipWhInFlight) return;
         _vipWhPage = 0;
         Net.I.SendVipWarehouseOpen();
     }
@@ -242,9 +241,12 @@ public partial class World
     private void VipDepositSlot(int abs)
     {
         if (StorageTransferBusy || !_vipWhShown || !InMainBag(abs) || Inv[abs].IsEmpty) return;
-        if (_vipWhExpirySec <= 0) { _vipWhStatus.Text = "Vault rental expired. Renew it with a vault key."; return; }
         var slot = Inv[abs];
-        if (slot.IsLinked || !WarehouseRules.VaultStorable(slot.ItemId)) { _vipWhStatus.Text = "This item is non-storable."; return; }
+        if (slot.IsLinked || WarehouseRules.IsNoTradeId(slot.ItemId))
+        {
+            _vipWhStatus.Text = ItemData.Text(WarehouseRules.NonStorableText, "This item is non-storable");
+            return;
+        }
         int count = WholeStack(slot);
         int vipIdx = StorageDestination.Find(_vipWh, slot.ItemId, count, IsStackable(slot.ItemId));
         if (vipIdx < 0) { _vipWhStatus.Text = "The vault is full."; return; }

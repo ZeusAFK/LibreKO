@@ -56,8 +56,12 @@ public partial class World
     private const double AnvilScanSeconds = 1.9;
     private const double AnvilRevealSeconds = 0.8;
     private const string AnvilHint = "Right-click a bag item to place it";
-    private const string UpgradeUntradableText = "That item is sealed, rented or in use.";
-    private const string UpgradeMisfitText = "That item or material does not fit this socket.";
+    private const int TextUpgradeNotPossible = 6702;
+    private const int TextUpgradeNoMatch = 6704;
+    private const int TextUpgradeRented = 10748;
+    private const int TextUpgradeDuplicateSerial = 10760;
+    private const int TextUpgradeSealed = 15103;
+    private const string UpgradeSelectionChangedText = "The selection changed. Check it and press Upgrade again.";
     private static readonly Color AnvilLidColour = new(0.045f, 0.045f, 0.055f);
     private const string AnvilSelectText =
         "You can upgrade your item at the magic anvil. Please select what you want to upgrade.";
@@ -428,7 +432,7 @@ public partial class World
         if (UpgradeInteractionLocked || !InMainBag(absSlot) || Inv[absSlot].IsEmpty) return;
         if (!Inv[absSlot].IsTradable)
         {
-            _anvilFooter.Status(UpgradeUntradableText, bad: true);
+            _anvilFooter.Status(UpgradeRefusalFor(Inv[absSlot]), bad: true);
             return;
         }
 
@@ -527,9 +531,14 @@ public partial class World
     private void StageInSocket(int socket, int absSlot)
     {
         var item = Inv[absSlot];
-        if (!item.IsTradable || !SocketAccepts(socket, item.ItemId))
+        if (!item.IsTradable)
         {
-            _anvilFooter.Status(UpgradeMisfitText, bad: true);
+            _anvilFooter.Status(UpgradeRefusalFor(item), bad: true);
+            return;
+        }
+        if (!SocketAccepts(socket, item.ItemId))
+        {
+            _anvilFooter.Status(ItemData.Text(TextUpgradeNoMatch, "The items required for upgrade does not match."), bad: true);
             return;
         }
         _upgradeItemIds[socket] = item.ItemId;
@@ -689,6 +698,15 @@ public partial class World
         return $"{ItemData.DisplayName(itemId)} is not an upgrade material.";
     }
 
+    private static string UpgradeRefusalFor(ItemSlot item) => item.State switch
+    {
+        ItemFlag.Sealed or ItemFlag.Bound => ItemData.Text(TextUpgradeSealed, "Sealed items cannot be upgraded."),
+        ItemFlag.Rented => ItemData.Text(TextUpgradeRented, "You cannot upgrade a rented item."),
+        ItemFlag.CharacterSeal or ItemFlag.Duplicate =>
+            ItemData.Text(TextUpgradeDuplicateSerial, "Items with duplicated serial number cannot be upgraded."),
+        _ => ItemData.Text(TextUpgradeNotPossible, "Cannot perform item upgrade."),
+    };
+
     private static bool IsBonusScroll(int itemId)
         => (itemId > UpgradeScrollHigh && itemId <= BonusScrollHighLast)
            || (itemId >= DispelScrollFirst && itemId <= DispelScrollLast)
@@ -709,7 +727,11 @@ public partial class World
             () =>
             {
                 if (SelectionMatches(items, positions) && preview == _upgradePreviewId) SendUpgrade();
-                else _upgradeConfirm = null;
+                else
+                {
+                    _upgradeConfirm = null;
+                    _anvilFooter.Status(UpgradeSelectionChangedText, bad: true);
+                }
             },
             () => _upgradeConfirm = null,
             "Magic Anvil");

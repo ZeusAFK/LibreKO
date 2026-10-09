@@ -26,4 +26,27 @@ internal static class CountChangePackets
         }
         return positions;
     }
+
+    public static List<byte> Flags(IEnumerable<Packet> packets)
+    {
+        var flags = new List<byte>();
+        foreach (var packet in packets)
+        {
+            if (packet.GetOpcode() != (byte)GameOpcodes.GS_ITEM_COUNT_CHANGE)
+                continue;
+            packet.ResetOffset();
+            int entries = packet.ReadShort();
+            for (var entry = 0; entry < entries; entry++)
+            {
+                packet.ReadByte();
+                packet.ReadByte();
+                packet.ReadInt();
+                packet.ReadInt();
+                flags.Add(packet.ReadByte());
+                packet.ReadShort();
+                packet.ReadInt();
+            }
+        }
+        return flags;
+    }
 }
