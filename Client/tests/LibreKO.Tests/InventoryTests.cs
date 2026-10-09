@@ -29,6 +29,35 @@ public class InventoryTests
     }
 
     [Fact]
+    public void GridSlotFor_PrefersAStackWithRoom_ThenAFreeSlot()
+    {
+        const int Arrow = 391010000;
+        int stack = Inventory.GridStart + 3, free = Inventory.GridStart + 7;
+        var inv = BagFullExcept(free);
+        inv[stack] = Item(Arrow, Inventory.StackMax - 5);
+
+        Assert.Equal(stack, inv.GridSlotFor(Arrow, 5, stackable: true));
+        Assert.Equal(free, inv.GridSlotFor(Arrow, 6, stackable: true));
+        Assert.Equal(free, inv.GridSlotFor(Arrow, 1, stackable: false));
+    }
+
+    [Fact]
+    public void GridRoomFor_CountsAMatchingStackWhenTheBagIsFull()
+    {
+        const int Arrow = 391010000;
+        int stack = Inventory.GridStart + 3;
+        var inv = BagFullExcept();
+        inv[stack] = Item(Arrow, Inventory.StackMax - 5);
+
+        Assert.Equal(5, inv.GridRoomFor(Arrow, stackable: true));
+        Assert.Equal(0, inv.GridRoomFor(Arrow, stackable: false));
+
+        inv[Inventory.GridStart] = default;
+        Assert.Equal(Inventory.StackMax, inv.GridRoomFor(Arrow, stackable: true));
+        Assert.Equal(1, inv.GridRoomFor(Arrow, stackable: false));
+    }
+
+    [Fact]
     public void GridLayout_MatchesTheWireConstants_NotALocalCopy()
     {
         Assert.Equal(InventoryConstants.InventoryStart, Inventory.GridStart);
