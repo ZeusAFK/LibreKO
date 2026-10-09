@@ -18,4 +18,14 @@ public class WarehouseRulesTests
     {
         Assert.Equal(storable, WarehouseRules.Storable(itemId, race));
     }
+
+    [Theory]
+    [InlineData(810433000, true)]
+    [InlineData(WarehouseRules.NonStorableIdFirst, false)]
+    [InlineData(WarehouseRules.NonStorableIdLast, false)]
+    [InlineData(WarehouseRules.NonStorableIdLast + 1, true)]
+    public void VaultStorableRefusesOnlyTheNonStorableIdRange(int itemId, bool storable)
+    {
+        Assert.Equal(storable, WarehouseRules.VaultStorable(itemId));
+    }
 }
