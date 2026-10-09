@@ -36,6 +36,7 @@ public partial class World
         Net.I.MyClanChangedEvent += OnCapeMyClan;
         Net.I.ClanCapeUpdateEvent += OnClanCapeUpdate;
         Net.I.ClanCapeNpcEvent += OnCapeNpc;
+        Net.I.CapeResetEvent += OnCapeReset;
     }
 
     private void CapeDispose()
@@ -44,6 +45,7 @@ public partial class World
         Net.I.MyClanChangedEvent -= OnCapeMyClan;
         Net.I.ClanCapeUpdateEvent -= OnClanCapeUpdate;
         Net.I.ClanCapeNpcEvent -= OnCapeNpc;
+        Net.I.CapeResetEvent -= OnCapeReset;
     }
 
     private void BuildCapePanel()
@@ -154,7 +156,6 @@ public partial class World
         if (_capeShown) { CloseCape(); return; }
         _capePanel.Visible = true;
         _capeShown = true;
-        _capeRequestInFlight = false;
         SetCapeStatus("", false);
 
         var worn = Net.I.LastEnter;
@@ -191,25 +192,29 @@ public partial class World
         }
 
         byte op = _capeTicket.ButtonPressed ? Net.CapeOpTicket : Net.CapeOpBuy;
+        if (!Net.I.SendCapeBuy(op, capeId, rr, gg, bb)) return;
         _capeRequestInFlight = true;
         _capeBuyBtn.Disabled = true;
         SetCapeStatus("Requesting…", false);
-        Net.I.SendCapeBuy(op, capeId, rr, gg, bb);
     }
 
     private void OnCapeResult(bool ok, int a, int capeId, int rr, int gg, int bb)
     {
+        if (!_capeRequestInFlight) return;
         _capeRequestInFlight = false;
         UpdateCapeGate();
 
         if (ok)
         {
-            if (capeId >= 0) SelectCape(capeId);
-            _capeR.Value = rr; _capeG.Value = gg; _capeB.Value = bb;
-            OnCapeDyeChanged();
+            if (_capeShown)
+            {
+                if (capeId >= 0) SelectCape(capeId);
+                _capeR.Value = rr; _capeG.Value = gg; _capeB.Value = bb;
+                OnCapeDyeChanged();
+            }
             var me = Net.I.LastEnter;
             DressCape(_selfVisual, capeId >= 0 ? capeId : me.CapeId, rr, gg, bb, false, me.Race);
-            _capePreviewing = true;
+            _capePreviewing = _capeShown;
             _capeCurrent = capeId >= 0 ? capeId : _capeCurrent;
             string what = capeId >= 0 ? $"cape #{capeId}" : "cape dye";
             SetCapeStatus($"Applied {what}.", false);
@@ -229,6 +234,12 @@ public partial class World
                 _ => "The cape change was refused (chief-only, promoted clan, and not while busy).",
             }, true);
         }
+    }
+
+    private void OnCapeReset()
+    {
+        _capeRequestInFlight = false;
+        if (_capeShown) UpdateCapeGate();
     }
 
     private void OnCapeMyClan(MyClanInfo info)

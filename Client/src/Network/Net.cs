@@ -174,6 +174,7 @@ public partial class Net : Node
     {
         ResetGenieSystem();
         ResetInventoryRequests();
+        ResetCape();
     }
 
     public Func<bool>? WindowCloseHandler;

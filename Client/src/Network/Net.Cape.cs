@@ -9,30 +9,45 @@ public partial class Net
     public const short CapeChanged = 1;
 
     public event Action<bool, int, int, int, int, int>? CapeResultEvent;
+    public event Action? CapeResetEvent;
+    private bool _capePending;
 
     private void HandleCape(Packet p)
     {
-        int result = p.RemainingBytes >= 2 ? p.ReadShort() : -1;
-        if (result != CapeChanged)
+        if (!_capePending || !CapeWire.TryRead(p, out var reply)) return;
+        if (!reply.Changed)
         {
-            CapeResultEvent?.Invoke(false, result, 0, 0, 0, 0);
+            _capePending = false;
+            CapeResultEvent?.Invoke(false, reply.Result, 0, 0, 0, 0);
             return;
         }
 
-        int clanId = p.RemainingBytes >= 2 ? p.ReadShort() : 0;
-        if (p.RemainingBytes >= 2) p.ReadShort();
-        int capeId = p.RemainingBytes >= 2 ? p.ReadShort() : -1;
-        int colour = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
-        CapeResultEvent?.Invoke(
-            true, clanId, capeId, colour & 0xFF, (colour >> 8) & 0xFF, (colour >> 16) & 0xFF);
+        if (!MyClan.InClan || reply.ClanId != MyClan.ClanId) return;
+        _capePending = false;
+        var me = LastEnter;
+        if (reply.CapeId != CapeWire.NoCape) me.CapeId = reply.CapeId;
+        me.CapeR = reply.R;
+        me.CapeG = reply.G;
+        me.CapeB = reply.B;
+        LastEnter = me;
+        CapeResultEvent?.Invoke(true, reply.ClanId, reply.CapeId, reply.R, reply.G, reply.B);
     }
 
-    public void SendCapeBuy(byte op, int capeId, byte r, byte g, byte b)
+    public bool SendCapeBuy(byte op, int capeId, byte r, byte g, byte b)
     {
+        if (_capePending || !CapeWire.IsRequest(op, capeId)) return false;
+        _capePending = true;
         var p = new Packet(GameOpcodes.GS_CAPE);
         p.WriteByte(op);
         p.WriteShort((short)capeId);
         p.WriteInt(r | (g << 8) | (b << 16));
         _conn.Send(p);
+        return true;
+    }
+
+    private void ResetCape()
+    {
+        _capePending = false;
+        CapeResetEvent?.Invoke();
     }
 }
