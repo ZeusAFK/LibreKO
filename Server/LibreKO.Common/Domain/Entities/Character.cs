@@ -77,6 +77,8 @@ public class Character : Entity
 
     public byte DrakiStage { get; set; }
     public byte DrakiSubStage { get; set; }
+    public byte DrakiEntranceLimit { get; set; } = 3;
+    public DateTime? DrakiEntranceLimitResetDate { get; set; }
 
     public int AttendanceDays { get; set; }
     public int AttendanceClaimedDays { get; set; }

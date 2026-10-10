@@ -163,6 +163,8 @@ public abstract class GameTestBase
         services.AddSingleton<IMagicTimingService, MagicTimingService>();
         services.AddSingleton<ISavedMagicService, SavedMagicService>();
         services.AddSingleton<IStealthService, StealthService>();
+        services.AddSingleton<IDrakiStageProvider, DrakiStageProvider>();
+        services.AddSingleton<IDrakiTowerService, DrakiTowerService>();
         services.AddSingleton<IQuestNpcInteractionService, QuestNpcInteractionService>();
         services.AddSingleton<IQuestProgressionService, QuestProgressionService>();
         services.AddSingleton<IWorldMovementService, WorldMovementService>();

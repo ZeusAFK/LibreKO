@@ -1,0 +1,1492 @@
+﻿[
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  51,
+                           "IsMonster":  true,
+                           "PosZ":  449,
+                           "Direction":  0,
+                           "MonsterId":  9728
+                       },
+                       {
+                           "PosX":  57,
+                           "IsMonster":  true,
+                           "PosZ":  442,
+                           "Direction":  0,
+                           "MonsterId":  9728
+                       },
+                       {
+                           "PosX":  65,
+                           "IsMonster":  true,
+                           "PosZ":  437,
+                           "Direction":  0,
+                           "MonsterId":  9728
+                       },
+                       {
+                           "PosX":  74,
+                           "IsMonster":  true,
+                           "PosZ":  437,
+                           "Direction":  0,
+                           "MonsterId":  9728
+                       },
+                       {
+                           "PosX":  80,
+                           "IsMonster":  true,
+                           "PosZ":  439,
+                           "Direction":  0,
+                           "MonsterId":  9728
+                       }
+                   ],
+        "SubStage":  1,
+        "Id":  1,
+        "Stage":  1
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  79,
+                           "IsMonster":  true,
+                           "PosZ":  451,
+                           "Direction":  0,
+                           "MonsterId":  9729
+                       },
+                       {
+                           "PosX":  57,
+                           "IsMonster":  true,
+                           "PosZ":  466,
+                           "Direction":  0,
+                           "MonsterId":  9729
+                       },
+                       {
+                           "PosX":  76,
+                           "IsMonster":  true,
+                           "PosZ":  461,
+                           "Direction":  0,
+                           "MonsterId":  9729
+                       },
+                       {
+                           "PosX":  69,
+                           "IsMonster":  true,
+                           "PosZ":  466,
+                           "Direction":  0,
+                           "MonsterId":  9729
+                       },
+                       {
+                           "PosX":  63,
+                           "IsMonster":  true,
+                           "PosZ":  467,
+                           "Direction":  0,
+                           "MonsterId":  9729
+                       }
+                   ],
+        "SubStage":  2,
+        "Id":  2,
+        "Stage":  1
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  52,
+                           "IsMonster":  true,
+                           "PosZ":  446,
+                           "Direction":  0,
+                           "MonsterId":  9729
+                       },
+                       {
+                           "PosX":  59,
+                           "IsMonster":  true,
+                           "PosZ":  438,
+                           "Direction":  0,
+                           "MonsterId":  9729
+                       },
+                       {
+                           "PosX":  50,
+                           "IsMonster":  true,
+                           "PosZ":  452,
+                           "Direction":  0,
+                           "MonsterId":  9729
+                       },
+                       {
+                           "PosX":  54,
+                           "IsMonster":  true,
+                           "PosZ":  464,
+                           "Direction":  0,
+                           "MonsterId":  9728
+                       },
+                       {
+                           "PosX":  75,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9826
+                       },
+                       {
+                           "PosX":  51,
+                           "IsMonster":  true,
+                           "PosZ":  458,
+                           "Direction":  0,
+                           "MonsterId":  9728
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  3,
+        "Stage":  1
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  58,
+                           "IsMonster":  false,
+                           "PosZ":  431,
+                           "Direction":  0,
+                           "MonsterId":  25257
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  4,
+        "Stage":  1
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  51,
+                           "IsMonster":  true,
+                           "PosZ":  449,
+                           "Direction":  0,
+                           "MonsterId":  9730
+                       },
+                       {
+                           "PosX":  80,
+                           "IsMonster":  true,
+                           "PosZ":  439,
+                           "Direction":  0,
+                           "MonsterId":  9730
+                       },
+                       {
+                           "PosX":  57,
+                           "IsMonster":  true,
+                           "PosZ":  442,
+                           "Direction":  0,
+                           "MonsterId":  9730
+                       },
+                       {
+                           "PosX":  65,
+                           "IsMonster":  true,
+                           "PosZ":  437,
+                           "Direction":  0,
+                           "MonsterId":  9730
+                       },
+                       {
+                           "PosX":  74,
+                           "IsMonster":  true,
+                           "PosZ":  437,
+                           "Direction":  0,
+                           "MonsterId":  9730
+                       }
+                   ],
+        "SubStage":  4,
+        "Id":  5,
+        "Stage":  1
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  76,
+                           "IsMonster":  true,
+                           "PosZ":  461,
+                           "Direction":  0,
+                           "MonsterId":  9731
+                       },
+                       {
+                           "PosX":  63,
+                           "IsMonster":  true,
+                           "PosZ":  467,
+                           "Direction":  0,
+                           "MonsterId":  9731
+                       },
+                       {
+                           "PosX":  69,
+                           "IsMonster":  true,
+                           "PosZ":  466,
+                           "Direction":  0,
+                           "MonsterId":  9731
+                       },
+                       {
+                           "PosX":  57,
+                           "IsMonster":  true,
+                           "PosZ":  466,
+                           "Direction":  0,
+                           "MonsterId":  9731
+                       },
+                       {
+                           "PosX":  79,
+                           "IsMonster":  true,
+                           "PosZ":  451,
+                           "Direction":  0,
+                           "MonsterId":  9731
+                       }
+                   ],
+        "SubStage":  5,
+        "Id":  6,
+        "Stage":  1
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  59,
+                           "IsMonster":  true,
+                           "PosZ":  438,
+                           "Direction":  0,
+                           "MonsterId":  9731
+                       },
+                       {
+                           "PosX":  52,
+                           "IsMonster":  true,
+                           "PosZ":  446,
+                           "Direction":  0,
+                           "MonsterId":  9731
+                       },
+                       {
+                           "PosX":  50,
+                           "IsMonster":  true,
+                           "PosZ":  452,
+                           "Direction":  0,
+                           "MonsterId":  9731
+                       },
+                       {
+                           "PosX":  51,
+                           "IsMonster":  true,
+                           "PosZ":  458,
+                           "Direction":  0,
+                           "MonsterId":  9730
+                       },
+                       {
+                           "PosX":  54,
+                           "IsMonster":  true,
+                           "PosZ":  464,
+                           "Direction":  0,
+                           "MonsterId":  9730
+                       },
+                       {
+                           "PosX":  75,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9827
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  7,
+        "Stage":  1
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  65,
+                           "IsMonster":  false,
+                           "PosZ":  444,
+                           "Direction":  0,
+                           "MonsterId":  25258
+                       },
+                       {
+                           "PosX":  87,
+                           "IsMonster":  false,
+                           "PosZ":  444,
+                           "Direction":  0,
+                           "MonsterId":  13007
+                       },
+                       {
+                           "PosX":  45,
+                           "IsMonster":  false,
+                           "PosZ":  446,
+                           "Direction":  0,
+                           "MonsterId":  31513
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  8,
+        "Stage":  1
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  59,
+                           "IsMonster":  true,
+                           "PosZ":  53,
+                           "Direction":  0,
+                           "MonsterId":  9732
+                       },
+                       {
+                           "PosX":  64,
+                           "IsMonster":  true,
+                           "PosZ":  49,
+                           "Direction":  0,
+                           "MonsterId":  9732
+                       },
+                       {
+                           "PosX":  79,
+                           "IsMonster":  true,
+                           "PosZ":  48,
+                           "Direction":  0,
+                           "MonsterId":  9732
+                       },
+                       {
+                           "PosX":  84,
+                           "IsMonster":  true,
+                           "PosZ":  53,
+                           "Direction":  0,
+                           "MonsterId":  9732
+                       },
+                       {
+                           "PosX":  56,
+                           "IsMonster":  true,
+                           "PosZ":  55,
+                           "Direction":  0,
+                           "MonsterId":  9732
+                       }
+                   ],
+        "SubStage":  1,
+        "Id":  9,
+        "Stage":  2
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  51,
+                           "IsMonster":  true,
+                           "PosZ":  76,
+                           "Direction":  0,
+                           "MonsterId":  9733
+                       },
+                       {
+                           "PosX":  55,
+                           "IsMonster":  true,
+                           "PosZ":  70,
+                           "Direction":  0,
+                           "MonsterId":  9733
+                       },
+                       {
+                           "PosX":  58,
+                           "IsMonster":  true,
+                           "PosZ":  78,
+                           "Direction":  0,
+                           "MonsterId":  9733
+                       },
+                       {
+                           "PosX":  49,
+                           "IsMonster":  true,
+                           "PosZ":  69,
+                           "Direction":  0,
+                           "MonsterId":  9733
+                       },
+                       {
+                           "PosX":  56,
+                           "IsMonster":  true,
+                           "PosZ":  66,
+                           "Direction":  0,
+                           "MonsterId":  9733
+                       }
+                   ],
+        "SubStage":  2,
+        "Id":  10,
+        "Stage":  2
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  78,
+                           "IsMonster":  true,
+                           "PosZ":  85,
+                           "Direction":  0,
+                           "MonsterId":  9732
+                       },
+                       {
+                           "PosX":  70,
+                           "IsMonster":  true,
+                           "PosZ":  86,
+                           "Direction":  0,
+                           "MonsterId":  9732
+                       },
+                       {
+                           "PosX":  82,
+                           "IsMonster":  true,
+                           "PosZ":  67,
+                           "Direction":  0,
+                           "MonsterId":  9733
+                       },
+                       {
+                           "PosX":  81,
+                           "IsMonster":  true,
+                           "PosZ":  78,
+                           "Direction":  0,
+                           "MonsterId":  9733
+                       },
+                       {
+                           "PosX":  88,
+                           "IsMonster":  true,
+                           "PosZ":  67,
+                           "Direction":  0,
+                           "MonsterId":  9733
+                       },
+                       {
+                           "PosX":  80,
+                           "IsMonster":  true,
+                           "PosZ":  63,
+                           "Direction":  0,
+                           "MonsterId":  9828
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  11,
+        "Stage":  2
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  79,
+                           "IsMonster":  false,
+                           "PosZ":  70,
+                           "Direction":  0,
+                           "MonsterId":  25259
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  12,
+        "Stage":  2
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  79,
+                           "IsMonster":  true,
+                           "PosZ":  48,
+                           "Direction":  0,
+                           "MonsterId":  9734
+                       },
+                       {
+                           "PosX":  64,
+                           "IsMonster":  true,
+                           "PosZ":  49,
+                           "Direction":  0,
+                           "MonsterId":  9734
+                       },
+                       {
+                           "PosX":  84,
+                           "IsMonster":  true,
+                           "PosZ":  53,
+                           "Direction":  0,
+                           "MonsterId":  9734
+                       },
+                       {
+                           "PosX":  59,
+                           "IsMonster":  true,
+                           "PosZ":  53,
+                           "Direction":  0,
+                           "MonsterId":  9734
+                       },
+                       {
+                           "PosX":  56,
+                           "IsMonster":  true,
+                           "PosZ":  55,
+                           "Direction":  0,
+                           "MonsterId":  9734
+                       }
+                   ],
+        "SubStage":  4,
+        "Id":  13,
+        "Stage":  2
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  49,
+                           "IsMonster":  true,
+                           "PosZ":  69,
+                           "Direction":  0,
+                           "MonsterId":  9735
+                       },
+                       {
+                           "PosX":  56,
+                           "IsMonster":  true,
+                           "PosZ":  66,
+                           "Direction":  0,
+                           "MonsterId":  9735
+                       },
+                       {
+                           "PosX":  55,
+                           "IsMonster":  true,
+                           "PosZ":  70,
+                           "Direction":  0,
+                           "MonsterId":  9735
+                       },
+                       {
+                           "PosX":  51,
+                           "IsMonster":  true,
+                           "PosZ":  76,
+                           "Direction":  0,
+                           "MonsterId":  9735
+                       },
+                       {
+                           "PosX":  58,
+                           "IsMonster":  true,
+                           "PosZ":  78,
+                           "Direction":  0,
+                           "MonsterId":  9735
+                       }
+                   ],
+        "SubStage":  5,
+        "Id":  14,
+        "Stage":  2
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  82,
+                           "IsMonster":  true,
+                           "PosZ":  67,
+                           "Direction":  0,
+                           "MonsterId":  9735
+                       },
+                       {
+                           "PosX":  88,
+                           "IsMonster":  true,
+                           "PosZ":  67,
+                           "Direction":  0,
+                           "MonsterId":  9735
+                       },
+                       {
+                           "PosX":  81,
+                           "IsMonster":  true,
+                           "PosZ":  78,
+                           "Direction":  0,
+                           "MonsterId":  9735
+                       },
+                       {
+                           "PosX":  70,
+                           "IsMonster":  true,
+                           "PosZ":  86,
+                           "Direction":  0,
+                           "MonsterId":  9734
+                       },
+                       {
+                           "PosX":  78,
+                           "IsMonster":  true,
+                           "PosZ":  85,
+                           "Direction":  0,
+                           "MonsterId":  9734
+                       },
+                       {
+                           "PosX":  80,
+                           "IsMonster":  true,
+                           "PosZ":  63,
+                           "Direction":  0,
+                           "MonsterId":  9829
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  15,
+        "Stage":  2
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  77,
+                           "IsMonster":  false,
+                           "PosZ":  63,
+                           "Direction":  0,
+                           "MonsterId":  25260
+                       },
+                       {
+                           "PosX":  58,
+                           "IsMonster":  false,
+                           "PosZ":  84,
+                           "Direction":  0,
+                           "MonsterId":  13007
+                       },
+                       {
+                           "PosX":  97,
+                           "IsMonster":  false,
+                           "PosZ":  61,
+                           "Direction":  0,
+                           "MonsterId":  31513
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  16,
+        "Stage":  2
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  285,
+                           "IsMonster":  true,
+                           "PosZ":  434,
+                           "Direction":  0,
+                           "MonsterId":  9736
+                       },
+                       {
+                           "PosX":  273,
+                           "IsMonster":  true,
+                           "PosZ":  453,
+                           "Direction":  0,
+                           "MonsterId":  9736
+                       },
+                       {
+                           "PosX":  262,
+                           "IsMonster":  true,
+                           "PosZ":  451,
+                           "Direction":  0,
+                           "MonsterId":  9736
+                       },
+                       {
+                           "PosX":  276,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9736
+                       },
+                       {
+                           "PosX":  283,
+                           "IsMonster":  true,
+                           "PosZ":  443,
+                           "Direction":  0,
+                           "MonsterId":  9736
+                       }
+                   ],
+        "SubStage":  1,
+        "Id":  17,
+        "Stage":  3
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  283,
+                           "IsMonster":  true,
+                           "PosZ":  443,
+                           "Direction":  0,
+                           "MonsterId":  9737
+                       },
+                       {
+                           "PosX":  268,
+                           "IsMonster":  true,
+                           "PosZ":  449,
+                           "Direction":  0,
+                           "MonsterId":  9737
+                       },
+                       {
+                           "PosX":  257,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9737
+                       },
+                       {
+                           "PosX":  285,
+                           "IsMonster":  true,
+                           "PosZ":  434,
+                           "Direction":  0,
+                           "MonsterId":  9737
+                       },
+                       {
+                           "PosX":  259,
+                           "IsMonster":  true,
+                           "PosZ":  445,
+                           "Direction":  0,
+                           "MonsterId":  9737
+                       }
+                   ],
+        "SubStage":  2,
+        "Id":  18,
+        "Stage":  3
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  273,
+                           "IsMonster":  true,
+                           "PosZ":  453,
+                           "Direction":  0,
+                           "MonsterId":  9736
+                       },
+                       {
+                           "PosX":  262,
+                           "IsMonster":  true,
+                           "PosZ":  451,
+                           "Direction":  0,
+                           "MonsterId":  9736
+                       },
+                       {
+                           "PosX":  276,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9737
+                       },
+                       {
+                           "PosX":  268,
+                           "IsMonster":  true,
+                           "PosZ":  449,
+                           "Direction":  0,
+                           "MonsterId":  9737
+                       },
+                       {
+                           "PosX":  259,
+                           "IsMonster":  true,
+                           "PosZ":  445,
+                           "Direction":  0,
+                           "MonsterId":  9737
+                       },
+                       {
+                           "PosX":  257,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9830
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  19,
+        "Stage":  3
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  276,
+                           "IsMonster":  false,
+                           "PosZ":  437,
+                           "Direction":  0,
+                           "MonsterId":  25261
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  20,
+        "Stage":  3
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  273,
+                           "IsMonster":  true,
+                           "PosZ":  453,
+                           "Direction":  0,
+                           "MonsterId":  9738
+                       },
+                       {
+                           "PosX":  262,
+                           "IsMonster":  true,
+                           "PosZ":  451,
+                           "Direction":  0,
+                           "MonsterId":  9738
+                       },
+                       {
+                           "PosX":  285,
+                           "IsMonster":  true,
+                           "PosZ":  434,
+                           "Direction":  0,
+                           "MonsterId":  9738
+                       },
+                       {
+                           "PosX":  283,
+                           "IsMonster":  true,
+                           "PosZ":  443,
+                           "Direction":  0,
+                           "MonsterId":  9738
+                       },
+                       {
+                           "PosX":  276,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9738
+                       }
+                   ],
+        "SubStage":  4,
+        "Id":  21,
+        "Stage":  3
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  268,
+                           "IsMonster":  true,
+                           "PosZ":  449,
+                           "Direction":  0,
+                           "MonsterId":  9739
+                       },
+                       {
+                           "PosX":  259,
+                           "IsMonster":  true,
+                           "PosZ":  445,
+                           "Direction":  0,
+                           "MonsterId":  9739
+                       },
+                       {
+                           "PosX":  257,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9739
+                       },
+                       {
+                           "PosX":  285,
+                           "IsMonster":  true,
+                           "PosZ":  434,
+                           "Direction":  0,
+                           "MonsterId":  9739
+                       },
+                       {
+                           "PosX":  283,
+                           "IsMonster":  true,
+                           "PosZ":  443,
+                           "Direction":  0,
+                           "MonsterId":  9739
+                       }
+                   ],
+        "SubStage":  5,
+        "Id":  22,
+        "Stage":  3
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  262,
+                           "IsMonster":  true,
+                           "PosZ":  451,
+                           "Direction":  0,
+                           "MonsterId":  9738
+                       },
+                       {
+                           "PosX":  273,
+                           "IsMonster":  true,
+                           "PosZ":  453,
+                           "Direction":  0,
+                           "MonsterId":  9738
+                       },
+                       {
+                           "PosX":  259,
+                           "IsMonster":  true,
+                           "PosZ":  445,
+                           "Direction":  0,
+                           "MonsterId":  9739
+                       },
+                       {
+                           "PosX":  276,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9739
+                       },
+                       {
+                           "PosX":  268,
+                           "IsMonster":  true,
+                           "PosZ":  449,
+                           "Direction":  0,
+                           "MonsterId":  9739
+                       },
+                       {
+                           "PosX":  257,
+                           "IsMonster":  true,
+                           "PosZ":  440,
+                           "Direction":  0,
+                           "MonsterId":  9831
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  23,
+        "Stage":  3
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  285,
+                           "IsMonster":  false,
+                           "PosZ":  437,
+                           "Direction":  0,
+                           "MonsterId":  25263
+                       },
+                       {
+                           "PosX":  291,
+                           "IsMonster":  false,
+                           "PosZ":  458,
+                           "Direction":  0,
+                           "MonsterId":  13007
+                       },
+                       {
+                           "PosX":  271,
+                           "IsMonster":  false,
+                           "PosZ":  422,
+                           "Direction":  0,
+                           "MonsterId":  31513
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  24,
+        "Stage":  3
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  261,
+                           "IsMonster":  true,
+                           "PosZ":  285,
+                           "Direction":  0,
+                           "MonsterId":  9740
+                       },
+                       {
+                           "PosX":  273,
+                           "IsMonster":  true,
+                           "PosZ":  273,
+                           "Direction":  0,
+                           "MonsterId":  9740
+                       },
+                       {
+                           "PosX":  268,
+                           "IsMonster":  true,
+                           "PosZ":  269,
+                           "Direction":  0,
+                           "MonsterId":  9740
+                       },
+                       {
+                           "PosX":  251,
+                           "IsMonster":  true,
+                           "PosZ":  283,
+                           "Direction":  0,
+                           "MonsterId":  9740
+                       },
+                       {
+                           "PosX":  267,
+                           "IsMonster":  true,
+                           "PosZ":  282,
+                           "Direction":  0,
+                           "MonsterId":  9740
+                       }
+                   ],
+        "SubStage":  1,
+        "Id":  25,
+        "Stage":  4
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  248,
+                           "IsMonster":  true,
+                           "PosZ":  265,
+                           "Direction":  0,
+                           "MonsterId":  9741
+                       },
+                       {
+                           "PosX":  251,
+                           "IsMonster":  true,
+                           "PosZ":  272,
+                           "Direction":  0,
+                           "MonsterId":  9741
+                       },
+                       {
+                           "PosX":  248,
+                           "IsMonster":  true,
+                           "PosZ":  270,
+                           "Direction":  0,
+                           "MonsterId":  9741
+                       },
+                       {
+                           "PosX":  261,
+                           "IsMonster":  true,
+                           "PosZ":  267,
+                           "Direction":  0,
+                           "MonsterId":  9741
+                       },
+                       {
+                           "PosX":  250,
+                           "IsMonster":  true,
+                           "PosZ":  279,
+                           "Direction":  0,
+                           "MonsterId":  9741
+                       }
+                   ],
+        "SubStage":  2,
+        "Id":  26,
+        "Stage":  4
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  264,
+                           "IsMonster":  true,
+                           "PosZ":  286,
+                           "Direction":  0,
+                           "MonsterId":  9741
+                       },
+                       {
+                           "PosX":  267,
+                           "IsMonster":  true,
+                           "PosZ":  272,
+                           "Direction":  0,
+                           "MonsterId":  9741
+                       },
+                       {
+                           "PosX":  267,
+                           "IsMonster":  true,
+                           "PosZ":  277,
+                           "Direction":  0,
+                           "MonsterId":  9741
+                       },
+                       {
+                           "PosX":  254,
+                           "IsMonster":  true,
+                           "PosZ":  284,
+                           "Direction":  0,
+                           "MonsterId":  9740
+                       },
+                       {
+                           "PosX":  261,
+                           "IsMonster":  true,
+                           "PosZ":  268,
+                           "Direction":  0,
+                           "MonsterId":  9832
+                       },
+                       {
+                           "PosX":  249,
+                           "IsMonster":  true,
+                           "PosZ":  287,
+                           "Direction":  0,
+                           "MonsterId":  9740
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  27,
+        "Stage":  4
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  257,
+                           "IsMonster":  false,
+                           "PosZ":  274,
+                           "Direction":  0,
+                           "MonsterId":  25264
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  28,
+        "Stage":  4
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  251,
+                           "IsMonster":  true,
+                           "PosZ":  283,
+                           "Direction":  0,
+                           "MonsterId":  9742
+                       },
+                       {
+                           "PosX":  261,
+                           "IsMonster":  true,
+                           "PosZ":  285,
+                           "Direction":  0,
+                           "MonsterId":  9742
+                       },
+                       {
+                           "PosX":  267,
+                           "IsMonster":  true,
+                           "PosZ":  282,
+                           "Direction":  0,
+                           "MonsterId":  9742
+                       },
+                       {
+                           "PosX":  268,
+                           "IsMonster":  true,
+                           "PosZ":  269,
+                           "Direction":  0,
+                           "MonsterId":  9742
+                       },
+                       {
+                           "PosX":  273,
+                           "IsMonster":  true,
+                           "PosZ":  273,
+                           "Direction":  0,
+                           "MonsterId":  9742
+                       }
+                   ],
+        "SubStage":  4,
+        "Id":  29,
+        "Stage":  4
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  254,
+                           "IsMonster":  true,
+                           "PosZ":  272,
+                           "Direction":  0,
+                           "MonsterId":  9743
+                       },
+                       {
+                           "PosX":  248,
+                           "IsMonster":  true,
+                           "PosZ":  265,
+                           "Direction":  0,
+                           "MonsterId":  9743
+                       },
+                       {
+                           "PosX":  261,
+                           "IsMonster":  true,
+                           "PosZ":  267,
+                           "Direction":  0,
+                           "MonsterId":  9743
+                       },
+                       {
+                           "PosX":  250,
+                           "IsMonster":  true,
+                           "PosZ":  279,
+                           "Direction":  0,
+                           "MonsterId":  9743
+                       },
+                       {
+                           "PosX":  248,
+                           "IsMonster":  true,
+                           "PosZ":  270,
+                           "Direction":  0,
+                           "MonsterId":  9743
+                       }
+                   ],
+        "SubStage":  5,
+        "Id":  30,
+        "Stage":  4
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  267,
+                           "IsMonster":  true,
+                           "PosZ":  272,
+                           "Direction":  0,
+                           "MonsterId":  9743
+                       },
+                       {
+                           "PosX":  264,
+                           "IsMonster":  true,
+                           "PosZ":  286,
+                           "Direction":  0,
+                           "MonsterId":  9743
+                       },
+                       {
+                           "PosX":  267,
+                           "IsMonster":  true,
+                           "PosZ":  277,
+                           "Direction":  0,
+                           "MonsterId":  9743
+                       },
+                       {
+                           "PosX":  249,
+                           "IsMonster":  true,
+                           "PosZ":  287,
+                           "Direction":  0,
+                           "MonsterId":  9742
+                       },
+                       {
+                           "PosX":  254,
+                           "IsMonster":  true,
+                           "PosZ":  284,
+                           "Direction":  0,
+                           "MonsterId":  9742
+                       },
+                       {
+                           "PosX":  261,
+                           "IsMonster":  true,
+                           "PosZ":  268,
+                           "Direction":  0,
+                           "MonsterId":  9833
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  31,
+        "Stage":  4
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  260,
+                           "IsMonster":  false,
+                           "PosZ":  277,
+                           "Direction":  0,
+                           "MonsterId":  25265
+                       },
+                       {
+                           "PosX":  262,
+                           "IsMonster":  false,
+                           "PosZ":  295,
+                           "Direction":  0,
+                           "MonsterId":  31513
+                       },
+                       {
+                           "PosX":  275,
+                           "IsMonster":  false,
+                           "PosZ":  284,
+                           "Direction":  0,
+                           "MonsterId":  13007
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  32,
+        "Stage":  4
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  78,
+                           "IsMonster":  true,
+                           "PosZ":  198,
+                           "Direction":  0,
+                           "MonsterId":  9744
+                       },
+                       {
+                           "PosX":  72,
+                           "IsMonster":  true,
+                           "PosZ":  200,
+                           "Direction":  0,
+                           "MonsterId":  9744
+                       },
+                       {
+                           "PosX":  62,
+                           "IsMonster":  true,
+                           "PosZ":  196,
+                           "Direction":  0,
+                           "MonsterId":  9744
+                       },
+                       {
+                           "PosX":  81,
+                           "IsMonster":  true,
+                           "PosZ":  202,
+                           "Direction":  0,
+                           "MonsterId":  9744
+                       },
+                       {
+                           "PosX":  67,
+                           "IsMonster":  true,
+                           "PosZ":  205,
+                           "Direction":  0,
+                           "MonsterId":  9744
+                       }
+                   ],
+        "SubStage":  1,
+        "Id":  33,
+        "Stage":  5
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  79,
+                           "IsMonster":  true,
+                           "PosZ":  194,
+                           "Direction":  0,
+                           "MonsterId":  9745
+                       },
+                       {
+                           "PosX":  79,
+                           "IsMonster":  true,
+                           "PosZ":  201,
+                           "Direction":  0,
+                           "MonsterId":  9745
+                       },
+                       {
+                           "PosX":  61,
+                           "IsMonster":  true,
+                           "PosZ":  185,
+                           "Direction":  0,
+                           "MonsterId":  9745
+                       },
+                       {
+                           "PosX":  69,
+                           "IsMonster":  true,
+                           "PosZ":  203,
+                           "Direction":  0,
+                           "MonsterId":  9745
+                       },
+                       {
+                           "PosX":  71,
+                           "IsMonster":  true,
+                           "PosZ":  189,
+                           "Direction":  0,
+                           "MonsterId":  9745
+                       }
+                   ],
+        "SubStage":  2,
+        "Id":  34,
+        "Stage":  5
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  65,
+                           "IsMonster":  true,
+                           "PosZ":  181,
+                           "Direction":  0,
+                           "MonsterId":  9745
+                       },
+                       {
+                           "PosX":  76,
+                           "IsMonster":  true,
+                           "PosZ":  194,
+                           "Direction":  0,
+                           "MonsterId":  9745
+                       },
+                       {
+                           "PosX":  72,
+                           "IsMonster":  true,
+                           "PosZ":  186,
+                           "Direction":  0,
+                           "MonsterId":  9745
+                       },
+                       {
+                           "PosX":  82,
+                           "IsMonster":  true,
+                           "PosZ":  203,
+                           "Direction":  0,
+                           "MonsterId":  9744
+                       },
+                       {
+                           "PosX":  67,
+                           "IsMonster":  true,
+                           "PosZ":  194,
+                           "Direction":  0,
+                           "MonsterId":  9744
+                       },
+                       {
+                           "PosX":  81,
+                           "IsMonster":  true,
+                           "PosZ":  182,
+                           "Direction":  0,
+                           "MonsterId":  9834
+                       }
+                   ],
+        "SubStage":  3,
+        "Id":  35,
+        "Stage":  5
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  80,
+                           "IsMonster":  true,
+                           "PosZ":  226,
+                           "Direction":  0,
+                           "MonsterId":  9835
+                       }
+                   ],
+        "SubStage":  4,
+        "Id":  36,
+        "Stage":  5
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  72,
+                           "IsMonster":  true,
+                           "PosZ":  208,
+                           "Direction":  0,
+                           "MonsterId":  9836
+                       }
+                   ],
+        "SubStage":  5,
+        "Id":  37,
+        "Stage":  5
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  69,
+                           "IsMonster":  true,
+                           "PosZ":  211,
+                           "Direction":  0,
+                           "MonsterId":  9837
+                       }
+                   ],
+        "SubStage":  6,
+        "Id":  38,
+        "Stage":  5
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  81,
+                           "IsMonster":  true,
+                           "PosZ":  182,
+                           "Direction":  0,
+                           "MonsterId":  9838
+                       }
+                   ],
+        "SubStage":  7,
+        "Id":  39,
+        "Stage":  5
+    },
+    {
+        "IsNpcBreak":  false,
+        "Spawns":  [
+                       {
+                           "PosX":  69,
+                           "IsMonster":  true,
+                           "PosZ":  211,
+                           "Direction":  0,
+                           "MonsterId":  9839
+                       }
+                   ],
+        "SubStage":  8,
+        "Id":  40,
+        "Stage":  5
+    },
+    {
+        "IsNpcBreak":  true,
+        "Spawns":  [
+                       {
+                           "PosX":  77,
+                           "IsMonster":  false,
+                           "PosZ":  214,
+                           "Direction":  0,
+                           "MonsterId":  25266
+                       }
+                   ],
+        "SubStage":  8,
+        "Id":  41,
+        "Stage":  5
+    }
+]

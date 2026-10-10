@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -378,6 +378,7 @@ public class BorderDefenseWarTests
             Substitute.For<IStealthService>(),
             Substitute.For<ICollectionRaceService>(),
             CreateService(),
+            Substitute.For<IDrakiTowerService>(),
             Substitute.For<ILogger<WorldMovementService>>());
 
         await movementService.HandleHomeAsync(session.Client);

@@ -24,6 +24,8 @@ public class QuestNpcInteractionService(
     IGameDataService gameDataService,
     IQuestDialogRunner dialogRunner,
     IKingSystemRuntimeService kingSystemRuntimeService,
+    IDrakiTowerService drakiTowerService,
+    IDrakiStageProvider drakiStageProvider,
     ILogger<QuestNpcInteractionService> logger) : IQuestNpcInteractionService
 {
     private const byte WarehouseRequest = 0x10;
@@ -98,6 +100,31 @@ public class QuestNpcInteractionService(
             && (npc is null || !npc.IsAlive || npc.ZoneId != session.ZoneId || !IsInNpcRange(session, npc))))
             return;
 
+        if (scriptFile is DrakiRiftScript or DrakiGateScript or DrakiExitScript)
+        {
+            Array.Fill(session.Quest.SelectMessageEvents, -1);
+            Array.Fill(session.Quest.SelectMessageRewards, -1);
+            session.Quest.IsScriptDialog = false;
+            session.Quest.ActiveQuestScript = string.Empty;
+
+            if (eventId == DrakiActionEnter)
+            {
+                var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
+                enterPacket.WriteInt(0);
+                enterPacket.WriteByte(1);
+                await drakiTowerService.HandleEnterAsync(session, enterPacket);
+            }
+            else if (eventId == DrakiActionAdvance && npc is not null)
+            {
+                await drakiTowerService.AdvanceFromGateNpcAsync(session, npc);
+            }
+            else if (eventId == DrakiActionExit)
+            {
+                await drakiTowerService.HandleTownAsync(session);
+            }
+            return;
+        }
+
         Array.Fill(session.Quest.SelectMessageEvents, -1);
         Array.Fill(session.Quest.SelectMessageRewards, -1);
         session.Quest.IsScriptDialog = false;
@@ -136,6 +163,10 @@ public class QuestNpcInteractionService(
         session.Quest.EventNpcId = npc.NpcId;
         session.Quest.EventNpcUniqueId = npcUniqueId;
         ResetDialog(session);
+
+        var npcData = gameDataService.GetNpc(npc.NpcId, !npc.UsesNpcSpawnStyle);
+        if (DrakiTowerRules.IsDrakiNpc(npc.NpcId) && npcData != null && await TryHandleNpcUiAsync(session, npc, npcData))
+            return;
 
         if (!await dialogRunner.TryGreetAsync(session, npc))
             logger.LogDebug("No quest script greets player {Name} at NPC {NpcId} (client event)",
@@ -183,8 +214,35 @@ public class QuestNpcInteractionService(
                 session.Name, npc.NpcId);
     }
 
+    private const string DrakiRiftScript = "draki_rift";
+    private const string DrakiGateScript = "draki_gate";
+    private const string DrakiExitScript = "draki_exit";
+
+    public const int DrakiActionEnter = 1;
+    public const int DrakiActionRanking = 2;
+    public const int DrakiActionAdvance = 3;
+    public const int DrakiActionExit = 4;
+
     private async Task<bool> TryHandleNpcUiAsync(UserSession session, NpcInstance npc, NpcData npcData)
     {
+        if (npc.NpcId == DrakiTowerRules.DrakiRiftNpcId)
+        {
+            await ShowDrakiRiftDialogAsync(session, npc);
+            return true;
+        }
+
+        if (session.ZoneId == DrakiTowerRules.ZoneIdValue && DrakiTowerRules.IsGateNpc(npc.NpcId))
+        {
+            await ShowDrakiGateDialogAsync(session, npc);
+            return true;
+        }
+
+        if (session.ZoneId == DrakiTowerRules.ZoneIdValue && npc.NpcId == DrakiTowerRules.FinalExitNpcId)
+        {
+            await ShowDrakiExitDialogAsync(session, npc);
+            return true;
+        }
+
         Packet? response = npc.NpcId == NpcData.MakeupArtist ? PreGamePacketWriter.ChangeHairShop() : npcData.NpcType switch
         {
             NpcData.TypeTradeMerchant => BuildTradeNpcPacket(npcData),
@@ -275,4 +333,126 @@ public class QuestNpcInteractionService(
         NpcServicePacketWriter.WarehouseNpc(WarehouseRequest);
 
     private static Packet BuildClassChangePacket() => NpcServicePacketWriter.ClassChangeNpc();
+
+    private async Task ShowDrakiRiftDialogAsync(UserSession session, NpcInstance npc)
+    {
+        DrakiTowerRules.EnsureDailyLimit(session);
+
+        session.Quest.EventNpcId = npc.NpcId;
+        session.Quest.EventNpcUniqueId = npc.UniqueId;
+        session.Quest.ActiveQuestScript = DrakiRiftScript;
+        session.Quest.IsScriptDialog = true;
+        Array.Fill(session.Quest.SelectMessageEvents, -1);
+        Array.Fill(session.Quest.SelectMessageRewards, -1);
+
+        session.Quest.SelectMessageEvents[0] = DrakiActionEnter;
+
+        var header = $"[Draki's Tower]\n\nWelcome, warrior. Through this dimensional rift lies Draki's Tower.\nConquer each stage to earn great experience and rewards!\n\nToday's Remaining Entries: {session.DrakiEntranceLimit}/{DrakiTowerRules.MaxDailyEntrances}\nRequired Level: {DrakiTowerRules.MinimumLevel}+";
+        var buttonTexts = new[]
+        {
+            "Enter Draki's Tower"
+        };
+
+        var dialogPacket = NpcDialogPacketWriter.SelectMessage(
+            npc.NpcId,
+            0,
+            -1,
+            -1,
+            [-1, -1],
+            UserSession.SelectMessageEventCount,
+            DrakiRiftScript,
+            header,
+            buttonTexts);
+
+        await session.Client.SendPacket(dialogPacket);
+        await drakiTowerService.HandleListAsync(session);
+    }
+
+    private async Task ShowDrakiGateDialogAsync(UserSession session, NpcInstance npc)
+    {
+        session.Quest.EventNpcId = npc.NpcId;
+        session.Quest.EventNpcUniqueId = npc.UniqueId;
+        session.Quest.ActiveQuestScript = DrakiGateScript;
+        session.Quest.IsScriptDialog = true;
+        Array.Fill(session.Quest.SelectMessageEvents, -1);
+        Array.Fill(session.Quest.SelectMessageRewards, -1);
+
+        session.Quest.SelectMessageEvents[0] = DrakiActionAdvance;
+
+        var npcData = gameDataService.GetNpc(npc.NpcId, isMonster: false);
+        var npcName = string.IsNullOrWhiteSpace(npcData?.Name) ? "Gate Keeper" : npcData.Name;
+
+        var state = drakiTowerService.GetRoomState((ushort)session.Room);
+        var stages = drakiStageProvider.Stages;
+        var nextIndex = state != null ? state.StageIndex + 1 : -1;
+        var nextStage = nextIndex >= 0 && nextIndex < stages.Count ? stages[nextIndex] : null;
+
+        string header;
+        string advanceButton;
+
+        if (nextStage != null && nextStage.Stage == session.DrakiStage)
+        {
+            header = $"[{npcName}]\n\nThank you for saving me and defeating the monsters!\nThe path ahead leads to Wave {nextStage.SubStage} of Floor {nextStage.Stage}.\nAre you ready to continue?";
+            advanceButton = $"Advance to Wave {nextStage.SubStage}";
+        }
+        else
+        {
+            var nextFloor = nextStage?.Stage ?? (session.DrakiStage + 1);
+            header = $"[{npcName}]\n\nThank you for saving me and defeating the monsters!\nThe gate behind me leads to Floor {nextFloor}.\nAre you ready to advance to the next floor?";
+            advanceButton = $"Advance to Floor {nextFloor}";
+        }
+
+        var buttonTexts = new[]
+        {
+            advanceButton,
+            "Stay here to prepare / use Sundries"
+        };
+
+        var dialogPacket = NpcDialogPacketWriter.SelectMessage(
+            npc.NpcId,
+            0,
+            -1,
+            -1,
+            [-1, -1],
+            UserSession.SelectMessageEventCount,
+            DrakiGateScript,
+            header,
+            buttonTexts);
+
+        await session.Client.SendPacket(dialogPacket);
+    }
+
+    private async Task ShowDrakiExitDialogAsync(UserSession session, NpcInstance npc)
+    {
+        session.Quest.EventNpcId = npc.NpcId;
+        session.Quest.EventNpcUniqueId = npc.UniqueId;
+        session.Quest.ActiveQuestScript = DrakiExitScript;
+        session.Quest.IsScriptDialog = true;
+        Array.Fill(session.Quest.SelectMessageEvents, -1);
+        Array.Fill(session.Quest.SelectMessageRewards, -1);
+
+        session.Quest.SelectMessageEvents[0] = DrakiActionExit;
+
+        var header = "[Draki Rift Exit]\n\nYou have vanquished the final boss and conquered Draki's Tower!\nStep through this rift to safely return to your castle.";
+        var buttonTexts = new[]
+        {
+            "Exit Draki's Tower",
+            "Stay here a bit longer"
+        };
+
+        var dialogPacket = NpcDialogPacketWriter.SelectMessage(
+            npc.NpcId,
+            0,
+            -1,
+            -1,
+            [-1, -1],
+            UserSession.SelectMessageEventCount,
+            DrakiExitScript,
+            header,
+            buttonTexts);
+
+        await session.Client.SendPacket(dialogPacket);
+    }
 }
+
+
