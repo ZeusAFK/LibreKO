@@ -662,8 +662,7 @@ public partial class World
             CastSkill(skill.Id);
             return;
         }
-        bool shouldMove = !_genie.Has(GenieExtra.HuntInPlace)
-            && (basic || hasAttackSkill) && !skillInRange && !(basic && InBasicAttackRange(target));
+        bool shouldMove = GenieApproach.ShouldMove(_genie.Has(GenieExtra.HuntInPlace), basic, InBasicAttackRange(target), hasAttackSkill, skillInRange);
         if (shouldMove)
         {
             _moveTarget = _ents[target].Body.GlobalPosition;
