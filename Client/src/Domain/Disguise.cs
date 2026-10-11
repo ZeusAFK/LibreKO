@@ -22,7 +22,7 @@ public static class Disguise
     public const int WithoutPremium = 2;
     public const int PremiumOnly = 3;
 
-    private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true, TypeInfoResolver = DomainJson.Default };
 
     public static DisguiseForm[] Parse(string json) =>
         JsonSerializer.Deserialize<DisguiseForm[]>(json, Options) ?? Array.Empty<DisguiseForm>();

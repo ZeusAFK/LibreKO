@@ -23,7 +23,7 @@ public static class Fortune
     public const string SpinFrames = "spin";
     public const string FinalFrames = "final";
 
-    private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true, TypeInfoResolver = DomainJson.Default };
 
     public static FortuneDeck Parse(string json) =>
         JsonSerializer.Deserialize<FortuneDeck>(json, Options) ?? FortuneDeck.Empty;

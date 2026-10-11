@@ -57,7 +57,7 @@ public static class SpecialAuction
     public const int ClaimLaterText = 43712;
     public const int SystemErrorText = 16506;
 
-    private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true, TypeInfoResolver = DomainJson.Default };
 
     private static readonly string[] LogColours =
     [
