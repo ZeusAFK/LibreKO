@@ -29,7 +29,7 @@ public partial class World
     private CanvasLayer _rbLayer = null!;
     private HudWindow? _rbWindow;
     private int _rbNpcId = -1;
-    private bool _rbAwaitingOpen;
+    private readonly RepurchaseSession _rbSession = new();
     private readonly List<RepurchaseRow> _rbRows = new();
     private readonly Label[] _rbNames = new Label[RepurchaseVisibleRows];
     private readonly Label[] _rbPrices = new Label[RepurchaseVisibleRows];
@@ -38,7 +38,7 @@ public partial class World
     private VScrollBar _rbScroll = null!;
     private Label _rbEmpty = null!;
 
-    private bool _repurchaseShown => _rbWindow is { Visible: true };
+    private bool _repurchaseShown => _rbSession.IsOpen;
 
     private void RepurchaseInit()
     {
@@ -54,15 +54,14 @@ public partial class World
     private void OpenRepurchase(int npcId)
     {
         _rbNpcId = npcId;
-        _rbAwaitingOpen = true;
+        _rbSession.Request();
         Net.I.SendRepurchase(RepurchaseReply.Open);
     }
 
     private void CloseRepurchase()
     {
-        _rbAwaitingOpen = false;
-        if (_rbWindow is not { Visible: true }) return;
-        _rbWindow.Visible = false;
+        if (!_rbSession.Close()) return;
+        if (_rbWindow != null) _rbWindow.Visible = false;
         HideItemTooltip();
         Net.I.SendRepurchase(RepurchaseReply.Close);
         PluginNotifyRepurchase();
@@ -129,9 +128,9 @@ public partial class World
     {
         if (reply.Op is RepurchaseReply.Open or RepurchaseReply.Refresh)
         {
-            bool opening = reply.Op == RepurchaseReply.Open && _rbAwaitingOpen;
-            if (!reply.Ok || (!opening && !_repurchaseShown)) return;
-            _rbAwaitingOpen = false;
+            var listing = _rbSession.Accept(reply.Op, reply.Ok);
+            if (listing == RepurchaseListing.Ignored) return;
+            bool opening = listing == RepurchaseListing.Opened;
             _rbRows.Clear();
             _rbRows.AddRange(reply.Rows);
             _rbWindow ??= BuildRepurchase();
