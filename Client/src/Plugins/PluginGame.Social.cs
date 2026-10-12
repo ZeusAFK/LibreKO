@@ -62,6 +62,7 @@ public interface IGameParty
     bool WarBoardOpen { get; }
     byte WarBoardMode { get; }
     float WarBoardAlpha { get; }
+    int WarBoardCooldown { get; }
     IReadOnlyList<GameWarBoardRow> WarBoardRows { get; }
     void ToggleWarBoard();
     void SetWarBoardMode(byte mode);
@@ -175,6 +176,7 @@ public sealed partial class PluginGame
         public bool WarBoardOpen => Source?.WarBoardOpen ?? false;
         public byte WarBoardMode => Source?.WarBoardMode ?? 0;
         public float WarBoardAlpha => Source?.WarBoardAlpha ?? 1f;
+        public int WarBoardCooldown => Source?.WarBoardCooldown ?? 0;
         public IReadOnlyList<GameWarBoardRow> WarBoardRows => Source?.WarBoardRows ?? Array.Empty<GameWarBoardRow>();
         public void ToggleWarBoard() => Source?.ToggleWarBoard();
         public void SetWarBoardMode(byte mode) => Source?.SetWarBoardMode(mode);

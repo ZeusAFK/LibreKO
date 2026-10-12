@@ -86,4 +86,12 @@ public class PartyWarBoardTests
         Assert.Equal(3.0, PartyWarBoard.SecondsLeft(10, 12, PartyWarBoard.BoardTabSeconds));
         Assert.Equal(0.0, PartyWarBoard.SecondsLeft(10, 16, PartyWarBoard.BoardTabSeconds));
     }
+
+    [Theory]
+    [InlineData(true, 4.2, 5)]
+    [InlineData(true, 0.4, 1)]
+    [InlineData(true, 0.0, 0)]
+    [InlineData(false, 3.0, 0)]
+    public void TheTabCooldownShowsWholeSecondsOnlyWhileARequestWaits(bool pending, double left, int shown) =>
+        Assert.Equal(shown, PartyWarBoard.CooldownShown(pending, left));
 }

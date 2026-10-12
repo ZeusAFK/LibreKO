@@ -49,4 +49,7 @@ public static class PartyWarBoard
 
     public static double SecondsLeft(double lastSent, double now, double limit) =>
         System.Math.Max(0, lastSent + limit - now);
+
+    public static int CooldownShown(bool pending, double secondsLeft) =>
+        pending && secondsLeft > 0 ? (int)System.Math.Ceiling(secondsLeft) : 0;
 }

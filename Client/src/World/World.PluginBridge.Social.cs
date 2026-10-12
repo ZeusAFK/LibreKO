@@ -142,6 +142,7 @@ public partial class World
         bool IGameParty.WarBoardOpen => w._warBoard is { Visible: true };
         byte IGameParty.WarBoardMode => w._warBoardMode;
         float IGameParty.WarBoardAlpha => Config.PartyBoardAlpha;
+        int IGameParty.WarBoardCooldown => w._warBoardCooldown;
         IReadOnlyList<GameWarBoardRow> IGameParty.WarBoardRows => w._warBoardLines;
         void IGameParty.ToggleWarBoard() => w.ToggleWarBoard();
         void IGameParty.SetWarBoardMode(byte mode) => w.RequestWarBoardMode(mode);
