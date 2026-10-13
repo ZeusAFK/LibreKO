@@ -1,4 +1,5 @@
 ﻿using Godot;
+using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -28,7 +29,7 @@ public static class Platform
 
     public const float MenuDesignDpi = 190f;
     public const float MenuScaleMin = 1.2f;
-    public const float MenuScaleMax = 2.6f;
+    public const float MenuScaleMax = 3.6f;
 
     public static bool MenuScreens { get; set; }
 
@@ -45,7 +46,12 @@ public static class Platform
     }
 
     public static float MenuScale =>
-        MenuScreens && TouchUi ? TouchMenuScale / Config.UiScaleMobileDefault : 1f;
+        MenuScreens && TouchUi ? TouchMenuScale / Config.UiScaleTouchDefault : 1f;
+
+    public static bool SizedByScreen => OS.HasFeature("ios");
+
+    public static float PhoneScale =>
+        SizedByScreen ? TouchScreenRules.PhoneScale(ScreenShortSide()) : 1f;
 
     public const float TouchDesignDpi = 420f;
     public const float TouchPixelMin = 0.7f;
@@ -68,7 +74,15 @@ public static class Platform
     private static float ScreenDpi()
     {
         if (DisplayServer.GetName() == "headless") return MenuDesignDpi;
+        if (SizedByScreen) return TouchDesignDpi * PhoneScale;
         int dpi = DisplayServer.ScreenGetDpi();
         return dpi > 0 ? dpi : MenuDesignDpi;
+    }
+
+    private static int ScreenShortSide()
+    {
+        if (DisplayServer.GetName() == "headless") return 0;
+        var size = DisplayServer.ScreenGetSize();
+        return Mathf.Min(size.X, size.Y);
     }
 }

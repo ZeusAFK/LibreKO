@@ -44,9 +44,12 @@ public static class Config
     public static int WinHeight { get; private set; } = 720;
 
     public const float UiScaleMin = 0.75f;
-    public const float UiScaleMax = 2.0f;
+    public const float UiScaleMax = 3.0f;
     public const float UiScaleStep = 0.05f;
     public const float UiScaleMobileDefault = 1.6f;
+
+    public static float UiScaleTouchDefault =>
+        Mathf.Clamp(UiScaleMobileDefault * Platform.PhoneScale, UiScaleMin, UiScaleMax);
 
     public static float UiScale { get; private set; } = 1f;
 
@@ -334,7 +337,7 @@ public static class Config
         WinHeight = cfg.GetValue("video", "height", WinHeight).AsInt32();
         UiScaleChosen = cfg.HasSectionKey("video", "ui_scale");
         UiScale = Mathf.Clamp((float)cfg.GetValue("video", "ui_scale",
-                              Platform.TouchUi ? UiScaleMobileDefault : UiScale).AsDouble(),
+                              Platform.TouchUi ? UiScaleTouchDefault : UiScale).AsDouble(),
                               UiScaleMin, UiScaleMax);
         NamePlateScale = Mathf.Clamp((float)cfg.GetValue("video", "name_plate_scale", NamePlateScale).AsDouble(),
                                      NamePlateScaleMin, NamePlateScaleMax);
