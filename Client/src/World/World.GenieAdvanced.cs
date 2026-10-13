@@ -417,6 +417,7 @@ public partial class World
 
     private void ApplyGenieSetup(GenieSetup setup)
     {
+        ClearRefusedGenieSkills(setup);
         _genie = setup;
         SyncGenieControls();
         PluginNotifyGenie();
@@ -479,6 +480,7 @@ public partial class World
             if (GenieSetup.FromBytes(saved, GenieKindOf) is { } setup)
             {
                 if (GenieOptionsBlob.LayoutOf(saved) < GenieOptionsBlob.CurrentLayout) CarryGenieHammerSettings(config, setup);
+                ClearRefusedGenieSkills(setup);
                 _genie = setup;
             }
             foreach (string name in config.GetValue("genie", "monsters", Array.Empty<string>()).AsStringArray())

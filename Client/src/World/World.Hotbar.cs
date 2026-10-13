@@ -329,7 +329,7 @@ public partial class World
         if (SkillData.IsSkill(id))
         {
             var skill = SkillData.Get(id)!;
-            if (!ZoneSkillTrees.Allowed(_zone, skill.Tree, skill.Id)) return false;
+            if (!HotbarKeeps(id) || !ZoneSkillTrees.Allowed(_zone, skill.Tree, skill.Id)) return false;
             CastSkill(id);
         }
         else
@@ -339,6 +339,11 @@ public partial class World
         }
         return true;
     }
+
+    private static bool HotbarTakes(int id, bool dragged) =>
+        SkillData.Get(id) is not { } s || (dragged ? HotbarAssign.CanDrag(s.Type1, s.Type2) : HotbarAssign.CanAdd(s.Id, s.Type1));
+
+    private static bool HotbarKeeps(int id) => SkillData.Get(id) is not { } s || HotbarAssign.Holds(s.Id, s.Type1, s.Type2);
 
     private void SelectHotAbs(int abs)
     {
@@ -469,7 +474,7 @@ public partial class World
         }
         else
         {
-            if (!SkillAssignable(id)) return;
+            if (!SkillAssignable(id) || !HotbarTakes(id, dragged: true)) return;
             _hotbar[dest] = id;
         }
         RefreshHotbar();
@@ -487,7 +492,7 @@ public partial class World
         }
         else
         {
-            if (!SkillAssignable(id)) return;
+            if (!SkillAssignable(id) || !HotbarTakes(id, dragged: true)) return;
             _hotbar[dest] = id;
         }
         RefreshHotbar();
@@ -496,7 +501,7 @@ public partial class World
 
     private void AddToHotbar(int id)
     {
-        if (!SkillAssignable(id) || RefuseHotbarEdit()) return;
+        if (!SkillAssignable(id) || !HotbarTakes(id, dragged: false) || RefuseHotbarEdit()) return;
         for (int p = 0; p < HotPages; p++)
         {
             int page = (_hotPage + p) % HotPages;
@@ -695,6 +700,7 @@ public partial class World
             }
             _hotbar[i] = slots[i];
         }
+        if (HotbarAssign.ClearRefused(_hotbar, HotbarKeeps)) dropped = true;
         _hotLoadedFromServer = true;
         RefreshHotbar();
         if (dropped) SaveHotbar();
@@ -729,6 +735,7 @@ public partial class World
         var saved = new int[arr.Count];
         for (int i = 0; i < arr.Count; i++) saved[i] = arr[i].AsInt32();
         var slots = HotbarLayout.Normalize(saved);
+        HotbarAssign.ClearRefused(slots, HotbarKeeps);
         bool any = false;
         for (int i = 0; i < HotTotal; i++)
         {

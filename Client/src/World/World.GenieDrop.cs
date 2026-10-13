@@ -19,16 +19,22 @@ public partial class World
 
     private bool GenieSkillAllowed(SkillData.Skill s, int cell)
     {
-        if (s.IsPotion || s.IsDeadFriend || s.IsBlink || s.IsGroundArea || !SkillRequirementMet(s)) return false;
+        if (s.IsPotion || s.IsDeadFriend || s.IsBlink || s.IsGroundArea || !HotbarAssign.CanDrag(s.Type1, s.Type2) || !SkillRequirementMet(s)) return false;
         var kind = GenieCellAt(cell).Kind;
         if (GenieKindOf(s) != kind) return false;
         return kind != GenieCellKind.Support
             || s.Moral is SkillTarget.Self or SkillTarget.FriendWithMe or SkillTarget.Party or SkillTarget.PartyAll;
     }
 
+    private static void ClearRefusedGenieSkills(GenieSetup setup)
+    {
+        foreach (var cells in new[] { setup.Attack, setup.Recovery, setup.Support })
+            HotbarAssign.ClearRefused(cells, id => HotbarTakes(id, dragged: true));
+    }
+
     private void GenieRefuseSkill(SkillData.Skill s)
     {
-        if (s.IsPotion || !SkillRequirementMet(s)) return;
+        if (s.IsPotion || !HotbarAssign.CanDrag(s.Type1, s.Type2) || !SkillRequirementMet(s)) return;
         int kind = (int)GenieKindOf(s);
         CombatNotice(ItemData.Text(GenieRefusalTexts[kind], GenieRefusalFallbacks[kind]));
     }
