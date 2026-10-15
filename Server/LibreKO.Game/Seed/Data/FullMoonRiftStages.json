@@ -1,0 +1,492 @@
+﻿[
+    {
+        "Difficulty":  1,
+        "StageId":  1,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9927
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  1,
+        "StageId":  2,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9928
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  1,
+        "StageId":  3,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9929
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  1,
+        "StageId":  4,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9930
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  1,
+        "StageId":  5,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count":  1,
+                           "MonsterId":  9931
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  6,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9947
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  7,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9948
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  8,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9949
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  9,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9950
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  10,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count":  1,
+                           "MonsterId":  9951
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  11,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9932
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  12,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9933
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  13,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9932
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  14,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9933
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  15,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9934
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  16,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9935
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  2,
+        "StageId":  17,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count":  1,
+                           "MonsterId":  9936
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  18,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9955
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  19,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9956
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  20,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9957
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  21,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9958
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  22,
+        "SpawnIntervalSeconds":  10,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count":  1,
+                           "MonsterId":  9959
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  23,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9932
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  24,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9933
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  25,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9932
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  26,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9933
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  27,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9934
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  28,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9935
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  29,
+        "SpawnIntervalSeconds":  20,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count":  1,
+                           "MonsterId":  9936
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  30,
+        "SpawnIntervalSeconds":  30,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9937
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  31,
+        "SpawnIntervalSeconds":  30,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9938
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  32,
+        "SpawnIntervalSeconds":  30,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9939
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  33,
+        "SpawnIntervalSeconds":  30,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9940
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  34,
+        "SpawnIntervalSeconds":  30,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count": 2,
+                           "MonsterId":  9941
+                       }
+                   ]
+    },
+    {
+        "Difficulty":  3,
+        "StageId":  35,
+        "SpawnIntervalSeconds":  30,
+        "Spawns":  [
+                       {
+                           "PosX":  60,
+                           "Radius":  0,
+                           "PosZ":  40,
+                           "Count":  1,
+                           "MonsterId":  9942
+                       }
+                   ]
+    }
+]

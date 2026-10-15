@@ -1,9 +1,12 @@
-﻿using FluentAssertions;
+﻿using System.Text;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -30,7 +33,8 @@ public class FullMoonTests
     {
         var leader = Member(1);
         FullMoonRules.EntryRefusal(null, [], FullMoonRules.FullMoonBoard).Should().Be(FullMoonRules.NoParty);
-        FullMoonRules.EntryRefusal(leader, [leader, Member(2)], FullMoonRules.NormalBoard).Should().Be(FullMoonRules.NotFullMoonParty);
+        FullMoonRules.EntryRefusal(leader, [leader, Member(2)], FullMoonRules.NormalBoard, requireFullMoonBoard: true).Should().Be(FullMoonRules.NotFullMoonParty);
+        FullMoonRules.EntryRefusal(leader, [leader, Member(2)], FullMoonRules.NormalBoard, requireFullMoonBoard: false).Should().Be(FullMoonRules.Ready);
         FullMoonRules.EntryRefusal(leader, [leader, Member(2, (byte)ZoneId.RonarkLand)], FullMoonRules.FullMoonBoard)
             .Should().Be(FullMoonRules.NotAllInMoradon);
         FullMoonRules.EntryRefusal(leader, [leader, Member(2, hp: 0)], FullMoonRules.FullMoonBoard).Should().Be(FullMoonRules.MemberDead);
@@ -39,10 +43,56 @@ public class FullMoonTests
     }
 
     [Fact]
-    public void AReadyPartyIsToldTheInstanceCouldNotBeMadeUntilTheDungeonExists()
+    public void AReadyPartyIsToldReadyToEnter()
     {
         var leader = Member(1);
-        FullMoonRules.EntryRefusal(leader, [leader, Member(2)], FullMoonRules.FullMoonBoard).Should().Be(FullMoonRules.InstanceFailed);
+        FullMoonRules.EntryRefusal(leader, [leader, Member(2)], FullMoonRules.FullMoonBoard).Should().Be(FullMoonRules.Ready);
+    }
+
+    [Theory]
+    [InlineData(1, FullMoonRules.DifficultyEasy, FullMoonRules.EasyMinStage, FullMoonRules.EasyMaxStage)]
+    [InlineData(2, FullMoonRules.DifficultyEasy, FullMoonRules.EasyMinStage, FullMoonRules.EasyMaxStage)]
+    [InlineData(3, FullMoonRules.DifficultyEasy, FullMoonRules.EasyMinStage, FullMoonRules.EasyMaxStage)]
+    [InlineData(4, FullMoonRules.DifficultyNormal, FullMoonRules.NormalMinStage, FullMoonRules.NormalMaxStage)]
+    [InlineData(7, FullMoonRules.DifficultyNormal, FullMoonRules.NormalMinStage, FullMoonRules.NormalMaxStage)]
+    [InlineData(8, FullMoonRules.DifficultyHard, FullMoonRules.HardMinStage, FullMoonRules.HardMaxStage)]
+    public void DifficultyAndStageRangesMatchPartySizes(int partyCount, byte expectedDiff, int expectedMin, int expectedMax)
+    {
+        var diff = FullMoonRules.DifficultyForPartySize(partyCount);
+        diff.Should().Be(expectedDiff);
+        FullMoonRules.StartingStageForDifficulty(diff).Should().Be(expectedMin);
+        FullMoonRules.MaxStageForDifficulty(diff).Should().Be(expectedMax);
+    }
+
+    [Theory]
+    [InlineData(FullMoonRules.DifficultyEasy, 1, 5, 1)]
+    [InlineData(FullMoonRules.DifficultyEasy, 5, 5, 5)]
+    [InlineData(FullMoonRules.DifficultyNormal, 6, 12, 1)]
+    [InlineData(FullMoonRules.DifficultyNormal, 17, 12, 12)]
+    [InlineData(FullMoonRules.DifficultyHard, 18, 18, 1)]
+    [InlineData(FullMoonRules.DifficultyHard, 35, 18, 18)]
+    public void DisplayStageCalculatesCorrectMaxAndCurrent(byte diff, int stageId, byte expectedMax, byte expectedCurrent)
+    {
+        var (maxDisplay, currentDisplay) = FullMoonRules.DisplayStage(diff, stageId);
+        maxDisplay.Should().Be(expectedMax);
+        currentDisplay.Should().Be(expectedCurrent);
+    }
+
+    [Fact]
+    public void StageProviderLoadsAll35Stages()
+    {
+        var provider = new FullMoonRiftStageProvider();
+        provider.Stages.Count.Should().Be(35);
+
+        var stage1 = provider.GetStage(1);
+        stage1.Should().NotBeNull();
+        stage1!.Difficulty.Should().Be(1);
+        stage1.Spawns[0].MonsterId.Should().Be(9927);
+
+        var finalBossStage = provider.GetStage(35);
+        finalBossStage.Should().NotBeNull();
+        finalBossStage!.Difficulty.Should().Be(3);
+        finalBossStage.Spawns[0].MonsterId.Should().Be(9942);
     }
 
     [Theory]
@@ -67,5 +117,36 @@ public class FullMoonTests
 
         BitConverter.ToInt32(bytes, bytes.Length - 6).Should().Be(42);
         bytes[^2].Should().Be(FullMoonRules.FullMoonBoard);
+    }
+
+    [Fact]
+    public void LaneWaypointsAreWalkable()
+    {
+        var smd = SmdFile.Load(@"D:\LibreKO\Server\LibreKO.Game\Map\dungeon_defense.smd")!;
+        var mapManager = new MapManager(new Microsoft.Extensions.Logging.Abstractions.NullLogger<MapManager>());
+        mapManager.SetMap((short)ZoneId.DungeonDefence, smd);
+
+        // Verify North lane
+        foreach (var (x, z) in FullMoonRules.NorthLaneWaypoints)
+        {
+            mapManager.IsMovable((short)ZoneId.DungeonDefence, x, z).Should().BeTrue($"North waypoint ({x},{z}) should be movable");
+        }
+
+        // Verify East lane
+        foreach (var (x, z) in FullMoonRules.EastLaneWaypoints)
+        {
+            mapManager.IsMovable((short)ZoneId.DungeonDefence, x, z).Should().BeTrue($"East waypoint ({x},{z}) should be movable");
+        }
+
+        // Verify both lanes end within 3 meters of the Nexus Tower
+        var finalNorth = FullMoonRules.NorthLaneWaypoints[^1];
+        var finalEast = FullMoonRules.EastLaneWaypoints[^1];
+        var nexus = FullMoonRules.InitialTowers.First(t => t.NpcId == FullMoonRules.NexusTowerNpcId);
+
+        var distNorth = MathF.Sqrt((finalNorth.X - nexus.X) * (finalNorth.X - nexus.X) + (finalNorth.Z - nexus.Z) * (finalNorth.Z - nexus.Z));
+        var distEast = MathF.Sqrt((finalEast.X - nexus.X) * (finalEast.X - nexus.X) + (finalEast.Z - nexus.Z) * (finalEast.Z - nexus.Z));
+
+        distNorth.Should().BeLessThanOrEqualTo(3.0f);
+        distEast.Should().BeLessThanOrEqualTo(3.0f);
     }
 }

@@ -16,6 +16,15 @@ public sealed class EventPacketWriter
         return packet;
     }
 
+    public static Packet FullMoonStageCounter(byte maxStage, byte currentStage)
+    {
+        var packet = new Packet(GameOpcodes.GS_EVENT);
+        packet.WriteByte(World.FullMoonRules.StageSub);
+        packet.WriteByte(maxStage);
+        packet.WriteByte(currentStage);
+        return packet;
+    }
+
     public static Packet BattleZoneOpened(byte sub, byte openType, byte zone)
     {
         var packet = Battle(sub);

@@ -46,6 +46,18 @@ public partial class World : Node3D
             AskVipKey(absSlot);
             return;
         }
+        int eventSkill = Inv[absSlot].ItemId switch
+        {
+            ChaosBattle.KillingBladeItem => 490226,
+            ChaosBattle.LightPitItem => 490227,
+            ChaosBattle.DrainRestoreItem => 490231,
+            _ => 0
+        };
+        if (eventSkill != 0)
+        {
+            CastSkill(eventSkill);
+            return;
+        }
         if (def.Effect1 != 0 && SkillData.IsSkill(def.Effect1))
             AddToHotbar(Inv[absSlot].ItemId);
     }

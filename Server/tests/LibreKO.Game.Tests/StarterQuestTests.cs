@@ -105,6 +105,7 @@ public class StarterSeedQuestTests
             Substitute.For<IUnderTheCastleService>(),
             Substitute.For<IForgottenTempleService>(),
             Substitute.For<IDrakiTowerService>(),
+            Substitute.For<IFullMoonRiftService>(),
             Substitute.For<IBifrostEventService>(),
             combatRewardLogger);
 

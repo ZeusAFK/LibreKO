@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using Microsoft.Extensions.Logging;
 
@@ -81,6 +81,11 @@ public class MapManager(ILogger<MapManager> logger)
         return _zoneMaps.GetValueOrDefault(zoneId);
     }
 
+    public void SetMap(short zoneId, SmdFile smd)
+    {
+        _zoneMaps[zoneId] = smd;
+    }
+
     public float GetHeight(short zoneId, float x, float z)
     {
         var map = GetMap(zoneId);
@@ -97,6 +102,18 @@ public class MapManager(ILogger<MapManager> logger)
     {
         var map = GetMap(zoneId);
         if (map == null) return true; // allow if map not loaded
+        if (zoneId == (short)Common.Enums.ZoneId.DungeonDefence)
+        {
+            var eventId = map.GetEventIdAtPosition(x, z);
+            if (eventId is 0 or 30 or 31 or 32 or 35)
+                return map.GetHeight(x, z) > float.MinValue;
+            if (eventId == 1)
+            {
+                var h = map.GetHeight(x, z);
+                return h is >= 75f and <= 81f && x >= 120f && z >= 170f;
+            }
+            return false;
+        }
         return map.GetEventIdAtPosition(x, z) == 0;
     }
 

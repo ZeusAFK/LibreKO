@@ -23,7 +23,7 @@ public partial class World
     private readonly List<ChaosSkillIcon> _chaosSkillIcons = new();
     private int _chaosSkillPageIndex;
 
-    private bool InChaosZone => _zone == ChaosBattle.Zone;
+    private bool InChaosZone => _zone is ChaosBattle.Zone or FullMoon.Zone;
 
     private bool ChaosBattleLocked => ChaosBattle.BattleLocked(_zone, Net.I.SelfAbnormal);
 
@@ -133,15 +133,18 @@ public partial class World
         bool any = false;
         if (kept != null)
             for (int i = 0; i < kept.Length && i < HotTotal; i++)
-                if (ChaosBattle.KeptOnEntry(kept[i]))
+                if (ChaosBattle.SkillKeptInZone(_zone, kept[i]))
                 {
                     _hotbar[i] = kept[i];
                     any = true;
                 }
         if (!any)
-            for (int i = 0; i < ChaosBattle.DefaultBar.Length; i++)
-                if (SkillData.Get(ChaosBattle.DefaultBar[i]) is { Tree: ChaosBattle.SkillTree })
-                    _hotbar[i] = ChaosBattle.DefaultBar[i];
+        {
+            var def = _zone == FullMoon.Zone ? ChaosBattle.FullMoonDefaultBar : ChaosBattle.DefaultBar;
+            for (int i = 0; i < def.Length && i < HotTotal; i++)
+                if (SkillData.Get(def[i]) is { Tree: ChaosBattle.SkillTree })
+                    _hotbar[i] = def[i];
+        }
         _hotPage = 0;
         Net.I.ChaosHotbar = (int[])_hotbar.Clone();
         RefreshHotbar();

@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 using Microsoft.Extensions.Logging;
 using LibreKO.Game.Protocol.Writers;
 
@@ -114,6 +114,26 @@ public class NpcAiMovementService(
         var arrived = npcAiTargetingService.DistanceSqToPoint(npc, npc.TargetX, npc.TargetZ) <= 1.0f;
         var stalled = nowTicks - npc.StateChangeTicks > TimeSpan.TicksPerSecond * NoProgressSeconds;
 
+        if (npc.ZoneId == (byte)ZoneId.DungeonDefence && npc.IsMonster)
+        {
+            var tower = sessionManager.Regions.GetNearbyNpcsForNpc(npc)
+                .Where(n => (n.NpcId == FullMoonRules.NexusTowerNpcId || FullMoonRules.InitialTowers.Any(t => t.NpcId == n.NpcId)) && n.IsAlive)
+                .MinBy(n => npcAiTargetingService.DistanceSqToPoint(npc, n.X, n.Z));
+
+            if (tower != null)
+            {
+                var distSq = npcAiTargetingService.DistanceSqToPoint(npc, tower.X, tower.Z);
+                var maxAttackDist = Math.Max(3f, (float)npc.AttackDistance + 1f);
+                if (distSq <= maxAttackDist * maxAttackDist)
+                {
+                    npc.IsMoving = false;
+                    npc.State = NpcState.Standing;
+                    npc.StateChangeTicks = nowTicks;
+                    return;
+                }
+            }
+        }
+
         if (arrived || stalled)
         {
             if (arrived && NpcInstance.FollowsAPath(npc.MoveType))
@@ -136,7 +156,8 @@ public class NpcAiMovementService(
             npc.IsMoving = false;
             npc.State = NpcState.Standing;
             npc.StateChangeTicks = nowTicks;
-            sessionManager.Regions.MarkNpcIdle(npc);
+            if (npc.ZoneId != (byte)Common.Enums.ZoneId.DungeonDefence)
+                sessionManager.Regions.MarkNpcIdle(npc);
             return;
         }
 
@@ -191,46 +212,16 @@ public class NpcAiMovementService(
             var map = sessionManager.Maps.GetMap(npc.ZoneId);
             if (map == null)
             {
-                logger.LogDebug(
-                    "NPC movement blocked without map data: npc={NpcId}/{UniqueId} state={State} from=({FromX:F2},{FromZ:F2}) attempted=({AttemptX:F2},{AttemptZ:F2}) target=({TargetX:F2},{TargetZ:F2})",
-                    npc.NpcId,
-                    npc.UniqueId,
-                    npc.State,
-                    npc.X,
-                    npc.Z,
-                    directX,
-                    directZ,
-                    targetX,
-                    targetZ);
+                logger.LogTrace("NPC movement blocked without map: npc={NpcId}", npc.NpcId);
                 return;
             }
 
             var nextStep = NpcPathfinder.FindNextStep(map, npc.X, npc.Z, targetX, targetZ);
             if (!nextStep.HasValue)
             {
-                logger.LogDebug(
-                    "NPC movement has no path: npc={NpcId}/{UniqueId} state={State} from=({FromX:F2},{FromZ:F2}) target=({TargetX:F2},{TargetZ:F2}) attempted=({AttemptX:F2},{AttemptZ:F2})",
-                    npc.NpcId,
-                    npc.UniqueId,
-                    npc.State,
-                    npc.X,
-                    npc.Z,
-                    targetX,
-                    targetZ,
-                    directX,
-                    directZ);
-
-                logger.LogDebug(
-                    "NPC movement falling back to direct step after path failure: npc={NpcId}/{UniqueId} state={State} from=({FromX:F2},{FromZ:F2}) direct=({DirectX:F2},{DirectZ:F2}) target=({TargetX:F2},{TargetZ:F2})",
-                    npc.NpcId,
-                    npc.UniqueId,
-                    npc.State,
-                    npc.X,
-                    npc.Z,
-                    directX,
-                    directZ,
-                    targetX,
-                    targetZ);
+                logger.LogTrace("NPC movement has no path: npc={NpcId}", npc.NpcId);
+                if (npc.ZoneId == (byte)ZoneId.DungeonDefence)
+                    return;
             }
             else
             {
@@ -246,30 +237,9 @@ public class NpcAiMovementService(
 
                 if (!sessionManager.Maps.IsMovable(npc.ZoneId, newX, newZ))
                 {
-                    logger.LogDebug(
-                        "NPC movement remained blocked after path adjustment: npc={NpcId}/{UniqueId} state={State} from=({FromX:F2},{FromZ:F2}) adjusted=({AdjustX:F2},{AdjustZ:F2}) target=({TargetX:F2},{TargetZ:F2})",
-                        npc.NpcId,
-                        npc.UniqueId,
-                        npc.State,
-                        npc.X,
-                        npc.Z,
-                        newX,
-                        newZ,
-                        targetX,
-                        targetZ);
-
-                    logger.LogDebug(
-                        "NPC movement falling back to direct step after blocked path adjustment: npc={NpcId}/{UniqueId} state={State} from=({FromX:F2},{FromZ:F2}) direct=({DirectX:F2},{DirectZ:F2}) target=({TargetX:F2},{TargetZ:F2})",
-                        npc.NpcId,
-                        npc.UniqueId,
-                        npc.State,
-                        npc.X,
-                        npc.Z,
-                        directX,
-                        directZ,
-                        targetX,
-                        targetZ);
-
+                    logger.LogTrace("NPC movement blocked after path adjustment: npc={NpcId}", npc.NpcId);
+                    if (npc.ZoneId == (byte)ZoneId.DungeonDefence)
+                        return;
                     newX = directX;
                     newZ = directZ;
                 }

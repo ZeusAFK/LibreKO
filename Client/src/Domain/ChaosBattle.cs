@@ -34,12 +34,22 @@ public static class ChaosBattle
     public const string BannerRule = "###########################################";
     public static readonly Color BannerColour = new("f04500");
 
+    public const int KillingBladeItem = 700037000;
+    public const int DrainRestoreItem = 700040000;
+    public const int LightPitItem = 700041000;
+
     public static readonly int[] BannerTexts = { NoAttackText, SkillWindowText, InventoryText, AltKeyText, CubeText };
     public static readonly int[] DefaultBar = { 490219, 490220, 490221, 490222, 490223 };
+    public static readonly int[] FullMoonDefaultBar = { 490219, 490220, 490221, 490223, 490226, 490227, 490231 };
     private const int KeptFirst = 490219;
     private const int KeptLast = 490230;
 
     public static bool KeptOnEntry(int id) => id is >= KeptFirst and <= KeptLast;
+
+    public static bool SkillKeptInZone(int zone, int id) =>
+        zone == FullMoon.Zone
+            ? SkillData.Get(id) is { Tree: SkillTree }
+            : KeptOnEntry(id);
 
     public static readonly Color WinnerName = new("eff1c9");
     public static readonly Color WinnerRank = new("808080");
@@ -53,7 +63,12 @@ public static class ChaosBattle
 
     public static bool IsPickaxe(int kind) => kind is PickaxeKindA or PickaxeKindB;
 
-    public static bool ItemUsable(int zone, int kind) => zone != Zone || kind == ChaosItemKind;
+    public static bool ItemUsable(int zone, int kind)
+    {
+        if (zone == Zone) return kind == ChaosItemKind;
+        if (zone == FullMoon.Zone) return kind is ChaosItemKind or 95;
+        return true;
+    }
 
     public static bool ShowsCapes(int zone) => zone != Zone;
 
