@@ -22,6 +22,8 @@ public static class GameCursor
     };
 
     private static readonly System.Collections.Generic.Dictionary<string, Texture2D?> Cache = new();
+    private static readonly System.Collections.Generic.Dictionary<string, Image?> Images =
+        Shutdown.Track(new System.Collections.Generic.Dictionary<string, Image?>());
 
     private static int _nation = Nations.NotSelected;
     private static GameCursorKind _kind = GameCursorKind.Arrow;
@@ -72,10 +74,18 @@ public static class GameCursor
         if (!_enabled) return;
         string stem = Stem(_kind);
         if (!force && stem == _applied) return;
-        if (Load(stem) is not { } tex) return;
+        if (ImageOf(stem) is not { } image) return;
         foreach (var shape in Shapes)
-            Input.SetCustomMouseCursor(tex, shape, Vector2.Zero);
+            Input.SetCustomMouseCursor(image, shape, Vector2.Zero);
         _applied = stem;
+    }
+
+    private static Image? ImageOf(string stem)
+    {
+        if (Images.TryGetValue(stem, out Image? cached)) return cached;
+        var image = Load(stem) is { } tex ? FxImages.Read(tex) : null;
+        Images[stem] = image;
+        return image;
     }
 
     internal static readonly string[] Stems =
@@ -98,8 +108,9 @@ public static class GameCursor
         using var file = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
         if (file == null) return null;
         var img = new Image();
-        return img.LoadPngFromBuffer(file.GetBuffer((long)file.GetLength())) == Error.Ok
-            ? ImageTexture.CreateFromImage(img)
-            : null;
+        if (img.LoadPngFromBuffer(file.GetBuffer((long)file.GetLength())) != Error.Ok) return null;
+        var tex = ImageTexture.CreateFromImage(img);
+        FxImages.Remember(tex, img);
+        return tex;
     }
 }
