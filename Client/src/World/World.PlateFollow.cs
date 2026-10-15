@@ -16,8 +16,19 @@ public partial class World
         public int Bone = -1;
         public float RestHeight;
         public bool Sought;
+        private ulong _plateId;
+        private bool _plateIsRoot;
 
         public bool Follows => Bone >= 0;
+
+        public bool IsPlateRoot(Node3D plates)
+        {
+            ulong id = plates.GetInstanceId();
+            if (id == _plateId) return _plateIsRoot;
+            _plateId = id;
+            _plateIsRoot = plates.Name == PlateRootName;
+            return _plateIsRoot;
+        }
 
         public void Forget()
         {
@@ -32,7 +43,7 @@ public partial class World
     private static void FollowHeadJoint(Node3D body, Node3D? plates, HeadJoint joint)
     {
         if (plates == null || !GodotObject.IsInstanceValid(plates) || plates.TopLevel
-            || plates.Name != PlateRootName) return;
+            || !joint.IsPlateRoot(plates)) return;
         if (!joint.Sought || (joint.Skeleton != null
             && (!GodotObject.IsInstanceValid(joint.Skeleton) || !joint.Skeleton.IsInsideTree())))
             SeekHeadJoint(body, joint);

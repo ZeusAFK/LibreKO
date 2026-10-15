@@ -42,6 +42,14 @@ public static class UiTheme
     public const float WindowPanelAlpha = 0.965f;
     public const float TranslucentWindowAlpha = 0.86f;
 
+    private static readonly StringName FontColorName = "font_color";
+
+    public static void ApplyFontColor(Control control, Color color)
+    {
+        if (control.HasThemeColorOverride(FontColorName) && control.GetThemeColor(FontColorName) == color) return;
+        control.AddThemeColorOverride(FontColorName, color);
+    }
+
     public static StyleBoxFlat WindowPanel(int radius = 2, float alpha = WindowPanelAlpha)
     {
         var sb = new StyleBoxFlat

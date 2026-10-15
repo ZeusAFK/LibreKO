@@ -21,6 +21,8 @@ public partial class World
     private static readonly Vector2 BuffPanelFromCenter = new(-300f, 56f);
     private static readonly Vector2 BuffPowerPanelBelow = new(0f, 44f);
     private static readonly Color BuffBlinkDim = new(1f, 1f, 1f, BuffExpiry.BlinkDimAlpha);
+    private const double BuffTimerWarnSeconds = 5;
+    private static readonly Color BuffTimerWarnColor = new(1f, 0.45f, 0.45f);
 
     private readonly List<ActiveBuff> _buffs = new();
     private Control? _buffPanel;
@@ -310,8 +312,7 @@ public partial class World
             }
             b.Timer.Text = left >= 60 ? $"{left / 60:0}M" : $"{left:0}S";
             b.Chip.Modulate = BuffExpiry.BlinkDimmed(left) ? BuffBlinkDim : Colors.White;
-            b.Timer.AddThemeColorOverride("font_color",
-                left <= 5 ? new Color(1f, 0.45f, 0.45f) : Colors.White);
+            UiTheme.ApplyFontColor(b.Timer, left <= BuffTimerWarnSeconds ? BuffTimerWarnColor : Colors.White);
         }
         if (removed) ShowBuffRows();
         if (Platform.TouchUi) SortBuffsByRemaining();

@@ -115,7 +115,8 @@ public partial class WeaponTrail : Node3D, IFxTicked
 
         if (!CrowdAnimator.Current(_anim, out string clip, out double pos))
         {
-            clip = _anim.CurrentAnimation.ToString();
+            using var current = _anim.CurrentAnimation;
+            clip = current.ToString();
             pos = clip.Length == 0 ? 0 : _anim.CurrentAnimationPosition;
         }
         if (clip.Length == 0)

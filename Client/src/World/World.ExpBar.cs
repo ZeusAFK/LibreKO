@@ -181,7 +181,7 @@ public partial class World : Node3D
         int fps = (int)Engine.GetFramesPerSecond();
         int ping = Net.I is { } net ? net.PingMs : -1;
         _expBarStats.Text = ping < 0 ? $"{fps} fps" : $"{fps} fps  {ping} ms";
-        _expBarStats.AddThemeColorOverride("font_color",
+        UiTheme.ApplyFontColor(_expBarStats,
             Grade(fps >= FpsGood && (ping < 0 || ping <= PingGood),
                   fps >= FpsFair && (ping < 0 || ping <= PingFair)));
     }

@@ -260,15 +260,38 @@ public partial class World
         if (_terrain == null) return onTerrain;
         float terrainFeetY = onTerrain.Y - lift;
         float anchorY = Mathf.Max(terrainFeetY, _terrain.KoToWorld(koX, serverY, koZ).Y);
-        var space = GetWorld3D().DirectSpaceState;
         var from = new Vector3(onTerrain.X, anchorY + EntityFloorProbeUp, onTerrain.Z);
         var to = new Vector3(onTerrain.X, terrainFeetY - EntityFloorProbeDown, onTerrain.Z);
-        var probe = PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer);
-        if (SelfProbeExclude() is { } exclude) probe.Exclude = exclude;
-        var hit = space.IntersectRay(probe);
-        if (hit.Count == 0 || ((Vector3)hit["normal"]).Y < 0.5f) return onTerrain;
-        float floorY = ((Vector3)hit["position"]).Y;
+        if (!FloorRayHit(from, to, SelfProbeExclude(), out var at, out var normal) || normal.Y < FloorNormalMin) return onTerrain;
+        float floorY = at.Y;
         return floorY > terrainFeetY ? new Vector3(onTerrain.X, floorY + lift, onTerrain.Z) : onTerrain;
+    }
+
+    private static readonly Variant RayHitPosition = "position";
+    private static readonly Variant RayHitNormal = "normal";
+    private PhysicsRayQueryParameters3D? _floorRay;
+    private Godot.Collections.Array<Rid>? _floorRayExclude;
+
+    private bool FloorRayHit(Vector3 from, Vector3 to, Godot.Collections.Array<Rid>? exclude,
+                             out Vector3 position, out Vector3 normal)
+    {
+        var query = _floorRay ??= new PhysicsRayQueryParameters3D { CollisionMask = WorldCollisionLayer };
+        query.From = from;
+        query.To = to;
+        if (!ReferenceEquals(exclude, _floorRayExclude))
+        {
+            query.Exclude = exclude ?? new Godot.Collections.Array<Rid>();
+            _floorRayExclude = exclude;
+        }
+        using var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (hit.Count == 0)
+        {
+            position = normal = default;
+            return false;
+        }
+        position = (Vector3)hit[RayHitPosition];
+        normal = (Vector3)hit[RayHitNormal];
+        return true;
     }
 
     private const int MaxFloorHits = 6;
@@ -313,7 +336,6 @@ public partial class World
     private List<float> ObjectFloorsAt(float x, float z, float top, float bottom, CollisionObject3D? alsoExclude = null)
     {
         var floors = new List<float>();
-        var space = GetWorld3D().DirectSpaceState;
         var exclude = SelfProbeExclude();
         if (alsoExclude != null && GodotObject.IsInstanceValid(alsoExclude))
         {
@@ -323,12 +345,8 @@ public partial class World
         float from = top;
         for (int i = 0; i < MaxFloorHits && from > bottom; i++)
         {
-            var probe = PhysicsRayQueryParameters3D.Create(new Vector3(x, from, z), new Vector3(x, bottom, z), WorldCollisionLayer);
-            if (exclude != null) probe.Exclude = exclude;
-            var hit = space.IntersectRay(probe);
-            if (hit.Count == 0) break;
-            var at = (Vector3)hit["position"];
-            if (((Vector3)hit["normal"]).Y >= FloorNormalMin) floors.Add(at.Y);
+            if (!FloorRayHit(new Vector3(x, from, z), new Vector3(x, bottom, z), exclude, out var at, out var normal)) break;
+            if (normal.Y >= FloorNormalMin) floors.Add(at.Y);
             from = at.Y - FloorHitStep;
         }
         return floors;
@@ -369,28 +387,28 @@ public partial class World
     private float ObjectFloorY(Vector3 atGodot, float feetY)
     {
         if (_selfBody == null || NoClip) return float.NegativeInfinity;
-        var space = GetWorld3D().DirectSpaceState;
         var from = new Vector3(atGodot.X, feetY + StepUp, atGodot.Z);
         float bottomOffset = _zone == JuraidZone ? PitFloorProbeDown : ObjectFloorProbeDown;
         var to = new Vector3(atGodot.X, Mathf.Min(atGodot.Y, feetY) - bottomOffset, atGodot.Z);
-        var q = PhysicsRayQueryParameters3D.Create(from, to, WorldCollisionLayer);
-        q.Exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
-        var hit = space.IntersectRay(q);
-        if (hit.Count == 0) return float.NegativeInfinity;
-        if (((Vector3)hit["normal"]).Y < 0.5f) return float.NegativeInfinity;
-        return ((Vector3)hit["position"]).Y;
+        if (!FloorRayHit(from, to, SelfProbeExclude(), out var at, out var normal)) return float.NegativeInfinity;
+        if (normal.Y < FloorNormalMin) return float.NegativeInfinity;
+        return at.Y;
     }
+
+    private PhysicsShapeQueryParameters3D? _capsuleQuery;
 
     private bool CapsuleOverlaps()
     {
         if (_selfBody == null || _selfCapsule == null || NoClip) return false;
-        var space = GetWorld3D().DirectSpaceState;
         var t = _selfBody.GlobalTransform;
         t.Origin += t.Basis * new Vector3(0, _selfCapsuleOffsetY, 0);
-        var q = new PhysicsShapeQueryParameters3D
-        { Shape = _selfCapsule, Transform = t, CollisionMask = WorldCollisionLayer, Margin = 0f };
-        q.Exclude = new Godot.Collections.Array<Rid> { _selfBody.GetRid() };
-        return space.IntersectShape(q, 1).Count > 0;
+        var q = _capsuleQuery ??= new PhysicsShapeQueryParameters3D
+        {
+            Shape = _selfCapsule, CollisionMask = WorldCollisionLayer, Margin = 0f, Exclude = SelfProbeExclude()!,
+        };
+        q.Transform = t;
+        using var hits = (Godot.Collections.Array)GetWorld3D().DirectSpaceState.IntersectShape(q, 1);
+        return hits.Count > 0;
     }
 
     public bool ObjectsPending { get; private set; } = true;

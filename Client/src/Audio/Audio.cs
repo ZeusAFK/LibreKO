@@ -16,6 +16,7 @@ public partial class Audio : Node
     private const int Pool3D = 48;
     private const int Pool2D = 12;
     private const float BgmFade = 2.0f;
+    private static readonly StringName SoundMeta = "snd";
 
     public static Audio? I { get; private set; }
 
@@ -259,7 +260,7 @@ public partial class Audio : Node
         p.Stream = stream;
         p.VolumeDb = e.GainDb;
         p.GlobalPosition = pos;
-        p.SetMeta("snd", soundId);
+        p.SetMeta(SoundMeta, soundId);
         p.Play();
         return p;
     }
@@ -274,7 +275,7 @@ public partial class Audio : Node
         p.Stream = stream;
         p.Bus = bus;
         p.VolumeDb = e.GainDb;
-        p.SetMeta("snd", soundId);
+        p.SetMeta(SoundMeta, soundId);
         p.Play();
     }
 
@@ -306,10 +307,10 @@ public partial class Audio : Node
 
     private void OnFinished(GodotObject player)
     {
-        if (player is Node n && n.HasMeta("snd"))
+        if (player is Node n && n.HasMeta(SoundMeta))
         {
-            Release(n.GetMeta("snd").AsInt32());
-            n.RemoveMeta("snd");
+            Release(n.GetMeta(SoundMeta).AsInt32());
+            n.RemoveMeta(SoundMeta);
         }
     }
 
