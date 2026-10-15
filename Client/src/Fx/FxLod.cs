@@ -30,14 +30,15 @@ public static class FxLod
         if (delta <= 0) return;
         _smoothedFrame += (delta - _smoothedFrame) * FrameSmoothing;
         double fps = 1.0 / _smoothedFrame;
-        double targetFps = TargetFps();
+        double targetFps = TargetFps(Engine.MaxFps);
         if (fps < targetFps * StrainedShare)
             Load = Mathf.Max(LoadFloor, Load - LoadDropPerSecond * (float)delta);
         else if (fps > targetFps * EasyShare)
             Load = Mathf.Min(1f, Load + LoadRisePerSecond * (float)delta);
     }
 
-    private static int TargetFps() => Engine.MaxFps > 0 ? Engine.MaxFps : DefaultTargetFps;
+    public static int TargetFps(int frameCap) =>
+        frameCap > 0 ? Mathf.Min(frameCap, DefaultTargetFps) : DefaultTargetFps;
 
     public static float Ratio(Vector3 at)
     {
