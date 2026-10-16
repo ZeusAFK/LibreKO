@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Globalization;
 using Godot;
 using LibreKO.Domain;
@@ -46,16 +46,9 @@ public partial class World : Node3D
             AskVipKey(absSlot);
             return;
         }
-        int eventSkill = Inv[absSlot].ItemId switch
+        if (_zone == FullMoon.Zone && def.Effect1 != 0 && SkillData.Get(def.Effect1) is { Tree: FullMoon.SkillTree })
         {
-            ChaosBattle.KillingBladeItem => 490226,
-            ChaosBattle.LightPitItem => 490227,
-            ChaosBattle.DrainRestoreItem => 490231,
-            _ => 0
-        };
-        if (eventSkill != 0)
-        {
-            CastSkill(eventSkill);
+            CastSkill(def.Effect1);
             return;
         }
         if (def.Effect1 != 0 && SkillData.IsSkill(def.Effect1))

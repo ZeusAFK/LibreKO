@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -213,7 +213,10 @@ public class BifrostTests
             Substitute.For<ITouchTrapService>(),
             Substitute.For<IChaosDungeonService>(),
             bifrostMock,
-            Substitute.For<ILogger<QuestNpcInteractionService>>());
+            Substitute.For<ILogger<QuestNpcInteractionService>>(),
+            Substitute.For<IFullMoonRiftService>(),
+            Substitute.For<IItemGrantService>(),
+            Substitute.For<IMagicItemUsageService>());
 
         var packet = new Packet(GameOpcodes.GS_NPC_EVENT);
         packet.WriteByte(1); // regular click

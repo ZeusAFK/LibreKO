@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -120,11 +120,15 @@ public class FullMoonTests
     }
 
     [Fact]
-    public void LaneWaypointsAreWalkable()
+    public void LaneWaypointsAreWalkable() => AssertLaneWaypoints();
+
+    private static void AssertLaneWaypoints([System.Runtime.CompilerServices.CallerFilePath] string source = "")
     {
-        var smd = SmdFile.Load(@"D:\LibreKO\Server\LibreKO.Game\Map\dungeon_defense.smd")!;
+        var mapPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, "..", "..", "LibreKO.Game", "Map", "dungeon_defense.smd"));
+        var smd = SmdFile.Load(mapPath);
+        smd.Should().NotBeNull();
         var mapManager = new MapManager(new Microsoft.Extensions.Logging.Abstractions.NullLogger<MapManager>());
-        mapManager.SetMap((short)ZoneId.DungeonDefence, smd);
+        mapManager.SetMap((short)ZoneId.DungeonDefence, smd!);
 
         // Verify North lane
         foreach (var (x, z) in FullMoonRules.NorthLaneWaypoints)
@@ -148,5 +152,50 @@ public class FullMoonTests
 
         distNorth.Should().BeLessThanOrEqualTo(3.0f);
         distEast.Should().BeLessThanOrEqualTo(3.0f);
+    }
+
+    [Fact]
+    public void HasEnteredTodayChecksDailyOperationTimestamp()
+    {
+        var session = Member(1);
+        FullMoonRules.HasEnteredToday(session).Should().BeFalse();
+
+        var now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        session.DailyOps[(int)DailyOperation.FullMoonRift] = now;
+        FullMoonRules.HasEnteredToday(session, now).Should().BeTrue();
+
+        // Expired after 1440 minutes + 1 minute
+        FullMoonRules.HasEnteredToday(session, now + 1441 * 60).Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasVoucherRespectsItemExpiry()
+    {
+        var session = Member(1);
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        session.Inventory[BagSlot].ExpiresAt = now + 1000;
+        FullMoonRules.HasVoucher(session, now).Should().BeTrue();
+
+        // Expired
+        FullMoonRules.HasVoucher(session, now + 1001).Should().BeFalse();
+    }
+
+    [Fact]
+    public void StageMonsterCountsMatchDesignSpecification()
+    {
+        var provider = new FullMoonRiftStageProvider();
+        int[] expectedCounts =
+        [
+            2, 1, 2, 2, 1,
+            4, 2, 3, 3, 1, 3, 2, 3, 3, 3, 2, 1,
+            4, 2, 3, 3, 1, 3, 2, 4, 3, 3, 2, 1, 4, 2, 3, 3, 2, 1
+        ];
+
+        for (int stageId = 1; stageId <= 35; stageId++)
+        {
+            var stage = provider.GetStage(stageId);
+            stage.Should().NotBeNull();
+            stage!.Spawns[0].Count.Should().Be(expectedCounts[stageId - 1], $"Stage {stageId} count mismatch");
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 
 namespace LibreKO.Game.World;
@@ -9,6 +9,8 @@ public sealed class FullMoonRiftRoomState
     public byte Difficulty { get; init; }
     public int CurrentStageId { get; set; }
     public int RemainingMonsters;
+    public int RemainingTowers { get; set; }
+    public object Lock { get; } = new();
     public DateTime StartTime { get; init; }
     public DateTime NextSpawnTime { get; set; }
     public DateTime Deadline { get; set; }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Globalization;
 using Godot;
 
@@ -51,6 +51,7 @@ public partial class World
         LoadLocalHotbar();
         RefreshHotbar();
         ApplyChaosHotbar();
+        ApplyFullMoonHotbar();
 
         if (Net.I.SkillBar is not { } bar)
         {
@@ -679,6 +680,12 @@ public partial class World
             ApplyChaosHotbar();
             return;
         }
+        if (_zone == FullMoon.Zone)
+        {
+            _hotLoadedFromServer = true;
+            ApplyFullMoonHotbar();
+            return;
+        }
 
         bool any = false;
         foreach (int id in ids) if (id != 0) { any = true; break; }
@@ -708,6 +715,31 @@ public partial class World
         if (_worldReady && _loadingLayer == null) WarmHotbarFxResources();
     }
 
+    private void ApplyFullMoonHotbar()
+    {
+        if (_zone != FullMoon.Zone) return;
+        const int BarPages = 2;
+        int slots = BarPages * HotSlotsPerPage;
+        bool any = false;
+        for (int i = 0; i < slots && i < HotTotal; i++)
+        {
+            if (_hotbar[i] != 0 && SkillData.Get(_hotbar[i]) is { } skill)
+            {
+                if (skill.Tree != FullMoon.SkillTree)
+                    _hotbar[i] = 0;
+                else
+                    any = true;
+            }
+        }
+        if (!any)
+        {
+            for (int i = 0; i < FullMoon.FreeSkills.Length && i < slots && i < HotTotal; i++)
+                _hotbar[i] = FullMoon.FreeSkills[i];
+        }
+        _hotPage = 0;
+        RefreshHotbar();
+    }
+
     private string LocalHotbarPath()
     {
         string key = $"{Config.ServerHost}_{Config.GamePort}_{LoginNet.I.Account}_{Net.I.MyCharId}";
@@ -718,7 +750,7 @@ public partial class World
 
     private void WriteLocalHotbar()
     {
-        if (InChaosZone) return;
+        if (InChaosZone || _zone == FullMoon.Zone) return;
         var arr = new Godot.Collections.Array();
         foreach (int id in _hotbar) arr.Add(id);
         using var f = Godot.FileAccess.Open(LocalHotbarPath(), Godot.FileAccess.ModeFlags.Write);

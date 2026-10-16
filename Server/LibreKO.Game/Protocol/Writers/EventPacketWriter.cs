@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Enums;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 
@@ -22,6 +22,14 @@ public sealed class EventPacketWriter
         packet.WriteByte(World.FullMoonRules.StageSub);
         packet.WriteByte(maxStage);
         packet.WriteByte(currentStage);
+        return packet;
+    }
+
+    public static Packet FullMoonTowersLeft(byte towersLeft)
+    {
+        var packet = new Packet(GameOpcodes.GS_EVENT);
+        packet.WriteByte(World.FullMoonRules.TowerSub);
+        packet.WriteByte(towersLeft);
         return packet;
     }
 

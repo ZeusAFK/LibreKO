@@ -1,8 +1,12 @@
-﻿namespace LibreKO.Domain;
+namespace LibreKO.Domain;
 
 public static class FullMoon
 {
     public const int Zone = 89;
+    public const int SkillTree = 3500;
+    public const int FreeSkillFirst = 490330;
+    public const int FreeSkillLast = 490335;
+    public static readonly int[] FreeSkills = { 490330, 490331, 490332, 490333, 490334, 490335 };
     public const byte NormalBoard = 0;
     public const byte FullMoonBoard = 2;
     public const byte EntrySub = 58;

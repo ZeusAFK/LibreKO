@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -59,7 +59,8 @@ public class ChaosDungeonTests : GameTestBase
     {
         ChaosRules.SkillAllowedIn(ChaosRules.Zone, ChaosRules.ChaosSkillTree).Should().BeTrue();
         ChaosRules.SkillAllowedIn(ChaosRules.Zone, 105).Should().BeFalse();
-        ChaosRules.SkillAllowedIn((byte)ZoneId.DungeonDefence, ChaosRules.ChaosSkillTree).Should().BeTrue();
+        ChaosRules.SkillAllowedIn((byte)ZoneId.DungeonDefence, ChaosRules.ChaosSkillTree).Should().BeFalse();
+        ChaosRules.SkillAllowedIn((byte)ZoneId.DungeonDefence, ChaosRules.DungeonDefenseSkillTree).Should().BeTrue();
         ChaosRules.SkillAllowedIn((byte)ZoneId.DungeonDefence, 105).Should().BeFalse();
         ChaosRules.SkillAllowedIn((byte)ZoneId.Moradon, ChaosRules.ChaosSkillTree).Should().BeFalse();
         ChaosRules.SkillAllowedIn((byte)ZoneId.Moradon, 105).Should().BeTrue();

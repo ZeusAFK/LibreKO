@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LibreKO.Common.Enums;
@@ -24,16 +24,69 @@ public static class FullMoonRules
 
     public const int MonsterCoinItem = 914058000;
     public const int RiftJewelItem = 914069000;
-    public const int LunarOrderToken = 810977000;
 
+    public const int BlancNpcId = 31735;
     public const int PriestOfFullMoonNpcId = 31737;
-    public const int KillingBladeItem = 700037000;
-    public const int DrainRestoreItem = 700040000;
-    public const int LightPitItem = 700041000;
 
-    public const int StarterKillingBladeCount = 10;
-    public const int StarterDrainRestoreCount = 5;
-    public const int StarterLightPitCount = 5;
+    // Exchange Items & Costs (Blanc)
+    public const int OldDrakiSupplyBoxItem = 810678000;
+    public const int OldDrakiSupplyBoxCost = 85;
+    public const int DrakiSupplyBoxItem = 810596000;
+    public const int DrakiSupplyBoxCost = 150;
+    public const int GraceOfMoonGodItem = 930661000;
+    public const int GraceOfMoonGodCost = 100;
+    public const int LunarTattoo7DaysItem = 810942000;
+    public const int LunarTattoo7DaysCost = 200;
+    public const int RabbitTransformScrollItem = 820634000;
+    public const int RabbitTransformScrollCost = 200;
+    public const int LunarTattoo30DaysItem = 810432000;
+    public const int LunarTattoo30DaysCost = 300;
+
+    // Priest Items & Costs
+    public const int DrainRestoreItem = 914060000;
+    public const int DrainRestoreCost = 2;
+    public const int FireStrikeItem = 914061000;
+    public const int FireStrikeCost = 4;
+    public const int BloodyArrowItem = 914062000;
+    public const int BloodyArrowCost = 3;
+    public const int AnkleFreezeItem = 914063000;
+    public const int AnkleFreezeCost = 5;
+    public const int SummonGuardItem = 931668000;
+    public const int SummonGuardCost = 8;
+    public const int TearOfGoddessItem = 914077000;
+    public const int TearOfGoddessCost = 1;
+    public const int GodsShieldItem = 914078000;
+    public const int GodsShieldCost = 2;
+
+    // Dialog & Button IDs
+    public const int BlancTalkId = 44689;
+    public const int PriestTalkId = 44690;
+    public const int PriestNotEnoughCoinsTalkId = 44691;
+    public const int PriestInventoryFullTalkId = 44692;
+    public const int VoucherClaimedTalkId = 44694;
+    public const int AlreadyHaveVoucherTalkId = 44695;
+    public const int AlreadyEnteredTodayTalkId = 44696;
+    public const int LevelTooLowTalkId = 45188;
+
+    public const int BlancBtnEnterRift = 40751;
+    public const int BlancBtnReceiveVoucher = 40752;
+    public const int BlancBtnExchangeJewel = 40753;
+    public const int BlancBtnCancel = 40772;
+
+    public const int ExchangeBtnOldDraki = 40754;
+    public const int ExchangeBtnDraki = 40755;
+    public const int ExchangeBtnGrace = 40756;
+    public const int ExchangeBtnTattoo7d = 40757;
+    public const int ExchangeBtnRabbit = 40758;
+    public const int ExchangeBtnTattoo30d = 40759;
+
+    public const int PriestBtnDrainRestore = 40761;
+    public const int PriestBtnFireStrike = 40762;
+    public const int PriestBtnBloodyArrow = 40763;
+    public const int PriestBtnAnkleFreeze = 40764;
+    public const int PriestBtnSummonGuard = 40767;
+    public const int PriestBtnTearOfGoddess = 40768;
+    public const int PriestBtnGodsShield = 40769;
 
     public const byte DifficultyEasy = 1;
     public const byte DifficultyNormal = 2;
@@ -96,8 +149,6 @@ public static class FullMoonRules
         (165, 211)
     ];
 
-    public static readonly HashSet<int> BossMonsterIds = [9931, 9951, 9936, 9959, 9942, 9971];
-
     public const byte AnyState = 0;
     public const byte SoloState = 2;
     public const byte PartyState = 3;
@@ -108,8 +159,18 @@ public static class FullMoonRules
 
     public static bool InMoradon(byte zone) => zone is >= (byte)ZoneId.Moradon and <= (byte)ZoneId.Moradon4;
 
-    public static bool HasVoucher(UserSession session) =>
-        session.Inventory.Any(slot => slot.ItemId == VoucherItem && slot.Count > 0);
+    public static bool HasVoucher(UserSession session, long? nowUnixSeconds = null)
+    {
+        var now = nowUnixSeconds ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        return session.Inventory.Any(slot => slot.ItemId == VoucherItem && slot.Count > 0 && !slot.HasExpired(now));
+    }
+
+    public static bool HasEnteredToday(UserSession session, int? nowUnixSeconds = null)
+    {
+        var now = nowUnixSeconds ?? (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var last = session.DailyOps[(int)DailyOperation.FullMoonRift];
+        return last > 0 && (now - last) / 60 <= GameConstants.DailyOperationWindowMinutes;
+    }
 
     public static byte DifficultyForPartySize(int memberCount) => memberCount switch
     {

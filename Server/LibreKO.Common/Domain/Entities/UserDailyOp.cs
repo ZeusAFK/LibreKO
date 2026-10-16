@@ -6,7 +6,7 @@ namespace LibreKO.Common.Domain.Entities;
 
 public class UserDailyOp
 {
-    public const int Count = (int)DailyOperation.SpiritGuardianBlack + 1;
+    public const int Count = (int)DailyOperation.FullMoonRift + 1;
 
     public int CharacterId { get; set; }
     public int ChaosMapTime { get; set; }
@@ -21,6 +21,7 @@ public class UserDailyOp
     public int SpiritGuardianRedTime { get; set; }
     public int SpiritGuardianBlueTime { get; set; }
     public int SpiritGuardianBlackTime { get; set; }
+    public int FullMoonRiftTime { get; set; }
 
     public int[] ToTimestamps() =>
     [
@@ -37,6 +38,7 @@ public class UserDailyOp
         SpiritGuardianRedTime,
         SpiritGuardianBlueTime,
         SpiritGuardianBlackTime,
+        FullMoonRiftTime,
     ];
 
     public void FromTimestamps(int[] timestamps)
@@ -56,6 +58,7 @@ public class UserDailyOp
         SpiritGuardianRedTime = timestamps[(int)DailyOperation.SpiritGuardianRed];
         SpiritGuardianBlueTime = timestamps[(int)DailyOperation.SpiritGuardianBlue];
         SpiritGuardianBlackTime = timestamps[(int)DailyOperation.SpiritGuardianBlack];
+        FullMoonRiftTime = timestamps[(int)DailyOperation.FullMoonRift];
     }
 
     internal class EntityConfiguration : IEntityTypeConfiguration<UserDailyOp>

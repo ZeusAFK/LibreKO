@@ -14,4 +14,5 @@ public enum DailyOperation
     SpiritGuardianRed = 10,
     SpiritGuardianBlue = 11,
     SpiritGuardianBlack = 12,
+    FullMoonRift = 13,
 }

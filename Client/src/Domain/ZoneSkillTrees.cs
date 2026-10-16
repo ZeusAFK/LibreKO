@@ -1,4 +1,4 @@
-﻿namespace LibreKO.Domain;
+namespace LibreKO.Domain;
 
 public static class ZoneSkillTrees
 {
@@ -15,7 +15,7 @@ public static class ZoneSkillTrees
     public static bool Allowed(int zone, int tree, int skillId)
     {
         if (zone == ChaosBattle.Zone) return tree == ChaosBattle.SkillTree;
-        if (zone == DungeonDefenseZone) return tree is ChaosBattle.SkillTree or DungeonDefenseTree;
+        if (zone == DungeonDefenseZone) return tree == DungeonDefenseTree;
         if (KnightRoyale.IsZone(zone)) return tree == KnightRoyaleTree;
         if (zone == Zone45) return skillId is >= FirstZone45Skill and <= LastZone45Skill;
         if (zone is >= FirstTree3200Zone and <= LastTree3200Zone) return tree == Tree3200;
