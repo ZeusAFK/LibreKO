@@ -71,6 +71,9 @@ public partial class World
         private float _extent;
         private float _koX, _koZ, _heading;
         private readonly List<MiniMap.Blip> _blips = new();
+        private readonly DiscBatch _discs = new();
+        private static readonly Color BlipShadow = new(0, 0, 0, 0.7f);
+        private const float BlipRimMargin = 1.5f;
 
         public void SetMap(Texture2D? tex, float extent) { _tex = tex; _extent = extent; QueueRedraw(); }
 
@@ -105,13 +108,17 @@ public partial class World
                 var p = ToPx(b.X, b.Z);
                 float r = (b.Radius + 1.5f) * 1.4f;
                 if (b.Hollow)
-                    DrawArc(p, r + 1.5f, 0, Mathf.Tau, 18, b.Color, 2.5f, true);
+                {
+                    _discs.Flush(GetCanvasItem());
+                    DrawArc(p, r + BlipRimMargin, 0, Mathf.Tau, 18, b.Color, 2.5f, true);
+                }
                 else
                 {
-                    DrawCircle(p, r + 1.5f, new Color(0, 0, 0, 0.7f));
-                    DrawCircle(p, r, b.Color);
+                    _discs.Add(p, r + BlipRimMargin, BlipShadow);
+                    _discs.Add(p, r, b.Color);
                 }
             }
+            _discs.Flush(GetCanvasItem());
 
             var pp = ToPx(_koX, _koZ);
             float a = Mathf.DegToRad(_heading);
