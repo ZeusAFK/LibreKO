@@ -710,7 +710,7 @@ public static class ItemData
     private static Texture2D CropToArt(Texture2D tex)
     {
         Image? img;
-        try { img = tex.GetImage(); } catch { return tex; }
+        try { img = FxImages.Read(tex); } catch { return tex; }
         if (img == null) return tex;
         if (img.IsCompressed() && img.Decompress() != Error.Ok) return tex;
 
