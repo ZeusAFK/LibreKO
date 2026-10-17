@@ -596,7 +596,7 @@ public class QuestNpcInteractionService(
                 {
                     var boardPacket = NpcDialogPacketWriter.SelectMessage(
                         npc.NpcId,
-                        57,
+                        NpcDialogPacketWriter.FullMoonBoardStyle,
                         NpcDialogPacketWriter.NoText,
                         NpcDialogPacketWriter.NoText,
                         [],

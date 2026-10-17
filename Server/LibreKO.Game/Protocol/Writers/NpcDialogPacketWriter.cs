@@ -18,6 +18,7 @@ public sealed class NpcDialogPacketWriter
     public const byte GenderChangePanelStyle = 53;
     public const byte FortunePanelStyle = 16;
     public const byte SpecialAuctionPanelStyle = 58;
+    public const byte FullMoonBoardStyle = 57;
     public const byte ItemCombinePanelStyle = 18;
     public const byte CombineRecipeBookStyle = 21;
     public const byte DisassemblePanelStyle = 27;

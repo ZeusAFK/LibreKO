@@ -17,7 +17,6 @@ public class NpcAiBehaviorService(
     IGuardSummonAiService guardSummonAiService,
     IPetAiService petAiService,
     IPetSkillService petSkillService,
-    ICombatLifecycleService combatLifecycleService,
     IFullMoonRiftService fullMoonRiftService) : INpcAiBehaviorService
 {
     public async Task ProcessNpcAsync(NpcInstance npc, long nowTicks)
