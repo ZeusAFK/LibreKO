@@ -9,19 +9,11 @@ public static partial class CharacterPreview
     private static Dictionary<int, string>? _bodyIndex;
     private static Dictionary<int, int>? _armorItems;
     private static Dictionary<int, (string Face, string Hair)>? _faceRaces;
-    private static Dictionary<int, WeaponPlug>? _weapons;
+
+    private const string BodyIndexPath = "res://assets/characters/index.json";
 
     private static readonly (int Gear, int Part)[] ArmorSlotToPart =
         { (0, 0), (1, 1), (3, 2), (4, 3), (2, 5) };
-
-    private sealed class WeaponPlug
-    {
-        public string Stem = "";
-        public string Anim = "";
-        public PlugPose Pose = new(Vector3.Zero, Quaternion.Identity, Vector3.One);
-        public int Version;
-        public PlugPose[] RaceBlocks = Array.Empty<PlugPose>();
-    }
 
     public static Node3D? Build(int race, int face, int[]? gear, int hair = 0, Color? hairColour = null,
                                 bool enableShine = false)
@@ -78,9 +70,16 @@ public static partial class CharacterPreview
         return list;
     }
 
+    public static void Warm()
+    {
+        _bodyIndex ??= LoadIdIndex(BodyIndexPath);
+        LoadParts();
+        _ = WeaponCatalog.Index;
+    }
+
     private static PackedScene? ResolveBody(int race)
     {
-        _bodyIndex ??= LoadIdIndex("res://assets/characters/index.json");
+        _bodyIndex ??= LoadIdIndex(BodyIndexPath);
         if (!_bodyIndex.TryGetValue(race, out var stem)) return null;
         string path = $"res://assets/characters/{stem}.glb";
         return ResourceLoader.Exists(path) ? ResourceLoader.Load<PackedScene>(path) : null;
@@ -251,7 +250,6 @@ public static partial class CharacterPreview
         if (gear == null) return;
         var skel = FindFirst<Skeleton3D>(body);
         if (skel == null) return;
-        _weapons ??= LoadWeapons();
         float bindHeight = WeaponMount.BindHeight(skel);
         var wearer = new HandWearer(race);
         foreach (int slot in new[] { InventoryConstants.VisRightHand, InventoryConstants.VisLeftHand })
@@ -274,52 +272,11 @@ public static partial class CharacterPreview
         }
     }
 
-    private static Dictionary<int, WeaponPlug> LoadWeapons()
+    private static bool TryGetWeapon(int itemId, out WeaponCatalog.Info weapon)
     {
-        var map = new Dictionary<int, WeaponPlug>();
-        using var f = Godot.FileAccess.Open("res://assets/items/weapon/index.json", Godot.FileAccess.ModeFlags.Read);
-        if (f == null) return map;
-        if (Json.ParseString(f.GetAsText()).AsGodotDictionary() is { } d)
-            foreach (var k in d.Keys)
-            {
-                if (!int.TryParse(k.AsString(), out int id)) continue;
-                var e = d[k].AsGodotDictionary();
-                map[id] = new WeaponPlug
-                {
-                    Stem = e["stem"].AsString(),
-                    Anim = e.TryGetValue("anim", out var clip) ? clip.AsString() : "",
-                    Pose = new PlugPose(WeaponCatalog.ReadVector(e["pos"]), WeaponCatalog.ReadQuaternion(e["quat"]),
-                                        WeaponCatalog.ReadVector(e["scale"])),
-                    Version = WeaponCatalog.ReadVersion(e),
-                    RaceBlocks = WeaponCatalog.ReadRaceBlocks(e),
-                };
-            }
-
-        using (var aliasesFile = Godot.FileAccess.Open(
-                   "res://assets/items/weapon/visual_aliases.json",
-                   Godot.FileAccess.ModeFlags.Read))
-            if (aliasesFile != null)
-            {
-                var parsed = Json.ParseString(aliasesFile.GetAsText());
-                if (parsed.VariantType == Variant.Type.Dictionary)
-                {
-                    var aliases = parsed.AsGodotDictionary();
-                    foreach (var key in aliases.Keys)
-                    {
-                        if (int.TryParse(key.AsString(), out int exactId)
-                            && map.TryGetValue(aliases[key].AsInt32(), out var canonical))
-                            map[exactId] = canonical;
-                    }
-                }
-            }
-        return map;
-    }
-
-    private static bool TryGetWeapon(int itemId, out WeaponPlug weapon)
-    {
-        _weapons ??= LoadWeapons();
-        return _weapons.TryGetValue(itemId, out weapon!)
-            || _weapons.TryGetValue(itemId / 1000 * 1000, out weapon!);
+        var weapons = WeaponCatalog.Index;
+        return weapons.TryGetValue(itemId, out weapon!)
+            || weapons.TryGetValue(Domain.ItemData.BaseId(itemId), out weapon!);
     }
 
     private static Dictionary<int, string> LoadIdIndex(string path)

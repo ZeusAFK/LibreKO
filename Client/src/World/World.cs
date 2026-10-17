@@ -170,6 +170,7 @@ public partial class World : Node3D, IWorldContext
         BuildHotkeys();
         ApplyHudTheme();
         GlyphWarmer.Warm(this);
+        CharacterPreview.Warm();
         Floaters?.WarmText();
 
         if (_selfAnim != null) { PlayClipOn(_selfAnim, ref _selfClip, "idle"); _selfAnim.Advance(0.0); }
