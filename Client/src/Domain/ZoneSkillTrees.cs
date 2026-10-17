@@ -1,4 +1,4 @@
-namespace LibreKO.Domain;
+﻿namespace LibreKO.Domain;
 
 public static class ZoneSkillTrees
 {

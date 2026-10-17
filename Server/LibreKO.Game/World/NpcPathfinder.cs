@@ -1,4 +1,4 @@
-﻿namespace LibreKO.Game.World;
+namespace LibreKO.Game.World;
 
 public static class NpcPathfinder
 {
@@ -21,14 +21,13 @@ public static class NpcPathfinder
         if (sx == tx && sz == tz)
             return (targetX, targetZ);
 
+        // Quick check: if direct line is clear, skip pathfinding
+        if (IsLineClear(map, sx, sz, tx, tz))
+            return null; // caller should use direct movement
+
         var path = FindPath(map, sx, sz, tx, tz);
         if (path == null || path.Count < 2)
-        {
-            if (IsLineClear(map, sx, sz, tx, tz))
-                return (targetX, targetZ);
-
             return null; // no path or already at target
-        }
 
         // Return the world position of the next tile in the path (index 1, since 0 is current)
         var (x, z) = path[1];
@@ -45,7 +44,7 @@ public static class NpcPathfinder
 
         while (true)
         {
-            if (!IsWalkable(map, x0, z0))
+            if (map.GetEventId(x0, z0) != 0)
                 return false;
 
             if (x0 == x1 && z0 == z1)
@@ -57,48 +56,9 @@ public static class NpcPathfinder
         }
     }
 
-    private static bool IsWalkable(SmdFile map, int x, int z)
-    {
-        var evt = map.GetEventId(x, z);
-        if (evt is 0 or 30 or 31 or 32 or 35) return true;
-        if (map.MapSize == 257 && map.UnitDistance == 4 && evt == 1)
-        {
-            float h = map.GetHeight(x * 4, z * 4);
-            return h is >= 75f and <= 81f && x >= 30 && z >= 42;
-        }
-        return false;
-    }
-
     private static List<(int x, int z)>? FindPath(SmdFile map, int sx, int sz, int tx, int tz)
     {
         int mapSize = map.MapSize;
-
-        // If start tile is blocked, find closest walkable adjacent tile
-        if (!IsWalkable(map, sx, sz))
-        {
-            var bestDist = float.MaxValue;
-            int bestSx = -1, bestSz = -1;
-            foreach (var (dx, dz, _) in Neighbors)
-            {
-                int nx = sx + dx;
-                int nz = sz + dz;
-                if (nx >= 0 && nx < mapSize && nz >= 0 && nz < mapSize && IsWalkable(map, nx, nz))
-                {
-                    float d = Heuristic(nx, nz, tx, tz);
-                    if (d < bestDist)
-                    {
-                        bestDist = d;
-                        bestSx = nx;
-                        bestSz = nz;
-                    }
-                }
-            }
-            if (bestSx != -1)
-            {
-                sx = bestSx;
-                sz = bestSz;
-            }
-        }
 
         // Open set as a priority queue (min-heap by fScore)
         var openSet = new PriorityQueue<long, float>();
@@ -134,13 +94,13 @@ public static class NpcPathfinder
                 if (nx < 0 || nx >= mapSize || nz < 0 || nz >= mapSize)
                     continue;
 
-                if (!IsWalkable(map, nx, nz))
+                if (map.GetEventId(nx, nz) != 0)
                     continue; // blocked tile
 
                 // For diagonal moves, check that both adjacent cardinal tiles are also walkable
                 if (dx != 0 && dz != 0)
                 {
-                    if (!IsWalkable(map, cx + dx, cz) || !IsWalkable(map, cx, cz + dz))
+                    if (map.GetEventId(cx + dx, cz) != 0 || map.GetEventId(cx, cz + dz) != 0)
                         continue; // can't cut corners
                 }
 

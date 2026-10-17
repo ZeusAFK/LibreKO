@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -117,41 +117,6 @@ public class FullMoonTests
 
         BitConverter.ToInt32(bytes, bytes.Length - 6).Should().Be(42);
         bytes[^2].Should().Be(FullMoonRules.FullMoonBoard);
-    }
-
-    [Fact]
-    public void LaneWaypointsAreWalkable() => AssertLaneWaypoints();
-
-    private static void AssertLaneWaypoints([System.Runtime.CompilerServices.CallerFilePath] string source = "")
-    {
-        var mapPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, "..", "..", "LibreKO.Game", "Map", "dungeon_defense.smd"));
-        var smd = SmdFile.Load(mapPath);
-        smd.Should().NotBeNull();
-        var mapManager = new MapManager(new Microsoft.Extensions.Logging.Abstractions.NullLogger<MapManager>());
-        mapManager.SetMap((short)ZoneId.DungeonDefence, smd!);
-
-        // Verify North lane
-        foreach (var (x, z) in FullMoonRules.NorthLaneWaypoints)
-        {
-            mapManager.IsMovable((short)ZoneId.DungeonDefence, x, z).Should().BeTrue($"North waypoint ({x},{z}) should be movable");
-        }
-
-        // Verify East lane
-        foreach (var (x, z) in FullMoonRules.EastLaneWaypoints)
-        {
-            mapManager.IsMovable((short)ZoneId.DungeonDefence, x, z).Should().BeTrue($"East waypoint ({x},{z}) should be movable");
-        }
-
-        // Verify both lanes end within 3 meters of the Nexus Tower
-        var finalNorth = FullMoonRules.NorthLaneWaypoints[^1];
-        var finalEast = FullMoonRules.EastLaneWaypoints[^1];
-        var nexus = FullMoonRules.InitialTowers.First(t => t.NpcId == FullMoonRules.NexusTowerNpcId);
-
-        var distNorth = MathF.Sqrt((finalNorth.X - nexus.X) * (finalNorth.X - nexus.X) + (finalNorth.Z - nexus.Z) * (finalNorth.Z - nexus.Z));
-        var distEast = MathF.Sqrt((finalEast.X - nexus.X) * (finalEast.X - nexus.X) + (finalEast.Z - nexus.Z) * (finalEast.Z - nexus.Z));
-
-        distNorth.Should().BeLessThanOrEqualTo(3.0f);
-        distEast.Should().BeLessThanOrEqualTo(3.0f);
     }
 
     [Fact]

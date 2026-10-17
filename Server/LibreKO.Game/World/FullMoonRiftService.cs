@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -119,7 +119,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             .Select(id => _sessionManager.GetByCharacterId(id))
             .OfType<UserSession>().ToList();
 
-        var underLeveled = members.Where(m => m.Level < 70).ToList();
+        var underLeveled = members.Where(m => m.Level < FullMoonRules.MinEntryLevel).ToList();
         if (underLeveled.Count > 0)
         {
             await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.LevelTooLowTalkId]));
@@ -514,6 +514,11 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         {
             SpawnNpcAt(room, npcId, x, z, isMonster: false);
         }
+
+        foreach (var (npcId, x, z) in FullMoonRules.InitialPriests)
+        {
+            SpawnNpcAt(room, npcId, x, z, isMonster: false);
+        }
     }
 
     private NpcInstance? SpawnNpcAt(InstanceRoom room, int npcId, float x, float z, bool isMonster, short direction = 0)
@@ -550,11 +555,6 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         if (isMonster)
         {
             _aggression.Apply(npc);
-            npc.MoveType = NpcMoveType.PatrolOnce;
-            var stageId = _activeRooms.TryGetValue(room.Id, out var state) ? state.CurrentStageId : 1;
-            var useNorth = stageId <= 5 ? (stageId % 2 == 1) : (room.Npcs.Count % 2 == 0);
-            npc.Waypoints = useNorth ? FullMoonRules.NorthLaneWaypoints : FullMoonRules.EastLaneWaypoints;
-            npc.CurrentWaypoint = 0;
             _sessionManager.Regions.MarkNpcEngaged(npc);
         }
 

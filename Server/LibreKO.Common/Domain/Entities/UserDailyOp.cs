@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

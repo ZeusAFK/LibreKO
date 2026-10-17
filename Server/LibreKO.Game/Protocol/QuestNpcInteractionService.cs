@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Scripting;
@@ -529,9 +529,9 @@ public class QuestNpcInteractionService(
         var buttons = new[]
         {
             FullMoonRules.BlancBtnEnterRift,
-            FullMoonRules.BlancBtnReceiveVoucher,
+            FullMoonRules.BlancBtnOpenBoard,
             FullMoonRules.BlancBtnExchangeJewel,
-            FullMoonRules.BlancBtnCancel
+            FullMoonRules.BlancBtnReceiveVoucher
         };
 
         for (int i = 0; i < buttons.Length; i++)
@@ -591,8 +591,19 @@ public class QuestNpcInteractionService(
                 await fullMoonRiftService.HandlePartyEntryAsync(session);
                 break;
 
-            case FullMoonRules.BlancBtnReceiveVoucher:
-                await ClaimVoucherAsync(session);
+            case FullMoonRules.BlancBtnOpenBoard:
+                if (npc != null)
+                {
+                    var boardPacket = NpcDialogPacketWriter.SelectMessage(
+                        npc.NpcId,
+                        57,
+                        NpcDialogPacketWriter.NoText,
+                        NpcDialogPacketWriter.NoText,
+                        [],
+                        UserSession.SelectMessageEventCount,
+                        FullMoonBlancScript);
+                    await session.Client.SendPacket(boardPacket);
+                }
                 break;
 
             case FullMoonRules.BlancBtnExchangeJewel:
@@ -600,7 +611,8 @@ public class QuestNpcInteractionService(
                     await ShowExchangeSubmenuAsync(session, npc);
                 break;
 
-            case FullMoonRules.BlancBtnCancel:
+            case FullMoonRules.BlancBtnReceiveVoucher:
+                await ClaimVoucherAsync(session);
                 break;
 
             case FullMoonRules.ExchangeBtnOldDraki:
@@ -685,7 +697,7 @@ public class QuestNpcInteractionService(
         var placed = await itemGrantService.GrantAsync(session, voucherItem, 1);
         if (placed > 0)
         {
-            var expiry = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 86400;
+            var expiry = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + FullMoonRules.VoucherDurationSeconds;
             session.WithLock(s =>
             {
                 for (int i = 0; i < s.Inventory.Length; i++)

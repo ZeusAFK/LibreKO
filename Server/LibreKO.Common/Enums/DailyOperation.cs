@@ -1,4 +1,4 @@
-namespace LibreKO.Common.Enums;
+﻿namespace LibreKO.Common.Enums;
 
 public enum DailyOperation
 {

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;

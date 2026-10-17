@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using LibreKO.Common.Enums;
@@ -25,7 +25,7 @@ public static class FullMoonRules
     public const int MonsterCoinItem = 914058000;
     public const int RiftJewelItem = 914069000;
 
-    public const int BlancNpcId = 31735;
+    public const int BlancNpcId = 31718;
     public const int PriestOfFullMoonNpcId = 31737;
 
     // Exchange Items & Costs (Blanc)
@@ -39,7 +39,7 @@ public static class FullMoonRules
     public const int LunarTattoo7DaysCost = 200;
     public const int RabbitTransformScrollItem = 820634000;
     public const int RabbitTransformScrollCost = 200;
-    public const int LunarTattoo30DaysItem = 810432000;
+    public const int LunarTattoo30DaysItem = 810927000;
     public const int LunarTattoo30DaysCost = 300;
 
     // Priest Items & Costs
@@ -69,9 +69,9 @@ public static class FullMoonRules
     public const int LevelTooLowTalkId = 45188;
 
     public const int BlancBtnEnterRift = 40751;
-    public const int BlancBtnReceiveVoucher = 40752;
+    public const int BlancBtnOpenBoard = 40752;
     public const int BlancBtnExchangeJewel = 40753;
-    public const int BlancBtnCancel = 40772;
+    public const int BlancBtnReceiveVoucher = 40772;
 
     public const int ExchangeBtnOldDraki = 40754;
     public const int ExchangeBtnDraki = 40755;
@@ -87,6 +87,9 @@ public static class FullMoonRules
     public const int PriestBtnSummonGuard = 40767;
     public const int PriestBtnTearOfGoddess = 40768;
     public const int PriestBtnGodsShield = 40769;
+
+    public const byte MinEntryLevel = 70;
+    public const int VoucherDurationSeconds = 86400;
 
     public const byte DifficultyEasy = 1;
     public const byte DifficultyNormal = 2;
@@ -111,42 +114,17 @@ public static class FullMoonRules
 
     public static readonly (int NpcId, float X, float Z)[] InitialTowers =
     [
-        (31737, 163f, 212f),
-        (31737, 199f, 200f),
-        (31737, 52f, 124f),
-        (31737, 211f, 38f),
         (31740, 167f, 212f),
         (31739, 65f, 134f),
         (31738, 196f, 54f),
     ];
 
-    public static readonly (short X, short Z)[] NorthLaneWaypoints =
+    public static readonly (int NpcId, float X, float Z)[] InitialPriests =
     [
-        (60, 40),
-        (32, 68),
-        (32, 76),
-        (16, 156),
-        (16, 168),
-        (12, 188),
-        (24, 192),
-        (124, 192),
-        (140, 180),
-        (155, 195),
-        (165, 211)
-    ];
-
-    public static readonly (short X, short Z)[] EastLaneWaypoints =
-    [
-        (60, 40),
-        (84, 28),
-        (92, 28),
-        (176, 20),
-        (200, 76),
-        (200, 104),
-        (192, 120),
-        (140, 180),
-        (155, 195),
-        (165, 211)
+        (31737, 163f, 212f),
+        (31737, 199f, 200f),
+        (31737, 52f, 124f),
+        (31737, 211f, 38f),
     ];
 
     public const byte AnyState = 0;

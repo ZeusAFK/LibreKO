@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using Godot;
 
@@ -667,6 +667,11 @@ public partial class World
             Net.I.ChaosHotbar = (int[])_hotbar.Clone();
             return;
         }
+        if (_zone == FullMoon.Zone)
+        {
+            Net.I.FullMoonHotbar = (int[])_hotbar.Clone();
+            return;
+        }
         Net.I.SendSkillDataSave(_hotbar);
         WriteLocalHotbar();
     }
@@ -718,6 +723,15 @@ public partial class World
     private void ApplyFullMoonHotbar()
     {
         if (_zone != FullMoon.Zone) return;
+        var kept = Net.I.FullMoonHotbar;
+        if (kept != null)
+        {
+            System.Array.Copy(kept, _hotbar, Math.Min(kept.Length, HotTotal));
+            _hotPage = 0;
+            RefreshHotbar();
+            return;
+        }
+
         const int BarPages = 2;
         int slots = BarPages * HotSlotsPerPage;
         bool any = false;
@@ -736,6 +750,7 @@ public partial class World
             for (int i = 0; i < FullMoon.FreeSkills.Length && i < slots && i < HotTotal; i++)
                 _hotbar[i] = FullMoon.FreeSkills[i];
         }
+        Net.I.FullMoonHotbar = (int[])_hotbar.Clone();
         _hotPage = 0;
         RefreshHotbar();
     }

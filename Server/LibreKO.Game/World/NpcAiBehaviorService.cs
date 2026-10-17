@@ -17,8 +17,8 @@ public class NpcAiBehaviorService(
     IGuardSummonAiService guardSummonAiService,
     IPetAiService petAiService,
     IPetSkillService petSkillService,
-    ICombatLifecycleService? combatLifecycleService = null,
-    IFullMoonRiftService? fullMoonRiftService = null) : INpcAiBehaviorService
+    ICombatLifecycleService combatLifecycleService,
+    IFullMoonRiftService fullMoonRiftService) : INpcAiBehaviorService
 {
     public async Task ProcessNpcAsync(NpcInstance npc, long nowTicks)
     {
@@ -132,11 +132,8 @@ public class NpcAiBehaviorService(
                         return;
                     }
 
-                    if (distSq <= 625f || npc.MoveType == NpcMoveType.None)
-                    {
-                        await npcAiMovementService.MoveTowardPointAsync(npc, tower.X, tower.Z, nowTicks);
-                        return;
-                    }
+                    await npcAiMovementService.MoveTowardPointAsync(npc, tower.X, tower.Z, nowTicks);
+                    return;
                 }
 
                 if (npc.MoveType != NpcMoveType.None && npc.MoveType != NpcMoveType.Stationary)
@@ -225,10 +222,18 @@ public class NpcAiBehaviorService(
 
         if (result == AttackResult.TargetDead)
         {
-            if (combatLifecycleService != null)
-                await combatLifecycleService.HandleNpcDeathAsync(tower, null!);
-            if (tower.NpcId == FullMoonRules.NexusTowerNpcId && fullMoonRiftService != null)
-                await fullMoonRiftService.OnNpcKilledAsync(tower, null);
+            tower.DeathTimeTicks = DateTime.UtcNow.Ticks;
+            tower.State = NpcState.Dead;
+            tower.TargetUserId = 0;
+            tower.TargetPetId = 0;
+            tower.IsMoving = false;
+            tower.WakeTicks = 0;
+            sessionManager.Regions.MarkNpcIdle(tower);
+
+            var deadPacket = DeathPacketWriter.NpcDeath(tower.UniqueId);
+            await sessionManager.Regions.BroadcastFromNpc(tower, deadPacket);
+
+            await fullMoonRiftService.OnNpcKilledAsync(tower, null);
         }
     }
 }

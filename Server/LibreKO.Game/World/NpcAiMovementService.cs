@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 using Microsoft.Extensions.Logging;
 using LibreKO.Game.Protocol.Writers;
 
