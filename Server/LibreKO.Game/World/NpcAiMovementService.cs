@@ -207,7 +207,10 @@ public class NpcAiMovementService(
         var newX = directX;
         var newZ = directZ;
 
-        if (sessionManager.Maps != null && !sessionManager.Maps.IsMovable(npc.ZoneId, newX, newZ))
+        var zoneMap = sessionManager.Maps?.GetMap(npc.ZoneId);
+        if (sessionManager.Maps != null
+            && (!sessionManager.Maps.IsMovable(npc.ZoneId, newX, newZ)
+                || (zoneMap != null && !NpcPathfinder.HasClearLine(zoneMap, npc.X, npc.Z, targetX, targetZ))))
         {
             var map = sessionManager.Maps.GetMap(npc.ZoneId);
             if (map == null)

@@ -2,7 +2,7 @@ namespace LibreKO.Game.World;
 
 public static class NpcPathfinder
 {
-    private const int MaxSearchNodes = 256; // limit search to prevent lag on unreachable targets
+    private const int MaxSearchNodes = 1024; // limit search to prevent lag on unreachable targets
     private static readonly (int dx, int dz, float cost)[] Neighbors =
     [
         (-1, 0, 1.0f), (1, 0, 1.0f), (0, -1, 1.0f), (0, 1, 1.0f),     // cardinal
@@ -32,6 +32,12 @@ public static class NpcPathfinder
         // Return the world position of the next tile in the path (index 1, since 0 is current)
         var (x, z) = path[1];
         return ((x + 0.5f) * unit, (z + 0.5f) * unit);
+    }
+
+    public static bool HasClearLine(SmdFile map, float startX, float startZ, float targetX, float targetZ)
+    {
+        float unit = map.UnitDistance;
+        return IsLineClear(map, (int)(startX / unit), (int)(startZ / unit), (int)(targetX / unit), (int)(targetZ / unit));
     }
 
     private static bool IsLineClear(SmdFile map, int x0, int z0, int x1, int z1)

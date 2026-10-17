@@ -1245,6 +1245,55 @@ public class NpcAiTests : GameTestBase
     }
 
     [Fact]
+    public async Task NpcAiMovementService_MoveTowardPointAsync_WalksAroundAWallAndAShelfOnWalkableTilesOnly()
+    {
+        const byte zone = 21;
+        const int mapSize = 16;
+        const int wallX = 8;
+        const int gapZ = 13;
+        const int shelfZ = 6;
+        const int shelfStartX = 4;
+        const float targetX = 13.5f;
+        const float targetZ = 2.5f;
+        const float arrivedDistance = 1f;
+        const int maxSteps = 100;
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var movementService = provider.GetRequiredService<INpcAiMovementService>();
+        sessionManager.Maps = CreateMapManagerWithTiles(zone, mapSize, unitDistance: 1, defaultEventId: 1);
+        var map = sessionManager.Maps.GetMap(zone)!;
+        for (var z = 0; z < gapZ; z++)
+            map.EventTiles[wallX * mapSize + z] = SmdFile.BlockedTile;
+        for (var x = shelfStartX; x < wallX; x++)
+            map.EventTiles[x * mapSize + shelfZ] = SmdFile.BlockedTile;
+
+        var npc = sessionManager.Regions.SpawnNpc(new NpcInstance
+        {
+            IsMonster = true,
+            ZoneId = zone,
+            X = 2.5f,
+            Z = 2.5f,
+            SpawnX = 2.5f,
+            SpawnZ = 2.5f,
+            Speed2 = 7,
+            State = NpcState.Attacking,
+            Hp = 100,
+            MaxHp = 100,
+            NpcType = 0
+        });
+
+        var steps = 0;
+        while (MathF.Sqrt((targetX - npc.X) * (targetX - npc.X) + (targetZ - npc.Z) * (targetZ - npc.Z)) > arrivedDistance
+               && steps++ < maxSteps)
+        {
+            await movementService.MoveTowardPointAsync(npc, targetX, targetZ, DateTime.UtcNow.Ticks);
+            map.IsWalkableAtPosition(npc.X, npc.Z).Should().BeTrue();
+        }
+
+        steps.Should().BeLessThan(maxSteps);
+    }
+
+    [Fact]
     public async Task NpcAiMovementService_MoveTowardPointAsync_UsesActualWalkRateInMovePacket()
     {
         using var provider = CreateProvider(_ => { });

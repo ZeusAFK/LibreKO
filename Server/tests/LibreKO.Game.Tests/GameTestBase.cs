@@ -43,7 +43,6 @@ public abstract class GameTestBase
 
     protected static MapManager CreateMapManagerWithTiles(short zoneId, int mapSize, float unitDistance, short defaultEventId = 0)
     {
-        var mapManager = new MapManager(Substitute.For<Microsoft.Extensions.Logging.ILogger<MapManager>>());
         var map = new SmdFile();
 
         typeof(SmdFile).GetProperty(nameof(SmdFile.MapSize), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
@@ -55,6 +54,12 @@ public abstract class GameTestBase
         typeof(SmdFile).GetProperty(nameof(SmdFile.EventTiles), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(map, Enumerable.Repeat(defaultEventId, mapSize * mapSize).ToArray());
 
+        return CreateMapManagerWithMap(zoneId, map);
+    }
+
+    protected static MapManager CreateMapManagerWithMap(short zoneId, SmdFile map)
+    {
+        var mapManager = new MapManager(Substitute.For<Microsoft.Extensions.Logging.ILogger<MapManager>>());
         var zoneMapsField = typeof(MapManager).GetField("_zoneMaps", BindingFlags.Instance | BindingFlags.NonPublic);
         zoneMapsField.Should().NotBeNull();
 
