@@ -37,9 +37,7 @@ public partial class World
             if (!NpcPlugSlots.Holds(wearer.PlugSlots, right)) continue;
             int baseItemId = WeaponCatalog.ResolveBaseId(gear[slot]);
             if (!weapons.TryGetValue(baseItemId, out var w)) continue;
-            string resPath = $"res://assets/items/weapon/{w.Stem}.glb";
-            if (!ResourceLoader.Exists(resPath) || ResourceLoader.Load(resPath) is not PackedScene scene)
-                continue;
+            if (KeptScene($"res://assets/items/weapon/{w.Stem}.glb") is not { } scene) continue;
             int bone = WeaponMount.Bone(skel, right, gear[slot]);
             if (bone < 0) continue;
             var attach = new BoneAttachment3D { Name = $"{WeaponNodePrefix}{slot}" };

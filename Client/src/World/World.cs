@@ -585,5 +585,6 @@ public partial class World : Node3D, IWorldContext
         Config.GraphicsChanged -= OnGraphicsChanged;
         Config.EffectsChanged -= CullMapFx;
         KeyBinds.Changed -= BuildHotkeys;
+        ForgetKeptModels();
     }
 }

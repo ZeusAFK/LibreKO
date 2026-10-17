@@ -15,16 +15,37 @@ public partial class World
 
     private const string BuiltInPlugPrefix = "plug_";
 
+    private readonly record struct FxPlugPart(string Fx, int Bone, Vector3 Position, float Scale, Vector3 Direction);
+
+    private static readonly PathCache<PackedScene> KeptScenes = new();
+    private static readonly PathCache<IReadOnlyList<BuiltInPlug>> KeptPlugs = new();
+    private static readonly PathCache<IReadOnlyList<FxPlugPart>> KeptFxPlugs = new();
+
+    private static PackedScene? KeptScene(string path) => KeptScenes.Get(path, LoadScene);
+
+    private static PackedScene? LoadScene(string path) =>
+        ResourceLoader.Exists(path) ? ResourceLoader.Load(path) as PackedScene : null;
+
+    private static IReadOnlyList<BuiltInPlug>? ReadBuiltInPlugs(string path) =>
+        Godot.FileAccess.FileExists(path) ? NpcBuiltInPlugs.Parse(Godot.FileAccess.GetFileAsString(path)) : null;
+
+    private static void ForgetKeptModels()
+    {
+        KeptScenes.Clear();
+        KeptPlugs.Clear();
+        KeptFxPlugs.Clear();
+    }
+
     internal static void AttachBuiltInPlugs(Node3D body, string modelStem)
     {
         if (string.IsNullOrEmpty(modelStem)) return;
         string path = $"res://assets/npcs/{modelStem}.plugs.json";
-        if (!Godot.FileAccess.FileExists(path) || FindFirst<Skeleton3D>(body) is not { } skel) return;
-        foreach (var plug in NpcBuiltInPlugs.Parse(Godot.FileAccess.GetFileAsString(path)))
+        if (KeptPlugs.Get(path, ReadBuiltInPlugs) is not { } plugs || FindFirst<Skeleton3D>(body) is not { } skel) return;
+        foreach (var plug in plugs)
         {
             if (plug.Joint < 0 || plug.Joint >= skel.GetBoneCount()) continue;
             string model = $"res://assets/npcs/plugs/{plug.Model}.glb";
-            if (!ResourceLoader.Exists(model) || ResourceLoader.Load(model) is not PackedScene scene) continue;
+            if (KeptScene(model) is not { } scene) continue;
             var attach = new BoneAttachment3D { Name = $"{BuiltInPlugPrefix}{plug.Slot}" };
             skel.AddChild(attach);
             attach.BoneIdx = plug.Joint;
@@ -38,14 +59,40 @@ public partial class World
 
     internal static void AttachFxPlugs(Node3D body, string path, bool turnWithBone = false)
     {
-        using var file = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
-        if (file == null) return;
-        var parsed = Json.ParseString(file.GetAsText());
-        if (parsed.VariantType != Variant.Type.Dictionary) return;
-        var root = parsed.AsGodotDictionary();
-        if (!root.TryGetValue("parts", out var pv) || pv.VariantType != Variant.Type.Array) return;
+        if (KeptFxPlugs.Get(path, ReadFxPlugs) is not { } parts) return;
 
         var skeleton = FindFirst<Skeleton3D>(body);
+        foreach (var part in parts)
+        {
+            Node3D parent = body;
+            if (skeleton != null && part.Bone >= 0 && part.Bone < skeleton.GetBoneCount())
+            {
+                var attachment = new BoneAttachment3D
+                {
+                    Name = $"fxplug_{part.Bone}_{part.Fx}",
+                    BoneIdx = part.Bone,
+                };
+                skeleton.AddChild(attachment);
+                parent = attachment;
+            }
+            var spawned = Fx.Spawn(part.Fx, parent, part.Position, oneShot: false, sizeScale: part.Scale);
+            Node3D facing = turnWithBone || skeleton == null ? parent : skeleton;
+            if (spawned is FxInstance pinned)
+                pinned.Pin(parent, facing, part.Position, part.Direction, inheritScale: false, followRotation: turnWithBone);
+            if (spawned != null) CullAttachedFx(spawned);
+        }
+    }
+
+    private static IReadOnlyList<FxPlugPart>? ReadFxPlugs(string path)
+    {
+        using var file = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
+        if (file == null) return null;
+        var parsed = Json.ParseString(file.GetAsText());
+        if (parsed.VariantType != Variant.Type.Dictionary) return null;
+        var root = parsed.AsGodotDictionary();
+        if (!root.TryGetValue("parts", out var pv) || pv.VariantType != Variant.Type.Array) return null;
+
+        var parts = new List<FxPlugPart>();
         foreach (var value in pv.AsGodotArray())
         {
             if (value.VariantType != Variant.Type.Dictionary) continue;
@@ -59,25 +106,11 @@ public partial class World
                 if (a.Count >= 3)
                     pos = new Vector3((float)a[0].AsDouble(), (float)a[1].AsDouble(), (float)a[2].AsDouble());
             }
-            Node3D parent = body;
-            if (skeleton != null && bone >= 0 && bone < skeleton.GetBoneCount())
-            {
-                var attachment = new BoneAttachment3D
-                {
-                    Name = $"fxplug_{bone}_{fx}",
-                    BoneIdx = bone,
-                };
-                skeleton.AddChild(attachment);
-                parent = attachment;
-            }
             float scale = part.TryGetValue("scale", out var sv) ? (float)sv.AsDouble() : 1f;
             if (!(scale > 0.0001f)) scale = 1f;
-            var spawned = Fx.Spawn(fx, parent, pos, oneShot: false, sizeScale: scale);
-            Node3D facing = turnWithBone || skeleton == null ? parent : skeleton;
-            if (spawned is FxInstance pinned)
-                pinned.Pin(parent, facing, pos, Fx.ReadVec3(part, "dir"), inheritScale: false, followRotation: turnWithBone);
-            if (spawned != null) CullAttachedFx(spawned);
+            parts.Add(new FxPlugPart(fx, bone, pos, scale, Fx.ReadVec3(part, "dir")));
         }
+        return parts;
     }
 
     private static void CullAttachedFx(Node node)

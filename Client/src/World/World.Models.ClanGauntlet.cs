@@ -39,9 +39,7 @@ public partial class World
         _clanGauntletIndex ??= LoadClanGauntletIndex();
         if (!_clanGauntletIndex.TryGetValue($"{race}_{clanGrade}", out var g)) return;
 
-        string resPath = $"res://assets/items/clanaddon/{g.Stem}.glb";
-        if (!ResourceLoader.Exists(resPath) || ResourceLoader.Load(resPath) is not PackedScene scene)
-            return;
+        if (KeptScene($"res://assets/items/clanaddon/{g.Stem}.glb") is not { } scene) return;
 
         if (g.Joint < 0 || g.Joint >= skel.GetBoneCount()) return;
 
