@@ -97,7 +97,7 @@ public class MapManager(ILogger<MapManager> logger)
     {
         var map = GetMap(zoneId);
         if (map == null) return true; // allow if map not loaded
-        return map.GetEventIdAtPosition(x, z) == 0;
+        return map.IsWalkableAtPosition(x, z);
     }
 
     public int GetEventId(short zoneId, float x, float z)

@@ -22,6 +22,7 @@ public class SmdFile
     public int ZRegionMax { get; private set; }
 
     private const float ViewDistance = 32.0f;
+    public const short BlockedTile = 0;
 
     public static SmdFile? Load(string filePath, bool loadWarpsAndRegene = true)
     {
@@ -289,6 +290,10 @@ public class SmdFile
         int iZ = (int)(z / UnitDistance);
         return GetEventId(iX, iZ);
     }
+
+    public bool IsWalkable(int x, int z) => GetEventId(x, z) > BlockedTile;
+
+    public bool IsWalkableAtPosition(float x, float z) => GetEventIdAtPosition(x, z) > BlockedTile;
 
     public bool IsValidPosition(float x, float z)
     {

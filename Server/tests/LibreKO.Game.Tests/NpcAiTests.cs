@@ -1218,7 +1218,7 @@ public class NpcAiTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var movementService = provider.GetRequiredService<INpcAiMovementService>();
 
-        sessionManager.Maps = CreateMapManagerWithTiles(zoneId: 21, mapSize: 8, unitDistance: 1, defaultEventId: 1);
+        sessionManager.Maps = CreateMapManagerWithTiles(zoneId: 21, mapSize: 8, unitDistance: 1, defaultEventId: SmdFile.BlockedTile);
 
         var npc = sessionManager.Regions.SpawnNpc(new NpcInstance
         {

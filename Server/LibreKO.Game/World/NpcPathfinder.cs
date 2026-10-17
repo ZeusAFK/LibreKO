@@ -44,7 +44,7 @@ public static class NpcPathfinder
 
         while (true)
         {
-            if (map.GetEventId(x0, z0) != 0)
+            if (!map.IsWalkable(x0, z0))
                 return false;
 
             if (x0 == x1 && z0 == z1)
@@ -94,13 +94,13 @@ public static class NpcPathfinder
                 if (nx < 0 || nx >= mapSize || nz < 0 || nz >= mapSize)
                     continue;
 
-                if (map.GetEventId(nx, nz) != 0)
+                if (!map.IsWalkable(nx, nz))
                     continue; // blocked tile
 
                 // For diagonal moves, check that both adjacent cardinal tiles are also walkable
                 if (dx != 0 && dz != 0)
                 {
-                    if (map.GetEventId(cx + dx, cz) != 0 || map.GetEventId(cx, cz + dz) != 0)
+                    if (!map.IsWalkable(cx + dx, cz) || !map.IsWalkable(cx, cz + dz))
                         continue; // can't cut corners
                 }
 
