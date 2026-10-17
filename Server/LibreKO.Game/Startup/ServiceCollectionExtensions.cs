@@ -163,6 +163,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IForgottenTempleService, ForgottenTempleService>();
         services.AddSingleton<IDrakiStageProvider, DrakiStageProvider>();
         services.AddSingleton<IDrakiTowerService, DrakiTowerService>();
+        services.AddSingleton<IFullMoonRiftStageProvider, FullMoonRiftStageProvider>();
+        services.AddSingleton<IFullMoonRiftService, FullMoonRiftService>();
         services.AddSingleton<ISessionTerminationService, SessionTerminationService>();
         services.AddSingleton<IAccountLockService, AccountLockService>();
         services.AddSingleton<IUserNotificationService, UserNotificationService>();

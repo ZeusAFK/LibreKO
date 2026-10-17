@@ -69,6 +69,7 @@ public partial class Net
     public event Action<byte>? FullMoonEntryEvent;
     public event Action<byte>? FullMoonTowerEvent;
     public event Action<byte, byte>? FullMoonStageEvent;
+    public int[]? FullMoonHotbar { get; set; }
 
     public void SendFullMoonEnter()
     {

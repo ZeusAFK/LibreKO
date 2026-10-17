@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -87,7 +87,7 @@ public class DailyOperationTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    [InlineData(13)]
+    [InlineData(14)]
     [InlineData(255)]
     public void UnknownOperationTypesAreRefused(int opType)
     {

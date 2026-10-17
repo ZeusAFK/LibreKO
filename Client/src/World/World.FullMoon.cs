@@ -141,17 +141,20 @@ public partial class World
 
     private void ShowFullMoonCaptionOnEntry()
     {
-        if (_zone != FullMoon.Zone || TimedItems.HiddenToday(Config.FullMoonCaptionHiddenDay, DateTime.Now)) return;
+        if (_zone != FullMoon.Zone || !ResourceLoader.Exists(FullMoonCaption) || TimedItems.HiddenToday(Config.FullMoonCaptionHiddenDay, DateTime.Now)) return;
         QueueEntryPopup(EntryPopup.ZoneCaption, () =>
         {
             _fullMoonCaption ??= BuildFullMoonCaption();
+            if (_fullMoonCaption == null) return null;
             _fullMoonCaption.Visible = true;
             return _fullMoonCaption;
         });
     }
 
-    private Control BuildFullMoonCaption()
+    private Control? BuildFullMoonCaption()
     {
+        if (!ResourceLoader.Exists(FullMoonCaption)) return null;
+
         _fullMoonCaptionLayer = new CanvasLayer { Layer = 74 };
         AddChild(_fullMoonCaptionLayer);
         var centre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -159,7 +162,7 @@ public partial class World
         _fullMoonCaptionLayer.AddChild(centre);
         var picture = new TextureRect
         {
-            Texture = ResourceLoader.Exists(FullMoonCaption) ? GD.Load<Texture2D>(FullMoonCaption) : null,
+            Texture = GD.Load<Texture2D>(FullMoonCaption),
             CustomMinimumSize = FullMoonCaptionSize,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.Scale,

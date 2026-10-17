@@ -7,6 +7,7 @@ public class ZoneSkillTreesTests
 {
     [Theory]
     [InlineData(89, 3500, 0, true)]
+    [InlineData(89, 3000, 0, false)]
     [InlineData(89, 105, 0, false)]
     [InlineData(37, 3100, 0, true)]
     [InlineData(76, 3100, 0, true)]

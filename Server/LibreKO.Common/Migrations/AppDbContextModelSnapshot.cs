@@ -4205,6 +4205,9 @@ namespace LibreKO.Common.Migrations
                     b.Property<int>("ChaosMapTime")
                         .HasColumnType("int");
 
+                    b.Property<int>("FullMoonRiftTime")
+                        .HasColumnType("int");
+
                     b.Property<int>("KeeperKillerTime")
                         .HasColumnType("int");
 

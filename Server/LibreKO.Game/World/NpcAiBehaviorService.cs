@@ -1,4 +1,5 @@
 ﻿using LibreKO.Common.Enums;
+using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 
 namespace LibreKO.Game.World;
@@ -15,7 +16,9 @@ public class NpcAiBehaviorService(
     INpcAiCombatService npcAiCombatService,
     IGuardSummonAiService guardSummonAiService,
     IPetAiService petAiService,
-    IPetSkillService petSkillService) : INpcAiBehaviorService
+    IPetSkillService petSkillService,
+    ICombatLifecycleService combatLifecycleService,
+    IFullMoonRiftService fullMoonRiftService) : INpcAiBehaviorService
 {
     public async Task ProcessNpcAsync(NpcInstance npc, long nowTicks)
     {
@@ -113,6 +116,35 @@ public class NpcAiBehaviorService(
         var target = npcAiTargetingService.FindTarget(npc);
         if (target == null)
         {
+            if (npc.ZoneId == (byte)ZoneId.DungeonDefence && npc.IsMonster)
+            {
+                var tower = sessionManager.Regions.GetNearbyNpcsForNpc(npc)
+                    .Where(n => (n.NpcId == FullMoonRules.NexusTowerNpcId || FullMoonRules.InitialTowers.Any(t => t.NpcId == n.NpcId)) && n.IsAlive)
+                    .MinBy(n => npcAiTargetingService.DistanceSqToPoint(npc, n.X, n.Z));
+
+                if (tower != null)
+                {
+                    var distSq = npcAiTargetingService.DistanceSqToPoint(npc, tower.X, tower.Z);
+                    var maxAttackDist = Math.Max(3f, (float)npc.AttackDistance + 1f);
+                    if (distSq <= maxAttackDist * maxAttackDist)
+                    {
+                        await StrikeTowerAsync(npc, tower, nowTicks);
+                        return;
+                    }
+
+                    await npcAiMovementService.MoveTowardPointAsync(npc, tower.X, tower.Z, nowTicks);
+                    return;
+                }
+
+                if (npc.MoveType != NpcMoveType.None && npc.MoveType != NpcMoveType.Stationary)
+                {
+                    sessionManager.Regions.MarkNpcEngaged(npc);
+                    await npcAiMovementService.StartIdleMovementAsync(npc, nowTicks);
+                }
+
+                return;
+            }
+
             if (npc.MoveType != NpcMoveType.None
                 && npc.MoveType != NpcMoveType.Stationary
                 && (npc.RollsToPathEnd || nowTicks - npc.StateChangeTicks > TimeSpan.TicksPerSecond * Random.Shared.Next(3, 6))
@@ -170,5 +202,38 @@ public class NpcAiBehaviorService(
         }
 
         await npcAiMovementService.MoveTowardTargetAsync(npc, target, nowTicks);
+    }
+
+    private async Task StrikeTowerAsync(NpcInstance monster, NpcInstance tower, long nowTicks)
+    {
+        if (nowTicks - monster.LastAttackTicks < TimeSpan.FromMilliseconds(monster.AttackDelay).Ticks)
+            return;
+
+        monster.LastAttackTicks = nowTicks;
+        var damage = CombatUtils.NpcStrikeDamage(monster.TotalHit, tower.TotalAc, monster.HitRate, tower.EvadeRate);
+        if (damage <= 0)
+            damage = Math.Max(10, monster.TotalHit / 5);
+
+        tower.Hp = Math.Max(0, tower.Hp - damage);
+        var result = tower.Hp > 0 ? AttackResult.Succeeded : AttackResult.TargetDead;
+
+        await sessionManager.Regions.BroadcastFromNpc(
+            monster, AttackPacketWriter.Create(AttackPacketWriter.TypeMelee, result, monster.UniqueId, tower.UniqueId));
+
+        if (result == AttackResult.TargetDead)
+        {
+            tower.DeathTimeTicks = DateTime.UtcNow.Ticks;
+            tower.State = NpcState.Dead;
+            tower.TargetUserId = 0;
+            tower.TargetPetId = 0;
+            tower.IsMoving = false;
+            tower.WakeTicks = 0;
+            sessionManager.Regions.MarkNpcIdle(tower);
+
+            var deadPacket = DeathPacketWriter.NpcDeath(tower.UniqueId);
+            await sessionManager.Regions.BroadcastFromNpc(tower, deadPacket);
+
+            await fullMoonRiftService.OnNpcKilledAsync(tower, null);
+        }
     }
 }

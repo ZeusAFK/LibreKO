@@ -1,4 +1,4 @@
-namespace LibreKO.Common.Enums;
+﻿namespace LibreKO.Common.Enums;
 
 public enum DailyOperation
 {
@@ -14,4 +14,5 @@ public enum DailyOperation
     SpiritGuardianRed = 10,
     SpiritGuardianBlue = 11,
     SpiritGuardianBlack = 12,
+    FullMoonRift = 13,
 }

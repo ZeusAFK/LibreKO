@@ -51,6 +51,7 @@ public partial class World
         LoadLocalHotbar();
         RefreshHotbar();
         ApplyChaosHotbar();
+        ApplyFullMoonHotbar();
 
         if (Net.I.SkillBar is not { } bar)
         {
@@ -666,6 +667,11 @@ public partial class World
             Net.I.ChaosHotbar = (int[])_hotbar.Clone();
             return;
         }
+        if (_zone == FullMoon.Zone)
+        {
+            Net.I.FullMoonHotbar = (int[])_hotbar.Clone();
+            return;
+        }
         Net.I.SendSkillDataSave(_hotbar);
         WriteLocalHotbar();
     }
@@ -677,6 +683,12 @@ public partial class World
         {
             _hotLoadedFromServer = true;
             ApplyChaosHotbar();
+            return;
+        }
+        if (_zone == FullMoon.Zone)
+        {
+            _hotLoadedFromServer = true;
+            ApplyFullMoonHotbar();
             return;
         }
 
@@ -708,6 +720,41 @@ public partial class World
         if (_worldReady && _loadingLayer == null) WarmHotbarFxResources();
     }
 
+    private void ApplyFullMoonHotbar()
+    {
+        if (_zone != FullMoon.Zone) return;
+        var kept = Net.I.FullMoonHotbar;
+        if (kept != null)
+        {
+            System.Array.Copy(kept, _hotbar, Math.Min(kept.Length, HotTotal));
+            _hotPage = 0;
+            RefreshHotbar();
+            return;
+        }
+
+        const int BarPages = 2;
+        int slots = BarPages * HotSlotsPerPage;
+        bool any = false;
+        for (int i = 0; i < slots && i < HotTotal; i++)
+        {
+            if (_hotbar[i] != 0 && SkillData.Get(_hotbar[i]) is { } skill)
+            {
+                if (skill.Tree != FullMoon.SkillTree)
+                    _hotbar[i] = 0;
+                else
+                    any = true;
+            }
+        }
+        if (!any)
+        {
+            for (int i = 0; i < FullMoon.FreeSkills.Length && i < slots && i < HotTotal; i++)
+                _hotbar[i] = FullMoon.FreeSkills[i];
+        }
+        Net.I.FullMoonHotbar = (int[])_hotbar.Clone();
+        _hotPage = 0;
+        RefreshHotbar();
+    }
+
     private string LocalHotbarPath()
     {
         string key = $"{Config.ServerHost}_{Config.GamePort}_{LoginNet.I.Account}_{Net.I.MyCharId}";
@@ -718,7 +765,7 @@ public partial class World
 
     private void WriteLocalHotbar()
     {
-        if (InChaosZone) return;
+        if (InChaosZone || _zone == FullMoon.Zone) return;
         var arr = new Godot.Collections.Array();
         foreach (int id in _hotbar) arr.Add(id);
         using var f = Godot.FileAccess.Open(LocalHotbarPath(), Godot.FileAccess.ModeFlags.Write);

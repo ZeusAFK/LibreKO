@@ -36,6 +36,7 @@ public class CombatRewardService(
     IUnderTheCastleService underTheCastleService,
     IForgottenTempleService forgottenTempleService,
     IDrakiTowerService drakiTowerService,
+    IFullMoonRiftService fullMoonRiftService,
     IBifrostEventService bifrostEventService,
     ILogger<CombatRewardService> logger) : ICombatRewardService
 {
@@ -95,6 +96,9 @@ public class CombatRewardService(
 
         if (npc.ZoneId == DrakiTowerRules.ZoneIdValue)
             await drakiTowerService.OnNpcKilledAsync(npc);
+
+        if (npc.ZoneId == (byte)ZoneId.DungeonDefence)
+            await fullMoonRiftService.OnNpcKilledAsync(npc, killer);
 
         if (npc.ZoneId == (byte)ZoneId.Delos)
             await castleSiegeService.OnNpcKilledAsync(npc, killer);

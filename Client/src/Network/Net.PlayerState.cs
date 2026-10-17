@@ -68,6 +68,7 @@ public partial class Net
         SelfDevilForm = false;
         ResetChaosBattle();
         ChaosHotbar = null;
+        FullMoonHotbar = null;
         ForgetGroundEffect();
         AngerGauge = 0;
         AngerFull = false;

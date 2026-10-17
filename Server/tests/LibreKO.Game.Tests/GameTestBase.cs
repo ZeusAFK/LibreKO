@@ -190,6 +190,8 @@ public abstract class GameTestBase
         services.AddSingleton<IStealthService, StealthService>();
         services.AddSingleton<IDrakiStageProvider, DrakiStageProvider>();
         services.AddSingleton<IDrakiTowerService, DrakiTowerService>();
+        services.AddSingleton<IFullMoonRiftStageProvider, FullMoonRiftStageProvider>();
+        services.AddSingleton<IFullMoonRiftService, FullMoonRiftService>();
         services.AddSingleton<IQuestNpcInteractionService, QuestNpcInteractionService>();
         services.AddSingleton<IQuestProgressionService, QuestProgressionService>();
         services.AddSingleton<IWorldMovementService, WorldMovementService>();

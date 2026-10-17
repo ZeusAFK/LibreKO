@@ -34,6 +34,10 @@ public static class ChaosBattle
     public const string BannerRule = "###########################################";
     public static readonly Color BannerColour = new("f04500");
 
+    public const int KillingBladeItem = 700037000;
+    public const int DrainRestoreItem = 700040000;
+    public const int LightPitItem = 700041000;
+
     public static readonly int[] BannerTexts = { NoAttackText, SkillWindowText, InventoryText, AltKeyText, CubeText };
     public static readonly int[] DefaultBar = { 490219, 490220, 490221, 490222, 490223 };
     private const int KeptFirst = 490219;

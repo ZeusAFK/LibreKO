@@ -86,8 +86,14 @@ public static class ChaosRules
     public static long PremiumExp(long exp, bool premium) =>
         premium ? Math.Min(MaxPremiumExp, exp * PremiumExpFactor) : 0;
 
+    public const short DungeonDefenseSkillTree = 3500;
+
     public static bool SkillAllowedIn(byte zoneId, short skillTree) =>
-        zoneId == Zone ? skillTree == ChaosSkillTree : skillTree != ChaosSkillTree;
+        zoneId == Zone
+            ? skillTree == ChaosSkillTree
+            : zoneId == (byte)ZoneId.DungeonDefence
+                ? skillTree == DungeonDefenseSkillTree
+                : skillTree != ChaosSkillTree;
 
     public static int SkillDamageOf(int skillId) => skillId == KillingBladeSkill ? KillingBladeDamage : SkillDamage;
 }

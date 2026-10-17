@@ -32,6 +32,7 @@ public class EventSystemsPacketCoordinator(
     ILoyaltyService loyaltyService,
     IMonsterStoneService monsterStoneService,
     IDrakiTowerService drakiTowerService,
+    IFullMoonRiftService fullMoonRiftService,
     INereidMonumentService nereidMonuments,
     IPartyUserVoteService userVote,
     ILogger<EventSystemsPacketCoordinator> logger) : IEventSystemsPacketCoordinator
@@ -105,15 +106,7 @@ public class EventSystemsPacketCoordinator(
 
     private async Task HandleFullMoonEntryAsync(UserSession session)
     {
-        var party = session.IsInParty ? sessionManager.Parties.GetParty(session.PartyIndex) : null;
-        if (party != null && party.LeaderId != (short)session.CharacterId)
-            return;
-        var members = party == null
-            ? []
-            : party.MemberIds.Where(id => id >= 0).Select(id => sessionManager.GetByCharacterId(id))
-                .OfType<UserSession>().ToList();
-        var code = FullMoonRules.EntryRefusal(party == null ? null : session, members, party?.BoardType ?? FullMoonRules.NormalBoard);
-        await session.Client.SendPacket(EventPacketWriter.FullMoonEntry(code));
+        await fullMoonRiftService.HandlePartyEntryAsync(session);
     }
 
     public async Task HandleBattleEventAsync(IClient client, Packet packet)

@@ -29,7 +29,10 @@ public class QuestNpcInteractionService(
     ITouchTrapService touchTrapService,
     IChaosDungeonService chaosDungeonService,
     IBifrostEventService bifrostEventService,
-    ILogger<QuestNpcInteractionService> logger) : IQuestNpcInteractionService
+    ILogger<QuestNpcInteractionService> logger,
+    IFullMoonRiftService fullMoonRiftService,
+    IItemGrantService itemGrantService,
+    IMagicItemUsageService magicItemUsageService) : IQuestNpcInteractionService
 {
     private const byte WarehouseRequest = 0x10;
     private const byte NpcEventTouch = 2;
@@ -104,6 +107,28 @@ public class QuestNpcInteractionService(
             && (npc is null || !npc.IsAlive || npc.ZoneId != session.ZoneId || !IsInNpcRange(session, npc))))
             return;
 
+        if (scriptFile == FullMoonBlancScript)
+        {
+            Array.Fill(session.Quest.SelectMessageEvents, -1);
+            Array.Fill(session.Quest.SelectMessageRewards, -1);
+            session.Quest.IsScriptDialog = false;
+            session.Quest.ActiveQuestScript = string.Empty;
+
+            await HandleBlancActionAsync(session, eventId, npc);
+            return;
+        }
+
+        if (scriptFile == FullMoonPriestScript)
+        {
+            Array.Fill(session.Quest.SelectMessageEvents, -1);
+            Array.Fill(session.Quest.SelectMessageRewards, -1);
+            session.Quest.IsScriptDialog = false;
+            session.Quest.ActiveQuestScript = string.Empty;
+
+            await HandlePriestActionAsync(session, eventId);
+            return;
+        }
+
         if (scriptFile is DrakiRiftScript or DrakiGateScript or DrakiExitScript)
         {
             Array.Fill(session.Quest.SelectMessageEvents, -1);
@@ -170,7 +195,8 @@ public class QuestNpcInteractionService(
         ResetDialog(session);
 
         var npcData = gameDataService.GetNpc(npc.NpcId, !npc.UsesNpcSpawnStyle);
-        if (DrakiTowerRules.IsDrakiNpc(npc.NpcId) && npcData != null && await TryHandleNpcUiAsync(session, npc, npcData))
+        if ((DrakiTowerRules.IsDrakiNpc(npc.NpcId) || npc.NpcId is FullMoonRules.PriestOfFullMoonNpcId or FullMoonRules.NexusTowerNpcId)
+            && npcData != null && await TryHandleNpcUiAsync(session, npc, npcData))
             return;
 
         if (!await dialogRunner.TryGreetAsync(session, npc))
@@ -244,6 +270,18 @@ public class QuestNpcInteractionService(
 
     private async Task<bool> TryHandleNpcUiAsync(UserSession session, NpcInstance npc, NpcData npcData)
     {
+        if (npc.NpcId == FullMoonRules.BlancNpcId)
+        {
+            await ShowBlancDialogAsync(session, npc);
+            return true;
+        }
+
+        if (npc.NpcId is FullMoonRules.PriestOfFullMoonNpcId or FullMoonRules.NexusTowerNpcId)
+        {
+            await ShowPriestDialogAsync(session, npc);
+            return true;
+        }
+
         if (npc.NpcId == DrakiTowerRules.DrakiRiftNpcId)
         {
             await ShowDrakiRiftDialogAsync(session, npc);
@@ -475,6 +513,286 @@ public class QuestNpcInteractionService(
             buttonTexts);
 
         await session.Client.SendPacket(dialogPacket);
+    }
+
+    private const string FullMoonBlancScript = "fullmoon_blanc";
+
+    private async Task ShowBlancDialogAsync(UserSession session, NpcInstance npc)
+    {
+        session.Quest.EventNpcId = npc.NpcId;
+        session.Quest.EventNpcUniqueId = npc.UniqueId;
+        session.Quest.ActiveQuestScript = FullMoonBlancScript;
+        session.Quest.IsScriptDialog = true;
+        Array.Fill(session.Quest.SelectMessageEvents, -1);
+        Array.Fill(session.Quest.SelectMessageRewards, -1);
+
+        var buttons = new[]
+        {
+            FullMoonRules.BlancBtnEnterRift,
+            FullMoonRules.BlancBtnOpenBoard,
+            FullMoonRules.BlancBtnExchangeJewel,
+            FullMoonRules.BlancBtnReceiveVoucher
+        };
+
+        for (int i = 0; i < buttons.Length; i++)
+            session.Quest.SelectMessageEvents[i] = buttons[i];
+
+        var dialogPacket = NpcDialogPacketWriter.SelectMessage(
+            npc.NpcId,
+            0,
+            -1,
+            FullMoonRules.BlancTalkId,
+            buttons,
+            UserSession.SelectMessageEventCount,
+            FullMoonBlancScript);
+
+        await session.Client.SendPacket(dialogPacket);
+    }
+
+    private async Task ShowExchangeSubmenuAsync(UserSession session, NpcInstance npc)
+    {
+        session.Quest.EventNpcId = npc.NpcId;
+        session.Quest.EventNpcUniqueId = npc.UniqueId;
+        session.Quest.ActiveQuestScript = FullMoonBlancScript;
+        session.Quest.IsScriptDialog = true;
+        Array.Fill(session.Quest.SelectMessageEvents, -1);
+        Array.Fill(session.Quest.SelectMessageRewards, -1);
+
+        var buttons = new[]
+        {
+            FullMoonRules.ExchangeBtnOldDraki,
+            FullMoonRules.ExchangeBtnDraki,
+            FullMoonRules.ExchangeBtnGrace,
+            FullMoonRules.ExchangeBtnTattoo7d,
+            FullMoonRules.ExchangeBtnRabbit,
+            FullMoonRules.ExchangeBtnTattoo30d
+        };
+
+        for (int i = 0; i < buttons.Length; i++)
+            session.Quest.SelectMessageEvents[i] = buttons[i];
+
+        var dialogPacket = NpcDialogPacketWriter.SelectMessage(
+            npc.NpcId,
+            0,
+            -1,
+            FullMoonRules.BlancTalkId,
+            buttons,
+            UserSession.SelectMessageEventCount,
+            FullMoonBlancScript);
+
+        await session.Client.SendPacket(dialogPacket);
+    }
+
+    private async Task HandleBlancActionAsync(UserSession session, int eventId, NpcInstance? npc)
+    {
+        switch (eventId)
+        {
+            case FullMoonRules.BlancBtnEnterRift:
+                await fullMoonRiftService.HandlePartyEntryAsync(session);
+                break;
+
+            case FullMoonRules.BlancBtnOpenBoard:
+                if (npc != null)
+                {
+                    var boardPacket = NpcDialogPacketWriter.SelectMessage(
+                        npc.NpcId,
+                        57,
+                        NpcDialogPacketWriter.NoText,
+                        NpcDialogPacketWriter.NoText,
+                        [],
+                        UserSession.SelectMessageEventCount,
+                        FullMoonBlancScript);
+                    await session.Client.SendPacket(boardPacket);
+                }
+                break;
+
+            case FullMoonRules.BlancBtnExchangeJewel:
+                if (npc != null)
+                    await ShowExchangeSubmenuAsync(session, npc);
+                break;
+
+            case FullMoonRules.BlancBtnReceiveVoucher:
+                await ClaimVoucherAsync(session);
+                break;
+
+            case FullMoonRules.ExchangeBtnOldDraki:
+            case FullMoonRules.ExchangeBtnDraki:
+            case FullMoonRules.ExchangeBtnGrace:
+            case FullMoonRules.ExchangeBtnTattoo7d:
+            case FullMoonRules.ExchangeBtnRabbit:
+            case FullMoonRules.ExchangeBtnTattoo30d:
+                await HandleExchangeAsync(session, eventId);
+                break;
+        }
+    }
+
+    private async Task HandleExchangeAsync(UserSession session, int buttonId)
+    {
+        var (itemId, cost) = buttonId switch
+        {
+            FullMoonRules.ExchangeBtnOldDraki => (FullMoonRules.OldDrakiSupplyBoxItem, FullMoonRules.OldDrakiSupplyBoxCost),
+            FullMoonRules.ExchangeBtnDraki => (FullMoonRules.DrakiSupplyBoxItem, FullMoonRules.DrakiSupplyBoxCost),
+            FullMoonRules.ExchangeBtnGrace => (FullMoonRules.GraceOfMoonGodItem, FullMoonRules.GraceOfMoonGodCost),
+            FullMoonRules.ExchangeBtnTattoo7d => (FullMoonRules.LunarTattoo7DaysItem, FullMoonRules.LunarTattoo7DaysCost),
+            FullMoonRules.ExchangeBtnRabbit => (FullMoonRules.RabbitTransformScrollItem, FullMoonRules.RabbitTransformScrollCost),
+            FullMoonRules.ExchangeBtnTattoo30d => (FullMoonRules.LunarTattoo30DaysItem, FullMoonRules.LunarTattoo30DaysCost),
+            _ => (0, 0)
+        };
+
+        if (itemId == 0)
+            return;
+
+        var jewelCount = session.Inventory.Where(s => s.ItemId == FullMoonRules.RiftJewelItem).Sum(s => (int)s.Count);
+        if (jewelCount < cost)
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.PriestNotEnoughCoinsTalkId]));
+            return;
+        }
+
+        var rewardItem = gameDataService.GetItem(itemId);
+        if (rewardItem == null)
+            return;
+
+        var targetSlot = session.WithLock(s => s.FindSlotForItem(itemId, gameDataService, 1));
+        if (targetSlot < 0)
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.PriestInventoryFullTalkId]));
+            return;
+        }
+
+        if (!await magicItemUsageService.TryConsumeItemAsync(session, FullMoonRules.RiftJewelItem, cost))
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.PriestNotEnoughCoinsTalkId]));
+            return;
+        }
+
+        await itemGrantService.GrantAsync(session, rewardItem, 1);
+    }
+
+    private async Task ClaimVoucherAsync(UserSession session)
+    {
+        if (FullMoonRules.HasEnteredToday(session))
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.AlreadyEnteredTodayTalkId]));
+            return;
+        }
+
+        if (FullMoonRules.HasVoucher(session))
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.AlreadyHaveVoucherTalkId]));
+            return;
+        }
+
+        var voucherItem = gameDataService.GetItem(FullMoonRules.VoucherItem);
+        if (voucherItem == null)
+            return;
+
+        var targetSlot = session.WithLock(s => s.FindSlotForItem(FullMoonRules.VoucherItem, gameDataService, 1));
+        if (targetSlot < 0)
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.PriestInventoryFullTalkId]));
+            return;
+        }
+
+        var placed = await itemGrantService.GrantAsync(session, voucherItem, 1);
+        if (placed > 0)
+        {
+            var expiry = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + FullMoonRules.VoucherDurationSeconds;
+            session.WithLock(s =>
+            {
+                for (int i = 0; i < s.Inventory.Length; i++)
+                {
+                    if (s.Inventory[i].ItemId == FullMoonRules.VoucherItem && s.Inventory[i].ExpiresAt == 0)
+                    {
+                        s.Inventory[i].ExpiresAt = expiry;
+                        break;
+                    }
+                }
+                return true;
+            });
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.VoucherClaimedTalkId]));
+        }
+    }
+
+    private const string FullMoonPriestScript = "fullmoon_priest";
+
+    private async Task ShowPriestDialogAsync(UserSession session, NpcInstance npc)
+    {
+        session.Quest.EventNpcId = npc.NpcId;
+        session.Quest.EventNpcUniqueId = npc.UniqueId;
+        session.Quest.ActiveQuestScript = FullMoonPriestScript;
+        session.Quest.IsScriptDialog = true;
+        Array.Fill(session.Quest.SelectMessageEvents, -1);
+        Array.Fill(session.Quest.SelectMessageRewards, -1);
+
+        var buttons = new[]
+        {
+            FullMoonRules.PriestBtnDrainRestore,
+            FullMoonRules.PriestBtnFireStrike,
+            FullMoonRules.PriestBtnBloodyArrow,
+            FullMoonRules.PriestBtnAnkleFreeze,
+            FullMoonRules.PriestBtnSummonGuard,
+            FullMoonRules.PriestBtnTearOfGoddess,
+            FullMoonRules.PriestBtnGodsShield
+        };
+
+        for (int i = 0; i < buttons.Length; i++)
+            session.Quest.SelectMessageEvents[i] = buttons[i];
+
+        var dialogPacket = NpcDialogPacketWriter.SelectMessage(
+            npc.NpcId,
+            0,
+            -1,
+            FullMoonRules.PriestTalkId,
+            buttons,
+            UserSession.SelectMessageEventCount,
+            FullMoonPriestScript);
+
+        await session.Client.SendPacket(dialogPacket);
+    }
+
+    private async Task HandlePriestActionAsync(UserSession session, int eventId)
+    {
+        var (cost, itemId) = eventId switch
+        {
+            FullMoonRules.PriestBtnDrainRestore => (FullMoonRules.DrainRestoreCost, FullMoonRules.DrainRestoreItem),
+            FullMoonRules.PriestBtnFireStrike => (FullMoonRules.FireStrikeCost, FullMoonRules.FireStrikeItem),
+            FullMoonRules.PriestBtnBloodyArrow => (FullMoonRules.BloodyArrowCost, FullMoonRules.BloodyArrowItem),
+            FullMoonRules.PriestBtnAnkleFreeze => (FullMoonRules.AnkleFreezeCost, FullMoonRules.AnkleFreezeItem),
+            FullMoonRules.PriestBtnSummonGuard => (FullMoonRules.SummonGuardCost, FullMoonRules.SummonGuardItem),
+            FullMoonRules.PriestBtnTearOfGoddess => (FullMoonRules.TearOfGoddessCost, FullMoonRules.TearOfGoddessItem),
+            FullMoonRules.PriestBtnGodsShield => (FullMoonRules.GodsShieldCost, FullMoonRules.GodsShieldItem),
+            _ => (0, 0)
+        };
+
+        if (itemId == 0)
+            return;
+
+        var coinCount = session.Inventory.Where(s => s.ItemId == FullMoonRules.MonsterCoinItem).Sum(s => (int)s.Count);
+        if (coinCount < cost)
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.PriestNotEnoughCoinsTalkId]));
+            return;
+        }
+
+        var item = gameDataService.GetItem(itemId);
+        if (item == null)
+            return;
+
+        var targetSlot = session.WithLock(s => s.FindSlotForItem(itemId, gameDataService, 1));
+        if (targetSlot < 0)
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.PriestInventoryFullTalkId]));
+            return;
+        }
+
+        if (!await magicItemUsageService.TryConsumeItemAsync(session, FullMoonRules.MonsterCoinItem, cost))
+        {
+            await session.Client.SendPacket(NpcDialogPacketWriter.NpcSay([FullMoonRules.PriestNotEnoughCoinsTalkId]));
+            return;
+        }
+
+        await itemGrantService.GrantAsync(session, item, 1);
     }
 }
 

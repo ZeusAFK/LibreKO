@@ -46,6 +46,11 @@ public partial class World : Node3D
             AskVipKey(absSlot);
             return;
         }
+        if (_zone == FullMoon.Zone && def.Effect1 != 0 && SkillData.Get(def.Effect1) is { Tree: FullMoon.SkillTree })
+        {
+            CastSkill(def.Effect1);
+            return;
+        }
         if (def.Effect1 != 0 && SkillData.IsSkill(def.Effect1))
             AddToHotbar(Inv[absSlot].ItemId);
     }
