@@ -250,7 +250,8 @@ public partial class World
         if (anim == null) { clip = null; return default; }
         if (!CrowdAnimator.Current(anim, out string name, out double pos))
         {
-            name = anim.CurrentAnimation.ToString();
+            using var current = anim.CurrentAnimation;
+            name = current.ToString();
             pos = name.Length == 0 ? 0 : anim.CurrentAnimationPosition;
         }
         if (name.Length == 0) { clip = null; return default; }

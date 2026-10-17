@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Godot;
@@ -9,7 +10,6 @@ public static class CharacterMerge
 {
     private const string MergedName = "merged_body";
     private const string PartsMeta = "merged_parts";
-    private const string MergedIntoMeta = "merged_into";
     private const string TicketMeta = "merge_ticket";
 
     private sealed class Plan
@@ -26,15 +26,13 @@ public static class CharacterMerge
 
     private static readonly Dictionary<string, ArrayMesh?> _meshes = Shutdown.Track(new Dictionary<string, ArrayMesh?>());
     private static readonly Dictionary<string, List<(Node3D Body, long Ticket)>> _reading = new();
+    private static readonly ConditionalWeakTable<MeshInstance3D, MeshInstance3D> _mergedInto = new();
     private static long _lastTicket;
 
     public static int CachedMeshes => _meshes.Count;
 
     public static GeometryInstance3D ShownAs(MeshInstance3D part) =>
-        part.HasMeta(MergedIntoMeta) && part.GetMeta(MergedIntoMeta).AsGodotObject() is MeshInstance3D merged
-            && GodotObject.IsInstanceValid(merged)
-            ? merged
-            : part;
+        _mergedInto.TryGetValue(part, out var merged) && GodotObject.IsInstanceValid(merged) ? merged : part;
 
     public static void Apply(Node3D body)
     {
@@ -126,7 +124,7 @@ public static class CharacterMerge
         {
             stored.Add(part);
             stored.Add(mesh);
-            part.SetMeta(MergedIntoMeta, merged);
+            _mergedInto.AddOrUpdate(part, merged);
             part.Visible = false;
             part.Mesh = null;
         }
@@ -146,7 +144,7 @@ public static class CharacterMerge
                     if (stored[i].AsGodotObject() is not MeshInstance3D part || !GodotObject.IsInstanceValid(part)) continue;
                     part.Mesh = stored[i + 1].AsGodotObject() as Mesh;
                     part.Visible = true;
-                    part.RemoveMeta(MergedIntoMeta);
+                    _mergedInto.Remove(part);
                 }
             }
             merged.GetParent()?.RemoveChild(merged);
