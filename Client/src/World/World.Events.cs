@@ -38,6 +38,7 @@ public partial class World
     private ScrollContainer _eventsScroll = null!;
     private readonly List<(EventCard Card, Label Status)> _eventsStatus = new();
     private EventSchedule? _eventSchedule;
+    private readonly ShownRebuild _eventsRebuild = new();
     private double _eventsRefreshIn, _eventsTickIn, _eventsRebuildIn;
     private bool _eventsAlert;
 
@@ -64,6 +65,10 @@ public partial class World
             Visible = false,
         };
         _eventsPanel.Closed += () => _eventsPanel.Visible = false;
+        _eventsPanel.VisibilityChanged += () =>
+        {
+            if (_eventsPanel.Visible && _eventsRebuild.Shown()) RefreshEventsWindow();
+        };
         _eventsLayer.AddChild(_eventsPanel);
 
         var body = new VBoxContainer();
@@ -121,8 +126,10 @@ public partial class World
 
     private void ToggleEvents()
     {
-        _eventsPanel.Visible = !_eventsPanel.Visible;
-        if (!_eventsPanel.Visible) return;
+        bool open = !_eventsPanel.Visible;
+        if (open) _eventsRebuild.Rebuilt();
+        _eventsPanel.Visible = open;
+        if (!open) return;
         RefreshEventsWindow();
         Net.I.SendEventScheduleRequest();
     }
@@ -130,7 +137,7 @@ public partial class World
     private void OnEventSchedule(EventSchedule schedule)
     {
         _eventSchedule = schedule;
-        RefreshEventsWindow();
+        if (_eventsRebuild.Changed(IsInstanceValid(_eventsPanel) && _eventsPanel.Visible)) RefreshEventsWindow();
         UpdateEventsAlert();
     }
 
@@ -173,6 +180,7 @@ public partial class World
     private void RefreshEventsWindow()
     {
         if (!IsInstanceValid(_eventsPanel)) return;
+        _eventsRebuild.Rebuilt();
         foreach (Node child in _eventsCards.GetChildren()) child.QueueFree();
         _eventsStatus.Clear();
 
