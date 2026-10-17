@@ -27,4 +27,23 @@ public class FxLodTests
         float carry = 0f;
         Assert.Equal(7, FxLod.Thin(7, 1f, ref carry, keepOne: false));
     }
+
+    [Theory]
+    [InlineData(30, 30)]
+    [InlineData(60, 60)]
+    public void ACapAtOrBelowTheDefaultBecomesTheTarget(int frameCap, int expected)
+    {
+        Assert.Equal(expected, FxLod.TargetFps(frameCap));
+    }
+
+    [Theory]
+    [InlineData(0, 60)]
+    [InlineData(120, 60)]
+    [InlineData(138, 60)]
+    [InlineData(144, 60)]
+    [InlineData(240, 60)]
+    public void NoCapOrAHigherCapKeepsTheDefaultTarget(int frameCap, int expected)
+    {
+        Assert.Equal(expected, FxLod.TargetFps(frameCap));
+    }
 }
