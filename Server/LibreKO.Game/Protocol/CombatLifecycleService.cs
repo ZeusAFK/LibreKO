@@ -42,6 +42,7 @@ public class CombatLifecycleService(
     IVanguardService vanguardService,
     IWarCaptainService warCaptainService,
     IClanMatchService clanMatchService,
+    IBountyPacketCoordinator bountyPacketCoordinator,
     ILogger<CombatLifecycleService> logger) : ICombatLifecycleService
 {
     public const int NoKillerId = -1;
@@ -255,6 +256,9 @@ public class CombatLifecycleService(
 
         var penaltyFree = PvpRules.IsPenaltyFreeDeath(victim, killer);
         var avenged = killer.HasRival && killer.RivalId == victim.CharacterId;
+
+        if (!penaltyFree)
+            bountyPacketCoordinator.OnPlayerKilled(victim, killer);
 
         if (killer.Nation != victim.Nation && !penaltyFree)
         {

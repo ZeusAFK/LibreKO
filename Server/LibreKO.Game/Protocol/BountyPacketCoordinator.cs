@@ -11,6 +11,7 @@ namespace LibreKO.Game.Protocol;
 public interface IBountyPacketCoordinator
 {
     Task HandleAsync(IClient client, Packet packet);
+    void OnPlayerKilled(UserSession victim, UserSession killer);
 }
 
 public class BountyPacketCoordinator(
@@ -30,7 +31,9 @@ public class BountyPacketCoordinator(
         public int BountyId;
         public string BountyTarget = "";
         public string BountyPoster = "";
+        public int BountyPosterId;
         public int BountyReward;
+        public readonly HashSet<int> Hunters = new();
     }
 
     // The open board (in-memory; resets on server restart). Guarded by BountyGate for the list/claim race.
@@ -80,7 +83,9 @@ public class BountyPacketCoordinator(
 
 
         target = target.Trim();
-        if (target.Length == 0 || reward < BountyMinReward || reward > BountyMaxReward)
+        if (target.Length == 0 || reward < BountyMinReward || reward > BountyMaxReward
+            || string.Equals(target, session.Name, StringComparison.OrdinalIgnoreCase)
+            || !session.WithLock(s => TryDebit(s, reward)))
         {
             await session.Client.SendPacket(BountyPacketWriter.Result(
                 BountySubPost, BountyPacketWriter.Failed));
@@ -94,10 +99,12 @@ public class BountyPacketCoordinator(
                 BountyId = BountyNextId++,
                 BountyTarget = target,
                 BountyPoster = session.Name,
+                BountyPosterId = session.CharacterId,
                 BountyReward = reward,
             });
         }
 
+        await userNotification.SendGoldLossAsync(session, reward);
         logger.LogDebug("{Name} posted bounty on {Target} for {Reward}", session.Name, target, reward);
         await session.Client.SendPacket(BountyPacketWriter.Result(
             BountySubPost, BountyPacketWriter.Succeeded));
@@ -111,15 +118,14 @@ public class BountyPacketCoordinator(
         int bountyId = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
 
 
-        Bounty? claimed = null;
+        Bounty? claimed;
         lock (BountyGate)
         {
-            var entry = BountyBoard.FirstOrDefault(b => b.BountyId == bountyId);
-            if (entry != null)
-            {
-                BountyBoard.Remove(entry);
-                claimed = entry;
-            }
+            claimed = BountyBoard.FirstOrDefault(b => b.BountyId == bountyId && b.Hunters.Contains(session.CharacterId));
+            if (claimed != null && session.WithLock(s => TryCredit(s, claimed.BountyReward)))
+                BountyBoard.Remove(claimed);
+            else
+                claimed = null;
         }
 
         if (claimed == null)
@@ -129,10 +135,7 @@ public class BountyPacketCoordinator(
             return;
         }
 
-        // Pay the bounty reward to the claimer. Guarded one-shot: only the thread that removed this
-        // bounty from the board under BountyGate reaches here, so the reward is granted exactly once.
-        session.Money += claimed.BountyReward;
-        await userNotification.SendGoldGainAsync(session, claimed.BountyReward);   // grants gold + GS_GOLD_CHANGE
+        await userNotification.SendGoldGainAsync(session, claimed.BountyReward);
 
         logger.LogDebug("{Name} claimed bounty {Id} on {Target} for {Reward}",
             session.Name, claimed.BountyId, claimed.BountyTarget, claimed.BountyReward);
@@ -141,5 +144,36 @@ public class BountyPacketCoordinator(
 
         // Refresh the board for the claimer so the claimed entry disappears.
         await SendBountyListAsync(session);
+    }
+
+    public void OnPlayerKilled(UserSession victim, UserSession killer)
+    {
+        lock (BountyGate)
+        {
+            foreach (var bounty in BountyBoard)
+            {
+                if (bounty.BountyPosterId != killer.CharacterId
+                    && string.Equals(bounty.BountyTarget, victim.Name, StringComparison.OrdinalIgnoreCase))
+                    bounty.Hunters.Add(killer.CharacterId);
+            }
+        }
+    }
+
+    private static bool TryDebit(UserSession session, int amount)
+    {
+        if (session.Money < amount)
+            return false;
+
+        session.Money -= amount;
+        return true;
+    }
+
+    private static bool TryCredit(UserSession session, int amount)
+    {
+        if ((long)session.Money + amount > ExchangePacketConstants.CoinMax)
+            return false;
+
+        session.Money += amount;
+        return true;
     }
 }
