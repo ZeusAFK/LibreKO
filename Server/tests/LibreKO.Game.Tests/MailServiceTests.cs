@@ -237,10 +237,7 @@ public class MailServiceTests : GameTestBase
         await mail.ClaimAsync(bob, mailId);
 
         bob.Money.Should().Be(ExchangePacketConstants.CoinMax, "a claim never pushes the purse past the cap");
-        var claim = MailPacket(bobSent, MailPacketWriter.SubClaim);
-        claim.ReadByte();
-        claim.ReadInt();
-        claim.ReadSByteString().Should().Contain("purse").And.NotContain("inventory");
+        ClaimMessage(bobSent).Should().Be("An attachment is still waiting. Make room in your purse and claim again.");
 
         bob.Money = 0;
         await mail.ClaimAsync(bob, mailId);
@@ -313,6 +310,27 @@ public class MailServiceTests : GameTestBase
         await mail.ClaimAsync(bob, mailId);
 
         ClaimMessage(bobSent).Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task ClaimAsync_ReadsEachItemOnce_SoAReloadMidClaimCannotLoseIt()
+    {
+        var apple = new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 };
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { Id = AliceId, AccountId = 1, Name = "Alice" },
+                new Character { Id = BobId, AccountId = 2, Name = "Bob" }),
+            // The first read finds the apples; the item table is reloaded without them right after.
+            gameData => gameData.GetItem(Apple).Returns(apple, (ItemData?)null));
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your apples.", [new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4)]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+
+        CountInBag(bob, Apple).Should().Be(4, "the claim acts on the one read it made");
+        ClaimMessage(bobSent).Should().Be("Attachment claimed.");
     }
 
     private static string ClaimMessage(List<Packet> sent)

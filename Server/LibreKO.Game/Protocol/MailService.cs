@@ -291,11 +291,15 @@ public class MailService(
                     delivered = true;
                     break;
                 default:
-                    // An item no longer in the item table is dropped (marked claimed) by the delivery.
-                    if (gameDataService.GetItem(attachment.ItemId) == null)
-                        dropped++;
-                    if (await DeliverItemAsync(session, attachment))
-                        delivered = itemsDelivered = true;
+                    switch (await DeliverItemAsync(session, attachment))
+                    {
+                        case ItemDelivery.Delivered:
+                            delivered = itemsDelivered = true;
+                            break;
+                        case ItemDelivery.Dropped:
+                            dropped++;
+                            break;
+                    }
                     break;
             }
         }
@@ -324,8 +328,9 @@ public class MailService(
             (false, true) => "room in your purse",
             _ => "room in your inventory",
         };
+        var waiting = chosen.Count(a => a.Remaining > 0) == 1 ? "An attachment is" : "Some attachments are";
         var outcome = goldWaiting || itemsWaiting
-            ? delivered ? $"Some attachments are still waiting. Make {room} and claim again." : $"Not enough {room}."
+            ? delivered ? $"{waiting} still waiting. Make {room} and claim again." : $"Not enough {room}."
             : !delivered ? null
             : tried - dropped > 1 ? "Attachments claimed."
             : "Attachment claimed.";
@@ -341,35 +346,71 @@ public class MailService(
             await session.Client.SendPacket(MailPacketWriter.Unread(await UnreadCountAsync(db, session.CharacterId)));
     }
 
-    private async Task<bool> DeliverItemAsync(UserSession session, MailAttachment attachment)
+    private enum ItemDelivery { NoRoom, Delivered, Dropped }
+
+    // Reads the item once, so the claim and its message agree even if the item table is reloaded
+    // meanwhile. An item no longer in the table is dropped (marked claimed). A mail item is fresh,
+    // so it only joins a stack of the same plain item, and an empty slot gets its count set.
+    private async Task<ItemDelivery> DeliverItemAsync(UserSession session, MailAttachment attachment)
     {
         var itemData = gameDataService.GetItem(attachment.ItemId);
         if (itemData == null)
         {
             attachment.ClaimedCount = attachment.Count;
-            return false;
+            return ItemDelivery.Dropped;
         }
 
         var delivered = false;
         while (attachment.Remaining > 0)
         {
-            var slot = session.FindSlotForItem(attachment.ItemId, gameDataService);
+            var slot = BagSlotFor(session, attachment.ItemId, itemData.Countable != 0);
             if (slot < 0)
-                return delivered;
+                break;
 
             var entry = session.Inventory[slot];
-            var portion = itemData.Countable == 0 ? 1 : Math.Min(attachment.Remaining, InventoryConstants.MaxStackCount - entry.Count);
             var isNew = entry.IsEmpty;
-            entry.ItemId = attachment.ItemId;
-            entry.Count += (ushort)portion;
+            var portion = itemData.Countable == 0 ? 1 : Math.Min(attachment.Remaining, InventoryConstants.MaxStackCount - (isNew ? 0 : entry.Count));
             if (isNew)
+            {
+                entry.Clear();
+                entry.ItemId = attachment.ItemId;
+                entry.Count = (ushort)portion;
                 entry.Durability = attachment.Durability > 0 ? attachment.Durability : itemData.Duration;
+            }
+            else
+            {
+                entry.Count = (ushort)(entry.Count + portion);
+            }
+
             await userNotificationService.SendStackChangeAsync(session, (byte)slot, entry.ItemId, entry.Count, entry.Durability, isNew);
             attachment.ClaimedCount += portion;
             delivered = true;
         }
 
-        return delivered;
+        return delivered ? ItemDelivery.Delivered : ItemDelivery.NoRoom;
+    }
+
+    private static int BagSlotFor(UserSession session, int itemId, bool countable)
+    {
+        var bag = session.Inventory.AsSpan(InventoryConstants.InventoryStart, InventoryConstants.HaveMax);
+        if (countable)
+        {
+            for (var i = 0; i < bag.Length; i++)
+            {
+                var slot = bag[i];
+                if (slot.ItemId == itemId && slot.Flag == 0 && slot.ExpiresAt == 0 && slot.UniqueId == 0
+                    && slot.Count < InventoryConstants.MaxStackCount)
+                    return InventoryConstants.InventoryStart + i;
+            }
+        }
+
+        for (var i = 0; i < bag.Length; i++)
+        {
+            if (bag[i].IsEmpty)
+                return InventoryConstants.InventoryStart + i;
+        }
+
+        return -1;
     }
 
     private async Task NotifyNewMailAsync(UserSession recipient, string senderName, AppDbContext db)
