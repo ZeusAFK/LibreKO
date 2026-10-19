@@ -42,7 +42,7 @@ public class ExchangePacketCoordinator(
                 break;
 
             case ExchangePacketConstants.ExchangeCancel:
-                await exchangeLifecycleService.CancelAsync(session);
+                await exchangeLifecycleService.CancelAsync(session, notifySelf: false);
                 break;
 
             default:

@@ -291,6 +291,9 @@ public class ScriptItemService(
                 return false;
         }
 
+        if (!GoldRewardFits(originItems, rewards))
+            return false;
+
         foreach (var (itemId, count) in originItems)
         {
             if (!RobItem(uid, itemId, count))
@@ -311,6 +314,15 @@ public class ScriptItemService(
     }
 
     private const byte UniqueItemType = 4;
+
+    // The gold an exchange gives, less any gold it takes, has to fit under the coin cap: a reward
+    // cut at the cap would lose the rest after the exchange had already taken its items.
+    private bool GoldRewardFits(IEnumerable<(int itemId, int count)> taken, IEnumerable<(int itemId, int count)> given)
+    {
+        var gained = given.Where(entry => entry.itemId == InventoryConstants.ItemGold).Sum(entry => (long)entry.count);
+        var spent = taken.Where(entry => entry.itemId == InventoryConstants.ItemGold).Sum(entry => (long)entry.count);
+        return gained == 0 || session.Money - spent + gained <= Protocol.ExchangePacketConstants.CoinMax;
+    }
 
     public bool ApplyScriptReward(
         IReadOnlyList<(int itemId, int count)> take,
@@ -379,6 +391,9 @@ public class ScriptItemService(
             if (!HasQuestOriginRequirement(uid, itemId, count))
                 return false;
         }
+
+        if (!GoldRewardFits(originItems, rewards))
+            return false;
 
         foreach (var (itemId, count) in originItems)
         {

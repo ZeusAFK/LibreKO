@@ -10,7 +10,7 @@ public interface IExchangeLifecycleService
 {
     Task RequestAsync(UserSession session, Packet packet);
     Task AgreeAsync(UserSession session, Packet packet);
-    Task CancelAsync(UserSession session, bool isOnDeath = false);
+    Task CancelAsync(UserSession session, bool isOnDeath = false, bool notifySelf = true);
     Task SettleReturnAsync(UserSession session, ExchangeReturn? returned);
 }
 
@@ -107,19 +107,19 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         await SettleReturnAsync(target, returnedTarget);
     }
 
-    public async Task CancelAsync(UserSession session, bool isOnDeath = false)
+    // notifySelf is false only for the player's own cancel, whose client has already closed the
+    // window. A cancel the server starts (range, death, logout) is news to the player's client,
+    // which must close the window and put its offer back before the resync below.
+    public async Task CancelAsync(UserSession session, bool isOnDeath = false, bool notifySelf = true)
     {
         if (!session.Trade.IsTrading || (!isOnDeath && session.Hp <= 0))
             return;
 
         var target = sessionManager.GetByCharacterId(session.Trade.ExchangeUser);
+        if (notifySelf)
+            await SendCancelAsync(session);
         var returnedSession = session.WithLock(s => s.InitExchange(false));
         logger.LogInformation("Trade cancelled for {Name}", session.Name);
-
-        // The player is told too: a cancel the server starts (range, death, logout) is news to its
-        // client, which must close the window and put its offer back before the resync below. A
-        // client that cancelled itself has already closed the window and ignores this.
-        await SendCancelAsync(session);
 
         ExchangeReturn? returnedTarget = null;
         if (target != null && target.Trade.ExchangeUser == session.CharacterId)

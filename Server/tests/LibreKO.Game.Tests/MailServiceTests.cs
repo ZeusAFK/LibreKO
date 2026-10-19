@@ -249,6 +249,39 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task ClaimAttachmentAsync_NamesOnlyTheRoomTheChosenAttachmentNeeds()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        bob.Money = ExchangePacketConstants.CoinMax;
+        FillBagLeaving(bob, 0);
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your things.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, 1_000),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAttachmentAsync(bob, mailId, 1);
+
+        ClaimMessage(bobSent).Should().Be("Not enough room in your inventory.", "only the apples were asked for");
+
+        EmptyBag(bob);
+        await mail.ClaimAttachmentAsync(bob, mailId, 1);
+
+        ClaimMessage(bobSent).Should().Be("Attachment claimed.", "the gold was not asked for, so there is nothing to make room for");
+    }
+
+    private static string ClaimMessage(List<Packet> sent)
+    {
+        var claim = MailPacket(sent, MailPacketWriter.SubClaim);
+        claim.ReadByte();
+        claim.ReadInt();
+        return claim.ReadSByteString();
+    }
+
+    [Fact]
     public async Task ClaimAsync_DeliversWhatFits_AndKeepsTheRestForTheNextClaim()
     {
         using var provider = Provider();

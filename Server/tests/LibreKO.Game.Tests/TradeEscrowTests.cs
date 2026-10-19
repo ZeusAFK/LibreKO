@@ -187,6 +187,24 @@ public class TradeEscrowTests : GameTestBase
     }
 
     [Fact]
+    public async Task APlayersOwnCancelIsNotEchoedBackToThem()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var (giver, _, giverClient, takerClient) = OpenTrade(provider);
+        StockPotions(giver);
+        await SendAsync(provider, giverClient, AddPacket(PotionPos, Potion, 3));
+
+        await SendAsync(provider, giverClient, CancelPacket());
+
+        Sent(giverClient).Should().NotContain(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE
+            && FirstByte(p) == ExchangePacketConstants.ExchangeCancel,
+            "its client closed the trade itself, and an echo could land on the next request");
+        Sent(takerClient).Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE
+            && FirstByte(p) == ExchangePacketConstants.ExchangeCancel);
+        BagSlot(giver, PotionPos).Count.Should().Be(PotionStack);
+    }
+
+    [Fact]
     public async Task ACancelTheServerStartsReachesThePlayerBeforeTheirBagIsResynced()
     {
         using var provider = CreateProvider(_ => { }, StockItems);
