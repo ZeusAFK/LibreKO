@@ -338,7 +338,7 @@ internal sealed class SkillCastSystem : IFeature
     {
         if (BasicRangedAttackSkill()?.Id == s.Id || !castLogged.Add(s.Id)) return;
         context.Log.Add(s.IsPotion
-            ? $"You used {ItemData.DisplayName(s.UseItem)}."
+            ? $"You used {ItemData.DisplayName(s.PotionItem)}."
             : GameText.System(GameText.UsingSkill, "Using %s", s.Name), CombatLogKind.Status);
     }
 

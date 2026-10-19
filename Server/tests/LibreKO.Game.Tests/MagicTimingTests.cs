@@ -1,5 +1,7 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
@@ -38,7 +40,9 @@ public class MagicTimingTests
     private static (MagicTimingService Timing, StubClock Clock) Subject()
     {
         var clock = new StubClock(new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero));
-        return (new MagicTimingService(clock), clock);
+        var gameData = Substitute.For<IGameDataService>();
+        gameData.MagicType3Table.Returns(RestoreEffects);
+        return (new MagicTimingService(gameData, clock), clock);
     }
 
     [Fact]
@@ -161,26 +165,153 @@ public class MagicTimingTests
     {
         var (timing, clock) = Subject();
         var session = Session();
-        var hpPotion = Potion(490001, useItem: 389001000);
-        var mpPotion = Potion(490004, useItem: 389004000);
-        var scroll = Potion(460006, useItem: 310310010);
-        scroll.CastTime = 15;
-        scroll.ReCastTime = 3600;
+        var hpPotion = Restore(HolyWater, useItem: 389010000, castTenths: 5, recastTenths: 20);
+        var mpPotion = Restore(PotionOfSpirit, useItem: 389016000, castTenths: 5, recastTenths: 20);
 
         timing.CheckCasting(session, hpPotion).Should().Be(MagicTimingVerdict.Allowed);
         timing.OnCastAccepted(session, hpPotion);
-        clock.Advance(TimeSpan.FromMilliseconds(500));
+        clock.Advance(TimeSpan.FromMilliseconds(50));
 
-        timing.CheckCasting(session, hpPotion).Should().Be(MagicTimingVerdict.OnCooldown);
         timing.CheckCasting(session, mpPotion).Should().Be(MagicTimingVerdict.OnCooldown, "every potion shares the one cooldown");
-        timing.CheckCasting(session, scroll).Should().Be(MagicTimingVerdict.Allowed, "a consumable with its own recast is not a potion");
 
-        clock.Advance(TimeSpan.FromMilliseconds(1600));
+        clock.Advance(TimeSpan.FromMilliseconds(450));
+        timing.CheckRelease(session, hpPotion).Should().Be(MagicTimingVerdict.Allowed, "the accepted potion still lands");
+        timing.OnReleaseAccepted(session, hpPotion);
+        timing.CheckCasting(session, hpPotion).Should().Be(MagicTimingVerdict.OnCooldown);
+        timing.CheckCasting(session, mpPotion).Should().Be(MagicTimingVerdict.OnCooldown);
+
+        clock.Advance(TimeSpan.FromMilliseconds(1500));
         timing.CheckCasting(session, mpPotion).Should().Be(MagicTimingVerdict.Allowed);
     }
 
-    private static MagicData Potion(int id, int useItem) =>
-        new() { Id = id, Type1 = 3, Moral = 1, ItemGroup = 9, UseItem = useItem, CastTime = 0, ReCastTime = 0 };
+    [Fact]
+    public void APotionWithoutACastTimeHoldsTheOtherPotionsFromItsRelease()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var riceCake = Restore(RiceCake, useItem: 389001000, castTenths: 0, recastTenths: 0);
+        var greenRiceCake = Restore(GreenRiceCake, useItem: 389004000, castTenths: 0, recastTenths: 0);
+        var holyWater = Restore(HolyWater, useItem: 389010000, castTenths: 5, recastTenths: 20);
+
+        timing.CheckRelease(session, riceCake).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnReleaseAccepted(session, riceCake);
+        clock.Advance(TimeSpan.FromMilliseconds(50));
+
+        timing.CheckRelease(session, greenRiceCake).Should().Be(MagicTimingVerdict.OnCooldown);
+        timing.CheckCasting(session, holyWater).Should().Be(MagicTimingVerdict.OnCooldown);
+
+        clock.Advance(TimeSpan.FromSeconds(2));
+        timing.CheckRelease(session, greenRiceCake).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void APotionWithoutACastTimeIsRefusedWhileACastPotionHoldsTheCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var holyWater = Restore(HolyWater, useItem: 389010000, castTenths: 5, recastTenths: 20);
+        var greenRiceCake = Restore(GreenRiceCake, useItem: 389004000, castTenths: 0, recastTenths: 0);
+
+        timing.OnCastAccepted(session, holyWater);
+        clock.Advance(TimeSpan.FromMilliseconds(100));
+
+        timing.CheckRelease(session, greenRiceCake).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void ThePotionCooldownAllowsForLatency()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var hpPotion = Restore(HolyWater, useItem: 389010000, castTenths: 5, recastTenths: 20);
+        var mpPotion = Restore(PotionOfSpirit, useItem: 389016000, castTenths: 5, recastTenths: 20);
+
+        timing.OnCastAccepted(session, hpPotion);
+
+        clock.Advance(TimeSpan.FromMilliseconds(1700));
+        timing.CheckCasting(session, mpPotion).Should().Be(MagicTimingVerdict.OnCooldown);
+
+        clock.Advance(TimeSpan.FromMilliseconds(100));
+        timing.CheckCasting(session, mpPotion).Should().Be(MagicTimingVerdict.Allowed,
+            "the client waits the full 2 s from its own send; the packets may arrive closer together");
+    }
+
+    [Fact]
+    public void APotionWithALongerRecastKeepsItBesideTheSharedCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var waterOfLife = Restore(WaterOfLife, useItem: 389060000, castTenths: 5, recastTenths: 25);
+        var mpPotion = Restore(PotionOfSpirit, useItem: 389016000, castTenths: 5, recastTenths: 20);
+
+        timing.OnCastAccepted(session, waterOfLife);
+        clock.Advance(TimeSpan.FromSeconds(2));
+
+        timing.CheckCasting(session, mpPotion).Should().Be(MagicTimingVerdict.Allowed);
+        timing.CheckCasting(session, waterOfLife).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void AMaestroPotionSharesThePotionCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var recoverHealth = Restore(RecoverHealth, useItem: 0, castTenths: 5, recastTenths: 20);
+        var mpPotion = Restore(PotionOfSpirit, useItem: 389016000, castTenths: 5, recastTenths: 20);
+
+        timing.CheckCasting(session, recoverHealth).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnCastAccepted(session, recoverHealth);
+        clock.Advance(TimeSpan.FromMilliseconds(50));
+
+        timing.CheckCasting(session, mpPotion).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void ConsumablesAndSkillsThatAreNotPotionsIgnoreThePotionCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var holyWater = Restore(HolyWater, useItem: 389010000, castTenths: 5, recastTenths: 20);
+        var hyperHealing = Restore(HyperHealing, useItem: 310310010, castTenths: 15, recastTenths: 3600);
+        var magicHammer = Restore(MagicHammer, useItem: 399288000, castTenths: 5, recastTenths: 25);
+        var returnToLife = Restore(ReturnToLife, useItem: 0, castTenths: 0, recastTenths: 51);
+
+        timing.OnCastAccepted(session, holyWater);
+        clock.Advance(TimeSpan.FromMilliseconds(50));
+
+        timing.CheckCasting(session, hyperHealing).Should().Be(MagicTimingVerdict.Allowed, "a heal over time is not a potion");
+        timing.CheckCasting(session, magicHammer).Should().Be(MagicTimingVerdict.Allowed, "a repair is not a potion");
+        timing.CheckRelease(session, returnToLife).Should().Be(MagicTimingVerdict.Allowed, "a class skill is not a potion");
+    }
+
+    private const int RiceCake = 490001;
+    private const int GreenRiceCake = 490004;
+    private const int HolyWater = 490010;
+    private const int PotionOfSpirit = 490016;
+    private const int WaterOfLife = 490060;
+    private const int RecoverHealth = 490076;
+    private const int HyperHealing = 460006;
+    private const int MagicHammer = 490153;
+    private const int ReturnToLife = 105740;
+
+    private static readonly Dictionary<int, MagicType3Data> RestoreEffects = new()
+    {
+        [RiceCake] = Effect(RiceCake, MagicDirectType.Health, firstDamage: 200),
+        [GreenRiceCake] = Effect(GreenRiceCake, MagicDirectType.Mana, firstDamage: 200),
+        [HolyWater] = Effect(HolyWater, MagicDirectType.Health, firstDamage: 45),
+        [PotionOfSpirit] = Effect(PotionOfSpirit, MagicDirectType.Mana, firstDamage: 120),
+        [WaterOfLife] = Effect(WaterOfLife, MagicDirectType.Health, firstDamage: 90),
+        [RecoverHealth] = Effect(RecoverHealth, MagicDirectType.HealthPurchase, firstDamage: 720),
+        [HyperHealing] = Effect(HyperHealing, MagicDirectType.Health, firstDamage: 0, timeDamage: 50, duration: 60),
+        [MagicHammer] = Effect(MagicHammer, MagicDirectType.Durability, firstDamage: 2000),
+        [ReturnToLife] = Effect(ReturnToLife, MagicDirectType.Health, firstDamage: 250),
+    };
+
+    private static MagicType3Data Effect(int id, MagicDirectType directType, short firstDamage, short timeDamage = 0, byte duration = 0) =>
+        new() { Id = id, DirectType = (byte)directType, FirstDamage = firstDamage, TimeDamage = timeDamage, Duration = duration };
+
+    private static MagicData Restore(int id, int useItem, int castTenths, int recastTenths) =>
+        new() { Id = id, Type1 = 3, Moral = 1, ItemGroup = 9, UseItem = useItem, CastTime = (byte)castTenths, ReCastTime = (short)recastTenths };
 
     [Fact]
     public void AConsumableIsExemptFromTheBurstFloor()
