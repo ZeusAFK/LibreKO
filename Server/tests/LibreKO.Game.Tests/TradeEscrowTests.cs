@@ -201,7 +201,50 @@ public class TradeEscrowTests : GameTestBase
             "its client closed the trade itself, and an echo could land on the next request");
         Sent(takerClient).Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE
             && FirstByte(p) == ExchangePacketConstants.ExchangeCancel);
+        Sent(giverClient).Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_ITEM_COUNT_CHANGE,
+            "the bag is still resynced after the player's own cancel");
         BagSlot(giver, PotionPos).Count.Should().Be(PotionStack);
+    }
+
+    [Fact]
+    public async Task AServerCancelAndAFinishingTradeNeverBothHappen()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var transfer = provider.GetRequiredService<IExchangeTransferService>();
+        UserSession? partner = null;
+        var decided = false;
+        var giverClient = Substitute.For<IClient>();
+        giverClient.Id.Returns(Guid.NewGuid());
+        giverClient.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(call =>
+        {
+            // The partner's acceptance lands while the server is telling the player the trade is off.
+            var packet = call.Arg<Packet>();
+            if (!decided && packet.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE && FirstByte(packet) == ExchangePacketConstants.ExchangeCancel)
+            {
+                decided = true;
+                transfer.DecideAsync(partner!).GetAwaiter().GetResult();
+            }
+            return Task.CompletedTask;
+        });
+        var giver = MakeSession(sessionManager, giverClient, GiverId);
+        var taker = MakeSession(sessionManager, MakeClient(), TakerId);
+        partner = taker;
+        giver.Trade.ExchangeUser = taker.CharacterId;
+        taker.Trade.ExchangeUser = giver.CharacterId;
+        giver.InitExchange(true);
+        taker.InitExchange(true);
+        StockSword(giver);
+        await SendAsync(provider, giverClient, AddPacket(SwordPos, Sword, 1));
+        giver.Trade.ExchangeOk = true;
+
+        await provider.GetRequiredService<IExchangeLifecycleService>().CancelAsync(giver, isOnDeath: true);
+
+        decided.Should().BeTrue();
+        var told = Sent(giverClient).Any(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE && FirstByte(p) == ExchangePacketConstants.ExchangeCancel);
+        var traded = CountInBag(taker, Sword) == 1;
+        (told && traded).Should().BeFalse("a trade is either called off or completed, and the player is told which");
+        (CountInBag(giver, Sword) + CountInBag(taker, Sword)).Should().Be(1);
     }
 
     [Fact]

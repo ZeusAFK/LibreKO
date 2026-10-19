@@ -273,6 +273,25 @@ public class MailServiceTests : GameTestBase
         ClaimMessage(bobSent).Should().Be("Attachment claimed.", "the gold was not asked for, so there is nothing to make room for");
     }
 
+    [Fact]
+    public async Task ClaimAttachmentAsync_SaysWhenTheAttachmentCouldNotBeDelivered()
+    {
+        const int retiredItem = 123_456_789;
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your things.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, retiredItem, 1),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAttachmentAsync(bob, mailId, 0);
+
+        ClaimMessage(bobSent).Should().Be("The attachment could not be delivered.");
+    }
+
     private static string ClaimMessage(List<Packet> sent)
     {
         var claim = MailPacket(sent, MailPacketWriter.SubClaim);

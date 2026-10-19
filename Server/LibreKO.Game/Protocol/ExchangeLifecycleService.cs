@@ -112,21 +112,32 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
     // which must close the window and put its offer back before the resync below.
     public async Task CancelAsync(UserSession session, bool isOnDeath = false, bool notifySelf = true)
     {
-        if (!session.Trade.IsTrading || (!isOnDeath && session.Hp <= 0))
+        if (!isOnDeath && session.Hp <= 0)
             return;
 
-        var target = sessionManager.GetByCharacterId(session.Trade.ExchangeUser);
+        // Whether the trade is still on and calling it off are one step under the player's lock,
+        // so a decision completing the trade meanwhile either happens first (and nothing is
+        // cancelled) or finds the trade gone; the player is never told both.
+        var partnerId = -1;
+        var returnedSession = session.WithLock(s =>
+        {
+            if (!s.Trade.IsTrading)
+                return null;
+            partnerId = s.Trade.ExchangeUser;
+            return s.InitExchange(false);
+        });
+        if (returnedSession == null)
+            return;
+
+        logger.LogInformation("Trade cancelled for {Name}", session.Name);
         if (notifySelf)
             await SendCancelAsync(session);
-        var returnedSession = session.WithLock(s => s.InitExchange(false));
-        logger.LogInformation("Trade cancelled for {Name}", session.Name);
 
-        ExchangeReturn? returnedTarget = null;
-        if (target != null && target.Trade.ExchangeUser == session.CharacterId)
-        {
-            returnedTarget = target.WithLock(t => t.InitExchange(false));
-            await SendCancelAsync(target);
-        }
+        var target = sessionManager.GetByCharacterId(partnerId);
+        var returnedTarget = target?.WithLock(t =>
+            t.Trade.ExchangeUser == session.CharacterId ? t.InitExchange(false) : null);
+        if (returnedTarget != null)
+            await SendCancelAsync(target!);
 
         await SettleReturnAsync(session, returnedSession);
         if (target != null)

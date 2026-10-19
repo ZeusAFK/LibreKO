@@ -319,8 +319,11 @@ public class MailService(
             (false, true) => "room in your purse",
             _ => "room in your inventory",
         };
-        var message = complete ? "Attachments claimed."
-            : !goldWaiting && !itemsWaiting ? "Attachment claimed."
+        var chosenSettled = !goldWaiting && !itemsWaiting;
+        var message = chosenSettled && !delivered
+                ? chosen.Count == 1 ? "The attachment could not be delivered." : "The attachments could not be delivered."
+            : complete ? "Attachments claimed."
+            : chosenSettled ? "Attachment claimed."
             : delivered ? $"Some attachments are still waiting. Make {room} and claim again."
             : $"Not enough {room}.";
         await session.Client.SendPacket(MailPacketWriter.ClaimResult(delivered, mailId, message));
