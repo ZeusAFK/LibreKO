@@ -18,6 +18,7 @@ namespace LibreKO.Game.Tests;
 public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
 {
     private const int FireBlast = 109535;
+    private const int TenthsPerSecond = 10;
     private const int FireThorn = 109554;
     private const int FireImpact = 109557;
     private const int IceOrb = 109627;
@@ -432,9 +433,9 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     private static void GiveStones(UserSession caster, int stone, ushort count) =>
         caster.Inventory[InventoryConstants.InventoryStart + 1] = new ItemSlot { ItemId = stone, Count = count };
 
-    private static async Task CastAsync(
-        IMagicPacketCoordinator coordinator, UserSession caster, int skillId, int targetId)
+    private static async Task CastAsync(IServiceProvider provider, UserSession caster, int skillId, int targetId)
     {
+        var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Casting);
         packet.WriteInt(skillId);
@@ -444,6 +445,9 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
             packet.WriteInt(0);
         await coordinator.HandleAsync(caster.Client, packet);
         caster.CastCommitTicks = 0;
+        var castTenths = provider.GetRequiredService<IGameDataService>().GetMagic(skillId)?.CastTime ?? 0;
+        if (caster.AcceptedCasts.TryGetValue(skillId, out var accepted))
+            caster.AcceptedCasts[skillId] = accepted - castTenths * TimeSpan.TicksPerSecond / TenthsPerSecond;
     }
 
     private static Packet EffectingPacket(int skillId, int casterId, int targetId)
@@ -482,7 +486,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
             caster.SkillPoints[i] = 99;
         GiveStones(caster, StoneOfRogue, 3);
 
-        await CastAsync(provider.GetRequiredService<IMagicPacketCoordinator>(), caster, MagicShield, caster.CharacterId);
+        await CastAsync(provider, caster, MagicShield, caster.CharacterId);
         await provider.GetRequiredService<IMagicPacketCoordinator>()
             .HandleAsync(caster.Client, EffectingPacket(MagicShield, caster.CharacterId, caster.CharacterId));
 
@@ -601,7 +605,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         var before = caster.Stats.ColdR;
 
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
-        await CastAsync(coordinator, caster, ResistCold, caster.CharacterId);
+        await CastAsync(provider, caster, ResistCold, caster.CharacterId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(ResistCold);
@@ -652,7 +656,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
         var before = monster.Hp;
 
-        await CastAsync(coordinator, caster, skillId, monster.UniqueId);
+        await CastAsync(provider, caster, skillId, monster.UniqueId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

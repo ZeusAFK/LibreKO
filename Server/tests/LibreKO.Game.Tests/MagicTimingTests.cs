@@ -66,7 +66,7 @@ public class MagicTimingTests
 
         session.CastingSkillId.Should().Be(0, "the last arrow closes the cast");
         session.PendingArrowHits.Should().BeEmpty();
-        timing.CheckRelease(session, volley).Should().Be(MagicTimingVerdict.OnCooldown, "a fourth hit is not part of the volley");
+        timing.CheckRelease(session, volley).Should().Be(MagicTimingVerdict.NotCast, "a fourth hit is not part of the volley, whose cast is spent");
     }
 
     [Fact]
@@ -518,6 +518,49 @@ public class MagicTimingTests
         session.CastingSkillId.Should().Be(0, "the cut draw frees the cast slot");
         session.SkillCooldowns.Should().ContainKey(arcShot.Id);
         timing.CheckCasting(session, arcShot).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void AnItemSkillIsNotReleasedBeforeItsCastTime()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var scroll = Magic(490201, castTenths: 15, recastTenths: 600, useItem: 379098000);
+
+        timing.OnCastAccepted(session, scroll);
+        clock.Advance(TimeSpan.FromMilliseconds(500));
+        timing.CheckRelease(session, scroll).Should().Be(MagicTimingVerdict.NotCast,
+            "the item's own cast phase has a second still to run");
+
+        clock.Advance(TimeSpan.FromMilliseconds(800));
+        timing.CheckRelease(session, scroll).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void AnArcheryShotWithADrawNeedsTheDraw()
+    {
+        var (timing, _) = Subject();
+        var session = Session();
+        var arcShot = Magic(102010, castTenths: 13, recastTenths: 30, useItem: 391010000);
+        arcShot.Type1 = 2;
+
+        timing.CheckRelease(session, arcShot).Should().Be(MagicTimingVerdict.NotCast);
+    }
+
+    [Fact]
+    public void AnArcheryShotThatUsesArrowsFliesOnlyFromItsCommitPoint()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var arcShot = Magic(102010, castTenths: 13, recastTenths: 30, useItem: 391010000);
+        arcShot.Type1 = 2;
+
+        timing.OnCastAccepted(session, arcShot);
+        timing.CheckRelease(session, arcShot).Should().Be(MagicTimingVerdict.NotCast);
+
+        clock.Advance(TimeSpan.FromMilliseconds(200));
+        timing.CheckRelease(session, arcShot).Should().Be(MagicTimingVerdict.Allowed,
+            "the arrow leaves the bow 400 ms into the draw, less the latency grace");
     }
 
     [Fact]

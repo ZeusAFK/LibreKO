@@ -81,7 +81,7 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         if (IsReleaseOfTheAcceptedCast(session, magic, now))
             return MagicTimingVerdict.Allowed;
 
-        if (magic.CastTime > 0 && magic.PrimaryType != MagicSkillType.Ranged && !HasInstantMagic(session))
+        if (magic.CastTime > 0 && !HasInstantMagic(session))
             return MagicTimingVerdict.NotCast;
 
         return RemainingCooldownMs(session, magic.Id, now) > 0 || (IsPotion(magic) && PotionCooldownRunning(session, now))
@@ -111,9 +111,8 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         session.CastingSkillId = magic.Id;
         session.CastLaunched = false;
         var castMs = magic.CastTime * MillisecondsPerTenth;
-        var commitMs = magic.PrimaryType == MagicSkillType.Ranged ? Math.Min(castMs, RangedCommitMs) : castMs;
         session.CastReadyTicks = now + castMs * TimeSpan.TicksPerMillisecond;
-        session.CastCommitTicks = now + commitMs * TimeSpan.TicksPerMillisecond;
+        session.CastCommitTicks = now + CommitMs(magic) * TimeSpan.TicksPerMillisecond;
         session.CastExpireTicks = session.CastReadyTicks + AbandonedCastGraceMs * TimeSpan.TicksPerMillisecond;
     }
 
@@ -186,12 +185,20 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         if (!session.AcceptedCasts.TryGetValue(magic.Id, out var accepted))
             return false;
 
-        var windowMs = magic.CastTime * MillisecondsPerTenth + AbandonedCastGraceMs;
-        if (MillisecondsSince(accepted, now) <= windowMs)
-            return true;
+        var sinceMs = MillisecondsSince(accepted, now);
+        if (sinceMs > magic.CastTime * MillisecondsPerTenth + AbandonedCastGraceMs)
+        {
+            session.AcceptedCasts.TryRemove(magic.Id, out _);
+            return false;
+        }
 
-        session.AcceptedCasts.TryRemove(magic.Id, out _);
-        return false;
+        return sinceMs + LatencyGraceMs >= CommitMs(magic) || HasInstantMagic(session);
+    }
+
+    private static int CommitMs(MagicData magic)
+    {
+        var castMs = magic.CastTime * MillisecondsPerTenth;
+        return magic.PrimaryType == MagicSkillType.Ranged ? Math.Min(castMs, RangedCommitMs) : castMs;
     }
 
     private static void PruneAcceptedCasts(UserSession session, long now)
