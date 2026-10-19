@@ -871,6 +871,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 530, accountId: 630);
+        session.Hp = 100;
         session.Name = "Mage";
         session.Class = 101;
         session.Level = 20;
@@ -943,6 +944,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 540, accountId: 640);
+        session.Hp = 100;
         session.Class = 202;
         session.Level = 20;
         session.ZoneId = 1;
@@ -1023,6 +1025,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var warrior = sessionManager.CreateSession(client, characterId: 5410, accountId: 6410);
+        warrior.Hp = 100;
         warrior.Class = 101;
         warrior.Level = 20;
         warrior.ZoneId = BattleZoneManager.ZONE_RONARK_LAND;
@@ -1113,6 +1116,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var warrior = sessionManager.CreateSession(client, characterId: 5412, accountId: 6412);
+        warrior.Hp = 100;
         warrior.Class = 101;
         warrior.Level = 20;
         warrior.ZoneId = BattleZoneManager.ZONE_RONARK_LAND;
@@ -1276,6 +1280,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 561, accountId: 661);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.ZoneId = 1;
@@ -1739,6 +1744,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 543, accountId: 643);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.Strength = 50;

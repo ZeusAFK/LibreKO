@@ -68,6 +68,16 @@ public class MagicPacketCoordinator(
             return;
         }
 
+        // A dead player cannot be hit (PvpRules needs the target alive), so a dead caster
+        // would be an invulnerable one. Only the rows that revive the caster work while dead.
+        if (session.Hp <= 0
+            && RequiresLearnedSkill((MagicProcessOpcode)magicOpcode)
+            && !RevivesTheCaster(magic, skillId))
+        {
+            await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
+            return;
+        }
+
         if (!ChaosRules.SkillAllowedIn(session.ZoneId, magic.Skill) && !IsTerminator((MagicProcessOpcode)magicOpcode))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
@@ -288,6 +298,11 @@ public class MagicPacketCoordinator(
         && magicItemUsageService.CanUseSkillItems(session, magic)
         && !BattleZoneManager.IsBattleZone(session.ZoneId)
         && !BattleZoneManager.IsPvpZone(session.ZoneId);
+
+    private bool RevivesTheCaster(MagicData magic, int skillId) =>
+        magic.PrimaryType == MagicSkillType.Special
+        && MagicTypeLookup.TryResolve(gameDataService.MagicType5Table, magic, skillId, out var type5Data)
+        && (SpecialMagicType)type5Data.Type is SpecialMagicType.ResurrectionSelf or SpecialMagicType.LifeCrystal;
 
     private static bool IsTerminator(MagicProcessOpcode opcode) =>
         opcode is MagicProcessOpcode.Cancel
