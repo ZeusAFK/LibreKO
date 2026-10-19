@@ -282,7 +282,7 @@ internal sealed class SkillCastSystem : IFeature
                 if (!miss && !dash && s?.TargetFx != null)
                 {
                     if (combatFx.SpawnFxAtImpact(casterId, targetId, s.TargetFx, s.TargetPart, data, s.IsAreaCast, s.IsMelee)
-                        && !(casterId == context.Self.CharId && s.IsPotion))
+                        && !(casterId == context.Self.CharId && s.IsPotion && !s.HasCastPhase))
                         audio.FxAt(s.TargetFxId, targetId > 0 ? targetId : casterId);
                 }
                 if (!miss && s != null && s.TargetAnim != 0 && targetId >= 0)
@@ -883,7 +883,7 @@ internal sealed class SkillCastSystem : IFeature
     {
         if (!skipCooldown) skillTimers.Start(s, FrameClock.Now());
         StartCastFx(context.Self.CharId, s);
-        if (s.IsPotion) audio.FxAt(s.TargetFxId, context.Self.CharId);
+        if (s.IsPotion && !s.HasCastPhase) audio.FxAt(s.TargetFxId, context.Self.CharId);
         BeginCast(s);
         if (s.IsNonAction) return;
         entityAction.PlaySkillAction(context.Self.CharId, entityAction.SkillAnim(context.Self.CharId, s, false), ActionAnimation.ClipsForCast(s), ModelAnimation.ActionRankSkill);

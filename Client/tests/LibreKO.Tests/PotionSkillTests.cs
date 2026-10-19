@@ -7,7 +7,7 @@ namespace LibreKO.Tests;
 public class PotionSkillTests
 {
     private const int PotionItemGroup = 9;
-    private const int PartyAll = 32;
+    private const int CorpsMoral = 32;
     private const int Durability = 4;
     private const double Now = 1000.0;
     private const double MpPressedAfter = 0.05;
@@ -98,7 +98,7 @@ public class PotionSkillTests
     public void AHealThatReachesThePartyIsNotAPotion()
     {
         var partyHeal = Restore(490406, 389406000, HealTarget.Hp, 720, cast: 5, recast: 50);
-        partyHeal.Moral = PartyAll;
+        partyHeal.Moral = CorpsMoral;
 
         Assert.False(partyHeal.IsPotion);
     }

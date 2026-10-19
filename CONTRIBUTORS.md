@@ -10,3 +10,4 @@ pull request that lands your first change, with whatever contact you want to giv
 - kerimyeniyildiz — https://github.com/kerimyeniyildiz
 - sgj1212 — https://github.com/sgj1212
 - ferhatsahin — https://github.com/ferhatsahin
+- periakteon — https://github.com/periakteon
