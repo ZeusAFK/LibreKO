@@ -287,7 +287,13 @@ public class PartyPacketCoordinator(
         else
         {
             var party = sessionManager.Parties.GetParty(session.PartyIndex);
-            if (party == null || party.FindEmptySlot() < 0)
+            if (party == null || party.LeaderId != (short)session.CharacterId)
+            {
+                await SendErrorAsync(session, PartyInviteError.CannotParty);
+                return;
+            }
+
+            if (party.FindEmptySlot() < 0)
             {
                 await SendErrorAsync(session, PartyInviteError.PartyFull);
                 return;
@@ -519,6 +525,13 @@ public class PartyPacketCoordinator(
         if (party == null)
         {
             session.PartyIndex = -1;
+            return;
+        }
+
+        // Only the leader disbands; anyone else asking to disband just leaves.
+        if (party.LeaderId != (short)session.CharacterId)
+        {
+            await RemoveMemberAsync(session, (short)session.CharacterId);
             return;
         }
 
