@@ -19,7 +19,8 @@ public class GenieSystemPacketCoordinator(
     IMagicPacketCoordinator magic,
     IWorldPacketCoordinator world,
     ILogger<GenieSystemPacketCoordinator> logger,
-    IGenieHammerService genieHammer) : IGenieSystemPacketCoordinator
+    IGenieHammerService genieHammer,
+    IGenieActivationService activation) : IGenieSystemPacketCoordinator
 {
     public const int SpiritOfGenieItem = 810378000;
     public const int SpiritOfGenieMinutes = 120;
@@ -70,34 +71,9 @@ public class GenieSystemPacketCoordinator(
         }
     }
 
-    public async Task StartAsync(UserSession session)
-    {
-        if (session.GenieMinutes == 0 || session.Hp <= 0)
-        {
-            await StopAsync(session);
-            return;
-        }
+    public Task StartAsync(UserSession session) => activation.StartAsync(session);
 
-        if (session.GenieActive)
-        {
-            await session.Client.SendPacket(GenieSystemPacketWriter.Started(session.GenieMinutes));
-            return;
-        }
-
-        session.GenieActive = true;
-        await session.Client.SendPacket(GenieSystemPacketWriter.Started(session.GenieMinutes));
-        await BroadcastActivationAsync(session);
-    }
-
-    public async Task StopAsync(UserSession session)
-    {
-        var wasActive = session.GenieActive;
-        session.GenieActive = false;
-        await session.Client.SendPacket(GenieSystemPacketWriter.Stopped(session.GenieMinutes));
-
-        if (wasActive)
-            await BroadcastActivationAsync(session);
-    }
+    public Task StopAsync(UserSession session) => activation.StopAsync(session);
 
     private async Task RelayAsync(IClient client, UserSession session, Packet packet)
     {
@@ -149,10 +125,4 @@ public class GenieSystemPacketCoordinator(
             options[i] = packet.ReadByte();
         session.GenieOptions = options;
     }
-
-    private Task BroadcastActivationAsync(UserSession session) =>
-        sessionManager.Regions.SendToRegion(
-            session,
-            GenieSystemPacketWriter.ActivationState(session.CharacterId, session.GenieActive),
-            excludeSender: false);
 }

@@ -460,6 +460,7 @@ public class BorderDefenseWarTests
             Substitute.For<IRespawnBlinkService>(),
             Substitute.For<ISoccerService>(),
             Substitute.For<IKrowazTrapService>(),
+            Substitute.For<IGenieActivationService>(),
             Substitute.For<ILogger<WorldMovementService>>());
 
         await movementService.HandleHomeAsync(session.Client);
