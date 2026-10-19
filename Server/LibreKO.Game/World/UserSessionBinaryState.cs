@@ -43,6 +43,12 @@ public static class UserSessionBinaryState
             var uniqueAt = uniqueOffset + index * BytesPerUniqueId;
             if (uniqueAt + BytesPerUniqueId <= data.Length)
                 slots[index].UniqueId = BitConverter.ToInt32(data, uniqueAt);
+
+            // A slot with no item holds nothing. Servers before the trade escrow could save a
+            // count in an empty slot (an offered stack destroyed mid-trade, then the trade
+            // cancelled), and any later write that adds to the slot would turn it into items.
+            if (slots[index].IsEmpty)
+                slots[index].Clear();
         }
     }
 
