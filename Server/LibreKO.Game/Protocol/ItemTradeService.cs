@@ -72,8 +72,9 @@ public class ItemTradeService(
             return;
         }
 
+        // A charge item's durability is its uses left, so a repair would refill its charges.
         var itemData = gameDataService.GetItem(itemId);
-        if (itemData == null || itemData.Duration <= 1 || itemData.SellPrice == SaleTypeNoRepair)
+        if (itemData == null || itemData.Duration <= 1 || itemData.SellPrice == SaleTypeNoRepair || itemData.IsChargeItem)
         {
             await SendRepairResponseAsync(session, ItemRepairResult.Failed);
             return;
