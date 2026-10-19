@@ -301,6 +301,7 @@ public class UserSession
     public ConcurrentDictionary<int, long> AcceptedCasts { get; } = new();
     public ConcurrentDictionary<int, int> PendingArrowHits { get; } = new();
     public long SkillBurstTicks { get; set; }
+    public long NextSwingTicks { get; set; }
     public long LastPotionTicks { get; set; }
     public long MageStatusImmuneUntilTicks { get; set; }
 

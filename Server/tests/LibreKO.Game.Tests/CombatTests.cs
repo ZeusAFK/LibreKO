@@ -65,6 +65,7 @@ public class CombatTests : GameTestBase
 
         for (var i = 0; i < 25 && worm.Hp == worm.MaxHp; i++)
         {
+            attacker.NextSwingTicks = 0;
             var packet = new Packet(GameOpcodes.GS_ATTACK);
             packet.WriteByte(1);
             packet.WriteByte(0);
@@ -171,6 +172,7 @@ public class CombatTests : GameTestBase
 
         for (var i = 0; i < 25 && attacker.Inventory[InventoryConstants.InventoryStart].Count == 5; i++)
         {
+            attacker.NextSwingTicks = 0;
             var packet = new Packet(GameOpcodes.GS_ATTACK);
             packet.WriteByte(1);
             packet.WriteByte(0);

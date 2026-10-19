@@ -1,0 +1,163 @@
+﻿using FluentAssertions;
+using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
+using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Game.Protocol;
+using LibreKO.Game.World;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+
+namespace LibreKO.Game.Tests;
+
+public class AttackTimingAndReachTests : GameTestBase
+{
+    private const int Sword = 110150001;
+    private const short SwordDelay = 150;
+    private const int Haste = 490900;
+    private const short HasteAttackSpeed = 150;
+    private const byte Zone = 21;
+    private const float Here = 500f;
+
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => Now;
+        public void Advance(int milliseconds) => Now = Now.AddMilliseconds(milliseconds);
+    }
+
+    [Fact]
+    public async Task ASwingBeforeTheWeaponIsReadyIsRefused()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        var worm = Monster(provider, Here + 1);
+
+        await Swing(provider, attacker, worm);
+        clock.Advance(1000);
+        await Swing(provider, attacker, worm);
+        Swings(sent).Should().Be(1, "a 1.5 s weapon cannot swing again after 1 s");
+
+        clock.Advance(200);
+        await Swing(provider, attacker, worm);
+        Swings(sent).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task AnAttackSpeedBuffShortensTheSwing()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        attacker.SetBuff(Haste, new ActiveBuff
+        {
+            MagicId = Haste, CasterId = attacker.CharacterId, BuffType = BuffType.AttackSpeed,
+            ExpireTicks = DateTime.UtcNow.AddMinutes(1).Ticks,
+        });
+        var worm = Monster(provider, Here + 1);
+
+        await Swing(provider, attacker, worm);
+        clock.Advance(700);
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ATargetFarAwayIsNotAttacked()
+    {
+        using var provider = Provider(new Clock());
+        var (attacker, sent) = Attacker(provider);
+        var worm = Monster(provider, Here + 50);
+
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(0);
+        worm.Hp.Should().Be(worm.MaxHp);
+    }
+
+    [Fact]
+    public async Task ATargetInAnotherRoomIsNotAttacked()
+    {
+        using var provider = Provider(new Clock());
+        var (attacker, sent) = Attacker(provider);
+        var worm = Monster(provider, Here + 1, room: 1);
+
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ALargeMonsterIsReachedAtItsBodysEdge()
+    {
+        using var provider = Provider(new Clock());
+        var (attacker, sent) = Attacker(provider);
+        var dragon = Monster(provider, Here + 18, bulk: 1000);
+
+        await Swing(provider, attacker, dragon);
+
+        Swings(sent).Should().Be(1, "a 10 m wide body is struck from far off its centre");
+    }
+
+    private static ServiceProvider Provider(Clock clock) => CreateProvider(_ => { }, gameData =>
+    {
+        gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Kind = 21, Slot = 1, Delay = SwordDelay, Range = 10, Damage = 10, Duration = 100 });
+        gameData.GetMagic(Haste).Returns(new MagicData { Id = Haste, Type1 = (byte)MagicSkillType.Buff, Moral = 1 });
+        gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
+        {
+            [Haste] = new() { Id = Haste, BuffType = (byte)BuffType.AttackSpeed, AttackSpeed = HasteAttackSpeed },
+        });
+    }, configureServices: services => services.AddSingleton<TimeProvider>(clock));
+
+    private static (UserSession Attacker, List<Packet> Sent) Attacker(ServiceProvider provider)
+    {
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sent = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var attacker = sessions.CreateSession(client, characterId: 910, accountId: 911);
+        attacker.Name = "Swordsman";
+        attacker.ZoneId = Zone;
+        attacker.X = Here;
+        attacker.Z = Here;
+        attacker.Hp = 100;
+        attacker.MaxHp = 100;
+        attacker.AttackAmount = 100;
+        attacker.PlayerAttackAmount = 100;
+        attacker.Stats.TotalHit = 50;
+        attacker.Stats.TotalHitrate = 10;
+        attacker.Inventory[InventoryConstants.RightHand].ItemId = Sword;
+        attacker.Inventory[InventoryConstants.RightHand].Count = 1;
+        attacker.Inventory[InventoryConstants.RightHand].Durability = 100;
+        sessions.Regions.AddToRegion(attacker);
+        return (attacker, sent);
+    }
+
+    private static NpcInstance Monster(ServiceProvider provider, float x, ushort room = 0, short bulk = 0) =>
+        provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
+        {
+            IsMonster = true, NpcId = 750, Name = "Worm", ZoneId = Zone, Room = room, Bulk = bulk,
+            X = x, Z = Here, SpawnX = x, SpawnZ = Here, Hp = 100_000, MaxHp = 100_000, Ac = 5, EvadeRate = 1,
+            AttackRange = 3, SearchRange = 8, TracingRange = 20,
+        });
+
+    private static async Task Swing(ServiceProvider provider, UserSession attacker, NpcInstance target)
+    {
+        var packet = new Packet(GameOpcodes.GS_ATTACK);
+        packet.WriteByte(1);
+        packet.WriteByte(0);
+        packet.WriteInt(target.UniqueId);
+        packet.WriteShort(SwordDelay);
+        packet.WriteShort(0);
+        packet.WriteByte(0);
+        packet.WriteByte(0);
+        packet.ResetOffset();
+        await provider.GetRequiredService<ICombatPacketCoordinator>().HandleAttackAsync(attacker.Client, packet);
+    }
+
+    private static int Swings(List<Packet> sent) => sent.Count(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_ATTACK);
+}
