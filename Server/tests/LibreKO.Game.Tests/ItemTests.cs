@@ -2141,6 +2141,112 @@ public class ItemTests : GameTestBase
     }
 
     [Fact]
+    public async Task HandleUpgradeAsync_OneAccessoryCannotCountAsThreeCopies()
+    {
+        const int originItemId = 310110005;
+        const int upgradedItemId = 310110006;
+        const int accessoryScroll = 379159000;
+
+        static ItemData Earring(int num) => new() { Num = num, Kind = 91, ItemType = 5, ItemClass = 0, Duration = 15 };
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(originItemId).Returns(Earring(originItemId));
+                gameData.GetItem(upgradedItemId).Returns(Earring(upgradedItemId));
+                gameData.GetUpgradeRecipe(originItemId, accessoryScroll).Returns(new ItemUpgradeRecipeData
+                {
+                    OriginNumber = originItemId,
+                    NewNumber = upgradedItemId,
+                    RequiredItem = accessoryScroll
+                });
+                gameData.GetUpgradeSetting(5, 5, accessoryScroll, 0).Returns(new ItemUpgradeSettingsData
+                {
+                    ReqItem1 = accessoryScroll,
+                    ItemType = 5,
+                    ItemGrade = 5,
+                    SuccessRate = 10000
+                });
+            });
+
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", originItemId, accessoryScroll);
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(
+            client, UpgradeRequest(3, 1, (originItemId, 0), (originItemId, 0), (originItemId, 0), (accessoryScroll, 1)));
+
+        ReadUpgradeReply(sentPackets).Result.Should().Be(UpgradeResultNoMatch);
+        session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(originItemId);
+        session.Inventory[InventoryConstants.InventoryStart + 1].ItemId.Should().Be(accessoryScroll);
+    }
+
+    [Fact]
+    public async Task HandleUpgradeAsync_ThePositionOfOneStackCannotFillEveryMaterialSlot()
+    {
+        const int originItemId = 156210008;
+        const int filler = 389010000;
+
+        using var provider = CreateProvider(_ => { }, gameData => gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId)));
+
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", originItemId, filler, HighClassScroll);
+        session.Inventory[InventoryConstants.InventoryStart + 1].Count = 2;
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(
+            client, UpgradeRequest(2, 1, (originItemId, 0), (filler, 1), (filler, 1), (filler, 1), (HighClassScroll, 2)));
+
+        ReadUpgradeReply(sentPackets).Result.Should().Be(UpgradeResultNoMatch);
+        session.Inventory[InventoryConstants.InventoryStart + 1].Count.Should().Be(2);
+        session.Inventory[InventoryConstants.InventoryStart + 2].ItemId.Should().Be(HighClassScroll);
+    }
+
+    [Fact]
+    public async Task HandleUpgradeAsync_AScrollInTheLastMaterialSlotIsUsedUp()
+    {
+        const int originItemId = 156210008;
+        const int upgradedItemId = 156210009;
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId));
+                gameData.GetItem(upgradedItemId).Returns(UpgradeItem(upgradedItemId, duration: 20));
+                gameData.GetUpgradeRecipe(originItemId, HighClassScroll).Returns(new ItemUpgradeRecipeData
+                {
+                    OriginNumber = originItemId,
+                    NewNumber = upgradedItemId,
+                    RequiredItem = HighClassScroll
+                });
+                gameData.GetUpgradeSetting(5, 8, HighClassScroll, 0).Returns(new ItemUpgradeSettingsData
+                {
+                    ItemType = 5,
+                    ItemGrade = 8,
+                    ReqNoah = 150_000,
+                    SuccessRate = 10000
+                });
+            });
+
+        var fillers = Enumerable.Range(0, 8).Select(i => 389010000 + i * 1000).ToArray();
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", [originItemId, .. fillers, HighClassScroll]);
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(client, UpgradeRequest(2, 1,
+            [(originItemId, 0), .. fillers.Select((id, i) => (id, (byte)(i + 1))), (HighClassScroll, 9)]));
+
+        ReadUpgradeReply(sentPackets).Result.Should().Be(1);
+        session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(upgradedItemId);
+        session.Inventory[InventoryConstants.InventoryStart + 9].Should().Match<ItemSlot>(slot => slot.IsEmpty);
+    }
+
+    [Fact]
     public void GlobalAnvilRateService_SuccessAndFailureClampWithinConfiguredBounds()
     {
         var options = Microsoft.Extensions.Options.Options.Create(new GameServerSettings

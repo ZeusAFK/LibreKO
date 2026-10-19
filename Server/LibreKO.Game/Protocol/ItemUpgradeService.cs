@@ -42,7 +42,6 @@ public class ItemUpgradeService(
     private const byte ObjectAnvil = 8;
 
     private const int UpgradeSlotCount = 10;
-    private const int UpgradeMaterialMax = 8;
     private const int UpgradeRequestBytes = 1 + 4 + UpgradeSlotCount * 5;
     private const float MaxAnvilRangeSq = 100.0f;
 
@@ -220,6 +219,9 @@ public class ItemUpgradeService(
             return;
         }
 
+        // A bag position may stand in the request only as many times as its stack holds,
+        // so one accessory cannot count as three copies and one stack cannot fill every slot.
+        var references = new Dictionary<sbyte, int>();
         for (var index = 0; index < UpgradeSlotCount; index++)
         {
             if (positions[index] < 0 || itemIds[index] == 0)
@@ -250,6 +252,16 @@ public class ItemUpgradeService(
                     "Upgrade rejected for {Name}: slot {SlotIndex} item {ItemId} carries flag {Flag}",
                     session.Name, index, itemIds[index], slot.Flag);
                 await SendUpgradeResultAsync(session, responseSubOpcode, upgradeType, UpgradeRental, itemIds, positions);
+                return;
+            }
+
+            var uses = references[positions[index]] = references.GetValueOrDefault(positions[index]) + 1;
+            if (uses > Math.Max(1, (int)slot.Count))
+            {
+                logger.LogWarning(
+                    "Upgrade rejected for {Name}: position {Position} named {Uses} times but holds {Count}",
+                    session.Name, positions[index], uses, slot.Count);
+                await SendUpgradeResultAsync(session, responseSubOpcode, upgradeType, UpgradeNoMatch, itemIds, positions);
                 return;
             }
         }
@@ -482,10 +494,11 @@ public class ItemUpgradeService(
         await sessionManager.BroadcastToAll(notice);
     }
 
+    // Every material the request named was validated above, so every one is used up: a
+    // scroll or a Blessing Logos in the last slot is spent like the others.
     private static void ConsumeMaterials(UserSession session, int[] itemIds, sbyte[] positions)
     {
-        var consumed = 0;
-        for (var index = 1; index < UpgradeSlotCount && consumed < UpgradeMaterialMax; index++)
+        for (var index = 1; index < UpgradeSlotCount; index++)
         {
             if (positions[index] < 0 || itemIds[index] == 0)
                 continue;
@@ -498,8 +511,6 @@ public class ItemUpgradeService(
                 material.Count--;
             else
                 material.Clear();
-
-            consumed++;
         }
     }
 
