@@ -17,7 +17,9 @@ namespace LibreKO.Game.Tests;
 // item out of their bag: a trade or a stall may be counting on it.
 public class BusyGateTests : GameTestBase
 {
-    public enum Busy { Trading, Selling, Preparing, Gathering, Dead }
+    // None is the control: the same request from an idle player goes through, so a busy
+    // player's refusal is down to being busy and nothing else.
+    public enum Busy { None, Trading, Selling, Preparing, Gathering, Dead }
 
     private const int CharacterId = 93001;
     private const int Ware = 156_210_000;
@@ -29,11 +31,12 @@ public class BusyGateTests : GameTestBase
     private const string RecipientName = "Recipient";
 
     [Theory]
+    [InlineData(Busy.None)]
     [InlineData(Busy.Trading)]
     [InlineData(Busy.Selling)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Dead)]
-    public async Task ABusyPlayerCannotDestroyAnItem(Busy state)
+    public async Task OnlyAnIdlePlayerDestroysAnItem(Busy state)
     {
         using var provider = Provider();
         var (session, client, _) = Player(provider, state);
@@ -44,15 +47,16 @@ public class BusyGateTests : GameTestBase
         packet.WriteInt(Ware);
         await provider.GetRequiredService<IItemRemoveService>().HandleAsync(client, Reset(packet));
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware);
+        Bag(session, WarePos).ItemId.Should().Be(state == Busy.None ? 0 : Ware);
     }
 
     [Theory]
+    [InlineData(Busy.None)]
     [InlineData(Busy.Trading)]
     [InlineData(Busy.Selling)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Gathering)]
-    public async Task ABusyPlayerCannotSwapBagSlots(Busy state)
+    public async Task OnlyAnIdlePlayerSwapsBagSlots(Busy state)
     {
         using var provider = Provider();
         var (session, client, _) = Player(provider, state);
@@ -64,16 +68,18 @@ public class BusyGateTests : GameTestBase
         packet.WriteByte(OtherPos);
         await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, Reset(packet));
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware, "a listed or offered slot must keep its item");
-        Bag(session, OtherPos).ItemId.Should().Be(Other);
+        var idle = state == Busy.None;
+        Bag(session, WarePos).ItemId.Should().Be(idle ? Other : Ware, "a listed or offered slot must keep its item");
+        Bag(session, OtherPos).ItemId.Should().Be(idle ? Ware : Other);
     }
 
     [Theory]
+    [InlineData(Busy.None)]
     [InlineData(Busy.Trading)]
     [InlineData(Busy.Selling)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Gathering)]
-    public async Task ABusyPlayerCannotDropAnItem(Busy state)
+    public async Task OnlyAnIdlePlayerDropsAnItem(Busy state)
     {
         using var provider = Provider();
         var (session, client, _) = Player(provider, state);
@@ -84,14 +90,15 @@ public class BusyGateTests : GameTestBase
         packet.WriteUShort(1);
         await provider.GetRequiredService<ILootPacketCoordinator>().HandleItemDropAsync(client, Reset(packet));
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware);
+        Bag(session, WarePos).ItemId.Should().Be(state == Busy.None ? 0 : Ware);
     }
 
     [Theory]
+    [InlineData(Busy.None)]
     [InlineData(Busy.Selling)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Gathering)]
-    public async Task ABusyPlayerCannotSellToAnNpc(Busy state)
+    public async Task OnlyAnIdlePlayerSellsToAnNpc(Busy state)
     {
         using var provider = Provider();
         var (session, client, _) = Player(provider, state);
@@ -117,47 +124,56 @@ public class BusyGateTests : GameTestBase
         packet.WriteUShort(1);
         await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, Reset(packet));
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware);
-        session.Money.Should().Be(0);
+        var idle = state == Busy.None;
+        Bag(session, WarePos).ItemId.Should().Be(idle ? 0 : Ware);
+        (session.Money > 0).Should().Be(idle);
     }
 
     [Theory]
+    [InlineData(Busy.None)]
     [InlineData(Busy.Trading)]
     [InlineData(Busy.Selling)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Gathering)]
     [InlineData(Busy.Dead)]
-    public async Task ABusyPlayerCannotStoreAnItem(Busy state)
+    public async Task OnlyAnIdlePlayerStoresAnItem(Busy state)
     {
         using var provider = Provider();
         var (session, client, _) = Player(provider, state);
 
         await SendWarehouseAsync(provider, client, WarehouseSubOpcode.Input, Ware, WarePos, 0, count: 1);
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware);
-        session.Warehouse[0].IsEmpty.Should().BeTrue();
+        var idle = state == Busy.None;
+        Bag(session, WarePos).ItemId.Should().Be(idle ? 0 : Ware);
+        session.Warehouse[0].ItemId.Should().Be(idle ? Ware : 0);
     }
 
-    [Fact]
-    public async Task ATradingPlayerCannotTakeAnItemOutOfStorage()
+    [Theory]
+    [InlineData(Busy.None)]
+    [InlineData(Busy.Trading)]
+    public async Task OnlyAnIdlePlayerTakesAnItemOutOfStorage(Busy state)
     {
         using var provider = Provider();
-        var (session, client, _) = Player(provider, Busy.Trading);
+        var (session, client, _) = Player(provider, state);
         session.Warehouse[0].ItemId = Other;
         session.Warehouse[0].Count = 1;
+        session.Warehouse[0].Durability = 50;
         Bag(session, OtherPos).Clear();
 
         await SendWarehouseAsync(provider, client, WarehouseSubOpcode.Output, Other, 0, OtherPos, count: 1);
 
-        session.Warehouse[0].ItemId.Should().Be(Other);
-        Bag(session, OtherPos).IsEmpty.Should().BeTrue();
+        var idle = state == Busy.None;
+        session.Warehouse[0].ItemId.Should().Be(idle ? 0 : Other);
+        Bag(session, OtherPos).ItemId.Should().Be(idle ? Other : 0);
     }
 
-    [Fact]
-    public async Task ASellingPlayerCannotRearrangeTheBagThroughStorage()
+    [Theory]
+    [InlineData(Busy.None)]
+    [InlineData(Busy.Selling)]
+    public async Task OnlyAnIdlePlayerRearrangesTheBagThroughStorage(Busy state)
     {
         using var provider = Provider();
-        var (session, client, _) = Player(provider, Busy.Selling);
+        var (session, client, _) = Player(provider, state);
         Bag(session, OtherPos).Clear();
 
         var packet = new Packet(GameOpcodes.GS_WAREHOUSE);
@@ -169,18 +185,21 @@ public class BusyGateTests : GameTestBase
         packet.WriteByte(OtherPos);
         await provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, Reset(packet));
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware);
-        Bag(session, OtherPos).IsEmpty.Should().BeTrue();
+        var idle = state == Busy.None;
+        Bag(session, WarePos).ItemId.Should().Be(idle ? 0 : Ware);
+        Bag(session, OtherPos).ItemId.Should().Be(idle ? Ware : 0);
     }
 
     [Theory]
+    [InlineData(Busy.None)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Dead)]
-    public async Task APlayerSettingUpAStallOrDeadCannotMoveOrArrangeTheBag(Busy state)
+    public async Task OnlyAnIdlePlayerMovesOrArrangesTheBag(Busy state)
     {
         using var provider = Provider();
         var (session, client, _) = Player(provider, state);
         Bag(session, OtherPos).Clear();
+        var idle = state == Busy.None;
 
         var move = new Packet(GameOpcodes.GS_ITEM_MOVE);
         move.WriteByte(1);
@@ -190,8 +209,8 @@ public class BusyGateTests : GameTestBase
         move.WriteByte(OtherPos);
         await provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(client, Reset(move));
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware);
-        Bag(session, OtherPos).IsEmpty.Should().BeTrue();
+        Bag(session, WarePos).ItemId.Should().Be(idle ? 0 : Ware);
+        Bag(session, OtherPos).ItemId.Should().Be(idle ? Ware : 0);
 
         Bag(session, 5).ItemId = Other;
         Bag(session, 5).Count = 1;
@@ -199,16 +218,17 @@ public class BusyGateTests : GameTestBase
         arrange.WriteByte(2);
         await provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(client, Reset(arrange));
 
-        Bag(session, 5).ItemId.Should().Be(Other, "arranging would move the item a listing points at");
+        Bag(session, 5).ItemId.Should().Be(idle ? 0 : Other, "arranging would move the item a listing points at");
     }
 
     [Theory]
+    [InlineData(Busy.None)]
     [InlineData(Busy.Trading)]
     [InlineData(Busy.Selling)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Gathering)]
     [InlineData(Busy.Dead)]
-    public async Task ABusyPlayerCannotMailAnItem(Busy state)
+    public async Task OnlyAnIdlePlayerMailsAnItem(Busy state)
     {
         using var provider = Provider(seedRecipient: true);
         var (session, _, _) = Player(provider, state);
@@ -216,18 +236,20 @@ public class BusyGateTests : GameTestBase
         await provider.GetRequiredService<IMailService>().SendAsync(session, RecipientName, "Subject", "Body", 0,
             [new MailItemPick((byte)(InventoryConstants.InventoryStart + WarePos), 1)]);
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware);
+        var idle = state == Busy.None;
+        Bag(session, WarePos).ItemId.Should().Be(idle ? 0 : Ware);
         await using var scope = provider.CreateAsyncScope();
-        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.CountAsync()).Should().Be(0);
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.CountAsync()).Should().Be(idle ? 1 : 0);
     }
 
     [Theory]
+    [InlineData(Busy.None)]
     [InlineData(Busy.Trading)]
     [InlineData(Busy.Selling)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Gathering)]
     [InlineData(Busy.Dead)]
-    public async Task ABusyPlayerCannotSendAnItemByLetter(Busy state)
+    public async Task OnlyAnIdlePlayerSendsAnItemByLetter(Busy state)
     {
         using var provider = Provider(seedRecipient: true);
         var (session, client, _) = Player(provider, state);
@@ -245,8 +267,9 @@ public class BusyGateTests : GameTestBase
         packet.WriteString("Message");
         await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, Reset(packet));
 
-        Bag(session, WarePos).ItemId.Should().Be(Ware);
-        session.Money.Should().Be(20_000);
+        var idle = state == Busy.None;
+        Bag(session, WarePos).ItemId.Should().Be(idle ? 0 : Ware);
+        (session.Money < 20_000).Should().Be(idle);
     }
 
     private static async Task SendWarehouseAsync(

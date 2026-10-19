@@ -73,15 +73,18 @@ public class ClanBankTests : GameTestBase
         bank.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(StoredItem);
     }
 
-    [Fact]
-    public async Task ATradingMemberCannotStoreAnItem()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OnlyAMemberWhoIsNotTradingStoresAnItem(bool trading)
     {
         var bank = Bank(Wolves, Member);
         var bag = bank.Session.Inventory[InventoryConstants.SlotMax];
         bag.ItemId = StoredItem;
         bag.Count = 1;
         bag.Durability = 50;
-        bank.Session.Trade.ExchangeUser = 9_999;
+        if (trading)
+            bank.Session.Trade.ExchangeUser = 9_999;
 
         await bank.Send(WarehouseSubOpcode.Input, packet =>
         {
@@ -93,9 +96,9 @@ public class ClanBankTests : GameTestBase
             packet.WriteInt(1);
         });
 
-        bank.LastResult(WarehouseSubOpcode.Input).Should().Be((byte)ClanWarehouseResult.Failed);
-        bank.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(StoredItem);
-        bank.Slots()[0].IsEmpty.Should().BeTrue();
+        bank.LastResult(WarehouseSubOpcode.Input).Should().Be((byte)(trading ? ClanWarehouseResult.Failed : ClanWarehouseResult.Succeeded));
+        bank.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(trading ? StoredItem : 0);
+        bank.Slots()[0].ItemId.Should().Be(trading ? 0 : StoredItem);
     }
 
     [Fact]

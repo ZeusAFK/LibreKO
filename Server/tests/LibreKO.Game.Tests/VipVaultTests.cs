@@ -103,15 +103,17 @@ public class VipVaultTests : GameTestBase
         vault.LastResult(VipWarehouseSubOpcode.UseVault).Should().Be((byte)VipWarehouseResult.NotAVaultKey);
     }
 
-    [Fact]
-    public async Task APlayerSettingUpAStallCannotStoreAnItem()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OnlyAPlayerNotSettingUpAStallStoresAnItem(bool preparing)
     {
         var vault = Vault(gameData => gameData.GetItem(StoredItem)
             .Returns(new ItemData { Num = StoredItem, Race = 1, Countable = 0, Duration = 50 }));
         vault.Session.Inventory[InventoryConstants.SlotMax].ItemId = StoredItem;
         vault.Session.Inventory[InventoryConstants.SlotMax].Count = 1;
         vault.Session.Inventory[InventoryConstants.SlotMax].Durability = 50;
-        vault.Session.Trade.IsSellingMerchantPreparing = true;
+        vault.Session.Trade.IsSellingMerchantPreparing = preparing;
 
         await vault.Send(VipWarehouseSubOpcode.Input, packet =>
         {
@@ -123,9 +125,9 @@ public class VipVaultTests : GameTestBase
             packet.WriteInt(1);
         });
 
-        vault.LastResult(VipWarehouseSubOpcode.Input).Should().Be((byte)VipWarehouseResult.Failed);
-        vault.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(StoredItem);
-        vault.Session.VipWarehouse[0].IsEmpty.Should().BeTrue();
+        vault.LastResult(VipWarehouseSubOpcode.Input).Should().Be((byte)(preparing ? VipWarehouseResult.Failed : VipWarehouseResult.Succeeded));
+        vault.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(preparing ? StoredItem : 0);
+        vault.Session.VipWarehouse[0].ItemId.Should().Be(preparing ? 0 : StoredItem);
     }
 
     [Fact]

@@ -193,7 +193,7 @@ public class MerchantBuyingService(
                 Flag = sellerItem.Flag,
                 ExpiresAt = sellerItem.ExpiresAt,
                 UniqueId = sellerItem.UniqueId,
-                Countable = gameDataService.GetItem(wantedItem.ItemId)?.Countable != 0,
+                Countable = gameDataService.GetItem(wantedItem.ItemId)?.Countable is not (null or 0),
             };
             var merchantSlot = ItemPlacement.FindForDelivery(
                 buyer.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, goods);
