@@ -219,8 +219,10 @@ public class PreGameService(
             return new CharacterSelectResult(SelectFailed(), 0);
         }
 
+        // A sealed character lives in a Cypher Ring that may already belong to someone else;
+        // it keeps its old account until unsealed, so only the list query used to hide it.
         var character = await characterRepository.GetByName(characterName);
-        if (character == null || character.AccountId != account.Id || character.NameChangeRequired)
+        if (character == null || character.AccountId != account.Id || character.NameChangeRequired || character.Sealed)
         {
             return new CharacterSelectResult(SelectFailed(), 0);
         }

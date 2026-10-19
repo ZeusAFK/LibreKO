@@ -106,6 +106,41 @@ public class CharacterSealTests : GameTestBase
     }
 
     [Fact]
+    public async Task ASealedCharacterCannotBeSelectedByTheAccountThatSealedIt()
+    {
+        using var provider = Provider();
+        var session = Session(provider, 10, AccountA, "Zeus");
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
+
+        using var scope = provider.CreateScope();
+        var selected = await scope.ServiceProvider.GetRequiredService<IPreGameService>()
+            .SelectCharacterAsync(AccountA, "a", "Velkan", 1);
+
+        selected.CharacterId.Should().Be(0);
+        selected.Packet.ReadByte().Should().NotBe((byte)SelectCharacterResult.Success);
+    }
+
+    [Fact]
+    public async Task ASealedCharacterIsNotLoadedIntoTheGame()
+    {
+        using var provider = Provider();
+        var session = Session(provider, 10, AccountA, "Zeus");
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.AccountId.Returns(AccountA);
+        client.CharacterId.Returns(11);
+        using var scope = provider.CreateScope();
+
+        var loaded = await scope.ServiceProvider.GetRequiredService<IGameSessionInitializer>().InitializeAsync(client);
+
+        loaded.Should().BeNull();
+    }
+
+    [Fact]
     public async Task AWrongVaultPasswordIsRefusedWithCode22()
     {
         using var provider = Provider();
