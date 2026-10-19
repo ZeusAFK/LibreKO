@@ -109,6 +109,7 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
             return;
 
         session.CastingSkillId = magic.Id;
+        session.CastLaunched = false;
         var castMs = magic.CastTime * MillisecondsPerTenth;
         var commitMs = magic.PrimaryType == MagicSkillType.Ranged ? Math.Min(castMs, RangedCommitMs) : castMs;
         session.CastReadyTicks = now + castMs * TimeSpan.TicksPerMillisecond;
@@ -124,8 +125,14 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
 
     public void OnFlightLaunched(UserSession session, MagicData magic)
     {
-        if (magic.PrimaryType == MagicSkillType.Ranged || session.CastingSkillId != magic.Id)
+        if (session.CastingSkillId != magic.Id)
             return;
+
+        if (magic.PrimaryType == MagicSkillType.Ranged)
+        {
+            session.CastLaunched = true;
+            return;
+        }
 
         ClearCast(session);
     }
@@ -149,14 +156,20 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
             ArmCooldown(session, magic, time.GetUtcNow().UtcTicks);
     }
 
+    // Only a cast that is still being drawn gives its cooldown back. A skill already released,
+    // or an arrow already launched, keeps it: otherwise a Cancel after every use would reset
+    // any skill's cooldown at will.
     public void OnCastAborted(UserSession session, int skillId)
     {
-        if (session.CastingSkillId == skillId)
-        {
-            ClearCast(session);
-            session.SkillBurstTicks = 0;
-        }
+        if (session.CastingSkillId != skillId)
+            return;
 
+        var launched = session.CastLaunched;
+        ClearCast(session);
+        if (launched)
+            return;
+
+        session.SkillBurstTicks = 0;
         session.PendingArrowHits.TryRemove(skillId, out _);
         session.AcceptedCasts.TryRemove(skillId, out _);
         session.SkillCooldowns.TryRemove(skillId, out _);
@@ -248,6 +261,7 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         session.CastingSkillId = 0;
         session.CastReadyTicks = 0;
         session.CastExpireTicks = 0;
+        session.CastLaunched = false;
     }
 
     private static void PruneCooldowns(UserSession session, long now)

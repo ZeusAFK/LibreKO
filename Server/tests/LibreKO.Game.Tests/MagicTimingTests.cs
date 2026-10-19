@@ -469,6 +469,58 @@ public class MagicTimingTests
     }
 
     [Fact]
+    public void CancellingAReleasedSkillKeepsItsCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var inferno = Magic(Inferno, castTenths: 15, recastTenths: 153);
+
+        timing.OnCastAccepted(session, inferno);
+        clock.Advance(TimeSpan.FromSeconds(1.5));
+        timing.CheckRelease(session, inferno).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnReleaseAccepted(session, inferno);
+        timing.OnCastAborted(session, inferno.Id);
+
+        session.SkillCooldowns.Should().ContainKey(inferno.Id);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        timing.CheckCasting(session, inferno).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void CancellingASkillThatWasOnlyReleasedKeepsItsCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var slash = Magic(Slash, castTenths: 0, recastTenths: 100);
+
+        timing.CheckRelease(session, slash).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnReleaseAccepted(session, slash);
+        timing.OnCastAborted(session, slash.Id);
+
+        clock.Advance(TimeSpan.FromSeconds(1));
+        timing.CheckRelease(session, slash).Should().Be(MagicTimingVerdict.OnCooldown,
+            "a Cancel of a skill that already landed must not reset its cooldown");
+    }
+
+    [Fact]
+    public void CancellingAfterTheArrowLeftTheBowKeepsTheCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var arcShot = Magic(102010, castTenths: 13, recastTenths: 30);
+        arcShot.Type1 = 2;
+
+        timing.OnCastAccepted(session, arcShot);
+        clock.Advance(TimeSpan.FromMilliseconds(500));
+        timing.OnFlightLaunched(session, arcShot);
+        timing.OnCastAborted(session, arcShot.Id);
+
+        session.CastingSkillId.Should().Be(0, "the cut draw frees the cast slot");
+        session.SkillCooldowns.Should().ContainKey(arcShot.Id);
+        timing.CheckCasting(session, arcShot).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
     public void AnAbandonedCastStopsBlockingOnceItsGraceExpires()
     {
         var (timing, clock) = Subject();

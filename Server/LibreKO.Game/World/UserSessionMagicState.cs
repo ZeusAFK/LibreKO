@@ -213,6 +213,7 @@ internal static class UserSessionMagicState
         session.CastReadyTicks = 0;
         session.CastCommitTicks = 0;
         session.CastExpireTicks = 0;
+        session.CastLaunched = false;
         RebuildSpecialStates(session, gameData);
         session.RecalculateStatsWithBuffs(gameData);
         return dropped;
