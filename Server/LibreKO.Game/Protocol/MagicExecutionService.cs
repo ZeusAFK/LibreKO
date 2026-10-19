@@ -21,6 +21,8 @@ public class MagicExecutionService(
     IStealthService stealthService) : IMagicExecutionService
 {
     private const int AreaTarget = -1;
+    private const int AreaCentreX = 0;
+    private const int AreaCentreZ = 2;
     private const float MeleeReach = 6f;
     private const float PlayerBodyRadius = 1f;
     private const float RangedPlayerShortcut = 38f;
@@ -31,7 +33,7 @@ public class MagicExecutionService(
 
     public async Task ExecuteAsync(UserSession session, MagicData magic, int skillId, int targetId, int[] data)
     {
-        if (!MayReach(session, magic, skillId, targetId))
+        if (!AreaCastAllowed(session, magic, skillId, targetId, data) || !MayReach(session, magic, skillId, targetId))
         {
             await MagicCombatHelper.SendMagicFailAsync(session, skillId);
             return;
@@ -71,6 +73,40 @@ public class MagicExecutionService(
         await magicStatusEffectService.ExecuteAsync(
             caster, extended, MagicSkillType.Buff, extendedId, targetId, data, isPrimary: false);
     }
+
+    private bool AreaCastAllowed(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    {
+        if (targetId == AreaTarget && !IsAreaCast(magic, skillId))
+            return false;
+
+        var centred = data.Length > AreaCentreZ && (data[AreaCentreX] != 0 || data[AreaCentreZ] != 0);
+        return !centred
+            || magic.PrimaryType is not (MagicSkillType.Melee or MagicSkillType.OverTime or MagicSkillType.Buff or MagicSkillType.Area)
+            || Within(caster, data[AreaCentreX], data[AreaCentreZ], 0f, magic.Range > 0 ? magic.Range : MeleeReach);
+    }
+
+    private bool IsAreaCast(MagicData magic, int skillId)
+    {
+        var moral = (SkillMoral)magic.Moral;
+        var groundMoral = moral is SkillMoral.AreaEnemy or SkillMoral.AreaFriend or SkillMoral.AreaAll;
+        var casterMoral = moral is SkillMoral.PartyAll or SkillMoral.SelfArea;
+        var radius = AreaRadius(magic, skillId);
+        var isArea = magic.PrimaryType == MagicSkillType.Melee
+            ? groundMoral || casterMoral
+            : radius > 0 && magic.PrimaryType is MagicSkillType.OverTime or MagicSkillType.Buff or MagicSkillType.Area;
+
+        return (isArea && (groundMoral || casterMoral))
+            || (casterMoral && magic.PrimaryType is MagicSkillType.Buff or MagicSkillType.Special)
+            || (moral == SkillMoral.PartyAll && radius == 0 && magic.PrimaryType is MagicSkillType.OverTime or MagicSkillType.Warp);
+    }
+
+    private int AreaRadius(MagicData magic, int skillId) => magic.PrimaryType switch
+    {
+        MagicSkillType.OverTime when MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, skillId, out var type3) => type3.Radius,
+        MagicSkillType.Buff when MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, skillId, out var type4) => type4.Radius,
+        MagicSkillType.Area when MagicTypeLookup.TryResolve(gameDataService.MagicType7Table, magic, skillId, out var type7) => type7.Radius,
+        _ => 0,
+    };
 
     private bool MayReach(UserSession caster, MagicData magic, int skillId, int targetId)
     {
