@@ -24,6 +24,7 @@ public sealed class SelfSession
             Face = value.Face;
             Hair = value.Hair;
             Class = value.Class;
+            KnightsRank = value.KnightsRank;
             PersonalRank = value.PersonalRank;
             IsKing = value.IsKing;
         }
@@ -36,6 +37,8 @@ public sealed class SelfSession
     public int Hair { get; private set; }
 
     public int Class { get; private set; }
+
+    public int KnightsRank { get; private set; }
 
     public int PersonalRank { get; private set; }
 
@@ -221,15 +224,16 @@ public sealed class SelfSession
         LastEnter = info;
     }
 
-    public event Action? PersonalRankEvent;
+    public event Action? NationRanksEvent;
 
-    internal void ApplyPersonalRank(int rank)
+    internal void ApplyNationRanks(int knightsRank, int personalRank)
     {
-        if (PersonalRank == rank) return;
+        if (KnightsRank == knightsRank && PersonalRank == personalRank) return;
         var info = LastEnter;
-        info.PersonalRank = rank;
+        info.KnightsRank = knightsRank;
+        info.PersonalRank = personalRank;
         LastEnter = info;
-        PersonalRankEvent?.Invoke();
+        NationRanksEvent?.Invoke();
     }
 
     internal void WearTransform(int skillId) => TransformSkill = skillId;

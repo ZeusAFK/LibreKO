@@ -26,6 +26,34 @@ public class SessionApplyTests
     }
 
     [Fact]
+    public void BothNationRanksFromTheEnterRecordAreKept()
+    {
+        var self = new SelfSession();
+
+        self.ApplyMyInfo(new MyInfo { KnightsRank = 1, PersonalRank = NationRankAura.Unranked }, new ItemSlot[InventoryConstants.InventoryTotal]);
+
+        Assert.Equal(1, self.KnightsRank);
+        Assert.Equal(NationRankAura.Unranked, self.PersonalRank);
+    }
+
+    [Fact]
+    public void ARankRefreshThatOnlyMovesTheKnightsRankIsStoredAndAnnouncedOnce()
+    {
+        var self = new SelfSession();
+        self.ApplyMyInfo(new MyInfo { KnightsRank = NationRankAura.Unranked, PersonalRank = NationRankAura.Unranked }, new ItemSlot[InventoryConstants.InventoryTotal]);
+        int announced = 0;
+        self.NationRanksEvent += () => announced++;
+
+        self.ApplyNationRanks(1, NationRankAura.Unranked);
+        self.ApplyNationRanks(1, NationRankAura.Unranked);
+
+        Assert.Equal(1, self.KnightsRank);
+        Assert.Equal(1, self.LastEnter.KnightsRank);
+        Assert.Equal(NationRankAura.Unranked, self.PersonalRank);
+        Assert.Equal(1, announced);
+    }
+
+    [Fact]
     public void HitPointsAndManaAreStoredBeforeTheyAreAnnounced()
     {
         var self = new SelfSession();
