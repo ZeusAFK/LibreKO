@@ -219,8 +219,6 @@ public class ItemUpgradeService(
             return;
         }
 
-        // A bag position may stand in the request only as many times as its stack holds,
-        // so one accessory cannot count as three copies and one stack cannot fill every slot.
         var references = new Dictionary<sbyte, int>();
         for (var index = 0; index < UpgradeSlotCount; index++)
         {
@@ -494,8 +492,6 @@ public class ItemUpgradeService(
         await sessionManager.BroadcastToAll(notice);
     }
 
-    // Every material the request named was validated above, so every one is used up: a
-    // scroll or a Blessing Logos in the last slot is spent like the others.
     private static void ConsumeMaterials(UserSession session, int[] itemIds, sbyte[] positions)
     {
         for (var index = 1; index < UpgradeSlotCount; index++)

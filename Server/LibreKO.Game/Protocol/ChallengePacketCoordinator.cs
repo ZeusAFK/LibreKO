@@ -119,8 +119,6 @@ public class ChallengePacketCoordinator(
         challenger.Trade.ChallengeUser = -1;
         challenger.Trade.IsRequestingChallenge = false;
 
-        // The request was checked when it was sent; either player may since have died, moved,
-        // joined a party or been sent to prison, and the accept moves both to the Arena.
         if (challenger == session || challenger.Hp <= 0 || challenger.ZoneId != session.ZoneId
             || ChallengeBlockedIn(session.ZoneId) || IsBusy(session) || IsBusy(challenger))
         {

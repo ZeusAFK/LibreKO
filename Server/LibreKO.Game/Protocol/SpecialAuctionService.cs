@@ -132,8 +132,6 @@ public class SpecialAuctionService(
         if (moment.Phase != AuctionPhase.Open)
             return SpecialAuctionPacketWriter.NotBiddingTime;
 
-        // A check offered in a trade stays in its slot with Count 0 until the trade ends, and
-        // the trade still delivers it; one listed on a stall can still be bought.
         if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing)
             return SpecialAuctionPacketWriter.Busy;
 

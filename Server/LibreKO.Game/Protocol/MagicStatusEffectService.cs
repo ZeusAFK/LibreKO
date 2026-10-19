@@ -617,8 +617,6 @@ public class MagicStatusEffectService(
         moral is SkillMoral.PartyAll or SkillMoral.AreaEnemy or SkillMoral.AreaFriend or SkillMoral.AreaAll
             or SkillMoral.SelfArea;
 
-    // A cure only reaches a player the row may touch (a friend, or an enemy for a dispel),
-    // in the caster's zone and within the row's range.
     private static bool MayCleanse(UserSession caster, UserSession target, MagicData magic)
     {
         var moral = (SkillMoral)magic.Moral;
@@ -656,7 +654,6 @@ public class MagicStatusEffectService(
             return;
         }
 
-        // A cure lifts curses; removing a blessing (a dispel) lifts the helpful ones.
         if (await ClearCastBuffsAsync(target, helpful: special == SpecialMagicType.RemoveBless))
         {
             target.RebuildSpecialStates(gameDataService);
@@ -673,7 +670,6 @@ public class MagicStatusEffectService(
 
     private async Task<bool> ClearCastBuffsAsync(UserSession target, bool helpful)
     {
-        // Only type-4 effects someone else cast on the target, of the asked kind.
         var liftedIds = target.ActiveBuffs
             .Where(kv => kv.Value.CasterId != target.CharacterId && kv.Value.BuffType != BuffType.None
                 && IsHelpfulBuff(kv.Key, kv.Value) == helpful)

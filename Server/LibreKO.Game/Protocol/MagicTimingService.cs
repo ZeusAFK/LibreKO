@@ -156,9 +156,6 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
             ArmCooldown(session, magic, time.GetUtcNow().UtcTicks);
     }
 
-    // Only a cast that is still being drawn gives its cooldown back. A skill already released,
-    // or an arrow already launched, keeps it: otherwise a Cancel after every use would reset
-    // any skill's cooldown at will.
     public void OnCastAborted(UserSession session, int skillId)
     {
         if (session.CastingSkillId != skillId)

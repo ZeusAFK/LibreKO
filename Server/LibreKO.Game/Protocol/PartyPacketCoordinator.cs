@@ -528,7 +528,6 @@ public class PartyPacketCoordinator(
             return;
         }
 
-        // Only the leader disbands; anyone else asking to disband just leaves.
         if (party.LeaderId != (short)session.CharacterId)
         {
             await RemoveMemberAsync(session, (short)session.CharacterId);

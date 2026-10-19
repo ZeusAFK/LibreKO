@@ -68,8 +68,7 @@ public class MagicPacketCoordinator(
             return;
         }
 
-        // A dead player cannot be hit (PvpRules needs the target alive), so a dead caster
-        // would be an invulnerable one. Only the rows that revive the caster work while dead.
+        // A dead player cannot be hit back, so only the rows that revive the caster work while dead.
         if (session.Hp <= 0
             && RequiresLearnedSkill((MagicProcessOpcode)magicOpcode)
             && !RevivesTheCaster(magic, skillId))
