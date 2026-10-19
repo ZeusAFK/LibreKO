@@ -18,6 +18,7 @@ public class NpcTradeAtomicityTests : GameTestBase
     private const int SellingGroup = 1;
     private const int Potion = 389_010_000;
     private const int Arrow = 391_010_000;
+    private const int Sword = 120_110_001;
     private const int PotionPrice = 100;
     private const int ArrowPrice = 10;
     private const int StartingGold = 1_000;
@@ -60,6 +61,18 @@ public class NpcTradeAtomicityTests : GameTestBase
         Bag(session, 0).ItemId.Should().Be(Arrow);
         Bag(session, 0).Count.Should().Be(1);
         session.Money.Should().Be(StartingGold - ArrowPrice);
+    }
+
+    [Fact]
+    public async Task ABuyOfSeveralOfAnItemThatDoesNotStackIsRefused()
+    {
+        using var provider = Provider();
+        var (session, client, npc) = Shopper(provider);
+
+        await TradeAsync(provider, client, npc, Buy, (Sword, 0, 5));
+
+        Bag(session, 0).IsEmpty.Should().BeTrue("one slot holds one such item");
+        session.Money.Should().Be(StartingGold);
     }
 
     [Fact]
@@ -122,6 +135,10 @@ public class NpcTradeAtomicityTests : GameTestBase
         gameData.GetItem(Potion).Returns(new ItemData
         {
             Num = Potion, Countable = 1, BuyPrice = PotionPrice, SellPrice = 1, Weight = 1, Race = 1, SellingGroup = SellingGroup,
+        });
+        gameData.GetItem(Sword).Returns(new ItemData
+        {
+            Num = Sword, Countable = 0, BuyPrice = 10, SellPrice = 1, Weight = 1, Race = 1, Duration = 100, SellingGroup = SellingGroup,
         });
         gameData.GetItem(Arrow).Returns(new ItemData
         {

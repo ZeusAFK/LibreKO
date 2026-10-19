@@ -630,7 +630,7 @@ public class UserSession
                 returned.GoldToWarehouse += gold.ToWarehouse;
                 returned.GoldLost += gold.Lost;
             }
-            else if (!ReturnEscrowedItem(item))
+            else if (!ReturnEscrowedItem(item, returned))
             {
                 returned.Unplaced.Add(item);
             }
@@ -648,14 +648,19 @@ public class UserSession
     }
 
     // Its own bag slot when that is still free (or holds the same stack), else any free bag slot,
-    // else the warehouse, so a slot filled during the trade never costs the item.
-    public bool ReturnEscrowedItem(ExchangeItem item)
+    // else the warehouse, so a slot filled during the trade never costs the item. The bag slots
+    // involved are noted in returned, for the client.
+    public bool ReturnEscrowedItem(ExchangeItem item, ExchangeReturn? returned = null)
     {
+        if (item.SrcPos is >= InventoryConstants.InventoryStart and < InventoryConstants.InventoryStart + InventoryConstants.HaveMax)
+            returned?.BagSlots.Add(item.SrcPos);
+
         var slot = ItemPlacement.FindForReturn(
             Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item, item.SrcPos);
         if (slot >= 0)
         {
             ItemPlacement.Put(Inventory[slot], item);
+            returned?.BagSlots.Add(slot);
             return true;
         }
 

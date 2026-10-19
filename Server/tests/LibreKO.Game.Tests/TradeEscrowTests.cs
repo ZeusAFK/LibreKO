@@ -154,6 +154,36 @@ public class TradeEscrowTests : GameTestBase
 
         giver.Money.Should().Be(ExchangePacketConstants.CoinMax, "the purse never goes past the cap");
         giver.WarehouseMoney.Should().Be(900, "the offered gold that no longer fits is kept, not destroyed");
+        var purse = Sent(giverClient).Last(p => p.GetOpcode() == (byte)GameOpcodes.GS_GOLD_CHANGE);
+        purse.ResetOffset();
+        purse.ReadByte();
+        purse.ReadInt().Should().Be(900);
+        purse.ReadInt().Should().Be(ExchangePacketConstants.CoinMax, "the client's purse is set to what it really holds");
+    }
+
+    [Fact]
+    public async Task APartnersClientIsToldWhereTheirCancelledOfferReallyWent()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var (_, taker, giverClient, takerClient) = OpenTrade(provider);
+        StockPotions(taker);
+
+        await SendAsync(provider, takerClient, AddPacket(PotionPos, Potion, PotionStack));
+        // A pickup of the same potion, but one that expires, lands in the freed slot. The client
+        // would stack the offer back onto it; the server keeps the two apart.
+        var filled = BagSlot(taker, PotionPos);
+        filled.ItemId = Potion;
+        filled.Count = 1;
+        filled.ExpiresAt = OldPotionExpiry;
+        await SendAsync(provider, giverClient, CancelPacket());
+
+        BagSlot(taker, 0).Count.Should().Be(PotionStack);
+        var sent = Sent(takerClient);
+        var cancelAt = sent.FindIndex(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE && FirstByte(p) == ExchangePacketConstants.ExchangeCancel);
+        var resyncAt = sent.FindIndex(p => p.GetOpcode() == (byte)GameOpcodes.GS_ITEM_COUNT_CHANGE);
+        cancelAt.Should().BeGreaterThanOrEqualTo(0);
+        resyncAt.Should().BeGreaterThan(cancelAt, "the client restores its own view on the cancel, then learns the truth");
+        CountChangePackets.Positions(sent).Should().Contain([PotionPos, 0]);
     }
 
     [Fact]
@@ -325,6 +355,18 @@ public class TradeEscrowTests : GameTestBase
         giver.InitExchange(true);
         taker.InitExchange(true);
         return (giver, taker, giverClient, takerClient);
+    }
+
+    private static List<Packet> Sent(IClient client) =>
+        client.ReceivedCalls()
+            .Where(call => call.GetMethodInfo().Name == nameof(IClient.SendPacket))
+            .Select(call => (Packet)call.GetArguments()[0]!)
+            .ToList();
+
+    private static byte FirstByte(Packet packet)
+    {
+        packet.ResetOffset();
+        return packet.ReadByte();
     }
 
     private static IClient MakeClient()

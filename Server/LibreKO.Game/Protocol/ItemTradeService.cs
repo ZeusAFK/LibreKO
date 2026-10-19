@@ -339,6 +339,7 @@ public class ItemTradeService(
                     || entry.Count == 0
                     || entry.Count > InventoryConstants.MaxStackCount
                     || (type == 1 && !usedPositions.Add(entry.Position))
+                    || (type == 1 && itemData.Countable == 0 && entry.Count != 1)
                     || (type == 2 && (entry.ItemId >= ItemNoTrade || UnsellableRaces.Contains(itemData.Race))))
                     return Refuse(ItemTradeRefusal.CannotTrade);
 

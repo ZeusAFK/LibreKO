@@ -2,10 +2,12 @@ using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.World;
 
-// What handing a trade's escrowed offers back did: the gold that went into the purse or, past
-// the coin cap, into the warehouse, and whatever found no room anywhere.
+// What handing a trade's escrowed offers back did: the bag slots it touched (where each offer
+// went and the slot it came from), the gold that went into the purse or, past the coin cap,
+// into the warehouse, and whatever found no room anywhere.
 public sealed class ExchangeReturn
 {
+    public List<int> BagSlots { get; } = [];
     public int GoldToPurse { get; set; }
     public int GoldToWarehouse { get; set; }
     public long GoldLost { get; set; }

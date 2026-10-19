@@ -166,6 +166,11 @@ public class MerchantStallTests : GameTestBase
 
         owner.Money.Should().Be(ExchangePacketConstants.CoinMax, "the purse never goes past the cap");
         owner.WarehouseMoney.Should().Be(5 * Price - 1_000, "the gold that no longer fits is kept, not destroyed");
+        owner.Client.ReceivedCalls()
+            .Where(call => call.GetMethodInfo().Name == nameof(IClient.SendPacket))
+            .Select(call => (Packet)call.GetArguments()[0]!)
+            .Should().Contain(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_CHAT,
+                "the owner is told where the gold went");
     }
 
     [Fact]

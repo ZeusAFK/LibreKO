@@ -11,9 +11,11 @@ public interface IExchangeLifecycleService
     Task RequestAsync(UserSession session, Packet packet);
     Task AgreeAsync(UserSession session, Packet packet);
     Task CancelAsync(UserSession session, bool isOnDeath = false);
+    Task SettleReturnAsync(UserSession session, ExchangeReturn? returned);
 }
 
 public class ExchangeLifecycleService(SessionManager sessionManager,
+    IUserNotificationService userNotificationService,
     ILogger<ExchangeLifecycleService> logger) : IExchangeLifecycleService
 {
     public async Task RequestAsync(UserSession session, Packet packet)
@@ -65,10 +67,11 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         // A refused request still hands back anything offered into escrow before the answer.
         if (target == null)
         {
-            LogUnplaced(session, session.WithLock(s => s.InitExchange(false)));
+            await SettleReturnAsync(session, session.WithLock(s => s.InitExchange(false)));
             return;
         }
 
+        ExchangeReturn? returnedSession = null, returnedTarget = null;
         if (agreed == 0
             || CannotStartTrade(session)
             || CannotStartTrade(target)
@@ -78,14 +81,13 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
             || (target.Nation != session.Nation
                 && !ZoneRules.Allows(session.ZoneId, ZoneFlags.TradeOtherNation)))
         {
-            LogUnplaced(session, session.WithLock(s => s.InitExchange(false)));
+            returnedSession = session.WithLock(s => s.InitExchange(false));
             if (target.Trade.ExchangeUser == session.CharacterId)
-                LogUnplaced(target, target.WithLock(t => t.InitExchange(false)));
+                returnedTarget = target.WithLock(t => t.InitExchange(false));
             agreed = 0;
         }
         else
         {
-            ExchangeReturn? returnedSession = null, returnedTarget = null;
             var paired = false;
             UserSession.WithBoth(session, target, (s, t) =>
             {
@@ -95,14 +97,14 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
                 returnedSession = s.InitExchange(true);
                 returnedTarget = t.InitExchange(true);
             });
-            LogUnplaced(session, returnedSession);
-            LogUnplaced(target, returnedTarget);
             if (!paired)
                 return;
         }
 
         await target.Client.SendPacket(ExchangePacketWriter.Result(
             ExchangePacketConstants.ExchangeAgree, agreed));
+        await SettleReturnAsync(session, returnedSession);
+        await SettleReturnAsync(target, returnedTarget);
     }
 
     public async Task CancelAsync(UserSession session, bool isOnDeath = false)
@@ -111,13 +113,42 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
             return;
 
         var target = sessionManager.GetByCharacterId(session.Trade.ExchangeUser);
-        LogUnplaced(session, session.WithLock(s => s.InitExchange(false)));
+        var returnedSession = session.WithLock(s => s.InitExchange(false));
         logger.LogInformation("Trade cancelled for {Name}", session.Name);
 
+        ExchangeReturn? returnedTarget = null;
         if (target != null && target.Trade.ExchangeUser == session.CharacterId)
         {
-            LogUnplaced(target, target.WithLock(t => t.InitExchange(false)));
+            returnedTarget = target.WithLock(t => t.InitExchange(false));
             await SendCancelAsync(target);
+        }
+
+        await SettleReturnAsync(session, returnedSession);
+        if (target != null)
+            await SettleReturnAsync(target, returnedTarget);
+    }
+
+    // Once the player's client knows the trade is over (and has put its offer back the way it
+    // guesses), tells it where each offer really went and what its purse holds, and logs
+    // whatever found no room anywhere.
+    public async Task SettleReturnAsync(UserSession session, ExchangeReturn? returned)
+    {
+        if (returned == null)
+            return;
+
+        returned.LogLosses(logger, session.Name);
+        foreach (var index in returned.BagSlots.Distinct())
+        {
+            var (itemId, count, durability) = session.WithLock(s =>
+                (s.Inventory[index].ItemId, s.Inventory[index].Count, s.Inventory[index].Durability));
+            await userNotificationService.SendStackChangeAsync(session, (byte)index, itemId, count, durability);
+        }
+
+        if (returned.GoldToWarehouse > 0)
+        {
+            await userNotificationService.SendGoldLossAsync(session, returned.GoldToWarehouse);
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                $"{returned.GoldToWarehouse:N0} coins did not fit in your purse and went to your warehouse."));
         }
     }
 
@@ -125,9 +156,6 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
     // trade nor take one up, so no one is ever trading and selling or gathering at once.
     private static bool CannotStartTrade(UserSession session) =>
         session.Hp <= 0 || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.IsGathering;
-
-    private void LogUnplaced(UserSession session, ExchangeReturn? returned) =>
-        returned?.LogLosses(logger, session.Name);
 
     private static async Task SendCancelAsync(UserSession session)
     {

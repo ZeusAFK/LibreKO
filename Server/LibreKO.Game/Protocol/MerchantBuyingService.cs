@@ -285,8 +285,12 @@ public class MerchantBuyingService(
         if (refund.ToPurse > 0)
             await userNotificationService.SendGoldGainAsync(session, refund.ToPurse);
         if (refund.ToWarehouse > 0)
+        {
             logger.LogInformation("The buying stall of {Name} put {Gold} gold into the warehouse: the purse was full",
                 session.Name, refund.ToWarehouse);
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                $"{refund.ToWarehouse:N0} coins did not fit in your purse and went to your warehouse."));
+        }
         if (refund.Lost > 0)
             logger.LogError("The buying stall of {Name} held {Gold} gold that fit in neither the purse nor the warehouse",
                 session.Name, refund.Lost);

@@ -217,12 +217,12 @@ public class ExchangeTransferService(
                 break;
 
             case DecideOutcome.Fail:
-                returnedSession?.LogLosses(logger, session.Name);
-                returnedTarget?.LogLosses(logger, target.Name);
                 var fail = ExchangePacketWriter.Result(
                     ExchangePacketConstants.ExchangeDone, ExchangePacketWriter.Failed);
                 await session.Client.SendPacket(fail);
                 await target.Client.SendPacket(fail);
+                await exchangeLifecycleService.SettleReturnAsync(session, returnedSession);
+                await exchangeLifecycleService.SettleReturnAsync(target, returnedTarget);
                 break;
 
             case DecideOutcome.Done:
