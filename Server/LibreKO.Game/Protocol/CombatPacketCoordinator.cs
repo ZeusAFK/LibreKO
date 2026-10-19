@@ -247,6 +247,9 @@ public class CombatPacketCoordinator(
         var target = sessionManager.GetByCharacterId(targetId);
         if (target != null)
         {
+            if (!CanSeeHpOf(session, target))
+                return;
+
             var result = BuildTargetHpPacket(targetId, echo, target.MaxHp, target.Hp, 0);
             await client.SendPacket(result);
             return;
@@ -259,6 +262,12 @@ public class CombatPacketCoordinator(
         var drops = TargetQuestDrops.For(session, npc, gameDataService, questDefinitions);
         await client.SendPacket(TargetHpPacketWriter.Polled(targetId, echo, npc.MaxHp, npc.Hp, 0, drops));
     }
+
+    private static bool CanSeeHpOf(UserSession viewer, UserSession target)
+        => viewer.CharacterId == target.CharacterId
+        || viewer.IsGM
+        || (RegionManager.IsInView(viewer, target)
+            && (!target.IsInvisible || target.Nation == viewer.Nation));
 
     private static Packet BuildTargetHpPacket(int targetId, byte echo, int maxHp, int hp, int damage)
     {

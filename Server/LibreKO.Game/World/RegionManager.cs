@@ -63,6 +63,12 @@ public class RegionManager
     public IEnumerable<UserSession> GetNearbyUsers(UserSession session)
         => GetNearbyUsersAt(session.Room, session.ZoneId, session.RegionX, session.RegionZ, session.CharacterId);
 
+    public static bool IsInView(UserSession viewer, UserSession target)
+        => viewer.Room == target.Room
+        && viewer.ZoneId == target.ZoneId
+        && Math.Abs(viewer.RegionX - target.RegionX) <= ViewDistance
+        && Math.Abs(viewer.RegionZ - target.RegionZ) <= ViewDistance;
+
     public IEnumerable<UserSession> GetNearbyUsersAt(ushort room, byte zoneId, int regionX, int regionZ, int excludeCharacterId)
     {
         for (var dx = -ViewDistance; dx <= ViewDistance; dx++)

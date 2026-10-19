@@ -94,13 +94,20 @@ public class MiscPacketCoordinator(
 
         var targetId = packet.ReadShort();
         var target = sessionManager.GetByCharacterId(targetId);
-        if (target == null)
+        if (target == null || !MayLocateCorpseOf(session, target))
             return;
 
         var result = MiscPacketWriter.CorpseLocation(
             targetId, target.GetPosX, target.GetPosZ, target.GetPosY);
         await session.Client.SendPacket(result);
     }
+
+    private static bool MayLocateCorpseOf(UserSession session, UserSession target)
+        => target.Hp <= 0
+        && target.ZoneId == session.ZoneId
+        && target.Room == session.Room
+        && (target.CharacterId == session.CharacterId
+            || (session.IsInParty && target.IsInParty && target.PartyIndex == session.PartyIndex));
 
     public async Task HandleNameChangeAsync(IClient client, Packet packet)
     {
