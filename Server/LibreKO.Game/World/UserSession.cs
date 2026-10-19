@@ -611,15 +611,17 @@ public class UserSession
         return -1;
     }
 
-    public void InitExchange(bool start)
+    // Hands every escrowed offer back: gold to the purse, each item by identity into the bag.
+    // Returns the items that found no room anywhere.
+    public List<ExchangeItem> InitExchange(bool start)
     {
-        // Restore items/gold from exchange list
+        var unplaced = new List<ExchangeItem>();
         foreach (var item in Trade.ExchangeItemList)
         {
             if (item.ItemId == InventoryConstants.ItemGold)
                 Money += item.Count;
-            else if (item.SrcPos < Inventory.Length)
-                Inventory[item.SrcPos].Count += (ushort)item.Count;
+            else if (!ReturnEscrowedItem(item))
+                unplaced.Add(item);
         }
         Trade.ExchangeItemList.Clear();
 
@@ -629,6 +631,28 @@ public class UserSession
             Trade.ExchangeOk = false;
             Trade.AskedForExchange = false;
         }
+
+        return unplaced;
+    }
+
+    // Its own bag slot when that is still free (or holds the same stack), else any free bag slot,
+    // else the warehouse, so a slot filled during the trade never costs the item.
+    public bool ReturnEscrowedItem(ExchangeItem item)
+    {
+        var slot = ItemPlacement.FindForReturn(
+            Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item, item.SrcPos);
+        if (slot >= 0)
+        {
+            ItemPlacement.Put(Inventory[slot], item);
+            return true;
+        }
+
+        slot = ItemPlacement.FindForReturn(Warehouse, 0, WarehouseMax, item);
+        if (slot < 0)
+            return false;
+
+        ItemPlacement.Put(Warehouse[slot], item);
+        return true;
     }
 
     public void CompleteExchange()

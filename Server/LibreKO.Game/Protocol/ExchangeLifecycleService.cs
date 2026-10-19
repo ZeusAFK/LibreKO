@@ -64,9 +64,10 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
 
         var agreed = packet.ReadByte();
         var target = sessionManager.GetByCharacterId(session.Trade.ExchangeUser);
+        // A refused request still hands back anything offered into escrow before the answer.
         if (target == null)
         {
-            session.Trade.ExchangeUser = -1;
+            LogUnplaced(session, session.WithLock(s => s.InitExchange(false)));
             return;
         }
 
@@ -79,8 +80,9 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
             || (target.Nation != session.Nation
                 && !ZoneRules.Allows(session.ZoneId, ZoneFlags.TradeOtherNation)))
         {
-            session.Trade.ExchangeUser = -1;
-            target.Trade.ExchangeUser = -1;
+            LogUnplaced(session, session.WithLock(s => s.InitExchange(false)));
+            if (target.Trade.ExchangeUser == session.CharacterId)
+                LogUnplaced(target, target.WithLock(t => t.InitExchange(false)));
             agreed = 0;
         }
         else
@@ -99,14 +101,21 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
             return;
 
         var target = sessionManager.GetByCharacterId(session.Trade.ExchangeUser);
-        session.InitExchange(false);
+        LogUnplaced(session, session.WithLock(s => s.InitExchange(false)));
         logger.LogInformation("Trade cancelled for {Name}", session.Name);
 
-        if (target != null)
+        if (target != null && target.Trade.ExchangeUser == session.CharacterId)
         {
-            target.InitExchange(false);
+            LogUnplaced(target, target.WithLock(t => t.InitExchange(false)));
             await SendCancelAsync(target);
         }
+    }
+
+    private void LogUnplaced(UserSession session, List<ExchangeItem> unplaced)
+    {
+        foreach (var item in unplaced)
+            logger.LogError("Exchange item {ItemId} x{Count} of {Name} found no room to return",
+                item.ItemId, item.Count, session.Name);
     }
 
     private static async Task SendCancelAsync(UserSession session)

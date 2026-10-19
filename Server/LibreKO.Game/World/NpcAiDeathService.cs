@@ -14,19 +14,17 @@ public class NpcAiDeathService(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IPlayerProgressionService playerProgressionService,
-    IMiningPacketCoordinator miningPacketCoordinator) : INpcAiDeathService
+    IMiningPacketCoordinator miningPacketCoordinator,
+    IExchangeLifecycleService exchangeLifecycleService) : INpcAiDeathService
 {
     public async Task HandlePlayerKilledByNpcAsync(UserSession target, NpcInstance npc)
     {
         var deadPacket = DeathPacketWriter.PlayerDeath(target.CharacterId, npc.UniqueId);
         await sessionManager.Regions.SendToRegion(target, deadPacket, excludeSender: false);
 
+        // Cancelling hands both players' escrowed offers back; clearing the list would lose them.
         if (target.Trade.IsTrading)
-        {
-            target.Trade.ExchangeUser = -1;
-            target.Trade.ExchangeOk = false;
-            target.Trade.ExchangeItemList.Clear();
-        }
+            await exchangeLifecycleService.CancelAsync(target, isOnDeath: true);
 
         if (target.Trade.IsMerchanting)
             target.Trade.MerchantState = Protocol.MerchantMode.None;
