@@ -77,6 +77,8 @@ public static class MagicSkillRequirement
         return magic.UseItem != 0 || prefix is < FirstMonsterSkillPrefix or > LastMonsterSkillPrefix;
     }
 
+    public static bool IsClassSkill(MagicData magic) => IsPlayerClass((short)(magic.Id / SkillIdsPerClass));
+
     private static bool IsClassTree(int skillTree) => IsPlayerClass((short)(skillTree / TreesPerClass));
 
     private static bool IsPlayerClass(short classId) =>

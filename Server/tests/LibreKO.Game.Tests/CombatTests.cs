@@ -907,6 +907,7 @@ public class CombatTests : GameTestBase
     {
         const int skillId = 202008;
         const int arrowItemId = 391010000;
+        const int bowItemId = 160210001;
 
         using var provider = CreateProvider(
             _ => { },
@@ -928,6 +929,7 @@ public class CombatTests : GameTestBase
                         NeedArrow = 1
                     }
                 });
+                gameData.GetItem(bowItemId).Returns(new ItemData { Num = bowItemId, Kind = 70, Slot = 4, Delay = 150, Range = 350, Duration = 83 });
                 gameData.GetItem(arrowItemId).Returns(new ItemData
                 {
                     Num = arrowItemId,
@@ -954,6 +956,8 @@ public class CombatTests : GameTestBase
         session.Z = 20;
         session.MaxMp = 100;
         session.Mp = 20;
+        session.Inventory[InventoryConstants.LeftHand].ItemId = bowItemId;
+        session.Inventory[InventoryConstants.LeftHand].Count = 1;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = arrowItemId;
         session.Inventory[InventoryConstants.InventoryStart].Count = 10;
         session.Inventory[InventoryConstants.InventoryStart].Durability = 1;

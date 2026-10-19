@@ -46,6 +46,7 @@ public class WeaponElementSkillTests : GameTestBase
         using var provider = CreateProvider(_ => { }, SkillData);
         var warrior = Warrior(provider, HellBreaker);
         var monster = Monster(provider, MonsterFireResistance);
+        warrior.PendingArrowHits[ArrowSkill] = 1;
 
         await Cast(provider, warrior, ArrowSkill, monster.UniqueId);
 

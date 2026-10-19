@@ -117,11 +117,8 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         session.CastExpireTicks = session.CastReadyTicks + AbandonedCastGraceMs * TimeSpan.TicksPerMillisecond;
     }
 
-    public void OnVolleyAccepted(UserSession session, MagicData magic, int arrows)
-    {
-        if (arrows > 1)
-            session.PendingArrowHits[magic.Id] = arrows;
-    }
+    public void OnVolleyAccepted(UserSession session, MagicData magic, int arrows) =>
+        session.PendingArrowHits[magic.Id] = Math.Max(1, arrows);
 
     public void OnFlightLaunched(UserSession session, MagicData magic)
     {
