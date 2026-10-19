@@ -315,14 +315,21 @@ public class ItemTradeService(
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var premiumSeller = NpcSellRules.SellsAtPremium(session,
             session.KnightsId > 0 && sessionManager.Knights.GetClan(session.KnightsId)?.HasPremium == true);
+        static (ItemTradeRefusal Error, int Price, int Money, int Loyalty, byte SellingGroup, bool HasItems) Refuse(
+            ItemTradeRefusal reason) => (reason, 0, 0, 0, 0, false);
+
+        // Every line is checked before anything changes; then all of them are applied and the
+        // gold is settled once, so a refused line can never leave the earlier ones paid for nothing.
         var outcome = session.WithLock(s =>
         {
             if (type == 2 && loyaltyShop)
-                return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+                return Refuse(ItemTradeRefusal.CannotTrade);
 
+            var lines = new List<(NpcTradeEntry Entry, ItemData Item)>(entries.Count);
             var usedPositions = new HashSet<byte>();
-            var totalPrice = 0;
-            ItemData? lastItemData = null;
+            var soldFrom = new Dictionary<byte, int>();
+            long totalPrice = 0;
+            long totalWeight = 0;
 
             foreach (var entry in entries)
             {
@@ -330,78 +337,99 @@ public class ItemTradeService(
                 if (itemData == null
                     || entry.Position >= InventoryConstants.HaveMax
                     || entry.Count == 0
-                    || entry.Count > 9999
+                    || entry.Count > InventoryConstants.MaxStackCount
                     || (type == 1 && !usedPositions.Add(entry.Position))
                     || (type == 2 && (entry.ItemId >= ItemNoTrade || UnsellableRaces.Contains(itemData.Race))))
-                {
-                    return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
-                }
+                    return Refuse(ItemTradeRefusal.CannotTrade);
 
-                var absolutePosition = InventoryConstants.InventoryStart + entry.Position;
+                var slot = s.Inventory[InventoryConstants.InventoryStart + entry.Position];
                 if (type == 1)
                 {
-                    var existingItem = s.Inventory[absolutePosition];
-                    if (!existingItem.IsEmpty)
+                    if (!slot.IsEmpty)
                     {
-                        if (existingItem.ItemId != entry.ItemId || itemData.Countable == 0)
-                            return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+                        if (slot.ItemId != entry.ItemId || itemData.Countable == 0)
+                            return Refuse(ItemTradeRefusal.CannotTrade);
 
-                        if (existingItem.Count + entry.Count > 9999)
-                            return (Error: ItemTradeRefusal.InventoryFull, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+                        if (slot.Count + entry.Count > InventoryConstants.MaxStackCount)
+                            return Refuse(ItemTradeRefusal.InventoryFull);
                     }
 
-                    var entryPrice = checked(itemData.BuyPrice * entry.Count);
-                    if ((loyaltyShop ? s.Loyalty : s.Money) < NpcTariff.WithTax((long)totalPrice + entryPrice, tariff))
-                        return (Error: ItemTradeRefusal.NotEnoughCoins, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
-
-                    var totalWeight = s.Stats.ItemWeight + entries.Sum(candidate =>
-                    {
-                        var data = gameDataService.GetItem(candidate.ItemId);
-                        return data == null ? 0 : data.Weight * candidate.Count;
-                    });
-                    if (totalWeight > s.Stats.MaxWeight)
-                        return (Error: ItemTradeRefusal.InventoryFull, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
-
-                    existingItem.ItemId = entry.ItemId;
-                    existingItem.Durability = itemData.Duration;
-                    existingItem.Count += entry.Count;
-                    totalPrice += entryPrice;
+                    totalPrice += (long)itemData.BuyPrice * entry.Count;
+                    totalWeight += (long)itemData.Weight * entry.Count;
                 }
                 else
                 {
-                    var inventoryItem = s.Inventory[absolutePosition];
-                    if (inventoryItem.ItemId != entry.ItemId || inventoryItem.Count < entry.Count || !inventoryItem.IsTradable)
-                        return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+                    // Lines selling from the same stack add up against what it holds.
+                    var sold = soldFrom.GetValueOrDefault(entry.Position) + entry.Count;
+                    if (slot.ItemId != entry.ItemId || slot.Count < sold || !slot.IsTradable)
+                        return Refuse(ItemTradeRefusal.CannotTrade);
 
-                    var entryPrice = SellUnitPrice(itemData, premiumSeller) * entry.Count;
-
-                    totalPrice += entryPrice;
-                    RepurchaseRules.Record(s.Repurchases, inventoryItem, Math.Min(entry.Count, inventoryItem.Count), now);
-
-                    if (entry.Count >= inventoryItem.Count)
-                        inventoryItem.Clear();
-                    else
-                        inventoryItem.Count -= entry.Count;
+                    soldFrom[entry.Position] = sold;
+                    totalPrice += (long)SellUnitPrice(itemData, premiumSeller) * entry.Count;
                 }
 
-                lastItemData = itemData;
+                lines.Add((entry, itemData));
             }
 
-            if (lastItemData == null)
-                return (Error: ItemTradeRefusal.None, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+            if (lines.Count == 0)
+                return Refuse(ItemTradeRefusal.None);
 
-            tax = NpcTariff.Tax(totalPrice, tariff);
-            totalPrice += tax;
+            var due = type == 1 ? NpcTariff.WithTax(totalPrice, tariff) : totalPrice;
+            if (type == 1)
+            {
+                if ((loyaltyShop ? s.Loyalty : s.Money) < due)
+                    return Refuse(ItemTradeRefusal.NotEnoughCoins);
+
+                if (s.Stats.ItemWeight + totalWeight > s.Stats.MaxWeight)
+                    return Refuse(ItemTradeRefusal.InventoryFull);
+            }
+            else if (s.Money + due > ExchangePacketConstants.CoinMax)
+            {
+                return Refuse(ItemTradeRefusal.CannotTrade);
+            }
+
+            foreach (var (entry, itemData) in lines)
+            {
+                var slot = s.Inventory[InventoryConstants.InventoryStart + entry.Position];
+                if (type == 1)
+                {
+                    // An empty slot gets its count set, never added to whatever it held before.
+                    if (slot.IsEmpty)
+                    {
+                        slot.Clear();
+                        slot.ItemId = entry.ItemId;
+                        slot.Count = entry.Count;
+                    }
+                    else
+                    {
+                        slot.Count += entry.Count;
+                    }
+
+                    slot.Durability = itemData.Duration;
+                }
+                else
+                {
+                    RepurchaseRules.Record(s.Repurchases, slot, entry.Count, now);
+                    if (entry.Count >= slot.Count)
+                        slot.Clear();
+                    else
+                        slot.Count -= entry.Count;
+                }
+            }
+
+            tax = (int)(due - totalPrice);
+            var price = (int)due;
             if (type == 1 && loyaltyShop)
-                s.Loyalty -= totalPrice;
+                s.Loyalty -= price;
             else if (type == 1)
-                s.Money -= totalPrice;
+                s.Money -= price;
             else
-                s.Money += totalPrice;
+                s.Money += price;
 
             s.RecalculateStatsWithBuffs(gameDataService);
 
-            return (Error: ItemTradeRefusal.None, Price: totalPrice, Money: s.Money, Loyalty: s.Loyalty, SellingGroup: lastItemData.SellingGroup, HasItems: true);
+            return (Error: ItemTradeRefusal.None, Price: price, Money: s.Money, Loyalty: s.Loyalty,
+                SellingGroup: lines[^1].Item.SellingGroup, HasItems: true);
         });
 
         if (outcome.Error != ItemTradeRefusal.None)
