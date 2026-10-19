@@ -36,15 +36,14 @@ internal sealed class CombatFxSystem : IFeature
     internal const float ProjectileFxHeight = 1.2f;
     private const int GenieAuraFxId = 30745;
     private const int GenieAuraKey = -GenieAuraFxId;
-    private const int GenieAuraPhase = 0;
     private const int GenieAuraOnBody = -1;
 
     private void ShowGenieAura(int entityId, bool on)
     {
-        if (on == ShowsSkillFx(entityId, GenieAuraKey, GenieAuraPhase)) return;
+        if (on == ShowsSkillFx(entityId, GenieAuraKey, SkillFxPhase.Aura)) return;
         StopSkillFx(entityId, GenieAuraKey);
         if (on && Fx.NameForId(GenieAuraFxId) is { } fxName)
-            SpawnOwnedFxPart(entityId, GenieAuraKey, GenieAuraPhase, fxName, GenieAuraOnBody, worldSentinel: false, oneShot: false);
+            SpawnOwnedFxPart(entityId, GenieAuraKey, SkillFxPhase.Aura, fxName, GenieAuraOnBody, worldSentinel: false, oneShot: false);
     }
 
     internal readonly record struct FlightArrival(double Travel, int TargetId, bool Area, bool Straight, Vector3 From, Vector3 To);
@@ -233,7 +232,6 @@ internal sealed class CombatFxSystem : IFeature
         list.Add(node);
     }
 
-    private static readonly int[] SkillFxPhases = { 1, 2, 3 };
     private readonly Dictionary<(int Caster, int Skill, int Phase), List<Node3D>> skillFx = new();
 
     internal bool ShowsSkillFx(int casterId, int skillId, int phase) =>
@@ -249,7 +247,7 @@ internal sealed class CombatFxSystem : IFeature
             StopSkillFxKey((casterId, skillId, one));
             return;
         }
-        foreach (int each in SkillFxPhases) StopSkillFxKey((casterId, skillId, each));
+        foreach (int each in SkillFxPhase.All) StopSkillFxKey((casterId, skillId, each));
     }
 
     private void StopSkillFxKey((int Caster, int Skill, int Phase) key)
