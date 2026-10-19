@@ -660,6 +660,19 @@ public class UserSession
         return true;
     }
 
+    // Hands back the gold a buying stall still holds and returns how much that was.
+    public int ReleaseBuyMerchantGold() => WithLock(s =>
+    {
+        var held = s.Trade.BuyMerchantGold;
+        s.Trade.BuyMerchantGold = 0;
+        s.Money += held;
+        return held;
+    });
+
+    // The purse as it is saved: gold a buying stall holds is still the owner's.
+    public int SavedMoney =>
+        (int)Math.Min((long)Money + Trade.BuyMerchantGold, Protocol.ExchangePacketConstants.CoinMax);
+
     public void CompleteExchange()
     {
         Trade.ExchangeItemList.Clear();

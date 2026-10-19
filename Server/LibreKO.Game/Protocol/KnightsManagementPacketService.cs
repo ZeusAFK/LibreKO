@@ -539,7 +539,7 @@ public class KnightsManagementPacketService(
         var character = await charRepo.GetById(session.CharacterId);
         if (character != null)
         {
-            character.Money = session.Money;
+            character.Money = session.SavedMoney;
             await charRepo.UpdateAsync(character);
         }
 

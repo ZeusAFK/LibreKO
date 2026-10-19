@@ -15,7 +15,8 @@ public class NpcAiDeathService(
     IGameDataService gameDataService,
     IPlayerProgressionService playerProgressionService,
     IMiningPacketCoordinator miningPacketCoordinator,
-    IExchangeLifecycleService exchangeLifecycleService) : INpcAiDeathService
+    IExchangeLifecycleService exchangeLifecycleService,
+    IMerchantLifecycleService merchantLifecycleService) : INpcAiDeathService
 {
     public async Task HandlePlayerKilledByNpcAsync(UserSession target, NpcInstance npc)
     {
@@ -26,8 +27,9 @@ public class NpcAiDeathService(
         if (target.Trade.IsTrading)
             await exchangeLifecycleService.CancelAsync(target, isOnDeath: true);
 
-        if (target.Trade.IsMerchanting)
-            target.Trade.MerchantState = Protocol.MerchantMode.None;
+        // Closing the stall clears its setup flags too and hands back a buying stall's gold.
+        if (target.Trade.IsMerchanting || target.Trade.IsMerchantPreparing || target.Trade.BuyMerchantGold > 0)
+            await merchantLifecycleService.CloseAsync(target, MerchantInOut.StallClosed);
 
         await miningPacketCoordinator.StopGatheringAsync(target);
 

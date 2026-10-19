@@ -28,6 +28,10 @@ public class TradeState
     public MerchantItem[] MerchantItems { get; } = new MerchantItem[MerchantSlots];
     public MerchantItem[] BuyMerchantItems { get; } = new MerchantItem[MerchantSlots];
 
+    // Gold a buying stall took from its owner's purse when it opened; sales are paid from it
+    // and whatever is left goes back when the stall closes.
+    public int BuyMerchantGold { get; set; }
+
     // PvP Challenge (duel)
     public int ChallengeUser { get; set; } = -1;
     public bool IsRequestingChallenge { get; set; }

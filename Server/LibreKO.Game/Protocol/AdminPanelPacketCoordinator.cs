@@ -860,7 +860,7 @@ public class AdminPanelPacketCoordinator(
             character.Intelligence = session.Intelligence;
             character.Magic = session.Magic;
             character.StatPoints = session.StatPoints;
-            character.Money = session.Money;
+            character.Money = session.SavedMoney;
             character.Loyalty = session.Loyalty;
             character.SkillPointData = session.SkillPoints;
             await characters.UpdateAsync(character);

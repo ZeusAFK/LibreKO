@@ -141,7 +141,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         character.Intelligence = session.Intelligence;
         character.Magic = session.Magic;
         character.StatPoints = session.StatPoints;
-        character.Money = session.Money;
+        character.Money = session.SavedMoney;
         character.Experience = session.Experience;
         character.Items = session.SerializeItems();
         character.SkillData = session.SkillData;

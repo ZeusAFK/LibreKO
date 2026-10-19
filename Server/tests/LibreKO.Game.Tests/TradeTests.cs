@@ -150,6 +150,7 @@ public class TradeTests : GameTestBase
         buyerClient.Id.Returns(Guid.NewGuid());
         buyerClient.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         var buyer = sessionManager.CreateSession(buyerClient, characterId: 51, accountId: 61);
+        buyer.Hp = 100;
         buyer.Money = 100_000;
 
         var merchantAClient = Substitute.For<IClient>();
@@ -229,6 +230,7 @@ public class TradeTests : GameTestBase
         buyerClient.SendPacket(Arg.Do<Packet>(packet => buyerPackets.Add(packet)), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         var buyer = sessionManager.CreateSession(buyerClient, characterId: 511, accountId: 611);
+        buyer.Hp = 100;
         buyer.Class = 101;
         buyer.Level = 20;
         buyer.Strength = 50;

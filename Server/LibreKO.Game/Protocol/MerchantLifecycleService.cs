@@ -21,6 +21,7 @@ public class MerchantLifecycleService(
     SessionManager sessionManager,
     IMerchantBotService merchantBotService,
     ISlaveMerchantService slaveMerchants,
+    IMerchantBuyingService merchantBuyingService,
     ILogger<MerchantLifecycleService> logger) : IMerchantLifecycleService
 {
     private const short OpenAccepted = 1;
@@ -66,6 +67,10 @@ public class MerchantLifecycleService(
 
     public async Task CloseAsync(UserSession session, MerchantInOut? merchantInOutType)
     {
+        // A buying stall closes through its own path, which hands back the gold it holds.
+        if (session.Trade.IsBuyingMerchant || session.Trade.IsBuyingMerchantPreparing || session.Trade.BuyMerchantGold > 0)
+            await merchantBuyingService.CloseAsync(session, broadcast: merchantInOutType.HasValue);
+
         if (!session.Trade.IsMerchanting && !session.Trade.IsSellingMerchantPreparing && !HasMerchantItems(session))
             return;
 
