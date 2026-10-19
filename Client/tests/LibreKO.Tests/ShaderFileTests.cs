@@ -1,23 +1,11 @@
 ﻿using System.IO;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace LibreKO.Tests;
 
 public class ShaderFileTests
 {
-    private const string ProjectFile = "project.godot";
-    private const string ExportPresets = "export_presets.cfg";
-
-    private static string ClientDir([CallerFilePath] string source = "")
-    {
-        string root = Path.Combine(Path.GetDirectoryName(source)!, "..", "..");
-        string nested = Path.Combine(root, "client");
-        return File.Exists(Path.Combine(nested, ProjectFile)) ? nested : root;
-    }
-
-    private static string Read(string relative) =>
-        File.ReadAllText(Path.Combine(ClientDir(), relative)).Replace("\r\n", "\n");
+    private static string Read(string relative) => ClientFiles.Read(relative);
 
     [Fact]
     public void TheFxShadersTellTheFxCameraByTheFxLayerBit() =>
@@ -54,10 +42,6 @@ public class ShaderFileTests
     }
 
     [Fact]
-    public void TheSceneDepthComputeShaderShipsWithTheGame()
-    {
-        Assert.True(File.Exists(Path.Combine(ClientDir(), "shaders", "fx_scene_depth.comp")));
-        if (File.Exists(Path.Combine(ClientDir(), ExportPresets)))
-            Assert.Contains("include_filter=\"settings.default.cfg,version.txt,shaders/*.comp\"", Read(ExportPresets));
-    }
+    public void TheSceneDepthComputeShaderShipsWithTheGame() =>
+        Assert.True(File.Exists(Path.Combine(ClientFiles.Dir(), "shaders", "fx_scene_depth.comp")));
 }

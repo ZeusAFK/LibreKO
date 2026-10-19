@@ -84,6 +84,11 @@ dotnet build
 
 The repository ships no export presets. To build a standalone executable or an APK, create a preset
 under Project > Export in the Godot editor; the game itself runs from the editor without one.
+Godot exports only the files it recognizes as resources, so set the preset's Resources > Filters to
+export non-resource files to `settings.default.cfg,version.txt,shaders/*.comp,assets/terrain/*/collision.bin`.
+Without the last pattern the exported game has no object collision: characters sink into stairs and
+bridges and walk through walls. The client tests check every preset in `Client/export_presets.cfg`
+for these files.
 
 The first import of the assets takes a while. The client connects to `127.0.0.1:15100` by default;
 copy `Client/settings.default.cfg` to `Client/settings.cfg` (created on first run) to change the

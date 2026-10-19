@@ -1115,7 +1115,7 @@ public static class Config
     private const string KeysFileName = "keys.cfg";
     private const string PresetsFileName = "presets.cfg";
     private const string LootFilterFileName = "lootfilter.cfg";
-    private const string DefaultsResPath = "res://settings.default.cfg";
+    internal const string DefaultsResPath = "res://settings.default.cfg";
 
     public static string SettingsSavePath { get; private set; } = "";
 

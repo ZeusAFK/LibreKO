@@ -333,5 +333,5 @@ public partial class FxSceneDepth : CompositorEffect
         return pipeline.IsValid;
     }
 
-    private const string ComputePath = "res://shaders/fx_scene_depth.comp";
+    internal const string ComputePath = "res://shaders/fx_scene_depth.comp";
 }
