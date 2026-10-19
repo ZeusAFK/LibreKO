@@ -224,8 +224,14 @@ public class ScriptItemService(
 
     public void GoldGain(int _uid, int amount)
     {
-        session.Money = Math.Min(session.Money + amount, int.MaxValue);
-        QueueGoldChange(1, amount);
+        // Worked out wide and capped, so a reward near the cap can neither pass it nor wrap negative.
+        var gained = session.WithLock(s =>
+        {
+            var before = s.Money;
+            s.Money = (int)Math.Clamp((long)s.Money + amount, 0, Protocol.ExchangePacketConstants.CoinMax);
+            return s.Money - before;
+        });
+        QueueGoldChange(1, gained);
     }
 
     public void GoldLose(int _uid, int amount)

@@ -67,7 +67,7 @@ public class KnightsRuntimeService(SessionManager sessionManager) : IKnightsRunt
             session.CharacterId,
             session.KnightsId,
             fame,
-            includeMoney ? session.Money : null,
+            includeMoney ? session.SavedMoney : null,
             includeLoyalty ? session.Loyalty : null);
     }
 

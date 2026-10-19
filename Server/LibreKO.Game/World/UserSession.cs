@@ -616,17 +616,24 @@ public class UserSession
         return -1;
     }
 
-    // Hands every escrowed offer back: gold to the purse, each item by identity into the bag.
-    // Returns the items that found no room anywhere.
-    public List<ExchangeItem> InitExchange(bool start)
+    // Hands every escrowed offer back: gold into the purse (and past the coin cap into the
+    // warehouse), each item by identity into the bag. Call under this session's lock.
+    public ExchangeReturn InitExchange(bool start)
     {
-        var unplaced = new List<ExchangeItem>();
+        var returned = new ExchangeReturn();
         foreach (var item in Trade.ExchangeItemList)
         {
             if (item.ItemId == InventoryConstants.ItemGold)
-                Money += item.Count;
+            {
+                var gold = ReturnHeldGold(item.Count);
+                returned.GoldToPurse += gold.ToPurse;
+                returned.GoldToWarehouse += gold.ToWarehouse;
+                returned.GoldLost += gold.Lost;
+            }
             else if (!ReturnEscrowedItem(item))
-                unplaced.Add(item);
+            {
+                returned.Unplaced.Add(item);
+            }
         }
         Trade.ExchangeItemList.Clear();
 
@@ -637,7 +644,7 @@ public class UserSession
             Trade.AskedForExchange = false;
         }
 
-        return unplaced;
+        return returned;
     }
 
     // Its own bag slot when that is still free (or holds the same stack), else any free bag slot,
@@ -660,20 +667,39 @@ public class UserSession
         return true;
     }
 
-    // Hands back the gold a buying stall still holds, never past the coin cap, and returns how
-    // much the purse grew.
-    public int ReleaseBuyMerchantGold() => WithLock(s =>
+    // Hands back the gold a buying stall still holds, the same way an offer's gold comes back.
+    public (int ToPurse, int ToWarehouse, long Lost) ReleaseBuyMerchantGold() => WithLock(s =>
     {
-        var before = s.Money;
-        s.Money = (int)Math.Min((long)s.Money + s.Trade.BuyMerchantGold, Protocol.ExchangePacketConstants.CoinMax);
+        var held = s.Trade.BuyMerchantGold;
         s.Trade.BuyMerchantGold = 0;
-        return s.Money - before;
+        return s.ReturnHeldGold(held);
     });
 
-    // The purse as it is saved: gold a buying stall holds is still the owner's. Read under the
-    // lock so a stall opening or closing meanwhile is counted once.
-    public int SavedMoney => WithLock(s =>
-        (int)Math.Min((long)s.Money + s.Trade.BuyMerchantGold, Protocol.ExchangePacketConstants.CoinMax));
+    // The purse and warehouse gold as they are saved: gold a buying stall holds is still the
+    // owner's, split the way closing the stall would split it. Read under the lock so a stall
+    // opening or closing meanwhile is counted once.
+    public int SavedMoney => WithLock(s => s.Money + s.SplitHeldGold(s.Trade.BuyMerchantGold).ToPurse);
+
+    public int SavedWarehouseMoney => WithLock(s => s.WarehouseMoney + s.SplitHeldGold(s.Trade.BuyMerchantGold).ToWarehouse);
+
+    // Gold held aside (an offer in a trade, a buying stall's purse) goes back into the purse up to
+    // the coin cap and the rest into the warehouse, so a purse that grew meanwhile loses none of
+    // it. Only what fits in neither is lost.
+    private (int ToPurse, int ToWarehouse, long Lost) ReturnHeldGold(long amount)
+    {
+        var (toPurse, toWarehouse) = SplitHeldGold(amount);
+        Money += toPurse;
+        WarehouseMoney += toWarehouse;
+        return (toPurse, toWarehouse, Math.Max(0, amount) - toPurse - toWarehouse);
+    }
+
+    private (int ToPurse, int ToWarehouse) SplitHeldGold(long amount)
+    {
+        const long coinMax = Protocol.ExchangePacketConstants.CoinMax;
+        var toPurse = Math.Clamp(amount, 0, Math.Max(0, coinMax - Money));
+        var toWarehouse = Math.Clamp(amount - toPurse, 0, Math.Max(0, coinMax - WarehouseMoney));
+        return ((int)toPurse, (int)toWarehouse);
+    }
 
     public void CompleteExchange()
     {

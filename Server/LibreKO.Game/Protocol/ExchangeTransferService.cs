@@ -164,7 +164,7 @@ public class ExchangeTransferService(
         var sessionItemCount = 0;
         var targetItemCount = 0;
 
-        List<ExchangeItem> unplaced = [];
+        ExchangeReturn? returnedSession = null, returnedTarget = null;
         UserSession.WithBoth(session, target, (sa, sb) =>
         {
             if (sa.Trade.ExchangeUser != sb.CharacterId || sb.Trade.ExchangeUser != sa.CharacterId)
@@ -183,8 +183,8 @@ public class ExchangeTransferService(
             if (!CheckExchange(sa, sb) || !CheckExchange(sb, sa))
             {
                 outcome = DecideOutcome.Fail;
-                unplaced.AddRange(sa.InitExchange(false));
-                unplaced.AddRange(sb.InitExchange(false));
+                returnedSession = sa.InitExchange(false);
+                returnedTarget = sb.InitExchange(false);
                 return;
             }
 
@@ -217,9 +217,8 @@ public class ExchangeTransferService(
                 break;
 
             case DecideOutcome.Fail:
-                foreach (var item in unplaced)
-                    logger.LogError("Exchange item {ItemId} x{Count} found no room to return between {Name} and {TargetName}",
-                        item.ItemId, item.Count, session.Name, target.Name);
+                returnedSession?.LogLosses(logger, session.Name);
+                returnedTarget?.LogLosses(logger, target.Name);
                 var fail = ExchangePacketWriter.Result(
                     ExchangePacketConstants.ExchangeDone, ExchangePacketWriter.Failed);
                 await session.Client.SendPacket(fail);

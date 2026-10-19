@@ -138,6 +138,22 @@ public class TradeEscrowTests : GameTestBase
     }
 
     [Fact]
+    public async Task OfferedGoldThatNoLongerFitsInThePurseGoesToTheWarehouseOnCancel()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var (giver, _, giverClient, _) = OpenTrade(provider);
+        giver.Money = 1_000;
+
+        await SendAsync(provider, giverClient, AddPacket(0, InventoryConstants.ItemGold, 1_000));
+        // Gold reached the purse by some route while the offer was held.
+        giver.Money = ExchangePacketConstants.CoinMax - 100;
+        await SendAsync(provider, giverClient, CancelPacket());
+
+        giver.Money.Should().Be(ExchangePacketConstants.CoinMax, "the purse never goes past the cap");
+        giver.WarehouseMoney.Should().Be(900, "the offered gold that no longer fits is kept, not destroyed");
+    }
+
+    [Fact]
     public async Task DyingToAMonsterMidTradeGivesBothPlayersTheirOffersBack()
     {
         using var provider = CreateProvider(_ => { }, gameData =>

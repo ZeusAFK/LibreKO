@@ -280,9 +280,15 @@ public class MerchantBuyingService(
             session.Trade.MerchantState = MerchantMode.None;
         session.Trade.MerchantTargetUserId = -1;
 
-        var refunded = session.ReleaseBuyMerchantGold();
-        if (refunded > 0)
-            await userNotificationService.SendGoldGainAsync(session, refunded);
+        var refund = session.ReleaseBuyMerchantGold();
+        if (refund.ToPurse > 0)
+            await userNotificationService.SendGoldGainAsync(session, refund.ToPurse);
+        if (refund.ToWarehouse > 0)
+            logger.LogInformation("The buying stall of {Name} put {Gold} gold into the warehouse: the purse was full",
+                session.Name, refund.ToWarehouse);
+        if (refund.Lost > 0)
+            logger.LogError("The buying stall of {Name} held {Gold} gold that fit in neither the purse nor the warehouse",
+                session.Name, refund.Lost);
 
         if (!broadcast)
             return;

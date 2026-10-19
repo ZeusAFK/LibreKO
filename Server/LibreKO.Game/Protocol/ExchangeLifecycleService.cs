@@ -87,18 +87,18 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         }
         else
         {
-            List<ExchangeItem> unplacedSession = [], unplacedTarget = [];
+            ExchangeReturn? returnedSession = null, returnedTarget = null;
             var paired = false;
             UserSession.WithBoth(session, target, (s, t) =>
             {
                 paired = s.Trade.ExchangeUser == t.CharacterId && t.Trade.ExchangeUser == s.CharacterId;
                 if (!paired)
                     return;
-                unplacedSession = s.InitExchange(true);
-                unplacedTarget = t.InitExchange(true);
+                returnedSession = s.InitExchange(true);
+                returnedTarget = t.InitExchange(true);
             });
-            LogUnplaced(session, unplacedSession);
-            LogUnplaced(target, unplacedTarget);
+            LogUnplaced(session, returnedSession);
+            LogUnplaced(target, returnedTarget);
             if (!paired)
                 return;
         }
@@ -123,12 +123,8 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         }
     }
 
-    private void LogUnplaced(UserSession session, List<ExchangeItem> unplaced)
-    {
-        foreach (var item in unplaced)
-            logger.LogError("Exchange item {ItemId} x{Count} of {Name} found no room to return",
-                item.ItemId, item.Count, session.Name);
-    }
+    private void LogUnplaced(UserSession session, ExchangeReturn? returned) =>
+        returned?.LogLosses(logger, session.Name);
 
     private static async Task SendCancelAsync(UserSession session)
     {

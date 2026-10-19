@@ -200,6 +200,27 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task ClaimAsync_GoldStopsAtTheCoinCap_AndTheRestWaitsForTheNextClaim()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        bob.Money = ExchangePacketConstants.CoinMax - 100;
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Refund", "Your gold.",
+            [new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, 1_000)]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+
+        bob.Money.Should().Be(ExchangePacketConstants.CoinMax, "a claim never pushes the purse past the cap");
+
+        bob.Money = 0;
+        await mail.ClaimAsync(bob, mailId);
+
+        bob.Money.Should().Be(900, "the part that did not fit stays in the mail");
+    }
+
+    [Fact]
     public async Task ClaimAsync_DeliversWhatFits_AndKeepsTheRestForTheNextClaim()
     {
         using var provider = Provider();

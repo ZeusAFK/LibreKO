@@ -256,13 +256,20 @@ public class MailService(
             switch (attachment.Kind)
             {
                 case MailAttachmentKind.Gold:
-                    var newMoney = Math.Min((long)session.Money + attachment.Remaining, int.MaxValue);
-                    var delta = (int)(newMoney - session.Money);
-                    session.Money = (int)newMoney;
-                    if (delta > 0)
-                        await userNotificationService.SendGoldGainAsync(session, delta);
-                    attachment.ClaimedCount = attachment.Count;
-                    delivered = true;
+                    // Only what fits under the coin cap is claimed; the rest waits in the mail.
+                    var remaining = attachment.Remaining;
+                    var credited = session.WithLock(s =>
+                    {
+                        var take = (int)Math.Clamp(ExchangePacketConstants.CoinMax - (long)s.Money, 0, remaining);
+                        s.Money += take;
+                        return take;
+                    });
+                    if (credited > 0)
+                    {
+                        attachment.ClaimedCount += credited;
+                        await userNotificationService.SendGoldGainAsync(session, credited);
+                        delivered = true;
+                    }
                     break;
                 case MailAttachmentKind.Experience:
                     await playerProgressionService.AwardExperienceAsync(session, attachment.Remaining);

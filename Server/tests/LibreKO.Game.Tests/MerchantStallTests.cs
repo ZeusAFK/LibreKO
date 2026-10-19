@@ -3,8 +3,10 @@ using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 
@@ -152,7 +154,7 @@ public class MerchantStallTests : GameTestBase
     }
 
     [Fact]
-    public async Task GoldHandedBackByAClosingStallStopsAtTheCoinCap()
+    public async Task GoldAClosingStallCannotFitInThePurseGoesToTheWarehouse()
     {
         using var market = new Market();
         var owner = market.Player(96015, gold: StartingGold);
@@ -162,7 +164,26 @@ public class MerchantStallTests : GameTestBase
 
         await market.SendAsync(owner, MerchantSubOpcode.BuyClose);
 
-        owner.Money.Should().Be(ExchangePacketConstants.CoinMax, "a refund must never wrap the purse past the cap");
+        owner.Money.Should().Be(ExchangePacketConstants.CoinMax, "the purse never goes past the cap");
+        owner.WarehouseMoney.Should().Be(5 * Price - 1_000, "the gold that no longer fits is kept, not destroyed");
+    }
+
+    [Fact]
+    public async Task ASaveWithMoreGoldThanThePurseHoldsKeepsTheRestInTheWarehouse()
+    {
+        using var market = new Market();
+        var owner = market.Player(96016, gold: StartingGold);
+        await market.OpenBuyingStallAsync(owner, (Ware, 5, Price));
+        owner.Money = ExchangePacketConstants.CoinMax - 1_000;
+
+        var mapper = market.Provider.GetRequiredService<IUserSessionCharacterMapper>();
+        var character = new Character { Name = owner.Name };
+        var warehouse = new Warehouse();
+        mapper.ApplyToCharacter(owner, character);
+        mapper.ApplyToWarehouse(owner, warehouse);
+
+        character.Money.Should().Be(ExchangePacketConstants.CoinMax);
+        warehouse.Money.Should().Be(5 * Price - 1_000);
     }
 
     [Fact]
@@ -176,6 +197,42 @@ public class MerchantStallTests : GameTestBase
         market.Provider.GetRequiredService<IUserSessionCharacterMapper>().ApplyToCharacter(owner, character);
 
         character.Money.Should().Be(StartingGold);
+    }
+
+    [Fact]
+    public async Task ASaveNeverCatchesAChangeToThePlayerHalfWay()
+    {
+        const int ownerId = 96017;
+        using var market = new Market(db => db.Characters.Add(new Character
+        {
+            Id = ownerId, AccountId = ownerId + 1000, Name = "Trader96017", Race = 1, Class = 101, Face = 1, Hair = 1,
+            Level = 80, Hp = 100, Mp = 100, MapId = 21,
+            Items = new byte[InventoryConstants.InventoryTotal * 8], SkillPointData = new byte[9],
+        }));
+        var owner = market.Player(ownerId, gold: StartingGold);
+        using var halfWay = new ManualResetEventSlim();
+        using var saved = new ManualResetEventSlim();
+
+        // Another connection changes the player in one locked step: pays, then takes the item
+        // and loses some health. The save must see all of that or none of it.
+        var purchase = Task.Run(() => owner.WithLock(s =>
+        {
+            s.Money -= Price;
+            halfWay.Set();
+            saved.Wait(TimeSpan.FromSeconds(2));
+            Stock(Bag(s, BagPos), Ware, 1);
+            s.Hp = 40;
+        }));
+        halfWay.Wait();
+        await market.Provider.GetRequiredService<ICharacterStatePersister>().SaveAsync(owner);
+        saved.Set();
+        await purchase;
+
+        await using var scope = market.Provider.CreateAsyncScope();
+        var row = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.SingleAsync(c => c.Id == ownerId);
+        row.Money.Should().Be(StartingGold - Price);
+        row.Items.Should().Equal(owner.SerializeItems(), "the gold and the item it paid for are saved together");
+        row.Hp.Should().Be(40, "every field comes from the same moment");
     }
 
     private static void ListByHand(UserSession seller, int itemId, ushort count)
@@ -209,10 +266,10 @@ public class MerchantStallTests : GameTestBase
 
         public ServiceProvider Provider { get; }
 
-        public Market()
+        public Market(Action<AppDbContext>? seed = null)
         {
             var ware = new ItemData { Num = Ware, Countable = 1, Weight = 1, Race = 1 };
-            Provider = CreateProvider(_ => { }, gameData =>
+            Provider = CreateProvider(db => seed?.Invoke(db), gameData =>
             {
                 gameData.GetItem(Ware).Returns(_ => Hold(ware));
                 gameData.GetItem(Other).Returns(new ItemData { Num = Other, Countable = 1, Weight = 1, Race = 1 });

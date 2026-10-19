@@ -204,7 +204,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
     public void ApplyToWarehouse(UserSession session, Warehouse warehouse)
     {
         warehouse.Items = session.SerializeWarehouse();
-        warehouse.Money = session.WarehouseMoney;
+        warehouse.Money = session.SavedWarehouseMoney;
     }
 
     public void ApplyToAccount(UserSession session, Account account)
