@@ -36,6 +36,12 @@ public class ShoppingMallLetterMutationService(
 
     public async Task HandleSendAsync(UserSession session, Packet packet)
     {
+        if (session.IsBusy)
+        {
+            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
+                ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterSend, Rejected));
+            return;
+        }
 
         if (packet.RemainingBytes < 3)
         {
@@ -139,7 +145,7 @@ public class ShoppingMallLetterMutationService(
             }
 
             itemSlot = session.Inventory[sourceIndex];
-            if (itemSlot.ItemId != itemId || itemSlot.IsEmpty)
+            if (itemSlot.ItemId != itemId || itemSlot.IsEmpty || itemSlot.Count == 0)
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
                     ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterSend, Rejected));

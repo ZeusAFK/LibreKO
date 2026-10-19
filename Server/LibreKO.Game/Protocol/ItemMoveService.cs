@@ -45,7 +45,7 @@ public class ItemMoveService(
 
         if (requestType == ItemMoveRequest.Arrange)
         {
-            if (IsBusy(session))
+            if (session.IsBusy)
             {
                 logger.LogDebug("Refused to arrange the bag for {Name}: busy", session.Name);
                 await session.Client.SendPacket(ItemMovePacketMapper.BuildArrangeRefusedResponse());
@@ -121,13 +121,15 @@ public class ItemMoveService(
             return;
         }
 
-        if (IsBusy(session))
+        if (session.IsBusy)
         {
             logger.LogDebug(
-                "Rejected item move for {Name}: blocked state trading={Trading} merchanting={Merchanting} gathering={Gathering}",
+                "Rejected item move for {Name}: blocked state hp={Hp} trading={Trading} merchanting={Merchanting} preparing={Preparing} gathering={Gathering}",
                 session.Name,
+                session.Hp,
                 session.Trade.IsTrading,
                 session.Trade.IsMerchanting,
+                session.Trade.IsMerchantPreparing,
                 session.IsGathering);
             await SendItemMoveResponseAsync(session, 0);
             return;
@@ -292,9 +294,6 @@ public class ItemMoveService(
                 break;
         }
     }
-
-    private static bool IsBusy(UserSession session) =>
-        session.Trade.IsTrading || session.Trade.IsMerchanting || session.IsGathering;
 
     private static void ArrangeBag(UserSession session)
     {

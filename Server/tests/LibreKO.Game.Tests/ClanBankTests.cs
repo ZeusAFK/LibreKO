@@ -74,6 +74,31 @@ public class ClanBankTests : GameTestBase
     }
 
     [Fact]
+    public async Task ATradingMemberCannotStoreAnItem()
+    {
+        var bank = Bank(Wolves, Member);
+        var bag = bank.Session.Inventory[InventoryConstants.SlotMax];
+        bag.ItemId = StoredItem;
+        bag.Count = 1;
+        bag.Durability = 50;
+        bank.Session.Trade.ExchangeUser = 9_999;
+
+        await bank.Send(WarehouseSubOpcode.Input, packet =>
+        {
+            packet.WriteInt(0);
+            packet.WriteInt(StoredItem);
+            packet.WriteByte(0);
+            packet.WriteByte(0);
+            packet.WriteByte(0);
+            packet.WriteInt(1);
+        });
+
+        bank.LastResult(WarehouseSubOpcode.Input).Should().Be((byte)ClanWarehouseResult.Failed);
+        bank.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(StoredItem);
+        bank.Slots()[0].IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task TheChiefMovesAnItemToAnotherPage()
     {
         var bank = Bank(Wolves, Chief);

@@ -47,6 +47,7 @@ public class WarehouseStorageTests : GameTestBase
             .Returns(Task.CompletedTask);
 
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 72, accountId: 82);
+        session.Hp = 100;
         session.Inventory[InventoryConstants.SlotMax].ItemId = itemId;
         session.Inventory[InventoryConstants.SlotMax].Count = 1;
         session.Inventory[InventoryConstants.SlotMax].Durability = 50;

@@ -32,7 +32,7 @@ public class LootPacketCoordinator(
     public async Task HandleItemDropAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || session.Hp <= 0 || packet.RemainingBytes < 7)
+        if (session == null || session.IsBusy || packet.RemainingBytes < 7)
             return;
 
         var pos = packet.ReadByte();

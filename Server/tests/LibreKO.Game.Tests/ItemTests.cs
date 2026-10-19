@@ -145,6 +145,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 402, accountId: 412);
+        session.Hp = 100;
         session.Class = classId;
         session.Level = 60;
         session.Strength = 100;
@@ -219,6 +220,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 401, accountId: 411);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.Strength = 50;
@@ -295,6 +297,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 405, accountId: 415);
+        session.Hp = 100;
         session.ZoneId = 1;
         session.X = 10;
         session.Z = 10;
@@ -349,6 +352,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 406, accountId: 416);
+        session.Hp = 100;
         session.ZoneId = 1;
         session.X = 10;
         session.Z = 10;
@@ -404,6 +408,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 4060, accountId: 4160);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.Strength = 50;
@@ -462,6 +467,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 4061, accountId: 4161);
+        session.Hp = 100;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = firstItemId;
         session.Inventory[InventoryConstants.InventoryStart].Durability = 20;
         session.Inventory[InventoryConstants.InventoryStart].Count = 2;
@@ -594,6 +600,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var actor = sessionManager.CreateSession(actorClient, characterId: 410, accountId: 420);
+        actor.Hp = 100;
         actor.Class = 101;
         actor.ZoneId = 1;
         actor.X = 10;
@@ -656,6 +663,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 412, accountId: 422);
+        session.Hp = 100;
         session.Class = 101;
         var bagSlot = InventoryConstants.BagSlotFor(0);
         session.Inventory[bagSlot].ItemId = itemId;
@@ -718,6 +726,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 460, accountId: 470);
+        session.Hp = 100;
         session.Class = 101;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = itemId;
         session.Inventory[InventoryConstants.InventoryStart].Durability = 20;
@@ -776,6 +785,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 461, accountId: 471);
+        session.Hp = 100;
         session.Class = 101;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = storedItemId;
         session.Inventory[InventoryConstants.InventoryStart].Durability = 10;
@@ -819,6 +829,7 @@ public class ItemTests : GameTestBase
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 462, accountId: 472);
+        session.Hp = 100;
         session.Class = 101;
         session.Inventory[InventoryConstants.BagSlotFor(0)].ItemId = bagItemId;
         session.Inventory[InventoryConstants.BagSlotFor(0)].Count = 1;
@@ -1016,6 +1027,7 @@ public class ItemTests : GameTestBase
         client.SendPacket(Arg.Do<Packet>(packet => replies.Add(packet)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 463, accountId: 473);
+        session.Hp = 100;
         session.Class = 101;
         session.Inventory[InventoryConstants.BagSlotFor(0)].ItemId = MagicBagItemId;
         session.Inventory[InventoryConstants.BagSlotFor(0)].Count = 1;
@@ -1086,6 +1098,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 462, accountId: 472);
+        session.Hp = 100;
         session.Class = 101;
         var bagSlot = InventoryConstants.BagSlotFor(1);
         session.Inventory[bagSlot].ItemId = bagItemId;
@@ -1207,6 +1220,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 4140, accountId: 4240);
+        session.Hp = 100;
         session.Inventory[InventoryConstants.LeftHand].ItemId = itemId;
         session.Inventory[InventoryConstants.LeftHand].Durability = 83;
         session.Inventory[InventoryConstants.LeftHand].Count = 1;
@@ -1242,6 +1256,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 4141, accountId: 4241);
+        session.Hp = 100;
         var slot = session.Inventory[InventoryConstants.MagicBagStart + bagPosition];
         slot.ItemId = itemId;
         slot.Count = 5;
@@ -1304,6 +1319,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 415, accountId: 425);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.Strength = 50;

@@ -36,7 +36,7 @@ public class ItemRemoveService(
             return;
         }
 
-        if (session.IsGathering
+        if (session.IsBusy
             || !itemInventoryRuleService.TryResolveRemoveIndex(type, position, out var absolutePosition, out var affectsEquipment))
         {
             await SendItemRemoveResponseAsync(session, 0);

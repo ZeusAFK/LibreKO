@@ -250,6 +250,22 @@ public class QuestDailyTests
     }
 
     [Fact]
+    public async Task ATradingPlayerCannotTurnAQuestIn()
+    {
+        using var harness = new RetailHarness(1755, 32557, AccountNation.Karus);
+        await harness.Request(QuestSubOpcode.Accept);
+        await harness.Progression.CheckQuestKillAsync(harness.Session, 10800);
+        harness.Session.Quest.StatusOf(1755).Should().Be(QuestStatus.ReadyToTurnIn);
+        harness.Session.Trade.ExchangeUser = 9_999;
+
+        await harness.Request(QuestSubOpcode.CheckFulfill);
+
+        harness.Session.Experience.Should().Be(0);
+        harness.Session.Loyalty.Should().Be(0);
+        harness.Session.Quest.StatusOf(1755).Should().Be(QuestStatus.ReadyToTurnIn);
+    }
+
+    [Fact]
     public async Task ConcurrentClaimsPayOnlyOnce()
     {
         using var harness = new RetailHarness(1755, 32557, AccountNation.Karus);

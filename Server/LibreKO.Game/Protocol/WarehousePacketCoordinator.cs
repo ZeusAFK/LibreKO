@@ -36,6 +36,12 @@ public class WarehousePacketCoordinator(
         var sub = (WarehouseSubOpcode)packet.ReadByte();
         logger.LogDebug("Warehouse operation {Sub} by {Name}", sub, session.Name);
 
+        if (session.IsBusy && sub is WarehouseSubOpcode.Input or WarehouseSubOpcode.Output or WarehouseSubOpcode.InventoryMove)
+        {
+            await session.Client.SendPacket(WarehousePacketWriter.Result(sub, WarehousePacketWriter.Failed));
+            return;
+        }
+
         switch (sub)
         {
             case WarehouseSubOpcode.Open:

@@ -141,7 +141,7 @@ public class ItemTradeService(
                 await SendItemTradeErrorAsync(session, ItemTradeRefusal.CannotTrade);
                 return;
             }
-            if (session.Trade.IsTrading)
+            if (session.IsBusy)
             {
                 await SendItemTradeErrorAsync(session, ItemTradeRefusal.CannotTrade);
                 return;
@@ -183,7 +183,8 @@ public class ItemTradeService(
         if (type == 3)
         {
             var destinationPosition = packet.ReadByte();
-            if (position >= InventoryConstants.HaveMax || destinationPosition >= InventoryConstants.HaveMax)
+            if (session.IsBusy
+                || position >= InventoryConstants.HaveMax || destinationPosition >= InventoryConstants.HaveMax)
             {
                 await SendItemTradeErrorAsync(session, ItemTradeRefusal.InventoryFull);
                 return;
@@ -231,7 +232,7 @@ public class ItemTradeService(
         var npcId = packet.ReadInt();
         var npc = sessionManager.Regions.GetNpc(npcId);
         var itemData = gameDataService.GetItem(itemId);
-        if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc) || itemData == null || session.Trade.IsTrading)
+        if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc) || itemData == null || session.IsBusy)
         {
             await client.SendPacket(ItemTradePacketWriter.RepurchaseRefused(itemId, RepurchaseGenericError));
             return;

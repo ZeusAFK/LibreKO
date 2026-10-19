@@ -220,6 +220,11 @@ public class UserSession
     public DateTime LastPieceExchangeTime { get; set; } = DateTime.MinValue;
     public bool IsGathering => IsMining || IsFishing;
 
+    // Dead, trading, keeping or setting up a stall, or gathering: every handler that moves an
+    // item refuses while this holds, so nothing moves an item a trade or a stall counts on.
+    public bool IsBusy =>
+        Hp <= 0 || Trade.IsTrading || Trade.IsMerchanting || Trade.IsMerchantPreparing || IsGathering;
+
     // Pet companion
     public PetState? Pet { get; set; }
     public int LastStruckNpcId { get; set; }

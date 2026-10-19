@@ -43,6 +43,12 @@ public class ClanWarehousePacketCoordinator(
             return;
         }
 
+        if (session.IsBusy && sub is WarehouseSubOpcode.Input or WarehouseSubOpcode.Output or WarehouseSubOpcode.InventoryMove)
+        {
+            await SendResult(session, sub, ClanWarehouseResult.Failed);
+            return;
+        }
+
         switch (sub)
         {
             case WarehouseSubOpcode.Open: await OpenAsync(session); break;

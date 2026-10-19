@@ -33,8 +33,7 @@ public class VipWarehousePacketCoordinator(
 
         var sub = (VipWarehouseSubOpcode)packet.ReadByte();
 
-        if (session.Hp <= 0 || session.Trade.IsTrading || session.Trade.IsMerchanting
-            || session.IsGathering)
+        if (session.IsBusy)
         {
             await SendResult(session, sub, VipWarehouseResult.Failed);
             return;

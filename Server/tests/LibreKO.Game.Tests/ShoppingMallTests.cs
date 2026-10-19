@@ -737,6 +737,7 @@ public class ShoppingMallTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 26, accountId: 36);
+        session.Hp = 100;
         session.Name = "Sender";
         session.Money = 20000;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = itemId;
@@ -816,6 +817,7 @@ public class ShoppingMallTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 27, accountId: 37);
+        session.Hp = 100;
         session.Name = "Sender";
         session.Money = 20000;
         session.Inventory[InventoryConstants.InventoryStart + backHalfSlot].ItemId = itemId;

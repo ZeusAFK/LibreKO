@@ -146,7 +146,7 @@ public class QuestProgressionService(
 
     private async Task ExecuteQuestEntryAsync(UserSession session, Packet packet, string role)
     {
-        if (packet.RemainingBytes is not (4 or 5) || session.Hp <= 0)
+        if (packet.RemainingBytes is not (4 or 5) || session.IsBusy)
             return;
 
         var requested = packet.ReadInt();

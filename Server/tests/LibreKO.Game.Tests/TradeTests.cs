@@ -698,6 +698,7 @@ public class TradeTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 73, accountId: 83);
+        session.Hp = 100;
         session.Money = 5000;
         session.WarehouseMoney = 1000;
 
@@ -735,6 +736,7 @@ public class TradeTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 74, accountId: 84);
+        session.Hp = 100;
         session.Money = 1000;
         session.WarehouseMoney = 5000;
 

@@ -100,6 +100,12 @@ public class MailService(
         subject = Truncate(subject.Trim(), MailLimits.SubjectMax);
         body = Truncate(body, MailLimits.BodyMax);
 
+        if (session.IsBusy)
+        {
+            await Fail(session, "You cannot send mail while trading, keeping a stall, gathering or dead.");
+            return;
+        }
+
         if (recipientName.Length == 0 || subject.Length == 0)
         {
             await Fail(session, "A recipient and a subject are required.");
