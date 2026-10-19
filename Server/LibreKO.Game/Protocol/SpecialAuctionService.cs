@@ -132,12 +132,19 @@ public class SpecialAuctionService(
         if (moment.Phase != AuctionPhase.Open)
             return SpecialAuctionPacketWriter.NotBiddingTime;
 
+        // A check offered in a trade stays in its slot with Count 0 until the trade ends, and
+        // the trade still delivers it; one listed on a stall can still be bought.
+        if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing)
+            return SpecialAuctionPacketWriter.Busy;
+
         var lot = LotsOf(moment.Serial).FirstOrDefault(l => l.Slot == slot);
         if (lot == null || lot.ItemId != itemId || lot.Count != count)
             return SpecialAuctionPacketWriter.NoSuchItem;
 
         if (!checksValid || checkSlots.Distinct().Count() != checkSlots.Count
-            || checkSlots.Any(s => session.Inventory[s].ItemId != MythrilCheck || !session.Inventory[s].IsTradable))
+            || checkSlots.Any(s => session.Inventory[s].ItemId != MythrilCheck
+                || session.Inventory[s].Count == 0
+                || !session.Inventory[s].IsTradable))
             return SpecialAuctionPacketWriter.WrongChecks;
 
         if (coins % CoinUnit != 0 || coins > MaxCoins || coins > session.Money)

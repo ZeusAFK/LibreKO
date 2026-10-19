@@ -4,6 +4,7 @@ using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
+using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -201,6 +202,50 @@ public class SpecialAuctionTests : GameTestBase
         var player = Join(provider, 100, "Bidder", 10_000_000);
 
         (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 3)).ReadShort().Should().Be(-2);
+    }
+
+    [Fact]
+    public async Task ACheckOfferedInATradeCannotAlsoBeBid()
+    {
+        var (provider, _) = Provider();
+        using var _p = provider;
+        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        var offered = player.Session.Inventory[InventoryConstants.SlotMax];
+        offered.Count = 0;
+        player.Session.Trade.ExchangeUser = 200;
+
+        (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 0)).ReadShort()
+            .Should().Be(SpecialAuctionPacketWriter.Busy);
+
+        offered.ItemId.Should().Be(Check);
+        player.Session.Money.Should().Be(10_000_000);
+        (await provider.GetRequiredService<ISpecialAuctionService>().HasOpenAuctionAsync(100)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AnEmptiedCheckSlotIsNotACheck()
+    {
+        var (provider, _) = Provider();
+        using var _p = provider;
+        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        player.Session.Inventory[InventoryConstants.SlotMax].Count = 0;
+
+        (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 0)).ReadShort()
+            .Should().Be(SpecialAuctionPacketWriter.WrongChecks);
+        player.Session.Money.Should().Be(10_000_000);
+    }
+
+    [Fact]
+    public async Task APlayerWithAStallOpenCannotBid()
+    {
+        var (provider, _) = Provider();
+        using var _p = provider;
+        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        player.Session.Trade.MerchantState = MerchantMode.Selling;
+
+        (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 0)).ReadShort()
+            .Should().Be(SpecialAuctionPacketWriter.Busy);
+        player.Session.Inventory[InventoryConstants.SlotMax].Count.Should().Be(1);
     }
 
     [Fact]
