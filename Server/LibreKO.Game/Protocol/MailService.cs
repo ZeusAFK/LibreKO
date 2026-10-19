@@ -309,9 +309,18 @@ public class MailService(
             mail.ReadAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
+        // Gold waits for room in the purse, everything else for room in the bag.
+        var goldWaiting = mail.Attachments.Any(a => a.Remaining > 0 && a.Kind == MailAttachmentKind.Gold);
+        var itemsWaiting = mail.Attachments.Any(a => a.Remaining > 0 && a.Kind != MailAttachmentKind.Gold);
+        var room = (itemsWaiting, goldWaiting) switch
+        {
+            (true, true) => "room in your inventory and your purse",
+            (false, true) => "room in your purse",
+            _ => "room in your inventory",
+        };
         var message = complete ? "Attachments claimed."
-            : delivered ? "Some attachments are still waiting. Make room in your inventory and claim again."
-            : "Not enough room in your inventory.";
+            : delivered ? $"Some attachments are still waiting. Make {room} and claim again."
+            : $"Not enough {room}.";
         await session.Client.SendPacket(MailPacketWriter.ClaimResult(delivered, mailId, message));
         if (firstRead)
             await session.Client.SendPacket(MailPacketWriter.Unread(await UnreadCountAsync(db, session.CharacterId)));

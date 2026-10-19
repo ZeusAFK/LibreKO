@@ -274,9 +274,10 @@ public class ShoppingMallLetterMutationService(
             return;
         }
 
+        var slot = -1;
         if (letter.ItemId > 0)
         {
-            var slot = session.FindSlotForItem(letter.ItemId, gameDataService, (ushort)letter.Count);
+            slot = session.FindSlotForItem(letter.ItemId, gameDataService, (ushort)letter.Count);
             if (slot < 0)
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
@@ -291,7 +292,26 @@ public class ShoppingMallLetterMutationService(
                     ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Rejected));
                 return;
             }
+        }
 
+        // The coins go into the purse under the lock and only if all of them fit under the cap;
+        // otherwise nothing is handed out and the letter waits.
+        var coins = letter.Coins;
+        if (coins > 0 && !session.WithLock(s =>
+            {
+                if ((long)s.Money + coins > ExchangePacketConstants.CoinMax)
+                    return false;
+                s.Money += coins;
+                return true;
+            }))
+        {
+            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
+                ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Rejected));
+            return;
+        }
+
+        if (letter.ItemId > 0)
+        {
             var slotEntry = session.Inventory[slot];
             var isNewItem = slotEntry.IsEmpty;
             slotEntry.ItemId = letter.ItemId;
@@ -309,11 +329,8 @@ public class ShoppingMallLetterMutationService(
                 isNewItem);
         }
 
-        if (letter.Coins > 0)
-        {
-            session.Money += letter.Coins;
-            await userNotificationService.SendGoldGainAsync(session, letter.Coins);
-        }
+        if (coins > 0)
+            await userNotificationService.SendGoldGainAsync(session, coins);
 
         letter.Status = 2;
         await db.SaveChangesAsync();

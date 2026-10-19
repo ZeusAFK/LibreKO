@@ -75,8 +75,9 @@ public class MerchantStallTests : GameTestBase
         first.Trade.MerchantTargetUserId = seller.CharacterId;
         second.Trade.MerchantTargetUserId = seller.CharacterId;
 
-        // The item is looked up once before the stock is checked and once more before it is written.
-        market.HoldEachRequestAtLookup(2);
+        // The item is looked up once before the locks and once more inside them, after the stock
+        // is checked and before it is written.
+        market.HoldEachRequestAtLookups(2);
         await Task.WhenAll(
             Task.Run(() => market.BuyAsync(first, Ware, 1)),
             Task.Run(() => market.BuyAsync(second, Ware, 1)));
@@ -100,8 +101,9 @@ public class MerchantStallTests : GameTestBase
             Stock(Bag(seller, BagPos), Ware, 1);
         }
 
-        // The item is looked up twice while the sale is checked and once more before it is written.
-        market.HoldEachRequestAtLookup(3);
+        // The sale is checked once outside the locks (lookups 1-2) and again inside them (3-4),
+        // and the item is looked up once more right before it is written (5).
+        market.HoldEachRequestAtLookups(3, 5);
         await Task.WhenAll(
             Task.Run(() => market.SellAsync(first, BagPos, 1)),
             Task.Run(() => market.SellAsync(second, BagPos, 1)));
@@ -215,6 +217,9 @@ public class MerchantStallTests : GameTestBase
             Items = new byte[InventoryConstants.InventoryTotal * 8], SkillPointData = new byte[9],
         }));
         var owner = market.Player(ownerId, gold: StartingGold);
+        var persister = market.Provider.GetRequiredService<ICharacterStatePersister>();
+        // A first save warms the database up, so the one below reaches the player's lock at once.
+        await persister.SaveAsync(owner);
         using var halfWay = new ManualResetEventSlim();
         using var saved = new ManualResetEventSlim();
 
@@ -229,7 +234,7 @@ public class MerchantStallTests : GameTestBase
             s.Hp = 40;
         }));
         halfWay.Wait();
-        await market.Provider.GetRequiredService<ICharacterStatePersister>().SaveAsync(owner);
+        await persister.SaveAsync(owner);
         saved.Set();
         await purchase;
 
@@ -238,6 +243,36 @@ public class MerchantStallTests : GameTestBase
         row.Money.Should().Be(StartingGold - Price);
         row.Items.Should().Equal(owner.SerializeItems(), "the gold and the item it paid for are saved together");
         row.Hp.Should().Be(40, "every field comes from the same moment");
+    }
+
+    [Fact]
+    public async Task LeavingTheZoneClosesAStallAndHandsBackItsGold()
+    {
+        using var market = new Market();
+        var owner = market.Player(96018, gold: StartingGold);
+        await market.OpenBuyingStallAsync(owner, (Ware, 5, Price));
+
+        await market.Provider.GetRequiredService<IZoneTransitionService>().ChangeZoneAsync(owner, 1, 100f, 100f);
+
+        owner.Trade.IsMerchanting.Should().BeFalse();
+        owner.Trade.IsMerchantPreparing.Should().BeFalse("a stall left behind must not keep its owner busy");
+        owner.Money.Should().Be(StartingGold);
+    }
+
+    [Fact]
+    public async Task DyingToAnotherPlayerClosesAStallAndHandsBackItsGold()
+    {
+        using var market = new Market();
+        var owner = market.Player(96019, gold: StartingGold);
+        var killer = market.Player(96020, gold: 0);
+        await market.OpenBuyingStallAsync(owner, (Ware, 5, Price));
+
+        owner.Hp = 0;
+        await market.Provider.GetRequiredService<ICombatLifecycleService>().HandlePlayerDeathAsync(owner, killer);
+
+        owner.Trade.IsMerchanting.Should().BeFalse();
+        owner.Trade.IsMerchantPreparing.Should().BeFalse("a stall must not keep its owner busy after reviving");
+        owner.Money.Should().Be(StartingGold);
     }
 
     private static void ListByHand(UserSession seller, int itemId, ushort count)
@@ -265,9 +300,8 @@ public class MerchantStallTests : GameTestBase
 
     private sealed class Market : IDisposable
     {
-        private readonly CountdownEvent rendezvous = new(2);
+        private readonly Dictionary<int, CountdownEvent> holds = [];
         private readonly AsyncLocal<int> lookups = new();
-        private volatile int holdAt;
 
         public ServiceProvider Provider { get; }
 
@@ -287,14 +321,18 @@ public class MerchantStallTests : GameTestBase
             });
         }
 
-        // From now on each request waits at its n-th item lookup until the other request gets
-        // there too (or a second passes), so two players' requests reach the stall together:
-        // both past their checks before either one writes, unless a lock keeps them apart.
-        public void HoldEachRequestAtLookup(int lookup) => holdAt = lookup;
+        // From now on each request waits at each of the given item lookups until the other
+        // request gets there too (or a second passes), so two players' requests reach the stall
+        // together: both past their checks before either one writes, unless a lock keeps them apart.
+        public void HoldEachRequestAtLookups(params int[] points)
+        {
+            foreach (var point in points)
+                holds[point] = new CountdownEvent(2);
+        }
 
         private ItemData Hold(ItemData data)
         {
-            if (holdAt > 0 && ++lookups.Value == holdAt && rendezvous.CurrentCount > 0)
+            if (holds.Count > 0 && holds.TryGetValue(++lookups.Value, out var rendezvous) && rendezvous.CurrentCount > 0)
             {
                 rendezvous.Signal();
                 rendezvous.Wait(TimeSpan.FromSeconds(1));
@@ -372,7 +410,8 @@ public class MerchantStallTests : GameTestBase
         public void Dispose()
         {
             Provider.Dispose();
-            rendezvous.Dispose();
+            foreach (var rendezvous in holds.Values)
+                rendezvous.Dispose();
         }
     }
 }

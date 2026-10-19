@@ -187,6 +187,27 @@ public class TradeEscrowTests : GameTestBase
     }
 
     [Fact]
+    public async Task ACancelTheServerStartsReachesThePlayerBeforeTheirBagIsResynced()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var (giver, taker, giverClient, _) = OpenTrade(provider);
+        StockPotions(giver);
+        await SendAsync(provider, giverClient, AddPacket(PotionPos, Potion, 3));
+
+        // The partner walks off; the next offer finds them out of range and the server cancels.
+        taker.X += 1_000f;
+        await SendAsync(provider, giverClient, AddPacket(PotionPos, Potion, 1));
+
+        giver.Trade.IsTrading.Should().BeFalse();
+        var sent = Sent(giverClient);
+        var cancelAt = sent.FindIndex(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE && FirstByte(p) == ExchangePacketConstants.ExchangeCancel);
+        var resyncAt = sent.FindIndex(p => p.GetOpcode() == (byte)GameOpcodes.GS_ITEM_COUNT_CHANGE);
+        cancelAt.Should().BeGreaterThanOrEqualTo(0, "the player's own client has to close the trade and put its offer back");
+        resyncAt.Should().BeGreaterThan(cancelAt);
+        BagSlot(giver, PotionPos).Count.Should().Be(PotionStack);
+    }
+
+    [Fact]
     public async Task DyingToAMonsterMidTradeGivesBothPlayersTheirOffersBack()
     {
         using var provider = CreateProvider(_ => { }, gameData =>

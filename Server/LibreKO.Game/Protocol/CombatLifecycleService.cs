@@ -43,6 +43,7 @@ public class CombatLifecycleService(
     IWarCaptainService warCaptainService,
     IClanMatchService clanMatchService,
     IBountyPacketCoordinator bountyPacketCoordinator,
+    IMerchantLifecycleService merchantLifecycleService,
     ILogger<CombatLifecycleService> logger) : ICombatLifecycleService
 {
     public const int NoKillerId = -1;
@@ -224,6 +225,10 @@ public class CombatLifecycleService(
 
         if (victim.Trade.IsTrading)
             await exchangePacketCoordinator.CancelAsync(victim, isOnDeath: true);
+
+        // Closing the stall clears its setup flags too and hands back a buying stall's gold.
+        if (victim.Trade.IsMerchanting || victim.Trade.IsMerchantPreparing || victim.Trade.BuyMerchantGold > 0)
+            await merchantLifecycleService.CloseAsync(victim, MerchantInOut.StallClosed);
 
         await miningPacketCoordinator.StopGatheringAsync(victim);
 

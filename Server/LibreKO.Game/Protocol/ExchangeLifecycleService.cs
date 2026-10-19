@@ -116,6 +116,11 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         var returnedSession = session.WithLock(s => s.InitExchange(false));
         logger.LogInformation("Trade cancelled for {Name}", session.Name);
 
+        // The player is told too: a cancel the server starts (range, death, logout) is news to its
+        // client, which must close the window and put its offer back before the resync below. A
+        // client that cancelled itself has already closed the window and ignores this.
+        await SendCancelAsync(session);
+
         ExchangeReturn? returnedTarget = null;
         if (target != null && target.Trade.ExchangeUser == session.CharacterId)
         {

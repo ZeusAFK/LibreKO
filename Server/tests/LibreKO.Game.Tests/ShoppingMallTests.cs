@@ -964,6 +964,43 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ShoppingMallPacketCoordinator_HandleAsync_LetterGetItemWhoseCoinsDoNotFitWaits()
+    {
+        const int itemId = 810003000;
+        const int letterId = 1004;
+
+        using var provider = CreateProvider(
+            db => db.MailBoxes.Add(new MailBox
+            {
+                LetterId = letterId, RecipientId = "Mailer", SenderId = "System", Subject = "Gift", Message = "Take it",
+                Type = 2, Status = 1, ItemId = itemId, Count = 2, Durability = 10, Coins = 1_000,
+                SendDate = DateTime.UtcNow, Deleted = false,
+            }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1, Weight = 1, Duration = 10 }));
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 29, accountId: 39);
+        session.Name = "Mailer";
+        session.Hp = 100;
+        session.Stats.MaxWeight = 100;
+        session.Money = ExchangePacketConstants.CoinMax - 100;
+
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(6);
+        request.WriteByte(4);
+        request.WriteInt(letterId);
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        session.Money.Should().Be(ExchangePacketConstants.CoinMax - 100, "coins past the cap are not taken in");
+        session.Inventory.Should().NotContain(slot => slot.ItemId == itemId, "the letter is claimed whole or not at all");
+        await using var scope = provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        (await db.MailBoxes.SingleAsync(mail => mail.LetterId == letterId)).Status.Should().Be(1);
+    }
+
+    [Fact]
     public async Task ShoppingMallPacketCoordinator_HandleAsync_LetterGetItemRejectsOverweightReceive()
     {
         const int itemId = 810004000;

@@ -237,6 +237,10 @@ public class MailServiceTests : GameTestBase
         await mail.ClaimAsync(bob, mailId);
 
         bob.Money.Should().Be(ExchangePacketConstants.CoinMax, "a claim never pushes the purse past the cap");
+        var claim = MailPacket(bobSent, MailPacketWriter.SubClaim);
+        claim.ReadByte();
+        claim.ReadInt();
+        claim.ReadSByteString().Should().Contain("purse").And.NotContain("inventory");
 
         bob.Money = 0;
         await mail.ClaimAsync(bob, mailId);

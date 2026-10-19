@@ -24,7 +24,8 @@ public class ZoneTransitionService(
     InstanceRoomRegistry instanceRooms,
     IPetService petService,
     ILogger<ZoneTransitionService> logger,
-    IPartyPacketCoordinator? partyCoordinator = null) : IZoneTransitionService
+    IPartyPacketCoordinator? partyCoordinator = null,
+    IMerchantLifecycleService? merchantLifecycle = null) : IZoneTransitionService
 {
     private const byte ZoneAbilityUpdate = 1;
     private const byte DefaultTariff = 10;
@@ -47,6 +48,12 @@ public class ZoneTransitionService(
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, RebornBarredNotice));
             return;
         }
+
+        // A stall stays where it was set up: leaving the zone closes it, setup flags and a buying
+        // stall's held gold included.
+        if (session.ZoneId != newZone && merchantLifecycle != null
+            && (session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.Trade.BuyMerchantGold > 0))
+            await merchantLifecycle.CloseAsync(session, MerchantInOut.StallClosed);
 
         if (session.ZoneId != newZone && PlayerLeavingZone is { } leaving)
         {

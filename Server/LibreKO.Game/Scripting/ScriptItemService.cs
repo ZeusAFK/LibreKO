@@ -350,7 +350,8 @@ public class ScriptItemService(
             var gained = give.Where(e => Matches(e.itemId)).Sum(e => (long)e.count);
             var spent = take.Where(e => Matches(e.itemId)).Sum(e => (long)e.count);
             var balance = currency == InventoryConstants.ItemGold ? session.Money : session.Loyalty;
-            if (balance - spent + gained > int.MaxValue
+            var cap = currency == InventoryConstants.ItemGold ? Protocol.ExchangePacketConstants.CoinMax : int.MaxValue;
+            if (balance - spent + gained > cap
                 || currency == InventoryConstants.ItemLadderPoint && session.MonthlyLoyalty + gained > int.MaxValue)
                 return false;
         }
