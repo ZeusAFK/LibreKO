@@ -54,6 +54,9 @@ internal sealed class PetReader : IPacketReader
             case PetFunction.Food:
                 HandlePetFood(p);
                 break;
+            case PetFunction.NameChange:
+                HandlePetRename(p);
+                break;
         }
     }
 
@@ -125,6 +128,20 @@ internal sealed class PetReader : IPacketReader
         pet.RaisePetTransformed(abs, transformed.Pet.Info);
     }
 
+    private void HandlePetRename(Packet p)
+    {
+        if (pet.PendingRename is not { } request) return;
+        pet.PendingRename = null;
+        if (!PetWire.TryReadRenameFor(p, request, out var renamed, out int failure))
+        {
+            pet.RaisePetRenameFailed(failure);
+            return;
+        }
+        int abs = PlaceFamiliarItem(renamed.Pet);
+        RemoveBagItem(InventoryConstants.InventoryStart + renamed.CertificateSlot, renamed.CertificateItemId);
+        pet.RaisePetRenamed(abs, renamed.Pet.Info);
+    }
+
     private int PlaceFamiliarItem(HatchedPet hatched)
     {
         pet.Remember(hatched.Info);
@@ -141,5 +158,13 @@ internal sealed class PetReader : IPacketReader
         var left = Inventory.Consumed(self.Inventory[abs], 1);
         self.ApplyInventorySlot(abs, left);
         items.RaiseInventorySlot(abs, left);
+    }
+
+    private void RemoveBagItem(int abs, int itemId)
+    {
+        if (!self.Inventory.Holds(abs, itemId)) return;
+        var empty = new ItemSlot();
+        self.ApplyInventorySlot(abs, empty);
+        items.RaiseInventorySlot(abs, empty);
     }
 }

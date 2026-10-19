@@ -5,6 +5,7 @@ public interface IPetRequests
     void Mode(PetMode mode);
     bool Hatch(int npcId, int eggItemId, int bagSlot, string name);
     bool Transform(int npcId, int petItemId, int petSlot, int petUniqueId, int materialItemId, int materialSlot);
+    bool Rename(int npcId, int petItemId, int petSlot, int petUniqueId, int certificateItemId, int certificateSlot, string name);
     bool Feed(int bagSlot, int foodItemId);
     void Dismiss();
     bool Skill(int stage, int skillId, int casterId, int targetId, int x, int y, int z);
@@ -70,6 +71,24 @@ public sealed class PetRequests : IPetRequests
             p.WriteByte(0);
         }
         pet.PendingIncubation = PetIncubationRequest.Transformation(petItemId, petSlot, petUniqueId, materialItemId, materialSlot);
+        sink.Send(p);
+        return true;
+    }
+
+    public bool Rename(int npcId, int petItemId, int petSlot, int petUniqueId, int certificateItemId, int certificateSlot, string name)
+    {
+        if (!sink.Connected || pet.PendingRename != null || !IsBagSlot(petSlot) || !IsBagSlot(certificateSlot)
+            || petSlot == certificateSlot) return false;
+        var p = new Packet(GameOpcodes.GS_PET);
+        p.WriteByte((byte)PetSubOpcode.ModeFunction);
+        p.WriteByte((byte)PetFunction.NameChange);
+        p.WriteInt(npcId);
+        p.WriteInt(petItemId);
+        p.WriteByte((byte)petSlot);
+        p.WriteInt(certificateItemId);
+        p.WriteByte((byte)certificateSlot);
+        p.WriteString(name);
+        pet.PendingRename = new PetRenameRequest(petItemId, petSlot, petUniqueId, certificateItemId, certificateSlot, name);
         sink.Send(p);
         return true;
     }

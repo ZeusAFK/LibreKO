@@ -17,6 +17,8 @@ public sealed class PetSession
 
     public PetIncubationRequest? PendingIncubation { get; internal set; }
 
+    public PetRenameRequest? PendingRename { get; internal set; }
+
     public event Action<PetSheet>? PetSummonedEvent;
 
     internal void RaisePetSummoned(PetSheet petSheet) => PetSummonedEvent?.Invoke(petSheet);
@@ -77,6 +79,14 @@ public sealed class PetSession
 
     internal void RaisePetTransformFailed(int value) => PetTransformFailedEvent?.Invoke(value);
 
+    public event Action<int, PetItemInfo>? PetRenamedEvent;
+
+    internal void RaisePetRenamed(int arg1, PetItemInfo petItemInfo) => PetRenamedEvent?.Invoke(arg1, petItemInfo);
+
+    public event Action<int>? PetRenameFailedEvent;
+
+    internal void RaisePetRenameFailed(int value) => PetRenameFailedEvent?.Invoke(value);
+
     public event Action? PetResetEvent;
 
     private void RaisePetReset() => PetResetEvent?.Invoke();
@@ -85,6 +95,7 @@ public sealed class PetSession
     {
         PendingFeed = null;
         PendingIncubation = null;
+        PendingRename = null;
         Pet = null;
         items.Clear();
         RaisePetGone();

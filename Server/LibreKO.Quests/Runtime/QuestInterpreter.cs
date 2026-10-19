@@ -690,6 +690,10 @@ public sealed class QuestInterpreter
                 host.OpenFamiliarPanel();
                 break;
 
+            case QuestActionKind.OpenFamiliarRenamePanel:
+                host.OpenFamiliarRenamePanel();
+                break;
+
             case QuestActionKind.OpenFamiliarShop:
                 host.OpenFamiliarShop();
                 break;

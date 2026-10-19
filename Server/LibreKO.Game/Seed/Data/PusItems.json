@@ -48,5 +48,6 @@
   { "Id": 47, "ItemId": 800450000, "Price": 248, "Category": 1, "Featured": false },
   { "Id": 48, "ItemId": 810277000, "Price": 349, "Category": 4, "Featured": false },
   { "Id": 49, "ItemId": 811135000, "Price": 1590, "Category": 1, "Featured": false },
-  { "Id": 50, "ItemId": 811136000, "Price": 1590, "Category": 1, "Featured": false }
+  { "Id": 50, "ItemId": 811136000, "Price": 1590, "Category": 1, "Featured": false },
+  { "Id": 51, "ItemId": 800090000, "Price": 299, "Category": 4, "Featured": false }
 ]

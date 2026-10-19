@@ -4,6 +4,8 @@ public readonly record struct HatchedPet(int ItemId, int BagSlot, PetItemInfo In
 
 public readonly record struct TransformedPet(HatchedPet Pet, int MaterialItemId, int MaterialSlot);
 
+public readonly record struct RenamedPet(HatchedPet Pet, int CertificateItemId, int CertificateSlot);
+
 public readonly record struct PetFoodReply(bool Succeeded, int BagSlot, int ItemId, short CountLeft, short Increase)
 {
     public bool TryLower(ItemSlot held, out ItemSlot left)
@@ -46,23 +48,34 @@ public readonly record struct PetIncubationRequest(bool Transform, int ItemId, i
         && result.MaterialItemId == MaterialItemId && result.MaterialSlot == MaterialSlot;
 }
 
+public readonly record struct PetRenameRequest(int ItemId, int BagSlot, int UniqueId, int CertificateItemId, int CertificateSlot, string Name)
+{
+    public bool Matches(RenamedPet result) =>
+        result.Pet.ItemId == ItemId && result.Pet.BagSlot == BagSlot && result.Pet.Info.Index == UniqueId
+        && result.Pet.Info.Name == Name && result.CertificateItemId == CertificateItemId && result.CertificateSlot == CertificateSlot;
+}
+
 public static class PetWire
 {
     public const int FamiliarSummonSkill = 500117;
+    public const int NameCertificate = 800090000;
+    public const int RenameMenuText = 4264;
 
     public const int ItemRecordBytes = 19;
     public const byte HatchRefused = 0;
     public const byte HatchSucceeded = 1;
     public const byte HatchNameTaken = 2;
+    public const byte RenameRefused = 0;
+    public const byte RenameSucceeded = 1;
     public const int NameTakenCode = -1;
     public const int MalformedReplyCode = int.MinValue;
     public const byte FoodRefused = 0;
     public const byte FoodSucceeded = 1;
     public const int FoodHeaderBytes = 6;
     private const int FoodSuccessTailBytes = 10;
-    private const int HatchSuccessBytes = 17;
-    private const int HatchNameTailBytes = 6;
-    private const int TransformTailBytes = 6;
+    private const int FamiliarBytes = 17;
+    private const int FamiliarNameTailBytes = 6;
+    private const int SpentMaterialBytes = 6;
 
     public static bool TryReadFood(Packet p, out PetFoodReply reply)
     {
@@ -165,21 +178,38 @@ public static class PetWire
             if (p.RemainingBytes >= 1) failure = p.ReadByte();
             return false;
         }
-        if (result != HatchSucceeded || p.RemainingBytes < HatchSuccessBytes) return false;
+        if (result != HatchSucceeded || !TryReadFamiliar(p, out hatched)) return false;
+        failure = 0;
+        return true;
+    }
+
+    private static bool TryReadFamiliar(Packet p, out HatchedPet familiar)
+    {
+        familiar = default;
+        if (p.RemainingBytes < FamiliarBytes) return false;
         int itemId = p.ReadInt();
         int bagSlot = p.ReadByte();
         int index = p.ReadInt();
         int nameLength = p.ReadShort();
-        if (nameLength is < 1 or > PetSheet.NameMaxLength || p.RemainingBytes < nameLength + HatchNameTailBytes) return false;
+        if (nameLength is < 1 or > PetSheet.NameMaxLength || p.RemainingBytes < nameLength + FamiliarNameTailBytes) return false;
         string name = System.Text.Encoding.ASCII.GetString(p.ReadBytes(nameLength));
         int attack = p.ReadByte();
         int level = p.ReadByte();
         int expPercent = p.ReadUShort();
         int satisfaction = p.ReadShort();
         if (itemId <= 0 || index <= 0 || bagSlot >= InventoryConstants.HaveMax || level == 0) return false;
-        hatched = new HatchedPet(itemId, bagSlot, new PetItemInfo(index, name, attack, level, expPercent, satisfaction));
-        failure = 0;
+        familiar = new HatchedPet(itemId, bagSlot, new PetItemInfo(index, name, attack, level, expPercent, satisfaction));
         return true;
+    }
+
+    private static bool TryReadSpentItem(Packet p, HatchedPet familiar, out int itemId, out int bagSlot)
+    {
+        itemId = bagSlot = 0;
+        if (p.RemainingBytes < SpentMaterialBytes) return false;
+        p.ReadByte();
+        itemId = p.ReadInt();
+        bagSlot = p.ReadByte();
+        return itemId > 0 && bagSlot < InventoryConstants.HaveMax && bagSlot != familiar.BagSlot;
     }
 
     public static bool TryReadHatchFor(Packet p, PetIncubationRequest request, out HatchedPet hatched, out int failure)
@@ -202,21 +232,39 @@ public static class PetWire
     {
         transformed = default;
         if (!TryReadHatch(p, out var pet, out failure)) return false;
-        if (p.RemainingBytes < TransformTailBytes)
-        {
-            failure = MalformedReplyCode;
-            return false;
-        }
-        p.ReadByte();
-        int materialItemId = p.ReadInt();
-        int materialSlot = p.ReadByte();
-        if (materialItemId <= 0 || materialSlot >= InventoryConstants.HaveMax || materialSlot == pet.BagSlot)
+        if (!TryReadSpentItem(p, pet, out int materialItemId, out int materialSlot))
         {
             failure = MalformedReplyCode;
             return false;
         }
         transformed = new TransformedPet(pet, materialItemId, materialSlot);
         return true;
+    }
+
+    public static bool TryReadRename(Packet p, out RenamedPet renamed, out int failure)
+    {
+        renamed = default;
+        failure = MalformedReplyCode;
+        if (p.RemainingBytes < 1) return false;
+        byte result = p.ReadByte();
+        if (result == RenameRefused)
+        {
+            if (p.RemainingBytes >= 1) failure = p.ReadByte();
+            return false;
+        }
+        if (result != RenameSucceeded || !TryReadFamiliar(p, out var pet)
+            || !TryReadSpentItem(p, pet, out int certificateItemId, out int certificateSlot)) return false;
+        renamed = new RenamedPet(pet, certificateItemId, certificateSlot);
+        failure = 0;
+        return true;
+    }
+
+    public static bool TryReadRenameFor(Packet p, PetRenameRequest request, out RenamedPet renamed, out int failure)
+    {
+        if (!TryReadRename(p, out renamed, out failure)) return false;
+        if (request.Matches(renamed)) return true;
+        failure = MalformedReplyCode;
+        return false;
     }
 }
 
@@ -236,6 +284,7 @@ public enum PetFunction : byte
     Mp = 13,
     Satisfaction = 15,
     Food = 16,
+    NameChange = 17,
 }
 
 public enum PetModeResult : short

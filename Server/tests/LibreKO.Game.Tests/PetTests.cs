@@ -58,6 +58,8 @@ public class PetTests : GameTestBase
     private const int ImageChangeLow = 700_013_000;
     private const int ImageChangeMiddle = 700_017_000;
     private const int ImageChangeHigh = 700_018_000;
+    private const int OtherCertificate = 810_193_000;
+    private const string NewPetName = "Brownie";
 
     private static readonly PetLevelData LevelOne = new()
     {
@@ -310,6 +312,99 @@ public class PetTests : GameTestBase
 
         owner.Inventory[InventoryConstants.SlotMax + 1].ItemId.Should().Be(EtarothScroll, "a scroll that would change nothing is kept");
         RefusalOf(sent).Should().Be(HatchRefusal.Failed);
+    }
+
+    [Fact]
+    public async Task ACertificateRenamesTheFamiliarAndIsUsedUp()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        var kate = Kate(sessions);
+        var pet = await LinkPet(provider, owner.Inventory[InventoryConstants.SlotMax]);
+        PutItem(owner, 1, PetService.NameCertificate);
+
+        await provider.GetRequiredService<IPetPacketCoordinator>()
+            .HandleAsync(owner.Client, RenameRequest(kate.NpcId, 0, PetService.NameCertificate, 1, NewPetName));
+
+        (await Repository(provider).GetById(pet.Id))!.Name.Should().Be(NewPetName);
+        owner.Inventory[InventoryConstants.SlotMax].UniqueId.Should().Be(pet.Id);
+        owner.Inventory[InventoryConstants.SlotMax + 1].IsEmpty.Should().BeTrue("the 2619 client removes the certificate's whole slot");
+
+        var reply = sent.Single(p => Function(p) == PetFunction.NameChange);
+        reply.ResetOffset();
+        reply.ReadByte().Should().Be((byte)PetSubOpcode.ModeFunction);
+        reply.ReadByte().Should().Be((byte)PetFunction.NameChange);
+        reply.ReadByte().Should().Be((byte)RenameResult.Succeeded);
+        reply.ReadInt().Should().Be(KaulId);
+        reply.ReadByte().Should().Be(0);
+        reply.ReadInt().Should().Be(pet.Id);
+        reply.ReadString().Should().Be(NewPetName);
+        reply.ReadByte().Should().Be(KaulClass);
+        reply.ReadByte().Should().Be(Pet.StartLevel);
+        reply.ReadUShort().Should().Be(0);
+        reply.ReadShort().Should().Be(Pet.HatchedSatisfaction);
+        reply.ReadByte().Should().Be(PetPacketWriter.RenamedPad, "the 2619 reader skips five bytes before the certificate's slot");
+        reply.ReadInt().Should().Be(PetService.NameCertificate);
+        reply.ReadByte().Should().Be(1);
+        reply.RemainingBytes.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ATakenFamiliarNameIsRefusedAndTheCertificateStays()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        var kate = Kate(sessions);
+        var pet = await LinkPet(provider, owner.Inventory[InventoryConstants.SlotMax]);
+        await Repository(provider).CreateAsync(new Pet { Name = NewPetName, Class = KaulClass });
+        PutItem(owner, 1, PetService.NameCertificate);
+
+        await provider.GetRequiredService<IPetService>()
+            .RenameAsync(owner, kate.NpcId, KaulId, 0, new PetMaterial(PetService.NameCertificate, 1), NewPetName);
+
+        (await Repository(provider).GetById(pet.Id))!.Name.Should().Be(PetName);
+        owner.Inventory[InventoryConstants.SlotMax + 1].ItemId.Should().Be(PetService.NameCertificate);
+        RenameRefusalOf(sent).Should().Be(RenameRefusal.NameTaken);
+    }
+
+    [Theory]
+    [InlineData(OtherCertificate, NewPetName, RenameRefusal.InvalidItem)]
+    [InlineData(PetService.NameCertificate, "two words", RenameRefusal.InvalidName)]
+    [InlineData(PetService.NameCertificate, "", RenameRefusal.InvalidName)]
+    public async Task ARenameNeedsTheCertificateAndAPlainName(int certificate, string name, RenameRefusal refusal)
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        var kate = Kate(sessions);
+        var pet = await LinkPet(provider, owner.Inventory[InventoryConstants.SlotMax]);
+        PutItem(owner, 1, certificate);
+
+        await provider.GetRequiredService<IPetService>()
+            .RenameAsync(owner, kate.NpcId, KaulId, 0, new PetMaterial(certificate, 1), name);
+
+        (await Repository(provider).GetById(pet.Id))!.Name.Should().Be(PetName);
+        owner.Inventory[InventoryConstants.SlotMax + 1].ItemId.Should().Be(certificate);
+        RenameRefusalOf(sent).Should().Be(refusal);
+    }
+
+    [Fact]
+    public async Task OnlyAFamiliarCanBeRenamed()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        var kate = Kate(sessions);
+        PutEgg(owner, 0);
+        PutItem(owner, 1, PetService.NameCertificate);
+
+        await provider.GetRequiredService<IPetService>()
+            .RenameAsync(owner, kate.NpcId, EggId, 0, new PetMaterial(PetService.NameCertificate, 1), NewPetName);
+
+        owner.Inventory[InventoryConstants.SlotMax + 1].ItemId.Should().Be(PetService.NameCertificate);
+        RenameRefusalOf(sent).Should().Be(RenameRefusal.NotFamiliar);
     }
 
     [Fact]
@@ -1073,6 +1168,33 @@ public class PetTests : GameTestBase
         }
         packet.ResetOffset();
         return packet;
+    }
+
+    private static Packet RenameRequest(int npcId, byte petSlot, int certificate, byte certificateSlot, string name)
+    {
+        var packet = new Packet(GameOpcodes.GS_PET);
+        packet.WriteByte((byte)PetSubOpcode.ModeFunction);
+        packet.WriteByte((byte)PetFunction.NameChange);
+        packet.WriteInt(npcId);
+        packet.WriteInt(KaulId);
+        packet.WriteByte(petSlot);
+        packet.WriteInt(certificate);
+        packet.WriteByte(certificateSlot);
+        packet.WriteString(name);
+        packet.ResetOffset();
+        return packet;
+    }
+
+    private static RenameRefusal RenameRefusalOf(List<Packet> sent)
+    {
+        var reply = sent.Single(p => Function(p) == PetFunction.NameChange);
+        reply.ResetOffset();
+        reply.ReadByte();
+        reply.ReadByte();
+        reply.ReadByte().Should().Be((byte)RenameResult.Refused);
+        var refusal = (RenameRefusal)reply.ReadByte();
+        reply.RemainingBytes.Should().Be(0);
+        return refusal;
     }
 
     private static NpcInstance Kate(SessionManager sessions) =>

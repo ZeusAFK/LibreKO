@@ -8,11 +8,19 @@ On greeting
 On topics
     If quest 78 is completed
         Topic "Familiar Hatching and transform" goto hatching
+        Topic "Familiar Name Change" goto name_change
         Topic "Familiar Shop" goto shop
         Topic "Use Voucher" goto vouchers
 
 On hatching
     Open familiar panel
+
+On name_change
+    If player has 800090000
+        Open familiar rename panel
+    Else
+        Say to_change_familiar_names
+        Topic "Close" goto close
 
 On shop
     Open familiar shop

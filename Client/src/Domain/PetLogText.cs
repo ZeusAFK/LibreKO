@@ -17,5 +17,8 @@ public static class PetLogText
     public const int CannotIncubate = 14014;
     public const int LimitExceeded = 14015;
     public const int NameTaken = 14016;
+    public const int NotFamiliarItem = 14024;
+    public const int RenameNameTaken = 14025;
+    public const int InvalidItem = 14026;
     public const int LootingMode = 14037;
 }

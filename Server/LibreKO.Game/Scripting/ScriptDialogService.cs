@@ -108,6 +108,11 @@ public class ScriptDialogService(
         queuedPackets.Add(NpcDialogPacketWriter.FamiliarPanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
     }
 
+    public void SendFamiliarRenamePanel()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.FamiliarRenamePanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
+
     public void SendFamiliarShop()
     {
         queuedPackets.Add(NpcDialogPacketWriter.FamiliarShop(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));

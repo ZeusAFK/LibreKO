@@ -9,4 +9,5 @@ public interface IPetRepository
     Task<bool> NameExists(string name);
     Task<Pet> CreateAsync(Pet pet);
     Task UpdateAsync(Pet pet);
+    Task<bool> RenameAsync(int id, string name);
 }

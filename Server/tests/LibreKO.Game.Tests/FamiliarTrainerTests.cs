@@ -15,6 +15,8 @@ public class FamiliarTrainerTests
     private const int FamiliarQuest = 78;
     private const string HatchingTopic = "Familiar Hatching and transform";
     private const string ShopTopic = "Familiar Shop";
+    private const string NameChangeTopic = "Familiar Name Change";
+    private const int NameCertificate = 800_090_000;
 
     private static string QuestPath(string name, [System.Runtime.CompilerServices.CallerFilePath] string source = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, "..", "..", "LibreKO.Game", "Quests", name));
@@ -73,12 +75,40 @@ public class FamiliarTrainerTests
     }
 
     [Fact]
+    public void KateOpensTheWindowForANameChangeWithACertificate()
+    {
+        var program = Kates();
+        var host = Player(questStatus: 2);
+        host.ItemCount(NameCertificate).Returns(1);
+
+        var nameChange = GreetingButtons(program, host).Single(b => b.Label.Text == NameChangeTopic);
+        new QuestInterpreter(program, host).Run(nameChange.TargetEvent).Failure.Should().BeNull();
+
+        host.Received(1).OpenFamiliarRenamePanel();
+        host.DidNotReceive().OpenFamiliarPanel();
+    }
+
+    [Fact]
+    public void WithoutACertificateKateSaysWhatANameChangeNeeds()
+    {
+        var program = Kates();
+        var host = Player(questStatus: 2);
+
+        var nameChange = GreetingButtons(program, host).Single(b => b.Label.Text == NameChangeTopic);
+        new QuestInterpreter(program, host).Run(nameChange.TargetEvent).Failure.Should().BeNull();
+
+        host.DidNotReceive().OpenFamiliarRenamePanel();
+        var header = (DialogLine)host.ReceivedCalls().Last(c => c.GetMethodInfo().Name == "ShowDialog").GetArguments()[2]!;
+        header.Text.Should().Contain("[Familiar Name Change Certificate]");
+    }
+
+    [Fact]
     public void BeforeHerQuestKateOffersNoHatching()
     {
         var program = Kates();
         var host = Player(questStatus: 0);
 
-        GreetingButtons(program, host).Select(b => b.Label.Text).Should().NotContain([HatchingTopic, ShopTopic]);
+        GreetingButtons(program, host).Select(b => b.Label.Text).Should().NotContain([HatchingTopic, NameChangeTopic, ShopTopic]);
     }
 
     [Fact]
@@ -90,6 +120,18 @@ public class FamiliarTrainerTests
         packet.ReadInt().Should().Be(Kate);
         packet.ReadByte().Should().Be(NpcDialogPacketWriter.FamiliarShopStyle);
         NpcDialogPacketWriter.FamiliarShopStyle.Should().Be(14, "the 2619 client opens the shop of selling group 232000 for SELECT_MSG style 14");
+    }
+
+    [Fact]
+    public void TheNameChangeOpensTheSameWindowUnderItsMenuText()
+    {
+        var packet = NpcDialogPacketWriter.FamiliarRenamePanel(Kate, "13016_21.quest");
+
+        packet.ResetOffset();
+        packet.ReadInt().Should().Be(Kate);
+        packet.ReadByte().Should().Be(NpcDialogPacketWriter.FamiliarPanelStyle);
+        packet.ReadInt().Should().Be(NpcDialogPacketWriter.NoText);
+        packet.ReadInt().Should().Be(NpcDialogPacketWriter.FamiliarRenameText, "the 2619 client reads nothing after the style for type 9, ours opens the Rename tab");
     }
 
     [Fact]

@@ -20,6 +20,20 @@ public enum HatchRefusal : byte
     LimitExceeded = 4,
 }
 
+public enum RenameResult : byte
+{
+    Refused = 0,
+    Succeeded = 1,
+}
+
+public enum RenameRefusal : byte
+{
+    InvalidItem = 1,
+    InvalidName = 2,
+    NotFamiliar = 3,
+    NameTaken = 4,
+}
+
 public static class PetPacketWriter
 {
     public const short Succeeded = 1;
@@ -33,6 +47,7 @@ public static class PetPacketWriter
     public const int NameTakenFillerInt = 0;
     public const byte NameTakenFillerByte = 0;
     public const byte TransformedPad = 0;
+    public const byte RenamedPad = 0;
 
     public readonly record struct SummonInfo(
         int Index, string Name, byte Class, byte Level, ushort ExpPercent,
@@ -190,6 +205,26 @@ public static class PetPacketWriter
     public static Packet TransformRefused(HatchRefusal refusal)
     {
         var packet = UpgradeHeader(ItemUpgradeSubOpcode.PetTransform, HatchResult.Refused);
+        packet.WriteByte((byte)refusal);
+        return packet;
+    }
+
+    public static Packet Renamed(int itemId, byte slot, int index, string name, byte petClass, byte level,
+        ushort expPercent, short satisfaction, int certificateItemId, byte certificateSlot)
+    {
+        var packet = Function(PetFunction.NameChange);
+        packet.WriteByte((byte)RenameResult.Succeeded);
+        WriteFamiliarItem(packet, itemId, slot, index, name, petClass, level, expPercent, satisfaction);
+        packet.WriteByte(RenamedPad);
+        packet.WriteInt(certificateItemId);
+        packet.WriteByte(certificateSlot);
+        return packet;
+    }
+
+    public static Packet RenameRefused(RenameRefusal refusal)
+    {
+        var packet = Function(PetFunction.NameChange);
+        packet.WriteByte((byte)RenameResult.Refused);
         packet.WriteByte((byte)refusal);
         return packet;
     }

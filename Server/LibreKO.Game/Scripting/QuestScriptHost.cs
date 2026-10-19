@@ -319,6 +319,7 @@ public sealed class QuestScriptHost(
     public void OpenRebirthResetPanel() => context.Dialog.SendRebirthResetPanel();
     public void OpenRepurchaseWindow() => context.Dialog.SendRepurchaseWindow();
     public void OpenFamiliarPanel() => context.Dialog.SendFamiliarPanel();
+    public void OpenFamiliarRenamePanel() => context.Dialog.SendFamiliarRenamePanel();
     public void OpenFamiliarShop() => context.Dialog.SendFamiliarShop();
     public void OpenGenderChangePanel() => context.Dialog.SendGenderChangePanel();
     public void OpenFortunePanel() => context.Dialog.SendFortunePanel();

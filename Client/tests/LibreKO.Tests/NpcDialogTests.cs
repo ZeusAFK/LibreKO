@@ -18,6 +18,27 @@ public class NpcDialogTests
     }
 
     [Fact]
+    public void KatesNameChangeOpensTheFamiliarWindowUnderItsMenuText()
+    {
+        var packet = new Packet(GameOpcodes.GS_SELECT_MSG);
+        packet.WriteInt(13016);
+        packet.WriteByte((byte)NpcDialogStyle.FamiliarPanel);
+        packet.WriteInt(-1);
+        packet.WriteInt(PetWire.RenameMenuText);
+        for (var index = 0; index < NpcDialog.ButtonSlots; index++)
+            packet.WriteInt(-1);
+        packet.WriteSByteString("13016_21.quest");
+        packet.ResetOffset();
+
+        var dialog = NpcDialog.Read(packet);
+
+        Assert.Equal(NpcDialogStyle.FamiliarPanel, dialog.Flag);
+        Assert.Equal(PetWire.RenameMenuText, dialog.HeaderTextId);
+        Assert.Empty(dialog.Buttons);
+        Assert.Equal(0, packet.RemainingBytes);
+    }
+
+    [Fact]
     public void LargeMenusKeepButtonsBeyondTheLegacySlots()
     {
         var packet = FromHex(LargeDialogFixture);

@@ -207,7 +207,7 @@ internal sealed class NpcInteractionFeature : IFeature, ILateTickFeature, IInter
         if (dlg.Flag == NpcDialogStyle.FamiliarPanel)
         {
             world.NpcDialogWindow.Close();
-            world.PetHatch.Open(dlg.NpcId);
+            world.PetHatch.Open(dlg.NpcId, dlg.HeaderTextId == PetWire.RenameMenuText);
             return;
         }
 

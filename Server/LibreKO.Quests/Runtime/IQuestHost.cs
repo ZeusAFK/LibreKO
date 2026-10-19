@@ -99,6 +99,7 @@ public interface IQuestHost
     void OpenRebirthResetPanel();
     void OpenRepurchaseWindow();
     void OpenFamiliarPanel();
+    void OpenFamiliarRenamePanel();
     void OpenFamiliarShop();
     void OpenGenderChangePanel();
     void OpenFortunePanel();

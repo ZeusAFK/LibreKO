@@ -34,4 +34,29 @@ public class PetRepository(AppDbContext context) : IPetRepository
         await context.SaveChangesAsync();
         context.Entry(pet).State = EntityState.Detached;
     }
+
+    public async Task<bool> RenameAsync(int id, string name)
+    {
+        if (await NameExists(name))
+            return false;
+
+        var pet = await context.Pets.SingleOrDefaultAsync(candidate => candidate.Id == id);
+        if (pet == null)
+            return false;
+
+        pet.Name = name;
+        try
+        {
+            await context.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            return false;
+        }
+        finally
+        {
+            context.Entry(pet).State = EntityState.Detached;
+        }
+    }
 }

@@ -15,6 +15,7 @@ public sealed class NpcDialogPacketWriter
     public const byte RepurchaseWindowStyle = 30;
     public const byte FamiliarPanelStyle = 9;
     public const byte FamiliarShopStyle = 14;
+    public const int FamiliarRenameText = 4264;
     public const byte GenderChangePanelStyle = 53;
     public const byte FortunePanelStyle = 16;
     public const byte SpecialAuctionPanelStyle = 58;
@@ -111,6 +112,9 @@ public sealed class NpcDialogPacketWriter
 
     public static Packet FamiliarPanel(int npcId, string scriptFile) =>
         SelectMessage(npcId, FamiliarPanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
+
+    public static Packet FamiliarRenamePanel(int npcId, string scriptFile) =>
+        SelectMessage(npcId, FamiliarPanelStyle, NoText, FamiliarRenameText, [], UserSession.SelectMessageEventCount, scriptFile);
 
     public static Packet GenderChangePanel(int npcId, string scriptFile) =>
         SelectMessage(npcId, GenderChangePanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);

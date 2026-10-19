@@ -17,6 +17,7 @@ public interface IPetService
     PetItemInfo? ItemInfo(UserSession session, ItemSlot slot);
     Task HatchAsync(UserSession session, int npcId, int eggItemId, byte bagSlot, string name);
     Task TransformAsync(UserSession session, int npcId, int petItemId, byte petSlot, IReadOnlyList<PetMaterial> materials);
+    Task RenameAsync(UserSession session, int npcId, int petItemId, byte petSlot, PetMaterial certificate, string name);
     Task<bool> SummonAsync(UserSession session);
     Task DismissAsync(UserSession session);
     Task SetModeAsync(UserSession session, PetMode mode);
@@ -39,6 +40,7 @@ public sealed class PetService(
     public const int HatchedPetItem = 610_001_000;
     public const int FamiliarSummonSkill = 500_117;
     public const int FamiliarChannelingSkill = 500_118;
+    public const int NameCertificate = 800_090_000;
     public const short HatchedModelId = 25_500;
     public const short HatchedSize = 100;
     public const short SatisfactionDecayPerMinute = 100;
@@ -239,6 +241,88 @@ public sealed class PetService(
         await session.Client.SendPacket(PetPacketWriter.Transformed(
             choice.Result, petSlot, pet.Id, pet.Name, pet.Class, pet.Level,
             PetItemInfo.ExpPercentOf(pet.Exp, LevelOf(pet.Level)), pet.Satisfaction, scrollItemId, material.BagSlot));
+    }
+
+    public async Task RenameAsync(UserSession session, int npcId, int petItemId, byte petSlot, PetMaterial certificate, string name)
+    {
+        if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.IsGathering || session.Hp <= 0
+            || !TrainerNearby(session, npcId) || petSlot >= InventoryConstants.HaveMax
+            || certificate.BagSlot >= InventoryConstants.HaveMax || certificate.BagSlot == petSlot)
+        {
+            await session.Client.SendPacket(PetPacketWriter.RenameRefused(RenameRefusal.InvalidItem));
+            return;
+        }
+
+        if (!IsValidName(name))
+        {
+            await session.Client.SendPacket(PetPacketWriter.RenameRefused(RenameRefusal.InvalidName));
+            return;
+        }
+
+        var petItem = session.Inventory[InventoryConstants.SlotMax + petSlot];
+        if (petItem.ItemId != petItemId || !petItem.IsPetLink || gameData.GetItem(petItemId)?.Kind != (byte)ItemKind.PetItem
+            || petItem.State is ItemFlag.Sealed or ItemFlag.Duplicate or ItemFlag.Rented)
+        {
+            await session.Client.SendPacket(PetPacketWriter.RenameRefused(RenameRefusal.NotFamiliar));
+            return;
+        }
+
+        var held = session.Inventory[InventoryConstants.SlotMax + certificate.BagSlot];
+        var certificateItemId = held.ItemId;
+        if (certificateItemId != NameCertificate || certificate.ItemId != NameCertificate
+            || held.State is ItemFlag.Sealed or ItemFlag.Duplicate or ItemFlag.Rented)
+        {
+            await session.Client.SendPacket(PetPacketWriter.RenameRefused(RenameRefusal.InvalidItem));
+            return;
+        }
+
+        await CacheAsync([petItem]);
+        if (!pets.TryGetValue(petItem.UniqueId, out var pet))
+        {
+            await session.Client.SendPacket(PetPacketWriter.RenameRefused(RenameRefusal.NotFamiliar));
+            return;
+        }
+
+        var taken = new ItemSlot();
+        var spent = session.WithLock(s =>
+        {
+            var current = s.Inventory[InventoryConstants.SlotMax + petSlot];
+            var used = s.Inventory[InventoryConstants.SlotMax + certificate.BagSlot];
+            if (current.ItemId != petItemId || current.UniqueId != pet.Id || used.ItemId != certificateItemId)
+                return false;
+
+            Swap(used, taken);
+            return true;
+        });
+
+        if (!spent)
+        {
+            await session.Client.SendPacket(PetPacketWriter.RenameRefused(RenameRefusal.InvalidItem));
+            return;
+        }
+
+        bool renamed;
+        using (var scope = scopeFactory.CreateScope())
+            renamed = await scope.ServiceProvider.GetRequiredService<IPetRepository>().RenameAsync(pet.Id, name);
+
+        if (!renamed)
+        {
+            session.WithLock(s =>
+            {
+                var slot = s.Inventory[InventoryConstants.SlotMax + certificate.BagSlot];
+                if (slot.IsEmpty)
+                    Swap(slot, taken);
+            });
+            await session.Client.SendPacket(PetPacketWriter.RenameRefused(RenameRefusal.NameTaken));
+            return;
+        }
+
+        var previous = pet.Name;
+        pet.Name = name;
+        logger.LogInformation("{Name} renamed familiar {Previous} (#{PetId}) to {PetName}", session.Name, previous, pet.Id, name);
+        await session.Client.SendPacket(PetPacketWriter.Renamed(
+            petItemId, petSlot, pet.Id, pet.Name, pet.Class, pet.Level,
+            PetItemInfo.ExpPercentOf(pet.Exp, LevelOf(pet.Level)), pet.Satisfaction, certificateItemId, certificate.BagSlot));
     }
 
     public async Task<bool> SummonAsync(UserSession session)

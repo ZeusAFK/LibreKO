@@ -17,6 +17,7 @@ public class PetPacketCoordinator(
 {
     private const int ModeRequestBytes = 1;
     private const int FoodRequestBytes = 5;
+    private const int NameChangeRequestBytes = sizeof(int) * 3 + sizeof(byte) * 2 + sizeof(short);
     private const int SkillDataSlots = 5;
     private const int SkillRequestBytes = 1 + sizeof(int) * (3 + SkillDataSlots);
 
@@ -66,6 +67,13 @@ public class PetPacketCoordinator(
                 var bagSlot = packet.ReadByte();
                 var itemId = packet.ReadInt();
                 await petService.FeedAsync(session, bagSlot, itemId);
+                break;
+            case PetFunction.NameChange when packet.RemainingBytes >= NameChangeRequestBytes:
+                var npcId = packet.ReadInt();
+                var petItemId = packet.ReadInt();
+                var petSlot = packet.ReadByte();
+                var certificate = new PetMaterial(packet.ReadInt(), packet.ReadByte());
+                await petService.RenameAsync(session, npcId, petItemId, petSlot, certificate, packet.ReadString());
                 break;
             default:
                 logger.LogDebug("Familiar function {Function} from {Name} ignored", function, session.Name);

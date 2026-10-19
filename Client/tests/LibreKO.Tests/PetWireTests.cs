@@ -1,5 +1,8 @@
 ﻿using LibreKO.Domain;
 using LibreKO.Network;
+using LibreKO.Network.Readers;
+using LibreKO.Network.Requests;
+using LibreKO.Session;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -284,6 +287,113 @@ public class PetWireTests
         Assert.Equal(PetWire.MalformedReplyCode, failure);
         Assert.False(PetWire.TryReadHatchFor(Reply(new byte[] { PetWire.HatchRefused, 3 }), PetIncubationRequest.Hatch(Kaul, 4), out _, out failure));
         Assert.Equal(3, failure);
+    }
+
+    private const string NewName = "Brownie";
+    private const int CertificateSlot = 7;
+
+    private static byte[] RenameReply(string name = NewName)
+    {
+        var p = new Packet(GameOpcodes.GS_PET);
+        p.WriteByte(PetWire.RenameSucceeded); p.WriteInt(Kaul);
+        p.WriteByte(4); p.WriteInt(9); p.WriteString(name);
+        p.WriteByte(101); p.WriteByte(12); p.WriteUShort(4200); p.WriteShort(7300);
+        p.WriteByte(0); p.WriteInt(PetWire.NameCertificate); p.WriteByte(CertificateSlot);
+        return p.GetData();
+    }
+
+    private static PetRenameRequest RenameRequest() => new(Kaul, 4, 9, PetWire.NameCertificate, CertificateSlot, NewName);
+
+    [Fact]
+    public void ARenamedFamiliarComesBackWithTheSpentCertificate()
+    {
+        var p = Reply(RenameReply());
+
+        Assert.True(PetWire.TryReadRename(p, out var renamed, out int failure));
+        Assert.Equal(0, failure);
+        Assert.Equal(Kaul, renamed.Pet.ItemId);
+        Assert.Equal(4, renamed.Pet.BagSlot);
+        Assert.Equal(9, renamed.Pet.Info.Index);
+        Assert.Equal(NewName, renamed.Pet.Info.Name);
+        Assert.Equal(12, renamed.Pet.Info.Level);
+        Assert.Equal(7300, renamed.Pet.Info.Satisfaction);
+        Assert.Equal(PetWire.NameCertificate, renamed.CertificateItemId);
+        Assert.Equal(CertificateSlot, renamed.CertificateSlot);
+        Assert.Equal(0, p.RemainingBytes);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void ARefusedRenameSaysWhy(byte code)
+    {
+        Assert.False(PetWire.TryReadRename(Reply(new[] { PetWire.RenameRefused, code }), out var renamed, out int failure));
+        Assert.Equal(default, renamed);
+        Assert.Equal(code, failure);
+    }
+
+    [Fact]
+    public void EveryTruncatedRenameIsIgnored()
+    {
+        byte[] data = RenameReply();
+        for (int length = 0; length < data.Length; length++)
+        {
+            Assert.False(PetWire.TryReadRename(Reply(data[..length]), out var renamed, out int failure));
+            Assert.Equal(default, renamed);
+            Assert.Equal(PetWire.MalformedReplyCode, failure);
+        }
+    }
+
+    [Fact]
+    public void ARenameReplyForTheRequestIsAcceptedAndAnyOtherReplyFailsIt()
+    {
+        Assert.True(PetWire.TryReadRenameFor(Reply(RenameReply()), RenameRequest(), out _, out int failure));
+        Assert.Equal(0, failure);
+
+        Assert.False(PetWire.TryReadRenameFor(Reply(RenameReply("Other")), RenameRequest(), out _, out failure));
+        Assert.Equal(PetWire.MalformedReplyCode, failure);
+        Assert.False(PetWire.TryReadRenameFor(Reply(RenameReply()), RenameRequest() with { UniqueId = 10 }, out _, out failure));
+        Assert.Equal(PetWire.MalformedReplyCode, failure);
+        Assert.False(PetWire.TryReadRenameFor(Reply(RenameReply()), RenameRequest() with { CertificateSlot = 8 }, out _, out failure));
+        Assert.Equal(PetWire.MalformedReplyCode, failure);
+    }
+
+    [Fact]
+    public void ARenameRenamesTheFamiliarAndTakesTheCertificateOutOfTheBag()
+    {
+        var session = new GameSession();
+        var dispatcher = new PacketDispatcher();
+        PacketReaders.Register(dispatcher, session, new GameRequests(new NoSink(), session, new LoginState()), () => 0);
+        int familiar = InventoryConstants.InventoryStart + 4;
+        int certificate = InventoryConstants.InventoryStart + CertificateSlot;
+        session.Self.ApplyInventorySlot(familiar, new ItemSlot { ItemId = Kaul, Count = 1, Durability = 1, UniqueId = 9 });
+        session.Self.ApplyInventorySlot(certificate, new ItemSlot { ItemId = PetWire.NameCertificate, Count = 1, Durability = 1 });
+        session.Pet.Remember(new PetItemInfo(9, Name, 101, 12, 4200, 7300));
+        session.Pet.PendingRename = RenameRequest();
+        PetItemInfo? renamed = null;
+        session.Pet.PetRenamedEvent += (_, info) => renamed = info;
+
+        var p = new Packet(GameOpcodes.GS_PET);
+        p.WriteByte((byte)PetSubOpcode.ModeFunction);
+        p.WriteByte((byte)PetFunction.NameChange);
+        p.WriteBytes(RenameReply());
+        p.ResetOffset();
+        dispatcher.Dispatch(p);
+
+        Assert.Equal(NewName, renamed?.Name);
+        Assert.Equal(NewName, session.Pet.Items[9].Name);
+        Assert.Equal(9, session.Self.Inventory[familiar].UniqueId);
+        Assert.True(session.Self.Inventory[certificate].IsEmpty);
+        Assert.Null(session.Pet.PendingRename);
+    }
+
+    private sealed class NoSink : IPacketSink
+    {
+        public bool Connected => false;
+
+        public void Send(Packet packet) { }
     }
 
     [Fact]
