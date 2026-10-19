@@ -2187,9 +2187,28 @@ public class ItemTests : GameTestBase
     public async Task HandleUpgradeAsync_ThePositionOfOneStackCannotFillEveryMaterialSlot()
     {
         const int originItemId = 156210008;
+        const int upgradedItemId = 156210009;
         const int filler = 389010000;
 
-        using var provider = CreateProvider(_ => { }, gameData => gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId)));
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId));
+                gameData.GetItem(upgradedItemId).Returns(UpgradeItem(upgradedItemId, duration: 20));
+                gameData.GetUpgradeRecipe(originItemId, HighClassScroll).Returns(new ItemUpgradeRecipeData
+                {
+                    OriginNumber = originItemId,
+                    NewNumber = upgradedItemId,
+                    RequiredItem = HighClassScroll
+                });
+                gameData.GetUpgradeSetting(5, 8, HighClassScroll, 0).Returns(new ItemUpgradeSettingsData
+                {
+                    ItemType = 5,
+                    ItemGrade = 8,
+                    SuccessRate = 10000
+                });
+            });
 
         var sentPackets = new List<Packet>();
         var client = CreateRecordingClient(sentPackets);
