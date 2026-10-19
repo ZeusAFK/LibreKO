@@ -2,6 +2,7 @@
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
+using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
 using NSubstitute;
@@ -20,7 +21,7 @@ public class MagicSecondTypeTests
         var (execution, combat, status, movement) = CreateExecutionService();
         var magic = new MagicData { Id = SkillId, Type1 = 3, Type2 = 4 };
 
-        await execution.ExecuteAsync(null!, magic, SkillId, TargetId, new int[7]);
+        await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
 
         await combat.Received(1).ExecuteAsync(
             Arg.Any<UserSession>(), magic, MagicSkillType.OverTime, SkillId, TargetId, Arg.Any<int[]>());
@@ -35,7 +36,7 @@ public class MagicSecondTypeTests
         var (execution, combat, status, _) = CreateExecutionService();
         var magic = new MagicData { Id = SkillId, Type1 = 1, Type2 = 0 };
 
-        await execution.ExecuteAsync(null!, magic, SkillId, TargetId, new int[7]);
+        await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
 
         await combat.Received(1).ExecuteAsync(
             Arg.Any<UserSession>(), magic, MagicSkillType.Melee, SkillId, TargetId, Arg.Any<int[]>());
@@ -48,7 +49,7 @@ public class MagicSecondTypeTests
         var (execution, combat, status, _) = CreateExecutionService();
         var magic = new MagicData { Id = SkillId, Type1 = 6, Type2 = 4 };
 
-        await execution.ExecuteAsync(null!, magic, SkillId, TargetId, new int[7]);
+        await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
 
         await status.Received(1).ExecuteAsync(
             Arg.Any<UserSession>(), magic, MagicSkillType.Transform, SkillId, TargetId, Arg.Any<int[]>(), true);
@@ -56,6 +57,8 @@ public class MagicSecondTypeTests
             Arg.Any<UserSession>(), magic, MagicSkillType.Buff, SkillId, TargetId, Arg.Any<int[]>(), false);
         await combat.DidNotReceiveWithAnyArgs().ExecuteAsync(default!, default!, 0, 0, 0, default!);
     }
+
+    private static UserSession Caster() => new(Substitute.For<IClient>(), characterId: 7, accountId: 7);
 
     private static (IMagicExecutionService Execution,
                     IMagicCombatEffectService Combat,
