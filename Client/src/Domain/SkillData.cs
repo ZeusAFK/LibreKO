@@ -113,8 +113,11 @@ public static class SkillData
         public bool IsNonAction => SelfAnim1 < 0;
 
         public bool IsPotion =>
-            UseItem != 0 && ItemGroup == PotionItemGroup && Moral == SkillTarget.Self
-            && Type1 == MagicType.DotHeal && Cast == 0 && Recast == 0;
+            PotionItem != 0 && ItemGroup == PotionItemGroup && Moral == SkillTarget.Self
+            && (ItemData.PotionHealFor(Type1, DirectType, FirstDamage, HealTarget.Hp) > 0
+                || ItemData.PotionHealFor(Type1, DirectType, FirstDamage, HealTarget.Mp) > 0);
+
+        public int PotionItem => UseItem != 0 ? UseItem : MaestroPotions.ItemFor(DirectType);
 
         public bool IsMasterScrollSkill => SkillData.IsMasterScrollSkill(Level, UseItem);
 

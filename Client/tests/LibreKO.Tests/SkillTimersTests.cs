@@ -7,6 +7,8 @@ public class SkillTimersTests
 {
     private const int SkillId = 105520;
     private const int PotionSkillId = 490010;
+    private const int SlowPotionSkillId = 490060;
+    private const double SlowPotionRecastSeconds = 2.5;
     private const double RecastSeconds = 10.0;
     private const double Now = 1000.0;
 
@@ -95,5 +97,48 @@ public class SkillTimersTests
         Assert.True(timers.OnCooldown(potion, Now + 1));
         Assert.False(timers.OnCooldown(potion, Now + SkillTimers.PotionCooldownSeconds));
         Assert.Empty(self.SkillCooldowns);
+    }
+
+    [Fact]
+    public void APotionWithALongerRecastKeepsItBesideTheSharedTimer()
+    {
+        var (timers, _) = NewTimers();
+        var slowPotion = new SkillTiming(SlowPotionSkillId, SlowPotionRecastSeconds, IsPotion: true);
+        var otherPotion = Potion();
+
+        timers.Start(slowPotion, Now);
+
+        Assert.False(timers.OnCooldown(otherPotion, Now + SkillTimers.PotionCooldownSeconds));
+        Assert.True(timers.OnCooldown(slowPotion, Now + SkillTimers.PotionCooldownSeconds));
+        Assert.False(timers.OnCooldown(slowPotion, Now + SlowPotionRecastSeconds));
+    }
+
+    [Fact]
+    public void APotionShowsTheFullerOfTheSharedTimerAndItsOwnRecast()
+    {
+        var (timers, _) = NewTimers();
+        var slowPotion = new SkillTiming(SlowPotionSkillId, SlowPotionRecastSeconds, IsPotion: true);
+
+        timers.Start(Potion(), Now);
+
+        Assert.Equal(0.5f, timers.Fraction(slowPotion, Now + SkillTimers.PotionCooldownSeconds / 2), 3);
+
+        timers.Start(slowPotion, Now);
+
+        Assert.Equal(0.2f, timers.Fraction(slowPotion, Now + SkillTimers.PotionCooldownSeconds), 3);
+    }
+
+    [Fact]
+    public void CancellingARefusedPotionKeepsTheSharedTimer()
+    {
+        var (timers, self) = NewTimers();
+        var slowPotion = new SkillTiming(SlowPotionSkillId, SlowPotionRecastSeconds, IsPotion: true);
+
+        timers.Start(slowPotion, Now);
+        timers.Cancel(slowPotion);
+
+        Assert.Equal(0, timers.ReadyAt(SlowPotionSkillId));
+        Assert.True(timers.OnCooldown(Potion(), Now + 1));
+        Assert.Equal(Now + SkillTimers.PotionCooldownSeconds, self.PotionReadyAt);
     }
 }

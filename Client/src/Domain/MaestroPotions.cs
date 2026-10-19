@@ -8,6 +8,13 @@ public static class MaestroPotions
 
     public static bool Is(int itemId) => itemId is Health or Mana;
 
+    public static int ItemFor(int directType) => directType switch
+    {
+        HealTarget.HpPurchase => Health,
+        HealTarget.MpPurchase => Mana,
+        _ => 0,
+    };
+
     public static bool CanUse(int itemId, int gold) => !Is(itemId) || gold >= MinimumCoins;
 
     public static int PickStrongest(IEnumerable<int> itemIds, Func<int, int> healOf, int gold)

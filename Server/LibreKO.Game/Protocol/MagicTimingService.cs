@@ -1,4 +1,5 @@
 ﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Game.World;
 
@@ -29,7 +30,7 @@ public interface IMagicTimingService
     void OnCastAborted(UserSession session, int skillId);
 }
 
-public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMagicTimingService
+public sealed class MagicTimingService(IGameDataService gameDataService, TimeProvider? timeProvider = null) : IMagicTimingService
 {
     private const int LatencyGraceMs = 250;
     private const int AbandonedCastGraceMs = 3000;
@@ -51,7 +52,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
         if (RemainingCooldownMs(session, magic.Id, now) > 0)
             return MagicTimingVerdict.OnCooldown;
 
-        if (IsPotion(magic) && MillisecondsSince(session.LastPotionTicks, now) < PotionSharedCooldownMs)
+        if (IsPotion(magic) && PotionCooldownRunning(session, now))
             return MagicTimingVerdict.OnCooldown;
 
         if (!ConsumesAnItem(magic))
@@ -83,7 +84,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
         if (magic.CastTime > 0 && magic.PrimaryType != MagicSkillType.Ranged && !HasInstantMagic(session))
             return MagicTimingVerdict.NotCast;
 
-        return RemainingCooldownMs(session, magic.Id, now) > 0
+        return RemainingCooldownMs(session, magic.Id, now) > 0 || (IsPotion(magic) && PotionCooldownRunning(session, now))
             ? MagicTimingVerdict.OnCooldown
             : MagicTimingVerdict.Allowed;
     }
@@ -139,6 +140,9 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
 
         session.PendingArrowHits.TryRemove(magic.Id, out _);
         var releasesAnAcceptedCast = session.AcceptedCasts.TryRemove(magic.Id, out _);
+        if (!releasesAnAcceptedCast && IsPotion(magic))
+            session.LastPotionTicks = time.GetUtcNow().UtcTicks;
+
         if (session.CastingSkillId == magic.Id)
             ClearCast(session);
         else if (!releasesAnAcceptedCast && armCooldown)
@@ -223,13 +227,21 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
     private static bool HasInstantMagic(UserSession session) =>
         session.ActiveBuffs.Values.Any(buff => buff.BuffType == BuffType.InstantMagic && !buff.IsExpired);
 
-    private static bool IsPotion(MagicData magic) =>
-        ConsumesAnItem(magic)
-        && magic.ItemGroup == PotionItemGroup
+    private bool IsPotion(MagicData magic) =>
+        magic.ItemGroup == PotionItemGroup
         && magic.Moral == MoralSelf
         && magic.PrimaryType == MagicSkillType.OverTime
-        && magic.CastTime == 0
-        && magic.ReCastTime == 0;
+        && MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, magic.Id, out var type3Data)
+        && type3Data.FirstDamage > 0
+        && (MagicDirectType)type3Data.DirectType switch
+        {
+            MagicDirectType.Health or MagicDirectType.Mana => ConsumesAnItem(magic),
+            MagicDirectType.HealthPurchase or MagicDirectType.ManaPurchase => true,
+            _ => false,
+        };
+
+    private static bool PotionCooldownRunning(UserSession session, long now) =>
+        MillisecondsSince(session.LastPotionTicks, now) < PotionSharedCooldownMs - LatencyGraceMs;
 
     private static void ClearCast(UserSession session)
     {

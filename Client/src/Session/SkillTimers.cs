@@ -25,11 +25,7 @@ public sealed class SkillTimers
 
     public void Start(SkillTiming s, double now)
     {
-        if (s.IsPotion)
-        {
-            self.HoldPotions(now + PotionCooldownSeconds);
-            return;
-        }
+        if (s.IsPotion) self.HoldPotions(now + PotionCooldownSeconds);
         if (s.RecastSeconds <= 0) return;
         self.StartCooldown(s.Id, now + s.RecastSeconds);
     }
@@ -40,15 +36,11 @@ public sealed class SkillTimers
         Start(s, now);
     }
 
-    public void Cancel(SkillTiming s)
-    {
-        if (!s.IsPotion) self.CancelCooldown(s.Id);
-    }
+    public void Cancel(SkillTiming s) => self.CancelCooldown(s.Id);
 
     public bool OnCooldown(SkillTiming s, double now) =>
-        s.IsPotion
-            ? now < self.PotionReadyAt
-            : s.RecastSeconds > 0 && self.SkillCooldowns.TryGetValue(s.Id, out double until) && now < until;
+        (s.IsPotion && now < self.PotionReadyAt)
+        || (s.RecastSeconds > 0 && self.SkillCooldowns.TryGetValue(s.Id, out double until) && now < until);
 
     public double ReadyAt(int skillId) => self.SkillCooldowns.TryGetValue(skillId, out double until) ? until : 0;
 
@@ -66,8 +58,14 @@ public sealed class SkillTimers
 
     public float Fraction(SkillTiming s, double now)
     {
-        if (s.IsPotion)
-            return System.Math.Clamp((float)((self.PotionReadyAt - now) / PotionCooldownSeconds), 0f, 1f);
+        float recast = RecastFraction(s, now);
+        return s.IsPotion
+            ? System.Math.Max(recast, System.Math.Clamp((float)((self.PotionReadyAt - now) / PotionCooldownSeconds), 0f, 1f))
+            : recast;
+    }
+
+    private float RecastFraction(SkillTiming s, double now)
+    {
         if (s.RecastSeconds <= 0 || !self.SkillCooldowns.TryGetValue(s.Id, out double until)) return 0f;
         double left = until - now;
         if (left <= 0) return 0f;
