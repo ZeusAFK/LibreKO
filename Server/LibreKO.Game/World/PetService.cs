@@ -49,7 +49,7 @@ public sealed class PetService(
     private const int PercentScale = 100;
     private const int MillisecondsPerTenth = 100;
 
-    private readonly ConcurrentDictionary<int, Pet> _pets = new();
+    private readonly ConcurrentDictionary<int, Pet> pets = new();
 
     public Task LoadAsync(UserSession session) => CacheAsync(session.Inventory);
 
@@ -59,7 +59,7 @@ public sealed class PetService(
         await CacheAsync(linked);
         var described = new Dictionary<int, PetItemInfo>();
         foreach (var slot in linked)
-            if (_pets.TryGetValue(slot.UniqueId, out var pet))
+            if (pets.TryGetValue(slot.UniqueId, out var pet))
                 described[slot.UniqueId] = PetItemInfo.From(pet, LevelOf(pet.Level));
         return described;
     }
@@ -67,19 +67,19 @@ public sealed class PetService(
     private async Task CacheAsync(IEnumerable<ItemSlot> slots)
     {
         var ids = slots.Where(slot => slot.IsPetLink).Select(slot => slot.UniqueId)
-            .Where(id => !_pets.ContainsKey(id)).Distinct().ToArray();
+            .Where(id => !pets.ContainsKey(id)).Distinct().ToArray();
         if (ids.Length == 0)
             return;
 
         using var scope = scopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IPetRepository>();
         foreach (var pet in await repository.GetByIds(ids))
-            _pets[pet.Id] = pet;
+            pets[pet.Id] = pet;
     }
 
     public PetItemInfo? ItemInfo(UserSession session, ItemSlot slot)
     {
-        if (!slot.IsPetLink || !_pets.TryGetValue(slot.UniqueId, out var pet))
+        if (!slot.IsPetLink || !pets.TryGetValue(slot.UniqueId, out var pet))
             return null;
 
         return PetItemInfo.From(pet, LevelOf(pet.Level));
@@ -146,7 +146,7 @@ public sealed class PetService(
             });
         }
 
-        _pets[pet.Id] = pet;
+        pets[pet.Id] = pet;
         var placed = session.WithLock(s =>
         {
             var current = s.Inventory[InventoryConstants.SlotMax + bagSlot];
@@ -201,7 +201,7 @@ public sealed class PetService(
             .Where(candidate => candidate.Result != petItemId
                 && gameData.GetItem(candidate.Result)?.Kind == (byte)ItemKind.PetItem)
             .ToList();
-        if (!_pets.TryGetValue(petItem.UniqueId, out var pet) || PetTransforms.Pick(candidates, Random.Shared) is not { } choice)
+        if (!pets.TryGetValue(petItem.UniqueId, out var pet) || PetTransforms.Pick(candidates, Random.Shared) is not { } choice)
         {
             await session.Client.SendPacket(PetPacketWriter.TransformRefused(HatchRefusal.Failed));
             return;
@@ -250,10 +250,10 @@ public sealed class PetService(
         if (!slot.IsLinked || gameData.GetItem(slot.ItemId)?.Kind != (byte)ItemKind.PetItem)
             return false;
 
-        if (!_pets.TryGetValue(slot.UniqueId, out var pet))
+        if (!pets.TryGetValue(slot.UniqueId, out var pet))
         {
             await LoadAsync(session);
-            if (!_pets.TryGetValue(slot.UniqueId, out pet))
+            if (!pets.TryGetValue(slot.UniqueId, out pet))
                 return false;
         }
 

@@ -6,36 +6,36 @@ namespace LibreKO;
 
 public static class Fx
 {
-    private static readonly Dictionary<string, Godot.Collections.Dictionary> _cache = new();
-    private static Dictionary<int, string>? _idNames;
+    private static readonly Dictionary<string, Godot.Collections.Dictionary> cache = new();
+    private static Dictionary<int, string>? idNames;
     internal static bool ShuttingDown { get; private set; }
 
-    private static ulong _cameraFrame = ulong.MaxValue;
-    private static Viewport? _cameraViewport;
-    private static Camera3D? _camera;
-    private static Transform3D _cameraTransform;
+    private static ulong cameraFrame = ulong.MaxValue;
+    private static Viewport? cameraViewport;
+    private static Camera3D? camera;
+    private static Transform3D cameraTransform;
 
-    internal static bool FrameCamera(Node node, out Transform3D camera)
+    internal static bool FrameCamera(Node node, out Transform3D transform)
     {
         ulong frame = Engine.GetProcessFrames();
         var viewport = node.GetViewport();
-        if (frame != _cameraFrame || viewport != _cameraViewport)
+        if (frame != cameraFrame || viewport != cameraViewport)
         {
-            _cameraFrame = frame;
-            _cameraViewport = viewport;
-            _camera = viewport?.GetCamera3D();
-            if (_camera != null) _cameraTransform = _camera.GlobalTransform;
+            cameraFrame = frame;
+            cameraViewport = viewport;
+            Fx.camera = viewport?.GetCamera3D();
+            if (Fx.camera != null) cameraTransform = Fx.camera.GlobalTransform;
         }
-        camera = _cameraTransform;
-        return _camera != null;
+        transform = cameraTransform;
+        return Fx.camera != null;
     }
 
     internal static void PrimeFrameCamera(Viewport viewport, Camera3D? camera, in Transform3D xf)
     {
-        _cameraFrame = Engine.GetProcessFrames();
-        _cameraViewport = viewport;
-        _camera = camera;
-        _cameraTransform = xf;
+        cameraFrame = Engine.GetProcessFrames();
+        cameraViewport = viewport;
+        Fx.camera = camera;
+        cameraTransform = xf;
     }
 
     public static void BeginShutdown(Node? root)
@@ -88,32 +88,32 @@ public static class Fx
     private readonly record struct PendingPart(FxInstance Root, Godot.Collections.Dictionary Part, FxPartKey Key,
         int Index, long QueuedAt);
 
-    private static readonly Queue<PendingPart> _pendingParts = new();
-    private static ulong _budgetFrame = ulong.MaxValue;
-    private static long _budgetSpent;
+    private static readonly Queue<PendingPart> pendingParts = new();
+    private static ulong budgetFrame = ulong.MaxValue;
+    private static long budgetSpent;
 
-    internal static int PendingParts => _pendingParts.Count;
+    internal static int PendingParts => pendingParts.Count;
 
     private static bool WithinPartBudget()
     {
         ulong frame = Engine.GetProcessFrames();
-        if (frame != _budgetFrame)
+        if (frame != budgetFrame)
         {
-            _budgetFrame = frame;
-            _budgetSpent = 0;
+            budgetFrame = frame;
+            budgetSpent = 0;
         }
-        return _budgetSpent < PartBudgetMs * System.Diagnostics.Stopwatch.Frequency / 1000.0;
+        return budgetSpent < PartBudgetMs * System.Diagnostics.Stopwatch.Frequency / 1000.0;
     }
 
     internal static void BuildPendingParts()
     {
         long overdue = (long)(MaxPartDelaySeconds * System.Diagnostics.Stopwatch.Frequency);
-        while (_pendingParts.Count > 0)
+        while (pendingParts.Count > 0)
         {
-            var next = _pendingParts.Peek();
+            var next = pendingParts.Peek();
             bool late = System.Diagnostics.Stopwatch.GetTimestamp() - next.QueuedAt > overdue;
             if (!late && !WithinPartBudget()) break;
-            _pendingParts.Dequeue();
+            pendingParts.Dequeue();
             if (!GodotObject.IsInstanceValid(next.Root) || next.Root.Released) continue;
             next.Root.PendingParts--;
             using var scope = Perf.Measure(Perf.Section.FxSpawn);
@@ -153,7 +153,7 @@ public static class Fx
         }
         if (node != null) root.AddChild(node);
         WithinPartBudget();
-        _budgetSpent += System.Diagnostics.Stopwatch.GetTimestamp() - started;
+        budgetSpent += System.Diagnostics.Stopwatch.GetTimestamp() - started;
     }
 
     private static Node3D? SpawnBaked(string name, Node parent, Vector3 pos, bool oneShot,
@@ -179,9 +179,9 @@ public static class Fx
             partIndex++;
             oneShotLife = Mathf.Max(oneShotLife, partEnd);
             var key = new FxPartKey(name, partIndex, sizeScale, forceAdditive);
-            if (deferParts && (_pendingParts.Count > 0 || !WithinPartBudget()))
+            if (deferParts && (pendingParts.Count > 0 || !WithinPartBudget()))
             {
-                _pendingParts.Enqueue(new PendingPart(root, p, key, partIndex, System.Diagnostics.Stopwatch.GetTimestamp()));
+                pendingParts.Enqueue(new PendingPart(root, p, key, partIndex, System.Diagnostics.Stopwatch.GetTimestamp()));
                 root.PendingParts++;
             }
             else BuildPart(root, p, key, partIndex);
@@ -192,13 +192,13 @@ public static class Fx
         return root;
     }
 
-    private static readonly Dictionary<(string Name, float Scale, bool Additive), List<(Godot.Collections.Dictionary Part, float End)>> _preparedParts = new();
+    private static readonly Dictionary<(string Name, float Scale, bool Additive), List<(Godot.Collections.Dictionary Part, float End)>> preparedParts = new();
 
     private static List<(Godot.Collections.Dictionary Part, float End)> PreparedParts(
         string name, Godot.Collections.Dictionary desc, float sizeScale, bool forceAdditive)
     {
         var key = (name, sizeScale, forceAdditive);
-        if (_preparedParts.TryGetValue(key, out var prepared)) return prepared;
+        if (preparedParts.TryGetValue(key, out var prepared)) return prepared;
         prepared = new List<(Godot.Collections.Dictionary, float)>();
         foreach (var pv in desc["parts"].AsGodotArray())
         {
@@ -220,7 +220,7 @@ public static class Fx
             }
             prepared.Add((p, partEnd));
         }
-        _preparedParts[key] = prepared;
+        preparedParts[key] = prepared;
         return prepared;
     }
 
@@ -237,29 +237,6 @@ public static class Fx
             StopFxUnder(child);
     }
 
-    private static Aabb ParticleBounds(Godot.Collections.Dictionary p, float lifeMax, float speed,
-                                       float bundleScale)
-    {
-        Vector3 boxCentre = ReadVec3(p, "emitBoxCentre") * bundleScale;
-        Vector3 boxExtent = ReadVec3(p, "emitBoxExtent") * bundleScale;
-        float grav = ReadVec3(p, "gravity").Length();
-        float sizeMax = (Mathf.Max(ReadF(p, "sizeMax"), ReadF(p, "sizeMin")) + ReadF(p, "sizeOffset"))
-                          * bundleScale
-                      + lifeMax * Mathf.Max(0f, MaxGrowth(p));
-        float travel = speed * lifeMax + 0.5f * grav * lifeMax * lifeMax;
-        float reach = Mathf.Clamp(travel + sizeMax * 0.5f + 1f, 1f, 400f);
-        Vector3 half = boxExtent + new Vector3(reach, reach, reach);
-        return new Aabb(boxCentre - half, half * 2f);
-    }
-
-    private static float MaxGrowth(Godot.Collections.Dictionary p)
-    {
-        if (!p.ContainsKey("sizeVel")) return 0f;
-        var v = p["sizeVel"].AsGodotArray();
-        if (v.Count != 2) return 0f;
-        return Mathf.Max((float)v[0].AsDouble(), (float)v[1].AsDouble());
-    }
-
     internal static float ParticleLife(Godot.Collections.Dictionary p) =>
         Mathf.Max(0.01f, ReadF(p, "lifeMax", 1f))
         + (p.ContainsKey("colorLUT") && p["colorLUT"].VariantType == Variant.Type.Array
@@ -274,9 +251,9 @@ public static class Fx
     }
 
     private const int PartPoolPerKey = 256;
-    private static readonly Dictionary<FxPartKey, FxParticleTemplate> _particleTemplates =
+    private static readonly Dictionary<FxPartKey, FxParticleTemplate> particleTemplates =
         Shutdown.Track(new Dictionary<FxPartKey, FxParticleTemplate>(), template => (template.Process, template.Material));
-    private static readonly Dictionary<FxPartKey, Stack<Node3D>> _partPool = new();
+    private static readonly Dictionary<FxPartKey, Stack<Node3D>> partPool = new();
 
     internal static int PooledParts { get; private set; }
 
@@ -287,7 +264,7 @@ public static class Fx
             part.QueueFree();
             return;
         }
-        if (!_partPool.TryGetValue(key, out var stack)) _partPool[key] = stack = new Stack<Node3D>();
+        if (!partPool.TryGetValue(key, out var stack)) partPool[key] = stack = new Stack<Node3D>();
         if (stack.Count >= PartPoolPerKey) { part.QueueFree(); return; }
         part.GetParent()?.RemoveChild(part);
         if (part is FxParticles particles) particles.Park();
@@ -297,7 +274,7 @@ public static class Fx
 
     internal static Node3D? TakePooledPart(FxPartKey key)
     {
-        if (!_partPool.TryGetValue(key, out var stack) || stack.Count == 0) return null;
+        if (!partPool.TryGetValue(key, out var stack) || stack.Count == 0) return null;
         var part = stack.Pop();
         PooledParts--;
         if (!GodotObject.IsInstanceValid(part)) return null;
@@ -307,10 +284,10 @@ public static class Fx
 
     private static void ClearPartPool()
     {
-        foreach (var stack in _partPool.Values)
+        foreach (var stack in partPool.Values)
             foreach (var part in stack)
                 if (GodotObject.IsInstanceValid(part)) part.QueueFree();
-        _partPool.Clear();
+        partPool.Clear();
         PooledParts = 0;
     }
 
@@ -326,8 +303,8 @@ public static class Fx
         if (TakePooledPart(key) is FxParticles pooled) return pooled;
         var tex = FirstTexture(p);
         if (tex == null) return null;
-        if (!_particleTemplates.TryGetValue(key, out var template))
-            _particleTemplates[key] = template = BuildParticleTemplate(p, key, tex);
+        if (!particleTemplates.TryGetValue(key, out var template))
+            particleTemplates[key] = template = BuildParticleTemplate(p, key, tex);
         var gp = new FxParticles { PoolKey = key, Template = template };
         gp.Configure(template.Start, template.Life, template.Origin, template.Velocity, template.Acceleration,
             template.FadeIn, template.FadeOut);
@@ -477,18 +454,18 @@ public static class Fx
 
     internal static Texture2D? FirstTexture(Godot.Collections.Dictionary p) => FrameTexture(p, 0);
 
-    private static readonly Dictionary<string, Texture2D?> _frameTextures = Shutdown.Track(new Dictionary<string, Texture2D?>());
+    private static readonly Dictionary<string, Texture2D?> frameTextures = Shutdown.Track(new Dictionary<string, Texture2D?>());
 
     internal static Texture2D? FrameTexture(Godot.Collections.Dictionary p, int frame)
     {
         var arr = p["tex"].AsGodotArray();
         if (arr.Count == 0) return null;
         string stem = arr[Mathf.Clamp(frame, 0, arr.Count - 1)].AsString();
-        if (_frameTextures.TryGetValue(stem, out var cached)) return cached;
+        if (frameTextures.TryGetValue(stem, out var cached)) return cached;
         using var scope = Perf.Measure(Perf.Section.FxLoadTexture);
         string path = $"res://assets/fx/tex/{stem}.png";
         var texture = ResourceLoader.Exists(path) ? ResourceLoader.Load<Texture2D>(path) : null;
-        _frameTextures[stem] = texture;
+        frameTextures[stem] = texture;
         return texture;
     }
 
@@ -534,7 +511,7 @@ public static class Fx
         return new Basis(new Quaternion(q.X, -q.Y, -q.Z, q.W));
     }
 
-    internal static Basis ReadKoMatrixBasis(Godot.Collections.Dictionary p)
+    internal static Basis ReadMapMatrixBasis(Godot.Collections.Dictionary p)
     {
         if (!p.ContainsKey("matrix") || p["matrix"].VariantType != Variant.Type.Array)
             return Basis.Identity;
@@ -593,9 +570,9 @@ public static class Fx
 
     public static string? NameForId(int fxId)
     {
-        if (_idNames == null)
+        if (idNames == null)
         {
-            _idNames = new Dictionary<int, string>();
+            idNames = new Dictionary<int, string>();
             const string path = "res://assets/fx/ids.json";
             if (Godot.FileAccess.FileExists(path))
             {
@@ -608,27 +585,27 @@ public static class Fx
                         foreach (var kv in parsed.AsGodotDictionary())
                         {
                             if (int.TryParse(kv.Key.AsString(), out int id))
-                                _idNames[id] = kv.Value.AsString();
+                                idNames[id] = kv.Value.AsString();
                         }
                     }
                 }
             }
         }
-        return _idNames.TryGetValue(fxId, out var name) ? name : null;
+        return idNames.TryGetValue(fxId, out var name) ? name : null;
     }
 
     internal static Godot.Collections.Dictionary? LoadDescriptor(string name)
     {
         string stem = name.ToLowerInvariant();
-        if (_cache.TryGetValue(stem, out var cached)) return cached;
+        if (cache.TryGetValue(stem, out var cached)) return cached;
         using var scope = Perf.Measure(Perf.Section.FxLoadDescriptor);
         string path = $"res://assets/fx/{stem}.json";
-        if (!Godot.FileAccess.FileExists(path)) { _cache[stem] = null!; return null; }
+        if (!Godot.FileAccess.FileExists(path)) { cache[stem] = null!; return null; }
         using var f = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
-        if (f == null) { _cache[stem] = null!; return null; }
+        if (f == null) { cache[stem] = null!; return null; }
         var parsed = Json.ParseString(f.GetAsText());
         var dict = parsed.VariantType == Variant.Type.Dictionary ? parsed.AsGodotDictionary() : null;
-        _cache[stem] = dict!;
+        cache[stem] = dict!;
         return dict;
     }
 }

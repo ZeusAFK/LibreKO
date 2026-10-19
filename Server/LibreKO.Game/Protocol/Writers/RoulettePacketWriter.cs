@@ -13,7 +13,7 @@ public sealed class RoulettePacketWriter
 
     public readonly record struct PrizeLogEntry(int ItemId, int Quantity, int UnixTime);
 
-    private readonly List<PrizeLogEntry> _prizeLog = [];
+    private readonly List<PrizeLogEntry> prizeLog = [];
 
     public EventBoardSubOpcode Sub { get; set; }
     public int Page { get; set; }
@@ -40,9 +40,9 @@ public sealed class RoulettePacketWriter
         var writer = new RoulettePacketWriter { Sub = EventBoardSubOpcode.RoulettePrizeList, Page = page, Status = ResultOk };
         foreach (var entry in entries)
         {
-            if (writer._prizeLog.Count == PrizeListMaxEntries)
+            if (writer.prizeLog.Count == PrizeListMaxEntries)
                 break;
-            writer._prizeLog.Add(entry);
+            writer.prizeLog.Add(entry);
         }
 
         return writer.Build();
@@ -68,8 +68,8 @@ public sealed class RoulettePacketWriter
             case EventBoardSubOpcode.RoulettePrizeList:
                 packet.WriteInt(Page);
                 packet.WriteInt(Status);
-                packet.WriteInt(_prizeLog.Count);
-                foreach (var entry in _prizeLog)
+                packet.WriteInt(prizeLog.Count);
+                foreach (var entry in prizeLog)
                 {
                     packet.WriteInt(entry.ItemId);
                     packet.WriteInt(entry.Quantity);

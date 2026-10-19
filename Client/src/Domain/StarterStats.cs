@@ -14,9 +14,6 @@ public static class StarterStats
         };
     }
 
-    public const int StatFloor = 50;
-    public const int RequiredTotal = 300;
-
     public static Roll BaseForClass(int cls) => CharacterClassCatalog.Family(cls) switch
     {
         CharacterClassCatalog.FamilyWarrior or CharacterClassCatalog.FamilyKurian => new(65, 65, 60, 50, 50, 10),
@@ -131,18 +128,4 @@ public static class StarterStats
         _ => $"Class {cls}",
     };
 
-    public static string Blurb(int cls) => (cls % 100) switch
-    {
-        1 => "Front-line fighter. Becomes a Blade for critical damage, or a Protector "
-             + "who shields the party's casters.",
-        2 => "Ranged specialist. Becomes a Hunter with the bow, or an Assassin who "
-             + "strikes from stealth.",
-        3 => "Elemental caster. Becomes a Mage of raw destruction, or an Enchanter who "
-             + "weakens and controls the enemy.",
-        4 => "Support caster. Becomes a Priest who heals and resurrects, or a Pikeman "
-             + "who fights with the spear.",
-        13 => "Close-quarters summoner. Fights with clawed gauntlets and calls on the "
-              + "spirits that bind them.",
-        _ => "",
-    };
 }

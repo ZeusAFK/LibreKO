@@ -19,7 +19,7 @@ public class SoccerTests
     [Fact]
     public void AGoalReadsKickerTeamsAndScores()
     {
-        var goal = Net.ReadSoccerGoal(Reply(w =>
+        var goal = SoccerWire.ReadGoal(Reply(w =>
         {
             w.WriteInt(77);
             w.WriteByte(Soccer.TeamBlue);
@@ -34,7 +34,7 @@ public class SoccerTests
     [Fact]
     public void AShortGoalIsDropped()
     {
-        Assert.Null(Net.ReadSoccerGoal(Reply(w => w.WriteInt(77))));
+        Assert.Null(SoccerWire.ReadGoal(Reply(w => w.WriteInt(77))));
     }
 
     [Theory]

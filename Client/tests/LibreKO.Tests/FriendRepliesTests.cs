@@ -27,7 +27,7 @@ public class FriendRepliesTests
     public void AnAcceptedFriendArrivesWithItsStatus()
     {
         var p = Reply(AddSub);
-        p.WriteByte(FriendTexts.Succeeded);
+        p.WriteByte((byte)FriendAddResult.Succeeded);
         p.WriteString("Rikka");
         p.WriteInt(2);
         p.WriteByte(1);
@@ -35,7 +35,7 @@ public class FriendRepliesTests
         var reply = FriendReplies.ReadAdd(Ready(p));
 
         Assert.NotNull(reply);
-        Assert.Equal(FriendTexts.Succeeded, reply.Value.Code);
+        Assert.Equal(FriendAddResult.Succeeded, reply.Value.Code);
         Assert.Equal("Rikka", reply.Value.Added.Name);
         Assert.Equal(2, reply.Value.Added.CharId);
         Assert.Equal(1, reply.Value.Added.Status);
@@ -45,11 +45,11 @@ public class FriendRepliesTests
     public void AFailedAddCarriesOnlyItsCode()
     {
         var p = Reply(AddSub);
-        p.WriteByte(2);
+        p.WriteByte((byte)FriendAddResult.ListFull);
 
         var reply = FriendReplies.ReadAdd(Ready(p));
 
-        Assert.Equal(2, reply!.Value.Code);
+        Assert.Equal(FriendAddResult.ListFull, reply!.Value.Code);
         Assert.Equal("", reply.Value.Added.Name);
     }
 
@@ -57,27 +57,27 @@ public class FriendRepliesTests
     public void ARemovedFriendIsNamed()
     {
         var p = Reply(RemoveSub);
-        p.WriteByte(FriendTexts.Succeeded);
+        p.WriteByte((byte)FriendRemoveResult.Succeeded);
         p.WriteString("Rikka");
 
-        Assert.Equal((FriendTexts.Succeeded, "Rikka"), FriendReplies.ReadRemove(Ready(p)));
+        Assert.Equal((FriendRemoveResult.Succeeded, "Rikka"), FriendReplies.ReadRemove(Ready(p)));
     }
 
     [Theory]
-    [InlineData(1, 44561)]
-    [InlineData(6, 44566)]
-    [InlineData(8, 44568)]
-    public void RequestRefusalsMapToTheirTexts(byte code, int text)
+    [InlineData(FriendRequestResult.ListFull, 44561)]
+    [InlineData(FriendRequestResult.NationMismatch, 44566)]
+    [InlineData(FriendRequestResult.Denied, 44568)]
+    public void RequestRefusalsMapToTheirTexts(FriendRequestResult code, int text)
     {
         Assert.Equal(text, FriendTexts.RequestResultText(code));
         Assert.Null(FriendTexts.RequestResultText(0));
     }
 
     [Theory]
-    [InlineData(0, 10406)]
-    [InlineData(1, 10400)]
-    [InlineData(2, 10401)]
-    public void AddResultsMapToTheirTexts(byte code, int text)
+    [InlineData(FriendAddResult.Succeeded, 10406)]
+    [InlineData(FriendAddResult.Failed, 10400)]
+    [InlineData(FriendAddResult.ListFull, 10401)]
+    public void AddResultsMapToTheirTexts(FriendAddResult code, int text)
     {
         Assert.Equal(text, FriendTexts.AddResultText(code));
     }

@@ -4,12 +4,11 @@ public enum GroundEffect : byte { None, Hay, Swamp, DriedRiver, SwampSlow }
 
 public static class GroundEffects
 {
-    public const byte SubTerrain = 1;
     public const float SlowFactor = 0.7f;
     public const int SwampAuraFx = 32161;
 
-    public static GroundEffect? Read(byte sub, byte effect) =>
-        sub == SubTerrain && effect <= (byte)GroundEffect.SwampSlow ? (GroundEffect)effect : null;
+    public static GroundEffect? Read(ZoneTerrainSubOpcode sub, byte effect) =>
+        sub == ZoneTerrainSubOpcode.Terrain && effect <= (byte)GroundEffect.SwampSlow ? (GroundEffect)effect : null;
 
     public static float SpeedFactor(GroundEffect effect, float current) => effect switch
     {

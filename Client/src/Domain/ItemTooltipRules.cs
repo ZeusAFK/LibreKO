@@ -106,7 +106,6 @@ public static class ItemTooltipRules
     private const int SealedText = 15117;
     private const int OneTimeTradeDoneText = 15122;
     private const int OneTimeTradeText = 15123;
-    public const int OneTimeTradeRace = 74;
     private const byte OneTimeTradeDoneState = 16;
 
     public static IEnumerable<Note> Notes(byte state, int race)
@@ -116,7 +115,7 @@ public static class ItemTooltipRules
         if (state is (byte)ItemFlag.NotBound or (byte)ItemFlag.Bound)
             yield return new Note(UnbindStonesText, NoteTint.Stones, WithStones: true);
         if (state is (byte)ItemFlag.Sealed or (byte)ItemFlag.SealedPremium) yield return new Note(SealedText, NoteTint.Sealed);
-        if (race == OneTimeTradeRace)
+        if (race == ItemData.Race.OneTimeTrade)
             yield return state == OneTimeTradeDoneState
                 ? new Note(OneTimeTradeDoneText, NoteTint.TradeDone)
                 : new Note(OneTimeTradeText, NoteTint.TradeOnce);
@@ -132,85 +131,61 @@ public static class ItemTooltipRules
     private const int NoTradeSoldOrDestroyedText = 4600;
     private const int NoTradeAnythingText = 45020;
 
-    private const int RaceNoTradeSellDestroy = 50;
-    private const int RaceTradeAfter72Hours = 69;
-    private const int RaceNoTradeDestroy = 70;
-    private const int RaceNoTradeDestroyAlt = 71;
-    private const int RaceNoTradeSellStore = 73;
-    private const int RaceNoTradeSellDestroyAlt = 76;
-    private const int RaceNoTradeSellStoreAlt = 77;
-
     public static int TradeNote(int itemId, int race)
     {
         int local = (int)((uint)itemId % OrgIdSpan);
         if (local is >= NoTradeIdFirst and <= NoTradeIdLast)
-            return race is RaceNoTradeSellDestroy or RaceTradeAfter72Hours or RaceNoTradeDestroy
+            return race is ItemData.Race.NoTradeSellDestroy or ItemData.Race.TradeAfter72Hours or ItemData.Race.NoTradeDestroy
                 ? NoTradeAnythingText
                 : NoTradeSoldStoredText;
         return race switch
         {
-            ItemData.QuestItemRace => NoTradeSoldText,
-            RaceNoTradeSellDestroy or RaceNoTradeSellDestroyAlt => NoTradeSoldDestroyedText,
-            RaceTradeAfter72Hours => TradeAfter72HoursText,
-            RaceNoTradeDestroy or RaceNoTradeDestroyAlt => NoTradeDestroyedText,
-            RaceNoTradeSellStore or RaceNoTradeSellStoreAlt => NoTradeSoldStoredText,
-            OneTimeTradeRace => NoTradeSoldOrDestroyedText,
+            ItemData.Race.Quest => NoTradeSoldText,
+            ItemData.Race.NoTradeSellDestroy or ItemData.Race.NoTradeSellDestroyAlt => NoTradeSoldDestroyedText,
+            ItemData.Race.TradeAfter72Hours => TradeAfter72HoursText,
+            ItemData.Race.NoTradeDestroy or ItemData.Race.NoTradeDestroyAlt => NoTradeDestroyedText,
+            ItemData.Race.NoTradeSellStore or ItemData.Race.NoTradeSellStoreAlt => NoTradeSoldStoredText,
+            ItemData.Race.OneTimeTrade => NoTradeSoldOrDestroyedText,
             _ => 0,
         };
     }
 
-    private const int SlotOneHand = 0;
-    private const int SlotRightOnly = 1;
-    private const int SlotLeftOnly = 2;
-    private const int SlotTwoHandRight = 3;
-    private const int SlotTwoHandLeft = 4;
-    private const int SlotPauldron = 5;
-    private const int SlotPants = 6;
-    private const int SlotHelmet = 7;
-    private const int SlotGloves = 8;
-    private const int SlotBoots = 9;
-    private const int SlotEarring = 10;
-    private const int SlotNecklace = 11;
-    private const int SlotRing = 12;
-    private const int SlotBelt = 14;
-    private const int SlotPet = 20;
     private const int SlotTypeSpan = 100;
-    public const int ShieldKind = 60;
 
     public static int CompareSlot(int slotType, Func<int, int?> wornKind)
     {
         bool Has(int slot) => wornKind(slot) != null;
-        bool Shield(int slot) => wornKind(slot) == ShieldKind;
+        bool Shield(int slot) => wornKind(slot) == ItemData.Kind.Shield;
         bool Weapon(int slot) => Has(slot) && !Shield(slot);
 
         int slot = (slotType % SlotTypeSpan) switch
         {
-            SlotOneHand or SlotTwoHandRight =>
+            ItemData.SlotType.OneHand or ItemData.SlotType.TwoHandRight =>
                 Has(InventoryConstants.RightHand) ? InventoryConstants.RightHand
                 : Weapon(InventoryConstants.LeftHand) ? InventoryConstants.LeftHand
                 : NoWornSlot,
-            SlotRightOnly => InventoryConstants.RightHand,
-            SlotLeftOnly => Shield(InventoryConstants.LeftHand) ? InventoryConstants.LeftHand : NoWornSlot,
-            SlotTwoHandLeft =>
+            ItemData.SlotType.RightOnly => InventoryConstants.RightHand,
+            ItemData.SlotType.LeftOnly => Shield(InventoryConstants.LeftHand) ? InventoryConstants.LeftHand : NoWornSlot,
+            ItemData.SlotType.TwoHandLeft =>
                 Has(InventoryConstants.LeftHand)
                     ? (Shield(InventoryConstants.LeftHand) ? NoWornSlot : InventoryConstants.LeftHand)
                     : Has(InventoryConstants.RightHand) ? InventoryConstants.RightHand : NoWornSlot,
-            SlotPauldron => InventoryConstants.Breast,
-            SlotPants => InventoryConstants.Leg,
-            SlotHelmet => InventoryConstants.Head,
-            SlotGloves => InventoryConstants.Glove,
-            SlotBoots => InventoryConstants.Foot,
-            SlotEarring =>
+            ItemData.SlotType.Pauldron => InventoryConstants.Breast,
+            ItemData.SlotType.Pants => InventoryConstants.Leg,
+            ItemData.SlotType.Helmet => InventoryConstants.Head,
+            ItemData.SlotType.Gloves => InventoryConstants.Glove,
+            ItemData.SlotType.Boots => InventoryConstants.Foot,
+            ItemData.SlotType.Earring =>
                 Has(InventoryConstants.RightEar) ? InventoryConstants.RightEar
                 : Has(InventoryConstants.LeftEar) ? InventoryConstants.LeftEar
                 : NoWornSlot,
-            SlotNecklace => InventoryConstants.Neck,
-            SlotRing =>
+            ItemData.SlotType.Necklace => InventoryConstants.Neck,
+            ItemData.SlotType.Ring =>
                 Has(InventoryConstants.RightRing) ? InventoryConstants.RightRing
                 : Has(InventoryConstants.LeftRing) ? InventoryConstants.LeftRing
                 : NoWornSlot,
-            SlotBelt => InventoryConstants.Waist,
-            SlotPet => InventoryConstants.Pet,
+            ItemData.SlotType.Belt => InventoryConstants.Waist,
+            ItemData.SlotType.Pet => InventoryConstants.Pet,
             _ => NoWornSlot,
         };
         return slot != NoWornSlot && Has(slot) ? slot : NoWornSlot;

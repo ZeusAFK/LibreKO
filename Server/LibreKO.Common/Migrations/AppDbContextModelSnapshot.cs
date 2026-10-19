@@ -348,6 +348,9 @@ namespace LibreKO.Common.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<bool>("NameChangeRequired")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("PlayMinutes")
                         .HasColumnType("int");
 

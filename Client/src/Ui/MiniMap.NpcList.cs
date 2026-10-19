@@ -16,28 +16,28 @@ public partial class MiniMap
     private const int NpcListRowFont = 11;
     private static readonly Vector2 NpcListButtonSpot = new(4f, 141f);
 
-    private Button _npcListButton = null!;
-    private PanelContainer _npcList = null!;
-    private readonly List<Button> _npcKindRows = new();
+    private Button npcListButton = null!;
+    private PanelContainer npcList = null!;
+    private readonly List<Button> npcKindRows = new();
 
     public event Action<int>? NpcKindPicked;
 
     private void BuildNpcList()
     {
-        _npcListButton = UiTheme.IconButton(NpcListGlyph, NpcListTitle);
-        _npcListButton.CustomMinimumSize = new Vector2(NpcListButtonSize, NpcListButtonSize);
-        _npcListButton.Position = NpcListButtonSpot + new Vector2(0f, HeaderSize);
-        _npcListButton.Pressed += () => _npcList.Visible = !_npcList.Visible;
-        AddChild(_npcListButton);
+        npcListButton = UiTheme.IconButton(NpcListGlyph, NpcListTitle);
+        npcListButton.CustomMinimumSize = new Vector2(NpcListButtonSize, NpcListButtonSize);
+        npcListButton.Position = NpcListButtonSpot + new Vector2(0f, HeaderSize);
+        npcListButton.Pressed += () => npcList.Visible = !npcList.Visible;
+        AddChild(npcListButton);
 
-        _npcList = new PanelContainer
+        npcList = new PanelContainer
         {
             Visible = false,
             MouseFilter = MouseFilterEnum.Stop,
             CustomMinimumSize = new Vector2(NpcListWidth, 0f),
             Position = new Vector2(-NpcListWidth - NpcListGap, HeaderSize),
         };
-        _npcList.AddThemeStyleboxOverride("panel", UiTheme.WindowPanel());
+        npcList.AddThemeStyleboxOverride("panel", UiTheme.WindowPanel());
         var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 1);
         var title = UiTheme.Heading(NpcListTitleFont, NpcListTitle);
@@ -65,20 +65,20 @@ public partial class MiniMap
             row.AddThemeColorOverride("font_hover_pressed_color", UiTheme.GoldBright);
             row.AddThemeColorOverride("font_disabled_color", UiTheme.TextDim);
             row.Pressed += () => NpcKindPicked?.Invoke(kind);
-            _npcKindRows.Add(row);
+            npcKindRows.Add(row);
             rows.AddChild(row);
         }
-        _npcList.AddChild(rows);
-        AddChild(_npcList);
+        npcList.AddChild(rows);
+        AddChild(npcList);
     }
 
-    internal void ShowNpcList() => _npcList.Visible = true;
+    internal void ShowNpcList() => npcList.Visible = true;
 
     public void SetNpcKinds(IReadOnlyList<bool> present, int selected)
     {
-        for (int i = 0; i < _npcKindRows.Count; i++)
+        for (int i = 0; i < npcKindRows.Count; i++)
         {
-            var row = _npcKindRows[i];
+            var row = npcKindRows[i];
             row.Disabled = i >= present.Count || !present[i];
             row.SetPressedNoSignal(selected == i + 1);
         }

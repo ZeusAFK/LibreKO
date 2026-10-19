@@ -29,23 +29,23 @@ public sealed class ClanMatchService : BackgroundService, IClanMatchService
     private const float HomeX = 0f, HomeZ = 0f;
     private const short Draw = 0;
 
-    private readonly SessionManager _sessions;
-    private readonly IZoneTransitionService _zones;
-    private readonly ILogger<ClanMatchService> _logger;
-    private readonly Dictionary<int, (short Hp, short Mp)> _shown = [];
-    private KnightsEntity? _clanA, _clanB;
-    private int _scoreA, _scoreB, _secondsLeft, _homeLeft;
+    private readonly SessionManager sessions;
+    private readonly IZoneTransitionService zones;
+    private readonly ILogger<ClanMatchService> logger;
+    private readonly Dictionary<int, (short Hp, short Mp)> shown = [];
+    private KnightsEntity? clanA, clanB;
+    private int scoreA, scoreB, secondsLeft, homeLeft;
 
     public ClanMatchService(SessionManager sessions, IZoneTransitionService zones, ILogger<ClanMatchService> logger)
     {
-        _sessions = sessions;
-        _zones = zones;
-        _logger = logger;
+        this.sessions = sessions;
+        this.zones = zones;
+        this.logger = logger;
         zones.ZoneAbilitySent += OnZoneAbilitySentAsync;
         zones.PlayerLeavingZone += (session, _) => LeaveAsync(session);
     }
 
-    public bool Running => _clanA != null && _secondsLeft > 0;
+    public bool Running => clanA != null && secondsLeft > 0;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -58,56 +58,56 @@ public sealed class ClanMatchService : BackgroundService, IClanMatchService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "Clan match tick failed");
+                logger.LogError(ex, "Clan match tick failed");
             }
         }
     }
 
-    public async Task<string> StartAsync(string clanA, string clanB)
+    public async Task<string> StartAsync(string clanAName, string clanBName)
     {
-        if (_clanA != null)
+        if (clanA != null)
             return "A clan match is already running.";
-        var a = ClanNamed(clanA);
-        var b = ClanNamed(clanB);
+        var a = ClanNamed(clanAName);
+        var b = ClanNamed(clanBName);
         if (a == null || b == null || a.Id == b.Id)
             return "Name two different clans.";
 
-        _clanA = a;
-        _clanB = b;
-        _scoreA = _scoreB = 0;
-        _secondsLeft = MatchSeconds;
-        _homeLeft = 0;
-        _shown.Clear();
+        clanA = a;
+        clanB = b;
+        scoreA = scoreB = 0;
+        secondsLeft = MatchSeconds;
+        homeLeft = 0;
+        shown.Clear();
         int moved = 0;
         foreach (var (clan, team, x, z) in new[] { (a, TeamA, StartAX, StartAZ), (b, TeamB, StartBX, StartBZ) })
-            foreach (var fighter in _sessions.GetAll().Where(s => s.KnightsId == clan.Id && s.Hp > 0).Take(MaxFighters).ToList())
+            foreach (var fighter in sessions.GetAll().Where(s => s.KnightsId == clan.Id && s.Hp > 0).Take(MaxFighters).ToList())
             {
                 fighter.MatchTeam = team;
                 moved++;
-                await _zones.ChangeZoneAsync(fighter, Zone, x, z);
+                await zones.ChangeZoneAsync(fighter, Zone, x, z);
             }
-        _logger.LogInformation("Clan match {A} vs {B} started with {Count} fighters", a.Name, b.Name, moved);
+        logger.LogInformation("Clan match {A} vs {B} started with {Count} fighters", a.Name, b.Name, moved);
         return $"Clan match {a.Name} vs {b.Name} started with {moved} fighters.";
     }
 
     public async Task StopAsync()
     {
-        if (_clanA != null && _secondsLeft > 0)
+        if (clanA != null && secondsLeft > 0)
             await EndAsync();
     }
 
     internal async Task TickAsync()
     {
-        if (_clanA == null)
+        if (clanA == null)
             return;
-        if (_secondsLeft > 0)
+        if (secondsLeft > 0)
         {
             await SendVitalsAsync();
-            if (--_secondsLeft <= 0)
+            if (--secondsLeft <= 0)
                 await EndAsync();
             return;
         }
-        if (--_homeLeft <= 0)
+        if (--homeLeft <= 0)
             await SendEveryoneHomeAsync();
     }
 
@@ -115,42 +115,42 @@ public sealed class ClanMatchService : BackgroundService, IClanMatchService
     {
         if (!Running || killer == null || victim.MatchTeam == NoTeam || killer.MatchTeam == NoTeam || victim.MatchTeam == killer.MatchTeam)
             return;
-        if (killer.MatchTeam == TeamA) _scoreA++;
-        else _scoreB++;
+        if (killer.MatchTeam == TeamA) scoreA++;
+        else scoreB++;
         await Task.CompletedTask;
     }
 
     private async Task EndAsync()
     {
-        _secondsLeft = 0;
-        _homeLeft = SendHomeSeconds;
-        short winner = _scoreA == _scoreB ? Draw : _scoreA > _scoreB ? _clanA!.Id : _clanB!.Id;
+        secondsLeft = 0;
+        homeLeft = SendHomeSeconds;
+        short winner = scoreA == scoreB ? Draw : scoreA > scoreB ? clanA!.Id : clanB!.Id;
         await BroadcastAsync(ClanMatchPacketWriter.Result(winner));
-        _logger.LogInformation("Clan match ended {A}:{B}", _scoreA, _scoreB);
+        logger.LogInformation("Clan match ended {A}:{B}", scoreA, scoreB);
     }
 
     private async Task SendEveryoneHomeAsync()
     {
         var inZone = InZone();
-        _clanA = _clanB = null;
+        clanA = clanB = null;
         foreach (var session in inZone)
         {
             session.MatchTeam = NoTeam;
-            await _zones.ChangeZoneAsync(session, (byte)ZoneId.Moradon, HomeX, HomeZ);
+            await zones.ChangeZoneAsync(session, (byte)ZoneId.Moradon, HomeX, HomeZ);
         }
     }
 
     private async Task OnZoneAbilitySentAsync(UserSession session)
     {
-        if (session.ZoneId != Zone || _clanA == null)
+        if (session.ZoneId != Zone || clanA == null)
             return;
         if (session.MatchTeam == NoTeam && !session.IsGM)
         {
-            await _zones.ChangeZoneAsync(session, (byte)ZoneId.Moradon, HomeX, HomeZ);
+            await zones.ChangeZoneAsync(session, (byte)ZoneId.Moradon, HomeX, HomeZ);
             return;
         }
-        await session.Client.SendPacket(ClanMatchPacketWriter.Pair(Zone, _clanA.Id, _clanA.MarkVersion, _clanA.Name,
-            _clanB!.Id, _clanB.MarkVersion, _clanB.Name));
+        await session.Client.SendPacket(ClanMatchPacketWriter.Pair(Zone, clanA.Id, clanA.MarkVersion, clanA.Name,
+            clanB!.Id, clanB.MarkVersion, clanB.Name));
         await BroadcastAsync(RosterPacket());
     }
 
@@ -159,8 +159,8 @@ public sealed class ClanMatchService : BackgroundService, IClanMatchService
         if (session.MatchTeam == NoTeam)
             return;
         session.MatchTeam = NoTeam;
-        _shown.Remove(session.CharacterId);
-        if (_clanA != null)
+        shown.Remove(session.CharacterId);
+        if (clanA != null)
             await BroadcastAsync(RosterPacket());
     }
 
@@ -172,16 +172,16 @@ public sealed class ClanMatchService : BackgroundService, IClanMatchService
     {
         foreach (var fighter in Fighters())
         {
-            if (_shown.TryGetValue(fighter.CharacterId, out var last) && last == (fighter.Hp, fighter.Mp))
+            if (shown.TryGetValue(fighter.CharacterId, out var last) && last == (fighter.Hp, fighter.Mp))
                 continue;
-            _shown[fighter.CharacterId] = (fighter.Hp, fighter.Mp);
+            shown[fighter.CharacterId] = (fighter.Hp, fighter.Mp);
             await BroadcastAsync(ClanMatchPacketWriter.Vitals(fighter.CharacterId, fighter.MaxHp, fighter.Hp, fighter.MaxMp, fighter.Mp));
         }
     }
 
     private List<UserSession> Fighters() => InZone().Where(s => s.MatchTeam != NoTeam).ToList();
 
-    private List<UserSession> InZone() => _sessions.GetAll().Where(s => s.ZoneId == Zone).ToList();
+    private List<UserSession> InZone() => sessions.GetAll().Where(s => s.ZoneId == Zone).ToList();
 
     private async Task BroadcastAsync(Packet packet)
     {
@@ -190,5 +190,5 @@ public sealed class ClanMatchService : BackgroundService, IClanMatchService
     }
 
     private KnightsEntity? ClanNamed(string name) =>
-        _sessions.Knights.GetAll().FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+        sessions.Knights.GetAll().FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
 }

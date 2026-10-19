@@ -8,49 +8,49 @@ public sealed class ChatInputHistory
     public const int Capacity = 40;
     private const int NotBrowsing = -1;
 
-    private readonly List<string> _lines = new();
-    private int _cursor = NotBrowsing;
-    private string _draft = "";
+    private readonly List<string> lines = new();
+    private int cursor = NotBrowsing;
+    private string draft = "";
 
     public void Push(string line)
     {
-        _cursor = NotBrowsing;
+        cursor = NotBrowsing;
         if (line.Length == 0) return;
-        if (_lines.Count > 0 && _lines[^1] == line) return;
-        _lines.Add(line);
-        if (_lines.Count > Capacity) _lines.RemoveAt(0);
+        if (lines.Count > 0 && lines[^1] == line) return;
+        lines.Add(line);
+        if (lines.Count > Capacity) lines.RemoveAt(0);
     }
 
     public string? Older(string current)
     {
-        if (_lines.Count == 0) return null;
-        if (_cursor == NotBrowsing)
+        if (lines.Count == 0) return null;
+        if (cursor == NotBrowsing)
         {
-            _draft = current;
-            _cursor = _lines.Count - 1;
+            draft = current;
+            cursor = lines.Count - 1;
         }
-        else if (_cursor > 0)
+        else if (cursor > 0)
         {
-            _cursor--;
+            cursor--;
         }
-        return _lines[_cursor];
+        return lines[cursor];
     }
 
     public string? Newer()
     {
-        if (_cursor == NotBrowsing) return null;
-        if (_cursor < _lines.Count - 1) return _lines[++_cursor];
-        _cursor = NotBrowsing;
-        return _draft;
+        if (cursor == NotBrowsing) return null;
+        if (cursor < lines.Count - 1) return lines[++cursor];
+        cursor = NotBrowsing;
+        return draft;
     }
 
-    public void StopBrowsing() => _cursor = NotBrowsing;
+    public void StopBrowsing() => cursor = NotBrowsing;
 
     public void Reset()
     {
-        _lines.Clear();
-        _cursor = NotBrowsing;
-        _draft = "";
+        lines.Clear();
+        cursor = NotBrowsing;
+        draft = "";
     }
 }
 

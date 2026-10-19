@@ -14,45 +14,45 @@ public partial class MiniMap
     private const int BlipStride = 12;
     private const int BlipInitialCapacity = 64;
 
-    private static ImageTexture? _rimTexture, _discTexture;
-    private readonly BlipBatch _rimmed = new(), _plain = new();
-    private readonly List<Blip> _rings = new();
-    private readonly List<Blip> _diamonds = new();
+    private static ImageTexture? rimTexture, discTexture;
+    private readonly BlipBatch rimmed = new(), plain = new();
+    private readonly List<Blip> rings = new();
+    private readonly List<Blip> diamonds = new();
     private static readonly Color DiamondEdge = new(0f, 0f, 0f, 0.8f);
     private const float DiamondEdgeWidth = 1f;
 
     private sealed class BlipBatch
     {
-        private MultiMesh? _mesh;
-        private float[] _data = new float[BlipStride * BlipInitialCapacity];
-        private int _count;
+        private MultiMesh? mesh;
+        private float[] data = new float[BlipStride * BlipInitialCapacity];
+        private int count;
 
-        public void Begin() => _count = 0;
+        public void Begin() => count = 0;
 
         public void Add(Vector2 at, float diameter, Color color)
         {
-            if ((_count + 1) * BlipStride > _data.Length) System.Array.Resize(ref _data, _data.Length * 2);
-            int i = _count * BlipStride;
-            _data[i] = diameter; _data[i + 1] = 0f; _data[i + 2] = 0f; _data[i + 3] = at.X;
-            _data[i + 4] = 0f; _data[i + 5] = diameter; _data[i + 6] = 0f; _data[i + 7] = at.Y;
-            _data[i + 8] = color.R; _data[i + 9] = color.G; _data[i + 10] = color.B; _data[i + 11] = color.A;
-            _count++;
+            if ((count + 1) * BlipStride > data.Length) System.Array.Resize(ref data, data.Length * 2);
+            int i = count * BlipStride;
+            data[i] = diameter; data[i + 1] = 0f; data[i + 2] = 0f; data[i + 3] = at.X;
+            data[i + 4] = 0f; data[i + 5] = diameter; data[i + 6] = 0f; data[i + 7] = at.Y;
+            data[i + 8] = color.R; data[i + 9] = color.G; data[i + 10] = color.B; data[i + 11] = color.A;
+            count++;
         }
 
         public void Draw(Control canvas, Texture2D texture)
         {
-            if (_count == 0) return;
-            _mesh ??= new MultiMesh
+            if (count == 0) return;
+            mesh ??= new MultiMesh
             {
                 TransformFormat = MultiMesh.TransformFormatEnum.Transform2D,
                 UseColors = true,
                 Mesh = new QuadMesh { Size = Vector2.One },
             };
-            int capacity = _data.Length / BlipStride;
-            if (_mesh.InstanceCount != capacity) _mesh.InstanceCount = capacity;
-            _mesh.Buffer = _data;
-            _mesh.VisibleInstanceCount = _count;
-            canvas.DrawMultimesh(_mesh, texture);
+            int capacity = data.Length / BlipStride;
+            if (mesh.InstanceCount != capacity) mesh.InstanceCount = capacity;
+            mesh.Buffer = data;
+            mesh.VisibleInstanceCount = count;
+            canvas.DrawMultimesh(mesh, texture);
         }
     }
 
@@ -60,36 +60,36 @@ public partial class MiniMap
     {
         float pxw = PxPerWorld;
         float min = 7f, maxX = c.Size.X - 7f, maxY = c.Size.Y - 7f;
-        _rimmed.Begin();
-        _plain.Begin();
-        _rings.Clear();
-        _diamonds.Clear();
-        foreach (var b in _blips)
+        rimmed.Begin();
+        plain.Begin();
+        rings.Clear();
+        diamonds.Clear();
+        foreach (var b in blips)
         {
-            float dx = (b.X - _koX) * pxw;
-            float dy = -(b.Z - _koZ) * pxw;
+            float dx = (b.X - mapX) * pxw;
+            float dy = -(b.Z - mapZ) * pxw;
             var p = ctr + new Vector2(dx, dy);
             bool clamped = p.X < min || p.X > maxX || p.Y < min || p.Y > maxY;
             if (b.Diamond)
             {
                 p = new Vector2(Mathf.Clamp(p.X, min, maxX), Mathf.Clamp(p.Y, min, maxY));
-                _diamonds.Add(b with { X = p.X, Z = p.Y });
+                diamonds.Add(b with { X = p.X, Z = p.Y });
                 continue;
             }
             if (clamped)
             {
                 p = new Vector2(Mathf.Clamp(p.X, min, maxX), Mathf.Clamp(p.Y, min, maxY));
-                _plain.Add(p, 2f * b.Radius * ClampedScale, new Color(b.Color, ClampedAlpha));
+                plain.Add(p, 2f * b.Radius * ClampedScale, new Color(b.Color, ClampedAlpha));
                 continue;
             }
-            if (b.Hollow) _rings.Add(b with { X = p.X, Z = p.Y });
-            else _rimmed.Add(p, 2f * (b.Radius + BlipOutline), b.Color);
+            if (b.Hollow) rings.Add(b with { X = p.X, Z = p.Y });
+            else rimmed.Add(p, 2f * (b.Radius + BlipOutline), b.Color);
         }
-        _plain.Draw(c, _discTexture ??= BlipTexture(rim: false));
-        _rimmed.Draw(c, _rimTexture ??= BlipTexture(rim: true));
-        foreach (var ring in _rings)
+        plain.Draw(c, discTexture ??= BlipTexture(rim: false));
+        rimmed.Draw(c, rimTexture ??= BlipTexture(rim: true));
+        foreach (var ring in rings)
             c.DrawArc(new Vector2(ring.X, ring.Z), ring.Radius + 1.5f, 0, Mathf.Tau, 20, ring.Color, 2f, true);
-        foreach (var diamond in _diamonds)
+        foreach (var diamond in diamonds)
             DrawDiamond(c, new Vector2(diamond.X, diamond.Z), diamond.Radius, diamond.Color);
     }
 

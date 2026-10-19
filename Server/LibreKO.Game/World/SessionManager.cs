@@ -7,8 +7,8 @@ namespace LibreKO.Game.World;
 
 public class SessionManager
 {
-    private readonly ConcurrentDictionary<int, UserSession> _sessionsByCharacterId = new();
-    private readonly ConcurrentDictionary<Guid, UserSession> _sessionsByClientId = new();
+    private readonly ConcurrentDictionary<int, UserSession> sessionsByCharacterId = new();
+    private readonly ConcurrentDictionary<Guid, UserSession> sessionsByClientId = new();
     public RegionManager Regions { get; } = new();
     public PartyManager Parties { get; } = new();
     public KnightsManager Knights { get; } = new();
@@ -17,21 +17,21 @@ public class SessionManager
 
     public UserSession? GetByCharacterId(int characterId)
     {
-        _sessionsByCharacterId.TryGetValue(characterId, out var session);
+        sessionsByCharacterId.TryGetValue(characterId, out var session);
         return session;
     }
 
     public UserSession? GetByClientId(Guid clientId)
     {
-        _sessionsByClientId.TryGetValue(clientId, out var session);
+        sessionsByClientId.TryGetValue(clientId, out var session);
         return session;
     }
 
     public UserSession CreateSession(IClient client, int characterId, int accountId)
     {
         var session = new UserSession(client, characterId, accountId);
-        _sessionsByCharacterId[characterId] = session;
-        _sessionsByClientId[client.Id] = session;
+        sessionsByCharacterId[characterId] = session;
+        sessionsByClientId[client.Id] = session;
         session.PartyLeaderChanged += BroadcastPartyLeader;
         session.BuffsChanged += RaiseBuffsChanged;
         return session;
@@ -39,8 +39,8 @@ public class SessionManager
 
     public void RegisterSession(UserSession session)
     {
-        _sessionsByCharacterId[session.CharacterId] = session;
-        _sessionsByClientId[session.Client.Id] = session;
+        sessionsByCharacterId[session.CharacterId] = session;
+        sessionsByClientId[session.Client.Id] = session;
         session.PartyLeaderChanged -= BroadcastPartyLeader;
         session.PartyLeaderChanged += BroadcastPartyLeader;
         session.BuffsChanged -= RaiseBuffsChanged;
@@ -62,28 +62,28 @@ public class SessionManager
         // Compare-and-remove: only evict if this exact session is still registered, so a
         // lagging cleanup of an old session can't remove a newer one that took over the
         // same character (login takeover).
-        _sessionsByCharacterId.TryRemove(new KeyValuePair<int, UserSession>(session.CharacterId, session));
-        _sessionsByClientId.TryRemove(new KeyValuePair<Guid, UserSession>(session.Client.Id, session));
+        sessionsByCharacterId.TryRemove(new KeyValuePair<int, UserSession>(session.CharacterId, session));
+        sessionsByClientId.TryRemove(new KeyValuePair<Guid, UserSession>(session.Client.Id, session));
     }
 
     public UserSession? GetByName(string name)
     {
-        foreach (var session in _sessionsByCharacterId.Values)
+        foreach (var session in sessionsByCharacterId.Values)
             if (string.Equals(session.Name, name, StringComparison.OrdinalIgnoreCase))
                 return session;
         return null;
     }
 
-    public int OnlineCount => _sessionsByCharacterId.Count;
+    public int OnlineCount => sessionsByCharacterId.Count;
 
-    public IEnumerable<UserSession> GetAll() => _sessionsByCharacterId.Values;
+    public IEnumerable<UserSession> GetAll() => sessionsByCharacterId.Values;
 
     public NpcInstance[] GetActiveAiNpcsSnapshot()
     {
         var activeNpcs = new List<NpcInstance>();
         var seenNpcIds = new HashSet<int>();
 
-        foreach (var session in _sessionsByCharacterId.Values)
+        foreach (var session in sessionsByCharacterId.Values)
         {
             if (session.RegionX < 0 || session.RegionZ < 0)
                 continue;
@@ -113,7 +113,7 @@ public class SessionManager
     public Task BroadcastToAll(Packet pkt)
     {
         var tasks = new List<Task>();
-        foreach (var session in _sessionsByCharacterId.Values)
+        foreach (var session in sessionsByCharacterId.Values)
             tasks.Add(session.Client.SendPacket(pkt));
         return tasks.Count > 0 ? Task.WhenAll(tasks) : Task.CompletedTask;
     }

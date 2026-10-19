@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -6,15 +7,15 @@ namespace LibreKO.Tests;
 public class GroundEffectTests
 {
     [Theory]
-    [InlineData(GroundEffects.SubTerrain, 0, GroundEffect.None)]
-    [InlineData(GroundEffects.SubTerrain, 4, GroundEffect.SwampSlow)]
-    public void TheTerrainSubReadsItsEffect(byte sub, byte value, GroundEffect expected) =>
+    [InlineData(ZoneTerrainSubOpcode.Terrain, 0, GroundEffect.None)]
+    [InlineData(ZoneTerrainSubOpcode.Terrain, 4, GroundEffect.SwampSlow)]
+    public void TheTerrainSubReadsItsEffect(ZoneTerrainSubOpcode sub, byte value, GroundEffect expected) =>
         Assert.Equal(expected, GroundEffects.Read(sub, value));
 
     [Theory]
-    [InlineData(2, 1)]
-    [InlineData(GroundEffects.SubTerrain, 5)]
-    public void OtherSubsAndValuesAreIgnored(byte sub, byte value) =>
+    [InlineData((ZoneTerrainSubOpcode)2, 1)]
+    [InlineData(ZoneTerrainSubOpcode.Terrain, 5)]
+    public void OtherSubsAndValuesAreIgnored(ZoneTerrainSubOpcode sub, byte value) =>
         Assert.Null(GroundEffects.Read(sub, value));
 
     [Fact]

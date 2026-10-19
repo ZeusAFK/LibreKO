@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using Godot;
-
-namespace LibreKO.Domain;
+﻿namespace LibreKO.Domain;
 
 public enum AchievementTab
 {
@@ -28,7 +25,7 @@ public static class AchievementData
 
     private static readonly Dictionary<int, Info> Table = new();
     private static readonly Dictionary<int, Title> Titles = new();
-    private static bool _loaded;
+    private static bool loaded;
 
     public static string TabName(AchievementTab tab) => tab switch
     {
@@ -82,76 +79,25 @@ public static class AchievementData
         get { EnsureLoaded(); return Table.Keys; }
     }
 
+    internal static Action? Loader { get; set; }
+
     private static void EnsureLoaded()
     {
-        if (_loaded) return;
-        _loaded = true;
-
-        using var file = Godot.FileAccess.Open(
-            "res://assets/achievements/achievements.json", Godot.FileAccess.ModeFlags.Read);
-        if (file == null)
-        {
-            GD.PushWarning("[achievements] achievements.json missing — the window will show ids only");
-            return;
-        }
-
-        if (Json.ParseString(file.GetAsText()).Obj is not Godot.Collections.Dictionary root) return;
-
-        foreach (var key in root.Keys)
-        {
-            if (!int.TryParse(key.AsString(), out int id)) continue;
-            if (root[key].Obj is not Godot.Collections.Dictionary row) continue;
-
-            Table[id] = new Info(
-                (AchievementTab)Read(row, "tab"),
-                Read(row, "group"),
-                Read(row, "points"),
-                row.ContainsKey("name") ? row["name"].AsString() : string.Empty,
-                row.ContainsKey("objective") ? row["objective"].AsString() : string.Empty,
-                Read(row, "item"),
-                Read(row, "count"),
-                Read(row, "title"));
-        }
-
-        LoadTitles();
-
-        GD.Print($"[achievements] {Table.Count} definitions");
+        if (loaded) return;
+        loaded = true;
+        Loader?.Invoke();
     }
+
+    internal static void Add(int achievementId, Info info) => Table[achievementId] = info;
+
+    internal static void AddTitle(int titleId, Title title) => Titles[titleId] = title;
+
+    internal static int DefinitionCount => Table.Count;
 
     public static Title? TitleOf(int titleId)
     {
         EnsureLoaded();
         return Titles.TryGetValue(titleId, out var title) ? title : null;
-    }
-
-    private static void LoadTitles()
-    {
-        using var file = Godot.FileAccess.Open(
-            "res://assets/achievements/titles.json", Godot.FileAccess.ModeFlags.Read);
-        if (file == null) return;
-        if (Json.ParseString(file.GetAsText()).Obj is not Godot.Collections.Dictionary root) return;
-
-        foreach (var key in root.Keys)
-        {
-            if (!int.TryParse(key.AsString(), out int id)) continue;
-            if (root[key].Obj is not Godot.Collections.Dictionary row) continue;
-
-            Titles[id] = new Title(
-                row.ContainsKey("name") ? row["name"].AsString() : string.Empty,
-                Read(row, "achievement"),
-                DescribeBonus(row));
-        }
-    }
-
-    private static string DescribeBonus(Godot.Collections.Dictionary row)
-    {
-        if (!row.ContainsKey("bonus")) return string.Empty;
-        if (row["bonus"].Obj is not Godot.Collections.Dictionary bonus) return string.Empty;
-
-        var parts = new List<string>();
-        foreach (var key in bonus.Keys)
-            parts.Add(BonusLine(key.AsString(), (int)bonus[key]));
-        return string.Join(", ", parts);
     }
 
     private const int BonusTextFirst = 37201;
@@ -171,7 +117,7 @@ public static class AchievementData
         ("r_curse", "Spell Resistence: %d"), ("r_poison", "Poison Resistence: %d"),
     };
 
-    private static string BonusLine(string key, int value)
+    internal static string BonusLine(string key, int value)
     {
         int index = System.Array.FindIndex(Bonuses, bonus => bonus.Key == key);
         if (index < 0) return $"{key}: {value}";
@@ -179,7 +125,4 @@ public static class AchievementData
             .Replace("%d", value.ToString())
             .Replace("%%", "%");
     }
-
-    private static int Read(Godot.Collections.Dictionary row, string key) =>
-        row.ContainsKey(key) ? (int)row[key] : 0;
 }

@@ -22,7 +22,7 @@ public class NpcAiTargetingService(
 {
     private const byte MoradonZoneId = (byte)ZoneId.Moradon;
     private const float SpawnReturnDistSq = 1.0f;
-    private readonly float _closeAggroRange = Math.Max(0f, settings.Value.Monsters.CloseAggroRange);
+    private readonly float closeAggroRange = Math.Max(0f, settings.Value.Monsters.CloseAggroRange);
 
     public UserSession? FindTarget(NpcInstance npc)
     {
@@ -59,7 +59,7 @@ public class NpcAiTargetingService(
         var searchRangeSq = npc.SearchRange * npc.SearchRange;
         var noticeRange = isGuard || npc.IsAggressive
             ? npc.SearchRange
-            : MathF.Min(npc.SearchRange, _closeAggroRange);
+            : MathF.Min(npc.SearchRange, closeAggroRange);
         var noticeRangeSq = noticeRange * noticeRange;
 
         UserSession? closest = null;

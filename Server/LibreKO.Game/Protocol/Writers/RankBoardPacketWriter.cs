@@ -10,7 +10,6 @@ public readonly record struct RankBoardEntry(
 
 public static class RankBoardPacketWriter
 {
-    public const byte SubRankBoard = 13;
     public const ushort KingSlot = 1000;
     public const ushort FirstPlayerSlot = 1101;
     public const ushort FirstClanSlot = 1201;
@@ -19,8 +18,7 @@ public static class RankBoardPacketWriter
 
     public static Packet Board(IReadOnlyList<RankBoardEntry> entries)
     {
-        var packet = new Packet(GameOpcodes.GS_BATTLE_EVENT);
-        packet.WriteByte(SubRankBoard);
+        var packet = BattleEventPacketWriter.Sub(BattleEventSubOpcode.RankBoard);
         packet.WriteByte((byte)entries.Count);
         foreach (var entry in entries)
         {

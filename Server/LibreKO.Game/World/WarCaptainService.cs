@@ -28,14 +28,14 @@ public sealed class WarCaptainService : BackgroundService, IWarCaptainService
     private const int ElMoradCaptainKilledText = 143;
     private const string NamePlaceholder = "%s";
 
-    private readonly SessionManager _sessions;
-    private readonly IOptions<GameServerSettings> _settings;
-    private readonly IKingSystemRuntimeService _kings;
-    private readonly IGameDataService _gameData;
-    private readonly ILogger<WarCaptainService> _logger;
-    private readonly Dictionary<int, byte> _formerFame = [];
-    private readonly SemaphoreSlim _gate = new(1, 1);
-    private bool _selected;
+    private readonly SessionManager sessions;
+    private readonly IOptions<GameServerSettings> settings;
+    private readonly IKingSystemRuntimeService kings;
+    private readonly IGameDataService gameData;
+    private readonly ILogger<WarCaptainService> logger;
+    private readonly Dictionary<int, byte> formerFame = [];
+    private readonly SemaphoreSlim gate = new(1, 1);
+    private bool selected;
 
     public WarCaptainService(
         SessionManager sessions,
@@ -45,15 +45,15 @@ public sealed class WarCaptainService : BackgroundService, IWarCaptainService
         IZoneTransitionService zones,
         ILogger<WarCaptainService> logger)
     {
-        _sessions = sessions;
-        _settings = settings;
-        _kings = kings;
-        _gameData = gameData;
-        _logger = logger;
+        this.sessions = sessions;
+        this.settings = settings;
+        this.kings = kings;
+        this.gameData = gameData;
+        this.logger = logger;
         zones.ZoneAbilitySent += OnZoneAbilitySentAsync;
     }
 
-    public bool IsCaptain(UserSession session) => _selected && _formerFame.ContainsKey(session.CharacterId);
+    public bool IsCaptain(UserSession session) => selected && formerFame.ContainsKey(session.CharacterId);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -66,61 +66,61 @@ public sealed class WarCaptainService : BackgroundService, IWarCaptainService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "War captain tick failed");
+                logger.LogError(ex, "War captain tick failed");
             }
         }
     }
 
     internal async Task TickAsync()
     {
-        var battle = _sessions.Battle;
-        var selectAfter = TimeSpan.FromMinutes(_settings.Value.Events.BattleDurationMinutes) / SelectionDivisor;
-        if (battle.IsBattleActive && !_selected && battle.GetElapsedTime() >= selectAfter)
+        var battle = sessions.Battle;
+        var selectAfter = TimeSpan.FromMinutes(settings.Value.Events.BattleDurationMinutes) / SelectionDivisor;
+        if (battle.IsBattleActive && !selected && battle.GetElapsedTime() >= selectAfter)
             await SelectAsync();
-        else if (!battle.IsBattleActive && _selected)
+        else if (!battle.IsBattleActive && selected)
             await ResetAsync();
     }
 
     internal async Task SelectAsync()
     {
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
-            _selected = true;
+            selected = true;
             foreach (var nation in new[] { AccountNation.Karus, AccountNation.ElMorad })
             {
                 var captains = CandidatesOf(nation).DistinctBy(s => s.CharacterId).ToList();
                 foreach (var captain in captains)
                 {
-                    _formerFame[captain.CharacterId] = captain.KnightsFame;
+                    formerFame[captain.CharacterId] = captain.KnightsFame;
                     await SetFameAsync(captain, CaptainFame);
                 }
                 if (captains.Count > 0)
                     await AnnounceAsync(nation, nation == AccountNation.Karus ? KarusCaptainsText : ElMoradCaptainsText,
                         captains.Select(TaggedName).ToList());
             }
-            _logger.LogInformation("War captains chosen: {Count}", _formerFame.Count);
+            logger.LogInformation("War captains chosen: {Count}", formerFame.Count);
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
     }
 
     internal async Task ResetAsync()
     {
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
-            foreach (var (characterId, fame) in _formerFame)
-                if (_sessions.GetByCharacterId(characterId) is { } captain && captain.KnightsFame == CaptainFame)
+            foreach (var (characterId, fame) in formerFame)
+                if (sessions.GetByCharacterId(characterId) is { } captain && captain.KnightsFame == CaptainFame)
                     await SetFameAsync(captain, fame);
-            _formerFame.Clear();
-            _selected = false;
+            formerFame.Clear();
+            selected = false;
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
     }
 
@@ -129,18 +129,18 @@ public sealed class WarCaptainService : BackgroundService, IWarCaptainService
         if (!IsCaptain(victim))
             return;
         var clan = ClanName(victim);
-        var text = _gameData.GetServerResource(victim.Nation == AccountNation.Karus ? KarusCaptainKilledText : ElMoradCaptainKilledText)
+        var text = gameData.GetServerResource(victim.Nation == AccountNation.Karus ? KarusCaptainKilledText : ElMoradCaptainKilledText)
                    ?? "[%s][%s], the captain has been killed";
         await BroadcastAsync(null, Fill(text, [clan, victim.Name]));
     }
 
     private IEnumerable<UserSession> CandidatesOf(AccountNation nation)
     {
-        var inWar = _sessions.GetAll().Where(s => s.Nation == nation && BattleZoneManager.IsBattleZone(s.ZoneId)).ToList();
-        if (_kings.GetKingData(nation) is { } king && inWar.FirstOrDefault(s => _kings.IsKing(s, king)) is { } kingSession)
+        var inWar = sessions.GetAll().Where(s => s.Nation == nation && BattleZoneManager.IsBattleZone(s.ZoneId)).ToList();
+        if (kings.GetKingData(nation) is { } king && inWar.FirstOrDefault(s => kings.IsKing(s, king)) is { } kingSession)
             yield return kingSession;
 
-        var topClans = _sessions.Knights.GetAll()
+        var topClans = sessions.Knights.GetAll()
             .Where(c => c.Nation == (byte)nation)
             .OrderByDescending(c => c.Points)
             .Take(ClanChiefsPerNation)
@@ -154,32 +154,32 @@ public sealed class WarCaptainService : BackgroundService, IWarCaptainService
     {
         if (IsCaptain(session) && session.KnightsFame != CaptainFame)
             await SetFameAsync(session, CaptainFame);
-        else if (!_selected && session.KnightsFame == CaptainFame)
+        else if (!selected && session.KnightsFame == CaptainFame)
             await SetFameAsync(session, ClanRules.FameChief);
     }
 
     private async Task SetFameAsync(UserSession session, byte fame)
     {
         session.KnightsFame = fame;
-        await _sessions.Regions.SendToRegion(session, MiscPacketWriter.AuthorityChange(FameSub, session.CharacterId, fame),
+        await sessions.Regions.SendToRegion(session, MiscPacketWriter.AuthorityChange(FameSub, session.CharacterId, fame),
             excludeSender: false);
     }
 
     private string TaggedName(UserSession session) => $"[{ClanName(session)}][{session.Name}]";
 
     private string ClanName(UserSession session) =>
-        session.KnightsId > 0 ? _sessions.Knights.GetClan(session.KnightsId)?.Name ?? string.Empty : string.Empty;
+        session.KnightsId > 0 ? sessions.Knights.GetClan(session.KnightsId)?.Name ?? string.Empty : string.Empty;
 
     private async Task AnnounceAsync(AccountNation nation, int textId, IReadOnlyList<string> names)
     {
-        var text = _gameData.GetServerResource(textId) ?? "The captain(s) are %s, %s, %s, %s, %s";
+        var text = gameData.GetServerResource(textId) ?? "The captain(s) are %s, %s, %s, %s, %s";
         await BroadcastAsync(nation, Fill(text, names));
     }
 
     private async Task BroadcastAsync(AccountNation? nation, string text)
     {
         var packet = NoticePacketWriter.Broadcast(text);
-        foreach (var session in _sessions.GetAll().Where(s => nation == null || s.Nation == nation))
+        foreach (var session in sessions.GetAll().Where(s => nation == null || s.Nation == nation))
             await session.Client.SendPacket(packet);
     }
 

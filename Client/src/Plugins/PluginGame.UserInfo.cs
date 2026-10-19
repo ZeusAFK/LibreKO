@@ -37,17 +37,17 @@ public interface IGameUserInfo
 
 public sealed partial class PluginGame
 {
-    public IGameUserInfo UserInfo => _userInfo;
+    public IGameUserInfo UserInfo => userInfo;
 
-    private readonly UserInfoProxy _userInfo = new();
+    private readonly UserInfoProxy userInfo = new();
 
-    internal void AttachUserInfo(IGameUserInfo userInfo)
+    internal void AttachUserInfo(IGameUserInfo userInfoSource)
     {
-        _userInfo.Source = userInfo;
+        userInfo.Source = userInfoSource;
         RaiseUserInfo();
     }
 
-    internal void RaiseUserInfo() => _userInfo.Raise();
+    internal void RaiseUserInfo() => userInfo.Raise();
 
     private sealed class UserInfoProxy : IGameUserInfo
     {

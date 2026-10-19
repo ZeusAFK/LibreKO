@@ -6,7 +6,7 @@ namespace LibreKO.Tests;
 
 public class RedistributionRequestTests
 {
-    private const byte Stat = Net.ResetKindStat, Mastery = Net.ResetKindSkill;
+    private const byte Stat = (byte)ResetKind.Stat, Mastery = (byte)ResetKind.Skill;
 
     [Fact]
     public void ASecondRequestIsRefusedWhileOneIsPending()
@@ -15,7 +15,7 @@ public class RedistributionRequestTests
 
         Assert.True(request.TryBegin(Stat));
         Assert.False(request.TryBegin(Mastery));
-        Assert.Equal(Stat, request.Kind);
+        Assert.Equal(Stat, (byte)request.Kind);
     }
 
     [Fact]

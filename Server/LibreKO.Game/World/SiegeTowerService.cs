@@ -14,9 +14,9 @@ public interface ISiegeTowerService
 
 public sealed class SiegeTowerService : ISiegeTowerService
 {
-    private readonly SessionManager _sessions;
-    private readonly IWorldPacketCoordinator _world;
-    private readonly IMagicStatusEffectService _magic;
+    private readonly SessionManager sessions;
+    private readonly IWorldPacketCoordinator world;
+    private readonly IMagicStatusEffectService magic;
 
     public SiegeTowerService(
         SessionManager sessions,
@@ -24,16 +24,16 @@ public sealed class SiegeTowerService : ISiegeTowerService
         IMagicStatusEffectService magic,
         IZoneTransitionService zones)
     {
-        _sessions = sessions;
-        _world = world;
-        _magic = magic;
-        _magic.TransformationEnded += OnTransformationEndedAsync;
+        this.sessions = sessions;
+        this.world = world;
+        this.magic = magic;
+        this.magic.TransformationEnded += OnTransformationEndedAsync;
         zones.PlayerLeavingZone += (session, _) => ReleaseAsync(session);
     }
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
-        var session = _sessions.GetByClientId(client.Id);
+        var session = sessions.GetByClientId(client.Id);
         if (session == null || packet.RemainingBytes < 1)
             return;
 
@@ -62,7 +62,7 @@ public sealed class SiegeTowerService : ISiegeTowerService
         if (session.GuardTowerNpcId != 0)
         {
             if (session.ActiveBuffs.ContainsKey(SiegeTowerRules.GuardTowerSkill))
-                await _magic.CancelAsync(session, SiegeTowerRules.GuardTowerSkill);
+                await magic.CancelAsync(session, SiegeTowerRules.GuardTowerSkill);
             await ReleaseGuardTowerAsync(session);
         }
         if (session.TransformId == SiegeTowerRules.MovingTowerLook)
@@ -80,12 +80,12 @@ public sealed class SiegeTowerService : ISiegeTowerService
 
         session.TowerHostId = host!.CharacterId;
         await session.Client.SendPacket(Board(SiegeTowerRules.Wire(host.X), SiegeTowerRules.Wire(host.Z), SiegeTowerRules.Wire(host.Y)));
-        await _world.WarpAsync(session, SiegeTowerRules.Wire(host.X), SiegeTowerRules.Wire(host.Z));
+        await world.WarpAsync(session, SiegeTowerRules.Wire(host.X), SiegeTowerRules.Wire(host.Z));
     }
 
     private byte BoardRefusal(UserSession session, int hostId, out UserSession? host)
     {
-        host = _sessions.GetByCharacterId(hostId);
+        host = sessions.GetByCharacterId(hostId);
         if (session.TowerHostId != 0 || session.GuardTowerNpcId != 0)
             return BoardAlreadyOnboard;
         if (host == null || host == session || host.ZoneId != session.ZoneId || host.Hp <= 0)
@@ -105,7 +105,7 @@ public sealed class SiegeTowerService : ISiegeTowerService
             : !PvpRules.IsEnemy(session, host);
 
     private int AllianceOf(UserSession session) =>
-        session.KnightsId > 0 ? _sessions.Knights.GetClan(session.KnightsId)?.AllianceId ?? 0 : 0;
+        session.KnightsId > 0 ? sessions.Knights.GetClan(session.KnightsId)?.AllianceId ?? 0 : 0;
 
     private async Task LeaveAsync(UserSession session, ushort x, ushort z)
     {
@@ -115,7 +115,7 @@ public sealed class SiegeTowerService : ISiegeTowerService
             return;
         }
 
-        var host = _sessions.GetByCharacterId(session.TowerHostId);
+        var host = sessions.GetByCharacterId(session.TowerHostId);
         if (host != null && host.ZoneId == session.ZoneId
             && !SiegeTowerRules.WithinGround(host.X, host.Z, (float)x / SiegeTowerRules.WireScale,
                 (float)z / SiegeTowerRules.WireScale, SiegeTowerRules.BoardReach))
@@ -126,12 +126,12 @@ public sealed class SiegeTowerService : ISiegeTowerService
 
         session.TowerHostId = 0;
         await session.Client.SendPacket(Result(SubLeave, Succeeded));
-        await _world.WarpAsync(session, x, z);
+        await world.WarpAsync(session, x, z);
     }
 
     private async Task UseAsync(UserSession session, int npcId)
     {
-        var npc = _sessions.Regions.GetNpc(npcId);
+        var npc = sessions.Regions.GetNpc(npcId);
         var refusal = UseRefusal(session, npc);
         if (refusal != Succeeded)
         {
@@ -141,17 +141,17 @@ public sealed class SiegeTowerService : ISiegeTowerService
 
         npc!.TowerUserId = session.CharacterId;
         session.GuardTowerNpcId = npc.UniqueId;
-        await _sessions.Regions.BroadcastFromNpc(npc, NpcPacketMapper.BuildInOutPacket(npc, InOutType.Out));
-        if (!await _magic.TransformAsync(session, SiegeTowerRules.GuardTowerSkill))
+        await sessions.Regions.BroadcastFromNpc(npc, NpcPacketMapper.BuildInOutPacket(npc, InOutType.Out));
+        if (!await magic.TransformAsync(session, SiegeTowerRules.GuardTowerSkill))
         {
             await ReleaseGuardTowerAsync(session);
             return;
         }
 
-        await _sessions.Regions.SendToRegion(session,
+        await sessions.Regions.SendToRegion(session,
             Use(session.CharacterId, npc.UniqueId, SiegeTowerRules.Wire(npc.X), SiegeTowerRules.Wire(npc.Z), SiegeTowerRules.Wire(npc.Y)),
             excludeSender: false);
-        await _world.WarpAsync(session, SiegeTowerRules.Wire(npc.X), SiegeTowerRules.Wire(npc.Z));
+        await world.WarpAsync(session, SiegeTowerRules.Wire(npc.X), SiegeTowerRules.Wire(npc.Z));
     }
 
     private static byte UseRefusal(UserSession session, NpcInstance? npc)
@@ -177,7 +177,7 @@ public sealed class SiegeTowerService : ISiegeTowerService
             return;
         }
 
-        await _magic.CancelAsync(session, SiegeTowerRules.GuardTowerSkill);
+        await magic.CancelAsync(session, SiegeTowerRules.GuardTowerSkill);
         await ReleaseGuardTowerAsync(session);
     }
 
@@ -196,17 +196,17 @@ public sealed class SiegeTowerService : ISiegeTowerService
             return;
 
         session.GuardTowerNpcId = 0;
-        if (_sessions.Regions.GetNpc(npcId) is { } npc && npc.TowerUserId == session.CharacterId)
+        if (sessions.Regions.GetNpc(npcId) is { } npc && npc.TowerUserId == session.CharacterId)
         {
             npc.TowerUserId = 0;
-            await _sessions.Regions.BroadcastFromNpc(npc, NpcPacketMapper.BuildInOutPacket(npc, InOutType.In));
+            await sessions.Regions.BroadcastFromNpc(npc, NpcPacketMapper.BuildInOutPacket(npc, InOutType.In));
         }
-        await _sessions.Regions.SendToRegion(session, Exit(session.CharacterId, npcId), excludeSender: false);
+        await sessions.Regions.SendToRegion(session, Exit(session.CharacterId, npcId), excludeSender: false);
     }
 
     private async Task DismissPassengersAsync(UserSession host)
     {
-        foreach (var passenger in _sessions.GetAll().Where(s => s.TowerHostId == host.CharacterId).ToList())
+        foreach (var passenger in sessions.GetAll().Where(s => s.TowerHostId == host.CharacterId).ToList())
         {
             passenger.TowerHostId = 0;
             await passenger.Client.SendPacket(Result(SubEnded, EndedDismissed));

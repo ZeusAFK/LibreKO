@@ -20,7 +20,7 @@ public static class MailView
         _ => "No unread mail.",
     };
 
-    public static string Fill(int count) => $"{count} / {Net.MailInboxMax} letters";
+    public static string Fill(int count) => $"{count} / {MailWire.InboxMax} letters";
 
-    public static bool Full(int count) => count >= Net.MailInboxMax;
+    public static bool Full(int count) => count >= MailWire.InboxMax;
 }

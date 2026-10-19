@@ -9,11 +9,6 @@ public sealed class PetSheet
     public const int InventorySize = 4;
     public const int ResistanceCount = 6;
     public const int NameMaxLength = 15;
-    public const int ModeSummoned = 1;
-    public const int ModeDied = 2;
-    public const int ModeAttack = 3;
-    public const int ModeDefence = 4;
-    public const int ModeLooting = 8;
 
     public int Index;
     public string Name = "";
@@ -23,7 +18,7 @@ public sealed class PetSheet
     public int MaxHp, Hp, MaxMp, Mp;
     public int Satisfaction;
     public int Attack, Defence;
-    public int Mode = ModeDefence;
+    public PetMode Mode = PetMode.Defence;
     public readonly int[] Resists = new int[ResistanceCount];
     public readonly ItemSlot[] Items = new ItemSlot[InventorySize];
 

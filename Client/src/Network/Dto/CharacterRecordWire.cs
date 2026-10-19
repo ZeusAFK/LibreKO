@@ -6,6 +6,7 @@ namespace LibreKO.Network;
 public static class CharacterRecordWire
 {
     public const int SlotCount = 4;
+    public const int NameChangeFaceOffset = 100;
     private const int HeaderBytes = 1 + 2 + 1 + 1 + 1 + 4 + 2;
     private const int GearBytes = 6;
 
@@ -21,7 +22,9 @@ public static class CharacterRecordWire
         ci.Class = p.ReadShort();
         ci.Level = p.ReadByte();
         ci.Rebirth = p.ReadByte();
-        ci.Face = p.ReadByte();
+        int face = p.ReadByte();
+        ci.NameChangeRequired = face >= NameChangeFaceOffset;
+        ci.Face = ci.NameChangeRequired ? face - NameChangeFaceOffset : face;
         ci.Hair = p.ReadUInt();
         ci.Zone = p.ReadUShort();
         ci.Gear = new int[InventoryConstants.VisualSlots.Length];

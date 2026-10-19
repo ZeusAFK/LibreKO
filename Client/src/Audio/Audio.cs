@@ -20,22 +20,20 @@ public partial class Audio : Node
 
     public static Audio? I { get; private set; }
 
-    private readonly Dictionary<string, AudioStream> _streams = new();
-    private readonly Dictionary<int, int> _live = new();
-    private readonly Dictionary<(ulong Owner, SoundOwnerKind Kind), AudioStreamPlayer3D> _owned = new();
+    private readonly Dictionary<string, AudioStream> streams = new();
+    private readonly Dictionary<int, int> live = new();
+    private readonly Dictionary<(ulong Owner, SoundOwnerKind Kind), AudioStreamPlayer3D> owned = new();
     private const int OwnedPruneAt = 1024;
-    private readonly List<AudioStreamPlayer3D> _pool3 = new();
-    private readonly List<AudioStreamPlayer> _pool2 = new();
-    private AudioStreamPlayer _bgmA = null!;
-    private AudioStreamPlayer _bgmB = null!;
-    private AudioStreamPlayer _ambience = null!;
-    private int _ambienceId;
-    private bool _bgmUseA;
-    private string _bgmFile = "";
-    private float _fade;
-    private Node3D? _listener;
-
-    public string PlayingBgm => _bgmFile;
+    private readonly List<AudioStreamPlayer3D> pool3 = new();
+    private readonly List<AudioStreamPlayer> pool2 = new();
+    private AudioStreamPlayer bgmA = null!;
+    private AudioStreamPlayer bgmB = null!;
+    private AudioStreamPlayer ambience = null!;
+    private int ambienceId;
+    private bool bgmUseA;
+    private string bgmFile = "";
+    private float fade;
+    private Node3D? listener;
 
     public override void _Ready()
     {
@@ -44,13 +42,13 @@ public partial class Audio : Node
         EnsureBuses();
         SoundCatalog.EnsureLoaded();
 
-        _bgmA = NewBgmPlayer("BgmA");
-        _bgmB = NewBgmPlayer("BgmB");
-        _ambience = new AudioStreamPlayer { Name = "Ambience", Bus = BusSfx };
-        AddChild(_ambience);
+        bgmA = NewBgmPlayer("BgmA");
+        bgmB = NewBgmPlayer("BgmB");
+        ambience = new AudioStreamPlayer { Name = "Ambience", Bus = BusSfx };
+        AddChild(ambience);
         ApplyVolumes();
         Config.AudioChanged += ApplyVolumes;
-        VoiceChat.Ensure(this);
+        VoiceChat.Ensure(this, Game.Session.RoomMedia, Game.Session.NationChat, Game.Session.Self, Game.Requests.RoomMedia);
     }
 
     public override void _ExitTree()
@@ -90,7 +88,7 @@ public partial class Audio : Node
     public static void PreviewVolume(string bus, float linear) =>
         SetBus(bus, linear, bus == BusMaster && (Config.AudioMuted || !Config.AudioEnabled));
 
-    public static void SetListener(Node3D? node) { if (I != null) I._listener = node; }
+    public static void SetListener(Node3D? node) { if (I != null) I.listener = node; }
 
     public static void Play(int soundId, Vector3 pos)
     {
@@ -113,14 +111,14 @@ public partial class Audio : Node
         I.StopOwned(owner, kind);
         if (I.Play3DInternal(soundId, e, pos, single ? SingleCopy : e.Instances) is { } player)
         {
-            if (I._owned.Count >= OwnedPruneAt) I.PruneOwned();
-            I._owned[(owner, kind)] = player;
+            if (I.owned.Count >= OwnedPruneAt) I.PruneOwned();
+            I.owned[(owner, kind)] = player;
         }
     }
 
     private void StopOwned(ulong owner, SoundOwnerKind kind)
     {
-        if (!_owned.Remove((owner, kind), out var player) || !GodotObject.IsInstanceValid(player) || !player.Playing) return;
+        if (!owned.Remove((owner, kind), out var player) || !GodotObject.IsInstanceValid(player) || !player.Playing) return;
         player.Stop();
         OnFinished(player);
     }
@@ -128,9 +126,9 @@ public partial class Audio : Node
     private void PruneOwned()
     {
         var idle = new List<(ulong, SoundOwnerKind)>();
-        foreach (var (key, player) in _owned)
+        foreach (var (key, player) in owned)
             if (!GodotObject.IsInstanceValid(player) || !player.Playing) idle.Add(key);
-        foreach (var key in idle) _owned.Remove(key);
+        foreach (var key in idle) owned.Remove(key);
     }
 
     public static void PlayUi(int soundId)
@@ -143,12 +141,6 @@ public partial class Audio : Node
     {
         if (I == null || !Config.AudioEnabled) return;
         I.Play2DFile(file, BusUi);
-    }
-
-    public static void PlayVoice(int soundId)
-    {
-        if (I == null || !Config.AudioEnabled) return;
-        if (SoundCatalog.TryGet(soundId, out var e)) I.Play2DInternal(soundId, e, BusVoice);
     }
 
     public static void PlayAt(int soundId, Node3D? node)
@@ -173,23 +165,23 @@ public partial class Audio : Node
     public static void StopBgm()
     {
         if (I == null) return;
-        I._bgmFile = "";
-        I._fade = 0f;
-        I._bgmA.Stop();
-        I._bgmB.Stop();
+        I.bgmFile = "";
+        I.fade = 0f;
+        I.bgmA.Stop();
+        I.bgmB.Stop();
     }
 
     public static void Ambience(int soundId)
     {
-        if (I == null || I._ambienceId == soundId) return;
-        I._ambienceId = soundId;
-        if (soundId == 0) { I._ambience.Stop(); return; }
-        if (!SoundCatalog.TryGet(soundId, out var e)) { I._ambience.Stop(); return; }
+        if (I == null || I.ambienceId == soundId) return;
+        I.ambienceId = soundId;
+        if (soundId == 0) { I.ambience.Stop(); return; }
+        if (!SoundCatalog.TryGet(soundId, out var e)) { I.ambience.Stop(); return; }
         var stream = I.Stream(e.File, looping: true);
-        if (stream == null) { I._ambience.Stop(); return; }
-        I._ambience.Stream = stream;
-        I._ambience.VolumeDb = e.GainDb;
-        I._ambience.Play();
+        if (stream == null) { I.ambience.Stop(); return; }
+        I.ambience.Stream = stream;
+        I.ambience.VolumeDb = e.GainDb;
+        I.ambience.Play();
     }
 
     public static AudioStreamPlayer3D? Loop(int soundId, Node3D parent)
@@ -214,18 +206,18 @@ public partial class Audio : Node
 
     public override void _Process(double delta)
     {
-        if (_bgmFile.Length == 0 && _fade <= 0f) return;
+        if (bgmFile.Length == 0 && fade <= 0f) return;
         float dt = (float)delta;
-        var rising = _bgmUseA ? _bgmA : _bgmB;
-        var falling = _bgmUseA ? _bgmB : _bgmA;
+        var rising = bgmUseA ? bgmA : bgmB;
+        var falling = bgmUseA ? bgmB : bgmA;
 
-        if (_fade < 1f)
+        if (fade < 1f)
         {
-            _fade = Mathf.Min(1f, _fade + dt / BgmFade);
-            rising.VolumeDb = Mathf.LinearToDb(_fade);
+            fade = Mathf.Min(1f, fade + dt / BgmFade);
+            rising.VolumeDb = Mathf.LinearToDb(fade);
             if (falling.Playing)
             {
-                float v = 1f - _fade;
+                float v = 1f - fade;
                 if (v <= 0.001f) falling.Stop();
                 else falling.VolumeDb = Mathf.LinearToDb(v);
             }
@@ -234,23 +226,23 @@ public partial class Audio : Node
 
     private void StartBgm(string file)
     {
-        if (file == _bgmFile) return;
+        if (file == bgmFile) return;
         var stream = Stream(file, looping: true);
         if (stream == null) return;
 
-        _bgmFile = file;
-        _bgmUseA = !_bgmUseA;
-        var rising = _bgmUseA ? _bgmA : _bgmB;
+        bgmFile = file;
+        bgmUseA = !bgmUseA;
+        var rising = bgmUseA ? bgmA : bgmB;
         rising.Stream = stream;
         rising.VolumeDb = Mathf.LinearToDb(0.001f);
         rising.Play();
-        _fade = 0f;
+        fade = 0f;
     }
 
     private AudioStreamPlayer3D? Play3DInternal(int soundId, SoundCatalog.Entry e, Vector3 pos, int instances)
     {
-        if (_listener != null && GodotObject.IsInstanceValid(_listener)
-            && _listener.GlobalPosition.DistanceSquaredTo(pos) > MaxAudible * MaxAudible)
+        if (listener != null && GodotObject.IsInstanceValid(listener)
+            && listener.GlobalPosition.DistanceSquaredTo(pos) > MaxAudible * MaxAudible)
             return null;
         if (!Reserve(soundId, instances)) return null;
         var p = Take3D();
@@ -293,16 +285,16 @@ public partial class Audio : Node
 
     private bool Reserve(int soundId, int cap)
     {
-        _live.TryGetValue(soundId, out int n);
+        live.TryGetValue(soundId, out int n);
         if (n >= cap) return false;
-        _live[soundId] = n + 1;
+        live[soundId] = n + 1;
         return true;
     }
 
     private void Release(int soundId)
     {
-        if (_live.TryGetValue(soundId, out int n))
-            _live[soundId] = Mathf.Max(0, n - 1);
+        if (live.TryGetValue(soundId, out int n))
+            live[soundId] = Mathf.Max(0, n - 1);
     }
 
     private void OnFinished(GodotObject player)
@@ -316,9 +308,9 @@ public partial class Audio : Node
 
     private AudioStreamPlayer3D? Take3D()
     {
-        foreach (var p in _pool3)
+        foreach (var p in pool3)
             if (!p.Playing) return p;
-        if (_pool3.Count >= Pool3D) return null;
+        if (pool3.Count >= Pool3D) return null;
         var np = new AudioStreamPlayer3D
         {
             Bus = BusSfx,
@@ -328,33 +320,33 @@ public partial class Audio : Node
         };
         AddChild(np);
         np.Finished += () => OnFinished(np);
-        _pool3.Add(np);
+        pool3.Add(np);
         return np;
     }
 
     private AudioStreamPlayer? Take2D()
     {
-        foreach (var p in _pool2)
+        foreach (var p in pool2)
             if (!p.Playing) return p;
-        if (_pool2.Count >= Pool2D) return null;
+        if (pool2.Count >= Pool2D) return null;
         var np = new AudioStreamPlayer { Bus = BusUi };
         AddChild(np);
         np.Finished += () => OnFinished(np);
-        _pool2.Add(np);
+        pool2.Add(np);
         return np;
     }
 
     private AudioStream? Stream(string file, bool looping)
     {
         string key = looping ? file + "#loop" : file;
-        if (_streams.TryGetValue(key, out var cached)) return cached;
+        if (streams.TryGetValue(key, out var cached)) return cached;
 
         string path = SoundCatalog.Dir + file;
         AudioStream? s = ResourceLoader.Exists(path) ? ResourceLoader.Load<AudioStream>(path) : null;
         if (s == null && Godot.FileAccess.FileExists(path)) s = AudioStreamOggVorbis.LoadFromFile(path);
         if (s == null)
         {
-            _streams[key] = null!;
+            streams[key] = null!;
             GD.PushWarning($"[sound] cannot load {path}");
             return null;
         }
@@ -363,7 +355,7 @@ public partial class Audio : Node
             s = (AudioStream)s.Duplicate();
             if (s is AudioStreamOggVorbis ogg) ogg.Loop = true;
         }
-        _streams[key] = s;
+        streams[key] = s;
         return s;
     }
 

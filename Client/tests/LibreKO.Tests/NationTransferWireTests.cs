@@ -94,65 +94,65 @@ public class NationTransferWireTests
     [Fact]
     public void OnlyKnownRefusalsAreReported()
     {
-        Assert.True(NationTransferWire.IsRefusal(NationTransferWire.NoItem));
-        Assert.True(NationTransferWire.IsRefusal(NationTransferWire.InClan));
-        Assert.False(NationTransferWire.IsRefusal(Net.NationTransferAccepted));
-        Assert.False(NationTransferWire.IsRefusal(Net.NationTransferWarRunning));
+        Assert.True(NationTransferWire.IsRefusal(NationTransferResult.NoItem));
+        Assert.True(NationTransferWire.IsRefusal(NationTransferResult.InClan));
+        Assert.False(NationTransferWire.IsRefusal(NationTransferResult.Accepted));
+        Assert.False(NationTransferWire.IsRefusal(NationTransferResult.WarRunning));
     }
 
-    private static (byte Sub, byte Result) Reply(byte sub, byte result)
+    private static (byte Sub, byte Result) Reply(NationTransferSubOpcode sub, byte result)
     {
         var p = new Packet(GameOpcodes.GS_NATION_TRANSFER);
-        p.WriteByte(sub);
+        p.WriteByte((byte)sub);
         p.WriteByte(result);
         p.ResetOffset();
         return (p.ReadByte(), p.ReadByte());
     }
 
     [Theory]
-    [InlineData(Net.NationTransferAccepted)]
-    [InlineData(NationTransferWire.SubmitCompleted)]
+    [InlineData((byte)NationTransferResult.Accepted)]
+    [InlineData((byte)NationTransferWire.SubmitCompleted)]
     public void BothSuccessResultsOfTheSubmitReplyComplete(byte result)
     {
-        var (sub, read) = Reply(Net.NationTransferSubmit, result);
+        var (sub, read) = Reply(NationTransferSubOpcode.Submit, result);
 
-        Assert.True(NationTransferWire.IsSubmitSuccess(read));
-        Assert.False(NationTransferWire.IsRefusal(sub, read));
+        Assert.True(NationTransferWire.IsSubmitSuccess((NationTransferResult)read));
+        Assert.False(NationTransferWire.IsRefusal((NationTransferSubOpcode)sub, read));
     }
 
     [Fact]
     public void TheInClanResultRefusesOnlyTheOpenReply()
     {
-        var (sub, read) = Reply(Net.NationTransferOpenBox, NationTransferWire.InClan);
+        var (sub, read) = Reply(NationTransferSubOpcode.OpenBox, (byte)NationTransferResult.InClan);
 
-        Assert.True(NationTransferWire.IsRefusal(sub, read));
-        Assert.Equal(InClanText, NationTransferWire.RefusalText(sub, read));
+        Assert.True(NationTransferWire.IsRefusal((NationTransferSubOpcode)sub, read));
+        Assert.Equal(InClanText, NationTransferWire.RefusalText((NationTransferSubOpcode)sub, read));
     }
 
     [Theory]
-    [InlineData(NationTransferWire.InInvestigationTeam, InInvestigationTeamText)]
-    [InlineData(NationTransferWire.MakeOverActive, MakeOverActiveText)]
-    [InlineData(NationTransferWire.NotEnoughCoins, NotEnoughCoinsText)]
-    [InlineData(NationTransferWire.NoItem, NoItemText)]
-    [InlineData(NationTransferWire.Failed, NationTransferWire.FailedText)]
-    [InlineData(Net.NationTransferWarRunning, NationTransferWire.FailedText)]
+    [InlineData((byte)NationTransferResult.InInvestigationTeam, InInvestigationTeamText)]
+    [InlineData((byte)NationTransferResult.MakeOverActive, MakeOverActiveText)]
+    [InlineData((byte)NationTransferResult.NotEnoughCoins, NotEnoughCoinsText)]
+    [InlineData((byte)NationTransferResult.NoItem, NoItemText)]
+    [InlineData((byte)NationTransferResult.Failed, NationTransferWire.FailedText)]
+    [InlineData((byte)NationTransferResult.WarRunning, NationTransferWire.FailedText)]
     [InlineData(UnknownResult, NationTransferWire.FailedText)]
     public void EveryOtherSubmitResultIsARefusalWithItsText(byte result, int text)
     {
-        var (sub, read) = Reply(Net.NationTransferSubmit, result);
+        var (sub, read) = Reply(NationTransferSubOpcode.Submit, result);
 
-        Assert.False(NationTransferWire.IsSubmitSuccess(read));
-        Assert.True(NationTransferWire.IsRefusal(sub, read));
-        Assert.Equal(text, NationTransferWire.RefusalText(sub, read));
+        Assert.False(NationTransferWire.IsSubmitSuccess((NationTransferResult)read));
+        Assert.True(NationTransferWire.IsRefusal((NationTransferSubOpcode)sub, read));
+        Assert.Equal(text, NationTransferWire.RefusalText((NationTransferSubOpcode)sub, read));
     }
 
     [Theory]
     [InlineData(UnknownResult)]
-    [InlineData(NationTransferWire.MakeOverActive)]
+    [InlineData((byte)NationTransferResult.MakeOverActive)]
     public void UnknownResultsOutsideTheSubmitReplyAreIgnored(byte result)
     {
-        var (sub, read) = Reply(Net.NationTransferOpenBox, result);
+        var (sub, read) = Reply(NationTransferSubOpcode.OpenBox, result);
 
-        Assert.False(NationTransferWire.IsRefusal(sub, read));
+        Assert.False(NationTransferWire.IsRefusal((NationTransferSubOpcode)sub, read));
     }
 }

@@ -103,6 +103,8 @@ public interface IQuestHost
     void OpenGenderChangePanel();
     void OpenFortunePanel();
     void OpenSpecialAuctionPanel();
+    void OpenYutGame();
+    void OpenDrakiRankBoard();
     void OpenItemCombinePanel();
     void OpenCombineRecipeBook();
     void OpenDisassembleWindow();

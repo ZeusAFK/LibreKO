@@ -19,38 +19,38 @@ public class BuffExtensionTests
     private const int ContinuanceItem = 800022000;
     private const short BuffSeconds = 600;
 
-    private readonly IGameDataService _data = Substitute.For<IGameDataService>();
-    private readonly IMagicItemUsageService _items = Substitute.For<IMagicItemUsageService>();
-    private readonly BuffExtensionService _service;
-    private readonly SessionManager _sessions = new();
-    private readonly List<Packet> _sent = new();
-    private readonly UserSession _session;
+    private readonly IGameDataService data = Substitute.For<IGameDataService>();
+    private readonly IMagicItemUsageService items = Substitute.For<IMagicItemUsageService>();
+    private readonly BuffExtensionService service;
+    private readonly SessionManager sessions = new();
+    private readonly List<Packet> sent = new();
+    private readonly UserSession session;
 
     public BuffExtensionTests()
     {
-        _data.GetMagic(BuffSkill).Returns(new MagicData { Id = BuffSkill, Moral = 1 });
-        _data.GetMagic(ContinuanceSkill).Returns(new MagicData { Id = ContinuanceSkill, Moral = BuffExtensionService.ExtendDurationMoral });
-        _data.MagicType4Table.Returns(new Dictionary<int, MagicType4Data> { [BuffSkill] = new() { BuffType = (byte)BuffType.None, Duration = BuffSeconds } });
-        _data.GetItem(ContinuanceItem).Returns(new ItemData { Num = ContinuanceItem, Kind = BuffExtensionService.DurationItemKind, Effect1 = ContinuanceSkill });
-        _items.TryConsumeItemAsync(Arg.Any<UserSession>(), ContinuanceItem, Arg.Any<int>()).Returns(true);
-        _service = new BuffExtensionService(_data, _items, NullLogger<BuffExtensionService>.Instance);
+        data.GetMagic(BuffSkill).Returns(new MagicData { Id = BuffSkill, Moral = 1 });
+        data.GetMagic(ContinuanceSkill).Returns(new MagicData { Id = ContinuanceSkill, Moral = BuffExtensionService.ExtendDurationMoral });
+        data.MagicType4Table.Returns(new Dictionary<int, MagicType4Data> { [BuffSkill] = new() { BuffType = (byte)BuffType.None, Duration = BuffSeconds } });
+        data.GetItem(ContinuanceItem).Returns(new ItemData { Num = ContinuanceItem, Kind = BuffExtensionService.DurationItemKind, Effect1 = ContinuanceSkill });
+        items.TryConsumeItemAsync(Arg.Any<UserSession>(), ContinuanceItem, Arg.Any<int>()).Returns(true);
+        service = new BuffExtensionService(data, items, NullLogger<BuffExtensionService>.Instance);
 
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
-        client.SendPacket(Arg.Do<Packet>(p => _sent.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        _session = _sessions.CreateSession(client, 1, 1);
-        _session.Name = "Rin";
+        client.SendPacket(Arg.Do<Packet>(p => sent.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        session = sessions.CreateSession(client, 1, 1);
+        session.Name = "Rin";
     }
 
     private ActiveBuff Buff()
     {
         var buff = new ActiveBuff { MagicId = BuffSkill, Duration = BuffSeconds, ExpireTicks = DateTime.UtcNow.AddSeconds(BuffSeconds).Ticks };
-        _session.SetBuff(BuffSkill, buff);
+        session.SetBuff(BuffSkill, buff);
         return buff;
     }
 
     private void CarryContinuanceItem() =>
-        _session.Inventory[InventoryConstants.InventoryStart] = new ItemSlot { ItemId = ContinuanceItem, Count = 1 };
+        session.Inventory[InventoryConstants.InventoryStart] = new ItemSlot { ItemId = ContinuanceItem, Count = 1 };
 
     [Fact]
     public async Task ARunningBuffIsDoubledOnceWithAContinuanceItem()
@@ -59,22 +59,22 @@ public class BuffExtensionTests
         long before = buff.ExpireTicks;
         CarryContinuanceItem();
 
-        (await _service.ExtendAsync(_session, BuffSkill)).Should().BeTrue();
-        (await _service.ExtendAsync(_session, BuffSkill)).Should().BeFalse();
+        (await service.ExtendAsync(session, BuffSkill)).Should().BeTrue();
+        (await service.ExtendAsync(session, BuffSkill)).Should().BeFalse();
 
         buff.ExpireTicks.Should().Be(before + TimeSpan.FromSeconds(BuffSeconds).Ticks);
-        _sent.Should().ContainSingle().Which.GetData().Should().Equal(MagicProcessPacketWriter.CreateExtendDuration(BuffSkill).GetData());
+        sent.Should().ContainSingle().Which.GetData().Should().Equal(MagicProcessPacketWriter.CreateExtendDuration(BuffSkill).GetData());
     }
 
     [Fact]
     public async Task NothingHappensWithoutTheItemOrTheBuff()
     {
         Buff();
-        (await _service.ExtendAsync(_session, BuffSkill)).Should().BeFalse();
+        (await service.ExtendAsync(session, BuffSkill)).Should().BeFalse();
 
-        _session.ClearBuffs();
+        session.ClearBuffs();
         CarryContinuanceItem();
-        (await _service.ExtendAsync(_session, BuffSkill)).Should().BeFalse();
-        _sent.Should().BeEmpty();
+        (await service.ExtendAsync(session, BuffSkill)).Should().BeFalse();
+        sent.Should().BeEmpty();
     }
 }

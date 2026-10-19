@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -69,11 +70,11 @@ public class KingElectionTests
     [Fact]
     public void TheScheduleTextDependsOnTheKind()
     {
-        Assert.Equal(11309, KingElection.ScheduleText(KingElection.ScheduleElection));
-        Assert.Equal(11310, KingElection.ScheduleText(KingElection.ScheduleImpeachment));
-        Assert.Equal(11398, KingElection.ScheduleText(KingElection.ScheduleImpeachmentVote));
-        Assert.Equal(0, KingElection.ScheduleText(9));
-        Assert.False(KingElection.KnownScheduleKind(9));
+        Assert.Equal(11309, KingElection.ScheduleText(KingScheduleKind.Election));
+        Assert.Equal(11310, KingElection.ScheduleText(KingScheduleKind.Impeachment));
+        Assert.Equal(11398, KingElection.ScheduleText(KingScheduleKind.ImpeachmentVote));
+        Assert.Equal(0, KingElection.ScheduleText((KingScheduleKind)9));
+        Assert.False(KingElection.KnownScheduleKind((KingScheduleKind)9));
         Assert.Equal(new object[] { 10, 12, 0, 30, 24, 30 }, KingElection.ScheduleArgs(10, 12, 0, 30));
     }
 
@@ -83,8 +84,8 @@ public class KingElectionTests
         Assert.Equal((11402, 0, 0), KingElection.NominateHours(KingElection.NoElectionHour));
         Assert.Equal((11314, 20, 19), KingElection.NominateHours(20));
         Assert.Equal((11314, 0, 23), KingElection.NominateHours(0));
-        Assert.Equal(KingElection.NoElectionHour, KingElection.NominateWindowHour(KingElection.ScheduleImpeachment, 20));
-        Assert.Equal(20, KingElection.NominateWindowHour(KingElection.ScheduleElection, 20));
+        Assert.Equal(KingElection.NoElectionHour, KingElection.NominateWindowHour(KingScheduleKind.Impeachment, 20));
+        Assert.Equal(20, KingElection.NominateWindowHour(KingScheduleKind.Election, 20));
     }
 
     [Fact]

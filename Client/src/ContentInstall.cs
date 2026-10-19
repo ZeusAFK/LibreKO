@@ -29,15 +29,15 @@ public sealed class ContentInstall
 
     public string AppUpdateUrl { get; private set; } = "";
 
-    private readonly object _gate = new();
-    private ContentStage _stage = ContentStage.Idle;
-    private string _detail = "";
-    private long _done, _total;
-    private double _bytesPerSecond;
-    private long _windowBytes;
-    private long _windowStartMs;
-    private long _lastProgressMs;
-    private TaskCompletionSource? _consent;
+    private readonly object gate = new();
+    private ContentStage stage = ContentStage.Idle;
+    private string detail = "";
+    private long done, total;
+    private double bytesPerSecond;
+    private long windowBytes;
+    private long windowStartMs;
+    private long lastProgressMs;
+    private TaskCompletionSource? consent;
 
     public string BaseUrl { get; }
 
@@ -53,67 +53,67 @@ public sealed class ContentInstall
 
     public Snapshot Read()
     {
-        lock (_gate)
-            return new Snapshot(_stage, _detail, _done, _total, _bytesPerSecond,
-                                (long)Time.GetTicksMsec() - _lastProgressMs);
+        lock (gate)
+            return new Snapshot(stage, detail, done, total, bytesPerSecond,
+                                (long)Time.GetTicksMsec() - lastProgressMs);
     }
 
     private void Set(ContentStage stage, string detail)
     {
-        lock (_gate) { _stage = stage; _detail = detail; }
+        lock (gate) { this.stage = stage; this.detail = detail; }
     }
 
     private void Reset(long total)
     {
-        lock (_gate)
+        lock (gate)
         {
-            _done = 0; _total = total; _bytesPerSecond = 0;
-            _windowBytes = 0; _windowStartMs = 0;
-            _lastProgressMs = (long)Time.GetTicksMsec();
+            done = 0; this.total = total; bytesPerSecond = 0;
+            windowBytes = 0; windowStartMs = 0;
+            lastProgressMs = (long)Time.GetTicksMsec();
         }
     }
 
     private void Advance(long done, long total)
     {
-        lock (_gate)
+        lock (gate)
         {
             long now = (long)Time.GetTicksMsec();
-            if (done > _done) _lastProgressMs = now;
-            if (_windowStartMs == 0) _windowStartMs = now;
-            _windowBytes += done - _done;
-            long span = now - _windowStartMs;
+            if (done > this.done) lastProgressMs = now;
+            if (windowStartMs == 0) windowStartMs = now;
+            windowBytes += done - this.done;
+            long span = now - windowStartMs;
             if (span >= SpeedWindowMs)
             {
-                _bytesPerSecond = _windowBytes * 1000.0 / span;
-                _windowBytes = 0;
-                _windowStartMs = now;
+                bytesPerSecond = windowBytes * 1000.0 / span;
+                windowBytes = 0;
+                windowStartMs = now;
             }
-            _done = done;
-            _total = total;
+            this.done = done;
+            this.total = total;
         }
     }
 
-    public void GiveConsent() => _consent?.TrySetResult();
+    public void GiveConsent() => consent?.TrySetResult();
 
     internal void Preview(ContentStage stage, string detail, long done, long total, double perSecond)
     {
-        lock (_gate)
+        lock (gate)
         {
-            _stage = stage; _detail = detail;
-            _done = done; _total = total; _bytesPerSecond = perSecond;
+            this.stage = stage; this.detail = detail;
+            this.done = done; this.total = total; bytesPerSecond = perSecond;
         }
     }
 
     private async Task AskConsent(long have, long total, CancellationToken token)
     {
-        _consent = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        consent = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Reset(total);
         Advance(have, total);
         Set(ContentStage.NeedsConsent, have > 0
             ? "Picking up where the last download stopped. Use Wi-Fi if you can."
             : "This download is large. Use Wi-Fi if you can — it resumes if interrupted.");
-        using (token.Register(() => _consent.TrySetCanceled(token)))
-            await _consent.Task;
+        using (token.Register(() => consent.TrySetCanceled(token)))
+            await consent.Task;
     }
 
     public Task RunAsync(CancellationToken token) => Task.Run(() => Run(token), token);

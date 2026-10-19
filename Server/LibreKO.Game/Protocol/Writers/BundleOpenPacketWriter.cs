@@ -22,14 +22,14 @@ public sealed class BundleOpenPacketWriter
 
     public readonly record struct Entry(int ItemId, ushort Count);
 
-    private readonly List<Entry> _entries = [];
+    private readonly List<Entry> entries = [];
 
     public int BundleId { get; set; }
 
     public BundleOpenPacketWriter Add(int itemId, ushort count)
     {
-        if (_entries.Count < WireSlots)
-            _entries.Add(new Entry(itemId, count));
+        if (entries.Count < WireSlots)
+            entries.Add(new Entry(itemId, count));
 
         return this;
     }
@@ -39,7 +39,7 @@ public sealed class BundleOpenPacketWriter
         var packet = new Packet(GameOpcodes.GS_BUNDLE_OPEN_REQ);
         packet.WriteInt(BundleId);
 
-        if (_entries.Count == 0)
+        if (entries.Count == 0)
         {
             packet.WriteByte(ResultEmpty);
             return packet;
@@ -48,7 +48,7 @@ public sealed class BundleOpenPacketWriter
         packet.WriteByte(ResultOpened);
         for (var index = 0; index < WireSlots; index++)
         {
-            var entry = index < _entries.Count ? _entries[index] : default;
+            var entry = index < entries.Count ? entries[index] : default;
             packet.WriteInt(entry.ItemId);
             packet.WriteUShort(entry.Count);
         }

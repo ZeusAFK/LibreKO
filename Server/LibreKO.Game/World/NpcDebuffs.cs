@@ -17,7 +17,7 @@ public sealed class NpcDebuffs
 {
     private const int NeutralPercent = 100;
 
-    private readonly ConcurrentDictionary<BuffType, NpcDebuff> _active = new();
+    private readonly ConcurrentDictionary<BuffType, NpcDebuff> active = new();
 
     public static bool Affects(BuffType buffType) =>
         buffType is BuffType.Speed or BuffType.Speed2 or BuffType.Stun or BuffType.Ac or BuffType.Damage;
@@ -28,7 +28,7 @@ public sealed class NpcDebuffs
         if (!Affects(buffType) || type4.Duration <= 0)
             return false;
 
-        _active[buffType] = new NpcDebuff(
+        active[buffType] = new NpcDebuff(
             skillId,
             nowTicks + type4.Duration * TimeSpan.TicksPerSecond,
             type4.Speed,
@@ -40,7 +40,7 @@ public sealed class NpcDebuffs
     }
 
     public bool Has(BuffType buffType, long nowTicks) =>
-        _active.TryGetValue(buffType, out var debuff) && debuff.ExpireTicks > nowTicks;
+        active.TryGetValue(buffType, out var debuff) && debuff.ExpireTicks > nowTicks;
 
     public bool IsStunned(long nowTicks) => Has(BuffType.Stun, nowTicks);
 
@@ -68,22 +68,22 @@ public sealed class NpcDebuffs
             ? attack * debuff.AttackPercent / NeutralPercent
             : attack;
 
-    public void Clear() => _active.Clear();
+    public void Clear() => active.Clear();
 
-    public bool IsEmpty => _active.IsEmpty;
+    public bool IsEmpty => active.IsEmpty;
 
     public IReadOnlyList<NpcDebuff> Active(long nowTicks) =>
-        _active.Values.Where(debuff => debuff.ExpireTicks > nowTicks).ToList();
+        active.Values.Where(debuff => debuff.ExpireTicks > nowTicks).ToList();
 
     private NpcDebuff? Live(BuffType buffType, long nowTicks)
     {
-        if (!_active.TryGetValue(buffType, out var debuff))
+        if (!active.TryGetValue(buffType, out var debuff))
             return null;
 
         if (debuff.ExpireTicks > nowTicks)
             return debuff;
 
-        _active.TryRemove(new KeyValuePair<BuffType, NpcDebuff>(buffType, debuff));
+        active.TryRemove(new KeyValuePair<BuffType, NpcDebuff>(buffType, debuff));
         return null;
     }
 }

@@ -5,7 +5,7 @@ namespace LibreKO.Domain;
 
 public static class WarehouseView
 {
-    public const int Slots = 192;
+    public const int Slots = WarehouseWire.Slots;
     public const int UiPageSize = 48;
     public const int ServerPageSize = 24;
     public const int UiPages = Slots / UiPageSize;

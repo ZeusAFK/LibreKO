@@ -42,7 +42,7 @@ public sealed class ItemMovePacketWriter
         int Serial,
         int ExpiresAt);
 
-    private readonly List<InventoryEntry> _inventory = [];
+    private readonly List<InventoryEntry> inventory = [];
 
     public byte Command { get; set; }
     public byte SubCommand { get; set; }
@@ -59,7 +59,7 @@ public sealed class ItemMovePacketWriter
 
     public ItemMovePacketWriter AddInventorySlot(int itemId, short durability, ushort count, byte flag, long expiresAt = 0)
     {
-        _inventory.Add(new InventoryEntry(
+        inventory.Add(new InventoryEntry(
             itemId,
             durability < 0 ? (ushort)0 : (ushort)durability,
             count,
@@ -79,7 +79,7 @@ public sealed class ItemMovePacketWriter
 
         if (Command == (byte)ItemMoveSubOpcode.ArrangeInventory)
         {
-            foreach (var entry in _inventory)
+            foreach (var entry in inventory)
             {
                 packet.WriteInt(entry.ItemId);
                 packet.WriteUShort(entry.Durability);

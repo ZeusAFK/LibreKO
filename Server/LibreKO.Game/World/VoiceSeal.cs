@@ -15,15 +15,15 @@ public sealed class VoiceSeal : IDisposable
     private const int NonceSessionOffset = 4;
     private const int NonceCounterOffset = 8;
 
-    private readonly AesGcm _aes;
-    private readonly ReplayWindow _window = new();
-    private readonly object _gate = new();
-    private uint _sendCounter;
+    private readonly AesGcm aes;
+    private readonly ReplayWindow window = new();
+    private readonly object gate = new();
+    private uint sendCounter;
 
     public VoiceSeal(uint sessionId, byte[] key)
     {
         SessionId = sessionId;
-        _aes = new AesGcm(key, TagLength);
+        aes = new AesGcm(key, TagLength);
     }
 
     public uint SessionId { get; }
@@ -34,13 +34,13 @@ public sealed class VoiceSeal : IDisposable
     public int Seal(byte direction, ReadOnlySpan<byte> plain, Span<byte> datagram)
     {
         Span<byte> nonce = stackalloc byte[NonceLength];
-        lock (_gate)
+        lock (gate)
         {
-            uint counter = ++_sendCounter;
+            uint counter = ++sendCounter;
             BinaryPrimitives.WriteUInt32LittleEndian(datagram, SessionId);
             BinaryPrimitives.WriteUInt32LittleEndian(datagram[4..], counter);
             Nonce(direction, SessionId, counter, nonce);
-            _aes.Encrypt(nonce, plain, datagram.Slice(HeaderLength, plain.Length),
+            aes.Encrypt(nonce, plain, datagram.Slice(HeaderLength, plain.Length),
                 datagram.Slice(HeaderLength + plain.Length, TagLength), datagram[..HeaderLength]);
         }
         return plain.Length + Overhead;
@@ -57,20 +57,20 @@ public sealed class VoiceSeal : IDisposable
             return false;
         Span<byte> nonce = stackalloc byte[NonceLength];
         Nonce(direction, SessionId, counter, nonce);
-        lock (_gate)
+        lock (gate)
         {
-            if (!_window.Allows(counter))
+            if (!window.Allows(counter))
                 return false;
             try
             {
-                _aes.Decrypt(nonce, datagram.Slice(HeaderLength, size), datagram.Slice(HeaderLength + size, TagLength),
+                aes.Decrypt(nonce, datagram.Slice(HeaderLength, size), datagram.Slice(HeaderLength + size, TagLength),
                     plain[..size], datagram[..HeaderLength]);
             }
             catch (AuthenticationTagMismatchException)
             {
                 return false;
             }
-            _window.Mark(counter);
+            window.Mark(counter);
         }
         length = size;
         return true;
@@ -84,33 +84,33 @@ public sealed class VoiceSeal : IDisposable
         BinaryPrimitives.WriteUInt32LittleEndian(nonce[NonceCounterOffset..], counter);
     }
 
-    public void Dispose() => _aes.Dispose();
+    public void Dispose() => aes.Dispose();
 }
 
 public sealed class ReplayWindow
 {
     private const int Width = 64;
-    private uint _highest;
-    private ulong _seen;
+    private uint highest;
+    private ulong seen;
 
     public bool Allows(uint counter)
     {
         if (counter == 0) return false;
-        if (counter > _highest) return true;
-        uint back = _highest - counter;
-        return back < Width && (_seen & (1UL << (int)back)) == 0;
+        if (counter > highest) return true;
+        uint back = highest - counter;
+        return back < Width && (seen & (1UL << (int)back)) == 0;
     }
 
     public void Mark(uint counter)
     {
-        if (counter > _highest)
+        if (counter > highest)
         {
-            uint shift = counter - _highest;
-            _seen = shift >= Width ? 0 : _seen << (int)shift;
-            _seen |= 1;
-            _highest = counter;
+            uint shift = counter - highest;
+            seen = shift >= Width ? 0 : seen << (int)shift;
+            seen |= 1;
+            highest = counter;
             return;
         }
-        _seen |= 1UL << (int)(_highest - counter);
+        seen |= 1UL << (int)(highest - counter);
     }
 }

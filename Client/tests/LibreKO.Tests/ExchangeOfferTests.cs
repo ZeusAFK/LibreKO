@@ -37,7 +37,7 @@ public class ExchangeOfferTests
     [Fact]
     public void QuestItemsAreRefusedLikeTheServer()
     {
-        Assert.False(ExchangeOffer.IsOfferable(Held(Sword), Def(Sword, ItemData.QuestItemRace)));
+        Assert.False(ExchangeOffer.IsOfferable(Held(Sword), Def(Sword, ItemData.Race.Quest)));
     }
 
     [Fact]

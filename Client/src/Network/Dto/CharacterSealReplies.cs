@@ -1,12 +1,10 @@
-﻿using LibreKO.Domain;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public readonly record struct CharacterSealList(bool Ok, int Code, CharacterSummary[] Slots);
 
-public readonly record struct CharacterSealOutcome(int Result, int Code, int BagPos, int ItemId, int UniqueId, PetItemInfo? Summary);
+public readonly record struct CharacterSealOutcome(CharacterSealResult Result, int Code, int BagPos, int ItemId, int UniqueId, PetItemInfo? Summary);
 
-public readonly record struct CharacterUnsealOutcome(int Result, int BagPos);
+public readonly record struct CharacterUnsealOutcome(CharacterSealResult Result, int BagPos);
 
 public sealed class SealedCharacterSheet
 {
@@ -20,15 +18,6 @@ public sealed class SealedCharacterSheet
 
 public static class CharacterSealWire
 {
-    public const byte Sub = 9;
-    public const byte ListSub = 1;
-    public const byte SealSub = 2;
-    public const byte UnsealSub = 3;
-    public const byte SheetSub = 4;
-    public const byte AchievementsSub = 6;
-    public const byte Failed = 0;
-    public const byte Succeeded = 1;
-    public const byte Extended = 2;
     public const int StatCount = 5;
     public const int SkillTrees = 4;
     public const int EquipItems = 14;
@@ -40,7 +29,7 @@ public static class CharacterSealWire
 
     public static CharacterSealList ReadList(Packet p)
     {
-        if (p.ReadByte() != Succeeded)
+        if ((CharacterSealResult)p.ReadByte() != CharacterSealResult.Succeeded)
             return new CharacterSealList(false, p.RemainingBytes > 0 ? p.ReadByte() : 0, []);
         var slots = new CharacterSummary[CharacterRecordWire.SlotCount];
         for (int i = 0; i < slots.Length; i++)
@@ -50,10 +39,10 @@ public static class CharacterSealWire
 
     public static CharacterSealOutcome ReadSeal(Packet p)
     {
-        int result = p.ReadByte();
+        var result = (CharacterSealResult)p.ReadByte();
         switch (result)
         {
-            case Succeeded:
+            case CharacterSealResult.Succeeded:
             {
                 int bagPos = p.ReadByte();
                 int itemId = p.ReadInt();
@@ -62,7 +51,7 @@ public static class CharacterSealWire
                 var summary = PetWire.ReadUniqueBlock(p, uniqueId);
                 return new CharacterSealOutcome(result, 0, bagPos, itemId, uniqueId, summary);
             }
-            case Extended:
+            case CharacterSealResult.Extended:
                 p.ReadBytes(ExtendedPadding);
                 return new CharacterSealOutcome(result, p.ReadShort(), -1, 0, 0, null);
             default:
@@ -72,15 +61,15 @@ public static class CharacterSealWire
 
     public static CharacterUnsealOutcome ReadUnseal(Packet p)
     {
-        int result = p.ReadByte();
-        return result == Succeeded
+        var result = (CharacterSealResult)p.ReadByte();
+        return result == CharacterSealResult.Succeeded
             ? new CharacterUnsealOutcome(result, p.ReadByte())
             : new CharacterUnsealOutcome(result, -1);
     }
 
     public static SealedCharacterSheet? ReadSheet(Packet p)
     {
-        if (p.ReadByte() != Succeeded) return null;
+        if ((CharacterSealResult)p.ReadByte() != CharacterSealResult.Succeeded) return null;
         var sheet = new SealedCharacterSheet
         {
             Name = p.ReadSByteString(),
@@ -113,11 +102,27 @@ public static class CharacterSealWire
 
     public static int[] ReadAchievements(Packet p)
     {
-        if (p.ReadByte() != Succeeded || p.RemainingBytes < sizeof(uint)) return [];
+        if ((CharacterSealResult)p.ReadByte() != CharacterSealResult.Succeeded || p.RemainingBytes < sizeof(uint)) return [];
         int bytes = (int)p.ReadUInt();
         int count = System.Math.Min(bytes / AchievementIdBytes, p.RemainingBytes / AchievementIdBytes);
         var ids = new int[count];
         for (int i = 0; i < count; i++) ids[i] = p.ReadUShort();
         return ids;
     }
+}
+
+public enum CharacterSealSubOpcode : byte
+{
+    List = 1,
+    Seal = 2,
+    Unseal = 3,
+    Sheet = 4,
+    Achievements = 6,
+}
+
+public enum CharacterSealResult : byte
+{
+    Failed = 0,
+    Succeeded = 1,
+    Extended = 2,
 }

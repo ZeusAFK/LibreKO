@@ -14,16 +14,16 @@ public class RebirthWireTests
     }
 
     [Theory]
-    [InlineData(new byte[] { Net.ClassChangeRebirthStat, 0x01, 0x00 }, RebirthWire.Accepted)]
-    [InlineData(new byte[] { Net.ClassChangeRebirthStat, 0xFE, 0xFF }, -2)]
-    [InlineData(new byte[] { Net.ClassChangeRebirthStat, 0xFD, 0xFF }, -3)]
-    [InlineData(new byte[] { Net.ClassChangeRebirthStat, 0xFB, 0xFF }, -5)]
-    [InlineData(new byte[] { Net.ClassChangeRebirthStat, 0xF9, 0xFF }, RebirthWire.Busy)]
+    [InlineData(new byte[] { (byte)ClassChangeSubOpcode.RebirthStatChange, 0x01, 0x00 }, (short)RebirthResult.Success)]
+    [InlineData(new byte[] { (byte)ClassChangeSubOpcode.RebirthStatChange, 0xFE, 0xFF }, -2)]
+    [InlineData(new byte[] { (byte)ClassChangeSubOpcode.RebirthStatChange, 0xFD, 0xFF }, -3)]
+    [InlineData(new byte[] { (byte)ClassChangeSubOpcode.RebirthStatChange, 0xFB, 0xFF }, -5)]
+    [InlineData(new byte[] { (byte)ClassChangeSubOpcode.RebirthStatChange, 0xF9, 0xFF }, (short)RebirthResult.Unavailable)]
     public void TheServerWriterBytesReadAsTheSignedResult(byte[] body, short expected)
     {
         var p = Reply(body);
 
-        Assert.Equal(Net.ClassChangeRebirthStat, p.ReadByte());
+        Assert.Equal((byte)ClassChangeSubOpcode.RebirthStatChange, p.ReadByte());
         Assert.True(RebirthWire.TryRead(p, out short result));
         Assert.Equal(expected, result);
     }
@@ -50,11 +50,11 @@ public class RebirthWireTests
     public void ALegacyOrUnknownReplyIsNotARebirthResult(byte[] tail)
     {
         Assert.False(RebirthWire.TryRead(Reply(tail), out _));
-        Assert.Equal(RebirthWire.Busy, RebirthWire.ReadOrBusy(Reply(tail)));
+        Assert.Equal((short)RebirthResult.Unavailable, RebirthWire.ReadOrBusy(Reply(tail)));
     }
 
     [Theory]
-    [InlineData(new byte[] { 0x01, 0x00 }, RebirthWire.Accepted)]
+    [InlineData(new byte[] { 0x01, 0x00 }, (short)RebirthResult.Success)]
     [InlineData(new byte[] { 0xFE, 0xFF }, -2)]
     public void AReadableReplyAnswersWithItsOwnResult(byte[] tail, short expected)
     {
@@ -62,7 +62,7 @@ public class RebirthWireTests
     }
 
     [Theory]
-    [InlineData(RebirthWire.Accepted, RebirthWire.AcceptedText)]
+    [InlineData((short)RebirthResult.Success, RebirthWire.AcceptedText)]
     [InlineData(-1, 33000)]
     [InlineData(-2, 33100)]
     [InlineData(-3, 33101)]
@@ -75,6 +75,6 @@ public class RebirthWireTests
     [InlineData(RebirthWire.RefusedLast, RebirthWire.UnavailableText)]
     public void EachResultShowsItsRetailText(short result, int text)
     {
-        Assert.Equal(text, RebirthWire.ResultText(result));
+        Assert.Equal(text, RebirthWire.ResultText((RebirthResult)result));
     }
 }

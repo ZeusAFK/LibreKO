@@ -28,17 +28,17 @@ public interface IGameAttendance
 
 public sealed partial class PluginGame
 {
-    public IGameAttendance Attendance => _attendance;
+    public IGameAttendance Attendance => attendance;
 
-    private readonly AttendanceProxy _attendance = new();
+    private readonly AttendanceProxy attendance = new();
 
-    internal void AttachAttendance(IGameAttendance attendance)
+    internal void AttachAttendance(IGameAttendance attendanceSource)
     {
-        _attendance.Source = attendance;
+        attendance.Source = attendanceSource;
         RaiseAttendance();
     }
 
-    internal void RaiseAttendance() => _attendance.Raise();
+    internal void RaiseAttendance() => attendance.Raise();
 
     private sealed class AttendanceProxy : IGameAttendance
     {

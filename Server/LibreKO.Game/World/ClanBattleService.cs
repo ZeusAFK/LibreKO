@@ -26,11 +26,11 @@ public sealed class ClanBattleService(SessionManager sessionManager, TimeProvide
     private readonly record struct Battle(short ClanA, short ClanB, DateTimeOffset Ends);
     private readonly record struct Challenge(int ChallengerId, short ChallengerClan, short TargetClan, DateTimeOffset Expires);
 
-    private readonly ConcurrentDictionary<short, Battle> _battles = new();
-    private readonly ConcurrentDictionary<int, Challenge> _challenges = new();
+    private readonly ConcurrentDictionary<short, Battle> battles = new();
+    private readonly ConcurrentDictionary<int, Challenge> challenges = new();
 
     public short EnemyOf(short clanId) =>
-        _battles.TryGetValue(clanId, out var battle) ? (battle.ClanA == clanId ? battle.ClanB : battle.ClanA) : (short)0;
+        battles.TryGetValue(clanId, out var battle) ? (battle.ClanA == clanId ? battle.ClanB : battle.ClanA) : (short)0;
 
     public async Task ChallengeAsync(UserSession challenger, int targetId)
     {
@@ -41,7 +41,7 @@ public sealed class ClanBattleService(SessionManager sessionManager, TimeProvide
             return;
         }
 
-        _challenges[targetLeader!.CharacterId] = new Challenge(
+        challenges[targetLeader!.CharacterId] = new Challenge(
             challenger.CharacterId, challenger.KnightsId, targetClan!.Id, time.GetUtcNow().AddSeconds(ChallengeSeconds));
         await targetLeader.Client.SendPacket(ClanBattlePacketWriter.Challenge(challenger.CharacterId, challenger.Name));
     }
@@ -61,14 +61,14 @@ public sealed class ClanBattleService(SessionManager sessionManager, TimeProvide
         if (targetClan == null || targetClan.Id == ownClan.Id) return ClanBattleResult.NotClanMember;
         if (target.ZoneId != challenger.ZoneId || Array.IndexOf(TownZones, challenger.ZoneId) >= 0)
             return ClanBattleResult.WrongZone;
-        if (_battles.ContainsKey(ownClan.Id) || _battles.ContainsKey(targetClan.Id)) return ClanBattleResult.AlreadyAtWar;
+        if (battles.ContainsKey(ownClan.Id) || battles.ContainsKey(targetClan.Id)) return ClanBattleResult.AlreadyAtWar;
         targetLeader = IsLeader(target, targetClan) ? target : sessionManager.GetByName(targetClan.Chief);
         return targetLeader == null ? ClanBattleResult.Offline : null;
     }
 
     public async Task AnswerAsync(UserSession leader, bool accept, int challengerId)
     {
-        if (!_challenges.TryRemove(leader.CharacterId, out var challenge)
+        if (!challenges.TryRemove(leader.CharacterId, out var challenge)
             || challenge.ChallengerId != challengerId
             || challenge.Expires < time.GetUtcNow())
             return;
@@ -81,15 +81,15 @@ public sealed class ClanBattleService(SessionManager sessionManager, TimeProvide
             return;
         }
 
-        if (_battles.ContainsKey(challenge.ChallengerClan) || _battles.ContainsKey(challenge.TargetClan))
+        if (battles.ContainsKey(challenge.ChallengerClan) || battles.ContainsKey(challenge.TargetClan))
         {
             await leader.Client.SendPacket(ClanBattlePacketWriter.Result(ClanBattleResult.AlreadyAtWar));
             return;
         }
 
         var battle = new Battle(challenge.ChallengerClan, challenge.TargetClan, time.GetUtcNow().AddMinutes(BattleMinutes));
-        _battles[battle.ClanA] = battle;
-        _battles[battle.ClanB] = battle;
+        battles[battle.ClanA] = battle;
+        battles[battle.ClanB] = battle;
         await TellClanAsync(battle.ClanA, ClanBattlePacketWriter.Begun(battle.ClanB), battle.ClanB);
         await TellClanAsync(battle.ClanB, ClanBattlePacketWriter.Begun(battle.ClanA), battle.ClanA);
     }
@@ -97,7 +97,7 @@ public sealed class ClanBattleService(SessionManager sessionManager, TimeProvide
     public async Task SurrenderAsync(UserSession leader)
     {
         var clan = sessionManager.Knights.GetClan(leader.KnightsId);
-        if (clan == null || !IsLeader(leader, clan) || !_battles.TryGetValue(clan.Id, out var battle))
+        if (clan == null || !IsLeader(leader, clan) || !battles.TryGetValue(clan.Id, out var battle))
         {
             await leader.Client.SendPacket(ClanBattlePacketWriter.Result(ClanBattleResult.NotAtWar));
             return;
@@ -128,17 +128,17 @@ public sealed class ClanBattleService(SessionManager sessionManager, TimeProvide
     public async Task ExpireAsync()
     {
         var now = time.GetUtcNow();
-        foreach (var battle in _battles.Values.Distinct().Where(b => b.Ends <= now).ToList())
+        foreach (var battle in battles.Values.Distinct().Where(b => b.Ends <= now).ToList())
             await EndAsync(battle);
-        foreach (var (leaderId, challenge) in _challenges)
+        foreach (var (leaderId, challenge) in challenges)
             if (challenge.Expires <= now)
-                _challenges.TryRemove(leaderId, out _);
+                challenges.TryRemove(leaderId, out _);
     }
 
     private async Task EndAsync(Battle battle)
     {
-        _battles.TryRemove(battle.ClanA, out _);
-        _battles.TryRemove(battle.ClanB, out _);
+        battles.TryRemove(battle.ClanA, out _);
+        battles.TryRemove(battle.ClanB, out _);
         await TellClanAsync(battle.ClanA, ClanBattlePacketWriter.End(ClanBattleEnd.Cleared), 0);
         await TellClanAsync(battle.ClanB, ClanBattlePacketWriter.End(ClanBattleEnd.Cleared), 0);
     }

@@ -1,0 +1,5 @@
+
+Bind Npc 25267
+
+On greeting
+    Open draki rank board

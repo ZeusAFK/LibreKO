@@ -56,7 +56,7 @@ public sealed class PartyWarBoardService(
     }
 
     private static readonly Member Fresh = new();
-    private readonly ConcurrentDictionary<int, Board> _boards = new();
+    private readonly ConcurrentDictionary<int, Board> boards = new();
 
     public void CountDamage(UserSession attacker, int amount) => Count(attacker, amount, healing: false);
 
@@ -67,7 +67,7 @@ public sealed class PartyWarBoardService(
         if (amount <= 0 || !session.IsInParty)
             return;
 
-        var board = _boards.GetOrAdd(session.PartyIndex, _ => new Board());
+        var board = boards.GetOrAdd(session.PartyIndex, _ => new Board());
         lock (board)
         {
             var member = board.Of(session.CharacterId);
@@ -84,7 +84,7 @@ public sealed class PartyWarBoardService(
         if (target is not (TargetRows or TargetBoard) || mode > ModeHealing || !session.IsInParty)
             return;
 
-        var board = _boards.GetOrAdd(session.PartyIndex, _ => new Board());
+        var board = boards.GetOrAdd(session.PartyIndex, _ => new Board());
         lock (board)
         {
             var member = board.Of(session.CharacterId);
@@ -104,7 +104,7 @@ public sealed class PartyWarBoardService(
     {
         if (rowMode > ModeHealing || boardMode > ModeHealing)
             return;
-        var board = _boards.GetOrAdd(partyIndex, _ => new Board());
+        var board = boards.GetOrAdd(partyIndex, _ => new Board());
         lock (board)
         {
             var member = board.Of(memberId);
@@ -115,7 +115,7 @@ public sealed class PartyWarBoardService(
 
     public void MemberJoined(int partyIndex, int memberId)
     {
-        var board = _boards.GetOrAdd(partyIndex, _ => new Board());
+        var board = boards.GetOrAdd(partyIndex, _ => new Board());
         lock (board)
         {
             board.Members[memberId] = new Member();
@@ -125,7 +125,7 @@ public sealed class PartyWarBoardService(
 
     public void MemberLeft(int partyIndex, int memberId)
     {
-        if (!_boards.TryGetValue(partyIndex, out var board))
+        if (!boards.TryGetValue(partyIndex, out var board))
             return;
         lock (board)
         {
@@ -134,11 +134,11 @@ public sealed class PartyWarBoardService(
         }
     }
 
-    public void PartyDeleted(int partyIndex) => _boards.TryRemove(partyIndex, out _);
+    public void PartyDeleted(int partyIndex) => boards.TryRemove(partyIndex, out _);
 
     public async Task PushAsync()
     {
-        foreach (var (index, board) in _boards)
+        foreach (var (index, board) in boards)
         {
             lock (board)
             {
@@ -149,7 +149,7 @@ public sealed class PartyWarBoardService(
 
             if (sessionManager.Parties.GetParty(index) is not { } party)
             {
-                _boards.TryRemove(index, out _);
+                boards.TryRemove(index, out _);
                 continue;
             }
 

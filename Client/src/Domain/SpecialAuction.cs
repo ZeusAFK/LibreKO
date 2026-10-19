@@ -16,9 +16,9 @@ public sealed record AuctionLot(int Slot, int ItemId, int Count, long Current, i
 
 public readonly record struct AuctionToday(short Status, int Group, int Seconds, int Day, IReadOnlyList<AuctionOffer> Offers);
 
-public readonly record struct AuctionBidRow(int Channel, byte Day, byte Slot, int ItemId, short Count, int Serial, byte Sequence, long Price, byte Status);
+public readonly record struct AuctionBidRow(int Channel, byte Day, byte Slot, int ItemId, short Count, int Serial, byte Sequence, long Price, AuctionBidStatus Status);
 
-public readonly record struct AuctionResultLine(int ItemId, long Price, byte Status);
+public readonly record struct AuctionResultLine(int ItemId, long Price, AuctionBidStatus Status);
 
 public readonly record struct AuctionUpcomingDay(int Offset, IReadOnlyList<AuctionScheduleLot> Lots);
 
@@ -36,11 +36,6 @@ public static class SpecialAuction
     public const short Bidding = 1;
     public const short CollectOnly = 2;
     public const short Settling = 3;
-
-    public const byte TopBidder = 1;
-    public const byte Outbid = 2;
-    public const byte Won = 3;
-    public const byte Cancelled = 4;
 
     public const short Success = 1;
     public const short MyInfoSettling = 2;
@@ -157,17 +152,17 @@ public static class SpecialAuction
         _ => SystemErrorText,
     };
 
-    public static int StateText(byte status) => status switch
+    public static int StateText(AuctionBidStatus status) => status switch
     {
-        TopBidder => 43682,
-        Outbid => 43683,
-        Cancelled => 43709,
+        AuctionBidStatus.Top => 43682,
+        AuctionBidStatus.Outbid => 43683,
+        AuctionBidStatus.Cancelled => 43709,
         _ => 0,
     };
 
-    public static bool IsBid(byte status) => status is TopBidder or Outbid or Cancelled;
+    public static bool IsBid(AuctionBidStatus status) => status is AuctionBidStatus.Top or AuctionBidStatus.Outbid or AuctionBidStatus.Cancelled;
 
-    public static bool CanRetract(byte status) => status is Outbid or Cancelled;
+    public static bool CanRetract(AuctionBidStatus status) => status is AuctionBidStatus.Outbid or AuctionBidStatus.Cancelled;
 
     public static string Clock(int seconds)
     {

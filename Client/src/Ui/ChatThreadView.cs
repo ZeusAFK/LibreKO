@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Godot;
 using LibreKO.Domain;
+using LibreKO.Features.Social;
 
 namespace LibreKO;
 
@@ -56,17 +57,17 @@ public sealed partial class ChatThreadView : ScrollContainer
         public RoomPost Post = null!;
     }
 
-    private readonly Func<int> _self;
-    private readonly VBoxContainer _log;
-    private readonly Button _older;
-    private readonly Dictionary<RoomPost, PostRow> _rows = new(ReferenceEqualityComparer.Instance);
-    private readonly List<NoteRow> _notes = [];
-    private RoomPost? _firstRendered;
-    private RoomPost? _newest;
-    private int _rendered;
-    private bool _stickBottom = true;
-    private PostRow? _hovered;
-    private double _noteClock;
+    private readonly Func<int> self;
+    private readonly VBoxContainer log;
+    private readonly Button older;
+    private readonly Dictionary<RoomPost, PostRow> rows = new(ReferenceEqualityComparer.Instance);
+    private readonly List<NoteRow> notes = [];
+    private RoomPost? firstRendered;
+    private RoomPost? newest;
+    private int rendered;
+    private bool stickBottom = true;
+    private PostRow? hovered;
+    private double noteClock;
 
     public RoomTimeline? Timeline { get; set; }
     public float BubbleMax { get; set; } = 268f;
@@ -83,7 +84,7 @@ public sealed partial class ChatThreadView : ScrollContainer
 
     public ChatThreadView(Func<int> self)
     {
-        _self = self;
+        this.self = self;
         HorizontalScrollMode = ScrollMode.Disabled;
         AddThemeStyleboxOverride("panel", UiTheme.Inset());
         UiTheme.ThinScrollbar(GetVScrollBar());
@@ -96,80 +97,80 @@ public sealed partial class ChatThreadView : ScrollContainer
         margin.AddChild(content);
         var olderRow = new CenterContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         content.AddChild(olderRow);
-        _older = UiTheme.SmallButton("Load older messages", "");
-        _older.Visible = false;
-        _older.Pressed += () => OlderRequested?.Invoke();
-        olderRow.AddChild(_older);
-        _log = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _log.AddThemeConstantOverride("separation", RowGap);
-        content.AddChild(_log);
-        GetVScrollBar().Changed += () => { if (_stickBottom) ScrollToEnd(); };
-        GetVScrollBar().ValueChanged += _ => _stickBottom = AtBottom();
+        older = UiTheme.SmallButton("Load older messages", "");
+        older.Visible = false;
+        older.Pressed += () => OlderRequested?.Invoke();
+        olderRow.AddChild(older);
+        log = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        log.AddThemeConstantOverride("separation", RowGap);
+        content.AddChild(log);
+        GetVScrollBar().Changed += () => { if (stickBottom) ScrollToEnd(); };
+        GetVScrollBar().ValueChanged += _ => stickBottom = AtBottom();
     }
 
     public bool StickBottom
     {
-        get => _stickBottom;
-        set => _stickBottom = value;
+        get => stickBottom;
+        set => stickBottom = value;
     }
 
     public void Clear()
     {
-        foreach (var child in _log.GetChildren())
+        foreach (var child in log.GetChildren())
         {
-            _log.RemoveChild(child);
+            log.RemoveChild(child);
             child.QueueFree();
         }
-        _rows.Clear();
-        _notes.Clear();
-        _hovered = null;
-        _firstRendered = null;
-        _rendered = 0;
+        rows.Clear();
+        notes.Clear();
+        hovered = null;
+        firstRendered = null;
+        rendered = 0;
     }
 
     public void Reset()
     {
         Clear();
-        _newest = null;
+        newest = null;
     }
 
     public void Render()
     {
         if (Timeline is not { } timeline) return;
         var posts = timeline.Posts;
-        if (posts.Count == 0 || (_firstRendered != null && !ReferenceEquals(posts[0], _firstRendered)) || _rendered > posts.Count)
+        if (posts.Count == 0 || (firstRendered != null && !ReferenceEquals(posts[0], firstRendered)) || rendered > posts.Count)
             Clear();
-        _older.Visible = timeline.MoreHistory;
-        int self = _self();
+        older.Visible = timeline.MoreHistory;
+        int selfId = self();
         bool fromMe = false;
-        for (int i = _rendered; i < posts.Count; i++)
+        for (int i = rendered; i < posts.Count; i++)
         {
             var post = posts[i];
-            if (i == 0 || posts[i - 1].Time.Date != post.Time.Date) _log.AddChild(DayChip(post.Time));
-            bool mine = post.SenderId != 0 && post.SenderId == self;
+            if (i == 0 || posts[i - 1].Time.Date != post.Time.Date) log.AddChild(DayChip(post.Time));
+            bool mine = post.SenderId != 0 && post.SenderId == selfId;
             fromMe |= mine;
-            _log.AddChild(BuildPost(post, timeline.StartsGroup(i), mine));
+            log.AddChild(BuildPost(post, timeline.StartsGroup(i), mine));
         }
-        _firstRendered = posts.Count > 0 ? posts[0] : null;
-        _rendered = posts.Count;
-        if (fromMe) _stickBottom = true;
-        if (_stickBottom) ScrollToEnd();
+        firstRendered = posts.Count > 0 ? posts[0] : null;
+        rendered = posts.Count;
+        if (fromMe) stickBottom = true;
+        if (stickBottom) ScrollToEnd();
         var newest = posts.Count > 0 ? posts[^1] : null;
-        if (newest != null && _newest != null && !ReferenceEquals(newest, _newest)
-            && newest.SenderId != self && newest.Kind != RoomPostKind.Notice)
+        if (newest != null && this.newest != null && !ReferenceEquals(newest, this.newest)
+            && newest.SenderId != selfId && newest.Kind != RoomPostKind.Notice)
             OthersPosted?.Invoke();
-        _newest = newest;
+        this.newest = newest;
     }
 
     public void Refresh(RoomPost post)
     {
-        if (!_rows.TryGetValue(post, out var row)) return;
+        if (!rows.TryGetValue(post, out var row)) return;
         bool atBottom = AtBottom();
         RefreshReactions(row);
-        if (atBottom) _stickBottom = true;
+        if (atBottom) stickBottom = true;
     }
 
-    public bool Shows(RoomPost post) => _rows.ContainsKey(post);
+    public bool Shows(RoomPost post) => rows.ContainsKey(post);
 
     public void ScrollToEnd() => ScrollVertical = (int)GetVScrollBar().MaxValue;
 
@@ -182,21 +183,21 @@ public sealed partial class ChatThreadView : ScrollContainer
 
     public void ShowReactButton(RoomPost post)
     {
-        if (_rows.TryGetValue(post, out var row)) Hover(row);
+        if (rows.TryGetValue(post, out var row)) Hover(row);
     }
 
-    internal Control? ReactButtonOf(RoomPost post) => _rows.TryGetValue(post, out var row) ? row.React : null;
+    internal Control? ReactButtonOf(RoomPost post) => rows.TryGetValue(post, out var row) ? row.React : null;
 
-    internal Control? PillOf(RoomPost post) => _rows.TryGetValue(post, out var row) ? row.Pill : null;
+    internal Control? PillOf(RoomPost post) => rows.TryGetValue(post, out var row) ? row.Pill : null;
 
     public override void _Process(double delta)
     {
         if (!IsVisibleInTree()) return;
         TrackHover();
-        _noteClock += delta;
-        if (_noteClock < NoteRefreshSeconds) return;
-        _noteClock = 0;
-        foreach (var note in _notes) RefreshNote(note);
+        noteClock += delta;
+        if (noteClock < NoteRefreshSeconds) return;
+        noteClock = 0;
+        foreach (var note in notes) RefreshNote(note);
     }
 
     private void TrackHover()
@@ -207,9 +208,9 @@ public sealed partial class ChatThreadView : ScrollContainer
             Hover(null);
             return;
         }
-        if (_hovered != null && IsInstanceValid(_hovered.Root) && _hovered.Root.GetGlobalRect().HasPoint(mouse)) return;
+        if (hovered != null && IsInstanceValid(hovered.Root) && hovered.Root.GetGlobalRect().HasPoint(mouse)) return;
         PostRow? found = null;
-        foreach (var row in _rows.Values)
+        foreach (var row in rows.Values)
         {
             if (row.React == null || !row.Root.GetGlobalRect().HasPoint(mouse)) continue;
             found = row;
@@ -220,9 +221,9 @@ public sealed partial class ChatThreadView : ScrollContainer
 
     private void Hover(PostRow? row)
     {
-        if (ReferenceEquals(row, _hovered)) return;
-        if (_hovered?.React is { } old && IsInstanceValid(old)) old.Visible = ReferenceEquals(_hovered.Post, Pinned);
-        _hovered = row;
+        if (ReferenceEquals(row, hovered)) return;
+        if (hovered?.React is { } old && IsInstanceValid(old)) old.Visible = ReferenceEquals(hovered.Post, Pinned);
+        hovered = row;
         if (row?.React is { } now) now.Visible = row.Post.Id > 0;
     }
 
@@ -230,7 +231,7 @@ public sealed partial class ChatThreadView : ScrollContainer
     {
         var pinned = Pinned;
         Pinned = null;
-        if (pinned != null && _rows.TryGetValue(pinned, out var row) && row.React != null && !ReferenceEquals(row, _hovered))
+        if (pinned != null && rows.TryGetValue(pinned, out var row) && row.React != null && !ReferenceEquals(row, hovered))
             row.React.Visible = false;
     }
 
@@ -285,7 +286,7 @@ public sealed partial class ChatThreadView : ScrollContainer
             column.AddChild(TimeLabel(post));
         }
         BuildPill(row, stack);
-        _rows[post] = row;
+        rows[post] = row;
         RefreshReactions(row);
         return spaced;
     }
@@ -435,7 +436,7 @@ public sealed partial class ChatThreadView : ScrollContainer
 
     private void RefreshReactions(PostRow row)
     {
-        if (row.React != null && ReferenceEquals(row, _hovered)) row.React.Visible = row.Post.Id > 0;
+        if (row.React != null && ReferenceEquals(row, hovered)) row.React.Visible = row.Post.Id > 0;
         if (row.PillHolder == null || row.PillGlyphs == null || row.PillCount == null) return;
         var reactions = row.Post.Reactions;
         row.PillHolder.Visible = reactions.Total > 0;
@@ -553,14 +554,14 @@ public sealed partial class ChatThreadView : ScrollContainer
         foot.AddChild(TimeLabel(post));
 
         var row = new NoteRow { Play = play, Ring = ring, Wave = wave, Clock = clock, Post = post };
-        _notes.Add(row);
+        notes.Add(row);
         RefreshNote(row);
         return note;
     }
 
     public void RefreshNotes()
     {
-        foreach (var note in _notes) RefreshNote(note);
+        foreach (var note in notes) RefreshNote(note);
     }
 
     private static void RefreshNote(NoteRow row)
@@ -575,7 +576,7 @@ public sealed partial class ChatThreadView : ScrollContainer
         row.Play.TooltipText = state switch
         {
             VoiceChat.NoteState.Loading => "Downloading...",
-            VoiceChat.NoteState.Missing => RoomMediaResults.Text(RoomMediaResults.NotFound),
+            VoiceChat.NoteState.Missing => RoomMediaResults.Text(RoomMediaResult.NotFound),
             VoiceChat.NoteState.Playing => "Pause",
             _ => "Play the voice note",
         };

@@ -55,15 +55,15 @@ public sealed class NpcSpawnPacketWriter
         string PetName = "",
         StatueLook? Statue = null);
 
-    private readonly byte _inOutType;
-    private readonly NpcState? _npc;
-    private readonly int _uniqueId;
+    private readonly byte inOutType;
+    private readonly NpcState? npc;
+    private readonly int uniqueId;
 
     private NpcSpawnPacketWriter(byte inOutType, int uniqueId, NpcState? npc)
     {
-        _inOutType = inOutType;
-        _uniqueId = uniqueId;
-        _npc = npc;
+        this.inOutType = inOutType;
+        this.uniqueId = uniqueId;
+        this.npc = npc;
     }
 
     public static Packet In(byte inOutType, NpcState npc) => new NpcSpawnPacketWriter(inOutType, npc.UniqueId, npc).Build();
@@ -71,10 +71,10 @@ public sealed class NpcSpawnPacketWriter
     private Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_NPC_INOUT);
-        packet.WriteByte(_inOutType);
-        packet.WriteInt(_uniqueId);
+        packet.WriteByte(inOutType);
+        packet.WriteInt(uniqueId);
 
-        if (_npc is { } npc)
+        if (this.npc is { } npc)
             WriteRecord(packet, npc);
 
         return packet;

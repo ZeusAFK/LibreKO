@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -11,7 +12,7 @@ public class AuctionTransactionsTests
     private static AuctionLot Lot(int slot = 1) => new(slot, Earrings, 1, Million, (int)Million, "Rikka");
 
     private static AuctionBidRow Row(byte slot = 1) =>
-        new(1, 2, slot, Earrings, 1, 42, 0, 2 * Million, SpecialAuction.Outbid);
+        new(1, 2, slot, Earrings, 1, 42, 0, 2 * Million, AuctionBidStatus.Outbid);
 
     [Fact]
     public void TheBidReplyKeepsTheSubmittedLotAmountAndDay()

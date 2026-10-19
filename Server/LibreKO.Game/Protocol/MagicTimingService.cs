@@ -42,11 +42,11 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
     private const int MillisecondsPerTenth = 1000 / TenthsPerSecond;
     private const int CooldownEntryPruneThreshold = 256;
 
-    private readonly TimeProvider _time = timeProvider ?? TimeProvider.System;
+    private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
 
     public MagicTimingVerdict CheckCasting(UserSession session, MagicData magic)
     {
-        var now = _time.GetUtcNow().UtcTicks;
+        var now = time.GetUtcNow().UtcTicks;
 
         if (RemainingCooldownMs(session, magic.Id, now) > 0)
             return MagicTimingVerdict.OnCooldown;
@@ -68,7 +68,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
 
     public MagicTimingVerdict CheckRelease(UserSession session, MagicData magic)
     {
-        var now = _time.GetUtcNow().UtcTicks;
+        var now = time.GetUtcNow().UtcTicks;
 
         if (session.CastingSkillId == magic.Id)
         {
@@ -90,7 +90,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
 
     public void OnCastAccepted(UserSession session, MagicData magic, bool armCooldown = true)
     {
-        var now = _time.GetUtcNow().UtcTicks;
+        var now = time.GetUtcNow().UtcTicks;
         if (armCooldown)
             ArmCooldown(session, magic, now);
         session.AcceptedCasts[magic.Id] = now;
@@ -142,7 +142,7 @@ public sealed class MagicTimingService(TimeProvider? timeProvider = null) : IMag
         if (session.CastingSkillId == magic.Id)
             ClearCast(session);
         else if (!releasesAnAcceptedCast && armCooldown)
-            ArmCooldown(session, magic, _time.GetUtcNow().UtcTicks);
+            ArmCooldown(session, magic, time.GetUtcNow().UtcTicks);
     }
 
     public void OnCastAborted(UserSession session, int skillId)

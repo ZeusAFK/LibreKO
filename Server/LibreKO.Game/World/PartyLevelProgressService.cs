@@ -23,7 +23,7 @@ public sealed class PartyLevelProgressService(
 
     private readonly record struct Shown(byte Level, int Percent);
 
-    private readonly ConcurrentDictionary<int, Shown> _shown = new();
+    private readonly ConcurrentDictionary<int, Shown> lastShown = new();
 
     public static ushort Permille(long experience, long required) =>
         required <= 0 ? (ushort)0 : (ushort)Math.Clamp(experience * PermilleScale / required, 0, PermilleScale);
@@ -36,16 +36,16 @@ public sealed class PartyLevelProgressService(
     {
         if (PartyOf(member) is not { } party)
         {
-            _shown.TryRemove(member.CharacterId, out _);
+            lastShown.TryRemove(member.CharacterId, out _);
             return;
         }
 
         var permille = PermilleOf(member);
         var shown = new Shown(member.Level, permille / PermillePerPercent);
-        if (_shown.TryGetValue(member.CharacterId, out var before) && before == shown)
+        if (lastShown.TryGetValue(member.CharacterId, out var before) && before == shown)
             return;
 
-        _shown[member.CharacterId] = shown;
+        lastShown[member.CharacterId] = shown;
         await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.LevelProgress(member.CharacterId, permille));
     }
 
@@ -55,7 +55,7 @@ public sealed class PartyLevelProgressService(
             return;
 
         var permille = PermilleOf(member);
-        _shown[member.CharacterId] = new Shown(member.Level, permille / PermillePerPercent);
+        lastShown[member.CharacterId] = new Shown(member.Level, permille / PermillePerPercent);
         await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.LevelProgress(member.CharacterId, permille));
     }
 

@@ -19,7 +19,7 @@ public class DailyRankTests
     [Fact]
     public void ABoardReadsPlaceChangeAndNamesNumberedInOrder()
     {
-        var data = Net.ReadDailyRankBoard(Reply(w =>
+        var data = DailyRankWire.ReadBoard(Reply(w =>
         {
             w.WriteByte(0);
             w.WriteInt(4);
@@ -36,7 +36,7 @@ public class DailyRankTests
     [Fact]
     public void TheDrakiBoardHasNoChangeField()
     {
-        var data = Net.ReadDailyRankBoard(Reply(w =>
+        var data = DailyRankWire.ReadBoard(Reply(w =>
         {
             w.WriteByte(DailyRank.DrakiBoard);
             w.WriteInt(1);
@@ -51,7 +51,7 @@ public class DailyRankTests
     [Fact]
     public void AnUnrankedKnightOfAdonisShowsNoPlace()
     {
-        var data = Net.ReadDailyRankBoard(Reply(w =>
+        var data = DailyRankWire.ReadBoard(Reply(w =>
         {
             w.WriteByte(DailyRank.AdonisBoard);
             w.WriteInt(DailyRank.AdonisUnranked);
@@ -66,7 +66,7 @@ public class DailyRankTests
     [Fact]
     public void AnEmptyNameStillUsesUpItsNumber()
     {
-        var data = Net.ReadDailyRankBoard(Reply(w =>
+        var data = DailyRankWire.ReadBoard(Reply(w =>
         {
             w.WriteByte(0);
             w.WriteInt(0);
@@ -83,7 +83,7 @@ public class DailyRankTests
     [Fact]
     public void NamesPastTheHundredthAreNotRead()
     {
-        var data = Net.ReadDailyRankBoard(Reply(w =>
+        var data = DailyRankWire.ReadBoard(Reply(w =>
         {
             w.WriteByte(0);
             w.WriteInt(0);
@@ -98,7 +98,7 @@ public class DailyRankTests
     [Fact]
     public void ABoardPastTheLastSlotIsDropped()
     {
-        Assert.Null(Net.ReadDailyRankBoard(Reply(w =>
+        Assert.Null(DailyRankWire.ReadBoard(Reply(w =>
         {
             w.WriteByte(DailyRank.BoardSlots);
             w.WriteInt(0);

@@ -7,14 +7,14 @@ public partial class MapChevron : Control
     private static readonly Color Stroke = new(0.93f, 0.94f, 0.96f, 0.90f);
     private static readonly Color Shade = new(0f, 0f, 0f, 0.55f);
 
-    private bool _pointsDown;
+    private bool pointsDown;
 
     public bool PointsDown
     {
         set
         {
-            if (_pointsDown == value) return;
-            _pointsDown = value;
+            if (pointsDown == value) return;
+            pointsDown = value;
             QueueRedraw();
         }
     }
@@ -24,7 +24,7 @@ public partial class MapChevron : Control
         float w = Size.X * 0.30f;
         float h = Size.Y * 0.14f;
         var c = Size * 0.5f;
-        float dir = _pointsDown ? -1f : 1f;
+        float dir = pointsDown ? -1f : 1f;
         var left = c + new Vector2(-w, h * dir);
         var apex = c + new Vector2(0f, -h * dir);
         var right = c + new Vector2(w, h * dir);

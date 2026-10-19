@@ -17,15 +17,15 @@ namespace LibreKO.Game.Tests;
 public class TempleJoinTests
 {
     private const int JoinWindow = 300;
-    private readonly SessionManager _sessions = new();
-    private readonly GameServerSettings _settings = new();
-    private readonly EventSchedulerService _scheduler;
+    private readonly SessionManager sessions = new();
+    private readonly GameServerSettings settings = new();
+    private readonly EventSchedulerService scheduler;
 
     public TempleJoinTests()
     {
-        _scheduler = new EventSchedulerService(
-            _sessions,
-            Options.Create(_settings),
+        scheduler = new EventSchedulerService(
+            sessions,
+            Options.Create(settings),
             Substitute.For<IZoneTransitionService>(),
             Substitute.For<ICollectionRaceService>(),
             Substitute.For<ILotteryService>(),
@@ -46,7 +46,7 @@ public class TempleJoinTests
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, characterId: characterId, accountId: characterId * 10);
+        var session = sessions.CreateSession(client, characterId: characterId, accountId: characterId * 10);
         session.Level = level;
         session.Nation = nation;
         for (int i = 0; i < session.Inventory.Length; i++)
@@ -57,44 +57,44 @@ public class TempleJoinTests
     [Fact]
     public void NothingOpenIsTheNotTimeCode()
     {
-        _scheduler.TryJoinTempleEvent(Player(1, 70)).Should().Be(TempleJoinResult.NotOpen);
+        scheduler.TryJoinTempleEvent(Player(1, 70)).Should().Be(TempleJoinResult.NotOpen);
     }
 
     [Fact]
     public async Task LevelsOutsideTheBandAreRefusedEachWithItsOwnCode()
     {
-        await _scheduler.CallTempleEventAsync(TempleEvent.ForgottenTemple, JoinWindow, minLevel: 60, maxLevel: 70);
+        await scheduler.CallTempleEventAsync(TempleEvent.ForgottenTemple, JoinWindow, minLevel: 60, maxLevel: 70);
 
-        _scheduler.TryJoinTempleEvent(Player(1, 59)).Should().Be(TempleJoinResult.LevelTooLow);
-        _scheduler.TryJoinTempleEvent(Player(2, 71)).Should().Be(TempleJoinResult.LevelTooHigh);
+        scheduler.TryJoinTempleEvent(Player(1, 59)).Should().Be(TempleJoinResult.LevelTooLow);
+        scheduler.TryJoinTempleEvent(Player(2, 71)).Should().Be(TempleJoinResult.LevelTooHigh);
         var player = Player(3, 65);
-        _scheduler.TryJoinTempleEvent(player).Should().Be(TempleJoinResult.Joined);
-        _scheduler.TryJoinTempleEvent(player).Should().Be(TempleJoinResult.AlreadyJoined);
+        scheduler.TryJoinTempleEvent(player).Should().Be(TempleJoinResult.Joined);
+        scheduler.TryJoinTempleEvent(player).Should().Be(TempleJoinResult.AlreadyJoined);
     }
 
     [Fact]
     public async Task ChaosAsksForTheMapOnlyWhenTheServerRequiresIt()
     {
-        await _scheduler.CallTempleEventAsync(TempleEvent.Chaos, JoinWindow, minLevel: 1, maxLevel: 83);
-        _scheduler.TryJoinTempleEvent(Player(1, 60)).Should().Be(TempleJoinResult.Joined);
+        await scheduler.CallTempleEventAsync(TempleEvent.Chaos, JoinWindow, minLevel: 1, maxLevel: 83);
+        scheduler.TryJoinTempleEvent(Player(1, 60)).Should().Be(TempleJoinResult.Joined);
 
-        _settings.Events.ChaosNeedsMap = true;
-        _scheduler.TryJoinTempleEvent(Player(2, 60)).Should().Be(TempleJoinResult.NeedsMapOfChaos);
+        settings.Events.ChaosNeedsMap = true;
+        scheduler.TryJoinTempleEvent(Player(2, 60)).Should().Be(TempleJoinResult.NeedsMapOfChaos);
 
         var mapHolder = Player(3, 60);
         mapHolder.Inventory[InventoryConstants.SlotMax] = new ItemSlot { ItemId = TempleEventRules.MapOfChaos, Count = 1 };
-        _scheduler.TryJoinTempleEvent(mapHolder).Should().Be(TempleJoinResult.Joined);
+        scheduler.TryJoinTempleEvent(mapHolder).Should().Be(TempleJoinResult.Joined);
     }
 
     [Fact]
     public async Task SignUpsAreCountedPerNation()
     {
-        await _scheduler.CallTempleEventAsync(TempleEvent.BorderDefenseWar, JoinWindow, minLevel: 1, maxLevel: 83);
-        _scheduler.TryJoinTempleEvent(Player(1, 60, AccountNation.Karus));
-        _scheduler.TryJoinTempleEvent(Player(2, 60, AccountNation.Karus));
-        _scheduler.TryJoinTempleEvent(Player(3, 60));
+        await scheduler.CallTempleEventAsync(TempleEvent.BorderDefenseWar, JoinWindow, minLevel: 1, maxLevel: 83);
+        scheduler.TryJoinTempleEvent(Player(1, 60, AccountNation.Karus));
+        scheduler.TryJoinTempleEvent(Player(2, 60, AccountNation.Karus));
+        scheduler.TryJoinTempleEvent(Player(3, 60));
 
-        _scheduler.TempleSignUps(TempleEvent.BorderDefenseWar).Should().Be(((ushort)2, (ushort)1));
+        scheduler.TempleSignUps(TempleEvent.BorderDefenseWar).Should().Be(((ushort)2, (ushort)1));
     }
 
     [Fact]

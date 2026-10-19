@@ -20,17 +20,17 @@ public interface IGameWarp
 
 public sealed partial class PluginGame
 {
-    public IGameWarp Warp => _warp;
+    public IGameWarp Warp => warp;
 
-    private readonly WarpProxy _warp = new();
+    private readonly WarpProxy warp = new();
 
-    internal void AttachWarp(IGameWarp warp)
+    internal void AttachWarp(IGameWarp warpSource)
     {
-        _warp.Source = warp;
+        warp.Source = warpSource;
         RaiseWarp();
     }
 
-    internal void RaiseWarp() => _warp.Raise();
+    internal void RaiseWarp() => warp.Raise();
 
     private sealed class WarpProxy : IGameWarp
     {

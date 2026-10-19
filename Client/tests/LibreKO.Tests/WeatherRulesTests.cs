@@ -12,10 +12,10 @@ public class WeatherRulesTests
 
     [Theory]
     [InlineData(Moradon, WeatherRules.Rain, WeatherRules.Rain)]
-    [InlineData(Moradon, WeatherRules.Snow, WeatherRules.Rain)]
+    [InlineData(Moradon, WeatherRules.Snow, WeatherRules.Snow)]
     [InlineData(BiFrost, WeatherRules.Rain, WeatherRules.Fine)]
     [InlineData(Zone66, WeatherRules.Rain, WeatherRules.DrawnSunny)]
-    public void ZonesAndTypesFollow2619(int zone, int type, int shown) =>
+    public void ZonesDecideWhatIsShown(int zone, int type, int shown) =>
         Assert.Equal(shown, WeatherRules.Type(zone, type));
 
     [Fact]
@@ -33,6 +33,7 @@ public class WeatherRulesTests
     {
         Assert.Equal(1f, WeatherRules.RelativeLight(WeatherRules.Fine, WeatherRules.MinAmount), 3);
         Assert.True(WeatherRules.RelativeLight(WeatherRules.Rain, WeatherRules.OtherMaxAmount) < 0.6f);
+        Assert.True(WeatherRules.RelativeLight(WeatherRules.Snow, WeatherRules.OtherMaxAmount) < 0.6f);
         Assert.Equal(0.25f, WeatherRules.Light(WeatherRules.Rain, 100), 3);
     }
 }

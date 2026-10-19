@@ -19,7 +19,7 @@ public class BorderWarRankingTests
     public void TheBoardReadsBothNationsAndTheExpTail()
     {
         var p = new Packet(GameOpcodes.GS_RANK);
-        p.WriteByte(Net.RankTypeBorderWar);
+        p.WriteByte((byte)RankType.BorderDefenseWar);
         p.WriteUShort(2);
         Row(p, "Rikka", 1, 12, "Olympus", 21);
         Row(p, "Rin", 1, 0, "", 4);
@@ -47,7 +47,7 @@ public class BorderWarRankingTests
     public void AnEmptyBoardHasNoRows()
     {
         var p = new Packet(GameOpcodes.GS_RANK);
-        p.WriteByte(Net.RankTypeBorderWar);
+        p.WriteByte((byte)RankType.BorderDefenseWar);
         p.WriteUShort(0);
         p.WriteUShort(0);
         p.WriteUInt(0);

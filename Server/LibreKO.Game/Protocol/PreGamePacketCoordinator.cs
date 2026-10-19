@@ -18,6 +18,8 @@ public class PreGamePacketCoordinator(
     ISessionTerminationService sessionTerminationService,
     ILogger<PreGamePacketCoordinator> logger) : IPreGamePacketCoordinator
 {
+    private const int NameChangeRequestMinBytes = 2 + 2;
+
     public async Task<Packet?> HandleAsync(IClient client, Packet packet, GameOpcodes opcode)
     {
         return opcode switch
@@ -44,13 +46,23 @@ public class PreGamePacketCoordinator(
         return subOpcode switch
         {
             (byte)AllCharacterInfoOpcode.CharacterList => await preGameService.GetAllCharacterInfoAsync(client.AccountId),
-            (byte)AllCharacterInfoOpcode.NameChange => PreGamePacketWriter.NameChangeRefused(),
+            (byte)AllCharacterInfoOpcode.NameChange => await HandleRequiredNameChangeAsync(packet, client),
             (byte)AllCharacterInfoOpcode.ArrangeOpen => null,
             (byte)AllCharacterInfoOpcode.ArrangeReceive => null,
             _ => null,
         };
     }
 
+
+    private async Task<Packet> HandleRequiredNameChangeAsync(Packet packet, IClient client)
+    {
+        if (packet.RemainingBytes < NameChangeRequestMinBytes)
+            return PreGamePacketWriter.NameChangeRefused();
+        var slot = packet.ReadShort();
+        var currentName = packet.ReadString();
+        var newName = packet.RemainingBytes >= 2 ? packet.ReadString() : string.Empty;
+        return await preGameService.ChangeRequiredNameAsync(client.AccountId, slot, currentName, newName);
+    }
 
     private async Task<Packet> HandleCreateCharacterAsync(Packet packet, IClient client)
     {

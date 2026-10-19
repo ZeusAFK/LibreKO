@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -36,12 +37,12 @@ public class PartyHudTests
 
     [Fact]
     public void PoisonTurnsTheBarPurple() =>
-        Assert.Equal(PartyHpLook.Drop, PartyHud.HpLook(new[] { PartyHud.StatusPoison }, 0));
+        Assert.Equal(PartyHpLook.Drop, PartyHud.HpLook(new[] { (byte)PartyStatusIcon.Poison }, 0));
 
     [Fact]
     public void TwoStatusesTakeTurnsEverySecond()
     {
-        var statuses = new[] { PartyHud.StatusPoison, PartyHud.StatusDamageOverTime };
+        var statuses = new[] { (byte)PartyStatusIcon.Poison, (byte)PartyStatusIcon.OverTimeDamage };
         Assert.Equal(PartyHpLook.Lasting, PartyHud.HpLook(statuses, 0));
         Assert.Equal(PartyHpLook.Drop, PartyHud.HpLook(statuses, 1));
         Assert.Equal(PartyHpLook.Lasting, PartyHud.HpLook(statuses, 2));

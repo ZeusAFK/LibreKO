@@ -19,7 +19,7 @@ public static class Emoticons
     private static readonly Dictionary<string, EmoticonInfo> ByCode = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<int, EmoticonInfo> ById = new();
     private static readonly List<EmoticonInfo> Ordered = new();
-    private static bool _loaded;
+    private static bool loaded;
 
     public static int Cell { get; private set; } = DefaultCell;
 
@@ -50,7 +50,7 @@ public static class Emoticons
             ById[e.Id] = e;
             Ordered.Add(e);
         }
-        _loaded = true;
+        loaded = true;
     }
 
     public static bool Contains(string text)
@@ -85,10 +85,10 @@ public static class Emoticons
 
     private static void EnsureLoaded()
     {
-        if (_loaded) return;
-        _loaded = true;
-        if (!Godot.FileAccess.FileExists(IndexPath)) return;
-        using var doc = JsonDocument.Parse(Godot.FileAccess.GetFileAsString(IndexPath));
+        if (loaded) return;
+        loaded = true;
+        if (GameFiles.ReadText(IndexPath) is not { } index) return;
+        using var doc = JsonDocument.Parse(index);
         int cell = doc.RootElement.TryGetProperty("cell", out var c) ? c.GetInt32() : DefaultCell;
         var list = new List<EmoticonInfo>();
         foreach (var e in doc.RootElement.GetProperty("emoticons").EnumerateArray())

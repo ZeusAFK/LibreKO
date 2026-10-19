@@ -48,7 +48,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
     private readonly IPlayerProgressionService playerProgressionService;
     private readonly ICombatNotificationService combatNotificationService;
     private readonly ILogger<ChaosDungeonService> logger;
-    private readonly ConcurrentDictionary<ushort, ChaosMatch> _activeMatches = new();
+    private readonly ConcurrentDictionary<ushort, ChaosMatch> activeMatches = new();
 
     public ChaosDungeonService(
         SessionManager sessionManager,
@@ -74,9 +74,9 @@ public sealed class ChaosDungeonService : IChaosDungeonService
         zoneTransitionService.PlayerLeavingZone += OnPlayerLeavingZoneAsync;
     }
 
-    public bool HasActiveMatches => !_activeMatches.IsEmpty;
+    public bool HasActiveMatches => !activeMatches.IsEmpty;
 
-    internal ChaosMatch? GetMatch(ushort roomId) => _activeMatches.GetValueOrDefault(roomId);
+    internal ChaosMatch? GetMatch(ushort roomId) => activeMatches.GetValueOrDefault(roomId);
 
     public async Task StartMatchesAsync(IReadOnlyList<int> participantCharacterIds, int durationSeconds)
     {
@@ -102,7 +102,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
             MatchEndUtc = DateTime.UtcNow + duration
                 - TimeSpan.FromSeconds(ChaosRules.FinishCountdownSeconds + CleanupMarginSeconds),
         };
-        _activeMatches[room.Id] = match;
+        activeMatches[room.Id] = match;
         instanceEntryService.Populate(room);
 
         var start = gameDataService.GetStartPosition(ChaosRules.Zone);
@@ -142,7 +142,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
     public async Task OnPlayerKilledAsync(UserSession victim, UserSession? killer)
     {
         await RemoveChaosItemsAsync(victim);
-        if (!_activeMatches.TryGetValue(victim.Room, out var match) || match.IsCompleted || match.IsFinishing)
+        if (!activeMatches.TryGetValue(victim.Room, out var match) || match.IsCompleted || match.IsFinishing)
             return;
 
         if (match.Scores.TryGetValue(victim.CharacterId, out var died))
@@ -160,7 +160,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
     {
         if (npc.ZoneId != ChaosRules.Zone || npc.NpcId != ChaosRules.CubeNpcId)
             return false;
-        if (session.Hp <= 0 || !_activeMatches.TryGetValue(session.Room, out var match) || match.IsCompleted
+        if (session.Hp <= 0 || !activeMatches.TryGetValue(session.Room, out var match) || match.IsCompleted
             || npc.Room != match.RoomId || !npc.IsAlive)
             return true;
 
@@ -177,7 +177,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
 
     public Packet BuildRanking(UserSession session, byte rankType)
     {
-        if (session.ZoneId != ChaosRules.Zone || !_activeMatches.TryGetValue(session.Room, out var match))
+        if (session.ZoneId != ChaosRules.Zone || !activeMatches.TryGetValue(session.Room, out var match))
             return RankPacketWriter.ChaosDungeon(rankType, [], 0, 0);
 
         var rows = ChaosRules.Ordered(match.Scores.Values)
@@ -205,17 +205,17 @@ public sealed class ChaosDungeonService : IChaosDungeonService
             await session.Client.SendPacket(MovementPacketWriter.StateChange(
                 session.CharacterId, (byte)StateChangeType.Abnormal, (byte)session.SizeState));
         }
-        if (_activeMatches.TryGetValue(session.Room, out var match) && !match.IsCompleted)
+        if (activeMatches.TryGetValue(session.Room, out var match) && !match.IsCompleted)
             match.Participants.Remove(session.CharacterId);
     }
 
     public async Task TickAsync()
     {
-        if (_activeMatches.IsEmpty)
+        if (activeMatches.IsEmpty)
             return;
 
         var now = DateTime.UtcNow;
-        foreach (var match in _activeMatches.Values.ToList())
+        foreach (var match in activeMatches.Values.ToList())
         {
             if (match.IsCompleted)
                 continue;
@@ -282,7 +282,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
 
     public async Task FinishAllMatchesAsync()
     {
-        foreach (var match in _activeMatches.Values.ToList())
+        foreach (var match in activeMatches.Values.ToList())
         {
             if (match.IsCompleted)
                 continue;
@@ -294,7 +294,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
 
     public async Task CancelAllMatchesAsync()
     {
-        foreach (var match in _activeMatches.Values.ToList())
+        foreach (var match in activeMatches.Values.ToList())
             await CloseMatchAsync(match, rewarded: false);
     }
 
@@ -331,7 +331,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
         }
 
         instanceRooms.Close(match.InstanceRoom);
-        _activeMatches.TryRemove(match.RoomId, out _);
+        activeMatches.TryRemove(match.RoomId, out _);
         logger.LogInformation("Chaos room {Room} closed (rewarded {Rewarded})", match.RoomId, rewarded);
     }
 

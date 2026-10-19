@@ -78,4 +78,10 @@ public static class SkillAnimation
             anim = second ? ShootQuarrelB : ShootQuarrelA;
         return anim;
     }
+
+    public static int HeldItemClass(int[]? gear, int slot)
+    {
+        if (gear == null || slot >= gear.Length || gear[slot] <= 0) return NoItem;
+        return ItemData.Get(gear[slot])?.Kind ?? NoItem;
+    }
 }

@@ -22,13 +22,13 @@ public class SocketServerTests
 
     private sealed class ThrowOnceClientFactory : IClientFactory
     {
-        private int _attempts;
+        private int attempts;
 
-        public int Attempts => Volatile.Read(ref _attempts);
+        public int Attempts => Volatile.Read(ref attempts);
 
         public IClient Create(Socket socket)
         {
-            if (Interlocked.Increment(ref _attempts) == 1)
+            if (Interlocked.Increment(ref attempts) == 1)
                 throw new InvalidOperationException("simulated factory failure");
 
             return new Client(socket, ServerType.Game, NullLogger<Client>.Instance);
@@ -37,7 +37,7 @@ public class SocketServerTests
 
     private sealed class RecordingLogger<T> : ILogger<T>
     {
-        private readonly List<(LogLevel Level, string Message)> _entries = [];
+        private readonly List<(LogLevel Level, string Message)> entries = [];
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
@@ -46,14 +46,14 @@ public class SocketServerTests
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
             Func<TState, Exception?, string> formatter)
         {
-            lock (_entries)
-                _entries.Add((logLevel, formatter(state, exception)));
+            lock (entries)
+                entries.Add((logLevel, formatter(state, exception)));
         }
 
         public IReadOnlyList<(LogLevel Level, string Message)> Snapshot()
         {
-            lock (_entries)
-                return _entries.ToArray();
+            lock (entries)
+                return entries.ToArray();
         }
     }
 

@@ -15,17 +15,6 @@ public readonly record struct KingCommand(KingCommandKind Kind, string Text, str
 
 public static class KingCommands
 {
-    public const byte EventDropRate = 1;
-    public const byte EventExperience = 2;
-    public const byte EventPrize = 3;
-    public const byte EventFugitive = 4;
-    public const byte EventWeather = 5;
-    public const byte EventRoyalOrder = 6;
-
-    public const byte WeatherClear = 1;
-    public const byte WeatherRain = 2;
-    public const byte WeatherSnow = 3;
-
     public const int RoyalOrderText = 9400;
     public const int PrizeText = 9401;
     public const int ExperienceText = 9402;
@@ -58,17 +47,17 @@ public static class KingCommands
         if (Is(DropRateText, "DropRate"))
             return new KingCommand(KingCommandKind.DropRate, "", "", Number(0), 0);
         if (Is(RainText, "Rain"))
-            return new KingCommand(KingCommandKind.Weather, "", "", Number(0), WeatherRain);
+            return new KingCommand(KingCommandKind.Weather, "", "", Number(0), (byte)KingWeather.Rain);
         if (Is(SnowText, "Snow"))
-            return new KingCommand(KingCommandKind.Weather, "", "", Number(0), WeatherSnow);
+            return new KingCommand(KingCommandKind.Weather, "", "", Number(0), (byte)KingWeather.Snow);
         if (Is(ClearText, "Clear"))
-            return new KingCommand(KingCommandKind.Weather, "", "", Number(0), WeatherClear);
+            return new KingCommand(KingCommandKind.Weather, "", "", Number(0), (byte)KingWeather.Clear);
         return null;
     }
 
-    public static int ResultText(byte kingEvent, short result) => kingEvent switch
+    public static int ResultText(KingEventSubOpcode kingEvent, short result) => kingEvent switch
     {
-        EventPrize or EventFugitive => result switch
+        KingEventSubOpcode.Prize or KingEventSubOpcode.Fugitive => result switch
         {
             -1 => OnlyKingsText,
             -2 => NoSuchIdText,
@@ -76,7 +65,7 @@ public static class KingCommands
             -4 => TreasuryText,
             _ => 0,
         },
-        EventWeather => result switch
+        KingEventSubOpcode.Weather => result switch
         {
             -1 => OnlyKingsText,
             -3 => TreasuryText,

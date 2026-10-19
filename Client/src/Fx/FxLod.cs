@@ -17,19 +17,19 @@ public static class FxLod
 
     private const ulong StaleFrames = 2;
 
-    private static Vector3 _camera;
-    private static ulong _updatedFrame;
-    private static double _smoothedFrame = 1.0 / DefaultTargetFps;
+    private static Vector3 camera;
+    private static ulong updatedFrame;
+    private static double smoothedFrame = 1.0 / DefaultTargetFps;
 
     public static float Load { get; private set; } = 1f;
 
     public static void Update(Vector3 camera, double delta)
     {
-        _camera = camera;
-        _updatedFrame = Engine.GetProcessFrames();
+        FxLod.camera = camera;
+        updatedFrame = Engine.GetProcessFrames();
         if (delta <= 0) return;
-        _smoothedFrame += (delta - _smoothedFrame) * FrameSmoothing;
-        double fps = 1.0 / _smoothedFrame;
+        smoothedFrame += (delta - smoothedFrame) * FrameSmoothing;
+        double fps = 1.0 / smoothedFrame;
         double targetFps = TargetFps(Engine.MaxFps);
         if (fps < targetFps * StrainedShare)
             Load = Mathf.Max(LoadFloor, Load - LoadDropPerSecond * (float)delta);
@@ -42,8 +42,8 @@ public static class FxLod
 
     public static float Ratio(Vector3 at)
     {
-        if (Engine.GetProcessFrames() - _updatedFrame > StaleFrames) return 1f;
-        float distance = at.DistanceTo(_camera);
+        if (Engine.GetProcessFrames() - updatedFrame > StaleFrames) return 1f;
+        float distance = at.DistanceTo(camera);
         float near = distance <= NearDistance ? 1f
             : distance >= FarDistance ? FarRatio
             : Mathf.Lerp(1f, FarRatio, (distance - NearDistance) / (FarDistance - NearDistance));

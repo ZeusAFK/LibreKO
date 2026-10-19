@@ -18,15 +18,15 @@ public sealed class KillStreakService(
 {
     public const int AnnouncementStep = 10;
 
-    private readonly ConcurrentDictionary<int, int> _streaks = new();
+    private readonly ConcurrentDictionary<int, int> streaks = new();
 
-    public int StreakOf(int characterId) => _streaks.GetValueOrDefault(characterId);
+    public int StreakOf(int characterId) => streaks.GetValueOrDefault(characterId);
 
-    public void Forget(UserSession session) => _streaks.TryRemove(session.CharacterId, out _);
+    public void Forget(UserSession session) => streaks.TryRemove(session.CharacterId, out _);
 
     public async Task OnPlayerKilledAsync(UserSession victim, UserSession killer)
     {
-        int streak = _streaks.AddOrUpdate(killer.CharacterId, 1, (_, current) => current + 1);
+        int streak = streaks.AddOrUpdate(killer.CharacterId, 1, (_, current) => current + 1);
         ushort count = (ushort)Math.Min(streak, ushort.MaxValue);
         await SendAsync(killer, KillAssistPacketWriter.Kill(
             KillAssistPacketWriter.OwnStreak, killer.CharacterId, killer.Name, (byte)killer.Nation, count));
@@ -43,7 +43,7 @@ public sealed class KillStreakService(
 
     public async Task OnPlayerDiedAsync(UserSession victim)
     {
-        if (_streaks.TryRemove(victim.CharacterId, out int lost) && lost > 0)
+        if (streaks.TryRemove(victim.CharacterId, out int lost) && lost > 0)
             await SendAsync(victim, KillAssistPacketWriter.Kill(
                 KillAssistPacketWriter.OwnStreak, victim.CharacterId, victim.Name, (byte)victim.Nation, 0));
     }

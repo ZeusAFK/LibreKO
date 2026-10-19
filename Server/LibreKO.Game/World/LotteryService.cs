@@ -10,17 +10,17 @@ namespace LibreKO.Game.World;
 
 public class LotteryService : ILotteryService
 {
-    private readonly SessionManager _sessionManager;
-    private readonly IGameDataService _gameDataService;
-    private readonly IUserNotificationService _userNotificationService;
-    private readonly IMailService _mailService;
-    private readonly ILogger<LotteryService> _logger;
+    private readonly SessionManager sessionManager;
+    private readonly IGameDataService gameDataService;
+    private readonly IUserNotificationService userNotificationService;
+    private readonly IMailService mailService;
+    private readonly ILogger<LotteryService> logger;
 
-    private ActiveLottery? _active;
-    private readonly object _stateLock = new();
-    private int _lastAnnouncedMinute = -1;
-    private int _lastAutoCheckMinute = -1;
-    private readonly ScheduleClock _scheduleClock;
+    private ActiveLottery? active;
+    private readonly object stateLock = new();
+    private int lastAnnouncedMinute = -1;
+    private int lastAutoCheckMinute = -1;
+    private readonly ScheduleClock scheduleClock;
 
     public LotteryService(
         SessionManager sessionManager,
@@ -30,53 +30,53 @@ public class LotteryService : ILotteryService
         ScheduleClock scheduleClock,
         ILogger<LotteryService> logger)
     {
-        _sessionManager = sessionManager;
-        _gameDataService = gameDataService;
-        _userNotificationService = userNotificationService;
-        _mailService = mailService;
-        _scheduleClock = scheduleClock;
-        _logger = logger;
+        this.sessionManager = sessionManager;
+        this.gameDataService = gameDataService;
+        this.userNotificationService = userNotificationService;
+        this.mailService = mailService;
+        this.scheduleClock = scheduleClock;
+        this.logger = logger;
     }
 
-    public ActiveLottery? ActiveEvent => _active;
+    public ActiveLottery? ActiveEvent => active;
 
     public IReadOnlyCollection<LotteryEventData> AvailableEvents =>
-        _gameDataService.LotteryEventTable.Values.ToList();
+        gameDataService.LotteryEventTable.Values.ToList();
 
     public async Task StartAsync(int lotteryId, int? durationMinutes = null)
     {
-        if (!_gameDataService.LotteryEventTable.TryGetValue(lotteryId, out var eventData))
+        if (!gameDataService.LotteryEventTable.TryGetValue(lotteryId, out var eventData))
         {
-            _logger.LogWarning("Lottery event {Id} not found in database", lotteryId);
+            logger.LogWarning("Lottery event {Id} not found in database", lotteryId);
             return;
         }
 
-        lock (_stateLock)
+        lock (stateLock)
         {
-            if (_active != null && _active.RemainingSeconds > 0)
+            if (active != null && active.RemainingSeconds > 0)
             {
-                _logger.LogWarning("Lottery event '{Name}' is already active", _active.EventData.Name);
+                logger.LogWarning("Lottery event '{Name}' is already active", active.EventData.Name);
                 return;
             }
 
             var duration = durationMinutes ?? (eventData.DurationMinutes > 0 ? eventData.DurationMinutes : LotteryEventData.DefaultDurationMinutes);
             var endTime = DateTime.UtcNow.AddMinutes(duration);
-            _active = new ActiveLottery(eventData, endTime);
-            _lastAnnouncedMinute = duration + 1;
+            active = new ActiveLottery(eventData, endTime);
+            lastAnnouncedMinute = duration + 1;
         }
 
-        _logger.LogInformation("Lottery event '{Name}' (ID {Id}) started for {Duration} minutes",
+        logger.LogInformation("Lottery event '{Name}' (ID {Id}) started for {Duration} minutes",
             eventData.Name, eventData.Id, durationMinutes ?? eventData.DurationMinutes);
 
         await BroadcastNoticeAsync($"[Lottery Event] '{eventData.Name}' has begun! Buy tickets via the Lottery window.");
 
-        var firstReward = _gameDataService.LotteryRewardsByEvent[eventData.Id].OrderBy(r => r.Place).FirstOrDefault();
+        var firstReward = gameDataService.LotteryRewardsByEvent[eventData.Id].OrderBy(r => r.Place).FirstOrDefault();
         if (firstReward != null)
             await BroadcastChatNoticeAsync($"[Lottery Event] {eventData.Name} started! 1st Prize: {GetRewardName(firstReward.ItemId)} x{firstReward.Count}.");
         else
             await BroadcastChatNoticeAsync($"[Lottery Event] {eventData.Name} started!");
 
-        foreach (var player in _sessionManager.GetAll())
+        foreach (var player in sessionManager.GetAll())
         {
             await SyncPlayerAsync(player);
         }
@@ -86,13 +86,13 @@ public class LotteryService : ILotteryService
     {
         ActiveLottery? current;
         Dictionary<int, int>? refundSnapshot = null;
-        lock (_stateLock)
+        lock (stateLock)
         {
-            current = _active;
+            current = active;
             if (current == null) return;
             if (cancelWithoutWinners)
             {
-                _active = null;
+                active = null;
             }
         }
 
@@ -104,7 +104,7 @@ public class LotteryService : ILotteryService
                 refundSnapshot = new Dictionary<int, int>(current.PlayerTicketCounts);
             }
 
-            _logger.LogInformation("Lottery event '{Name}' was cancelled without drawing winners", current.EventData.Name);
+            logger.LogInformation("Lottery event '{Name}' was cancelled without drawing winners", current.EventData.Name);
             await BroadcastNoticeAsync($"[Lottery Event] '{current.EventData.Name}' was cancelled by GM.");
             await BroadcastPacketAsync(LotteryPacketWriter.Close());
 
@@ -124,12 +124,12 @@ public class LotteryService : ILotteryService
                 }
                 else
                 {
-                    var itemData = _gameDataService.GetItem(reqItemId);
+                    var itemData = gameDataService.GetItem(reqItemId);
                     short duration = itemData?.Duration ?? 0;
                     attachment = new MailAttachmentDraft(MailAttachmentKind.Item, reqItemId, (int)Math.Min(totalRefund, int.MaxValue), duration);
                 }
 
-                await _mailService.SendSystemMailAsync(
+                await mailService.SendSystemMailAsync(
                     charId,
                     "Lottery Event Cancelled - Refund",
                     $"The '{current.EventData.Name}' event was cancelled. Your purchase of {ticketCount} ticket(s) has been refunded in full.",
@@ -143,7 +143,7 @@ public class LotteryService : ILotteryService
 
     public async Task<(bool Success, string Message, int MyTickets, int TotalTickets)> BuyTicketAsync(UserSession player)
     {
-        ActiveLottery? active = _active;
+        ActiveLottery? active = this.active;
         if (active == null || active.RemainingSeconds <= 0)
             return (false, "No lottery event is currently active.", 0, 0);
 
@@ -173,7 +173,7 @@ public class LotteryService : ILotteryService
             {
                 if (CountItem(player, reqItemId) < reqItemCount)
                 {
-                    var reqName = _gameDataService.GetItem(reqItemId)?.Name ?? "required item";
+                    var reqName = gameDataService.GetItem(reqItemId)?.Name ?? "required item";
                     return (false, $"You don't have the required {reqName} x{reqItemCount}.", active.TicketsFor(player.CharacterId), active.TotalTickets);
                 }
 
@@ -188,16 +188,16 @@ public class LotteryService : ILotteryService
 
         if (reqItemId == InventoryConstants.ItemGold)
         {
-            await _userNotificationService.SendGoldLossAsync(player, reqItemCount);
+            await userNotificationService.SendGoldLossAsync(player, reqItemCount);
         }
         else if (stackChanges != null)
         {
             foreach (var sc in stackChanges)
             {
-                await _userNotificationService.SendStackChangeAsync(player, sc.SlotIndex, sc.ItemId, sc.Count, sc.Durability);
+                await userNotificationService.SendStackChangeAsync(player, sc.SlotIndex, sc.ItemId, sc.Count, sc.Durability);
             }
-            player.RecalculateStatsWithBuffs(_gameDataService);
-            await _userNotificationService.SendWeightChangeAsync(player);
+            player.RecalculateStatsWithBuffs(gameDataService);
+            await userNotificationService.SendWeightChangeAsync(player);
         }
 
         await BroadcastPacketAsync(LotteryPacketWriter.Progress(totalTickets));
@@ -207,7 +207,7 @@ public class LotteryService : ILotteryService
 
     public async Task SyncPlayerAsync(UserSession player)
     {
-        var active = _active;
+        var active = this.active;
         if (active == null || active.RemainingSeconds <= 0)
         {
             await player.Client.SendPacket(LotteryPacketWriter.InactiveState());
@@ -217,9 +217,9 @@ public class LotteryService : ILotteryService
         var eventData = active.EventData;
         var reqName = eventData.ReqItemId == InventoryConstants.ItemGold
             ? "Gold"
-            : (_gameDataService.GetItem(eventData.ReqItemId)?.Name ?? "Item");
+            : (gameDataService.GetItem(eventData.ReqItemId)?.Name ?? "Item");
 
-        var rewards = _gameDataService.LotteryRewardsByEvent[eventData.Id]
+        var rewards = gameDataService.LotteryRewardsByEvent[eventData.Id]
             .OrderBy(r => r.Place)
             .Select(r => new LotteryPacketWriter.RewardInfo(r.ItemId, r.Count, GetRewardName(r.ItemId)))
             .ToList();
@@ -241,7 +241,7 @@ public class LotteryService : ILotteryService
 
     public async Task TickAsync()
     {
-        var active = _active;
+        var active = this.active;
         if (active != null)
         {
             var rem = active.RemainingSeconds;
@@ -255,9 +255,9 @@ public class LotteryService : ILotteryService
             int[] intervals = [15, 10, 5, 3, 1];
             foreach (var minutes in intervals)
             {
-                if (rem <= minutes * 60 && _lastAnnouncedMinute > minutes)
+                if (rem <= minutes * 60 && lastAnnouncedMinute > minutes)
                 {
-                    _lastAnnouncedMinute = minutes;
+                    lastAnnouncedMinute = minutes;
                     await BroadcastNoticeAsync($"[Lottery Event] {minutes} minute(s) remaining! ({active.TotalTickets} tickets bought)");
                     break;
                 }
@@ -265,21 +265,21 @@ public class LotteryService : ILotteryService
         }
 
         // Automatic schedule checking via database (matching Collection Race)
-        var utcNow = _scheduleClock.UtcNow;
-        if (utcNow.Minute != _lastAutoCheckMinute)
+        var utcNow = scheduleClock.UtcNow;
+        if (utcNow.Minute != lastAutoCheckMinute)
         {
-            _lastAutoCheckMinute = utcNow.Minute;
-            if (_active == null)
+            lastAutoCheckMinute = utcNow.Minute;
+            if (this.active == null)
             {
-                foreach (var eventData in _gameDataService.LotteryEventTable.Values)
+                foreach (var eventData in gameDataService.LotteryEventTable.Values)
                 {
                     if (!eventData.AutoStart)
                         continue;
 
-                    var schedules = _gameDataService.LotterySchedulesByEvent[eventData.Id];
+                    var schedules = gameDataService.LotterySchedulesByEvent[eventData.Id];
                     if (schedules.Any(s => s.Matches(utcNow)))
                     {
-                        _logger.LogInformation("Auto-starting lottery event '{Name}' (ID {Id}) from database schedule", eventData.Name, eventData.Id);
+                        logger.LogInformation("Auto-starting lottery event '{Name}' (ID {Id}) from database schedule", eventData.Name, eventData.Id);
                         await StartAsync(eventData.Id);
                         break;
                     }
@@ -290,9 +290,9 @@ public class LotteryService : ILotteryService
 
     private async Task FinishAsync(ActiveLottery active)
     {
-        lock (_stateLock)
+        lock (stateLock)
         {
-            if (_active == active) _active = null;
+            if (this.active == active) this.active = null;
         }
 
         List<(int CharacterId, string CharacterName)> ticketSnapshot;
@@ -302,7 +302,7 @@ public class LotteryService : ILotteryService
             ticketSnapshot = new List<(int CharacterId, string CharacterName)>(active.Tickets);
         }
 
-        _logger.LogInformation("Lottery event '{Name}' finished with {Count} total tickets",
+        logger.LogInformation("Lottery event '{Name}' finished with {Count} total tickets",
             active.EventData.Name, ticketSnapshot.Count);
 
         if (ticketSnapshot.Count == 0)
@@ -312,7 +312,7 @@ public class LotteryService : ILotteryService
             return;
         }
 
-        var rewards = _gameDataService.LotteryRewardsByEvent[active.EventData.Id]
+        var rewards = gameDataService.LotteryRewardsByEvent[active.EventData.Id]
             .OrderBy(r => r.Place)
             .ToList();
 
@@ -340,7 +340,7 @@ public class LotteryService : ILotteryService
             winnerInfos.Add(new LotteryPacketWriter.WinnerInfo(place, charName, reward.ItemId, reward.Count, itemName));
 
             string placeStr = place switch { 1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{place}th" };
-            var itemData = _gameDataService.GetItem(reward.ItemId);
+            var itemData = gameDataService.GetItem(reward.ItemId);
             short duration = itemData?.Duration ?? 0;
 
             var attachment = reward.ItemId switch
@@ -351,13 +351,13 @@ public class LotteryService : ILotteryService
                 _ => new MailAttachmentDraft(MailAttachmentKind.Item, reward.ItemId, reward.Count, duration),
             };
 
-            await _mailService.SendSystemMailAsync(
+            await mailService.SendSystemMailAsync(
                 charId,
                 $"Lottery Reward - {placeStr} Prize",
                 $"Congratulations {charName}! You won {placeStr} Prize in the '{active.EventData.Name}' event! Your reward ({itemName} x{reward.Count}) is attached to this mail.",
                 [attachment]);
 
-            _logger.LogInformation("Mailed {Place} prize ({Item} x{Count}) to winner {Name} ({CharId})",
+            logger.LogInformation("Mailed {Place} prize ({Item} x{Count}) to winner {Name} ({CharId})",
                 placeStr, itemName, reward.Count, charName, charId);
         }
 
@@ -379,7 +379,7 @@ public class LotteryService : ILotteryService
             InventoryConstants.ItemGold => "Gold",
             InventoryConstants.ItemExperience => "Experience",
             InventoryConstants.ItemLadderPoint => "National Points",
-            _ => _gameDataService.GetItem(itemId)?.Name ?? $"Item {itemId}",
+            _ => gameDataService.GetItem(itemId)?.Name ?? $"Item {itemId}",
         };
 
     private async Task BroadcastNoticeAsync(string message)
@@ -396,7 +396,7 @@ public class LotteryService : ILotteryService
 
     private async Task BroadcastPacketAsync(Packet packet)
     {
-        foreach (var session in _sessionManager.GetAll())
+        foreach (var session in sessionManager.GetAll())
         {
             await session.Client.SendPacket(packet);
         }

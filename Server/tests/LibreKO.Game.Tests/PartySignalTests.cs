@@ -13,7 +13,7 @@ namespace LibreKO.Game.Tests;
 public class PartySignalTests : GameTestBase
 {
     private const byte Moradon = 21;
-    private long _now = 5_000_000;
+    private long now = 5_000_000;
 
     [Fact]
     public async Task AnEchoedProbeBecomesTheMembersSmoothedRoundTrip()
@@ -162,7 +162,7 @@ public class PartySignalTests : GameTestBase
 
         await signal.TickAsync();
         var token = ProbesIn(leaderSent).Single();
-        _now += 50;
+        now += 50;
         await coordinator.HandleAsync(leader.Client, EchoOf(unchecked(token + 1)));
 
         signal.ShownMs(leader.CharacterId).Should().BeNull();
@@ -214,7 +214,7 @@ public class PartySignalTests : GameTestBase
 
     private ServiceProvider CreateSignalProvider() => CreateProvider(_ => { }, configureServices: services =>
         services.AddSingleton(sp => new PartySignalService(
-            sp.GetRequiredService<SessionManager>(), NullLogger<PartySignalService>.Instance, () => _now)));
+            sp.GetRequiredService<SessionManager>(), NullLogger<PartySignalService>.Instance, () => now)));
 
     private static (IPartySignalService Signal, IPartyPacketCoordinator Coordinator, SessionManager Sessions) Resolve(
         ServiceProvider provider) => (
@@ -225,7 +225,7 @@ public class PartySignalTests : GameTestBase
     private async Task EchoAfterAsync(
         IPartyPacketCoordinator coordinator, long elapsedMs, params (UserSession Session, List<Packet> Sent)[] answering)
     {
-        _now += elapsedMs;
+        now += elapsedMs;
         foreach (var (session, sent) in answering)
             await coordinator.HandleAsync(session.Client, EchoOf(ProbesIn(sent).Last()));
     }

@@ -26,9 +26,9 @@ public sealed class KrowazTrapService(
 
     private const double TenthsPerSecond = 10.0;
 
-    private readonly object _lock = new();
-    private readonly Dictionary<int, DateTime> _gateClosesAt = [];
-    private readonly Dictionary<int, DateTime> _gasSwitchAt = [];
+    private readonly object stateLock = new();
+    private readonly Dictionary<int, DateTime> gateClosesAt = [];
+    private readonly Dictionary<int, DateTime> gasSwitchAt = [];
 
     public static bool InGasCloud(float x, float z, float gasX, float gasZ) =>
         Math.Abs(x - gasX) <= GasHalfWidthX && Math.Abs(z - gasZ) <= GasHalfWidthZ;
@@ -51,13 +51,13 @@ public sealed class KrowazTrapService(
         if (gate.GateOpen == 0)
             return;
 
-        lock (_lock)
+        lock (stateLock)
         {
-            if (!_gateClosesAt.TryGetValue(gate.UniqueId, out var closesAt))
+            if (!gateClosesAt.TryGetValue(gate.UniqueId, out var closesAt))
                 closesAt = now;
             if (now < closesAt)
                 return;
-            _gateClosesAt.Remove(gate.UniqueId);
+            gateClosesAt.Remove(gate.UniqueId);
         }
 
         gate.GateOpen = 0;
@@ -66,13 +66,13 @@ public sealed class KrowazTrapService(
 
     private async Task TickGasAsync(NpcInstance gas, DateTime now)
     {
-        lock (_lock)
+        lock (stateLock)
         {
-            if (_gasSwitchAt.TryGetValue(gas.UniqueId, out var switchAt) && now < switchAt)
+            if (gasSwitchAt.TryGetValue(gas.UniqueId, out var switchAt) && now < switchAt)
                 return;
             bool flowing = gas.GateOpen == 0;
             gas.GateOpen = flowing ? 1 : 0;
-            _gasSwitchAt[gas.UniqueId] = now.AddSeconds(flowing
+            gasSwitchAt[gas.UniqueId] = now.AddSeconds(flowing
                 ? Random.Shared.Next(GasFlowMinTenths, GasFlowMaxTenths + 1) / TenthsPerSecond
                 : Random.Shared.Next(GasRestMinTenths, GasRestMaxTenths + 1) / TenthsPerSecond);
         }
@@ -101,8 +101,8 @@ public sealed class KrowazTrapService(
         if (npc == null || npc.GateOpen != 0)
             return false;
 
-        lock (_lock)
-            _gateClosesAt[npc.UniqueId] = DateTime.UtcNow.AddSeconds(KeyGateOpenSeconds);
+        lock (stateLock)
+            gateClosesAt[npc.UniqueId] = DateTime.UtcNow.AddSeconds(KeyGateOpenSeconds);
         npc.GateOpen = 1;
         await BroadcastStateAsync(npc, KeyGateObject);
         return true;

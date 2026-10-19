@@ -7,21 +7,21 @@ public enum LogTab { All, State, Item, System }
 
 public sealed class TabbedLog
 {
-    private readonly int _max;
-    private readonly Dictionary<LogTab, Queue<string>> _lines = new();
+    private readonly int max;
+    private readonly Dictionary<LogTab, Queue<string>> lines = new();
 
     public TabbedLog(int max)
     {
-        _max = max;
+        this.max = max;
         foreach (var tab in Enum.GetValues<LogTab>())
-            _lines[tab] = new Queue<string>();
+            lines[tab] = new Queue<string>();
     }
 
     public LogTab Shown { get; private set; } = LogTab.All;
 
-    public IReadOnlyCollection<string> Lines(LogTab tab) => _lines[tab];
+    public IReadOnlyCollection<string> Lines(LogTab tab) => lines[tab];
 
-    public IReadOnlyCollection<string> ShownLines => _lines[Shown];
+    public IReadOnlyCollection<string> ShownLines => lines[Shown];
 
     public bool Show(LogTab tab)
     {
@@ -41,11 +41,11 @@ public sealed class TabbedLog
 
     private void Push(LogTab tab, string line, List<string>? dropped)
     {
-        var lines = _lines[tab];
-        lines.Enqueue(line);
-        while (lines.Count > _max)
+        var tabLines = lines[tab];
+        tabLines.Enqueue(line);
+        while (tabLines.Count > max)
         {
-            string old = lines.Dequeue();
+            string old = tabLines.Dequeue();
             dropped?.Add(old);
         }
     }

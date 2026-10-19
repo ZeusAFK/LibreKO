@@ -40,6 +40,6 @@ public class MailViewTests
     {
         Assert.Equal("12 / 50 letters", MailView.Fill(12));
         Assert.False(MailView.Full(49));
-        Assert.True(MailView.Full(Net.MailInboxMax));
+        Assert.True(MailView.Full(MailWire.InboxMax));
     }
 }

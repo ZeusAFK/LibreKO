@@ -26,56 +26,56 @@ public partial class StatBar : Control
     private const float RibbonBreatheSwing = 0.025f;
     private const float LowerCoreLift = 0.08f;
     private const float FlowMargin = 4f;
-    private static Shader? _glowShader, _flowShader;
-    private static Shader GlowShader => _glowShader ??= GD.Load<Shader>("res://shaders/ribbon_glow.gdshader");
-    private static Shader FlowShader => _flowShader ??= GD.Load<Shader>("res://shaders/ribbon_flow.gdshader");
-    private readonly Color _fill;
-    private Color? _fillOverride;
+    private static Shader? glowShader, flowShader;
+    private static Shader GlowShader => glowShader ??= GD.Load<Shader>("res://shaders/ribbon_glow.gdshader");
+    private static Shader FlowShader => flowShader ??= GD.Load<Shader>("res://shaders/ribbon_flow.gdshader");
+    private readonly Color fillColor;
+    private Color? fillOverride;
     private const float TrailLighten = 0.55f;
     private const float TrailAlpha = 0.8f;
 
-    private Color Fill => _fillOverride ?? _fill;
+    private Color Fill => fillOverride ?? fillColor;
 
     public Color? FillOverride
     {
-        get => _fillOverride;
+        get => fillOverride;
         set
         {
-            if (_fillOverride == value) return;
-            _fillOverride = value;
+            if (fillOverride == value) return;
+            fillOverride = value;
             QueueRedraw();
         }
     }
-    private readonly Label _text;
-    private readonly RibbonKind _ribbon;
-    private readonly Control? _glow, _flow, _border;
-    private readonly ShaderMaterial? _flowMaterial;
-    private float _frac;
+    private readonly Label textLabel;
+    private readonly RibbonKind ribbon;
+    private readonly Control? glow, flow, border;
+    private readonly ShaderMaterial? flowMaterial;
+    private float frac;
 
     public StatBar(Color fill, Vector2 size, RibbonKind ribbon = RibbonKind.None)
     {
-        _fill = fill;
-        _ribbon = ribbon;
+        fillColor = fill;
+        this.ribbon = ribbon;
         CustomMinimumSize = size;
 
-        if (_ribbon != RibbonKind.None)
+        if (this.ribbon != RibbonKind.None)
         {
             var glowMaterial = new ShaderMaterial { Shader = GlowShader };
             glowMaterial.SetShaderParameter("breathe", new Vector3(1f - fill.R, 1f - fill.G, 1f - fill.B) * RibbonBreatheSwing);
-            _flowMaterial = new ShaderMaterial { Shader = FlowShader };
-            _glow = Layer(glowMaterial, DrawGlow);
-            _flow = Layer(_flowMaterial, DrawFlow);
-            _border = Layer(null, DrawBorder);
+            flowMaterial = new ShaderMaterial { Shader = FlowShader };
+            glow = Layer(glowMaterial, DrawGlow);
+            flow = Layer(flowMaterial, DrawFlow);
+            border = Layer(null, DrawBorder);
         }
 
-        _text = HudStyle.Label(_ribbon is RibbonKind.None or RibbonKind.Plain ? 11 : 10,
+        textLabel = HudStyle.Label(this.ribbon is RibbonKind.None or RibbonKind.Plain ? 11 : 10,
                                HorizontalAlignment.Center);
-        _text.AddThemeColorOverride("font_color", new Color(0.85f, 0.86f, 0.84f, 0.94f));
-        _text.AddThemeColorOverride("font_outline_color", new Color(0.04f, 0.045f, 0.05f, 0.82f));
-        _text.AddThemeConstantOverride("outline_size",
-            _ribbon is RibbonKind.None or RibbonKind.Plain ? 2 : 1);
-        _text.SetAnchorsPreset(LayoutPreset.FullRect);
-        AddChild(_text);
+        textLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.86f, 0.84f, 0.94f));
+        textLabel.AddThemeColorOverride("font_outline_color", new Color(0.04f, 0.045f, 0.05f, 0.82f));
+        textLabel.AddThemeConstantOverride("outline_size",
+            this.ribbon is RibbonKind.None or RibbonKind.Plain ? 2 : 1);
+        textLabel.SetAnchorsPreset(LayoutPreset.FullRect);
+        AddChild(textLabel);
         Resized += Refresh;
         Refresh();
     }
@@ -91,82 +91,82 @@ public partial class StatBar : Control
     private void Refresh()
     {
         QueueRedraw();
-        if (_glow == null || _flow == null || _border == null || _flowMaterial == null) return;
-        bool filled = _frac > 0f;
-        _glow.Visible = filled;
-        _flow.Visible = filled;
+        if (glow == null || flow == null || border == null || flowMaterial == null) return;
+        bool filled = frac > 0f;
+        glow.Visible = filled;
+        flow.Visible = filled;
         var quad = FilledQuad(Silhouette());
-        _flowMaterial.SetShaderParameter("quad_top_left", quad[0]);
-        _flowMaterial.SetShaderParameter("quad_top_right", quad[1]);
-        _flowMaterial.SetShaderParameter("quad_bottom_right", quad[2]);
-        _flowMaterial.SetShaderParameter("quad_bottom_left", quad[3]);
-        _glow.QueueRedraw();
-        _flow.QueueRedraw();
-        _border.QueueRedraw();
+        flowMaterial.SetShaderParameter("quad_top_left", quad[0]);
+        flowMaterial.SetShaderParameter("quad_top_right", quad[1]);
+        flowMaterial.SetShaderParameter("quad_bottom_right", quad[2]);
+        flowMaterial.SetShaderParameter("quad_bottom_left", quad[3]);
+        glow.QueueRedraw();
+        flow.QueueRedraw();
+        border.QueueRedraw();
     }
 
-    private int _cur = -1, _max = -1;
-    private string? _fullText;
-    private BarGlide? _glide;
-    private bool _snapNext = true;
+    private int cur = -1, max = -1;
+    private string? fullText;
+    private BarGlide? glide;
+    private bool snapNext = true;
 
     public bool Glide
     {
-        get => _glide != null;
-        set => _glide = value ? new BarGlide() : null;
+        get => glide != null;
+        set => glide = value ? new BarGlide() : null;
     }
 
-    public void SnapNext() => _snapNext = true;
+    public void SnapNext() => snapNext = true;
 
     public void Set(int cur, int max)
     {
-        if (cur == _cur && max == _max) return;
-        _cur = cur;
-        _max = max;
-        _fullText = null;
+        if (cur == this.cur && max == this.max) return;
+        this.cur = cur;
+        this.max = max;
+        fullText = null;
         float frac = max > 0 ? Mathf.Clamp((float)cur / max, 0f, 1f) : 0f;
-        _text.Text = $"{cur} / {max}";
-        if (_glide == null || _snapNext)
+        textLabel.Text = $"{cur} / {max}";
+        if (glide == null || snapNext)
         {
-            _snapNext = false;
-            _glide?.Snap(frac);
-            _frac = frac;
+            snapNext = false;
+            glide?.Snap(frac);
+            this.frac = frac;
             Refresh();
             return;
         }
-        _glide.Aim(frac);
+        glide.Aim(frac);
         SetProcess(true);
     }
 
     public override void _Process(double delta)
     {
-        if (_glide == null || !_glide.Step(delta))
+        if (glide == null || !glide.Step(delta))
         {
-            if (_glide != null) _frac = _glide.Shown;
+            if (glide != null) frac = glide.Shown;
             SetProcess(false);
             Refresh();
             return;
         }
-        _frac = _glide.Shown;
+        frac = glide.Shown;
         Refresh();
     }
 
     public void SetFraction(float fraction, string text)
     {
-        _cur = _max = -1;
-        _fullText = null;
-        _frac = Mathf.Clamp(fraction, 0f, 1f);
-        _text.Text = text;
+        cur = max = -1;
+        fullText = null;
+        frac = Mathf.Clamp(fraction, 0f, 1f);
+        textLabel.Text = text;
         Refresh();
     }
 
     public void SetFull(string text = "")
     {
-        if (_fullText == text) return;
-        _fullText = text;
-        _cur = _max = -1;
-        _frac = 1f;
-        _text.Text = text;
+        if (fullText == text) return;
+        fullText = text;
+        cur = max = -1;
+        frac = 1f;
+        textLabel.Text = text;
         Refresh();
     }
 
@@ -174,12 +174,12 @@ public partial class StatBar : Control
     {
         float w = Size.X, h = Size.Y;
         if (w <= 0f || h <= 0f) return;
-        if (_ribbon != RibbonKind.None)
+        if (ribbon != RibbonKind.None)
         {
             DrawRibbon();
             return;
         }
-        if (_ribbon == RibbonKind.Plain)
+        if (ribbon == RibbonKind.Plain)
         {
             DrawPlain(w, h);
             return;
@@ -188,12 +188,12 @@ public partial class StatBar : Control
         Vector2[] outer = { new(Skew, 0), new(w, 0), new(w - Skew, h), new(0, h) };
         DrawColoredPolygon(outer, new Color(0.025f, 0.026f, 0.030f, 0.92f));
 
-        if (_frac > 0f)
+        if (frac > 0f)
         {
             float topLeft = Skew + 2f, bottomLeft = 3f;
             float topLimit = w - 3f, bottomLimit = w - Skew - 2f;
-            float topRight = Mathf.Lerp(topLeft, topLimit, _frac);
-            float bottomRight = Mathf.Lerp(bottomLeft, bottomLimit, _frac);
+            float topRight = Mathf.Lerp(topLeft, topLimit, frac);
+            float bottomRight = Mathf.Lerp(bottomLeft, bottomLimit, frac);
             Vector2[] fill =
             {
                 new(topLeft, 3), new(topRight, 3),
@@ -202,10 +202,10 @@ public partial class StatBar : Control
             Color top = Fill.Lightened(FillLighten);
             Color bottom = Fill.Darkened(FillDarken);
             DrawPolygon(fill, new[] { top, top, bottom, bottom });
-            if (_glide != null && _glide.Trail > _frac)
+            if (glide != null && glide.Trail > frac)
             {
-                float trailTop = Mathf.Lerp(topLeft, topLimit, _glide.Trail);
-                float trailBottom = Mathf.Lerp(bottomLeft, bottomLimit, _glide.Trail);
+                float trailTop = Mathf.Lerp(topLeft, topLimit, glide.Trail);
+                float trailBottom = Mathf.Lerp(bottomLeft, bottomLimit, glide.Trail);
                 Vector2[] trail =
                 {
                     new(topRight, 3), new(trailTop, 3),
@@ -232,19 +232,19 @@ public partial class StatBar : Control
         };
         DrawColoredPolygon(gloss, new Color(1f, 1f, 1f, 0.09f));
 
-        Vector2[] border = { outer[0], outer[1], outer[2], outer[3], outer[0] };
-        DrawPolyline(border, new Color(0.025f, 0.027f, 0.031f, 0.98f), 3f, true);
-        DrawPolyline(border, new Color(0.49f, 0.41f, 0.23f, 0.90f), 1.25f, true);
+        Vector2[] borderPoints = { outer[0], outer[1], outer[2], outer[3], outer[0] };
+        DrawPolyline(borderPoints, new Color(0.025f, 0.027f, 0.031f, 0.98f), 3f, true);
+        DrawPolyline(borderPoints, new Color(0.49f, 0.41f, 0.23f, 0.90f), 1.25f, true);
     }
 
     private void DrawPlain(float w, float h)
     {
         DrawRect(new Rect2(0f, 0f, w, h), new Color(0.020f, 0.022f, 0.027f, 0.90f));
         if (Trailing)
-            DrawRect(new Rect2(1f, 1f, Mathf.Max(0f, (w - 2f) * _glide!.Trail), h - 2f), TrailColour);
-        if (_frac > 0f)
+            DrawRect(new Rect2(1f, 1f, Mathf.Max(0f, (w - 2f) * glide!.Trail), h - 2f), TrailColour);
+        if (frac > 0f)
         {
-            var fill = new Rect2(1f, 1f, Mathf.Max(0f, (w - 2f) * _frac), h - 2f);
+            var fill = new Rect2(1f, 1f, Mathf.Max(0f, (w - 2f) * frac), h - 2f);
             DrawRect(fill, Fill.Darkened(0.30f));
             DrawRect(new Rect2(fill.Position, new Vector2(fill.Size.X, fill.Size.Y * 0.45f)),
                      Fill.Lightened(0.22f));
@@ -260,11 +260,11 @@ public partial class StatBar : Control
 
     public bool ShowNumbers
     {
-        get => _text.Visible;
-        set => _text.Visible = value;
+        get => textLabel.Visible;
+        set => textLabel.Visible = value;
     }
 
-    private Vector2[] Silhouette() => _ribbon switch
+    private Vector2[] Silhouette() => ribbon switch
     {
         RibbonKind.Upper => Fitted(UpperShape, UpperFrame),
         RibbonKind.Lower => Fitted(LowerShape, LowerFrame),
@@ -284,7 +284,7 @@ public partial class StatBar : Control
         return fitted;
     }
 
-    private Vector2[] FilledQuad(Vector2[] silhouette) => FilledQuad(silhouette, _frac);
+    private Vector2[] FilledQuad(Vector2[] silhouette) => FilledQuad(silhouette, frac);
 
     private static Vector2[] FilledQuad(Vector2[] silhouette, float fraction) => new[]
     {
@@ -294,26 +294,26 @@ public partial class StatBar : Control
         silhouette[3],
     };
 
-    private bool Trailing => _glide != null && _glide.Trail > _frac;
+    private bool Trailing => glide != null && glide.Trail > frac;
 
     private Color TrailColour => new(Fill.Lightened(TrailLighten), TrailAlpha);
 
-    private Color RibbonEdge() => Fill.Darkened(_ribbon == RibbonKind.Lower ? 0.40f : 0.45f);
+    private Color RibbonEdge() => Fill.Darkened(ribbon == RibbonKind.Lower ? 0.40f : 0.45f);
 
     private void DrawRibbon()
     {
         var silhouette = Silhouette();
         DrawColoredPolygon(silhouette, new Color(0.035f, 0.038f, 0.040f, 0.90f));
-        if (Trailing) DrawColoredPolygon(FilledQuad(silhouette, _glide!.Trail), TrailColour);
-        if (_frac > 0f) DrawColoredPolygon(FilledQuad(silhouette), RibbonEdge());
+        if (Trailing) DrawColoredPolygon(FilledQuad(silhouette, glide!.Trail), TrailColour);
+        if (frac > 0f) DrawColoredPolygon(FilledQuad(silhouette), RibbonEdge());
     }
 
     private void DrawGlow(Control layer)
     {
-        if (_frac <= 0f) return;
+        if (frac <= 0f) return;
         var filled = FilledQuad(Silhouette());
         Color edge = RibbonEdge();
-        Color core = Fill.Lightened(_ribbon == RibbonKind.Upper ? RibbonBreathe : RibbonBreathe + LowerCoreLift);
+        Color core = Fill.Lightened(ribbon == RibbonKind.Upper ? RibbonBreathe : RibbonBreathe + LowerCoreLift);
 
         Vector2 a = filled[0].Lerp(filled[3], 0.22f);
         Vector2 b = filled[1].Lerp(filled[2], 0.22f);
@@ -342,13 +342,13 @@ public partial class StatBar : Control
     private void DrawBorder(Control layer)
     {
         var silhouette = Silhouette();
-        Vector2[] border =
+        Vector2[] borderPoints =
         {
             silhouette[0], silhouette[1], silhouette[2], silhouette[3], silhouette[0],
         };
-        layer.DrawPolyline(border, new Color(Fill, 0.13f), 3f, true);
-        layer.DrawPolyline(border, new Color(0.055f, 0.060f, 0.060f, 0.96f), 1.5f, true);
-        layer.DrawPolyline(border, new Color(0.56f, 0.48f, 0.27f, 0.48f), 0.75f, true);
+        layer.DrawPolyline(borderPoints, new Color(Fill, 0.13f), 3f, true);
+        layer.DrawPolyline(borderPoints, new Color(0.055f, 0.060f, 0.060f, 0.96f), 1.5f, true);
+        layer.DrawPolyline(borderPoints, new Color(0.56f, 0.48f, 0.27f, 0.48f), 0.75f, true);
     }
 }
 
@@ -359,14 +359,14 @@ public partial class LevelOrb : Control
     private static readonly Color HighlightIconTint = new(0.12f, 0.09f, 0.04f);
     private static readonly Color Face = new(0.115f, 0.120f, 0.125f, 0.97f);
     private static readonly Color HighlightFace = new(0.86f, 0.66f, 0.27f, 0.98f);
-    private readonly CenterContainer _labels;
-    private readonly Label _level;
-    private readonly Label _exp;
-    private TextureRect? _icon;
-    private bool _highlighted;
-    private float _expFraction;
-    private float _expShown;
-    private bool _expPlaced;
+    private readonly CenterContainer labels;
+    private readonly Label levelLabel;
+    private readonly Label exp;
+    private TextureRect? icon;
+    private bool highlighted;
+    private float expFraction;
+    private float expShown;
+    private bool expPlaced;
 
     public LevelOrb(float size)
     {
@@ -375,81 +375,81 @@ public partial class LevelOrb : Control
         var center = new CenterContainer();
         center.SetAnchorsPreset(LayoutPreset.FullRect);
         AddChild(center);
-        _labels = center;
+        labels = center;
         var vb = new VBoxContainer();
         vb.AddThemeConstantOverride("separation", -2);
         center.AddChild(vb);
 
-        _level = HudStyle.Label(20, HorizontalAlignment.Center);
-        _level.AddThemeConstantOverride("outline_size", 2);
-        _exp = HudStyle.Label(11, HorizontalAlignment.Center);
-        _exp.AddThemeColorOverride("font_color", new Color(0.83f, 0.82f, 0.78f));
-        _exp.AddThemeConstantOverride("outline_size", 2);
-        vb.AddChild(_level);
-        vb.AddChild(_exp);
-        _exp.Visible = Platform.PointerUi;
+        levelLabel = HudStyle.Label(20, HorizontalAlignment.Center);
+        levelLabel.AddThemeConstantOverride("outline_size", 2);
+        exp = HudStyle.Label(11, HorizontalAlignment.Center);
+        exp.AddThemeColorOverride("font_color", new Color(0.83f, 0.82f, 0.78f));
+        exp.AddThemeConstantOverride("outline_size", 2);
+        vb.AddChild(levelLabel);
+        vb.AddChild(exp);
+        exp.Visible = Platform.PointerUi;
         Resized += QueueRedraw;
     }
 
     public Texture2D? Icon
     {
-        get => _icon?.Texture;
+        get => icon?.Texture;
         set
         {
-            if (_icon == null)
+            if (icon == null)
             {
                 float inset = Mathf.Min(CustomMinimumSize.X, CustomMinimumSize.Y) * IconInset;
-                _icon = new TextureRect
+                icon = new TextureRect
                 {
                     ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                     StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
                     MouseFilter = MouseFilterEnum.Ignore,
-                    SelfModulate = _highlighted ? HighlightIconTint : IconTint,
+                    SelfModulate = highlighted ? HighlightIconTint : IconTint,
                 };
-                _icon.SetAnchorsPreset(LayoutPreset.FullRect);
-                _icon.OffsetLeft = _icon.OffsetTop = inset;
-                _icon.OffsetRight = _icon.OffsetBottom = -inset;
-                AddChild(_icon);
+                icon.SetAnchorsPreset(LayoutPreset.FullRect);
+                icon.OffsetLeft = icon.OffsetTop = inset;
+                icon.OffsetRight = icon.OffsetBottom = -inset;
+                AddChild(icon);
             }
-            _icon.Texture = value;
-            _labels.Visible = value == null;
+            icon.Texture = value;
+            labels.Visible = value == null;
         }
     }
 
     public bool Highlighted
     {
-        get => _highlighted;
+        get => highlighted;
         set
         {
-            if (_highlighted == value) return;
-            _highlighted = value;
-            if (_icon != null) _icon.SelfModulate = value ? HighlightIconTint : IconTint;
+            if (highlighted == value) return;
+            highlighted = value;
+            if (icon != null) icon.SelfModulate = value ? HighlightIconTint : IconTint;
             QueueRedraw();
         }
     }
 
     public void Set(int level, double expPercent)
     {
-        _level.Text = level.ToString();
-        _exp.Text = $"{expPercent:0.000}%";
+        levelLabel.Text = level.ToString();
+        exp.Text = $"{expPercent:0.000}%";
         SetGauge(expPercent);
     }
 
     public void SetGauge(double percent)
     {
         float fraction = Mathf.Clamp((float)(percent / 100.0), 0f, 1f);
-        if (_expPlaced && Mathf.IsEqualApprox(fraction, _expFraction)) return;
-        _expFraction = fraction;
-        if (!_expPlaced || _expFraction < _expShown) _expShown = _expFraction;
-        _expPlaced = true;
-        SetProcess(_expShown < _expFraction);
+        if (expPlaced && Mathf.IsEqualApprox(fraction, expFraction)) return;
+        expFraction = fraction;
+        if (!expPlaced || expFraction < expShown) expShown = expFraction;
+        expPlaced = true;
+        SetProcess(expShown < expFraction);
         QueueRedraw();
     }
 
     public override void _Process(double delta)
     {
-        _expShown = Mathf.MoveToward(_expShown, _expFraction, BarGlide.GlidePerSecond * (float)delta);
-        if (_expShown >= _expFraction) SetProcess(false);
+        expShown = Mathf.MoveToward(expShown, expFraction, BarGlide.GlidePerSecond * (float)delta);
+        if (expShown >= expFraction) SetProcess(false);
         QueueRedraw();
     }
 
@@ -464,7 +464,7 @@ public partial class LevelOrb : Control
         {
             new(c.X, c.Y - r), new(c.X + r, c.Y), new(c.X, c.Y + r), new(c.X - r, c.Y),
         };
-        DrawColoredPolygon(dia, _highlighted ? HighlightFace : Face);
+        DrawColoredPolygon(dia, highlighted ? HighlightFace : Face);
         Vector2[] outline = { dia[0], dia[1], dia[2], dia[3], dia[0] };
         DrawPolyline(outline, new Color(0.025f, 0.027f, 0.030f, 0.98f), 3f, true);
         DrawPolyline(outline, new Color(0.24f, 0.22f, 0.17f, 0.92f), 1.25f, true);
@@ -483,7 +483,7 @@ public partial class LevelOrb : Control
     private void DrawExpGauge(Vector2[] diamond)
     {
         Vector2[] path = { diamond[2], diamond[3], diamond[0], diamond[1], diamond[2] };
-        float remaining = _expShown * 4f;
+        float remaining = expShown * 4f;
         var glow = new Color(0.86f, 0.64f, 0.22f, 0.18f);
         var gold = new Color(0.86f, 0.66f, 0.27f, 0.98f);
         var highlight = new Color(1.00f, 0.82f, 0.39f, 0.72f);

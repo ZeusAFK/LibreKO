@@ -20,10 +20,10 @@ public sealed class QuestScriptHost(
     Func<int, string>? monsterName = null,
     QuestProgram? notificationProgram = null) : IQuestHost
 {
-    private readonly List<string> _unsupported = [];
-    private readonly List<(int ItemId, int Count)> _granted = [];
+    private readonly List<string> unsupported = [];
+    private readonly List<(int ItemId, int Count)> granted = [];
 
-    public IReadOnlyList<string> UnsupportedActions => _unsupported;
+    public IReadOnlyList<string> UnsupportedActions => unsupported;
 
     public int PlayerClassGroup => ClassIdHelper.GroupOf(session.Class);
 
@@ -251,7 +251,7 @@ public sealed class QuestScriptHost(
         }
         if (take.Count + give.Count > 0)
             CheckExchangeResult(context.Items.ApplyScriptReward(take, give));
-        _granted.Clear();
+        granted.Clear();
         if (context.ActionFailed)
             return;
         for (var promoted = 0; promoted < promotions && !context.ActionFailed; promoted++)
@@ -259,7 +259,7 @@ public sealed class QuestScriptHost(
         if (context.ActionFailed)
             return;
         foreach (var (itemId, count, _) in give)
-            _granted.Add((itemId, itemId == InventoryConstants.ItemExperience
+            granted.Add((itemId, itemId == InventoryConstants.ItemExperience
                 ? (int)Math.Clamp(context.PendingExperience - experienceBefore, 0, int.MaxValue)
                 : count));
     }
@@ -286,9 +286,9 @@ public sealed class QuestScriptHost(
 
     public void ShowReceipt(int questId)
     {
-        if (_granted.Count > 0)
-            context.QueuedPackets.Add(QuestPacketWriter.RewardReceipt(questId, _granted));
-        _granted.Clear();
+        if (granted.Count > 0)
+            context.QueuedPackets.Add(QuestPacketWriter.RewardReceipt(questId, granted));
+        granted.Clear();
     }
     public void TeleportToZone(int zoneId, int x, int z) => context.Dialog.ZoneChange(zoneId, x, z);
     public void TeleportClanToZone(int zoneId, int x, int z) => context.RequestClanZoneChange(zoneId, x, z);
@@ -323,6 +323,8 @@ public sealed class QuestScriptHost(
     public void OpenGenderChangePanel() => context.Dialog.SendGenderChangePanel();
     public void OpenFortunePanel() => context.Dialog.SendFortunePanel();
     public void OpenSpecialAuctionPanel() => context.Dialog.SendSpecialAuctionPanel();
+    public void OpenYutGame() => context.Dialog.SendYutGame();
+    public void OpenDrakiRankBoard() => context.Dialog.SendDrakiRankBoard();
     public void OpenItemCombinePanel() => context.Dialog.SendItemCombinePanel();
     public void OpenCombineRecipeBook() => context.Dialog.SendCombineRecipeBook();
     public void OpenDisassembleWindow() => context.Dialog.SendDisassemblePanel();
@@ -330,7 +332,7 @@ public sealed class QuestScriptHost(
 
     public void Unsupported(string what)
     {
-        _unsupported.Add(what);
+        unsupported.Add(what);
         logger.LogWarning("Quest script {File}: {What}", fileName, what);
     }
 }

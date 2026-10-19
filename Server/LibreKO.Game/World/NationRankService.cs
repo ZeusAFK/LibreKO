@@ -36,10 +36,10 @@ public class NationRankService(
 
     private static readonly AccountNation[] Nations = [AccountNation.Karus, AccountNation.ElMorad];
 
-    private volatile IReadOnlyDictionary<int, NationRanks> _ranks = new Dictionary<int, NationRanks>();
+    private volatile IReadOnlyDictionary<int, NationRanks> ranks = new Dictionary<int, NationRanks>();
 
     public NationRanks Of(int characterId) =>
-        _ranks.TryGetValue(characterId, out var ranks) ? ranks : NationRanks.None;
+        ranks.TryGetValue(characterId, out var nationRanks) ? nationRanks : NationRanks.None;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -81,7 +81,7 @@ public class NationRankService(
             ranks[id] = new NationRanks(
                 knights.GetValueOrDefault(id, NationRanks.Unranked),
                 personal.GetValueOrDefault(id, NationRanks.Unranked));
-        _ranks = ranks;
+        this.ranks = ranks;
 
         var visibility = services.GetService<IWorldVisibilityService>();
         foreach (var session in sessionManager.GetAll())

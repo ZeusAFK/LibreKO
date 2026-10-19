@@ -18,25 +18,25 @@ public partial class FxWeaponGlow : Node3D, IFxTicked
     private const float TexPhaseMax = 10f;
     private const float ScaleFactor = 0.7f;
 
-    private readonly System.Collections.Generic.List<Node3D> _tails = new();
-    private MeshInstance3D[] _shine = System.Array.Empty<MeshInstance3D>();
-    private Node3D[] _meshes = System.Array.Empty<Node3D>();
-    private string _fxName = "";
-    private int _renderFlags;
-    private int _blendWord;
-    private bool _reduced;
+    private readonly System.Collections.Generic.List<Node3D> tails = new();
+    private MeshInstance3D[] shine = System.Array.Empty<MeshInstance3D>();
+    private Node3D[] meshes = System.Array.Empty<Node3D>();
+    private string fxName = "";
+    private int renderFlags;
+    private int blendWord;
+    private bool reduced;
     private const int ReducedLayers = 1;
     private const int ReducedTails = 1;
 
     private static readonly System.Collections.Generic.Dictionary<(string Fx, int Layer, int Frame), ShaderMaterial> SharedMaterials =
         Shutdown.Track(new System.Collections.Generic.Dictionary<(string Fx, int Layer, int Frame), ShaderMaterial>());
-    private int[] _shown = System.Array.Empty<int>();
-    private Texture2D?[] _frames = System.Array.Empty<Texture2D?>();
-    private float _fps = 1f;
-    private double _age;
-    private double _texAge;
-    private Shell? _shell;
-    private Aabb _bounds;
+    private int[] shown = System.Array.Empty<int>();
+    private Texture2D?[] frames = System.Array.Empty<Texture2D?>();
+    private float fps = 1f;
+    private double age;
+    private double texAge;
+    private Shell? shell;
+    private Aabb bounds;
 
     public static Node3D? Create(string fxName, string tailFxName, string guideStem,
                                  string guideDir = WeaponGuideDir)
@@ -49,9 +49,9 @@ public partial class FxWeaponGlow : Node3D, IFxTicked
     public static Node3D? CreateTailOnly(string tailFxName, Aabb bounds)
     {
         if (tailFxName.Length == 0 || bounds.Size == Vector3.Zero) return null;
-        var root = new FxWeaponGlow { Name = $"fx_{tailFxName}_scatter", _bounds = bounds };
+        var root = new FxWeaponGlow { Name = $"fx_{tailFxName}_scatter", bounds = bounds };
         root.AddTails(tailFxName);
-        return root._tails.Count > 0 ? FxRegistry.Track(root, tailFxName, "weapon glow tail") : null;
+        return root.tails.Count > 0 ? FxRegistry.Track(root, tailFxName, "weapon glow tail") : null;
     }
 
     private sealed class Shell(Mesh mesh)
@@ -118,28 +118,28 @@ public partial class FxWeaponGlow : Node3D, IFxTicked
         var root = new FxWeaponGlow
         {
             Name = $"fx_{fxName}_guide",
-            _bounds = shell.Mesh.GetAabb(),
-            _shell = shell,
-            _shine = new MeshInstance3D[Layers],
-            _meshes = new Node3D[Layers],
-            _shown = new[] { -1, -1, -1 },
-            _fxName = fxName,
-            _renderFlags = FxShading.RenderFlags(part) | Fx.RfDoubleSided | Fx.RfNotZWrite,
-            _blendWord = FxShading.Packed(part),
+            bounds = shell.Mesh.GetAabb(),
+            shell = shell,
+            shine = new MeshInstance3D[Layers],
+            meshes = new Node3D[Layers],
+            shown = new[] { -1, -1, -1 },
+            fxName = fxName,
+            renderFlags = FxShading.RenderFlags(part) | Fx.RfDoubleSided | Fx.RfNotZWrite,
+            blendWord = FxShading.Packed(part),
         };
         var textures = part["tex"].AsGodotArray();
-        root._frames = new Texture2D?[textures.Count];
+        root.frames = new Texture2D?[textures.Count];
         for (int i = 0; i < textures.Count; i++)
-            root._frames[i] = Fx.FrameTexture(part, i);
-        root._fps = Mathf.Max(0.01f, Fx.ReadF(part, "texFPS", 1f));
-        root._texAge = GD.Randf() * TexPhaseMax;
+            root.frames[i] = Fx.FrameTexture(part, i);
+        root.fps = Mathf.Max(0.01f, Fx.ReadF(part, "texFPS", 1f));
+        root.texAge = GD.Randf() * TexPhaseMax;
 
         for (int i = 0; i < Layers; i++)
         {
             var layer = new Node3D { Name = $"layer{i}" };
-            root._meshes[i] = layer;
+            root.meshes[i] = layer;
             root.AddChild(layer);
-            var shine = new MeshInstance3D
+            var shineMesh = new MeshInstance3D
             {
                 Name = $"shine{i}",
                 Mesh = shell.Mesh,
@@ -147,17 +147,17 @@ public partial class FxWeaponGlow : Node3D, IFxTicked
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                 Layers = FxShading.LayerBit,
             };
-            root._shine[i] = shine;
-            layer.AddChild(shine);
+            root.shine[i] = shineMesh;
+            layer.AddChild(shineMesh);
         }
         return root;
     }
 
     private ShaderMaterial SharedMaterial(int layer, int frame)
     {
-        var key = (_fxName, layer, frame);
+        var key = (fxName, layer, frame);
         if (SharedMaterials.TryGetValue(key, out var material)) return material;
-        material = FxShading.SurfaceMaterial(_renderFlags, _blendWord, _frames.Length > frame ? _frames[frame] : null);
+        material = FxShading.SurfaceMaterial(renderFlags, blendWord, frames.Length > frame ? frames[frame] : null);
         material.RenderPriority = layer;
         SharedMaterials[key] = material;
         return material;
@@ -165,43 +165,43 @@ public partial class FxWeaponGlow : Node3D, IFxTicked
 
     private void SetReduced(bool reduced)
     {
-        if (_reduced == reduced) return;
-        _reduced = reduced;
-        for (int i = ReducedLayers; i < _meshes.Length; i++)
-            if (IsInstanceValid(_meshes[i])) _meshes[i].Visible = !reduced;
-        for (int i = ReducedTails; i < _tails.Count; i++)
-            if (IsInstanceValid(_tails[i])) _tails[i].Visible = !reduced;
+        if (this.reduced == reduced) return;
+        this.reduced = reduced;
+        for (int i = ReducedLayers; i < meshes.Length; i++)
+            if (IsInstanceValid(meshes[i])) meshes[i].Visible = !reduced;
+        for (int i = ReducedTails; i < tails.Count; i++)
+            if (IsInstanceValid(tails[i])) tails[i].Visible = !reduced;
     }
 
-    private bool _layerUser;
+    private bool layerUser;
 
     public override void _EnterTree()
     {
         FxDriver.Lane(this, FxLane.Gear)?.Join(this);
-        if (_shine.Length == 0 || _layerUser) return;
-        _layerUser = true;
+        if (shine.Length == 0 || layerUser) return;
+        layerUser = true;
         FxLayer.Users++;
     }
 
     public override void _ExitTree()
     {
         FxDriver.Lane(this, FxLane.Gear)?.Leave(this);
-        if (!_layerUser) return;
-        _layerUser = false;
+        if (!layerUser) return;
+        layerUser = false;
         FxLayer.Users--;
     }
 
     private void AddTails(string tailFxName)
     {
-        if (tailFxName.Length == 0 || _bounds.Size == Vector3.Zero) return;
+        if (tailFxName.Length == 0 || bounds.Size == Vector3.Zero) return;
         float scale = 1f;
         if (Fx.LoadDescriptor(tailFxName) is { } d
             && d.ContainsKey("scaleMode") && d["scaleMode"].AsInt32() != 0)
-            scale = (_bounds.Size.Y + _bounds.Size.Z) * ScaleFactor;
+            scale = (bounds.Size.Y + bounds.Size.Z) * ScaleFactor;
         for (int i = 0; i < Tails; i++)
         {
             if (Fx.Spawn(tailFxName, this, ScatterPoint(), sizeScale: scale) is { } tail)
-                _tails.Add(tail);
+                tails.Add(tail);
         }
     }
 
@@ -211,7 +211,7 @@ public partial class FxWeaponGlow : Node3D, IFxTicked
         for (int axis = 0; axis < 3; axis++)
         {
             float u = ScatterBias + Scatter.Next(ScatterMod) / ScatterDiv;
-            p[axis] = _bounds.Position[axis] + _bounds.Size[axis] * u;
+            p[axis] = bounds.Position[axis] + bounds.Size[axis] * u;
         }
         return p;
     }
@@ -220,56 +220,56 @@ public partial class FxWeaponGlow : Node3D, IFxTicked
     private const int GlowFarEvery = 4;
     private const int GlowDistCheckFrames = 16;
     private static readonly System.Random Scatter = new();
-    private int _frame;
-    private bool _far;
+    private int frame;
+    private bool far;
 
     public void FxTick(double delta)
     {
         using var scope = Perf.Measure(Perf.Section.Gear);
         if (Fx.ShuttingDown) return;
-        _age += delta;
-        _texAge += delta;
-        _frame++;
-        if (_frame % GlowDistCheckFrames == 0)
+        age += delta;
+        texAge += delta;
+        this.frame++;
+        if (this.frame % GlowDistCheckFrames == 0)
         {
-            _far = Fx.FrameCamera(this, out var cam)
+            far = Fx.FrameCamera(this, out var cam)
                 && cam.Origin.DistanceSquaredTo(GlobalPosition) > GlowNearDist * GlowNearDist;
-            SetReduced(_far);
+            SetReduced(far);
         }
-        if (_far && _frame % GlowFarEvery != 0) return;
+        if (far && this.frame % GlowFarEvery != 0) return;
 
-        for (int i = _tails.Count - 1; i >= 0; i--)
+        for (int i = tails.Count - 1; i >= 0; i--)
         {
-            if (!IsInstanceValid(_tails[i])) { _tails.RemoveAt(i); continue; }
-            _tails[i].Position = ScatterPoint();
+            if (!IsInstanceValid(tails[i])) { tails.RemoveAt(i); continue; }
+            tails[i].Position = ScatterPoint();
         }
 
-        if (_frames.Length == 0 || _meshes.Length < Layers) return;
+        if (frames.Length == 0 || meshes.Length < Layers) return;
 
-        float phase = (float)(_age * WobbleHz);
+        float phase = (float)(age * WobbleHz);
         float wobble = (phase - Mathf.Floor(phase)) * WobbleSpan - WobbleBias;
-        var axis = _shell?.Normal ?? Vector3.Up;
-        _meshes[1].Transform = new Transform3D(
+        var axis = shell?.Normal ?? Vector3.Up;
+        meshes[1].Transform = new Transform3D(
             new Basis(Vector3.Up, Mathf.DegToRad(-RollDegrees)), axis * wobble);
-        _meshes[2].Transform = new Transform3D(
+        meshes[2].Transform = new Transform3D(
             new Basis(Vector3.Up, Mathf.DegToRad(RollDegrees)), axis * -wobble);
 
-        int frame = Mathf.PosMod((int)(_texAge * _fps), _frames.Length);
-        int layersShown = _reduced ? ReducedLayers : Layers;
+        int frame = Mathf.PosMod((int)(texAge * fps), frames.Length);
+        int layersShown = reduced ? ReducedLayers : Layers;
         for (int i = 0; i < layersShown; i++)
         {
-            int f = (frame + i) % _frames.Length;
-            if (f == _shown[i]) continue;
-            _shown[i] = f;
-            if (_frames[f] == null) continue;
-            _shine[i].MaterialOverride = SharedMaterial(i, f);
+            int f = (frame + i) % frames.Length;
+            if (f == shown[i]) continue;
+            shown[i] = f;
+            if (frames[f] == null) continue;
+            shine[i].MaterialOverride = SharedMaterial(i, f);
         }
     }
 
-    private static Vector3 FirstNormal(Mesh shell)
+    private static Vector3 FirstNormal(Mesh shellMesh)
     {
-        if (shell.GetSurfaceCount() < 1) return Vector3.Up;
-        var arrays = shell.SurfaceGetArrays(0);
+        if (shellMesh.GetSurfaceCount() < 1) return Vector3.Up;
+        var arrays = shellMesh.SurfaceGetArrays(0);
         int slot = (int)Mesh.ArrayType.Normal;
         if (arrays.Count <= slot || arrays[slot].VariantType != Variant.Type.PackedVector3Array)
             return Vector3.Up;

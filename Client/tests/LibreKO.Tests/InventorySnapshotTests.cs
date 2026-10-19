@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -23,18 +24,18 @@ public class InventorySnapshotTests
     private const byte LastMagicBag = InventoryConstants.MagicBagTotal - 1;
 
     [Theory]
-    [InlineData(ItemMove.InventoryToSlot, LastGrid, LastEquip, Grid + LastGrid, LastEquip)]
-    [InlineData(ItemMove.SlotToInventory, LastEquip, LastGrid, LastEquip, Grid + LastGrid)]
-    [InlineData(ItemMove.InventoryToInventory, 0, LastGrid, Grid, Grid + LastGrid)]
-    [InlineData(ItemMove.SlotToSlot, 0, LastEquip, 0, LastEquip)]
-    [InlineData(ItemMove.InventoryToCospre, LastGrid, LastCospre, Grid + LastGrid, Cospre + LastCospre)]
-    [InlineData(ItemMove.CospreToInventory, LastCospre, LastGrid, Cospre + LastCospre, Grid + LastGrid)]
-    [InlineData(ItemMove.InventoryToBagSlot, LastGrid, LastBagSlot, Grid + LastGrid, BagSlot + LastBagSlot)]
-    [InlineData(ItemMove.BagSlotToInventory, LastBagSlot, LastGrid, BagSlot + LastBagSlot, Grid + LastGrid)]
-    [InlineData(ItemMove.InventoryToMagicBag, LastGrid, LastMagicBag, Grid + LastGrid, MagicBag + LastMagicBag)]
-    [InlineData(ItemMove.MagicBagToInventory, LastMagicBag, LastGrid, MagicBag + LastMagicBag, Grid + LastGrid)]
-    [InlineData(ItemMove.MagicBagToMagicBag, 0, LastMagicBag, MagicBag, MagicBag + LastMagicBag)]
-    public void EveryConfirmedMoveLandsTheRecordOnItsResolvedSlot(byte direction, byte source, byte destination, int expectedFrom, int expectedTo)
+    [InlineData(ItemMoveDirection.InventoryToSlot, LastGrid, LastEquip, Grid + LastGrid, LastEquip)]
+    [InlineData(ItemMoveDirection.SlotToInventory, LastEquip, LastGrid, LastEquip, Grid + LastGrid)]
+    [InlineData(ItemMoveDirection.InventoryToInventory, 0, LastGrid, Grid, Grid + LastGrid)]
+    [InlineData(ItemMoveDirection.SlotToSlot, 0, LastEquip, 0, LastEquip)]
+    [InlineData(ItemMoveDirection.InventoryToCospre, LastGrid, LastCospre, Grid + LastGrid, Cospre + LastCospre)]
+    [InlineData(ItemMoveDirection.CospreToInventory, LastCospre, LastGrid, Cospre + LastCospre, Grid + LastGrid)]
+    [InlineData(ItemMoveDirection.InventoryToBagSlot, LastGrid, LastBagSlot, Grid + LastGrid, BagSlot + LastBagSlot)]
+    [InlineData(ItemMoveDirection.BagSlotToInventory, LastBagSlot, LastGrid, BagSlot + LastBagSlot, Grid + LastGrid)]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag, LastGrid, LastMagicBag, Grid + LastGrid, MagicBag + LastMagicBag)]
+    [InlineData(ItemMoveDirection.MagicBagToInventory, LastMagicBag, LastGrid, MagicBag + LastMagicBag, Grid + LastGrid)]
+    [InlineData(ItemMoveDirection.MagicBagToMagicBag, 0, LastMagicBag, MagicBag, MagicBag + LastMagicBag)]
+    public void EveryConfirmedMoveLandsTheRecordOnItsResolvedSlot(ItemMoveDirection direction, byte source, byte destination, int expectedFrom, int expectedTo)
     {
         Assert.True(ItemMove.TryResolveSlots(direction, source, destination, out int from, out int to));
         Assert.Equal(expectedFrom, from);
@@ -57,7 +58,7 @@ public class InventorySnapshotTests
         var worn = new ItemSlot { ItemId = Shield, Count = 1, Durability = 90, UniqueId = 8 };
         cached[Grid] = held;
         cached[InventoryConstants.RightHand] = worn;
-        ItemMove.ApplyConfirmed(cached, ItemMove.InventoryToSlot, Grid, InventoryConstants.RightHand, Single);
+        ItemMove.ApplyConfirmed(cached, ItemMoveDirection.InventoryToSlot, Grid, InventoryConstants.RightHand, Single);
         Assert.Equal(worn, cached[Grid]);
         Assert.Equal(held, cached[InventoryConstants.RightHand]);
     }
@@ -68,7 +69,7 @@ public class InventorySnapshotTests
         var cached = new ItemSlot[InventoryConstants.InventoryTotal];
         int bag = InventoryConstants.MagicBagStart;
         cached[Grid] = new ItemSlot { ItemId = Potion, Count = 10, Durability = 5, Flag = 1 };
-        ItemMove.ApplyConfirmed(cached, ItemMove.InventoryToMagicBag, Grid, bag, Stackable, 4);
+        ItemMove.ApplyConfirmed(cached, ItemMoveDirection.InventoryToMagicBag, Grid, bag, Stackable, 4);
         Assert.Equal(6, cached[Grid].Count);
         Assert.Equal(new ItemSlot { ItemId = Potion, Count = 4, Durability = 5, Flag = 1 }, cached[bag]);
     }
@@ -80,17 +81,17 @@ public class InventorySnapshotTests
         int bag = InventoryConstants.MagicBagStart;
         cached[bag] = new ItemSlot { ItemId = Potion, Count = 10 };
         cached[Grid] = new ItemSlot { ItemId = Potion, Count = 2 };
-        ItemMove.ApplyConfirmed(cached, ItemMove.MagicBagToInventory, bag, Grid, Stackable, 3);
+        ItemMove.ApplyConfirmed(cached, ItemMoveDirection.MagicBagToInventory, bag, Grid, Stackable, 3);
         Assert.Equal(7, cached[bag].Count);
         Assert.Equal(5, cached[Grid].Count);
     }
 
     [Theory]
-    [InlineData(ItemMove.InventoryToInventory, 0, 1)]
-    [InlineData(ItemMove.InventoryToMagicBag, 0, LastMagicBag)]
-    [InlineData(ItemMove.MagicBagToInventory, LastMagicBag, 0)]
-    [InlineData(ItemMove.MagicBagToMagicBag, 0, LastMagicBag)]
-    public void ConfirmedStackMergesAddTheCountIntoTheDestination(byte direction, byte source, byte destination)
+    [InlineData(ItemMoveDirection.InventoryToInventory, 0, 1)]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag, 0, LastMagicBag)]
+    [InlineData(ItemMoveDirection.MagicBagToInventory, LastMagicBag, 0)]
+    [InlineData(ItemMoveDirection.MagicBagToMagicBag, 0, LastMagicBag)]
+    public void ConfirmedStackMergesAddTheCountIntoTheDestination(ItemMoveDirection direction, byte source, byte destination)
     {
         Assert.True(ItemMove.TryResolveSlots(direction, source, destination, out int from, out int to));
         var cached = new ItemSlot[InventoryConstants.InventoryTotal];
@@ -104,13 +105,13 @@ public class InventorySnapshotTests
     }
 
     [Theory]
-    [InlineData(ItemMove.InventoryToCospre, InventoryConstants.HaveMax, 0)]
-    [InlineData(ItemMove.InventoryToCospre, 0, InventoryConstants.CospreMax)]
-    [InlineData(ItemMove.InventoryToBagSlot, 0, InventoryConstants.BagSlotMax)]
-    [InlineData(ItemMove.MagicBagToInventory, InventoryConstants.MagicBagTotal, 0)]
-    [InlineData(ItemMove.InventoryToPet, 0, 0)]
-    [InlineData(ItemMove.InventoryToZone, 0, 0)]
-    public void InvalidAndExternalSlotsDoNotModifyTheZoneSnapshot(byte direction, byte source, byte destination)
+    [InlineData(ItemMoveDirection.InventoryToCospre, InventoryConstants.HaveMax, 0)]
+    [InlineData(ItemMoveDirection.InventoryToCospre, 0, InventoryConstants.CospreMax)]
+    [InlineData(ItemMoveDirection.InventoryToBagSlot, 0, InventoryConstants.BagSlotMax)]
+    [InlineData(ItemMoveDirection.MagicBagToInventory, InventoryConstants.MagicBagTotal, 0)]
+    [InlineData(ItemMoveDirection.InventoryToPet, 0, 0)]
+    [InlineData(ItemMoveDirection.InventoryToZone, 0, 0)]
+    public void InvalidAndExternalSlotsDoNotModifyTheZoneSnapshot(ItemMoveDirection direction, byte source, byte destination)
     {
         Assert.False(ItemMove.TryResolveSlots(direction, source, destination, out int from, out int to));
         Assert.Equal(-1, from);

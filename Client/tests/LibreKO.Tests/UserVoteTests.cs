@@ -9,7 +9,7 @@ public class UserVoteTests
     [Fact]
     public void TheAskCarriesTargetReasonAndTheOtherText()
     {
-        var p = Reply(Net.SubPartyUserVote);
+        var p = Reply(PartySubOpcode.UserVote);
         p.WriteShort(1);
         p.WriteString("Rikka");
         p.WriteByte(UserVote.ReasonOther);
@@ -26,7 +26,7 @@ public class UserVoteTests
     [Fact]
     public void ARefusalCarriesOnlyItsCode()
     {
-        var p = Reply(Net.SubPartyUserVote);
+        var p = Reply(PartySubOpcode.UserVote);
         p.WriteShort(-4);
         p.ResetOffset();
         p.ReadByte();
@@ -41,7 +41,7 @@ public class UserVoteTests
     [Fact]
     public void TheWarnedPlayerGetsTheCountAndLimit()
     {
-        var p = Reply(Net.SubPartyUserVoteResult);
+        var p = Reply(PartySubOpcode.UserVoteResult);
         p.WriteShort(1);
         p.WriteByte(2);
         p.WriteShort(2);
@@ -55,7 +55,7 @@ public class UserVoteTests
     [Fact]
     public void AVoidedVoteIsNotAWarning()
     {
-        var p = Reply(Net.SubPartyUserVoteResult);
+        var p = Reply(PartySubOpcode.UserVoteResult);
         p.WriteShort(0);
         p.WriteByte(0);
         p.ResetOffset();
@@ -80,10 +80,10 @@ public class UserVoteTests
         Assert.Equal(0, UserVote.CooldownLeft(100, 500));
     }
 
-    private static Packet Reply(byte sub)
+    private static Packet Reply(PartySubOpcode sub)
     {
         var p = new Packet(GameOpcodes.GS_PARTY);
-        p.WriteByte(sub);
+        p.WriteByte((byte)sub);
         return p;
     }
 }

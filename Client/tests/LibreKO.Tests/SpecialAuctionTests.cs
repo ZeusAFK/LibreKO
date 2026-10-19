@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -118,10 +119,10 @@ public class SpecialAuctionTests
     [Fact]
     public void OnlyAnOutbidOrCancelledBidCanBeRetracted()
     {
-        Assert.False(SpecialAuction.CanRetract(SpecialAuction.TopBidder));
-        Assert.True(SpecialAuction.CanRetract(SpecialAuction.Outbid));
-        Assert.True(SpecialAuction.CanRetract(SpecialAuction.Cancelled));
-        Assert.False(SpecialAuction.IsBid(SpecialAuction.Won));
+        Assert.False(SpecialAuction.CanRetract(AuctionBidStatus.Top));
+        Assert.True(SpecialAuction.CanRetract(AuctionBidStatus.Outbid));
+        Assert.True(SpecialAuction.CanRetract(AuctionBidStatus.Cancelled));
+        Assert.False(SpecialAuction.IsBid(AuctionBidStatus.Won));
     }
 
     [Fact]

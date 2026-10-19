@@ -24,15 +24,15 @@ public static class CharacterMerge
     private sealed record Surfaces(Vector3[] Verts, Vector3[] Normals, Vector2[] Uvs, Vector2[] SlotUvs,
                                    int[] Bones, float[] Weights, int[] Indices, int Influences);
 
-    private static readonly Dictionary<string, ArrayMesh?> _meshes = Shutdown.Track(new Dictionary<string, ArrayMesh?>());
-    private static readonly Dictionary<string, List<(Node3D Body, long Ticket)>> _reading = new();
-    private static readonly ConditionalWeakTable<MeshInstance3D, MeshInstance3D> _mergedInto = new();
-    private static long _lastTicket;
+    private static readonly Dictionary<string, ArrayMesh?> meshes = Shutdown.Track(new Dictionary<string, ArrayMesh?>());
+    private static readonly Dictionary<string, List<(Node3D Body, long Ticket)>> reading = new();
+    private static readonly ConditionalWeakTable<MeshInstance3D, MeshInstance3D> mergedInto = new();
+    private static long lastTicket;
 
-    public static int CachedMeshes => _meshes.Count;
+    public static int CachedMeshes => meshes.Count;
 
     public static GeometryInstance3D ShownAs(MeshInstance3D part) =>
-        _mergedInto.TryGetValue(part, out var merged) && GodotObject.IsInstanceValid(merged) ? merged : part;
+        mergedInto.TryGetValue(part, out var merged) && GodotObject.IsInstanceValid(merged) ? merged : part;
 
     public static void Apply(Node3D body)
     {
@@ -40,20 +40,20 @@ public static class CharacterMerge
         var plan = PlanFor(body);
         if (plan.Used.Count < 2 || plan.Skin == null || plan.Parent == null) return;
         string id = KeyOf(plan.Sources);
-        if (_meshes.TryGetValue(id, out var cached))
+        if (meshes.TryGetValue(id, out var cached))
         {
             if (cached != null) Swap(plan, cached);
             return;
         }
 
-        long ticket = ++_lastTicket;
+        long ticket = ++lastTicket;
         body.SetMeta(TicketMeta, ticket);
-        if (_reading.TryGetValue(id, out var waiting))
+        if (reading.TryGetValue(id, out var waiting))
         {
             waiting.Add((body, ticket));
             return;
         }
-        _reading[id] = new List<(Node3D Body, long Ticket)> { (body, ticket) };
+        reading[id] = new List<(Node3D Body, long Ticket)> { (body, ticket) };
         var sources = plan.Sources;
         Task.Run(() =>
         {
@@ -66,18 +66,18 @@ public static class CharacterMerge
 
     private static void Finish(string id, Surfaces? surfaces)
     {
-        if (!_reading.Remove(id, out var waiting)) return;
+        if (!reading.Remove(id, out var waiting)) return;
         var alive = waiting.FindAll(w => GodotObject.IsInstanceValid(w.Body)
             && w.Body.HasMeta(TicketMeta) && w.Body.GetMeta(TicketMeta).AsInt64() == w.Ticket);
         if (alive.Count == 0) return;
-        _meshes[id] = surfaces == null ? null : Build(surfaces);
+        meshes[id] = surfaces == null ? null : Build(surfaces);
         foreach (var (body, _) in alive) Apply(body);
     }
 
     private static Plan PlanFor(Node3D body)
     {
         var plan = new Plan();
-        foreach (var part in Ordered(World.BodyParts(body)))
+        foreach (var part in Ordered(ModelNodes.BodyParts(body)))
         {
             if (!part.Visible || part.Mesh is not ArrayMesh mesh || part.Skin == null) continue;
             if (part.Transform != Transform3D.Identity || part.MaterialOverlay != null) continue;
@@ -124,7 +124,7 @@ public static class CharacterMerge
         {
             stored.Add(part);
             stored.Add(mesh);
-            _mergedInto.AddOrUpdate(part, merged);
+            mergedInto.AddOrUpdate(part, merged);
             part.Visible = false;
             part.Mesh = null;
         }
@@ -144,7 +144,7 @@ public static class CharacterMerge
                     if (stored[i].AsGodotObject() is not MeshInstance3D part || !GodotObject.IsInstanceValid(part)) continue;
                     part.Mesh = stored[i + 1].AsGodotObject() as Mesh;
                     part.Visible = true;
-                    _mergedInto.Remove(part);
+                    mergedInto.Remove(part);
                 }
             }
             merged.GetParent()?.RemoveChild(merged);

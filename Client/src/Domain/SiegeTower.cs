@@ -2,13 +2,6 @@
 
 public static class SiegeTower
 {
-    public const byte SubBoard = 1;
-    public const byte SubLeave = 2;
-    public const byte SubEnded = 3;
-    public const byte SubUse = 0x10;
-    public const byte SubExit = 0x11;
-    public const byte Succeeded = 1;
-
     public const int MovingTowerLook = 30070;
     public const int GuardTowerLook = 30210;
     public const int GuardTowerNpcType = 191;
@@ -60,8 +53,8 @@ public static class SiegeTower
         _ => (16809, "Failed getting off"),
     };
 
-    public static (int Id, string Fallback) EndedText(int result) =>
-        result == Succeeded ? (16812, "Tower transformation is canceled") : (16811, "The tower is dismissed");
+    public static (int Id, string Fallback) EndedText(SiegeTowerResult result) =>
+        result == SiegeTowerResult.Succeeded ? (16812, "Tower transformation is canceled") : (16811, "The tower is dismissed");
 
     public static (int Id, string Fallback) UseRefusal(int result) =>
         result == UseInUse ? (16821, "In use already") : (16818, "Not available now");

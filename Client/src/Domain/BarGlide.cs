@@ -6,16 +6,16 @@ public sealed class BarGlide
     public const float TrailPerSecond = 0.6f;
     public const double TrailHoldSeconds = 0.4;
 
-    private float _target;
-    private double _hold;
+    private float target;
+    private double hold;
 
     public float Shown { get; private set; }
     public float Trail { get; private set; }
 
     public void Snap(float fraction)
     {
-        Shown = Trail = _target = fraction;
-        _hold = 0;
+        Shown = Trail = target = fraction;
+        hold = 0;
     }
 
     public void Aim(float fraction)
@@ -23,18 +23,18 @@ public sealed class BarGlide
         if (fraction < Shown)
         {
             if (Trail < Shown) Trail = Shown;
-            _hold = TrailHoldSeconds;
+            hold = TrailHoldSeconds;
         }
-        _target = fraction;
+        target = fraction;
     }
 
     public bool Step(double seconds)
     {
         float step = (float)(GlidePerSecond * seconds);
-        Shown = _target > Shown ? System.Math.Min(_target, Shown + step) : System.Math.Max(_target, Shown - step);
+        Shown = target > Shown ? System.Math.Min(target, Shown + step) : System.Math.Max(target, Shown - step);
         if (Trail < Shown) Trail = Shown;
-        if (_hold > 0) _hold -= seconds;
+        if (hold > 0) hold -= seconds;
         else if (Trail > Shown) Trail = System.Math.Max(Shown, Trail - (float)(TrailPerSecond * seconds));
-        return Shown != _target || Trail != Shown;
+        return Shown != target || Trail != Shown;
     }
 }

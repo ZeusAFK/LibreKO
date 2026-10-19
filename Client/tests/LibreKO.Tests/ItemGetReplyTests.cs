@@ -12,7 +12,7 @@ public class ItemGetReplyTests
     private static Packet Taken(byte position, int itemId, ushort count, int money, ushort bundleSlot)
     {
         var p = new Packet(GameOpcodes.GS_ITEM_GET);
-        p.WriteByte(ItemGetReply.Taken);
+        p.WriteByte((byte)ItemGetResult.Taken);
         p.WriteInt(BundleId);
         p.WriteByte(position);
         p.WriteInt(itemId);
@@ -31,7 +31,7 @@ public class ItemGetReplyTests
         var reply = ItemGetReply.Read(p);
 
         Assert.NotNull(reply);
-        Assert.Equal(ItemGetReply.Taken, reply.Value.Result);
+        Assert.Equal((byte)ItemGetResult.Taken, (byte)reply.Value.Result);
         Assert.Equal(BundleId, reply.Value.BundleId);
         Assert.Equal(3, reply.Value.Position);
         Assert.Equal(ItemId, reply.Value.ItemId);
@@ -57,7 +57,7 @@ public class ItemGetReplyTests
     public void AReplyWithoutTheBundleCellStillCounts()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_GET);
-        p.WriteByte(ItemGetReply.TakenToSlot);
+        p.WriteByte((byte)ItemGetResult.TakenToSlot);
         p.WriteInt(BundleId);
         p.WriteByte(0);
         p.WriteInt(ItemId);
@@ -76,7 +76,7 @@ public class ItemGetReplyTests
     public void PartyCoinsAreGoldWithoutABundleCell()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_GET);
-        p.WriteByte(ItemGetReply.PartyCoins);
+        p.WriteByte((byte)ItemGetResult.PartyCoins);
         p.WriteInt(BundleId);
         p.WriteByte(ItemGetReply.GoldPosition);
         p.WriteInt(GoldItemId);
@@ -98,7 +98,7 @@ public class ItemGetReplyTests
     public void AFailureCarriesTheBundleThenTheReason(int reason)
     {
         var p = new Packet(GameOpcodes.GS_ITEM_GET);
-        p.WriteByte(ItemGetReply.Failed);
+        p.WriteByte((byte)ItemGetResult.Failed);
         p.WriteInt(BundleId);
         p.WriteInt(reason);
         p.ResetOffset();
@@ -114,7 +114,7 @@ public class ItemGetReplyTests
     public void APartyMembersItemReadsTheLooterAndTheCell()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_GET);
-        p.WriteByte(ItemGetReply.PartyMember);
+        p.WriteByte((byte)ItemGetResult.PartyMember);
         p.WriteInt(BundleId);
         p.WriteInt(ItemId);
         p.WriteString("Rikka");
@@ -133,7 +133,7 @@ public class ItemGetReplyTests
     public void ATemporaryInventoryNoticeReadsTheItem()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_GET);
-        p.WriteByte(ItemGetReply.TemporaryLost);
+        p.WriteByte((byte)ItemGetResult.TemporaryLost);
         p.WriteInt(BundleId);
         p.WriteByte(0);
         p.WriteInt(ItemId);
@@ -142,7 +142,7 @@ public class ItemGetReplyTests
         var reply = ItemGetReply.Read(p);
 
         Assert.NotNull(reply);
-        Assert.Equal(ItemGetReply.TemporaryLost, reply.Value.Result);
+        Assert.Equal((byte)ItemGetResult.TemporaryLost, (byte)reply.Value.Result);
         Assert.Equal(ItemId, reply.Value.ItemId);
     }
 }

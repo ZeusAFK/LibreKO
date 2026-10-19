@@ -12,17 +12,13 @@ public static class PartyHud
 
     public static int KeepPick(int pick, int selectedId, int selectionAtPick) =>
         pick >= 0 && selectedId != selectionAtPick ? NoMember : pick;
-    public const byte StatusDamageOverTime = 1;
-    public const byte StatusPoison = 2;
-    public const byte StatusSlow = 3;
-    public const byte StatusGreyHp = 5;
 
     private static readonly (byte Status, PartyHpLook Look)[] LookOrder =
     {
-        (StatusGreyHp, PartyHpLook.Undead),
-        (StatusDamageOverTime, PartyHpLook.Lasting),
-        (StatusPoison, PartyHpLook.Drop),
-        (StatusSlow, PartyHpLook.Slow),
+        ((byte)PartyStatusIcon.GreyHealth, PartyHpLook.Undead),
+        ((byte)PartyStatusIcon.OverTimeDamage, PartyHpLook.Lasting),
+        ((byte)PartyStatusIcon.Poison, PartyHpLook.Drop),
+        ((byte)PartyStatusIcon.Slow, PartyHpLook.Slow),
     };
 
     private const int ElMoradClassBase = 200;

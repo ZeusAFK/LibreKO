@@ -4,11 +4,7 @@ namespace LibreKO.Domain;
 
 public static class SiegeWar
 {
-    public const byte BaseSub = 1;
-    public const byte StatusSub = 2;
-    public const byte PointsSub = 6;
     public const int Delos = 30;
-    public const int ArtifactNpc = 541;
 
     public const int WarClockText = 30100;
     public const int HoldClockText = 30101;
@@ -88,11 +84,11 @@ public static class SiegeWar
         _ => null,
     };
 
-    public static (int Id, string Fallback)? PointsText(int kind) => kind switch
+    public static (int Id, string Fallback)? PointsText(SiegePointsKind kind) => kind switch
     {
-        SiegePoints.Obtained => (44650, "Siege Point [%d] Obtained, [%d] Accumulated (It will be credited to the clan when you log out)"),
-        SiegePoints.CreditedAtEnd => (44651, "Siege Point [%d] Obtained, [%d] Accumulated (It will be credited to the clan when the siege ends)"),
-        SiegePoints.Renewed => (44653, "Siege points have been renewed for clans. Accumulated Points [%d]"),
+        SiegePointsKind.Obtained => (44650, "Siege Point [%d] Obtained, [%d] Accumulated (It will be credited to the clan when you log out)"),
+        SiegePointsKind.CreditedAtEnd => (44651, "Siege Point [%d] Obtained, [%d] Accumulated (It will be credited to the clan when the siege ends)"),
+        SiegePointsKind.Renewed => (44653, "Siege points have been renewed for clans. Accumulated Points [%d]"),
         _ => null,
     };
 }

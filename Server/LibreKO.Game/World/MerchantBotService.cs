@@ -19,29 +19,29 @@ namespace LibreKO.Game.World;
 
 public class MerchantBotService : IMerchantBotService
 {
-    private readonly SessionManager _sessionManager;
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<MerchantBotService> _logger;
+    private readonly SessionManager sessionManager;
+    private readonly IServiceScopeFactory scopeFactory;
+    private readonly ILogger<MerchantBotService> logger;
 
-    private readonly ConcurrentDictionary<int, BotSession> _activeBots = new();
+    private readonly ConcurrentDictionary<int, BotSession> activeBots = new();
     private const int BotCharacterIdBase = 800_000;
-    private int _nextBotCharacterId = BotCharacterIdBase;
+    private int nextBotCharacterId = BotCharacterIdBase;
 
-    public IReadOnlyCollection<BotSession> ActiveBots => _activeBots.Values.ToList();
+    public IReadOnlyCollection<BotSession> ActiveBots => activeBots.Values.ToList();
 
     public MerchantBotService(
         SessionManager sessionManager,
         IServiceScopeFactory scopeFactory,
         ILogger<MerchantBotService> logger)
     {
-        _sessionManager = sessionManager;
-        _scopeFactory = scopeFactory;
-        _logger = logger;
+        this.sessionManager = sessionManager;
+        this.scopeFactory = scopeFactory;
+        this.logger = logger;
     }
 
     public async Task<BotSession?> CloneFromGmAsync(UserSession gmSession, string advertMessage)
     {
-        var botId = System.Threading.Interlocked.Increment(ref _nextBotCharacterId);
+        var botId = System.Threading.Interlocked.Increment(ref nextBotCharacterId);
         var botName = await AcquireBotNameAsync(gmSession.Nation, gmSession.Name, botId);
 
         var bot = BotSession.Create(
@@ -100,7 +100,7 @@ public class MerchantBotService : IMerchantBotService
 
         if (!hasItems)
         {
-            _logger.LogWarning("CloneFromGmAsync: GM has no merchant items staged");
+            logger.LogWarning("CloneFromGmAsync: GM has no merchant items staged");
             return null;
         }
 
@@ -110,13 +110,13 @@ public class MerchantBotService : IMerchantBotService
         bot.IsSitting = true;
 
         // Register in session & region managers
-        _sessionManager.RegisterSession(bot);
-        _sessionManager.Regions.AddToRegion(bot);
-        _activeBots[bot.CharacterId] = bot;
+        sessionManager.RegisterSession(bot);
+        sessionManager.Regions.AddToRegion(bot);
+        activeBots[bot.CharacterId] = bot;
 
         // Broadcast UserInOut to surrounding players
         var inPacket = BuildUserInOutPacket(bot, InOutType.In);
-        await _sessionManager.Regions.SendToRegion(bot, inPacket, excludeSender: true);
+        await sessionManager.Regions.SendToRegion(bot, inPacket, excludeSender: true);
 
         // Broadcast StallInserted
         var displayItemIds = bot.Trade.MerchantItems
@@ -131,9 +131,9 @@ public class MerchantBotService : IMerchantBotService
             (byte)(bot.Trade.PremiumMerchant ? 1 : 0),
             displayItemIds);
 
-        await _sessionManager.Regions.SendToRegion(bot, stallPacket, excludeSender: true);
+        await sessionManager.Regions.SendToRegion(bot, stallPacket, excludeSender: true);
 
-        _logger.LogInformation("Merchant bot '{BotName}' (ID {BotId}) spawned at ({X:F1}, {Z:F1})",
+        logger.LogInformation("Merchant bot '{BotName}' (ID {BotId}) spawned at ({X:F1}, {Z:F1})",
             bot.Name, bot.CharacterId, bot.X, bot.Z);
 
         await SendNoticeAsync(gmSession,
@@ -144,20 +144,20 @@ public class MerchantBotService : IMerchantBotService
 
     public async Task<int> SaveActiveBotsAsync(UserSession? gmSession = null)
     {
-        if (_activeBots.IsEmpty)
+        if (activeBots.IsEmpty)
         {
             if (gmSession != null)
                 await SendNoticeAsync(gmSession, "[Bot Merchant] No active merchant bots to save.");
             return 0;
         }
 
-        using var scope = _scopeFactory.CreateScope();
+        using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var count = 0;
         var savedEntries = new List<(BotSession Bot, BotMerchantData Data)>();
 
-        foreach (var bot in _activeBots.Values)
+        foreach (var bot in activeBots.Values)
         {
             var items = new List<StoredBotItem>();
             for (byte i = 0; i < bot.Trade.MerchantItems.Length; i++)
@@ -255,7 +255,7 @@ public class MerchantBotService : IMerchantBotService
     {
         await ClearAllBotsAsync(gmSession: null);
 
-        using var scope = _scopeFactory.CreateScope();
+        using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var list = await db.BotMerchants.Where(b => b.IsActive).ToListAsync();
@@ -263,7 +263,7 @@ public class MerchantBotService : IMerchantBotService
         var spawned = 0;
         foreach (var data in list)
         {
-            var botId = System.Threading.Interlocked.Increment(ref _nextBotCharacterId);
+            var botId = System.Threading.Interlocked.Increment(ref nextBotCharacterId);
             var bot = BotSession.Create(
                 botId,
                 data.BotName,
@@ -303,7 +303,7 @@ public class MerchantBotService : IMerchantBotService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to deserialize bot equipment");
+                    logger.LogWarning(ex, "Failed to deserialize bot equipment");
                 }
             }
 
@@ -338,7 +338,7 @@ public class MerchantBotService : IMerchantBotService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to deserialize bot merchant items");
+                    logger.LogWarning(ex, "Failed to deserialize bot merchant items");
                 }
             }
 
@@ -348,13 +348,13 @@ public class MerchantBotService : IMerchantBotService
             bot.IsSitting = true;
 
             // Register
-            _sessionManager.RegisterSession(bot);
-            _sessionManager.Regions.AddToRegion(bot);
-            _activeBots[bot.CharacterId] = bot;
+            sessionManager.RegisterSession(bot);
+            sessionManager.Regions.AddToRegion(bot);
+            activeBots[bot.CharacterId] = bot;
 
             // Broadcast InOut
             var inPacket = BuildUserInOutPacket(bot, InOutType.In);
-            await _sessionManager.Regions.SendToRegion(bot, inPacket, excludeSender: true);
+            await sessionManager.Regions.SendToRegion(bot, inPacket, excludeSender: true);
 
             // Broadcast Stall
             var displayItemIds = bot.Trade.MerchantItems
@@ -369,12 +369,12 @@ public class MerchantBotService : IMerchantBotService
                 (byte)(bot.Trade.PremiumMerchant ? 1 : 0),
                 displayItemIds);
 
-            await _sessionManager.Regions.SendToRegion(bot, stallPacket, excludeSender: true);
+            await sessionManager.Regions.SendToRegion(bot, stallPacket, excludeSender: true);
 
             spawned++;
         }
 
-        _logger.LogInformation("Loaded and spawned {Count} merchant bots", spawned);
+        logger.LogInformation("Loaded and spawned {Count} merchant bots", spawned);
         if (gmSession != null)
             await SendNoticeAsync(gmSession,
                 $"[Bot Merchant] Loaded and spawned {spawned} merchant bots from database.");
@@ -384,19 +384,19 @@ public class MerchantBotService : IMerchantBotService
 
     public async Task ClearAllBotsAsync(UserSession? gmSession = null)
     {
-        var count = _activeBots.Count;
-        foreach (var bot in _activeBots.Values)
+        var count = activeBots.Count;
+        foreach (var bot in activeBots.Values)
         {
             var closePacket = MerchantPacketWriter.StallClosed(bot.CharacterId);
-            await _sessionManager.Regions.SendToRegion(bot, closePacket, excludeSender: true);
+            await sessionManager.Regions.SendToRegion(bot, closePacket, excludeSender: true);
 
             var outPacket = VisibilityPacketWriter.UserOut(bot.CharacterId);
-            await _sessionManager.Regions.SendToRegion(bot, outPacket, excludeSender: true);
+            await sessionManager.Regions.SendToRegion(bot, outPacket, excludeSender: true);
 
-            _sessionManager.RemoveSession(bot);
+            sessionManager.RemoveSession(bot);
         }
 
-        _activeBots.Clear();
+        activeBots.Clear();
 
         if (gmSession != null)
             await SendNoticeAsync(gmSession,
@@ -452,10 +452,10 @@ public class MerchantBotService : IMerchantBotService
     {
         try
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var onlineNames = new HashSet<string>(_sessionManager.GetAll().Select(s => s.Name), StringComparer.OrdinalIgnoreCase);
+            var onlineNames = new HashSet<string>(sessionManager.GetAll().Select(s => s.Name), StringComparer.OrdinalIgnoreCase);
 
             var availableBots = await db.UserBots
                 .AsNoTracking()
@@ -477,7 +477,7 @@ public class MerchantBotService : IMerchantBotService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to query UserBots table for bot name, using fallback");
+            logger.LogWarning(ex, "Failed to query UserBots table for bot name, using fallback");
         }
 
         var baseName = fallbackBaseName.Length > 13 ? fallbackBaseName[..13] : fallbackBaseName;

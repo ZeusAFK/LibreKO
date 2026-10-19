@@ -35,19 +35,19 @@ public class GameServerBootstrapper(
     private const short ObjectKeyGate = KrowazTrapService.KeyGateObject;
     private const short ObjectPoisonGas = KrowazTrapService.PoisonGasObject;
 
-    private readonly SemaphoreSlim _initializeLock = new(1, 1);
-    private bool _initialized;
+    private readonly SemaphoreSlim initializeLock = new(1, 1);
+    private bool initialized;
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        if (_initialized)
+        if (initialized)
             return;
 
-        await _initializeLock.WaitAsync(cancellationToken);
+        await initializeLock.WaitAsync(cancellationToken);
 
         try
         {
-            if (_initialized)
+            if (initialized)
                 return;
 
             await gameDataService.LoadAsync(cancellationToken);
@@ -60,11 +60,11 @@ public class GameServerBootstrapper(
             LogPublicDemoGrants();
             await WarnAboutStoreSeedAsync(cancellationToken);
 
-            _initialized = true;
+            initialized = true;
         }
         finally
         {
-            _initializeLock.Release();
+            initializeLock.Release();
         }
     }
 

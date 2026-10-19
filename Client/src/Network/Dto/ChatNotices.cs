@@ -1,34 +1,27 @@
 ﻿namespace LibreKO.Network;
 
-public readonly record struct MonumentNotice(byte Kind, int Nation, string Name, bool Done, int Value)
+public readonly record struct MonumentNotice(MonumentNoticeKind Kind, int Nation, string Name, bool Done, int Value)
 {
-    public const byte TopSecretCaptured = 1;
-    public const byte QuestFailed = 2;
-    public const byte TopSecretExpired = 3;
-    public const byte MonumentCaptured = 4;
-    public const byte SpyRescue = 5;
-    public const byte Alert = 7;
-
     public static MonumentNotice? Read(Packet p)
     {
         if (p.RemainingBytes < 1) return null;
-        byte kind = p.ReadByte();
+        var kind = (MonumentNoticeKind)p.ReadByte();
         switch (kind)
         {
-            case TopSecretCaptured or MonumentCaptured or SpyRescue:
+            case MonumentNoticeKind.TopSecretCaptured or MonumentNoticeKind.MonumentCaptured or MonumentNoticeKind.SpyRescue:
             {
                 if (p.RemainingBytes < 3) return null;
                 int nation = p.ReadByte();
                 string name = p.ReadString();
                 if (name.Length == 0) return null;
-                bool done = kind == SpyRescue && p.RemainingBytes >= 1 && p.ReadByte() != 0;
+                bool done = kind == MonumentNoticeKind.SpyRescue && p.RemainingBytes >= 1 && p.ReadByte() != 0;
                 return new MonumentNotice(kind, nation, name, done, 0);
             }
-            case QuestFailed:
+            case MonumentNoticeKind.QuestFailed:
                 return p.RemainingBytes >= sizeof(int) ? new MonumentNotice(kind, 0, "", false, p.ReadInt()) : null;
-            case TopSecretExpired:
+            case MonumentNoticeKind.TopSecretExpired:
                 return new MonumentNotice(kind, 0, "", false, 0);
-            case Alert:
+            case MonumentNoticeKind.Alert:
                 return p.RemainingBytes >= 1 ? new MonumentNotice(kind, 0, "", false, p.ReadByte()) : null;
             default:
                 return null;
@@ -55,4 +48,14 @@ public readonly record struct BoxItemNotice(string Name, int BoxItem, int Item)
         if (p.RemainingBytes < 2 * sizeof(int)) return null;
         return new BoxItemNotice(name, p.ReadInt(), p.ReadInt());
     }
+}
+
+public enum MonumentNoticeKind : byte
+{
+    TopSecretCaptured = 1,
+    QuestFailed = 2,
+    TopSecretExpired = 3,
+    MonumentCaptured = 4,
+    SpyRescue = 5,
+    Alert = 7,
 }

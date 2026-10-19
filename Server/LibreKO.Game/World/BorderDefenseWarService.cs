@@ -114,9 +114,9 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
     private readonly IMagicStatusEffectService magicStatusEffectService;
     private readonly ILogger<BorderDefenseWarService> logger;
 
-    private readonly ConcurrentDictionary<ushort, BdwMatch> _activeMatches = new();
+    private readonly ConcurrentDictionary<ushort, BdwMatch> activeMatches = new();
 
-    public bool HasActiveMatches => !_activeMatches.IsEmpty;
+    public bool HasActiveMatches => !activeMatches.IsEmpty;
 
     public BorderDefenseWarService(
         SessionManager sessionManager,
@@ -150,7 +150,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
         zoneTransitionService.PlayerLeavingZone += OnPlayerLeavingZoneAsync;
     }
 
-    internal BdwMatch? GetMatch(ushort roomId) => _activeMatches.GetValueOrDefault(roomId);
+    internal BdwMatch? GetMatch(ushort roomId) => activeMatches.GetValueOrDefault(roomId);
 
     public static int LevelBracket(byte level)
     {
@@ -249,7 +249,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
             match.ElmoradMembers.Add(s.CharacterId);
         }
 
-        _activeMatches[roomId] = match;
+        activeMatches[roomId] = match;
 
         instanceEntryService.Populate(match.InstanceRoom);
         match.AltarNpc = match.InstanceRoom.Npcs.FirstOrDefault(n => n.NpcId == AltarOfManesProtoId);
@@ -290,7 +290,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
     public async Task OnNpcKilledAsync(NpcInstance npc, UserSession killer)
     {
-        if (npc.ZoneId != BdwZoneId || !_activeMatches.TryGetValue(killer.Room, out var match) || match.IsCompleted)
+        if (npc.ZoneId != BdwZoneId || !activeMatches.TryGetValue(killer.Room, out var match) || match.IsCompleted)
             return;
 
         if (npc.NpcId == AltarOfManesProtoId)
@@ -327,7 +327,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
     public async Task CheckCarrierBaseDeliveryAsync(UserSession session)
     {
-        if (session.ZoneId != BdwZoneId || !_activeMatches.TryGetValue(session.Room, out var match) || match.IsCompleted)
+        if (session.ZoneId != BdwZoneId || !activeMatches.TryGetValue(session.Room, out var match) || match.IsCompleted)
             return;
 
         if (match.AltarCarrierCharacterId != session.CharacterId)
@@ -377,7 +377,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
     public async Task OnPlayerKilledAsync(UserSession victim, UserSession? killer)
     {
-        if (victim.ZoneId != BdwZoneId || !_activeMatches.TryGetValue(victim.Room, out var match) || match.IsCompleted)
+        if (victim.ZoneId != BdwZoneId || !activeMatches.TryGetValue(victim.Room, out var match) || match.IsCompleted)
             return;
 
         if (match.AltarCarrierCharacterId == victim.CharacterId)
@@ -421,7 +421,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
     public Packet BuildRanking(UserSession session, byte rankType)
     {
-        if (session.ZoneId != BdwZoneId || !_activeMatches.TryGetValue(session.Room, out var match))
+        if (session.ZoneId != BdwZoneId || !activeMatches.TryGetValue(session.Room, out var match))
             return RankPacketWriter.BorderDefenseWar(rankType, [], [], 0, NoBonusExp);
 
         return RankPacketWriter.BorderDefenseWar(
@@ -511,7 +511,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
     public async Task OnPlayerLogoutOrLeaveAsync(UserSession session)
     {
-        if (session.ZoneId != BdwZoneId || !_activeMatches.TryGetValue(session.Room, out var match) || match.IsCompleted)
+        if (session.ZoneId != BdwZoneId || !activeMatches.TryGetValue(session.Room, out var match) || match.IsCompleted)
             return;
 
         if (match.AltarCarrierCharacterId == session.CharacterId)
@@ -539,12 +539,12 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
     public async Task TickAsync()
     {
-        if (_activeMatches.IsEmpty)
+        if (activeMatches.IsEmpty)
             return;
 
         var now = DateTime.UtcNow;
 
-        foreach (var match in _activeMatches.Values.ToList())
+        foreach (var match in activeMatches.Values.ToList())
         {
             if (match.IsCompleted)
                 continue;
@@ -661,12 +661,12 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
     public async Task FinishAllMatchesAsync()
     {
-        if (_activeMatches.IsEmpty)
+        if (activeMatches.IsEmpty)
             return;
 
-        logger.LogInformation("Finishing all BDW active matches by score ({Count})", _activeMatches.Count);
+        logger.LogInformation("Finishing all BDW active matches by score ({Count})", activeMatches.Count);
 
-        foreach (var match in _activeMatches.Values.ToList())
+        foreach (var match in activeMatches.Values.ToList())
         {
             if (match.IsCompleted)
                 continue;
@@ -697,12 +697,12 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
 
     public async Task CancelAllMatchesAsync()
     {
-        if (_activeMatches.IsEmpty)
+        if (activeMatches.IsEmpty)
             return;
 
-        logger.LogInformation("Cancelling all BDW active matches ({Count}) without rewards", _activeMatches.Count);
+        logger.LogInformation("Cancelling all BDW active matches ({Count}) without rewards", activeMatches.Count);
 
-        foreach (var match in _activeMatches.Values.ToList())
+        foreach (var match in activeMatches.Values.ToList())
         {
             match.IsCompleted = true;
             await CloseMatchAsync(match);
@@ -756,7 +756,7 @@ public sealed class BorderDefenseWarService : IBorderDefenseWarService
         }
 
         instanceRooms.Close(match.InstanceRoom);
-        _activeMatches.TryRemove(match.RoomId, out _);
+        activeMatches.TryRemove(match.RoomId, out _);
     }
 
     private async Task BroadcastScoresToRoomAsync(BdwMatch match)

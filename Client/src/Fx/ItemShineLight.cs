@@ -6,30 +6,30 @@ namespace LibreKO;
 public partial class ItemShineLight : OmniLight3D
 {
     public const uint SceneryLayer = 1u << 18;
-    private readonly List<ItemShineDriver> _sources = new();
-    private Vector3 _lastPosition = new(float.NaN, float.NaN, float.NaN);
-    private float _lastRange = float.NaN, _lastEnergy = float.NaN;
+    private readonly List<ItemShineDriver> sources = new();
+    private Vector3 lastPosition = new(float.NaN, float.NaN, float.NaN);
+    private float lastRange = float.NaN, lastEnergy = float.NaN;
 
-    private static readonly List<ItemShineLight> _all = new();
-    private static readonly System.Comparison<ItemShineLight> ByCamDist = (a, b) => a._camDist2.CompareTo(b._camDist2);
-    private static ulong _rankFrame = ulong.MaxValue;
-    private float _camDist2;
-    private int _rank;
+    private static readonly List<ItemShineLight> all = new();
+    private static readonly System.Comparison<ItemShineLight> ByCamDist = (a, b) => a.camDist2.CompareTo(b.camDist2);
+    private static ulong rankFrame = ulong.MaxValue;
+    private float camDist2;
+    private int rank;
 
-    public override void _EnterTree() => _all.Add(this);
+    public override void _EnterTree() => all.Add(this);
 
-    public override void _ExitTree() => _all.Remove(this);
+    public override void _ExitTree() => all.Remove(this);
 
     private void RankAll()
     {
         ulong frame = Engine.GetProcessFrames();
-        if (frame == _rankFrame) return;
-        _rankFrame = frame;
+        if (frame == rankFrame) return;
+        rankFrame = frame;
         Vector3 eye = Fx.FrameCamera(this, out var camera) ? camera.Origin : Vector3.Zero;
-        foreach (var light in _all)
-            light._camDist2 = float.IsNaN(light._lastPosition.X) ? float.MaxValue : light._lastPosition.DistanceSquaredTo(eye);
-        _all.Sort(ByCamDist);
-        for (int i = 0; i < _all.Count; i++) _all[i]._rank = i;
+        foreach (var light in all)
+            light.camDist2 = float.IsNaN(light.lastPosition.X) ? float.MaxValue : light.lastPosition.DistanceSquaredTo(eye);
+        all.Sort(ByCamDist);
+        for (int i = 0; i < all.Count; i++) all[i].rank = i;
     }
 
     public static void Refresh(Node3D body, bool shadow = false)
@@ -63,8 +63,8 @@ public partial class ItemShineLight : OmniLight3D
             body.AddChild(light);
         }
         light.ShadowEnabled = shadow && Config.Shadows;
-        light._sources.Clear();
-        light._sources.AddRange(sources);
+        light.sources.Clear();
+        light.sources.AddRange(sources);
     }
 
     private static void Collect(Node node, List<ItemShineDriver> sources)
@@ -90,16 +90,16 @@ public partial class ItemShineLight : OmniLight3D
     {
         if (GetParent() is not Node3D body) return;
         Vector3 position = body.GlobalPosition + Vector3.Up * 1.6f;
-        if (_lastPosition != position) { GlobalPosition = position; _lastPosition = position; }
+        if (lastPosition != position) { GlobalPosition = position; lastPosition = position; }
         RankAll();
-        if (_rank >= Config.ShineLightBudget)
+        if (rank >= Config.ShineLightBudget)
         {
             if (Visible) Visible = false;
             return;
         }
         ItemShineDriver? strongest = null;
         float visibility = 0f;
-        foreach (var source in _sources)
+        foreach (var source in sources)
         {
             if (!IsInstanceValid(source) || source.IsQueuedForDeletion()
                 || source.GetParent() is not MeshInstance3D part) continue;
@@ -119,9 +119,9 @@ public partial class ItemShineLight : OmniLight3D
         if (Visible != visible) Visible = visible;
         if (!visible) return;
         float range = level switch { 1 => 3.5f, 2 => 5f, 3 => 6.5f, _ => 8f };
-        if (_lastRange != range) { OmniRange = range; _lastRange = range; }
+        if (lastRange != range) { OmniRange = range; lastRange = range; }
         float pulse = ItemShine.Envelope(level, seconds, strongest!.PartIndex) / ItemShine.PeakFor(level);
         float energy = visibility * pulse * (level switch { 1 => 0.7f, 2 => 1.1f, 3 => 1.6f, _ => 2.2f });
-        if (_lastEnergy != energy) { LightEnergy = energy; _lastEnergy = energy; }
+        if (lastEnergy != energy) { LightEnergy = energy; lastEnergy = energy; }
     }
 }

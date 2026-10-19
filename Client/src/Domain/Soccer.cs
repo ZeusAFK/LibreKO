@@ -8,12 +8,6 @@ public sealed record SoccerEnd(int Winner, int Blue, int Red);
 
 public static class Soccer
 {
-    public const byte MiningSub = 16;
-    public const byte SubGoal = 1;
-    public const byte SubClock = 2;
-    public const byte SubSync = 3;
-    public const byte SubEnd = 4;
-
     public const int TeamNone = 0;
     public const int TeamBlue = 1;
     public const int TeamRed = 2;
@@ -40,7 +34,6 @@ public static class Soccer
     public const int DrawText = 25004;
     public const int BlueText = 25005;
     public const int RedText = 25006;
-    public const int ZoneRefusalText = 4331;
 
     public static int FxFor(int team) => team switch
     {

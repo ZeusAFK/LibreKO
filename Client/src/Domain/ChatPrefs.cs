@@ -16,7 +16,7 @@ public sealed class ChatPrefs
     private const int FirstRevision = 1;
     private const ChatCategory SplitFromGeneral = ChatCategory.NoahKnights | ChatCategory.ChatRoom;
 
-    private readonly Dictionary<string, ChatCategory> _filters = new();
+    private readonly Dictionary<string, ChatCategory> filters = new();
 
     public string Tab { get; set; } = "all";
     public bool Timestamps { get; set; }
@@ -25,15 +25,15 @@ public sealed class ChatPrefs
     public bool Locked { get; set; }
     public bool NearbyShown { get; set; } = true;
 
-    public ChatCategory Filter(ChatTabSpec tab) => _filters.TryGetValue(tab.Id, out var filter) ? filter : tab.Filter;
+    public ChatCategory Filter(ChatTabSpec tab) => filters.TryGetValue(tab.Id, out var filter) ? filter : tab.Filter;
 
     public void SetFilter(ChatTabSpec tab, ChatCategory filter)
     {
-        if (filter == tab.Filter) _filters.Remove(tab.Id);
-        else _filters[tab.Id] = filter;
+        if (filter == tab.Filter) filters.Remove(tab.Id);
+        else filters[tab.Id] = filter;
     }
 
-    public void ResetFilters() => _filters.Clear();
+    public void ResetFilters() => filters.Clear();
 
     public string Format()
     {
@@ -45,7 +45,7 @@ public sealed class ChatPrefs
         text.Append(";bg=").Append(Background);
         text.Append(";lock=").Append(Locked ? 1 : 0);
         text.Append(";nearbylist=").Append(NearbyShown ? 1 : 0);
-        foreach (var (id, filter) in _filters)
+        foreach (var (id, filter) in filters)
             text.Append(';').Append(FilterPrefix).Append(id).Append('=').Append((int)filter);
         return text.ToString();
     }

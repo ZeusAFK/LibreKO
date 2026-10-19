@@ -31,6 +31,7 @@ public static class GmCommandCatalog
         new(Players, "+summonuser <name>", "Bring one player to you"),
         new(Players, "+goto <name> | <zone> <x> <z>", "Go to a player or to a spot"),
         new(Players, "+kick <name>", "Disconnect a player"),
+        new(Players, "+forcerename <name>", "Make a character choose a new name at character selection"),
         new(Players, "+kill <name>", "Kill a player"),
         new(Players, "+mute <name> / +unmute <name>", "Stop or allow a player's chat"),
         new(Players, "+ban <name> / +unban <login>", "Ban or unban an account"),

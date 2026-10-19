@@ -31,27 +31,27 @@ public sealed class InstanceRoom(ushort id, byte zoneId, short set, DateTime exp
 
 public sealed class InstanceRoomRegistry(SessionManager sessionManager, ILogger<InstanceRoomRegistry> logger)
 {
-    private readonly ConcurrentDictionary<ushort, InstanceRoom> _rooms = new();
-    private int _nextRoom;
+    private readonly ConcurrentDictionary<ushort, InstanceRoom> rooms = new();
+    private int nextRoom;
 
-    public IEnumerable<InstanceRoom> Rooms => _rooms.Values;
+    public IEnumerable<InstanceRoom> Rooms => rooms.Values;
 
     public InstanceRoom Open(byte zoneId, short set, TimeSpan duration, bool endsOnBossKill = false)
     {
         ushort id;
         do
         {
-            id = (ushort)(Interlocked.Increment(ref _nextRoom) & 0xFFFF);
-        } while (id == 0 || _rooms.ContainsKey(id));
+            id = (ushort)(Interlocked.Increment(ref nextRoom) & 0xFFFF);
+        } while (id == 0 || rooms.ContainsKey(id));
 
         var room = new InstanceRoom(id, zoneId, set, DateTime.UtcNow + duration, endsOnBossKill);
-        _rooms[id] = room;
+        rooms[id] = room;
         return room;
     }
 
-    public InstanceRoom? Get(ushort id) => _rooms.GetValueOrDefault(id);
+    public InstanceRoom? Get(ushort id) => rooms.GetValueOrDefault(id);
 
-    public bool Holds(ushort roomId, byte zoneId) => _rooms.TryGetValue(roomId, out var room) && room.ZoneId == zoneId;
+    public bool Holds(ushort roomId, byte zoneId) => rooms.TryGetValue(roomId, out var room) && room.ZoneId == zoneId;
 
     public void Join(InstanceRoom room, UserSession session)
     {
@@ -66,7 +66,7 @@ public sealed class InstanceRoomRegistry(SessionManager sessionManager, ILogger<
         var roomId = session.Room;
         session.Room = 0;
         session.InstanceReturn = null;
-        if (roomId == 0 || !_rooms.TryGetValue(roomId, out var room))
+        if (roomId == 0 || !rooms.TryGetValue(roomId, out var room))
             return;
 
         room.Members.TryRemove(session.CharacterId, out _);
@@ -78,7 +78,7 @@ public sealed class InstanceRoomRegistry(SessionManager sessionManager, ILogger<
 
     public void Close(InstanceRoom room)
     {
-        if (!_rooms.TryRemove(room.Id, out _))
+        if (!rooms.TryRemove(room.Id, out _))
             return;
 
         foreach (var npc in room.Npcs)

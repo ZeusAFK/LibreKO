@@ -16,12 +16,12 @@ public sealed class VoiceNoteRecorder : IDisposable
     private const int LeadInFrames = LeadInMs / PcmFrameCutter.FrameMs;
     private const int MaxWaitFrames = VoiceNoteRules.MaxSeconds * 1000 / PcmFrameCutter.FrameMs;
 
-    private readonly MemoryStream _file = new();
-    private readonly OpusOggWriteStream _ogg;
-    private readonly float[] _frame = new float[PcmFrameCutter.FrameSamples];
-    private readonly List<float> _levels = new();
-    private readonly List<float[]> _beforeVoice = new();
-    private bool _voiceHeard;
+    private readonly MemoryStream file = new();
+    private readonly OpusOggWriteStream ogg;
+    private readonly float[] frame = new float[PcmFrameCutter.FrameSamples];
+    private readonly List<float> levels = new();
+    private readonly List<float[]> beforeVoice = new();
+    private bool voiceHeard;
 
     public VoiceNoteRecorder()
     {
@@ -29,51 +29,51 @@ public sealed class VoiceNoteRecorder : IDisposable
         var encoder = OpusCodecFactory.CreateEncoder(PcmFrameCutter.SampleRate, 1, OpusApplication.OPUS_APPLICATION_VOIP);
         encoder.Bitrate = Bitrate;
         encoder.SignalType = OpusSignal.OPUS_SIGNAL_VOICE;
-        _ogg = new OpusOggWriteStream(encoder, _file, new OpusTags(), PcmFrameCutter.SampleRate, ResamplerQuality, true);
+        ogg = new OpusOggWriteStream(encoder, file, new OpusTags(), PcmFrameCutter.SampleRate, ResamplerQuality, true);
     }
 
     public int Samples { get; private set; }
 
     public double Seconds => Samples / (double)PcmFrameCutter.SampleRate;
 
-    public bool Full => Seconds >= VoiceNoteRules.MaxSeconds || _beforeVoice.Count >= MaxWaitFrames;
+    public bool Full => Seconds >= VoiceNoteRules.MaxSeconds || beforeVoice.Count >= MaxWaitFrames;
 
-    public void Write(ReadOnlySpan<float> frame, bool voice = true)
+    public void Write(ReadOnlySpan<float> pcm, bool voice = true)
     {
-        if (!_voiceHeard && !voice)
+        if (!voiceHeard && !voice)
         {
-            _beforeVoice.Add(frame.ToArray());
+            beforeVoice.Add(pcm.ToArray());
             return;
         }
-        if (!_voiceHeard)
+        if (!voiceHeard)
         {
-            _voiceHeard = true;
-            for (int i = Math.Max(0, _beforeVoice.Count - LeadInFrames); i < _beforeVoice.Count; i++) Encode(_beforeVoice[i]);
-            _beforeVoice.Clear();
+            voiceHeard = true;
+            for (int i = Math.Max(0, beforeVoice.Count - LeadInFrames); i < beforeVoice.Count; i++) Encode(beforeVoice[i]);
+            beforeVoice.Clear();
         }
-        Encode(frame);
+        Encode(pcm);
     }
 
-    private void Encode(ReadOnlySpan<float> frame)
+    private void Encode(ReadOnlySpan<float> pcm)
     {
-        int count = Math.Min(frame.Length, _frame.Length);
-        frame[..count].CopyTo(_frame);
-        _ogg.WriteSamples(_frame, 0, count);
-        _levels.Add(VoiceWaveform.Rms(frame[..count]));
+        int count = Math.Min(pcm.Length, frame.Length);
+        pcm[..count].CopyTo(frame);
+        ogg.WriteSamples(frame, 0, count);
+        levels.Add(VoiceWaveform.Rms(pcm[..count]));
         Samples += count;
     }
 
-    public byte[] Waveform() => VoiceWaveform.FromLevels(_levels);
+    public byte[] Waveform() => VoiceWaveform.FromLevels(levels);
 
     public byte[] Finish()
     {
-        foreach (var frame in _beforeVoice) Encode(frame);
-        _beforeVoice.Clear();
-        _ogg.Finish();
-        return _file.ToArray();
+        foreach (var frame in beforeVoice) Encode(frame);
+        beforeVoice.Clear();
+        ogg.Finish();
+        return file.ToArray();
     }
 
-    public void Dispose() => _file.Dispose();
+    public void Dispose() => file.Dispose();
 }
 
 public static class VoiceNoteCodec

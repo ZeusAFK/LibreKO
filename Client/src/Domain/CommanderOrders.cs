@@ -25,61 +25,54 @@ public static class CommanderOrders
         (9555, "Retreat", BackSlot), (9556, "Fallback", BackSlot), (9557, "Back", BackSlot),
     };
 
-    public const byte None = 0;
-    public const byte Forward = 1;
-    public const byte Back = 2;
-    public const byte BackHome = 3;
-    public const byte Right = 5;
-    public const byte Left = 6;
-
-    public readonly record struct Slot(int Skill, byte Order);
+    public readonly record struct Slot(int Skill, CommanderOrder Order);
 
     public static readonly Slot[] Bar =
     {
-        new(MarkingSkill, None),
-        new(492066, Forward),
-        new(492067, Back),
-        new(492068, BackHome),
-        new(492073, Right),
-        new(492072, Left),
+        new(MarkingSkill, CommanderOrder.None),
+        new(492066, CommanderOrder.Forward),
+        new(492067, CommanderOrder.Back),
+        new(492068, CommanderOrder.BackHome),
+        new(492073, CommanderOrder.Right),
+        new(492072, CommanderOrder.Left),
     };
 
-    public static bool RedFlash(byte order) => order is Back or BackHome;
+    public static bool RedFlash(CommanderOrder order) => order is CommanderOrder.Back or CommanderOrder.BackHome;
 
-    public static int Sound(byte order) => order switch
+    public static int Sound(CommanderOrder order) => order switch
     {
-        Forward or Right or Left => ForwardSound,
-        Back => BackSound,
-        BackHome => BackHomeSound,
+        CommanderOrder.Forward or CommanderOrder.Right or CommanderOrder.Left => ForwardSound,
+        CommanderOrder.Back => BackSound,
+        CommanderOrder.BackHome => BackHomeSound,
         _ => 0,
     };
 
-    public static int Glyph(byte order) => order switch
+    public static int Glyph(CommanderOrder order) => order switch
     {
-        Forward => 0,
-        Back => 1,
-        BackHome => 2,
-        Right => 3,
-        Left => 4,
+        CommanderOrder.Forward => 0,
+        CommanderOrder.Back => 1,
+        CommanderOrder.BackHome => 2,
+        CommanderOrder.Right => 3,
+        CommanderOrder.Left => 4,
         _ => NoGlyph,
     };
 
     public static bool RedRing(int glyph) => glyph is 1 or 2;
 
-    public static int SheetCell(byte order) => order switch
+    public static int SheetCell(CommanderOrder order) => order switch
     {
-        Forward => 0,
-        Left => 1,
-        Right => 2,
-        BackHome => 3,
-        Back => 4,
+        CommanderOrder.Forward => 0,
+        CommanderOrder.Left => 1,
+        CommanderOrder.Right => 2,
+        CommanderOrder.BackHome => 3,
+        CommanderOrder.Back => 4,
         _ => NoGlyph,
     };
 
-    public static int SkillOf(byte order)
+    public static int SkillOf(CommanderOrder order)
     {
         foreach (var slot in Bar)
-            if (slot.Order == order && order != None) return slot.Skill;
+            if (slot.Order == order && order != CommanderOrder.None) return slot.Skill;
         return 0;
     }
 

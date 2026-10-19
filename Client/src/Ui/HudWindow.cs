@@ -13,50 +13,50 @@ public partial class HudWindow : PanelContainer
 
     public HudLayout Layout { get; }
 
-    private System.Func<Vector2>? _dock;
+    private System.Func<Vector2>? dock;
 
-    public void DockTo(System.Func<Vector2> position) => _dock = position;
+    public void DockTo(System.Func<Vector2> position) => dock = position;
 
     private const ulong CentreSettleMsec = 300;
-    private readonly bool _opensCentred;
-    private ulong _centreSettlesAt;
+    private readonly bool opensCentred;
+    private ulong centreSettlesAt;
 
-    private static readonly System.Collections.Generic.HashSet<string> _centredIds =
+    private static readonly System.Collections.Generic.HashSet<string> centredIds =
         new(System.StringComparer.OrdinalIgnoreCase);
 
-    internal static System.Collections.Generic.IReadOnlyCollection<string> CentredIds => _centredIds;
+    internal static System.Collections.Generic.IReadOnlyCollection<string> CentredIds => centredIds;
 
-    private static readonly System.Collections.Generic.Dictionary<string, HudWindow> _byId =
+    private static readonly System.Collections.Generic.Dictionary<string, HudWindow> byId =
         new(System.StringComparer.OrdinalIgnoreCase);
 
     internal static HudWindow? Find(string id) =>
-        _byId.TryGetValue(id, out var w) && GodotObject.IsInstanceValid(w) ? w : null;
+        byId.TryGetValue(id, out var w) && GodotObject.IsInstanceValid(w) ? w : null;
 
-    private readonly bool _pluginHidden;
-    private readonly WindowHost? _host;
-    private readonly LibreKO.Plugins.WindowFrame? _frame;
+    private readonly bool pluginHidden;
+    private readonly WindowHost? host;
+    private readonly LibreKO.Plugins.WindowFrame? frame;
 
-    public bool PluginFramed => _frame != null;
+    public bool PluginFramed => frame != null;
 
     public override void _Notification(int what)
     {
         switch ((long)what)
         {
             case NotificationEnterTree:
-                _byId[Id] = this;
+                byId[Id] = this;
                 break;
             case NotificationExitTree:
-                if (_byId.TryGetValue(Id, out var current) && current == this) _byId.Remove(Id);
+                if (byId.TryGetValue(Id, out var current) && current == this) byId.Remove(Id);
                 break;
             case NotificationVisibilityChanged:
-                if (_pluginHidden && Visible) { Visible = false; break; }
-                if (_opensCentred && Visible) _centreSettlesAt = Time.GetTicksMsec() + CentreSettleMsec;
-                if (_frame != null)
+                if (pluginHidden && Visible) { Visible = false; break; }
+                if (opensCentred && Visible) centreSettlesAt = Time.GetTicksMsec() + CentreSettleMsec;
+                if (frame != null)
                 {
-                    if (Visible) _frame.RaiseShown(); else _frame.RaiseHidden();
+                    if (Visible) frame.RaiseShown(); else frame.RaiseHidden();
                 }
-                if (_host == null) break;
-                if (Visible) _host.RaiseShown(); else _host.RaiseHidden();
+                if (host == null) break;
+                if (Visible) host.RaiseShown(); else host.RaiseHidden();
                 break;
         }
     }
@@ -70,7 +70,7 @@ public partial class HudWindow : PanelContainer
 
     public void SetBackgroundAlpha(float alpha)
     {
-        if (PluginReplaced || _frame != null) return;
+        if (PluginReplaced || frame != null) return;
         AddThemeStyleboxOverride("panel", UiTheme.WindowPanel(alpha: alpha));
     }
 
@@ -78,7 +78,7 @@ public partial class HudWindow : PanelContainer
 
     public void SetCloseVisible(bool visible)
     {
-        if (_closeButton != null) _closeButton.Visible = visible;
+        if (closeButton != null) closeButton.Visible = visible;
     }
 
     private static Vector2 HeaderButtonSize => Platform.Pick(new Vector2(20, 20), new Vector2(46, 46));
@@ -89,8 +89,8 @@ public partial class HudWindow : PanelContainer
     {
         set
         {
-            _titleLbl.Text = value;
-            _frame?.SetTitle(value);
+            titleLbl.Text = value;
+            frame?.SetTitle(value);
         }
     }
 
@@ -99,24 +99,24 @@ public partial class HudWindow : PanelContainer
     private const int MinimizedTitleWidth = 124;
     private const int MinimizeGlyphFontSize = 17;
 
-    private readonly Label _titleLbl;
-    private bool _fitQueued;
-    private MarginContainer? _content;
-    private Button? _minimizeBtn;
-    private PanelContainer? _header;
-    private Label? _marker;
-    private HBoxContainer? _headerBar;
-    private Button? _closeButton;
-    private Button? _dockPin;
+    private readonly Label titleLbl;
+    private bool fitQueued;
+    private MarginContainer? content;
+    private Button? minimizeBtn;
+    private PanelContainer? header;
+    private Label? markerLabel;
+    private HBoxContainer? headerBar;
+    private Button? closeButton;
+    private Button? dockPin;
 
     public void SetHeaderAccent(Color fill, Color border, Color marker)
     {
-        if (_header == null) return;
+        if (header == null) return;
         var sb = UiTheme.WindowHeaderBand();
         sb.BgColor = fill;
         sb.BorderColor = border;
-        _header.AddThemeStyleboxOverride("panel", sb);
-        _marker?.AddThemeColorOverride("font_color", marker);
+        header.AddThemeStyleboxOverride("panel", sb);
+        markerLabel?.AddThemeColorOverride("font_color", marker);
     }
 
     private const float DockPinDockedAlpha = 0.42f;
@@ -132,23 +132,23 @@ public partial class HudWindow : PanelContainer
 
     public void ShowDockPin(System.Action redock)
     {
-        if (PluginReplaced || _headerBar == null || _dockPin != null) return;
-        _dockPin = UiTheme.IconButton(UiIcons.Get("system/pin"), "Dock to the screen edge");
-        _dockPin.CustomMinimumSize = HeaderButtonSize;
-        _dockPin.AddThemeConstantOverride("icon_max_width", Platform.Pick(12, 22));
-        _dockPin.AddThemeColorOverride("icon_hover_color", Colors.White);
-        _dockPin.AddThemeColorOverride("icon_pressed_color", Colors.White);
-        _dockPin.AddThemeStyleboxOverride("hover", PinChip(DockPinHoverAlpha));
-        _dockPin.AddThemeStyleboxOverride("pressed", PinChip(DockPinHoverAlpha));
-        _dockPin.Pressed += redock;
-        _headerBar.AddChild(_dockPin);
-        if (_closeButton != null) _headerBar.MoveChild(_dockPin, _closeButton.GetIndex());
+        if (PluginReplaced || headerBar == null || dockPin != null) return;
+        dockPin = UiTheme.IconButton(UiIcons.Get("system/pin"), "Dock to the screen edge");
+        dockPin.CustomMinimumSize = HeaderButtonSize;
+        dockPin.AddThemeConstantOverride("icon_max_width", Platform.Pick(12, 22));
+        dockPin.AddThemeColorOverride("icon_hover_color", Colors.White);
+        dockPin.AddThemeColorOverride("icon_pressed_color", Colors.White);
+        dockPin.AddThemeStyleboxOverride("hover", PinChip(DockPinHoverAlpha));
+        dockPin.AddThemeStyleboxOverride("pressed", PinChip(DockPinHoverAlpha));
+        dockPin.Pressed += redock;
+        headerBar.AddChild(dockPin);
+        if (closeButton != null) headerBar.MoveChild(dockPin, closeButton.GetIndex());
         SetDocked(true);
     }
 
     public Button? AddHeaderIcon(string iconId, string tooltip, System.Action pressed)
     {
-        if (PluginReplaced || _headerBar == null) return null;
+        if (PluginReplaced || headerBar == null) return null;
         var button = UiTheme.IconButton(UiIcons.Get(iconId), tooltip);
         button.CustomMinimumSize = HeaderButtonSize;
         button.AddThemeConstantOverride("icon_max_width", Platform.Pick(12, 22));
@@ -157,36 +157,36 @@ public partial class HudWindow : PanelContainer
         button.AddThemeStyleboxOverride("hover", PinChip(DockPinHoverAlpha));
         button.AddThemeStyleboxOverride("pressed", PinChip(DockPinHoverAlpha));
         button.Pressed += pressed;
-        _headerBar.AddChild(button);
-        Control? before = (Control?)_minimizeBtn ?? _closeButton;
-        if (before != null) _headerBar.MoveChild(button, before.GetIndex());
+        headerBar.AddChild(button);
+        Control? before = (Control?)minimizeBtn ?? closeButton;
+        if (before != null) headerBar.MoveChild(button, before.GetIndex());
         return button;
     }
 
     public void SetDocked(bool docked)
     {
-        if (_dockPin == null) return;
-        _dockPin.AddThemeColorOverride("icon_normal_color", docked ? Colors.White : new Color(UiTheme.TextHi, DockPinFreeAlpha));
-        _dockPin.AddThemeStyleboxOverride("normal", docked ? PinChip(DockPinDockedAlpha) : new StyleBoxEmpty());
-        _dockPin.TooltipText = docked ? "Docked to the screen edge" : "Dock to the screen edge";
+        if (dockPin == null) return;
+        dockPin.AddThemeColorOverride("icon_normal_color", docked ? Colors.White : new Color(UiTheme.TextHi, DockPinFreeAlpha));
+        dockPin.AddThemeStyleboxOverride("normal", docked ? PinChip(DockPinDockedAlpha) : new StyleBoxEmpty());
+        dockPin.TooltipText = docked ? "Docked to the screen edge" : "Dock to the screen edge";
     }
 
     public void SetMinimized(bool minimized)
     {
-        if (PluginReplaced || _content == null || Minimized == minimized) return;
+        if (PluginReplaced || content == null || Minimized == minimized) return;
         Minimized = minimized;
-        _content.Visible = !minimized;
-        if (_minimizeBtn != null)
+        content.Visible = !minimized;
+        if (minimizeBtn != null)
         {
-            _minimizeBtn.Text = minimized ? "❒" : "—";
-            _minimizeBtn.TooltipText = minimized ? "Restore" : "Minimize";
+            minimizeBtn.Text = minimized ? "❒" : "—";
+            minimizeBtn.TooltipText = minimized ? "Restore" : "Minimize";
         }
 
-        _titleLbl.ClipText = minimized;
-        _titleLbl.TextOverrunBehavior = minimized
+        titleLbl.ClipText = minimized;
+        titleLbl.TextOverrunBehavior = minimized
             ? TextServer.OverrunBehavior.TrimEllipsis
             : TextServer.OverrunBehavior.NoTrimming;
-        _titleLbl.CustomMinimumSize = minimized ? new Vector2(MinimizedTitleWidth, 0) : Vector2.Zero;
+        titleLbl.CustomMinimumSize = minimized ? new Vector2(MinimizedTitleWidth, 0) : Vector2.Zero;
 
         Size = Vector2.Zero;
         ResetSize();
@@ -195,14 +195,14 @@ public partial class HudWindow : PanelContainer
 
     private void QueueFit()
     {
-        if (_fitQueued) return;
-        _fitQueued = true;
+        if (fitQueued) return;
+        fitQueued = true;
         Callable.From(Fit).CallDeferred();
     }
 
     private void Fit()
     {
-        _fitQueued = false;
+        fitQueued = false;
         if (IsInsideTree()) ResetSize();
     }
 
@@ -266,7 +266,7 @@ public partial class HudWindow : PanelContainer
         var header = new PanelContainer { ClipContents = true };
         header.AddThemeStyleboxOverride("panel", UiTheme.WindowHeaderBand());
         root.AddChild(header);
-        _header = header;
+        this.header = header;
 
         var facets = new Control { MouseFilter = MouseFilterEnum.Ignore };
         header.AddChild(facets);
@@ -294,7 +294,7 @@ public partial class HudWindow : PanelContainer
         };
         bar.AddThemeConstantOverride("separation", 6);
         header.AddChild(bar);
-        _headerBar = bar;
+        headerBar = bar;
 
         if (titleIcon != null)
         {
@@ -315,14 +315,14 @@ public partial class HudWindow : PanelContainer
             marker.CustomMinimumSize = new Vector2(16, 20);
             marker.MouseFilter = MouseFilterEnum.Ignore;
             bar.AddChild(marker);
-            _marker = marker;
+            markerLabel = marker;
         }
 
-        _titleLbl = UiTheme.Text(title, 15, new Color("f1ead9"));
-        _titleLbl.Text = title;
-        _titleLbl.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        _titleLbl.MouseFilter = MouseFilterEnum.Ignore;
-        bar.AddChild(_titleLbl);
+        titleLbl = UiTheme.Text(title, 15, new Color("f1ead9"));
+        titleLbl.Text = title;
+        titleLbl.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        titleLbl.MouseFilter = MouseFilterEnum.Ignore;
+        bar.AddChild(titleLbl);
 
         var closeNormal = new StyleBoxEmpty();
         var closeHover = new StyleBoxFlat { BgColor = new Color(0.06f, 0.05f, 0.035f, 0.34f) };
@@ -330,16 +330,16 @@ public partial class HudWindow : PanelContainer
 
         if (minimizable)
         {
-            _minimizeBtn = UiTheme.IconButton("—", "Minimize");
-            _minimizeBtn.CustomMinimumSize = HeaderButtonSize;
-            _minimizeBtn.AddThemeFontSizeOverride("font_size", MinimizeGlyphFontSize);
-            _minimizeBtn.AddThemeColorOverride("font_color", new Color(UiTheme.TextHi, 0.82f));
-            _minimizeBtn.AddThemeColorOverride("font_hover_color", UiTheme.TextHi);
-            _minimizeBtn.AddThemeStyleboxOverride("normal", closeNormal);
-            _minimizeBtn.AddThemeStyleboxOverride("hover", closeHover);
-            _minimizeBtn.AddThemeStyleboxOverride("pressed", closeHover);
-            _minimizeBtn.Pressed += () => SetMinimized(!Minimized);
-            bar.AddChild(_minimizeBtn);
+            minimizeBtn = UiTheme.IconButton("—", "Minimize");
+            minimizeBtn.CustomMinimumSize = HeaderButtonSize;
+            minimizeBtn.AddThemeFontSizeOverride("font_size", MinimizeGlyphFontSize);
+            minimizeBtn.AddThemeColorOverride("font_color", new Color(UiTheme.TextHi, 0.82f));
+            minimizeBtn.AddThemeColorOverride("font_hover_color", UiTheme.TextHi);
+            minimizeBtn.AddThemeStyleboxOverride("normal", closeNormal);
+            minimizeBtn.AddThemeStyleboxOverride("hover", closeHover);
+            minimizeBtn.AddThemeStyleboxOverride("pressed", closeHover);
+            minimizeBtn.Pressed += () => SetMinimized(!Minimized);
+            bar.AddChild(minimizeBtn);
         }
 
         if (closable)
@@ -354,11 +354,11 @@ public partial class HudWindow : PanelContainer
             close.AddThemeStyleboxOverride("pressed", closeHover);
             close.Pressed += Close;
             bar.AddChild(close);
-            _closeButton = close;
+            closeButton = close;
         }
 
         var content = new MarginContainer();
-        _content = content;
+        this.content = content;
         UiTheme.Margins(content, 9, 8, 9, 10);
         root.AddChild(content);
         Body = new VBoxContainer();
@@ -371,7 +371,7 @@ public partial class HudWindow : PanelContainer
         {
             if (rule.Hidden)
             {
-                _pluginHidden = true;
+                pluginHidden = true;
                 Visible = false;
             }
             else if (rule.Replacement != null)
@@ -379,27 +379,27 @@ public partial class HudWindow : PanelContainer
                 PluginReplaced = true;
                 margin.Visible = false;
                 AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
-                _host = new WindowHost(id, title, this, Close);
-                var replacement = rule.Replacement(_host);
+                host = new WindowHost(id, title, this, Close);
+                var replacement = rule.Replacement(host);
                 AddChild(replacement);
-                dragHandle = _host.DragHandle ?? replacement;
+                dragHandle = host.DragHandle ?? replacement;
             }
             if (!PluginReplaced)
                 foreach (var extend in rule.Extenders) extend(Body);
         }
-        if (!_pluginHidden && !PluginReplaced && PluginHost.Ui.FrameFor(id) is { } frameBuild)
+        if (!pluginHidden && !PluginReplaced && PluginHost.Ui.FrameFor(id) is { } frameBuild)
         {
             root.RemoveChild(content);
             margin.Visible = false;
             AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
-            _frame = new LibreKO.Plugins.WindowFrame(id, title, content, closable, Close);
-            var chrome = frameBuild(_frame);
+            frame = new LibreKO.Plugins.WindowFrame(id, title, content, closable, Close);
+            var chrome = frameBuild(frame);
             AddChild(chrome);
-            dragHandle = _frame.DragHandle ?? chrome;
+            dragHandle = frame.DragHandle ?? chrome;
         }
 
         Layout = HudLayout.Attach(
-            this, id, dragHandle, () => _dock?.Invoke() ?? defaultPos ?? CentredSpot(),
+            this, id, dragHandle, () => dock?.Invoke() ?? defaultPos ?? CentredSpot(),
             resizable: resizable,
             minimumSize: minimumSize,
             persist: persistLayout);
@@ -407,8 +407,8 @@ public partial class HudWindow : PanelContainer
         if (!resizable) MinimumSizeChanged += QueueFit;
         if (defaultPos == null)
         {
-            _opensCentred = true;
-            _centredIds.Add(id);
+            opensCentred = true;
+            centredIds.Add(id);
             Resized += RecentreWhileSettling;
         }
     }
@@ -423,7 +423,7 @@ public partial class HudWindow : PanelContainer
 
     private void RecentreWhileSettling()
     {
-        if (Visible && Time.GetTicksMsec() < _centreSettlesAt && IsInstanceValid(Layout))
+        if (Visible && Time.GetTicksMsec() < centreSettlesAt && IsInstanceValid(Layout))
             Callable.From(Layout.ReapplyDefault).CallDeferred();
     }
 }

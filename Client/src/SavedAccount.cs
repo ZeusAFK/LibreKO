@@ -14,29 +14,29 @@ public static class SavedAccount
 
     public static string Name { get; private set; } = "";
 
-    private static string _secret = "";
+    private static string secret = "";
 
-    public static bool Any => Name.Length > 0 && _secret.Length > 0;
+    public static bool Any => Name.Length > 0 && secret.Length > 0;
 
     public static void Load()
     {
         var cfg = new ConfigFile();
         if (cfg.Load(Path) != Error.Ok) return;
         Name = cfg.GetValue(Section, "name", "").AsString();
-        _secret = cfg.GetValue(Section, "secret", "").AsString();
+        secret = cfg.GetValue(Section, "secret", "").AsString();
         if (Password.Length == 0) Forget();
     }
 
-    public static string Password => _secret.Length == 0 ? "" : Unprotect(_secret);
+    public static string Password => secret.Length == 0 ? "" : Unprotect(secret);
 
     public static void Save(string name, string password)
     {
         if (name.Length == 0 || password.Length == 0) { Forget(); return; }
         Name = name;
-        _secret = Protect(password);
+        secret = Protect(password);
         var cfg = new ConfigFile();
         cfg.SetValue(Section, "name", Name);
-        cfg.SetValue(Section, "secret", _secret);
+        cfg.SetValue(Section, "secret", secret);
         if (cfg.Save(Path) != Error.Ok)
             GD.PushWarning($"[account] could not write {Path}");
     }
@@ -44,13 +44,13 @@ public static class SavedAccount
     internal static void Preview(string name)
     {
         Name = name;
-        _secret = name.Length == 0 ? "" : Protect("preview");
+        secret = name.Length == 0 ? "" : Protect("preview");
     }
 
     public static void Forget()
     {
         Name = "";
-        _secret = "";
+        secret = "";
         if (FileAccess.FileExists(Path))
             DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(Path));
     }

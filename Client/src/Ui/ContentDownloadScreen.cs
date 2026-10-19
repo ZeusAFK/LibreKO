@@ -24,19 +24,19 @@ public partial class ContentDownloadScreen : Control
     private const float BarHeight = 9f;
     private const long IdleGraceMs = 4000;
 
-    private Label _percent = null!;
-    private Label _detail = null!;
-    private Label _transfer = null!;
-    private Label _eta = null!;
-    private ColorRect _fill = null!;
-    private Control _track = null!;
-    private Button _action = null!;
+    private Label percent = null!;
+    private Label detailLabel = null!;
+    private Label transfer = null!;
+    private Label eta = null!;
+    private ColorRect fill = null!;
+    private Control track = null!;
+    private Button action = null!;
 
-    private ContentInstall _install = null!;
-    private CancellationTokenSource _cancel = null!;
-    private ContentStage _shownStage = ContentStage.Idle;
-    private bool _actionTaken;
-    private bool _leaving;
+    private ContentInstall install = null!;
+    private CancellationTokenSource cancel = null!;
+    private ContentStage shownStage = ContentStage.Idle;
+    private bool actionTaken;
+    private bool leaving;
 
     public override void _Ready()
     {
@@ -48,17 +48,17 @@ public partial class ContentDownloadScreen : Control
 
         GD.Print($"[content] download screen up {Size.X:0}x{Size.Y:0} — patch host {Config.PatchUrl}"
                  + $" app build {Build.ApkBuild}");
-        _install = new ContentInstall(Config.PatchUrl);
+        install = new ContentInstall(Config.PatchUrl);
         SetProcess(true);
 
         DisplayServer.ScreenSetKeepOn(true);
-        _cancel = new CancellationTokenSource();
-        _ = _install.RunAsync(_cancel.Token);
+        cancel = new CancellationTokenSource();
+        _ = install.RunAsync(cancel.Token);
     }
 
     public override void _ExitTree()
     {
-        _cancel?.Cancel();
+        cancel?.Cancel();
         DisplayServer.ScreenSetKeepOn(false);
     }
 
@@ -146,10 +146,10 @@ public partial class ContentDownloadScreen : Control
             MouseFilter = MouseFilterEnum.Ignore,
         };
         box.AddThemeConstantOverride("separation", 6);
-        _percent = Text("0", Platform.Pick(62, 54), Bright);
-        _percent.CustomMinimumSize = new Vector2(Platform.Pick(150, 128), 0);
-        _percent.HorizontalAlignment = HorizontalAlignment.Right;
-        box.AddChild(_percent);
+        percent = Text("0", Platform.Pick(62, 54), Bright);
+        percent.CustomMinimumSize = new Vector2(Platform.Pick(150, 128), 0);
+        percent.HorizontalAlignment = HorizontalAlignment.Right;
+        box.AddChild(percent);
         var pct = Text("%", 22, Amber);
         pct.SizeFlagsVertical = SizeFlags.ShrinkEnd;
         box.AddChild(pct);
@@ -166,34 +166,34 @@ public partial class ContentDownloadScreen : Control
         };
         col.AddThemeConstantOverride("separation", 9);
 
-        _detail = Text("Preparing", 19, Amber);
-        _detail.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        col.AddChild(_detail);
+        detailLabel = Text("Preparing", 19, Amber);
+        detailLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        col.AddChild(detailLabel);
 
         var line = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
         line.AddThemeConstantOverride("separation", 18);
-        _transfer = Text("", 15, Muted);
-        line.AddChild(_transfer);
-        _eta = Text("", 15, Muted);
-        line.AddChild(_eta);
+        transfer = Text("", 15, Muted);
+        line.AddChild(transfer);
+        eta = Text("", 15, Muted);
+        line.AddChild(eta);
         col.AddChild(line);
 
-        _track = new Control { CustomMinimumSize = new Vector2(0, BarHeight) };
-        _track.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        _track.MouseFilter = MouseFilterEnum.Ignore;
-        col.AddChild(_track);
+        track = new Control { CustomMinimumSize = new Vector2(0, BarHeight) };
+        track.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        track.MouseFilter = MouseFilterEnum.Ignore;
+        col.AddChild(track);
 
         var back = new ColorRect { Color = TrackColor, MouseFilter = MouseFilterEnum.Ignore };
         back.SetAnchorsPreset(LayoutPreset.FullRect);
-        _track.AddChild(back);
+        track.AddChild(back);
 
-        _fill = new ColorRect
+        fill = new ColorRect
         {
             Color = BarTop,
             MouseFilter = MouseFilterEnum.Ignore,
             AnchorTop = 0f, AnchorBottom = 1f, AnchorLeft = 0f, AnchorRight = 0f,
         };
-        _track.AddChild(_fill);
+        track.AddChild(fill);
 
         var gloss = new ColorRect
         {
@@ -201,13 +201,13 @@ public partial class ContentDownloadScreen : Control
             MouseFilter = MouseFilterEnum.Ignore,
             AnchorTop = 0.5f, AnchorBottom = 1f, AnchorLeft = 0f, AnchorRight = 1f,
         };
-        _fill.AddChild(gloss);
+        fill.AddChild(gloss);
         return col;
     }
 
     private Control BuildAction()
     {
-        _action = new Button
+        action = new Button
         {
             Text = "",
             FocusMode = FocusModeEnum.None,
@@ -220,38 +220,38 @@ public partial class ContentDownloadScreen : Control
         face.SetBorderWidthAll(1);
         var hover = (StyleBoxFlat)face.Duplicate();
         hover.BgColor = new Color(Gold, 0.38f);
-        _action.AddThemeStyleboxOverride("normal", face);
-        _action.AddThemeStyleboxOverride("hover", hover);
-        _action.AddThemeStyleboxOverride("pressed", hover);
-        _action.AddThemeColorOverride("font_color", Bright);
-        _action.AddThemeFontSizeOverride("font_size", 22);
-        _action.Pressed += OnAction;
-        return _action;
+        action.AddThemeStyleboxOverride("normal", face);
+        action.AddThemeStyleboxOverride("hover", hover);
+        action.AddThemeStyleboxOverride("pressed", hover);
+        action.AddThemeColorOverride("font_color", Bright);
+        action.AddThemeFontSizeOverride("font_size", 22);
+        action.Pressed += OnAction;
+        return action;
     }
 
     private string ActionLabel(ContentInstall.Snapshot s) => s.Stage switch
     {
         ContentStage.Failed => "Retry",
-        ContentStage.AppOutdated => _install.AppUpdateUrl.Length > 0 ? "Get the new app" : "Check again",
+        ContentStage.AppOutdated => install.AppUpdateUrl.Length > 0 ? "Get the new app" : "Check again",
         ContentStage.NeedsConsent => $"Download {Bytes(s.Total - s.Done)}",
         _ => "",
     };
 
     private void OnAction()
     {
-        var stage = _install.Read().Stage;
-        _actionTaken = true;
-        _action.Visible = false;
+        var stage = install.Read().Stage;
+        actionTaken = true;
+        action.Visible = false;
 
         if (stage == ContentStage.AppOutdated)
         {
-            if (_install.AppUpdateUrl.Length > 0) OS.ShellOpen(_install.AppUpdateUrl);
+            if (install.AppUpdateUrl.Length > 0) OS.ShellOpen(install.AppUpdateUrl);
             else Restart();
             return;
         }
         if (stage == ContentStage.NeedsConsent)
         {
-            _install.GiveConsent();
+            install.GiveConsent();
             return;
         }
         Restart();
@@ -259,10 +259,10 @@ public partial class ContentDownloadScreen : Control
 
     private void Restart()
     {
-        _cancel?.Cancel();
-        _cancel = new CancellationTokenSource();
-        _install = new ContentInstall(Config.PatchUrl);
-        _ = _install.RunAsync(_cancel.Token);
+        cancel?.Cancel();
+        cancel = new CancellationTokenSource();
+        install = new ContentInstall(Config.PatchUrl);
+        _ = install.RunAsync(cancel.Token);
     }
 
     public override void _Process(double delta)
@@ -270,39 +270,39 @@ public partial class ContentDownloadScreen : Control
         var box = GetViewportRect().Size;
         if (Size != box) Size = box;
 
-        var s = _install.Read();
+        var s = install.Read();
         float frac = s.Total > 0 ? Mathf.Clamp((float)s.Done / s.Total, 0f, 1f) : 0f;
 
         bool moving = s.IdleMs < IdleGraceMs;
         bool flowing = moving && s.BytesPerSecond > 1;
 
-        _percent.Text = ((int)(frac * 100f)).ToString();
-        _fill.AnchorRight = frac;
-        _detail.Text = s.Stage == ContentStage.Downloading && !moving
+        percent.Text = ((int)(frac * 100f)).ToString();
+        fill.AnchorRight = frac;
+        detailLabel.Text = s.Stage == ContentStage.Downloading && !moving
             ? "Waiting for the server…"
             : s.Detail.Length > 0 ? s.Detail : "Preparing";
 
-        _transfer.Text = s.Total > 0
+        transfer.Text = s.Total > 0
             ? $"{Bytes(s.Done)} of {Bytes(s.Total)}" + (flowing ? $"   {Bytes((long)s.BytesPerSecond)}/s" : "")
             : "";
-        _eta.Text = flowing && s.Stage == ContentStage.Downloading && s.Total > s.Done
+        eta.Text = flowing && s.Stage == ContentStage.Downloading && s.Total > s.Done
             ? $"about {Eta((s.Total - s.Done) / s.BytesPerSecond)} left"
             : "";
 
-        if (s.Stage != _shownStage)
+        if (s.Stage != shownStage)
         {
-            _shownStage = s.Stage;
-            _actionTaken = false;
+            shownStage = s.Stage;
+            actionTaken = false;
         }
 
         string label = ActionLabel(s);
-        bool offer = label.Length > 0 && !_actionTaken;
-        if (offer && _action.Text != label) _action.Text = label;
-        if (_action.Visible != offer) _action.Visible = offer;
+        bool offer = label.Length > 0 && !actionTaken;
+        if (offer && action.Text != label) action.Text = label;
+        if (action.Visible != offer) action.Visible = offer;
 
-        if (s.Stage == ContentStage.Done && !_leaving)
+        if (s.Stage == ContentStage.Done && !leaving)
         {
-            _leaving = true;
+            leaving = true;
             DisplayServer.ScreenSetKeepOn(false);
             Packs.MountDownloaded();
             GD.Print("[content] install complete — entering login");

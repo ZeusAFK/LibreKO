@@ -33,39 +33,6 @@ public sealed class EventPacketWriter
         return packet;
     }
 
-    public static Packet BattleZoneOpened(byte sub, byte openType, byte zone)
-    {
-        var packet = Battle(sub);
-        packet.WriteByte(openType);
-        packet.WriteByte(zone);
-        return packet;
-    }
-
-    public static Packet BattleDeclare(byte sub, byte declareType, byte nation)
-    {
-        var packet = Battle(sub);
-        packet.WriteByte(declareType);
-        packet.WriteByte(nation);
-        return packet;
-    }
-
-    public static Packet BattleZoneClosed(byte sub, byte closeType)
-    {
-        var packet = Battle(sub);
-        packet.WriteByte(closeType);
-        return packet;
-    }
-
-    public static Packet BattleResult(byte sub, byte resultType, byte winner, int karus, int elmorad)
-    {
-        var packet = Battle(sub);
-        packet.WriteByte(resultType);
-        packet.WriteByte(winner);
-        packet.WriteInt(karus);
-        packet.WriteInt(elmorad);
-        return packet;
-    }
-
     public static Packet AssignRival(
         byte sub, int rivalId, int money, int loyalty, string clanName, string rivalName)
     {
@@ -253,22 +220,6 @@ public sealed class EventPacketWriter
         packet.WriteUShort(subStage);
         packet.WriteUInt(elapsedSeconds);
         packet.WriteByte(completed ? (byte)0 : (byte)1);
-        return packet;
-    }
-
-    public static Packet BattleZoneState(byte sub, byte open, byte zone, int secondsRemaining)
-    {
-        var packet = Battle(sub);
-        packet.WriteByte(open);
-        packet.WriteByte(zone);
-        packet.WriteInt(secondsRemaining);
-        return packet;
-    }
-
-    private static Packet Battle(byte sub)
-    {
-        var packet = new Packet(GameOpcodes.GS_BATTLE_EVENT);
-        packet.WriteByte(sub);
         return packet;
     }
 

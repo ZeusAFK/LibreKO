@@ -39,6 +39,11 @@ public static class StealthKind
     };
 }
 
+public static class MagicData
+{
+    public const int Length = 7;
+}
+
 public static class MagicSub
 {
     public const int Casting = 1;
@@ -68,6 +73,8 @@ public static class MagicFail
     public const short NotEnoughMp = -106;
 
     public static short Code(short[] data) => data.Length > ResultSlot ? data[ResultSlot] : (short)0;
+
+    public static bool IsMiss(short[] data) => Code(data) <= Casting;
 
     public static bool RefundsCooldown(short code, bool hasFlyingFx) =>
         code is not (ProjectileKilled or ProjectileKilledByType) && !hasFlyingFx;

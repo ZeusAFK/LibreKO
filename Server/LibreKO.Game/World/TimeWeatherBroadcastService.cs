@@ -30,9 +30,9 @@ public class TimeWeatherBroadcastService(
     private const int TimeIntervalSeconds = 10;     // frequent enough that clients sync fast + interpolate
     private const int WeatherIntervalSeconds = 3600;
 
-    private int _minuteOffset;
+    private int minuteOffset;
 
-    public int MinuteOfDay => Wrap(EpochMinuteOfDay + _minuteOffset);
+    public int MinuteOfDay => Wrap(EpochMinuteOfDay + minuteOffset);
 
     public byte WeatherType { get; set; } = WeatherFine;
     public ushort WeatherAmount { get; set; }
@@ -107,9 +107,9 @@ public class TimeWeatherBroadcastService(
     public Packet BuildCurrentTimePacket() => BuildTimePacket(MinuteOfDay);
 
     public void SetTimeOfDay(int hour, int minute) =>
-        _minuteOffset = Wrap(hour * 60 + minute - EpochMinuteOfDay);
+        minuteOffset = Wrap(hour * 60 + minute - EpochMinuteOfDay);
 
-    public void ResetTimeOfDay() => _minuteOffset = 0;
+    public void ResetTimeOfDay() => minuteOffset = 0;
 
     public static bool TryParseTimeOfDay(string text, out int hour, out int minute)
     {

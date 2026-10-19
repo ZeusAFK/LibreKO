@@ -6,11 +6,11 @@ namespace LibreKO.Tests;
 
 public class NationChatTests
 {
-    private static Packet Reply(byte sub)
+    private static Packet Reply(NationChatSubOpcode sub)
     {
         var p = new Packet(GameOpcodes.GS_NATION_CHAT);
-        p.WriteByte(NationChatReplies.NationRooms);
-        p.WriteByte(sub);
+        p.WriteByte(NationChatWire.NationRooms);
+        p.WriteByte((byte)sub);
         return p;
     }
 
@@ -25,7 +25,7 @@ public class NationChatTests
     [Fact]
     public void ThePrivateListCarriesLockNationAndSeats()
     {
-        var p = Reply(NationChatReplies.PrivateList);
+        var p = Reply(NationChatSubOpcode.PrivateList);
         p.WriteUShort(2);
         p.WriteUShort(1001);
         p.WriteString("Siege at nine");
@@ -50,7 +50,7 @@ public class NationChatTests
     [Fact]
     public void ThePublicListStopsAtSixteenRows()
     {
-        var p = Reply(NationChatReplies.PublicList);
+        var p = Reply(NationChatSubOpcode.PublicList);
         p.WriteUShort(20);
         for (int i = 1; i <= 20; i++)
         {
@@ -61,7 +61,7 @@ public class NationChatTests
 
         var channels = NationChatReplies.ReadChannels(Ready(p));
 
-        Assert.Equal(NationChatReplies.PublicListMax, channels.Count);
+        Assert.Equal(NationChatWire.PublicListMax, channels.Count);
         Assert.Equal(new NationChannel(2, "Channel 2", 6), channels[1]);
     }
 

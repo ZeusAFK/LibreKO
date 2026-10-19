@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public enum VanguardReplyKind
 {
@@ -18,38 +15,27 @@ public readonly record struct VanguardMark(int X, int Z, string Name);
 
 public sealed record VanguardReply(VanguardReplyKind Kind, IReadOnlyList<string> Names, IReadOnlyList<VanguardMark> Marks)
 {
-    public const byte SubAppoint = 1;
-    public const byte SubWanted = 2;
-    public const byte SubClosed = 3;
-    public const byte AppointInvite = 1;
-    public const byte AppointResult = 2;
-    public const byte WantedList = 1;
-    public const byte WantedPositions = 2;
-    public const byte WantedRemove = 3;
-    public const byte AcceptRequest = 0;
-    private const byte Appointed = 1;
-    private const byte Failed = 2;
     private const int MarkBytes = 3 * sizeof(short);
 
     public static VanguardReply? Read(Packet p)
     {
         if (p.RemainingBytes < 1) return null;
-        byte sub = p.ReadByte();
-        if (sub == SubClosed) return Of(VanguardReplyKind.Closed);
+        var sub = (VanguardSubOpcode)p.ReadByte();
+        if (sub == VanguardSubOpcode.Closed) return Of(VanguardReplyKind.Closed);
         if (p.RemainingBytes < 1) return null;
         byte kind = p.ReadByte();
         return (sub, kind) switch
         {
-            (SubAppoint, AppointInvite) => Of(VanguardReplyKind.Invite),
-            (SubAppoint, AppointResult) when p.RemainingBytes >= 1 => p.ReadByte() switch
+            (VanguardSubOpcode.Appoint, (byte)VanguardAppointKind.Invite) => Of(VanguardReplyKind.Invite),
+            (VanguardSubOpcode.Appoint, (byte)VanguardAppointKind.Result) when p.RemainingBytes >= 1 => (VanguardAppointResult)p.ReadByte() switch
             {
-                Appointed => Of(VanguardReplyKind.Appointed),
-                Failed => Of(VanguardReplyKind.AppointFailed),
+                VanguardAppointResult.Appointed => Of(VanguardReplyKind.Appointed),
+                VanguardAppointResult.Failed => Of(VanguardReplyKind.AppointFailed),
                 _ => null,
             },
-            (SubWanted, WantedList) => ReadList(p),
-            (SubWanted, WantedPositions) => ReadPositions(p),
-            (SubWanted, WantedRemove) when p.RemainingBytes >= sizeof(short) =>
+            (VanguardSubOpcode.Wanted, (byte)VanguardWantedKind.List) => ReadList(p),
+            (VanguardSubOpcode.Wanted, (byte)VanguardWantedKind.Positions) => ReadPositions(p),
+            (VanguardSubOpcode.Wanted, (byte)VanguardWantedKind.Remove) when p.RemainingBytes >= sizeof(short) =>
                 new VanguardReply(VanguardReplyKind.Remove, new[] { p.ReadString() }, Array.Empty<VanguardMark>()),
             _ => null,
         };
@@ -82,4 +68,31 @@ public sealed record VanguardReply(VanguardReplyKind Kind, IReadOnlyList<string>
         var names = marks.ConvertAll(m => m.Name);
         return new VanguardReply(VanguardReplyKind.Positions, names, marks);
     }
+}
+
+public enum VanguardSubOpcode : byte
+{
+    Appoint = 1,
+    Wanted = 2,
+    Closed = 3,
+}
+
+public enum VanguardAppointKind : byte
+{
+    Accept = 0,
+    Invite = 1,
+    Result = 2,
+}
+
+public enum VanguardWantedKind : byte
+{
+    List = 1,
+    Positions = 2,
+    Remove = 3,
+}
+
+public enum VanguardAppointResult : byte
+{
+    Appointed = 1,
+    Failed = 2,
 }

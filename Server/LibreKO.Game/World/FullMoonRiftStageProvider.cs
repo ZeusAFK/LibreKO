@@ -28,7 +28,7 @@ public interface IFullMoonRiftStageProvider
 
 public sealed class FullMoonRiftStageProvider : IFullMoonRiftStageProvider
 {
-    private readonly IReadOnlyList<FullMoonRiftStageInfo> _stages;
+    private readonly IReadOnlyList<FullMoonRiftStageInfo> stages;
 
     public FullMoonRiftStageProvider(ILogger<FullMoonRiftStageProvider>? logger = null)
     {
@@ -45,7 +45,7 @@ public sealed class FullMoonRiftStageProvider : IFullMoonRiftStageProvider
             var json = File.ReadAllText(path);
             var list = JsonSerializer.Deserialize<List<FullMoonRiftStageInfo>>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            _stages = list ?? throw new InvalidOperationException($"Failed to deserialize '{path}'.");
+            stages = list ?? throw new InvalidOperationException($"Failed to deserialize '{path}'.");
         }
         catch (Exception ex)
         {
@@ -56,10 +56,10 @@ public sealed class FullMoonRiftStageProvider : IFullMoonRiftStageProvider
 
     public FullMoonRiftStageProvider(IReadOnlyList<FullMoonRiftStageInfo> stages)
     {
-        _stages = stages;
+        this.stages = stages;
     }
 
-    public IReadOnlyList<FullMoonRiftStageInfo> Stages => _stages;
+    public IReadOnlyList<FullMoonRiftStageInfo> Stages => stages;
 
-    public FullMoonRiftStageInfo? GetStage(int stageId) => _stages.FirstOrDefault(s => s.StageId == stageId);
+    public FullMoonRiftStageInfo? GetStage(int stageId) => stages.FirstOrDefault(s => s.StageId == stageId);
 }

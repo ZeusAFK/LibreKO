@@ -7,6 +7,7 @@ using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Xunit;
+using LibreKO.Game.Protocol;
 
 namespace LibreKO.Game.Tests;
 
@@ -23,7 +24,7 @@ public class RankBoardTests : GameTestBase
 
         packet.GetOpcode().Should().Be((byte)GameOpcodes.GS_BATTLE_EVENT);
         packet.ResetOffset();
-        packet.ReadByte().Should().Be(RankBoardPacketWriter.SubRankBoard);
+        packet.ReadByte().Should().Be((byte)BattleEventSubOpcode.RankBoard);
         packet.ReadByte().Should().Be(2);
         packet.ReadUShort().Should().Be(RankBoardPacketWriter.FirstPlayerSlot);
         packet.ReadString().Should().Be("Veteran");
@@ -69,7 +70,7 @@ public class RankBoardTests : GameTestBase
 
         var board = sent.Single(p => p.GetOpcode() == (byte)GameOpcodes.GS_BATTLE_EVENT);
         board.ResetOffset();
-        board.ReadByte().Should().Be(RankBoardPacketWriter.SubRankBoard);
+        board.ReadByte().Should().Be((byte)BattleEventSubOpcode.RankBoard);
         var rows = Enumerable.Range(0, board.ReadByte()).Select(_ => ReadEntry(board)).ToList();
         rows.Should().Equal(
             (RankBoardPacketWriter.FirstClanSlot, "Veteran", "Wolves"),

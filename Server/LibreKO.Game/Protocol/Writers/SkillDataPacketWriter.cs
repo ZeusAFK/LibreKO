@@ -7,9 +7,9 @@ public sealed class SkillDataPacketWriter
     public const int MaxSlots = 64;
     public const int BytesPerSlot = 4;
 
-    private readonly int[] _slots;
+    private readonly int[] slots;
 
-    private SkillDataPacketWriter(int[] slots) => _slots = slots;
+    private SkillDataPacketWriter(int[] slots) => this.slots = slots;
 
     public static Packet Slots(byte[] skillData)
     {
@@ -25,8 +25,8 @@ public sealed class SkillDataPacketWriter
     private Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_SKILLDATA);
-        packet.WriteShort((short)_slots.Length);
-        foreach (var slot in _slots)
+        packet.WriteShort((short)slots.Length);
+        foreach (var slot in slots)
             packet.WriteInt(slot);
         return packet;
     }

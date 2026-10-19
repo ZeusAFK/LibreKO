@@ -29,13 +29,13 @@ public sealed class PartyPacketWriter
         short MaxMp,
         short Mp);
 
-    private readonly PartySubOpcode _sub;
-    private readonly Action<Packet> _body;
+    private readonly PartySubOpcode sub;
+    private readonly Action<Packet> body;
 
     private PartyPacketWriter(PartySubOpcode sub, Action<Packet> body)
     {
-        _sub = sub;
-        _body = body;
+        this.sub = sub;
+        this.body = body;
     }
 
     public static Packet MemberInfo(MemberState member, byte statusCode = MemberJoined, int markedTarget = NoTargetMark, byte partyType = TrailingDefault) =>
@@ -163,8 +163,8 @@ public sealed class PartyPacketWriter
     private Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_PARTY);
-        packet.WriteByte((byte)_sub);
-        _body(packet);
+        packet.WriteByte((byte)sub);
+        body(packet);
         return packet;
     }
 }

@@ -4,73 +4,26 @@ using System.Linq;
 
 namespace LibreKO.Domain;
 
-public static class RoomMediaSubs
-{
-    public const byte History = 1;
-    public const byte Posted = 2;
-    public const byte Stored = 3;
-    public const byte React = 4;
-    public const byte Reactions = 5;
-    public const byte Kept = 6;
-    public const byte NoteBegin = 10;
-    public const byte NoteChunk = 11;
-    public const byte NoteEnd = 12;
-    public const byte NoteFetch = 13;
-    public const byte NoteData = 14;
-    public const byte VoiceJoin = 20;
-    public const byte VoiceLeave = 21;
-    public const byte VoiceState = 22;
-    public const byte VoiceFrame = 23;
-    public const byte VoiceTransport = 24;
-    public const byte VoiceRoster = 25;
-    public const byte VoiceSilence = 26;
-    public const byte DirectHistory = 30;
-    public const byte DirectStored = 31;
-
-    public const byte MemberJoined = 1;
-    public const byte MemberLeft = 2;
-    public const byte MemberFlags = 3;
-}
-
 public static class RoomMediaResults
 {
-    public const byte Ok = 0;
-    public const byte NotInRoom = 1;
-    public const byte PublicChannel = 2;
-    public const byte VoiceOff = 3;
-    public const byte VoiceFull = 4;
-    public const byte Silenced = 5;
-    public const byte TooLong = 6;
-    public const byte TooBig = 7;
-    public const byte TooSoon = 8;
-    public const byte DailyLimit = 9;
-    public const byte BadUpload = 10;
-    public const byte NotFound = 11;
-    public const byte Busy = 12;
-    public const byte Failed = 13;
-    public const byte NotLeader = 14;
-    public const byte PartnerAway = 15;
-    public const byte Blocked = 16;
-    public const byte KeptLimit = 17;
-
-    public static string Text(byte result) => result switch
+    public static string Text(RoomMediaResult result) => result switch
     {
-        PartnerAway => "That player is not online.",
-        Blocked => "Private messages are blocked.",
-        KeptLimit => "You already keep as many rooms as you can.",
-        NotInRoom => "You are not in a chat room.",
-        PublicChannel => "Voice calls are available in private rooms.",
-        VoiceOff => "Voice chat is turned off on this server.",
-        VoiceFull => "The voice call in this room is full.",
-        Silenced => "You cannot speak while you are muted.",
-        TooLong => $"Voice notes can be up to {VoiceNoteRules.MaxSeconds} seconds.",
-        TooBig => "That voice note is too large.",
-        TooSoon => "Wait a moment before sending another voice note.",
-        DailyLimit => "You have sent too many voice notes today.",
-        NotFound => "That voice note is no longer available.",
-        Failed => "The voice note could not be saved.",
-        NotLeader => "Only the room leader can do that.",
-        Ok => "",
+        RoomMediaResult.PartnerAway => "That player is not online.",
+        RoomMediaResult.Blocked => "Private messages are blocked.",
+        RoomMediaResult.KeptLimit => "You already keep as many rooms as you can.",
+        RoomMediaResult.NotInRoom => "You are not in a chat room.",
+        RoomMediaResult.PublicChannel => "Voice calls are available in private rooms.",
+        RoomMediaResult.VoiceOff => "Voice chat is turned off on this server.",
+        RoomMediaResult.VoiceFull => "The voice call in this room is full.",
+        RoomMediaResult.Silenced => "You cannot speak while you are muted.",
+        RoomMediaResult.TooLong => $"Voice notes can be up to {VoiceNoteRules.MaxSeconds} seconds.",
+        RoomMediaResult.TooBig => "That voice note is too large.",
+        RoomMediaResult.TooSoon => "Wait a moment before sending another voice note.",
+        RoomMediaResult.DailyLimit => "You have sent too many voice notes today.",
+        RoomMediaResult.NotFound => "That voice note is no longer available.",
+        RoomMediaResult.Failed => "The voice note could not be saved.",
+        RoomMediaResult.NotLeader => "Only the room leader can do that.",
+        RoomMediaResult.Ok => "",
         _ => "The voice note could not be sent.",
     };
 }
@@ -154,36 +107,36 @@ public sealed class RoomTimeline
     public const int MaxPosts = 400;
     public static readonly TimeSpan GroupGap = TimeSpan.FromMinutes(5);
 
-    private readonly List<RoomPost> _posts = [];
-    private readonly List<RoomPost> _early = [];
+    private readonly List<RoomPost> posts = [];
+    private readonly List<RoomPost> early = [];
 
-    public IReadOnlyList<RoomPost> Posts => _posts;
+    public IReadOnlyList<RoomPost> Posts => posts;
     public bool HistoryLoaded { get; private set; }
     public bool MoreHistory { get; private set; }
 
-    public long OldestId => _posts.Where(p => p.Id > 0).Select(p => p.Id).DefaultIfEmpty(0).Min();
+    public long OldestId => posts.Where(p => p.Id > 0).Select(p => p.Id).DefaultIfEmpty(0).Min();
 
     public void Clear()
     {
-        _posts.Clear();
-        _early.Clear();
+        posts.Clear();
+        early.Clear();
         HistoryLoaded = false;
         MoreHistory = false;
     }
 
     public void Add(RoomPost post)
     {
-        if (post.Id > 0 && _posts.Any(p => p.Id == post.Id)) return;
-        if (!HistoryLoaded && post.Kind == RoomPostKind.Text) _early.Add(post);
-        _posts.Add(post);
+        if (post.Id > 0 && posts.Any(p => p.Id == post.Id)) return;
+        if (!HistoryLoaded && post.Kind == RoomPostKind.Text) early.Add(post);
+        posts.Add(post);
         Trim();
     }
 
     public RoomPost? Find(long id)
     {
         if (id <= 0) return null;
-        for (int i = _posts.Count - 1; i >= 0; i--)
-            if (_posts[i].Id == id) return _posts[i];
+        for (int i = posts.Count - 1; i >= 0; i--)
+            if (posts[i].Id == id) return posts[i];
         return null;
     }
 
@@ -192,7 +145,7 @@ public sealed class RoomTimeline
         if (Find(row.Id) is { } known) return (known, false);
         if (row.Kind == RoomPostKind.Text)
         {
-            var waiting = _posts.Where(p => p.Id == 0 && p.Kind == RoomPostKind.Text && p.SenderId == row.SenderId).ToList();
+            var waiting = posts.Where(p => p.Id == 0 && p.Kind == RoomPostKind.Text && p.SenderId == row.SenderId).ToList();
             if ((waiting.FirstOrDefault(p => p.Text == row.Text) ?? waiting.FirstOrDefault()) is { } line)
             {
                 line.Id = row.Id;
@@ -205,17 +158,17 @@ public sealed class RoomTimeline
 
     public int MergeHistory(IReadOnlyList<RoomPost> page, bool more)
     {
-        var known = new HashSet<long>(_posts.Where(p => p.Id > 0).Select(p => p.Id));
+        var known = new HashSet<long>(posts.Where(p => p.Id > 0).Select(p => p.Id));
         var fresh = page.Where(p => !known.Contains(p.Id)).ToList();
         if (!HistoryLoaded)
         {
-            foreach (var early in _early)
-                if (fresh.Any(p => p.Kind == RoomPostKind.Text && p.SenderId == early.SenderId && p.Text == early.Text))
-                    _posts.Remove(early);
-            _early.Clear();
+            foreach (var earlyPost in early)
+                if (fresh.Any(p => p.Kind == RoomPostKind.Text && p.SenderId == earlyPost.SenderId && p.Text == earlyPost.Text))
+                    posts.Remove(earlyPost);
+            early.Clear();
             HistoryLoaded = true;
         }
-        _posts.InsertRange(0, fresh);
+        posts.InsertRange(0, fresh);
         MoreHistory = more;
         Trim();
         return fresh.Count;
@@ -223,16 +176,16 @@ public sealed class RoomTimeline
 
     public bool StartsGroup(int index)
     {
-        if (index <= 0 || index >= _posts.Count) return true;
-        var post = _posts[index];
-        var before = _posts[index - 1];
+        if (index <= 0 || index >= posts.Count) return true;
+        var post = posts[index];
+        var before = posts[index - 1];
         if (post.Kind == RoomPostKind.Notice || before.Kind == RoomPostKind.Notice) return true;
         return post.SenderId != before.SenderId || post.Time - before.Time > GroupGap;
     }
 
     private void Trim()
     {
-        if (_posts.Count > MaxPosts) _posts.RemoveRange(0, _posts.Count - MaxPosts);
+        if (posts.Count > MaxPosts) posts.RemoveRange(0, posts.Count - MaxPosts);
     }
 }
 
@@ -255,35 +208,35 @@ public sealed class VoiceNoteDownloads
         public int Received { get; set; }
     }
 
-    private readonly Dictionary<long, Download> _downloads = new();
+    private readonly Dictionary<long, Download> downloads = new();
 
-    public bool Pending(long noteId) => _downloads.ContainsKey(noteId);
+    public bool Pending(long noteId) => downloads.ContainsKey(noteId);
 
     public float Progress(long noteId) =>
-        _downloads.TryGetValue(noteId, out var download) ? download.Received / (float)download.Data.Length : 0f;
+        downloads.TryGetValue(noteId, out var download) ? download.Received / (float)download.Data.Length : 0f;
 
     public bool Start(long noteId, int size)
     {
-        _downloads.Remove(noteId);
+        downloads.Remove(noteId);
         if (size <= 0 || size > VoiceNoteRules.MaxBytes) return false;
-        _downloads[noteId] = new Download(size);
+        downloads[noteId] = new Download(size);
         return true;
     }
 
     public byte[]? Append(long noteId, byte[] data)
     {
-        if (!_downloads.TryGetValue(noteId, out var download)) return null;
+        if (!downloads.TryGetValue(noteId, out var download)) return null;
         if (download.Received + data.Length > download.Data.Length)
         {
-            _downloads.Remove(noteId);
+            downloads.Remove(noteId);
             return null;
         }
         data.CopyTo(download.Data, download.Received);
         download.Received += data.Length;
         if (download.Received < download.Data.Length) return null;
-        _downloads.Remove(noteId);
+        downloads.Remove(noteId);
         return download.Data;
     }
 
-    public void Clear() => _downloads.Clear();
+    public void Clear() => downloads.Clear();
 }

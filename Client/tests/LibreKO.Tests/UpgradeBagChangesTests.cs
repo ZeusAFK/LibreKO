@@ -40,7 +40,7 @@ public class UpgradeBagChangesTests
     }
 
     private static System.Collections.Generic.List<(int Abs, ItemSlot Slot)> Changes(byte type, byte result, int resultItem) =>
-        UpgradeBagChanges.For(type, result, Reply(resultItem), Bag(), _ => Raptor9Durability);
+        UpgradeBagChanges.For((ItemUpgradeKind)type, (ItemUpgradeResult)result, Reply(resultItem), Bag(), _ => Raptor9Durability);
 
     [Fact]
     public void ASucceededUpgradeReplacesTheItemAndUsesOneScroll()

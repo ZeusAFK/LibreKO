@@ -13,9 +13,9 @@ public sealed partial class HudLogText : RichTextLabel
     private const float TextBottomPadding = 4f;
     public bool ScrollbarOnLeft { get; init; }
     public float ScrollbarBottomInset { get; init; } = DefaultScrollbarBottomInset;
-    private float _reservedBottom;
-    private bool? _wasScrollable;
-    private bool _syncQueued;
+    private float reservedBottom;
+    private bool? wasScrollable;
+    private bool syncQueued;
 
     public override void _Ready()
     {
@@ -33,19 +33,19 @@ public sealed partial class HudLogText : RichTextLabel
 
     private void QueueSync()
     {
-        if (_syncQueued) return;
-        _syncQueued = true;
+        if (syncQueued) return;
+        syncQueued = true;
         Callable.From(Sync).CallDeferred();
     }
 
     private void Sync()
     {
-        _syncQueued = false;
+        syncQueued = false;
         ConstrainScrollbar();
         VScrollBar bar = GetVScrollBar();
         bool scrollable = bar.MaxValue > bar.Page + 0.5;
-        if (_wasScrollable == scrollable) return;
-        _wasScrollable = scrollable;
+        if (wasScrollable == scrollable) return;
+        wasScrollable = scrollable;
         UiTheme.ThinScrollbarThumb(bar, scrollable);
     }
 
@@ -60,7 +60,7 @@ public sealed partial class HudLogText : RichTextLabel
     {
         var content = new StyleBoxFlat { BgColor = Colors.Transparent };
         content.ContentMarginTop = TextTopPadding;
-        content.ContentMarginBottom = TextBottomPadding + _reservedBottom;
+        content.ContentMarginBottom = TextBottomPadding + reservedBottom;
         content.ContentMarginLeft = ScrollbarOnLeft ? ScrollbarGutter : TextEdgePadding;
         content.ContentMarginRight = ScrollbarOnLeft ? TextEdgePadding : ScrollbarGutter;
         AddThemeStyleboxOverride("normal", content);
@@ -68,8 +68,8 @@ public sealed partial class HudLogText : RichTextLabel
 
     public void ReserveBottom(float height)
     {
-        if (Mathf.IsEqualApprox(_reservedBottom, height)) return;
-        _reservedBottom = height;
+        if (Mathf.IsEqualApprox(reservedBottom, height)) return;
+        reservedBottom = height;
         if (IsNodeReady()) StyleTextPadding();
     }
 

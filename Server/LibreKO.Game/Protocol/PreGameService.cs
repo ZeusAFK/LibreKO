@@ -22,6 +22,7 @@ public interface IPreGameService
     Task<Packet> DeleteCharacterAsync(int accountId, byte slot, string name, string socNo);
     Task<CharacterSelectResult> SelectCharacterAsync(int accountId, string accountName, string characterName, byte init);
     Task<Packet> ChangeHairAsync(int accountId, byte subOpcode, string characterName, byte face, int hair);
+    Task<Packet> ChangeRequiredNameAsync(int accountId, short slot, string currentName, string newName);
     Task<List<Packet>> GameStartAsync(int characterId, int accountId, byte subOpcode, UserSession? session = null);
     Task LogoutAsync(int characterId);
 }
@@ -215,7 +216,7 @@ public class PreGameService(
         }
 
         var character = await characterRepository.GetByName(characterName);
-        if (character == null || character.AccountId != account.Id)
+        if (character == null || character.AccountId != account.Id || character.NameChangeRequired)
         {
             return new CharacterSelectResult(SelectFailed(), 0);
         }
@@ -248,6 +249,29 @@ public class PreGameService(
         await characterRepository.UpdateAsync(character);
 
         return PreGamePacketWriter.ChangeHairResult(PreGamePacketWriter.ChangeHairSucceeded);
+    }
+
+    public async Task<Packet> ChangeRequiredNameAsync(int accountId, short slot, string currentName, string newName)
+    {
+        var character = await characterRepository.GetByName(currentName);
+        if (character == null || character.AccountId != accountId || character.Slot != slot || !character.NameChangeRequired)
+            return PreGamePacketWriter.NameChangeRefused();
+        if (string.IsNullOrWhiteSpace(newName) || newName.Length > MaxCharacterNameLength || !NameRules.IsPlain(newName))
+            return PreGamePacketWriter.NameChangeRefused(SelectingCharacterNameChangeResult.InvalidCharacters);
+        if (await characterRepository.IsNameTaken(newName))
+            return PreGamePacketWriter.NameChangeRefused();
+
+        if (character.KnightsId > 0 && sessionManager.Knights.GetClan(character.KnightsId) is { } clan
+            && string.Equals(clan.Chief, character.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            clan.Chief = newName;
+            await knightsRepository.UpdateAsync(clan);
+        }
+
+        character.Name = newName;
+        character.NameChangeRequired = false;
+        await characterRepository.UpdateAsync(character);
+        return PreGamePacketWriter.NameChanged(slot, newName);
     }
 
     public async Task<List<Packet>> GameStartAsync(int characterId, int accountId, byte subOpcode, UserSession? session = null)

@@ -25,14 +25,14 @@ public class CollectionRaceTests
     private const int Apple = 810418000;
     private const int Dagger = 110010000;
 
-    private readonly SessionManager _sessionManager = new();
-    private readonly IGameDataService _gameDataService = Substitute.For<IGameDataService>();
-    private readonly IUserNotificationService _userNotificationService = Substitute.For<IUserNotificationService>();
-    private readonly IPlayerProgressionService _playerProgressionService = Substitute.For<IPlayerProgressionService>();
-    private readonly IMailService _mailService = Substitute.For<IMailService>();
-    private readonly CollectionRaceService _service;
+    private readonly SessionManager sessionManager = new();
+    private readonly IGameDataService gameDataService = Substitute.For<IGameDataService>();
+    private readonly IUserNotificationService userNotificationService = Substitute.For<IUserNotificationService>();
+    private readonly IPlayerProgressionService playerProgressionService = Substitute.For<IPlayerProgressionService>();
+    private readonly IMailService mailService = Substitute.For<IMailService>();
+    private readonly CollectionRaceService service;
 
-    private readonly Dictionary<int, CollectionRaceData> _races = new()
+    private readonly Dictionary<int, CollectionRaceData> races = new()
     {
         [MoradonRace] = new() { Id = MoradonRace, Name = "Test Moradon Race", ZoneId = Moradon, MinLevel = 1, MaxLevel = 83, DurationMinutes = 60 },
         [LufersonRace] = new() { Id = LufersonRace, Name = "Test Luferson Race", ZoneId = Luferson, MinLevel = 1, MaxLevel = 83, DurationMinutes = 60 },
@@ -40,7 +40,7 @@ public class CollectionRaceTests
         [ScheduledRace] = new() { Id = ScheduledRace, Name = "Scheduled", ZoneId = Luferson, MinLevel = 1, MaxLevel = 83, DurationMinutes = 60, AutoStart = true },
     };
 
-    private readonly List<CollectionRaceObjectiveData> _objectives =
+    private readonly List<CollectionRaceObjectiveData> objectives =
     [
         new() { Id = 1, RaceId = MoradonRace, Ordinal = 0, Kind = CollectionRaceObjectiveKind.Monster, TargetId = Kecoon, Count = 2 },
         new() { Id = 2, RaceId = MoradonRace, Ordinal = 1, Kind = CollectionRaceObjectiveKind.Monster, TargetId = KecoonWarrior, Count = 1 },
@@ -50,7 +50,7 @@ public class CollectionRaceTests
         new() { Id = 6, RaceId = ScheduledRace, Ordinal = 0, Kind = CollectionRaceObjectiveKind.Monster, TargetId = Kecoon, Count = 1 },
     ];
 
-    private readonly List<CollectionRaceRewardData> _rewards =
+    private readonly List<CollectionRaceRewardData> rewards =
     [
         new() { Id = 1, RaceId = MoradonRace, ItemId = InventoryConstants.ItemGold, ItemCount = 50000 },
         new() { Id = 2, RaceId = MoradonRace, ItemId = InventoryConstants.ItemExperience, ItemCount = 25000 },
@@ -60,30 +60,30 @@ public class CollectionRaceTests
         new() { Id = 6, RaceId = LufersonRace, ItemId = InventoryConstants.ItemGold, ItemCount = 500 },
     ];
 
-    private readonly List<CollectionRaceScheduleData> _schedules = [];
+    private readonly List<CollectionRaceScheduleData> schedules = [];
 
     public CollectionRaceTests()
     {
-        _gameDataService.CollectionRaceTable.Returns(_races);
-        _gameDataService.CollectionRaceObjectivesByRace.Returns(_ => _objectives.ToLookup(x => x.RaceId));
-        _gameDataService.CollectionRaceRewardsByRace.Returns(_ => _rewards.ToLookup(x => x.RaceId));
-        _gameDataService.CollectionRaceSchedulesByRace.Returns(_ => _schedules.ToLookup(x => x.RaceId));
-        _gameDataService.ZoneInfoTable.Returns(new Dictionary<short, ZoneInfoData>());
-        _gameDataService.GetItem(Dagger).Returns(new ItemData { Num = Dagger, Name = "Dagger", Countable = 0, Duration = 5000 });
+        gameDataService.CollectionRaceTable.Returns(races);
+        gameDataService.CollectionRaceObjectivesByRace.Returns(_ => objectives.ToLookup(x => x.RaceId));
+        gameDataService.CollectionRaceRewardsByRace.Returns(_ => rewards.ToLookup(x => x.RaceId));
+        gameDataService.CollectionRaceSchedulesByRace.Returns(_ => schedules.ToLookup(x => x.RaceId));
+        gameDataService.ZoneInfoTable.Returns(new Dictionary<short, ZoneInfoData>());
+        gameDataService.GetItem(Dagger).Returns(new ItemData { Num = Dagger, Name = "Dagger", Countable = 0, Duration = 5000 });
 
-        _service = new CollectionRaceService(
-            _sessionManager,
-            _gameDataService,
-            _userNotificationService,
-            _playerProgressionService,
-            _mailService,
+        service = new CollectionRaceService(
+            sessionManager,
+            gameDataService,
+            userNotificationService,
+            playerProgressionService,
+            mailService,
             new ScheduleClock(),
             Substitute.For<ILogger<CollectionRaceService>>());
     }
 
     private UserSession CreatePlayer(int id, byte zoneId, AccountNation nation = AccountNation.Karus, IClient? client = null)
     {
-        var player = _sessionManager.CreateSession(client ?? Substitute.For<IClient>(), id, id);
+        var player = sessionManager.CreateSession(client ?? Substitute.For<IClient>(), id, id);
         player.Name = $"Player{id}";
         player.ZoneId = zoneId;
         player.Level = 50;
@@ -94,82 +94,82 @@ public class CollectionRaceTests
     [Fact]
     public async Task StartRaceAsync_ActivatesOneRacePerZone()
     {
-        await _service.StartRaceAsync(MoradonRace);
-        await _service.StartRaceAsync(CollectRace);
-        await _service.StartRaceAsync(LufersonRace);
+        await service.StartRaceAsync(MoradonRace);
+        await service.StartRaceAsync(CollectRace);
+        await service.StartRaceAsync(LufersonRace);
 
-        _service.ActiveRaces.Should().HaveCount(2);
-        _service.GetActive(Moradon)!.Race.Id.Should().Be(MoradonRace);
-        _service.GetActive(Luferson)!.Race.Id.Should().Be(LufersonRace);
-        _service.GetActive(Moradon)!.RemainingSeconds.Should().BeGreaterThan(0);
+        service.ActiveRaces.Should().HaveCount(2);
+        service.GetActive(Moradon)!.Race.Id.Should().Be(MoradonRace);
+        service.GetActive(Luferson)!.Race.Id.Should().Be(LufersonRace);
+        service.GetActive(Moradon)!.RemainingSeconds.Should().BeGreaterThan(0);
     }
 
     [Fact]
     public async Task EndRaceAsync_DeactivatesOnlyThatRace()
     {
-        await _service.StartRaceAsync(MoradonRace);
-        await _service.StartRaceAsync(LufersonRace);
+        await service.StartRaceAsync(MoradonRace);
+        await service.StartRaceAsync(LufersonRace);
 
-        await _service.EndRaceAsync(MoradonRace);
+        await service.EndRaceAsync(MoradonRace);
 
-        _service.GetActive(Moradon).Should().BeNull();
-        _service.GetActive(Luferson).Should().NotBeNull();
+        service.GetActive(Moradon).Should().BeNull();
+        service.GetActive(Luferson).Should().NotBeNull();
 
-        await _service.EndAllAsync();
-        _service.ActiveRaces.Should().BeEmpty();
+        await service.EndAllAsync();
+        service.ActiveRaces.Should().BeEmpty();
     }
 
     [Fact]
     public async Task HandleNpcKillAsync_UpdatesObjectives_AndCompletes()
     {
-        await _service.StartRaceAsync(MoradonRace);
+        await service.StartRaceAsync(MoradonRace);
         var player = CreatePlayer(1, Moradon);
 
         var kecoon = new NpcInstance { NpcId = Kecoon, ZoneId = Moradon };
         var warrior = new NpcInstance { NpcId = KecoonWarrior, ZoneId = Moradon };
 
-        await _service.HandleNpcKillAsync(kecoon, player);
-        await _service.HandleNpcKillAsync(kecoon, player);
-        await _service.HandleNpcKillAsync(kecoon, player);
-        await _service.HandleNpcKillAsync(warrior, player);
+        await service.HandleNpcKillAsync(kecoon, player);
+        await service.HandleNpcKillAsync(kecoon, player);
+        await service.HandleNpcKillAsync(kecoon, player);
+        await service.HandleNpcKillAsync(warrior, player);
 
-        var progress = _service.GetActive(Moradon)!.ProgressOf(player);
+        var progress = service.GetActive(Moradon)!.ProgressOf(player);
         progress.Current.Should().Equal(2, 1, 0);
         progress.IsCompleted.Should().BeFalse();
 
         var victim = new UserSession(Substitute.For<IClient>(), 2, 2) { ZoneId = Moradon, Level = 50, Nation = AccountNation.ElMorad };
-        await _service.HandlePlayerKillAsync(victim, player);
+        await service.HandlePlayerKillAsync(victim, player);
 
         progress.IsCompleted.Should().BeTrue();
-        await _mailService.Received(1).SendSystemMailAsync(player.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.Received(1).SendSystemMailAsync(player.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
     }
 
     [Fact]
     public async Task FinishingMailsEveryRewardAtOnce_AndTheEndMailsNothingMore()
     {
-        await _service.StartRaceAsync(MoradonRace);
+        await service.StartRaceAsync(MoradonRace);
         var winner = CreatePlayer(1, Moradon);
         var partial = CreatePlayer(2, Moradon);
 
         IReadOnlyList<MailAttachmentDraft>? mailed = null;
-        await _mailService.SendSystemMailAsync(winner.CharacterId, Arg.Any<string>(), Arg.Any<string>(),
+        await mailService.SendSystemMailAsync(winner.CharacterId, Arg.Any<string>(), Arg.Any<string>(),
             Arg.Do<IReadOnlyList<MailAttachmentDraft>>(a => mailed = a));
-        _mailService.ClearReceivedCalls();
+        mailService.ClearReceivedCalls();
 
         var kecoon = new NpcInstance { NpcId = Kecoon, ZoneId = Moradon };
-        await _service.HandleNpcKillAsync(kecoon, winner);
-        await _service.HandleNpcKillAsync(kecoon, winner);
-        await _service.HandleNpcKillAsync(new NpcInstance { NpcId = KecoonWarrior, ZoneId = Moradon }, winner);
+        await service.HandleNpcKillAsync(kecoon, winner);
+        await service.HandleNpcKillAsync(kecoon, winner);
+        await service.HandleNpcKillAsync(new NpcInstance { NpcId = KecoonWarrior, ZoneId = Moradon }, winner);
         var victim = new UserSession(Substitute.For<IClient>(), 9, 9) { ZoneId = Moradon, Level = 50, Nation = AccountNation.ElMorad };
-        await _service.HandlePlayerKillAsync(victim, winner);
-        await _service.HandleNpcKillAsync(kecoon, partial);
+        await service.HandlePlayerKillAsync(victim, winner);
+        await service.HandleNpcKillAsync(kecoon, partial);
 
-        await _mailService.Received(1).SendSystemMailAsync(winner.CharacterId, "Collection Race: Test Moradon Race", Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.Received(1).SendSystemMailAsync(winner.CharacterId, "Collection Race: Test Moradon Race", Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
 
-        await _service.EndRaceAsync(MoradonRace);
+        await service.EndRaceAsync(MoradonRace);
 
-        await _mailService.Received(1).SendSystemMailAsync(winner.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
-        await _mailService.DidNotReceive().SendSystemMailAsync(partial.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.Received(1).SendSystemMailAsync(winner.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.DidNotReceive().SendSystemMailAsync(partial.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
         mailed.Should().NotBeNull();
         mailed!.Select(a => (a.Kind, a.Count)).Should().Equal(
             (MailAttachmentKind.Gold, 50000),
@@ -183,58 +183,58 @@ public class CollectionRaceTests
     [Fact]
     public async Task HandleNpcKillAsync_PartyMembersShareProgress_AndEachCompleterIsMailed()
     {
-        await _service.StartRaceAsync(LufersonRace);
+        await service.StartRaceAsync(LufersonRace);
 
         var leader = CreatePlayer(1, Luferson);
         var member = CreatePlayer(2, Luferson);
         var elsewhere = CreatePlayer(3, Moradon);
-        var party = _sessionManager.Parties.CreateParty((short)leader.CharacterId);
+        var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
         party.MemberIds[party.FindEmptySlot()] = (short)member.CharacterId;
         party.MemberIds[party.FindEmptySlot()] = (short)elsewhere.CharacterId;
         leader.PartyIndex = member.PartyIndex = elsewhere.PartyIndex = party.Index;
 
-        await _service.HandleNpcKillAsync(new NpcInstance { NpcId = Kecoon, ZoneId = Luferson }, leader);
-        await _service.EndRaceAsync(LufersonRace);
+        await service.HandleNpcKillAsync(new NpcInstance { NpcId = Kecoon, ZoneId = Luferson }, leader);
+        await service.EndRaceAsync(LufersonRace);
 
-        await _mailService.Received(1).SendSystemMailAsync(leader.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
-        await _mailService.Received(1).SendSystemMailAsync(member.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
-        await _mailService.DidNotReceive().SendSystemMailAsync(elsewhere.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.Received(1).SendSystemMailAsync(leader.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.Received(1).SendSystemMailAsync(member.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.DidNotReceive().SendSystemMailAsync(elsewhere.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
     }
 
     [Fact]
     public async Task TheRaceClosesWhenTheLastWinnerPlaceIsTaken()
     {
-        _races[LufersonRace].MaxWinners = 2;
-        await _service.StartRaceAsync(LufersonRace);
+        races[LufersonRace].MaxWinners = 2;
+        await service.StartRaceAsync(LufersonRace);
         var first = CreatePlayer(11, Luferson);
         var second = CreatePlayer(12, Luferson);
         var late = CreatePlayer(13, Luferson);
         var kecoon = new NpcInstance { NpcId = Kecoon, ZoneId = Luferson };
 
-        await _service.HandleNpcKillAsync(kecoon, first);
-        _service.GetActive(Luferson)!.Winners.Should().Be(1);
-        await _service.HandleNpcKillAsync(kecoon, second);
+        await service.HandleNpcKillAsync(kecoon, first);
+        service.GetActive(Luferson)!.Winners.Should().Be(1);
+        await service.HandleNpcKillAsync(kecoon, second);
 
-        _service.GetActive(Luferson).Should().BeNull("both winner places are taken");
-        await _service.HandleNpcKillAsync(kecoon, late);
+        service.GetActive(Luferson).Should().BeNull("both winner places are taken");
+        await service.HandleNpcKillAsync(kecoon, late);
 
-        await _mailService.Received(1).SendSystemMailAsync(first.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
-        await _mailService.Received(1).SendSystemMailAsync(second.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
-        await _mailService.DidNotReceive().SendSystemMailAsync(late.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.Received(1).SendSystemMailAsync(first.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.Received(1).SendSystemMailAsync(second.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
+        await mailService.DidNotReceive().SendSystemMailAsync(late.CharacterId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<MailAttachmentDraft>>());
     }
 
     [Fact]
     public void APlaceBeyondTheLimitIsRefused_AndARaceWithoutALimitNeverFills()
     {
         var limited = new ActiveCollectionRace(
-            new CollectionRaceData { Id = 90, MaxWinners = 1 }, _objectives, DateTime.UtcNow.AddMinutes(1));
+            new CollectionRaceData { Id = 90, MaxWinners = 1 }, objectives, DateTime.UtcNow.AddMinutes(1));
         limited.TryClaimPlace().Should().Be(1);
         limited.TryClaimPlace().Should().Be(0);
         limited.Winners.Should().Be(1);
         limited.IsFull.Should().BeTrue();
 
         var open = new ActiveCollectionRace(
-            new CollectionRaceData { Id = 91, MaxWinners = 0 }, _objectives, DateTime.UtcNow.AddMinutes(1));
+            new CollectionRaceData { Id = 91, MaxWinners = 0 }, objectives, DateTime.UtcNow.AddMinutes(1));
         open.TryClaimPlace().Should().Be(1);
         open.TryClaimPlace().Should().Be(2);
         open.IsFull.Should().BeFalse();
@@ -243,16 +243,16 @@ public class CollectionRaceTests
     [Fact]
     public async Task HandleNpcKillAsync_IgnoredIfDifferentZoneOrLevel()
     {
-        await _service.StartRaceAsync(MoradonRace);
+        await service.StartRaceAsync(MoradonRace);
 
         var client = Substitute.For<IClient>();
         var farPlayer = CreatePlayer(3, Luferson, client: client);
-        await _service.HandleNpcKillAsync(new NpcInstance { NpcId = Kecoon, ZoneId = Luferson }, farPlayer);
+        await service.HandleNpcKillAsync(new NpcInstance { NpcId = Kecoon, ZoneId = Luferson }, farPlayer);
 
         var lowClient = Substitute.For<IClient>();
         var tooLow = CreatePlayer(4, Moradon, client: lowClient);
-        _races[MoradonRace].MinLevel = 60;
-        await _service.HandleNpcKillAsync(new NpcInstance { NpcId = Kecoon, ZoneId = Moradon }, tooLow);
+        races[MoradonRace].MinLevel = 60;
+        await service.HandleNpcKillAsync(new NpcInstance { NpcId = Kecoon, ZoneId = Moradon }, tooLow);
 
         await client.DidNotReceive().SendPacket(Arg.Any<Packet>());
         await lowClient.DidNotReceive().SendPacket(Arg.Any<Packet>());
@@ -261,19 +261,19 @@ public class CollectionRaceTests
     [Fact]
     public async Task HandleItemGainAsync_CountsInventory_ConsumesItemsOnCompletion()
     {
-        await _service.StartRaceAsync(CollectRace);
+        await service.StartRaceAsync(CollectRace);
         var player = CreatePlayer(5, Moradon);
         var slot = player.Inventory[InventoryConstants.InventoryStart];
         slot.ItemId = Apple;
         slot.Count = 2;
 
-        await _service.HandleItemGainAsync(player, Apple);
-        var progress = _service.GetActive(Moradon)!.ProgressOf(player);
+        await service.HandleItemGainAsync(player, Apple);
+        var progress = service.GetActive(Moradon)!.ProgressOf(player);
         progress.Current.Should().Equal(2);
         progress.IsCompleted.Should().BeFalse();
 
         slot.Count = 5;
-        await _service.HandleItemGainAsync(player, Apple);
+        await service.HandleItemGainAsync(player, Apple);
 
         progress.IsCompleted.Should().BeTrue();
         slot.Count.Should().Be(2);
@@ -282,27 +282,27 @@ public class CollectionRaceTests
     [Fact]
     public async Task SyncPlayerAsync_SendsCloseOutsideRace_AndStateInside()
     {
-        await _service.StartRaceAsync(MoradonRace);
+        await service.StartRaceAsync(MoradonRace);
 
         var farClient = Substitute.For<IClient>();
         var farPlayer = CreatePlayer(6, Luferson, client: farClient);
-        await _service.SyncPlayerAsync(farPlayer);
+        await service.SyncPlayerAsync(farPlayer);
         await farClient.Received(1).SendPacket(Arg.Is<Packet>(p => p.GetData()[0] == CollectionRacePacketWriter.SubClose));
 
         var client = Substitute.For<IClient>();
         var player = CreatePlayer(7, Moradon, client: client);
-        await _service.SyncPlayerAsync(player);
+        await service.SyncPlayerAsync(player);
         await client.Received(1).SendPacket(Arg.Is<Packet>(p => p.GetData()[0] == CollectionRacePacketWriter.SubState));
     }
 
     [Fact]
     public async Task LevelChange_ResyncsThePlayer()
     {
-        await _service.StartRaceAsync(MoradonRace);
+        await service.StartRaceAsync(MoradonRace);
         var client = Substitute.For<IClient>();
         var player = CreatePlayer(8, Moradon, client: client);
 
-        _playerProgressionService.LevelChanged += Raise.Event<Func<UserSession, Task>>(player);
+        playerProgressionService.LevelChanged += Raise.Event<Func<UserSession, Task>>(player);
 
         await client.Received(1).SendPacket(Arg.Is<Packet>(p => p.GetData()[0] == CollectionRacePacketWriter.SubState));
     }
@@ -311,12 +311,12 @@ public class CollectionRaceTests
     public async Task TickAsync_StartsScheduledRaceAtItsMinute()
     {
         var now = DateTime.UtcNow;
-        _schedules.Add(new CollectionRaceScheduleData { Id = 1, RaceId = ScheduledRace, Day = null, Hour = (byte)now.Hour, Minute = (byte)now.Minute });
-        _schedules.Add(new CollectionRaceScheduleData { Id = 2, RaceId = LufersonRace, Day = null, Hour = (byte)now.Hour, Minute = (byte)now.Minute });
+        schedules.Add(new CollectionRaceScheduleData { Id = 1, RaceId = ScheduledRace, Day = null, Hour = (byte)now.Hour, Minute = (byte)now.Minute });
+        schedules.Add(new CollectionRaceScheduleData { Id = 2, RaceId = LufersonRace, Day = null, Hour = (byte)now.Hour, Minute = (byte)now.Minute });
 
-        await _service.TickAsync();
+        await service.TickAsync();
 
-        _service.GetActive(Luferson)!.Race.Id.Should().Be(ScheduledRace);
-        _service.ActiveRaces.Should().HaveCount(1);
+        service.GetActive(Luferson)!.Race.Id.Should().Be(ScheduledRace);
+        service.ActiveRaces.Should().HaveCount(1);
     }
 }

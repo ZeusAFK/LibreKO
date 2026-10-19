@@ -2,8 +2,6 @@
 
 public readonly record struct PartyBoardInvite(string Inviter, int Level, int Class)
 {
-    public const byte Sub = 8;
-    public const byte AcceptSub = 9;
     public const int PromptText = 3422;
     public const string PromptFallback = "ID: %s,  Job: %s has invited you into a party.\nWill you accept?";
     private const byte Succeeded = 1;

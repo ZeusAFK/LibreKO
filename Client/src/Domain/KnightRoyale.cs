@@ -10,7 +10,6 @@ public static class KnightRoyale
     public const int FirstGasRegion = 20051;
     public const int LastGasRegion = 20055;
     public const int LastArea = LastGasRegion - FirstGasRegion + 1;
-    public const int BagSlots = 9;
     public const int GemsPerKillBase = 1;
     public const double ReturnBoxDelaySeconds = 3.0;
     public const int ReturnBoxSeconds = 5;
@@ -58,24 +57,16 @@ public static class KnightRoyale
 
     public static int TitleFor(int mode) => mode == DuoMode ? DuoTitleText : TitleText;
 
-    public static int SignUpText(int result) => result switch
+    public static int SignUpText(KnightRoyaleSignUpResult result) => result switch
     {
-        SignUpAlready => AlreadyText,
-        SignUpRejected => RejectedText,
-        SignUpLevel => LevelText,
-        SignUpDuplicateIp => DuplicateIpText,
+        KnightRoyaleSignUpResult.Already => AlreadyText,
+        KnightRoyaleSignUpResult.Rejected => RejectedText,
+        KnightRoyaleSignUpResult.Level => LevelText,
+        KnightRoyaleSignUpResult.DuplicateIp => DuplicateIpText,
         _ => 0,
     };
 
-    public const int SignUpCount = 0;
-    public const int SignUpOpen = 1;
-    public const int SignUpApplyBack = 2;
-    public const int SignUpAlready = 3;
-    public const int SignUpRejected = 4;
-    public const int SignUpLevel = 5;
-    public const int SignUpDuplicateIp = 6;
-
-    public static bool ShowsCancel(int result) => result == SignUpAlready;
+    public static bool ShowsCancel(KnightRoyaleSignUpResult result) => result == KnightRoyaleSignUpResult.Already;
 
     public static string Clock(int seconds)
     {

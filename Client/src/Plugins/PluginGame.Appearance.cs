@@ -37,28 +37,28 @@ public interface IGameAppearance
 
 public sealed partial class PluginGame
 {
-    public IGameAppearance BeautyShop => _beautyShop;
-    public IGameAppearance GenderChange => _genderChange;
+    public IGameAppearance BeautyShop => beautyShop;
+    public IGameAppearance GenderChange => genderChange;
 
-    private readonly AppearanceProxy _beautyShop = new();
-    private readonly AppearanceProxy _genderChange = new();
+    private readonly AppearanceProxy beautyShop = new();
+    private readonly AppearanceProxy genderChange = new();
 
-    internal void AttachAppearance(IGameAppearance beautyShop, IGameAppearance genderChange)
+    internal void AttachAppearance(IGameAppearance beautyShopSource, IGameAppearance genderChangeSource)
     {
-        _beautyShop.Source = beautyShop;
-        _genderChange.Source = genderChange;
+        beautyShop.Source = beautyShopSource;
+        genderChange.Source = genderChangeSource;
         RaiseBeautyShop();
         RaiseGenderChange();
     }
 
     internal void DetachAppearance()
     {
-        _beautyShop.Source = null;
-        _genderChange.Source = null;
+        beautyShop.Source = null;
+        genderChange.Source = null;
     }
 
-    internal void RaiseBeautyShop() => _beautyShop.Raise();
-    internal void RaiseGenderChange() => _genderChange.Raise();
+    internal void RaiseBeautyShop() => beautyShop.Raise();
+    internal void RaiseGenderChange() => genderChange.Raise();
 
     private sealed class AppearanceProxy : IGameAppearance
     {

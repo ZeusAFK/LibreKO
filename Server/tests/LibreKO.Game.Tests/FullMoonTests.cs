@@ -129,7 +129,6 @@ public class FullMoonTests
         session.DailyOps[(int)DailyOperation.FullMoonRift] = now;
         FullMoonRules.HasEnteredToday(session, now).Should().BeTrue();
 
-        // Expired after 1440 minutes + 1 minute
         FullMoonRules.HasEnteredToday(session, now + 1441 * 60).Should().BeFalse();
     }
 
@@ -141,7 +140,6 @@ public class FullMoonTests
         session.Inventory[BagSlot].ExpiresAt = now + 1000;
         FullMoonRules.HasVoucher(session, now).Should().BeTrue();
 
-        // Expired
         FullMoonRules.HasVoucher(session, now + 1001).Should().BeFalse();
     }
 

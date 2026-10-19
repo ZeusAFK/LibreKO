@@ -30,17 +30,17 @@ public interface IGameEquipView
 
 public sealed partial class PluginGame
 {
-    public IGameEquipView EquipView => _equipView;
+    public IGameEquipView EquipView => equipView;
 
-    private readonly EquipViewProxy _equipView = new();
+    private readonly EquipViewProxy equipView = new();
 
-    internal void AttachEquipView(IGameEquipView equipView)
+    internal void AttachEquipView(IGameEquipView equipViewSource)
     {
-        _equipView.Source = equipView;
+        equipView.Source = equipViewSource;
         RaiseEquipView();
     }
 
-    internal void RaiseEquipView() => _equipView.Raise();
+    internal void RaiseEquipView() => equipView.Raise();
 
     private sealed class EquipViewProxy : IGameEquipView
     {

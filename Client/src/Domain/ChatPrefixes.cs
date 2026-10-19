@@ -9,14 +9,14 @@ public static class ChatPrefixes
         if (string.IsNullOrEmpty(text)) return selected;
         return text[0] switch
         {
-            '@' => ChatType.Private,
-            '!' => ChatType.Shout,
-            '#' => ChatType.Party,
-            '$' => ChatType.Clan,
-            '%' => ChatType.Command,
-            '&' => ChatType.Alliance,
-            '~' => ChatType.ClanOfficer,
-            '|' => ChatType.NoahKnights,
+            '@' => (byte)ChatType.Private,
+            '!' => (byte)ChatType.Shout,
+            '#' => (byte)ChatType.Party,
+            '$' => (byte)ChatType.Clan,
+            '%' => (byte)ChatType.Command,
+            '&' => (byte)ChatType.Alliance,
+            '~' => (byte)ChatType.ClanOfficer,
+            '|' => (byte)ChatType.NoahKnights,
             '/' or '+' => NotChat,
             _ => selected,
         };

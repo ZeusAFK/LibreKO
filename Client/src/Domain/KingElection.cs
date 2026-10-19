@@ -90,62 +90,6 @@ public sealed class ElectionPager
 
 public static class KingElection
 {
-    public const byte Election = 1;
-    public const byte Impeachment = 2;
-    public const byte Tax = 3;
-    public const byte KingEvent = 4;
-    public const byte ElectionOfficer = 5;
-    public const byte NationIntro = 6;
-    public const byte TreasuryNotice = 7;
-
-    public const byte Schedule = 1;
-    public const byte Nominate = 2;
-    public const byte Plan = 3;
-    public const byte Poll = 4;
-    public const byte Withdraw = 5;
-
-    public const byte PlanWrite = 1;
-    public const byte PlanRead = 2;
-    public const byte PlanBoard = 5;
-    public const byte PlanList = 1;
-    public const byte PlanText = 2;
-    public const byte PlanShout = 3;
-
-    public const byte PollList = 1;
-    public const byte PollVote = 2;
-    public const byte PollKingChange = 4;
-
-    public const byte ImpeachPropose = 1;
-    public const byte ImpeachSenatorVote = 2;
-    public const byte ImpeachSenators = 3;
-    public const byte ImpeachPublicVote = 4;
-    public const byte ImpeachProposed = 5;
-    public const byte ImpeachSenatorBallot = 8;
-    public const byte ImpeachPublicBallot = 9;
-    public const byte InFavour = 1;
-    public const byte Against = 2;
-
-    public const byte TaxOpen = 1;
-    public const byte TaxFund = 2;
-    public const byte TaxRateRead = 3;
-    public const byte TaxRateSet = 4;
-    public const byte TaxReserve = 5;
-    public const byte TaxKingItem = 7;
-    public const byte TaxChannelOnly = 8;
-
-    public const byte IntroRead = 1;
-    public const byte IntroWrite = 2;
-    public const byte IntroSaved = 1;
-    public const byte TreasuryNoticeShown = 1;
-
-    public const short Success = 1;
-    public const short Refused = -1;
-    public const short ShoutAskAgain = 2;
-
-    public const byte ScheduleNone = 0;
-    public const byte ScheduleElection = 1;
-    public const byte ScheduleImpeachment = 2;
-    public const byte ScheduleImpeachmentVote = 3;
     public const byte SenatorsVoting = 2;
     public const byte SenatorsVotingLate = 4;
     public const int NoElectionHour = 255;
@@ -188,12 +132,12 @@ public static class KingElection
 
     private const int CheckElectionDayText = 11336;
     private const int ElectionForKingText = 11337;
-    private const int ImpeachmentText = 11338;
+    public const int ImpeachmentText = 11338;
     private const int ScheduleBackText = 11339;
     private const int NominateKingText = 11340;
     private const int TurnDownNominationText = 11341;
     private const int NomineeBoardText = 11342;
-    private const int ElectionText = 11343;
+    public const int ElectionText = 11343;
     private const int ElectionBackText = 11344;
     private const int PostText = 11345;
     private const int ViewText = 11346;
@@ -309,14 +253,14 @@ public static class KingElection
 
     public static int KingLine(string king) => king.Length > 0 ? CurrentKingText : NoKingText;
 
-    public static bool KnownScheduleKind(byte kind) =>
-        kind is ScheduleElection or ScheduleImpeachment or ScheduleImpeachmentVote;
+    public static bool KnownScheduleKind(KingScheduleKind kind) =>
+        kind is KingScheduleKind.Election or KingScheduleKind.Impeachment or KingScheduleKind.ImpeachmentVote;
 
-    public static int ScheduleText(int kind) => kind switch
+    public static int ScheduleText(KingScheduleKind kind) => kind switch
     {
-        ScheduleElection => ElectionScheduleText,
-        ScheduleImpeachment => ImpeachmentScheduleText,
-        ScheduleImpeachmentVote => ImpeachmentVoteScheduleText,
+        KingScheduleKind.Election => ElectionScheduleText,
+        KingScheduleKind.Impeachment => ImpeachmentScheduleText,
+        KingScheduleKind.ImpeachmentVote => ImpeachmentVoteScheduleText,
         _ => 0,
     };
 
@@ -325,7 +269,7 @@ public static class KingElection
 
     public static bool SenatorsAreVoting(int state) => state is SenatorsVoting or SenatorsVotingLate;
 
-    public static int NominateWindowHour(int kind, int hour) => kind == ScheduleElection ? hour : NoElectionHour;
+    public static int NominateWindowHour(KingScheduleKind kind, int hour) => kind == KingScheduleKind.Election ? hour : NoElectionHour;
 
     public static (int TextId, int From, int Until) NominateHours(int hour) =>
         hour == NoElectionHour ? (NoScheduleText, 0, 0) : (NominateHoursText, hour, hour == 0 ? LastHour : hour - 1);
@@ -377,7 +321,7 @@ public static class KingElection
             -2 => NoPlanText,
             _ => 0,
         },
-        KingReply.Board or KingReply.Candidates or KingReply.Senators => result == Refused ? NotVotingTimeText : 0,
+        KingReply.Board or KingReply.Candidates or KingReply.Senators => result == KingWire.Refused ? NotVotingTimeText : 0,
         KingReply.Vote => result switch
         {
             1 => VotedText,
@@ -414,10 +358,10 @@ public static class KingElection
             -3 => AlreadyVotedText,
             _ => 0,
         },
-        KingReply.SenatorBallot => result == Refused ? SenatorBallotClosedText : 0,
-        KingReply.PublicBallot => result == Refused ? PublicBallotClosedText : 0,
+        KingReply.SenatorBallot => result == KingWire.Refused ? SenatorBallotClosedText : 0,
+        KingReply.PublicBallot => result == KingWire.Refused ? PublicBallotClosedText : 0,
         KingReply.Treasury or KingReply.Fund or KingReply.TariffRead or KingReply.TariffSet or KingReply.Reserve =>
-            result == Refused ? KingsOnlyText : 0,
+            result == KingWire.Refused ? KingsOnlyText : 0,
         KingReply.KingItem => result switch
         {
             1 => ItemIssuedText,
@@ -425,7 +369,7 @@ public static class KingElection
             -2 => NoBagSlotText,
             _ => 0,
         },
-        KingReply.ChannelOnly => result == Success ? ChannelOnlyText : 0,
+        KingReply.ChannelOnly => result == KingWire.Success ? ChannelOnlyText : 0,
         _ => 0,
     };
 

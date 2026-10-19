@@ -89,23 +89,23 @@ public sealed record Diagnostic(
 
 public sealed class DiagnosticBag
 {
-    private readonly List<Diagnostic> _items = [];
+    private readonly List<Diagnostic> items = [];
 
-    public IReadOnlyList<Diagnostic> Items => _items;
-    public bool HasErrors => _items.Any(d => d.Severity == DiagnosticSeverity.Error);
+    public IReadOnlyList<Diagnostic> Items => items;
+    public bool HasErrors => items.Any(d => d.Severity == DiagnosticSeverity.Error);
 
-    public void Report(Diagnostic diagnostic) => _items.Add(diagnostic);
+    public void Report(Diagnostic diagnostic) => items.Add(diagnostic);
 
     public void Error(string id, TextSpan span, string message, string? hint = null) =>
-        _items.Add(new Diagnostic(id, DiagnosticSeverity.Error, message, span, Hint: hint));
+        items.Add(new Diagnostic(id, DiagnosticSeverity.Error, message, span, Hint: hint));
 
     public void Warning(string id, TextSpan span, string message, string? hint = null) =>
-        _items.Add(new Diagnostic(id, DiagnosticSeverity.Warning, message, span, Hint: hint));
+        items.Add(new Diagnostic(id, DiagnosticSeverity.Warning, message, span, Hint: hint));
 
     public void Info(string id, TextSpan span, string message, string? hint = null) =>
-        _items.Add(new Diagnostic(id, DiagnosticSeverity.Information, message, span, Hint: hint));
+        items.Add(new Diagnostic(id, DiagnosticSeverity.Information, message, span, Hint: hint));
 
-    public void AddRange(IEnumerable<Diagnostic> diagnostics) => _items.AddRange(diagnostics);
+    public void AddRange(IEnumerable<Diagnostic> diagnostics) => items.AddRange(diagnostics);
 }
 
 public static class DiagnosticFormatter

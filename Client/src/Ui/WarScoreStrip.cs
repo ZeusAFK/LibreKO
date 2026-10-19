@@ -16,16 +16,16 @@ public sealed partial class WarScoreStrip : PanelContainer
     private const float CloseSize = 18f;
     private const int CloseIconWidth = 10;
 
-    private readonly string _leftName;
-    private readonly string _rightName;
-    private readonly Label _left;
-    private readonly Label _right;
-    private readonly Label _centre;
-    private readonly Label? _status;
-    private readonly Label? _clock;
-    private readonly Button? _ranking;
-    private readonly ColorRect _leftBar;
-    private readonly ColorRect _rightBar;
+    private readonly string leftName;
+    private readonly string rightName;
+    private readonly Label leftLabel;
+    private readonly Label rightLabel;
+    private readonly Label centre;
+    private readonly Label? status;
+    private readonly Label? clock;
+    private readonly Button? ranking;
+    private readonly ColorRect leftBar;
+    private readonly ColorRect rightBar;
 
     public event System.Action? RankingPressed;
 
@@ -38,8 +38,8 @@ public sealed partial class WarScoreStrip : PanelContainer
 
     public WarScoreStrip(bool withStatus, string leftName, Color leftColour, string rightName, Color rightColour, bool closable)
     {
-        _leftName = leftName;
-        _rightName = rightName;
+        this.leftName = leftName;
+        this.rightName = rightName;
         CustomMinimumSize = new Vector2(StripWidth, 0);
         var style = UiTheme.Panel(6, true);
         style.ContentMarginLeft = style.ContentMarginRight = SidePadding;
@@ -53,13 +53,13 @@ public sealed partial class WarScoreStrip : PanelContainer
         var scores = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
         scores.AddThemeConstantOverride("separation", 6);
         rows.AddChild(scores);
-        _left = Side(scores, leftColour, HorizontalAlignment.Left);
-        _centre = UiTheme.Text("", 14, UiTheme.GoldBright, HorizontalAlignment.Center);
-        _centre.CustomMinimumSize = new Vector2(CentreWidth, 0);
-        _centre.AddThemeConstantOverride("outline_size", 3);
-        _centre.MouseFilter = MouseFilterEnum.Ignore;
-        scores.AddChild(_centre);
-        _right = Side(scores, rightColour, HorizontalAlignment.Right);
+        leftLabel = Side(scores, leftColour, HorizontalAlignment.Left);
+        centre = UiTheme.Text("", 14, UiTheme.GoldBright, HorizontalAlignment.Center);
+        centre.CustomMinimumSize = new Vector2(CentreWidth, 0);
+        centre.AddThemeConstantOverride("outline_size", 3);
+        centre.MouseFilter = MouseFilterEnum.Ignore;
+        scores.AddChild(centre);
+        rightLabel = Side(scores, rightColour, HorizontalAlignment.Right);
         if (closable)
         {
             var close = UiTheme.IconButton(UiIcons.Get("system/close"), "Close");
@@ -75,58 +75,58 @@ public sealed partial class WarScoreStrip : PanelContainer
         var bar = new HBoxContainer { CustomMinimumSize = new Vector2(0, BarHeight), MouseFilter = MouseFilterEnum.Ignore };
         bar.AddThemeConstantOverride("separation", 0);
         rows.AddChild(bar);
-        _leftBar = BarPart(bar, leftColour);
-        _rightBar = BarPart(bar, rightColour);
+        leftBar = BarPart(bar, leftColour);
+        rightBar = BarPart(bar, rightColour);
 
         if (withStatus)
         {
-            _status = UiTheme.Text("", 12, UiTheme.TextHi, HorizontalAlignment.Center);
-            _status.AddThemeConstantOverride("outline_size", 1);
-            _status.MouseFilter = MouseFilterEnum.Ignore;
-            rows.AddChild(_status);
+            status = UiTheme.Text("", 12, UiTheme.TextHi, HorizontalAlignment.Center);
+            status.AddThemeConstantOverride("outline_size", 1);
+            status.MouseFilter = MouseFilterEnum.Ignore;
+            rows.AddChild(status);
 
             var foot = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
             foot.AddThemeConstantOverride("separation", 6);
             rows.AddChild(foot);
-            _clock = UiTheme.Text("", 12, UiTheme.TextLo);
-            _clock.AddThemeConstantOverride("outline_size", 1);
-            _clock.MouseFilter = MouseFilterEnum.Ignore;
-            _clock.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            _clock.VerticalAlignment = VerticalAlignment.Center;
-            foot.AddChild(_clock);
-            _ranking = new Button { Text = "Ranking", FocusMode = FocusModeEnum.None, Visible = false };
-            _ranking.AddThemeFontSizeOverride("font_size", 11);
-            _ranking.Pressed += () => RankingPressed?.Invoke();
-            foot.AddChild(_ranking);
+            clock = UiTheme.Text("", 12, UiTheme.TextLo);
+            clock.AddThemeConstantOverride("outline_size", 1);
+            clock.MouseFilter = MouseFilterEnum.Ignore;
+            clock.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            clock.VerticalAlignment = VerticalAlignment.Center;
+            foot.AddChild(clock);
+            ranking = new Button { Text = "Ranking", FocusMode = FocusModeEnum.None, Visible = false };
+            ranking.AddThemeFontSizeOverride("font_size", 11);
+            ranking.Pressed += () => RankingPressed?.Invoke();
+            foot.AddChild(ranking);
         }
         SetScores(0, 0);
     }
 
-    public bool RankingShown { set { if (_ranking != null) _ranking.Visible = value; } }
+    public bool RankingShown { set { if (ranking != null) ranking.Visible = value; } }
 
     public void SetClock(string text)
     {
-        if (_clock == null) return;
-        _clock.Text = text;
-        _clock.GetParent<Control>().Visible = text.Length > 0 || _ranking is { Visible: true };
+        if (clock == null) return;
+        clock.Text = text;
+        clock.GetParent<Control>().Visible = text.Length > 0 || ranking is { Visible: true };
     }
 
-    public string Centre { set => _centre.Text = value; }
+    public string Centre { set => centre.Text = value; }
 
     public void SetScores(int left, int right)
     {
-        _left.Text = $"{_leftName}  {left}";
-        _right.Text = $"{right}  {_rightName}";
+        leftLabel.Text = $"{leftName}  {left}";
+        rightLabel.Text = $"{right}  {rightName}";
         bool empty = left <= 0 && right <= 0;
-        _leftBar.SizeFlagsStretchRatio = empty ? EmptyShare : Mathf.Max(0, left);
-        _rightBar.SizeFlagsStretchRatio = empty ? EmptyShare : Mathf.Max(0, right);
+        leftBar.SizeFlagsStretchRatio = empty ? EmptyShare : Mathf.Max(0, left);
+        rightBar.SizeFlagsStretchRatio = empty ? EmptyShare : Mathf.Max(0, right);
     }
 
     public void SetStatus(string text, Color colour)
     {
-        if (_status == null) return;
-        _status.Text = text;
-        _status.AddThemeColorOverride("font_color", colour);
+        if (status == null) return;
+        status.Text = text;
+        status.AddThemeColorOverride("font_color", colour);
     }
 
     private static Label Side(HBoxContainer row, Color colour, HorizontalAlignment align)

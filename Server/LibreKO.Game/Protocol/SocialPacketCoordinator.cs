@@ -26,7 +26,7 @@ public class SocialPacketCoordinator(
     public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(20);
     private const byte RequestAccepted = 1;
 
-    private readonly ConcurrentDictionary<(int Target, int Requester), DateTime> _pendingRequests = new();
+    private readonly ConcurrentDictionary<(int Target, int Requester), DateTime> pendingRequests = new();
 
     public async Task HandleChatTargetAsync(IClient client, Packet packet)
     {
@@ -249,13 +249,13 @@ public class SocialPacketCoordinator(
         }
 
         var key = (target.CharacterId, session.CharacterId);
-        if (_pendingRequests.TryGetValue(key, out var askedAt) && DateTime.UtcNow - askedAt < RequestTimeout)
+        if (pendingRequests.TryGetValue(key, out var askedAt) && DateTime.UtcNow - askedAt < RequestTimeout)
         {
             await client.SendPacket(FriendPacketWriter.RequestResult(FriendRequestResult.InProgress));
             return;
         }
 
-        _pendingRequests[key] = DateTime.UtcNow;
+        pendingRequests[key] = DateTime.UtcNow;
         await target.Client.SendPacket(FriendPacketWriter.Request(session.Name));
         logger.LogDebug("{Name} asked {FriendName} to be friends", session.Name, target.Name);
     }
@@ -265,7 +265,7 @@ public class SocialPacketCoordinator(
         var requesterName = packet.ReadString();
         var accepted = packet.RemainingBytes >= 1 && packet.ReadByte() == RequestAccepted;
         var requester = string.IsNullOrEmpty(requesterName) ? null : sessionManager.GetByName(requesterName);
-        if (requester == null || !_pendingRequests.TryRemove((session.CharacterId, requester.CharacterId), out var askedAt))
+        if (requester == null || !pendingRequests.TryRemove((session.CharacterId, requester.CharacterId), out var askedAt))
             return;
 
         if (DateTime.UtcNow - askedAt >= RequestTimeout)

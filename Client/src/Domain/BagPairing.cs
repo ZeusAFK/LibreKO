@@ -2,26 +2,26 @@
 
 public sealed class BagPairing<T> where T : class
 {
-    private T? _current;
-    private bool _openedByCompanion;
+    private T? current;
+    private bool openedByCompanion;
 
     public T? Attach(T companion, bool inventoryWasOpen)
     {
-        if (ReferenceEquals(companion, _current)) return null;
-        var previous = _current;
-        _current = companion;
-        if (previous == null) _openedByCompanion = !inventoryWasOpen;
+        if (ReferenceEquals(companion, current)) return null;
+        var previous = current;
+        current = companion;
+        if (previous == null) openedByCompanion = !inventoryWasOpen;
         return previous;
     }
 
     public bool Detach(T companion)
     {
-        if (!ReferenceEquals(companion, _current)) return false;
-        _current = null;
-        bool close = _openedByCompanion;
-        _openedByCompanion = false;
+        if (!ReferenceEquals(companion, current)) return false;
+        current = null;
+        bool close = openedByCompanion;
+        openedByCompanion = false;
         return close;
     }
 
-    public void PlayerTouched() => _openedByCompanion = false;
+    public void PlayerTouched() => openedByCompanion = false;
 }

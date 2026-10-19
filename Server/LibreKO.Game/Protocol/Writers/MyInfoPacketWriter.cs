@@ -8,13 +8,13 @@ public sealed class MyInfoPacketWriter
 {
     private const int SkillPointDataSize = 9;
 
-    private readonly int[] _itemIds = new int[InventoryConstants.InventoryTotal];
-    private readonly short[] _itemDurability = new short[InventoryConstants.InventoryTotal];
-    private readonly short[] _itemCount = new short[InventoryConstants.InventoryTotal];
-    private readonly byte[] _itemFlags = new byte[InventoryConstants.InventoryTotal];
-    private readonly int[] _itemExpiry = new int[InventoryConstants.InventoryTotal];
-    private readonly PetItemInfo?[] _itemPets = new PetItemInfo?[InventoryConstants.InventoryTotal];
-    private byte[] _skillPointData = new byte[SkillPointDataSize];
+    private readonly int[] itemIds = new int[InventoryConstants.InventoryTotal];
+    private readonly short[] itemDurability = new short[InventoryConstants.InventoryTotal];
+    private readonly short[] itemCount = new short[InventoryConstants.InventoryTotal];
+    private readonly byte[] itemFlags = new byte[InventoryConstants.InventoryTotal];
+    private readonly int[] itemExpiry = new int[InventoryConstants.InventoryTotal];
+    private readonly PetItemInfo?[] itemPets = new PetItemInfo?[InventoryConstants.InventoryTotal];
+    private byte[] skillPointData = new byte[SkillPointDataSize];
 
     public int CharacterId { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -173,9 +173,9 @@ public sealed class MyInfoPacketWriter
 
     public void SetSkillPointData(byte[]? data)
     {
-        _skillPointData = new byte[SkillPointDataSize];
+        skillPointData = new byte[SkillPointDataSize];
         if (data is not null)
-            Array.Copy(data, _skillPointData, Math.Min(data.Length, SkillPointDataSize));
+            Array.Copy(data, skillPointData, Math.Min(data.Length, SkillPointDataSize));
     }
 
     public void SetItem(int storageSlot, int itemId, short durability, short count, byte flag, int expiresAt = ItemRecordWriter.NoExpiry)
@@ -183,11 +183,11 @@ public sealed class MyInfoPacketWriter
         if (storageSlot < 0 || storageSlot >= InventoryConstants.InventoryTotal)
             return;
 
-        _itemIds[storageSlot] = itemId;
-        _itemDurability[storageSlot] = durability;
-        _itemCount[storageSlot] = count;
-        _itemFlags[storageSlot] = flag;
-        _itemExpiry[storageSlot] = expiresAt;
+        itemIds[storageSlot] = itemId;
+        itemDurability[storageSlot] = durability;
+        itemCount[storageSlot] = count;
+        itemFlags[storageSlot] = flag;
+        itemExpiry[storageSlot] = expiresAt;
     }
 
     public void SetPetItem(int storageSlot, PetItemInfo pet)
@@ -195,7 +195,7 @@ public sealed class MyInfoPacketWriter
         if (storageSlot < 0 || storageSlot >= InventoryConstants.InventoryTotal)
             return;
 
-        _itemPets[storageSlot] = pet;
+        itemPets[storageSlot] = pet;
     }
 
     public Packet Build()
@@ -291,7 +291,7 @@ public sealed class MyInfoPacketWriter
         packet.WriteByte(shownRanks.Knights);
         packet.WriteByte(shownRanks.Personal);
 
-        packet.WriteBytes(_skillPointData);
+        packet.WriteBytes(skillPointData);
 
         WriteItems(packet);
 
@@ -332,12 +332,12 @@ public sealed class MyInfoPacketWriter
             var storageSlot = InventoryConstants.MyInfoWireSlot(wireIndex);
             ItemRecordWriter.Write(
                 packet,
-                _itemIds[storageSlot],
-                _itemDurability[storageSlot],
-                _itemCount[storageSlot],
-                _itemFlags[storageSlot],
-                _itemPets[storageSlot],
-                _itemExpiry[storageSlot]);
+                itemIds[storageSlot],
+                itemDurability[storageSlot],
+                itemCount[storageSlot],
+                itemFlags[storageSlot],
+                itemPets[storageSlot],
+                itemExpiry[storageSlot]);
         }
 
         for (var reserved = 0; reserved < InventoryConstants.MyInfoReservedItemRecords; reserved++)

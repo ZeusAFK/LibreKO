@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public readonly record struct ClanMatchPair(int Zone, int ClanA, int ClanB);
 
@@ -10,11 +8,6 @@ public readonly record struct ClanMatchVitals(int Id, int MaxHp, int Hp, int Max
 
 public static class ClanMatchReply
 {
-    public const byte BattleSub = 19;
-    public const byte ResultSub = 1;
-    public const byte RosterSub = 2;
-    public const byte VitalsSub = 3;
-    public const byte KnightsPairSub = 96;
     private const int FighterFixedBytes = 2 + 4 + 2 + 2 + 2 + 1 + 2 + 2 + 2 + 1;
     private const int VitalsBytes = 4 + 4 * 2;
 
@@ -64,4 +57,11 @@ public static class ClanMatchReply
     public static ClanMatchVitals? ReadVitals(Packet p) => p.RemainingBytes >= VitalsBytes
         ? new ClanMatchVitals(p.ReadInt(), p.ReadShort(), p.ReadShort(), p.ReadShort(), p.ReadShort())
         : null;
+}
+
+public enum ClanMatchKind : byte
+{
+    Result = 1,
+    Roster = 2,
+    Vitals = 3,
 }

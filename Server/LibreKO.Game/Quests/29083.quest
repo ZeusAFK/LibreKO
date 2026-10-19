@@ -1,0 +1,11 @@
+
+Bind Npc 29083
+
+On greeting
+    Say "Welcome! Don't miss your chance to win prizes from playing Yut. The price is 50,000 Noah per round."
+    Topic "Accept / Compete" goto compete
+    Topic "Reject" goto close
+    Goto close
+
+On compete
+    Open yut game

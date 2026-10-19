@@ -8,51 +8,49 @@ public sealed partial class HudLayout : Node
 {
     public enum Corner { TopLeft, TopRight, BottomLeft, BottomRight }
 
-    public static bool EditMode { get; set; }
-
     public event Action? Placed;
     public event Action? Clicked;
     public static bool PersistLayouts { get; set; } = true;
 
     private static readonly System.Collections.Generic.HashSet<HudLayout> Live = new();
 
-    private readonly Control _target;
-    private readonly Control? _dragHandle;
-    private readonly string _id;
-    private readonly Func<Vector2>? _defaultPosition;
-    private bool _userPlaced;
-    private readonly HudAnchor.Spot? _anchor;
-    private Vector2 _anchorMargin;
-    private readonly Vector2 _anchorSize;
-    private readonly Vector2 _defaultSize;
-    private Vector2 _minimumSize;
-    private readonly bool _resizable;
-    private readonly bool _persist;
-    private readonly Corner _resizeCorner;
-    private readonly Corner _moveCorner;
-    private readonly bool _moveGripAlwaysVisible;
-    private readonly bool _moveGripOverlay;
-    private readonly Vector2 _resizeGripOffset;
-    private readonly Action<float>? _backgroundOpacityChanged;
-    private int _backgroundOpacityIndex = -1;
+    private readonly Control target;
+    private readonly Control? dragHandle;
+    private readonly string id;
+    private readonly Func<Vector2>? defaultPosition;
+    private bool userPlaced;
+    private readonly HudAnchor.Spot? anchor;
+    private Vector2 anchorMargin;
+    private readonly Vector2 anchorSize;
+    private readonly Vector2 defaultSize;
+    private Vector2 minimumSize;
+    private readonly bool resizable;
+    private readonly bool persist;
+    private readonly Corner resizeCorner;
+    private readonly Corner moveCorner;
+    private readonly bool moveGripAlwaysVisible;
+    private readonly bool moveGripOverlay;
+    private readonly Vector2 resizeGripOffset;
+    private readonly Action<float>? backgroundOpacityChanged;
+    private int backgroundOpacityIndex = -1;
     private static readonly float[] BackgroundOpacityLevels = { 0.90f, 0.50f, 0.20f };
 
-    private bool _dragging;
-    private bool _resizing;
-    private Vector2 _dragOffset;
-    private Vector2 _dragOriginMouse;
-    private Vector2 _dragOriginPosition;
-    private bool _dragMoved;
-    private Vector2 _resizeOriginMouse;
-    private Vector2 _resizeOriginSize;
-    private Vector2 _resizeOriginPosition;
-    private ResizeCorner? _corner;
-    private bool? _cornerShown;
-    private bool _gripShown;
-    private bool _locked;
-    private Rect2 _overlayRect;
-    private Vector2 _gripSize, _cornerSize;
-    private MoveGrip? _moveGrip;
+    private bool dragging;
+    private bool resizing;
+    private Vector2 dragOffset;
+    private Vector2 dragOriginMouse;
+    private Vector2 dragOriginPosition;
+    private bool dragMoved;
+    private Vector2 resizeOriginMouse;
+    private Vector2 resizeOriginSize;
+    private Vector2 resizeOriginPosition;
+    private ResizeCorner? resizeGrip;
+    private bool? cornerShown;
+    private bool gripShown;
+    private bool locked;
+    private Rect2 overlayRect;
+    private Vector2 gripSize, cornerSize;
+    private MoveGrip? moveGrip;
 
     private HudLayout(
         Control target,
@@ -73,37 +71,37 @@ public sealed partial class HudLayout : Node
         Vector2 anchorSize,
         bool moveGripOverlay)
     {
-        _target = target;
-        _id = id;
-        _dragHandle = dragHandle;
-        _defaultPosition = defaultPosition;
-        _anchor = anchor;
-        _anchorMargin = anchorMargin;
-        _anchorSize = anchorSize;
-        _resizable = resizable;
-        _defaultSize = defaultSize;
-        _minimumSize = minimumSize;
-        _persist = persist && PersistLayouts;
-        _resizeCorner = resizeCorner;
-        _moveCorner = moveCorner;
-        _moveGripAlwaysVisible = moveGripAlwaysVisible;
-        _moveGripOverlay = moveGripOverlay;
-        _resizeGripOffset = resizeGripOffset;
-        _backgroundOpacityChanged = backgroundOpacityChanged;
+        this.target = target;
+        this.id = id;
+        this.dragHandle = dragHandle;
+        this.defaultPosition = defaultPosition;
+        this.anchor = anchor;
+        this.anchorMargin = anchorMargin;
+        this.anchorSize = anchorSize;
+        this.resizable = resizable;
+        this.defaultSize = defaultSize;
+        this.minimumSize = minimumSize;
+        this.persist = persist && PersistLayouts;
+        this.resizeCorner = resizeCorner;
+        this.moveCorner = moveCorner;
+        this.moveGripAlwaysVisible = moveGripAlwaysVisible;
+        this.moveGripOverlay = moveGripOverlay;
+        this.resizeGripOffset = resizeGripOffset;
+        this.backgroundOpacityChanged = backgroundOpacityChanged;
     }
 
     public bool Locked
     {
-        get => _locked;
+        get => locked;
         set
         {
-            if (_locked == value) return;
-            _locked = value;
-            _cornerShown = null;
+            if (locked == value) return;
+            locked = value;
+            cornerShown = null;
         }
     }
 
-    private bool Frozen => _locked && !EditMode;
+    private bool Frozen => locked;
 
     public static HudLayout Attach(
         Control target,
@@ -134,17 +132,17 @@ public sealed partial class HudLayout : Node
 
     public override void _Ready()
     {
-        if (_dragHandle != null && _anchor == null)
+        if (dragHandle != null && anchor == null)
         {
-            _dragHandle.MouseFilter = Control.MouseFilterEnum.Stop;
-            _dragHandle.MouseDefaultCursorShape = Control.CursorShape.Move;
-            _dragHandle.GuiInput += OnDragHandleInput;
+            dragHandle.MouseFilter = Control.MouseFilterEnum.Stop;
+            dragHandle.MouseDefaultCursorShape = Control.CursorShape.Move;
+            dragHandle.GuiInput += OnDragHandleInput;
         }
 
         GetViewport().SizeChanged += KeepOnScreen;
         Config.UiScaleApplied += KeepOnScreen;
-        _target.VisibilityChanged += KeepOnScreen;
-        _target.Resized += ClampAfterResize;
+        target.VisibilityChanged += KeepOnScreen;
+        target.Resized += ClampAfterResize;
         Live.Add(this);
 
         Callable.From(InstallOverlays).CallDeferred();
@@ -153,7 +151,7 @@ public sealed partial class HudLayout : Node
 
     private void KeepOnScreen()
     {
-        if (!GodotObject.IsInstanceValid(_target) || !_target.IsVisibleInTree()) return;
+        if (!GodotObject.IsInstanceValid(target) || !target.IsVisibleInTree()) return;
         Callable.From(FollowDefaultOnScreen).CallDeferred();
     }
 
@@ -161,11 +159,11 @@ public sealed partial class HudLayout : Node
 
     private void ClampAndKeep()
     {
-        if (!GodotObject.IsInstanceValid(_target)) return;
-        var before = _target.Position;
+        if (!GodotObject.IsInstanceValid(target)) return;
+        var before = target.Position;
         ClampOnScreen();
-        if (_persist && _anchor == null && !_dragging && Config.HasWindowPos(_id) && !before.IsEqualApprox(_target.Position))
-            Config.SaveWindowPos(_id, _target.Position);
+        if (persist && anchor == null && !dragging && Config.HasWindowPos(id) && !before.IsEqualApprox(target.Position))
+            Config.SaveWindowPos(id, target.Position);
     }
 
     public void ReapplyDefault() => FollowDefaultOnScreen();
@@ -176,7 +174,7 @@ public sealed partial class HudLayout : Node
         foreach (var layout in new System.Collections.Generic.List<HudLayout>(Live))
         {
             if (!GodotObject.IsInstanceValid(layout)) continue;
-            layout._userPlaced = false;
+            layout.userPlaced = false;
             layout.ApplySavedLayout();
             layout.Placed?.Invoke();
         }
@@ -186,83 +184,76 @@ public sealed partial class HudLayout : Node
 
     internal Vector2 MinimumSize
     {
-        get => _minimumSize;
-        set => _minimumSize = value;
+        get => minimumSize;
+        set => minimumSize = value;
     }
 
     internal void Place(Vector2 position, Vector2 size)
     {
-        _target.Size = size;
-        _target.Position = position;
-        _userPlaced = true;
+        target.Size = size;
+        target.Position = position;
+        userPlaced = true;
         ClampOnScreen();
-        if (_persist)
+        if (persist)
         {
-            Config.SaveWindowPos(_id, _target.Position);
-            Config.SaveWindowSize(_id, _target.Size);
+            Config.SaveWindowPos(id, target.Position);
+            Config.SaveWindowSize(id, target.Size);
         }
         Placed?.Invoke();
     }
 
     private void FollowDefaultOnScreen()
     {
-        if (!GodotObject.IsInstanceValid(_target)) return;
-        if (_anchor == null && _defaultPosition != null && !_dragging && !_userPlaced
-            && !(_persist && Config.HasWindowPos(_id)))
-            _target.Position = _defaultPosition();
+        if (!GodotObject.IsInstanceValid(target)) return;
+        if (anchor == null && defaultPosition != null && !dragging && !userPlaced
+            && !(persist && Config.HasWindowPos(id)))
+            target.Position = defaultPosition();
         ClampOnScreen();
     }
 
     private void InstallOverlays()
     {
-        if (!GodotObject.IsInstanceValid(_target) || _target.GetParent() == null) return;
+        if (!GodotObject.IsInstanceValid(target) || target.GetParent() == null) return;
 
-        if (_anchor == null && _moveGripOverlay)
+        if (anchor == null && moveGripOverlay)
         {
-            _moveGrip = new MoveGrip(this);
-            _target.AddSibling(_moveGrip);
+            moveGrip = new MoveGrip(this);
+            target.AddSibling(moveGrip);
         }
 
-        if (_resizable)
+        if (resizable)
         {
-            _corner = new ResizeCorner(this, _resizeCorner);
-            _target.AddSibling(_corner);
+            resizeGrip = new ResizeCorner(this, resizeCorner);
+            target.AddSibling(resizeGrip);
         }
-    }
-
-    public void SetAnchorMargin(Vector2 margin)
-    {
-        if (_anchorMargin.IsEqualApprox(margin)) return;
-        _anchorMargin = margin;
-        ApplySavedLayout();
     }
 
     private void ApplySavedLayout()
     {
-        if (!GodotObject.IsInstanceValid(_target)) return;
+        if (!GodotObject.IsInstanceValid(target)) return;
 
-        if (_anchor is { } spot)
+        if (anchor is { } spot)
         {
-            if (_resizable) _target.Size = ClampSize(SavedSize());
-            HudAnchor.Pin(_target, spot, _anchorMargin, _resizable ? _target.Size : _anchorSize);
+            if (resizable) target.Size = ClampSize(SavedSize());
+            HudAnchor.Pin(target, spot, anchorMargin, resizable ? target.Size : anchorSize);
             return;
         }
 
-        Vector2 fallback = _defaultPosition?.Invoke() ?? _target.Position;
-        _target.SetAnchorsPreset(Control.LayoutPreset.TopLeft, true);
-        _target.Position = _persist ? Config.GetWindowPos(_id, fallback) : fallback;
+        Vector2 fallback = defaultPosition?.Invoke() ?? target.Position;
+        target.SetAnchorsPreset(Control.LayoutPreset.TopLeft, true);
+        target.Position = persist ? Config.GetWindowPos(id, fallback) : fallback;
 
-        if (_resizable) _target.Size = ClampSize(SavedSize());
+        if (resizable) target.Size = ClampSize(SavedSize());
         ClampOnScreen();
     }
 
     private Vector2 SavedSize()
     {
-        Vector2 fallback = _defaultSize != Vector2.Zero ? _defaultSize : _target.Size;
-        return _persist ? Config.GetWindowSize(_id, fallback) : fallback;
+        Vector2 fallback = defaultSize != Vector2.Zero ? defaultSize : target.Size;
+        return persist ? Config.GetWindowSize(id, fallback) : fallback;
     }
 
-    private void OnDragHandleInput(InputEvent ev) => DragFrom(_dragHandle, ev);
+    private void OnDragHandleInput(InputEvent ev) => DragFrom(dragHandle, ev);
 
     private void DragFrom(Control? handle, InputEvent ev)
     {
@@ -274,7 +265,7 @@ public sealed partial class HudLayout : Node
 
     public void AddDragHandle(Control handle)
     {
-        if (_anchor != null) return;
+        if (anchor != null) return;
         handle.MouseFilter = Control.MouseFilterEnum.Stop;
         handle.MouseDefaultCursorShape = Control.CursorShape.Move;
         handle.GuiInput += ev => DragFrom(handle, ev);
@@ -282,30 +273,30 @@ public sealed partial class HudLayout : Node
 
     public override void _Input(InputEvent ev)
     {
-        if (_dragging && ev is InputEventMouseMotion drag)
+        if (dragging && ev is InputEventMouseMotion drag)
         {
-            if (drag.GlobalPosition.DistanceTo(_dragOriginMouse) >= 4f)
-                _dragMoved = true;
-            _target.Position = drag.GlobalPosition + _dragOffset;
+            if (drag.GlobalPosition.DistanceTo(dragOriginMouse) >= 4f)
+                dragMoved = true;
+            target.Position = drag.GlobalPosition + dragOffset;
             ClampOnScreen();
             GetViewport().SetInputAsHandled();
             return;
         }
 
-        if (_resizing && ev is InputEventMouseMotion resize)
+        if (resizing && ev is InputEventMouseMotion resize)
         {
-            Vector2 delta = resize.GlobalPosition - _resizeOriginMouse;
-            bool fromLeft = _resizeCorner is Corner.TopLeft or Corner.BottomLeft;
-            bool fromTop = _resizeCorner is Corner.TopLeft or Corner.TopRight;
-            Vector2 requested = _resizeOriginSize + new Vector2(
+            Vector2 delta = resize.GlobalPosition - resizeOriginMouse;
+            bool fromLeft = resizeCorner is Corner.TopLeft or Corner.BottomLeft;
+            bool fromTop = resizeCorner is Corner.TopLeft or Corner.TopRight;
+            Vector2 requested = resizeOriginSize + new Vector2(
                 fromLeft ? -delta.X : delta.X,
                 fromTop ? -delta.Y : delta.Y);
             Vector2 size = ClampSize(requested, fromLeft, fromTop);
-            Vector2 position = _resizeOriginPosition;
-            if (fromLeft) position.X += _resizeOriginSize.X - size.X;
-            if (fromTop) position.Y += _resizeOriginSize.Y - size.Y;
-            _target.Position = position;
-            _target.Size = size;
+            Vector2 position = resizeOriginPosition;
+            if (fromLeft) position.X += resizeOriginSize.X - size.X;
+            if (fromTop) position.Y += resizeOriginSize.Y - size.Y;
+            target.Position = position;
+            target.Size = size;
             ClampOnScreen();
             GetViewport().SetInputAsHandled();
             return;
@@ -313,12 +304,12 @@ public sealed partial class HudLayout : Node
 
         if (ev is InputEventMouseButton { Pressed: false, ButtonIndex: MouseButton.Left })
         {
-            if (_dragging)
+            if (dragging)
             {
                 EndDrag();
                 GetViewport().SetInputAsHandled();
             }
-            if (_resizing)
+            if (resizing)
             {
                 EndResize();
                 GetViewport().SetInputAsHandled();
@@ -329,40 +320,40 @@ public sealed partial class HudLayout : Node
     public override void _Process(double delta)
     {
         using var scope = Perf.Measure(Perf.Section.Ui);
-        if (_moveGrip == null && _corner == null) return;
-        bool shown = _target.IsVisibleInTree();
+        if (moveGrip == null && resizeGrip == null) return;
+        bool shown = target.IsVisibleInTree();
         bool frozen = Frozen;
-        bool gripShown = shown && !frozen && (_moveGripAlwaysVisible || EditMode);
-        bool cornerShown = shown && !frozen;
-        var rect = new Rect2(_target.GlobalPosition, ScaledTargetSize());
-        Vector2 gripSize = _moveGrip?.Size ?? Vector2.Zero, cornerSize = _corner?.Size ?? Vector2.Zero;
-        if (cornerShown == _cornerShown && gripShown == _gripShown && rect == _overlayRect
-            && gripSize == _gripSize && cornerSize == _cornerSize)
+        bool gripShown = shown && !frozen && moveGripAlwaysVisible;
+        bool showCorner = shown && !frozen;
+        var rect = new Rect2(target.GlobalPosition, ScaledTargetSize());
+        Vector2 gripSize = moveGrip?.Size ?? Vector2.Zero, cornerSize = resizeGrip?.Size ?? Vector2.Zero;
+        if (showCorner == cornerShown && gripShown == this.gripShown && rect == overlayRect
+            && gripSize == this.gripSize && cornerSize == this.cornerSize)
             return;
-        _cornerShown = cornerShown;
-        _gripShown = gripShown;
-        _overlayRect = rect;
-        _gripSize = gripSize;
-        _cornerSize = cornerSize;
-        if (_moveGrip != null)
+        cornerShown = showCorner;
+        this.gripShown = gripShown;
+        overlayRect = rect;
+        this.gripSize = gripSize;
+        this.cornerSize = cornerSize;
+        if (moveGrip != null)
         {
-            _moveGrip.Visible = gripShown;
-            if (gripShown) _moveGrip.GlobalPosition = OverlayPosition(gripSize, _moveCorner);
+            moveGrip.Visible = gripShown;
+            if (gripShown) moveGrip.GlobalPosition = OverlayPosition(gripSize, moveCorner);
         }
-        if (_corner != null)
+        if (resizeGrip != null)
         {
-            _corner.Visible = cornerShown;
-            if (cornerShown) _corner.GlobalPosition = OverlayPosition(cornerSize, _resizeCorner) + _resizeGripOffset;
+            resizeGrip.Visible = showCorner;
+            if (showCorner) resizeGrip.GlobalPosition = OverlayPosition(cornerSize, resizeCorner) + resizeGripOffset;
         }
     }
 
-    private Vector2 ScaledTargetSize() => _target.Size * _target.Scale;
+    private Vector2 ScaledTargetSize() => target.Size * target.Scale;
 
     private Vector2 OverlayPosition(Vector2 overlaySize, Corner corner)
     {
         Vector2 inset = new(3f, 3f);
         Vector2 size = ScaledTargetSize();
-        return _target.GlobalPosition + corner switch
+        return target.GlobalPosition + corner switch
         {
             Corner.TopLeft => inset,
             Corner.TopRight => new Vector2(size.X - overlaySize.X - inset.X, inset.Y),
@@ -376,76 +367,76 @@ public sealed partial class HudLayout : Node
         Live.Remove(this);
         GetViewport().SizeChanged -= KeepOnScreen;
         Config.UiScaleApplied -= KeepOnScreen;
-        if (GodotObject.IsInstanceValid(_target))
+        if (GodotObject.IsInstanceValid(target))
         {
-            _target.VisibilityChanged -= KeepOnScreen;
-            _target.Resized -= ClampAfterResize;
+            target.VisibilityChanged -= KeepOnScreen;
+            target.Resized -= ClampAfterResize;
         }
-        if (_moveGrip != null && GodotObject.IsInstanceValid(_moveGrip))
-            _moveGrip.QueueFree();
-        if (_corner != null && GodotObject.IsInstanceValid(_corner))
-            _corner.QueueFree();
+        if (moveGrip != null && GodotObject.IsInstanceValid(moveGrip))
+            moveGrip.QueueFree();
+        if (resizeGrip != null && GodotObject.IsInstanceValid(resizeGrip))
+            resizeGrip.QueueFree();
     }
 
     private void BeginDrag(Vector2 mouse)
     {
         if (Frozen) return;
-        _dragging = true;
-        _dragMoved = false;
-        _dragOriginMouse = mouse;
-        _dragOriginPosition = _target.Position;
-        _dragOffset = _target.Position - mouse;
+        dragging = true;
+        dragMoved = false;
+        dragOriginMouse = mouse;
+        dragOriginPosition = target.Position;
+        dragOffset = target.Position - mouse;
     }
 
     private void EndDrag()
     {
-        if (!_dragging) return;
-        _dragging = false;
-        if (!_dragMoved)
+        if (!dragging) return;
+        dragging = false;
+        if (!dragMoved)
         {
-            _target.Position = _dragOriginPosition;
+            target.Position = dragOriginPosition;
             CycleBackgroundOpacity();
             Clicked?.Invoke();
             return;
         }
-        _userPlaced = true;
+        userPlaced = true;
         ClampOnScreen();
-        if (_persist) Config.SaveWindowPos(_id, _target.Position);
+        if (persist) Config.SaveWindowPos(id, target.Position);
         Placed?.Invoke();
     }
 
     internal void CycleBackgroundOpacity()
     {
-        if (_backgroundOpacityChanged == null) return;
-        _backgroundOpacityIndex = (_backgroundOpacityIndex + 1) % BackgroundOpacityLevels.Length;
-        _backgroundOpacityChanged(BackgroundOpacityLevels[_backgroundOpacityIndex]);
+        if (backgroundOpacityChanged == null) return;
+        backgroundOpacityIndex = (backgroundOpacityIndex + 1) % BackgroundOpacityLevels.Length;
+        backgroundOpacityChanged(BackgroundOpacityLevels[backgroundOpacityIndex]);
     }
 
     private void BeginResize(Vector2 mouse)
     {
         if (Frozen) return;
-        _resizing = true;
-        _resizeOriginMouse = mouse;
-        _resizeOriginSize = _target.Size;
-        _resizeOriginPosition = _target.Position;
+        resizing = true;
+        resizeOriginMouse = mouse;
+        resizeOriginSize = target.Size;
+        resizeOriginPosition = target.Position;
     }
 
     private void EndResize()
     {
-        if (!_resizing) return;
-        _resizing = false;
-        _userPlaced = true;
-        if (!_persist) return;
-        if (_anchor == null) Config.SaveWindowPos(_id, _target.Position);
-        Config.SaveWindowSize(_id, _target.Size);
+        if (!resizing) return;
+        resizing = false;
+        userPlaced = true;
+        if (!persist) return;
+        if (anchor == null) Config.SaveWindowPos(id, target.Position);
+        Config.SaveWindowSize(id, target.Size);
     }
 
     private Vector2 ClampSize(Vector2 requested, bool fromLeft = false, bool fromTop = false)
     {
         var vp = GetViewport().GetVisibleRect().Size;
-        float minX = Mathf.Max(120f, _minimumSize.X);
-        float minY = Mathf.Max(80f, _minimumSize.Y);
-        var limit = HudResize.Limit(vp, _target.Position, new Rect2(_resizeOriginPosition, _resizeOriginSize), fromLeft, fromTop);
+        float minX = Mathf.Max(120f, minimumSize.X);
+        float minY = Mathf.Max(80f, minimumSize.Y);
+        var limit = HudResize.Limit(vp, target.Position, new Rect2(resizeOriginPosition, resizeOriginSize), fromLeft, fromTop);
         float maxX = Mathf.Max(minX, limit.X);
         float maxY = Mathf.Max(minY, limit.Y);
         if (MaximumViewportShare.X > 0f) maxX = Mathf.Max(minX, Mathf.Min(maxX, vp.X * MaximumViewportShare.X));
@@ -457,16 +448,16 @@ public sealed partial class HudLayout : Node
 
     private void ClampOnScreen()
     {
-        if (_anchor != null || !GodotObject.IsInstanceValid(_target) || !_target.IsInsideTree()) return;
+        if (anchor != null || !GodotObject.IsInstanceValid(target) || !target.IsInsideTree()) return;
         var vp = GetViewport().GetVisibleRect().Size;
-        var min = _target.GetCombinedMinimumSize();
+        var min = target.GetCombinedMinimumSize();
         var size = new Vector2(
-            Mathf.Max(_target.Size.X, min.X),
-            Mathf.Max(_target.Size.Y, min.Y)) * _target.Scale;
-        var p = _target.Position;
+            Mathf.Max(target.Size.X, min.X),
+            Mathf.Max(target.Size.Y, min.Y)) * target.Scale;
+        var p = target.Position;
         p.X = Mathf.Clamp(p.X, 0f, Mathf.Max(0f, vp.X - size.X));
         p.Y = Mathf.Clamp(p.Y, 0f, Mathf.Max(0f, vp.Y - size.Y));
-        _target.Position = p;
+        target.Position = p;
     }
 
     private sealed partial class ResizeCorner : Control
@@ -482,14 +473,14 @@ public sealed partial class HudLayout : Node
             new[] { new Vector2(19, 22), new Vector2(22, 19) },
         };
 
-        private readonly HudLayout _owner;
-        private readonly Corner _placement;
-        private bool _hot;
+        private readonly HudLayout owner;
+        private readonly Corner placement;
+        private bool hot;
 
         public ResizeCorner(HudLayout owner, Corner placement)
         {
-            _owner = owner;
-            _placement = placement;
+            this.owner = owner;
+            this.placement = placement;
             CustomMinimumSize = new Vector2(GripSize, GripSize);
             Size = CustomMinimumSize;
             MouseFilter = MouseFilterEnum.Stop;
@@ -498,38 +489,38 @@ public sealed partial class HudLayout : Node
                 : CursorShape.Fdiagsize;
             TooltipText = "Drag to resize";
             ZIndex = 100;
-            MouseEntered += () => { _hot = true; QueueRedraw(); };
-            MouseExited += () => { _hot = false; QueueRedraw(); };
+            MouseEntered += () => { hot = true; QueueRedraw(); };
+            MouseExited += () => { hot = false; QueueRedraw(); };
         }
 
         public override void _Draw()
         {
             Vector2 Mirror(Vector2 p) => new(
-                _placement is Corner.TopRight or Corner.BottomRight ? p.X : Size.X - p.X,
-                _placement is Corner.BottomLeft or Corner.BottomRight ? p.Y : Size.Y - p.Y);
+                placement is Corner.TopRight or Corner.BottomRight ? p.X : Size.X - p.X,
+                placement is Corner.BottomLeft or Corner.BottomRight ? p.Y : Size.Y - p.Y);
             var shadeOffset = new Vector2(1, 1);
             foreach (var stroke in Strokes)
                 DrawLine(Mirror(stroke[0]) + shadeOffset, Mirror(stroke[1]) + shadeOffset, Shade, StrokeWidth);
             foreach (var stroke in Strokes)
-                DrawLine(Mirror(stroke[0]), Mirror(stroke[1]), _hot ? UiTheme.GoldBright : Stroke, StrokeWidth);
+                DrawLine(Mirror(stroke[0]), Mirror(stroke[1]), hot ? UiTheme.GoldBright : Stroke, StrokeWidth);
         }
 
         public override void _GuiInput(InputEvent ev)
         {
             if (ev is not InputEventMouseButton { ButtonIndex: MouseButton.Left } mb) return;
-            if (mb.Pressed) _owner.BeginResize(mb.GlobalPosition);
-            else _owner.EndResize();
+            if (mb.Pressed) owner.BeginResize(mb.GlobalPosition);
+            else owner.EndResize();
             AcceptEvent();
         }
     }
 
     private sealed partial class MoveGrip : Control
     {
-        private readonly HudLayout _owner;
+        private readonly HudLayout owner;
 
         public MoveGrip(HudLayout owner)
         {
-            _owner = owner;
+            this.owner = owner;
             CustomMinimumSize = new Vector2(18, 18);
             Size = CustomMinimumSize;
             Visible = false;
@@ -555,8 +546,8 @@ public sealed partial class HudLayout : Node
         public override void _GuiInput(InputEvent ev)
         {
             if (ev is not InputEventMouseButton { ButtonIndex: MouseButton.Left } mb) return;
-            if (mb.Pressed) _owner.BeginDrag(mb.GlobalPosition);
-            else _owner.EndDrag();
+            if (mb.Pressed) owner.BeginDrag(mb.GlobalPosition);
+            else owner.EndDrag();
             AcceptEvent();
         }
     }

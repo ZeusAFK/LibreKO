@@ -73,12 +73,12 @@ public class AchievementData
     public string Npcs { get; set; } = string.Empty;
     public string Requires { get; set; } = string.Empty;
 
-    private int[]? _npcIds;
-    private int[]? _requiredIds;
+    private int[]? npcIds;
+    private int[]? requiredIds;
 
-    public int[] NpcIds => _npcIds ??= ParseIds(Npcs);
+    public int[] NpcIds => npcIds ??= ParseIds(Npcs);
 
-    public int[] RequiredIds => _requiredIds ??= ParseIds(Requires);
+    public int[] RequiredIds => requiredIds ??= ParseIds(Requires);
 
     public WarAchievementKind WarKind => (WarAchievementKind)Kind;
 

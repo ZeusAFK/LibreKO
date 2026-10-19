@@ -18,7 +18,7 @@ public class ClanBattleWireTests
     {
         var p = Knights(w =>
         {
-            w.WriteByte(Net.ClanBattleChallenged);
+            w.WriteByte((byte)ClanBattleResult.Challenged);
             w.WriteInt(1234);
             w.WriteUShort(0);
             w.WriteString("Alpha");
@@ -26,7 +26,7 @@ public class ClanBattleWireTests
 
         var reply = ClanBattleWire.ReadResult(p);
 
-        Assert.Equal(new ClanBattleWire.ResultReply(Net.ClanBattleChallenged, 1234, "Alpha"), reply);
+        Assert.Equal(new ClanBattleWire.ResultReply((byte)ClanBattleResult.Challenged, 1234, "Alpha"), reply);
     }
 
     [Fact]
@@ -42,14 +42,14 @@ public class ClanBattleWireTests
     {
         var surrendered = Knights(w =>
         {
-            w.WriteByte(Net.ClanBattleTheySurrendered);
+            w.WriteByte((byte)ClanBattleEnd.TheySurrendered);
             w.WriteShort(11);
             w.WriteUShort(0);
             w.WriteString("Doves");
         });
-        var cleared = Knights(w => w.WriteByte(Net.ClanBattleCleared));
+        var cleared = Knights(w => w.WriteByte((byte)ClanBattleEnd.Cleared));
 
-        Assert.Equal(new ClanBattleWire.EndReply(Net.ClanBattleTheySurrendered, "Doves"), ClanBattleWire.ReadEnd(surrendered));
-        Assert.Equal(new ClanBattleWire.EndReply(Net.ClanBattleCleared, ""), ClanBattleWire.ReadEnd(cleared));
+        Assert.Equal(new ClanBattleWire.EndReply(ClanBattleEnd.TheySurrendered, "Doves"), ClanBattleWire.ReadEnd(surrendered));
+        Assert.Equal(new ClanBattleWire.EndReply(ClanBattleEnd.Cleared, ""), ClanBattleWire.ReadEnd(cleared));
     }
 }

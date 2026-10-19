@@ -603,6 +603,10 @@ public class AdminPacketCoordinator(
                 await HandleKickAsync(session, arg);
                 break;
 
+            case "forcerename":
+                await HandleForceRenameAsync(session, arg);
+                break;
+
             case "kill":
                 await HandleKillAsync(session, arg);
                 break;
@@ -770,6 +774,29 @@ public class AdminPacketCoordinator(
         await RemoveFromServerAsync(target, AccountKickCode.RemovedByGameMaster);
         await SendNoticeAsync(session, $"Kicked {target.Name}.");
         logger.LogInformation("GM {Gm} kicked {Target}", session.Name, target.Name);
+    }
+
+    private async Task HandleForceRenameAsync(UserSession session, string arg)
+    {
+        if (string.IsNullOrWhiteSpace(arg))
+        {
+            await SendNoticeAsync(session, "Usage: +forcerename <name>");
+            return;
+        }
+
+        using var scope = serviceProvider.CreateScope();
+        var characterRepo = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
+        var character = await characterRepo.GetByName(arg.Trim());
+        if (character == null)
+        {
+            await SendNoticeAsync(session, $"Player not found: {arg}");
+            return;
+        }
+
+        character.NameChangeRequired = true;
+        await characterRepo.UpdateAsync(character);
+        await SendNoticeAsync(session, $"{character.Name} must choose a new name at character selection.");
+        logger.LogInformation("GM {Gm} required a new name for {Target}", session.Name, character.Name);
     }
 
     private async Task HandleKillAsync(UserSession session, string arg)

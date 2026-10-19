@@ -18,7 +18,7 @@ public class CharacterStatePersister(
     IPetService petService,
     ILogger<CharacterStatePersister> logger) : ICharacterStatePersister
 {
-    private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+    private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
     // Quest-state saves are fired on every quest milestone, which a misbehaving or
     // spamming client can trigger dozens of times per second. To stop that flooding
@@ -26,8 +26,8 @@ public class CharacterStatePersister(
     // collapse into a single in-flight save plus one pending re-save) and the total
     // number of concurrent quest writes is capped server-wide.
     private const int MaxConcurrentQuestSaves = 8;
-    private readonly SemaphoreSlim _questSaveGate = new(MaxConcurrentQuestSaves);
-    private readonly ConcurrentDictionary<int, QuestSaveSlot> _questSaveSlots = new();
+    private readonly SemaphoreSlim questSaveGate = new(MaxConcurrentQuestSaves);
+    private readonly ConcurrentDictionary<int, QuestSaveSlot> questSaveSlots = new();
 
     private sealed class QuestSaveSlot
     {
@@ -54,7 +54,7 @@ public class CharacterStatePersister(
 
     private async Task<bool> SaveUnderGateAsync(UserSession session)
     {
-        using var scope = _scopeFactory.CreateScope();
+        using var scope = scopeFactory.CreateScope();
         var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
         var warehouseRepository = scope.ServiceProvider.GetRequiredService<IWarehouseRepository>();
         var dailyOpRepository = scope.ServiceProvider.GetRequiredService<IUserDailyOpRepository>();
@@ -88,7 +88,7 @@ public class CharacterStatePersister(
 
     public async Task SetOnlineStateAsync(int characterId, bool isOnline, CancellationToken cancellationToken = default)
     {
-        using var scope = _scopeFactory.CreateScope();
+        using var scope = scopeFactory.CreateScope();
         var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
         var character = await characterRepository.GetById(characterId);
         if (character == null)
@@ -105,7 +105,7 @@ public class CharacterStatePersister(
         if (session.IsBot)
             return Task.CompletedTask;
 
-        var slot = _questSaveSlots.GetOrAdd(session.CharacterId, static _ => new QuestSaveSlot());
+        var slot = questSaveSlots.GetOrAdd(session.CharacterId, static _ => new QuestSaveSlot());
         lock (slot)
         {
             slot.Session = session;
@@ -136,7 +136,7 @@ public class CharacterStatePersister(
                 session = slot.Session;
             }
 
-            await _questSaveGate.WaitAsync();
+            await questSaveGate.WaitAsync();
             try
             {
                 await PersistQuestBlobAsync(session);
@@ -147,14 +147,14 @@ public class CharacterStatePersister(
             }
             finally
             {
-                _questSaveGate.Release();
+                questSaveGate.Release();
             }
         }
     }
 
     private async Task PersistQuestBlobAsync(UserSession session)
     {
-        using var scope = _scopeFactory.CreateScope();
+        using var scope = scopeFactory.CreateScope();
         var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
         // Direct single-column UPDATE — no full character row read or rewrite.
         await characterRepository.UpdateQuestDataAsync(session.CharacterId, session.SerializeQuestData());

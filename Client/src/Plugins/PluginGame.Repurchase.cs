@@ -21,17 +21,17 @@ public interface IGameRepurchase
 
 public sealed partial class PluginGame
 {
-    public IGameRepurchase Repurchase => _repurchase;
+    public IGameRepurchase Repurchase => repurchase;
 
-    private readonly RepurchaseProxy _repurchase = new();
+    private readonly RepurchaseProxy repurchase = new();
 
-    internal void AttachRepurchase(IGameRepurchase repurchase)
+    internal void AttachRepurchase(IGameRepurchase repurchaseSource)
     {
-        _repurchase.Source = repurchase;
+        repurchase.Source = repurchaseSource;
         RaiseRepurchase();
     }
 
-    internal void RaiseRepurchase() => _repurchase.Raise();
+    internal void RaiseRepurchase() => repurchase.Raise();
 
     private sealed class RepurchaseProxy : IGameRepurchase
     {

@@ -9,7 +9,7 @@ public enum WarehouseSubOpcode : byte
     InventoryMove = 5,
     Refresh = 6,
     ItemLost = 7,
-    Close = 16,
+    Request = 16,
 }
 
 public enum ClanWarehouseResult : byte

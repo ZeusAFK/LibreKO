@@ -85,23 +85,23 @@ public static class ChatItemLink
 
 public sealed class ChatLinkDraft
 {
-    private int _itemId;
-    private int _start;
-    private string _visible = "";
+    private int itemId;
+    private int start;
+    private string visible = "";
 
-    public bool Active => _itemId != 0;
+    public bool Active => itemId != 0;
 
-    public int WireExtra => Active ? ChatItemLink.Token(_itemId).Length - _visible.Length : 0;
+    public int WireExtra => Active ? ChatItemLink.Token(itemId).Length - visible.Length : 0;
 
     public (string Text, int Caret) Insert(string text, int caret, int itemId, string name)
     {
         if (Active || itemId <= 0 || itemId == ChatItemLink.RefusedItem) return (text, caret);
         caret = Math.Clamp(caret, 0, text.Length);
-        _itemId = itemId;
-        _start = caret;
-        _visible = $"[{name}]";
-        string result = text[..caret] + _visible + text[caret..];
-        return (result, caret + _visible.Length);
+        this.itemId = itemId;
+        start = caret;
+        visible = $"[{name}]";
+        string result = text[..caret] + visible + text[caret..];
+        return (result, caret + visible.Length);
     }
 
     public void TextChanged(string oldText, string newText)
@@ -114,28 +114,28 @@ public sealed class ChatLinkDraft
         while (suffix < shortest - prefix
                && oldText[oldText.Length - 1 - suffix] == newText[newText.Length - 1 - suffix]) suffix++;
         int editEnd = oldText.Length - suffix;
-        int spanEnd = _start + _visible.Length;
+        int spanEnd = start + visible.Length;
 
-        if (editEnd <= _start) _start += newText.Length - oldText.Length;
+        if (editEnd <= start) start += newText.Length - oldText.Length;
         else if (prefix < spanEnd) Clear();
 
-        if (Active && (_start < 0 || _start + _visible.Length > newText.Length
-                       || string.CompareOrdinal(newText, _start, _visible, 0, _visible.Length) != 0))
+        if (Active && (start < 0 || start + visible.Length > newText.Length
+                       || string.CompareOrdinal(newText, start, visible, 0, visible.Length) != 0))
             Clear();
     }
 
     public string ToWire(string text)
     {
-        if (!Active || _start + _visible.Length > text.Length
-            || string.CompareOrdinal(text, _start, _visible, 0, _visible.Length) != 0)
+        if (!Active || start + visible.Length > text.Length
+            || string.CompareOrdinal(text, start, visible, 0, visible.Length) != 0)
             return text;
-        return text[.._start] + ChatItemLink.Token(_itemId) + text[(_start + _visible.Length)..];
+        return text[..start] + ChatItemLink.Token(itemId) + text[(start + visible.Length)..];
     }
 
     public void Clear()
     {
-        _itemId = 0;
-        _start = 0;
-        _visible = "";
+        itemId = 0;
+        start = 0;
+        visible = "";
     }
 }

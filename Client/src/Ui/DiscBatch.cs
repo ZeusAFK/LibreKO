@@ -16,16 +16,16 @@ public sealed class DiscBatch
     private static readonly float[] RimCos = Rim(MathF.Cos);
     private static readonly float[] RimSin = Rim(MathF.Sin);
 
-    private Vector2[] _points = new Vector2[VerticesPerDisc * InitialDiscs];
-    private Color[] _colors = new Color[VerticesPerDisc * InitialDiscs];
-    private int[] _indices = new int[IndicesPerDisc * InitialDiscs];
-    private int _indexed;
+    private Vector2[] points = new Vector2[VerticesPerDisc * InitialDiscs];
+    private Color[] colors = new Color[VerticesPerDisc * InitialDiscs];
+    private int[] indices = new int[IndicesPerDisc * InitialDiscs];
+    private int indexed;
 
     public int Count { get; private set; }
 
-    public ReadOnlySpan<Vector2> Points => _points.AsSpan(0, Count * VerticesPerDisc);
-    public ReadOnlySpan<Color> Colors => _colors.AsSpan(0, Count * VerticesPerDisc);
-    public ReadOnlySpan<int> Indices => _indices.AsSpan(0, Count * IndicesPerDisc);
+    public ReadOnlySpan<Vector2> Points => points.AsSpan(0, Count * VerticesPerDisc);
+    public ReadOnlySpan<Color> Colors => colors.AsSpan(0, Count * VerticesPerDisc);
+    public ReadOnlySpan<int> Indices => indices.AsSpan(0, Count * IndicesPerDisc);
 
     private static float[] Rim(Func<float, float> wave)
     {
@@ -37,14 +37,14 @@ public sealed class DiscBatch
 
     public void Add(Vector2 centre, float radius, Color color)
     {
-        if ((Count + 1) * VerticesPerDisc > _points.Length) Grow();
+        if ((Count + 1) * VerticesPerDisc > points.Length) Grow();
         int first = Count * VerticesPerDisc;
         for (int i = 0; i <= Segments; i++)
-            _points[first + i] = new Vector2(RimCos[i] * radius + centre.X, RimSin[i] * radius + centre.Y);
-        _points[first + CentreVertex] = centre;
-        _colors.AsSpan(first, VerticesPerDisc).Fill(color);
+            points[first + i] = new Vector2(RimCos[i] * radius + centre.X, RimSin[i] * radius + centre.Y);
+        points[first + CentreVertex] = centre;
+        colors.AsSpan(first, VerticesPerDisc).Fill(color);
         Count++;
-        for (; _indexed < Count; _indexed++) Index(_indexed);
+        for (; indexed < Count; indexed++) Index(indexed);
     }
 
     public void Clear() => Count = 0;
@@ -63,16 +63,16 @@ public sealed class DiscBatch
         int at = disc * IndicesPerDisc;
         for (int i = 0; i < Segments; i++, at += IndicesPerTriangle)
         {
-            _indices[at] = first + CentreVertex;
-            _indices[at + 1] = first + i;
-            _indices[at + 2] = first + i + 1;
+            indices[at] = first + CentreVertex;
+            indices[at + 1] = first + i;
+            indices[at + 2] = first + i + 1;
         }
     }
 
     private void Grow()
     {
-        Array.Resize(ref _points, _points.Length * 2);
-        Array.Resize(ref _colors, _colors.Length * 2);
-        Array.Resize(ref _indices, _indices.Length * 2);
+        Array.Resize(ref points, points.Length * 2);
+        Array.Resize(ref colors, colors.Length * 2);
+        Array.Resize(ref indices, indices.Length * 2);
     }
 }

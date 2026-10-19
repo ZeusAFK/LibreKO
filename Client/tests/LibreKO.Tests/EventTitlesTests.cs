@@ -10,7 +10,7 @@ public class EventTitlesTests
     public void AShownTitleCarriesItsMessage()
     {
         var p = new Packet(GameOpcodes.GS_NOTICE);
-        p.WriteByte(EventTitleNotice.Shown);
+        p.WriteByte((byte)EventTitleSubOpcode.Shown);
         p.WriteString("Exp Event");
         p.WriteString("Earn 50 percent extra EXP.");
         p.ResetOffset();
@@ -22,7 +22,7 @@ public class EventTitlesTests
     public void ARemovalNamesOnlyTheTitle()
     {
         var p = new Packet(GameOpcodes.GS_NOTICE);
-        p.WriteByte(EventTitleNotice.Gone);
+        p.WriteByte((byte)EventTitleSubOpcode.Removed);
         p.WriteString("Exp Event");
         p.ResetOffset();
 
@@ -33,7 +33,7 @@ public class EventTitlesTests
     public void TheEffectVariantIsShownAndItsKindByteConsumed()
     {
         var p = new Packet(GameOpcodes.GS_NOTICE);
-        p.WriteByte(EventTitleNotice.ShownWithEffect);
+        p.WriteByte((byte)EventTitleSubOpcode.ShownWithEffect);
         p.WriteString("Flash");
         p.WriteString("EXP +10%");
         p.WriteByte(2);
@@ -66,7 +66,7 @@ public class EventTitlesTests
         Assert.Equal(1, titles.ShownCount);
         Assert.True(titles.HasToggle);
 
-        titles.Expanded = true;
+        titles.Expand();
         Assert.Equal(2, titles.ShownCount);
 
         Assert.True(titles.Remove("Exp Event"));

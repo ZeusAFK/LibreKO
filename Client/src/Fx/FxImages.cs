@@ -12,13 +12,13 @@ internal static class FxImages
     private const uint CtexWebp = 2;
     private static readonly byte[] CtexMagic = { (byte)'G', (byte)'S', (byte)'T', (byte)'2' };
 
-    private static readonly Dictionary<ulong, Image> _derived = Shutdown.Track(new Dictionary<ulong, Image>());
+    private static readonly Dictionary<ulong, Image> derived = Shutdown.Track(new Dictionary<ulong, Image>());
 
-    internal static void Remember(Texture2D texture, Image image) => _derived[texture.GetRid().Id] = image;
+    internal static void Remember(Texture2D texture, Image image) => derived[texture.GetRid().Id] = image;
 
     internal static Image? Read(Texture2D texture)
     {
-        if (_derived.TryGetValue(texture.GetRid().Id, out var derived)) return (Image)derived.Duplicate();
+        if (FxImages.derived.TryGetValue(texture.GetRid().Id, out var derivedImage)) return (Image)derivedImage.Duplicate();
         if (texture is CompressedTexture2D compressed && FromCtex(compressed.LoadPath) is { } decoded) return decoded;
         return texture.GetImage();
     }

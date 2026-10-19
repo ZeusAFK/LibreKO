@@ -2,7 +2,7 @@
 
 public readonly struct ChatLine
 {
-    public readonly byte Type;
+    public readonly ChatType Type;
     public readonly int Nation;
     public readonly int CharId;
     public readonly string Name;
@@ -11,6 +11,6 @@ public readonly struct ChatLine
 
     public ChatLine(byte type, int nation, int charId, string name, string message, bool isGm)
     {
-        Type = type; Nation = nation; CharId = charId; Name = name; Message = message; IsGm = isGm;
+        Type = (ChatType)type; Nation = nation; CharId = charId; Name = name; Message = message; IsGm = isGm;
     }
 }

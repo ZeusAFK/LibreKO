@@ -76,16 +76,16 @@ public class DailyRankTests
 
     private sealed record BoardReply(byte Board, int MyPlace, int? Change, List<string> Names);
 
-    private readonly SessionManager _sessions = new();
-    private readonly FakeRepository _repository = new();
-    private readonly DailyRankService _service;
+    private readonly SessionManager sessions = new();
+    private readonly FakeRepository repository = new();
+    private readonly DailyRankService service;
 
     public DailyRankTests()
     {
-        var provider = new ServiceCollection().AddSingleton<IDailyRankRepository>(_repository).BuildServiceProvider();
-        _service = new DailyRankService(_sessions, provider.GetRequiredService<IServiceScopeFactory>(),
+        var provider = new ServiceCollection().AddSingleton<IDailyRankRepository>(repository).BuildServiceProvider();
+        service = new DailyRankService(sessions, provider.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<DailyRankService>.Instance);
-        _repository.Names = new Dictionary<int, string> { [1] = "Alpha", [2] = "Bravo", [3] = "Charlie" };
+        repository.Names = new Dictionary<int, string> { [1] = "Alpha", [2] = "Bravo", [3] = "Charlie" };
     }
 
     private Player Join(int id, short classId = Warrior, short clan = 0, bool gm = false)
@@ -94,8 +94,8 @@ public class DailyRankTests
         client.Id.Returns(Guid.NewGuid());
         var sent = new List<Packet>();
         client.SendPacket(Arg.Do<Packet>(p => sent.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, id, id);
-        session.Name = _repository.Names.GetValueOrDefault(id, $"Player{id}");
+        var session = sessions.CreateSession(client, id, id);
+        session.Name = repository.Names.GetValueOrDefault(id, $"Player{id}");
         session.Class = classId;
         session.KnightsId = clan;
         session.Nation = AccountNation.Karus;
@@ -130,7 +130,7 @@ public class DailyRankTests
     private async Task<BoardReply> AskAsync(Player player, DailyRankBoard board)
     {
         player.Sent.Clear();
-        await _service.HandleAsync(player.Client, Request((byte)board));
+        await service.HandleAsync(player.Client, Request((byte)board));
         player.Sent.Should().ContainSingle();
         return Read(player.Sent[0]);
     }
@@ -184,15 +184,15 @@ public class DailyRankTests
     [Fact]
     public async Task ARollOverRanksAgainstYesterdayAndTellsEveryoneToDropTheirLists()
     {
-        _repository.Merchant = [1, 2];
-        await _service.LoadAsync(Day1);
+        repository.Merchant = [1, 2];
+        await service.LoadAsync(Day1);
         var alpha = Join(1);
         var bravo = Join(2);
         (await AskAsync(alpha, DailyRankBoard.GrandMerchant)).Should()
             .BeEquivalentTo(new BoardReply(0, 1, DailyRankPacketWriter.NewEntryChange, ["Alpha", "Bravo"]));
 
-        _repository.Merchant = [2, 1, 3];
-        await _service.RollOverAsync(Day2);
+        repository.Merchant = [2, 1, 3];
+        await service.RollOverAsync(Day2);
 
         bravo.Sent.Should().ContainSingle();
         bravo.Sent[0].ResetOffset();
@@ -204,23 +204,23 @@ public class DailyRankTests
     [Fact]
     public async Task ASecondRankingOnTheSameDayStillComparesWithYesterday()
     {
-        _repository.Merchant = [1, 2];
-        await _service.LoadAsync(Day1);
-        _repository.Merchant = [2, 1];
-        await _service.RollOverAsync(Day2);
-        await _service.RollOverAsync(Day2);
+        repository.Merchant = [1, 2];
+        await service.LoadAsync(Day1);
+        repository.Merchant = [2, 1];
+        await service.RollOverAsync(Day2);
+        await service.RollOverAsync(Day2);
 
-        _repository.Places.Single(p => p.SubjectId == 2).PreviousPlace.Should().Be(2);
+        repository.Places.Single(p => p.SubjectId == 2).PreviousPlace.Should().Be(2);
         (await AskAsync(Join(2), DailyRankBoard.GrandMerchant)).Change.Should().Be(1);
     }
 
     [Fact]
     public async Task StartingOnTheSameDayReusesTheStoredPlaces()
     {
-        _repository.Merchant = [1, 2];
-        await _service.LoadAsync(Day2);
-        _repository.Merchant = [2, 1];
-        await _service.LoadAsync(Day2);
+        repository.Merchant = [1, 2];
+        await service.LoadAsync(Day2);
+        repository.Merchant = [2, 1];
+        await service.LoadAsync(Day2);
 
         (await AskAsync(Join(1), DailyRankBoard.GrandMerchant)).MyPlace.Should().Be(1);
     }
@@ -228,24 +228,24 @@ public class DailyRankTests
     [Fact]
     public async Task TheCountersResetWhenTheMonthTurns()
     {
-        _repository.Merchant = [1];
-        await _service.LoadAsync(new DateOnly(2026, 9, 30));
-        await _service.RollOverAsync(new DateOnly(2026, 10, 1));
-        await _service.RollOverAsync(new DateOnly(2026, 10, 2));
+        repository.Merchant = [1];
+        await service.LoadAsync(new DateOnly(2026, 9, 30));
+        await service.RollOverAsync(new DateOnly(2026, 10, 1));
+        await service.RollOverAsync(new DateOnly(2026, 10, 2));
 
-        _repository.Resets.Should().Be(1);
+        repository.Resets.Should().Be(1);
     }
 
     [Fact]
     public async Task TheDrakiBoardListsOnlyTheRequestersClassLive()
     {
-        _repository.Draki =
+        repository.Draki =
         [
             new DrakiClimber(1, "Alpha", Warrior, 9, 2),
             new DrakiClimber(2, "Bravo", Mage, 8, 5),
             new DrakiClimber(3, "Charlie", Mage, 7, 1),
         ];
-        await _service.LoadAsync(Day2);
+        await service.LoadAsync(Day2);
 
         (await AskAsync(Join(3, Mage), DailyRankBoard.ConquerorOfDraki)).Should()
             .BeEquivalentTo(new BoardReply(5, 2, null, ["Bravo", "Charlie"]));
@@ -254,9 +254,9 @@ public class DailyRankTests
     [Fact]
     public async Task TheClanBoardNamesClansAndPlacesMyClan()
     {
-        _sessions.Knights.AddClan(Wolves, new KnightsEntity { Id = Wolves, Name = "Wolves", Points = 300 });
-        _sessions.Knights.AddClan(Bears, new KnightsEntity { Id = Bears, Name = "Bears", Points = 500 });
-        await _service.LoadAsync(Day2);
+        sessions.Knights.AddClan(Wolves, new KnightsEntity { Id = Wolves, Name = "Wolves", Points = 300 });
+        sessions.Knights.AddClan(Bears, new KnightsEntity { Id = Bears, Name = "Bears", Points = 500 });
+        await service.LoadAsync(Day2);
 
         (await AskAsync(Join(1, clan: Wolves), DailyRankBoard.KnightsOfFelankor)).Should()
             .BeEquivalentTo(new BoardReply(8, 2, DailyRankPacketWriter.NewEntryChange, ["Bears", "Wolves"]));
@@ -266,7 +266,7 @@ public class DailyRankTests
     [Fact]
     public async Task BoardsWithoutAFeedAnswerEmpty()
     {
-        await _service.LoadAsync(Day2);
+        await service.LoadAsync(Day2);
 
         (await AskAsync(Join(1), DailyRankBoard.HeroOfChaos)).Should()
             .BeEquivalentTo(new BoardReply(2, 0, 0, []));
@@ -275,10 +275,10 @@ public class DailyRankTests
     [Fact]
     public async Task ASecondRequestInsideASecondIsDropped()
     {
-        await _service.LoadAsync(Day2);
+        await service.LoadAsync(Day2);
         var alpha = Join(1);
-        await _service.HandleAsync(alpha.Client, Request((byte)DailyRankBoard.GrandMerchant));
-        await _service.HandleAsync(alpha.Client, Request((byte)DailyRankBoard.KnightOfAdonis));
+        await service.HandleAsync(alpha.Client, Request((byte)DailyRankBoard.GrandMerchant));
+        await service.HandleAsync(alpha.Client, Request((byte)DailyRankBoard.KnightOfAdonis));
 
         alpha.Sent.Should().ContainSingle();
     }
@@ -286,9 +286,9 @@ public class DailyRankTests
     [Fact]
     public async Task UnknownBoardsGetNoAnswer()
     {
-        await _service.LoadAsync(Day2);
+        await service.LoadAsync(Day2);
         var alpha = Join(1);
-        await _service.HandleAsync(alpha.Client, Request(3));
+        await service.HandleAsync(alpha.Client, Request(3));
 
         alpha.Sent.Should().BeEmpty();
     }
@@ -296,9 +296,9 @@ public class DailyRankTests
     [Fact]
     public async Task GameMasterSalesAreNotCounted()
     {
-        await _service.CountMerchantSaleAsync(Join(1, gm: true).Session, 500);
-        await _service.CountMerchantSaleAsync(Join(2).Session, 700);
+        await service.CountMerchantSaleAsync(Join(1, gm: true).Session, 500);
+        await service.CountMerchantSaleAsync(Join(2).Session, 700);
 
-        _repository.MerchantGold.Should().Equal(new Dictionary<int, long> { [2] = 700 });
+        repository.MerchantGold.Should().Equal(new Dictionary<int, long> { [2] = 700 });
     }
 }

@@ -22,16 +22,16 @@ public sealed class ChatTargetPacketWriter
 
     public const int MaxNameLength = 20;
 
-    private byte _type;
-    private ChatTargetResult _result;
-    private string _targetName = string.Empty;
-    private byte _trailingFlag;
+    private byte type;
+    private ChatTargetResult result;
+    private string targetName = string.Empty;
+    private byte trailingFlag;
 
     private static ChatTargetPacketWriter Whisper(ChatTargetResult result, string targetName) => new()
     {
-        _type = TypeWhisper,
-        _result = result,
-        _targetName = targetName,
+        type = TypeWhisper,
+        result = result,
+        targetName = targetName,
     };
 
     public static Packet WhisperConnected(string targetName) => Whisper(ChatTargetResult.Connected, targetName).Build();
@@ -51,19 +51,19 @@ public sealed class ChatTargetPacketWriter
     public static Packet ClanAdmissionRequestReceived(string targetName) => ClanAdmission(targetName, AdmissionRequestReceived).Build();
     private static ChatTargetPacketWriter ClanAdmission(string targetName, byte direction) => new()
     {
-        _type = TypeClanAdmission,
-        _result = ChatTargetResult.Connected,
-        _targetName = targetName,
-        _trailingFlag = direction,
+        type = TypeClanAdmission,
+        result = ChatTargetResult.Connected,
+        targetName = targetName,
+        trailingFlag = direction,
     };
 
     private Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_CHAT_TARGET);
-        packet.WriteByte(_type);
-        packet.WriteShort((short)_result);
-        packet.WriteString(_targetName);
-        packet.WriteByte(_trailingFlag);
+        packet.WriteByte(type);
+        packet.WriteShort((short)result);
+        packet.WriteString(targetName);
+        packet.WriteByte(trailingFlag);
         return packet;
     }
 }

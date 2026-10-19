@@ -11,14 +11,6 @@ public static class ItemUseRules
     public const int NonTradableText = 18200;
     public const int NonStorableText = WarehouseRules.NonStorableText;
 
-    private const int RaceQuest = ItemData.QuestItemRace;
-    private const int RaceNoTradeSellDestroy = 50;
-    private const int RaceNoTradeDestroy = 70;
-    private const int RaceNoTradeDestroyAlt = 71;
-    private const int RaceNoTradeSellStore = 73;
-    private const int RaceOneTimeTrade = 74;
-    private const int RaceNoTradeSellDestroyAlt = 76;
-    private const int RaceNoSale = 12;
     private const byte TradeLockedStateFirst = 16;
     private const byte TradeLockedStateLast = 18;
 
@@ -38,7 +30,8 @@ public static class ItemUseRules
     private static int TradeRefusal(int itemId, int race, byte state, bool timed)
     {
         if (ItemData.IsNoTradeId(itemId)
-            || race is RaceQuest or RaceNoTradeDestroy or RaceNoTradeDestroyAlt or RaceNoTradeSellStore
+            || race is ItemData.Race.Quest or ItemData.Race.NoTradeDestroy or ItemData.Race.NoTradeDestroyAlt
+                or ItemData.Race.NoTradeSellStore
             || state is >= TradeLockedStateFirst and <= TradeLockedStateLast)
             return CannotTradeText;
         return state switch
@@ -51,8 +44,9 @@ public static class ItemUseRules
 
     private static int SellRefusal(int itemId, int race, byte state, bool timed) =>
         ItemData.IsNoTradeId(itemId) || HeldBack(state) || timed
-        || race is RaceNoSale or RaceQuest or RaceNoTradeSellDestroy or RaceNoTradeDestroy or RaceNoTradeDestroyAlt
-            or RaceNoTradeSellStore or RaceOneTimeTrade or RaceNoTradeSellDestroyAlt
+        || race is ItemData.Race.NoSale or ItemData.Race.Quest or ItemData.Race.NoTradeSellDestroy
+            or ItemData.Race.NoTradeDestroy or ItemData.Race.NoTradeDestroyAlt or ItemData.Race.NoTradeSellStore
+            or ItemData.Race.OneTimeTrade or ItemData.Race.NoTradeSellDestroyAlt
             ? NonTradableText
             : Allowed;
 }

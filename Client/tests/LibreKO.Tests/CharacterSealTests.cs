@@ -58,7 +58,7 @@ public class CharacterSealTests
     public void TheSlotListReadsFourCharacterRecordsWithEmptySlots()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
-        p.WriteByte(CharacterSealWire.Succeeded);
+        p.WriteByte((byte)CharacterSealResult.Succeeded);
         WriteSlot(p, "Zeus", 1, 101, 60);
         WriteSlot(p, "", 0, 0, 0);
         WriteSlot(p, "Velkan", 1, 105, 70);
@@ -77,7 +77,7 @@ public class CharacterSealTests
     [Fact]
     public void ARefusedListCarriesItsCode()
     {
-        var list = CharacterSealWire.ReadList(Reply(CharacterSealWire.Failed, (byte)CharacterSeal.CodeTooSoon));
+        var list = CharacterSealWire.ReadList(Reply((byte)CharacterSealResult.Failed, (byte)CharacterSeal.CodeTooSoon));
         Assert.False(list.Ok);
         Assert.Equal(CharacterSeal.CodeTooSoon, list.Code);
     }
@@ -86,7 +86,7 @@ public class CharacterSealTests
     public void ASealedScrollBecomesARingWithItsSummary()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
-        p.WriteByte(CharacterSealWire.Succeeded);
+        p.WriteByte((byte)CharacterSealResult.Succeeded);
         p.WriteByte(3);
         p.WriteInt(Ring);
         p.WriteInt(11);
@@ -106,29 +106,29 @@ public class CharacterSealTests
     [Fact]
     public void SealRefusalsReadTheirCodeInBothShapes()
     {
-        var plain = CharacterSealWire.ReadSeal(Reply(CharacterSealWire.Failed, (byte)CharacterSeal.CodeWrongVaultPassword));
+        var plain = CharacterSealWire.ReadSeal(Reply((byte)CharacterSealResult.Failed, (byte)CharacterSeal.CodeWrongVaultPassword));
         Assert.Equal(CharacterSeal.WrongVaultPasswordText, CharacterSeal.SealRefusalText(plain.Result, plain.Code));
 
-        var extended = CharacterSealWire.ReadSeal(Reply(CharacterSealWire.Extended, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (short)CharacterSeal.RefusalBoundGear));
+        var extended = CharacterSealWire.ReadSeal(Reply((byte)CharacterSealResult.Extended, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (short)CharacterSeal.RefusalBoundGear));
         Assert.Equal(CharacterSeal.BoundGearText, CharacterSeal.SealRefusalText(extended.Result, extended.Code));
 
-        Assert.Equal(CharacterSeal.SealFailedText, CharacterSeal.SealRefusalText(CharacterSealWire.Failed, 1));
-        Assert.Equal(CharacterSeal.VoteWarningText, CharacterSeal.SealRefusalText(CharacterSealWire.Failed, CharacterSeal.CodeJuraidVotes));
-        Assert.Equal(CharacterSeal.SealFailedText, CharacterSeal.SealRefusalText(CharacterSealWire.Extended, -9));
+        Assert.Equal(CharacterSeal.SealFailedText, CharacterSeal.SealRefusalText(CharacterSealResult.Failed, 1));
+        Assert.Equal(CharacterSeal.VoteWarningText, CharacterSeal.SealRefusalText(CharacterSealResult.Failed, CharacterSeal.CodeJuraidVotes));
+        Assert.Equal(CharacterSeal.SealFailedText, CharacterSeal.SealRefusalText(CharacterSealResult.Extended, -9));
     }
 
     [Fact]
     public void AnUnsealNamesTheBagPositionToEmpty()
     {
-        Assert.Equal(new CharacterUnsealOutcome(1, 3), CharacterSealWire.ReadUnseal(Reply(CharacterSealWire.Succeeded, (byte)3, 11)));
-        Assert.Equal(new CharacterUnsealOutcome(0, -1), CharacterSealWire.ReadUnseal(Reply(CharacterSealWire.Failed, (byte)0)));
+        Assert.Equal(new CharacterUnsealOutcome(CharacterSealResult.Succeeded, 3), CharacterSealWire.ReadUnseal(Reply((byte)CharacterSealResult.Succeeded, (byte)3, 11)));
+        Assert.Equal(new CharacterUnsealOutcome(CharacterSealResult.Failed, -1), CharacterSealWire.ReadUnseal(Reply((byte)CharacterSealResult.Failed, (byte)0)));
     }
 
     [Fact]
     public void TheRingSheetReadsStatsSkillsAndFortyTwoItems()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
-        p.WriteByte(CharacterSealWire.Succeeded);
+        p.WriteByte((byte)CharacterSealResult.Succeeded);
         p.WriteSByteString("Velkan");
         p.WriteByte(1);
         p.WriteByte(1);
@@ -165,14 +165,14 @@ public class CharacterSealTests
 
     [Fact]
     public void ARefusedSheetReadsAsNothing() =>
-        Assert.Null(CharacterSealWire.ReadSheet(Reply(CharacterSealWire.Extended)));
+        Assert.Null(CharacterSealWire.ReadSheet(Reply((byte)CharacterSealResult.Extended)));
 
     [Fact]
     public void AchievementIdsAreCountedByBytes()
     {
-        var p = Reply(CharacterSealWire.Succeeded, 4, (ushort)101, (ushort)202);
+        var p = Reply((byte)CharacterSealResult.Succeeded, 4, (ushort)101, (ushort)202);
         Assert.Equal([101, 202], CharacterSealWire.ReadAchievements(p));
-        Assert.Empty(CharacterSealWire.ReadAchievements(Reply(CharacterSealWire.Succeeded, 0)));
+        Assert.Empty(CharacterSealWire.ReadAchievements(Reply((byte)CharacterSealResult.Succeeded, 0)));
     }
 
     [Fact]

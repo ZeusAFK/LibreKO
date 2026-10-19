@@ -8,14 +8,14 @@ public partial class SettingsPanel : CanvasLayer
 {
     private const int BindButtonWidth = 132;
 
-    private readonly Dictionary<KeyAction, Button> _bindButtons = new();
-    private readonly List<(BindGroup Group, string Label, Control Row)> _bindRows = new();
-    private readonly Dictionary<BindGroup, Control> _bindHeaders = new();
-    private KeyAction? _capturing;
-    private Key _heldModifier = Key.None;
-    private bool _comboAfterModifier;
-    private readonly HashSet<KeyAction> _taken = new();
-    private Label _bindNotice = null!;
+    private readonly Dictionary<KeyAction, Button> bindButtons = new();
+    private readonly List<(BindGroup Group, string Label, Control Row)> bindRows = new();
+    private readonly Dictionary<BindGroup, Control> bindHeaders = new();
+    private KeyAction? capturing;
+    private Key heldModifier = Key.None;
+    private bool comboAfterModifier;
+    private readonly HashSet<KeyAction> taken = new();
+    private Label bindNotice = null!;
     private static readonly Color TakenKeyColour = new("e0574a");
 
     private void BuildKeysTab(VBoxContainer vb)
@@ -30,10 +30,10 @@ public partial class SettingsPanel : CanvasLayer
         hint.AddThemeFontSizeOverride("font_size", 12);
         hint.AddThemeColorOverride("font_color", new Color(0.72f, 0.74f, 0.78f));
         vb.AddChild(hint);
-        _bindNotice = new Label { Visible = false, AutowrapMode = TextServer.AutowrapMode.WordSmart };
-        _bindNotice.AddThemeFontSizeOverride("font_size", 12);
-        _bindNotice.AddThemeColorOverride("font_color", TakenKeyColour);
-        vb.AddChild(_bindNotice);
+        bindNotice = new Label { Visible = false, AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        bindNotice.AddThemeFontSizeOverride("font_size", 12);
+        bindNotice.AddThemeColorOverride("font_color", TakenKeyColour);
+        vb.AddChild(bindNotice);
 
         var filter = new LineEdit { PlaceholderText = "Search actions…", Name = "bind_filter" };
         Ui.StyleField(filter);
@@ -47,11 +47,11 @@ public partial class SettingsPanel : CanvasLayer
             {
                 section = entry.Group;
                 var header = GroupHeader(entry.Group.ToString());
-                _bindHeaders[entry.Group] = header;
+                bindHeaders[entry.Group] = header;
                 vb.AddChild(header);
             }
             var row = BindRow(entry);
-            _bindRows.Add((entry.Group, entry.Label, row));
+            bindRows.Add((entry.Group, entry.Label, row));
             vb.AddChild(row);
         }
 
@@ -61,8 +61,8 @@ public partial class SettingsPanel : CanvasLayer
         {
             CancelCapture();
             KeyBinds.Reset();
-            _taken.Clear();
-            _bindNotice.Visible = false;
+            taken.Clear();
+            bindNotice.Visible = false;
             RefreshBindButtons();
         };
         vb.AddChild(reset);
@@ -100,7 +100,7 @@ public partial class SettingsPanel : CanvasLayer
             KeyBinds.Set(entry.Action, KeyChord.Unbound);
             RefreshBindButtons();
         };
-        _bindButtons[entry.Action] = button;
+        bindButtons[entry.Action] = button;
         row.AddChild(button);
         ShowBinding(entry.Action);
         return row;
@@ -110,7 +110,7 @@ public partial class SettingsPanel : CanvasLayer
     {
         string needle = text.Trim();
         var shown = new HashSet<BindGroup>();
-        foreach (var (group, label, row) in _bindRows)
+        foreach (var (group, label, row) in bindRows)
         {
             bool match = needle.Length == 0
                          || label.Contains(needle, StringComparison.OrdinalIgnoreCase)
@@ -118,60 +118,60 @@ public partial class SettingsPanel : CanvasLayer
             row.Visible = match;
             if (match) shown.Add(group);
         }
-        foreach (var (group, header) in _bindHeaders) header.Visible = shown.Contains(group);
+        foreach (var (group, header) in bindHeaders) header.Visible = shown.Contains(group);
     }
 
     private void BeginCapture(KeyAction action)
     {
         CancelCapture();
-        _capturing = action;
-        _heldModifier = Key.None;
-        _comboAfterModifier = false;
-        if (_bindButtons.TryGetValue(action, out var button))
+        capturing = action;
+        heldModifier = Key.None;
+        comboAfterModifier = false;
+        if (bindButtons.TryGetValue(action, out var button))
             button.Text = KeyBinds.IsHold(action) ? "Press a key or a modifier…" : "Press a key…";
     }
 
     private bool CaptureModifierRelease(InputEventKey key)
     {
-        if (_capturing is not { } action || key.Pressed || key.Keycode != _heldModifier) return false;
-        bool bare = !_comboAfterModifier && KeyBinds.IsHold(action);
-        _heldModifier = Key.None;
+        if (capturing is not { } action || key.Pressed || key.Keycode != heldModifier) return false;
+        bool bare = !comboAfterModifier && KeyBinds.IsHold(action);
+        heldModifier = Key.None;
         if (!bare) return true;
-        _capturing = null;
+        capturing = null;
         Bind(action, new KeyChord(key.Keycode, false, false, false));
         return true;
     }
 
     private void Bind(KeyAction action, KeyChord chord)
     {
-        var taken = KeyBinds.Set(action, chord);
-        _taken.Remove(action);
-        foreach (var other in taken) _taken.Add(other);
-        _bindNotice.Visible = taken.Count > 0;
-        if (taken.Count > 0)
-            _bindNotice.Text = $"{chord.Text} was taken from {string.Join(", ", taken.ConvertAll(KeyBinds.LabelOf))}, which is unbound now.";
+        var displaced = KeyBinds.Set(action, chord);
+        taken.Remove(action);
+        foreach (var other in displaced) taken.Add(other);
+        bindNotice.Visible = displaced.Count > 0;
+        if (displaced.Count > 0)
+            bindNotice.Text = $"{chord.Text} was taken from {string.Join(", ", displaced.ConvertAll(KeyBinds.LabelOf))}, which is unbound now.";
         RefreshBindButtons();
     }
 
     private void CancelCapture()
     {
-        if (_capturing is not { } action) return;
-        _capturing = null;
+        if (capturing is not { } action) return;
+        capturing = null;
         ShowBinding(action);
     }
 
     private bool CaptureBindKey(InputEventKey key)
     {
-        if (_capturing is not { } action) return false;
+        if (capturing is not { } action) return false;
         if (key.Keycode is Key.Ctrl or Key.Shift or Key.Alt or Key.Meta)
         {
-            _heldModifier = key.Keycode;
-            _comboAfterModifier = false;
+            heldModifier = key.Keycode;
+            comboAfterModifier = false;
             return true;
         }
 
-        _capturing = null;
-        _comboAfterModifier = true;
+        capturing = null;
+        comboAfterModifier = true;
         if (key.Keycode == Key.Escape)
         {
             ShowBinding(action);
@@ -184,16 +184,16 @@ public partial class SettingsPanel : CanvasLayer
 
     private void RefreshBindButtons()
     {
-        foreach (var action in _bindButtons.Keys) ShowBinding(action);
+        foreach (var action in bindButtons.Keys) ShowBinding(action);
     }
 
     private void ShowBinding(KeyAction action)
     {
-        if (!_bindButtons.TryGetValue(action, out var button)) return;
+        if (!bindButtons.TryGetValue(action, out var button)) return;
         var chord = KeyBinds.Get(action);
         button.Text = chord.Text;
         button.AddThemeColorOverride("font_color",
-            _taken.Contains(action) ? TakenKeyColour : chord.Assigned ? UiTheme.TextHi : new Color(0.55f, 0.55f, 0.58f));
+            taken.Contains(action) ? TakenKeyColour : chord.Assigned ? UiTheme.TextHi : new Color(0.55f, 0.55f, 0.58f));
     }
 
     private sealed partial class BindButton : Button

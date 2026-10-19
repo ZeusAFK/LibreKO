@@ -28,10 +28,10 @@ public sealed class NpcServicePacketWriter
         return packet;
     }
 
-    public static Packet WarehouseNpc(byte sub)
+    public static Packet WarehouseNpc(WarehouseSubOpcode sub)
     {
         var packet = new Packet(GameOpcodes.GS_WAREHOUSE);
-        packet.WriteByte(sub);
+        packet.WriteByte((byte)sub);
         return packet;
     }
 

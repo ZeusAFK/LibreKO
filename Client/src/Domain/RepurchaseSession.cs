@@ -11,17 +11,17 @@ public enum RepurchaseListing
 
 public sealed class RepurchaseSession
 {
-    private bool _awaitingOpen;
+    private bool awaitingOpen;
 
     public bool IsOpen { get; private set; }
 
-    public void Request() => _awaitingOpen = true;
+    public void Request() => awaitingOpen = true;
 
-    public RepurchaseListing Accept(byte op, bool ok)
+    public RepurchaseListing Accept(RepurchaseSubOpcode op, bool ok)
     {
-        bool opening = op == RepurchaseReply.Open && _awaitingOpen;
+        bool opening = op == RepurchaseSubOpcode.Open && awaitingOpen;
         if (!ok || (!opening && !IsOpen)) return RepurchaseListing.Ignored;
-        _awaitingOpen = false;
+        awaitingOpen = false;
         if (!opening) return RepurchaseListing.Refreshed;
         IsOpen = true;
         return RepurchaseListing.Opened;
@@ -29,7 +29,7 @@ public sealed class RepurchaseSession
 
     public bool Close()
     {
-        _awaitingOpen = false;
+        awaitingOpen = false;
         if (!IsOpen) return false;
         IsOpen = false;
         return true;

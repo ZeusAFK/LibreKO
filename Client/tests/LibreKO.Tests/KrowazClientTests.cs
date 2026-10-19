@@ -67,7 +67,7 @@ public class KrowazClientTests
     public void TheGasStateReadsTheServersBytes()
     {
         var p = new Packet(GameOpcodes.GS_OBJECT_EVENT);
-        p.WriteByte(Net.ObjectEventPoisonGas);
+        p.WriteByte((byte)ObjectEventType.PoisonGas);
         p.WriteByte(1);
         p.WriteInt(10234);
         p.WriteByte(1);
@@ -75,18 +75,18 @@ public class KrowazClientTests
         p.ReadByte();
         p.ReadByte();
 
-        Assert.Equal((10234, true), Net.ReadShapeState(p));
+        Assert.Equal((10234, true), ObjectEventWire.ReadShapeState(p));
     }
 
     [Fact]
     public void TheKrowazNoticeCarriesItsSeconds()
     {
         var p = new Packet(GameOpcodes.GS_CHAT);
-        p.WriteByte(ChatType.KrowazNotice);
+        p.WriteByte((byte)ChatType.KrowazNotice);
         p.WriteShort(30);
         p.ResetOffset();
         p.ReadByte();
 
-        Assert.Equal(30, Net.ReadKrowazSeconds(p));
+        Assert.Equal(30, ChatWire.ReadKrowazSeconds(p));
     }
 }

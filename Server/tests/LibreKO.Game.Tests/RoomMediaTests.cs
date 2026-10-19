@@ -23,54 +23,54 @@ public sealed class RoomMediaTests : IDisposable
 {
     private sealed class Clock(DateTimeOffset start) : TimeProvider
     {
-        private DateTimeOffset _now = start;
-        public override DateTimeOffset GetUtcNow() => _now;
-        public void Advance(TimeSpan by) => _now += by;
+        private DateTimeOffset now = start;
+        public override DateTimeOffset GetUtcNow() => now;
+        public void Advance(TimeSpan by) => now += by;
     }
 
-    private readonly SessionManager _sessions = new();
-    private readonly Dictionary<int, List<Packet>> _sent = [];
-    private readonly Clock _clock = new(new DateTimeOffset(2026, 10, 11, 12, 0, 0, TimeSpan.Zero));
-    private readonly string _notes = Path.Combine(Path.GetTempPath(), "libreko-notes-" + Guid.NewGuid().ToString("N"));
-    private readonly ServiceProvider _provider;
-    private readonly ChatRoomHistory _history;
-    private readonly NationChatService _rooms;
-    private readonly RoomMediaService _media;
-    private readonly VoiceRoster _roster = new();
-    private readonly GameServerSettings _settings = new();
+    private readonly SessionManager sessions = new();
+    private readonly Dictionary<int, List<Packet>> sent = [];
+    private readonly Clock clock = new(new DateTimeOffset(2026, 10, 11, 12, 0, 0, TimeSpan.Zero));
+    private readonly string notes = Path.Combine(Path.GetTempPath(), "libreko-notes-" + Guid.NewGuid().ToString("N"));
+    private readonly ServiceProvider provider;
+    private readonly ChatRoomHistory history;
+    private readonly NationChatService rooms;
+    private readonly RoomMediaService media;
+    private readonly VoiceRoster roster = new();
+    private readonly GameServerSettings settings = new();
 
     public RoomMediaTests()
     {
-        _settings.ChatRooms.NotesPath = _notes;
+        settings.ChatRooms.NotesPath = notes;
         var services = new ServiceCollection();
         var root = new InMemoryDatabaseRoot();
         string name = $"RoomMedia_{Guid.NewGuid():N}";
         services.AddDbContext<AppDbContext>(options => options
             .UseInMemoryDatabase(name, root)
             .ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning)));
-        _provider = services.BuildServiceProvider();
-        var options = Options.Create(_settings);
-        _history = new ChatRoomHistory(_provider.GetRequiredService<IServiceScopeFactory>(), options,
-            Substitute.For<ILogger<ChatRoomHistory>>(), _clock);
-        _rooms = new NationChatService(_sessions, _history, Substitute.For<ILogger<NationChatService>>(), options, _clock);
-        var relay = new VoiceRelayService(_roster, _sessions, options, Substitute.For<ILogger<VoiceRelayService>>(), _clock);
-        _media = new RoomMediaService(_sessions, _rooms, _history, _roster, relay, options,
-            Substitute.For<ILogger<RoomMediaService>>(), _clock);
+        provider = services.BuildServiceProvider();
+        var options = Options.Create(settings);
+        history = new ChatRoomHistory(provider.GetRequiredService<IServiceScopeFactory>(), options,
+            Substitute.For<ILogger<ChatRoomHistory>>(), clock);
+        rooms = new NationChatService(sessions, history, Substitute.For<ILogger<NationChatService>>(), options, clock);
+        var relay = new VoiceRelayService(roster, sessions, options, Substitute.For<ILogger<VoiceRelayService>>(), clock);
+        media = new RoomMediaService(sessions, rooms, history, roster, relay, options,
+            Substitute.For<ILogger<RoomMediaService>>(), clock);
     }
 
     public void Dispose()
     {
-        _provider.Dispose();
-        if (Directory.Exists(_notes)) Directory.Delete(_notes, recursive: true);
+        provider.Dispose();
+        if (Directory.Exists(notes)) Directory.Delete(notes, recursive: true);
     }
 
     private UserSession Player(int id, AccountNation nation = AccountNation.Karus)
     {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
-        var log = _sent[id] = [];
+        var log = sent[id] = [];
         client.SendPacket(Arg.Do<Packet>(p => log.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, characterId: id, accountId: id * 10);
+        var session = sessions.CreateSession(client, characterId: id, accountId: id * 10);
         session.Name = $"Player{id}";
         session.Nation = nation;
         session.ZoneId = 21;
@@ -95,13 +95,13 @@ public sealed class RoomMediaTests : IDisposable
     private async Task ToRooms(UserSession who, Packet packet)
     {
         packet.ResetOffset();
-        await _rooms.HandleAsync(who.Client, packet);
+        await rooms.HandleAsync(who.Client, packet);
     }
 
     private async Task ToMedia(UserSession who, Packet packet)
     {
         packet.ResetOffset();
-        await _media.HandleAsync(who.Client, packet);
+        await media.HandleAsync(who.Client, packet);
     }
 
     private async Task<ushort> CreateRoom(UserSession owner)
@@ -130,7 +130,7 @@ public sealed class RoomMediaTests : IDisposable
     }
 
     private List<Packet> MediaOf(int id, byte sub) =>
-        _sent[id].Where(p => p.GetOpcode() == (byte)GameOpcodes.GS_ROOM_MEDIA && SubOf(p) == sub).ToList();
+        sent[id].Where(p => p.GetOpcode() == (byte)GameOpcodes.GS_ROOM_MEDIA && SubOf(p) == sub).ToList();
 
     private Packet LastMedia(int id, byte sub)
     {
@@ -140,10 +140,10 @@ public sealed class RoomMediaTests : IDisposable
         return packet;
     }
 
-    private static byte SubOf(Packet p)
+    private static byte SubOf(Packet packet)
     {
-        p.ResetOffset();
-        return p.ReadByte();
+        packet.ResetOffset();
+        return packet.ReadByte();
     }
 
     internal static byte[] OggOpus(int channels, int durationMs, int bodyBytes = 64)
@@ -292,9 +292,9 @@ public sealed class RoomMediaTests : IDisposable
         await ToMedia(listener, mute);
 
         await ToMedia(outsider, Media(RoomMediaPacketWriter.VoiceRoster));
-        var roster = LastMedia(3, RoomMediaPacketWriter.VoiceRoster);
-        int count = roster.ReadUShort();
-        var inCall = Enumerable.Range(0, count).ToDictionary(_ => roster.ReadInt(), _ => roster.ReadByte());
+        var rosterPacket = LastMedia(3, RoomMediaPacketWriter.VoiceRoster);
+        int count = rosterPacket.ReadUShort();
+        var inCall = Enumerable.Range(0, count).ToDictionary(_ => rosterPacket.ReadInt(), _ => rosterPacket.ReadByte());
         inCall.Should().BeEquivalentTo(new Dictionary<int, byte> { [1] = 0, [2] = VoiceFlags.MicMuted });
 
         await ToMedia(owner, Media(RoomMediaPacketWriter.VoiceLeave));
@@ -403,15 +403,15 @@ public sealed class RoomMediaTests : IDisposable
         var mover = Player(3);
         await CreateRoom(first);
         await CreateRoom(second);
-        _rooms.TryGetSeat(1, out var oldRoom).Should().BeTrue();
-        _rooms.TryGetSeat(2, out var newRoom).Should().BeTrue();
+        rooms.TryGetSeat(1, out var oldRoom).Should().BeTrue();
+        rooms.TryGetSeat(2, out var newRoom).Should().BeTrue();
         await EnterRoom(mover, newRoom.RoomId);
-        _roster.Join(3, oldRoom.Key, true, 0, out _);
+        roster.Join(3, oldRoom.Key, true, 0, out _);
 
         await ToMedia(mover, Media(RoomMediaPacketWriter.VoiceJoin));
 
-        _roster.Get(3)!.RoomKey.Should().Be(newRoom.Key);
-        _roster.CountIn(oldRoom.Key).Should().Be(0);
+        roster.Get(3)!.RoomKey.Should().Be(newRoom.Key);
+        roster.CountIn(oldRoom.Key).Should().Be(0);
         var told = LastMedia(1, RoomMediaPacketWriter.VoiceState);
         told.ReadInt().Should().Be(3);
         told.ReadByte().Should().Be(RoomMediaPacketWriter.MemberLeft);
@@ -487,7 +487,7 @@ public sealed class RoomMediaTests : IDisposable
         posted.ReadUInt().Should().Be((uint)file.Length);
         posted.ReadBytes(posted.ReadByte()).Should().Equal(Wave);
         posted.RemainingBytes.Should().Be(0);
-        Directory.EnumerateFiles(_notes, "*.opus", SearchOption.AllDirectories).Should().HaveCount(1);
+        Directory.EnumerateFiles(notes, "*.opus", SearchOption.AllDirectories).Should().HaveCount(1);
 
         var fetch = Media(RoomMediaPacketWriter.NoteFetch);
         fetch.WriteLong(noteId);
@@ -521,7 +521,7 @@ public sealed class RoomMediaTests : IDisposable
         (await Upload(owner, OggOpus(2, 1_000), 10)).Should().Be(RoomMediaResults.BadUpload);
         (await Upload(owner, OggOpus(1, 1_000), 10)).Should().Be(RoomMediaResults.Ok);
         (await Upload(owner, OggOpus(1, 1_000), 10)).Should().Be(RoomMediaResults.TooSoon);
-        _clock.Advance(TimeSpan.FromSeconds(_settings.ChatRooms.NoteMinIntervalSeconds));
+        clock.Advance(TimeSpan.FromSeconds(settings.ChatRooms.NoteMinIntervalSeconds));
         (await Upload(owner, OggOpus(1, 1_000), 10)).Should().Be(RoomMediaResults.Ok);
     }
 
@@ -532,7 +532,7 @@ public sealed class RoomMediaTests : IDisposable
         var late = Player(2);
         ushort roomId = await CreateRoom(owner);
         for (int i = 0; i < RoomMediaPacketWriter.HistoryPageMax + 2; i++)
-            await _rooms.SayAsync(owner, roomId, $"line {i}");
+            await rooms.SayAsync(owner, roomId, $"line {i}");
         (await Upload(owner, OggOpus(1, 2_000), 20)).Should().Be(RoomMediaResults.Ok);
         await EnterRoom(late, roomId);
 
@@ -583,19 +583,19 @@ public sealed class RoomMediaTests : IDisposable
     {
         var owner = Player(1);
         ushort roomId = await CreateRoom(owner);
-        await _rooms.SayAsync(owner, roomId, "old line");
+        await rooms.SayAsync(owner, roomId, "old line");
         (await Upload(owner, OggOpus(1, 1_000), 10)).Should().Be(RoomMediaResults.Ok);
-        _clock.Advance(TimeSpan.FromDays(_settings.ChatRooms.HistoryDays) + TimeSpan.FromHours(1));
-        await _rooms.SayAsync(owner, roomId, "new line");
+        clock.Advance(TimeSpan.FromDays(settings.ChatRooms.HistoryDays) + TimeSpan.FromHours(1));
+        await rooms.SayAsync(owner, roomId, "new line");
 
-        var pruned = await _history.PruneAsync();
+        var pruned = await history.PruneAsync();
 
         pruned.Should().Be(new ChatRoomPruneResult(2, 1));
-        Directory.EnumerateFiles(_notes, "*.opus", SearchOption.AllDirectories).Should().BeEmpty();
-        using var scope = _provider.CreateScope();
+        Directory.EnumerateFiles(notes, "*.opus", SearchOption.AllDirectories).Should().BeEmpty();
+        using var scope = provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.ChatRoomMessages.Select(m => m.Text).Should().BeEquivalentTo(["new line"]);
-        (await _history.PruneAsync()).Should().Be(new ChatRoomPruneResult(0, 0));
+        (await history.PruneAsync()).Should().Be(new ChatRoomPruneResult(0, 0));
     }
 
     [Fact]
@@ -603,20 +603,20 @@ public sealed class RoomMediaTests : IDisposable
     {
         var owner = Player(1);
         ushort roomId = await CreateRoom(owner);
-        _rooms.TryGetSeat(1, out var first).Should().BeTrue();
-        _rooms.TryGetSeat(1, out var again).Should().BeTrue();
+        rooms.TryGetSeat(1, out var first).Should().BeTrue();
+        rooms.TryGetSeat(1, out var again).Should().BeTrue();
         again.Key.Should().Be(first.Key);
         first.Public.Should().BeFalse();
 
         await ToRooms(owner, Nation(NationChatPacketWriter.PrivateLeave));
         await CreateRoom(owner);
-        _rooms.TryGetSeat(1, out var recreated).Should().BeTrue();
+        rooms.TryGetSeat(1, out var recreated).Should().BeTrue();
         recreated.RoomId.Should().NotBe(roomId);
         recreated.Key.Should().NotBe(first.Key);
 
         var pub = Player(2, AccountNation.ElMorad);
         await EnterPublic(pub, 3);
-        _rooms.TryGetSeat(2, out var channel).Should().BeTrue();
+        rooms.TryGetSeat(2, out var channel).Should().BeTrue();
         channel.Key.Should().Be("pub:3");
     }
 
@@ -664,7 +664,7 @@ public sealed class RoomMediaTests : IDisposable
         ushort roomId = await CreateRoom(owner);
         await EnterRoom(friend, roomId);
 
-        await _rooms.SayAsync(owner, roomId, "hello room");
+        await rooms.SayAsync(owner, roomId, "hello room");
 
         foreach (int member in new[] { 1, 2 })
         {
@@ -683,22 +683,22 @@ public sealed class RoomMediaTests : IDisposable
         ushort roomId = await CreateRoom(owner);
         await EnterRoom(friend, roomId);
         await EnterPublic(outsider, 1);
-        await _rooms.SayAsync(owner, roomId, "react to me");
+        await rooms.SayAsync(owner, roomId, "react to me");
         long id = LastMedia(1, RoomMediaPacketWriter.Stored).ReadLong();
 
         await ToMedia(friend, ReactTo(id, "❤"));
         ReadReaction(LastMedia(1, RoomMediaPacketWriter.React)).Should().Be((id, 2, "Player2", "❤"));
         ReadReaction(LastMedia(2, RoomMediaPacketWriter.React)).Should().Be((id, 2, "Player2", "❤"));
 
-        _clock.Advance(TimeSpan.FromSeconds(1));
+        clock.Advance(TimeSpan.FromSeconds(1));
         await ToMedia(friend, ReactTo(id, "❤"));
         MediaOf(1, RoomMediaPacketWriter.React).Should().HaveCount(1, "the same reaction twice changes nothing");
 
-        _clock.Advance(TimeSpan.FromSeconds(1));
+        clock.Advance(TimeSpan.FromSeconds(1));
         await ToMedia(friend, ReactTo(id, "🙏"));
         ReadReaction(LastMedia(1, RoomMediaPacketWriter.React)).Emoji.Should().Be("🙏");
 
-        _clock.Advance(TimeSpan.FromSeconds(1));
+        clock.Advance(TimeSpan.FromSeconds(1));
         await ToMedia(outsider, ReactTo(id, "😂"));
         MediaOf(1, RoomMediaPacketWriter.React).Should().HaveCount(2, "someone outside the room cannot react");
 
@@ -711,10 +711,10 @@ public sealed class RoomMediaTests : IDisposable
         reactions.ReadUShort().Should().Be(1);
         ReadReaction(reactions).Should().Be((id, 2, "Player2", "🙏"));
 
-        _clock.Advance(TimeSpan.FromSeconds(1));
+        clock.Advance(TimeSpan.FromSeconds(1));
         await ToMedia(friend, ReactTo(id, ""));
         ReadReaction(LastMedia(4, RoomMediaPacketWriter.React)).Should().Be((id, 2, "Player2", ""));
-        using var scope = _provider.CreateScope();
+        using var scope = provider.CreateScope();
         scope.ServiceProvider.GetRequiredService<AppDbContext>().ChatRoomReactions.Should().BeEmpty();
     }
 
@@ -725,7 +725,7 @@ public sealed class RoomMediaTests : IDisposable
         var receiver = Player(2);
         var stranger = Player(3);
 
-        await _media.WhisperSentAsync(sender, receiver, "psst");
+        await media.WhisperSentAsync(sender, receiver, "psst");
 
         var toSender = LastMedia(1, RoomMediaPacketWriter.DirectStored);
         toSender.ReadString().Should().Be("Player2");
@@ -777,7 +777,7 @@ public sealed class RoomMediaTests : IDisposable
         await ToMedia(stranger, fetch);
         LastMedia(3, RoomMediaPacketWriter.NoteFetch).ReadByte().Should().Be(RoomMediaResults.NotFound);
 
-        _clock.Advance(TimeSpan.FromSeconds(_settings.ChatRooms.NoteMinIntervalSeconds));
+        clock.Advance(TimeSpan.FromSeconds(settings.ChatRooms.NoteMinIntervalSeconds));
         receiver.BlockPrivateChat = true;
         (await Upload(sender, file, 30, partner: "Player2")).Should().Be(RoomMediaResults.Blocked);
         (await Upload(sender, file, 30, partner: "Nobody")).Should().Be(RoomMediaResults.PartnerAway);
@@ -790,7 +790,7 @@ public sealed class RoomMediaTests : IDisposable
         var friend = Player(2);
         ushort roomId = await CreateRoom(owner);
         await EnterRoom(friend, roomId);
-        _rooms.TryGetSeat(1, out var seat).Should().BeTrue();
+        rooms.TryGetSeat(1, out var seat).Should().BeTrue();
 
         await ToMedia(friend, Keep(true));
         LastMedia(2, RoomMediaPacketWriter.Kept).ReadByte().Should().Be(RoomMediaResults.NotLeader);
@@ -805,12 +805,12 @@ public sealed class RoomMediaTests : IDisposable
         await ToRooms(owner, Nation(NationChatPacketWriter.PrivateLeave));
         await ToRooms(friend, Nation(NationChatPacketWriter.PrivateLeave));
         await EnterRoom(friend, roomId);
-        _rooms.TryGetSeat(2, out var back).Should().BeTrue("a kept room stays open when it empties");
+        rooms.TryGetSeat(2, out var back).Should().BeTrue("a kept room stays open when it empties");
         back.Key.Should().Be(seat.Key);
         back.OwnerId.Should().Be(1, "the leader keeps the lead while away");
         await ToRooms(friend, Nation(NationChatPacketWriter.PrivateLeave));
 
-        var restarted = new NationChatService(_sessions, _history, Substitute.For<ILogger<NationChatService>>(), Options.Create(_settings), _clock);
+        var restarted = new NationChatService(sessions, history, Substitute.For<ILogger<NationChatService>>(), Options.Create(settings), clock);
         await restarted.RestoreKeptAsync();
         var enter = Nation(NationChatPacketWriter.PrivateEnter);
         enter.WriteUShort(NationChatService.PrivateRoomIdBase);
@@ -822,14 +822,14 @@ public sealed class RoomMediaTests : IDisposable
         restored.OwnerId.Should().Be(1);
 
         await restarted.SetKeptAsync(owner, false);
-        using var scope = _provider.CreateScope();
+        using var scope = provider.CreateScope();
         scope.ServiceProvider.GetRequiredService<AppDbContext>().KeptChatRooms.Should().BeEmpty();
     }
 
     [Fact]
     public async Task KeptRoomsAreCappedPerLeaderAndPrunedWhenUnused()
     {
-        _settings.ChatRooms.KeptRoomsPerCharacter = 1;
+        settings.ChatRooms.KeptRoomsPerCharacter = 1;
         var owner = Player(1);
         ushort first = await CreateRoom(owner);
         await ToMedia(owner, Keep(true));
@@ -839,10 +839,10 @@ public sealed class RoomMediaTests : IDisposable
         await ToMedia(owner, Keep(true));
         LastMedia(1, RoomMediaPacketWriter.Kept).ReadByte().Should().Be(RoomMediaResults.KeptLimit);
 
-        _clock.Advance(TimeSpan.FromDays(_settings.ChatRooms.HistoryDays + 1));
-        (await _rooms.PruneKeptAsync(_clock.GetUtcNow().UtcDateTime.AddDays(-_settings.ChatRooms.HistoryDays))).Should().Be(1);
+        clock.Advance(TimeSpan.FromDays(settings.ChatRooms.HistoryDays + 1));
+        (await rooms.PruneKeptAsync(clock.GetUtcNow().UtcDateTime.AddDays(-settings.ChatRooms.HistoryDays))).Should().Be(1);
         var visitor = Player(2);
         await EnterRoom(visitor, first);
-        _rooms.TryGetSeat(2, out _).Should().BeFalse();
+        rooms.TryGetSeat(2, out _).Should().BeFalse();
     }
 }

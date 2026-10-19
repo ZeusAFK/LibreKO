@@ -23,15 +23,15 @@ public sealed partial class ItemSlotView : PanelContainer
     private static readonly Dictionary<(Color?, bool), StyleBoxFlat> Frames =
         Shutdown.Track(new Dictionary<(Color?, bool), StyleBoxFlat>());
 
-    private readonly TextureRect _icon;
-    private readonly Label _count;
-    private readonly UpgradeBadge _plus;
-    private readonly IconVeilView _veil;
-    private readonly ColorRect _wearTrack;
-    private readonly ColorRect _wearFill;
-    private SlotLook _look;
-    private Control? _lock;
-    private bool _hover;
+    private readonly TextureRect icon;
+    private readonly Label countLabel;
+    private readonly UpgradeBadge plus;
+    private readonly IconVeilView veil;
+    private readonly ColorRect wearTrack;
+    private readonly ColorRect wearFill;
+    private SlotLook look;
+    private Control? lockIcon;
+    private bool hover;
 
     public event Action<ItemSlotView>? Clicked;
     public event Action<ItemSlotView>? DoubleClicked;
@@ -50,14 +50,14 @@ public sealed partial class ItemSlotView : PanelContainer
 
     public bool Locked
     {
-        get => _lock?.Visible ?? false;
+        get => lockIcon?.Visible ?? false;
         set
         {
-            if (value && _lock == null)
+            if (value && lockIcon == null)
             {
-                _lock = new Control { MouseFilter = MouseFilterEnum.Ignore };
-                AddChild(_lock);
-                _lock.AddChild(new TextureRect
+                lockIcon = new Control { MouseFilter = MouseFilterEnum.Ignore };
+                AddChild(lockIcon);
+                lockIcon.AddChild(new TextureRect
                 {
                     Texture = UiIcons.Get("system/lock"),
                     ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
@@ -69,8 +69,8 @@ public sealed partial class ItemSlotView : PanelContainer
                     OffsetTop = LockInset, OffsetBottom = LockInset + LockSize,
                 });
             }
-            if (_lock != null) _lock.Visible = value;
-            _icon.SelfModulate = value ? LockedIconTint : _look == SlotLook.Ghost ? GhostTint : Colors.White;
+            if (lockIcon != null) lockIcon.Visible = value;
+            icon.SelfModulate = value ? LockedIconTint : look == SlotLook.Ghost ? GhostTint : Colors.White;
         }
     }
 
@@ -79,18 +79,18 @@ public sealed partial class ItemSlotView : PanelContainer
         CustomMinimumSize = new Vector2(size, size);
         MouseFilter = MouseFilterEnum.Stop;
 
-        _icon = new TextureRect
+        icon = new TextureRect
         {
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        AddChild(_icon);
-        _veil = IconVeilView.Attach(this);
+        AddChild(icon);
+        veil = IconVeilView.Attach(this);
 
         var overlay = new Control { MouseFilter = MouseFilterEnum.Ignore };
         AddChild(overlay);
-        _wearTrack = new ColorRect
+        wearTrack = new ColorRect
         {
             Color = WearTrackColour,
             MouseFilter = MouseFilterEnum.Ignore,
@@ -99,33 +99,33 @@ public sealed partial class ItemSlotView : PanelContainer
             OffsetLeft = WearInset, OffsetRight = -WearInset,
             OffsetTop = -WearInset - WearHeight, OffsetBottom = -WearInset,
         };
-        overlay.AddChild(_wearTrack);
-        _wearFill = new ColorRect
+        overlay.AddChild(wearTrack);
+        wearFill = new ColorRect
         {
             MouseFilter = MouseFilterEnum.Ignore,
             AnchorLeft = 0f, AnchorTop = 0f, AnchorBottom = 1f, AnchorRight = 0f,
         };
-        _wearTrack.AddChild(_wearFill);
+        wearTrack.AddChild(wearFill);
 
-        _plus = UpgradeBadge.Attach(this);
+        plus = UpgradeBadge.Attach(this);
 
-        _count = HudStyle.Label(11, HorizontalAlignment.Right);
-        _count.MouseFilter = MouseFilterEnum.Ignore;
-        _count.VerticalAlignment = VerticalAlignment.Bottom;
-        _count.AddThemeStyleboxOverride("normal", new StyleBoxEmpty { ContentMarginRight = 3, ContentMarginBottom = 1 });
-        _count.AddThemeConstantOverride("outline_size", 3);
-        _count.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.85f));
-        AddChild(_count);
+        countLabel = HudStyle.Label(11, HorizontalAlignment.Right);
+        countLabel.MouseFilter = MouseFilterEnum.Ignore;
+        countLabel.VerticalAlignment = VerticalAlignment.Bottom;
+        countLabel.AddThemeStyleboxOverride("normal", new StyleBoxEmpty { ContentMarginRight = 3, ContentMarginBottom = 1 });
+        countLabel.AddThemeConstantOverride("outline_size", 3);
+        countLabel.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.85f));
+        AddChild(countLabel);
 
         MouseEntered += () =>
         {
-            _hover = true;
+            hover = true;
             ApplyFrame();
             if (!Item.IsEmpty) Hovered?.Invoke(this);
         };
         MouseExited += () =>
         {
-            _hover = false;
+            hover = false;
             ApplyFrame();
             Unhovered?.Invoke(this);
         };
@@ -137,21 +137,21 @@ public sealed partial class ItemSlotView : PanelContainer
         Item = item;
         if (item.IsEmpty)
         {
-            _icon.Texture = null;
-            _count.Text = "";
-            _plus.Clear();
-            _veil.Clear();
+            icon.Texture = null;
+            countLabel.Text = "";
+            plus.Clear();
+            veil.Clear();
         }
         else
         {
-            _icon.Texture = ItemData.Icon(item.ItemId);
+            icon.Texture = ItemIcons.Get(item.ItemId);
             int shown = count ?? ItemData.ShownCount(ItemData.Get(item.ItemId), item);
-            _count.Text = shown > 1 ? shown.ToString() : "";
-            _plus.Set(item.ItemId);
-            if (Veiled) _veil.Set(item);
+            countLabel.Text = shown > 1 ? shown.ToString() : "";
+            plus.Set(item.ItemId);
+            if (Veiled) veil.Set(item);
         }
         ApplyFrame();
-        if (!_hover) return;
+        if (!hover) return;
         if (item.IsEmpty) Unhovered?.Invoke(this);
         else Hovered?.Invoke(this);
     }
@@ -160,11 +160,11 @@ public sealed partial class ItemSlotView : PanelContainer
 
     public SlotLook Look
     {
-        get => _look;
+        get => look;
         set
         {
-            if (_look == value) return;
-            _look = value;
+            if (look == value) return;
+            look = value;
             Modulate = value switch
             {
                 SlotLook.Dimmed => DimmedTint,
@@ -172,26 +172,26 @@ public sealed partial class ItemSlotView : PanelContainer
                 SlotLook.Staged => StagedTint,
                 _ => Colors.White,
             };
-            _icon.SelfModulate = Locked ? LockedIconTint : value == SlotLook.Ghost ? GhostTint : Colors.White;
+            icon.SelfModulate = Locked ? LockedIconTint : value == SlotLook.Ghost ? GhostTint : Colors.White;
             ApplyFrame();
         }
     }
 
     public void SetWear(float? share, Color tint)
     {
-        _wearTrack.Visible = share.HasValue;
+        wearTrack.Visible = share.HasValue;
         if (share is not { } value) return;
-        _wearFill.Color = tint;
-        _wearFill.AnchorRight = Mathf.Clamp(value, 0f, 1f);
+        wearFill.Color = tint;
+        wearFill.AnchorRight = Mathf.Clamp(value, 0f, 1f);
     }
 
     private void ApplyFrame()
     {
-        Color? grade = _look == SlotLook.Selected ? UiTheme.GoldBright
+        Color? grade = look == SlotLook.Selected ? UiTheme.GoldBright
             : Item.IsEmpty ? null : ItemGrade.Tint(Item.ItemId);
-        var key = (grade, _hover);
+        var key = (grade, hover);
         if (!Frames.TryGetValue(key, out var frame))
-            Frames[key] = frame = UiTheme.Slot(grade, _hover);
+            Frames[key] = frame = UiTheme.Slot(grade, hover);
         AddThemeStyleboxOverride("panel", frame);
     }
 

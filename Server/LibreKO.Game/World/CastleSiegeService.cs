@@ -32,22 +32,22 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
     private const int TextEnded = 172;
     private const int TextArtifactDestroyed = 179;
 
-    private readonly SessionManager _sessions;
-    private readonly IGameDataService _gameData;
-    private readonly IZoneTransitionService _zones;
-    private readonly INpcSummonService _summon;
-    private readonly INpcLifecycleService _lifecycle;
-    private readonly IServiceScopeFactory _scopes;
-    private readonly IOptions<GameServerSettings> _settings;
-    private readonly ScheduleClock _scheduleClock;
-    private readonly ILogger<CastleSiegeService> _logger;
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly SessionManager sessions;
+    private readonly IGameDataService gameData;
+    private readonly IZoneTransitionService zones;
+    private readonly INpcSummonService summon;
+    private readonly INpcLifecycleService lifecycle;
+    private readonly IServiceScopeFactory scopes;
+    private readonly IOptions<GameServerSettings> settings;
+    private readonly ScheduleClock scheduleClock;
+    private readonly ILogger<CastleSiegeService> logger;
+    private readonly SemaphoreSlim gate = new(1, 1);
 
-    private int _countdownSeconds;
-    private int _warSeconds;
-    private int _holdSeconds;
-    private int _lastScheduleMinute = -1;
-    private NpcInstance? _artifact;
+    private int countdownSeconds;
+    private int warSeconds;
+    private int holdSeconds;
+    private int lastScheduleMinute = -1;
+    private NpcInstance? artifact;
 
     public CastleSiegeService(
         SessionManager sessions,
@@ -60,23 +60,23 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
         ScheduleClock scheduleClock,
         ILogger<CastleSiegeService> logger)
     {
-        _sessions = sessions;
-        _gameData = gameData;
-        _zones = zones;
-        _summon = summon;
-        _lifecycle = lifecycle;
-        _scopes = scopes;
-        _settings = settings;
-        _scheduleClock = scheduleClock;
-        _logger = logger;
-        _zones.ZoneAbilitySent += OnZoneAbilitySentAsync;
+        this.sessions = sessions;
+        this.gameData = gameData;
+        this.zones = zones;
+        this.summon = summon;
+        this.lifecycle = lifecycle;
+        this.scopes = scopes;
+        this.settings = settings;
+        this.scheduleClock = scheduleClock;
+        this.logger = logger;
+        this.zones.ZoneAbilitySent += OnZoneAbilitySentAsync;
     }
 
     public CastleSiegePhase Phase { get; private set; }
 
-    public int WarSecondsLeft => Phase == CastleSiegePhase.War ? Math.Max(0, _warSeconds) : 0;
+    public int WarSecondsLeft => Phase == CastleSiegePhase.War ? Math.Max(0, warSeconds) : 0;
 
-    private short OwnerClan => _gameData.SiegeWarfare?.MasterKnights ?? 0;
+    private short OwnerClan => gameData.SiegeWarfare?.MasterKnights ?? 0;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -85,11 +85,11 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
         {
             try
             {
-                await TickAsync(ScheduleTime.Now(_settings.Value.Events, _scheduleClock.UtcNow));
+                await TickAsync(ScheduleTime.Now(settings.Value.Events, scheduleClock.UtcNow));
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "Castle siege tick failed");
+                logger.LogError(ex, "Castle siege tick failed");
             }
         }
     }
@@ -99,26 +99,26 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
         switch (Phase)
         {
             case CastleSiegePhase.None:
-                if (_gameData.SiegeWarfare is { } siege && now.Minute != _lastScheduleMinute
+                if (gameData.SiegeWarfare is { } siege && now.Minute != lastScheduleMinute
                     && CastleSiegeRules.IsScheduledStart(siege.WarDay, siege.WarTime, siege.WarMinute, now))
                 {
-                    _lastScheduleMinute = now.Minute;
+                    lastScheduleMinute = now.Minute;
                     await StartCountdownAsync();
                 }
                 break;
             case CastleSiegePhase.Countdown:
-                if (--_countdownSeconds <= 0)
+                if (--countdownSeconds <= 0)
                     await OpenAsync();
-                else if (_countdownSeconds % SecondsPerMinute == 0)
-                    await AnnounceMinutesLeftAsync(_countdownSeconds / SecondsPerMinute);
+                else if (countdownSeconds % SecondsPerMinute == 0)
+                    await AnnounceMinutesLeftAsync(countdownSeconds / SecondsPerMinute);
                 break;
             case CastleSiegePhase.War:
-                _warSeconds--;
+                warSeconds--;
                 if (OwnerClan > 0)
-                    _holdSeconds--;
-                if (_warSeconds <= 0 || (OwnerClan > 0 && _holdSeconds <= 0))
+                    holdSeconds--;
+                if (warSeconds <= 0 || (OwnerClan > 0 && holdSeconds <= 0))
                     await CloseAsync();
-                else if (_warSeconds % SecondsPerMinute == 0)
+                else if (warSeconds % SecondsPerMinute == 0)
                     await BroadcastToDelosAsync(StatusPacket());
                 break;
         }
@@ -129,52 +129,52 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
         if (Phase != CastleSiegePhase.None)
             return;
         Phase = CastleSiegePhase.Countdown;
-        _countdownSeconds = CastleSiegeRules.CountdownMinutes * SecondsPerMinute;
-        _logger.LogInformation("Castle siege countdown started");
+        countdownSeconds = CastleSiegeRules.CountdownMinutes * SecondsPerMinute;
+        logger.LogInformation("Castle siege countdown started");
         await AnnounceMinutesLeftAsync(CastleSiegeRules.CountdownMinutes);
     }
 
     public async Task OpenAsync()
     {
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
             if (Phase == CastleSiegePhase.War)
                 return;
             Phase = CastleSiegePhase.War;
-            _warSeconds = CastleSiegeRules.WarSeconds;
-            _holdSeconds = OwnerClan > 0 ? CastleSiegeRules.HoldAfterCapture(_warSeconds) : 0;
-            _sessions.Battle.CastleSiegeOpen = true;
-            _logger.LogInformation("Castle siege opened, owner clan {Clan}", OwnerClan);
+            warSeconds = CastleSiegeRules.WarSeconds;
+            holdSeconds = OwnerClan > 0 ? CastleSiegeRules.HoldAfterCapture(warSeconds) : 0;
+            sessions.Battle.CastleSiegeOpen = true;
+            logger.LogInformation("Castle siege opened, owner clan {Clan}", OwnerClan);
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
 
         await SpawnArtifactAsync();
         await AnnounceAsync(TextBegun, "Siege has begun");
         foreach (var session in InDelos())
-            await _zones.SendZoneAbilityAsync(session);
+            await zones.SendZoneAbilityAsync(session);
     }
 
     public async Task CloseAsync()
     {
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
             if (Phase == CastleSiegePhase.None)
                 return;
             bool wasWar = Phase == CastleSiegePhase.War;
             Phase = CastleSiegePhase.None;
-            _sessions.Battle.CastleSiegeOpen = false;
-            _countdownSeconds = _warSeconds = _holdSeconds = 0;
+            sessions.Battle.CastleSiegeOpen = false;
+            countdownSeconds = warSeconds = holdSeconds = 0;
             if (!wasWar)
                 return;
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
 
         await RemoveArtifactAsync();
@@ -182,10 +182,10 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
         foreach (var session in InDelos())
         {
             session.SiegeSide = SiegeSide.None;
-            await _zones.SendZoneAbilityAsync(session);
+            await zones.SendZoneAbilityAsync(session);
         }
         await AnnounceAsync(TextEnded, "Siege has ended");
-        _logger.LogInformation("Castle siege closed, owner clan {Clan}", OwnerClan);
+        logger.LogInformation("Castle siege closed, owner clan {Clan}", OwnerClan);
     }
 
     public async Task OnNpcKilledAsync(NpcInstance npc, UserSession? killer)
@@ -193,17 +193,17 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
         if (Phase != CastleSiegePhase.War || npc.NpcId != CastleSiegeRules.ArtifactNpc || npc.ZoneId != (byte)ZoneId.Delos)
             return;
 
-        _artifact = null;
+        artifact = null;
         short newOwner = killer?.KnightsId > 0 ? killer.KnightsId : (short)0;
         await SetOwnerAsync(newOwner);
-        _holdSeconds = newOwner > 0 ? CastleSiegeRules.HoldAfterCapture(_warSeconds) : 0;
-        _logger.LogInformation("Castle captured by clan {Clan} ({Killer})", newOwner, killer?.Name);
+        holdSeconds = newOwner > 0 ? CastleSiegeRules.HoldAfterCapture(warSeconds) : 0;
+        logger.LogInformation("Castle captured by clan {Clan} ({Killer})", newOwner, killer?.Name);
 
         await AnnounceAsync(TextArtifactDestroyed, "Center Artifact has been destroyed");
         foreach (var session in InDelos())
         {
             StampSide(session);
-            await _zones.ChangeZoneAsync(session, (byte)ZoneId.Delos, 0f, 0f);
+            await zones.ChangeZoneAsync(session, (byte)ZoneId.Delos, 0f, 0f);
         }
         await SpawnArtifactAsync();
         await BroadcastToDelosAsync(StatusPacket());
@@ -215,14 +215,14 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
 
     private Packet StatusPacket(byte state)
     {
-        var owner = OwnerClan > 0 ? _sessions.Knights.GetClan(OwnerClan) : null;
+        var owner = OwnerClan > 0 ? sessions.Knights.GetClan(OwnerClan) : null;
         return SiegePacketWriter.WarStatus(
             state,
             OwnerClan,
             owner == null || owner.MarkVersion < 0 ? (short)0 : owner.MarkVersion,
             owner?.AllianceId ?? 0,
-            Phase == CastleSiegePhase.War ? _holdSeconds : 0,
-            Phase == CastleSiegePhase.War ? _warSeconds : 0,
+            Phase == CastleSiegePhase.War ? holdSeconds : 0,
+            Phase == CastleSiegePhase.War ? warSeconds : 0,
             owner?.Name ?? string.Empty);
     }
 
@@ -241,7 +241,7 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
         }
         if (session.KnightsId <= 0 && !session.IsGM)
         {
-            await _zones.ChangeZoneAsync(session, (byte)ZoneId.Moradon, 0f, 0f);
+            await zones.ChangeZoneAsync(session, (byte)ZoneId.Moradon, 0f, 0f);
             return;
         }
         StampSide(session);
@@ -250,16 +250,16 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
 
     private void StampSide(UserSession session)
     {
-        var alliance = session.KnightsId > 0 ? _sessions.Knights.GetClan(session.KnightsId)?.AllianceId ?? 0 : 0;
+        var alliance = session.KnightsId > 0 ? sessions.Knights.GetClan(session.KnightsId)?.AllianceId ?? 0 : 0;
         session.SiegeSide = CastleSiegeRules.SideOf(session.KnightsId, alliance, OwnerClan);
     }
 
     private async Task SetOwnerAsync(short clanId)
     {
-        if (_gameData.SiegeWarfare is not { } siege)
+        if (gameData.SiegeWarfare is not { } siege)
             return;
         siege.MasterKnights = clanId;
-        using var scope = _scopes.CreateScope();
+        using var scope = scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Attach(siege);
         db.Entry(siege).Property(s => s.MasterKnights).IsModified = true;
@@ -269,22 +269,22 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
     private async Task SpawnArtifactAsync()
     {
         await RemoveArtifactAsync();
-        var spawned = await _summon.SummonAsync(CastleSiegeRules.ArtifactNpc, (byte)ZoneId.Delos, 0,
+        var spawned = await summon.SummonAsync(CastleSiegeRules.ArtifactNpc, (byte)ZoneId.Delos, 0,
             CastleSiegeRules.ArtifactX, CastleSiegeRules.ArtifactZ, 1, CastleSiegeRules.ArtifactFallbackY);
-        _artifact = spawned.Count > 0 ? spawned[0] : null;
-        if (_artifact == null)
-            _logger.LogWarning("Castle siege artifact {Npc} could not be spawned", CastleSiegeRules.ArtifactNpc);
+        artifact = spawned.Count > 0 ? spawned[0] : null;
+        if (artifact == null)
+            logger.LogWarning("Castle siege artifact {Npc} could not be spawned", CastleSiegeRules.ArtifactNpc);
     }
 
     private async Task RemoveArtifactAsync()
     {
-        if (_artifact is { IsAlive: true } artifact)
-            await _lifecycle.DespawnAsync(artifact);
-        _artifact = null;
+        if (this.artifact is { IsAlive: true } artifact)
+            await lifecycle.DespawnAsync(artifact);
+        this.artifact = null;
     }
 
     private IEnumerable<UserSession> InDelos() =>
-        _sessions.GetAll().Where(s => s.ZoneId == (byte)ZoneId.Delos).ToList();
+        sessions.GetAll().Where(s => s.ZoneId == (byte)ZoneId.Delos).ToList();
 
     private async Task BroadcastToDelosAsync(Packet packet)
     {
@@ -294,10 +294,10 @@ public sealed class CastleSiegeService : BackgroundService, ICastleSiegeService
 
     private Task AnnounceMinutesLeftAsync(int minutes) => minutes <= 1
         ? AnnounceAsync(TextAboutToBegin, "Castle Siege War is about to begin.")
-        : _sessions.BroadcastToAll(NoticePacketWriter.Broadcast(
-            (_gameData.GetServerResource(TextMinutesLeft) ?? "There are %d minutes remaining in the Siege Warfare.")
+        : sessions.BroadcastToAll(NoticePacketWriter.Broadcast(
+            (gameData.GetServerResource(TextMinutesLeft) ?? "There are %d minutes remaining in the Siege Warfare.")
                 .Replace("%d", minutes.ToString())));
 
     private Task AnnounceAsync(int resourceId, string fallback) =>
-        _sessions.BroadcastToAll(NoticePacketWriter.Broadcast(_gameData.GetServerResource(resourceId) ?? fallback));
+        sessions.BroadcastToAll(NoticePacketWriter.Broadcast(gameData.GetServerResource(resourceId) ?? fallback));
 }

@@ -10,7 +10,7 @@ public class ChatNoticesTests
     public void AMonumentCaptureCarriesTheNationAndTheName()
     {
         var p = new Packet(GameOpcodes.GS_CHAT);
-        p.WriteByte(MonumentNotice.MonumentCaptured);
+        p.WriteByte((byte)MonumentNoticeKind.MonumentCaptured);
         p.WriteByte(Nations.Karus);
         p.WriteString("Zeus");
         p.ResetOffset();
@@ -26,7 +26,7 @@ public class ChatNoticesTests
     public void ASpyRescueReadsItsDoneFlag()
     {
         var p = new Packet(GameOpcodes.GS_CHAT);
-        p.WriteByte(MonumentNotice.SpyRescue);
+        p.WriteByte((byte)MonumentNoticeKind.SpyRescue);
         p.WriteByte(Nations.ElMorad);
         p.WriteString("Rikka");
         p.WriteByte(1);
@@ -39,7 +39,7 @@ public class ChatNoticesTests
     public void AFailedQuestCarriesItsId()
     {
         var p = new Packet(GameOpcodes.GS_CHAT);
-        p.WriteByte(MonumentNotice.QuestFailed);
+        p.WriteByte((byte)MonumentNoticeKind.QuestFailed);
         p.WriteInt(1234);
         p.ResetOffset();
 

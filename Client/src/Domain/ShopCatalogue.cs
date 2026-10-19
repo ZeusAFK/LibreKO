@@ -12,27 +12,27 @@ public sealed class ShopCatalogue
 
     public static readonly ShopCatalogue Empty = new(Array.Empty<Entry>(), _ => "");
 
-    private readonly Entry[] _entries;
-    private readonly Func<int, string> _name;
+    private readonly Entry[] entries;
+    private readonly Func<int, string> name;
 
-    public ShopCatalogue(IEnumerable<Entry> entries, Func<int, string> name)
+    public ShopCatalogue(IEnumerable<Entry> offered, Func<int, string> name)
     {
-        _entries = entries
+        entries = offered
             .Where(e => e.ItemId != 0 && e.Cell >= 0 && e.Cell < PageSize)
             .OrderBy(e => e.Page).ThenBy(e => e.Cell)
             .ToArray();
-        _name = name;
-        Pages = _entries.Select(e => e.Page).Distinct().ToArray();
+        this.name = name;
+        Pages = entries.Select(e => e.Page).Distinct().ToArray();
     }
 
     public IReadOnlyList<int> Pages { get; }
 
-    public int Count => _entries.Length;
+    public int Count => entries.Length;
 
     public int[] Page(int page)
     {
         var cells = new int[PageSize];
-        foreach (var entry in _entries)
+        foreach (var entry in entries)
             if (entry.Page == page) cells[entry.Cell] = entry.ItemId;
         return cells;
     }
@@ -41,7 +41,7 @@ public sealed class ShopCatalogue
     {
         var wanted = new ItemQuery(query);
         if (wanted.IsEmpty) return Array.Empty<int>();
-        return _entries.Where(e => wanted.Matches(e.ItemId, _name)).Select(e => e.ItemId).ToArray();
+        return entries.Where(e => wanted.Matches(e.ItemId, name)).Select(e => e.ItemId).ToArray();
     }
 
     public static int[] Slice(IReadOnlyList<int> items, int page)

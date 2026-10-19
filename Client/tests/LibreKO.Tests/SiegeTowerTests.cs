@@ -25,27 +25,27 @@ public class SiegeTowerTests
     [Fact]
     public void TheUseReplyCarriesTheUserTheTowerAndItsPositionInTenths()
     {
-        var reply = SiegeTowerReply.Read(Bytes(SiegeTower.SubUse, (byte)1, 7, 10042, (ushort)5005, (ushort)7801, (ushort)790));
+        var reply = SiegeTowerReply.Read(Bytes((byte)SiegeTowerSubOpcode.Use, (byte)1, 7, 10042, (ushort)5005, (ushort)7801, (ushort)790));
 
-        Assert.Equal(new SiegeTowerReply(SiegeTower.SubUse, 1, 7, 10042, 500.5f, 780.1f), reply);
+        Assert.Equal(new SiegeTowerReply(SiegeTowerSubOpcode.Use, SiegeTowerResult.Succeeded, 7, 10042, 500.5f, 780.1f), reply);
     }
 
     [Fact]
     public void TheExitReplyCarriesTheUserAndTheTower()
     {
-        var reply = SiegeTowerReply.Read(Bytes(SiegeTower.SubExit, (byte)1, 7, 10042));
+        var reply = SiegeTowerReply.Read(Bytes((byte)SiegeTowerSubOpcode.Exit, (byte)1, 7, 10042));
 
-        Assert.Equal(new SiegeTowerReply(SiegeTower.SubExit, 1, 7, 10042, 0f, 0f), reply);
+        Assert.Equal(new SiegeTowerReply(SiegeTowerSubOpcode.Exit, SiegeTowerResult.Succeeded, 7, 10042, 0f, 0f), reply);
     }
 
     [Fact]
     public void ABoardReplyIgnoresItsThreeWordsAndARefusalIsJustTheCode()
     {
-        Assert.Equal(new SiegeTowerReply(SiegeTower.SubBoard, 1, 0, 0, 0f, 0f),
-            SiegeTowerReply.Read(Bytes(SiegeTower.SubBoard, (byte)1, (ushort)5000, (ushort)7800, (ushort)790)));
-        Assert.Equal(new SiegeTowerReply(SiegeTower.SubUse, 8, 0, 0, 0f, 0f),
-            SiegeTowerReply.Read(Bytes(SiegeTower.SubUse, (byte)8)));
-        Assert.Null(SiegeTowerReply.Read(Bytes(SiegeTower.SubUse)));
+        Assert.Equal(new SiegeTowerReply(SiegeTowerSubOpcode.Board, SiegeTowerResult.Succeeded, 0, 0, 0f, 0f),
+            SiegeTowerReply.Read(Bytes((byte)SiegeTowerSubOpcode.Board, (byte)1, (ushort)5000, (ushort)7800, (ushort)790)));
+        Assert.Equal(new SiegeTowerReply(SiegeTowerSubOpcode.Use, (SiegeTowerResult)8, 0, 0, 0f, 0f),
+            SiegeTowerReply.Read(Bytes((byte)SiegeTowerSubOpcode.Use, (byte)8)));
+        Assert.Null(SiegeTowerReply.Read(Bytes((byte)SiegeTowerSubOpcode.Use)));
     }
 
     [Theory]
@@ -70,8 +70,8 @@ public class SiegeTowerTests
     {
         Assert.Equal(16821, SiegeTower.UseRefusal(8).Id);
         Assert.Equal(16818, SiegeTower.UseRefusal(2).Id);
-        Assert.Equal(16811, SiegeTower.EndedText(0).Id);
-        Assert.Equal(16812, SiegeTower.EndedText(1).Id);
+        Assert.Equal(16811, SiegeTower.EndedText(SiegeTowerResult.Failed).Id);
+        Assert.Equal(16812, SiegeTower.EndedText(SiegeTowerResult.Succeeded).Id);
     }
 
     [Fact]

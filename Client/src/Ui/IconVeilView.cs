@@ -11,9 +11,9 @@ public sealed partial class IconVeilView : Control
     private static readonly Color DuplicateWash = Color.Color8(40, 40, 40, 160);
     private static readonly Color SealedWash = Color.Color8(20, 20, 255, 70);
 
-    private static Texture2D? _notBound, _bound;
-    private IconWash _wash;
-    private IconBadge _badge;
+    private static Texture2D? notBound, bound;
+    private IconWash wash;
+    private IconBadge badge;
 
     public IconVeilView()
     {
@@ -32,9 +32,9 @@ public sealed partial class IconVeilView : Control
     {
         var wash = IconVeil.Wash(slot);
         var badge = slot.IsEmpty ? IconBadge.None : IconVeil.Badge(ItemData.ShownFlag(slot));
-        if (wash == _wash && badge == _badge) return;
-        _wash = wash;
-        _badge = badge;
+        if (wash == this.wash && badge == this.badge) return;
+        this.wash = wash;
+        this.badge = badge;
         QueueRedraw();
     }
 
@@ -43,7 +43,7 @@ public sealed partial class IconVeilView : Control
     public override void _Draw()
     {
         var rect = new Rect2(Vector2.Zero, Size);
-        Color? wash = _wash switch
+        Color? washColor = wash switch
         {
             IconWash.Exhausted => ExhaustedWash,
             IconWash.Rented => RentedWash,
@@ -51,13 +51,13 @@ public sealed partial class IconVeilView : Control
             IconWash.Sealed => SealedWash,
             _ => null,
         };
-        if (wash is { } colour) DrawRect(rect, colour);
-        var badge = _badge switch
+        if (washColor is { } colour) DrawRect(rect, colour);
+        var badgeTexture = badge switch
         {
-            IconBadge.NotBound => _notBound ??= GD.Load<Texture2D>(BadgeArt + "hermetic_seal.png"),
-            IconBadge.Bound => _bound ??= GD.Load<Texture2D>(BadgeArt + "belong.png"),
+            IconBadge.NotBound => notBound ??= GD.Load<Texture2D>(BadgeArt + "hermetic_seal.png"),
+            IconBadge.Bound => bound ??= GD.Load<Texture2D>(BadgeArt + "belong.png"),
             _ => null,
         };
-        if (badge != null) DrawTextureRect(badge, rect, false);
+        if (badgeTexture != null) DrawTextureRect(badgeTexture, rect, false);
     }
 }

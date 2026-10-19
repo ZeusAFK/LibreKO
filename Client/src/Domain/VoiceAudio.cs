@@ -15,14 +15,14 @@ public sealed class VoiceJitterBuffer
     public const int Capacity = 32;
     public const int MaxConcealed = 5;
 
-    private readonly byte[]?[] _frames = new byte[Capacity][];
-    private readonly ushort[] _seqs = new ushort[Capacity];
-    private ushort _next;
-    private bool _started;
-    private bool _playing;
-    private int _concealed;
+    private readonly byte[]?[] frames = new byte[Capacity][];
+    private readonly ushort[] seqs = new ushort[Capacity];
+    private ushort next;
+    private bool started;
+    private bool playing;
+    private int concealed;
 
-    public bool Playing => _playing;
+    public bool Playing => playing;
 
     public int Buffered
     {
@@ -30,103 +30,103 @@ public sealed class VoiceJitterBuffer
         {
             int count = 0;
             for (int i = 0; i < Capacity; i++)
-                if (_frames[i] != null && Ahead(_seqs[i]) is >= 0 and < Capacity) count++;
+                if (frames[i] != null && Ahead(seqs[i]) is >= 0 and < Capacity) count++;
             return count;
         }
     }
 
     public void Push(ushort seq, byte[] frame)
     {
-        if (!_started)
+        if (!started)
         {
-            _next = seq;
-            _started = true;
+            next = seq;
+            started = true;
         }
         int ahead = Ahead(seq);
         if (ahead < 0)
         {
-            if (_playing || ahead <= -Capacity) return;
-            _next = seq;
+            if (playing || ahead <= -Capacity) return;
+            next = seq;
         }
         else if (ahead >= Capacity)
         {
             Reset();
-            _next = seq;
-            _started = true;
+            next = seq;
+            started = true;
         }
         int slot = seq % Capacity;
-        _frames[slot] = frame;
-        _seqs[slot] = seq;
+        frames[slot] = frame;
+        seqs[slot] = seq;
     }
 
     public JitterOutput Pop(out byte[]? frame)
     {
         frame = null;
-        if (!_started) return JitterOutput.Wait;
-        if (!_playing)
+        if (!started) return JitterOutput.Wait;
+        if (!playing)
         {
             if (Buffered < TargetFrames) return JitterOutput.Wait;
-            _playing = true;
+            playing = true;
         }
-        if (Take(_next, out frame))
+        if (Take(next, out frame))
         {
-            _next++;
-            _concealed = 0;
+            next++;
+            concealed = 0;
             return JitterOutput.Frame;
         }
         if (Buffered > 0)
         {
-            if (_concealed < MaxConcealed)
+            if (concealed < MaxConcealed)
             {
-                _next++;
-                _concealed++;
-                Peek(_next, out frame);
+                next++;
+                concealed++;
+                Peek(next, out frame);
                 return JitterOutput.Lost;
             }
-            _next = Earliest();
-            _concealed = 0;
-            if (Take(_next, out frame))
+            next = Earliest();
+            concealed = 0;
+            if (Take(next, out frame))
             {
-                _next++;
+                next++;
                 return JitterOutput.Frame;
             }
         }
-        _playing = false;
-        if (Buffered == 0) _started = false;
+        playing = false;
+        if (Buffered == 0) started = false;
         return JitterOutput.Wait;
     }
 
     public void Reset()
     {
-        Array.Clear(_frames);
-        _started = false;
-        _playing = false;
-        _concealed = 0;
+        Array.Clear(frames);
+        started = false;
+        playing = false;
+        concealed = 0;
     }
 
-    private int Ahead(ushort seq) => (short)(ushort)(seq - _next);
+    private int Ahead(ushort seq) => (short)(ushort)(seq - next);
 
     private ushort Earliest()
     {
         int best = Capacity;
         for (int i = 0; i < Capacity; i++)
-            if (_frames[i] != null && Ahead(_seqs[i]) is >= 0 and var ahead && ahead < best) best = ahead;
-        return (ushort)(_next + (best == Capacity ? 0 : best));
+            if (frames[i] != null && Ahead(seqs[i]) is >= 0 and var ahead && ahead < best) best = ahead;
+        return (ushort)(next + (best == Capacity ? 0 : best));
     }
 
     private bool Take(ushort seq, out byte[]? frame)
     {
         int slot = seq % Capacity;
-        frame = _frames[slot];
-        if (frame == null || _seqs[slot] != seq) { frame = null; return false; }
-        _frames[slot] = null;
+        frame = frames[slot];
+        if (frame == null || seqs[slot] != seq) { frame = null; return false; }
+        frames[slot] = null;
         return true;
     }
 
     private void Peek(ushort seq, out byte[]? frame)
     {
         int slot = seq % Capacity;
-        frame = _frames[slot] != null && _seqs[slot] == seq ? _frames[slot] : null;
+        frame = frames[slot] != null && seqs[slot] == seq ? frames[slot] : null;
     }
 }
 
@@ -164,7 +164,7 @@ public sealed class VoiceAutoGain
     private const float FallRate = 0.4f;
     private const float QuietRms = 1e-4f;
 
-    private float _applied = 1f;
+    private float applied = 1f;
 
     public float Gain { get; private set; } = 1f;
 
@@ -184,13 +184,13 @@ public sealed class VoiceAutoGain
             Gain += (wanted - Gain) * (wanted < Gain ? FallRate : RiseRate);
         }
         float target = peak * Gain > PeakLimit ? PeakLimit / peak : Gain;
-        float from = Math.Min(_applied, target);
+        float from = Math.Min(applied, target);
         for (int i = 0; i < frame.Length; i++)
         {
             float gain = from + (target - from) * (i + 1) / frame.Length;
             frame[i] = SoftLimit(frame[i] * gain);
         }
-        _applied = target;
+        applied = target;
     }
 
     public static float SoftLimit(float sample)
@@ -204,7 +204,7 @@ public sealed class VoiceAutoGain
     public void Reset()
     {
         Gain = 1f;
-        _applied = 1f;
+        applied = 1f;
     }
 }
 
@@ -215,7 +215,7 @@ public sealed class VoiceActivityGate
     public const int HangoverFrames = 15;
     private const double Floor = 1e-6;
 
-    private int _hang;
+    private int hang;
 
     public float LevelDb { get; private set; } = MinDb;
 
@@ -235,12 +235,12 @@ public sealed class VoiceActivityGate
         LevelDb = Math.Max(MinDb, (float)(20 * Math.Log10(Math.Max(rms, Floor))));
         if (LevelDb >= ThresholdDb(threshold))
         {
-            _hang = HangoverFrames;
+            hang = HangoverFrames;
             return true;
         }
-        if (_hang > 0)
+        if (hang > 0)
         {
-            _hang--;
+            hang--;
             return true;
         }
         return false;
@@ -248,7 +248,7 @@ public sealed class VoiceActivityGate
 
     public void Reset()
     {
-        _hang = 0;
+        hang = 0;
         LevelDb = MinDb;
     }
 }
@@ -260,50 +260,50 @@ public sealed class PcmFrameCutter
     public const int FrameMs = 20;
     private const int MaxPendingFrames = 10;
 
-    private readonly float[] _pending = new float[FrameSamples * MaxPendingFrames];
-    private int _count;
+    private readonly float[] pending = new float[FrameSamples * MaxPendingFrames];
+    private int count;
 
-    public int Pending => _count;
+    public int Pending => count;
 
     public void Push(ReadOnlySpan<float> mono)
     {
-        if (mono.Length >= _pending.Length)
+        if (mono.Length >= pending.Length)
         {
-            mono[^_pending.Length..].CopyTo(_pending);
-            _count = _pending.Length;
+            mono[^pending.Length..].CopyTo(pending);
+            count = pending.Length;
             return;
         }
-        int overflow = _count + mono.Length - _pending.Length;
+        int overflow = count + mono.Length - pending.Length;
         if (overflow > 0)
         {
-            Array.Copy(_pending, overflow, _pending, 0, _count - overflow);
-            _count -= overflow;
+            Array.Copy(pending, overflow, pending, 0, count - overflow);
+            count -= overflow;
         }
-        mono.CopyTo(_pending.AsSpan(_count));
-        _count += mono.Length;
+        mono.CopyTo(pending.AsSpan(count));
+        count += mono.Length;
     }
 
     public bool TryTake(Span<float> frame)
     {
-        if (_count < FrameSamples || frame.Length < FrameSamples) return false;
-        _pending.AsSpan(0, FrameSamples).CopyTo(frame);
-        _count -= FrameSamples;
-        Array.Copy(_pending, FrameSamples, _pending, 0, _count);
+        if (count < FrameSamples || frame.Length < FrameSamples) return false;
+        pending.AsSpan(0, FrameSamples).CopyTo(frame);
+        count -= FrameSamples;
+        Array.Copy(pending, FrameSamples, pending, 0, count);
         return true;
     }
 
-    public void Clear() => _count = 0;
+    public void Clear() => count = 0;
 }
 
 public sealed class LinearResampler(int fromRate, int toRate)
 {
-    private readonly double _step = fromRate / (double)toRate;
-    private double _position;
-    private float _last;
+    private readonly double step = fromRate / (double)toRate;
+    private double position;
+    private float last;
 
     public bool PassThrough => fromRate == toRate;
 
-    public int MaxOutput(int inputLength) => (int)Math.Ceiling((inputLength + 1) / _step) + 1;
+    public int MaxOutput(int inputLength) => (int)Math.Ceiling((inputLength + 1) / step) + 1;
 
     public int Process(ReadOnlySpan<float> input, Span<float> output)
     {
@@ -317,15 +317,15 @@ public sealed class LinearResampler(int fromRate, int toRate)
         int written = 0;
         while (written < output.Length)
         {
-            int index = (int)Math.Floor(_position);
+            int index = (int)Math.Floor(position);
             if (index + 1 >= input.Length) break;
-            float a = index < 0 ? _last : input[index];
+            float a = index < 0 ? last : input[index];
             float b = input[index + 1];
-            output[written++] = a + (b - a) * (float)(_position - index);
-            _position += _step;
+            output[written++] = a + (b - a) * (float)(position - index);
+            position += step;
         }
-        _position -= input.Length;
-        _last = input[^1];
+        position -= input.Length;
+        last = input[^1];
         return written;
     }
 }

@@ -36,11 +36,11 @@ public class GamePacketHandler(
 
     private const int PingMinIntervalMs = 200;
     private const int PingMaxEchoBytes = 8;
-    private readonly ConcurrentDictionary<Guid, long> _lastPingTicks = new();
+    private readonly ConcurrentDictionary<Guid, long> lastPingTicks = new();
 
     public async Task OnClientDisconnected(IClient client)
     {
-        _lastPingTicks.TryRemove(client.Id, out _);
+        lastPingTicks.TryRemove(client.Id, out _);
         await sessionTerminationService.DisconnectAsync(client);
         await accountLockService.ReleaseAsync(client);
     }
@@ -48,9 +48,9 @@ public class GamePacketHandler(
     private async Task HandlePingAsync(IClient client, Packet packet)
     {
         var now = Environment.TickCount64;
-        if (now - _lastPingTicks.GetValueOrDefault(client.Id) < PingMinIntervalMs)
+        if (now - lastPingTicks.GetValueOrDefault(client.Id) < PingMinIntervalMs)
             return;
-        _lastPingTicks[client.Id] = now;
+        lastPingTicks[client.Id] = now;
 
         var echoBytes = Math.Min(packet.RemainingBytes, PingMaxEchoBytes);
         await client.SendPacket(SessionPacketWriter.Pong(

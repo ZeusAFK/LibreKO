@@ -57,7 +57,7 @@ public sealed class LootFilter
     {
         if (itemId == coinId) return LootGroup.Coins;
         if (item == null) return LootGroup.Other;
-        if (item.Race == ItemData.QuestItemRace) return LootGroup.Quest;
+        if (item.Race == ItemData.Race.Quest) return LootGroup.Quest;
         return item.Slot > 0 ? LootGroup.Equipment : LootGroup.Other;
     }
 

@@ -34,15 +34,13 @@ public static class NestDungeon
     private const int FirstNest = 81;
     private const int SecondNest = 82;
     private const int ThirdNest = 83;
-    private const int BorderDefenseWar = 84;
-    private const int JuraidMountain = 87;
     private const int SecondsPerMinute = 60;
     private const int SecondsPerHour = 3600;
 
     public static bool IsNestZone(int zone) => zone is FirstNest or SecondNest or ThirdNest;
 
     public static bool IsInstancedZone(int zone) =>
-        IsNestZone(zone) || zone is BorderDefenseWar or JuraidMountain;
+        IsNestZone(zone) || zone is TempleZones.BorderDefenseWar or TempleZones.JuraidMountain;
 
     public static string TerminationLine(int secondsLeft, bool completed, string label = TerminationFallback,
         string seconds = SecondsFallback)

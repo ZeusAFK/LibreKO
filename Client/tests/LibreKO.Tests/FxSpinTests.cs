@@ -9,7 +9,7 @@ public class FxSpinTests
 
     private static Vector3 Mirror(Vector3 v) => new(-v.X, v.Y, v.Z);
 
-    private static Vector3 Baked(Vector3 koRate) => Mirror(koRate);
+    private static Vector3 Baked(Vector3 mapRate) => Mirror(mapRate);
 
     private static Vector3 N3Rotation(Vector3 p, Vector3 angles)
     {
@@ -42,35 +42,35 @@ public class FxSpinTests
     [InlineData(0.4f, -1.1f, 0.9f)]
     public void AMeshSpinsAsTheMirroredN3Rotation(float x, float y, float z)
     {
-        var koRate = new Vector3(x, y, z);
+        var mapRate = new Vector3(x, y, z);
         const float age = 0.75f;
         var point = new Vector3(2f, -1f, 3f);
 
-        var turned = FxSpin.MeshOrientation(FxSpin.RateFromBaked(Baked(koRate)), age) * Mirror(point);
+        var turned = FxSpin.MeshOrientation(FxSpin.RateFromBaked(Baked(mapRate)), age) * Mirror(point);
 
-        AssertClose(Mirror(N3Rotation(point, koRate * age)), turned);
+        AssertClose(Mirror(N3Rotation(point, mapRate * age)), turned);
     }
 
     [Theory]
     [InlineData(0.9f)]
     [InlineData(-2.4f)]
-    public void AGroundBoardYawsAsTheMirroredD3DYaw(float koRate)
+    public void AGroundBoardYawsAsTheMirroredD3DYaw(float mapRate)
     {
         const float age = 1.5f;
         var point = new Vector3(4f, 0f, -1f);
-        float yaw = FxSpin.RateFromBaked(Baked(new Vector3(0f, koRate, 0f))).Y * age;
+        float yaw = FxSpin.RateFromBaked(Baked(new Vector3(0f, mapRate, 0f))).Y * age;
 
         var turned = new Basis(Vector3.Up, yaw) * Mirror(point);
 
-        AssertClose(Mirror(D3DRotationY(point, koRate * age)), turned);
+        AssertClose(Mirror(D3DRotationY(point, mapRate * age)), turned);
     }
 
     [Theory]
     [InlineData(5.0f)]
     [InlineData(-0.5f)]
-    public void ScreenPlaneRollsKeepTheAuthoredSign(float koRoll)
+    public void ScreenPlaneRollsKeepTheAuthoredSign(float mapRoll)
     {
-        Assert.Equal(koRoll, FxSpin.RateFromBaked(Baked(new Vector3(koRoll, 0f, 0f))).X, Tolerance);
-        Assert.Equal(koRoll, FxSpin.RollFromBaked(-koRoll), Tolerance);
+        Assert.Equal(mapRoll, FxSpin.RateFromBaked(Baked(new Vector3(mapRoll, 0f, 0f))).X, Tolerance);
+        Assert.Equal(mapRoll, FxSpin.RollFromBaked(-mapRoll), Tolerance);
     }
 }

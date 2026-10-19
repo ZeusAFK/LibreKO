@@ -1,6 +1,4 @@
-﻿using LibreKO.Domain;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public readonly record struct VipVaultContents(bool PinSet, bool Open, uint ExpiresAt, ItemSlot[] Slots)
 {
@@ -39,16 +37,15 @@ public readonly record struct VipVaultContents(bool PinSet, bool Open, uint Expi
     }
 }
 
-public readonly record struct VipVaultKeyReply(byte Result, byte Storage, uint ExpiresAt)
+public readonly record struct VipVaultKeyReply(VipWarehouseResult Result, byte Storage, uint ExpiresAt)
 {
-    public const byte Succeeded = 1;
     private const int StorageAndTimeBytes = 5;
 
     public static VipVaultKeyReply? Read(Packet p)
     {
         if (p.RemainingBytes < 1) return null;
-        byte result = p.ReadByte();
-        if (result != Succeeded) return new VipVaultKeyReply(result, 0, 0);
+        var result = (VipWarehouseResult)p.ReadByte();
+        if (result != VipWarehouseResult.Succeeded) return new VipVaultKeyReply(result, 0, 0);
         return p.RemainingBytes >= StorageAndTimeBytes ? new VipVaultKeyReply(result, p.ReadByte(), p.ReadUInt()) : null;
     }
 }

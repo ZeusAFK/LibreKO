@@ -62,8 +62,8 @@ public class KillSplashTests
     public void TheKillPacketReadsKindIdNameNationAndCount()
     {
         var p = new Packet(GameOpcodes.GS_KILL_ASSIST);
-        p.WriteByte(KillAssistReplies.KillSub);
-        p.WriteByte(KillSplash.OwnStreak);
+        p.WriteByte((byte)KillAssistSubOpcode.Kill);
+        p.WriteByte((byte)KillStreakKind.OwnStreak);
         p.WriteInt(7);
         p.WriteString("Rikka");
         p.WriteByte(1);
@@ -73,6 +73,6 @@ public class KillSplashTests
 
         var kill = KillAssistReplies.ReadKill(p);
 
-        Assert.Equal(new KillStreakReply(KillSplash.OwnStreak, 7, "Rikka", 1, 3), kill);
+        Assert.Equal(new KillStreakReply(KillStreakKind.OwnStreak, 7, "Rikka", 1, 3), kill);
     }
 }

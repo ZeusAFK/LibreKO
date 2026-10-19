@@ -19,51 +19,51 @@ public sealed class ChatPacketWriter
 
     public const int NoSender = -1;
 
-    private byte _type;
-    private byte _nation;
-    private int _characterId;
-    private string _name = string.Empty;
-    private string _message = string.Empty;
-    private byte _authority;
+    private byte type;
+    private byte nation;
+    private int characterId;
+    private string name = string.Empty;
+    private string message = string.Empty;
+    private byte authority;
 
     public static Packet Say(
         byte type, byte nation, int characterId, string name, string message, bool isGameMaster) =>
         new ChatPacketWriter
         {
-            _type = type,
-            _nation = nation,
-            _characterId = characterId,
-            _name = name,
-            _message = message,
-            _authority = isGameMaster ? AuthorityGameMaster : AuthorityPlayer,
+            type = type,
+            nation = nation,
+            characterId = characterId,
+            name = name,
+            message = message,
+            authority = isGameMaster ? AuthorityGameMaster : AuthorityPlayer,
         }.Build();
 
     public static Packet SystemNotice(byte nation, string message) =>
         new ChatPacketWriter
         {
-            _type = TypeSystemNotice,
-            _nation = nation,
-            _characterId = NoSender,
-            _message = message,
+            type = TypeSystemNotice,
+            nation = nation,
+            characterId = NoSender,
+            message = message,
         }.Build();
 
     public static Packet ClanNotice(string message) =>
         new ChatPacketWriter
         {
-            _type = TypeClan,
-            _characterId = NoSender,
-            _message = message,
+            type = TypeClan,
+            characterId = NoSender,
+            message = message,
         }.Build();
 
     public static Packet NationNotice(byte nation, int characterId, string name, string message) =>
         new ChatPacketWriter
         {
-            _type = TypeSystemNotice,
-            _nation = nation,
-            _characterId = characterId,
-            _name = name,
-            _message = message,
-            _authority = AuthorityNone,
+            type = TypeSystemNotice,
+            nation = nation,
+            characterId = characterId,
+            name = name,
+            message = message,
+            authority = AuthorityNone,
         }.Build();
 
     public static Packet DeathNotice(
@@ -89,14 +89,14 @@ public sealed class ChatPacketWriter
     private Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_CHAT);
-        packet.WriteByte(_type);
-        packet.WriteByte(_nation);
-        packet.WriteInt(_characterId);
-        packet.WriteSByteString(_name);
-        packet.WriteString(_message);
+        packet.WriteByte(type);
+        packet.WriteByte(nation);
+        packet.WriteInt(characterId);
+        packet.WriteSByteString(name);
+        packet.WriteString(message);
 
-        if (_characterId >= 0)
-            packet.WriteByte(_authority);
+        if (characterId >= 0)
+            packet.WriteByte(authority);
 
         return packet;
     }

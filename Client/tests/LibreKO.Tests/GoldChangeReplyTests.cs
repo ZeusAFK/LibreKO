@@ -9,7 +9,7 @@ public class GoldChangeReplyTests
     public void AnEarnedChangeCarriesTheNewBalance()
     {
         var p = new Packet(GameOpcodes.GS_GOLD_CHANGE);
-        p.WriteByte(GoldChangeReply.Earned);
+        p.WriteByte((byte)GoldChangeKind.Earned);
         p.WriteInt(1_500);
         p.WriteInt(42_000);
         p.ResetOffset();
@@ -26,7 +26,7 @@ public class GoldChangeReplyTests
     public void AJackpotReadsItsTimesAndUnitAndLeavesTheBalance()
     {
         var p = new Packet(GameOpcodes.GS_GOLD_CHANGE);
-        p.WriteByte(GoldChangeReply.Multiplied);
+        p.WriteByte((byte)GoldChangeKind.Multiplied);
         p.WriteInt(0);
         p.WriteInt(0);
         p.WriteUShort(500);
@@ -45,7 +45,7 @@ public class GoldChangeReplyTests
     public void AShortJackpotIsRefused()
     {
         var p = new Packet(GameOpcodes.GS_GOLD_CHANGE);
-        p.WriteByte(GoldChangeReply.Multiplied);
+        p.WriteByte((byte)GoldChangeKind.Multiplied);
         p.WriteInt(0);
         p.WriteInt(0);
         p.ResetOffset();

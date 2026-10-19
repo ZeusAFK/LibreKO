@@ -9,7 +9,7 @@ public class UserInfoReplyTests
     private static Packet Reply(int party, int[] places, (int Type, short B, short S, short G)[] marks, (int Id, int Count)[] special)
     {
         var p = new Packet(GameOpcodes.GS_USER_INFO);
-        p.WriteByte(UserInfoReply.Accepted);
+        p.WriteByte((byte)PlayerInspectResult.Accepted);
         p.WriteSByteString("Rikka");
         p.WriteByte(72);
         p.WriteShort(211);
@@ -49,7 +49,7 @@ public class UserInfoReplyTests
     {
         var (result, info) = UserInfoReply.Read(Reply(-1, new[] { 4, 255, 0, 9, 12, 0, 1 }, System.Array.Empty<(int, short, short, short)>(), System.Array.Empty<(int, int)>()));
 
-        Assert.Equal(UserInfoReply.Accepted, result);
+        Assert.Equal((byte)PlayerInspectResult.Accepted, result);
         Assert.NotNull(info);
         Assert.Equal("Rikka", info!.Name);
         Assert.Equal(211, info.Class);

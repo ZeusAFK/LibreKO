@@ -20,9 +20,9 @@ public class PartyUserVoteTests : GameTestBase
 
     private sealed class FakeTimeProvider(DateTimeOffset start) : TimeProvider
     {
-        private DateTimeOffset _now = start;
-        public override DateTimeOffset GetUtcNow() => _now;
-        public void Advance(TimeSpan by) => _now += by;
+        private DateTimeOffset now = start;
+        public override DateTimeOffset GetUtcNow() => now;
+        public void Advance(TimeSpan by) => now += by;
     }
 
     [Fact]

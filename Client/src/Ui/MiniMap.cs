@@ -28,29 +28,29 @@ public partial class MiniMap : Control
     private const float MapInset = 0f;
     private const float Diameter = SquareSize - MapInset * 2f;
     private static readonly float[] ZoomRadii = { 64f, 100f, 150f, 220f, 320f, 460f };
-    private int _zoomIndex = 2;
+    private int zoomIndex = 2;
 
-    private ColorRect _disc = null!;
-    private ShaderMaterial _discMat = null!;
-    private Overlay _overlay = null!;
-    private Label _zoneLabel = null!;
-    private Label _coordLabel = null!;
-    private Control _coordChip = null!;
-    private Button _zoomIn = null!;
-    private Button _zoomOut = null!;
-    private MapChevron? _chevron;
-    private bool _collapsed;
+    private ColorRect disc = null!;
+    private ShaderMaterial discMat = null!;
+    private Overlay overlay = null!;
+    private Label zoneLabel = null!;
+    private Label coordLabel = null!;
+    private Control coordChip = null!;
+    private Button zoomIn = null!;
+    private Button zoomOut = null!;
+    private MapChevron? chevron;
+    private bool collapsed;
 
-    private ImageTexture? _mapTex;
-    private float _worldExtent;
-    private bool _hasMap;
+    private ImageTexture? mapTex;
+    private float worldExtent;
+    private bool hasMap;
 
-    public Texture2D? MapTexture => _mapTex;
-    public float MapExtent => _worldExtent;
+    public Texture2D? MapTexture => mapTex;
+    public float MapExtent => worldExtent;
     public string MapSource { get; private set; } = "relief";
 
-    private float _koX, _koZ, _headingDeg;
-    private readonly List<Blip> _blips = new();
+    private float mapX, mapZ, headingDeg;
+    private readonly List<Blip> blips = new();
 
     public MiniMap()
     {
@@ -61,50 +61,50 @@ public partial class MiniMap : Control
     private void Build()
     {
         if (Platform.TouchUi) BuildFrame();
-        _disc = new ColorRect
+        disc = new ColorRect
         {
             Position = new Vector2(MapInset, HeaderSize + MapInset),
             Size = new Vector2(MapSize, MapSize),
             Color = Colors.White,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        _discMat = new ShaderMaterial { Shader = BuildShader() };
-        _discMat.SetShaderParameter("center", new Vector2(0.5f, 0.5f));
-        _discMat.SetShaderParameter("span", 0.3f);
-        _discMat.SetShaderParameter("rot", 0f);
-        _discMat.SetShaderParameter("oob", new Color(0.04f, 0.05f, 0.07f));
-        _disc.Material = _discMat;
-        AddChild(_disc);
+        discMat = new ShaderMaterial { Shader = BuildShader() };
+        discMat.SetShaderParameter("center", new Vector2(0.5f, 0.5f));
+        discMat.SetShaderParameter("span", 0.3f);
+        discMat.SetShaderParameter("rot", 0f);
+        discMat.SetShaderParameter("oob", new Color(0.04f, 0.05f, 0.07f));
+        disc.Material = discMat;
+        AddChild(disc);
 
-        _overlay = new Overlay(this)
+        overlay = new Overlay(this)
         {
-            Position = _disc.Position,
-            Size = _disc.Size,
+            Position = disc.Position,
+            Size = disc.Size,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        AddChild(_overlay);
+        AddChild(overlay);
 
-        _zoneLabel = UiTheme.Heading(Platform.TouchUi ? 16 : 13, "—");
-        _zoneLabel.Position = Platform.TouchUi
+        zoneLabel = UiTheme.Heading(Platform.TouchUi ? 16 : 13, "—");
+        zoneLabel.Position = Platform.TouchUi
             ? new Vector2(HeaderCell + 8f, 0f)
             : new Vector2(6f, 8f);
-        _zoneLabel.Size = new Vector2(MapSize - (Platform.TouchUi ? HeaderCell * 3f + 16f : 12f),
+        zoneLabel.Size = new Vector2(MapSize - (Platform.TouchUi ? HeaderCell * 3f + 16f : 12f),
                                       Platform.TouchUi ? HeaderHeight : 20f);
-        if (Platform.TouchUi) _zoneLabel.VerticalAlignment = VerticalAlignment.Center;
-        _zoneLabel.AddThemeConstantOverride("outline_size", 3);
-        _zoneLabel.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.75f));
-        _zoneLabel.MouseFilter = MouseFilterEnum.Ignore;
-        AddChild(_zoneLabel);
+        if (Platform.TouchUi) zoneLabel.VerticalAlignment = VerticalAlignment.Center;
+        zoneLabel.AddThemeConstantOverride("outline_size", 3);
+        zoneLabel.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.75f));
+        zoneLabel.MouseFilter = MouseFilterEnum.Ignore;
+        AddChild(zoneLabel);
 
         var chip = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
-        _coordChip = chip;
+        coordChip = chip;
         chip.AddThemeStyleboxOverride("panel", UiTheme.Chip());
         chip.Position = new Vector2(8, TotalHeight - 29f);
         chip.CustomMinimumSize = new Vector2(98, 0);
         AddChild(chip);
-        _coordLabel = UiTheme.Text("0, 0", 11, UiTheme.TextLo, HorizontalAlignment.Center);
-        _coordLabel.AddThemeColorOverride("font_color", UiTheme.TextLo);
-        chip.AddChild(_coordLabel);
+        coordLabel = UiTheme.Text("0, 0", 11, UiTheme.TextLo, HorizontalAlignment.Center);
+        coordLabel.AddThemeColorOverride("font_color", UiTheme.TextLo);
+        chip.AddChild(coordLabel);
 
         var zin = UiTheme.IconButton("+", "Zoom in");
         var zout = UiTheme.IconButton("−", "Zoom out");
@@ -130,8 +130,8 @@ public partial class MiniMap : Control
         zout.Pressed += () => Zoom(1);
         AddChild(zin);
         AddChild(zout);
-        _zoomIn = zin;
-        _zoomOut = zout;
+        zoomIn = zin;
+        zoomOut = zout;
 
         if (Platform.TouchUi) BuildCollapseToggle();
         BuildNpcList();
@@ -183,23 +183,23 @@ public partial class MiniMap : Control
         foreach (string state in new[] { "normal", "hover", "pressed", "focus", "disabled" })
             button.AddThemeStyleboxOverride(state, new StyleBoxEmpty());
 
-        _chevron = new MapChevron { MouseFilter = MouseFilterEnum.Ignore };
-        _chevron.SetAnchorsPreset(LayoutPreset.FullRect);
-        button.AddChild(_chevron);
-        button.Pressed += () => SetCollapsed(!_collapsed);
+        chevron = new MapChevron { MouseFilter = MouseFilterEnum.Ignore };
+        chevron.SetAnchorsPreset(LayoutPreset.FullRect);
+        button.AddChild(chevron);
+        button.Pressed += () => SetCollapsed(!collapsed);
         AddChild(button);
     }
 
     private void SetCollapsed(bool on)
     {
-        _collapsed = on;
+        collapsed = on;
         Collapsed = on;
-        _disc.Visible = !on;
-        _overlay.Visible = !on;
-        _coordChip.Visible = !on;
-        _zoomIn.Visible = !on;
-        _zoomOut.Visible = !on;
-        if (_chevron != null) _chevron.PointsDown = on;
+        disc.Visible = !on;
+        overlay.Visible = !on;
+        coordChip.Visible = !on;
+        zoomIn.Visible = !on;
+        zoomOut.Visible = !on;
+        if (chevron != null) chevron.PointsDown = on;
         CustomMinimumSize = new Vector2(MapSize, on ? HeaderSize : TotalHeight);
         Size = CustomMinimumSize;
         CollapsedChanged?.Invoke();
@@ -209,27 +209,27 @@ public partial class MiniMap : Control
 
     public void SetZone(string stem, string displayName)
     {
-        _zoneLabel.Text = displayName;
-        var hm = KoHeightmap.LoadPng(stem);
+        zoneLabel.Text = displayName;
+        var hm = Heightmap.LoadPng(stem);
         if (hm == null)
         {
-            _hasMap = false;
-            _mapTex = null;
+            hasMap = false;
+            mapTex = null;
             MapSource = "none";
-            _discMat.SetShaderParameter("map_tex", new Variant());
+            discMat.SetShaderParameter("map_tex", new Variant());
             return;
         }
-        _worldExtent = hm.WorldExtent;
+        worldExtent = hm.WorldExtent;
         string baked = BakedMapPath(stem);
-        _mapTex = LoadBakedMap(baked);
-        MapSource = _mapTex != null ? baked : "relief";
-        _mapTex ??= BuildReliefTexture(hm, LoadWaterRects(stem, hm.CellSize));
-        _discMat.SetShaderParameter("map_tex", _mapTex);
-        _hasMap = true;
+        mapTex = LoadBakedMap(baked);
+        MapSource = mapTex != null ? baked : "relief";
+        mapTex ??= BuildReliefTexture(hm, LoadWaterRects(stem, hm.CellSize));
+        discMat.SetShaderParameter("map_tex", mapTex);
+        hasMap = true;
         ApplyZoom();
     }
 
-    public float WorldExtent => _worldExtent;
+    public float WorldExtent => worldExtent;
 
     internal static ImageTexture? LoadBaked(string stem) => LoadBakedMap(BakedMapPath(stem));
 
@@ -246,35 +246,35 @@ public partial class MiniMap : Control
         return ImageTexture.CreateFromImage(img);
     }
 
-    public void UpdateView(float koX, float koZ, float headingDeg, IReadOnlyList<Blip> blips)
+    public void UpdateView(float mapX, float mapZ, float headingDeg, IReadOnlyList<Blip> currentBlips)
     {
-        _koX = koX; _koZ = koZ; _headingDeg = headingDeg;
-        _blips.Clear();
-        _blips.AddRange(blips);
+        this.mapX = mapX; this.mapZ = mapZ; this.headingDeg = headingDeg;
+        blips.Clear();
+        blips.AddRange(currentBlips);
 
-        if (_hasMap && _worldExtent > 0f)
+        if (hasMap && worldExtent > 0f)
         {
-            var center = new Vector2(koX / _worldExtent, 1f - koZ / _worldExtent);
-            _discMat.SetShaderParameter("center", center);
+            var center = new Vector2(mapX / worldExtent, 1f - mapZ / worldExtent);
+            discMat.SetShaderParameter("center", center);
         }
-        _coordLabel.Text = $"{koX:0}, {koZ:0}";
-        _overlay.QueueRedraw();
+        coordLabel.Text = $"{mapX:0}, {mapZ:0}";
+        overlay.QueueRedraw();
     }
 
     private void Zoom(int dir)
     {
-        _zoomIndex = Mathf.Clamp(_zoomIndex + dir, 0, ZoomRadii.Length - 1);
+        zoomIndex = Mathf.Clamp(zoomIndex + dir, 0, ZoomRadii.Length - 1);
         ApplyZoom();
-        _overlay.QueueRedraw();
+        overlay.QueueRedraw();
     }
 
-    private float ViewRadiusWorld => ZoomRadii[_zoomIndex];
+    private float ViewRadiusWorld => ZoomRadii[zoomIndex];
 
     private void ApplyZoom()
     {
-        if (!_hasMap || _worldExtent <= 0f) return;
-        float span = 2f * ViewRadiusWorld / _worldExtent;
-        _discMat.SetShaderParameter("span", span);
+        if (!hasMap || worldExtent <= 0f) return;
+        float span = 2f * ViewRadiusWorld / worldExtent;
+        discMat.SetShaderParameter("span", span);
     }
 
     private float PxPerWorld => Diameter * 0.5f / ViewRadiusWorld;
@@ -332,7 +332,7 @@ public partial class MiniMap : Control
         return Ramp[^1].C;
     }
 
-    private static ImageTexture BuildReliefTexture(KoHeightmap hm, List<WaterRect> water)
+    private static ImageTexture BuildReliefTexture(Heightmap hm, List<WaterRect> water)
     {
         int n = hm.MapSize;
         int dim = Mathf.Min(n, 512);
@@ -387,7 +387,7 @@ public partial class MiniMap : Control
         return ImageTexture.CreateFromImage(img);
     }
 
-    private static float H(KoHeightmap hm, int x, int z)
+    private static float H(Heightmap hm, int x, int z)
     {
         int n = hm.MapSize;
         x = Mathf.Clamp(x, 0, n - 1);
@@ -410,7 +410,7 @@ public partial class MiniMap : Control
         var ctr = size * 0.5f;
         float radius = Diameter * 0.5f;
 
-        if (!_hasMap)
+        if (!hasMap)
         {
             var noMap = "No map data";
             var font = c.GetThemeDefaultFont();
@@ -426,7 +426,7 @@ public partial class MiniMap : Control
 
     private void DrawPlayer(Control c, Vector2 ctr)
     {
-        float a = Mathf.DegToRad(_headingDeg);
+        float a = Mathf.DegToRad(headingDeg);
         Vector2 Rot(Vector2 v) => new(v.X * Mathf.Cos(a) - v.Y * Mathf.Sin(a),
                                       v.X * Mathf.Sin(a) + v.Y * Mathf.Cos(a));
         var tip = ctr + Rot(new Vector2(0, -9f));
@@ -440,8 +440,8 @@ public partial class MiniMap : Control
 
     private sealed partial class Overlay : Control
     {
-        private readonly MiniMap _map;
-        public Overlay(MiniMap map) => _map = map;
-        public override void _Draw() => _map.DrawOverlay(this);
+        private readonly MiniMap map;
+        public Overlay(MiniMap map) => this.map = map;
+        public override void _Draw() => map.DrawOverlay(this);
     }
 }

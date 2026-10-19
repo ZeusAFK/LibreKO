@@ -175,16 +175,16 @@ public static partial class KeyBinds
         }
     }
 
-    private static int _padDevice = int.MinValue;
+    private static int padDevice = int.MinValue;
 
     public static int PadDevice()
     {
-        if (_padDevice == int.MinValue)
+        if (padDevice == int.MinValue)
         {
-            Input.Singleton.JoyConnectionChanged += (_, _) => _padDevice = FirstPad();
-            _padDevice = FirstPad();
+            Input.Singleton.JoyConnectionChanged += (_, _) => padDevice = FirstPad();
+            padDevice = FirstPad();
         }
-        return _padDevice;
+        return padDevice;
     }
 
     private static int FirstPad()

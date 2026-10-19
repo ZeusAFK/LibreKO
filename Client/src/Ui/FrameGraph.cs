@@ -14,15 +14,15 @@ public partial class FrameGraph : Control
     private static readonly Color Text = new(0.72f, 0.77f, 0.84f, 0.9f);
     private const int LabelSize = 11;
 
-    private readonly float[] _ms = new float[Frames];
-    private readonly Vector2[] _polygon = new Vector2[Frames + 2];
-    private readonly Vector2[] _outline = new Vector2[Frames];
-    private int _count;
+    private readonly float[] frameMs = new float[Frames];
+    private readonly Vector2[] polygon = new Vector2[Frames + 2];
+    private readonly Vector2[] outline = new Vector2[Frames];
+    private int count;
 
     public override void _Process(double delta)
     {
         if (!IsVisibleInTree()) return;
-        _count = Perf.CopyRecentFrames(_ms);
+        count = Perf.CopyRecentFrames(frameMs);
         QueueRedraw();
     }
 
@@ -30,10 +30,10 @@ public partial class FrameGraph : Control
     {
         var size = Size;
         DrawRect(new Rect2(Vector2.Zero, size), Back);
-        if (_count < 2) return;
+        if (count < 2) return;
 
         float peak = MinScaleMs;
-        for (int i = 0; i < _count; i++) if (_ms[i] > peak) peak = _ms[i];
+        for (int i = 0; i < count; i++) if (frameMs[i] > peak) peak = frameMs[i];
         float scale = (size.Y - 2f) / peak;
         var font = ThemeDB.FallbackFont;
         foreach (float grid in GridMs)
@@ -45,17 +45,17 @@ public partial class FrameGraph : Control
         }
 
         float step = size.X / (Frames - 1);
-        float x0 = size.X - (_count - 1) * step;
-        for (int i = 0; i < _count; i++)
+        float x0 = size.X - (count - 1) * step;
+        for (int i = 0; i < count; i++)
         {
             float x = x0 + i * step;
-            float y = size.Y - Mathf.Min(_ms[i], peak) * scale;
-            _outline[i] = new Vector2(x, y);
-            _polygon[i + 1] = _outline[i];
+            float y = size.Y - Mathf.Min(frameMs[i], peak) * scale;
+            outline[i] = new Vector2(x, y);
+            polygon[i + 1] = outline[i];
         }
-        _polygon[0] = new Vector2(x0, size.Y);
-        _polygon[_count + 1] = new Vector2(x0 + (_count - 1) * step, size.Y);
-        DrawColoredPolygon(_polygon[..(_count + 2)], Fill);
-        DrawPolyline(_outline[.._count], Line, 1.5f, true);
+        polygon[0] = new Vector2(x0, size.Y);
+        polygon[count + 1] = new Vector2(x0 + (count - 1) * step, size.Y);
+        DrawColoredPolygon(polygon[..(count + 2)], Fill);
+        DrawPolyline(outline[..count], Line, 1.5f, true);
     }
 }

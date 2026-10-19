@@ -27,17 +27,17 @@ public interface IGameCapeShop
 
 public sealed partial class PluginGame
 {
-    public IGameCapeShop CapeShop => _capeShop;
+    public IGameCapeShop CapeShop => capeShop;
 
-    private readonly CapeShopProxy _capeShop = new();
+    private readonly CapeShopProxy capeShop = new();
 
-    internal void AttachCapeShop(IGameCapeShop capeShop)
+    internal void AttachCapeShop(IGameCapeShop capeShopSource)
     {
-        _capeShop.Source = capeShop;
+        capeShop.Source = capeShopSource;
         RaiseCapeShop();
     }
 
-    internal void RaiseCapeShop() => _capeShop.Raise();
+    internal void RaiseCapeShop() => capeShop.Raise();
 
     private sealed class CapeShopProxy : IGameCapeShop
     {

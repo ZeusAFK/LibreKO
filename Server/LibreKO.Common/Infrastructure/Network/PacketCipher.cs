@@ -7,7 +7,7 @@ public sealed class PacketCipher
 {
     private static ulong PrivateKey = 0x1207500120128966;
 
-    private readonly byte[] _keyBytes;
+    private readonly byte[] keyBytes;
 
     public static void SetPrivateKey(ulong key) => PrivateKey = key;
 
@@ -17,7 +17,7 @@ public sealed class PacketCipher
         // then use the raw little-endian bytes of the uint64 as the XOR key
         var publicKeyUlong = (ulong)(publicKey & ulong.MaxValue);
         var tKey = publicKeyUlong ^ PrivateKey;
-        _keyBytes = BitConverter.GetBytes(tKey); // little-endian, 8 bytes
+        keyBytes = BitConverter.GetBytes(tKey); // little-endian, 8 bytes
     }
 
     public static (byte[], BigInteger) GeneratePublicKey()
@@ -46,7 +46,7 @@ public sealed class PacketCipher
         for (var i = 0; i < length; i++)
         {
             var rsk = (byte)((rKey >> 8) & 0xFF);
-            result[i] = (byte)(((data[i] ^ rsk) ^ _keyBytes[i % 8]) ^ lKey);
+            result[i] = (byte)(((data[i] ^ rsk) ^ keyBytes[i % 8]) ^ lKey);
             unchecked { rKey *= 2171; }
         }
 

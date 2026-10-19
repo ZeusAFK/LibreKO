@@ -8,6 +8,7 @@ public class Character : Entity
     public int AccountId { get; set; } = default!;
     public byte Slot { get; set; }
     public string Name { get; set; } = default!;
+    public bool NameChangeRequired { get; set; }
 
     public byte Race { get; set; } = default!;
     public short Class { get; set; }

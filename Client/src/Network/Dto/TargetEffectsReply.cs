@@ -1,12 +1,9 @@
-﻿using System.Collections.Generic;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public readonly record struct TargetEffect(int SkillId, int Seconds);
 
 public readonly record struct TargetEffectsReply(int TargetId, IReadOnlyList<TargetEffect> Effects)
 {
-    public const byte SubEffects = 2;
     private const int EffectBytes = 6;
 
     public static TargetEffectsReply? Read(Packet p)

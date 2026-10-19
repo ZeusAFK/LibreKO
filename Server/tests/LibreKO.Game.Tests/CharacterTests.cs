@@ -467,10 +467,8 @@ public class CharacterTests : GameTestBase
         character.Hair.Should().Be(998877);
     }
 
-    [Fact]
-    public async Task AllCharacterInfoNameChange_IsRefusedBecauseARenameNeedsTheScroll()
-    {
-        using var provider = CreateProvider(
+    private static ServiceProvider RenameProvider(bool nameChangeRequired, params string[] otherNames) =>
+        CreateProvider(
             db =>
             {
                 db.Accounts.Add(new Account
@@ -489,11 +487,18 @@ public class CharacterTests : GameTestBase
                     Slot = 0,
                     Name = "Before",
                     Race = 1,
-                    Class = 101
+                    Class = 101,
+                    Face = 2,
+                    NameChangeRequired = nameChangeRequired
                 });
+                byte slot = 1;
+                foreach (var name in otherNames)
+                    db.Characters.Add(new Character { AccountId = accountId, Slot = slot++, Name = name, Race = 1, Class = 101 });
                 db.SaveChanges();
             });
 
+    private static async Task<Packet> RenameAsync(ServiceProvider provider, string newName)
+    {
         using var scope = provider.CreateScope();
         var coordinator = scope.ServiceProvider.GetRequiredService<IPreGamePacketCoordinator>();
         var client = Substitute.For<IClient>();
@@ -501,17 +506,25 @@ public class CharacterTests : GameTestBase
 
         var request = new Packet(GameOpcodes.GS_ALLCHAR_INFO_REQ);
         request.WriteByte((byte)AllCharacterInfoOpcode.NameChange);
-        request.WriteUShort(1);
+        request.WriteUShort(0);
         request.WriteString("Before");
-        request.WriteString("After");
+        request.WriteString(newName);
 
         var response = await coordinator.HandleAsync(client, request, GameOpcodes.GS_ALLCHAR_INFO_REQ);
-
         response.Should().NotBeNull();
         response!.ReadByte().Should().Be((byte)AllCharacterInfoOpcode.NameChange);
+        return response;
+    }
+
+    [Fact]
+    public async Task AllCharacterInfoNameChange_IsRefusedForACharacterNotAskedToRename()
+    {
+        using var provider = RenameProvider(nameChangeRequired: false);
+
+        var response = await RenameAsync(provider, "After");
+
         response.ReadByte().Should().Be((byte)SelectingCharacterNameChangeResult.Failed);
         response.RemainingBytes.Should().Be(0);
-
         await using var verifyScope = provider.CreateAsyncScope();
         var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
         (await db.Characters.AnyAsync(character => character.Name == "Before")).Should().BeTrue();
@@ -521,56 +534,63 @@ public class CharacterTests : GameTestBase
     [Fact]
     public async Task AllCharacterInfoNameChange_ReturnsFailureWhenTargetNameExists()
     {
-        using var provider = CreateProvider(
-            db =>
-            {
-                db.Accounts.Add(new Account
-                {
-                    Login = "rename-user",
-                    Password = "pw",
-                    Nation = AccountNation.Karus,
-                    Authority = AccountAuthority.Normal
-                });
-                db.SaveChanges();
+        using var provider = RenameProvider(nameChangeRequired: true, "Taken");
 
-                var accountId = db.Accounts.Single(a => a.Login == "rename-user").Id;
-                db.Characters.AddRange(
-                    new Character
-                    {
-                        AccountId = accountId,
-                        Slot = 0,
-                        Name = "Before",
-                        Race = 1,
-                        Class = 101
-                    },
-                    new Character
-                    {
-                        AccountId = accountId,
-                        Slot = 1,
-                        Name = "Taken",
-                        Race = 1,
-                        Class = 101
-                    });
-                db.SaveChanges();
-            });
+        var response = await RenameAsync(provider, "Taken");
 
-        using var scope = provider.CreateScope();
-        var coordinator = scope.ServiceProvider.GetRequiredService<IPreGamePacketCoordinator>();
-        var client = Substitute.For<IClient>();
-        client.AccountId.Returns(await GetAccountIdAsync(provider, "rename-user"));
-
-        var request = new Packet(GameOpcodes.GS_ALLCHAR_INFO_REQ);
-        request.WriteByte((byte)AllCharacterInfoOpcode.NameChange);
-        request.WriteUShort(1);
-        request.WriteString("Before");
-        request.WriteString("Taken");
-
-        var response = await coordinator.HandleAsync(client, request, GameOpcodes.GS_ALLCHAR_INFO_REQ);
-
-        response.Should().NotBeNull();
-        response!.ReadByte().Should().Be((byte)AllCharacterInfoOpcode.NameChange);
         response.ReadByte().Should().Be((byte)SelectingCharacterNameChangeResult.Failed);
         response.RemainingBytes.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AllCharacterInfoNameChange_RefusesANameWithInvalidCharacters()
+    {
+        using var provider = RenameProvider(nameChangeRequired: true);
+
+        var response = await RenameAsync(provider, "Bad Name");
+
+        response.ReadByte().Should().Be((byte)SelectingCharacterNameChangeResult.InvalidCharacters);
+        response.RemainingBytes.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AllCharacterInfoNameChange_RenamesAFlaggedCharacterAndClearsTheFlag()
+    {
+        using var provider = RenameProvider(nameChangeRequired: true);
+
+        var response = await RenameAsync(provider, "After");
+
+        response.ReadByte().Should().Be((byte)SelectingCharacterNameChangeResult.Success);
+        response.ReadShort().Should().Be(0);
+        response.ReadString().Should().Be("After");
+        response.RemainingBytes.Should().Be(0);
+        await using var verifyScope = provider.CreateAsyncScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var renamed = await db.Characters.SingleAsync(character => character.Name == "After");
+        renamed.NameChangeRequired.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AFlaggedCharacterIsMarkedInTheCharacterListAndCannotBeSelected()
+    {
+        using var provider = RenameProvider(nameChangeRequired: true);
+        using var scope = provider.CreateScope();
+        var preGame = scope.ServiceProvider.GetRequiredService<IPreGameService>();
+        var accountId = await GetAccountIdAsync(provider, "rename-user");
+
+        var list = await preGame.GetAllCharacterInfoAsync(accountId);
+        list.ResetOffset();
+        list.ReadByte().Should().Be((byte)AllCharacterInfoOpcode.CharacterList);
+        list.ReadByte();
+        list.ReadString().Should().Be("Before");
+        list.ReadByte();
+        list.ReadShort();
+        list.ReadByte();
+        list.ReadByte();
+        list.ReadByte().Should().Be(2 + PreGamePacketWriter.NameChangeFaceOffset);
+
+        var selected = await preGame.SelectCharacterAsync(accountId, "rename-user", "Before", 1);
+        selected.CharacterId.Should().Be(0);
     }
 
     [Fact]

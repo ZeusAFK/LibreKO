@@ -32,25 +32,25 @@ public partial class FxBoardBatch : Node3D
     private const int PruneIdleFrames = 600;
     private const int ShrinkRatio = 4;
 
-    private static readonly Dictionary<ulong, FxBoardBatch> _perViewport = new();
-    private static readonly Dictionary<string, (Texture2DArray Array, ulong Id)> _sequences = Shutdown.Track(new Dictionary<string, (Texture2DArray Array, ulong Id)>());
-    private static readonly Dictionary<(bool DoubleSided, bool NoDepthTest), Shader> _shaders = Shutdown.Track(new Dictionary<(bool DoubleSided, bool NoDepthTest), Shader>());
+    private static readonly Dictionary<ulong, FxBoardBatch> perViewport = new();
+    private static readonly Dictionary<string, (Texture2DArray Array, ulong Id)> sequences = Shutdown.Track(new Dictionary<string, (Texture2DArray Array, ulong Id)>());
+    private static readonly Dictionary<(bool DoubleSided, bool NoDepthTest), Shader> shaders = Shutdown.Track(new Dictionary<(bool DoubleSided, bool NoDepthTest), Shader>());
     private static readonly StringName FramesParam = "frames";
     private static readonly StringName UvScaleParam = "uv_scale";
-    private static QuadMesh? _quad;
-    private static ulong _nextSequenceId = 1;
+    private static QuadMesh? quad;
+    private static ulong nextSequenceId = 1;
 
-    private readonly Dictionary<Key, Batch> _batches = new();
-    private readonly List<Key> _prune = new();
+    private readonly Dictionary<Key, Batch> batches = new();
+    private readonly List<Key> prune = new();
 
     internal static FxBoardBatch? For(Node part)
     {
         var viewport = part.GetViewport();
         if (viewport == null) return null;
         ulong id = viewport.GetInstanceId();
-        if (_perViewport.TryGetValue(id, out var batcher) && GodotObject.IsInstanceValid(batcher)) return batcher;
+        if (perViewport.TryGetValue(id, out var batcher) && GodotObject.IsInstanceValid(batcher)) return batcher;
         batcher = new FxBoardBatch { Name = "FxBoards", ProcessPriority = BatcherProcessPriority };
-        _perViewport[id] = batcher;
+        perViewport[id] = batcher;
         viewport.CallDeferred(Node.MethodName.AddChild, batcher);
         return batcher;
     }
@@ -63,10 +63,11 @@ public partial class FxBoardBatch : Node3D
         var keyBuilder = new System.Text.StringBuilder();
         foreach (var f in frames) keyBuilder.Append((f ?? first).GetRid().Id).Append(',');
         string key = keyBuilder.ToString();
-        if (_sequences.TryGetValue(key, out var cached)) return (cached.Array, cached.Id, frames.Length);
+        if (sequences.TryGetValue(key, out var cached)) return (cached.Array, cached.Id, frames.Length);
         using var scope = Perf.Measure(Perf.Section.SpawnSequence);
 
         var images = new Godot.Collections.Array<Image>();
+        var created = new List<Image>(frames.Length);
         foreach (var f in frames)
         {
             var image = FxImages.Read(f ?? first) ?? Image.CreateEmpty(first.GetWidth(), first.GetHeight(), false, Image.Format.Rgba8);
@@ -77,18 +78,20 @@ public partial class FxBoardBatch : Node3D
                 image.Resize(first.GetWidth(), first.GetHeight());
             image.GenerateMipmaps();
             images.Add(image);
+            created.Add(image);
         }
         var array = new Texture2DArray();
         array.CreateFromImages(images);
-        foreach (var image in images) image.Dispose();
-        var entry = (array, _nextSequenceId++);
-        _sequences[key] = entry;
+        images.Clear();
+        foreach (var image in created) image.Dispose();
+        var entry = (array, nextSequenceId++);
+        sequences[key] = entry;
         return (entry.array, entry.Item2, frames.Length);
     }
 
     internal Batch Resolve(Key key, Texture2DArray sequence)
     {
-        if (_batches.TryGetValue(key, out var batch)) return batch;
+        if (batches.TryGetValue(key, out var batch)) return batch;
         var material = new ShaderMaterial
         {
             Shader = ShaderFor(key.DoubleSided, key.NoDepthTest),
@@ -101,7 +104,7 @@ public partial class FxBoardBatch : Node3D
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
             UseColors = true,
             UseCustomData = true,
-            Mesh = _quad ??= new QuadMesh { Size = Vector2.One },
+            Mesh = quad ??= new QuadMesh { Size = Vector2.One },
             InstanceCount = InitialCapacity,
             VisibleInstanceCount = 0,
         };
@@ -115,32 +118,16 @@ public partial class FxBoardBatch : Node3D
         };
         AddChild(instance);
         batch = new Batch { Instance = instance, Multimesh = multimesh, SortByDepth = key.Sorted };
-        _batches[key] = batch;
+        batches[key] = batch;
         return batch;
     }
 
     private static Shader ShaderFor(bool doubleSided, bool noDepthTest)
     {
         var key = (doubleSided, noDepthTest);
-        if (_shaders.TryGetValue(key, out var shader)) return shader;
-        shader = new Shader
-        {
-            Code = "shader_type spatial;\n"
-                   + $"render_mode {FxShading.RenderModes(doubleSided, noDepthTest)};\n"
-                   + "uniform sampler2DArray frames : filter_linear_mipmap, repeat_enable;\n"
-                   + "uniform vec2 uv_scale = vec2(1.0, 1.0);\n"
-                   + "varying vec3 cell;\n"
-                   + "varying flat float blend_word;\n"
-                   + FxShading.Header()
-                   + "void vertex() {\n    cell = INSTANCE_CUSTOM.xyz;\n    blend_word = INSTANCE_CUSTOM.w;\n"
-                   + FxShading.ClipVertex + "}\n"
-                   + "void fragment() {\n"
-                   + "    vec4 fx_out = fx_shade(texture(frames, vec3(UV * uv_scale + cell.xy, cell.z)), vec4(1.0, 1.0, 1.0, COLOR.a), "
-                   + $"blend_word, fx_clip, CAMERA_VISIBLE_LAYERS, {FxShading.DepthTested(noDepthTest)});\n"
-                   + FxShading.Apply("COLOR.r")
-                   + "}\n",
-        };
-        _shaders[key] = shader;
+        if (shaders.TryGetValue(key, out var shader)) return shader;
+        shader = FxShading.VariantShader("fx_board_batch", doubleSided, noDepthTest);
+        shaders[key] = shader;
         return shader;
     }
 
@@ -180,13 +167,13 @@ public partial class FxBoardBatch : Node3D
     {
         using var scope = Perf.Measure(Perf.Section.FxBatch);
         if (Fx.ShuttingDown) return;
-        foreach (var (key, b) in _batches)
+        foreach (var (key, b) in batches)
         {
             if (b.Count == 0)
             {
                 if (b.Uploaded != 0) { b.Multimesh.VisibleInstanceCount = 0; b.Uploaded = 0; }
                 if (b.Shown) { b.Shown = false; b.Instance.Visible = false; }
-                if (++b.IdleFrames >= PruneIdleFrames) _prune.Add(key);
+                if (++b.IdleFrames >= PruneIdleFrames) prune.Add(key);
                 continue;
             }
             b.IdleFrames = 0;
@@ -202,15 +189,15 @@ public partial class FxBoardBatch : Node3D
             b.Uploaded = b.Count;
             b.Count = 0;
         }
-        if (_prune.Count == 0) return;
-        foreach (var key in _prune)
+        if (prune.Count == 0) return;
+        foreach (var key in prune)
         {
-            var b = _batches[key];
+            var b = batches[key];
             b.Pruned = true;
             b.Instance.QueueFree();
-            _batches.Remove(key);
+            batches.Remove(key);
         }
-        _prune.Clear();
+        prune.Clear();
     }
 
     private static void ShrinkIfOversized(Batch b)
@@ -234,15 +221,13 @@ public partial class FxBoardBatch : Node3D
         (b.Data, b.Sorted) = (b.Sorted, b.Data);
     }
 
-    internal int BatchCount => _batches.Count;
-
     internal static int LiveBatches
     {
         get
         {
             int n = 0;
-            foreach (var batcher in _perViewport.Values)
-                if (GodotObject.IsInstanceValid(batcher)) n += batcher._batches.Count;
+            foreach (var batcher in perViewport.Values)
+                if (GodotObject.IsInstanceValid(batcher)) n += batcher.batches.Count;
             return n;
         }
     }

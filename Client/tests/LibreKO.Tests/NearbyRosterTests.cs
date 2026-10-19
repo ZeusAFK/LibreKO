@@ -10,12 +10,12 @@ public class NearbyRosterTests
     private static readonly NearbyViewer Me = new("Zeus", Nation: 2, ClanId: 7, X: 100, Z: 100, Gm: false);
 
     [Theory]
-    [InlineData(Net.NearbyPlayersSignSub, Net.NearbyPlayersRefreshSub, 0, true)]
-    [InlineData(Net.NearbyPlayersRefreshSub, Net.NearbyPlayersRefreshSub, 0, false)]
-    [InlineData(Net.NearbyPlayersSignSub, Net.NearbyPlayersSignSub, 0, false)]
-    [InlineData(Net.NearbyPlayersSignSub, Net.NearbyPlayersRefreshSub, 3, false)]
-    public void AnEmptyListUnderAnotherSubIsOnlyTheHeader(byte sub, byte requested, int count, bool header) =>
-        Assert.Equal(header, Net.IsNearbyListHeader(sub, requested, count));
+    [InlineData(PlayerInspectSubOpcode.Nearby, PlayerInspectSubOpcode.NearbyAll, 0, true)]
+    [InlineData(PlayerInspectSubOpcode.NearbyAll, PlayerInspectSubOpcode.NearbyAll, 0, false)]
+    [InlineData(PlayerInspectSubOpcode.Nearby, PlayerInspectSubOpcode.Nearby, 0, false)]
+    [InlineData(PlayerInspectSubOpcode.Nearby, PlayerInspectSubOpcode.NearbyAll, 3, false)]
+    public void AnEmptyListUnderAnotherSubIsOnlyTheHeader(PlayerInspectSubOpcode sub, PlayerInspectSubOpcode requested, int count, bool header) =>
+        Assert.Equal(header, NearbyPlayersWire.IsListHeader(sub, requested, count));
 
     [Fact]
     public void SightAndServerListMergeSortedByDistanceWithoutMe()

@@ -6,22 +6,22 @@ namespace LibreKO.Game.Tests;
 
 public class QuestIncludeTests : IDisposable
 {
-    private readonly string _root = Path.Combine(
+    private readonly string root = Path.Combine(
         Path.GetTempPath(), "kq-inc-" + Guid.NewGuid().ToString("N"));
 
     public QuestIncludeTests()
     {
-        Directory.CreateDirectory(Path.Combine(_root, "locations"));
-        Directory.CreateDirectory(Path.Combine(_root, "scripts"));
+        Directory.CreateDirectory(Path.Combine(root, "locations"));
+        Directory.CreateDirectory(Path.Combine(root, "scripts"));
         File.WriteAllText(
-            Path.Combine(_root, "locations", "global.quest"),
+            Path.Combine(root, "locations", "global.quest"),
             "country_cont = location \"Country CONT\" found \"War zone\"\n");
     }
 
     public void Dispose()
     {
-        if (Directory.Exists(_root))
-            Directory.Delete(_root, recursive: true);
+        if (Directory.Exists(root))
+            Directory.Delete(root, recursive: true);
         GC.SuppressFinalize(this);
     }
 
@@ -47,22 +47,22 @@ public class QuestIncludeTests : IDisposable
     [Fact]
     public void AnIncludeResolvesFromAnAncestorDirectory()
     {
-        var includes = new DirectoryQuestIncludes(Path.Combine(_root, "scripts"));
+        var includes = new DirectoryQuestIncludes(Path.Combine(root, "scripts"));
 
         includes.TryRead("locations/global", out var text, out var fileName)
             .Should().BeTrue("a script in a subdirectory should reach locations/ without '../'");
-        fileName.Should().Be(Path.Combine(_root, "locations", "global.quest"));
+        fileName.Should().Be(Path.Combine(root, "locations", "global.quest"));
         text.Should().Contain("Country CONT");
     }
 
     [Fact]
     public void NestedLibrariesUseTheirOwnDirectoryAndDistinctFilesMayShareABasename()
     {
-        Directory.CreateDirectory(Path.Combine(_root, "translations"));
-        File.WriteAllText(Path.Combine(_root, "translations", "words.quest"), "hello = text \"Hello\"");
-        File.WriteAllText(Path.Combine(_root, "translations", "global.quest"),
+        Directory.CreateDirectory(Path.Combine(root, "translations"));
+        File.WriteAllText(Path.Combine(root, "translations", "words.quest"), "hello = text \"Hello\"");
+        File.WriteAllText(Path.Combine(root, "translations", "global.quest"),
             "include words\ninclude locations/global");
-        var path = Path.Combine(_root, "scripts", "global.quest");
+        var path = Path.Combine(root, "scripts", "global.quest");
         File.WriteAllText(path, "include translations/global\nBind Npc 100\nOn greeting\n    Say hello");
         var compilation = QuestCompilation.CreateFromFile(path);
         compilation.Succeeded.Should().BeTrue(compilation.RenderDiagnostics());
@@ -72,7 +72,7 @@ public class QuestIncludeTests : IDisposable
     [Fact]
     public void AnIncludeThatEscapesTheRootIsRefused()
     {
-        var includes = new DirectoryQuestIncludes(Path.Combine(_root, "scripts"));
+        var includes = new DirectoryQuestIncludes(Path.Combine(root, "scripts"));
 
         includes.TryRead("../locations/global", out _, out _).Should().BeFalse();
     }
@@ -90,7 +90,7 @@ public class QuestIncludeTests : IDisposable
             "On g_topic",
             "    Say \"hi\"",
             "    Topic \"x\" goto close");
-        var path = Path.Combine(_root, "scripts", "a.quest");
+        var path = Path.Combine(root, "scripts", "a.quest");
         File.WriteAllText(path, script);
 
         var compilation = QuestCompilation.CreateFromFile(path);
@@ -112,7 +112,7 @@ public class QuestIncludeTests : IDisposable
             "",
             "On g_topic",
             "    Map country_cont");
-        var path = Path.Combine(_root, "scripts", "b.quest");
+        var path = Path.Combine(root, "scripts", "b.quest");
         File.WriteAllText(path, script);
 
         var compilation = QuestCompilation.CreateFromFile(path);

@@ -65,29 +65,29 @@ public partial class Cape : MeshInstance3D, IFxTicked
         public Vector3[] Pos = Array.Empty<Vector3>();
     }
 
-    private static bool _loaded;
-    private static int _cols = 5, _rows = 9;
-    private static readonly Dictionary<int, CapeDef> _table = new();
-    private static readonly Dictionary<string, GridMesh> _grids = new();
-    private static readonly Dictionary<string, Texture2D?> _texCache = Shutdown.Track(new Dictionary<string, Texture2D?>());
+    private static bool loaded;
+    private static int cols = 5, rows = 9;
+    private static readonly Dictionary<int, CapeDef> table = new();
+    private static readonly Dictionary<string, GridMesh> grids = new();
+    private static readonly Dictionary<string, Texture2D?> texCache = Shutdown.Track(new Dictionary<string, Texture2D?>());
 
     private static void Load()
     {
-        if (_loaded) return;
-        _loaded = true;
+        if (loaded) return;
+        loaded = true;
         using var f = Godot.FileAccess.Open(AssetDir + "capes.json", Godot.FileAccess.ModeFlags.Read);
         if (f == null) { GD.PushWarning("[cape] capes.json missing — capes disabled"); return; }
         var doc = Json.ParseString(f.GetAsText()).AsGodotDictionary();
         if (doc.TryGetValue("grid", out var g))
         {
             var gd = g.AsGodotDictionary();
-            _cols = gd["cols"].AsInt32();
-            _rows = gd["rows"].AsInt32();
+            cols = gd["cols"].AsInt32();
+            rows = gd["rows"].AsInt32();
         }
         foreach (var k in doc["table"].AsGodotDictionary())
         {
             var o = k.Value.AsGodotDictionary();
-            _table[int.Parse(k.Key.AsString())] = new CapeDef(
+            table[int.Parse(k.Key.AsString())] = new CapeDef(
                 o["name"].AsString(), o["family"].AsInt32(), o["grade"].AsInt32(),
                 o["ranking"].AsInt32(), o["c"].AsInt32(), o["m"].AsInt32(),
                 o.TryGetValue("price", out var pr) ? pr.AsInt32() : 0,
@@ -98,24 +98,24 @@ public partial class Cape : MeshInstance3D, IFxTicked
         foreach (var k in doc["meshes"].AsGodotDictionary())
         {
             var o = k.Value.AsGodotDictionary();
-            var pos = o["pos"].AsFloat32Array();
-            var m = new GridMesh { Pos = new Vector3[pos.Length / 3] };
+            var savedPositions = o["pos"].AsFloat32Array();
+            var m = new GridMesh { Pos = new Vector3[savedPositions.Length / 3] };
             for (int i = 0; i < m.Pos.Length; i++)
-                m.Pos[i] = new Vector3(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
-            _grids[k.Key.AsString()] = m;
+                m.Pos[i] = new Vector3(savedPositions[i * 3], savedPositions[i * 3 + 1], savedPositions[i * 3 + 2]);
+            grids[k.Key.AsString()] = m;
         }
-        GD.Print($"[cape] {_table.Count} capes, {_grids.Count} fitted grids");
+        GD.Print($"[cape] {table.Count} capes, {grids.Count} fitted grids");
     }
 
     public static IReadOnlyDictionary<int, CapeDef> Catalogue
     {
-        get { Load(); return _table; }
+        get { Load(); return table; }
     }
 
     public static bool TryGet(int capeId, out CapeDef def)
     {
         Load();
-        return _table.TryGetValue(capeId, out def);
+        return table.TryGetValue(capeId, out def);
     }
 
     public static Texture2D? ClothTexture(int c) => Tex($"c_{c:00}.png");
@@ -125,72 +125,72 @@ public partial class Cape : MeshInstance3D, IFxTicked
     public static bool IsRenderable(int capeId)
     {
         Load();
-        return capeId > 0 && _table.ContainsKey(capeId);
+        return capeId > 0 && table.ContainsKey(capeId);
     }
 
-    private static Texture2D? _blank;
+    private static Texture2D? blank;
 
     private static Texture2D Blank
     {
         get
         {
-            if (_blank != null) return _blank;
+            if (blank != null) return blank;
             var img = Image.CreateEmpty(1, 1, false, Image.Format.Rgba8);
             img.SetPixel(0, 0, Colors.White);
-            return _blank = ImageTexture.CreateFromImage(img);
+            return blank = ImageTexture.CreateFromImage(img);
         }
     }
 
     private static Texture2D? Tex(string file)
     {
-        if (_texCache.TryGetValue(file, out var t)) return t;
+        if (texCache.TryGetValue(file, out var t)) return t;
         string path = AssetDir + "tex/" + file;
         t = ResourceLoader.Exists(path) ? ResourceLoader.Load<Texture2D>(path) : null;
-        _texCache[file] = t;
+        texCache[file] = t;
         return t;
     }
 
     private static GridMesh? GridFor(int family, int race)
     {
-        if (_grids.TryGetValue($"{family}:{race}", out var m)) return m;
+        if (grids.TryGetValue($"{family}:{race}", out var m)) return m;
         int baseRace = race >= 10 ? 11 : 1;
         for (int r = baseRace; r < baseRace + 6; r++)
-            if (_grids.TryGetValue($"{family}:{r}", out m)) return m;
-        foreach (var kv in _grids)
+            if (grids.TryGetValue($"{family}:{r}", out m)) return m;
+        foreach (var kv in grids)
             if (kv.Key.StartsWith($"{family}:")) return kv.Value;
-        foreach (var kv in _grids) return kv.Value;
+        foreach (var kv in grids) return kv.Value;
         return null;
     }
 
-    private Skeleton3D _skel = null!;
-    private int _rideBone = -1;
-    private Transform3D _anchorLocal;
-    private int _hipBone = -1, _neckBone = -1;
-    private int _upLegL = -1, _loLegL = -1, _ftLegL = -1;
-    private int _upLegR = -1, _loLegR = -1, _ftLegR = -1;
-    private int _upArmL = -1, _loArmL = -1, _handL = -1;
-    private int _upArmR = -1, _loArmR = -1, _handR = -1;
+    private Skeleton3D skel = null!;
+    private int rideBone = -1;
+    private Transform3D anchorLocal;
+    private int hipBone = -1, neckBone = -1;
+    private int upLegL = -1, loLegL = -1, ftLegL = -1;
+    private int upLegR = -1, loLegR = -1, ftLegR = -1;
+    private int upArmL = -1, loArmL = -1, handL = -1;
+    private int upArmR = -1, loArmR = -1, handR = -1;
 
-    private int _nc, _nr;
-    private Vector3[] _rest = Array.Empty<Vector3>();
-    private Vector3[] _pos = Array.Empty<Vector3>();
-    private Vector3[] _targets = Array.Empty<Vector3>();
-    private Vector3[] _previous = Array.Empty<Vector3>();
-    private Vector3[] _renderPos = Array.Empty<Vector3>();
-    private Vector3[] _vel = Array.Empty<Vector3>();
-    private Vector3[] _pred = Array.Empty<Vector3>();
-    private Vector3[] _nrm = Array.Empty<Vector3>();
-    private Vector3[] _surfacePos = Array.Empty<Vector3>();
-    private int[] _surfaceIdx = Array.Empty<int>();
-    private int _surfaceCols, _surfaceRows;
-    private int[] _surfaceSamples = Array.Empty<int>();
-    private float[] _surfaceWeights = Array.Empty<float>();
-    private int[] _idx = Array.Empty<int>();
-    private float[] _w = Array.Empty<float>();
-    private bool[] _contact = Array.Empty<bool>();
-    private float[] _tether = Array.Empty<float>();
-    private float[] _areaW = Array.Empty<float>();
-    private Vector3 _bodyFwd = Vector3.Forward;
+    private int gridColumns, gridRows;
+    private Vector3[] rest = Array.Empty<Vector3>();
+    private Vector3[] pos = Array.Empty<Vector3>();
+    private Vector3[] targets = Array.Empty<Vector3>();
+    private Vector3[] previous = Array.Empty<Vector3>();
+    private Vector3[] renderPos = Array.Empty<Vector3>();
+    private Vector3[] vel = Array.Empty<Vector3>();
+    private Vector3[] pred = Array.Empty<Vector3>();
+    private Vector3[] nrm = Array.Empty<Vector3>();
+    private Vector3[] surfacePos = Array.Empty<Vector3>();
+    private int[] surfaceIdx = Array.Empty<int>();
+    private int surfaceCols, surfaceRows;
+    private int[] surfaceSamples = Array.Empty<int>();
+    private float[] surfaceWeights = Array.Empty<float>();
+    private int[] idx = Array.Empty<int>();
+    private float[] inverseMass = Array.Empty<float>();
+    private bool[] contact = Array.Empty<bool>();
+    private float[] tether = Array.Empty<float>();
+    private float[] areaW = Array.Empty<float>();
+    private Vector3 bodyFwd = Vector3.Forward;
 
     private struct Link
     {
@@ -198,37 +198,37 @@ public partial class Cape : MeshInstance3D, IFxTicked
         public float Length, Compliance, Lambda;
     }
 
-    private Link[] _links = Array.Empty<Link>();
+    private Link[] links = Array.Empty<Link>();
 
-    private ArrayMesh _mesh = null!;
-    private ShaderMaterial _mat = null!;
+    private ArrayMesh mesh = null!;
+    private ShaderMaterial mat = null!;
     private static readonly Dictionary<(long Format, int Vertices), byte[]> VertexTemplates = Shutdown.Track(new Dictionary<(long Format, int Vertices), byte[]>());
-    private byte[] _vertexBytes = Array.Empty<byte>();
-    private int _normalOffset, _normalStride;
-    private Basis _restBasis;
-    private Transform3D _lastFrameAnchor, _stepAnchor, _pinPrevious, _pinCurrent;
-    private Node3D _bodyRoot = null!;
-    private VisibleOnScreenNotifier3D _visibility = null!;
-    private int _race, _family;
-    private bool _highDetail;
-    private float _lastStep;
-    private Color _dye;
-    private Vector3 _renderOrigin;
-    private bool _primed, _frozen;
-    private float _rigScale = 1f;
-    private double _phase, _accum;
-    private Vector3 _anchorVel;
+    private byte[] vertexBytes = Array.Empty<byte>();
+    private int normalOffset, normalStride;
+    private Basis restBasis;
+    private Transform3D lastFrameAnchor, stepAnchor, pinPrevious, pinCurrent;
+    private Node3D bodyRoot = null!;
+    private VisibleOnScreenNotifier3D visibility = null!;
+    private int race, family;
+    private bool highDetail;
+    private float lastStep;
+    private Color dye;
+    private Vector3 renderOrigin;
+    private bool primed, frozen;
+    private float rigScale = 1f;
+    private double phase, accum;
+    private Vector3 anchorVel;
 
-    private int _capeId;
+    private int capeId;
 
-    public int CapeId => _capeId;
-    internal ReadOnlySpan<Vector3> ClothVertices => _surfacePos;
-    internal ReadOnlySpan<int> ClothTriangles => _surfaceIdx;
-    internal int ClothColumns => _surfaceCols;
-    internal bool Dormant => _frozen;
-    internal bool Finite => Array.TrueForAll(_pos, p => p.IsFinite()) && Array.TrueForAll(_surfacePos, p => p.IsFinite());
+    public int CapeId => capeId;
+    internal ReadOnlySpan<Vector3> ClothVertices => surfacePos;
+    internal ReadOnlySpan<int> ClothTriangles => surfaceIdx;
+    internal int ClothColumns => surfaceCols;
+    internal bool Dormant => frozen;
+    internal bool Finite => Array.TrueForAll(pos, p => p.IsFinite()) && Array.TrueForAll(surfacePos, p => p.IsFinite());
 
-    public string Resolution => $"{_nc}x{_nr}";
+    public string Resolution => $"{gridColumns}x{gridRows}";
 
     public static Cape? Attach(Node3D body, int capeId, Color dye, int race, bool highDetail = false)
     {
@@ -237,7 +237,7 @@ public partial class Cape : MeshInstance3D, IFxTicked
         var skel = FindSkeleton(body);
         if (skel == null) return null;
 
-        var def = _table[capeId];
+        var def = table[capeId];
         var grid = GridFor(def.Family, race);
         if (grid == null) return null;
 
@@ -248,25 +248,25 @@ public partial class Cape : MeshInstance3D, IFxTicked
         var cape = new Cape
         {
             Name = "Cape",
-            _skel = skel,
-            _bodyRoot = body,
-            _race = race,
-            _highDetail = highDetail,
-            _rideBone = ride,
-            _neckBone = neck,
-            _hipBone = FirstBone(skel, "Hips", "Pelvis", "Root"),
-            _upLegL = FirstBone(skel, "UpperLeg_L", "LeftHip"),
-            _loLegL = FirstBone(skel, "LowerLeg_L", "LeftKnee"),
-            _ftLegL = FirstBone(skel, "Foot_L", "LeftAnkle"),
-            _upLegR = FirstBone(skel, "UpperLeg_R", "RightHip"),
-            _loLegR = FirstBone(skel, "LowerLeg_R", "RightKnee"),
-            _ftLegR = FirstBone(skel, "Foot_R", "RightAnkle"),
-            _upArmL = FirstBone(skel, "UpperArm_L", "LeftShoulder"),
-            _loArmL = FirstBone(skel, "LowerArm_L", "LeftElbow"),
-            _handL = FirstBone(skel, "Hand_L", "LeftWrist"),
-            _upArmR = FirstBone(skel, "UpperArm_R", "RightShoulder"),
-            _loArmR = FirstBone(skel, "LowerArm_R", "RightElbow"),
-            _handR = FirstBone(skel, "Hand_R", "RightWrist"),
+            skel = skel,
+            bodyRoot = body,
+            race = race,
+            highDetail = highDetail,
+            rideBone = ride,
+            neckBone = neck,
+            hipBone = FirstBone(skel, "Hips", "Pelvis", "Root"),
+            upLegL = FirstBone(skel, "UpperLeg_L", "LeftHip"),
+            loLegL = FirstBone(skel, "LowerLeg_L", "LeftKnee"),
+            ftLegL = FirstBone(skel, "Foot_L", "LeftAnkle"),
+            upLegR = FirstBone(skel, "UpperLeg_R", "RightHip"),
+            loLegR = FirstBone(skel, "LowerLeg_R", "RightKnee"),
+            ftLegR = FirstBone(skel, "Foot_R", "RightAnkle"),
+            upArmL = FirstBone(skel, "UpperArm_L", "LeftShoulder"),
+            loArmL = FirstBone(skel, "LowerArm_L", "LeftElbow"),
+            handL = FirstBone(skel, "Hand_L", "LeftWrist"),
+            upArmR = FirstBone(skel, "UpperArm_R", "RightShoulder"),
+            loArmR = FirstBone(skel, "LowerArm_R", "RightElbow"),
+            handR = FirstBone(skel, "Hand_R", "RightWrist"),
             TopLevel = true,
             CastShadow = ShadowCastingSetting.Off,
         };
@@ -278,26 +278,26 @@ public partial class Cape : MeshInstance3D, IFxTicked
     public void SetCape(int capeId, Color dye)
     {
         Load();
-        if (!_table.TryGetValue(capeId, out var def)) { QueueFree(); return; }
-        if (_family != def.Family && GridFor(def.Family, _race) is { } grid)
+        if (!table.TryGetValue(capeId, out var def)) { QueueFree(); return; }
+        if (family != def.Family && GridFor(def.Family, race) is { } grid)
         {
-            Build(grid, capeId, dye, _highDetail, _bodyRoot);
+            Build(grid, capeId, dye, highDetail, bodyRoot);
             return;
         }
-        _capeId = capeId;
-        _dye = dye;
+        this.capeId = capeId;
+        this.dye = dye;
         ApplyDye(dye);
         var mark = def.M > 0 ? Tex($"m_{def.M:00}.png") : null;
-        _mat.SetShaderParameter("base_tex", Tex($"c_{def.C:00}.png") ?? Blank);
-        _mat.SetShaderParameter("mark_tex", mark ?? Blank);
-        _mat.SetShaderParameter("has_mark", mark != null ? 1.0f : 0.0f);
+        mat.SetShaderParameter("base_tex", Tex($"c_{def.C:00}.png") ?? Blank);
+        mat.SetShaderParameter("mark_tex", mark ?? Blank);
+        mat.SetShaderParameter("has_mark", mark != null ? 1.0f : 0.0f);
     }
 
     private void ApplyDye(Color dye)
     {
         bool dyed = dye.R > 0.001f || dye.G > 0.001f || dye.B > 0.001f;
         var c = dyed ? dye : Colors.White;
-        _mat.SetShaderParameter("dye", new Vector3(c.R, c.G, c.B));
+        mat.SetShaderParameter("dye", new Vector3(c.R, c.G, c.B));
     }
 
     public override void _EnterTree()
@@ -309,9 +309,9 @@ public partial class Cape : MeshInstance3D, IFxTicked
     }
 
     private static readonly List<Cape> Batch = new();
-    private float _stepH, _stepDt;
-    private Transform3D _stepTarget;
-    private bool _stepOk;
+    private float stepH, stepDt;
+    private Transform3D stepTarget;
+    private bool stepOk;
 
     internal static void FlushBatch()
     {
@@ -337,133 +337,133 @@ public partial class Cape : MeshInstance3D, IFxTicked
         try
         {
             Step();
-            _stepOk = true;
+            stepOk = true;
         }
         catch (Exception)
         {
-            _stepOk = false;
+            stepOk = false;
         }
     }
 
     private void Step()
     {
-        float h = _stepH, dt = _stepDt;
-        var anchor = _stepTarget;
-        while (_accum + 1e-8 >= h)
+        float h = stepH, dt = stepDt;
+        var anchor = stepTarget;
+        while (accum + 1e-8 >= h)
         {
-            float blend = Mathf.Clamp(1f - ((float)_accum - h) / dt, 0f, 1f);
-            var step = _lastFrameAnchor.InterpolateWith(anchor, blend);
+            float blend = Mathf.Clamp(1f - ((float)accum - h) / dt, 0f, 1f);
+            var step = lastFrameAnchor.InterpolateWith(anchor, blend);
             Simulate(h, step, blend);
-            _accum -= h;
+            accum -= h;
         }
-        _lastFrameAnchor = anchor;
-        _renderOrigin = anchor.Origin;
-        float alpha = Mathf.Clamp((float)_accum / h, 0, 1);
-        for (int i = 0; i < _pos.Length; i++)
-            _renderPos[i] = _w[i] == 0 ? _pins[i] : _previous[i].Lerp(_pos[i], alpha);
-        SmoothSurface(_renderPos);
+        lastFrameAnchor = anchor;
+        renderOrigin = anchor.Origin;
+        float alpha = Mathf.Clamp((float)accum / h, 0, 1);
+        for (int i = 0; i < pos.Length; i++)
+            renderPos[i] = inverseMass[i] == 0 ? pins[i] : previous[i].Lerp(pos[i], alpha);
+        SmoothSurface(renderPos);
         CollideRender();
-        Pack(_surfacePos);
+        Pack(surfacePos);
     }
 
     private void FinishStep()
     {
-        if (!_stepOk)
+        if (!stepOk)
         {
-            _primed = false;
+            primed = false;
             return;
         }
-        GlobalTransform = new Transform3D(Basis.Identity, _renderOrigin);
-        _mesh.SurfaceUpdateVertexRegion(0, 0, _vertexBytes);
+        GlobalTransform = new Transform3D(Basis.Identity, renderOrigin);
+        mesh.SurfaceUpdateVertexRegion(0, 0, vertexBytes);
         CommitColliders();
-        _pinPrevious = _pinCurrent;
-        Array.Copy(_pins, _oldPins, _nc);
+        pinPrevious = pinCurrent;
+        Array.Copy(pins, oldPins, gridColumns);
         if (DrawDebug) DrawDebugOverlay();
-        else if (_dbg != null) _dbg.Visible = false;
+        else if (dbg != null) dbg.Visible = false;
     }
 
     public override void _ExitTree() => FxDriver.Lane(this, FxLane.Late)?.Leave(this);
 
-    private Transform3D _parkedPin;
-    private bool _parkedWritten;
+    private Transform3D parkedPin;
+    private bool parkedWritten;
 
     public void FxTick(double delta)
     {
         using var scope = Perf.Measure(Perf.Section.Cape);
-        if (!IsInstanceValid(_skel) || _rest.Length == 0 || delta <= 0) return;
+        if (!IsInstanceValid(skel) || rest.Length == 0 || delta <= 0) return;
         var anchor = AnchorWorld();
-        _pinCurrent = AttachmentWorld();
+        pinCurrent = AttachmentWorld();
         var cam = GetViewport().GetCamera3D();
         float distance2 = cam == null ? 0f : cam.GlobalPosition.DistanceSquaredTo(anchor.Origin);
         bool dormant = !IsVisibleInTree() || distance2 > SimDist * SimDist
-            || (cam != null && !_visibility.IsOnScreen());
+            || (cam != null && !visibility.IsOnScreen());
         if (dormant)
         {
-            if (!_frozen)
+            if (!frozen)
             {
-                _renderOrigin = Vector3.Zero;
-                SmoothSurface(_rest);
-                Upload(_surfacePos);
-                _frozen = true;
+                renderOrigin = Vector3.Zero;
+                SmoothSurface(rest);
+                Upload(surfacePos);
+                frozen = true;
             }
-            if (!_parkedWritten || !_pinCurrent.IsEqualApprox(_parkedPin))
+            if (!parkedWritten || !pinCurrent.IsEqualApprox(parkedPin))
             {
-                GlobalTransform = _pinCurrent;
-                _parkedPin = _pinCurrent;
-                _parkedWritten = true;
+                GlobalTransform = pinCurrent;
+                parkedPin = pinCurrent;
+                parkedWritten = true;
             }
-            _lastFrameAnchor = anchor;
-            _pinPrevious = _pinCurrent;
-            _primed = false;
-            if (_dbg != null) _dbg.Visible = false;
+            lastFrameAnchor = anchor;
+            pinPrevious = pinCurrent;
+            primed = false;
+            if (dbg != null) dbg.Visible = false;
             return;
         }
-        _parkedWritten = false;
+        parkedWritten = false;
         UpdatePins();
-        if (!_primed || _frozen || delta > 0.2 || anchor.Origin.DistanceSquaredTo(_lastFrameAnchor.Origin) > 9f)
+        if (!primed || frozen || delta > 0.2 || anchor.Origin.DistanceSquaredTo(lastFrameAnchor.Origin) > 9f)
             Reset(anchor);
-        _frozen = false;
+        frozen = false;
 
         float h = distance2 > ThrottleDist * ThrottleDist ? 1f / 30f
-            : _highDetail ? 1f / 120f : 1f / 60f;
+            : highDetail ? 1f / 120f : 1f / 60f;
         if (delta > 0.035) h = Mathf.Max(h, 1f / 60f);
-        if (_lastStep != h) { _accum = 0; _lastStep = h; }
+        if (lastStep != h) { accum = 0; lastStep = h; }
         float dt = Mathf.Min((float)delta, h * 4);
-        _accum += dt;
+        accum += dt;
         UpdateColliders();
-        _stepH = h;
-        _stepDt = dt;
-        _stepTarget = anchor;
+        stepH = h;
+        stepDt = dt;
+        stepTarget = anchor;
         Batch.Add(this);
     }
 
     private void Reset(Transform3D anchor)
     {
-        _pinPrevious = _pinCurrent;
-        Array.Copy(_pins, _oldPins, _nc);
-        Array.Copy(_pins, _stepPins, _nc);
-        BuildTargets(anchor, _pinCurrent);
-        for (int i = 0; i < _rest.Length; i++)
+        pinPrevious = pinCurrent;
+        Array.Copy(pins, oldPins, gridColumns);
+        Array.Copy(pins, stepPins, gridColumns);
+        BuildTargets(anchor, pinCurrent);
+        for (int i = 0; i < rest.Length; i++)
         {
-            _pos[i] = _previous[i] = _pred[i] = _targets[i];
-            _vel[i] = Vector3.Zero;
+            pos[i] = previous[i] = pred[i] = targets[i];
+            vel[i] = Vector3.Zero;
         }
-        _stepAnchor = _lastFrameAnchor = anchor;
-        _anchorVel = Vector3.Zero;
-        _accum = 0;
-        _primed = true;
-        _collidersPrimed = false;
+        stepAnchor = lastFrameAnchor = anchor;
+        anchorVel = Vector3.Zero;
+        accum = 0;
+        primed = true;
+        collidersPrimed = false;
     }
 
     public static void RefreshBody(Node3D body)
     {
         if (FindFirst<Cape>(body) is { } cape && !cape.IsQueuedForDeletion()
-            && GridFor(cape._family, cape._race) is { } grid)
-            cape.Build(grid, cape._capeId, cape._dye, cape._highDetail, cape._bodyRoot);
+            && GridFor(cape.family, cape.race) is { } grid)
+            cape.Build(grid, cape.capeId, cape.dye, cape.highDetail, cape.bodyRoot);
     }
 
-    private float _aspect = 1f;
-    private readonly (Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] _segs
+    private float aspect = 1f;
+    private readonly (Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] segs
         = new (Vector3, Vector3, float, float, float)[20];
 
     private static T? FindFirst<T>(Node n) where T : class
@@ -475,24 +475,24 @@ public partial class Cape : MeshInstance3D, IFxTicked
     }
     private const float UpperArmRadius = 0.090f, ForeArmRadius = 0.075f, HandRadius = 0.070f;
     private const float ThighRadius = 0.115f, CalfRadius = 0.085f;
-    private float _rNeck, _rChest, _rHips, _inflate;
+    private float rNeck, rChest, rHips, inflate;
 
     private const int ProfileBins = 14;
     private const float CollideInflate = 0.02f;
-    private float[]? _fitted;
+    private float[]? fitted;
 
-    private MeshInstance3D? _dbg;
+    private MeshInstance3D? dbg;
 
     private void SmoothSurface(Vector3[] source)
     {
         var input = MemoryMarshal.Cast<Vector3, NumericsVector3>(source.AsSpan());
-        var output = MemoryMarshal.Cast<Vector3, NumericsVector3>(_surfacePos.AsSpan());
+        var output = MemoryMarshal.Cast<Vector3, NumericsVector3>(surfacePos.AsSpan());
         for (int i = 0; i < output.Length; i++)
         {
             var position = NumericsVector3.Zero;
             int start = i * 16;
             for (int j = start; j < start + 16; j++)
-                position += input[_surfaceSamples[j]] * _surfaceWeights[j];
+                position += input[surfaceSamples[j]] * surfaceWeights[j];
             output[i] = position;
         }
     }
@@ -500,29 +500,29 @@ public partial class Cape : MeshInstance3D, IFxTicked
     private void Upload(Vector3[] positions)
     {
         Pack(positions);
-        _mesh.SurfaceUpdateVertexRegion(0, 0, _vertexBytes);
+        mesh.SurfaceUpdateVertexRegion(0, 0, vertexBytes);
     }
 
     private void Pack(Vector3[] positions)
     {
         var points = MemoryMarshal.Cast<Vector3, NumericsVector3>(positions.AsSpan());
-        var normals = MemoryMarshal.Cast<Vector3, NumericsVector3>(_nrm.AsSpan());
+        var normals = MemoryMarshal.Cast<Vector3, NumericsVector3>(nrm.AsSpan());
         normals.Clear();
-        for (int t = 0; t < _surfaceIdx.Length; t += 3)
+        for (int t = 0; t < surfaceIdx.Length; t += 3)
         {
-            int a = _surfaceIdx[t], b = _surfaceIdx[t + 1], c = _surfaceIdx[t + 2];
+            int a = surfaceIdx[t], b = surfaceIdx[t + 1], c = surfaceIdx[t + 2];
             var normal = NumericsVector3.Cross(points[b] - points[a], points[c] - points[a]);
             normals[a] += normal; normals[b] += normal; normals[c] += normal;
         }
-        var vertices = MemoryMarshal.Cast<byte, Vector3>(_vertexBytes.AsSpan(0, positions.Length * 12));
+        var vertices = MemoryMarshal.Cast<byte, Vector3>(vertexBytes.AsSpan(0, positions.Length * 12));
         for (int i = 0; i < positions.Length; i++)
         {
-            vertices[i] = positions[i] - _renderOrigin;
-            var normal = _nrm[i].LengthSquared() > 1e-12f ? _nrm[i].Normalized() : Vector3.Back;
+            vertices[i] = positions[i] - renderOrigin;
+            var normal = nrm[i].LengthSquared() > 1e-12f ? nrm[i].Normalized() : Vector3.Back;
             var oct = normal.OctahedronEncode();
-            int offset = _normalOffset + i * _normalStride;
-            BinaryPrimitives.WriteUInt16LittleEndian(_vertexBytes.AsSpan(offset), (ushort)Mathf.Clamp(oct.X * 65535, 0, 65535));
-            BinaryPrimitives.WriteUInt16LittleEndian(_vertexBytes.AsSpan(offset + 2), (ushort)Mathf.Clamp(oct.Y * 65535, 0, 65535));
+            int offset = normalOffset + i * normalStride;
+            BinaryPrimitives.WriteUInt16LittleEndian(vertexBytes.AsSpan(offset), (ushort)Mathf.Clamp(oct.X * 65535, 0, 65535));
+            BinaryPrimitives.WriteUInt16LittleEndian(vertexBytes.AsSpan(offset + 2), (ushort)Mathf.Clamp(oct.Y * 65535, 0, 65535));
         }
     }
 

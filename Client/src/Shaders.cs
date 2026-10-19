@@ -4,15 +4,15 @@ namespace LibreKO;
 
 public static class Shaders
 {
-    private static readonly System.Collections.Generic.Dictionary<string, Shader> _cache = Shutdown.Track(new System.Collections.Generic.Dictionary<string, Shader>());
+    private static readonly System.Collections.Generic.Dictionary<string, Shader> cache = Shutdown.Track(new System.Collections.Generic.Dictionary<string, Shader>());
 
     public static Shader Get(string name)
     {
-        if (_cache.TryGetValue(name, out var cached)) return cached;
+        if (cache.TryGetValue(name, out var cached)) return cached;
         string path = $"res://shaders/{name}.gdshader";
         var shader = ResourceLoader.Load<Shader>(path);
         if (shader == null) GD.PushError($"[shaders] missing {path}");
-        _cache[name] = shader!;
+        cache[name] = shader!;
         return shader!;
     }
 

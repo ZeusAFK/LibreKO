@@ -6,19 +6,27 @@ public partial class Notice : CanvasLayer
 {
     private const int PanelWidth = 420;
 
-    private Button? _ok;
-    private Button? _cancel;
-    private Label _message = null!;
-    private System.Action? _onClose;
-    private System.Action? _onConfirm;
-    private System.Action? _onCancel;
-    private System.Action<string>? _onSubmit;
-    private VBoxContainer? _column;
-    private LineEdit? _field;
+    private Button? okButton;
+    private Button? cancelButton;
+    private Label messageLabel = null!;
+    private System.Action? onClose;
+    private System.Action? onConfirm;
+    private System.Action? onCancel;
+    private System.Action<string>? onSubmit;
+    private VBoxContainer? column;
+    private LineEdit? field;
 
     public static Notice Show(Node parent, string message, string title = "Notice",
                               System.Action? onClose = null)
         => Spawn(parent, message, title, dismissable: true, onClose);
+
+    public static Notice Waiting(Node parent, string message, string closeText, System.Action onClose, string title = "Notice")
+    {
+        var n = new Notice { Layer = UiLayers.Dialogs, onClose = onClose };
+        parent.AddChild(n);
+        n.Build(message, title, dismissable: true, closeText: closeText);
+        return n;
+    }
 
     public static Notice Busy(Node parent, string message, string title = "Please wait")
         => Spawn(parent, message, title, dismissable: false, null);
@@ -27,7 +35,7 @@ public partial class Notice : CanvasLayer
                                  System.Action onConfirm, System.Action? onCancel = null,
                                  string title = "Notice")
     {
-        var n = new Notice { Layer = 220, _onConfirm = onConfirm, _onCancel = onCancel };
+        var n = new Notice { Layer = UiLayers.Dialogs, onConfirm = onConfirm, onCancel = onCancel };
         parent.AddChild(n);
         n.Build(message, title, dismissable: true, confirmText, cancelText);
         return n;
@@ -37,7 +45,7 @@ public partial class Notice : CanvasLayer
                                  string initial = "", string placeholder = "", int maxLength = 0, bool secret = false,
                                  string confirmText = "OK", string cancelText = "Cancel", System.Action? onCancel = null)
     {
-        var n = new Notice { Layer = 220, _onSubmit = onSubmit, _onCancel = onCancel };
+        var n = new Notice { Layer = UiLayers.Dialogs, onSubmit = onSubmit, onCancel = onCancel };
         parent.AddChild(n);
         if (PluginHost.Ui.TextInputBuilder is { } build)
         {
@@ -46,44 +54,44 @@ public partial class Notice : CanvasLayer
             return n;
         }
         n.Build(message, title, dismissable: true, confirmText, cancelText, allowPlugin: false);
-        n._field = new LineEdit { Text = initial, PlaceholderText = placeholder, MaxLength = maxLength, Secret = secret };
-        n._column!.AddChild(n._field);
-        n._field.CallDeferred(Control.MethodName.GrabFocus);
+        n.field = new LineEdit { Text = initial, PlaceholderText = placeholder, MaxLength = maxLength, Secret = secret };
+        n.column!.AddChild(n.field);
+        n.field.CallDeferred(Control.MethodName.GrabFocus);
         return n;
     }
 
-    private DialogRequest? _request;
+    private DialogRequest? request;
 
     public void SetMessage(string message)
     {
-        if (_request != null) _request.SetMessage(message);
-        else _message.Text = message;
+        if (request != null) request.SetMessage(message);
+        else messageLabel.Text = message;
     }
 
     public void Close()
     {
         if (!IsInstanceValid(this) || IsQueuedForDeletion()) return;
         QueueFree();
-        _onClose?.Invoke();
+        onClose?.Invoke();
     }
 
     private static Notice Spawn(Node parent, string message, string title, bool dismissable,
                                 System.Action? onClose)
     {
-        var n = new Notice { Layer = 220, _onClose = onClose };
+        var n = new Notice { Layer = UiLayers.Dialogs, onClose = onClose };
         parent.AddChild(n);
         n.Build(message, title, dismissable);
         return n;
     }
 
     private void Build(string message, string title, bool dismissable,
-                       string? confirmText = null, string? cancelText = null, bool allowPlugin = true)
+                       string? confirmText = null, string? cancelText = null, bool allowPlugin = true, string? closeText = null)
     {
         if (allowPlugin && PluginHost.Ui.DialogBuilder is { } pluginDialog)
         {
-            _request = new DialogRequest(title, message, confirmText ?? "OK",
+            request = new DialogRequest(title, message, confirmText ?? closeText ?? "OK",
                 confirmText == null ? null : cancelText ?? "Cancel", dismissable, Accept, Decline, Close);
-            AddChild(pluginDialog(_request));
+            AddChild(pluginDialog(request));
             return;
         }
 
@@ -135,17 +143,17 @@ public partial class Notice : CanvasLayer
         body.AddThemeConstantOverride("margin_bottom", dismissable ? 16 : 22);
         vb.AddChild(body);
 
-        _message = new Label
+        messageLabel = new Label
         {
             Text = message,
             HorizontalAlignment = HorizontalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         };
-        _message.AddThemeColorOverride("font_color", UiTheme.TextHi);
-        _column = new VBoxContainer();
-        _column.AddThemeConstantOverride("separation", 10);
-        body.AddChild(_column);
-        _column.AddChild(_message);
+        messageLabel.AddThemeColorOverride("font_color", UiTheme.TextHi);
+        column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 10);
+        body.AddChild(column);
+        column.AddChild(messageLabel);
 
         if (!dismissable) return;
 
@@ -155,9 +163,9 @@ public partial class Notice : CanvasLayer
 
         if (confirmText == null)
         {
-            _ok = Ui.MenuButton("OK (ENTER)", height: 36, fontSize: 16);
-            _ok.Pressed += Close;
-            footer.AddChild(_ok);
+            okButton = Ui.MenuButton(closeText ?? "OK (ENTER)", height: 36, fontSize: 16);
+            okButton.Pressed += Close;
+            footer.AddChild(okButton);
             return;
         }
 
@@ -165,46 +173,46 @@ public partial class Notice : CanvasLayer
         row.AddThemeConstantOverride("separation", 10);
         footer.AddChild(row);
 
-        _ok = Ui.MenuButton(confirmText, height: 36, fontSize: 16);
-        _ok.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        _ok.Pressed += Accept;
-        row.AddChild(_ok);
+        okButton = Ui.MenuButton(confirmText, height: 36, fontSize: 16);
+        okButton.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        okButton.Pressed += Accept;
+        row.AddChild(okButton);
 
-        _cancel = Ui.MenuButton(cancelText ?? "Cancel", height: 36, fontSize: 16);
-        _cancel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        _cancel.Pressed += Decline;
-        row.AddChild(_cancel);
+        cancelButton = Ui.MenuButton(cancelText ?? "Cancel", height: 36, fontSize: 16);
+        cancelButton.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        cancelButton.Pressed += Decline;
+        row.AddChild(cancelButton);
     }
 
     private void Submit(string text)
     {
-        var submit = _onSubmit;
-        _onSubmit = null;
-        _onCancel = null;
+        var submit = onSubmit;
+        onSubmit = null;
+        onCancel = null;
         Close();
         submit?.Invoke(text);
     }
 
     private void Accept()
     {
-        if (_field != null)
+        if (field != null)
         {
-            Submit(_field.Text);
+            Submit(field.Text);
             return;
         }
-        var confirm = _onConfirm;
-        _onConfirm = null;
-        _onCancel = null;
+        var confirm = onConfirm;
+        onConfirm = null;
+        onCancel = null;
         Close();
         confirm?.Invoke();
     }
 
     private void Decline()
     {
-        var cancel = _onCancel;
-        _onConfirm = null;
-        _onCancel = null;
-        _onSubmit = null;
+        var cancel = onCancel;
+        onConfirm = null;
+        onCancel = null;
+        onSubmit = null;
         Close();
         cancel?.Invoke();
     }
@@ -214,11 +222,11 @@ public partial class Notice : CanvasLayer
 
     public override void _Input(InputEvent ev)
     {
-        if (_ok == null) return;
+        if (okButton == null) return;
         if (ev is not InputEventKey { Pressed: true, Echo: false } k) return;
         if (k.Keycode is Key.Enter or Key.KpEnter or Key.Space && TypingElsewhere()) return;
 
-        if (_cancel != null)
+        if (cancelButton != null)
         {
             if (k.Keycode is Key.Enter or Key.KpEnter) { GetViewport().SetInputAsHandled(); Accept(); }
             else if (k.Keycode == Key.Escape) { GetViewport().SetInputAsHandled(); Decline(); }

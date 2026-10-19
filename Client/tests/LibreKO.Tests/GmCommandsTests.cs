@@ -20,7 +20,7 @@ public class GmCommandsTests
         p.WriteString("Show the online count");
         p.ResetOffset();
 
-        var (commands, open) = Net.ReadAdminCommands(p);
+        var (commands, open) = AdminWire.ReadCommands(p);
 
         Assert.True(open);
         Assert.Equal(new[]

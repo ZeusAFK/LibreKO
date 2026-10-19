@@ -19,7 +19,7 @@ public class ClanBoardsTests
     {
         var p = Reply(w =>
         {
-            w.WriteByte(ClanBoards.StateStaff);
+            w.WriteByte((byte)ClanBoardState.Staff);
             w.WriteShort(1);
             w.WriteByte(50);
             w.WriteByte(112);
@@ -27,7 +27,7 @@ public class ClanBoardsTests
             w.WriteString("Hello");
         });
 
-        var status = Net.ReadBoardStatus(p)!;
+        var status = ClanBoardsWire.ReadBoardStatus(p)!;
 
         Assert.True(status.Staff);
         Assert.Equal(new[] { new ClanApplicant(50, 112, "Rin", "Hello") }, status.Applicants);
@@ -38,14 +38,14 @@ public class ClanBoardsTests
     {
         var p = Reply(w =>
         {
-            w.WriteByte(ClanBoards.StateClanless);
+            w.WriteByte((byte)ClanBoardState.Clanless);
             w.WriteShort(1);
             w.WriteShort(10);
             w.WriteShort(4);
             w.WriteString("Wolves");
         });
 
-        var status = Net.ReadBoardStatus(p)!;
+        var status = ClanBoardsWire.ReadBoardStatus(p)!;
 
         Assert.True(status.Applied);
         Assert.Equal((10, 4, "Wolves"), (status.AppliedClanId, status.AppliedMarkVersion, status.AppliedClanName));
@@ -66,7 +66,7 @@ public class ClanBoardsTests
             w.WriteString("Join us");
         });
 
-        Assert.Equal(new[] { new ClanAdvert(10, "Wolves", 3, 2, "Alpha", 4, "Join us") }, Net.ReadAdverts(p));
+        Assert.Equal(new[] { new ClanAdvert(10, "Wolves", 3, 2, "Alpha", 4, "Join us") }, ClanBoardsWire.ReadAdverts(p));
     }
 
     [Fact]
@@ -86,16 +86,16 @@ public class ClanBoardsTests
         });
         var oversized = Reply(w => w.WriteShort(ClanBoards.RowsPerPage + 1));
 
-        Assert.Equal(new[] { new WishPost("Rin", "Priest", 72, 112, 25, true, 101, "2026-10-09") }, Net.ReadWishPosts(p));
-        Assert.Empty(Net.ReadWishPosts(oversized));
+        Assert.Equal(new[] { new WishPost("Rin", "Priest", 72, 112, 25, true, 101, "2026-10-09") }, ClanBoardsWire.ReadWishPosts(p));
+        Assert.Empty(ClanBoardsWire.ReadWishPosts(oversized));
     }
 
     [Fact]
     public void TheWishStatusDependsOnTheRole()
     {
-        var recruiter = Net.ReadWishStatus(Reply(w => { w.WriteByte(ClanBoards.RoleRecruiter); w.WriteString("Kaito"); }));
-        var member = Net.ReadWishStatus(Reply(w => w.WriteByte(ClanBoards.RoleMember)));
-        var seeker = Net.ReadWishStatus(Reply(w => { w.WriteByte(ClanBoards.RoleSeeker); w.WriteByte(3); }));
+        var recruiter = ClanBoardsWire.ReadWishStatus(Reply(w => { w.WriteByte((byte)WishBoardRole.Recruiter); w.WriteString("Kaito"); }));
+        var member = ClanBoardsWire.ReadWishStatus(Reply(w => w.WriteByte((byte)WishBoardRole.Member)));
+        var seeker = ClanBoardsWire.ReadWishStatus(Reply(w => { w.WriteByte((byte)WishBoardRole.Seeker); w.WriteByte(3); }));
 
         Assert.Equal("Kaito", recruiter.RequestedName);
         Assert.True(member.Member);
@@ -117,7 +117,7 @@ public class ClanBoardsTests
             w.WriteString("Come with us");
         });
 
-        Assert.Equal(new[] { new WishRequest(10, "Alpha", "Wolves", 3, 2, 4, "Come with us") }, Net.ReadWishRequests(p));
+        Assert.Equal(new[] { new WishRequest(10, "Alpha", "Wolves", 3, 2, 4, "Come with us") }, ClanBoardsWire.ReadWishRequests(p));
     }
 
     [Theory]
@@ -137,12 +137,12 @@ public class ClanBoardsTests
     [Fact]
     public void ResultCodesMapToThe2619Texts()
     {
-        Assert.Equal(16510, ClanBoards.ApplyResultText(ClanBoards.KindRegister, 0));
-        Assert.Equal(16507, ClanBoards.ApplyResultText(ClanBoards.KindDelete, 2));
-        Assert.Equal(16504, ClanBoards.AdvertResultText(ClanBoards.KindRegister, 3));
+        Assert.Equal(16510, ClanBoards.ApplyResultText(ClanBoardAction.Register, 0));
+        Assert.Equal(16507, ClanBoards.ApplyResultText(ClanBoardAction.Delete, 2));
+        Assert.Equal(16504, ClanBoards.AdvertResultText(ClanBoardAction.Register, 3));
         Assert.Equal(18633, ClanBoards.PromoteText(4));
-        Assert.Equal(40056, ClanBoards.IntroResultText(ClanBoards.KindRegister, 3));
-        Assert.Equal(40061, ClanBoards.RequestResultText(ClanBoards.KindRegister, 4));
+        Assert.Equal(40056, ClanBoards.IntroResultText(ClanBoardAction.Register, 3));
+        Assert.Equal(40061, ClanBoards.RequestResultText(ClanBoardAction.Register, 4));
         Assert.Equal(40064, ClanBoards.WishPromoteText(4));
         Assert.Equal(15701, ClanBoards.ClassLineText(5));
     }

@@ -14,27 +14,27 @@ namespace LibreKO.Game.Tests;
 
 public class BorderDefenseWarTests
 {
-    private readonly SessionManager _sessionManager;
-    private readonly IGameDataService _gameDataService;
-    private readonly IMonsterAggressionPolicy _aggressionPolicy;
-    private readonly IZoneTransitionService _zoneTransitionService;
-    private readonly InstanceRoomRegistry _instanceRooms;
-    private readonly IInstanceEntryService _instanceEntryService;
-    private readonly IUserNotificationService _userNotificationService;
-    private readonly ILoyaltyService _loyaltyService;
-    private readonly IPlayerProgressionService _playerProgressionService;
-    private readonly ICombatNotificationService _combatNotificationService;
-    private readonly IMagicStatusEffectService _magicStatusEffectService;
-    private readonly ILogger<BorderDefenseWarService> _logger;
-    private readonly List<NpcPosData> _npcPositions;
+    private readonly SessionManager sessionManager;
+    private readonly IGameDataService gameDataService;
+    private readonly IMonsterAggressionPolicy aggressionPolicy;
+    private readonly IZoneTransitionService zoneTransitionService;
+    private readonly InstanceRoomRegistry instanceRooms;
+    private readonly IInstanceEntryService instanceEntryService;
+    private readonly IUserNotificationService userNotificationService;
+    private readonly ILoyaltyService loyaltyService;
+    private readonly IPlayerProgressionService playerProgressionService;
+    private readonly ICombatNotificationService combatNotificationService;
+    private readonly IMagicStatusEffectService magicStatusEffectService;
+    private readonly ILogger<BorderDefenseWarService> logger;
+    private readonly List<NpcPosData> npcPositions;
 
     public BorderDefenseWarTests()
     {
-        _sessionManager = new SessionManager();
-        _gameDataService = Substitute.For<IGameDataService>();
-        _aggressionPolicy = Substitute.For<IMonsterAggressionPolicy>();
-        _zoneTransitionService = Substitute.For<IZoneTransitionService>();
-        _zoneTransitionService.ChangeZoneAsync(Arg.Any<UserSession>(), Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>())
+        sessionManager = new SessionManager();
+        gameDataService = Substitute.For<IGameDataService>();
+        aggressionPolicy = Substitute.For<IMonsterAggressionPolicy>();
+        zoneTransitionService = Substitute.For<IZoneTransitionService>();
+        zoneTransitionService.ChangeZoneAsync(Arg.Any<UserSession>(), Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>())
             .Returns(callInfo =>
             {
                 var s = callInfo.ArgAt<UserSession>(0);
@@ -43,24 +43,24 @@ public class BorderDefenseWarTests
                 s.Z = callInfo.ArgAt<float>(3);
                 return Task.CompletedTask;
             });
-        _instanceRooms = new InstanceRoomRegistry(_sessionManager, Substitute.For<ILogger<InstanceRoomRegistry>>());
-        _instanceEntryService = Substitute.For<IInstanceEntryService>();
-        _userNotificationService = Substitute.For<IUserNotificationService>();
-        _loyaltyService = Substitute.For<ILoyaltyService>();
-        _playerProgressionService = Substitute.For<IPlayerProgressionService>();
-        _combatNotificationService = Substitute.For<ICombatNotificationService>();
-        _magicStatusEffectService = Substitute.For<IMagicStatusEffectService>();
-        _logger = Substitute.For<ILogger<BorderDefenseWarService>>();
+        instanceRooms = new InstanceRoomRegistry(sessionManager, Substitute.For<ILogger<InstanceRoomRegistry>>());
+        instanceEntryService = Substitute.For<IInstanceEntryService>();
+        userNotificationService = Substitute.For<IUserNotificationService>();
+        loyaltyService = Substitute.For<ILoyaltyService>();
+        playerProgressionService = Substitute.For<IPlayerProgressionService>();
+        combatNotificationService = Substitute.For<ICombatNotificationService>();
+        magicStatusEffectService = Substitute.For<IMagicStatusEffectService>();
+        logger = Substitute.For<ILogger<BorderDefenseWarService>>();
 
-        _npcPositions =
+        npcPositions =
         [
             new NpcPosData { Index = 1, ZoneId = 84, Room = 1, NpcId = 9840, LeftX = 127, TopZ = 131, NumNPC = 1 },
             new NpcPosData { Index = 2, ZoneId = 84, Room = 1, NpcId = 8161, LeftX = 42, TopZ = 49, NumNPC = 1 },
             new NpcPosData { Index = 3, ZoneId = 84, Room = 1, NpcId = 8162, LeftX = 47, TopZ = 49, NumNPC = 1 }
         ];
 
-        _gameDataService.NpcPositions.Returns(_npcPositions);
-        _gameDataService.GetSpawnProto(Arg.Any<NpcPosData>()).Returns(callInfo =>
+        gameDataService.NpcPositions.Returns(npcPositions);
+        gameDataService.GetSpawnProto(Arg.Any<NpcPosData>()).Returns(callInfo =>
         {
             var pos = callInfo.Arg<NpcPosData>();
             return new NpcData
@@ -73,7 +73,7 @@ public class BorderDefenseWarTests
             };
         });
 
-        _gameDataService.GetItem(Arg.Any<int>()).Returns(callInfo =>
+        gameDataService.GetItem(Arg.Any<int>()).Returns(callInfo =>
         {
             var itemId = callInfo.Arg<int>();
             return new ItemData
@@ -86,13 +86,13 @@ public class BorderDefenseWarTests
             };
         });
 
-        _instanceEntryService.When(x => x.Populate(Arg.Any<InstanceRoom>()))
+        instanceEntryService.When(x => x.Populate(Arg.Any<InstanceRoom>()))
             .Do(callInfo =>
             {
                 var room = callInfo.Arg<InstanceRoom>();
-                foreach (var pos in _npcPositions.Where(p => p.ZoneId == BorderDefenseWarService.BdwZoneId))
+                foreach (var pos in npcPositions.Where(p => p.ZoneId == BorderDefenseWarService.BdwZoneId))
                 {
-                    var proto = _gameDataService.GetSpawnProto(pos)!;
+                    var proto = gameDataService.GetSpawnProto(pos)!;
                     var npc = NpcInstance.FromData(proto, pos, 0);
                     npc.Room = room.Id;
                     room.Npcs.Add(npc);
@@ -102,19 +102,19 @@ public class BorderDefenseWarTests
 
     private BorderDefenseWarService CreateService() =>
         new(
-            _sessionManager,
-            _gameDataService,
-            _aggressionPolicy,
-            _zoneTransitionService,
-            _instanceRooms,
-            _instanceEntryService,
-            _userNotificationService,
-            _loyaltyService,
-            _playerProgressionService,
-            _combatNotificationService,
+            sessionManager,
+            gameDataService,
+            aggressionPolicy,
+            zoneTransitionService,
+            instanceRooms,
+            instanceEntryService,
+            userNotificationService,
+            loyaltyService,
+            playerProgressionService,
+            combatNotificationService,
             Substitute.For<IPartyLevelProgressService>(),
-            _magicStatusEffectService,
-            _logger);
+            magicStatusEffectService,
+            logger);
 
     private UserSession CreateTestSession(int charId, AccountNation nation)
     {
@@ -122,7 +122,7 @@ public class BorderDefenseWarTests
         client.Id.Returns(Guid.NewGuid());
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        var session = _sessionManager.CreateSession(client, characterId: charId, accountId: charId * 10);
+        var session = sessionManager.CreateSession(client, characterId: charId, accountId: charId * 10);
         session.Name = $"Player_{charId}";
         session.Nation = nation;
         session.Level = 60;
@@ -141,10 +141,10 @@ public class BorderDefenseWarTests
         service.HasActiveMatches.Should().BeTrue();
         caller.Room.Should().Be(1);
 
-        await _zoneTransitionService.Received(1)
+        await zoneTransitionService.Received(1)
             .ChangeZoneAsync(caller, BorderDefenseWarService.BdwZoneId, BorderDefenseWarService.KarusStartX, BorderDefenseWarService.KarusStartZ);
 
-        var room = _instanceRooms.Get(1);
+        var room = instanceRooms.Get(1);
         room.Should().NotBeNull();
         room!.Npcs.Should().Contain(n => n.NpcId == BorderDefenseWarService.AltarOfManesProtoId);
     }
@@ -158,15 +158,15 @@ public class BorderDefenseWarTests
 
         await service.StartMatchesAsync([karusPlayer.CharacterId, elmoPlayer.CharacterId], 1800);
 
-        var room = _instanceRooms.Get(1)!;
+        var room = instanceRooms.Get(1)!;
         var altar = room.Npcs.First(n => n.NpcId == BorderDefenseWarService.AltarOfManesProtoId);
 
-        _gameDataService.GetMagic(BorderDefenseWarService.FragmentOfManesSkillId)
+        gameDataService.GetMagic(BorderDefenseWarService.FragmentOfManesSkillId)
             .Returns(new MagicData { Id = BorderDefenseWarService.FragmentOfManesSkillId, Type1 = 4 });
 
         await service.OnNpcKilledAsync(altar, karusPlayer);
 
-        await _magicStatusEffectService.Received(1).ExecuteAsync(
+        await magicStatusEffectService.Received(1).ExecuteAsync(
             karusPlayer,
             Arg.Any<MagicData>(),
             MagicSkillType.Buff,
@@ -178,7 +178,7 @@ public class BorderDefenseWarTests
         karusPlayer.Z = 60f;
         await service.CheckCarrierBaseDeliveryAsync(karusPlayer);
 
-        await _magicStatusEffectService.Received(1).CancelAsync(karusPlayer, BorderDefenseWarService.FragmentOfManesSkillId);
+        await magicStatusEffectService.Received(1).CancelAsync(karusPlayer, BorderDefenseWarService.FragmentOfManesSkillId);
 
         var match = service.GetMatch(1);
         match.Should().NotBeNull();
@@ -194,7 +194,7 @@ public class BorderDefenseWarTests
     [Fact]
     public async Task ScoreReachesTarget_DeclaresWinner_DistributesRewards()
     {
-        _gameDataService.TempleEventRewards.Returns([
+        gameDataService.TempleEventRewards.Returns([
             new TempleEventRewardData
             {
                 Id = 1,
@@ -224,10 +224,10 @@ public class BorderDefenseWarTests
 
         await service.StartMatchesAsync([karusPlayer.CharacterId, elmoPlayer.CharacterId], 1800);
 
-        var room = _instanceRooms.Get(1)!;
+        var room = instanceRooms.Get(1)!;
         var altar = room.Npcs.First(n => n.NpcId == BorderDefenseWarService.AltarOfManesProtoId);
 
-        _gameDataService.GetMagic(BorderDefenseWarService.FragmentOfManesSkillId)
+        gameDataService.GetMagic(BorderDefenseWarService.FragmentOfManesSkillId)
             .Returns(new MagicData { Id = BorderDefenseWarService.FragmentOfManesSkillId, Type1 = 4 });
 
         await service.OnNpcKilledAsync(altar, karusPlayer);
@@ -250,7 +250,7 @@ public class BorderDefenseWarTests
         var chestSlot = karusPlayer.Inventory.FirstOrDefault(s => s.ItemId == BorderDefenseWarService.RedTreasureChestId);
         chestSlot.Should().NotBeNull();
         chestSlot!.Count.Should().BeGreaterThan(0);
-        await _loyaltyService.Received(1).ChangeAsync(karusPlayer, 500);
+        await loyaltyService.Received(1).ChangeAsync(karusPlayer, 500);
     }
 
     [Fact]
@@ -286,7 +286,7 @@ public class BorderDefenseWarTests
     {
         var service = CreateService();
 
-        _gameDataService.TempleEventSchedules.Returns([
+        gameDataService.TempleEventSchedules.Returns([
             new TempleEventScheduleData { Id = 1, Event = TempleEvent.BorderDefenseWar, MinLevel = 20, MaxLevel = 83 }
         ]);
 
@@ -296,7 +296,7 @@ public class BorderDefenseWarTests
         await service.StartMatchForCallerAsync(lowLevelCaller);
 
         lowLevelCaller.ZoneId.Should().Be(21);
-        await _zoneTransitionService.DidNotReceiveWithAnyArgs()
+        await zoneTransitionService.DidNotReceiveWithAnyArgs()
             .ChangeZoneAsync(lowLevelCaller, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
 
         var highLevelCaller = CreateTestSession(102, AccountNation.Karus);
@@ -368,7 +368,7 @@ public class BorderDefenseWarTests
     [Fact]
     public async Task RankingListsEachNationByPersonalPointsWithTheVictoryExp()
     {
-        _gameDataService.TempleEventRewards.Returns(
+        gameDataService.TempleEventRewards.Returns(
         [
             new TempleEventRewardData { Event = TempleEvent.BorderDefenseWar, Outcome = TempleEventRewardOutcome.Win, ExpPercent = 100 },
         ]);
@@ -445,11 +445,11 @@ public class BorderDefenseWarTests
         });
 
         var movementService = new WorldMovementService(
-            _sessionManager,
-            _gameDataService,
-            _zoneTransitionService,
-            _userNotificationService,
-            _combatNotificationService,
+            sessionManager,
+            gameDataService,
+            zoneTransitionService,
+            userNotificationService,
+            combatNotificationService,
             Substitute.For<ICombatLifecycleService>(),
             Substitute.For<IWorldVisibilityService>(),
             Substitute.For<IMiningPacketCoordinator>(),

@@ -4,9 +4,9 @@ namespace LibreKO.Game.World;
 
 public sealed class ScheduleClock
 {
-    private long _offsetTicks;
+    private long offsetTicks;
 
-    public TimeSpan Offset => TimeSpan.FromTicks(Interlocked.Read(ref _offsetTicks));
+    public TimeSpan Offset => TimeSpan.FromTicks(Interlocked.Read(ref offsetTicks));
 
     public DateTime UtcNow => DateTime.UtcNow + Offset;
 
@@ -14,8 +14,8 @@ public sealed class ScheduleClock
     {
         var scheduleNow = ScheduleTime.Now(events, DateTime.UtcNow);
         var target = scheduleNow.Date.AddHours(hour).AddMinutes(minute);
-        Interlocked.Exchange(ref _offsetTicks, (target - scheduleNow).Ticks);
+        Interlocked.Exchange(ref offsetTicks, (target - scheduleNow).Ticks);
     }
 
-    public void Reset() => Interlocked.Exchange(ref _offsetTicks, 0);
+    public void Reset() => Interlocked.Exchange(ref offsetTicks, 0);
 }

@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -25,9 +26,9 @@ public class KingCommandsTests
     }
 
     [Theory]
-    [InlineData("Rain", KingCommands.WeatherRain)]
-    [InlineData("snow", KingCommands.WeatherSnow)]
-    [InlineData("Clear", KingCommands.WeatherClear)]
+    [InlineData("Rain", (byte)KingWeather.Rain)]
+    [InlineData("snow", (byte)KingWeather.Snow)]
+    [InlineData("Clear", (byte)KingWeather.Clear)]
     public void WeatherCommandsCarryTheirType(string word, byte weather)
     {
         var command = KingCommands.Parse(word, "70", Names);
@@ -43,14 +44,14 @@ public class KingCommandsTests
     }
 
     [Theory]
-    [InlineData(KingCommands.EventExperience, -1, KingCommands.OnlyKingsText)]
-    [InlineData(KingCommands.EventDropRate, -3, KingCommands.TreasuryText)]
-    [InlineData(KingCommands.EventPrize, -2, KingCommands.NoSuchIdText)]
-    [InlineData(KingCommands.EventPrize, -4, KingCommands.TreasuryText)]
-    [InlineData(KingCommands.EventWeather, -2, 0)]
-    [InlineData(KingCommands.EventExperience, 1, 0)]
+    [InlineData((byte)KingEventSubOpcode.Experience, -1, KingCommands.OnlyKingsText)]
+    [InlineData((byte)KingEventSubOpcode.DropRate, -3, KingCommands.TreasuryText)]
+    [InlineData((byte)KingEventSubOpcode.Prize, -2, KingCommands.NoSuchIdText)]
+    [InlineData((byte)KingEventSubOpcode.Prize, -4, KingCommands.TreasuryText)]
+    [InlineData((byte)KingEventSubOpcode.Weather, -2, 0)]
+    [InlineData((byte)KingEventSubOpcode.Experience, 1, 0)]
     public void ResultsMapToThe2619Texts(byte kingEvent, short result, int text)
     {
-        Assert.Equal(text, KingCommands.ResultText(kingEvent, result));
+        Assert.Equal(text, KingCommands.ResultText((KingEventSubOpcode)kingEvent, result));
     }
 }

@@ -14,20 +14,20 @@ internal static class GlyphWarmer
     private static readonly (long First, long Last)[] TextRanges = { (0x20, 0x7E), (0xA0, 0xFF), (0x2013, 0x2026) };
     internal static readonly (long First, long Last)[] AsciiRange = { (0x20, 0x7E) };
 
-    private static readonly Dictionary<int, Dictionary<(Rid Font, Vector2I Size), (long First, long Last)[]>> _warmed = new();
-    private static readonly HashSet<(Font Font, int Size, int Outline, (long First, long Last)[] Ranges)> _requests = new();
-    private static readonly Queue<(Font Font, int Size, int Outline, (long First, long Last)[] Ranges)> _rewarm = new();
-    private static readonly HashSet<Rid> _safeUploads = new();
-    private static readonly HashSet<(Font, int, int, int, bool)> _scratch = new();
-    private static SceneTree? _tree;
-    private static int _rootLevel = UnscaledLevel;
-    private static bool _draining;
+    private static readonly Dictionary<int, Dictionary<(Rid Font, Vector2I Size), (long First, long Last)[]>> warmed = new();
+    private static readonly HashSet<(Font Font, int Size, int Outline, (long First, long Last)[] Ranges)> requests = new();
+    private static readonly Queue<(Font Font, int Size, int Outline, (long First, long Last)[] Ranges)> rewarm = new();
+    private static readonly HashSet<Rid> safeUploads = new();
+    private static readonly HashSet<(Font, int, int, int, bool)> scratch = new();
+    private static SceneTree? tree;
+    private static int rootLevel = UnscaledLevel;
+    private static bool draining;
 
     internal static void Watch(SceneTree tree)
     {
-        if (_tree != null) return;
-        _tree = tree;
-        _rootLevel = LevelOf(tree.Root);
+        if (GlyphWarmer.tree != null) return;
+        GlyphWarmer.tree = tree;
+        rootLevel = LevelOf(tree.Root);
         tree.NodeAdded += OnNodeAdded;
         tree.Root.SizeChanged += OnRootSizeChanged;
     }
@@ -47,51 +47,51 @@ internal static class GlyphWarmer
     private static void OnNodeAdded(Node node)
     {
         if (node is not (Label or Button or LineEdit or RichTextLabel or Label3D)) return;
-        _scratch.Clear();
-        AddFor(node, _scratch);
-        foreach (var (font, size, outline, level, spatial) in _scratch) Render(font, size, outline, TextRanges, level, spatial);
+        scratch.Clear();
+        AddFor(node, scratch);
+        foreach (var (font, size, outline, level, spatial) in scratch) Render(font, size, outline, TextRanges, level, spatial);
     }
 
     private static void OnRootSizeChanged()
     {
-        if (_tree == null) return;
-        int level = LevelOf(_tree.Root);
-        if (level == _rootLevel) return;
-        _rootLevel = level;
+        if (tree == null) return;
+        int level = LevelOf(tree.Root);
+        if (level == rootLevel) return;
+        rootLevel = level;
         Forget();
-        _requests.RemoveWhere(r => !GodotObject.IsInstanceValid(r.Font));
-        _rewarm.Clear();
-        foreach (var request in _requests) _rewarm.Enqueue(request);
-        if (_draining) return;
-        _draining = true;
-        _tree.ProcessFrame += Rewarm;
+        requests.RemoveWhere(r => !GodotObject.IsInstanceValid(r.Font));
+        rewarm.Clear();
+        foreach (var request in requests) rewarm.Enqueue(request);
+        if (draining) return;
+        draining = true;
+        tree.ProcessFrame += Rewarm;
     }
 
     private static void Rewarm()
     {
         long until = Stopwatch.GetTimestamp() + (long)(RewarmFrameBudgetMs * Stopwatch.Frequency / 1000.0);
-        while (Stopwatch.GetTimestamp() < until && _rewarm.TryDequeue(out var r))
-            Render(r.Font, r.Size, r.Outline, r.Ranges, _rootLevel);
-        if (_rewarm.Count > 0 || _tree == null) return;
-        _tree.ProcessFrame -= Rewarm;
-        _draining = false;
+        while (Stopwatch.GetTimestamp() < until && rewarm.TryDequeue(out var r))
+            Render(r.Font, r.Size, r.Outline, r.Ranges, rootLevel);
+        if (rewarm.Count > 0 || tree == null) return;
+        tree.ProcessFrame -= Rewarm;
+        draining = false;
     }
 
     private static void Forget()
     {
         var server = TextServerManager.GetPrimaryInterface();
-        foreach (int level in new List<int>(_warmed.Keys))
+        foreach (int level in new List<int>(warmed.Keys))
         {
-            if (level == UnscaledLevel || level == _rootLevel) continue;
-            foreach (var key in _warmed[level].Keys)
-                if (server.Has(key.Font) && !WarmedAt(UnscaledLevel, key) && !WarmedAt(_rootLevel, key))
+            if (level == UnscaledLevel || level == rootLevel) continue;
+            foreach (var key in warmed[level].Keys)
+                if (server.Has(key.Font) && !WarmedAt(UnscaledLevel, key) && !WarmedAt(rootLevel, key))
                     server.FontRemoveSizeCache(key.Font, key.Size);
-            _warmed.Remove(level);
+            warmed.Remove(level);
         }
     }
 
     private static bool WarmedAt(int level, (Rid, Vector2I) key) =>
-        _warmed.TryGetValue(level, out var keys) && keys.ContainsKey(key);
+        warmed.TryGetValue(level, out var keys) && keys.ContainsKey(key);
 
     internal static int Warm(Node root)
     {
@@ -108,21 +108,21 @@ internal static class GlyphWarmer
     internal static int Render(Font? font, int size, int outline, (long First, long Last)[] ranges, int level, bool spatial = false)
     {
         if (font == null || size <= 0 || !GodotObject.IsInstanceValid(font)) return 0;
-        if (!spatial && level == _rootLevel) _requests.Add((font, size, outline, ranges));
+        if (!spatial && level == rootLevel) requests.Add((font, size, outline, ranges));
         var server = TextServerManager.GetPrimaryInterface();
         var rids = font.GetRids();
         foreach (var rid in rids)
-            if (_safeUploads.Add(rid) && !server.FontGetGenerateMipmaps(rid)) server.FontSetGenerateMipmaps(rid, true);
+            if (safeUploads.Add(rid) && !server.FontGetGenerateMipmaps(rid)) server.FontSetGenerateMipmaps(rid, true);
 
         int raster = RasterSize(size, level);
         if (raster == 0) return 0;
         var key = new Vector2I(raster, RasterOutline(outline, level));
-        if (!_warmed.TryGetValue(level, out var warmed)) _warmed[level] = warmed = new();
+        if (!GlyphWarmer.warmed.TryGetValue(level, out var warmedRanges)) GlyphWarmer.warmed[level] = warmedRanges = new();
         int rendered = 0;
         foreach (var rid in rids)
         {
-            if (warmed.TryGetValue((rid, key), out var done) && (done == ranges || done == TextRanges)) continue;
-            warmed[(rid, key)] = ranges;
+            if (warmedRanges.TryGetValue((rid, key), out var done) && (done == ranges || done == TextRanges)) continue;
+            warmedRanges[(rid, key)] = ranges;
             foreach (var (first, last) in ranges) server.FontRenderRange(rid, key, first, last);
             rendered++;
         }

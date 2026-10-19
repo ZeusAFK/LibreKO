@@ -9,12 +9,12 @@ public class BlinkPathTests
     [InlineData(1f, 0f)]
     [InlineData(0f, 1f)]
     [InlineData(-0.6f, -0.8f)]
-    public void TheBlinkGoesTheWayTheCharacterFaces(float koDx, float koDz)
+    public void TheBlinkGoesTheWayTheCharacterFaces(float mapDx, float mapDz)
     {
-        float rotationY = 180f - Coord.KoHeading(koDx, koDz);
-        var (x, z) = BlinkPath.KoDirection(rotationY);
-        Assert.Equal(koDx, x, 3);
-        Assert.Equal(koDz, z, 3);
+        float rotationY = 180f - Coord.MapHeading(mapDx, mapDz);
+        var (x, z) = BlinkPath.MapDirection(rotationY);
+        Assert.Equal(mapDx, x, 3);
+        Assert.Equal(mapDz, z, 3);
     }
 
     [Fact]

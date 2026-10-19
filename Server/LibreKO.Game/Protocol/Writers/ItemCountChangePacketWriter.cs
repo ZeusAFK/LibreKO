@@ -20,7 +20,7 @@ public sealed class ItemCountChangePacketWriter
         short Durability,
         int Serial);
 
-    private readonly List<Entry> _entries = [];
+    private readonly List<Entry> entries = [];
 
     public static byte NormalizePosition(byte pos) =>
         pos >= InventoryConstants.InventoryStart
@@ -30,7 +30,7 @@ public sealed class ItemCountChangePacketWriter
     public ItemCountChangePacketWriter Add(
         byte position, int itemId, int quantity, short durability, bool isNewItem = false, int serial = 0)
     {
-        _entries.Add(new Entry(
+        entries.Add(new Entry(
             KindUpdate,
             NormalizePosition(position),
             itemId,
@@ -45,9 +45,9 @@ public sealed class ItemCountChangePacketWriter
     public Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_ITEM_COUNT_CHANGE);
-        packet.WriteShort((short)_entries.Count);
+        packet.WriteShort((short)entries.Count);
 
-        foreach (var entry in _entries)
+        foreach (var entry in entries)
         {
             packet.WriteByte(entry.Kind);
             packet.WriteByte(entry.Position);

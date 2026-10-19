@@ -4,25 +4,25 @@ namespace LibreKO.Domain;
 
 public sealed class UpgradePreviewGate
 {
-    private int[]? _items;
-    private int[]? _positions;
+    private int[]? items;
+    private int[]? positions;
 
-    public bool Pending => _items != null;
+    public bool Pending => items != null;
 
     public bool Begin(int[] items, int[] positions)
     {
         if (Pending) return false;
-        _items = (int[])items.Clone();
-        _positions = (int[])positions.Clone();
+        this.items = (int[])items.Clone();
+        this.positions = (int[])positions.Clone();
         return true;
     }
 
     public bool Complete(int[] items, int[] positions)
     {
-        bool current = _items != null && _positions != null
-            && _items.AsSpan().SequenceEqual(items) && _positions.AsSpan().SequenceEqual(positions);
-        _items = null;
-        _positions = null;
+        bool current = this.items != null && this.positions != null
+            && this.items.AsSpan().SequenceEqual(items) && this.positions.AsSpan().SequenceEqual(positions);
+        this.items = null;
+        this.positions = null;
         return current;
     }
 }

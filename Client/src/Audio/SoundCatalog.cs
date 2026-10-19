@@ -19,21 +19,21 @@ public static class SoundCatalog
 
     public const string Dir = "res://assets/sounds/";
 
-    private static readonly Dictionary<int, Entry> _sounds = new();
-    private static readonly Dictionary<int, LooksSounds> _looks = new();
-    private static readonly Dictionary<int, (int, int)> _items = new();
-    private static readonly Dictionary<int, int> _fxById = new();
-    private static readonly Dictionary<string, int> _fxByName = new();
-    private static readonly Dictionary<int, ZoneBgm> _zones = new();
-    private static readonly Dictionary<int, Footsteps> _steps = new();
-    private static bool _loaded;
+    private static readonly Dictionary<int, Entry> sounds = new();
+    private static readonly Dictionary<int, LooksSounds> looks = new();
+    private static readonly Dictionary<int, (int, int)> items = new();
+    private static readonly Dictionary<int, int> fxById = new();
+    private static readonly Dictionary<string, int> fxByName = new();
+    private static readonly Dictionary<int, ZoneBgm> zones = new();
+    private static readonly Dictionary<int, Footsteps> steps = new();
+    private static bool loaded;
 
-    public static int Count => _sounds.Count;
+    public static int Count => sounds.Count;
 
     public static void EnsureLoaded()
     {
-        if (_loaded) return;
-        _loaded = true;
+        if (loaded) return;
+        loaded = true;
 
         using var f = Godot.FileAccess.Open(Dir + "sounds.json", Godot.FileAccess.ModeFlags.Read);
         if (f == null)
@@ -50,14 +50,14 @@ public static class SoundCatalog
             if (!int.TryParse(key, out int id)) continue;
             var o = val.AsGodotDictionary();
             float gain = o.TryGetValue("gain", out var g) ? (float)g.AsDouble() : 0f;
-            _sounds[id] = new Entry(Str(o, "file"), (Kind)Int(o, "type"), Mathf.Max(1, Int(o, "inst")), gain);
+            sounds[id] = new Entry(Str(o, "file"), (Kind)Int(o, "type"), Mathf.Max(1, Int(o, "inst")), gain);
         }
 
         foreach (var (key, val) in Each(root, "looks"))
         {
             if (!int.TryParse(key, out int id)) continue;
             var o = val.AsGodotDictionary();
-            _looks[id] = new LooksSounds(
+            looks[id] = new LooksSounds(
                 Int(o, "move"), Int(o, "attack0"), Int(o, "attack1"),
                 Int(o, "struck0"), Int(o, "struck1"), Int(o, "dead0"), Int(o, "dead1"),
                 Int(o, "breathe0"), Int(o, "breathe1"));
@@ -67,20 +67,20 @@ public static class SoundCatalog
         {
             if (!int.TryParse(key, out int id)) continue;
             var a = val.AsGodotArray();
-            _items[id] = (a.Count > 0 ? a[0].AsInt32() : 0, a.Count > 1 ? a[1].AsInt32() : 0);
+            items[id] = (a.Count > 0 ? a[0].AsInt32() : 0, a.Count > 1 ? a[1].AsInt32() : 0);
         }
 
         foreach (var (key, val) in Each(root, "fx"))
-            if (int.TryParse(key, out int fxId)) _fxById[fxId] = val.AsInt32();
+            if (int.TryParse(key, out int fxId)) fxById[fxId] = val.AsInt32();
 
         foreach (var (key, val) in Each(root, "fxByName"))
-            _fxByName[key.ToLowerInvariant()] = val.AsInt32();
+            fxByName[key.ToLowerInvariant()] = val.AsInt32();
 
         foreach (var (key, val) in Each(root, "zones"))
         {
             if (!int.TryParse(key, out int id)) continue;
             var o = val.AsGodotDictionary();
-            _zones[id] = new ZoneBgm(Int(o, "elBattle"), Int(o, "elAmbient"),
+            zones[id] = new ZoneBgm(Int(o, "elBattle"), Int(o, "elAmbient"),
                                      Int(o, "kaBattle"), Int(o, "kaAmbient"));
         }
 
@@ -88,24 +88,24 @@ public static class SoundCatalog
         {
             if (!int.TryParse(key, out int id)) continue;
             var o = val.AsGodotDictionary();
-            _steps[id] = new Footsteps(Int(o, "walk1"), Int(o, "walk2"),
+            steps[id] = new Footsteps(Int(o, "walk1"), Int(o, "walk2"),
                                        Int(o, "run1"), Int(o, "run2"), Int(o, "run3"));
         }
 
-        GD.Print($"[sound] {_sounds.Count} sounds · {_looks.Count} looks · {_items.Count} items · " +
-                 $"{_fxByName.Count} fx · {_zones.Count} zones");
+        GD.Print($"[sound] {sounds.Count} sounds · {looks.Count} looks · {items.Count} items · " +
+                 $"{fxByName.Count} fx · {zones.Count} zones");
     }
 
     public static bool TryGet(int id, out Entry e)
     {
         EnsureLoaded();
-        return _sounds.TryGetValue(id, out e);
+        return sounds.TryGetValue(id, out e);
     }
 
     public static LooksSounds? Looks(int looksId)
     {
         EnsureLoaded();
-        return _looks.TryGetValue(looksId, out var l) ? l : null;
+        return looks.TryGetValue(looksId, out var l) ? l : null;
     }
 
     public static int ItemSwing(int itemId) => ItemPair(itemId).Item1;
@@ -115,33 +115,33 @@ public static class SoundCatalog
     private static (int, int) ItemPair(int itemId)
     {
         EnsureLoaded();
-        if (_items.TryGetValue(itemId, out var p)) return p;
+        if (items.TryGetValue(itemId, out var p)) return p;
         int baseId = itemId / 1000 * 1000;
-        return baseId != itemId && _items.TryGetValue(baseId, out var b) ? b : (0, 0);
+        return baseId != itemId && items.TryGetValue(baseId, out var b) ? b : (0, 0);
     }
 
     public static int FxSound(int fxId)
     {
         EnsureLoaded();
-        return fxId > 0 && _fxById.TryGetValue(fxId, out int s) ? s : 0;
+        return fxId > 0 && fxById.TryGetValue(fxId, out int s) ? s : 0;
     }
 
     public static int FxSound(string fxName)
     {
         EnsureLoaded();
-        return fxName.Length > 0 && _fxByName.TryGetValue(fxName.ToLowerInvariant(), out int s) ? s : 0;
+        return fxName.Length > 0 && fxByName.TryGetValue(fxName.ToLowerInvariant(), out int s) ? s : 0;
     }
 
     public static ZoneBgm? Zone(int zoneId)
     {
         EnsureLoaded();
-        return _zones.TryGetValue(zoneId, out var z) ? z : null;
+        return zones.TryGetValue(zoneId, out var z) ? z : null;
     }
 
     public static Footsteps? Steps(int raceId)
     {
         EnsureLoaded();
-        return _steps.TryGetValue(raceId, out var s) ? s : null;
+        return steps.TryGetValue(raceId, out var s) ? s : null;
     }
 
     private static IEnumerable<(string, Variant)> Each(Godot.Collections.Dictionary root, string section)

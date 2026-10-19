@@ -9,7 +9,6 @@ public struct MyInfo
     public int Authority;
     public int Nation, Race, Class, Face, Hair;
     public int[] Gear;
-    public ItemSlot[] Inventory;
     public int CapeId;
     public int CapeR, CapeG, CapeB;
     public int KnightsId;

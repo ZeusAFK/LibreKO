@@ -25,23 +25,23 @@ public partial class NationSelect : Control
         + "They decided to set up their own nation in the Luferson Castle located on the northern "
         + "part of the Iskanz mountain range.";
 
-    private Label _status = null!;
-    private Button _karus = null!;
-    private Button _elmorad = null!;
-    private ShaderMaterial _split = null!;
-    private Tween? _tweenLeft;
-    private Tween? _tweenRight;
+    private Label status = null!;
+    private Button karus = null!;
+    private Button elmorad = null!;
+    private ShaderMaterial split = null!;
+    private Tween? tweenLeft;
+    private Tween? tweenRight;
 
     public override void _Ready()
     {
         Ui.MenuScale(true);
         var backdrop = Ui.Background(this, "res://assets/backgrounds/nation_select.jpg");
-        _split = Shaders.Material("nation_split");
-        _split.SetShaderParameter("sat_left", 0f);
-        _split.SetShaderParameter("sat_right", 0f);
-        (backdrop as BackdropRect)?.SetArtMaterial(_split);
+        split = Shaders.Material("nation_split");
+        split.SetShaderParameter("sat_left", 0f);
+        split.SetShaderParameter("sat_right", 0f);
+        (backdrop as BackdropRect)?.SetArtMaterial(split);
 
-        var layer = new CanvasLayer { Layer = 5 };
+        var layer = new CanvasLayer { Layer = UiLayers.NationSelectScreen };
         AddChild(layer);
         var root = new Control { MouseFilter = MouseFilterEnum.Ignore };
         root.SetAnchorsPreset(LayoutPreset.FullRect);
@@ -57,18 +57,18 @@ public partial class NationSelect : Control
         header.AddChild(Ui.Legend("This choice binds the account and cannot be changed.",
                                   14, UiTheme.TextHi));
 
-        _elmorad = BuildSide(root, "El Morad", ElMoradLore, Nations.ElMorad, left: true);
-        _karus = BuildSide(root, "Karus", KarusLore, Nations.Karus, left: false);
+        elmorad = BuildSide(root, "El Morad", ElMoradLore, Nations.ElMorad, left: true);
+        karus = BuildSide(root, "Karus", KarusLore, Nations.Karus, left: false);
 
-        _status = Ui.Legend("", 14, UiTheme.TextHi);
-        _status.SetAnchorsPreset(LayoutPreset.BottomWide);
-        _status.GrowVertical = GrowDirection.Begin;
-        _status.OffsetTop = -30;
-        _status.OffsetBottom = -8;
-        root.AddChild(_status);
+        status = Ui.Legend("", 14, UiTheme.TextHi);
+        status.SetAnchorsPreset(LayoutPreset.BottomWide);
+        status.GrowVertical = GrowDirection.Begin;
+        status.OffsetTop = -30;
+        status.OffsetBottom = -8;
+        root.AddChild(status);
 
-        Net.I.NationResultEvent += OnNationResult;
-        Net.I.ErrorEvent += OnError;
+        Game.Session.PreGame.NationResultEvent += OnNationResult;
+        Game.Connection.ErrorEvent += OnError;
     }
 
     private Button BuildSide(Control root, string name, string lore, int nation, bool left)
@@ -140,19 +140,19 @@ public partial class NationSelect : Control
 
     private void Highlight(bool left, float target)
     {
-        if (_split?.Shader == null) return;
+        if (split?.Shader == null) return;
 
-        ref var slot = ref left ? ref _tweenLeft : ref _tweenRight;
+        ref var slot = ref left ? ref tweenLeft : ref tweenRight;
         if (slot != null && slot.IsValid()) slot.Kill();
         slot = CreateTween();
         var step = slot.TweenProperty(
-            _split, left ? "shader_parameter/sat_left" : "shader_parameter/sat_right",
+            split, left ? "shader_parameter/sat_left" : "shader_parameter/sat_right",
             target, FadeTime);
         if (step == null)
         {
             slot.Kill();
             slot = null;
-            _split.SetShaderParameter(left ? "sat_left" : "sat_right", target);
+            split.SetShaderParameter(left ? "sat_left" : "sat_right", target);
             return;
         }
         step.SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
@@ -162,17 +162,17 @@ public partial class NationSelect : Control
 
     private void Choose(int nation)
     {
-        _karus.Disabled = _elmorad.Disabled = true;
-        _status.Text = "Selecting nation…";
-        Net.I.SelectNation(nation);
+        karus.Disabled = elmorad.Disabled = true;
+        status.Text = "Selecting nation…";
+        Game.Requests.PreGame.SelectNation(nation);
     }
 
     private void OnNationResult(int nation)
     {
         if (nation == Nations.NotSelected)
         {
-            _karus.Disabled = _elmorad.Disabled = false;
-            _status.Text = "";
+            karus.Disabled = elmorad.Disabled = false;
+            status.Text = "";
             Notice.Show(this, "Nation selection was rejected. Please try again.");
             return;
         }
@@ -181,14 +181,14 @@ public partial class NationSelect : Control
 
     private void OnError(string e)
     {
-        _karus.Disabled = _elmorad.Disabled = false;
-        _status.Text = "";
+        karus.Disabled = elmorad.Disabled = false;
+        status.Text = "";
         Notice.Show(this, "Error: " + e);
     }
 
     public override void _ExitTree()
     {
-        Net.I.NationResultEvent -= OnNationResult;
-        Net.I.ErrorEvent -= OnError;
+        Game.Session.PreGame.NationResultEvent -= OnNationResult;
+        Game.Connection.ErrorEvent -= OnError;
     }
 }

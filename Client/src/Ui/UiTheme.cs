@@ -18,7 +18,6 @@ public static class UiTheme
     public static readonly Color GoldVivid  = new("e4b552");
     public static readonly Color GoldDark   = new("5a5038");
     public static readonly Color Bronze     = new("8a6d3c");
-    public static readonly Color BronzeDark = new("3f3325");
 
     public static readonly Color TextHi     = new("ece4d2");
     public static readonly Color TextLo     = new("a8a298");
@@ -219,9 +218,9 @@ public static class UiTheme
         return rule;
     }
 
-    private static FontVariation? _strong;
+    private static FontVariation? strong;
 
-    public static Font Strong => _strong ??= new FontVariation
+    public static Font Strong => strong ??= new FontVariation
     {
         BaseFont = ThemeDB.FallbackFont,
         VariationEmbolden = 0.3f,
@@ -556,14 +555,6 @@ public static class UiTheme
         margin.AddThemeConstantOverride("margin_bottom", bottom);
     }
 
-    public static void DrawGoldRing(CanvasItem ci, Vector2 center, float radius, float width = 4f)
-    {
-        ci.DrawArc(center, radius + width * 0.5f, 0, Mathf.Tau, 96, new Color(0, 0, 0, 0.55f), width + 3f, true);
-        ci.DrawArc(center, radius, 0, Mathf.Tau, 96, GoldDark, width + 1.5f, true);
-        ci.DrawArc(center, radius, 0, Mathf.Tau, 96, Gold, width, true);
-        ci.DrawArc(center, radius - width * 0.35f, 0, Mathf.Tau, 96, new Color(GoldBright, 0.85f), width * 0.4f, true);
-    }
-
     public static SpinBox NumberBox(double min, double max, double step, float width, int fontSize = 13)
     {
         var spin = new SpinBox
@@ -626,11 +617,11 @@ public static class UiTheme
         return option;
     }
 
-    private static ImageTexture? _dividerTex;
+    private static ImageTexture? dividerTex;
 
     public static ImageTexture Divider()
     {
-        if (_dividerTex != null) return _dividerTex;
+        if (dividerTex != null) return dividerTex;
         const int w = 64, h = 3;
         var img = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         img.Fill(new Color(0, 0, 0, 0));
@@ -642,7 +633,7 @@ public static class UiTheme
             img.SetPixel(x, 1, new Color(Gold, a));
             img.SetPixel(x, 2, new Color(GoldDark, a * 0.35f));
         }
-        _dividerTex = ImageTexture.CreateFromImage(img);
-        return _dividerTex;
+        dividerTex = ImageTexture.CreateFromImage(img);
+        return dividerTex;
     }
 }

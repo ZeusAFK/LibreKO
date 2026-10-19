@@ -1,39 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using LibreKO.Domain;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public static class NationTransferWire
 {
-    public const byte Failed = 0;
-    public const byte InClan = 2;
-    public const byte IsKing = 3;
-    public const byte InInvestigationTeam = 4;
-    public const byte WrongCharacter = 5;
-    public const byte NoCharacter = 6;
-    public const byte NoItem = 7;
-    public const byte MakeOverActive = 9;
-    public const byte NotEnoughCoins = 10;
-    public const byte SubmitCompleted = 2;
+    public const NationTransferResult SubmitCompleted = (NationTransferResult)2;
     public const int FailedText = 16700;
 
     private static readonly Dictionary<byte, int> RefusalTexts = new()
     {
-        [InClan] = 16702,
-        [IsKing] = 16703,
-        [WrongCharacter] = 16705,
-        [NoCharacter] = 16706,
-        [NoItem] = 16710,
+        [(byte)NationTransferResult.InClan] = 16702,
+        [(byte)NationTransferResult.IsKing] = 16703,
+        [(byte)NationTransferResult.WrongCharacter] = 16705,
+        [(byte)NationTransferResult.NoCharacter] = 16706,
+        [(byte)NationTransferResult.NoItem] = 16710,
     };
 
     private static readonly Dictionary<byte, int> SubmitRefusalTexts = new()
     {
-        [InInvestigationTeam] = 16704,
-        [MakeOverActive] = 18906,
-        [NotEnoughCoins] = 11303,
+        [(byte)NationTransferResult.InInvestigationTeam] = 16704,
+        [(byte)NationTransferResult.MakeOverActive] = 18906,
+        [(byte)NationTransferResult.NotEnoughCoins] = 11303,
     };
 
     public static List<NationTransferCandidate>? ReadCandidates(Packet p)
@@ -79,17 +64,44 @@ public static class NationTransferWire
                                  && GenderChange.AllowedRaces(candidate.Class).Contains(pick.Race));
     }
 
-    public static bool IsRefusal(byte result) =>
-        result is Failed or InClan or IsKing or WrongCharacter or NoCharacter or NoItem;
+    public static bool IsRefusal(NationTransferResult result) =>
+        result is NationTransferResult.Failed or NationTransferResult.InClan or NationTransferResult.IsKing or NationTransferResult.WrongCharacter or NationTransferResult.NoCharacter or NationTransferResult.NoItem;
 
-    public static bool IsSubmitSuccess(byte result) =>
-        result is Net.NationTransferAccepted or SubmitCompleted;
+    public static bool IsSubmitSuccess(NationTransferResult result) =>
+        result is NationTransferResult.Accepted or SubmitCompleted;
 
-    public static bool IsRefusal(byte sub, byte result) =>
-        sub == Net.NationTransferSubmit ? !IsSubmitSuccess(result) : IsRefusal(result);
+    public static bool IsRefusal(NationTransferSubOpcode sub, byte result) =>
+        sub == NationTransferSubOpcode.Submit ? !IsSubmitSuccess((NationTransferResult)result) : IsRefusal((NationTransferResult)result);
 
-    public static int RefusalText(byte sub, byte result) =>
-        sub == Net.NationTransferSubmit && SubmitRefusalTexts.TryGetValue(result, out int submitText) ? submitText
+    public static int RefusalText(NationTransferSubOpcode sub, byte result) =>
+        sub == NationTransferSubOpcode.Submit && SubmitRefusalTexts.TryGetValue(result, out int submitText) ? submitText
         : RefusalTexts.TryGetValue(result, out int text) ? text
         : FailedText;
 }
+
+public enum NationTransferSubOpcode : byte
+{
+    WarStatus = 1,
+    OpenBox = 2,
+    Submit = 3,
+    ErrorBox = 16,
+}
+
+public enum NationTransferResult : byte
+{
+    Failed = 0,
+    Accepted = 1,
+    InClan = 2,
+    IsKing = 3,
+    InInvestigationTeam = 4,
+    WrongCharacter = 5,
+    NoCharacter = 6,
+    NoItem = 7,
+    WarRunning = 8,
+    MakeOverActive = 9,
+    NotEnoughCoins = 10,
+}
+
+public sealed record NationTransferCandidate(int Slot, string Name, int Race, int Nation, int Class, int Face, int Hair);
+
+public readonly record struct NationTransferPick(int Slot, string Name, int Race, int Face, int Hair);

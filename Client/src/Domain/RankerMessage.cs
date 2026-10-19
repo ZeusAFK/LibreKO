@@ -2,9 +2,6 @@
 
 public static class RankerMessage
 {
-    public const byte SubView = 1;
-    public const byte SubWrite = 2;
-    public const byte SubRedress = 3;
     public const short Done = 1;
     public const int MessageMaxLength = 200;
     public const float Reach = 9.5f;

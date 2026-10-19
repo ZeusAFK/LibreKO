@@ -10,10 +10,10 @@ public class ChatReactionsTests
     private static readonly uint NoonUnix = (uint)new DateTimeOffset(Noon).ToUnixTimeSeconds();
     private const string Heart = "❤️";
 
-    private static Packet Media(byte sub)
+    private static Packet Media(RoomMediaSubOpcode sub)
     {
         var p = new Packet(GameOpcodes.GS_ROOM_MEDIA);
-        p.WriteByte(sub);
+        p.WriteByte((byte)sub);
         return p;
     }
 
@@ -146,11 +146,11 @@ public class ChatReactionsTests
     [Fact]
     public void ReactionPacketsReadTheServerLayout()
     {
-        var one = Media(RoomMediaSubs.React);
+        var one = Media(RoomMediaSubOpcode.React);
         WriteReaction(one, 41, 7, "Rikka", Heart);
         Assert.Equal(new RoomMediaReplies.ReactionChange(41, 7, "Rikka", Heart), RoomMediaReplies.ReadReaction(Ready(one)));
 
-        var list = Media(RoomMediaSubs.Reactions);
+        var list = Media(RoomMediaSubOpcode.Reactions);
         list.WriteUShort(2);
         WriteReaction(list, 41, 7, "Rikka", Heart);
         WriteReaction(list, 42, 8, "Borin", "");
@@ -159,16 +159,16 @@ public class ChatReactionsTests
         Assert.Equal([new(41, 7, "Rikka", Heart), new RoomMediaReplies.ReactionChange(42, 8, "Borin", "")], read);
         Assert.Equal(0, ready.RemainingBytes);
 
-        var kept = Media(RoomMediaSubs.Kept);
-        kept.WriteByte(RoomMediaResults.Ok);
+        var kept = Media(RoomMediaSubOpcode.Kept);
+        kept.WriteByte((byte)RoomMediaResult.Ok);
         kept.WriteByte(1);
-        Assert.Equal((RoomMediaResults.Ok, true), RoomMediaReplies.ReadKept(Ready(kept)));
+        Assert.Equal(((byte)RoomMediaResult.Ok, true), RoomMediaReplies.ReadKept(Ready(kept)));
     }
 
     [Fact]
     public void WhisperRowsAndPagesCarryThePartnerName()
     {
-        var stored = Media(RoomMediaSubs.DirectStored);
+        var stored = Media(RoomMediaSubOpcode.DirectStored);
         stored.WriteString("Rikka");
         WriteTextRow(stored, 55, 7, "Rikka", "psst");
         var direct = RoomMediaReplies.ReadDirectRow(Ready(stored));
@@ -177,7 +177,7 @@ public class ChatReactionsTests
         Assert.Equal(55, direct.Value.Row.Id);
         Assert.Equal("psst", direct.Value.Row.Text);
 
-        var page = Media(RoomMediaSubs.DirectHistory);
+        var page = Media(RoomMediaSubOpcode.DirectHistory);
         page.WriteString("Rikka");
         page.WriteByte(1);
         WriteTextRow(page, 54, 9, "Tester10", "hi");

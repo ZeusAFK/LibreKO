@@ -6,7 +6,6 @@ namespace LibreKO;
 public static class DragLayer
 {
     public const string AmountKey = "amount";
-    private const int TopLayer = 230;
     private const string LayerName = "DragLayer";
     private const int CountFontSize = 12;
 
@@ -41,7 +40,7 @@ public static class DragLayer
         var size = source.Size * scale;
         var icon = new TextureRect
         {
-            Texture = ItemData.Icon(itemId),
+            Texture = ItemIcons.Get(itemId),
             CustomMinimumSize = size,
             Size = size,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
@@ -75,7 +74,7 @@ public static class DragLayer
     {
         if (tree.Root.GetNodeOrNull<CanvasLayer>(LayerName) is { } existing)
             return existing.GetChild<DragLayerRoot>(0);
-        var layer = new CanvasLayer { Name = LayerName, Layer = TopLayer };
+        var layer = new CanvasLayer { Name = LayerName, Layer = UiLayers.Drag };
         var root = new DragLayerRoot();
         layer.AddChild(root);
         tree.Root.AddChild(layer);
@@ -94,23 +93,23 @@ public sealed partial class DragLayerRoot : Control
 {
     private const double MsecPerSecond = 1000.0;
 
-    private StackDial? _dial;
-    private Label? _count;
-    private Godot.Collections.Dictionary? _data;
+    private StackDial? dial;
+    private Label? count;
+    private Godot.Collections.Dictionary? data;
 
     public DragLayerRoot() => MouseFilter = MouseFilterEnum.Ignore;
 
     internal void Arm(StackDial dial, Label count, Godot.Collections.Dictionary data)
     {
-        _dial = dial;
-        _count = count;
-        _data = data;
+        this.dial = dial;
+        this.count = count;
+        this.data = data;
         Publish();
     }
 
     public override void _Input(InputEvent ev)
     {
-        if (_dial == null || ev is not InputEventMouseButton { ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown } wheel) return;
+        if (dial == null || ev is not InputEventMouseButton { ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown } wheel) return;
         if (!GetViewport().GuiIsDragging())
         {
             Disarm();
@@ -118,7 +117,7 @@ public sealed partial class DragLayerRoot : Control
         }
         GetViewport().SetInputAsHandled();
         if (!wheel.Pressed) return;
-        _dial.Turn(wheel.ButtonIndex == MouseButton.WheelUp ? StackDial.Up : StackDial.Down, Time.GetTicksMsec() / MsecPerSecond);
+        dial.Turn(wheel.ButtonIndex == MouseButton.WheelUp ? StackDial.Up : StackDial.Down, Time.GetTicksMsec() / MsecPerSecond);
         Publish();
     }
 
@@ -129,17 +128,17 @@ public sealed partial class DragLayerRoot : Control
 
     private void Publish()
     {
-        if (_dial == null || _data == null) return;
-        _data[DragLayer.AmountKey] = _dial.Amount;
-        if (_count == null || !IsInstanceValid(_count)) return;
-        _count.Text = _dial.Amount.ToString();
-        _count.AddThemeColorOverride("font_color", _dial.Whole ? Colors.White : UiTheme.GoldBright);
+        if (dial == null || data == null) return;
+        data[DragLayer.AmountKey] = dial.Amount;
+        if (count == null || !IsInstanceValid(count)) return;
+        count.Text = dial.Amount.ToString();
+        count.AddThemeColorOverride("font_color", dial.Whole ? Colors.White : UiTheme.GoldBright);
     }
 
     private void Disarm()
     {
-        _dial = null;
-        _count = null;
-        _data = null;
+        dial = null;
+        count = null;
+        data = null;
     }
 }

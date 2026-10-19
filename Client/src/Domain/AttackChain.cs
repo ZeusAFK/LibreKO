@@ -11,23 +11,23 @@ public sealed class AttackChain
 
     private const int Slots = 6;
 
-    private readonly int[] _kinds = new int[Slots];
-    private readonly double[] _times = new double[Slots];
-    private int _next;
+    private readonly int[] kinds = new int[Slots];
+    private readonly double[] times = new double[Slots];
+    private int next;
 
     public bool Chained { get; private set; }
 
     public bool Record(int kind, double now)
     {
-        if (_next >= Slots) _next = 0;
-        int slot = _next;
+        if (next >= Slots) next = 0;
+        int slot = next;
         int previous = (slot + Slots - 1) % Slots;
-        bool hasPrevious = _times[previous] > 0;
-        bool sameKind = slot == 0 ? _kinds[previous] == kind : kind == BasicAttack && _kinds[previous] == BasicAttack;
-        _kinds[slot] = kind;
-        _times[slot] = now;
-        _next = slot + 1;
-        Chained = hasPrevious && !sameKind && now - _times[previous] < Window;
+        bool hasPrevious = times[previous] > 0;
+        bool sameKind = slot == 0 ? kinds[previous] == kind : kind == BasicAttack && kinds[previous] == BasicAttack;
+        kinds[slot] = kind;
+        times[slot] = now;
+        next = slot + 1;
+        Chained = hasPrevious && !sameKind && now - times[previous] < Window;
         return Chained;
     }
 

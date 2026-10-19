@@ -265,7 +265,7 @@ public static partial class KeyBinds
     };
 
     private static readonly Dictionary<KeyAction, KeyChord> Bound = new();
-    private static bool _loaded;
+    private static bool loaded;
 
     public static event Action? Changed;
 
@@ -328,8 +328,8 @@ public static partial class KeyBinds
 
     private static void Load()
     {
-        if (_loaded) return;
-        _loaded = true;
+        if (loaded) return;
+        loaded = true;
         foreach (var (action, chord) in Resolve(Table, SavedChord))
             Bound[action] = chord;
         LoadPad();

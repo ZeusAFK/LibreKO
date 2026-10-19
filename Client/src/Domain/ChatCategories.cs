@@ -19,7 +19,7 @@ public static class ChatCategories
         ChatCategory.NoahKnights,
     };
 
-    public static ChatCategory Of(byte type, bool serverNotice)
+    public static ChatCategory Of(ChatType type, bool serverNotice)
     {
         if (serverNotice) return ChatCategory.Notice;
         return type switch
@@ -66,17 +66,17 @@ public static class ChatTabs
 
     public static IReadOnlyList<ChatTabSpec> All { get; } = new ChatTabSpec[]
     {
-        new("all", "All", ChatCategory.All, NoSendChannel, ChatType.General),
+        new("all", "All", ChatCategory.All, NoSendChannel, (byte)ChatType.General),
         new("general", "General", ChatCategory.General | ChatCategory.Shout | ChatCategory.Commander | ChatCategory.Notice
-            | ChatCategory.NoahKnights | ChatCategory.ChatRoom, ChatType.General, ChatType.General),
-        new("whisper", "Whispers", ChatCategory.Whisper, ChatType.Private, ChatType.Private),
-        new("party", "Party", ChatCategory.Party | ChatCategory.Notice, ChatType.Party, ChatType.Party),
-        new("clan", "Clan", ChatCategory.Clan | ChatCategory.Alliance | ChatCategory.Notice, ChatType.Clan, ChatType.Clan),
-        new("alliance", "Alliance", ChatCategory.Alliance | ChatCategory.Notice, ChatType.Alliance, ChatType.Alliance),
-        new("noah", "Noah Knights", ChatCategory.NoahKnights | ChatCategory.Notice, ChatType.NoahKnights, ChatType.NoahKnights),
-        new("shout", "Shout", ChatCategory.Shout, ChatType.Shout, ChatType.Shout),
-        new("trade", "Trade", ChatCategory.Trade, NoSendChannel, ChatType.Merchant),
-        new("system", "System", ChatCategory.Notice | ChatCategory.System, NoSendChannel, ChatType.WarSystem),
+            | ChatCategory.NoahKnights | ChatCategory.ChatRoom, (byte)ChatType.General, (byte)ChatType.General),
+        new("whisper", "Whispers", ChatCategory.Whisper, (byte)ChatType.Private, (byte)ChatType.Private),
+        new("party", "Party", ChatCategory.Party | ChatCategory.Notice, (byte)ChatType.Party, (byte)ChatType.Party),
+        new("clan", "Clan", ChatCategory.Clan | ChatCategory.Alliance | ChatCategory.Notice, (byte)ChatType.Clan, (byte)ChatType.Clan),
+        new("alliance", "Alliance", ChatCategory.Alliance | ChatCategory.Notice, (byte)ChatType.Alliance, (byte)ChatType.Alliance),
+        new("noah", "Noah Knights", ChatCategory.NoahKnights | ChatCategory.Notice, (byte)ChatType.NoahKnights, (byte)ChatType.NoahKnights),
+        new("shout", "Shout", ChatCategory.Shout, (byte)ChatType.Shout, (byte)ChatType.Shout),
+        new("trade", "Trade", ChatCategory.Trade, NoSendChannel, (byte)ChatType.Merchant),
+        new("system", "System", ChatCategory.Notice | ChatCategory.System, NoSendChannel, (byte)ChatType.WarSystem),
     };
 
     public static bool Applies(ChatTabSpec tab, bool noahKnight) => tab.Id switch

@@ -15,15 +15,15 @@ public sealed class NereidMonumentService : INereidMonumentService
 {
     private const byte Nereid = BattleZoneManager.ZONE_BATTLE4;
 
-    private readonly SessionManager _sessions;
+    private readonly SessionManager sessions;
 
     public NereidMonumentService(SessionManager sessions, IZoneTransitionService zones)
     {
-        _sessions = sessions;
+        this.sessions = sessions;
         zones.ZoneAbilitySent += OnZoneAbilitySentAsync;
     }
 
-    private BattleZoneManager Battle => _sessions.Battle;
+    private BattleZoneManager Battle => sessions.Battle;
 
     private bool WarHere => Battle.IsBattleActive && Battle.BattleZone == Nereid;
 
@@ -58,7 +58,7 @@ public sealed class NereidMonumentService : INereidMonumentService
 
     private async Task BroadcastAsync(Packet packet)
     {
-        foreach (var session in _sessions.GetAll().Where(s => s.ZoneId == Nereid).ToList())
+        foreach (var session in sessions.GetAll().Where(s => s.ZoneId == Nereid).ToList())
             await session.Client.SendPacket(packet);
     }
 }

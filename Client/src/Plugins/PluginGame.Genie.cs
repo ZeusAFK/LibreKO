@@ -51,17 +51,17 @@ public interface IGameGenie
 
 public sealed partial class PluginGame
 {
-    public IGameGenie Genie => _genie;
+    public IGameGenie Genie => genie;
 
-    private readonly GenieProxy _genie = new();
+    private readonly GenieProxy genie = new();
 
-    internal void AttachGenie(IGameGenie genie)
+    internal void AttachGenie(IGameGenie genieSource)
     {
-        _genie.Source = genie;
+        genie.Source = genieSource;
         RaiseGenie();
     }
 
-    internal void RaiseGenie() => _genie.Raise();
+    internal void RaiseGenie() => genie.Raise();
 
     private sealed class GenieProxy : IGameGenie
     {

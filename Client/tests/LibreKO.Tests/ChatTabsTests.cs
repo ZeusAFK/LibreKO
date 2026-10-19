@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -23,7 +24,7 @@ public class ChatTabsTests
     [InlineData(33, false, ChatCategory.ChatRoom)]
     [InlineData(34, false, ChatCategory.NoahKnights)]
     public void EveryChatTypeHasOneCategory(byte type, bool serverNotice, ChatCategory expected) =>
-        Assert.Equal(expected, ChatCategories.Of(type, serverNotice));
+        Assert.Equal(expected, ChatCategories.Of((ChatType)type, serverNotice));
 
     [Theory]
     [InlineData("noah", true, true)]

@@ -17,17 +17,17 @@ public readonly record struct LinePosition(int Line, int Character)
 
 public sealed class SourceText
 {
-    private readonly int[] _lineStarts;
+    private readonly int[] lineStarts;
 
     public string FileName { get; }
     public string Content { get; }
-    public int LineCount => _lineStarts.Length;
+    public int LineCount => lineStarts.Length;
 
     public SourceText(string content, string fileName)
     {
         Content = content;
         FileName = fileName;
-        _lineStarts = ComputeLineStarts(content);
+        lineStarts = ComputeLineStarts(content);
     }
 
     public char this[int index] => Content[index];
@@ -36,28 +36,28 @@ public sealed class SourceText
     public LinePosition GetLinePosition(int position)
     {
         var line = GetLineIndex(position);
-        return new LinePosition(line, position - _lineStarts[line]);
+        return new LinePosition(line, position - lineStarts[line]);
     }
 
     public int GetPosition(LinePosition position)
     {
         if (position.Line < 0)
             return 0;
-        if (position.Line >= _lineStarts.Length)
+        if (position.Line >= lineStarts.Length)
             return Content.Length;
-        return Math.Min(_lineStarts[position.Line] + position.Character, Content.Length);
+        return Math.Min(lineStarts[position.Line] + position.Character, Content.Length);
     }
 
     public int GetLineIndex(int position)
     {
         var low = 0;
-        var high = _lineStarts.Length - 1;
+        var high = lineStarts.Length - 1;
         while (low <= high)
         {
             var mid = low + (high - low) / 2;
-            if (_lineStarts[mid] == position)
+            if (lineStarts[mid] == position)
                 return mid;
-            if (_lineStarts[mid] < position)
+            if (lineStarts[mid] < position)
                 low = mid + 1;
             else
                 high = mid - 1;
@@ -67,10 +67,10 @@ public sealed class SourceText
 
     public string GetLineText(int lineIndex)
     {
-        if (lineIndex < 0 || lineIndex >= _lineStarts.Length)
+        if (lineIndex < 0 || lineIndex >= lineStarts.Length)
             return string.Empty;
-        var start = _lineStarts[lineIndex];
-        var end = lineIndex + 1 < _lineStarts.Length ? _lineStarts[lineIndex + 1] : Content.Length;
+        var start = lineStarts[lineIndex];
+        var end = lineIndex + 1 < lineStarts.Length ? lineStarts[lineIndex + 1] : Content.Length;
         return Content[start..end].TrimEnd('\r', '\n');
     }
 

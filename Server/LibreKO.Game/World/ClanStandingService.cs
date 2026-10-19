@@ -23,10 +23,10 @@ public class ClanStandingService(
 {
     private const int IntervalSeconds = 3600;
 
-    private readonly ConcurrentDictionary<short, byte> _dirty = new();
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly ConcurrentDictionary<short, byte> dirty = new();
+    private readonly SemaphoreSlim gate = new(1, 1);
 
-    public void MarkDirty(short clanId) => _dirty[clanId] = 1;
+    public void MarkDirty(short clanId) => dirty[clanId] = 1;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -59,7 +59,7 @@ public class ClanStandingService(
         if (clan == null)
             return;
 
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -76,13 +76,13 @@ public class ClanStandingService(
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
     }
 
     public async Task RefreshRankingsAsync()
     {
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -94,13 +94,13 @@ public class ClanStandingService(
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
     }
 
     public async Task RefreshAllAsync()
     {
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -128,7 +128,7 @@ public class ClanStandingService(
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
     }
 
@@ -183,9 +183,9 @@ public class ClanStandingService(
 
     private async Task PersistAsync(IKnightsRepository repo, List<KnightsEntity> changed)
     {
-        foreach (var clanId in _dirty.Keys.ToList())
+        foreach (var clanId in dirty.Keys.ToList())
         {
-            _dirty.TryRemove(clanId, out _);
+            dirty.TryRemove(clanId, out _);
             var clan = sessionManager.Knights.GetClan(clanId);
             if (clan != null && !changed.Contains(clan))
                 changed.Add(clan);

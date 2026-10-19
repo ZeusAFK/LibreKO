@@ -16,11 +16,11 @@ public class MagicTimingTests
 
     private sealed class StubClock(DateTimeOffset start) : TimeProvider
     {
-        private DateTimeOffset _now = start;
+        private DateTimeOffset now = start;
 
-        public override DateTimeOffset GetUtcNow() => _now;
+        public override DateTimeOffset GetUtcNow() => now;
 
-        public void Advance(TimeSpan delta) => _now += delta;
+        public void Advance(TimeSpan delta) => now += delta;
     }
 
     private static MagicData Magic(int id, int castTenths, int recastTenths, int useItem = 0) =>

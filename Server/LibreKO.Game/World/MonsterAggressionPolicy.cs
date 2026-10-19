@@ -10,16 +10,16 @@ public interface IMonsterAggressionPolicy
 
 public class MonsterAggressionPolicy(IOptions<GameServerSettings> settings) : IMonsterAggressionPolicy
 {
-    private readonly bool _bosses = settings.Value.Monsters.AggressiveBosses;
-    private readonly HashSet<int> _zones = [.. settings.Value.Monsters.AggressiveZones];
-    private readonly HashSet<int> _npcIds = [.. settings.Value.Monsters.AggressiveNpcIds];
+    private readonly bool bosses = settings.Value.Monsters.AggressiveBosses;
+    private readonly HashSet<int> zones = [.. settings.Value.Monsters.AggressiveZones];
+    private readonly HashSet<int> npcIds = [.. settings.Value.Monsters.AggressiveNpcIds];
 
     public void Apply(NpcInstance npc)
     {
         if (npc.IsAggressive || !npc.IsMonster || npc.IsScarecrow)
             return;
 
-        if (_npcIds.Contains(npc.NpcId) || (_bosses && npc.IsBoss) || _zones.Contains(npc.ZoneId))
+        if (npcIds.Contains(npc.NpcId) || (bosses && npc.IsBoss) || zones.Contains(npc.ZoneId))
             npc.IsAggressive = true;
     }
 }

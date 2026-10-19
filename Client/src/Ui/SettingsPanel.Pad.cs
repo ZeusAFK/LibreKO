@@ -6,11 +6,11 @@ namespace LibreKO;
 
 public partial class SettingsPanel : CanvasLayer
 {
-    private readonly Dictionary<KeyAction, Button> _padButtons = new();
-    private readonly List<(BindGroup Group, string Label, Control Row)> _padRows = new();
-    private readonly Dictionary<BindGroup, Control> _padHeaders = new();
-    private KeyAction? _capturingPad;
-    private Label _padStatus = null!;
+    private readonly Dictionary<KeyAction, Button> padButtons = new();
+    private readonly List<(BindGroup Group, string Label, Control Row)> padRows = new();
+    private readonly Dictionary<BindGroup, Control> padHeaders = new();
+    private KeyAction? capturingPad;
+    private Label padStatus = null!;
 
     private void BuildPadTab(VBoxContainer vb)
     {
@@ -26,9 +26,9 @@ public partial class SettingsPanel : CanvasLayer
         hint.AddThemeColorOverride("font_color", new Color(0.72f, 0.74f, 0.78f));
         vb.AddChild(hint);
 
-        _padStatus = new Label { Name = "pad_status" };
-        _padStatus.AddThemeFontSizeOverride("font_size", 12);
-        vb.AddChild(_padStatus);
+        padStatus = new Label { Name = "pad_status" };
+        padStatus.AddThemeFontSizeOverride("font_size", 12);
+        vb.AddChild(padStatus);
         RefreshPadStatus();
         Input.Singleton.JoyConnectionChanged += OnPadConnectionChanged;
 
@@ -44,11 +44,11 @@ public partial class SettingsPanel : CanvasLayer
             {
                 section = entry.Group;
                 var header = GroupHeader(entry.Group.ToString());
-                _padHeaders[entry.Group] = header;
+                padHeaders[entry.Group] = header;
                 vb.AddChild(header);
             }
             var row = PadRow(entry);
-            _padRows.Add((entry.Group, entry.Label, row));
+            padRows.Add((entry.Group, entry.Label, row));
             vb.AddChild(row);
         }
 
@@ -70,10 +70,10 @@ public partial class SettingsPanel : CanvasLayer
     {
         int device = KeyBinds.PadDevice();
         bool on = device >= 0;
-        _padStatus.Text = on
+        padStatus.Text = on
             ? $"Connected: {Input.GetJoyName(device)}"
             : "No controller detected — bindings can still be edited.";
-        _padStatus.AddThemeColorOverride("font_color", on ? UiTheme.Good : UiTheme.TextLo);
+        padStatus.AddThemeColorOverride("font_color", on ? UiTheme.Good : UiTheme.TextLo);
     }
 
     private HBoxContainer PadRow(KeyBinds.Entry entry)
@@ -100,7 +100,7 @@ public partial class SettingsPanel : CanvasLayer
             KeyBinds.SetPad(entry.Action, PadChord.Unbound);
             RefreshPadButtons();
         };
-        _padButtons[entry.Action] = button;
+        padButtons[entry.Action] = button;
         row.AddChild(button);
         ShowPadBinding(entry.Action);
         return row;
@@ -110,7 +110,7 @@ public partial class SettingsPanel : CanvasLayer
     {
         string needle = text.Trim();
         var shown = new HashSet<BindGroup>();
-        foreach (var (group, label, row) in _padRows)
+        foreach (var (group, label, row) in padRows)
         {
             bool match = needle.Length == 0
                          || label.Contains(needle, StringComparison.OrdinalIgnoreCase)
@@ -118,32 +118,32 @@ public partial class SettingsPanel : CanvasLayer
             row.Visible = match;
             if (match) shown.Add(group);
         }
-        foreach (var (group, header) in _padHeaders) header.Visible = shown.Contains(group);
+        foreach (var (group, header) in padHeaders) header.Visible = shown.Contains(group);
     }
 
     private void BeginPadCapture(KeyAction action)
     {
         CancelPadCapture();
         CancelCapture();
-        _capturingPad = action;
-        if (_padButtons.TryGetValue(action, out var button)) button.Text = "Press a button…";
+        capturingPad = action;
+        if (padButtons.TryGetValue(action, out var button)) button.Text = "Press a button…";
     }
 
     private void CancelPadCapture()
     {
-        if (_capturingPad is not { } action) return;
-        _capturingPad = null;
+        if (capturingPad is not { } action) return;
+        capturingPad = null;
         ShowPadBinding(action);
     }
 
-    private PadMod _triggerDown = PadMod.None;
-    private bool _triggerUsedInChord;
+    private PadMod triggerDown = PadMod.None;
+    private bool triggerUsedInChord;
 
     public override void _Process(double delta)
     {
-        if (_capturingPad is not { } action)
+        if (capturingPad is not { } action)
         {
-            _triggerDown = PadMod.None;
+            triggerDown = PadMod.None;
             return;
         }
 
@@ -153,26 +153,26 @@ public partial class SettingsPanel : CanvasLayer
 
         if (down != PadMod.None)
         {
-            if (_triggerDown == PadMod.None) _triggerUsedInChord = false;
-            _triggerDown = down;
+            if (triggerDown == PadMod.None) triggerUsedInChord = false;
+            triggerDown = down;
             return;
         }
 
-        if (_triggerDown == PadMod.None) return;
-        var released = _triggerDown;
-        _triggerDown = PadMod.None;
-        if (_triggerUsedInChord) return;
+        if (triggerDown == PadMod.None) return;
+        var released = triggerDown;
+        triggerDown = PadMod.None;
+        if (triggerUsedInChord) return;
 
-        _capturingPad = null;
+        capturingPad = null;
         KeyBinds.SetPad(action, new PadChord(JoyButton.Invalid, released));
         RefreshPadButtons();
     }
 
     private bool CapturePadButton(InputEventJoypadButton ev)
     {
-        if (_capturingPad is not { } action) return false;
-        if (_triggerDown != PadMod.None) _triggerUsedInChord = true;
-        _capturingPad = null;
+        if (capturingPad is not { } action) return false;
+        if (triggerDown != PadMod.None) triggerUsedInChord = true;
+        capturingPad = null;
         if (ev.ButtonIndex == JoyButton.Back)
         {
             ShowPadBinding(action);
@@ -185,12 +185,12 @@ public partial class SettingsPanel : CanvasLayer
 
     private void RefreshPadButtons()
     {
-        foreach (var action in _padButtons.Keys) ShowPadBinding(action);
+        foreach (var action in padButtons.Keys) ShowPadBinding(action);
     }
 
     private void ShowPadBinding(KeyAction action)
     {
-        if (!_padButtons.TryGetValue(action, out var button)) return;
+        if (!padButtons.TryGetValue(action, out var button)) return;
         var chord = KeyBinds.GetPad(action);
         button.Text = chord.Text;
         button.AddThemeColorOverride("font_color",

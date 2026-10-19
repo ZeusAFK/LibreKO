@@ -34,14 +34,14 @@ public class KnightRoyaleTests
     public void SignUpOpenCarriesCountSecondsAndMode()
     {
         var p = new Packet(GameOpcodes.GS_KNIGHT_ROYALE);
-        p.WriteByte(KnightRoyale.SignUpOpen);
+        p.WriteByte((byte)KnightRoyaleSignUpResult.Open);
         p.WriteByte(12);
         p.WriteUShort(300);
         p.WriteByte(KnightRoyale.DuoMode);
 
         var signUp = KnightRoyaleWire.ReadSignUp(p);
 
-        Assert.Equal(new RoyaleSignUp(KnightRoyale.SignUpOpen, 12, 300, KnightRoyale.DuoMode), signUp);
+        Assert.Equal(new RoyaleSignUp(KnightRoyaleSignUpResult.Open, 12, 300, KnightRoyale.DuoMode), signUp);
         Assert.Equal(KnightRoyale.DuoTitleText, KnightRoyale.TitleFor(signUp.Mode));
     }
 
@@ -49,7 +49,7 @@ public class KnightRoyaleTests
     public void RefusalsCarryOnlyTheirResult()
     {
         var p = new Packet(GameOpcodes.GS_KNIGHT_ROYALE);
-        p.WriteByte(KnightRoyale.SignUpLevel);
+        p.WriteByte((byte)KnightRoyaleSignUpResult.Level);
 
         var signUp = KnightRoyaleWire.ReadSignUp(p);
 

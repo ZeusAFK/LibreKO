@@ -20,7 +20,6 @@ public static class WeaponMount
     public const float HandReferenceHeight = 1.8f;
     public const float GiantHandReferenceHeight = 4.5f;
 
-    private const int ShieldKind = 60;
     private const int DefaultBlock = 0;
     private const string RightWrist = "rightwrist";
     private const string LeftWrist = "leftwrist";
@@ -87,7 +86,7 @@ public static class WeaponMount
 
     public static int Bone(Skeleton3D skel, bool right, int itemId)
     {
-        if (!right && ItemData.Get(itemId) is { Kind: ShieldKind })
+        if (!right && ItemData.Get(itemId) is { Kind: ItemData.Kind.Shield })
         {
             int forearm = Find(skel, LeftForearm);
             if (forearm >= 0) return forearm;

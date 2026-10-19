@@ -26,17 +26,17 @@ public sealed class PlayerMenuRequest
     public Vector2 Position { get; }
     public IReadOnlyList<PlayerMenuRow> Rows { get; }
 
-    private readonly Action _close;
+    private readonly Action close;
 
     internal PlayerMenuRequest(string name, Vector2 position, IReadOnlyList<PlayerMenuRow> rows, Action close)
     {
         Name = name;
         Position = position;
         Rows = rows;
-        _close = close;
+        this.close = close;
     }
 
-    public void Close() => _close();
+    public void Close() => close();
 }
 
 public readonly record struct ExitMenuRow(string Key, string Caption, Action Run);
@@ -49,17 +49,17 @@ public sealed class ExitMenuRequest
     public IReadOnlyList<ExitMenuItem> TimedItems { get; }
     public IReadOnlyList<ExitMenuRow> Rows { get; }
 
-    private readonly Action _close;
+    private readonly Action close;
 
     internal ExitMenuRequest(string notice, IReadOnlyList<ExitMenuItem> timedItems, IReadOnlyList<ExitMenuRow> rows, Action close)
     {
         Notice = notice;
         TimedItems = timedItems;
         Rows = rows;
-        _close = close;
+        this.close = close;
     }
 
-    public void Close() => _close();
+    public void Close() => close();
 }
 
 public sealed class WindowHost
@@ -72,19 +72,19 @@ public sealed class WindowHost
     public event Action? Shown;
     public event Action? Hidden;
 
-    private readonly Action _close;
+    private readonly Action close;
 
     internal WindowHost(string id, string title, Control window, Action close)
     {
         Id = id;
         Title = title;
         Window = window;
-        _close = close;
+        this.close = close;
     }
 
     public void SetDragHandle(Control handle) => DragHandle = handle;
 
-    public void Close() => _close();
+    public void Close() => close();
 
     internal void RaiseShown() => Shown?.Invoke();
 
@@ -102,9 +102,9 @@ public sealed class DialogRequest
 
     public event Action<string>? MessageChanged;
 
-    private readonly Action _confirm;
-    private readonly Action _cancel;
-    private readonly Action _dismiss;
+    private readonly Action confirm;
+    private readonly Action cancel;
+    private readonly Action dismiss;
 
     internal DialogRequest(string title, string message, string confirmText, string? cancelText, bool dismissable,
         Action confirm, Action cancel, Action dismiss)
@@ -114,16 +114,16 @@ public sealed class DialogRequest
         ConfirmText = confirmText;
         CancelText = cancelText;
         Dismissable = dismissable;
-        _confirm = confirm;
-        _cancel = cancel;
-        _dismiss = dismiss;
+        this.confirm = confirm;
+        this.cancel = cancel;
+        this.dismiss = dismiss;
     }
 
-    public void Confirm() => _confirm();
+    public void Confirm() => confirm();
 
-    public void Cancel() => _cancel();
+    public void Cancel() => cancel();
 
-    public void Dismiss() => _dismiss();
+    public void Dismiss() => dismiss();
 
     internal void SetMessage(string message)
     {
@@ -143,8 +143,8 @@ public sealed class TextRequest
     public string ConfirmText { get; }
     public string CancelText { get; }
 
-    private readonly Action<string> _submit;
-    private readonly Action _cancel;
+    private readonly Action<string> submit;
+    private readonly Action cancel;
 
     internal TextRequest(string title, string message, string initial, string placeholder, int maxLength, bool secret,
         string confirmText, string cancelText, Action<string> submit, Action cancel)
@@ -157,13 +157,13 @@ public sealed class TextRequest
         Secret = secret;
         ConfirmText = confirmText;
         CancelText = cancelText;
-        _submit = submit;
-        _cancel = cancel;
+        this.submit = submit;
+        this.cancel = cancel;
     }
 
-    public void Submit(string text) => _submit(text);
+    public void Submit(string text) => submit(text);
 
-    public void Cancel() => _cancel();
+    public void Cancel() => cancel();
 }
 
 public sealed class WindowFrame
@@ -178,7 +178,7 @@ public sealed class WindowFrame
     public event Action? Shown;
     public event Action? Hidden;
 
-    private readonly Action _close;
+    private readonly Action close;
 
     internal WindowFrame(string id, string title, Control content, bool closable, Action close)
     {
@@ -186,12 +186,12 @@ public sealed class WindowFrame
         Title = title;
         Content = content;
         Closable = closable;
-        _close = close;
+        this.close = close;
     }
 
     public void SetDragHandle(Control handle) => DragHandle = handle;
 
-    public void Close() => _close();
+    public void Close() => close();
 
     internal void SetTitle(string title)
     {
@@ -207,25 +207,27 @@ public sealed class WindowFrame
 
 internal sealed class Owned<T>
 {
-    private readonly List<(string Owner, T Value)> _entries = new();
+    private readonly List<(string Owner, T Value)> entries = new();
 
-    public bool Has => _entries.Count > 0;
+    public bool Has => entries.Count > 0;
 
-    public T? Current => _entries.Count > 0 ? _entries[^1].Value : default;
+    public T? Current => entries.Count > 0 ? entries[^1].Value : default;
 
-    public IEnumerable<T> All => _entries.Select(e => e.Value);
+    public IEnumerable<T> All => entries.Select(e => e.Value);
 
     public void Set(string owner, T value)
     {
-        _entries.RemoveAll(e => e.Owner == owner);
-        _entries.Add((owner, value));
+        entries.RemoveAll(e => e.Owner == owner);
+        entries.Add((owner, value));
     }
 
-    public void Add(string owner, T value) => _entries.Add((owner, value));
+    public void Add(string owner, T value) => entries.Add((owner, value));
 
-    public bool Remove(string owner) => _entries.RemoveAll(e => e.Owner == owner) > 0;
+    public bool Remove(string owner) => entries.RemoveAll(e => e.Owner == owner) > 0;
 
-    public void Clear() => _entries.Clear();
+    public bool RemoveValue(T value) => entries.RemoveAll(e => EqualityComparer<T>.Default.Equals(e.Value, value)) > 0;
+
+    public void Clear() => entries.Clear();
 }
 
 internal sealed class WindowRule
@@ -281,10 +283,11 @@ public sealed class PluginUi
         public readonly Owned<Func<PlayerMenuRequest, Control>> PlayerMenus = new();
         public readonly Owned<Func<ExitMenuRequest, Control>> ExitMenus = new();
         public readonly Owned<Func<TextRequest, Control>> TextInputs = new();
+        public readonly Owned<IEscapable> EscapePanels = new();
     }
 
-    private readonly Registry _store;
-    private readonly string _owner;
+    private readonly Registry store;
+    private readonly string owner;
 
     public PluginUi() : this(new Registry(), "")
     {
@@ -292,110 +295,126 @@ public sealed class PluginUi
 
     private PluginUi(Registry store, string owner)
     {
-        _store = store;
-        _owner = owner;
+        this.store = store;
+        this.owner = owner;
     }
 
-    internal PluginUi ForOwner(string owner) => new(_store, owner);
+    internal PluginUi ForOwner(string owner) => new(store, owner);
 
-    internal Func<DialogRequest, Control>? DialogBuilder => _store.Dialogs.Current;
+    internal Func<DialogRequest, Control>? DialogBuilder => store.Dialogs.Current;
 
-    internal Func<PlayerMenuRequest, Control>? PlayerMenuBuilder => _store.PlayerMenus.Current;
+    internal Func<PlayerMenuRequest, Control>? PlayerMenuBuilder => store.PlayerMenus.Current;
 
-    internal Func<ExitMenuRequest, Control>? ExitMenuBuilder => _store.ExitMenus.Current;
+    internal Func<ExitMenuRequest, Control>? ExitMenuBuilder => store.ExitMenus.Current;
 
-    internal Func<TextRequest, Control>? TextInputBuilder => _store.TextInputs.Current;
+    internal Func<TextRequest, Control>? TextInputBuilder => store.TextInputs.Current;
 
-    internal IReadOnlyList<Func<Control>> ExtraHud => _store.ExtraHud.All.ToList();
+    internal IReadOnlyList<Func<Control>> ExtraHud => store.ExtraHud.All.ToList();
 
-    public void AddHud(Func<Control> build) => _store.ExtraHud.Add(_owner, build);
+    internal IEnumerable<IEscapable> EscapePanels => store.EscapePanels.All;
+
+    public void AddHud(Func<Control> build) => store.ExtraHud.Add(owner, build);
 
     public IReadOnlyList<string> WindowIds => KnownWindowIds;
 
-    public void HideWindow(string id) => Rule(id).HiddenBy.Set(_owner, true);
+    public void HideWindow(string id) => Rule(id).HiddenBy.Set(owner, true);
 
-    public void ReplaceWindow(string id, Func<WindowHost, Control> build) => Rule(id).Replacements.Set(_owner, build);
+    public void ReplaceWindow(string id, Func<WindowHost, Control> build) => Rule(id).Replacements.Set(owner, build);
 
-    public void ExtendWindow(string id, Action<Control> extend) => Rule(id).ExtendedBy.Add(_owner, extend);
+    public void ExtendWindow(string id, Action<Control> extend) => Rule(id).ExtendedBy.Add(owner, extend);
 
     public void FrameWindow(string id, Func<WindowFrame, Control> build)
     {
-        if (id == EveryWindow) _store.EveryFrame.Set(_owner, build);
-        else Rule(id).Frames.Set(_owner, build);
+        if (id == EveryWindow) store.EveryFrame.Set(owner, build);
+        else Rule(id).Frames.Set(owner, build);
     }
 
-    public void HideHud(HudPart part) => HudEntry(part).Set(_owner, null);
+    public void HideHud(HudPart part) => HudEntry(part).Set(owner, null);
 
-    public void ReplaceHud(HudPart part, Func<Control> build) => HudEntry(part).Set(_owner, build);
+    public void ReplaceHud(HudPart part, Func<Control> build) => HudEntry(part).Set(owner, build);
 
-    public void ReplaceDialogs(Func<DialogRequest, Control> build) => _store.Dialogs.Set(_owner, build);
+    public void ReplaceDialogs(Func<DialogRequest, Control> build) => store.Dialogs.Set(owner, build);
 
-    public void ReplacePlayerMenu(Func<PlayerMenuRequest, Control> build) => _store.PlayerMenus.Set(_owner, build);
+    public void ReplacePlayerMenu(Func<PlayerMenuRequest, Control> build) => store.PlayerMenus.Set(owner, build);
 
-    public void ReplaceExitMenu(Func<ExitMenuRequest, Control> build) => _store.ExitMenus.Set(_owner, build);
+    public void ReplaceExitMenu(Func<ExitMenuRequest, Control> build) => store.ExitMenus.Set(owner, build);
 
-    public void ReplaceTextInput(Func<TextRequest, Control> build) => _store.TextInputs.Set(_owner, build);
+    public void ReplaceTextInput(Func<TextRequest, Control> build) => store.TextInputs.Set(owner, build);
+
+    public IDisposable CloseOnEscape(Func<bool> isOpen, Action close)
+    {
+        var panel = new ClosablePanel(isOpen, close);
+        store.EscapePanels.Add(owner, panel);
+        return new Registration(() => store.EscapePanels.RemoveValue(panel));
+    }
+
+    private sealed class Registration(Action undo) : IDisposable
+    {
+        public void Dispose() => undo();
+    }
 
     public bool IsWindowOverridden(string id) =>
         RuleFor(id) is { } r && (r.Hidden || r.Replacement != null);
 
     internal WindowRule? RuleFor(string id)
     {
-        if (_store.Windows.TryGetValue(id, out var r)) return r;
+        if (store.Windows.TryGetValue(id, out var r)) return r;
         int cut = id.IndexOf(FamilySeparator);
-        return cut > 0 && _store.Windows.TryGetValue(id[..(cut + 1)] + FamilyWildcard, out var family) ? family : null;
+        return cut > 0 && store.Windows.TryGetValue(id[..(cut + 1)] + FamilyWildcard, out var family) ? family : null;
     }
 
-    internal Func<WindowFrame, Control>? FrameFor(string id) => RuleFor(id)?.Frame ?? _store.EveryFrame.Current;
+    internal Func<WindowFrame, Control>? FrameFor(string id) => RuleFor(id)?.Frame ?? store.EveryFrame.Current;
 
     private const char FamilySeparator = '_';
     private const string FamilyWildcard = "*";
 
-    internal bool HudHidden(HudPart part) => _store.Hud.TryGetValue(part, out var h) && h.Has;
+    internal bool HudHidden(HudPart part) => store.Hud.TryGetValue(part, out var h) && h.Has;
 
-    internal Func<Control>? HudReplacement(HudPart part) => _store.Hud.TryGetValue(part, out var h) ? h.Current : null;
+    internal Func<Control>? HudReplacement(HudPart part) => store.Hud.TryGetValue(part, out var h) ? h.Current : null;
 
     internal bool RemoveOwner(string owner)
     {
         bool removed = false;
-        foreach (var (id, rule) in _store.Windows.ToList())
+        foreach (var (id, rule) in store.Windows.ToList())
         {
             removed |= rule.Remove(owner);
-            if (rule.Empty) _store.Windows.Remove(id);
+            if (rule.Empty) store.Windows.Remove(id);
         }
-        foreach (var entry in _store.Hud.Values) removed |= entry.Remove(owner);
-        removed |= _store.EveryFrame.Remove(owner);
-        removed |= _store.ExtraHud.Remove(owner);
-        removed |= _store.Dialogs.Remove(owner);
-        removed |= _store.PlayerMenus.Remove(owner);
-        removed |= _store.ExitMenus.Remove(owner);
-        removed |= _store.TextInputs.Remove(owner);
+        foreach (var entry in store.Hud.Values) removed |= entry.Remove(owner);
+        removed |= store.EveryFrame.Remove(owner);
+        removed |= store.ExtraHud.Remove(owner);
+        removed |= store.Dialogs.Remove(owner);
+        removed |= store.PlayerMenus.Remove(owner);
+        removed |= store.ExitMenus.Remove(owner);
+        removed |= store.TextInputs.Remove(owner);
+        removed |= store.EscapePanels.Remove(owner);
         return removed;
     }
 
     internal void Reset()
     {
-        _store.Windows.Clear();
-        _store.Hud.Clear();
-        _store.EveryFrame.Clear();
-        _store.ExtraHud.Clear();
-        _store.Dialogs.Clear();
-        _store.PlayerMenus.Clear();
-        _store.ExitMenus.Clear();
-        _store.TextInputs.Clear();
+        store.Windows.Clear();
+        store.Hud.Clear();
+        store.EveryFrame.Clear();
+        store.ExtraHud.Clear();
+        store.Dialogs.Clear();
+        store.PlayerMenus.Clear();
+        store.ExitMenus.Clear();
+        store.TextInputs.Clear();
+        store.EscapePanels.Clear();
     }
 
     private WindowRule Rule(string id)
     {
-        if (!_store.Windows.TryGetValue(id, out var r))
-            _store.Windows[id] = r = new WindowRule();
+        if (!store.Windows.TryGetValue(id, out var r))
+            store.Windows[id] = r = new WindowRule();
         return r;
     }
 
     private Owned<Func<Control>?> HudEntry(HudPart part)
     {
-        if (!_store.Hud.TryGetValue(part, out var entry))
-            _store.Hud[part] = entry = new Owned<Func<Control>?>();
+        if (!store.Hud.TryGetValue(part, out var entry))
+            store.Hud[part] = entry = new Owned<Func<Control>?>();
         return entry;
     }
 }

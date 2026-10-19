@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Text.Json;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
 using Microsoft.Extensions.Logging;
@@ -12,7 +12,7 @@ public interface IDrakiStageProvider
 
 public sealed class DrakiStageProvider : IDrakiStageProvider
 {
-    private readonly IReadOnlyList<DrakiStageInfo> _stages;
+    private readonly IReadOnlyList<DrakiStageInfo> stages;
 
     public DrakiStageProvider(ILogger<DrakiStageProvider>? logger = null)
     {
@@ -29,7 +29,7 @@ public sealed class DrakiStageProvider : IDrakiStageProvider
             var json = File.ReadAllText(path);
             var list = JsonSerializer.Deserialize<List<DrakiStageInfo>>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            _stages = list ?? throw new InvalidOperationException($"Failed to deserialize '{path}'.");
+            stages = list ?? throw new InvalidOperationException($"Failed to deserialize '{path}'.");
         }
         catch (Exception ex)
         {
@@ -40,8 +40,8 @@ public sealed class DrakiStageProvider : IDrakiStageProvider
 
     public DrakiStageProvider(IReadOnlyList<DrakiStageInfo> stages)
     {
-        _stages = stages;
+        this.stages = stages;
     }
 
-    public IReadOnlyList<DrakiStageInfo> Stages => _stages;
+    public IReadOnlyList<DrakiStageInfo> Stages => stages;
 }

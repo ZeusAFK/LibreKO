@@ -19,27 +19,27 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 {
     public const string Extension = ".quest";
 
-    private readonly ConcurrentDictionary<string, CachedProgram?> _cache = new(StringComparer.OrdinalIgnoreCase);
-    private readonly string[] _scriptDirectories;
-    private readonly IGameDataService _gameData;
-    private readonly SessionManager _sessionManager;
-    private readonly IScriptEffectApplier _effects;
-    private readonly IQuestTranslations _translations;
-    private readonly ILogger<QuestScriptEngine> _logger;
-    private readonly GameServerSettings _settings;
-    private readonly TimeProvider _clock;
-    private DateTimeOffset _nextFileCheck;
+    private readonly ConcurrentDictionary<string, CachedProgram?> cache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly string[] scriptDirectories;
+    private readonly IGameDataService gameData;
+    private readonly SessionManager sessionManager;
+    private readonly IScriptEffectApplier effects;
+    private readonly IQuestTranslations translations;
+    private readonly ILogger<QuestScriptEngine> logger;
+    private readonly GameServerSettings settings;
+    private readonly TimeProvider clock;
+    private DateTimeOffset nextFileCheck;
 
     private sealed record CachedProgram(QuestProgram Program, DateTime WrittenAt, string Path)
     {
         public IReadOnlyList<(Diagnostic Diagnostic, string Rendered)> Withheld { get; init; } = [];
     }
 
-    private readonly Lock _indexGate = new();
-    private Dictionary<(int Npc, int Zone), List<string>>? _npcIndex;
-    private readonly Dictionary<string, CachedProgram> _composites = new(StringComparer.OrdinalIgnoreCase);
-    private string[]? _files;
-    private FileStamp[]? _fileStamps;
+    private readonly Lock indexGate = new();
+    private Dictionary<(int Npc, int Zone), List<string>>? npcIndex;
+    private readonly Dictionary<string, CachedProgram> composites = new(StringComparer.OrdinalIgnoreCase);
+    private string[]? files;
+    private FileStamp[]? fileStamps;
 
     private sealed record FileStamp(string Path, DateTime WrittenAt, long Length);
 
@@ -53,37 +53,37 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         ILogger<QuestScriptEngine> logger,
         TimeProvider? clock = null)
     {
-        _gameData = gameData;
-        _sessionManager = sessionManager;
-        _effects = effects;
-        _translations = translations;
-        _logger = logger;
-        _settings = settings.Value;
-        _clock = clock ?? TimeProvider.System;
-        _scriptDirectories = GameAssetPathResolver.GetCandidateDirectories(
-            _settings.QuestsDirectory, hostEnvironment.ContentRootPath, "Quests");
+        this.gameData = gameData;
+        this.sessionManager = sessionManager;
+        this.effects = effects;
+        this.translations = translations;
+        this.logger = logger;
+        this.settings = settings.Value;
+        this.clock = clock ?? TimeProvider.System;
+        scriptDirectories = GameAssetPathResolver.GetCandidateDirectories(
+            this.settings.QuestsDirectory, hostEnvironment.ContentRootPath, "Quests");
     }
 
     public bool Handles(string scriptName) => Resolve(scriptName) is not null;
 
-    private Dictionary<int, QuestObjectives>? _objectiveIndex;
-    private Dictionary<(int Quest, int Nation, int ClassGroup), QuestText>? _textIndex;
-    private Dictionary<int, QuestProgram>? _flowIndex;
-    private Dictionary<int, List<(string File, int Event)>>? _abandonIndex;
+    private Dictionary<int, QuestObjectives>? objectiveIndex;
+    private Dictionary<(int Quest, int Nation, int ClassGroup), QuestText>? textIndex;
+    private Dictionary<int, QuestProgram>? flowIndex;
+    private Dictionary<int, List<(string File, int Event)>>? abandonIndex;
 
     public void ClearCache()
     {
-        _cache.Clear();
-        lock (_indexGate)
+        cache.Clear();
+        lock (indexGate)
         {
-            _npcIndex = null;
-            _composites.Clear();
-            _objectiveIndex = null;
-            _textIndex = null;
-            _flowIndex = null;
-            _abandonIndex = null;
-            _files = null;
-            _fileStamps = null;
+            npcIndex = null;
+            composites.Clear();
+            objectiveIndex = null;
+            textIndex = null;
+            flowIndex = null;
+            abandonIndex = null;
+            files = null;
+            fileStamps = null;
         }
     }
 
@@ -91,7 +91,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
     {
         (int)AccountNation.Karus => "Karus players",
         (int)AccountNation.ElMorad => "El Morad players",
-        _ => _gameData.GetNpc(monster)?.Name ?? "Creature",
+        _ => gameData.GetNpc(monster)?.Name ?? "Creature",
     };
 
     public QuestObjectives? ObjectivesFor(int questId) =>
@@ -131,13 +131,13 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
     public bool TryGetAbandonEntry(int questId, out string? scriptName, out int eventId)
     {
-        lock (_indexGate)
+        lock (indexGate)
         {
             RefreshFiles();
-            if (_abandonIndex is null)
+            if (abandonIndex is null)
             {
-                _abandonIndex = [];
-                foreach (var file in _files!)
+                abandonIndex = [];
+                foreach (var file in files!)
                 {
                     var cached = ResolveFile(file);
                     if (cached is null)
@@ -147,8 +147,8 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                         if (!name.StartsWith(QuestProgram.AbandonEvent + "_", StringComparison.OrdinalIgnoreCase)
                             || !int.TryParse(name.AsSpan(QuestProgram.AbandonEvent.Length + 1), out var quest))
                             continue;
-                        if (!_abandonIndex.TryGetValue(quest, out var entries))
-                            _abandonIndex[quest] = entries = [];
+                        if (!abandonIndex.TryGetValue(quest, out var entries))
+                            abandonIndex[quest] = entries = [];
                         entries.Add((file, id));
                     }
                 }
@@ -156,26 +156,26 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
             scriptName = null;
             eventId = 0;
-            if (!_abandonIndex.TryGetValue(questId, out var matches))
+            if (!abandonIndex.TryGetValue(questId, out var matches))
                 return false;
             if (matches.Count == 1)
                 (scriptName, eventId) = (ScriptName(matches[0].File), matches[0].Event);
             else
-                _logger.LogWarning("Quest {QuestId} has multiple abandon handlers; abandonment was refused", questId);
+                logger.LogWarning("Quest {QuestId} has multiple abandon handlers; abandonment was refused", questId);
             return true;
         }
     }
 
     private Dictionary<int, QuestObjectives> ObjectiveIndex()
     {
-        lock (_indexGate)
+        lock (indexGate)
         {
             RefreshFiles();
-            if (_objectiveIndex is not null)
-                return _objectiveIndex;
+            if (objectiveIndex is not null)
+                return objectiveIndex;
 
             var index = new Dictionary<int, QuestObjectives>();
-            foreach (var file in _files!)
+            foreach (var file in files!)
             {
                 var cached = ResolveFile(file);
                 foreach (var objectives in cached?.Program.Objectives ?? [])
@@ -184,13 +184,13 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                         continue;
                     if (Agree(index[objectives.QuestId], objectives))
                         continue;
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "Quest {QuestId} lists different objectives in more than one script; keeping the first",
                         objectives.QuestId);
                 }
             }
 
-            return _objectiveIndex = index;
+            return objectiveIndex = index;
         }
     }
 
@@ -204,14 +204,14 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
     private Dictionary<(int Quest, int Nation, int ClassGroup), QuestText> TextIndex()
     {
-        lock (_indexGate)
+        lock (indexGate)
         {
             RefreshFiles();
-            if (_textIndex is not null)
-                return _textIndex;
+            if (textIndex is not null)
+                return textIndex;
 
             var index = new Dictionary<(int Quest, int Nation, int ClassGroup), QuestText>();
-            foreach (var file in _files!)
+            foreach (var file in files!)
             {
                 var cached = ResolveFile(file);
                 foreach (var text in cached?.Program.Texts ?? [])
@@ -221,31 +221,31 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                         continue;
                     if (index[key] == text)
                         continue;
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "Quest {QuestId} is named differently in {Kept} and {Ignored}; keeping the first",
                         text.QuestId, index[key].Title, text.Title);
                 }
             }
 
-            return _textIndex = index;
+            return textIndex = index;
         }
     }
 
     private Dictionary<int, QuestProgram> FlowIndex()
     {
-        lock (_indexGate)
+        lock (indexGate)
         {
             RefreshFiles();
-            if (_flowIndex is not null)
-                return _flowIndex;
+            if (flowIndex is not null)
+                return flowIndex;
             var index = new Dictionary<int, QuestProgram>();
-            foreach (var file in _files!)
+            foreach (var file in files!)
             {
                 var program = ResolveFile(file)?.Program;
                 foreach (var flow in program?.Flows ?? [])
                     index.TryAdd(flow.QuestId, program!);
             }
-            return _flowIndex = index;
+            return flowIndex = index;
         }
     }
 
@@ -263,9 +263,9 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
             {
                 if (questId is { } requested && id != requested)
                     continue;
-                var context = new QuestScriptContext(session, null, _gameData, _sessionManager, _logger,
-                    Math.Max(1, _settings.Global.ExpMultiplier));
-                var host = new QuestScriptHost(session, context, _translations, _logger, program.FileName, this, _clock,
+                var context = new QuestScriptContext(session, null, gameData, sessionManager, logger,
+                    Math.Max(1, settings.Global.ExpMultiplier));
+                var host = new QuestScriptHost(session, context, translations, logger, program.FileName, this, clock,
                     MonsterName);
                 session.WithLock(_ =>
                 {
@@ -289,7 +289,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                         view = interpreter.BuildView(id);
                     }
                     var version = new QuestState.ViewVersion(program, (byte)view.State, session.ZoneId, session.LanguageCode,
-                        DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime).DayNumber, string.Join(',', view.Counts));
+                        DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime).DayNumber, string.Join(',', view.Counts));
                     if (!changesOnly || !session.Quest.ViewVersions.TryGetValue(id, out var previous) || previous != version)
                     {
                         session.Quest.ViewVersions[id] = version;
@@ -300,7 +300,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                     Notify(session, context, program, id, QuestProgram.ReadyEvent,
                         view.State == QuestViewState.Claimable, session.Quest.ReadyNotifications);
                 });
-                await _effects.ApplyAsync(session, context, program.FileName);
+                await effects.ApplyAsync(session, context, program.FileName);
             }
         }
         finally
@@ -323,8 +323,8 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
             return;
         if (!seen.Add(questId) || !program.TryGetEntry(role, questId, out var entry))
             return;
-        var host = new QuestScriptHost(session, context, _translations, _logger, program.FileName,
-            this, _clock, MonsterName, program);
+        var host = new QuestScriptHost(session, context, translations, logger, program.FileName,
+            this, clock, MonsterName, program);
         new QuestInterpreter(program, host).Run(entry);
     }
 
@@ -335,20 +335,20 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
             || group < 0 || group >= goals.Groups.Count
             || !program.TryGetLocation(goals.Groups[group].Target, out var location))
             return;
-        var context = new QuestScriptContext(session, null, _gameData, _sessionManager, _logger,
-            Math.Max(1, _settings.Global.ExpMultiplier));
-        new QuestScriptHost(session, context, _translations, _logger, program.FileName, this, _clock,
+        var context = new QuestScriptContext(session, null, gameData, sessionManager, logger,
+            Math.Max(1, settings.Global.ExpMultiplier));
+        new QuestScriptHost(session, context, translations, logger, program.FileName, this, clock,
             MonsterName).ShowLocation(location, questId);
-        await _effects.ApplyAsync(session, context, program.FileName);
+        await effects.ApplyAsync(session, context, program.FileName);
     }
 
     public async Task ReplyToNotificationAsync(UserSession session, int questId, int choice)
     {
         if (!FlowIndex().TryGetValue(questId, out var program))
             return;
-        var context = new QuestScriptContext(session, null, _gameData, _sessionManager, _logger,
-            Math.Max(1, _settings.Global.ExpMultiplier));
-        var host = new QuestScriptHost(session, context, _translations, _logger, program.FileName, this, _clock,
+        var context = new QuestScriptContext(session, null, gameData, sessionManager, logger,
+            Math.Max(1, settings.Global.ExpMultiplier));
+        var host = new QuestScriptHost(session, context, translations, logger, program.FileName, this, clock,
             MonsterName, program);
         session.WithLock(_ =>
         {
@@ -360,7 +360,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
             if (interpreter.BuildView(questId).State == reply.State)
                 interpreter.Run(reply.Events[choice]);
         });
-        await _effects.ApplyAsync(session, context, program.FileName);
+        await effects.ApplyAsync(session, context, program.FileName);
     }
 
     public bool TryGetGreeting(int npcId, int zoneId, out string scriptName, out int eventId) =>
@@ -377,7 +377,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         scriptName = string.Empty;
         eventId = 0;
 
-        lock (_indexGate)
+        lock (indexGate)
         {
             var index = NpcIndex();
             var files = index.GetValueOrDefault((npcId, zoneId), []).Concat(
@@ -396,14 +396,14 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
             else
             {
                 scriptName = $"@npc_{npcId}_{zoneId}.quest";
-                if (!_composites.TryGetValue(scriptName, out cached!))
+                if (!composites.TryGetValue(scriptName, out cached!))
                 {
                     var quests = new HashSet<int>();
                     var chosen = programs.Where(p => p.Program.DefaultQuestId <= 0
                         || quests.Add(p.Program.DefaultQuestId)).Select(p => p.Program).ToArray();
                     cached = new CachedProgram(QuestProgramComposer.Compose(scriptName, npcId, zoneId, chosen),
                         DateTime.MinValue, scriptName);
-                    _composites[scriptName] = cached;
+                    composites[scriptName] = cached;
                 }
             }
             return cached.Program.TryGetEntry(role, questId, out eventId);
@@ -412,14 +412,14 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
     private Dictionary<(int Npc, int Zone), List<string>> NpcIndex()
     {
-        lock (_indexGate)
+        lock (indexGate)
         {
             RefreshFiles();
-            if (_npcIndex is not null)
-                return _npcIndex;
+            if (npcIndex is not null)
+                return npcIndex;
 
             var index = new Dictionary<(int Npc, int Zone), List<string>>();
-            foreach (var file in _files!)
+            foreach (var file in files!)
             {
                 var cached = ResolveFile(file);
                 if (cached is null)
@@ -441,17 +441,17 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
             }
 
             LogFamilyWarnings();
-            return _npcIndex = index;
+            return npcIndex = index;
         }
     }
 
     private IEnumerable<string> ScriptFiles()
     {
-        foreach (var directory in _scriptDirectories)
+        foreach (var directory in scriptDirectories)
         {
             if (!Directory.Exists(directory))
                 continue;
-            if (_settings.QuestManifest is { Length: > 0 } manifestName)
+            if (settings.QuestManifest is { Length: > 0 } manifestName)
             {
                 var manifest = Path.Combine(directory, manifestName);
                 string[] names;
@@ -461,7 +461,7 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                 }
                 catch (Exception exception) when (exception is IOException or JsonException)
                 {
-                    _logger.LogWarning(exception, "Quest manifest could not be read at {Path}; no scripts will load from this directory", manifest);
+                    logger.LogWarning(exception, "Quest manifest could not be read at {Path}; no scripts will load from this directory", manifest);
                     names = [];
                 }
                 foreach (var name in names)
@@ -479,33 +479,33 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
     private void RefreshFiles()
     {
-        var now = _clock.GetUtcNow();
-        if (_files is not null && (!_settings.Global.HotReloadQuestScripts || now < _nextFileCheck))
+        var now = clock.GetUtcNow();
+        if (files is not null && (!settings.Global.HotReloadQuestScripts || now < nextFileCheck))
             return;
-        _nextFileCheck = now.AddSeconds(1);
+        nextFileCheck = now.AddSeconds(1);
 
         var stamps = ScriptFiles().Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(path => new FileInfo(path))
             .Where(file => file.Exists)
             .Select(file => new FileStamp(file.FullName, file.LastWriteTimeUtc, file.Length))
             .ToArray();
-        if (_fileStamps is not null && _fileStamps.SequenceEqual(stamps))
+        if (fileStamps is not null && fileStamps.SequenceEqual(stamps))
             return;
 
-        _fileStamps = stamps;
-        _files = stamps.Select(stamp => stamp.Path)
+        fileStamps = stamps;
+        files = stamps.Select(stamp => stamp.Path)
             .DistinctBy(ScriptName, StringComparer.OrdinalIgnoreCase).ToArray();
-        _cache.Clear();
-        _npcIndex = null;
-        _composites.Clear();
-        _textIndex = null;
-        _flowIndex = null;
-        _objectiveIndex = null;
-        _abandonIndex = null;
+        cache.Clear();
+        npcIndex = null;
+        composites.Clear();
+        textIndex = null;
+        flowIndex = null;
+        objectiveIndex = null;
+        abandonIndex = null;
     }
 
     private string ScriptName(string path) => Path.GetRelativePath(
-        _scriptDirectories.First(directory => Path.GetFullPath(path).StartsWith(
+        scriptDirectories.First(directory => Path.GetFullPath(path).StartsWith(
             Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory)) + Path.DirectorySeparatorChar,
             StringComparison.OrdinalIgnoreCase)), path);
 
@@ -532,10 +532,10 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
         session.Quest.ActiveQuestScript = cached.Path.StartsWith("@") ? cached.Path : ScriptName(cached.Path);
 
         var context = new QuestScriptContext(
-            session, npc, _gameData, _sessionManager, _logger,
-            Math.Max(1, _settings.Global.ExpMultiplier));
+            session, npc, gameData, sessionManager, logger,
+            Math.Max(1, settings.Global.ExpMultiplier));
 
-        var host = new QuestScriptHost(session, context, _translations, _logger, cached.Program.FileName, this, _clock,
+        var host = new QuestScriptHost(session, context, translations, logger, cached.Program.FileName, this, clock,
             MonsterName);
         var result = cached.Program.Flows.Count > 0
             ? session.WithLock(_ => new QuestInterpreter(cached.Program, host, selectedReward).Run(eventId))
@@ -543,18 +543,18 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
         if (!result.Handled)
         {
-            _logger.LogDebug("Quest script {File} does not handle event {Event}", cached.Program.FileName, eventId);
+            logger.LogDebug("Quest script {File} does not handle event {Event}", cached.Program.FileName, eventId);
             return false;
         }
 
         if (result.Failure is { } failure)
-            _logger.LogWarning("Quest script {File} stopped: {Failure} (chain {Chain})",
+            logger.LogWarning("Quest script {File} stopped: {Failure} (chain {Chain})",
                 cached.Program.FileName, failure, string.Join(" -> ", result.EventChain));
 
-        await _effects.ApplyAsync(session, context, cached.Program.FileName);
+        await effects.ApplyAsync(session, context, cached.Program.FileName);
 
-        if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug(
+        if (logger.IsEnabled(LogLevel.Debug))
+            logger.LogDebug(
                 "Quest script {File} ran event {Event} for {Name}: {Statements} statement(s), {Packets} packet(s)",
                 cached.Program.FileName, eventId, session.Name, result.StatementsExecuted, context.QueuedPackets.Count);
 
@@ -563,25 +563,25 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
     private CachedProgram? Resolve(string scriptName)
     {
-        lock (_indexGate)
+        lock (indexGate)
         {
             var key = QuestScriptName(scriptName);
             if (key is null)
                 return null;
             RefreshFiles();
-            if (_composites.TryGetValue(key, out var composed))
+            if (composites.TryGetValue(key, out var composed))
                 return composed;
             if (TryReadCompositeKey(key, out var compositeNpc, out var compositeZone))
             {
                 TryGetEntry(compositeNpc, compositeZone, QuestProgram.GreetingEvent, 0, out _, out _);
-                if (_composites.TryGetValue(key, out composed))
+                if (composites.TryGetValue(key, out composed))
                     return composed;
             }
-            var path = _files!.FirstOrDefault(file =>
+            var path = files!.FirstOrDefault(file =>
                 string.Equals(file, key, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(ScriptName(file), key, StringComparison.OrdinalIgnoreCase));
             if (path is null && Path.GetFileName(key) == key)
-                path = _files!.FirstOrDefault(file =>
+                path = files!.FirstOrDefault(file =>
                     string.Equals(Path.GetFileName(file), key, StringComparison.OrdinalIgnoreCase));
             return path is null ? null : ResolveFile(path);
         }
@@ -589,12 +589,12 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
     private void LogFamilyWarnings()
     {
-        var compiled = _files!.Select(file => _cache.GetValueOrDefault(file)).OfType<CachedProgram>().ToList();
+        var compiled = files!.Select(file => cache.GetValueOrDefault(file)).OfType<CachedProgram>().ToList();
         var reached = QuestProgramLinks.Reachable(compiled.Select(cached => cached.Program).ToList());
         foreach (var cached in compiled)
         foreach (var (diagnostic, rendered) in cached.Withheld)
             if (!QuestProgramLinks.ReachedThroughSibling(cached.Program, diagnostic, reached))
-                _logger.Log(LevelOf(diagnostic), "{Diagnostic}", rendered);
+                logger.Log(LevelOf(diagnostic), "{Diagnostic}", rendered);
     }
 
     private static LogLevel LevelOf(Diagnostic diagnostic) =>
@@ -605,10 +605,10 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
 
     private CachedProgram? ResolveFile(string path)
     {
-        if (_cache.TryGetValue(path, out var cached))
+        if (cache.TryGetValue(path, out var cached))
             return cached;
         var compiled = Compile(path);
-        _cache[path] = compiled;
+        cache[path] = compiled;
         return compiled;
     }
 
@@ -625,27 +625,27 @@ public sealed partial class QuestScriptEngine : IQuestDefinitionSource
                 if (compilation.Succeeded && ReachableFromSiblings(diagnostic))
                     withheld.Add((diagnostic, rendered));
                 else
-                    _logger.Log(LevelOf(diagnostic), "{Diagnostic}", rendered);
+                    logger.Log(LevelOf(diagnostic), "{Diagnostic}", rendered);
             }
 
             if (!compilation.Succeeded)
             {
-                _logger.LogError("Quest script {File} has errors and will not be used", fileName);
+                logger.LogError("Quest script {File} has errors and will not be used", fileName);
                 return null;
             }
 
-            _logger.LogInformation("Compiled quest script {File}: {Events} event(s) for NPC {Npc}",
+            logger.LogInformation("Compiled quest script {File}: {Events} event(s) for NPC {Npc}",
                 fileName, compilation.Program.Events.Count, compilation.Program.NpcId);
             return new CachedProgram(compilation.Program, LastWriteTime(path), path) { Withheld = withheld };
         }
         catch (IOException exception)
         {
-            _logger.LogWarning(exception, "Could not read quest script {File}", fileName);
+            logger.LogWarning(exception, "Could not read quest script {File}", fileName);
             return null;
         }
     }
 
-    private IQuestCatalog BuildCatalog() => new GameDataQuestCatalog(_gameData);
+    private IQuestCatalog BuildCatalog() => new GameDataQuestCatalog(gameData);
 
     private static DateTime LastWriteTime(string path)
     {

@@ -11,7 +11,7 @@ public static class NpcPlugSlots
     private const string TablePath = "res://assets/npcs/plug_slots.json";
 
     private static readonly Dictionary<int, int> ByModel = new();
-    private static bool _loaded;
+    private static bool loaded;
 
     public static int For(int modelId)
     {
@@ -30,13 +30,13 @@ public static class NpcPlugSlots
         foreach (var entry in doc.RootElement.EnumerateObject())
             if (int.TryParse(entry.Name, out int modelId) && entry.Value.TryGetInt32(out int slots))
                 ByModel[modelId] = slots;
-        _loaded = true;
+        loaded = true;
     }
 
     private static void EnsureLoaded()
     {
-        if (_loaded) return;
-        _loaded = true;
-        if (Godot.FileAccess.FileExists(TablePath)) Seed(Godot.FileAccess.GetFileAsString(TablePath));
+        if (loaded) return;
+        loaded = true;
+        if (GameFiles.ReadText(TablePath) is { } table) Seed(table);
     }
 }

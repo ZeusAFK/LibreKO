@@ -5,17 +5,17 @@ namespace LibreKO.Domain;
 
 public sealed class PathCache<T> where T : class
 {
-    private readonly Dictionary<string, T?> _kept = new();
+    private readonly Dictionary<string, T?> byPath = new();
 
-    public int Count => _kept.Count;
+    public int Count => byPath.Count;
 
     public T? Get(string path, Func<string, T?> load)
     {
-        if (_kept.TryGetValue(path, out var kept)) return kept;
-        kept = load(path);
-        _kept[path] = kept;
-        return kept;
+        if (byPath.TryGetValue(path, out var found)) return found;
+        found = load(path);
+        byPath[path] = found;
+        return found;
     }
 
-    public void Clear() => _kept.Clear();
+    public void Clear() => byPath.Clear();
 }

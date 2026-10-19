@@ -12,6 +12,7 @@ public sealed class PreGamePacketWriter
     public const byte NationRejected = 0;
     public const byte LoginQueueReady = 1;
     public const byte NoStory = 0;
+    public const byte NameChangeFaceOffset = 100;
 
     public readonly record struct CharSelectItem(int ItemId, short Durability);
 
@@ -24,7 +25,8 @@ public sealed class PreGamePacketWriter
         byte Face,
         int Hair,
         short ZoneId,
-        IReadOnlyList<CharSelectItem> Equipment);
+        IReadOnlyList<CharSelectItem> Equipment,
+        bool NameChangeRequired = false);
 
     public static Packet NationSelect(byte nation)
     {
@@ -33,8 +35,16 @@ public sealed class PreGamePacketWriter
         return packet;
     }
 
-    public static Packet NameChangeRefused() =>
-        NameChangeReply(SelectingCharacterNameChangeResult.Failed);
+    public static Packet NameChangeRefused(SelectingCharacterNameChangeResult result = SelectingCharacterNameChangeResult.Failed) =>
+        NameChangeReply(result);
+
+    public static Packet NameChanged(short slot, string name)
+    {
+        var packet = NameChangeReply(SelectingCharacterNameChangeResult.Success);
+        packet.WriteShort(slot);
+        packet.WriteString(name);
+        return packet;
+    }
 
     public static Packet LoginQueue(byte result, int waiting)
     {
@@ -159,7 +169,7 @@ public sealed class PreGamePacketWriter
         packet.WriteShort(character.Class);
         packet.WriteByte(character.Level);
         packet.WriteByte(character.Rebirth);
-        packet.WriteByte(character.Face);
+        packet.WriteByte((byte)(character.Face + (character.NameChangeRequired ? NameChangeFaceOffset : 0)));
         packet.WriteInt(character.Hair);
         packet.WriteShort(character.ZoneId);
 

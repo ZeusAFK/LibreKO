@@ -8,10 +8,10 @@ public partial class Cape : MeshInstance3D
 {
     private readonly record struct PinInfluence(int Bone, Vector3 Point, float Weight);
     private readonly record struct AttachmentVertex(Vector3 Point, PinInfluence[] Influences);
-    private int _attachmentFallbacks;
-    internal int AttachmentFallbacks => _attachmentFallbacks;
-    private PinInfluence[][] _pinBindings = Array.Empty<PinInfluence[]>();
-    private Vector3[] _pins = Array.Empty<Vector3>(), _oldPins = Array.Empty<Vector3>(), _stepPins = Array.Empty<Vector3>();
+    private int attachmentFallbacks;
+    internal int AttachmentFallbacks => attachmentFallbacks;
+    private PinInfluence[][] pinBindings = Array.Empty<PinInfluence[]>();
+    private Vector3[] pins = Array.Empty<Vector3>(), oldPins = Array.Empty<Vector3>(), stepPins = Array.Empty<Vector3>();
 
     private const int AttachmentCacheLimit = 512;
     private readonly record struct AttachmentPart(Mesh Mesh, Skin? Skin, Transform3D Transform);
@@ -21,14 +21,14 @@ public partial class Cape : MeshInstance3D
 
     private void FitAttachment(Node root, Vector3 neck)
     {
-        var frame = new Transform3D(_restBasis, neck);
-        var toFrame = frame.AffineInverse() * _skel.GlobalTransform.AffineInverse();
+        var frame = new Transform3D(restBasis, neck);
+        var toFrame = frame.AffineInverse() * skel.GlobalTransform.AffineInverse();
         var parts = new List<AttachmentPart>();
         void Gather(Node node)
         {
             if (node is Cape or BoneAttachment3D or FxInstance or FxWeaponGlow or ItemShineDriver) return;
-            if (node is MeshInstance3D { Mesh: { } mesh, Visible: true } instance)
-                parts.Add(new AttachmentPart(mesh, instance.Skin, toFrame * instance.GlobalTransform));
+            if (node is MeshInstance3D { Mesh: { } sourceMesh, Visible: true } instance)
+                parts.Add(new AttachmentPart(sourceMesh, instance.Skin, toFrame * instance.GlobalTransform));
             foreach (var child in node.GetChildren()) Gather(child);
         }
         Gather(root);
@@ -45,8 +45,8 @@ public partial class Cape : MeshInstance3D
     private string AttachmentKey(List<AttachmentPart> parts, Transform3D frame)
     {
         var key = new System.Text.StringBuilder();
-        key.Append(_rigScale.ToString("F4")).Append('|').Append(Rounded(frame));
-        for (int bone = 0; bone < _skel.GetBoneCount(); bone++) key.Append('|').Append(_skel.GetBoneName(bone));
+        key.Append(rigScale.ToString("F4")).Append('|').Append(Rounded(frame));
+        for (int bone = 0; bone < skel.GetBoneCount(); bone++) key.Append('|').Append(skel.GetBoneName(bone));
         foreach (var part in parts)
             key.Append('#').Append(part.Mesh.GetRid().Id).Append(':').Append(part.Skin?.GetRid().Id ?? 0).Append(':').Append(Rounded(part.Transform));
         return key.ToString();
@@ -60,11 +60,11 @@ public partial class Cape : MeshInstance3D
     {
         var vertices = new List<AttachmentVertex>();
         var triangles = new List<int>();
-        foreach (var (mesh, skin, transform) in parts)
+        foreach (var (sourceMesh, skin, transform) in parts)
         {
-            for (int surface = 0; surface < mesh.GetSurfaceCount(); surface++)
+            for (int surface = 0; surface < sourceMesh.GetSurfaceCount(); surface++)
             {
-                var cached = MeshArraysCache.Get(mesh, surface);
+                var cached = MeshArraysCache.Get(sourceMesh, surface);
                 var positions = cached.Vertices;
                 var indices = cached.Indices;
                 var bones = cached.Bones;
@@ -81,7 +81,7 @@ public partial class Cape : MeshInstance3D
                             if (weights[at] <= 0) continue;
                             int bind = bones[at];
                             var name = skin.GetBindName(bind);
-                            int bone = name.IsEmpty ? skin.GetBindBone(bind) : _skel.FindBone(name);
+                            int bone = name.IsEmpty ? skin.GetBindBone(bind) : skel.FindBone(name);
                             if (bone < 0) continue;
                             binding.Add(new PinInfluence(bone, skin.GetBindPose(bind) * positions[i], weights[at]));
                         }
@@ -90,7 +90,7 @@ public partial class Cape : MeshInstance3D
                     {
                         restPoint = Vector3.Zero;
                         foreach (var influence in binding)
-                            restPoint += (_skel.GetBoneGlobalRest(influence.Bone) * influence.Point) * influence.Weight;
+                            restPoint += (skel.GetBoneGlobalRest(influence.Bone) * influence.Point) * influence.Weight;
                         restPoint = frame.AffineInverse() * restPoint;
                     }
                     vertices.Add(new AttachmentVertex(restPoint, binding.ToArray()));
@@ -106,16 +106,16 @@ public partial class Cape : MeshInstance3D
     {
         FitCollar(vertices, triangles);
         FitFeet(vertices, frame);
-        _pinBindings = new PinInfluence[_nc][];
-        _pins = new Vector3[_nc]; _oldPins = new Vector3[_nc]; _stepPins = new Vector3[_nc];
-        _attachmentFallbacks = 0;
-        float width = 0.20f * _rigScale;
-        if (_upArmL >= 0 && _upArmR >= 0)
-            width = _skel.GetBoneGlobalRest(_upArmL).Origin.DistanceTo(_skel.GetBoneGlobalRest(_upArmR).Origin) * 0.43f;
-        for (int col = 0; col < _nc; col++)
+        pinBindings = new PinInfluence[gridColumns][];
+        pins = new Vector3[gridColumns]; oldPins = new Vector3[gridColumns]; stepPins = new Vector3[gridColumns];
+        attachmentFallbacks = 0;
+        float width = 0.20f * rigScale;
+        if (upArmL >= 0 && upArmR >= 0)
+            width = skel.GetBoneGlobalRest(upArmL).Origin.DistanceTo(skel.GetBoneGlobalRest(upArmR).Origin) * 0.43f;
+        for (int col = 0; col < gridColumns; col++)
         {
-            float side = 1 - 2 * col / (_nc - 1f);
-            var point = new Vector3(side * width, (0.025f - 0.045f * Mathf.Abs(side)) * _rigScale, -0.1f * _rigScale);
+            float side = 1 - 2 * col / (gridColumns - 1f);
+            var point = new Vector3(side * width, (0.025f - 0.045f * Mathf.Abs(side)) * rigScale, -0.1f * rigScale);
             float back = float.PositiveInfinity, bestU = 0, bestV = 0;
             int best = -1;
             for (int i = 0; i + 2 < triangles.Count; i += 3)
@@ -130,48 +130,48 @@ public partial class Cape : MeshInstance3D
                 float v = (ab.X * d.Y - ab.Y * d.X) / det;
                 if (u < 0 || v < 0 || u + v > 1) continue;
                 float z = a.Z + ab.Z * u + ac.Z * v;
-                if (z <= 0.02f * _rigScale && z >= -0.35f * _rigScale && z < back)
+                if (z <= 0.02f * rigScale && z >= -0.35f * rigScale && z < back)
                 { back = z; best = i; bestU = u; bestV = v; }
             }
             var bindings = new List<PinInfluence>();
             if (best >= 0)
             {
-                point.Z = back - 0.008f * _rigScale;
+                point.Z = back - 0.008f * rigScale;
                 for (int vertex = 0; vertex < 3; vertex++)
                 {
                     float weight = vertex == 0 ? 1 - bestU - bestV : vertex == 1 ? bestU : bestV;
                     foreach (var influence in vertices[triangles[best + vertex]].Influences)
                     {
-                        var rest = _skel.GetBoneGlobalRest(influence.Bone);
-                        var clearance = rest.Basis.Inverse() * (-_restBasis.Z * 0.008f * _rigScale);
+                        var restPose = skel.GetBoneGlobalRest(influence.Bone);
+                        var clearance = restPose.Basis.Inverse() * (-restBasis.Z * 0.008f * rigScale);
                         bindings.Add(influence with { Point = influence.Point + clearance, Weight = influence.Weight * weight });
                     }
                 }
             }
             if (bindings.Count == 0)
             {
-                _attachmentFallbacks++;
-                bindings.Add(new PinInfluence(_rideBone, _skel.GetBoneGlobalRest(_rideBone).AffineInverse() * (frame * point), 1));
+                attachmentFallbacks++;
+                bindings.Add(new PinInfluence(rideBone, skel.GetBoneGlobalRest(rideBone).AffineInverse() * (frame * point), 1));
             }
-            _pinBindings[col] = bindings.ToArray();
-            var offset = point - _rest[col];
-            for (int row = 0; row < _nr; row++)
+            pinBindings[col] = bindings.ToArray();
+            var offset = point - rest[col];
+            for (int row = 0; row < gridRows; row++)
             {
-                int i = row * _nc + col;
-                float weight = 1 - Mathf.SmoothStep(0, 0.35f * _rigScale, -_rest[i].Y);
-                _rest[i] += offset * weight;
+                int i = row * gridColumns + col;
+                float weight = 1 - Mathf.SmoothStep(0, 0.35f * rigScale, -rest[i].Y);
+                rest[i] += offset * weight;
             }
         }
     }
 
     private void FitFeet(List<AttachmentVertex> vertices, Transform3D frame)
     {
-        _boneBoxes.Clear();
-        foreach (int bone in new[] { _ftLegL, _ftLegR })
+        boneBoxes.Clear();
+        foreach (int bone in new[] { ftLegL, ftLegR })
         {
             if (bone < 0) continue;
-            var rest = _skel.GetBoneGlobalRest(bone);
-            var footFrame = new Transform3D(_restBasis, rest.Origin);
+            var restPose = skel.GetBoneGlobalRest(bone);
+            var footFrame = new Transform3D(restBasis, restPose.Origin);
             var inverse = footFrame.AffineInverse();
             var min = Vector3.One * float.PositiveInfinity;
             var max = Vector3.One * float.NegativeInfinity;
@@ -181,28 +181,28 @@ public partial class Cape : MeshInstance3D
                 foreach (var influence in vertex.Influences)
                     if (influence.Bone == bone) weight += influence.Weight;
                 var point = inverse * (frame * vertex.Point);
-                if (weight < 0.25f || point.Y > 0.09f * _rigScale) continue;
+                if (weight < 0.25f || point.Y > 0.09f * rigScale) continue;
                 min = min.Min(point); max = max.Max(point);
             }
             if (!min.IsFinite()) continue;
-            _boneBoxes.Add(new WeaponBox
+            boneBoxes.Add(new WeaponBox
             {
                 Bone = bone, SliceAxis = -1,
-                Local = rest.AffineInverse() * footFrame * new Transform3D(Basis.Identity, (min + max) * 0.5f),
-                Half = (max - min) * 0.5f + Vector3.One * (0.025f * _rigScale),
+                Local = restPose.AffineInverse() * footFrame * new Transform3D(Basis.Identity, (min + max) * 0.5f),
+                Half = (max - min) * 0.5f + Vector3.One * (0.025f * rigScale),
             });
         }
     }
 
     private void UpdatePins()
     {
-        var world = _skel.GlobalTransform;
-        for (int col = 0; col < _nc; col++)
+        var world = skel.GlobalTransform;
+        for (int col = 0; col < gridColumns; col++)
         {
             var point = Vector3.Zero;
-            foreach (var influence in _pinBindings[col])
-                point += (_skel.GetBoneGlobalPose(influence.Bone) * influence.Point) * influence.Weight;
-            _pins[col] = world * point;
+            foreach (var influence in pinBindings[col])
+                point += (skel.GetBoneGlobalPose(influence.Bone) * influence.Point) * influence.Weight;
+            pins[col] = world * point;
         }
     }
 }

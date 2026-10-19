@@ -2,12 +2,13 @@
 using System.Globalization;
 using Godot;
 using LibreKO.Domain;
+using LibreKO.Presentation;
 
 namespace LibreKO;
 
 public static class Config
 {
-    private static bool _loaded;
+    private static bool loaded;
 
     public static string ServerHost { get; private set; } = "127.0.0.1";
     public static string PatchUrl { get; private set; } = "";
@@ -23,13 +24,13 @@ public static class Config
     public static bool LegacyQuestFallback { get; private set; } = true;
 
     public static string PluginDirs { get; private set; } = "";
-    private static readonly Dictionary<string, bool> _pluginEnabled = new(System.StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, bool> pluginEnabled = new(System.StringComparer.OrdinalIgnoreCase);
 
-    public static bool PluginEnabled(string id) => _pluginEnabled.TryGetValue(id, out bool on) && on;
+    public static bool PluginEnabled(string id) => pluginEnabled.TryGetValue(id, out bool on) && on;
 
     public static void SetPluginEnabled(string id, bool enabled)
     {
-        _pluginEnabled[id] = enabled;
+        pluginEnabled[id] = enabled;
         Save();
     }
 
@@ -79,14 +80,20 @@ public static class Config
     public static int Screen { get; private set; } = CurrentScreen;
     public static bool ShowTitles { get; private set; } = true;
     public static bool QuestNotices { get; private set; } = true;
+    public static bool TradeRequestsBlocked { get; private set; }
     public static CospreKinds HiddenCospre { get; private set; } = CospreKinds.None;
     public static event System.Action? PlatesChanged;
+    public static event System.Action? TradeRequestsBlockedChanged;
     public static int UiAlpha { get; private set; } = LibreKO.Domain.UiOpacityRules.Opaque;
     public static event System.Action? UiAlphaChanged;
     public static event System.Action? CospreChanged;
     public static bool VolumetricFog { get; private set; } = false;
     public static bool Bloom { get; private set; } = true;
-    public static bool FxLayer { get; private set; } = true;
+    public static bool FxLayer => !fxLayerSuspended;
+
+    private static bool fxLayerSuspended;
+
+    private const string RetiredFxLayerKey = "fx_layer";
     public static LibreKO.Domain.CrowdMode Crowd { get; private set; } = LibreKO.Domain.CrowdMode.Balanced;
     public static LibreKO.Domain.ShineStyle Shine { get; private set; } = LibreKO.Domain.ShineStyle.Glow;
     public static bool Clouds { get; private set; } = true;
@@ -139,8 +146,8 @@ public static class Config
     public static bool DestroyWellLocked { get; private set; }
     public static WhisperSize WhisperSize { get; private set; } = WhisperLook.DefaultSize;
     public static float WhisperAlpha { get; private set; } = WhisperLook.DefaultAlpha;
-    public static byte PartyRowMeter { get; private set; } = PartyWarBoard.ModeOff;
-    public static byte PartyBoardMode { get; private set; } = PartyWarBoard.ModeOff;
+    public static PartyBoardMeterMode PartyRowMeter { get; private set; } = PartyBoardMeterMode.Off;
+    public static PartyBoardMeterMode PartyBoardMode { get; private set; } = PartyBoardMeterMode.Off;
     public static float PartyBoardAlpha { get; private set; } = 1f;
     public static event System.Action? WhisperLookChanged;
     public static float CamEdgePanSpeed { get; private set; } = CamEdgePanSpeedRetail;
@@ -172,7 +179,7 @@ public static class Config
     public static int LampLightBudget { get; private set; } = 24;
     public static bool MergeCharacters { get; private set; } = true;
     public static bool DamageNumbers { get; private set; } = true;
-    public static bool CombatLog { get; private set; } = false;
+    public static bool CombatLog { get; private set; } = true;
 
     public static bool AudioEnabled { get; private set; } = true;
     public static bool AudioMuted { get; private set; } = false;
@@ -202,10 +209,10 @@ public static class Config
     public static float HotbarScale { get; private set; } = HotbarLayout.ScaleDefault;
     public static int HotbarGap { get; private set; } = HotbarLayout.GapDefault;
     public static event System.Action? HotbarLookChanged;
-    private static readonly int[] _hotbarExtraPages = System.Linq.Enumerable.Range(1, HotbarLayout.MaxBars - 1).ToArray();
+    private static readonly int[] hotbarExtraPages = System.Linq.Enumerable.Range(1, HotbarLayout.MaxBars - 1).ToArray();
 
     public static int HotbarExtraPage(int extraBar) =>
-        extraBar >= 0 && extraBar < _hotbarExtraPages.Length ? _hotbarExtraPages[extraBar] : 0;
+        extraBar >= 0 && extraBar < hotbarExtraPages.Length ? hotbarExtraPages[extraBar] : 0;
 
     public static int TooltipHeight { get; private set; } = 11;
     public static bool TooltipBold { get; private set; } = false;
@@ -230,7 +237,7 @@ public static class Config
     public const int RarityNameCraft = 21;
     public const int RarityNameEvent = 22;
     public const int RarityNameCospre = 23;
-    private static Color[] _tooltipColors = (Color[])DefaultTooltipColors.Clone();
+    private static Color[] tooltipColors = (Color[])DefaultTooltipColors.Clone();
 
     private static T ReadEnum<T>(ConfigFile cfg, string section, string key, T fallback)
         where T : struct, System.Enum
@@ -255,8 +262,8 @@ public static class Config
 
     public static void Load()
     {
-        if (_loaded) return;
-        _loaded = true;
+        if (loaded) return;
+        loaded = true;
 
         ReadLayer(DefaultsResPath, server: true, shipped: true);
 
@@ -277,7 +284,7 @@ public static class Config
             GD.PushWarning($"[config] '{InstallDir()}' is not writable — preferences go to {SettingsSavePath}. " +
                            "Server settings still come from the install directory.");
 
-        if ((!haveInstall || _hostMigrated) && InstallDirWritable)
+        if ((!haveInstall || hostMigrated) && InstallDirWritable)
             Save();
 
         ApplyCommandLineOverrides();
@@ -286,19 +293,19 @@ public static class Config
         SavedAccount.Load();
     }
 
-    private static ConfigFile? _shippedDefaults;
-    private static bool _hostMigrated;
-    private static string _retiredHost = "";
+    private static ConfigFile? shippedDefaults;
+    private static bool hostMigrated;
+    private static string retiredHost = "";
 
     public static void PinShippedDefaults()
     {
         var cfg = new ConfigFile();
-        if (cfg.Load(DefaultsResPath) == Error.Ok) _shippedDefaults = cfg;
+        if (cfg.Load(DefaultsResPath) == Error.Ok) shippedDefaults = cfg;
     }
 
     private static bool ReadLayer(string path, bool server, bool shipped = false)
     {
-        var cfg = shipped ? _shippedDefaults : null;
+        var cfg = shipped ? shippedDefaults : null;
         if (cfg == null)
         {
             cfg = new ConfigFile();
@@ -309,9 +316,9 @@ public static class Config
         if (server)
         {
             string host = cfg.GetValue("server", "host", ServerHost).AsString();
-            if (shipped) _retiredHost = cfg.GetValue("server", "retired_host", "").AsString();
-            ServerHost = shipped ? host : ServerHosts.Migrate(host, _retiredHost, ServerHost);
-            if (!shipped && ServerHost != host) _hostMigrated = true;
+            if (shipped) retiredHost = cfg.GetValue("server", "retired_host", "").AsString();
+            ServerHost = shipped ? host : ServerHosts.Migrate(host, retiredHost, ServerHost);
+            if (!shipped && ServerHost != host) hostMigrated = true;
             ServerPort = cfg.GetValue("server", "login_port", ServerPort).AsInt32();
             GamePort = cfg.GetValue("server", "game_port", GamePort).AsInt32();
             ServerVersion = cfg.GetValue("server", "version", ServerVersion).AsInt32();
@@ -325,7 +332,7 @@ public static class Config
             foreach (string key in cfg.GetSectionKeys("plugins"))
             {
                 if (key == "dirs") PluginDirs = cfg.GetValue("plugins", key, PluginDirs).AsString();
-                else _pluginEnabled[key] = cfg.GetValue("plugins", key, false).AsBool();
+                else pluginEnabled[key] = cfg.GetValue("plugins", key, false).AsBool();
             }
         }
         WindowMode = ReadEnum(cfg, "video", "mode", WindowMode);
@@ -350,11 +357,11 @@ public static class Config
         Screen = cfg.GetValue("video", "screen", Screen).AsInt32();
         ShowTitles = cfg.GetValue("hud", "show_titles", ShowTitles).AsBool();
         QuestNotices = cfg.GetValue("hud", "quest_notices", QuestNotices).AsBool();
+        TradeRequestsBlocked = cfg.GetValue("user_option", "trade_state", TradeRequestsBlocked).AsBool();
         UiAlpha = LibreKO.Domain.UiOpacityRules.Clamp(cfg.GetValue("hud", "ui_alpha", UiAlpha).AsInt32());
         HiddenCospre = (CospreKinds)cfg.GetValue("graphics", "hidden_cospre", (int)HiddenCospre).AsInt32();
         VolumetricFog = cfg.GetValue("graphics", "volumetric_fog", VolumetricFog).AsBool();
         Bloom = cfg.GetValue("graphics", "bloom", Bloom).AsBool();
-        FxLayer = cfg.GetValue("graphics", "fx_layer", FxLayer).AsBool();
         Crowd = ReadEnum(cfg, "graphics", "crowd_mode", Crowd);
         Shine = ReadEnum(cfg, "effects", "item_shine", Shine);
         Clouds = cfg.GetValue("graphics", "clouds", Clouds).AsBool();
@@ -378,8 +385,8 @@ public static class Config
         DestroyWellLocked = cfg.GetValue("inventory", "destroy_locked", DestroyWellLocked).AsBool();
         WhisperSize = WhisperLook.SizeFrom(cfg.GetValue("whisper", "size", (int)WhisperSize).AsInt32());
         WhisperAlpha = WhisperLook.ClampAlpha((float)cfg.GetValue("whisper", "alpha", WhisperAlpha).AsDouble());
-        PartyRowMeter = PartyWarBoard.SavedMode(cfg.GetValue("party", "row_meter", (int)PartyRowMeter).AsInt32(), PartyRowMeter);
-        PartyBoardMode = PartyWarBoard.SavedMode(cfg.GetValue("party", "board_mode", (int)PartyBoardMode).AsInt32(), PartyBoardMode);
+        PartyRowMeter = PartyWarBoard.SavedMode((PartyBoardMeterMode)cfg.GetValue("party", "row_meter", (int)PartyRowMeter).AsInt32(), PartyRowMeter);
+        PartyBoardMode = PartyWarBoard.SavedMode((PartyBoardMeterMode)cfg.GetValue("party", "board_mode", (int)PartyBoardMode).AsInt32(), PartyBoardMode);
         PartyBoardAlpha = PartyWarBoard.SavedAlpha((float)cfg.GetValue("party", "board_alpha", PartyBoardAlpha).AsDouble());
         CamEdgePanSpeed = Mathf.Clamp((float)cfg.GetValue("controls", "cam_edge_pan_speed", CamEdgePanSpeed).AsDouble(),
             CamEdgePanSpeedMin, CamEdgePanSpeedMax);
@@ -444,14 +451,14 @@ public static class Config
         HotbarGap = HotbarLayout.ClampGap(cfg.GetValue("hotbar", "gap", HotbarGap).AsInt32());
         HotbarExtraBars = Mathf.Clamp(cfg.GetValue("hotbar", "extra_bars", HotbarExtraBars).AsInt32(),
                                       0, HotbarLayout.MaxBars - 1);
-        for (int i = 0; i < _hotbarExtraPages.Length; i++)
-            _hotbarExtraPages[i] = Mathf.Clamp(cfg.GetValue("hotbar", $"extra_page_{i}", _hotbarExtraPages[i]).AsInt32(),
+        for (int i = 0; i < hotbarExtraPages.Length; i++)
+            hotbarExtraPages[i] = Mathf.Clamp(cfg.GetValue("hotbar", $"extra_page_{i}", hotbarExtraPages[i]).AsInt32(),
                                                0, HotbarLayout.Pages - 1);
         TooltipHeight = Mathf.Max(1, cfg.GetValue("fontstate", "tooltipheight", TooltipHeight).AsInt32());
         TooltipBold = cfg.GetValue("fontstate", "tooltipbold", TooltipBold).AsBool();
         TooltipBack = cfg.GetValue("fontstate", "tooltipback", TooltipBack).AsBool();
-        for (int i = 0; i < _tooltipColors.Length; i++)
-            _tooltipColors[i] = ReadTooltipColor(cfg, i);
+        for (int i = 0; i < tooltipColors.Length; i++)
+            tooltipColors[i] = ReadTooltipColor(cfg, i);
         RestoreRotatedTooltipColors();
         return true;
     }
@@ -472,7 +479,7 @@ public static class Config
         cfg.SetValue("server", "development", Development);
         cfg.SetValue("quests", "legacy_fallback", LegacyQuestFallback);
         if (PluginDirs.Length > 0) cfg.SetValue("plugins", "dirs", PluginDirs);
-        foreach (var (id, on) in _pluginEnabled) cfg.SetValue("plugins", id, on);
+        foreach (var (id, on) in pluginEnabled) cfg.SetValue("plugins", id, on);
         cfg.SetValue("video", "mode", (int)WindowMode);
         cfg.SetValue("video", "width", WinWidth);
         cfg.SetValue("video", "height", WinHeight);
@@ -487,11 +494,12 @@ public static class Config
         cfg.SetValue("video", "screen", Screen);
         cfg.SetValue("hud", "show_titles", ShowTitles);
         cfg.SetValue("hud", "quest_notices", QuestNotices);
+        cfg.SetValue("user_option", "trade_state", TradeRequestsBlocked);
         cfg.SetValue("hud", "ui_alpha", UiAlpha);
         cfg.SetValue("graphics", "hidden_cospre", (int)HiddenCospre);
         cfg.SetValue("graphics", "volumetric_fog", VolumetricFog);
         cfg.SetValue("graphics", "bloom", Bloom);
-        cfg.SetValue("graphics", "fx_layer", FxLayer);
+        if (cfg.HasSectionKey("graphics", RetiredFxLayerKey)) cfg.EraseSectionKey("graphics", RetiredFxLayerKey);
         cfg.SetValue("graphics", "crowd_mode", (int)Crowd);
         cfg.SetValue("effects", "item_shine", (int)Shine);
         cfg.SetValue("graphics", "clouds", Clouds);
@@ -511,8 +519,8 @@ public static class Config
         cfg.SetValue("hotbar", "scale", HotbarScale);
         cfg.SetValue("hotbar", "gap", HotbarGap);
         cfg.SetValue("hotbar", "extra_bars", HotbarExtraBars);
-        for (int i = 0; i < _hotbarExtraPages.Length; i++)
-            cfg.SetValue("hotbar", $"extra_page_{i}", _hotbarExtraPages[i]);
+        for (int i = 0; i < hotbarExtraPages.Length; i++)
+            cfg.SetValue("hotbar", $"extra_page_{i}", hotbarExtraPages[i]);
         cfg.SetValue("controls", "move_stick", MoveStickSensitivity);
         cfg.SetValue("controls", "look_stick", LookStickSensitivity);
         cfg.SetValue("controls", "cam_turn_speed", CamTurnSpeed);
@@ -555,8 +563,8 @@ public static class Config
         cfg.SetValue("fontstate", "tooltipheight", TooltipHeight);
         cfg.SetValue("fontstate", "tooltipbold", TooltipBold);
         cfg.SetValue("fontstate", "tooltipback", TooltipBack);
-        for (int i = 0; i < _tooltipColors.Length; i++)
-            cfg.SetValue("fontstate", $"tooltipcolor{i}", ArgbString(_tooltipColors[i]));
+        for (int i = 0; i < tooltipColors.Length; i++)
+            cfg.SetValue("fontstate", $"tooltipcolor{i}", ArgbString(tooltipColors[i]));
 
         var err = cfg.Save(SettingsSavePath);
         if (err != Error.Ok)
@@ -607,6 +615,14 @@ public static class Config
         if (QuestNotices == on) return;
         QuestNotices = on;
         Save();
+    }
+
+    public static void SetTradeRequestsBlocked(bool blocked)
+    {
+        if (TradeRequestsBlocked == blocked) return;
+        TradeRequestsBlocked = blocked;
+        Save();
+        TradeRequestsBlockedChanged?.Invoke();
     }
 
     public static void SetShowTitles(bool show)
@@ -693,7 +709,7 @@ public static class Config
     public static void SuspendFxLayer()
     {
         if (!FxLayer) return;
-        FxLayer = false;
+        fxLayerSuspended = true;
         GraphicsChanged?.Invoke();
     }
 
@@ -710,14 +726,6 @@ public static class Config
         if (Crowd == mode) return;
         Crowd = mode;
         Save();
-    }
-
-    public static void SetFxLayer(bool on)
-    {
-        if (FxLayer == on) return;
-        FxLayer = on;
-        Save();
-        GraphicsChanged?.Invoke();
     }
 
     private static float Vol(ConfigFile cfg, string key, float fallback) =>
@@ -852,16 +860,16 @@ public static class Config
         WhisperLookChanged?.Invoke();
     }
 
-    public static void SetPartyRowMeter(byte mode)
+    public static void SetPartyRowMeter(PartyBoardMeterMode mode)
     {
         if (mode == PartyRowMeter) return;
         PartyRowMeter = mode;
         Save();
     }
 
-    public static void SetPartyBoardMode(byte mode)
+    public static void SetPartyBoardMode(PartyBoardMeterMode mode)
     {
-        if (mode == PartyBoardMode || mode == PartyWarBoard.ModeOff) return;
+        if (mode == PartyBoardMode || mode == PartyBoardMeterMode.Off) return;
         PartyBoardMode = mode;
         Save();
     }
@@ -901,8 +909,8 @@ public static class Config
 
     public static void SetHotbarExtraPage(int extraBar, int page)
     {
-        if (extraBar < 0 || extraBar >= _hotbarExtraPages.Length) return;
-        _hotbarExtraPages[extraBar] = Mathf.Clamp(page, 0, HotbarLayout.Pages - 1);
+        if (extraBar < 0 || extraBar >= hotbarExtraPages.Length) return;
+        hotbarExtraPages[extraBar] = Mathf.Clamp(page, 0, HotbarLayout.Pages - 1);
         Save();
     }
 
@@ -993,8 +1001,8 @@ public static class Config
         if (Engine.GetMainLoop() is not SceneTree { Root: not null } tree) return;
         tree.Root.ContentScaleFactor = EffectiveUiScale * Platform.MenuScale;
         UiScaleApplied?.Invoke();
-        if (_uiScaleFollowsWindow) return;
-        _uiScaleFollowsWindow = true;
+        if (uiScaleFollowsWindow) return;
+        uiScaleFollowsWindow = true;
         tree.Root.SizeChanged += () =>
         {
             if (!UiScaleChosen) ApplyUiScale();
@@ -1053,7 +1061,7 @@ public static class Config
     public const int SmallScreenHeight = 860;
     public static bool UiScaleChosen { get; private set; }
     public static event System.Action? UiScaleApplied;
-    private static bool _uiScaleFollowsWindow;
+    private static bool uiScaleFollowsWindow;
 
     public static float EffectiveUiScale =>
         UiScaleChosen || Platform.TouchUi ? UiScale : AutoUiScale(WindowHeight());
@@ -1134,14 +1142,14 @@ public static class Config
         }
     }
 
-    private static ConfigFile? _windowsCfg;
+    private static ConfigFile? windowsCfg;
 
     private static ConfigFile WindowsCfg()
     {
-        if (_windowsCfg != null) return _windowsCfg;
-        _windowsCfg = new ConfigFile();
-        _windowsCfg.Load(WindowsPath());
-        return _windowsCfg;
+        if (windowsCfg != null) return windowsCfg;
+        windowsCfg = new ConfigFile();
+        windowsCfg.Load(WindowsPath());
+        return windowsCfg;
     }
 
     public static Vector2 GetWindowPos(string id, Vector2 fallback)
@@ -1200,26 +1208,26 @@ public static class Config
         ReportWindowsSave(cfg.Save(WindowsPath()));
     }
 
-    private static bool _windowsSaveFailed;
+    private static bool windowsSaveFailed;
 
     private static void ReportWindowsSave(Error err)
     {
-        if (err == Error.Ok || _windowsSaveFailed) return;
-        _windowsSaveFailed = true;
+        if (err == Error.Ok || windowsSaveFailed) return;
+        windowsSaveFailed = true;
         GD.PushError($"[config] could not write {WindowsPath()}: {err} — window layout will not persist");
     }
 
     private static string WindowsPath() => Path.Combine(
         InstallDirWritable ? InstallDir() : UserDir(), WindowsFileName);
 
-    private static ConfigFile? _keysCfg;
+    private static ConfigFile? keysCfg;
 
     private static ConfigFile KeysCfg()
     {
-        if (_keysCfg != null) return _keysCfg;
-        _keysCfg = new ConfigFile();
-        _keysCfg.Load(KeysPath());
-        return _keysCfg;
+        if (keysCfg != null) return keysCfg;
+        keysCfg = new ConfigFile();
+        keysCfg.Load(KeysPath());
+        return keysCfg;
     }
 
     public static string GetKeyBind(string id)
@@ -1262,26 +1270,26 @@ public static class Config
         ReportKeysSave(cfg.Save(KeysPath()));
     }
 
-    private static bool _keysSaveFailed;
+    private static bool keysSaveFailed;
 
     private static void ReportKeysSave(Error err)
     {
-        if (err == Error.Ok || _keysSaveFailed) return;
-        _keysSaveFailed = true;
+        if (err == Error.Ok || keysSaveFailed) return;
+        keysSaveFailed = true;
         GD.PushError($"[config] could not write {KeysPath()}: {err} — key bindings will not persist");
     }
 
     private static string KeysPath() => Path.Combine(
         InstallDirWritable ? InstallDir() : UserDir(), KeysFileName);
 
-    private static ConfigFile? _presetsCfg;
+    private static ConfigFile? presetsCfg;
 
     private static ConfigFile PresetsCfg()
     {
-        if (_presetsCfg != null) return _presetsCfg;
-        _presetsCfg = new ConfigFile();
-        _presetsCfg.Load(PresetsPath());
-        return _presetsCfg;
+        if (presetsCfg != null) return presetsCfg;
+        presetsCfg = new ConfigFile();
+        presetsCfg.Load(PresetsPath());
+        return presetsCfg;
     }
 
     public static int[] GetPresetPlan(string character, string kind, int slot, int length)
@@ -1303,23 +1311,23 @@ public static class Config
         ReportPresetsSave(cfg.Save(PresetsPath()));
     }
 
-    private static bool _presetsSaveFailed;
+    private static bool presetsSaveFailed;
 
     private static void ReportPresetsSave(Error err)
     {
-        if (err == Error.Ok || _presetsSaveFailed) return;
-        _presetsSaveFailed = true;
+        if (err == Error.Ok || presetsSaveFailed) return;
+        presetsSaveFailed = true;
         GD.PushError($"[config] could not write {PresetsPath()}: {err} — stat presets will not persist");
     }
 
-    private static ConfigFile? _lootFilterCfg;
+    private static ConfigFile? lootFilterCfg;
 
     private static ConfigFile LootFilterCfg()
     {
-        if (_lootFilterCfg != null) return _lootFilterCfg;
-        _lootFilterCfg = new ConfigFile();
-        _lootFilterCfg.Load(LootFilterPath());
-        return _lootFilterCfg;
+        if (lootFilterCfg != null) return lootFilterCfg;
+        lootFilterCfg = new ConfigFile();
+        lootFilterCfg.Load(LootFilterPath());
+        return lootFilterCfg;
     }
 
     public static LibreKO.Domain.LootFilter LoadLootFilter(string character)
@@ -1362,7 +1370,7 @@ public static class Config
         InstallDirWritable ? InstallDir() : UserDir(), PresetsFileName);
 
     public static Color TooltipColor(int idx) =>
-        _tooltipColors[Mathf.Clamp(idx, 0, _tooltipColors.Length - 1)];
+        tooltipColors[Mathf.Clamp(idx, 0, tooltipColors.Length - 1)];
 
     private const int RotatedTooltipColorFirst = 6;
     private static readonly uint[] RotatedTooltipColors = { 0xFFEAF50C, 0xFFADFF2F, 0xFFCDC300 };
@@ -1370,16 +1378,16 @@ public static class Config
     private static void RestoreRotatedTooltipColors()
     {
         for (int i = 0; i < RotatedTooltipColors.Length; i++)
-            if ((uint)_tooltipColors[RotatedTooltipColorFirst + i].ToArgb32() != RotatedTooltipColors[i]) return;
+            if ((uint)tooltipColors[RotatedTooltipColorFirst + i].ToArgb32() != RotatedTooltipColors[i]) return;
         for (int i = 0; i < RotatedTooltipColors.Length; i++)
-            _tooltipColors[RotatedTooltipColorFirst + i] = DefaultTooltipColors[RotatedTooltipColorFirst + i];
+            tooltipColors[RotatedTooltipColorFirst + i] = DefaultTooltipColors[RotatedTooltipColorFirst + i];
     }
 
     private static Color ReadTooltipColor(ConfigFile cfg, int idx)
     {
-        string fallback = ArgbString(_tooltipColors[idx]);
+        string fallback = ArgbString(tooltipColors[idx]);
         string s = cfg.GetValue("fontstate", $"tooltipcolor{idx}", fallback).AsString();
-        return ParseArgb(s, _tooltipColors[idx]);
+        return ParseArgb(s, tooltipColors[idx]);
     }
 
     private static Color ParseArgb(string value, Color fallback)

@@ -23,7 +23,7 @@ public class TournamentPacketCoordinator(
     private static readonly HashSet<int> TournamentRegistrants = new();
 
     // Current bracket round (1-based). Static so every participant sees the same round.
-    private static byte _tournamentRound = 1;
+    private static byte tournamentRound = 1;
 
     private static readonly object TournamentLock = new();
 
@@ -57,7 +57,7 @@ public class TournamentPacketCoordinator(
         {
             registered = TournamentRegistrants.Contains(session.CharacterId);
             participantCount = (ushort)TournamentRegistrants.Count;
-            round = _tournamentRound;
+            round = tournamentRound;
         }
 
         var result = TournamentPacketWriter.Status(

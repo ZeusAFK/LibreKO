@@ -7,7 +7,7 @@ public class CapeWireTests
 {
     private const short ClanId = 42, Reserved = 0, CapeId = 7;
     private const byte Red = 10, Green = 20, Blue = 30;
-    private const byte UnknownOp = Net.CapeOpTicket + 1;
+    private const byte UnknownOp = (int)CapeSubOpcode.TicketPurchase + 1;
 
     private static Packet Reply(params object[] parts)
     {
@@ -31,7 +31,7 @@ public class CapeWireTests
     public void AChangedReplyCarriesTheClanCapeAndDye()
     {
         Assert.True(CapeWire.TryRead(
-            Reply(Net.CapeChanged, ClanId, Reserved, CapeId, Colour(Red, Green, Blue)), out var reply));
+            Reply((short)CapeResult.Changed, ClanId, Reserved, CapeId, Colour(Red, Green, Blue)), out var reply));
 
         Assert.True(reply.Changed);
         Assert.Equal((ClanId, CapeId), ((short)reply.ClanId, (short)reply.CapeId));
@@ -42,7 +42,7 @@ public class CapeWireTests
     public void ADyeOnlyReplyKeepsNoCape()
     {
         Assert.True(CapeWire.TryRead(
-            Reply(Net.CapeChanged, ClanId, Reserved, (short)CapeWire.NoCape, Colour(Red, Green, Blue)), out var reply));
+            Reply((short)CapeResult.Changed, ClanId, Reserved, (short)CapeWire.NoCape, Colour(Red, Green, Blue)), out var reply));
 
         Assert.Equal(CapeWire.NoCape, reply.CapeId);
     }
@@ -50,28 +50,28 @@ public class CapeWireTests
     [Fact]
     public void AChangedReplyNeedsTheExactTail()
     {
-        Assert.False(CapeWire.TryRead(Reply(Net.CapeChanged, ClanId, Reserved, CapeId), out _));
+        Assert.False(CapeWire.TryRead(Reply((short)CapeResult.Changed, ClanId, Reserved, CapeId), out _));
         Assert.False(CapeWire.TryRead(
-            Reply(Net.CapeChanged, ClanId, Reserved, CapeId, Colour(Red, Green, Blue), (byte)0), out _));
+            Reply((short)CapeResult.Changed, ClanId, Reserved, CapeId, Colour(Red, Green, Blue), (byte)0), out _));
     }
 
     [Fact]
     public void AChangedReplyRejectsAColourOutsideRgb()
     {
         Assert.False(CapeWire.TryRead(
-            Reply(Net.CapeChanged, ClanId, Reserved, CapeId, ~CapeWire.ColourMask), out _));
+            Reply((short)CapeResult.Changed, ClanId, Reserved, CapeId, ~CapeWire.ColourMask), out _));
     }
 
     [Theory]
     [InlineData(CapeWire.RefusedFirst)]
     [InlineData(CapeWire.RefusedLast)]
-    public void ARefusalIsABareKnownCode(short code)
+    public void ARefusalIsABareKnownCode(CapeResult code)
     {
-        Assert.True(CapeWire.TryRead(Reply(code), out var reply));
+        Assert.True(CapeWire.TryRead(Reply((short)code), out var reply));
         Assert.False(reply.Changed);
         Assert.Equal(code, reply.Result);
 
-        Assert.False(CapeWire.TryRead(Reply(code, ClanId), out _));
+        Assert.False(CapeWire.TryRead(Reply((short)code, ClanId), out _));
     }
 
     [Theory]
@@ -91,10 +91,10 @@ public class CapeWireTests
     [Fact]
     public void OnlyKnownOpsAndWireSizedCapesAreRequested()
     {
-        Assert.True(CapeWire.IsRequest(Net.CapeOpBuy, CapeId));
-        Assert.True(CapeWire.IsRequest(Net.CapeOpTicket, CapeWire.NoCape));
-        Assert.False(CapeWire.IsRequest(UnknownOp, CapeId));
-        Assert.False(CapeWire.IsRequest(Net.CapeOpBuy, CapeWire.NoCape - 1));
-        Assert.False(CapeWire.IsRequest(Net.CapeOpBuy, short.MaxValue + 1));
+        Assert.True(CapeWire.IsRequest(CapeSubOpcode.NormalPurchase, CapeId));
+        Assert.True(CapeWire.IsRequest(CapeSubOpcode.TicketPurchase, CapeWire.NoCape));
+        Assert.False(CapeWire.IsRequest((CapeSubOpcode)UnknownOp, CapeId));
+        Assert.False(CapeWire.IsRequest(CapeSubOpcode.NormalPurchase, CapeWire.NoCape - 1));
+        Assert.False(CapeWire.IsRequest(CapeSubOpcode.NormalPurchase, short.MaxValue + 1));
     }
 }

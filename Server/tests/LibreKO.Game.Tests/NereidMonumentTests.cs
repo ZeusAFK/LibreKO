@@ -15,18 +15,18 @@ public class NereidMonumentTests
     private const byte Karus = (byte)AccountNation.Karus;
     private const byte ElMorad = (byte)AccountNation.ElMorad;
 
-    private readonly SessionManager _sessions = new();
-    private readonly IZoneTransitionService _zones = Substitute.For<IZoneTransitionService>();
-    private readonly NereidMonumentService _monuments;
+    private readonly SessionManager sessions = new();
+    private readonly IZoneTransitionService zones = Substitute.For<IZoneTransitionService>();
+    private readonly NereidMonumentService monuments;
 
-    public NereidMonumentTests() => _monuments = new NereidMonumentService(_sessions, _zones);
+    public NereidMonumentTests() => monuments = new NereidMonumentService(sessions, zones);
 
     private UserSession Player(int id, AccountNation nation, byte zone = Nereid)
     {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, id, id + 1000);
+        var session = sessions.CreateSession(client, id, id + 1000);
         session.Nation = nation;
         session.ZoneId = zone;
         return session;
@@ -92,14 +92,14 @@ public class NereidMonumentTests
     [Fact]
     public async Task AMonumentKilledInTheWarIsCapturedAndTheZoneIsTold()
     {
-        _sessions.Battle.OpenBattleZone(BattleZoneManager.BATTLEZONE_OPEN, Nereid);
+        sessions.Battle.OpenBattleZone(BattleZoneManager.BATTLEZONE_OPEN, Nereid);
         var killer = Player(1, AccountNation.ElMorad);
         var watcher = Player(2, AccountNation.Karus);
         var elsewhere = Player(3, AccountNation.Karus, (byte)ZoneId.Moradon);
 
-        await _monuments.OnNpcKilledAsync(Monument(4), killer);
+        await monuments.OnNpcKilledAsync(Monument(4), killer);
 
-        _sessions.Battle.MonumentOwners[3].Should().Be(ElMorad);
+        sessions.Battle.MonumentOwners[3].Should().Be(ElMorad);
         var captured = Sent(watcher)[0];
         captured.ReadByte().Should().Be(MapEventPacketWriter.SubCaptured);
         captured.ReadByte().Should().Be(MapEventPacketWriter.CapturedOne);
@@ -117,9 +117,9 @@ public class NereidMonumentTests
     {
         var killer = Player(1, AccountNation.ElMorad);
 
-        await _monuments.OnNpcKilledAsync(Monument(4), killer);
+        await monuments.OnNpcKilledAsync(Monument(4), killer);
 
-        _sessions.Battle.MonumentOwners.Should().OnlyContain(owner => owner == 0);
+        sessions.Battle.MonumentOwners.Should().OnlyContain(owner => owner == 0);
         Sent(killer).Should().BeEmpty();
     }
 
@@ -128,7 +128,7 @@ public class NereidMonumentTests
     {
         var arriving = Player(1, AccountNation.Karus);
 
-        _zones.ZoneAbilitySent += Raise.Event<Func<UserSession, Task>>(arriving);
+        zones.ZoneAbilitySent += Raise.Event<Func<UserSession, Task>>(arriving);
 
         var sent = Sent(arriving);
         sent[0].ReadByte().Should().Be(MapEventPacketWriter.SubOwners);

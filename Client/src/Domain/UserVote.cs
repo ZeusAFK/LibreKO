@@ -4,16 +4,12 @@ namespace LibreKO.Domain;
 
 public static class UserVote
 {
-    public const int JuraidZone = 87;
     public const int Reasons = 4;
     public const byte ReasonOther = 4;
     public const int OtherTextMaxBytes = 60;
     public const int OtherTextMaxLetters = 30;
     public const double CooldownSeconds = 300;
     public const double AnswerSeconds = 30;
-    public const byte AnswerNo = 0;
-    public const byte AnswerYes = 1;
-    public const byte AnswerDraw = 2;
 
     public const int TitleText = 43781;
     public const int AskText = 43774;

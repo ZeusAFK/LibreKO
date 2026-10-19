@@ -13,11 +13,11 @@ public interface IExpSealService
 
 public sealed class ExpSealService : IExpSealService
 {
-    private readonly SessionManager _sessions;
-    private readonly IGameDataService _gameData;
-    private readonly IMagicItemUsageService _itemUsage;
-    private readonly IItemGrantService _itemGrants;
-    private readonly IPlayerProgressionService _progression;
+    private readonly SessionManager sessions;
+    private readonly IGameDataService gameData;
+    private readonly IMagicItemUsageService itemUsage;
+    private readonly IItemGrantService itemGrants;
+    private readonly IPlayerProgressionService progression;
 
     public ExpSealService(
         SessionManager sessions,
@@ -27,11 +27,11 @@ public sealed class ExpSealService : IExpSealService
         IPlayerProgressionService progression,
         IZoneTransitionService? zones = null)
     {
-        _sessions = sessions;
-        _gameData = gameData;
-        _itemUsage = itemUsage;
-        _itemGrants = itemGrants;
-        _progression = progression;
+        this.sessions = sessions;
+        this.gameData = gameData;
+        this.itemUsage = itemUsage;
+        this.itemGrants = itemGrants;
+        this.progression = progression;
         if (zones != null)
             zones.ZoneAbilitySent += SendStateAsync;
     }
@@ -47,7 +47,7 @@ public sealed class ExpSealService : IExpSealService
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
-        var session = _sessions.GetByClientId(client.Id);
+        var session = sessions.GetByClientId(client.Id);
         if (session == null || packet.RemainingBytes < 1)
             return;
 
@@ -91,10 +91,10 @@ public sealed class ExpSealService : IExpSealService
             return ExpSealPacketWriter.Code(ExpSealRules.SubStore, ExpSealRules.StoreWhileOn);
         if (session.SealedExperience < amount)
             return ExpSealPacketWriter.Code(ExpSealRules.SubStore, ExpSealRules.StoreTooLittle);
-        if (_gameData.GetItem(ExpSealRules.LargeJar) is not { } filledJar || !await _itemUsage.TryConsumeItemAsync(session, jar))
+        if (gameData.GetItem(ExpSealRules.LargeJar) is not { } filledJar || !await itemUsage.TryConsumeItemAsync(session, jar))
             return ExpSealPacketWriter.Code(ExpSealRules.SubStore, ExpSealRules.UseFailed);
 
-        var placed = await _itemGrants.GrantAsync(session, filledJar, ExpSealRules.FilledJarsFor(amount));
+        var placed = await itemGrants.GrantAsync(session, filledJar, ExpSealRules.FilledJarsFor(amount));
         session.SealedExperience -= placed * ExpSealRules.FillStep;
         return ExpSealPacketWriter.Stored(session.SealedExperience);
     }
@@ -104,9 +104,9 @@ public sealed class ExpSealService : IExpSealService
         if (session.ExpSealOn)
             return ExpSealPacketWriter.Code(ExpSealRules.SubUseJar, ExpSealRules.UseWhileOn);
         var exp = ExpSealRules.ExpOfJar(jar);
-        if (exp == 0 || !await _itemUsage.TryConsumeItemAsync(session, jar))
+        if (exp == 0 || !await itemUsage.TryConsumeItemAsync(session, jar))
             return ExpSealPacketWriter.Code(ExpSealRules.SubUseJar, ExpSealRules.UseFailed);
-        await _progression.ChangeExperienceAsync(session, exp);
+        await progression.ChangeExperienceAsync(session, exp);
         return ExpSealPacketWriter.Code(ExpSealRules.SubUseJar, ExpSealRules.Succeeded);
     }
 }

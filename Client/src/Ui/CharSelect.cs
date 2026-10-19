@@ -1,30 +1,28 @@
-﻿using System.Collections.Generic;
-using Godot;
-using LibreKO.Domain;
+﻿using Godot;
 
 namespace LibreKO;
 
 public partial class CharSelect : Node3D
 {
-    private readonly Dictionary<Button, CharacterSummary> _buttons = new();
-    private readonly List<CharacterSummary> _characters = new();
+    private readonly Dictionary<Button, CharacterSummary> buttons = new();
+    private readonly List<CharacterSummary> characters = new();
 
-    private Node3D _characterAnchor = null!;
-    private Node3D? _characterModel;
-    private readonly Dictionary<string, Node3D> _modelCache = new();
+    private Node3D characterAnchor = null!;
+    private Node3D? characterModel;
+    private readonly Dictionary<string, Node3D> modelCache = new();
     private const double CharListTimeoutSeconds = 20;
-    private int _charListAttempts;
-    private bool _charListArrived;
-    private VBoxContainer _characterList = null!;
-    private Label _status = null!;
-    private Button _enterButton = null!;
-    private Button _backButton = null!;
-    private Button _createButton = null!;
-    private PanelContainer _selectPanel = null!;
+    private int charListAttempts;
+    private bool charListArrived;
+    private VBoxContainer characterList = null!;
+    private Label status = null!;
+    private Button enterButton = null!;
+    private Button backButton = null!;
+    private Button createButton = null!;
+    private PanelContainer selectPanel = null!;
 
-    private CharacterSummary? _selected;
-    private bool _returningToServers;
-    private bool _draggingCharacter;
+    private CharacterSummary? selected;
+    private bool returningToServers;
+    private bool draggingCharacter;
 
     public override void _Ready()
     {
@@ -33,13 +31,14 @@ public partial class CharSelect : Node3D
         BuildOverlay();
         Audio.BgmFile(Sfx.BgmIntroFile);
 
-        Net.I.CharListEvent += OnCharList;
-        Net.I.EnterWorldEvent += OnEnterWorld;
-        Net.I.ErrorEvent += OnError;
-        LoginNet.I.LoginResultEvent += OnReturnLoginResult;
-        LoginNet.I.ErrorEvent += OnLoginServerError;
+        Game.Session.PreGame.CharListEvent += OnCharList;
+        Game.Session.PreGame.EnterWorldEvent += OnEnterWorld;
+        Game.Session.PreGame.RequiredNameChangeEvent += OnRequiredNameChange;
+        Game.Connection.ErrorEvent += OnError;
+        Game.LoginServer.LoginResultEvent += OnReturnLoginResult;
+        Game.LoginServer.ErrorEvent += OnLoginServerError;
 
-        _status.Text = "Loading characters…";
+        status.Text = "Loading characters…";
         RequestCharListWithTimeout();
         Callable.From(() => GlyphWarmer.Warm(this)).CallDeferred();
         GetTree().CreateTimer(MemoryCensusDelaySeconds).Timeout += LogMemoryCensus;
@@ -59,14 +58,14 @@ public partial class CharSelect : Node3D
 
     private void BuildOverlay()
     {
-        var canvas = new CanvasLayer { Layer = 10 };
+        var canvas = new CanvasLayer { Layer = UiLayers.CharSelectScreen };
         AddChild(canvas);
 
         var overlay = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
         overlay.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         canvas.AddChild(overlay);
 
-        var panel = _selectPanel = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Stop };
+        var panel = selectPanel = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Stop };
         panel.SetAnchorsPreset(Control.LayoutPreset.RightWide);
         panel.OffsetLeft = -PanelWidth;
         var panelStyle = new StyleBoxFlat
@@ -90,9 +89,9 @@ public partial class CharSelect : Node3D
 
         content.AddChild(Ui.Legend("Select Character", 22, UiTheme.GoldBright));
 
-        _status = Ui.Legend("", 13, UiTheme.TextLo);
-        _status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        content.AddChild(_status);
+        status = Ui.Legend("", 13, UiTheme.TextLo);
+        status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        content.AddChild(status);
 
         var scroll = new ScrollContainer
         {
@@ -101,19 +100,19 @@ public partial class CharSelect : Node3D
         };
         content.AddChild(scroll);
 
-        _characterList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _characterList.AddThemeConstantOverride("separation", 8);
-        scroll.AddChild(_characterList);
+        characterList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        characterList.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(characterList);
 
-        _enterButton = Ui.MenuButton("Enter World", 46, 20);
-        _enterButton.Disabled = true;
-        _enterButton.Pressed += EnterSelectedCharacter;
-        content.AddChild(_enterButton);
+        enterButton = Ui.MenuButton("Enter World", 46, 20);
+        enterButton.Disabled = true;
+        enterButton.Pressed += EnterSelectedCharacter;
+        content.AddChild(enterButton);
 
         var group = Ui.ActionGroup(content,
             ("Create Character", OpenCreate), ("Back to servers", ReturnToServerSelection));
-        _createButton = group[0];
-        _backButton = group[1];
+        createButton = group[0];
+        backButton = group[1];
 
         BuildCreatePanel(overlay);
     }
@@ -153,8 +152,8 @@ public partial class CharSelect : Node3D
         line.AddThemeColorOverride("font_color", UiTheme.TextHi);
         vb.AddChild(line);
 
-        _buttons[card] = c;
-        ApplyCharacterButtonStyle(card, selected: false);
+        buttons[card] = c;
+        ApplyCharacterButtonStyle(card, isSelected: false);
         return card;
     }
 
@@ -180,7 +179,7 @@ public partial class CharSelect : Node3D
         text.AddThemeColorOverride("font_color", UiTheme.TextLo);
         card.AddChild(text);
 
-        ApplyCharacterButtonStyle(card, selected: false);
+        ApplyCharacterButtonStyle(card, isSelected: false);
         return card;
     }
 
@@ -193,109 +192,109 @@ public partial class CharSelect : Node3D
 
     private void RequestCharListWithTimeout()
     {
-        _charListAttempts++;
-        Net.I.RequestCharList();
+        charListAttempts++;
+        Game.Requests.PreGame.CharacterList();
         GetTree().CreateTimer(CharListTimeoutSeconds).Timeout += OnCharListTimeout;
     }
 
     private void OnCharListTimeout()
     {
-        if (_charListArrived || !IsInsideTree() || _returningToServers) return;
-        if (_charListAttempts < CharListMaxAttempts)
+        if (charListArrived || !IsInsideTree() || returningToServers) return;
+        if (charListAttempts < CharListMaxAttempts)
         {
-            _status.Text = "The character list is late, asking again…";
+            status.Text = "The character list is late, asking again…";
             RequestCharListWithTimeout();
             return;
         }
-        _status.Text = "The character list did not arrive. Go back to the server list and try again.";
+        status.Text = "The character list did not arrive. Go back to the server list and try again.";
     }
 
     private void DetachCharacterModel()
     {
-        if (_characterModel == null || !GodotObject.IsInstanceValid(_characterModel)) return;
-        if (_modelCache.ContainsValue(_characterModel)) _characterModel.GetParent()?.RemoveChild(_characterModel);
-        else _characterModel.QueueFree();
-        _characterModel = null;
+        if (characterModel == null || !GodotObject.IsInstanceValid(characterModel)) return;
+        if (modelCache.ContainsValue(characterModel)) characterModel.GetParent()?.RemoveChild(characterModel);
+        else characterModel.QueueFree();
+        characterModel = null;
     }
 
     private void ClearModelCache()
     {
-        foreach (var model in _modelCache.Values)
-            if (GodotObject.IsInstanceValid(model) && model != _characterModel) model.QueueFree();
-        _modelCache.Clear();
+        foreach (var model in modelCache.Values)
+            if (GodotObject.IsInstanceValid(model) && model != characterModel) model.QueueFree();
+        modelCache.Clear();
     }
 
     private void OnCharList(List<CharacterSummary> characters)
     {
-        _charListArrived = true;
+        charListArrived = true;
         DetachCharacterModel();
         ClearModelCache();
-        foreach (Node child in _characterList.GetChildren())
+        foreach (Node child in characterList.GetChildren())
             child.QueueFree();
-        _buttons.Clear();
-        _characters.Clear();
-        _selected = null;
+        buttons.Clear();
+        this.characters.Clear();
+        selected = null;
 
         foreach (var character in characters)
             if (!character.Empty)
-                _characters.Add(character);
+                this.characters.Add(character);
 
-        if (_characters.Count == 0)
+        if (this.characters.Count == 0)
         {
-            _status.Text = "No characters yet — create one.";
-            _enterButton.Disabled = true;
-            _createButton.Disabled = false;
+            status.Text = "No characters yet — create one.";
+            enterButton.Disabled = true;
+            createButton.Disabled = false;
             OpenCreate();
             return;
         }
 
-        foreach (var character in _characters)
-            _characterList.AddChild(BuildCharacterCard(character));
-        for (int slot = _characters.Count; slot < MaxSlots; slot++)
-            _characterList.AddChild(BuildEmptySlotCard());
+        foreach (var character in this.characters)
+            characterList.AddChild(BuildCharacterCard(character));
+        for (int slot = this.characters.Count; slot < MaxSlots; slot++)
+            characterList.AddChild(BuildEmptySlotCard());
 
-        _createButton.Disabled = _characters.Count >= MaxSlots;
-        SelectCharacter(_characters[0]);
+        createButton.Disabled = this.characters.Count >= MaxSlots;
+        SelectCharacter(this.characters[0]);
     }
 
     private void SelectCharacter(CharacterSummary character)
     {
-        if (_returningToServers) return;
-        _selected = character;
-        _status.Text = _characters.Count == 1 ? "1 character on this account."
-                                             : $"{_characters.Count} characters on this account.";
-        _enterButton.Disabled = false;
+        if (returningToServers) return;
+        selected = character;
+        status.Text = characters.Count == 1 ? "1 character on this account."
+                                             : $"{characters.Count} characters on this account.";
+        enterButton.Disabled = false;
 
-        foreach (var (button, entry) in _buttons)
+        foreach (var (button, entry) in buttons)
             ApplyCharacterButtonStyle(button, ReferenceEquals(entry, character));
 
         DetachCharacterModel();
-        if (_modelCache.TryGetValue(character.Name, out var cached) && GodotObject.IsInstanceValid(cached))
+        if (modelCache.TryGetValue(character.Name, out var cached) && GodotObject.IsInstanceValid(cached))
         {
-            _characterModel = cached;
-            _characterAnchor.RotationDegrees = new Vector3(0, _stageStandYaw, 0);
-            _characterAnchor.Scale = Vector3.One;
-            _characterAnchor.AddChild(cached);
+            characterModel = cached;
+            characterAnchor.RotationDegrees = new Vector3(0, stageStandYaw, 0);
+            characterAnchor.Scale = Vector3.One;
+            characterAnchor.AddChild(cached);
             return;
         }
 
         int hair = (int)character.Hair;
-        _characterModel = CharacterPreview.Build(character.Race, character.Face, character.Gear,
+        characterModel = CharacterPreview.Build(character.Race, character.Face, character.Gear,
             HairCode.StyleOf(hair), HairCode.TintOf(hair));
 
-        if (_characterModel == null)
+        if (characterModel == null)
         {
-            _status.Text = $"Character assets are unavailable for race {character.Race}.";
+            status.Text = $"Character assets are unavailable for race {character.Race}.";
             return;
         }
 
-        _modelCache[character.Name] = _characterModel;
-        _characterModel.Position = Vector3.Zero;
-        _characterModel.Rotation = Vector3.Zero;
-        _characterAnchor.RotationDegrees = new Vector3(0, _stageStandYaw, 0);
-        _characterAnchor.Scale = Vector3.One;
-        _characterAnchor.AddChild(_characterModel);
-        FrameCharacterWhenReady(_characterModel);
+        modelCache[character.Name] = characterModel;
+        characterModel.Position = Vector3.Zero;
+        characterModel.Rotation = Vector3.Zero;
+        characterAnchor.RotationDegrees = new Vector3(0, stageStandYaw, 0);
+        characterAnchor.Scale = Vector3.One;
+        characterAnchor.AddChild(characterModel);
+        FrameCharacterWhenReady(characterModel);
     }
 
     private async void FrameCharacterWhenReady(Node3D model)
@@ -303,7 +302,7 @@ public partial class CharSelect : Node3D
         for (int i = 0; i < 3; i++)
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 
-        if (_characterModel != model || !GodotObject.IsInstanceValid(model))
+        if (characterModel != model || !GodotObject.IsInstanceValid(model))
             return;
 
         if (!TryModelBounds(model, out var bounds) || bounds.Size.Y < 0.05f)
@@ -313,8 +312,8 @@ public partial class CharSelect : Node3D
         model.Position = new Vector3(-center.X, -bounds.Position.Y, -center.Z);
 
         var tween = CreateTween();
-        _characterAnchor.Scale = new Vector3(0.96f, 0.96f, 0.96f);
-        tween.TweenProperty(_characterAnchor, "scale", Vector3.One, 0.24)
+        characterAnchor.Scale = new Vector3(0.96f, 0.96f, 0.96f);
+        tween.TweenProperty(characterAnchor, "scale", Vector3.One, 0.24)
             .SetEase(Tween.EaseType.Out)
             .SetTrans(Tween.TransitionType.Cubic);
     }
@@ -351,77 +350,105 @@ public partial class CharSelect : Node3D
         {
             if (mouseButton.ButtonIndex == MouseButton.Left)
             {
-                if (!mouseButton.Pressed) { _draggingCharacter = false; return; }
+                if (!mouseButton.Pressed) { draggingCharacter = false; return; }
                 if (mouseButton.Position.X >= uiStart || ColourPopupOpen()) return;
-                _draggingCharacter = true;
+                draggingCharacter = true;
                 GetViewport().SetInputAsHandled();
             }
             else if (mouseButton.Pressed
                      && mouseButton.ButtonIndex is MouseButton.WheelUp or MouseButton.WheelDown
-                     && _createPanel.Visible
+                     && createPanel.Visible
                      && mouseButton.Position.X < uiStart)
             {
                 ZoomCreateCamera(mouseButton.ButtonIndex == MouseButton.WheelUp ? -1 : 1);
                 GetViewport().SetInputAsHandled();
             }
         }
-        else if (_draggingCharacter && inputEvent is InputEventMouseMotion motion)
+        else if (draggingCharacter && inputEvent is InputEventMouseMotion motion)
         {
-            _characterAnchor.RotateY(motion.Relative.X * 0.01f);
+            characterAnchor.RotateY(motion.Relative.X * 0.01f);
             GetViewport().SetInputAsHandled();
         }
     }
 
-    private LoadingScreen? _entering;
-    private double _enterStartedAt;
+    private LoadingScreen? entering;
+    private double enterStartedAt;
 
     private void EnterSelectedCharacter()
     {
-        if (_selected == null || _returningToServers) return;
-        _status.Text = $"Entering world as {_selected.Name}…";
+        if (selected == null || returningToServers) return;
+        if (selected.NameChangeRequired)
+        {
+            AskRequiredName(selected);
+            return;
+        }
+        status.Text = $"Entering world as {selected.Name}…";
         SetActionsDisabled(true);
 
-        _enterStartedAt = Time.GetTicksMsec() / 1000.0;
+        enterStartedAt = FrameClock.Now();
         GD.Print("[enter] requesting character");
-        _entering = new LoadingScreen();
-        AddChild(_entering);
-        _entering.Set("Entering world…", 0.04, _selected.Name);
+        entering = new LoadingScreen();
+        AddChild(entering);
+        entering.Set("Entering world…", 0.04, selected.Name);
 
-        Net.I.SelectChar(_selected.Name);
+        Game.Requests.PreGame.SelectCharacter(selected.Name);
+    }
+
+    private void AskRequiredName(CharacterSummary character)
+    {
+        Notice.AskText(this, ItemData.Text(RequiredNameChange.PromptText, RequiredNameChange.PromptFallback), name =>
+        {
+            name = name.Trim();
+            if (name.Length == 0) return;
+            if (!RequiredNameChange.IsAlphanumeric(name))
+            {
+                Notice.Show(this, ItemData.Text(RequiredNameChange.NotAlphanumericText, RequiredNameChange.NotAlphanumericFallback),
+                    onClose: () => AskRequiredName(character));
+                return;
+            }
+            string confirm = RequiredNameChange.ConfirmLine(ItemData.Text(RequiredNameChange.ConfirmText, RequiredNameChange.ConfirmFallback), name);
+            Notice.Confirm(this, confirm, "Yes", "No", () => Game.Requests.PreGame.ChangeRequiredName(character.Slot, character.Name, name));
+        }, maxLength: RequiredNameChange.MaxLength);
+    }
+
+    private void OnRequiredNameChange(SelectingCharacterNameChangeResult result, int slot, string name)
+    {
+        if (RequiredNameChange.ResultText(result) is { } text) Notice.Show(this, ItemData.Text(text.Id, text.Fallback));
+        if (result == SelectingCharacterNameChangeResult.Success) Game.Requests.PreGame.CharacterList();
     }
 
     private void CancelEnteringOverlay()
     {
-        if (_entering == null) return;
-        _entering.QueueFree();
-        _entering = null;
+        if (entering == null) return;
+        entering.QueueFree();
+        entering = null;
         Backdrop.RerollLoadingArt();
     }
 
     private void ReturnToServerSelection()
     {
-        if (_returningToServers) return;
-        _returningToServers = true;
+        if (returningToServers) return;
+        returningToServers = true;
         SetActionsDisabled(true);
-        _status.Text = "Returning to server selection…";
+        status.Text = "Returning to server selection…";
 
-        Net.I.Disconnect(expected: true);
+        Game.Connection.Disconnect(expected: true);
 
-        if (!LoginNet.I.ReconnectForServerSelection())
+        if (!Game.LoginServer.ReconnectForServerSelection())
         {
-            _returningToServers = false;
+            returningToServers = false;
             GetTree().ChangeSceneToFile("res://scenes/Login.tscn");
         }
     }
 
     private void OnReturnLoginResult(bool ok, int result)
     {
-        if (!_returningToServers) return;
+        if (!returningToServers) return;
         if (!ok)
         {
-            _returningToServers = false;
+            returningToServers = false;
             SetActionsDisabled(false);
-            _status.Text = $"Could not return to server list (login code {result}).";
+            status.Text = $"Could not return to server list (login code {result}).";
             return;
         }
         Login.StartAtServers = true;
@@ -430,37 +457,37 @@ public partial class CharSelect : Node3D
 
     private void OnLoginServerError(string error)
     {
-        if (!_returningToServers) return;
-        _returningToServers = false;
+        if (!returningToServers) return;
+        returningToServers = false;
         SetActionsDisabled(false);
-        _status.Text = "Login server error: " + error;
+        status.Text = "Login server error: " + error;
     }
 
     private void SetActionsDisabled(bool disabled)
     {
-        _enterButton.Disabled = disabled;
-        _backButton.Disabled = disabled;
-        _createButton.Disabled = disabled || _characters.Count >= MaxSlots;
-        foreach (var button in _buttons.Keys)
+        enterButton.Disabled = disabled;
+        backButton.Disabled = disabled;
+        createButton.Disabled = disabled || characters.Count >= MaxSlots;
+        foreach (var button in buttons.Keys)
             button.Disabled = disabled;
     }
 
-    private static void ApplyCharacterButtonStyle(Button button, bool selected)
+    private static void ApplyCharacterButtonStyle(Button button, bool isSelected)
     {
         var normal = new StyleBoxFlat
         {
-            BgColor = selected ? new Color(0.20f, 0.155f, 0.065f, 0.92f)
+            BgColor = isSelected ? new Color(0.20f, 0.155f, 0.065f, 0.92f)
                                : new Color(0.055f, 0.053f, 0.060f, 0.80f),
-            BorderColor = selected ? UiTheme.Gold : UiTheme.EdgeSoft,
+            BorderColor = isSelected ? UiTheme.Gold : UiTheme.EdgeSoft,
         };
-        normal.SetBorderWidthAll(selected ? 2 : 1);
+        normal.SetBorderWidthAll(isSelected ? 2 : 1);
         normal.SetCornerRadiusAll(5);
         button.AddThemeStyleboxOverride("normal", normal);
 
         var hover = (StyleBoxFlat)normal.Duplicate();
-        hover.BgColor = selected ? new Color(0.25f, 0.19f, 0.08f, 0.95f)
+        hover.BgColor = isSelected ? new Color(0.25f, 0.19f, 0.08f, 0.95f)
                                  : new Color(0.10f, 0.095f, 0.085f, 0.88f);
-        hover.BorderColor = selected ? UiTheme.GoldBright : new Color(UiTheme.Gold, 0.5f);
+        hover.BorderColor = isSelected ? UiTheme.GoldBright : new Color(UiTheme.Gold, 0.5f);
         button.AddThemeStyleboxOverride("hover", hover);
         button.AddThemeStyleboxOverride("pressed", hover);
         button.AddThemeStyleboxOverride("disabled", normal);
@@ -481,32 +508,33 @@ public partial class CharSelect : Node3D
 
     private void OnEnterWorld(MyInfo info)
     {
-        double now = Time.GetTicksMsec() / 1000.0;
-        GD.Print($"[enter] server replied (+{now - _enterStartedAt:0.0}s), swapping scene");
-        _entering?.Set("Entering world…", 0.08, info.Name);
+        double now = FrameClock.Now();
+        GD.Print($"[enter] server replied (+{now - enterStartedAt:0.0}s), swapping scene");
+        entering?.Set("Entering world…", 0.08, info.Name);
         GetTree().ChangeSceneToFile("res://scenes/World.tscn");
     }
 
     private void OnError(string error)
     {
         CancelEnteringOverlay();
-        if (!_returningToServers)
+        if (!returningToServers)
         {
             SetActionsDisabled(false);
-            _status.Text = "Error: " + error;
+            status.Text = "Error: " + error;
         }
     }
 
     public override void _ExitTree()
     {
-        if (_stageFxLayer != null && IsInstanceValid(_stageFxLayer)) _stageFxLayer.QueueFree();
-        _stageFxLayer = null;
+        if (stageFxLayer != null && IsInstanceValid(stageFxLayer)) stageFxLayer.QueueFree();
+        stageFxLayer = null;
         ClearModelCache();
-        Net.I.CreateCharResultEvent -= OnCreateResult;
-        Net.I.CharListEvent -= OnCharList;
-        Net.I.EnterWorldEvent -= OnEnterWorld;
-        Net.I.ErrorEvent -= OnError;
-        LoginNet.I.LoginResultEvent -= OnReturnLoginResult;
-        LoginNet.I.ErrorEvent -= OnLoginServerError;
+        Game.Session.PreGame.CreateCharResultEvent -= OnCreateResult;
+        Game.Session.PreGame.RequiredNameChangeEvent -= OnRequiredNameChange;
+        Game.Session.PreGame.CharListEvent -= OnCharList;
+        Game.Session.PreGame.EnterWorldEvent -= OnEnterWorld;
+        Game.Connection.ErrorEvent -= OnError;
+        Game.LoginServer.LoginResultEvent -= OnReturnLoginResult;
+        Game.LoginServer.ErrorEvent -= OnLoginServerError;
     }
 }

@@ -4,8 +4,8 @@ public enum StatusTone { Hint, Good, Bad }
 
 public sealed class StatusLine
 {
-    private string _hint = "";
-    private int _token;
+    private string hint = "";
+    private int token;
 
     public string Text { get; private set; } = "";
     public StatusTone Tone { get; private set; } = StatusTone.Hint;
@@ -14,7 +14,7 @@ public sealed class StatusLine
     {
         set
         {
-            _hint = value;
+            hint = value;
             if (Tone == StatusTone.Hint) Text = value;
         }
     }
@@ -23,20 +23,20 @@ public sealed class StatusLine
     {
         Text = text;
         Tone = bad ? StatusTone.Bad : StatusTone.Good;
-        return ++_token;
+        return ++token;
     }
 
     public bool Expire(int token)
     {
-        if (token != _token) return false;
+        if (token != this.token) return false;
         Reset();
         return true;
     }
 
     public void Reset()
     {
-        _token++;
-        Text = _hint;
+        token++;
+        Text = hint;
         Tone = StatusTone.Hint;
     }
 }

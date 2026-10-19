@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Godot;
+﻿using Godot;
 
 namespace LibreKO;
 
@@ -12,22 +11,22 @@ public partial class Login : Control
     private static int ServerPanelWidth => Platform.Pick(380, 430);
     private const int FooterHeight = 66;
 
-    private LineEdit _user = null!;
-    private LineEdit _pass = null!;
-    private CheckButton _remember = null!;
-    private VBoxContainer _card = null!;
-    private VBoxContainer _session = null!;
-    private Label _sessionStatus = null!;
-    private Button _continue = null!;
-    private HBoxContainer _footer = null!;
-    private PanelContainer _serverPanel = null!;
-    private VBoxContainer _serverBox = null!;
-    private Label _serverStatus = null!;
-    private Notice? _busy;
-    private LoginNet.ServerEntry? _onlyServer;
-    private bool _loginPending;
-    private bool _resuming;
-    private bool _serversReady;
+    private LineEdit user = null!;
+    private LineEdit pass = null!;
+    private CheckButton remember = null!;
+    private VBoxContainer cardBox = null!;
+    private VBoxContainer session = null!;
+    private Label sessionStatus = null!;
+    private Button continueButton = null!;
+    private HBoxContainer footer = null!;
+    private PanelContainer serverPanel = null!;
+    private VBoxContainer serverBox = null!;
+    private Label serverStatus = null!;
+    private Notice? busy;
+    private ServerListEntry? onlyServer;
+    private bool loginPending;
+    private bool resuming;
+    private bool serversReady;
 
     public override void _Ready()
     {
@@ -52,27 +51,27 @@ public partial class Login : Control
         BuildCard(cardHost);
         BuildSession(cardHost);
 
-        _serverPanel = BuildServerPanel();
-        split.AddChild(_serverPanel);
+        serverPanel = BuildServerPanel();
+        split.AddChild(serverPanel);
 
         BuildFooter();
 
         Callable.From(() => GlyphWarmer.Warm(this)).CallDeferred();
-        LoginNet.I.VersionEvent += OnVersion;
-        LoginNet.I.LoginResultEvent += OnLoginResult;
-        LoginNet.I.AccountInUseEvent += OnLoginServerAccountInUse;
-        LoginNet.I.ServerListEvent += OnServerList;
-        LoginNet.I.ErrorEvent += OnError;
-        Net.I.LoginResultEvent += OnGameLogin;
-        Net.I.AccountInUseEvent += OnGameAccountInUse;
-        Net.I.KickResultEvent += OnKickResult;
-        Net.I.ErrorEvent += OnError;
+        Game.LoginServer.VersionEvent += OnVersion;
+        Game.LoginServer.LoginResultEvent += OnLoginResult;
+        Game.LoginServer.AccountInUseEvent += OnLoginServerAccountInUse;
+        Game.LoginServer.ServerListEvent += OnServerList;
+        Game.LoginServer.ErrorEvent += OnError;
+        Game.Session.PreGame.LoginResultEvent += OnGameLogin;
+        Game.Session.AccountLock.AccountInUseEvent += OnGameAccountInUse;
+        Game.Session.AccountLock.KickResultEvent += OnKickResult;
+        Game.Connection.ErrorEvent += OnError;
 
         if (StartAtServers)
         {
             StartAtServers = false;
             EnterServerMode("Loading servers…");
-            LoginNet.I.RequestServerList();
+            Game.LoginServer.RequestServerList();
         }
         else if (SavedAccount.Any)
         {
@@ -89,40 +88,40 @@ public partial class Login : Control
 
     private void BuildCard(Node parent)
     {
-        _card = new VBoxContainer { CustomMinimumSize = new Vector2(CardWidth, 0) };
-        _card.AddThemeConstantOverride("separation", 8);
-        parent.AddChild(_card);
+        cardBox = new VBoxContainer { CustomMinimumSize = new Vector2(CardWidth, 0) };
+        cardBox.AddThemeConstantOverride("separation", 8);
+        parent.AddChild(cardBox);
 
-        _card.AddChild(Ui.Legend("Welcome to LibreKO", 30, UiTheme.GoldBright));
+        cardBox.AddChild(Ui.Legend("Welcome to LibreKO", 30, UiTheme.GoldBright));
         if (Platform.PointerUi)
         {
-            _card.AddChild(Ui.Legend("Enter your credentials", 15, UiTheme.TextHi));
-            _card.AddChild(Spacer(10));
+            cardBox.AddChild(Ui.Legend("Enter your credentials", 15, UiTheme.TextHi));
+            cardBox.AddChild(Spacer(10));
         }
 
-        _card.AddChild(FieldLabel("Username"));
-        _card.AddChild(_user = new LineEdit { PlaceholderText = "username" });
-        _card.AddChild(FieldLabel("Password"));
-        _card.AddChild(_pass = new LineEdit { PlaceholderText = "password", Secret = true });
-        Ui.StyleField(_user);
-        Ui.StyleField(_pass);
-        _card.AddChild(BuildRememberRow());
-        if (Platform.PointerUi) _card.AddChild(Spacer(6));
+        cardBox.AddChild(FieldLabel("Username"));
+        cardBox.AddChild(user = new LineEdit { PlaceholderText = "username" });
+        cardBox.AddChild(FieldLabel("Password"));
+        cardBox.AddChild(pass = new LineEdit { PlaceholderText = "password", Secret = true });
+        Ui.StyleField(user);
+        Ui.StyleField(pass);
+        cardBox.AddChild(BuildRememberRow());
+        if (Platform.PointerUi) cardBox.AddChild(Spacer(6));
 
-        AddMenuButton(_card, "Login", OnLoginPressed);
-        Ui.ActionGroup(_card, ("Settings", OpenSettings), ("Exit", OnExit));
+        AddMenuButton(cardBox, "Login", OnLoginPressed);
+        Ui.ActionGroup(cardBox, ("Settings", OpenSettings), ("Exit", OnExit));
 
-        Ui.SoftScrim(_card);
-        _user.Text = SavedAccount.Name;
+        Ui.SoftScrim(cardBox);
+        user.Text = SavedAccount.Name;
 
-        _user.TextSubmitted += _ => _pass.GrabFocus();
-        _pass.TextSubmitted += _ => OnLoginPressed();
-        if (Platform.PointerUi) _user.CallDeferred(Control.MethodName.GrabFocus);
+        user.TextSubmitted += _ => pass.GrabFocus();
+        pass.TextSubmitted += _ => OnLoginPressed();
+        if (Platform.PointerUi) user.CallDeferred(Control.MethodName.GrabFocus);
     }
 
     private Control BuildRememberRow()
     {
-        _remember = new CheckButton
+        remember = new CheckButton
         {
             Text = "Keep me signed in",
             ButtonPressed = SavedAccount.Any,
@@ -130,52 +129,52 @@ public partial class Login : Control
             CustomMinimumSize = new Vector2(0, Platform.Pick(30, Ui.TouchButtonHeight)),
             SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
         };
-        _remember.AddThemeFontSizeOverride("font_size", 15);
-        _remember.AddThemeColorOverride("font_color", UiTheme.TextLo);
-        _remember.AddThemeColorOverride("font_pressed_color", UiTheme.GoldBright);
-        _remember.AddThemeColorOverride("font_hover_color", UiTheme.TextHi);
-        _remember.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.9f));
-        _remember.AddThemeConstantOverride("outline_size", 4);
-        _remember.AddThemeConstantOverride("h_separation", 14);
-        return _remember;
+        remember.AddThemeFontSizeOverride("font_size", 15);
+        remember.AddThemeColorOverride("font_color", UiTheme.TextLo);
+        remember.AddThemeColorOverride("font_pressed_color", UiTheme.GoldBright);
+        remember.AddThemeColorOverride("font_hover_color", UiTheme.TextHi);
+        remember.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.9f));
+        remember.AddThemeConstantOverride("outline_size", 4);
+        remember.AddThemeConstantOverride("h_separation", 14);
+        return remember;
     }
 
     private void BuildSession(Node parent)
     {
-        _session = new VBoxContainer { CustomMinimumSize = new Vector2(CardWidth, 0), Visible = false };
-        _session.AddThemeConstantOverride("separation", 8);
-        parent.AddChild(_session);
+        session = new VBoxContainer { CustomMinimumSize = new Vector2(CardWidth, 0), Visible = false };
+        session.AddThemeConstantOverride("separation", 8);
+        parent.AddChild(session);
 
-        _session.AddChild(Ui.Legend("Welcome back", 30, UiTheme.GoldBright));
-        _session.AddChild(Ui.Legend(SavedAccount.Name, 20, UiTheme.Gold));
-        _sessionStatus = Ui.Legend("", 14, UiTheme.TextLo);
-        _sessionStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        _sessionStatus.CustomMinimumSize = new Vector2(0, 40);
-        _session.AddChild(_sessionStatus);
+        session.AddChild(Ui.Legend("Welcome back", 30, UiTheme.GoldBright));
+        session.AddChild(Ui.Legend(SavedAccount.Name, 20, UiTheme.Gold));
+        sessionStatus = Ui.Legend("", 14, UiTheme.TextLo);
+        sessionStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        sessionStatus.CustomMinimumSize = new Vector2(0, 40);
+        session.AddChild(sessionStatus);
 
-        _continue = AddMenuButton(_session, "Continue", OnContinue);
-        _continue.Disabled = true;
-        Ui.ActionGroup(_session, ("Log out", OnForgetAccount), ("Settings", OpenSettings),
+        continueButton = AddMenuButton(session, "Continue", OnContinue);
+        continueButton.Disabled = true;
+        Ui.ActionGroup(session, ("Log out", OnForgetAccount), ("Settings", OpenSettings),
                        ("Close game", OnExit));
 
-        Ui.SoftScrim(_session);
+        Ui.SoftScrim(session);
     }
 
     private void ResumeSavedSession()
     {
-        _resuming = true;
-        _loginPending = true;
-        _serversReady = false;
-        _card.Visible = false;
-        _session.Visible = true;
-        _continue.Disabled = true;
-        _sessionStatus.Text = "Signing in…";
-        LoginNet.I.ConnectToLoginServer();
+        resuming = true;
+        loginPending = true;
+        serversReady = false;
+        cardBox.Visible = false;
+        session.Visible = true;
+        continueButton.Disabled = true;
+        sessionStatus.Text = "Signing in…";
+        Game.LoginServer.ConnectToLoginServer();
     }
 
     private void OnContinue()
     {
-        if (!_serversReady)
+        if (!serversReady)
         {
             ResumeSavedSession();
             return;
@@ -186,8 +185,8 @@ public partial class Login : Control
 
     private void OnServerListShown()
     {
-        int count = _serverBox.GetChildCount();
-        _serverStatus.Text = count == 1 ? "1 server available." : $"{count} servers available.";
+        int count = serverBox.GetChildCount();
+        serverStatus.Text = count == 1 ? "1 server available." : $"{count} servers available.";
     }
 
     private void OnForgetAccount() => SignOut(clearUser: true);
@@ -229,9 +228,9 @@ public partial class Login : Control
 
         vb.AddChild(Ui.Legend("Game Servers", 22, UiTheme.GoldBright));
 
-        _serverStatus = Ui.Legend("", 13, UiTheme.TextLo);
-        _serverStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        vb.AddChild(_serverStatus);
+        serverStatus = Ui.Legend("", 13, UiTheme.TextLo);
+        serverStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        vb.AddChild(serverStatus);
 
         var scroll = new ScrollContainer
         {
@@ -240,15 +239,15 @@ public partial class Login : Control
         };
         vb.AddChild(scroll);
 
-        _serverBox = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _serverBox.AddThemeConstantOverride("separation", 8);
-        scroll.AddChild(_serverBox);
+        serverBox = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        serverBox.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(serverBox);
 
         Ui.ActionGroup(vb, ("Settings", OpenSettings), ("Logout", OnLogout), ("Exit game", OnExit));
         return panel;
     }
 
-    private Control BuildServerCard(LoginNet.ServerEntry s)
+    private Control BuildServerCard(ServerListEntry s)
     {
         bool full = s.Players < 0;
         int players = full ? s.MaxPlayers : s.Players;
@@ -307,73 +306,73 @@ public partial class Login : Control
         var chosen = s;
         var pick = Ui.MenuButton("Select", height: 30, fontSize: 15);
         pick.CustomMinimumSize = new Vector2(96, 30);
-        if (_onlyServer is { } only && only.Name == s.Name) pick.TooltipText = "Enter";
+        if (onlyServer is { } only && only.Name == s.Name) pick.TooltipText = "Enter";
         pick.Pressed += () => Pick(chosen);
         Audio.HookButton(pick);
         row.AddChild(pick);
         return card;
     }
 
-    private void OpenSettings() => SettingsPanel.Open(this);
+    private void OpenSettings() => SettingsPanel.Open(this, Game.Requests.ClientSettings);
 
     public override void _UnhandledKeyInput(InputEvent e)
     {
         if (e is not InputEventKey { Pressed: true, Echo: false } key || key.Keycode is not (Key.Enter or Key.KpEnter)) return;
-        if (_session.Visible && !_continue.Disabled && _busy == null)
+        if (session.Visible && !continueButton.Disabled && busy == null)
         {
             GetViewport().SetInputAsHandled();
             OnContinue();
             return;
         }
-        if (_onlyServer is not { } only || !_serverPanel.Visible || _busy != null) return;
+        if (onlyServer is not { } only || !serverPanel.Visible || busy != null) return;
         GetViewport().SetInputAsHandled();
         Pick(only);
     }
 
     private void OnLoginPressed()
     {
-        if (_loginPending) return;
-        if (_user.Text.StripEdges().Length == 0)
+        if (loginPending) return;
+        if (user.Text.StripEdges().Length == 0)
         {
             Notice.Show(this, "Please enter a username.");
             return;
         }
 
-        _loginPending = true;
-        _busy = Notice.Busy(this, $"Connecting to {Config.ServerHost}:{Config.ServerPort} …");
-        LoginNet.I.ConnectToLoginServer();
+        loginPending = true;
+        busy = Notice.Busy(this, $"Connecting to {Config.ServerHost}:{Config.ServerPort} …");
+        Game.LoginServer.ConnectToLoginServer();
     }
 
     private void OnVersion(int v)
     {
-        if (!_loginPending) return;
-        if (_resuming)
+        if (!loginPending) return;
+        if (resuming)
         {
-            _sessionStatus.Text = $"Server online (v{v}). Signing in…";
-            LoginNet.I.Login(SavedAccount.Name, SavedAccount.Password);
+            sessionStatus.Text = $"Server online (v{v}). Signing in…";
+            Game.LoginServer.Login(SavedAccount.Name, SavedAccount.Password);
             return;
         }
-        _busy?.SetMessage($"Server online (v{v}). Signing in…");
-        LoginNet.I.Login(_user.Text.StripEdges(), _pass.Text);
+        busy?.SetMessage($"Server online (v{v}). Signing in…");
+        Game.LoginServer.Login(user.Text.StripEdges(), pass.Text);
     }
 
     private void OnLoginResult(bool ok, int result)
     {
-        _loginPending = false;
+        loginPending = false;
         CloseBusy();
 
-        if (_resuming)
+        if (resuming)
         {
             if (!ok)
             {
-                _sessionStatus.Text = LoginResults.Describe(result)
+                sessionStatus.Text = LoginResults.Describe(result)
                                       + " Log out to sign in with different details.";
-                _continue.Text = "Try again";
-                _continue.Disabled = false;
+                continueButton.Text = "Try again";
+                continueButton.Disabled = false;
                 return;
             }
-            _sessionStatus.Text = "Loading servers…";
-            LoginNet.I.RequestServerList();
+            sessionStatus.Text = "Loading servers…";
+            Game.LoginServer.RequestServerList();
             return;
         }
 
@@ -382,15 +381,15 @@ public partial class Login : Control
             Notice.Show(this, LoginResults.Describe(result));
             return;
         }
-        if (_remember.ButtonPressed) SavedAccount.Save(_user.Text.StripEdges(), _pass.Text);
+        if (remember.ButtonPressed) SavedAccount.Save(user.Text.StripEdges(), pass.Text);
         else SavedAccount.Forget();
         EnterServerMode("Loading servers…");
-        LoginNet.I.RequestServerList();
+        Game.LoginServer.RequestServerList();
     }
 
     private void OnLoginServerAccountInUse(AccountInUse info)
     {
-        _loginPending = false;
+        loginPending = false;
         CloseBusy();
         Notice.Confirm(this,
             info.Describe() + "\n\nDisconnect it and continue?",
@@ -402,9 +401,9 @@ public partial class Login : Control
 
     private void KickThenSignIn(AccountInUse info)
     {
-        _loginPending = true;
-        _busy = Notice.Busy(this, $"Closing the session on {info.Where}…");
-        var (account, password) = LoginNet.I.Credentials();
+        loginPending = true;
+        busy = Notice.Busy(this, $"Closing the session on {info.Where}…");
+        var (account, password) = Game.LoginServer.Credentials();
         AccountKick.Request(this, Config.GameHostFor(info.Host), info.Port, account, password,
             code => OnLoginServerKickResult(code, info));
     }
@@ -415,12 +414,12 @@ public partial class Login : Control
 
         if (code is AccountKickCode.Done or AccountKickCode.NotOnline)
         {
-            _busy = Notice.Busy(this, "Signing in…");
-            LoginNet.I.RetryLogin();
+            busy = Notice.Busy(this, "Signing in…");
+            Game.LoginServer.RetryLogin();
             return;
         }
 
-        _loginPending = false;
+        loginPending = false;
 
         if (code == AccountKickCode.Rejected)
         {
@@ -433,9 +432,9 @@ public partial class Login : Control
             "Sign in anyway", "Cancel",
             () =>
             {
-                _loginPending = true;
-                _busy = Notice.Busy(this, "Signing in…");
-                LoginNet.I.RetryLogin(LoginRequestFlags.IgnoreOnlineClaim);
+                loginPending = true;
+                busy = Notice.Busy(this, "Signing in…");
+                Game.LoginServer.RetryLogin(LoginRequestFlags.IgnoreOnlineClaim);
             },
             null,
             "Server unreachable");
@@ -449,10 +448,10 @@ public partial class Login : Control
             "Disconnect it", "Cancel",
             () =>
             {
-                _busy = Notice.Busy(this, "Closing the other session…");
-                Net.I.SendKickOut();
+                busy = Notice.Busy(this, "Closing the other session…");
+                Game.Requests.PreGame.KickOut();
             },
-            () => Net.I.Disconnect(expected: true),
+            () => Game.Connection.Disconnect(expected: true),
             "Account already in use");
     }
 
@@ -462,41 +461,41 @@ public partial class Login : Control
 
         if (code is AccountKickCode.Done or AccountKickCode.NotOnline)
         {
-            _busy = Notice.Busy(this, "Signing in…");
-            Net.I.RetryLogin();
+            busy = Notice.Busy(this, "Signing in…");
+            Game.Requests.PreGame.RetryLogin();
             return;
         }
 
-        Net.I.Disconnect(expected: true);
+        Game.Connection.Disconnect(expected: true);
         Notice.Show(this, "The server refused the takeover request.");
     }
 
-    private void OnServerList(List<LoginNet.ServerEntry> servers)
+    private void OnServerList(List<ServerListEntry> servers)
     {
-        foreach (Node c in _serverBox.GetChildren()) c.QueueFree();
-        _serversReady = servers.Count > 0;
-        _onlyServer = servers.Count == 1 && servers[0].Players >= 0 ? servers[0] : null;
+        foreach (Node c in serverBox.GetChildren()) c.QueueFree();
+        serversReady = servers.Count > 0;
+        onlyServer = servers.Count == 1 && servers[0].Players >= 0 ? servers[0] : null;
         if (servers.Count == 0)
         {
-            _serverStatus.Text = "No servers online.";
-            if (_session.Visible) _sessionStatus.Text = "No servers are online right now.";
+            serverStatus.Text = "No servers online.";
+            if (session.Visible) sessionStatus.Text = "No servers are online right now.";
             return;
         }
-        foreach (var s in servers) _serverBox.AddChild(BuildServerCard(s));
+        foreach (var s in servers) serverBox.AddChild(BuildServerCard(s));
         OnServerListShown();
 
-        if (!_session.Visible) return;
-        _sessionStatus.Text = "Continue to server selection.";
-        _continue.Text = "Continue";
-        _continue.Disabled = false;
+        if (!session.Visible) return;
+        sessionStatus.Text = "Continue to server selection.";
+        continueButton.Text = "Continue";
+        continueButton.Disabled = false;
     }
 
-    private void Pick(LoginNet.ServerEntry server)
+    private void Pick(ServerListEntry server)
     {
-        _busy = Notice.Busy(this, $"Connecting to {server.Name}…");
-        var (account, password) = LoginNet.I.Credentials();
-        LoginNet.I.Disconnect(expected: true);
-        Net.I.BeginGameLogin(Config.GameHostFor(server.Address), server.Port, account, password);
+        busy = Notice.Busy(this, $"Connecting to {server.Name}…");
+        var (account, password) = Game.LoginServer.Credentials();
+        Game.LoginServer.Disconnect(expected: true);
+        Game.Connection.BeginGameLogin(Config.GameHostFor(server.Address), server.Port, account, password);
     }
 
     private void OnGameLogin(bool ok, int nation)
@@ -514,19 +513,19 @@ public partial class Login : Control
 
     internal void PreviewAccountInUse(AccountInUse info) => OnGameAccountInUse(info);
 
-    internal void PreviewSignedIn(List<LoginNet.ServerEntry> servers)
+    internal void PreviewSignedIn(List<ServerListEntry> servers)
     {
-        LoginNet.I.Disconnect(expected: true);
+        Game.LoginServer.Disconnect(expected: true);
         OnServerList(servers);
     }
 
     internal void PreviewSignInFailed(int code)
     {
-        LoginNet.I.Disconnect(expected: true);
+        Game.LoginServer.Disconnect(expected: true);
         OnLoginResult(false, code);
     }
 
-    internal void PreviewServers(List<LoginNet.ServerEntry> servers)
+    internal void PreviewServers(List<ServerListEntry> servers)
     {
         EnterServerMode("");
         OnServerList(servers);
@@ -534,12 +533,12 @@ public partial class Login : Control
 
     private void EnterServerMode(string status)
     {
-        _card.Visible = false;
-        _session.Visible = false;
-        _resuming = false;
-        _footer.OffsetRight = -(ServerPanelWidth + 24);
-        _serverStatus.Text = status;
-        _serverPanel.Visible = true;
+        cardBox.Visible = false;
+        session.Visible = false;
+        resuming = false;
+        footer.OffsetRight = -(ServerPanelWidth + 24);
+        serverStatus.Text = status;
+        serverPanel.Visible = true;
     }
 
     private void OnLogout() => SignOut(clearUser: false);
@@ -547,25 +546,25 @@ public partial class Login : Control
     private void SignOut(bool clearUser)
     {
         SavedAccount.Forget();
-        LoginNet.I.Disconnect(expected: true);
-        _resuming = false;
-        _loginPending = false;
-        _serversReady = false;
-        foreach (Node c in _serverBox.GetChildren()) c.QueueFree();
-        _serverPanel.Visible = false;
-        _footer.OffsetRight = -12;
-        _session.Visible = false;
-        _card.Visible = true;
-        _remember.ButtonPressed = false;
-        if (clearUser) _user.Text = "";
-        _pass.Text = "";
-        if (Platform.PointerUi) _pass.GrabFocus();
+        Game.LoginServer.Disconnect(expected: true);
+        resuming = false;
+        loginPending = false;
+        serversReady = false;
+        foreach (Node c in serverBox.GetChildren()) c.QueueFree();
+        serverPanel.Visible = false;
+        footer.OffsetRight = -12;
+        session.Visible = false;
+        cardBox.Visible = true;
+        remember.ButtonPressed = false;
+        if (clearUser) user.Text = "";
+        pass.Text = "";
+        if (Platform.PointerUi) pass.GrabFocus();
     }
 
     private void CloseBusy()
     {
-        _busy?.Close();
-        _busy = null;
+        busy?.Close();
+        busy = null;
     }
 
     private void OnExit() => _ = Diag.Guard("login-exit", () => Shutdown.Begin(this, 240));
@@ -578,10 +577,10 @@ public partial class Login : Control
 
     private void BuildFooter()
     {
-        var layer = new CanvasLayer { Layer = 1 };
+        var layer = new CanvasLayer { Layer = UiLayers.LoginScreen };
         AddChild(layer);
 
-        var footer = _footer = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        var footer = this.footer = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
         footer.SetAnchorsPreset(LayoutPreset.BottomWide);
         footer.GrowVertical = GrowDirection.Begin;
         footer.OffsetLeft = 16;
@@ -629,13 +628,13 @@ public partial class Login : Control
 
     private void OnError(string e)
     {
-        _loginPending = false;
+        loginPending = false;
         CloseBusy();
-        if (_resuming && _session.Visible)
+        if (resuming && session.Visible)
         {
-            _sessionStatus.Text = e;
-            _continue.Text = "Try again";
-            _continue.Disabled = false;
+            sessionStatus.Text = e;
+            continueButton.Text = "Try again";
+            continueButton.Disabled = false;
             return;
         }
         Notice.Show(this, "Error: " + e);
@@ -652,14 +651,14 @@ public partial class Login : Control
 
     public override void _ExitTree()
     {
-        LoginNet.I.VersionEvent -= OnVersion;
-        LoginNet.I.LoginResultEvent -= OnLoginResult;
-        LoginNet.I.AccountInUseEvent -= OnLoginServerAccountInUse;
-        LoginNet.I.ServerListEvent -= OnServerList;
-        LoginNet.I.ErrorEvent -= OnError;
-        Net.I.LoginResultEvent -= OnGameLogin;
-        Net.I.AccountInUseEvent -= OnGameAccountInUse;
-        Net.I.KickResultEvent -= OnKickResult;
-        Net.I.ErrorEvent -= OnError;
+        Game.LoginServer.VersionEvent -= OnVersion;
+        Game.LoginServer.LoginResultEvent -= OnLoginResult;
+        Game.LoginServer.AccountInUseEvent -= OnLoginServerAccountInUse;
+        Game.LoginServer.ServerListEvent -= OnServerList;
+        Game.LoginServer.ErrorEvent -= OnError;
+        Game.Session.PreGame.LoginResultEvent -= OnGameLogin;
+        Game.Session.AccountLock.AccountInUseEvent -= OnGameAccountInUse;
+        Game.Session.AccountLock.KickResultEvent -= OnKickResult;
+        Game.Connection.ErrorEvent -= OnError;
     }
 }

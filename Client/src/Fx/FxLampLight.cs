@@ -25,17 +25,17 @@ public partial class FxLampLight : OmniLight3D
         ["070707_itemzone_2007_bill_fx_c01"] = new Color(1.000f, 0.690f, 0.401f),
     };
 
-    private static readonly List<FxLampLight> _all = new();
-    private static readonly List<FxLampLight> _ranked = new();
-    private static readonly System.Comparison<FxLampLight> ByDistance = (a, b) => a._distance2.CompareTo(b._distance2);
+    private static readonly List<FxLampLight> all = new();
+    private static readonly List<FxLampLight> ranked = new();
+    private static readonly System.Comparison<FxLampLight> ByDistance = (a, b) => a.distance2.CompareTo(b.distance2);
 
-    private float _phase;
-    private float _age;
-    private float _scaleComp = 1f;
-    private float _weight, _distance2;
-    private bool _lit, _placed, _visible;
-    private Vector3 _position;
-    private FxInstance? _root;
+    private float phase;
+    private float age;
+    private float scaleComp = 1f;
+    private float weight, distance2;
+    private bool lit, placed, visible;
+    private Vector3 position;
+    private FxInstance? root;
 
     internal static int Lit { get; private set; }
 
@@ -53,56 +53,56 @@ public partial class FxLampLight : OmniLight3D
             ShadowEnabled = false,
             Visible = false,
         };
-        light._scaleComp = 1f / Mathf.Max(fx.Scale.X, 0.001f);
-        light.OmniRange = LampRange * RangeScale * light._scaleComp;
+        light.scaleComp = 1f / Mathf.Max(fx.Scale.X, 0.001f);
+        light.OmniRange = LampRange * RangeScale * light.scaleComp;
         fx.AddChild(light);
         return true;
     }
 
     public override void _EnterTree()
     {
-        _root = GetParent() as FxInstance;
-        _all.Add(this);
+        root = GetParent() as FxInstance;
+        all.Add(this);
     }
 
     public override void _ExitTree()
     {
-        _all.Remove(this);
-        _root = null;
-        _placed = false;
+        all.Remove(this);
+        root = null;
+        placed = false;
     }
 
     public override void _Ready()
     {
-        _phase = GD.Randf() * Mathf.Tau;
-        SetProcess(_lit);
+        phase = GD.Randf() * Mathf.Tau;
+        SetProcess(lit);
     }
 
     internal static void Rank(Vector3 camera)
     {
-        _ranked.Clear();
-        foreach (var lamp in _all)
+        ranked.Clear();
+        foreach (var lamp in all)
         {
-            if (Perf.SkipLamps || lamp._root is not { Asleep: false }) { lamp.Extinguish(); continue; }
-            if (!lamp._placed) { lamp._position = lamp.GlobalPosition; lamp._placed = true; }
-            lamp._distance2 = lamp._position.DistanceSquaredTo(camera);
-            _ranked.Add(lamp);
+            if (Perf.SkipLamps || lamp.root is not { Asleep: false }) { lamp.Extinguish(); continue; }
+            if (!lamp.placed) { lamp.position = lamp.GlobalPosition; lamp.placed = true; }
+            lamp.distance2 = lamp.position.DistanceSquaredTo(camera);
+            ranked.Add(lamp);
         }
-        _ranked.Sort(ByDistance);
-        int lit = 0;
-        for (int i = 0; i < _ranked.Count; i++)
+        ranked.Sort(ByDistance);
+        int litCount = 0;
+        for (int i = 0; i < ranked.Count; i++)
         {
             bool on = i < Config.LampLightBudget;
-            _ranked[i].SetLit(on);
-            if (on) lit++;
+            ranked[i].SetLit(on);
+            if (on) litCount++;
         }
-        Lit = lit;
+        Lit = litCount;
     }
 
     private void SetLit(bool lit)
     {
-        if (_lit == lit) return;
-        _lit = lit;
+        if (this.lit == lit) return;
+        this.lit = lit;
         if (!lit) return;
         Show(true);
         SetProcess(true);
@@ -110,9 +110,9 @@ public partial class FxLampLight : OmniLight3D
 
     private void Extinguish()
     {
-        _lit = false;
-        if (_weight <= 0f && !_visible) return;
-        _weight = 0f;
+        lit = false;
+        if (weight <= 0f && !visible) return;
+        weight = 0f;
         LightEnergy = 0f;
         Show(false);
         SetProcess(false);
@@ -120,16 +120,16 @@ public partial class FxLampLight : OmniLight3D
 
     private void Show(bool visible)
     {
-        if (_visible == visible) return;
-        _visible = visible;
+        if (this.visible == visible) return;
+        this.visible = visible;
         Visible = visible;
     }
 
     public override void _Process(double delta)
     {
-        _age += (float)delta;
-        _weight = Mathf.MoveToward(_weight, _lit ? 1f : 0f, (float)delta / FadeSeconds);
-        if (_weight <= 0f && !_lit)
+        age += (float)delta;
+        weight = Mathf.MoveToward(weight, lit ? 1f : 0f, (float)delta / FadeSeconds);
+        if (weight <= 0f && !lit)
         {
             LightEnergy = 0f;
             Show(false);
@@ -137,8 +137,8 @@ public partial class FxLampLight : OmniLight3D
             return;
         }
         float f = 1f + FlickerAmount * (
-            Mathf.Sin(_age * FlickerSpeed + _phase) * (1f - FlickerBeatMix) +
-            Mathf.Sin(_age * FlickerSpeed * FlickerBeatRatio + _phase * 1.7f) * FlickerBeatMix);
-        LightEnergy = BaseEnergy * f * _weight;
+            Mathf.Sin(age * FlickerSpeed + phase) * (1f - FlickerBeatMix) +
+            Mathf.Sin(age * FlickerSpeed * FlickerBeatRatio + phase * 1.7f) * FlickerBeatMix);
+        LightEnergy = BaseEnergy * f * weight;
     }
 }

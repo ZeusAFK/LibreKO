@@ -22,16 +22,16 @@ public class RankerStatueService(IServiceScopeFactory scopeFactory, SessionManag
             ? (AccountNation.ElMorad, npcType - NpcData.TypeRankerElMoradFirst + 1)
             : (AccountNation.Karus, npcType - NpcData.TypeRankerKarusFirst + 1);
 
-    private volatile IReadOnlyDictionary<byte, int> _rankers = new Dictionary<byte, int>();
+    private volatile IReadOnlyDictionary<byte, int> rankers = new Dictionary<byte, int>();
 
-    public int RankerOf(byte npcType) => _rankers.GetValueOrDefault(npcType);
+    public int RankerOf(byte npcType) => rankers.GetValueOrDefault(npcType);
 
     public string? NameOn(byte npcType) => Statues()
         .FirstOrDefault(npc => npc.NpcType == npcType && npc.StatueLook != null)?.StatueLook?.Name;
 
     public async Task RefreshAsync(IReadOnlyDictionary<AccountNation, IReadOnlyList<int>> leaders)
     {
-        var previous = _rankers;
+        var previous = this.rankers;
         var rankers = new Dictionary<byte, int>();
         for (var type = NpcData.TypeRankerKarusFirst; type < NpcData.TypeRankerElMoradFirst + NpcData.RankerPlaces; type++)
         {
@@ -39,7 +39,7 @@ public class RankerStatueService(IServiceScopeFactory scopeFactory, SessionManag
             if (leaders.TryGetValue(nation, out var ranked) && place <= ranked.Count)
                 rankers[type] = ranked[place - 1];
         }
-        _rankers = rankers;
+        this.rankers = rankers;
 
         var statues = Statues();
         if (statues.Count == 0) return;

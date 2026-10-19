@@ -7,24 +7,24 @@ namespace LibreKO;
 
 public partial class ItemSearchPanel : VBoxContainer
 {
-    private readonly bool _tradeableOnly;
-    private readonly bool _showQuantity;
-    private readonly string _actionText;
-    private readonly Action<ItemSearchHit, int> _onAction;
-    private readonly Action<int>? _showTooltip;
-    private readonly Action? _hideTooltip;
+    private readonly bool tradeableOnly;
+    private readonly bool showQuantity;
+    private readonly string actionText;
+    private readonly Action<ItemSearchHit, int> onAction;
+    private readonly Action<int>? showTooltip;
+    private readonly Action? hideTooltip;
 
-    private readonly List<string> _names = new();
-    private readonly List<List<ItemSearchHit>> _hits = new();
-    private readonly List<string> _groups = new();
-    private readonly List<int> _levels = new();
-    private readonly Dictionary<string, Button> _tabButtons = new();
-    private string _tab = ItemSearch.TabBasic;
+    private readonly List<string> names = new();
+    private readonly List<List<ItemSearchHit>> hits = new();
+    private readonly List<string> groups = new();
+    private readonly List<int> levels = new();
+    private readonly Dictionary<string, Button> tabButtons = new();
+    private string tab = ItemSearch.TabBasic;
 
-    private LineEdit _query = null!;
-    private OptionButton _pick = null!, _group = null!, _level = null!;
-    private VBoxContainer _results = null!;
-    private Label _summary = null!;
+    private LineEdit query = null!;
+    private OptionButton pick = null!, groupPicker = null!, levelPicker = null!;
+    private VBoxContainer results = null!;
+    private Label summary = null!;
 
     public ItemSearchPanel(
         bool tradeableOnly,
@@ -35,12 +35,12 @@ public partial class ItemSearchPanel : VBoxContainer
         Vector2 resultsSize = default,
         bool showQuantity = true)
     {
-        _tradeableOnly = tradeableOnly;
-        _showQuantity = showQuantity;
-        _actionText = actionText;
-        _onAction = onAction;
-        _showTooltip = showTooltip;
-        _hideTooltip = hideTooltip;
+        this.tradeableOnly = tradeableOnly;
+        this.showQuantity = showQuantity;
+        this.actionText = actionText;
+        this.onAction = onAction;
+        this.showTooltip = showTooltip;
+        this.hideTooltip = hideTooltip;
 
         AddThemeConstantOverride("separation", 6);
         if (resultsSize == default) resultsSize = new Vector2(470, 320);
@@ -51,13 +51,13 @@ public partial class ItemSearchPanel : VBoxContainer
         var findRow = new HBoxContainer();
         findRow.AddThemeConstantOverride("separation", 5);
         AddChild(findRow);
-        _query = new LineEdit
+        query = new LineEdit
         {
             PlaceholderText = "item name",
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
         };
-        _query.TextSubmitted += _ => Run();
-        findRow.AddChild(_query);
+        query.TextSubmitted += _ => Run();
+        findRow.AddChild(query);
         var search = new Button { Text = "Search", FocusMode = FocusModeEnum.None };
         search.Pressed += Run;
         findRow.AddChild(search);
@@ -71,29 +71,29 @@ public partial class ItemSearchPanel : VBoxContainer
             var button = new Button { Text = label, ToggleMode = true, FocusMode = FocusModeEnum.None };
             button.AddThemeFontSizeOverride("font_size", 12);
             button.Pressed += () => SelectTab(key);
-            _tabButtons[key] = button;
+            tabButtons[key] = button;
             tabBar.AddChild(button);
         }
-        _tabButtons[_tab].ButtonPressed = true;
+        tabButtons[tab].ButtonPressed = true;
 
         var pickRow = new HBoxContainer();
         pickRow.AddThemeConstantOverride("separation", 5);
         AddChild(pickRow);
-        _pick = UiTheme.Dropdown();
-        _pick.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        _pick.ItemSelected += _ => OnNamePicked();
-        pickRow.AddChild(_pick);
-        _group = UiTheme.Dropdown();
-        _group.CustomMinimumSize = new Vector2(124, 0);
-        _group.ItemSelected += _ => OnGroupPicked();
-        pickRow.AddChild(_group);
-        _level = UiTheme.Dropdown();
-        _level.CustomMinimumSize = new Vector2(96, 0);
-        _level.ItemSelected += _ => Refresh();
-        pickRow.AddChild(_level);
+        pick = UiTheme.Dropdown();
+        pick.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        pick.ItemSelected += _ => OnNamePicked();
+        pickRow.AddChild(pick);
+        groupPicker = UiTheme.Dropdown();
+        groupPicker.CustomMinimumSize = new Vector2(124, 0);
+        groupPicker.ItemSelected += _ => OnGroupPicked();
+        pickRow.AddChild(groupPicker);
+        levelPicker = UiTheme.Dropdown();
+        levelPicker.CustomMinimumSize = new Vector2(96, 0);
+        levelPicker.ItemSelected += _ => Refresh();
+        pickRow.AddChild(levelPicker);
 
-        _summary = UiTheme.Text("Type an item name and press Search.", 12, UiTheme.TextLo);
-        AddChild(_summary);
+        summary = UiTheme.Text("Type an item name and press Search.", 12, UiTheme.TextLo);
+        AddChild(summary);
 
         var scroll = new ScrollContainer
         {
@@ -101,20 +101,20 @@ public partial class ItemSearchPanel : VBoxContainer
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
         };
         AddChild(scroll);
-        _results = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _results.AddThemeConstantOverride("separation", 3);
-        scroll.AddChild(_results);
+        results = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        results.AddThemeConstantOverride("separation", 3);
+        scroll.AddChild(results);
     }
 
-    public void FocusQuery() => _query.GrabFocus();
+    public void FocusQuery() => query.GrabFocus();
 
     public void Run()
     {
-        ItemSearch.Match(_query.Text.Trim(), _tradeableOnly, _names, _hits);
+        ItemSearch.Match(query.Text.Trim(), tradeableOnly, names, hits);
 
-        _pick.Clear();
-        foreach (string name in _names) _pick.AddItem(name);
-        if (_names.Count > 0) _pick.Selected = 0;
+        pick.Clear();
+        foreach (string name in names) pick.AddItem(name);
+        if (names.Count > 0) pick.Selected = 0;
 
         foreach (string label in ItemSearch.Tabs)
         {
@@ -127,11 +127,11 @@ public partial class ItemSearchPanel : VBoxContainer
 
     public void Refresh()
     {
-        foreach (Node child in _results.GetChildren()) child.QueueFree();
-        _hideTooltip?.Invoke();
+        foreach (Node child in results.GetChildren()) child.QueueFree();
+        hideTooltip?.Invoke();
 
-        int levelIndex = _level.Selected - 1;
-        int wantedPlus = levelIndex >= 0 && levelIndex < _levels.Count ? _levels[levelIndex] : -1;
+        int levelIndex = levelPicker.Selected - 1;
+        int wantedPlus = levelIndex >= 0 && levelIndex < levels.Count ? levels[levelIndex] : -1;
 
         var shown = new List<ItemSearchHit>();
         foreach (var hit in GroupHits())
@@ -146,13 +146,13 @@ public partial class ItemSearchPanel : VBoxContainer
 
         int listed = Math.Min(shown.Count, ItemSearch.ResultCap);
         for (int i = 0; i < listed; i++)
-            _results.AddChild(BuildRow(shown[i]));
+            results.AddChild(BuildRow(shown[i]));
 
-        _summary.Text = _names.Count == 0
+        summary.Text = names.Count == 0
             ? "No item matches that name."
             : shown.Count switch
             {
-                0 => $"Nothing on the {_tab} tab for this item.",
+                0 => $"Nothing on the {tab} tab for this item.",
                 _ when shown.Count > listed => $"{shown.Count:n0} variants — showing the first {listed}.",
                 1 => "1 variant.",
                 _ => $"{shown.Count:n0} variants.",
@@ -165,19 +165,19 @@ public partial class ItemSearchPanel : VBoxContainer
         OnNamePicked();
     }
 
-    public void SetQuery(string text) => _query.Text = text;
+    public void SetQuery(string text) => query.Text = text;
 
     internal void RegisterFirstUiPreview()
     {
-        foreach (var hit in GroupHits()) { _onAction(hit, 1); return; }
+        foreach (var hit in GroupHits()) { onAction(hit, 1); return; }
     }
 
     public void SelectPlus(int plus)
     {
-        for (int i = 0; i < _levels.Count; i++)
+        for (int i = 0; i < levels.Count; i++)
         {
-            if (_levels[i] != plus) continue;
-            _level.Selected = i + 1;
+            if (levels[i] != plus) continue;
+            levelPicker.Selected = i + 1;
             Refresh();
             return;
         }
@@ -185,8 +185,8 @@ public partial class ItemSearchPanel : VBoxContainer
 
     private void SetTab(string label)
     {
-        _tab = label;
-        foreach (var (key, button) in _tabButtons) button.ButtonPressed = key == label;
+        tab = label;
+        foreach (var (key, button) in tabButtons) button.ButtonPressed = key == label;
     }
 
     private bool TabHasHits(string label)
@@ -198,52 +198,52 @@ public partial class ItemSearchPanel : VBoxContainer
 
     private void OnNamePicked()
     {
-        _groups.Clear();
-        _group.Clear();
-        _group.AddItem("All");
+        groups.Clear();
+        groupPicker.Clear();
+        groupPicker.AddItem("All");
 
-        var groups = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var hit in TabHits()) groups.Add(hit.VariantLabel);
-        groups.Remove("");
+        var foundGroups = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var hit in TabHits()) foundGroups.Add(hit.VariantLabel);
+        foundGroups.Remove("");
 
-        foreach (string group in groups)
+        foreach (string group in foundGroups)
         {
-            _groups.Add(group);
-            _group.AddItem(group);
+            groups.Add(group);
+            groupPicker.AddItem(group);
         }
-        _group.Selected = 0;
-        _group.Visible = _groups.Count > 0;
+        groupPicker.Selected = 0;
+        groupPicker.Visible = groups.Count > 0;
         OnGroupPicked();
     }
 
     private void OnGroupPicked()
     {
-        _levels.Clear();
-        _level.Clear();
-        _level.AddItem("Any +");
+        levels.Clear();
+        levelPicker.Clear();
+        levelPicker.AddItem("Any +");
 
-        var levels = new SortedSet<int>();
-        foreach (var hit in GroupHits()) levels.Add(hit.Plus);
+        var foundLevels = new SortedSet<int>();
+        foreach (var hit in GroupHits()) foundLevels.Add(hit.Plus);
 
-        foreach (int level in levels)
+        foreach (int level in foundLevels)
         {
-            _levels.Add(level);
-            _level.AddItem($"+{level}");
+            levels.Add(level);
+            levelPicker.AddItem($"+{level}");
         }
-        _level.Selected = 0;
+        levelPicker.Selected = 0;
         Refresh();
     }
 
     private IEnumerable<ItemSearchHit> TabHits()
     {
         foreach (var hit in PickedHits())
-            if (ItemSearch.TabOf(hit) == _tab) yield return hit;
+            if (ItemSearch.TabOf(hit) == tab) yield return hit;
     }
 
     private IEnumerable<ItemSearchHit> GroupHits()
     {
-        int index = _group.Selected - 1;
-        string wanted = index >= 0 && index < _groups.Count ? _groups[index] : "";
+        int index = groupPicker.Selected - 1;
+        string wanted = index >= 0 && index < groups.Count ? groups[index] : "";
         foreach (var hit in TabHits())
             if (wanted.Length == 0
                 || string.Equals(hit.VariantLabel, wanted, StringComparison.OrdinalIgnoreCase))
@@ -252,8 +252,8 @@ public partial class ItemSearchPanel : VBoxContainer
 
     private IReadOnlyList<ItemSearchHit> PickedHits()
     {
-        int picked = _pick.Selected;
-        return picked >= 0 && picked < _hits.Count ? _hits[picked] : Array.Empty<ItemSearchHit>();
+        int picked = pick.Selected;
+        return picked >= 0 && picked < hits.Count ? hits[picked] : Array.Empty<ItemSearchHit>();
     }
 
     private Control BuildRow(ItemSearchHit hit)
@@ -261,8 +261,8 @@ public partial class ItemSearchPanel : VBoxContainer
         int itemId = hit.Id;
         var row = UiTheme.RowPanel();
         row.CustomMinimumSize = new Vector2(0, 34);
-        row.MouseEntered += () => _showTooltip?.Invoke(itemId);
-        row.MouseExited += () => _hideTooltip?.Invoke();
+        row.MouseEntered += () => showTooltip?.Invoke(itemId);
+        row.MouseExited += () => hideTooltip?.Invoke();
 
         var line = new HBoxContainer();
         line.AddThemeConstantOverride("separation", 8);
@@ -270,7 +270,7 @@ public partial class ItemSearchPanel : VBoxContainer
 
         line.AddChild(new TextureRect
         {
-            Texture = ItemData.Icon(itemId),
+            Texture = ItemIcons.Get(itemId),
             CustomMinimumSize = new Vector2(28, 28),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
@@ -295,16 +295,16 @@ public partial class ItemSearchPanel : VBoxContainer
         }
 
         SpinBox? quantity = null;
-        if (_showQuantity && hit.Def.Countable > 0)
+        if (showQuantity && hit.Def.Countable > 0)
         {
             quantity = UiTheme.NumberBox(1, 9_999, 1, 84);
             quantity.Value = 1;
             line.AddChild(quantity);
         }
 
-        var action = new Button { Text = _actionText, FocusMode = FocusModeEnum.None };
+        var action = new Button { Text = actionText, FocusMode = FocusModeEnum.None };
         action.AddThemeFontSizeOverride("font_size", 12);
-        action.Pressed += () => _onAction(hit, quantity == null ? 1 : (int)quantity.Value);
+        action.Pressed += () => onAction(hit, quantity == null ? 1 : (int)quantity.Value);
         line.AddChild(action);
 
         return row;

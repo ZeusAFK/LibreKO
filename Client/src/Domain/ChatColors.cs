@@ -39,17 +39,17 @@ public sealed class ChatColors
     private static readonly Color SeekingParty = new("32f640");
     private static readonly Color ClanOfficer = new("64ffff");
 
-    private readonly Color[] _slots = Defaults.ToArray();
+    private readonly Color[] slots = Defaults.ToArray();
 
     public Color this[ChatColorSlot slot]
     {
-        get => _slots[(int)slot];
-        set => _slots[(int)slot] = value;
+        get => slots[(int)slot];
+        set => slots[(int)slot] = value;
     }
 
-    public void Reset() => Array.Copy(Defaults, _slots, SlotCount);
+    public void Reset() => Array.Copy(Defaults, slots, SlotCount);
 
-    public Color ForLine(byte type, WhisperSide side = WhisperSide.None, int nation = 0) => type switch
+    public Color ForLine(ChatType type, WhisperSide side = WhisperSide.None, int nation = 0) => type switch
     {
         ChatType.General => this[ChatColorSlot.Normal],
         ChatType.Private => side switch
@@ -78,12 +78,12 @@ public sealed class ChatColors
         _ => White,
     };
 
-    public Color ForTab(ChatTabSpec tab) => ForLine(tab.Tint, WhisperSide.Sent);
+    public Color ForTab(ChatTabSpec tab) => ForLine((ChatType)tab.Tint, WhisperSide.Sent);
 
-    public Color ForInput(byte channel, bool gameMasterMode, int nation = 0) =>
+    public Color ForInput(ChatType channel, bool gameMasterMode, int nation = 0) =>
         gameMasterMode && channel == ChatType.General ? Announcement : ForLine(channel, WhisperSide.Sent, nation);
 
-    public string Format() => string.Join(Separator, _slots.Select(c => c.ToHtml(false)));
+    public string Format() => string.Join(Separator, slots.Select(c => c.ToHtml(false)));
 
     public static ChatColors Parse(string text)
     {
@@ -96,7 +96,7 @@ public sealed class ChatColors
             if (!Color.HtmlIsValid(parts[i])) return colors;
             parsed[i] = new Color(parts[i]);
         }
-        Array.Copy(parsed, colors._slots, SlotCount);
+        Array.Copy(parsed, colors.slots, SlotCount);
         return colors;
     }
 }

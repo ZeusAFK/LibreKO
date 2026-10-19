@@ -18,8 +18,10 @@ public enum ItemRemoveSource : byte
 
 public enum ItemRemoveReason : byte
 {
-    SystemError = 20,
-    VipKeyPassword = 22,
+    SystemError = 0,
+    NoVipKeyPassword = 20,
+    VipKeyLocked = 21,
+    WrongVipKeyPassword = 22,
 }
 
 public sealed class ItemRemovePacketWriter

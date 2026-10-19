@@ -12,7 +12,7 @@ public class LootBundle
     public const float MaxLootRange = 121.0f; // 11 units squared
     public const long OwnerExclusiveMs = 15_000; // 15 seconds owner-only looting
 
-    private readonly Lock _sync = new();
+    private readonly Lock sync = new();
 
     public int BundleId { get; set; }
     public List<LootItem> Items { get; } = [];
@@ -20,7 +20,7 @@ public class LootBundle
     public bool TryClaimSlot(int slotIndex, int expectedItemId, out LootItem? claimed)
     {
         claimed = null;
-        using var scope = _sync.EnterScope();
+        using var scope = sync.EnterScope();
         if (slotIndex < 0 || slotIndex >= Items.Count)
             return false;
         var item = Items[slotIndex];
@@ -33,13 +33,13 @@ public class LootBundle
 
     public bool IsEmpty()
     {
-        using var scope = _sync.EnterScope();
+        using var scope = sync.EnterScope();
         return Items.Count == 0;
     }
 
     public List<LootItem> SnapshotItems()
     {
-        using var scope = _sync.EnterScope();
+        using var scope = sync.EnterScope();
         return [.. Items];
     }
     public float X { get; set; }

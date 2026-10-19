@@ -10,18 +10,18 @@ public sealed class PluginSettings
 
     public static bool Enabled { get; set; } = true;
 
-    private readonly string _path;
-    private readonly PluginLog _log;
-    private readonly Dictionary<string, string> _values = new();
+    private readonly string path;
+    private readonly PluginLog log;
+    private readonly Dictionary<string, string> values = new();
 
     internal PluginSettings(string pluginId, PluginLog log)
     {
-        _log = log;
-        _path = ProjectSettings.GlobalizePath($"{Folder}/{pluginId}.settings.json");
+        this.log = log;
+        path = ProjectSettings.GlobalizePath($"{Folder}/{pluginId}.settings.json");
         Load();
     }
 
-    public string Get(string key, string fallback = "") => Enabled && _values.TryGetValue(key, out var v) ? v : fallback;
+    public string Get(string key, string fallback = "") => Enabled && values.TryGetValue(key, out var v) ? v : fallback;
 
     public int GetInt(string key, int fallback) =>
         int.TryParse(Get(key), NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : fallback;
@@ -34,8 +34,8 @@ public sealed class PluginSettings
     public void Set(string key, string value)
     {
         if (!Enabled) return;
-        if (_values.TryGetValue(key, out var current) && current == value) return;
-        _values[key] = value;
+        if (values.TryGetValue(key, out var current) && current == value) return;
+        values[key] = value;
         Save();
     }
 
@@ -49,14 +49,14 @@ public sealed class PluginSettings
     {
         try
         {
-            if (!File.Exists(_path)) return;
-            var stored = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(_path));
+            if (!File.Exists(path)) return;
+            var stored = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path));
             if (stored == null) return;
-            foreach (var (key, value) in stored) _values[key] = value;
+            foreach (var (key, value) in stored) values[key] = value;
         }
         catch (Exception ex)
         {
-            _log.Warn($"settings not read from {_path}: {ex.Message}");
+            log.Warn($"settings not read from {path}: {ex.Message}");
         }
     }
 
@@ -64,12 +64,12 @@ public sealed class PluginSettings
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(_values, new JsonSerializerOptions { WriteIndented = true }));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex)
         {
-            _log.Warn($"settings not written to {_path}: {ex.Message}");
+            log.Warn($"settings not written to {path}: {ex.Message}");
         }
     }
 }

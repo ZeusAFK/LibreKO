@@ -11,9 +11,9 @@ public readonly record struct StallShowcaseReply(int Owner, byte Flags, int[]? I
         int owner = p.ReadInt();
         p.ReadByte();
         byte flags = p.ReadByte();
-        if ((flags & Net.MerchantPremiumFlagMask) != 0)
+        if ((flags & MerchantWire.PremiumFlagMask) != 0)
         {
-            var ids = new int[Net.MerchantStallDisplaySlotsPremium];
+            var ids = new int[MerchantWire.StallDisplaySlotsPremium];
             for (int i = 0; i < ids.Length && p.RemainingBytes >= sizeof(int); i++) ids[i] = p.ReadInt();
             return new StallShowcaseReply(owner, flags, ids, NoSlot);
         }

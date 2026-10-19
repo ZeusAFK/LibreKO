@@ -1,10 +1,7 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
+﻿using System.Buffers.Binary;
 using Concentus;
 using Concentus.Enums;
 using Godot;
-using LibreKO.Domain;
 
 namespace LibreKO;
 
@@ -48,49 +45,62 @@ public partial class VoiceChat : Node
 
     public static VoiceChat? I { get; private set; }
 
-    private AudioStreamPlayer _micPlayer = null!;
-    private AudioEffectCapture _capture = null!;
-    private bool _micOn;
-    private LinearResampler? _micResampler;
-    private float[] _micMono = new float[4096];
-    private float[] _micLeft = new float[4096];
-    private float[] _micRight = new float[4096];
-    private float[] _micResampled = new float[8192];
-    private readonly float[] _frame = new float[FrameSamples];
-    private readonly byte[] _opus = new byte[MaxOpusPacket];
-    private readonly byte[] _datagram = new byte[MaxOpusPacket + VoiceSeal.Overhead + 8];
-    private readonly byte[] _plain = new byte[MaxOpusPacket + 16];
-    private readonly PcmFrameCutter _cutter = new();
-    private readonly VoiceActivityGate _gate = new();
-    private readonly VoiceAutoGain _autoGain = new();
-    private IOpusEncoder? _encoder;
-    private VoiceSeal? _seal;
-    private PacketPeerUdp? _udp;
-    private double _probeLeft;
-    private double _helloLeft;
-    private ushort _seq;
-    private byte _flags;
-    private double _clock;
-    private double _selfSpeakingUntil = double.NegativeInfinity;
-    private readonly Dictionary<int, Speaker> _speakers = new();
-    private readonly Dictionary<int, PeerMix> _mix = new();
-    private readonly Dictionary<int, double> _lastHeard = new();
+    private AudioStreamPlayer micPlayer = null!;
+    private AudioEffectCapture capture = null!;
+    private bool micOn;
+    private LinearResampler? micResampler;
+    private float[] micMono = new float[4096];
+    private float[] micLeft = new float[4096];
+    private float[] micRight = new float[4096];
+    private float[] micResampled = new float[8192];
+    private readonly float[] frame = new float[FrameSamples];
+    private readonly byte[] opus = new byte[MaxOpusPacket];
+    private readonly byte[] datagram = new byte[MaxOpusPacket + VoiceSeal.Overhead + 8];
+    private readonly byte[] plainBuffer = new byte[MaxOpusPacket + 16];
+    private readonly PcmFrameCutter cutter = new();
+    private readonly VoiceActivityGate gate = new();
+    private readonly VoiceAutoGain autoGain = new();
+    private IOpusEncoder? encoder;
+    private VoiceSeal? seal;
+    private PacketPeerUdp? udpPeer;
+    private double probeLeft;
+    private double helloLeft;
+    private ushort seq;
+    private byte flags;
+    private double clock;
+    private double selfSpeakingUntil = double.NegativeInfinity;
+    private readonly Dictionary<int, Speaker> speakers = new();
+    private readonly Dictionary<int, PeerMix> peerMixes = new();
+    private readonly Dictionary<int, double> lastHeard = new();
 
     public event Action? StateChanged;
 
     public Transport CurrentTransport { get; private set; }
-    public bool InVoice => Net.I.Voice != null;
-    public bool MicMuted => (_flags & VoiceFlags.MicMuted) != 0;
-    public bool Deafened => (_flags & VoiceFlags.Deafened) != 0;
-    public bool CanSpeak => Net.I.Voice is { } voice && (voice.SelfFlags & (VoiceFlags.CannotSpeak | VoiceFlags.Silenced)) == 0;
-    public bool SilencedByLeader => Net.I.Voice is { } voice && (voice.SelfFlags & VoiceFlags.Silenced) != 0;
-    public float MicLevel => _gate.Level;
-    public bool SelfSpeaking => _clock < _selfSpeakingUntil;
+    public bool InVoice => roomMedia.Voice != null;
+    public bool MicMuted => (flags & VoiceFlags.MicMuted) != 0;
+    public bool Deafened => (flags & VoiceFlags.Deafened) != 0;
+    public bool CanSpeak => roomMedia.Voice is { } voice && (voice.SelfFlags & (VoiceFlags.CannotSpeak | VoiceFlags.Silenced)) == 0;
+    public bool SilencedByLeader => roomMedia.Voice is { } voice && (voice.SelfFlags & VoiceFlags.Silenced) != 0;
+    public float MicLevel => gate.Level;
+    public bool SelfSpeaking => clock < selfSpeakingUntil;
 
-    public static VoiceChat Ensure(Node host)
+    private RoomMediaSession roomMedia = null!;
+    private NationChatSession nationChat = null!;
+    private SelfSession self = null!;
+    private IRoomMediaRequests roomMediaRequests = null!;
+
+    public static VoiceChat Ensure(Node host, RoomMediaSession roomMedia, NationChatSession nationChat, SelfSession self,
+        IRoomMediaRequests roomMediaRequests)
     {
         if (I != null && IsInstanceValid(I)) return I;
-        var chat = new VoiceChat { Name = "VoiceChat" };
+        var chat = new VoiceChat
+        {
+            Name = "VoiceChat",
+            roomMedia = roomMedia,
+            nationChat = nationChat,
+            self = self,
+            roomMediaRequests = roomMediaRequests,
+        };
         host.AddChild(chat);
         return chat;
     }
@@ -101,15 +111,15 @@ public partial class VoiceChat : Node
         ProcessMode = ProcessModeEnum.Always;
         OpusCodecFactory.AttemptToUseNativeLibrary = false;
         EnsureBuses();
-        _micPlayer = new AudioStreamPlayer { Name = "Microphone", Bus = BusMic };
-        AddChild(_micPlayer);
+        micPlayer = new AudioStreamPlayer { Name = "Microphone", Bus = BusMic };
+        AddChild(micPlayer);
         ApplyVolume();
         Config.VoiceChatChanged += ApplyVolume;
         Config.VoiceChatChanged += ApplyInputDevice;
-        Net.I.VoiceJoinedEvent += OnJoined;
-        Net.I.VoiceLeftEvent += OnLeft;
-        Net.I.VoicePeerEvent += OnPeer;
-        Net.I.VoiceTcpFrameEvent += OnFrame;
+        roomMedia.VoiceJoinedEvent += OnJoined;
+        roomMedia.VoiceLeftEvent += OnLeft;
+        roomMedia.VoicePeerEvent += OnPeer;
+        roomMedia.VoiceTcpFrameEvent += OnFrame;
         PruneNoteCache();
     }
 
@@ -117,10 +127,10 @@ public partial class VoiceChat : Node
     {
         Config.VoiceChatChanged -= ApplyVolume;
         Config.VoiceChatChanged -= ApplyInputDevice;
-        Net.I.VoiceJoinedEvent -= OnJoined;
-        Net.I.VoiceLeftEvent -= OnLeft;
-        Net.I.VoicePeerEvent -= OnPeer;
-        Net.I.VoiceTcpFrameEvent -= OnFrame;
+        roomMedia.VoiceJoinedEvent -= OnJoined;
+        roomMedia.VoiceLeftEvent -= OnLeft;
+        roomMedia.VoicePeerEvent -= OnPeer;
+        roomMedia.VoiceTcpFrameEvent -= OnFrame;
         TearDownLive();
         if (I == this) I = null;
     }
@@ -147,7 +157,7 @@ public partial class VoiceChat : Node
             AudioServer.SetBusMute(mic, true);
             AudioServer.AddBusEffect(mic, new AudioEffectCapture { BufferLength = 0.5f });
         }
-        _capture = (AudioEffectCapture)AudioServer.GetBusEffect(mic, 0);
+        capture = (AudioEffectCapture)AudioServer.GetBusEffect(mic, 0);
     }
 
     private static void ApplyVolume()
@@ -176,18 +186,18 @@ public partial class VoiceChat : Node
 
     public static string[] InputDevices() => AudioServer.GetInputDeviceList();
 
-    private Action? _afterPermission;
-    private bool _permissionHooked;
+    private Action? afterPermission;
+    private bool permissionHooked;
 
     private bool AskForMicrophone(Action then)
     {
         if (OS.GetName() != "Android") return true;
         foreach (string granted in OS.GetGrantedPermissions())
             if (granted == AndroidRecordAudio) return true;
-        _afterPermission = then;
-        if (!_permissionHooked)
+        afterPermission = then;
+        if (!permissionHooked)
         {
-            _permissionHooked = true;
+            permissionHooked = true;
             GetTree().OnRequestPermissionsResult += OnPermissionResult;
         }
         OS.RequestPermission(AndroidRecordAudio);
@@ -197,49 +207,49 @@ public partial class VoiceChat : Node
     private void OnPermissionResult(string permission, bool granted)
     {
         if (permission != AndroidRecordAudio) return;
-        var then = _afterPermission;
-        _afterPermission = null;
+        var then = afterPermission;
+        afterPermission = null;
         if (granted) then?.Invoke();
-        else NoteNotice?.Invoke(_noticeTarget, "Voice chat needs access to the microphone.");
+        else NoteNotice?.Invoke(noticeTarget, "Voice chat needs access to the microphone.");
     }
 
     public void Join()
     {
-        if (InVoice || !Net.I.NationChat.InRoom) return;
-        _noticeTarget = "";
+        if (InVoice || !nationChat.NationChat.InRoom) return;
+        noticeTarget = "";
         if (!AskForMicrophone(Join)) return;
-        Net.I.SendVoiceJoin();
+        roomMediaRequests.VoiceJoin();
     }
 
-    public void Leave() => Net.I.SendVoiceLeave();
+    public void Leave() => roomMediaRequests.VoiceLeave();
 
-    public void ToggleMute() => SetFlags((byte)(_flags ^ VoiceFlags.MicMuted));
+    public void ToggleMute() => SetFlags((byte)(flags ^ VoiceFlags.MicMuted));
 
-    public void ToggleDeafen() => SetFlags((byte)(_flags ^ VoiceFlags.Deafened));
+    public void ToggleDeafen() => SetFlags((byte)(flags ^ VoiceFlags.Deafened));
 
     private void SetFlags(byte flags)
     {
-        _flags = flags;
-        Net.I.SendVoiceState(_flags);
-        foreach (var speaker in _speakers.Values) ApplyMix(speaker);
+        this.flags = flags;
+        roomMediaRequests.VoiceState(this.flags);
+        foreach (var speaker in speakers.Values) ApplyMix(speaker);
         StateChanged?.Invoke();
     }
 
     public bool IsSpeaking(int characterId) =>
-        _lastHeard.TryGetValue(characterId, out double heard) && _clock - heard < SpeakingHoldSeconds;
+        lastHeard.TryGetValue(characterId, out double heard) && clock - heard < SpeakingHoldSeconds;
 
-    internal void PreviewSpeaking(int characterId, bool self)
+    internal void PreviewSpeaking(int characterId, bool isSelf)
     {
-        if (self) _selfSpeakingUntil = double.PositiveInfinity;
-        else _lastHeard[characterId] = double.PositiveInfinity;
+        if (isSelf) selfSpeakingUntil = double.PositiveInfinity;
+        else lastHeard[characterId] = double.PositiveInfinity;
     }
 
-    public PeerMix MixOf(int characterId) => _mix.TryGetValue(characterId, out var mix) ? mix : new PeerMix(1f, false);
+    public PeerMix MixOf(int characterId) => peerMixes.TryGetValue(characterId, out var mix) ? mix : new PeerMix(1f, false);
 
     public void SetMix(int characterId, PeerMix mix)
     {
-        _mix[characterId] = new PeerMix(Math.Clamp(mix.Volume, 0f, VoiceLevels.MaxVolume), mix.Muted);
-        if (_speakers.TryGetValue(characterId, out var speaker)) ApplyMix(speaker);
+        peerMixes[characterId] = new PeerMix(Math.Clamp(mix.Volume, 0f, VoiceLevels.MaxVolume), mix.Muted);
+        if (speakers.TryGetValue(characterId, out var speaker)) ApplyMix(speaker);
         StateChanged?.Invoke();
     }
 
@@ -253,28 +263,28 @@ public partial class VoiceChat : Node
     private void OnJoined(VoiceSession session)
     {
         TearDownLive();
-        _flags = 0;
-        _encoder = OpusCodecFactory.CreateEncoder(SampleRate, 1, OpusApplication.OPUS_APPLICATION_VOIP);
-        _encoder.Bitrate = LiveBitrate;
-        _encoder.UseInbandFEC = true;
-        _encoder.PacketLossPercent = ExpectedLossPercent;
-        _encoder.SignalType = OpusSignal.OPUS_SIGNAL_VOICE;
-        _seq = 0;
-        _gate.Reset();
-        _autoGain.Reset();
-        _cutter.Clear();
-        bool udp = session.UdpPort != 0 && VoiceSeal.Supported && Net.I.ServerHost.Length > 0;
+        flags = 0;
+        encoder = OpusCodecFactory.CreateEncoder(SampleRate, 1, OpusApplication.OPUS_APPLICATION_VOIP);
+        encoder.Bitrate = LiveBitrate;
+        encoder.UseInbandFEC = true;
+        encoder.PacketLossPercent = ExpectedLossPercent;
+        encoder.SignalType = OpusSignal.OPUS_SIGNAL_VOICE;
+        seq = 0;
+        gate.Reset();
+        autoGain.Reset();
+        cutter.Clear();
+        bool udp = session.UdpPort != 0 && VoiceSeal.Supported && Game.Connection.ServerHost.Length > 0;
         if (udp)
         {
-            _seal = new VoiceSeal(session.SessionId, session.Key);
-            _udp = new PacketPeerUdp();
-            string address = Net.I.ServerHost.IsValidIPAddress() ? Net.I.ServerHost : IP.ResolveHostname(Net.I.ServerHost, IP.Type.Ipv4);
-            udp = address.Length > 0 && _udp.ConnectToHost(address, session.UdpPort) == Error.Ok;
+            seal = new VoiceSeal(session.SessionId, session.Key);
+            udpPeer = new PacketPeerUdp();
+            string address = Game.Connection.ServerHost.IsValidIPAddress() ? Game.Connection.ServerHost : IP.ResolveHostname(Game.Connection.ServerHost, IP.Type.Ipv4);
+            udp = address.Length > 0 && udpPeer.ConnectToHost(address, session.UdpPort) == Error.Ok;
         }
         if (udp)
         {
             CurrentTransport = Transport.Probing;
-            _probeLeft = ProbeSeconds;
+            probeLeft = ProbeSeconds;
             SendHello();
         }
         else UseTcp();
@@ -288,110 +298,110 @@ public partial class VoiceChat : Node
         StateChanged?.Invoke();
     }
 
-    private void OnPeer(int characterId, byte change, byte flags)
+    private void OnPeer(int characterId, RoomMemberChange change, byte flags)
     {
-        if (change == RoomMediaSubs.MemberLeft && _speakers.Remove(characterId, out var speaker))
+        if (change == RoomMemberChange.Left && speakers.Remove(characterId, out var speaker))
             speaker.Player.QueueFree();
         StateChanged?.Invoke();
     }
 
     private void TearDownLive()
     {
-        foreach (var speaker in _speakers.Values)
+        foreach (var speaker in speakers.Values)
             if (IsInstanceValid(speaker.Player)) speaker.Player.QueueFree();
-        _speakers.Clear();
-        _lastHeard.Clear();
-        _udp?.Close();
-        _udp = null;
-        _seal?.Dispose();
-        _seal = null;
-        _encoder = null;
+        speakers.Clear();
+        lastHeard.Clear();
+        udpPeer?.Close();
+        udpPeer = null;
+        seal?.Dispose();
+        seal = null;
+        encoder = null;
         CurrentTransport = Transport.Off;
-        _selfSpeakingUntil = double.NegativeInfinity;
+        selfSpeakingUntil = double.NegativeInfinity;
         RetainMic(false);
     }
 
     private void UseTcp()
     {
         CurrentTransport = Transport.Tcp;
-        _udp?.Close();
-        _udp = null;
-        Net.I.SendVoiceTransport(true);
+        udpPeer?.Close();
+        udpPeer = null;
+        roomMediaRequests.VoiceTransport(true);
         StateChanged?.Invoke();
     }
 
     private void SendHello()
     {
-        _helloLeft = CurrentTransport == Transport.Probing ? ProbeHelloSeconds : HelloSeconds;
+        helloLeft = CurrentTransport == Transport.Probing ? ProbeHelloSeconds : HelloSeconds;
         SendDatagram([VoiceDatagram.Hello]);
     }
 
     private void SendDatagram(ReadOnlySpan<byte> plain)
     {
-        if (_udp == null || _seal == null) return;
-        int length = _seal.Seal(VoiceSeal.ClientToServer, plain, _datagram);
-        _udp.PutPacket(_datagram.AsSpan(0, length).ToArray());
+        if (udpPeer == null || seal == null) return;
+        int length = seal.Seal(VoiceSeal.ClientToServer, plain, datagram);
+        udpPeer.PutPacket(datagram.AsSpan(0, length).ToArray());
     }
 
     public override void _Process(double delta)
     {
-        _clock += delta;
-        if (_micOn) PumpMicrophone();
+        clock += delta;
+        if (micOn) PumpMicrophone();
         if (CurrentTransport is Transport.Probing or Transport.Udp) PumpUdp(delta);
-        foreach (var speaker in _speakers.Values) FillSpeaker(speaker);
+        foreach (var speaker in speakers.Values) FillSpeaker(speaker);
         ProcessNotes();
     }
 
     private void RetainMic(bool live)
     {
         bool want = (live && InVoice) || Recording;
-        if (want == _micOn) return;
-        _micOn = want;
+        if (want == micOn) return;
+        micOn = want;
         if (want)
         {
             ApplyInputDevice();
-            _capture.ClearBuffer();
-            _micResampler = new LinearResampler((int)AudioServer.GetMixRate(), SampleRate);
-            _micPlayer.Stream = new AudioStreamMicrophone();
-            _micPlayer.Play();
+            capture.ClearBuffer();
+            micResampler = new LinearResampler((int)AudioServer.GetMixRate(), SampleRate);
+            micPlayer.Stream = new AudioStreamMicrophone();
+            micPlayer.Play();
         }
         else
         {
-            _micPlayer.Stop();
-            _micPlayer.Stream = null;
-            _cutter.Clear();
-            _gate.Reset();
+            micPlayer.Stop();
+            micPlayer.Stream = null;
+            cutter.Clear();
+            gate.Reset();
         }
     }
 
     private void PumpMicrophone()
     {
-        int available = _capture.GetFramesAvailable();
-        if (available <= 0 || _micResampler == null) return;
-        Vector2[] stereo = _capture.GetBuffer(available);
-        if (_micMono.Length < stereo.Length)
+        int available = capture.GetFramesAvailable();
+        if (available <= 0 || micResampler == null) return;
+        Vector2[] stereo = capture.GetBuffer(available);
+        if (micMono.Length < stereo.Length)
         {
-            _micMono = new float[stereo.Length * 2];
-            _micLeft = new float[stereo.Length * 2];
-            _micRight = new float[stereo.Length * 2];
+            micMono = new float[stereo.Length * 2];
+            micLeft = new float[stereo.Length * 2];
+            micRight = new float[stereo.Length * 2];
         }
         for (int i = 0; i < stereo.Length; i++)
         {
-            _micLeft[i] = stereo[i].X;
-            _micRight[i] = stereo[i].Y;
+            micLeft[i] = stereo[i].X;
+            micRight[i] = stereo[i].Y;
         }
-        VoiceLevels.ToMono(_micLeft.AsSpan(0, stereo.Length), _micRight.AsSpan(0, stereo.Length), _micMono);
-        int room = _micResampler.MaxOutput(stereo.Length);
-        if (_micResampled.Length < room) _micResampled = new float[room * 2];
-        int written = _micResampler.Process(_micMono.AsSpan(0, stereo.Length), _micResampled);
-        _cutter.Push(_micResampled.AsSpan(0, written));
-        while (_cutter.TryTake(_frame))
+        VoiceLevels.ToMono(micLeft.AsSpan(0, stereo.Length), micRight.AsSpan(0, stereo.Length), micMono);
+        int room = micResampler.MaxOutput(stereo.Length);
+        if (micResampled.Length < room) micResampled = new float[room * 2];
+        int written = micResampler.Process(micMono.AsSpan(0, stereo.Length), micResampled);
+        cutter.Push(micResampled.AsSpan(0, written));
+        while (cutter.TryTake(frame))
         {
-            bool open = _gate.Process(_frame, Config.VoiceThreshold);
-            bool voice = _gate.Above(Config.VoiceThreshold);
-            if (Recording) RecordFrame(_frame, voice);
+            bool open = gate.Process(frame, Config.VoiceThreshold);
+            bool voice = gate.Above(Config.VoiceThreshold);
+            if (Recording) RecordFrame(frame, voice);
             if (!InVoice) continue;
-            _autoGain.Process(_frame, voice);
+            autoGain.Process(frame, voice);
             Transmit(open);
         }
     }
@@ -401,40 +411,40 @@ public partial class VoiceChat : Node
 
     private void Transmit(bool gateOpen)
     {
-        if (_encoder == null || MicMuted || !CanSpeak || CurrentTransport == Transport.Off) return;
+        if (encoder == null || MicMuted || !CanSpeak || CurrentTransport == Transport.Off) return;
         bool send = Config.VoicePushToTalk ? PushToTalkHeld() : gateOpen;
         if (!send) return;
         int length;
         try
         {
-            length = _encoder.Encode(_frame, FrameSamples, _opus, _opus.Length);
+            length = encoder.Encode(frame, FrameSamples, opus, opus.Length);
         }
         catch (OpusException)
         {
             return;
         }
         if (length <= 0) return;
-        ushort seq = _seq++;
-        _selfSpeakingUntil = _clock + SpeakingHoldSeconds;
+        ushort seq = this.seq++;
+        selfSpeakingUntil = clock + SpeakingHoldSeconds;
         if (CurrentTransport == Transport.Tcp)
         {
-            Net.I.SendVoiceFrame(seq, _opus.AsSpan(0, length));
+            roomMediaRequests.VoiceFrame(seq, opus.AsSpan(0, length));
             return;
         }
-        _plain[0] = VoiceDatagram.Frame;
-        BinaryPrimitives.WriteUInt16LittleEndian(_plain.AsSpan(1), seq);
-        _opus.AsSpan(0, length).CopyTo(_plain.AsSpan(VoiceDatagram.ClientFrameHeader));
-        SendDatagram(_plain.AsSpan(0, VoiceDatagram.ClientFrameHeader + length));
+        plainBuffer[0] = VoiceDatagram.Frame;
+        BinaryPrimitives.WriteUInt16LittleEndian(plainBuffer.AsSpan(1), seq);
+        opus.AsSpan(0, length).CopyTo(plainBuffer.AsSpan(VoiceDatagram.ClientFrameHeader));
+        SendDatagram(plainBuffer.AsSpan(0, VoiceDatagram.ClientFrameHeader + length));
     }
 
     private void PumpUdp(double delta)
     {
-        if (_udp == null || _seal == null) return;
-        while (_udp.GetAvailablePacketCount() > 0)
+        if (udpPeer == null || seal == null) return;
+        while (udpPeer.GetAvailablePacketCount() > 0)
         {
-            byte[] packet = _udp.GetPacket();
-            if (!_seal.TryOpen(VoiceSeal.ServerToClient, packet, _plain, out int length) || length < 1) continue;
-            if (_plain[0] == VoiceDatagram.Hello)
+            byte[] packet = udpPeer.GetPacket();
+            if (!seal.TryOpen(VoiceSeal.ServerToClient, packet, plainBuffer, out int length) || length < 1) continue;
+            if (plainBuffer[0] == VoiceDatagram.Hello)
             {
                 if (CurrentTransport == Transport.Probing)
                 {
@@ -443,23 +453,23 @@ public partial class VoiceChat : Node
                 }
                 continue;
             }
-            if (_plain[0] != VoiceDatagram.Frame || length <= VoiceDatagram.ServerFrameHeader) continue;
-            int speaker = BinaryPrimitives.ReadInt32LittleEndian(_plain.AsSpan(1));
-            ushort seq = BinaryPrimitives.ReadUInt16LittleEndian(_plain.AsSpan(5));
-            OnFrame(speaker, seq, _plain.AsSpan(VoiceDatagram.ServerFrameHeader, length - VoiceDatagram.ServerFrameHeader).ToArray());
+            if (plainBuffer[0] != VoiceDatagram.Frame || length <= VoiceDatagram.ServerFrameHeader) continue;
+            int speaker = BinaryPrimitives.ReadInt32LittleEndian(plainBuffer.AsSpan(1));
+            ushort seq = BinaryPrimitives.ReadUInt16LittleEndian(plainBuffer.AsSpan(5));
+            OnFrame(speaker, seq, plainBuffer.AsSpan(VoiceDatagram.ServerFrameHeader, length - VoiceDatagram.ServerFrameHeader).ToArray());
         }
-        if (CurrentTransport == Transport.Probing && (_probeLeft -= delta) <= 0)
+        if (CurrentTransport == Transport.Probing && (probeLeft -= delta) <= 0)
         {
             UseTcp();
             return;
         }
-        if ((_helloLeft -= delta) <= 0) SendHello();
+        if ((helloLeft -= delta) <= 0) SendHello();
     }
 
     private void OnFrame(int characterId, ushort seq, byte[] opus)
     {
-        if (!InVoice || characterId == Net.I.MyCharId) return;
-        if (!_speakers.TryGetValue(characterId, out var speaker))
+        if (!InVoice || characterId == self.MyCharId) return;
+        if (!speakers.TryGetValue(characterId, out var speaker))
         {
             var player = new AudioStreamPlayer
             {
@@ -478,10 +488,10 @@ public partial class VoiceChat : Node
             {
                 Playback = player.GetStreamPlayback() as AudioStreamGeneratorPlayback,
             };
-            _speakers[characterId] = speaker;
+            speakers[characterId] = speaker;
             ApplyMix(speaker);
         }
-        _lastHeard[characterId] = _clock;
+        lastHeard[characterId] = clock;
         speaker.Jitter.Push(seq, opus);
     }
 
@@ -491,14 +501,14 @@ public partial class VoiceChat : Node
         if (playback == null) return;
         while (playback.GetFramesAvailable() >= FrameSamples)
         {
-            var output = speaker.Jitter.Pop(out byte[]? frame);
+            var output = speaker.Jitter.Pop(out byte[]? packet);
             if (output == JitterOutput.Wait) return;
             int decoded;
             try
             {
                 decoded = output == JitterOutput.Frame
-                    ? speaker.Decoder.Decode(frame, speaker.Pcm, FrameSamples, false)
-                    : speaker.Decoder.Decode(frame ?? ReadOnlySpan<byte>.Empty, speaker.Pcm, FrameSamples, frame != null);
+                    ? speaker.Decoder.Decode(packet, speaker.Pcm, FrameSamples, false)
+                    : speaker.Decoder.Decode(packet ?? ReadOnlySpan<byte>.Empty, speaker.Pcm, FrameSamples, packet != null);
             }
             catch (OpusException)
             {

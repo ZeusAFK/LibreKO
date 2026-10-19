@@ -44,7 +44,7 @@ public class KingSiegeWindowTests : GameTestBase
     private const byte PublicImpeachmentVote = 3;
     private const byte CandidateList = 4;
 
-    private static int _nextCharacterId = 7000;
+    private static int nextCharacterId = 7000;
 
     private sealed record Player(UserSession Session, IClient Client, List<Packet> Sent)
     {
@@ -103,7 +103,7 @@ public class KingSiegeWindowTests : GameTestBase
         var sent = new List<Packet>();
         client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        var characterId = Interlocked.Increment(ref _nextCharacterId);
+        var characterId = Interlocked.Increment(ref nextCharacterId);
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId, characterId);
         session.Name = name;
         session.Nation = nation;

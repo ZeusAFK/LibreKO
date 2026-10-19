@@ -36,21 +36,21 @@ public static class CrowdModes
 
 public sealed class RateBudget
 {
-    private double _tokens;
-    private double _last = double.NaN;
+    private double tokens;
+    private double last = double.NaN;
 
     public bool Take(int perSecond, double now)
     {
         if (perSecond <= CrowdModes.Unlimited) return true;
-        if (double.IsNaN(_last))
+        if (double.IsNaN(last))
         {
-            _last = now;
-            _tokens = perSecond;
+            last = now;
+            tokens = perSecond;
         }
-        _tokens = Math.Min(perSecond, _tokens + Math.Max(0.0, now - _last) * perSecond);
-        _last = now;
-        if (_tokens < 1.0) return false;
-        _tokens -= 1.0;
+        tokens = Math.Min(perSecond, tokens + Math.Max(0.0, now - last) * perSecond);
+        last = now;
+        if (tokens < 1.0) return false;
+        tokens -= 1.0;
         return true;
     }
 }

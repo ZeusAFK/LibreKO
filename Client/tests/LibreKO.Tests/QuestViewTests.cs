@@ -14,7 +14,7 @@ public class QuestViewTests
     {
         var packet = new Packet(GameOpcodes.GS_QUEST);
         packet.WriteBytes(bytes);
-        Assert.Equal((byte)QuestSub.View, packet.ReadByte());
+        Assert.Equal((byte)QuestSubOpcode.View, packet.ReadByte());
         return QuestView.Read(packet);
     }
 

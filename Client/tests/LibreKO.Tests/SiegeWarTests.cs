@@ -10,7 +10,7 @@ public class SiegeWarTests
     private const int OwnerAlliance = 300;
 
     private static readonly SiegeWarStatus Held =
-        new(2, OwnerClan, 4, OwnerAlliance, 900, 2400, "Wolves");
+        new(SiegeWarState.Held, OwnerClan, 4, OwnerAlliance, 900, 2400, "Wolves");
 
     private static Packet StatusBytes(byte state, short clan, short mark, short alliance, int hold, short war, string name)
     {
@@ -74,7 +74,7 @@ public class SiegeWarTests
     [Fact]
     public void WithNoOwnerNobodyIsHostile()
     {
-        var unheld = new SiegeWarStatus(1, 0, 0, 0, 0, 3000, "");
+        var unheld = new SiegeWarStatus(SiegeWarState.Unheld, 0, 0, 0, 0, 3000, "");
 
         Assert.False(SiegeWar.Hostile(77, 0, 88, 0, unheld));
     }

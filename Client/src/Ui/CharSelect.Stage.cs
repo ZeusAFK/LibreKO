@@ -8,14 +8,14 @@ public partial class CharSelect
     private const string ElMoradStageStem = "elmorad_intro";
     private const string KarusStageStem = "karus_intro";
 
-    private static readonly Vector3 StageEyeKo = new(144.235f, -3.562f, 161.578f);
-    private static readonly Vector3 StageAimOffsetKo = new(-42.017f, 1.12f, -27.08f);
-    private static readonly Vector3 StageStandKo = new(141.868f, -4.319f, 159.231f);
+    private static readonly Vector3 StageEyeMap = new(144.235f, -3.562f, 161.578f);
+    private static readonly Vector3 StageAimOffsetMap = new(-42.017f, 1.12f, -27.08f);
+    private static readonly Vector3 StageStandMap = new(141.868f, -4.319f, 159.231f);
 
-    private const float StageEyePullbackKo = 1.2f;
+    private const float StageEyePullbackMap = 1.2f;
 
-    private static Vector3 StageCameraKo =>
-        StageEyeKo + (StageEyeKo - StageStandKo).Normalized() * StageEyePullbackKo;
+    private static Vector3 StageCameraMap =>
+        StageEyeMap + (StageEyeMap - StageStandMap).Normalized() * StageEyePullbackMap;
 
     private const float StageFov = 45f;
     private const float StageNear = 0.1f;
@@ -30,14 +30,14 @@ public partial class CharSelect
     private const float CreateCameraHeadHeight = 1.6f;
     private const float CreateZoomMin = 0.35f;
     private const float CreateZoomStep = 0.1f;
-    private float _createZoom = 1f;
+    private float createZoom = 1f;
 
-    private Terrain? _stageTerrain;
-    private Sky? _stageSky;
-    private Camera3D _stageCamera = null!;
-    private FxLayer? _stageFxLayer;
-    private float _stageStandYaw;
-    private Vector3 _stageFacing = Vector3.Back;
+    private Terrain? stageTerrain;
+    private Sky? stageSky;
+    private Camera3D stageCamera = null!;
+    private FxLayer? stageFxLayer;
+    private float stageStandYaw;
+    private Vector3 stageFacing = Vector3.Back;
 
     private static string StageStem(int nation) =>
         nation == Nations.Karus ? KarusStageStem : ElMoradStageStem;
@@ -48,28 +48,28 @@ public partial class CharSelect
     {
         if (PreviewNation is Nations.Karus or Nations.ElMorad)
             return PreviewNation;
-        if (Net.I.Nation is Nations.Karus or Nations.ElMorad)
-            return Net.I.Nation;
-        foreach (var c in _characters)
+        if (Game.Session.Self.Nation is Nations.Karus or Nations.ElMorad)
+            return Game.Session.Self.Nation;
+        foreach (var c in characters)
             return NationOf(c.Race);
         return Nations.ElMorad;
     }
 
     private Vector3 StageToWorld(Vector3 ko) =>
-        _stageTerrain != null ? _stageTerrain.KoToWorld(ko.X, ko.Y, ko.Z)
+        stageTerrain != null ? stageTerrain.MapToWorld(ko.X, ko.Y, ko.Z)
                               : Coord.ToGodot(ko.X, ko.Y, ko.Z);
 
     private void BuildStage()
     {
-        _stageSky = new Sky { Name = "Sky" };
-        AddChild(_stageSky);
+        stageSky = new Sky { Name = "Sky" };
+        AddChild(stageSky);
 
         var terrain = new Terrain { Name = "Terrain", RenderDistance = StageFar };
         AddChild(terrain);
         if (terrain.BuildStem(StageStem(StageNation())))
         {
-            _stageTerrain = terrain;
-            if (KoScenery.Build(terrain, StageStandKo, StageSceneryRadius) is { } scenery)
+            stageTerrain = terrain;
+            if (SceneryBuilder.Build(terrain, StageStandMap, StageSceneryRadius) is { } scenery)
                 AddChild(scenery);
         }
         else
@@ -78,11 +78,11 @@ public partial class CharSelect
             BuildFallbackGround();
         }
 
-        Vector3 eye = StageToWorld(StageCameraKo);
-        Vector3 aim = StageToWorld(StageCameraKo + StageAimOffsetKo);
-        Vector3 stand = StageToWorld(StageStandKo);
+        Vector3 eye = StageToWorld(StageCameraMap);
+        Vector3 aim = StageToWorld(StageCameraMap + StageAimOffsetMap);
+        Vector3 stand = StageToWorld(StageStandMap);
 
-        _stageCamera = new Camera3D
+        stageCamera = new Camera3D
         {
             Name = "SelectionCamera",
             Current = true,
@@ -90,23 +90,23 @@ public partial class CharSelect
             Near = StageNear,
             Far = StageFar,
         };
-        AddChild(_stageCamera);
-        _stageCamera.LookAtFromPosition(eye, aim, Vector3.Up);
-        _stageFxLayer = FxLayer.Attach(GetViewport());
+        AddChild(stageCamera);
+        stageCamera.LookAtFromPosition(eye, aim, Vector3.Up);
+        stageFxLayer = FxLayer.Attach(GetViewport());
 
-        _stageStandYaw = -Coord.KoHeading(StageEyeKo.X - StageStandKo.X, StageEyeKo.Z - StageStandKo.Z);
+        stageStandYaw = -Coord.MapHeading(StageEyeMap.X - StageStandMap.X, StageEyeMap.Z - StageStandMap.Z);
 
-        _characterAnchor = new Node3D
+        characterAnchor = new Node3D
         {
             Name = "SelectedCharacter",
             Position = stand,
-            RotationDegrees = new Vector3(0, _stageStandYaw, 0),
+            RotationDegrees = new Vector3(0, stageStandYaw, 0),
         };
-        AddChild(_characterAnchor);
+        AddChild(characterAnchor);
 
         var toCamera = (eye - stand) with { Y = 0f };
         toCamera = toCamera.LengthSquared() > 0.0001f ? toCamera.Normalized() : Vector3.Back;
-        _stageFacing = toCamera;
+        stageFacing = toCamera;
         AddChild(new OmniLight3D
         {
             Name = "StandFill",
@@ -116,7 +116,7 @@ public partial class CharSelect
             LightColor = new Color(1f, 0.97f, 0.9f),
         });
 
-        _stageSky.Tick(StageDayFraction, Weather.Sunny, eye);
+        stageSky.Tick(StageDayFraction, Weather.Sunny, eye);
     }
 
     private const float StageDayFraction = 0.42f;
@@ -137,33 +137,33 @@ public partial class CharSelect
 
     private void TickStage(double delta)
     {
-        _stageSky?.Tick(StageDayFraction, Weather.Sunny, _stageCamera.GlobalPosition);
+        stageSky?.Tick(StageDayFraction, Weather.Sunny, stageCamera.GlobalPosition);
     }
 
     private void ZoomCreateCamera(int steps)
     {
-        _createZoom = Mathf.Clamp(_createZoom + steps * CreateZoomStep, CreateZoomMin, 1f);
+        createZoom = Mathf.Clamp(createZoom + steps * CreateZoomStep, CreateZoomMin, 1f);
         FrameStageCamera(forCreate: true);
     }
 
     private void FrameStageCamera(bool forCreate)
     {
-        if (_stageCamera == null) return;
+        if (stageCamera == null) return;
         if (forCreate)
         {
-            Vector3 stand = _characterAnchor.Position;
-            float closeness = (1f - _createZoom) / (1f - CreateZoomMin);
+            Vector3 stand = characterAnchor.Position;
+            float closeness = (1f - createZoom) / (1f - CreateZoomMin);
             float eyeY = Mathf.Lerp(CreateCameraHeight, CreateCameraHeadHeight, closeness);
             float aimY = Mathf.Lerp(CreateCameraAimHeight, CreateCameraHeadHeight, closeness);
-            _stageCamera.Fov = CreateCameraFov;
-            _stageCamera.LookAtFromPosition(
-                stand + _stageFacing * CreateCameraDistance * _createZoom + new Vector3(0, eyeY, 0),
+            stageCamera.Fov = CreateCameraFov;
+            stageCamera.LookAtFromPosition(
+                stand + stageFacing * CreateCameraDistance * createZoom + new Vector3(0, eyeY, 0),
                 stand + new Vector3(0, aimY, 0),
                 Vector3.Up);
             return;
         }
-        _stageCamera.Fov = StageFov;
-        _stageCamera.LookAtFromPosition(
-            StageToWorld(StageCameraKo), StageToWorld(StageCameraKo + StageAimOffsetKo), Vector3.Up);
+        stageCamera.Fov = StageFov;
+        stageCamera.LookAtFromPosition(
+            StageToWorld(StageCameraMap), StageToWorld(StageCameraMap + StageAimOffsetMap), Vector3.Up);
     }
 }

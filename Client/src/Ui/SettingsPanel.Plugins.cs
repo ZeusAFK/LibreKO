@@ -9,8 +9,8 @@ public partial class SettingsPanel : CanvasLayer
     private const int PluginDescriptionFontSize = 12;
     private const int PluginMetaFontSize = 11;
 
-    private VBoxContainer _pluginList = null!;
-    private Label _pluginRestartNote = null!;
+    private VBoxContainer pluginList = null!;
+    private Label pluginRestartNote = null!;
 
     private void BuildPluginsTab(VBoxContainer tab)
     {
@@ -20,14 +20,14 @@ public partial class SettingsPanel : CanvasLayer
         intro.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         tab.AddChild(intro);
 
-        _pluginRestartNote = UiTheme.Text("Some changes take effect after the game restarts.",
+        pluginRestartNote = UiTheme.Text("Some changes take effect after the game restarts.",
             PluginDescriptionFontSize, UiTheme.Warning);
-        _pluginRestartNote.Visible = PluginHost.RestartRequired;
-        tab.AddChild(_pluginRestartNote);
+        pluginRestartNote.Visible = PluginHost.RestartRequired;
+        tab.AddChild(pluginRestartNote);
 
-        _pluginList = new VBoxContainer();
-        _pluginList.AddThemeConstantOverride("separation", 10);
-        tab.AddChild(_pluginList);
+        pluginList = new VBoxContainer();
+        pluginList.AddThemeConstantOverride("separation", 10);
+        tab.AddChild(pluginList);
         FillPluginList();
 
         var buttons = new HBoxContainer();
@@ -43,14 +43,14 @@ public partial class SettingsPanel : CanvasLayer
 
     private void FillPluginList()
     {
-        foreach (var child in _pluginList.GetChildren()) child.QueueFree();
+        foreach (var child in pluginList.GetChildren()) child.QueueFree();
         if (PluginHost.All.Count == 0)
         {
-            _pluginList.AddChild(UiTheme.Text("No plugins found.", PluginDescriptionFontSize, UiTheme.TextDim));
+            pluginList.AddChild(UiTheme.Text("No plugins found.", PluginDescriptionFontSize, UiTheme.TextDim));
             return;
         }
         foreach (var info in PluginHost.All)
-            _pluginList.AddChild(PluginRow(info));
+            pluginList.AddChild(PluginRow(info));
     }
 
     private Control PluginRow(PluginInfo info)
@@ -107,7 +107,7 @@ public partial class SettingsPanel : CanvasLayer
         toggle.Toggled += on =>
         {
             PluginHost.SetEnabled(info.Id, on);
-            _pluginRestartNote.Visible = PluginHost.RestartRequired;
+            pluginRestartNote.Visible = PluginHost.RestartRequired;
             FillPluginList();
         };
         row.AddChild(toggle);

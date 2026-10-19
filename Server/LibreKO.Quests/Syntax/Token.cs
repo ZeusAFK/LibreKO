@@ -34,9 +34,9 @@ public sealed class Lexer(SourceText source, DiagnosticBag diagnostics)
 {
     private static readonly string[] MultiCharOperators = [">=", "<=", "==", "!=", "<>"];
 
-    private int _position;
-    private bool _blockComment;
-    private int _commentStart;
+    private int position;
+    private bool blockComment;
+    private int commentStart;
 
     public List<Token> Tokenize()
     {
@@ -58,42 +58,42 @@ public sealed class Lexer(SourceText source, DiagnosticBag diagnostics)
     {
         SkipTrivia();
 
-        if (_position >= source.Length)
+        if (position >= source.Length)
             return new Token(TokenKind.EndOfFile, string.Empty, new TextSpan(source.Length, 0));
 
-        var start = _position;
-        var current = source[_position];
+        var start = position;
+        var current = source[position];
 
         if (current is '\n' or '\r')
         {
-            if (current == '\r' && _position + 1 < source.Length && source[_position + 1] == '\n')
-                _position++;
-            _position++;
-            return new Token(TokenKind.LineBreak, "\n", TextSpan.FromBounds(start, _position));
+            if (current == '\r' && position + 1 < source.Length && source[position + 1] == '\n')
+                position++;
+            position++;
+            return new Token(TokenKind.LineBreak, "\n", TextSpan.FromBounds(start, position));
         }
 
         if (current == ',')
         {
-            _position++;
-            return new Token(TokenKind.Comma, ",", TextSpan.FromBounds(start, _position));
+            position++;
+            return new Token(TokenKind.Comma, ",", TextSpan.FromBounds(start, position));
         }
 
         if (current == ':')
         {
-            _position++;
-            return new Token(TokenKind.Colon, ":", TextSpan.FromBounds(start, _position));
+            position++;
+            return new Token(TokenKind.Colon, ":", TextSpan.FromBounds(start, position));
         }
 
         if (current == '(')
         {
-            _position++;
-            return new Token(TokenKind.OpenParen, "(", TextSpan.FromBounds(start, _position));
+            position++;
+            return new Token(TokenKind.OpenParen, "(", TextSpan.FromBounds(start, position));
         }
 
         if (current == ')')
         {
-            _position++;
-            return new Token(TokenKind.CloseParen, ")", TextSpan.FromBounds(start, _position));
+            position++;
+            return new Token(TokenKind.CloseParen, ")", TextSpan.FromBounds(start, position));
         }
 
         if (current == '"')
@@ -101,111 +101,111 @@ public sealed class Lexer(SourceText source, DiagnosticBag diagnostics)
 
         foreach (var op in MultiCharOperators)
         {
-            if (!MatchesAt(_position, op))
+            if (!MatchesAt(position, op))
                 continue;
-            _position += op.Length;
-            return new Token(TokenKind.Operator, op, TextSpan.FromBounds(start, _position));
+            position += op.Length;
+            return new Token(TokenKind.Operator, op, TextSpan.FromBounds(start, position));
         }
 
         if (current is '>' or '<' or '=')
         {
-            _position++;
-            return new Token(TokenKind.Operator, current.ToString(), TextSpan.FromBounds(start, _position));
+            position++;
+            return new Token(TokenKind.Operator, current.ToString(), TextSpan.FromBounds(start, position));
         }
 
-        if (char.IsAsciiDigit(current) || (current == '-' && _position + 1 < source.Length && char.IsAsciiDigit(source[_position + 1])))
+        if (char.IsAsciiDigit(current) || (current == '-' && position + 1 < source.Length && char.IsAsciiDigit(source[position + 1])))
             return ReadNumber(start);
 
         if (IsWordStart(current))
             return ReadWord(start);
 
-        _position++;
-        var span = TextSpan.FromBounds(start, _position);
+        position++;
+        var span = TextSpan.FromBounds(start, position);
         diagnostics.Error(DiagnosticId.UnexpectedCharacter, span, $"Unexpected character '{current}'.");
         return new Token(TokenKind.Bad, current.ToString(), span);
     }
 
     private void SkipTrivia()
     {
-        while (_position < source.Length)
+        while (position < source.Length)
         {
-            if (_blockComment)
+            if (blockComment)
             {
-                while (_position < source.Length && source[_position] is not ('\n' or '\r')
-                       && !MatchesAt(_position, "*/"))
-                    _position++;
-                if (MatchesAt(_position, "*/"))
+                while (position < source.Length && source[position] is not ('\n' or '\r')
+                       && !MatchesAt(position, "*/"))
+                    position++;
+                if (MatchesAt(position, "*/"))
                 {
-                    _position += 2;
-                    _blockComment = false;
+                    position += 2;
+                    blockComment = false;
                     continue;
                 }
-                if (_position == source.Length)
+                if (position == source.Length)
                 {
                     diagnostics.Error(DiagnosticId.UnexpectedCharacter,
-                        TextSpan.FromBounds(_commentStart, _position), "This block comment needs '*/'.");
-                    _blockComment = false;
+                        TextSpan.FromBounds(commentStart, position), "This block comment needs '*/'.");
+                    blockComment = false;
                 }
                 return;
             }
-            if (MatchesAt(_position, "/*"))
+            if (MatchesAt(position, "/*"))
             {
-                _commentStart = _position;
-                _position += 2;
-                _blockComment = true;
+                commentStart = position;
+                position += 2;
+                blockComment = true;
                 continue;
             }
-            var current = source[_position];
+            var current = source[position];
             if (current is ' ' or '\t')
             {
-                _position++;
+                position++;
                 continue;
             }
 
-            if (MatchesAt(_position, "//"))
+            if (MatchesAt(position, "//"))
             {
-                while (_position < source.Length && source[_position] is not ('\n' or '\r'))
-                    _position++;
+                while (position < source.Length && source[position] is not ('\n' or '\r'))
+                    position++;
                 continue;
             }
 
             break;
         }
-        if (_blockComment)
+        if (blockComment)
         {
             diagnostics.Error(DiagnosticId.UnexpectedCharacter,
-                TextSpan.FromBounds(_commentStart, _position), "This block comment needs '*/'.");
-            _blockComment = false;
+                TextSpan.FromBounds(commentStart, position), "This block comment needs '*/'.");
+            blockComment = false;
         }
     }
 
     private Token ReadString(int start)
     {
-        _position++;
+        position++;
         var builder = new System.Text.StringBuilder();
-        while (_position < source.Length && source[_position] != '"')
+        while (position < source.Length && source[position] != '"')
         {
-            if (source[_position] is '\n' or '\r')
+            if (source[position] is '\n' or '\r')
                 break;
-            if (source[_position] == '\\' && _position + 1 < source.Length)
+            if (source[position] == '\\' && position + 1 < source.Length)
             {
-                builder.Append(Unescape(source[_position + 1]));
-                _position += 2;
+                builder.Append(Unescape(source[position + 1]));
+                position += 2;
                 continue;
             }
-            builder.Append(source[_position]);
-            _position++;
+            builder.Append(source[position]);
+            position++;
         }
 
-        var span = TextSpan.FromBounds(start, Math.Min(_position + 1, source.Length));
-        if (_position >= source.Length || source[_position] != '"')
+        var span = TextSpan.FromBounds(start, Math.Min(position + 1, source.Length));
+        if (position >= source.Length || source[position] != '"')
         {
             diagnostics.Error(DiagnosticId.UnexpectedCharacter, span, "Unterminated text.");
             return new Token(TokenKind.String, builder.ToString(), span);
         }
 
-        _position++;
-        return new Token(TokenKind.String, builder.ToString(), TextSpan.FromBounds(start, _position));
+        position++;
+        return new Token(TokenKind.String, builder.ToString(), TextSpan.FromBounds(start, position));
     }
 
     private char Unescape(char escape)
@@ -218,7 +218,7 @@ public sealed class Lexer(SourceText source, DiagnosticBag diagnostics)
             case '"': return '"';
             default:
                 diagnostics.Error(DiagnosticId.UnexpectedCharacter,
-                    TextSpan.FromBounds(_position, _position + 2),
+                    TextSpan.FromBounds(position, position + 2),
                     $"\"\\{escape}\" is not an escape this language knows.",
                     "Write \\n for a line break, \\t for a tab, \\\\ for a backslash or \\\" for a quote.");
                 return escape;
@@ -227,12 +227,12 @@ public sealed class Lexer(SourceText source, DiagnosticBag diagnostics)
 
     private Token ReadNumber(int start)
     {
-        if (source[_position] == '-')
-            _position++;
-        while (_position < source.Length && (char.IsAsciiDigit(source[_position]) || source[_position] == '_'))
-            _position++;
+        if (source[position] == '-')
+            position++;
+        while (position < source.Length && (char.IsAsciiDigit(source[position]) || source[position] == '_'))
+            position++;
 
-        var span = TextSpan.FromBounds(start, _position);
+        var span = TextSpan.FromBounds(start, position);
         var text = source.GetText(span);
         if (!long.TryParse(text.Replace("_", string.Empty), out var value))
         {
@@ -245,9 +245,9 @@ public sealed class Lexer(SourceText source, DiagnosticBag diagnostics)
 
     private Token ReadWord(int start)
     {
-        while (_position < source.Length && IsWordPart(source[_position]))
-            _position++;
-        var span = TextSpan.FromBounds(start, _position);
+        while (position < source.Length && IsWordPart(source[position]))
+            position++;
+        var span = TextSpan.FromBounds(start, position);
         return new Token(TokenKind.Word, source.GetText(span), span);
     }
 

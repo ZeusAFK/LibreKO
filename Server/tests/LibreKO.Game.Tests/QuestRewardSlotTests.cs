@@ -18,22 +18,22 @@ public class QuestRewardSlotTests
     private const int BackHalfSlot = 20;
     private const int NoFreeSlot = -1;
 
-    private readonly IGameDataService _data = Substitute.For<IGameDataService>();
-    private readonly UserSession _session;
-    private readonly QuestScriptContext _context;
+    private readonly IGameDataService data = Substitute.For<IGameDataService>();
+    private readonly UserSession session;
+    private readonly QuestScriptContext context;
 
     public QuestRewardSlotTests()
     {
         var sessions = new SessionManager();
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
-        _session = sessions.CreateSession(client, 1, 1);
-        _session.Hp = 100;
-        _data.GetItem(Filler).Returns(new ItemData { Num = Filler });
-        _data.GetItem(Reward).Returns(new ItemData { Num = Reward });
-        _data.GetItem(JobChangeRules.MasterChangeScroll)
+        session = sessions.CreateSession(client, 1, 1);
+        session.Hp = 100;
+        data.GetItem(Filler).Returns(new ItemData { Num = Filler });
+        data.GetItem(Reward).Returns(new ItemData { Num = Reward });
+        data.GetItem(JobChangeRules.MasterChangeScroll)
             .Returns(new ItemData { Num = JobChangeRules.MasterChangeScroll, Countable = 1 });
-        _context = new QuestScriptContext(_session, null, _data, sessions, Substitute.For<ILogger>(), 1);
+        context = new QuestScriptContext(session, null, data, sessions, Substitute.For<ILogger>(), 1);
     }
 
     [Fact]
@@ -41,9 +41,9 @@ public class QuestRewardSlotTests
     {
         FillBagExcept(BackHalfSlot);
 
-        _context.Items.GiveItem(0, Reward, 1).Should().BeTrue();
+        context.Items.GiveItem(0, Reward, 1).Should().BeTrue();
 
-        _session.Inventory[InventoryConstants.InventoryStart + BackHalfSlot].ItemId.Should().Be(Reward);
+        session.Inventory[InventoryConstants.InventoryStart + BackHalfSlot].ItemId.Should().Be(Reward);
         CountChangePositions().Should().Equal((byte)BackHalfSlot);
     }
 
@@ -52,7 +52,7 @@ public class QuestRewardSlotTests
     {
         Place(BackHalfSlot, Reward);
 
-        _context.Items.RobItem(0, Reward, 1).Should().BeTrue();
+        context.Items.RobItem(0, Reward, 1).Should().BeTrue();
 
         CountChangePositions().Should().Equal((byte)BackHalfSlot);
     }
@@ -62,10 +62,10 @@ public class QuestRewardSlotTests
     {
         FillBagExcept(NoFreeSlot);
 
-        _context.Items.ApplyScriptReward([], [(Reward, 1, 0)]).Should().BeFalse();
+        context.Items.ApplyScriptReward([], [(Reward, 1, 0)]).Should().BeFalse();
 
-        _context.FailureReason.Should().Be(ScriptItemService.InventoryFullReason);
-        _session.Inventory.Should().NotContain(slot => slot.ItemId == Reward);
+        context.FailureReason.Should().Be(ScriptItemService.InventoryFullReason);
+        session.Inventory.Should().NotContain(slot => slot.ItemId == Reward);
     }
 
     [Fact]
@@ -73,27 +73,27 @@ public class QuestRewardSlotTests
     {
         FillBagExcept(NoFreeSlot);
 
-        _context.Items.GiveItem(0, Reward, 1).Should().BeFalse();
+        context.Items.GiveItem(0, Reward, 1).Should().BeFalse();
 
-        _context.FailureReason.Should().Be(ScriptItemService.InventoryFullReason);
+        context.FailureReason.Should().Be(ScriptItemService.InventoryFullReason);
     }
 
     [Fact]
     public void AJobChangeTokenInTheBackHalfOfTheBagNamesThatSlot()
     {
-        _session.Class = 101;
-        _session.Race = 1;
-        _session.Nation = AccountNation.Karus;
+        session.Class = 101;
+        session.Race = 1;
+        session.Nation = AccountNation.Karus;
         Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
 
-        _context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeTrue();
+        context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeTrue();
 
         CountChangePositions().Should().Equal((byte)BackHalfSlot);
     }
 
     private void Place(int bagSlot, int itemId)
     {
-        var slot = _session.Inventory[InventoryConstants.InventoryStart + bagSlot];
+        var slot = session.Inventory[InventoryConstants.InventoryStart + bagSlot];
         slot.ItemId = itemId;
         slot.Count = 1;
     }
@@ -105,5 +105,5 @@ public class QuestRewardSlotTests
                 Place(bagSlot, Filler);
     }
 
-    private List<byte> CountChangePositions() => CountChangePackets.Positions(_context.QueuedPackets);
+    private List<byte> CountChangePositions() => CountChangePackets.Positions(context.QueuedPackets);
 }

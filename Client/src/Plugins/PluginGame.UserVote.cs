@@ -15,7 +15,7 @@ public interface IGameUserVote
 
     void Send(int reason, string text);
     void CancelSelect();
-    void Answer(byte answer);
+    void Answer(UserVoteAnswer answer);
     void CloseNotice();
 
     event Action? Changed;
@@ -23,17 +23,17 @@ public interface IGameUserVote
 
 public sealed partial class PluginGame
 {
-    public IGameUserVote UserVote => _userVote;
+    public IGameUserVote UserVote => userVote;
 
-    private readonly UserVoteProxy _userVote = new();
+    private readonly UserVoteProxy userVote = new();
 
-    internal void AttachUserVote(IGameUserVote userVote)
+    internal void AttachUserVote(IGameUserVote userVoteSource)
     {
-        _userVote.Source = userVote;
+        userVote.Source = userVoteSource;
         RaiseUserVote();
     }
 
-    internal void RaiseUserVote() => _userVote.Raise();
+    internal void RaiseUserVote() => userVote.Raise();
 
     private sealed class UserVoteProxy : IGameUserVote
     {
@@ -53,7 +53,7 @@ public sealed partial class PluginGame
         public IReadOnlyList<string> NoticeLines => Source?.NoticeLines ?? Array.Empty<string>();
         public void Send(int reason, string text) => Source?.Send(reason, text);
         public void CancelSelect() => Source?.CancelSelect();
-        public void Answer(byte answer) => Source?.Answer(answer);
+        public void Answer(UserVoteAnswer answer) => Source?.Answer(answer);
         public void CloseNotice() => Source?.CloseNotice();
     }
 }

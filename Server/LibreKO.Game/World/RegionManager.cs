@@ -10,19 +10,19 @@ public class RegionManager
     public const long NoRegionKey = -1;
 
     // Key: packed zoneId|regionX|regionZ -> set of session IDs in that region
-    private readonly ConcurrentDictionary<long, ConcurrentDictionary<int, UserSession>> _regions = new();
+    private readonly ConcurrentDictionary<long, ConcurrentDictionary<int, UserSession>> regions = new();
 
     // NPC instances: uniqueId -> NpcInstance
-    private readonly ConcurrentDictionary<int, NpcInstance> _npcs = new();
-    private readonly ConcurrentDictionary<long, ConcurrentDictionary<int, NpcInstance>> _npcRegions = new();
-    private int _nextNpcId = 10000; // NPC IDs start at 10000 to avoid collision with character IDs
+    private readonly ConcurrentDictionary<int, NpcInstance> npcs = new();
+    private readonly ConcurrentDictionary<long, ConcurrentDictionary<int, NpcInstance>> npcRegions = new();
+    private int nextNpcId = 10000; // NPC IDs start at 10000 to avoid collision with character IDs
 
     // NPCs that need AI ticks even without nearby players (in combat, returning, damaged, etc.)
-    private readonly ConcurrentDictionary<int, NpcInstance> _engagedNpcs = new();
+    private readonly ConcurrentDictionary<int, NpcInstance> engagedNpcs = new();
 
     // Ground loot bundles: bundleId -> LootBundle
-    private readonly ConcurrentDictionary<int, LootBundle> _bundles = new();
-    private int _nextBundleId = 1;
+    private readonly ConcurrentDictionary<int, LootBundle> bundles = new();
+    private int nextBundleId = 1;
 
     private static long RegionKey(ushort room, byte zoneId, int rx, int rz) =>
         ((long)room << 40) | ((long)zoneId << 32) | ((long)(rx & 0xFFFF) << 16) | (long)(rz & 0xFFFF);
@@ -30,7 +30,7 @@ public class RegionManager
     public void AddToRegion(UserSession session)
     {
         var key = RegionKey(session.Room, session.ZoneId, session.NewRegionX, session.NewRegionZ);
-        var region = _regions.GetOrAdd(key, _ => new ConcurrentDictionary<int, UserSession>());
+        var region = regions.GetOrAdd(key, _ => new ConcurrentDictionary<int, UserSession>());
         region[session.CharacterId] = session;
         session.RegionX = session.NewRegionX;
         session.RegionZ = session.NewRegionZ;
@@ -42,7 +42,7 @@ public class RegionManager
     {
         var key = session.RegisteredRegionKey;
         if (key == NoRegionKey) return;
-        if (_regions.TryGetValue(key, out var region))
+        if (regions.TryGetValue(key, out var region))
             region.TryRemove(new KeyValuePair<int, UserSession>(session.CharacterId, session));
         session.RegisteredRegionKey = NoRegionKey;
     }
@@ -70,7 +70,7 @@ public class RegionManager
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
                 var key = RegionKey(room, zoneId, regionX + dx, regionZ + dz);
-                if (_regions.TryGetValue(key, out var region))
+                if (regions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
                     {
@@ -101,8 +101,8 @@ public class RegionManager
     // ─────────────────────────────────────────────
     public NpcInstance SpawnNpc(NpcInstance npc)
     {
-        npc.UniqueId = Interlocked.Increment(ref _nextNpcId);
-        _npcs[npc.UniqueId] = npc;
+        npc.UniqueId = Interlocked.Increment(ref nextNpcId);
+        npcs[npc.UniqueId] = npc;
         AddNpcToRegion(npc);
         return npc;
     }
@@ -110,7 +110,7 @@ public class RegionManager
     private void AddNpcToRegion(NpcInstance npc)
     {
         var key = RegionKey(npc.Room, npc.ZoneId, npc.NewRegionX, npc.NewRegionZ);
-        var region = _npcRegions.GetOrAdd(key, _ => new ConcurrentDictionary<int, NpcInstance>());
+        var region = npcRegions.GetOrAdd(key, _ => new ConcurrentDictionary<int, NpcInstance>());
         region[npc.UniqueId] = npc;
         npc.RegionX = npc.NewRegionX;
         npc.RegionZ = npc.NewRegionZ;
@@ -118,21 +118,21 @@ public class RegionManager
 
     public void RemoveNpc(NpcInstance npc)
     {
-        _npcs.TryRemove(npc.UniqueId, out _);
-        _engagedNpcs.TryRemove(npc.UniqueId, out _);
-        if (_npcRegions.TryGetValue(RegionKey(npc.Room, npc.ZoneId, npc.RegionX, npc.RegionZ), out var region))
+        npcs.TryRemove(npc.UniqueId, out _);
+        engagedNpcs.TryRemove(npc.UniqueId, out _);
+        if (npcRegions.TryGetValue(RegionKey(npc.Room, npc.ZoneId, npc.RegionX, npc.RegionZ), out var region))
             region.TryRemove(npc.UniqueId, out _);
     }
 
     public NpcInstance? GetNpc(int uniqueId)
     {
-        _npcs.TryGetValue(uniqueId, out var npc);
+        npcs.TryGetValue(uniqueId, out var npc);
         return npc;
     }
 
     public NpcInstance? GetNpcByProtoId(byte zoneId, short npcId)
     {
-        foreach (var npc in _npcs.Values)
+        foreach (var npc in npcs.Values)
         {
             if (npc.ZoneId == zoneId && npc.NpcId == npcId)
                 return npc;
@@ -147,7 +147,7 @@ public class RegionManager
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
                 var key = RegionKey(session.Room, session.ZoneId, session.RegionX + dx, session.RegionZ + dz);
-                if (_npcRegions.TryGetValue(key, out var region))
+                if (npcRegions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
                         yield return kvp.Value;
@@ -163,7 +163,7 @@ public class RegionManager
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
                 var key = RegionKey(npc.Room, npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
-                if (_regions.TryGetValue(key, out var region))
+                if (regions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
                         yield return kvp.Value;
@@ -179,7 +179,7 @@ public class RegionManager
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
                 var key = RegionKey(npc.Room, npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
-                if (_regions.TryGetValue(key, out var region) && !region.IsEmpty)
+                if (regions.TryGetValue(key, out var region) && !region.IsEmpty)
                     return true;
             }
         }
@@ -195,7 +195,7 @@ public class RegionManager
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
                 var key = RegionKey(npc.Room, npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
-                if (_regions.TryGetValue(key, out var region))
+                if (regions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
                         _ = kvp.Value.Client.SendPacket(packet);
@@ -213,7 +213,7 @@ public class RegionManager
 
         // Remove from old region
         var oldKey = RegionKey(npc.Room, npc.ZoneId, npc.RegionX, npc.RegionZ);
-        if (_npcRegions.TryGetValue(oldKey, out var oldRegion))
+        if (npcRegions.TryGetValue(oldKey, out var oldRegion))
             oldRegion.TryRemove(npc.UniqueId, out _);
 
         // Add to new region
@@ -227,7 +227,7 @@ public class RegionManager
             for (var dz = -ViewDistance; dz <= ViewDistance; dz++)
             {
                 var key = RegionKey(npc.Room, npc.ZoneId, npc.RegionX + dx, npc.RegionZ + dz);
-                if (_npcRegions.TryGetValue(key, out var region))
+                if (npcRegions.TryGetValue(key, out var region))
                 {
                     foreach (var kvp in region)
                         yield return kvp.Value;
@@ -238,26 +238,26 @@ public class RegionManager
 
     public IEnumerable<NpcInstance> GetAllNpcsInZone(byte zoneId)
     {
-        return _npcs.Values.Where(n => n.ZoneId == zoneId);
+        return npcs.Values.Where(n => n.ZoneId == zoneId);
     }
 
-    public IEnumerable<NpcInstance> GetAllNpcs() => _npcs.Values;
+    public IEnumerable<NpcInstance> GetAllNpcs() => npcs.Values;
 
     public IEnumerable<NpcInstance> GetAllAliveMonsters()
     {
-        return _npcs.Values.Where(n => n.IsAlive && n.HasAi && NpcWorldFilter.ShouldSpawnNormally(n));
+        return npcs.Values.Where(n => n.IsAlive && n.HasAi && NpcWorldFilter.ShouldSpawnNormally(n));
     }
 
-    public void MarkNpcEngaged(NpcInstance npc) => _engagedNpcs[npc.UniqueId] = npc;
+    public void MarkNpcEngaged(NpcInstance npc) => engagedNpcs[npc.UniqueId] = npc;
 
-    public void MarkNpcIdle(NpcInstance npc) => _engagedNpcs.TryRemove(npc.UniqueId, out _);
+    public void MarkNpcIdle(NpcInstance npc) => engagedNpcs.TryRemove(npc.UniqueId, out _);
 
-    public IEnumerable<NpcInstance> GetEngagedNpcs() => _engagedNpcs.Values;
+    public IEnumerable<NpcInstance> GetEngagedNpcs() => engagedNpcs.Values;
 
     public void DropAggroOn(int characterId)
     {
         var nowTicks = DateTime.UtcNow.Ticks;
-        foreach (var npc in _engagedNpcs.Values)
+        foreach (var npc in engagedNpcs.Values)
         {
             if (npc.TargetUserId != characterId)
                 continue;
@@ -283,7 +283,7 @@ public class RegionManager
 
     public IEnumerable<NpcInstance> GetDeadNpcsReadyToRespawn(long nowTicks)
     {
-        return _npcs.Values.Where(n =>
+        return npcs.Values.Where(n =>
             n.IsDead
             && n.CanRespawn
             && (nowTicks - n.DeathTimeTicks) >= TimeSpan.FromMilliseconds(n.RespawnDelayMs).Ticks);
@@ -296,46 +296,46 @@ public class RegionManager
     {
         var bundle = new LootBundle
         {
-            BundleId = Interlocked.Increment(ref _nextBundleId),
+            BundleId = Interlocked.Increment(ref nextBundleId),
             X = x,
             Z = z,
             Y = y,
             DropTimeTicks = DateTime.UtcNow.Ticks
         };
-        _bundles[bundle.BundleId] = bundle;
+        bundles[bundle.BundleId] = bundle;
         return bundle;
     }
 
     public LootBundle? GetBundle(int bundleId)
     {
-        _bundles.TryGetValue(bundleId, out var bundle);
+        bundles.TryGetValue(bundleId, out var bundle);
         return bundle;
     }
 
     public void RemoveBundle(int bundleId)
     {
-        _bundles.TryRemove(bundleId, out _);
+        bundles.TryRemove(bundleId, out _);
     }
 
     public bool TryClaimBundleSlot(int bundleId, int slotIndex, int expectedItemId, out LootItem? claimed)
     {
         claimed = null;
-        if (!_bundles.TryGetValue(bundleId, out var bundle))
+        if (!bundles.TryGetValue(bundleId, out var bundle))
             return false;
         if (!bundle.TryClaimSlot(slotIndex, expectedItemId, out claimed))
             return false;
         if (bundle.IsEmpty())
-            _bundles.TryRemove(bundleId, out _);
+            bundles.TryRemove(bundleId, out _);
         return true;
     }
 
     public void CleanupExpiredBundles()
     {
         var now = DateTime.UtcNow.Ticks;
-        foreach (var kvp in _bundles)
+        foreach (var kvp in bundles)
         {
             if (kvp.Value.IsExpired(now))
-                _bundles.TryRemove(kvp.Key, out _);
+                bundles.TryRemove(kvp.Key, out _);
         }
     }
 }

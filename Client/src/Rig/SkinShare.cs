@@ -10,19 +10,19 @@ public static class SkinShare
     private const float AabbGrowFraction = 0.6f;
     private const float AabbGrowMin = 0.3f;
 
-    private static readonly Dictionary<string, Skin> _canonical = Shutdown.Track(new Dictionary<string, Skin>());
-    private static readonly Dictionary<ulong, Skin> _byInstance = Shutdown.Track(new Dictionary<ulong, Skin>());
+    private static readonly Dictionary<string, Skin> canonical = Shutdown.Track(new Dictionary<string, Skin>());
+    private static readonly Dictionary<ulong, Skin> byInstance = Shutdown.Track(new Dictionary<ulong, Skin>());
 
-    public static int Distinct => _canonical.Count;
+    public static int Distinct => canonical.Count;
 
     public static Skin? Canonical(Skin? skin)
     {
         if (skin == null) return null;
         ulong id = skin.GetInstanceId();
-        if (_byInstance.TryGetValue(id, out var known)) return known;
+        if (byInstance.TryGetValue(id, out var known)) return known;
         string key = KeyOf(skin);
-        if (!_canonical.TryGetValue(key, out var shared)) _canonical[key] = shared = skin;
-        _byInstance[id] = shared;
+        if (!canonical.TryGetValue(key, out var shared)) canonical[key] = shared = skin;
+        byInstance[id] = shared;
         return shared;
     }
 

@@ -5,26 +5,26 @@ namespace LibreKO;
 
 public partial class Water : Node3D
 {
-    private readonly List<MeshInstance3D> _patches = new();
-    private ShaderMaterial? _riverMat, _stillMat;
-    private readonly Dictionary<string, ShaderMaterial?> _surfaceMats = new();
+    private readonly List<MeshInstance3D> patches = new();
+    private ShaderMaterial? riverMat, stillMat;
+    private readonly Dictionary<string, ShaderMaterial?> surfaceMats = new();
 
-    public bool HasWater => _patches.Count > 0;
+    public bool HasWater => patches.Count > 0;
 
     public void SetParam(string name, Variant value)
     {
-        _riverMat?.SetShaderParameter(name, value);
-        _stillMat?.SetShaderParameter(name, value);
+        riverMat?.SetShaderParameter(name, value);
+        stillMat?.SetShaderParameter(name, value);
     }
 
     public bool Build(Terrain terrain, string stem)
     {
-        var water = KoWater.LoadJson(stem);
+        var water = ZoneWater.LoadJson(stem);
         if (water == null)
             return false;
 
-        _riverMat = MakeWaterMaterial(flowing: true);
-        _stillMat = MakeWaterMaterial(flowing: false);
+        riverMat = MakeWaterMaterial(flowing: true);
+        stillMat = MakeWaterMaterial(flowing: false);
 
         int verts = 0;
         foreach (var p in water.Patches)
@@ -33,11 +33,11 @@ public partial class Water : Node3D
             {
                 Mesh = BuildPatchMesh(terrain, p),
                 MaterialOverride = (p.Uv != null ? SurfaceMaterial(p.Tex) : null)
-                    ?? (IsStill(p.Tex) ? _stillMat : _riverMat),
+                    ?? (IsStill(p.Tex) ? stillMat : riverMat),
                 GIMode = GeometryInstance3D.GIModeEnum.Disabled,
             };
             AddChild(mi);
-            _patches.Add(mi);
+            patches.Add(mi);
             verts += p.Verts.Length;
         }
 
@@ -47,14 +47,14 @@ public partial class Water : Node3D
     private const float TargetQuad = 2.5f;
     private const int MaxSubdiv = 8;
 
-    private static ArrayMesh BuildPatchMesh(Terrain terrain, KoWater.Patch p)
+    private static ArrayMesh BuildPatchMesh(Terrain terrain, ZoneWater.Patch p)
     {
         int cols = p.Cols, rows = p.Rows;
         var w = new Vector3[p.Verts.Length];
         for (int i = 0; i < w.Length; i++)
         {
-            var ko = p.Verts[i];
-            w[i] = terrain.KoToWorld(ko.X, ko.Y, ko.Z);
+            var vertex = p.Verts[i];
+            w[i] = terrain.MapToWorld(vertex.X, vertex.Y, vertex.Z);
         }
 
         float edgeSum = 0f; int edgeCount = 0;
@@ -125,7 +125,7 @@ public partial class Water : Node3D
 
     private ShaderMaterial MakeWaterMaterial(bool flowing)
     {
-        var mat = new ShaderMaterial { Shader = _waterShader ??= Shaders.Get("water") };
+        var mat = new ShaderMaterial { Shader = waterShader ??= Shaders.Get("water") };
         var (nA, nB) = WaveNormals();
         mat.SetShaderParameter("wave_normal_a", nA);
         mat.SetShaderParameter("wave_normal_b", nB);
@@ -148,7 +148,7 @@ public partial class Water : Node3D
 
     private ShaderMaterial? SurfaceMaterial(string tex)
     {
-        if (_surfaceMats.TryGetValue(tex, out var cached)) return cached;
+        if (surfaceMats.TryGetValue(tex, out var cached)) return cached;
         string path = $"res://assets/water/{tex}.png";
         ShaderMaterial? mat = null;
         if (ResourceLoader.Exists(path))
@@ -157,12 +157,12 @@ public partial class Water : Node3D
             mat.SetShaderParameter("surface_tex", ResourceLoader.Load<Texture2D>(path));
             mat.SetShaderParameter("wave_normal", WaveNormals().Item1);
         }
-        _surfaceMats[tex] = mat;
+        surfaceMats[tex] = mat;
         return mat;
     }
 
-    private static Shader? _waterShader;
-    private static (Texture2D, Texture2D)? _waveNormals;
+    private static Shader? waterShader;
+    private static (Texture2D, Texture2D)? waveNormals;
 
     private readonly record struct WaveNormalSpec(string Path, int Seed, float Strength);
 
@@ -171,9 +171,9 @@ public partial class Water : Node3D
 
     private static (Texture2D, Texture2D) WaveNormals()
     {
-        if (_waveNormals.HasValue) return _waveNormals.Value;
-        _waveNormals = (WaveNormal(WaveNormalA), WaveNormal(WaveNormalB));
-        return _waveNormals.Value;
+        if (waveNormals.HasValue) return waveNormals.Value;
+        waveNormals = (WaveNormal(WaveNormalA), WaveNormal(WaveNormalB));
+        return waveNormals.Value;
     }
 
     private static Texture2D WaveNormal(WaveNormalSpec spec) =>
@@ -243,8 +243,8 @@ public partial class Water : Node3D
 
     public override void _ExitTree()
     {
-        foreach (var mi in _patches)
+        foreach (var mi in patches)
             mi.QueueFree();
-        _patches.Clear();
+        patches.Clear();
     }
 }

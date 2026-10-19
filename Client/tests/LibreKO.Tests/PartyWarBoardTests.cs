@@ -10,8 +10,8 @@ public class PartyWarBoardTests
     public void TheReplyReadsTargetModeAndShares()
     {
         var p = new Packet(GameOpcodes.GS_PARTY);
-        p.WriteByte(PartyWarBoard.TargetBoard);
-        p.WriteByte(PartyWarBoard.ModeHealing);
+        p.WriteByte((byte)PartyWarBoardTarget.Board);
+        p.WriteByte((byte)PartyBoardMeterMode.Healing);
         p.WriteByte(2);
         p.WriteInt(11);
         p.WriteShort(750);
@@ -19,11 +19,11 @@ public class PartyWarBoardTests
         p.WriteShort(250);
         p.ResetOffset();
 
-        var reply = Net.ReadWarBoard(p);
+        var reply = PartyWarBoardWire.ReadWarBoard(p);
 
         Assert.NotNull(reply);
-        Assert.Equal(PartyWarBoard.TargetBoard, reply.Value.Target);
-        Assert.Equal(PartyWarBoard.ModeHealing, reply.Value.Mode);
+        Assert.Equal((byte)PartyWarBoardTarget.Board, (byte)reply.Value.Target);
+        Assert.Equal(PartyBoardMeterMode.Healing, reply.Value.Mode);
         Assert.Equal(new[] { new WarBoardShare(11, 750), new WarBoardShare(12, 250) }, reply.Value.Shares);
     }
 
@@ -40,9 +40,9 @@ public class PartyWarBoardTests
     [Fact]
     public void TheRowToggleCyclesOffDamageHealing()
     {
-        Assert.Equal(PartyWarBoard.ModeDamage, PartyWarBoard.NextRowMode(PartyWarBoard.ModeOff));
-        Assert.Equal(PartyWarBoard.ModeHealing, PartyWarBoard.NextRowMode(PartyWarBoard.ModeDamage));
-        Assert.Equal(PartyWarBoard.ModeOff, PartyWarBoard.NextRowMode(PartyWarBoard.ModeHealing));
+        Assert.Equal(PartyBoardMeterMode.Damage, PartyWarBoard.NextRowMode(PartyBoardMeterMode.Off));
+        Assert.Equal(PartyBoardMeterMode.Healing, PartyWarBoard.NextRowMode(PartyBoardMeterMode.Damage));
+        Assert.Equal(PartyBoardMeterMode.Off, PartyWarBoard.NextRowMode(PartyBoardMeterMode.Healing));
     }
 
     [Fact]
@@ -60,17 +60,17 @@ public class PartyWarBoardTests
     [Fact]
     public void PriestsOpenTheBoardOnHealing()
     {
-        Assert.Equal(PartyWarBoard.ModeHealing, PartyWarBoard.DefaultBoardMode(104));
-        Assert.Equal(PartyWarBoard.ModeDamage, PartyWarBoard.DefaultBoardMode(201));
+        Assert.Equal(PartyBoardMeterMode.Healing, PartyWarBoard.DefaultBoardMode(104));
+        Assert.Equal(PartyBoardMeterMode.Damage, PartyWarBoard.DefaultBoardMode(201));
     }
 
     [Theory]
-    [InlineData(0, PartyWarBoard.ModeOff)]
-    [InlineData(2, PartyWarBoard.ModeHealing)]
-    [InlineData(7, PartyWarBoard.ModeDamage)]
-    [InlineData(-1, PartyWarBoard.ModeDamage)]
-    public void ASavedModeOutsideTheThreeFallsBack(int saved, byte expected) =>
-        Assert.Equal(expected, PartyWarBoard.SavedMode(saved, PartyWarBoard.ModeDamage));
+    [InlineData(0, PartyBoardMeterMode.Off)]
+    [InlineData(2, PartyBoardMeterMode.Healing)]
+    [InlineData(7, PartyBoardMeterMode.Damage)]
+    [InlineData(-1, PartyBoardMeterMode.Damage)]
+    public void ASavedModeOutsideTheThreeFallsBack(int saved, PartyBoardMeterMode expected) =>
+        Assert.Equal(expected, PartyWarBoard.SavedMode((PartyBoardMeterMode)saved, PartyBoardMeterMode.Damage));
 
     [Theory]
     [InlineData(0.5f, 0.5f)]

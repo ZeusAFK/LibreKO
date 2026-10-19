@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -16,7 +17,7 @@ public class GeniePartyCodeGateTests
     public void CorrectPrivateMessageAuthorizesItsSenderOnlyOnce()
     {
         var gate = Enabled();
-        Assert.True(gate.Receive(2, 42, "Alice", " PT123 ", 1, 100));
+        Assert.True(gate.Receive(ChatType.Private, 42, "Alice", " PT123 ", 1, 100));
         Assert.False(gate.TryAccept(43, "Alice", 101));
         Assert.False(gate.TryAccept(42, "Bob", 101));
         Assert.True(gate.TryAccept(42, "ALICE", 101));
@@ -33,7 +34,7 @@ public class GeniePartyCodeGateTests
     public void OtherChannelsWrongMessagesAndSelfMessagesDoNotAuthorize(byte channel, string message, int sender)
     {
         var gate = Enabled();
-        Assert.False(gate.Receive(channel, sender, "Alice", message, 1, 100));
+        Assert.False(gate.Receive((ChatType)channel, sender, "Alice", message, 1, 100));
         Assert.False(gate.TryAccept(sender, "Alice", 101));
     }
 
@@ -42,7 +43,7 @@ public class GeniePartyCodeGateTests
     {
         var gate = Enabled();
         Assert.False(gate.TryAccept(42, "Alice", 100));
-        Assert.True(gate.Receive(2, 42, "Alice", "PT123", 1, 101));
+        Assert.True(gate.Receive(ChatType.Private, 42, "Alice", "PT123", 1, 101));
         Assert.True(gate.TryAccept(42, "Alice", 102));
     }
 
@@ -50,7 +51,7 @@ public class GeniePartyCodeGateTests
     public void AuthorizationExpiresAtTwoMinutes()
     {
         var gate = Enabled();
-        gate.Receive(2, 42, "Alice", "PT123", 1, 100);
+        gate.Receive(ChatType.Private, 42, "Alice", "PT123", 1, 100);
         Assert.False(gate.TryAccept(42, "Alice", 220));
     }
 
@@ -58,10 +59,10 @@ public class GeniePartyCodeGateTests
     public void CodeChangeAndDisableDiscardExistingAuthorizations()
     {
         var gate = Enabled();
-        gate.Receive(2, 42, "Alice", "PT123", 1, 100);
+        gate.Receive(ChatType.Private, 42, "Alice", "PT123", 1, 100);
         gate.Configure(true, "NEW");
         Assert.False(gate.TryAccept(42, "Alice", 101));
-        gate.Receive(2, 42, "Alice", "NEW", 1, 102);
+        gate.Receive(ChatType.Private, 42, "Alice", "NEW", 1, 102);
         gate.Configure(false, "NEW");
         gate.Configure(true, "NEW");
         Assert.False(gate.TryAccept(42, "Alice", 103));
@@ -72,9 +73,9 @@ public class GeniePartyCodeGateTests
     {
         var gate = Enabled();
         gate.Configure(true, " ");
-        Assert.False(gate.Receive(2, 42, "Alice", " ", 1, 100));
+        Assert.False(gate.Receive(ChatType.Private, 42, "Alice", " ", 1, 100));
         gate.Configure(true, "PT123");
-        gate.Receive(2, 42, "Alice", "PT123", 1, 101);
+        gate.Receive(ChatType.Private, 42, "Alice", "PT123", 1, 101);
         gate.Clear();
         Assert.False(gate.TryAccept(42, "Alice", 102));
     }

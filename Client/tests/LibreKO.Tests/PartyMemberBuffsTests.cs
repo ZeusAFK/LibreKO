@@ -21,7 +21,7 @@ public class PartyMemberBuffsTests
     {
         var p = FromServer(TwoBuffs);
 
-        Assert.Equal(Net.SubPartyMemberBuffs, p.ReadByte());
+        Assert.Equal((byte)PartySubOpcode.MemberBuffs, p.ReadByte());
         var buffs = PartyMemberBuffs.Read(p);
 
         Assert.NotNull(buffs);

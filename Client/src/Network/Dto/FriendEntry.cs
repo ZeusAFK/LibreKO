@@ -14,3 +14,5 @@ public struct FriendEntry
     public readonly bool IsOnline => Status != 0 && CharId >= 0;
     public readonly bool InParty => Status == 3;
 }
+
+public readonly record struct FriendDetails(string Name, byte Level, short Class, byte Nation, byte ZoneId);

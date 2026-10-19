@@ -14,20 +14,20 @@ public sealed partial class ChatComposer : HBoxContainer
     private const string RecordTip = "Hold to record a voice note, or click to start and click again to send";
     private static readonly Color RecordingColour = new("e0574a");
 
-    private readonly string _target;
-    private readonly ChatLinkDraft _draft = new();
-    private readonly HBoxContainer _field;
-    private readonly HBoxContainer _strip;
-    private readonly Label _clock;
-    private readonly ProgressBar _level;
-    private readonly Button _record;
-    private readonly Button _send;
-    private EmoticonPicker? _emoticons;
-    private string _lastText = "";
-    private bool _hold;
-    private double _pressedAt;
-    private double _tick;
-    private VoiceChat? _voice;
+    private readonly string target;
+    private readonly ChatLinkDraft draft = new();
+    private readonly HBoxContainer field;
+    private readonly HBoxContainer strip;
+    private readonly Label clock;
+    private readonly ProgressBar levelBar;
+    private readonly Button record;
+    private readonly Button send;
+    private EmoticonPicker? emoticons;
+    private string lastText = "";
+    private bool hold;
+    private double pressedAt;
+    private double tick;
+    private VoiceChat? voice;
 
     public LineEdit Input { get; }
 
@@ -36,11 +36,11 @@ public sealed partial class ChatComposer : HBoxContainer
 
     public ChatComposer(string target)
     {
-        _target = target;
+        this.target = target;
         AddThemeConstantOverride("separation", Gap);
 
-        _field = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        AddChild(_field);
+        field = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        AddChild(field);
         Input = new LineEdit
         {
             PlaceholderText = "Message",
@@ -51,13 +51,13 @@ public sealed partial class ChatComposer : HBoxContainer
         Input.TextSubmitted += _ => Submit();
         Input.TextChanged += text =>
         {
-            _draft.TextChanged(_lastText, text);
-            _lastText = text;
+            draft.TextChanged(lastText, text);
+            lastText = text;
             Limit();
         };
-        var emoticons = EmoticonPicker.InputButton(EmoticonButtonSize, EmoticonInset);
-        emoticons.Pressed += () => OpenEmoticons(emoticons.GlobalPosition);
-        Input.AddChild(emoticons);
+        var emoticonsButton = EmoticonPicker.InputButton(EmoticonButtonSize, EmoticonInset);
+        emoticonsButton.Pressed += () => OpenEmoticons(emoticonsButton.GlobalPosition);
+        Input.AddChild(emoticonsButton);
         Input.TreeEntered += () =>
         {
             foreach (string state in new[] { "normal", "focus" })
@@ -67,28 +67,28 @@ public sealed partial class ChatComposer : HBoxContainer
                 Input.AddThemeStyleboxOverride(state, roomy);
             }
         };
-        _field.AddChild(Input);
+        field.AddChild(Input);
 
-        _strip = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Visible = false };
-        _strip.AddThemeConstantOverride("separation", Gap);
-        AddChild(_strip);
-        _strip.AddChild(UiTheme.Text("●", 14, RecordingColour));
-        _clock = UiTheme.Text("0:00", 13, UiTheme.TextHi);
-        _strip.AddChild(_clock);
-        _level = Meter(RecordingColour);
-        _strip.AddChild(_level);
+        strip = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Visible = false };
+        strip.AddThemeConstantOverride("separation", Gap);
+        AddChild(strip);
+        strip.AddChild(UiTheme.Text("●", 14, RecordingColour));
+        clock = UiTheme.Text("0:00", 13, UiTheme.TextHi);
+        strip.AddChild(clock);
+        levelBar = Meter(RecordingColour);
+        strip.AddChild(levelBar);
         var cancel = UiTheme.IconButton(UiIcons.Get("system/close"), "Cancel the voice note");
         cancel.Pressed += () => VoiceChat.I?.StopRecording(send: false);
-        _strip.AddChild(cancel);
+        strip.AddChild(cancel);
 
-        _record = UiTheme.IconButton(UiIcons.Get("system/waveform"), RecordTip);
-        _record.ButtonDown += OnRecordDown;
-        _record.ButtonUp += OnRecordUp;
-        AddChild(_record);
+        record = UiTheme.IconButton(UiIcons.Get("system/waveform"), RecordTip);
+        record.ButtonDown += OnRecordDown;
+        record.ButtonUp += OnRecordUp;
+        AddChild(record);
 
-        _send = UiTheme.IconButton(UiIcons.Get("system/send"), "Send");
-        _send.Pressed += Submit;
-        AddChild(_send);
+        send = UiTheme.IconButton(UiIcons.Get("system/send"), "Send");
+        send.Pressed += Submit;
+        AddChild(send);
     }
 
     public static ProgressBar Meter(Color tint)
@@ -111,62 +111,62 @@ public sealed partial class ChatComposer : HBoxContainer
 
     public override void _EnterTree()
     {
-        _voice = VoiceChat.I;
-        if (_voice != null) _voice.StateChanged += RefreshRecording;
+        voice = VoiceChat.I;
+        if (voice != null) voice.StateChanged += RefreshRecording;
         RefreshRecording();
     }
 
     public override void _ExitTree()
     {
-        if (_voice != null) _voice.StateChanged -= RefreshRecording;
-        _voice = null;
+        if (voice != null) voice.StateChanged -= RefreshRecording;
+        voice = null;
     }
 
     public override void _Process(double delta)
     {
-        if (VoiceChat.I is not { } voice || !voice.RecordingFor(_target)) return;
-        _tick += delta;
-        if (_tick < TickSeconds) return;
-        _tick = 0;
-        _clock.Text = $"{VoiceNoteRules.Clock(voice.RecordingSeconds)} / {VoiceNoteRules.Clock(VoiceNoteRules.MaxSeconds)}";
-        _level.Value = voice.MicLevel;
+        if (VoiceChat.I is not { } voice || !voice.RecordingFor(target)) return;
+        tick += delta;
+        if (tick < TickSeconds) return;
+        tick = 0;
+        clock.Text = $"{VoiceNoteRules.Clock(voice.RecordingSeconds)} / {VoiceNoteRules.Clock(VoiceNoteRules.MaxSeconds)}";
+        levelBar.Value = voice.MicLevel;
     }
 
     public void RefreshRecording()
     {
-        bool recording = VoiceChat.I?.RecordingFor(_target) == true;
-        _field.Visible = !recording;
-        _strip.Visible = recording;
-        _send.Visible = !recording;
-        _record.Icon = UiIcons.Get(recording ? "system/send" : "system/waveform");
-        _record.TooltipText = recording ? "Send the voice note" : RecordTip;
-        _record.AddThemeColorOverride("icon_normal_color", recording ? RecordingColour : UiTheme.Gold);
-        if (!recording) _level.Value = 0;
+        bool recording = VoiceChat.I?.RecordingFor(target) == true;
+        field.Visible = !recording;
+        strip.Visible = recording;
+        send.Visible = !recording;
+        record.Icon = UiIcons.Get(recording ? "system/send" : "system/waveform");
+        record.TooltipText = recording ? "Send the voice note" : RecordTip;
+        record.AddThemeColorOverride("icon_normal_color", recording ? RecordingColour : UiTheme.Gold);
+        if (!recording) levelBar.Value = 0;
     }
 
     public void ShowRecording(double seconds, float level)
     {
-        _field.Visible = false;
-        _strip.Visible = true;
-        _send.Visible = false;
-        _record.Icon = UiIcons.Get("system/send");
-        _record.AddThemeColorOverride("icon_normal_color", RecordingColour);
-        _clock.Text = $"{VoiceNoteRules.Clock(seconds)} / {VoiceNoteRules.Clock(VoiceNoteRules.MaxSeconds)}";
-        _level.Value = level;
+        field.Visible = false;
+        strip.Visible = true;
+        send.Visible = false;
+        record.Icon = UiIcons.Get("system/send");
+        record.AddThemeColorOverride("icon_normal_color", RecordingColour);
+        clock.Text = $"{VoiceNoteRules.Clock(seconds)} / {VoiceNoteRules.Clock(VoiceNoteRules.MaxSeconds)}";
+        levelBar.Value = level;
     }
 
     public bool InsertItemLink(int itemId)
     {
         if (ItemData.Get(itemId) == null) return false;
-        var (text, caret) = _draft.Insert(Input.Text, TextRunes.Utf16Index(Input.Text, Input.CaretColumn), itemId, ItemData.DisplayName(itemId));
-        if (TextRunes.Count(text) + _draft.WireExtra > ChatInputText.MaxLength)
+        var (text, caret) = draft.Insert(Input.Text, TextRunes.Utf16Index(Input.Text, Input.CaretColumn), itemId, ItemData.DisplayName(itemId));
+        if (TextRunes.Count(text) + draft.WireExtra > ChatInputText.MaxLength)
         {
-            _draft.Clear();
+            draft.Clear();
             return true;
         }
         Input.Text = text;
         Input.CaretColumn = TextRunes.Column(text, caret);
-        _lastText = text;
+        lastText = text;
         Limit();
         Input.GrabFocus();
         return true;
@@ -176,9 +176,9 @@ public sealed partial class ChatComposer : HBoxContainer
     {
         string message = Input.Text.Trim();
         if (message.Length == 0) return;
-        string wire = _draft.ToWire(message);
-        _draft.Clear();
-        _lastText = "";
+        string wire = draft.ToWire(message);
+        draft.Clear();
+        lastText = "";
         Input.Clear();
         Limit();
         if (!Input.HasFocus()) Input.CallDeferred(Control.MethodName.GrabFocus);
@@ -187,7 +187,7 @@ public sealed partial class ChatComposer : HBoxContainer
 
     private void Limit()
     {
-        int limit = ChatInputText.MaxLength - _draft.WireExtra;
+        int limit = ChatInputText.MaxLength - draft.WireExtra;
         if (Input.MaxLength == limit) return;
         int caret = Input.CaretColumn;
         Input.MaxLength = limit;
@@ -196,37 +196,37 @@ public sealed partial class ChatComposer : HBoxContainer
 
     private void OpenEmoticons(Vector2 at)
     {
-        if (_emoticons == null)
+        if (emoticons == null)
         {
-            _emoticons = new EmoticonPicker();
-            AddChild(_emoticons);
-            _emoticons.Picked += code =>
+            emoticons = new EmoticonPicker();
+            AddChild(emoticons);
+            emoticons.Picked += code =>
             {
                 if (EmoticonPicker.Insert(Input, code) is { } refusal) Notice?.Invoke(refusal);
                 Input.CallDeferred(Control.MethodName.GrabFocus);
             };
         }
-        _emoticons.ShowAt(at);
+        emoticons.ShowAt(at);
     }
 
     private void OnRecordDown()
     {
         if (VoiceChat.I is not { } voice) return;
-        if (voice.RecordingFor(_target))
+        if (voice.RecordingFor(target))
         {
-            _hold = false;
+            hold = false;
             voice.StopRecording(send: true);
             return;
         }
-        if (!voice.StartRecording(_target)) return;
-        _hold = true;
-        _pressedAt = Time.GetTicksMsec() / 1000.0;
+        if (!voice.StartRecording(target)) return;
+        hold = true;
+        pressedAt = FrameClock.Now();
     }
 
     private void OnRecordUp()
     {
-        if (VoiceChat.I is not { } voice || !voice.RecordingFor(_target) || !_hold) return;
-        _hold = false;
-        if (Time.GetTicksMsec() / 1000.0 - _pressedAt >= HoldSeconds) voice.StopRecording(send: true);
+        if (VoiceChat.I is not { } voice || !voice.RecordingFor(target) || !hold) return;
+        hold = false;
+        if (FrameClock.Now() - pressedAt >= HoldSeconds) voice.StopRecording(send: true);
     }
 }

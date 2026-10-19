@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public enum DropBand : byte
 {
@@ -15,7 +13,6 @@ public readonly record struct DropLine(int ItemId, DropBand Band);
 public sealed record DropListReply(int TargetId, bool Shown, int CoinMin, int CoinMax, int Experience,
     IReadOnlyList<DropLine> Items)
 {
-    public const byte SubDropList = 1;
     private const byte DropListShown = 1;
     private const int HeaderBytes = 4 + 1;
     private const int SummaryBytes = 4 + 4 + 4 + 1;

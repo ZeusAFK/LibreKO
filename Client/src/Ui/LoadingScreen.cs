@@ -5,16 +5,16 @@ namespace LibreKO;
 
 public partial class LoadingScreen : CanvasLayer
 {
-    private ProgressBar _bar = null!;
-    private Label _status = null!;
-    private Label _detail = null!;
-    private Label _percent = null!;
-    private readonly LoadingGlide _glide = new();
+    private ProgressBar bar = null!;
+    private Label statusLabel = null!;
+    private Label detailLabel = null!;
+    private Label percent = null!;
+    private readonly LoadingGlide glide = new();
     private const float PercentWidth = 56f;
 
     public override void _Ready()
     {
-        Layer = 120;
+        Layer = UiLayers.Loading;
 
         Ui.Background(this, Backdrop.LoadingArt, Backdrop.Fit.Cover, bottomScrim: true);
 
@@ -30,13 +30,13 @@ public partial class LoadingScreen : CanvasLayer
         box.AddThemeConstantOverride("separation", 8);
         host.AddChild(box);
 
-        _status = Line("Loading…", 19, UiTheme.TextHi, 5);
-        box.AddChild(_status);
+        statusLabel = Line("Loading…", 19, UiTheme.TextHi, 5);
+        box.AddChild(statusLabel);
 
         var barRow = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         barRow.AddThemeConstantOverride("separation", 8);
         box.AddChild(barRow);
-        _bar = new ProgressBar
+        bar = new ProgressBar
         {
             MinValue = 0, MaxValue = 1, Value = 0,
             ShowPercentage = false,
@@ -49,23 +49,23 @@ public partial class LoadingScreen : CanvasLayer
         barBg.SetCornerRadiusAll(3);
         var barFill = new StyleBoxFlat { BgColor = UiTheme.Gold };
         barFill.SetCornerRadiusAll(2);
-        _bar.AddThemeStyleboxOverride("background", barBg);
-        _bar.AddThemeStyleboxOverride("fill", barFill);
-        barRow.AddChild(_bar);
-        _percent = Line("0 %", 15, UiTheme.GoldBright, 4);
-        _percent.HorizontalAlignment = HorizontalAlignment.Right;
-        _percent.CustomMinimumSize = new Vector2(PercentWidth, 0);
-        barRow.AddChild(_percent);
+        bar.AddThemeStyleboxOverride("background", barBg);
+        bar.AddThemeStyleboxOverride("fill", barFill);
+        barRow.AddChild(bar);
+        percent = Line("0 %", 15, UiTheme.GoldBright, 4);
+        percent.HorizontalAlignment = HorizontalAlignment.Right;
+        percent.CustomMinimumSize = new Vector2(PercentWidth, 0);
+        barRow.AddChild(percent);
 
-        _detail = Line("", 12, new Color(UiTheme.TextLo, 0.94f), 4);
-        box.AddChild(_detail);
+        detailLabel = Line("", 12, new Color(UiTheme.TextLo, 0.94f), 4);
+        box.AddChild(detailLabel);
     }
 
     public void Set(string status, double progress, string detail = "")
     {
-        if (_status != null) _status.Text = status;
-        if (_detail != null) _detail.Text = detail;
-        _glide.Set(progress, Now());
+        if (statusLabel != null) statusLabel.Text = status;
+        if (detailLabel != null) detailLabel.Text = detail;
+        glide.Set(progress, FrameClock.Now());
         ShowProgress();
     }
 
@@ -73,13 +73,11 @@ public partial class LoadingScreen : CanvasLayer
 
     private void ShowProgress()
     {
-        if (_bar == null) return;
-        double shown = _glide.At(Now());
-        _bar.Value = shown;
-        _percent.Text = $"{LoadingGlide.Percent(shown)} %";
+        if (bar == null) return;
+        double shown = glide.At(FrameClock.Now());
+        bar.Value = shown;
+        percent.Text = $"{LoadingGlide.Percent(shown)} %";
     }
-
-    private static double Now() => Time.GetTicksMsec() / 1000.0;
 
     private static Label Line(string text, int size, Color color, int outline)
     {

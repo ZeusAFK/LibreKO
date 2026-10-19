@@ -5,37 +5,37 @@ namespace LibreKO.Tests;
 
 public class UpgradeSessionTests
 {
-    private readonly UpgradeSession _session = new();
+    private readonly UpgradeSession session = new();
 
     [Fact]
     public void AWatchedUpgradeIsRevealed()
     {
-        _session.Sent();
-        Assert.True(_session.Awaiting);
-        Assert.Equal(UpgradeAnswerView.Reveal, _session.Answered());
-        Assert.False(_session.Awaiting);
+        session.Sent();
+        Assert.True(session.Awaiting);
+        Assert.Equal(UpgradeAnswerView.Reveal, session.Answered());
+        Assert.False(session.Awaiting);
     }
 
     [Fact]
     public void ClosingAfterSendingKeepsTheUpgradeAndAppliesItQuietly()
     {
-        _session.Sent();
-        _session.Closed();
-        Assert.True(_session.Awaiting);
-        Assert.Equal(UpgradeAnswerView.Quiet, _session.Answered());
+        session.Sent();
+        session.Closed();
+        Assert.True(session.Awaiting);
+        Assert.Equal(UpgradeAnswerView.Quiet, session.Answered());
     }
 
     [Fact]
     public void ReopeningBeforeTheAnswerKeepsTheBenchBusyUntilItArrives()
     {
-        _session.Sent();
-        _session.Closed();
-        Assert.True(_session.Awaiting);
-        Assert.False(_session.CanSend);
-        Assert.Equal(UpgradeAnswerView.Quiet, _session.Answered());
-        Assert.True(_session.CanSend);
+        session.Sent();
+        session.Closed();
+        Assert.True(session.Awaiting);
+        Assert.False(session.CanSend);
+        Assert.Equal(UpgradeAnswerView.Quiet, session.Answered());
+        Assert.True(session.CanSend);
     }
 
     [Fact]
-    public void AnAnswerNobodyWaitsForIsQuiet() => Assert.Equal(UpgradeAnswerView.Quiet, _session.Answered());
+    public void AnAnswerNobodyWaitsForIsQuiet() => Assert.Equal(UpgradeAnswerView.Quiet, session.Answered());
 }

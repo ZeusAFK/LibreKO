@@ -20,6 +20,7 @@ public sealed class PluginInfo
     public string Message { get; internal set; } = "";
     public bool Enabled { get; internal set; }
     internal IPlugin? Instance { get; set; }
+    internal PluginContext? Context { get; set; }
 
     public string Id => Manifest?.Id ?? FolderName;
     public string Name => Manifest?.Name ?? FolderName;

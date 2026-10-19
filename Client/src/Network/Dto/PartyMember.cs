@@ -44,7 +44,7 @@ public readonly record struct PartySignalProbe(uint Token)
     public Packet Echo()
     {
         var p = new Packet(GameOpcodes.GS_PARTY);
-        p.WriteByte(Net.SubPartySignal);
+        p.WriteByte((byte)PartySubOpcode.SignalProbe);
         p.WriteUInt(Token);
         return p;
     }

@@ -4,7 +4,6 @@ namespace LibreKO.Game.Protocol.Writers;
 
 public static class ClanMatchPacketWriter
 {
-    public const byte BattleSub = 19;
     public const byte ResultSub = 1;
     public const byte RosterSub = 2;
     public const byte VitalsSub = 3;
@@ -72,8 +71,7 @@ public static class ClanMatchPacketWriter
 
     private static Packet Battle(byte kind)
     {
-        var packet = new Packet(GameOpcodes.GS_BATTLE_EVENT);
-        packet.WriteByte(BattleSub);
+        var packet = BattleEventPacketWriter.Sub(BattleEventSubOpcode.ClanMatch);
         packet.WriteByte(kind);
         return packet;
     }

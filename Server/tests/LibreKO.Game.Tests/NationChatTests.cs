@@ -12,22 +12,22 @@ namespace LibreKO.Game.Tests;
 
 public class NationChatTests
 {
-    private readonly SessionManager _sessions = new();
-    private readonly Dictionary<int, List<Packet>> _sent = [];
-    private readonly NationChatService _service;
+    private readonly SessionManager sessions = new();
+    private readonly Dictionary<int, List<Packet>> sent = [];
+    private readonly NationChatService service;
 
     public NationChatTests()
     {
-        _service = new NationChatService(_sessions, Substitute.For<IChatRoomHistory>(), Substitute.For<ILogger<NationChatService>>());
+        service = new NationChatService(sessions, Substitute.For<IChatRoomHistory>(), Substitute.For<ILogger<NationChatService>>());
     }
 
     private UserSession Player(int id, AccountNation nation)
     {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
-        var log = _sent[id] = [];
+        var log = sent[id] = [];
         client.SendPacket(Arg.Do<Packet>(p => log.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, characterId: id, accountId: id * 10);
+        var session = sessions.CreateSession(client, characterId: id, accountId: id * 10);
         session.Name = $"Player{id}";
         session.Nation = nation;
         session.ZoneId = 21;
@@ -45,7 +45,7 @@ public class NationChatTests
     private Task Send(UserSession session, Packet packet)
     {
         packet.ResetOffset();
-        return _service.HandleAsync(session.Client, packet);
+        return service.HandleAsync(session.Client, packet);
     }
 
     private Task Create(UserSession owner, string name, string password = "", ushort size = 10)
@@ -69,21 +69,21 @@ public class NationChatTests
 
     private Packet Last(int id, byte nationSub)
     {
-        var packet = _sent[id].Last(p => p.GetOpcode() == (byte)GameOpcodes.GS_NATION_CHAT && Sub(p) == nationSub);
+        var packet = sent[id].Last(p => p.GetOpcode() == (byte)GameOpcodes.GS_NATION_CHAT && Sub(p) == nationSub);
         packet.ResetOffset();
         packet.ReadByte();
         packet.ReadByte();
         return packet;
     }
 
-    private static byte Sub(Packet p)
+    private static byte Sub(Packet packet)
     {
-        p.ResetOffset();
-        p.ReadByte();
-        return p.ReadByte();
+        packet.ResetOffset();
+        packet.ReadByte();
+        return packet.ReadByte();
     }
 
-    private List<Packet> RoomChat(int id) => _sent[id].Where(p => p.GetOpcode() == (byte)GameOpcodes.GS_CHAT).ToList();
+    private List<Packet> RoomChat(int id) => sent[id].Where(p => p.GetOpcode() == (byte)GameOpcodes.GS_CHAT).ToList();
 
     [Fact]
     public async Task CreatingARoomPutsTheOwnerInItAndListsIt()
@@ -150,10 +150,10 @@ public class NationChatTests
 
         await Enter(other, roomId, "pw");
         Last(3, NationChatPacketWriter.PrivateEnter).ReadByte().Should().Be(NationChatResults.Ok);
-        _service.MembersOf(RoomKeyOf(1)).Should().BeEquivalentTo([1, 2, 3]);
+        service.MembersOf(RoomKeyOf(1)).Should().BeEquivalentTo([1, 2, 3]);
     }
 
-    private string RoomKeyOf(int characterId) => _service.TryGetSeat(characterId, out var seat) ? seat.Key : "";
+    private string RoomKeyOf(int characterId) => service.TryGetSeat(characterId, out var seat) ? seat.Key : "";
 
     [Fact]
     public async Task RoomChatReachesOnlyTheMembers()
@@ -165,7 +165,7 @@ public class NationChatTests
         ushort roomId = NationChatService.PrivateRoomIdBase;
         await Enter(friend, roomId);
 
-        await _service.SayAsync(owner, roomId, "hello");
+        await service.SayAsync(owner, roomId, "hello");
 
         var line = RoomChat(2).Last();
         line.ResetOffset();
@@ -177,18 +177,18 @@ public class NationChatTests
         line.ReadUShort().Should().Be(21);
         RoomChat(3).Should().BeEmpty();
 
-        await _service.SayAsync(outsider, roomId, "let me in");
+        await service.SayAsync(outsider, roomId, "let me in");
         RoomChat(1).Should().NotContain(p => Said(p) == "let me in");
     }
 
-    private static string Said(Packet p)
+    private static string Said(Packet packet)
     {
-        p.ResetOffset();
-        p.ReadByte();
-        if (p.ReadByte() != NationChatPacketWriter.SayMessage) return "";
-        p.ReadInt();
-        p.ReadString();
-        return p.ReadString();
+        packet.ResetOffset();
+        packet.ReadByte();
+        if (packet.ReadByte() != NationChatPacketWriter.SayMessage) return "";
+        packet.ReadInt();
+        packet.ReadString();
+        return packet.ReadString();
     }
 
     [Fact]
@@ -254,7 +254,7 @@ public class NationChatTests
         list.ReadString().Should().Be(NationChatService.PublicChannelNames[0]);
         list.ReadUShort().Should().Be(1);
         await Send(elmo, enter);
-        _service.MembersOf(RoomKeyOf(2)).Should().BeEquivalentTo([1, 2]);
+        service.MembersOf(RoomKeyOf(2)).Should().BeEquivalentTo([1, 2]);
 
         var again = Request(NationChatPacketWriter.Create);
         again.WriteString("Second");
@@ -270,7 +270,7 @@ public class NationChatTests
         var owner = Player(1, AccountNation.Karus);
         await Create(owner, "Solo");
 
-        await _service.LeaveAllAsync(owner);
+        await service.LeaveAllAsync(owner);
         await Send(owner, Request(NationChatPacketWriter.PrivateList));
 
         Last(1, NationChatPacketWriter.PrivateList).ReadUShort().Should().Be(0);

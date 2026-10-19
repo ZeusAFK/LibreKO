@@ -26,36 +26,36 @@ public class GlobalAnvilRateService(IOptions<GameServerSettings> settings) : IGl
 {
     private const short MaxUpgradeRate = 10000;
 
-    private readonly Lock _sync = new();
-    private readonly bool _enabled = settings.Value.Global.Anvil.Enabled;
-    private readonly double _maxModifier = NormalizePercent(settings.Value.Global.Anvil.MaxRateSwingPercent);
-    private readonly double _successStep = NormalizePercent(settings.Value.Global.Anvil.SuccessStepPercent);
-    private readonly double _failureStep = NormalizePercent(settings.Value.Global.Anvil.FailureStepPercent);
+    private readonly Lock sync = new();
+    private readonly bool enabled = settings.Value.Global.Anvil.Enabled;
+    private readonly double maxModifier = NormalizePercent(settings.Value.Global.Anvil.MaxRateSwingPercent);
+    private readonly double successStep = NormalizePercent(settings.Value.Global.Anvil.SuccessStepPercent);
+    private readonly double failureStep = NormalizePercent(settings.Value.Global.Anvil.FailureStepPercent);
 
-    private double _modifier;
+    private double modifier;
 
     public GlobalAnvilRateSnapshot GetSnapshot(short baseGenRate)
     {
-        lock (_sync)
+        lock (sync)
         {
-            return CreateSnapshot(baseGenRate, _modifier);
+            return CreateSnapshot(baseGenRate, modifier);
         }
     }
 
     public GlobalAnvilRollOutcome ResolveRoll(short baseGenRate, int roll)
     {
-        lock (_sync)
+        lock (sync)
         {
-            var modifierBefore = _enabled ? _modifier : 0d;
+            var modifierBefore = enabled ? modifier : 0d;
             var effectiveGenRate = CalculateEffectiveGenRate(baseGenRate, modifierBefore);
             var succeeded = effectiveGenRate > roll;
 
-            if (_enabled)
+            if (enabled)
             {
-                _modifier = Math.Clamp(
-                    _modifier + (succeeded ? -_successStep : _failureStep),
-                    -_maxModifier,
-                    _maxModifier);
+                modifier = Math.Clamp(
+                    modifier + (succeeded ? -successStep : failureStep),
+                    -maxModifier,
+                    maxModifier);
             }
 
             return new GlobalAnvilRollOutcome(
@@ -64,13 +64,13 @@ public class GlobalAnvilRateService(IOptions<GameServerSettings> settings) : IGl
                 roll,
                 succeeded,
                 modifierBefore * 100d,
-                (_enabled ? _modifier : 0d) * 100d);
+                (enabled ? modifier : 0d) * 100d);
         }
     }
 
     private GlobalAnvilRateSnapshot CreateSnapshot(short baseGenRate, double modifier)
     {
-        var normalizedModifier = _enabled ? modifier : 0d;
+        var normalizedModifier = enabled ? modifier : 0d;
         return new GlobalAnvilRateSnapshot(
             baseGenRate,
             CalculateEffectiveGenRate(baseGenRate, normalizedModifier),

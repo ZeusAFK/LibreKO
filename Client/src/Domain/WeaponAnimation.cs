@@ -65,8 +65,6 @@ public static class WeaponAnimation
         return GearCheck.Ok;
     }
 
-    public static bool IsLauncher(int rightKind) => rightKind == Launcher;
-
     public static int BreathBase(int rightKind, int leftKind, int rightWeight)
     {
         float w = rightWeight / WeightPerUnit;

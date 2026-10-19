@@ -15,24 +15,24 @@ public partial class Sky
     public float CloudShadowStrength = 0.34f;
     public bool CloudsEnabled = true;
 
-    public Vector3 MoonDir => _moonDir;
-    public Vector3 SunDir => _sunDir;
+    public Vector3 MoonDir => moonDir;
+    public Vector3 SunDir => sunDir;
 
-    private Vector2 _cloudPan;
-    private Vector2 _cirrusPan;
-    private float _cloudCover = 0.45f;
-    private float _coverTarget = 0.45f;
-    private bool _coverInit;
-    private float _sunBlock;
-    private float _moonBlock;
-    private float _moonLit;
-    private Vector3 _sunDir = Vector3.Up;
-    private Vector3 _moonDir = Vector3.Down;
-    private Vector3 _followPos;
-    private ShaderMaterial? _skyTexOn;
+    private Vector2 cloudPan;
+    private Vector2 cirrusPan;
+    private float cloudCover = 0.45f;
+    private float coverTarget = 0.45f;
+    private bool coverInit;
+    private float sunBlock;
+    private float moonBlock;
+    private float moonLit;
+    private Vector3 sunDir = Vector3.Up;
+    private Vector3 moonDir = Vector3.Down;
+    private Vector3 followPos;
+    private ShaderMaterial? skyTexOn;
 
     // At 16 u/s a cloud crossed the sun every ~40s and every shadow pulsed with it.
-    private static float BaseWindSpeed(Weather w) => w switch
+    private static float BaseWindSpeed(Weather weather) => weather switch
     {
         Weather.Windy => 11f,
         Weather.Rainy => 14f,
@@ -40,7 +40,7 @@ public partial class Sky
         _ => 4f,
     };
 
-    private static float CoverFor(Weather w) => w switch
+    private static float CoverFor(Weather weather) => weather switch
     {
         Weather.Windy => 0.62f,
         Weather.Rainy => 0.95f,
@@ -60,27 +60,27 @@ public partial class Sky
     private void ProcessClouds(float dt)
     {
         var wind = WindDir;
-        float speed = BaseWindSpeed(_lastWeather) * WindSpeed;
-        _cloudPan += wind * speed * dt;
-        _cirrusPan += wind * speed * 2.4f * dt;
+        float speed = BaseWindSpeed(lastWeather) * WindSpeed;
+        cloudPan += wind * speed * dt;
+        cirrusPan += wind * speed * 2.4f * dt;
 
-        _cloudPan = _cloudPan.PosMod(1f / Mathf.Max(CloudScale, 1e-6f));
-        _cirrusPan = _cirrusPan.PosMod(1f / Mathf.Max(CloudScale * 0.4f, 1e-6f));
+        cloudPan = cloudPan.PosMod(1f / Mathf.Max(CloudScale, 1e-6f));
+        cirrusPan = cirrusPan.PosMod(1f / Mathf.Max(CloudScale * 0.4f, 1e-6f));
 
-        _coverTarget = Mathf.Clamp(CoverFor(_lastWeather) + CloudBias, 0f, 1f);
-        if (_coverInit) _cloudCover = Mathf.MoveToward(_cloudCover, _coverTarget, dt * 0.12f);
-        else { _cloudCover = _coverTarget; _coverInit = true; }
+        coverTarget = Mathf.Clamp(CoverFor(lastWeather) + CloudBias, 0f, 1f);
+        if (coverInit) cloudCover = Mathf.MoveToward(cloudCover, coverTarget, dt * 0.12f);
+        else { cloudCover = coverTarget; coverInit = true; }
 
         float k = 1f - Mathf.Exp(-dt * 1.2f);
-        float sunTarget = CloudsEnabled && _sunDir.Y > 0f
-            ? CloudField.CoverAt(CloudField.DeckHit(_followPos, _sunDir, CloudHeight), _cloudPan, CloudScale, _cloudCover)
+        float sunTarget = CloudsEnabled && sunDir.Y > 0f
+            ? CloudField.CoverAt(CloudField.DeckHit(followPos, sunDir, CloudHeight), cloudPan, CloudScale, cloudCover)
             : 0f;
-        _sunBlock = Mathf.Lerp(_sunBlock, sunTarget, k);
+        sunBlock = Mathf.Lerp(sunBlock, sunTarget, k);
 
-        float moonTarget = CloudsEnabled && _moonLit > 0.002f
-            ? CloudField.CoverAt(CloudField.DeckHit(_followPos, _moonDir, CloudHeight), _cloudPan, CloudScale, _cloudCover)
+        float moonTarget = CloudsEnabled && moonLit > 0.002f
+            ? CloudField.CoverAt(CloudField.DeckHit(followPos, moonDir, CloudHeight), cloudPan, CloudScale, cloudCover)
             : 0f;
-        _moonBlock = Mathf.Lerp(_moonBlock, moonTarget, k);
+        moonBlock = Mathf.Lerp(moonBlock, moonTarget, k);
     }
 
     private float ApplyClouds(float day, float amb, float overcast, Color sunLight, Color horizon)
@@ -89,36 +89,29 @@ public partial class Sky
         var darkDay = horizon.Lerp(new Color(0.44f, 0.48f, 0.56f), 0.55f) * Mathf.Lerp(0.55f, 0.88f, day);
         var lit = new Color(0.07f, 0.09f, 0.14f).Lerp(litDay, amb);
         var dark = new Color(0.02f, 0.03f, 0.05f).Lerp(darkDay, amb);
-        if (_storm)
+        if (storm)
         {
             lit = lit.Lerp(new Color(0.26f, 0.27f, 0.31f), 0.85f);
             dark = dark.Lerp(new Color(0.08f, 0.09f, 0.12f), 0.85f);
         }
 
-        if (!ReferenceEquals(_skyMat, _skyTexOn))
+        if (!ReferenceEquals(skyMat, skyTexOn))
         {
-            _skyMat.SetShaderParameter(Param.CloudTex, CloudField.Texture);
-            _skyMat.SetShaderParameter(Param.CloudScale, CloudScale);
-            _skyMat.SetShaderParameter(Param.CloudHeight, CloudHeight);
-            _skyTexOn = _skyMat;
+            skyMat.SetShaderParameter(Param.CloudTex, CloudField.Texture);
+            skyMat.SetShaderParameter(Param.CloudScale, CloudScale);
+            skyMat.SetShaderParameter(Param.CloudHeight, CloudHeight);
+            skyTexOn = skyMat;
         }
-        _skyMat.SetShaderParameter(Param.CloudPan, _cloudPan);
-        _skyMat.SetShaderParameter(Param.CirrusPan, _cirrusPan);
-        _skyMat.SetShaderParameter(Param.CloudCover, CloudsEnabled ? _cloudCover : 0f);
-        _skyMat.SetShaderParameter(Param.CloudDensity, CloudsEnabled ? CloudDensity : 0f);
-        _skyMat.SetShaderParameter(Param.CloudLit, lit);
-        _skyMat.SetShaderParameter(Param.CloudDark, dark);
-        _skyMat.SetShaderParameter(Param.CirrusAmount, CloudsEnabled ? CirrusAmount * (1f - overcast * 0.8f) : 0f);
-        _skyMat.SetShaderParameter(Param.SunDir, _sunDir);
+        skyMat.SetShaderParameter(Param.CloudPan, cloudPan);
+        skyMat.SetShaderParameter(Param.CirrusPan, cirrusPan);
+        skyMat.SetShaderParameter(Param.CloudCover, CloudsEnabled ? cloudCover : 0f);
+        skyMat.SetShaderParameter(Param.CloudDensity, CloudsEnabled ? CloudDensity : 0f);
+        skyMat.SetShaderParameter(Param.CloudLit, lit);
+        skyMat.SetShaderParameter(Param.CloudDark, dark);
+        skyMat.SetShaderParameter(Param.CirrusAmount, CloudsEnabled ? CirrusAmount * (1f - overcast * 0.8f) : 0f);
+        skyMat.SetShaderParameter(Param.SunDir, sunDir);
 
-        return 1f - SunCloudInfluence * _sunBlock;
-    }
-
-    public float CloudShadowAt(Vector3 world)
-    {
-        if (!CloudsEnabled) return 1f;
-        var hit = new Vector2(world.X, world.Z) + CloudField.RayStep(_sunDir) * Mathf.Max(CloudHeight - world.Y, 0f);
-        return 1f - CloudShadowStrength * CloudField.CoverAt(hit, _cloudPan, CloudScale, _cloudCover);
+        return 1f - SunCloudInfluence * sunBlock;
     }
 
 }

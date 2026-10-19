@@ -4,13 +4,13 @@ namespace LibreKO.Domain;
 
 public sealed class SlotHold
 {
-    private readonly Dictionary<int, ItemSlot> _held = new();
+    private readonly Dictionary<int, ItemSlot> held = new();
 
-    public bool Active => _held.Count > 0;
+    public bool Active => held.Count > 0;
 
-    public void Hold(int abs, ItemSlot shown) => _held.TryAdd(abs, shown);
+    public void Hold(int abs, ItemSlot shown) => held.TryAdd(abs, shown);
 
-    public ItemSlot Shown(int abs, ItemSlot live) => _held.TryGetValue(abs, out var held) ? held : live;
+    public ItemSlot Shown(int abs, ItemSlot live) => held.TryGetValue(abs, out var heldSlot) ? heldSlot : live;
 
-    public void Release() => _held.Clear();
+    public void Release() => held.Clear();
 }

@@ -12,8 +12,8 @@ public sealed partial class VoiceWaveformView : Control
     private const float DotRadius = 5f;
     private const int FlatSample = 40;
 
-    private byte[] _samples = [];
-    private float _progress;
+    private byte[] samples = [];
+    private float progress;
 
     public event Action<float>? Seeked;
 
@@ -29,29 +29,29 @@ public sealed partial class VoiceWaveformView : Control
 
     public byte[] Samples
     {
-        get => _samples;
+        get => samples;
         set
         {
-            _samples = value;
+            samples = value;
             QueueRedraw();
         }
     }
 
     public float Progress
     {
-        get => _progress;
+        get => progress;
         set
         {
             float clamped = Math.Clamp(value, 0f, 1f);
-            if (Mathf.IsEqualApprox(clamped, _progress)) return;
-            _progress = clamped;
+            if (Mathf.IsEqualApprox(clamped, progress)) return;
+            progress = clamped;
             QueueRedraw();
         }
     }
 
     public override void _Draw()
     {
-        int count = _samples.Length > 0 ? _samples.Length : VoiceWaveform.Samples;
+        int count = samples.Length > 0 ? samples.Length : VoiceWaveform.Samples;
         float left = DotRadius;
         float width = Math.Max(1f, Size.X - DotRadius * 2);
         float step = width / count;
@@ -60,13 +60,13 @@ public sealed partial class VoiceWaveformView : Control
         float tallest = Size.Y - 2;
         for (int i = 0; i < count; i++)
         {
-            byte sample = _samples.Length > 0 ? _samples[i] : (byte)FlatSample;
+            byte sample = samples.Length > 0 ? samples[i] : (byte)FlatSample;
             float height = Math.Max(MinBarHeight, sample / (float)VoiceWaveform.Peak * tallest);
             float x = left + i * step;
-            var colour = (i + 0.5f) / count <= _progress ? Played : Rest;
+            var colour = (i + 0.5f) / count <= progress ? Played : Rest;
             DrawRect(new Rect2(x, middle - height / 2, bar, height), colour);
         }
-        DrawCircle(new Vector2(left + _progress * width, middle), DotRadius, Dot);
+        DrawCircle(new Vector2(left + progress * width, middle), DotRadius, Dot);
     }
 
     public override void _GuiInput(InputEvent ev)
@@ -84,7 +84,7 @@ public sealed partial class NoteDownloadRing : Control
     private const int Points = 32;
     private const float StartAngle = -Mathf.Pi / 2;
 
-    private float _fraction;
+    private float fraction;
 
     public Color Fill { get; set; } = UiTheme.Premium;
     public Color Track { get; set; } = new(UiTheme.TextLo, 0.3f);
@@ -93,12 +93,12 @@ public sealed partial class NoteDownloadRing : Control
 
     public float Fraction
     {
-        get => _fraction;
+        get => fraction;
         set
         {
             float clamped = Math.Clamp(value, 0f, 1f);
-            if (Mathf.IsEqualApprox(clamped, _fraction)) return;
-            _fraction = clamped;
+            if (Mathf.IsEqualApprox(clamped, fraction)) return;
+            fraction = clamped;
             QueueRedraw();
         }
     }
@@ -108,7 +108,7 @@ public sealed partial class NoteDownloadRing : Control
         var centre = Size / 2;
         float radius = Math.Min(Size.X, Size.Y) / 2 - Thickness;
         DrawArc(centre, radius, 0, Mathf.Tau, Points, Track, Thickness, true);
-        if (_fraction > 0f)
-            DrawArc(centre, radius, StartAngle, StartAngle + Mathf.Tau * _fraction, Points, Fill, Thickness, true);
+        if (fraction > 0f)
+            DrawArc(centre, radius, StartAngle, StartAngle + Mathf.Tau * fraction, Points, Fill, Thickness, true);
     }
 }

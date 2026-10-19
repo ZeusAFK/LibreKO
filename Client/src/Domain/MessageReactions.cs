@@ -10,29 +10,29 @@ public readonly record struct ReactionCount(string Emoji, int Count);
 
 public sealed class MessageReactions
 {
-    private readonly List<Reaction> _all = [];
+    private readonly List<Reaction> all = [];
 
-    public IReadOnlyList<Reaction> All => _all;
+    public IReadOnlyList<Reaction> All => all;
 
-    public int Total => _all.Count;
+    public int Total => all.Count;
 
-    public string Of(int characterId) => _all.FirstOrDefault(r => r.CharacterId == characterId).Emoji ?? "";
+    public string Of(int characterId) => all.FirstOrDefault(r => r.CharacterId == characterId).Emoji ?? "";
 
     public bool Set(int characterId, string name, string emoji)
     {
-        int at = _all.FindIndex(r => r.CharacterId == characterId);
+        int at = all.FindIndex(r => r.CharacterId == characterId);
         if (emoji.Length == 0)
         {
             if (at < 0) return false;
-            _all.RemoveAt(at);
+            all.RemoveAt(at);
             return true;
         }
         if (at >= 0)
         {
-            if (_all[at].Emoji == emoji) return false;
-            _all.RemoveAt(at);
+            if (all[at].Emoji == emoji) return false;
+            all.RemoveAt(at);
         }
-        _all.Add(new Reaction(characterId, name, emoji));
+        all.Add(new Reaction(characterId, name, emoji));
         return true;
     }
 
@@ -40,7 +40,7 @@ public sealed class MessageReactions
     {
         var order = new List<string>();
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var reaction in _all)
+        foreach (var reaction in all)
         {
             if (!counts.TryAdd(reaction.Emoji, 1)) counts[reaction.Emoji]++;
             else order.Add(reaction.Emoji);
@@ -53,12 +53,12 @@ public sealed class MessageReactions
             .ToList();
     }
 
-    public override bool Equals(object? obj) => obj is MessageReactions other && _all.SequenceEqual(other._all);
+    public override bool Equals(object? obj) => obj is MessageReactions other && all.SequenceEqual(other.all);
 
-    public override int GetHashCode() => _all.Count;
+    public override int GetHashCode() => all.Count;
 
     public IReadOnlyList<Reaction> Listed(string emoji, int self) =>
-        _all.Where(r => emoji.Length == 0 || r.Emoji == emoji)
+        all.Where(r => emoji.Length == 0 || r.Emoji == emoji)
             .OrderByDescending(r => r.CharacterId == self)
             .ThenBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();

@@ -13,32 +13,32 @@ public static class FxRegistry
         public Aabb? LocalBounds;
     }
 
-    private static readonly List<Entry> _live = new();
-    private static int _pruneAt = 512;
+    private static readonly List<Entry> live = new();
+    private static int pruneAt = 512;
 
     public static T? Track<T>(T? node, string name, string kind) where T : Node3D
     {
         if (node == null) return null;
-        if (_live.Count >= _pruneAt) Prune();
-        _live.Add(new Entry { Node = node, Name = name, Kind = kind });
+        if (live.Count >= pruneAt) Prune();
+        live.Add(new Entry { Node = node, Name = name, Kind = kind });
         return node;
     }
 
     public static void Prune()
     {
-        for (int i = _live.Count - 1; i >= 0; i--)
-            if (!GodotObject.IsInstanceValid(_live[i].Node)) _live.RemoveAt(i);
-        _pruneAt = Mathf.Max(512, _live.Count * 2);
+        for (int i = live.Count - 1; i >= 0; i--)
+            if (!GodotObject.IsInstanceValid(live[i].Node)) live.RemoveAt(i);
+        pruneAt = Mathf.Max(512, live.Count * 2);
     }
 
     public static void Clear()
     {
-        _live.Clear();
-        _pruneAt = 512;
+        live.Clear();
+        pruneAt = 512;
     }
 
     public static List<Entry> Live
     {
-        get { Prune(); return _live; }
+        get { Prune(); return live; }
     }
 }

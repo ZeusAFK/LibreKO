@@ -42,12 +42,6 @@ public class EventSystemsPacketCoordinator(
     private const byte TempleEventJoin = 8;
     private const byte TempleEventDisband = 9;
 
-    private const byte BattleEventOpen = 1;
-    private const byte BattleMapEventResult = 2;
-    private const byte BattleEventResult = 3;
-    private const byte BattleEventMaxUser = 4;
-    private const byte BattleEventKillUser = 5;
-
     private const int WarderKillLoyalty = 500;
     private const int GatekeeperKillLoyalty = 1000;
 
@@ -115,26 +109,26 @@ public class EventSystemsPacketCoordinator(
         if (session == null || packet.RemainingBytes < 1)
             return;
 
-        var subOpcode = packet.ReadByte();
+        var subOpcode = (BattleEventSubOpcode)packet.ReadByte();
         switch (subOpcode)
         {
-            case BattleEventOpen:
+            case BattleEventSubOpcode.Open:
                 await HandleBattleEventOpenAsync(session);
                 break;
 
-            case BattleMapEventResult:
+            case BattleEventSubOpcode.MapEventResult:
                 HandleBattleMapEventResult(packet);
                 break;
 
-            case BattleEventResult:
+            case BattleEventSubOpcode.Result:
                 await HandleBattleEventResultAsync(session, packet);
                 break;
 
-            case BattleEventMaxUser:
+            case BattleEventSubOpcode.MaxUser:
                 await HandleBattleEventMaxUserAsync(session, packet);
                 break;
 
-            case BattleEventKillUser:
+            case BattleEventSubOpcode.KillUser:
                 break;
 
             default:
@@ -172,8 +166,7 @@ public class EventSystemsPacketCoordinator(
         if (!battle.OpenBattleZone(type, zone))
             return;
 
-        var packet = EventPacketWriter.BattleZoneOpened(
-            BattleEventOpen,
+        var packet = BattleEventPacketWriter.ZoneOpened(
             type == BattleZoneManager.SNOW_BATTLEZONE_OPEN
                 ? BattleZoneManager.SNOW_BATTLEZONE_OPEN
                 : BattleZoneManager.BATTLEZONE_OPEN,
@@ -192,11 +185,9 @@ public class EventSystemsPacketCoordinator(
         if (winner > 0)
             await AnnounceBattleResultAsync(winner);
 
+        var zone = battle.BattleZone;
         battle.CloseBattleZone();
-
-        var packet = EventPacketWriter.BattleZoneClosed(
-            BattleEventOpen, BattleZoneManager.BATTLEZONE_CLOSE);
-        await sessionManager.BroadcastToAll(packet);
+        await sessionManager.BroadcastToAll(BattleEventPacketWriter.ZoneClosed(zone));
     }
 
     public async Task AssignRivalAsync(UserSession player, UserSession rival)
@@ -319,8 +310,7 @@ public class EventSystemsPacketCoordinator(
             ? (int)Math.Max(0, (battle.BattleDuration - battle.GetElapsedTime()).TotalSeconds)
             : 0;
 
-        var packet = EventPacketWriter.BattleZoneState(
-            BattleEventOpen, battle.BattleOpen, battle.BattleZone, secondsRemaining);
+        var packet = BattleEventPacketWriter.ZoneState(battle.BattleOpen, battle.BattleZone, secondsRemaining);
 
         await session.Client.SendPacket(packet);
     }
@@ -375,16 +365,8 @@ public class EventSystemsPacketCoordinator(
 
     private async Task AnnounceBattleResultAsync(byte winnerNation)
     {
-        var winnerPacket = EventPacketWriter.BattleDeclare(
-            BattleEventResult, BattleZoneManager.DECLARE_WINNER, winnerNation);
-        await sessionManager.BroadcastToAll(winnerPacket);
-
-        var loserPacket = EventPacketWriter.BattleDeclare(
-            BattleEventResult, BattleZoneManager.DECLARE_LOSER,
-            winnerNation == (byte)AccountNation.Karus
-                ? (byte)AccountNation.ElMorad
-                : (byte)AccountNation.Karus);
-        await sessionManager.BroadcastToAll(loserPacket);
+        foreach (var packet in BattleEventPacketWriter.Winner(winnerNation))
+            await sessionManager.BroadcastToAll(packet);
     }
 
 }

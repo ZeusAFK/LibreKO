@@ -31,11 +31,11 @@ public sealed class KrowazService(
     private const int SecondsPerMinute = 60;
     private const int StartMinuteOfHour = 0;
 
-    private readonly object _lock = new();
-    private DateTime _closesAt;
-    private int _lastCountdown;
-    private int _lastSweepMinute = -1;
-    private DateTime _lastOpenMinute = DateTime.MinValue;
+    private readonly object stateLock = new();
+    private DateTime closesAt;
+    private int lastCountdown;
+    private int lastSweepMinute = -1;
+    private DateTime lastOpenMinute = DateTime.MinValue;
 
     public bool IsOpen => sessionManager.Battle.KrowazOpen;
 
@@ -43,8 +43,8 @@ public sealed class KrowazService(
     {
         get
         {
-            lock (_lock)
-                return IsOpen ? Math.Max(0, (int)(_closesAt - Clock()).TotalSeconds) : 0;
+            lock (stateLock)
+                return IsOpen ? Math.Max(0, (int)(closesAt - Clock()).TotalSeconds) : 0;
         }
     }
 
@@ -52,22 +52,22 @@ public sealed class KrowazService(
 
     public async Task OpenAtAsync(DateTime now)
     {
-        lock (_lock)
+        lock (stateLock)
         {
             if (IsOpen)
                 return;
             sessionManager.Battle.KrowazOpen = true;
-            _closesAt = now.AddMinutes(OpenMinutes);
-            _lastCountdown = int.MaxValue;
+            closesAt = now.AddMinutes(OpenMinutes);
+            lastCountdown = int.MaxValue;
         }
 
-        logger.LogInformation("Krowaz's Dominion opened until {ClosesAt}", _closesAt);
+        logger.LogInformation("Krowaz's Dominion opened until {ClosesAt}", closesAt);
         await sessionManager.BroadcastToAll(KrowazPacketWriter.Opened());
     }
 
     public async Task CloseAsync()
     {
-        lock (_lock)
+        lock (stateLock)
         {
             if (!IsOpen)
                 return;
@@ -88,16 +88,16 @@ public sealed class KrowazService(
     public async Task TickAtAsync(DateTime now)
     {
         var minute = now.Date.AddHours(now.Hour).AddMinutes(now.Minute);
-        if (!IsOpen && now.Minute == StartMinuteOfHour && minute != _lastOpenMinute
+        if (!IsOpen && now.Minute == StartMinuteOfHour && minute != lastOpenMinute
             && settings.Value.Events.KrowazStartHours.Contains(now.Hour))
         {
-            _lastOpenMinute = minute;
+            lastOpenMinute = minute;
             await OpenAtAsync(now);
         }
 
         if (IsOpen)
         {
-            int remaining = (int)Math.Ceiling((_closesAt - now).TotalSeconds);
+            int remaining = (int)Math.Ceiling((closesAt - now).TotalSeconds);
             if (remaining <= 0)
             {
                 await CloseAsync();
@@ -106,18 +106,18 @@ public sealed class KrowazService(
 
             foreach (int minutes in CountdownMinutes)
             {
-                if (remaining > minutes * SecondsPerMinute || _lastCountdown <= minutes)
+                if (remaining > minutes * SecondsPerMinute || lastCountdown <= minutes)
                     continue;
-                _lastCountdown = minutes;
+                lastCountdown = minutes;
                 await sessionManager.BroadcastToAll(KrowazPacketWriter.Countdown(minutes));
                 break;
             }
             return;
         }
 
-        if (now.Minute != _lastSweepMinute)
+        if (now.Minute != lastSweepMinute)
         {
-            _lastSweepMinute = now.Minute;
+            lastSweepMinute = now.Minute;
             await SweepAsync();
         }
     }

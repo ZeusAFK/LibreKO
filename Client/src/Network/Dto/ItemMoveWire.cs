@@ -1,14 +1,12 @@
-﻿using LibreKO.Domain;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public static class ItemMoveWire
 {
-    public static Packet Move(byte direction, int itemId, byte sourcePosition, byte destinationPosition, ushort amount)
+    public static Packet Move(ItemMoveDirection direction, int itemId, byte sourcePosition, byte destinationPosition, ushort amount)
     {
         var p = new Packet(GameOpcodes.GS_ITEM_MOVE);
-        p.WriteByte(ItemMove.MoveRequest);
-        p.WriteByte(direction);
+        p.WriteByte((byte)ItemMoveSubOpcode.Move);
+        p.WriteByte((byte)direction);
         p.WriteInt(itemId);
         p.WriteByte(sourcePosition);
         p.WriteByte(destinationPosition);

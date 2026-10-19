@@ -51,16 +51,16 @@ public sealed class SoccerService(
     private const float PositionScale = 10f;
     private const ushort BallMoveRate = 60;
 
-    private readonly ConcurrentDictionary<int, byte> _teams = new();
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private int _secondsLeft;
-    private bool _practice;
-    private byte _blue, _red;
-    private int _lastKickerId;
+    private readonly ConcurrentDictionary<int, byte> teams = new();
+    private readonly SemaphoreSlim stateLock = new(1, 1);
+    private int secondsLeft;
+    private bool practice;
+    private byte blue, red;
+    private int lastKickerId;
 
     public bool Running { get; private set; }
 
-    public byte TeamOf(int characterId) => _teams.GetValueOrDefault(characterId);
+    public byte TeamOf(int characterId) => teams.GetValueOrDefault(characterId);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -83,26 +83,26 @@ public sealed class SoccerService(
 
     public async Task<SoccerJoinResult> JoinAsync(UserSession session, byte team)
     {
-        await _lock.WaitAsync();
+        await stateLock.WaitAsync();
         try
         {
             if (session.ZoneId != PitchZone)
                 return SoccerJoinResult.WrongZone;
             if (team is not (TeamBlue or TeamRed))
                 return SoccerJoinResult.BadTeam;
-            if (_teams.ContainsKey(session.CharacterId))
+            if (teams.ContainsKey(session.CharacterId))
                 return SoccerJoinResult.AlreadyIn;
-            if (_teams.Values.Count(t => t == team) >= MaxTeamPlayers)
+            if (teams.Values.Count(t => t == team) >= MaxTeamPlayers)
                 return SoccerJoinResult.TeamFull;
-            _teams[session.CharacterId] = team;
+            teams[session.CharacterId] = team;
         }
         finally
         {
-            _lock.Release();
+            stateLock.Release();
         }
 
         await session.Client.SendPacket(Running
-            ? SoccerPacketWriter.Sync(_secondsLeft, _blue, _red)
+            ? SoccerPacketWriter.Sync(secondsLeft, blue, red)
             : SoccerPacketWriter.Clock(0));
         await WarpAsync(session, SoccerPitch.CentreX, team == TeamBlue ? SoccerPitch.BlueKickOffZ : SoccerPitch.RedKickOffZ);
         await SetTeamAsync(session, team);
@@ -112,23 +112,23 @@ public sealed class SoccerService(
 
     public async Task<bool> StartAsync(UserSession session, bool practice = false)
     {
-        await _lock.WaitAsync();
+        await stateLock.WaitAsync();
         try
         {
             if (Running)
                 return false;
-            if (!practice && (!_teams.ContainsKey(session.CharacterId)
-                              || !_teams.Values.Contains(TeamBlue) || !_teams.Values.Contains(TeamRed)))
+            if (!practice && (!teams.ContainsKey(session.CharacterId)
+                              || !teams.Values.Contains(TeamBlue) || !teams.Values.Contains(TeamRed)))
                 return false;
             Running = true;
-            _practice = practice;
-            _secondsLeft = MatchSeconds;
-            _blue = _red = 0;
-            _lastKickerId = 0;
+            this.practice = practice;
+            secondsLeft = MatchSeconds;
+            blue = red = 0;
+            lastKickerId = 0;
         }
         finally
         {
-            _lock.Release();
+            stateLock.Release();
         }
 
         await KickOffAsync();
@@ -139,7 +139,7 @@ public sealed class SoccerService(
 
     public async Task LeaveAsync(UserSession session)
     {
-        if (!_teams.TryRemove(session.CharacterId, out _))
+        if (!teams.TryRemove(session.CharacterId, out _))
             return;
         await SetTeamAsync(session, TeamNone);
     }
@@ -156,7 +156,7 @@ public sealed class SoccerService(
             return false;
 
         var (x, z) = SoccerPitch.KickLanding(ball.X, ball.Z, data[KickXSlot], data[KickZSlot]);
-        _lastKickerId = caster.CharacterId;
+        lastKickerId = caster.CharacterId;
         await MoveBallAsync(ball, x, z);
         return true;
     }
@@ -165,19 +165,19 @@ public sealed class SoccerService(
     {
         if (!Running)
             return;
-        if (!_practice && Players().Count <= 1)
-            _secondsLeft = Math.Min(_secondsLeft, LastSecond);
+        if (!practice && Players().Count <= 1)
+            secondsLeft = Math.Min(secondsLeft, LastSecond);
 
         if (Ball() is { } ball)
         {
             switch (SoccerPitch.Classify(ball.X, ball.Z))
             {
                 case SoccerBallSpot.BlueScores:
-                    _blue++;
+                    blue++;
                     await ScoreAsync(TeamRed);
                     break;
                 case SoccerBallSpot.RedScores:
-                    _red++;
+                    red++;
                     await ScoreAsync(TeamBlue);
                     break;
                 case SoccerBallSpot.Out:
@@ -186,8 +186,8 @@ public sealed class SoccerService(
             }
         }
 
-        _secondsLeft--;
-        if (_secondsLeft <= 0)
+        secondsLeft--;
+        if (secondsLeft <= 0)
             await FinishAsync();
     }
 
@@ -196,23 +196,23 @@ public sealed class SoccerService(
         if (!Running)
             return;
         Running = false;
-        byte winner = _blue > _red ? TeamBlue : _red > _blue ? TeamRed : Draw;
+        byte winner = blue > red ? TeamBlue : red > blue ? TeamRed : Draw;
         var players = Players();
         foreach (var (session, team) in players)
             await WarpAsync(session, team == TeamBlue ? SoccerPitch.BlueExitX : SoccerPitch.RedExitX,
                 team == TeamBlue ? SoccerPitch.BlueExitZ : SoccerPitch.RedExitZ);
-        await SendToAudienceAsync(SoccerPacketWriter.End(winner, _blue, _red));
+        await SendToAudienceAsync(SoccerPacketWriter.End(winner, blue, red));
         foreach (var (session, _) in players)
             await SetTeamAsync(session, TeamNone);
-        _teams.Clear();
+        teams.Clear();
         await ResetBallAsync();
-        logger.LogInformation("Soccer match ended {Blue} - {Red}", _blue, _red);
+        logger.LogInformation("Soccer match ended {Blue} - {Red}", blue, red);
     }
 
     private async Task ScoreAsync(byte goalTeam)
     {
-        byte kickerTeam = TeamOf(_lastKickerId);
-        await SendToAudienceAsync(SoccerPacketWriter.Goal(_lastKickerId, kickerTeam, goalTeam, _blue, _red));
+        byte kickerTeam = TeamOf(lastKickerId);
+        await SendToAudienceAsync(SoccerPacketWriter.Goal(lastKickerId, kickerTeam, goalTeam, blue, red));
         await KickOffAsync();
     }
 
@@ -230,7 +230,7 @@ public sealed class SoccerService(
     private List<(UserSession Session, byte Team)> Players()
     {
         var players = new List<(UserSession, byte)>();
-        foreach (var (characterId, team) in _teams)
+        foreach (var (characterId, team) in teams)
             if (sessionManager.GetByCharacterId(characterId) is { } session && session.ZoneId == PitchZone)
                 players.Add((session, team));
         return players;
@@ -243,7 +243,7 @@ public sealed class SoccerService(
             if (session.ZoneId != PitchZone)
                 continue;
             float dx = session.X - SoccerPitch.CentreX, dz = session.Z - SoccerPitch.CentreZ;
-            if (_teams.ContainsKey(session.CharacterId) || dx * dx + dz * dz <= SoccerPitch.SpectatorRange * SoccerPitch.SpectatorRange)
+            if (teams.ContainsKey(session.CharacterId) || dx * dx + dz * dz <= SoccerPitch.SpectatorRange * SoccerPitch.SpectatorRange)
                 await session.Client.SendPacket(packet);
         }
     }

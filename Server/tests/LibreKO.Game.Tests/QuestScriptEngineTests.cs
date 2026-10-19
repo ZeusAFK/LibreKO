@@ -20,9 +20,9 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
 {
     private sealed class ManualClock : TimeProvider
     {
-        private DateTimeOffset _now = DateTimeOffset.UtcNow;
-        public override DateTimeOffset GetUtcNow() => _now;
-        public void Advance() => _now = _now.AddSeconds(1);
+        private DateTimeOffset now = DateTimeOffset.UtcNow;
+        public override DateTimeOffset GetUtcNow() => now;
+        public void Advance() => now = now.AddSeconds(1);
     }
     private const int NpcId = 16079;
     private const int GreetingEvent = 1205;
@@ -39,20 +39,20 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
             Topic 27 goto close
         """;
 
-    private readonly string _directory =
+    private readonly string directory =
         Path.Combine(Path.GetTempPath(), "kq-" + Guid.NewGuid().ToString("N"));
 
     public QuestScriptEngineTests()
     {
-        Directory.CreateDirectory(_directory);
-        File.WriteAllText(Path.Combine(_directory, ScriptName), Script);
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, ScriptName), Script);
     }
 
     public void Dispose()
     {
         try
         {
-            Directory.Delete(_directory, recursive: true);
+            Directory.Delete(directory, recursive: true);
         }
         catch (IOException)
         {
@@ -75,8 +75,8 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public void AnEventOnlyAnotherFileBorrowsIsNotReportedAsDead()
     {
-        File.Delete(Path.Combine(_directory, ScriptName));
-        File.WriteAllText(Path.Combine(_directory, "16079_21_0.quest"), """
+        File.Delete(Path.Combine(directory, ScriptName));
+        File.WriteAllText(Path.Combine(directory, "16079_21_0.quest"), """
             Bind Npc 16079 Zone 21
             On greeting
                 Say "Hello."
@@ -85,7 +85,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
             On forgotten
                 Give 1 coins
             """);
-        File.WriteAllText(Path.Combine(_directory, "16079_21_61.quest"), """
+        File.WriteAllText(Path.Combine(directory, "16079_21_61.quest"), """
             Bind Npc 16079 Zone 21
             payout = event from 16079_21_0
             Quest 61
@@ -104,15 +104,15 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task AQuestFileReachesAnEventDeclaredAsSharedAndAnsweredByItsNpcsOtherFile()
     {
-        File.Delete(Path.Combine(_directory, ScriptName));
-        File.WriteAllText(Path.Combine(_directory, "16079_21_0.quest"), """
+        File.Delete(Path.Combine(directory, ScriptName));
+        File.WriteAllText(Path.Combine(directory, "16079_21_0.quest"), """
             Bind Npc 16079 Zone 21
             On greeting
                 Say "Hello."
             On payout
                 Give 23 coins
             """);
-        File.WriteAllText(Path.Combine(_directory, "16079_21_61.quest"), """
+        File.WriteAllText(Path.Combine(directory, "16079_21_61.quest"), """
             Bind Npc 16079 Zone 21
             payout = event from 16079_21_0
             Quest 61
@@ -131,9 +131,9 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task AnEventEachFileAnswersForItselfIsNotSharedByAccident()
     {
-        File.Delete(Path.Combine(_directory, ScriptName));
+        File.Delete(Path.Combine(directory, ScriptName));
         foreach (var (quest, coins) in new[] { (61, 5), (62, 9) })
-            File.WriteAllText(Path.Combine(_directory, $"16079_21_{quest}.quest"), $"""
+            File.WriteAllText(Path.Combine(directory, $"16079_21_{quest}.quest"), $"""
                 Bind Npc 16079 Zone 21
                 Quest {quest}
                 On accept
@@ -153,9 +153,9 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task BoundQuestFilesShareTopicsAndKeepRepliesAndQuestScopesSeparate()
     {
-        File.Delete(Path.Combine(_directory, ScriptName));
+        File.Delete(Path.Combine(directory, ScriptName));
         foreach (var (quest, coins) in new[] { (61, 7), (62, 11) })
-            File.WriteAllText(Path.Combine(_directory, $"16079_21_{quest}.quest"), $"""
+            File.WriteAllText(Path.Combine(directory, $"16079_21_{quest}.quest"), $"""
                 Bind Npc 16079 Zone 21
                 Quest {quest}
                 On greeting
@@ -190,11 +190,11 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task SpecificBindingOverridesOnlyTheMatchingQuest()
     {
-        File.Delete(Path.Combine(_directory, ScriptName));
+        File.Delete(Path.Combine(directory, ScriptName));
         foreach (var (name, binding, quest, coins) in new[]
                  { ("a", "Npc 16079", 61, 1), ("b", "Npc 16079 Zone 21", 61, 2),
                    ("c", "Npc 16079", 62, 3) })
-            File.WriteAllText(Path.Combine(_directory, name + ".quest"), $"""
+            File.WriteAllText(Path.Combine(directory, name + ".quest"), $"""
                 Bind {binding}
                 Quest {quest}
                 On topics
@@ -217,8 +217,8 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [InlineData(true)]
     public async Task GreetingRepliesReturnToTheSharedMenuAndSpecialGreetingsKeepTheirOwnChoices(bool special)
     {
-        File.Delete(Path.Combine(_directory, ScriptName));
-        File.WriteAllText(Path.Combine(_directory, "greeting.quest"), """
+        File.Delete(Path.Combine(directory, ScriptName));
+        File.WriteAllText(Path.Combine(directory, "greeting.quest"), """
             Bind Npc 16079
             On greeting
                 If player level >= 10
@@ -227,7 +227,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
                 Else
                     Say "Shared"
             """);
-        File.WriteAllText(Path.Combine(_directory, "quest.quest"), """
+        File.WriteAllText(Path.Combine(directory, "quest.quest"), """
             Bind Npc 16079
             Quest 61
             On topics
@@ -305,7 +305,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task NestedScriptsAreAddressedByTheirDeclaredNpcAndKeepTheirOwnButtons()
     {
-        var nested = Path.Combine(_directory, "rewards");
+        var nested = Path.Combine(directory, "rewards");
         Directory.CreateDirectory(nested);
         File.WriteAllText(Path.Combine(nested, "friendly.quest"), """
             Bind Npc 16080
@@ -334,8 +334,8 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     {
         foreach (var (folder, npc) in new[] { ("one", 100), ("two", 200) })
         {
-            Directory.CreateDirectory(Path.Combine(_directory, folder));
-            File.WriteAllText(Path.Combine(_directory, folder, "npc.quest"),
+            Directory.CreateDirectory(Path.Combine(directory, folder));
+            File.WriteAllText(Path.Combine(directory, folder, "npc.quest"),
                 $"Bind Npc {npc}\nOn greeting\n    Give {npc} coins\n");
         }
         var (engine, _, _) = CreateHarness();
@@ -347,7 +347,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public void HotReloadDetectsEditsToAnOlderFileAndRecoversFromCompileErrors()
     {
-        var older = Path.Combine(_directory, "older.quest");
+        var older = Path.Combine(directory, "older.quest");
         File.WriteAllText(older, "Bind Npc 100\nOn greeting\n    Give 1 coins\n");
         File.SetLastWriteTimeUtc(older, DateTime.UtcNow.AddDays(-2));
         var clock = new ManualClock();
@@ -368,9 +368,9 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task EditingAnIncludeReloadsItsConsumers()
     {
-        var include = Path.Combine(_directory, "words.quest");
+        var include = Path.Combine(directory, "words.quest");
         File.WriteAllText(include, "amount = item 100\n");
-        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+        File.WriteAllText(Path.Combine(directory, ScriptName), """
             include words
             Bind Npc 16079
             On greeting
@@ -388,7 +388,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
         File.WriteAllText(include, "amount = item 200\n");
         File.SetLastWriteTimeUtc(include, DateTime.UtcNow.AddSeconds(1));
         clock.Advance();
-        var compilation = LibreKO.Quests.QuestCompilation.CreateFromFile(Path.Combine(_directory, ScriptName));
+        var compilation = LibreKO.Quests.QuestCompilation.CreateFromFile(Path.Combine(directory, ScriptName));
         var condition = (BoundCondition.Predicate)compilation.Program.Events[greeting].Body
             .OfType<BoundStatement.If>().Single().Arms[0].Condition;
         condition.Arguments.GetInt("item").Should().Be(200);
@@ -399,7 +399,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task ScriptOnlyKillQuestsResetOnRestartAndSendTheirCounts()
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+        File.WriteAllText(Path.Combine(directory, ScriptName), """
             Bind Npc 16079
             Quest 777
                 Kill 7 of 100
@@ -427,7 +427,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [InlineData(10, 4)]
     public async Task JournalAbandonUsesItsScriptAwayFromTheNpcAndPreservesItsGate(byte level, byte expectedState)
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+        File.WriteAllText(Path.Combine(directory, ScriptName), """
             Bind Npc 16079
             On abandon for quest 777
                 If player level >= 10
@@ -451,7 +451,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task ScriptButtonsBindRewardSlotsForTheExistingGodotMenu()
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+        File.WriteAllText(Path.Combine(directory, ScriptName), """
             Bind Npc 16079
             On greeting
                 Say "Choose one."
@@ -478,7 +478,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     {
         var choices = Enumerable.Range(0, 20).Select(index =>
             $"    If player level >= 0\n        Topic \"Reward {index}\" reward {index % 5} goto reward\n");
-        File.WriteAllText(Path.Combine(_directory, ScriptName),
+        File.WriteAllText(Path.Combine(directory, ScriptName),
             "Bind Npc 16079\nOn greeting\n    Say \"Choose\"\n" + string.Concat(choices)
             + "    Topic \"Cancel\" goto close\nOn reward\n    Give 1 coins\n");
         var (engine, session, sent) = CreateHarness();
@@ -512,8 +512,8 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     public async Task AmbiguousAbandonHandlersCannotFallBackToUnconditionalAbandon()
     {
         var script = "Bind Npc 16079\nOn abandon for quest 777\n    Abandon 777\n";
-        File.WriteAllText(Path.Combine(_directory, ScriptName), script);
-        var duplicate = Path.Combine(_directory, "duplicate.quest");
+        File.WriteAllText(Path.Combine(directory, ScriptName), script);
+        var duplicate = Path.Combine(directory, "duplicate.quest");
         File.WriteAllText(duplicate, script.Replace("16079", "100"));
         var clock = new ManualClock();
         var (engine, session, _) = CreateHarness(clock);
@@ -532,7 +532,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task ReadinessNotifiesOncePerTransitionAndStaysOffTheNpcClaimPage()
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+        File.WriteAllText(Path.Combine(directory, ScriptName), """
             Bind Npc 16079 Zone 21
             Quest 62 "A new hunt"
                 Kill 1 of 850
@@ -586,7 +586,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task TheStarterRescueCompletesFromItsReadyNotice()
     {
-        File.Copy(BakedQuestPath("0_21_500.quest"), Path.Combine(_directory, "0_21_500.quest"), true);
+        File.Copy(BakedQuestPath("0_21_500.quest"), Path.Combine(directory, "0_21_500.quest"), true);
         var (engine, session, sent) = CreateHarness();
         session.Hp = 100;
         session.ZoneId = 21;
@@ -675,7 +675,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task TheStarterRescueAlsoCompletesFromTheJournalWithNoNpc()
     {
-        File.Copy(BakedQuestPath("0_21_500.quest"), Path.Combine(_directory, "0_21_500.quest"), true);
+        File.Copy(BakedQuestPath("0_21_500.quest"), Path.Combine(directory, "0_21_500.quest"), true);
         var (engine, session, _) = CreateHarness();
         session.Hp = 100;
         session.ZoneId = 21;
@@ -692,7 +692,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task AvailabilityTransitionsNotifyWithoutTalkingAndKeepNpcRepliesSeparate()
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+        File.WriteAllText(Path.Combine(directory, ScriptName), """
             Bind Npc 16079 Zone 21
             Quest 62 "A new hunt"
             Requires player level >= 3
@@ -758,7 +758,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task ALevelUpAnnouncesOnlyTheQuestsItUnlocks()
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+        File.WriteAllText(Path.Combine(directory, ScriptName), """
             Bind Npc 16079 Zone 21
             Quest 62 "A new hunt"
             Requires player level >= 3
@@ -769,7 +769,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
             On offer
                 Show quest "Will you help with the hunt?"
             """);
-        File.WriteAllText(Path.Combine(_directory, "bigger-hunt.quest"), """
+        File.WriteAllText(Path.Combine(directory, "bigger-hunt.quest"), """
             Bind Npc 16079 Zone 21
             Quest 63 "A bigger hunt"
             Requires player level >= 5
@@ -803,11 +803,11 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task ManifestLoadsOnlyListedScriptsAndFallbackCanBeDisabled()
     {
-        File.WriteAllText(Path.Combine(_directory, "retail.quest"),
+        File.WriteAllText(Path.Combine(directory, "retail.quest"),
             "Bind Npc 16079\nQuest 62 \"Retail hunt\"\nRewards\n    Give 1 coins\n");
-        File.WriteAllText(Path.Combine(_directory, "legacy.quest"),
+        File.WriteAllText(Path.Combine(directory, "legacy.quest"),
             "Bind Npc 16079\nQuest 999 \"Legacy hunt\"\nRewards\n    Give 2 coins\n");
-        File.WriteAllText(Path.Combine(_directory, "quest-manifest.json"), "[\"retail.quest\"]");
+        File.WriteAllText(Path.Combine(directory, "quest-manifest.json"), "[\"retail.quest\"]");
         var (engine, session, _) = CreateHarness(manifestOnly: true);
         engine.TextFor(62)!.Title.Should().Be("Retail hunt");
         engine.TextFor(999).Should().BeNull();
@@ -825,7 +825,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     public void ExplicitManifestDoesNotLoadOtherFilesWhenMissingOrInvalid(string? manifest)
     {
         if (manifest is not null)
-            File.WriteAllText(Path.Combine(_directory, "quest-manifest.json"), manifest);
+            File.WriteAllText(Path.Combine(directory, "quest-manifest.json"), manifest);
         var (engine, _, _) = CreateHarness(manifestOnly: true);
         engine.Handles(ScriptName).Should().BeFalse();
         engine.TryGetGreeting(NpcId, 1, out _, out _).Should().BeFalse();
@@ -834,8 +834,8 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task CompileErrorsDoNotRunTheScript()
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), "Bind Npc broken\n");
-        File.WriteAllText(Path.Combine(_directory, "quest-manifest.json"), $"[\"{ScriptName}\"]");
+        File.WriteAllText(Path.Combine(directory, ScriptName), "Bind Npc broken\n");
+        File.WriteAllText(Path.Combine(directory, "quest-manifest.json"), $"[\"{ScriptName}\"]");
         var (engine, session, _) = CreateHarness(manifestOnly: true);
         var runner = new QuestDialogRunner(engine, Substitute.For<ILogger<QuestDialogRunner>>());
         (await runner.RunAsync(session, null, GreetingEvent, -1, ScriptName)).Should().BeFalse();
@@ -854,7 +854,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [InlineData(3210)]
     public async Task ZoneAutoAcceptanceAndCompletionAreEntirelyScriptDriven(int questId)
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), $"""
+        File.WriteAllText(Path.Combine(directory, ScriptName), $"""
             Bind Zone 21
             Quest {questId} "Rescue"
                 Kill 1 of 750
@@ -934,13 +934,13 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
 
         var effects = new ForwardingEffectApplier();
 
-        var settings = Options.Create(new GameServerSettings { QuestsDirectory = _directory, QuestManifest = manifestOnly ? "quest-manifest.json" : null });
+        var settings = Options.Create(new GameServerSettings { QuestsDirectory = directory, QuestManifest = manifestOnly ? "quest-manifest.json" : null });
         var engine = new QuestScriptEngine(
             gameData,
             sessionManager,
             effects,
             LibreKO.Quests.Localization.QuestTranslations.Empty,
-            TestHostEnvironmentFactory.Create(_directory),
+            TestHostEnvironmentFactory.Create(directory),
             settings,
             logger ?? Substitute.For<ILogger<QuestScriptEngine>>(), clock);
 
@@ -950,7 +950,7 @@ public class QuestScriptEngineTests : GameTestBase, IDisposable
     [Fact]
     public async Task AFailedExchangeDoesNotCompleteTheQuest()
     {
-        File.WriteAllText(Path.Combine(_directory, ScriptName), """
+        File.WriteAllText(Path.Combine(directory, ScriptName), """
             Bind Npc 16079
             On fulfil for quest 777
                 Exchange 999

@@ -8,30 +8,30 @@ public partial class Cape : MeshInstance3D
 {
     private const int WeaponSlices = 8;
     private static readonly NodePath[] WeaponPaths = { new("weapon_6"), new("weapon_7") };
-    private readonly BoneAttachment3D?[] _weaponAttachments = new BoneAttachment3D?[2];
-    private readonly List<WeaponBox>[] _weaponBoxes = { new(), new() };
-    private readonly List<WeaponBox> _activeBoxes = new();
-    private readonly (Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] _oldSegs = new (Vector3, Vector3, float, float, float)[20];
-    private readonly (Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] _stepSegs = new (Vector3, Vector3, float, float, float)[20];
-    private readonly (Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] _priorSegs = new (Vector3, Vector3, float, float, float)[20];
-    private readonly Aabb[] _segmentBounds = new Aabb[20];
-    private readonly Aabb[] _currentBounds = new Aabb[20];
-    private readonly Vector3[] _segmentForward = new Vector3[20];
-    private readonly int[] _segmentBones = new int[20];
-    private readonly Vector3[] _oldForward = new Vector3[20];
-    private readonly Vector3[] _stepForward = new Vector3[20];
-    private Vector3[] _contactNormal = Array.Empty<Vector3>();
-    private Vector3[] _contactVelocity = Array.Empty<Vector3>();
-    private readonly float[] _limbRadius = new float[8];
-    private readonly float[] _limbTipRadius = new float[8];
-    private readonly float[] _limbWidth = new float[8];
-    private Aabb[] _rowBounds = Array.Empty<Aabb>();
-    private int[] _rowLinkStart = Array.Empty<int>();
-    private int _segCount;
-    private bool _collidersPrimed;
-    private float _collisionStep;
+    private readonly BoneAttachment3D?[] weaponAttachments = new BoneAttachment3D?[2];
+    private readonly List<WeaponBox>[] weaponBoxes = { new(), new() };
+    private readonly List<WeaponBox> activeBoxes = new();
+    private readonly (Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] oldSegs = new (Vector3, Vector3, float, float, float)[20];
+    private readonly (Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] stepSegs = new (Vector3, Vector3, float, float, float)[20];
+    private readonly (Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] priorSegs = new (Vector3, Vector3, float, float, float)[20];
+    private readonly Aabb[] segmentBounds = new Aabb[20];
+    private readonly Aabb[] currentBounds = new Aabb[20];
+    private readonly Vector3[] segmentForward = new Vector3[20];
+    private readonly int[] segmentBones = new int[20];
+    private readonly Vector3[] oldForward = new Vector3[20];
+    private readonly Vector3[] stepForward = new Vector3[20];
+    private Vector3[] contactNormal = Array.Empty<Vector3>();
+    private Vector3[] contactVelocity = Array.Empty<Vector3>();
+    private readonly float[] limbRadius = new float[8];
+    private readonly float[] limbTipRadius = new float[8];
+    private readonly float[] limbWidth = new float[8];
+    private Aabb[] rowBounds = Array.Empty<Aabb>();
+    private int[] rowLinkStart = Array.Empty<int>();
+    private int segCount;
+    private bool collidersPrimed;
+    private float collisionStep;
 
-    private readonly List<WeaponBox> _boneBoxes = new();
+    private readonly List<WeaponBox> boneBoxes = new();
 
     private sealed class WeaponBox
     {
@@ -52,13 +52,13 @@ public partial class Cape : MeshInstance3D
                 if (child is FxInstance or FxWeaponGlow or FxMesh or FxParticles or GpuParticles3D or ItemShineDriver
                     or WeaponTrail or Node3D { TopLevel: true }) continue;
                 var local = child is Node3D nd ? transform * nd.Transform : transform;
-                if (child is MeshInstance3D { Mesh: { } mesh, Visible: true })
+                if (child is MeshInstance3D { Mesh: { } sourceMesh, Visible: true })
                 {
                     var vertices = new List<Vector3>();
                     var triangles = new List<int>();
-                    for (int surface = 0; surface < mesh.GetSurfaceCount(); surface++)
+                    for (int surface = 0; surface < sourceMesh.GetSurfaceCount(); surface++)
                     {
-                        var cached = MeshArraysCache.Get(mesh, surface);
+                        var cached = MeshArraysCache.Get(sourceMesh, surface);
                         var positions = cached.Vertices;
                         var indices = cached.Indices;
                         int offset = vertices.Count;
@@ -116,94 +116,94 @@ public partial class Cape : MeshInstance3D
     private void UpdateColliders()
     {
         UpdateCollar();
-        _segCount = BodySegments(_segs);
-        for (int i = 0; i < _segCount; i++)
+        segCount = BodySegments(segs);
+        for (int i = 0; i < segCount; i++)
         {
-            int bone = _segmentBones[i];
-            var basis = bone < 0 ? _skel.GlobalTransform.Basis * _restBasis
-                : _skel.GlobalTransform.Basis * _skel.GetBoneGlobalPose(bone).Basis
-                    * _skel.GetBoneGlobalRest(bone).Basis.Inverse() * _restBasis;
-            var axis = (_segs[i].B - _segs[i].A).Normalized();
+            int bone = segmentBones[i];
+            var basis = bone < 0 ? skel.GlobalTransform.Basis * restBasis
+                : skel.GlobalTransform.Basis * skel.GetBoneGlobalPose(bone).Basis
+                    * skel.GetBoneGlobalRest(bone).Basis.Inverse() * restBasis;
+            var axis = (segs[i].B - segs[i].A).Normalized();
             var forward = basis.Z - axis * basis.Z.Dot(axis);
-            _segmentForward[i] = forward.LengthSquared() > 1e-8f ? forward.Normalized() : _bodyFwd;
+            segmentForward[i] = forward.LengthSquared() > 1e-8f ? forward.Normalized() : bodyFwd;
         }
-        for (int i = 0; i < _segCount; i++)
+        for (int i = 0; i < segCount; i++)
         {
-            var seg = _segs[i];
+            var seg = segs[i];
             float radius = Mathf.Max(seg.Ra, seg.Rb) * seg.Aspect;
             var min = seg.A.Min(seg.B) - Vector3.One * radius;
             var max = seg.A.Max(seg.B) + Vector3.One * radius;
-            _currentBounds[i] = new Aabb(min, max - min);
+            currentBounds[i] = new Aabb(min, max - min);
         }
-        if (_contactNormal.Length != _pos.Length)
+        if (contactNormal.Length != pos.Length)
         {
-            _contactNormal = new Vector3[_pos.Length];
-            _contactVelocity = new Vector3[_pos.Length];
+            contactNormal = new Vector3[pos.Length];
+            contactVelocity = new Vector3[pos.Length];
         }
-        _activeBoxes.Clear();
+        activeBoxes.Clear();
         for (int hand = 0; hand < WeaponPaths.Length; hand++)
         {
-            var attachment = _skel.GetNodeOrNull<BoneAttachment3D>(WeaponPaths[hand]);
-            bool changed = attachment != _weaponAttachments[hand];
+            var attachment = skel.GetNodeOrNull<BoneAttachment3D>(WeaponPaths[hand]);
+            bool changed = attachment != weaponAttachments[hand];
             if (changed)
             {
-                _weaponAttachments[hand] = attachment;
-                _weaponBoxes[hand].Clear();
-                if (attachment != null) FitWeapon(attachment, _weaponBoxes[hand]);
+                weaponAttachments[hand] = attachment;
+                weaponBoxes[hand].Clear();
+                if (attachment != null) FitWeapon(attachment, weaponBoxes[hand]);
             }
             if (attachment == null || attachment.BoneIdx < 0 || !attachment.IsVisibleInTree()) continue;
-            var transform = _skel.GlobalTransform * _skel.GetBoneGlobalPose(attachment.BoneIdx);
-            foreach (var box in _weaponBoxes[hand])
+            var transform = skel.GlobalTransform * skel.GetBoneGlobalPose(attachment.BoneIdx);
+            foreach (var box in weaponBoxes[hand])
             {
                 box.Current = transform * box.Local;
                 box.RenderInverse = box.Current.AffineInverse();
                 box.RenderBounds = box.Current * new Aabb(-box.Half, box.Half * 2);
-                if (changed || !_collidersPrimed) box.Previous = box.Step = box.Prior = box.Current;
-                _activeBoxes.Add(box);
+                if (changed || !collidersPrimed) box.Previous = box.Step = box.Prior = box.Current;
+                activeBoxes.Add(box);
             }
         }
 
-        foreach (var box in _boneBoxes)
+        foreach (var box in boneBoxes)
         {
-            box.Current = _skel.GlobalTransform * _skel.GetBoneGlobalPose(box.Bone) * box.Local;
+            box.Current = skel.GlobalTransform * skel.GetBoneGlobalPose(box.Bone) * box.Local;
             box.RenderInverse = box.Current.AffineInverse();
             box.RenderBounds = box.Current * new Aabb(-box.Half, box.Half * 2);
-            if (!_collidersPrimed) box.Previous = box.Step = box.Prior = box.Current;
-            _activeBoxes.Add(box);
+            if (!collidersPrimed) box.Previous = box.Step = box.Prior = box.Current;
+            activeBoxes.Add(box);
         }
-        if (!_collidersPrimed)
+        if (!collidersPrimed)
         {
-            Array.Copy(_segs, _oldSegs, _segCount);
-            Array.Copy(_segs, _stepSegs, _segCount);
-            Array.Copy(_segmentForward, _oldForward, _segCount);
-            _collidersPrimed = true;
+            Array.Copy(segs, oldSegs, segCount);
+            Array.Copy(segs, stepSegs, segCount);
+            Array.Copy(segmentForward, oldForward, segCount);
+            collidersPrimed = true;
         }
     }
 
     private void CommitColliders()
     {
-        Array.Copy(_segs, _oldSegs, _segCount);
-        Array.Copy(_segmentForward, _oldForward, _segCount);
-        foreach (var box in _activeBoxes) box.Previous = box.Current;
+        Array.Copy(segs, oldSegs, segCount);
+        Array.Copy(segmentForward, oldForward, segCount);
+        foreach (var box in activeBoxes) box.Previous = box.Current;
     }
 
     private void PrepareStepColliders(float blend, float h)
     {
-        _collisionStep = h;
-        for (int i = 0; i < _segCount; i++)
+        collisionStep = h;
+        for (int i = 0; i < segCount; i++)
         {
-            _priorSegs[i] = _stepSegs[i];
-            _stepForward[i] = _oldForward[i].Lerp(_segmentForward[i], blend).Normalized();
-            var old = _oldSegs[i]; var current = _segs[i];
+            priorSegs[i] = stepSegs[i];
+            stepForward[i] = oldForward[i].Lerp(segmentForward[i], blend).Normalized();
+            var old = oldSegs[i]; var current = segs[i];
             var step = (old.A.Lerp(current.A, blend), old.B.Lerp(current.B, blend),
                 current.Ra, current.Rb, current.Aspect);
-            _stepSegs[i] = step;
+            stepSegs[i] = step;
             float radius = Mathf.Max(current.Ra, current.Rb) * current.Aspect;
-            var min = step.Item1.Min(step.Item2).Min(_priorSegs[i].A).Min(_priorSegs[i].B) - Vector3.One * radius;
-            var max = step.Item1.Max(step.Item2).Max(_priorSegs[i].A).Max(_priorSegs[i].B) + Vector3.One * radius;
-            _segmentBounds[i] = new Aabb(min, max - min);
+            var min = step.Item1.Min(step.Item2).Min(priorSegs[i].A).Min(priorSegs[i].B) - Vector3.One * radius;
+            var max = step.Item1.Max(step.Item2).Max(priorSegs[i].A).Max(priorSegs[i].B) + Vector3.One * radius;
+            segmentBounds[i] = new Aabb(min, max - min);
         }
-        foreach (var box in _activeBoxes)
+        foreach (var box in activeBoxes)
         {
             box.Prior = box.Step;
             box.PriorInverse = box.Prior.AffineInverse();
@@ -216,15 +216,15 @@ public partial class Cape : MeshInstance3D
 
     private void CollideParticles(bool swept)
     {
-        float floor = _bodyRoot.GlobalPosition.Y + 0.015f;
-        for (int i = _nc; i < _pred.Length; i++)
+        float floor = bodyRoot.GlobalPosition.Y + 0.015f;
+        for (int i = gridColumns; i < pred.Length; i++)
         {
-            var p = _pred[i];
-            for (int s = 0; s < _segCount; s++)
+            var p = pred[i];
+            for (int s = 0; s < segCount; s++)
             {
-                if (!_segmentBounds[s].HasPoint(p) && (!swept || !_segmentBounds[s].IntersectsSegment(_pos[i], p))) continue;
-                var seg = _stepSegs[s]; var old = _priorSegs[s];
-                var forward = _stepForward[s];
+                if (!segmentBounds[s].HasPoint(p) && (!swept || !segmentBounds[s].IntersectsSegment(pos[i], p))) continue;
+                var seg = stepSegs[s]; var old = priorSegs[s];
+                var forward = stepForward[s];
                 var ab = seg.B - seg.A;
                 var warpedAxis = ab + forward * (ab.Dot(forward) * (seg.Aspect - 1));
                 var fromA = p - seg.A;
@@ -246,37 +246,37 @@ public partial class Cape : MeshInstance3D
                 else
                 {
                     if (!swept) continue;
-                    var previous = _pos[i] - old.A.Lerp(old.B, t);
-                    previous += forward * (previous.Dot(forward) * (seg.Aspect - 1));
-                    if (!SweepSphere(previous, warped, radius, out direction)) continue;
+                    var previousPosition = pos[i] - old.A.Lerp(old.B, t);
+                    previousPosition += forward * (previousPosition.Dot(forward) * (seg.Aspect - 1));
+                    if (!SweepSphere(previousPosition, warped, radius, out direction)) continue;
                 }
                 var offset = direction * radius;
                 offset -= forward * (offset.Dot(forward) * (1 - 1 / seg.Aspect));
                 p = center + offset;
-                _contact[i] = true;
-                _contactNormal[i] = (direction + forward * (direction.Dot(forward) * (seg.Aspect - 1))).Normalized();
-                _contactVelocity[i] = (center - old.A.Lerp(old.B, t)) / _collisionStep;
+                contact[i] = true;
+                contactNormal[i] = (direction + forward * (direction.Dot(forward) * (seg.Aspect - 1))).Normalized();
+                contactVelocity[i] = (center - old.A.Lerp(old.B, t)) / collisionStep;
             }
-            foreach (var box in _activeBoxes)
+            foreach (var box in activeBoxes)
             {
-                if (!box.Bounds.HasPoint(p) && (!swept || !box.Bounds.IntersectsSegment(_pos[i], p))) continue;
+                if (!box.Bounds.HasPoint(p) && (!swept || !box.Bounds.IntersectsSegment(pos[i], p))) continue;
                 var local = box.Inverse * p;
-                var before = swept ? box.PriorInverse * _pos[i] : local;
+                var before = swept ? box.PriorInverse * pos[i] : local;
                 if (!PushBox(ref local, before, box.Half, box.SliceAxis, swept, out var normal)) continue;
                 p = box.Step * local;
-                _contact[i] = true;
-                _contactNormal[i] = (box.Inverse.Basis.Transposed() * normal).Normalized();
-                _contactVelocity[i] = (p - box.Prior * local) / _collisionStep;
+                contact[i] = true;
+                contactNormal[i] = (box.Inverse.Basis.Transposed() * normal).Normalized();
+                contactVelocity[i] = (p - box.Prior * local) / collisionStep;
             }
             if (p.Y < floor)
             {
                 p.Y = floor;
-                _contact[i] = true;
-                _contactNormal[i] = Vector3.Up;
-                _contactVelocity[i] = Vector3.Zero;
+                contact[i] = true;
+                contactNormal[i] = Vector3.Up;
+                contactVelocity[i] = Vector3.Zero;
             }
             CollideCollar(ref p);
-            _pred[i] = p;
+            pred[i] = p;
         }
         CollideWeaponEdges();
     }
@@ -320,10 +320,10 @@ public partial class Cape : MeshInstance3D
         return exit >= 0 && entry <= 1;
     }
 
-    private static bool PushBox(ref Vector3 p, Vector3 previous, Vector3 half, int sliceAxis, bool swept, out Vector3 normal)
+    private static bool PushBox(ref Vector3 p, Vector3 previousPosition, Vector3 half, int sliceAxis, bool swept, out Vector3 normal)
     {
         normal = Vector3.Zero;
-        if (swept && BoxEntry(previous, p, half, out float entry, out normal) && normal != Vector3.Zero)
+        if (swept && BoxEntry(previousPosition, p, half, out float entry, out normal) && normal != Vector3.Zero)
         {
             int axis = (int)normal.Abs().MaxAxisIndex();
             p[axis] = normal[axis] * (half[axis] + 0.001f);
@@ -341,101 +341,101 @@ public partial class Cape : MeshInstance3D
 
     private void CollideWeaponEdges()
     {
-        for (int row = 0; row < _nr; row++)
+        for (int row = 0; row < gridRows; row++)
         {
-            var min = _pred[row * _nc]; var max = min;
-            int end = Mathf.Min((row + 2) * _nc, _pred.Length);
-            for (int i = row * _nc + 1; i < end; i++)
-            { min = min.Min(_pred[i]); max = max.Max(_pred[i]); }
-            _rowBounds[row] = new Aabb(min, max - min).Grow(0.005f);
+            var min = pred[row * gridColumns]; var max = min;
+            int end = Mathf.Min((row + 2) * gridColumns, pred.Length);
+            for (int i = row * gridColumns + 1; i < end; i++)
+            { min = min.Min(pred[i]); max = max.Max(pred[i]); }
+            rowBounds[row] = new Aabb(min, max - min).Grow(0.005f);
         }
-        foreach (var box in _activeBoxes)
-            for (int row = 0; row < _nr; row++)
+        foreach (var box in activeBoxes)
+            for (int row = 0; row < gridRows; row++)
             {
-                if (!box.Bounds.Intersects(_rowBounds[row])) continue;
-                for (int index = _rowLinkStart[row]; index < _rowLinkStart[row + 1]; index++)
+                if (!box.Bounds.Intersects(rowBounds[row])) continue;
+                for (int index = rowLinkStart[row]; index < rowLinkStart[row + 1]; index++)
                 {
-                    ref readonly var link = ref _links[index];
+                    ref readonly var link = ref links[index];
                     if (link.Compliance == BendCompliance) continue;
-                    var a = _pred[link.A]; var b = _pred[link.B];
+                    var a = pred[link.A]; var b = pred[link.B];
                     if (!box.Bounds.IntersectsSegment(a, b)) continue;
                     var la = box.Inverse * a; var lb = box.Inverse * b;
                     if (!BoxEntry(la, lb, box.Half, out float enter, out _)
                         || !BoxEntry(lb, la, box.Half, out float leave, out _)) continue;
                     float t = Mathf.Clamp((enter + 1 - leave) * 0.5f, 0.05f, 0.95f);
-                    var contact = la.Lerp(lb, t); var pushed = contact;
-                    if (!PushBox(ref pushed, contact, box.Half, box.SliceAxis, false, out var normal)) continue;
-                    float wa = _w[link.A] * (1 - t), wb = _w[link.B] * t;
+                    var contactPoint = la.Lerp(lb, t); var pushed = contactPoint;
+                    if (!PushBox(ref pushed, contactPoint, box.Half, box.SliceAxis, false, out var normal)) continue;
+                    float wa = inverseMass[link.A] * (1 - t), wb = inverseMass[link.B] * t;
                     float weight = wa * (1 - t) + wb * t;
                     if (weight < 1e-8f) continue;
-                    var correction = box.Step.Basis * (pushed - contact) / weight;
-                    _pred[link.A] += correction * wa;
-                    _pred[link.B] += correction * wb;
+                    var correction = box.Step.Basis * (pushed - contactPoint) / weight;
+                    pred[link.A] += correction * wa;
+                    pred[link.B] += correction * wb;
                 }
             }
     }
 
-    private Aabb[] _surfaceEdgeBounds = Array.Empty<Aabb>();
+    private Aabb[] surfaceEdgeBounds = Array.Empty<Aabb>();
 
     private bool CollideSurfaceEdges()
     {
-        for (int row = 0; row < _surfaceRows - 1; row++)
+        for (int row = 0; row < surfaceRows - 1; row++)
         {
-            var min = _surfacePos[row * _surfaceCols]; var max = min;
-            for (int i = row * _surfaceCols + 1; i < (row + 2) * _surfaceCols; i++)
-            { min = min.Min(_surfacePos[i]); max = max.Max(_surfacePos[i]); }
-            _surfaceEdgeBounds[row] = new Aabb(min, max - min).Grow(0.005f);
+            var min = surfacePos[row * surfaceCols]; var max = min;
+            for (int i = row * surfaceCols + 1; i < (row + 2) * surfaceCols; i++)
+            { min = min.Min(surfacePos[i]); max = max.Max(surfacePos[i]); }
+            surfaceEdgeBounds[row] = new Aabb(min, max - min).Grow(0.005f);
         }
         bool moved = false;
-        foreach (var box in _activeBoxes)
-            for (int row = 0; row < _surfaceRows - 1; row++)
+        foreach (var box in activeBoxes)
+            for (int row = 0; row < surfaceRows - 1; row++)
             {
-                if (!box.RenderBounds.Intersects(_surfaceEdgeBounds[row])) continue;
-                for (int col = 0; col < _surfaceCols; col++)
+                if (!box.RenderBounds.Intersects(surfaceEdgeBounds[row])) continue;
+                for (int col = 0; col < surfaceCols; col++)
                 {
-                    int a = row * _surfaceCols + col;
-                    Edge(a, a + _surfaceCols, box);
-                    if (col == _surfaceCols - 1) continue;
+                    int a = row * surfaceCols + col;
+                    Edge(a, a + surfaceCols, box);
+                    if (col == surfaceCols - 1) continue;
                     Edge(a, a + 1, box);
-                    Edge(a + 1, a + _surfaceCols, box);
+                    Edge(a + 1, a + surfaceCols, box);
                 }
             }
         return moved;
         void Edge(int a, int b, WeaponBox box)
         {
-            var from = _surfacePos[a]; var to = _surfacePos[b];
+            var from = surfacePos[a]; var to = surfacePos[b];
             if (!box.RenderBounds.IntersectsSegment(from, to)) return;
             var la = box.RenderInverse * from; var lb = box.RenderInverse * to;
             if (!BoxEntry(la, lb, box.Half, out float enter, out _)
                 || !BoxEntry(lb, la, box.Half, out float leave, out _)) return;
             float t = Mathf.Clamp((enter + 1 - leave) * 0.5f, 0.05f, 0.95f);
-            var contact = la.Lerp(lb, t); var pushed = contact;
-            if (!PushBox(ref pushed, contact, box.Half, box.SliceAxis, false, out _)) return;
-            float wa = a < _surfaceCols ? 0 : 1 - t;
-            float wb = b < _surfaceCols ? 0 : t;
+            var contactPoint = la.Lerp(lb, t); var pushed = contactPoint;
+            if (!PushBox(ref pushed, contactPoint, box.Half, box.SliceAxis, false, out _)) return;
+            float wa = a < surfaceCols ? 0 : 1 - t;
+            float wb = b < surfaceCols ? 0 : t;
             float weight = wa * (1 - t) + wb * t;
             if (weight < 1e-8f) return;
-            var correction = box.Current.Basis * (pushed - contact) / weight;
-            _surfacePos[a] += correction * wa;
-            _surfacePos[b] += correction * wb;
+            var correction = box.Current.Basis * (pushed - contactPoint) / weight;
+            surfacePos[a] += correction * wa;
+            surfacePos[b] += correction * wb;
             moved = true;
         }
     }
 
     private void CollideRender()
     {
-        _bodyFwd = Flat(_lastFrameAnchor.Basis.Z);
+        bodyFwd = Flat(lastFrameAnchor.Basis.Z);
         for (int pass = 0; pass < 4; pass++)
         {
             bool moved = false;
-            for (int i = _surfaceCols; i < _surfacePos.Length; i++)
+            for (int i = surfaceCols; i < surfacePos.Length; i++)
             {
-                var p = _surfacePos[i];
-                for (int s = 0; s < _segCount; s++)
+                var p = surfacePos[i];
+                for (int s = 0; s < segCount; s++)
                 {
-                    if (!_currentBounds[s].HasPoint(p)) continue;
-                    var seg = _segs[s]; var ab = seg.B - seg.A;
-                    var forward = _segmentForward[s];
+                    if (!currentBounds[s].HasPoint(p)) continue;
+                    var seg = segs[s]; var ab = seg.B - seg.A;
+                    var forward = segmentForward[s];
                     float length2 = ab.LengthSquared();
                     float t = length2 > 1e-8f ? Mathf.Clamp((p - seg.A).Dot(ab) / length2, 0, 1) : 0;
                     var center = seg.A + ab * t;
@@ -447,15 +447,15 @@ public partial class Cape : MeshInstance3D
                     d = lateral - forward * Mathf.Sqrt(Mathf.Max(radius * radius - lateral.LengthSquared(), 0));
                     p = center + d - forward * (d.Dot(forward) * (1 - 1 / seg.Aspect));
                 }
-                foreach (var box in _activeBoxes)
+                foreach (var box in activeBoxes)
                 {
                     if (!box.RenderBounds.HasPoint(p)) continue;
                     var local = box.RenderInverse * p;
                     if (PushBox(ref local, local, box.Half, box.SliceAxis, false, out _)) p = box.Current * local;
                 }
                 CollideCollar(ref p);
-                moved |= p.DistanceSquaredTo(_surfacePos[i]) > 1e-8f;
-                _surfacePos[i] = p;
+                moved |= p.DistanceSquaredTo(surfacePos[i]) > 1e-8f;
+                surfacePos[i] = p;
             }
             if (pass < 3) moved |= CollideSurfaceEdges();
             if (!moved) break;
@@ -468,48 +468,48 @@ public partial class Cape : MeshInstance3D
         {
             float t = fallbackT;
             if (bone >= 0 && neckY > 0.01f)
-                t = Mathf.Clamp((neckY - _skel.GetBoneGlobalRest(bone).Origin.Y) / neckY, 0f, 1f);
+                t = Mathf.Clamp((neckY - skel.GetBoneGlobalRest(bone).Origin.Y) / neckY, 0f, 1f);
             float step = 1f / (ProfileBins - 1);
             return (Mathf.Max(BodyRadiusAt(t),
-                    Mathf.Max(BodyRadiusAt(t - step), BodyRadiusAt(t + step))) + CollideInflate) * _rigScale;
+                    Mathf.Max(BodyRadiusAt(t - step), BodyRadiusAt(t + step))) + CollideInflate) * rigScale;
         }
-        _inflate = CollideInflate * _rigScale;
-        _rNeck = (CollarRadius + CollideInflate) * _rigScale;
-        _rChest = At(_rideBone, 0.12f);
-        _rHips = At(_hipBone, 0.46f);
+        inflate = CollideInflate * rigScale;
+        rNeck = (CollarRadius + CollideInflate) * rigScale;
+        rChest = At(rideBone, 0.12f);
+        rHips = At(hipBone, 0.46f);
     }
 
     private int BodySegments((Vector3 A, Vector3 B, float Ra, float Rb, float Aspect)[] into)
     {
-        if (_hipBone < 0 || _neckBone < 0) return 0;
-        var st = _skel.GlobalTransform;
-        var neck = st * _skel.GetBoneGlobalPose(_neckBone).Origin;
-        var hips = st * _skel.GetBoneGlobalPose(_hipBone).Origin;
+        if (hipBone < 0 || neckBone < 0) return 0;
+        var st = skel.GlobalTransform;
+        var neck = st * skel.GetBoneGlobalPose(neckBone).Origin;
+        var hips = st * skel.GetBoneGlobalPose(hipBone).Origin;
         int n = 0;
         void Add(Vector3 a, Vector3 b, float ra, float rb, float aspect, int bone)
         {
-            _segmentBones[n] = bone;
+            segmentBones[n] = bone;
             into[n++] = (a, b, ra, rb, aspect);
         }
-        Vector3 P(int bone) => st * _skel.GetBoneGlobalPose(bone).Origin;
+        Vector3 P(int bone) => st * skel.GetBoneGlobalPose(bone).Origin;
 
         var chest = neck.Lerp(hips, 0.35f);
-        Add(neck, chest, _rNeck, _rChest, _aspect, _rideBone);
-        Add(chest, hips, _rChest, _rHips, _aspect, _rideBone);
+        Add(neck, chest, rNeck, rChest, aspect, rideBone);
+        Add(chest, hips, rChest, rHips, aspect, rideBone);
 
-        float rThigh = ThighRadius * _rigScale, rCalf = CalfRadius * _rigScale;
-        float rUp = UpperArmRadius * _rigScale, rFore = ForeArmRadius * _rigScale;
-        if (_upLegL >= 0 && _loLegL >= 0) Add(P(_upLegL), P(_loLegL), Mathf.Max(rThigh, _limbRadius[0]), Mathf.Max(rCalf, _limbTipRadius[0]), LimbAspect(0), _upLegL);
-        if (_loLegL >= 0 && _ftLegL >= 0) Add(P(_loLegL), P(_ftLegL), Mathf.Max(rCalf, _limbRadius[1]), Mathf.Max(rCalf, _limbTipRadius[1]), LimbAspect(1), _loLegL);
-        if (_upLegR >= 0 && _loLegR >= 0) Add(P(_upLegR), P(_loLegR), Mathf.Max(rThigh, _limbRadius[2]), Mathf.Max(rCalf, _limbTipRadius[2]), LimbAspect(2), _upLegR);
-        if (_loLegR >= 0 && _ftLegR >= 0) Add(P(_loLegR), P(_ftLegR), Mathf.Max(rCalf, _limbRadius[3]), Mathf.Max(rCalf, _limbTipRadius[3]), LimbAspect(3), _loLegR);
-        float rHand = HandRadius * _rigScale;
-        if (_upArmL >= 0 && _loArmL >= 0) Add(P(_upArmL), P(_loArmL), Mathf.Max(rUp, _limbRadius[4]), Mathf.Max(rFore, _limbTipRadius[4]), LimbAspect(4), _upArmL);
-        if (_loArmL >= 0 && _handL >= 0) Add(P(_loArmL), P(_handL), Mathf.Max(rFore, _limbRadius[5]), Mathf.Max(rHand, _limbTipRadius[5]), LimbAspect(5), _loArmL);
-        if (_upArmR >= 0 && _loArmR >= 0) Add(P(_upArmR), P(_loArmR), Mathf.Max(rUp, _limbRadius[6]), Mathf.Max(rFore, _limbTipRadius[6]), LimbAspect(6), _upArmR);
-        if (_loArmR >= 0 && _handR >= 0) Add(P(_loArmR), P(_handR), Mathf.Max(rFore, _limbRadius[7]), Mathf.Max(rHand, _limbTipRadius[7]), LimbAspect(7), _loArmR);
-        if (_handL >= 0) Add(P(_handL), P(_handL), rHand, rHand, 1f, _handL);
-        if (_handR >= 0) Add(P(_handR), P(_handR), rHand, rHand, 1f, _handR);
+        float rThigh = ThighRadius * rigScale, rCalf = CalfRadius * rigScale;
+        float rUp = UpperArmRadius * rigScale, rFore = ForeArmRadius * rigScale;
+        if (upLegL >= 0 && loLegL >= 0) Add(P(upLegL), P(loLegL), Mathf.Max(rThigh, limbRadius[0]), Mathf.Max(rCalf, limbTipRadius[0]), LimbAspect(0), upLegL);
+        if (loLegL >= 0 && ftLegL >= 0) Add(P(loLegL), P(ftLegL), Mathf.Max(rCalf, limbRadius[1]), Mathf.Max(rCalf, limbTipRadius[1]), LimbAspect(1), loLegL);
+        if (upLegR >= 0 && loLegR >= 0) Add(P(upLegR), P(loLegR), Mathf.Max(rThigh, limbRadius[2]), Mathf.Max(rCalf, limbTipRadius[2]), LimbAspect(2), upLegR);
+        if (loLegR >= 0 && ftLegR >= 0) Add(P(loLegR), P(ftLegR), Mathf.Max(rCalf, limbRadius[3]), Mathf.Max(rCalf, limbTipRadius[3]), LimbAspect(3), loLegR);
+        float rHand = HandRadius * rigScale;
+        if (upArmL >= 0 && loArmL >= 0) Add(P(upArmL), P(loArmL), Mathf.Max(rUp, limbRadius[4]), Mathf.Max(rFore, limbTipRadius[4]), LimbAspect(4), upArmL);
+        if (loArmL >= 0 && handL >= 0) Add(P(loArmL), P(handL), Mathf.Max(rFore, limbRadius[5]), Mathf.Max(rHand, limbTipRadius[5]), LimbAspect(5), loArmL);
+        if (upArmR >= 0 && loArmR >= 0) Add(P(upArmR), P(loArmR), Mathf.Max(rUp, limbRadius[6]), Mathf.Max(rFore, limbTipRadius[6]), LimbAspect(6), upArmR);
+        if (loArmR >= 0 && handR >= 0) Add(P(loArmR), P(handR), Mathf.Max(rFore, limbRadius[7]), Mathf.Max(rHand, limbTipRadius[7]), LimbAspect(7), loArmR);
+        if (handL >= 0) Add(P(handL), P(handL), rHand, rHand, 1f, handL);
+        if (handR >= 0) Add(P(handR), P(handR), rHand, rHand, 1f, handR);
 
         var scale = st.Basis.Scale.Abs();
         float worldScale = Mathf.Max(scale.X, Mathf.Max(scale.Y, scale.Z));
@@ -522,17 +522,17 @@ public partial class Cape : MeshInstance3D
     }
 
     private float LimbAspect(int limb)
-        => Mathf.Clamp(_limbWidth[limb] / Mathf.Max(0.06f * _rigScale,
-            Mathf.Max(_limbRadius[limb], _limbTipRadius[limb])), 1, 3);
+        => Mathf.Clamp(limbWidth[limb] / Mathf.Max(0.06f * rigScale,
+            Mathf.Max(limbRadius[limb], limbTipRadius[limb])), 1, 3);
 
     private float BodyRadiusAt(float t)
     {
         t = Mathf.Clamp(t, 0f, 1f);
-        if (_fitted != null)
+        if (fitted != null)
         {
             float f = t * (ProfileBins - 1);
             int i = Mathf.Clamp((int)f, 0, ProfileBins - 2);
-            return Mathf.Lerp(_fitted[i], _fitted[i + 1], f - i);
+            return Mathf.Lerp(fitted[i], fitted[i + 1], f - i);
         }
         for (int i = 1; i < BodyProfile.Length; i++)
         {
@@ -545,42 +545,42 @@ public partial class Cape : MeshInstance3D
     }
 
 
-    public int ColliderSegments() => _segCount + _activeBoxes.Count;
+    public int ColliderSegments() => segCount + activeBoxes.Count;
 
-    public int WeaponColliderCount(int hand) => _weaponBoxes[hand].Count;
+    public int WeaponColliderCount(int hand) => weaponBoxes[hand].Count;
 
     public float DeviationNow()
     {
         var anchor = AnchorWorld();
         float worst = 0;
-        for (int i = _nc; i < _pos.Length; i++)
-            worst = Mathf.Max(worst, _pos[i].DistanceTo(anchor * _rest[i]));
+        for (int i = gridColumns; i < pos.Length; i++)
+            worst = Mathf.Max(worst, pos[i].DistanceTo(anchor * rest[i]));
         return worst;
     }
 
     public float PenetrationDepth()
     {
         float worst = 0;
-        for (int s = 0; s < _segCount; s++)
+        for (int s = 0; s < segCount; s++)
         {
-            var seg = _segs[s]; var ab = seg.B - seg.A;
-            var forward = _segmentForward[s];
+            var seg = segs[s]; var ab = seg.B - seg.A;
+            var forward = segmentForward[s];
             float length2 = ab.LengthSquared();
-            for (int i = _surfaceCols; i < _surfacePos.Length; i++)
+            for (int i = surfaceCols; i < surfacePos.Length; i++)
             {
-                float t = length2 > 1e-8f ? Mathf.Clamp((_surfacePos[i] - seg.A).Dot(ab) / length2, 0, 1) : 0;
-                var d = _surfacePos[i] - seg.A - ab * t;
+                float t = length2 > 1e-8f ? Mathf.Clamp((surfacePos[i] - seg.A).Dot(ab) / length2, 0, 1) : 0;
+                var d = surfacePos[i] - seg.A - ab * t;
                 d += forward * (d.Dot(forward) * (seg.Aspect - 1));
-                float depth = Mathf.Lerp(seg.Ra, seg.Rb, t) - _inflate - d.Length() / seg.Aspect;
+                float depth = Mathf.Lerp(seg.Ra, seg.Rb, t) - inflate - d.Length() / seg.Aspect;
                 worst = Mathf.Max(worst, depth);
             }
         }
-        foreach (var box in _activeBoxes)
+        foreach (var box in activeBoxes)
         {
             var inverse = box.Current.AffineInverse();
-            for (int i = _surfaceCols; i < _surfacePos.Length; i++)
+            for (int i = surfaceCols; i < surfacePos.Length; i++)
             {
-                var p = _surfacePos[i];
+                var p = surfacePos[i];
                 var depth = box.Half - (inverse * p).Abs();
                 worst = Mathf.Max(worst, Mathf.Min(depth.X, Mathf.Min(depth.Y, depth.Z)) - 0.025f);
             }
@@ -590,9 +590,9 @@ public partial class Cape : MeshInstance3D
 
     private void DrawDebugOverlay()
     {
-        if (_dbg == null)
+        if (dbg == null)
         {
-            _dbg = new MeshInstance3D
+            dbg = new MeshInstance3D
             {
                 Mesh = new ImmediateMesh(), TopLevel = true,
                 CastShadow = ShadowCastingSetting.Off,
@@ -602,25 +602,25 @@ public partial class Cape : MeshInstance3D
                     VertexColorUseAsAlbedo = true, NoDepthTest = true,
                 },
             };
-            AddChild(_dbg);
+            AddChild(dbg);
         }
-        _dbg.GlobalTransform = Transform3D.Identity;
-        _dbg.Visible = true;
-        var mesh = (ImmediateMesh)_dbg.Mesh;
-        mesh.ClearSurfaces();
-        mesh.SurfaceBegin(Mesh.PrimitiveType.Lines);
+        dbg.GlobalTransform = Transform3D.Identity;
+        dbg.Visible = true;
+        var debugMesh = (ImmediateMesh)dbg.Mesh;
+        debugMesh.ClearSurfaces();
+        debugMesh.SurfaceBegin(Mesh.PrimitiveType.Lines);
         void Line(Vector3 a, Vector3 b, Color color)
         {
-            mesh.SurfaceSetColor(color); mesh.SurfaceAddVertex(a); mesh.SurfaceAddVertex(b);
+            debugMesh.SurfaceSetColor(color); debugMesh.SurfaceAddVertex(a); debugMesh.SurfaceAddVertex(b);
         }
-        for (int i = 0; i < _segCount; i++)
+        for (int i = 0; i < segCount; i++)
         {
-            var seg = _segs[i];
+            var seg = segs[i];
             Line(seg.A, seg.B, Colors.Green);
             for (int j = 0; j < 16; j++)
             {
                 float a = j * Mathf.Tau / 16, b = (j + 1) * Mathf.Tau / 16;
-                var forward = _segmentForward[i];
+                var forward = segmentForward[i];
                 var axis = seg.B - seg.A;
                 if (axis.LengthSquared() < 1e-8f) axis = Vector3.Up;
                 var right = axis.Normalized().Cross(forward).Normalized();
@@ -630,7 +630,7 @@ public partial class Cape : MeshInstance3D
                 Line(seg.B + da * seg.Rb, seg.B + db * seg.Rb, Colors.Green);
             }
         }
-        foreach (var box in _activeBoxes)
+        foreach (var box in activeBoxes)
             for (int corner = 0; corner < 8; corner++)
                 for (int axis = 0; axis < 3; axis++)
                 {
@@ -640,9 +640,9 @@ public partial class Cape : MeshInstance3D
                     var b = a; b[axis] *= -1;
                     Line(box.Current * a, box.Current * b, Colors.Yellow);
                 }
-        foreach (var link in _links)
+        foreach (var link in links)
             if (link.Compliance == StretchCompliance)
-                Line(_renderPos[link.A], _renderPos[link.B], Colors.Cyan);
-        mesh.SurfaceEnd();
+                Line(renderPos[link.A], renderPos[link.B], Colors.Cyan);
+        debugMesh.SurfaceEnd();
     }
 }

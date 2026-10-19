@@ -33,7 +33,7 @@ public abstract class GameTestBase
         foreach (var warp in warps)
             map.Warps[warp.WarpId] = warp;
 
-        var zoneMapsField = typeof(MapManager).GetField("_zoneMaps", BindingFlags.Instance | BindingFlags.NonPublic);
+        var zoneMapsField = typeof(MapManager).GetField("zoneMaps", BindingFlags.Instance | BindingFlags.NonPublic);
         zoneMapsField.Should().NotBeNull();
 
         var zoneMaps = zoneMapsField!.GetValue(mapManager).Should().BeOfType<Dictionary<short, SmdFile>>().Subject;
@@ -60,7 +60,7 @@ public abstract class GameTestBase
     protected static MapManager CreateMapManagerWithMap(short zoneId, SmdFile map)
     {
         var mapManager = new MapManager(Substitute.For<Microsoft.Extensions.Logging.ILogger<MapManager>>());
-        var zoneMapsField = typeof(MapManager).GetField("_zoneMaps", BindingFlags.Instance | BindingFlags.NonPublic);
+        var zoneMapsField = typeof(MapManager).GetField("zoneMaps", BindingFlags.Instance | BindingFlags.NonPublic);
         zoneMapsField.Should().NotBeNull();
 
         var zoneMaps = zoneMapsField!.GetValue(mapManager).Should().BeOfType<Dictionary<short, SmdFile>>().Subject;

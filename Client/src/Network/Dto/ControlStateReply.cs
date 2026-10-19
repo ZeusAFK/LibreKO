@@ -1,18 +1,10 @@
-﻿using System.Collections.Generic;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public readonly record struct ControlEffect(int SkillId, byte BuffType, int RemainingMs);
 
 public readonly record struct ControlStateReply(
     int UnitId, byte Flags, byte MovePercent, short AttackPercent, IReadOnlyList<ControlEffect> Effects)
 {
-    public const byte SubControl = 3;
-    public const byte Stunned = 1;
-    public const byte Frozen = 2;
-    public const byte Blinded = 4;
-    public const byte Slowed = 8;
-    public const byte AttackSlowed = 16;
     private const int HeaderBytes = 4 + 1 + 1 + 2 + 1;
     private const int EffectBytes = 4 + 1 + 4;
 

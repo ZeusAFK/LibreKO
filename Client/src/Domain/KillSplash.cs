@@ -6,9 +6,6 @@ public readonly record struct SplashDigit(int Digit, float X);
 
 public static class KillSplash
 {
-    public const byte OwnStreak = 1;
-    public const byte OtherStreak = 2;
-    public const byte Announcement = 3;
     public const int MaxShown = 999;
     public const int AnnouncementStep = 10;
     public const float HoldSeconds = 3f;

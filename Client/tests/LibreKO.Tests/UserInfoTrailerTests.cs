@@ -57,7 +57,7 @@ public class UserInfoTrailerTests
     {
         var p = Record(helmetHidden, costumeHidden, genie);
 
-        var e = Net.ReadUserInfo(p, CharacterId);
+        var e = WorldWire.ReadUserInfo(p, CharacterId);
 
         Assert.Equal(helmetHidden, e.HelmetHidden);
         Assert.Equal(costumeHidden, e.CostumeHidden);
@@ -71,7 +71,7 @@ public class UserInfoTrailerTests
     {
         const int transformSkill = 450003;
 
-        var e = Net.ReadUserInfo(Record(false, false, false, transformSkill), CharacterId);
+        var e = WorldWire.ReadUserInfo(Record(false, false, false, transformSkill), CharacterId);
 
         Assert.Equal(transformSkill, e.TransformSkill);
         Assert.Equal(TitleId, e.TitleId);

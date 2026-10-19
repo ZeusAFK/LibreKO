@@ -43,8 +43,8 @@ public class AccountLockService(
 {
     private const int EvictionGraceMs = 500;
 
-    private readonly ConcurrentDictionary<int, AccountClaim> _claims = new();
-    private readonly ConcurrentDictionary<Guid, int> _accountByClient = new();
+    private readonly ConcurrentDictionary<int, AccountClaim> claims = new();
+    private readonly ConcurrentDictionary<Guid, int> accountByClient = new();
 
     public async Task<AccountLockResult> AcquireAsync(IClient client, int accountId)
     {
@@ -52,24 +52,24 @@ public class AccountLockService(
 
         while (true)
         {
-            var current = _claims.GetOrAdd(accountId, wanted);
+            var current = claims.GetOrAdd(accountId, wanted);
             if (ReferenceEquals(current, wanted) || current.Client.Id == client.Id)
                 break;
 
             if (current.Client.IsConnected)
                 return new AccountLockResult(false, await DescribeAsync(current));
 
-            if (!_claims.TryUpdate(accountId, wanted, current))
+            if (!claims.TryUpdate(accountId, wanted, current))
                 continue;
 
             logger.LogInformation(
                 "Account {AccountId}: replacing dropped claim from client {ClientId}",
                 accountId, current.Client.Id);
-            _accountByClient.TryRemove(new KeyValuePair<Guid, int>(current.Client.Id, accountId));
+            accountByClient.TryRemove(new KeyValuePair<Guid, int>(current.Client.Id, accountId));
             break;
         }
 
-        _accountByClient[client.Id] = accountId;
+        accountByClient[client.Id] = accountId;
         await SetOnlineAsync(accountId);
         return new AccountLockResult(true, null);
     }
@@ -78,7 +78,7 @@ public class AccountLockService(
     {
         await ClearOnlineAsync(accountId);
 
-        if (!_claims.TryGetValue(accountId, out var claim))
+        if (!claims.TryGetValue(accountId, out var claim))
             return AccountKickCode.NotOnline;
 
         await EvictAsync(claim);
@@ -86,19 +86,19 @@ public class AccountLockService(
     }
 
     public bool Owns(IClient client)
-        => _accountByClient.TryGetValue(client.Id, out var accountId)
-           && _claims.TryGetValue(accountId, out var claim)
+        => accountByClient.TryGetValue(client.Id, out var accountId)
+           && claims.TryGetValue(accountId, out var claim)
            && claim.Client.Id == client.Id;
 
     public async Task ReleaseAsync(IClient client)
     {
-        if (!_accountByClient.TryRemove(client.Id, out var accountId))
+        if (!accountByClient.TryRemove(client.Id, out var accountId))
             return;
 
-        if (!_claims.TryGetValue(accountId, out var claim) || claim.Client.Id != client.Id)
+        if (!claims.TryGetValue(accountId, out var claim) || claim.Client.Id != client.Id)
             return;
 
-        _claims.TryRemove(new KeyValuePair<int, AccountClaim>(accountId, claim));
+        claims.TryRemove(new KeyValuePair<int, AccountClaim>(accountId, claim));
         await ClearOnlineAsync(accountId);
     }
 
@@ -120,8 +120,8 @@ public class AccountLockService(
 
     private async Task EvictAsync(AccountClaim claim)
     {
-        _claims.TryRemove(new KeyValuePair<int, AccountClaim>(claim.AccountId, claim));
-        _accountByClient.TryRemove(new KeyValuePair<Guid, int>(claim.Client.Id, claim.AccountId));
+        claims.TryRemove(new KeyValuePair<int, AccountClaim>(claim.AccountId, claim));
+        accountByClient.TryRemove(new KeyValuePair<Guid, int>(claim.Client.Id, claim.AccountId));
 
         logger.LogInformation(
             "Evicting account {AccountId} (client {ClientId}) for a takeover",

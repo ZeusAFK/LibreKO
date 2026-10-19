@@ -7,12 +7,12 @@ public partial class MoneyEdit : LineEdit
 {
     public event Action<long>? ValueChanged;
 
-    private readonly long _max;
-    private bool _formatting;
+    private readonly long max;
+    private bool formatting;
 
     public MoneyEdit(long max, float width, int fontSize = 13)
     {
-        _max = max;
+        this.max = max;
         CustomMinimumSize = new Vector2(width, 0);
         Alignment = HorizontalAlignment.Right;
         AddThemeFontSizeOverride("font_size", fontSize);
@@ -24,29 +24,29 @@ public partial class MoneyEdit : LineEdit
         get => DigitsOf(Text);
         set
         {
-            long clamped = Math.Clamp(value, 0, _max);
-            _formatting = true;
+            long clamped = Math.Clamp(value, 0, max);
+            formatting = true;
             Text = clamped.ToString("n0");
             CaretColumn = Text.Length;
-            _formatting = false;
+            formatting = false;
         }
     }
 
     private void OnTextChanged(string text)
     {
-        if (_formatting) return;
+        if (formatting) return;
 
         int digitsBeforeCaret = 0;
         for (int i = 0; i < CaretColumn && i < text.Length; i++)
             if (char.IsDigit(text[i])) digitsBeforeCaret++;
 
-        long value = Math.Min(DigitsOf(text), _max);
+        long value = Math.Min(DigitsOf(text), max);
         string formatted = value == 0 && !HasDigit(text) ? "" : value.ToString("n0");
 
-        _formatting = true;
+        formatting = true;
         Text = formatted;
         CaretColumn = CaretAfterDigits(formatted, digitsBeforeCaret);
-        _formatting = false;
+        formatting = false;
 
         ValueChanged?.Invoke(value);
     }

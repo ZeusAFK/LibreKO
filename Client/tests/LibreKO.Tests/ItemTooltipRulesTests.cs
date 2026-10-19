@@ -64,8 +64,8 @@ public class ItemTooltipRulesTests
     [Fact]
     public void OneTimeTradeItemsSayWhetherTheTradeIsUsed()
     {
-        Assert.Equal(new[] { 15123 }, ItemTooltipRules.Notes(0, ItemTooltipRules.OneTimeTradeRace).Select(n => n.TextId));
-        Assert.Equal(new[] { 15122 }, ItemTooltipRules.Notes(16, ItemTooltipRules.OneTimeTradeRace).Select(n => n.TextId));
+        Assert.Equal(new[] { 15123 }, ItemTooltipRules.Notes(0, ItemData.Race.OneTimeTrade).Select(n => n.TextId));
+        Assert.Equal(new[] { 15122 }, ItemTooltipRules.Notes(16, ItemData.Race.OneTimeTrade).Select(n => n.TextId));
     }
 
     [Theory]
@@ -73,7 +73,7 @@ public class ItemTooltipRulesTests
     [InlineData(900_100_000, 70, 45020)]
     [InlineData(PlainItem, QuestRace, 4581)]
     [InlineData(PlainItem, 69, 4597)]
-    [InlineData(PlainItem, ItemTooltipRules.OneTimeTradeRace, 4600)]
+    [InlineData(PlainItem, ItemData.Race.OneTimeTrade, 4600)]
     [InlineData(PlainItem, 0, 0)]
     public void TradeNotesFollowTheRace(int itemId, int race, int text) =>
         Assert.Equal(text, ItemTooltipRules.TradeNote(itemId, race));
@@ -91,7 +91,7 @@ public class ItemTooltipRulesTests
     [Fact]
     public void OneHandedSkipsALeftShield()
     {
-        var worn = Worn(new() { [InventoryConstants.LeftHand] = ItemTooltipRules.ShieldKind });
+        var worn = Worn(new() { [InventoryConstants.LeftHand] = ItemData.Kind.Shield });
         Assert.Equal(ItemTooltipRules.NoWornSlot, ItemTooltipRules.CompareSlot(0, worn));
     }
 
@@ -99,7 +99,7 @@ public class ItemTooltipRulesTests
     public void ShieldsCompareOnlyWithAShield()
     {
         Assert.Equal(InventoryConstants.LeftHand, ItemTooltipRules.CompareSlot(2,
-            Worn(new() { [InventoryConstants.LeftHand] = ItemTooltipRules.ShieldKind })));
+            Worn(new() { [InventoryConstants.LeftHand] = ItemData.Kind.Shield })));
         Assert.Equal(ItemTooltipRules.NoWornSlot, ItemTooltipRules.CompareSlot(2,
             Worn(new() { [InventoryConstants.LeftHand] = SwordKind })));
     }

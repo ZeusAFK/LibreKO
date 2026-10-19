@@ -28,11 +28,11 @@ public sealed class DailyRankService(
 
     private sealed record BoardRanking(IReadOnlyList<string> Names, IReadOnlyDictionary<int, DailyRankPlace> Places);
 
-    private readonly SemaphoreSlim _counterLock = new(1, 1);
-    private readonly SemaphoreSlim _rankLock = new(1, 1);
-    private readonly ConcurrentDictionary<int, long> _lastRequestAt = new();
-    private volatile IReadOnlyDictionary<DailyRankBoard, BoardRanking> _boards = new Dictionary<DailyRankBoard, BoardRanking>();
-    private DateOnly _rankedOn;
+    private readonly SemaphoreSlim counterLock = new(1, 1);
+    private readonly SemaphoreSlim rankLock = new(1, 1);
+    private readonly ConcurrentDictionary<int, long> lastRequestAt = new();
+    private volatile IReadOnlyDictionary<DailyRankBoard, BoardRanking> boards = new Dictionary<DailyRankBoard, BoardRanking>();
+    private DateOnly rankedOn;
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -41,7 +41,7 @@ public sealed class DailyRankService(
         await SafelyAsync(() => LoadAsync(Today));
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(CheckSeconds));
         while (await timer.WaitForNextTickAsync(stoppingToken))
-            if (Today != _rankedOn)
+            if (Today != rankedOn)
                 await SafelyAsync(() => RollOverAsync(Today));
     }
 
@@ -59,7 +59,7 @@ public sealed class DailyRankService(
 
     public async Task LoadAsync(DateOnly today)
     {
-        await _rankLock.WaitAsync();
+        await rankLock.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -67,21 +67,21 @@ public sealed class DailyRankService(
             var stored = await repository.GetPlacesAsync();
             if (stored.Count > 0 && stored.All(place => place.RankedOn == today))
             {
-                _boards = await BuildAsync(stored, repository);
-                _rankedOn = today;
+                boards = await BuildAsync(stored, repository);
+                rankedOn = today;
                 return;
             }
             await RankAsync(today, repository, stored);
         }
         finally
         {
-            _rankLock.Release();
+            rankLock.Release();
         }
     }
 
     public async Task RollOverAsync(DateOnly today)
     {
-        await _rankLock.WaitAsync();
+        await rankLock.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -90,7 +90,7 @@ public sealed class DailyRankService(
         }
         finally
         {
-            _rankLock.Release();
+            rankLock.Release();
         }
         await sessionManager.BroadcastToAll(DailyRankPacketWriter.Reset());
         logger.LogInformation("Daily rankings recomputed for {Day}", today);
@@ -99,7 +99,7 @@ public sealed class DailyRankService(
     public Task RecomputeAsync() => RollOverAsync(Today);
 
     public int PlaceOf(DailyRankBoard board, int subjectId) =>
-        subjectId != 0 && _boards.TryGetValue(board, out var ranking) && ranking.Places.TryGetValue(subjectId, out var place)
+        subjectId != 0 && boards.TryGetValue(board, out var ranking) && ranking.Places.TryGetValue(subjectId, out var place)
             ? place.Place
             : 0;
 
@@ -133,8 +133,8 @@ public sealed class DailyRankService(
         if (lastRankedOn.Year != today.Year || lastRankedOn.Month != today.Month)
             await repository.ResetCountersAsync();
 
-        _boards = await BuildAsync(places, repository);
-        _rankedOn = today;
+        boards = await BuildAsync(places, repository);
+        rankedOn = today;
     }
 
     private IReadOnlyList<int> ClanOrder() => sessionManager.Knights.GetAll()
@@ -184,15 +184,15 @@ public sealed class DailyRankService(
     private bool TakeRequestSlot(int characterId)
     {
         var now = Environment.TickCount64;
-        if (_lastRequestAt.TryGetValue(characterId, out var last) && now - last < RequestGapMilliseconds)
+        if (lastRequestAt.TryGetValue(characterId, out var last) && now - last < RequestGapMilliseconds)
             return false;
-        _lastRequestAt[characterId] = now;
+        lastRequestAt[characterId] = now;
         return true;
     }
 
     private Packet StoredBoard(DailyRankBoard board, int subjectId)
     {
-        if (!_boards.TryGetValue(board, out var ranking))
+        if (!boards.TryGetValue(board, out var ranking))
             return DailyRankPacketWriter.Board(board, 0, 0, []);
         if (subjectId == 0 || !ranking.Places.TryGetValue(subjectId, out var mine))
             return DailyRankPacketWriter.Board(board, 0, 0, ranking.Names);
@@ -221,7 +221,7 @@ public sealed class DailyRankService(
 
     private async Task CountAsync(Func<IDailyRankRepository, Task> update)
     {
-        await _counterLock.WaitAsync();
+        await counterLock.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -233,7 +233,7 @@ public sealed class DailyRankService(
         }
         finally
         {
-            _counterLock.Release();
+            counterLock.Release();
         }
     }
 }

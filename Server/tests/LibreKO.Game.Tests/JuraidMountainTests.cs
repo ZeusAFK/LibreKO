@@ -13,25 +13,25 @@ namespace LibreKO.Game.Tests;
 
 public class JuraidMountainTests
 {
-    private readonly SessionManager _sessionManager;
-    private readonly IGameDataService _gameDataService;
-    private readonly IMonsterAggressionPolicy _aggressionPolicy;
-    private readonly IZoneTransitionService _zoneTransitionService;
-    private readonly InstanceRoomRegistry _instanceRooms;
-    private readonly IInstanceEntryService _instanceEntryService;
-    private readonly IUserNotificationService _userNotificationService;
-    private readonly ILoyaltyService _loyaltyService;
-    private readonly ICombatNotificationService _combatNotificationService;
-    private readonly ILogger<JuraidMountainService> _logger;
-    private readonly List<NpcPosData> _npcPositions;
+    private readonly SessionManager sessionManager;
+    private readonly IGameDataService gameDataService;
+    private readonly IMonsterAggressionPolicy aggressionPolicy;
+    private readonly IZoneTransitionService zoneTransitionService;
+    private readonly InstanceRoomRegistry instanceRooms;
+    private readonly IInstanceEntryService instanceEntryService;
+    private readonly IUserNotificationService userNotificationService;
+    private readonly ILoyaltyService loyaltyService;
+    private readonly ICombatNotificationService combatNotificationService;
+    private readonly ILogger<JuraidMountainService> logger;
+    private readonly List<NpcPosData> npcPositions;
 
     public JuraidMountainTests()
     {
-        _sessionManager = new SessionManager();
-        _gameDataService = Substitute.For<IGameDataService>();
-        _aggressionPolicy = Substitute.For<IMonsterAggressionPolicy>();
-        _zoneTransitionService = Substitute.For<IZoneTransitionService>();
-        _zoneTransitionService.ChangeZoneAsync(Arg.Any<UserSession>(), Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>())
+        sessionManager = new SessionManager();
+        gameDataService = Substitute.For<IGameDataService>();
+        aggressionPolicy = Substitute.For<IMonsterAggressionPolicy>();
+        zoneTransitionService = Substitute.For<IZoneTransitionService>();
+        zoneTransitionService.ChangeZoneAsync(Arg.Any<UserSession>(), Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>())
             .Returns(callInfo =>
             {
                 var s = callInfo.Arg<UserSession>();
@@ -40,20 +40,20 @@ public class JuraidMountainTests
                 s.Z = callInfo.Arg<float>();
                 return Task.CompletedTask;
             });
-        _instanceRooms = new InstanceRoomRegistry(_sessionManager, Substitute.For<ILogger<InstanceRoomRegistry>>());
-        _instanceEntryService = new InstanceEntryService(
-            _sessionManager,
-            _gameDataService,
-            _aggressionPolicy,
-            _zoneTransitionService,
-            _instanceRooms,
+        instanceRooms = new InstanceRoomRegistry(sessionManager, Substitute.For<ILogger<InstanceRoomRegistry>>());
+        instanceEntryService = new InstanceEntryService(
+            sessionManager,
+            gameDataService,
+            aggressionPolicy,
+            zoneTransitionService,
+            instanceRooms,
             Substitute.For<ILogger<InstanceEntryService>>());
-        _userNotificationService = Substitute.For<IUserNotificationService>();
-        _loyaltyService = Substitute.For<ILoyaltyService>();
-        _combatNotificationService = Substitute.For<ICombatNotificationService>();
-        _logger = Substitute.For<ILogger<JuraidMountainService>>();
+        userNotificationService = Substitute.For<IUserNotificationService>();
+        loyaltyService = Substitute.For<ILoyaltyService>();
+        combatNotificationService = Substitute.For<ICombatNotificationService>();
+        logger = Substitute.For<ILogger<JuraidMountainService>>();
 
-        _npcPositions =
+        npcPositions =
         [
             // Karus Stage 1: LeftX < 400, TopZ between 540 and 650
             new NpcPosData { Index = 1, ZoneId = 87, Room = 1, NpcId = 8101, LeftX = 224, TopZ = 600, NumNPC = 2 },
@@ -71,8 +71,8 @@ public class JuraidMountainTests
             new NpcPosData { Index = 7, ZoneId = 87, Room = 1, NpcId = 8106, LeftX = 510, TopZ = 510, NumNPC = 1 }
         ];
 
-        _gameDataService.NpcPositions.Returns(_npcPositions);
-        _gameDataService.GetSpawnProto(Arg.Any<NpcPosData>()).Returns(callInfo =>
+        gameDataService.NpcPositions.Returns(npcPositions);
+        gameDataService.GetSpawnProto(Arg.Any<NpcPosData>()).Returns(callInfo =>
         {
             var pos = callInfo.Arg<NpcPosData>();
             return new NpcData
@@ -85,7 +85,7 @@ public class JuraidMountainTests
             };
         });
 
-        _gameDataService.GetItem(Arg.Any<int>()).Returns(callInfo =>
+        gameDataService.GetItem(Arg.Any<int>()).Returns(callInfo =>
         {
             var itemId = callInfo.Arg<int>();
             return new ItemData
@@ -98,7 +98,7 @@ public class JuraidMountainTests
             };
         });
 
-        _gameDataService.GetStartPosition(87).Returns(new StartPositionData
+        gameDataService.GetStartPosition(87).Returns(new StartPositionData
         {
             ZoneId = 87,
             KarusX = 224,
@@ -107,7 +107,7 @@ public class JuraidMountainTests
             ElmoradZ = 748
         });
 
-        _gameDataService.TempleEventRewards.Returns(
+        gameDataService.TempleEventRewards.Returns(
         [
             new TempleEventRewardData { Id = 1, Event = TempleEvent.JuraidMountain, Outcome = TempleEventRewardOutcome.Win, ItemId = 389196000, ItemCount = 2, LoyaltyPoints = 500 },
             new TempleEventRewardData { Id = 2, Event = TempleEvent.JuraidMountain, Outcome = TempleEventRewardOutcome.Loss, ItemId = 389205000, ItemCount = 1, LoyaltyPoints = 0 },
@@ -117,16 +117,16 @@ public class JuraidMountainTests
     }
 
     private JuraidMountainService CreateService() => new(
-        _sessionManager,
-        _gameDataService,
-        _zoneTransitionService,
-        _instanceRooms,
-        _instanceEntryService,
-        _userNotificationService,
-        _loyaltyService,
-        _combatNotificationService,
+        sessionManager,
+        gameDataService,
+        zoneTransitionService,
+        instanceRooms,
+        instanceEntryService,
+        userNotificationService,
+        loyaltyService,
+        combatNotificationService,
         Substitute.For<IPartyLevelProgressService>(),
-        _logger);
+        logger);
 
     private UserSession CreateTestSession(int charId, AccountNation nation)
     {
@@ -134,7 +134,7 @@ public class JuraidMountainTests
         client.Id.Returns(Guid.NewGuid());
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        var session = _sessionManager.CreateSession(client, characterId: charId, accountId: charId * 10);
+        var session = sessionManager.CreateSession(client, characterId: charId, accountId: charId * 10);
         session.Name = $"Player_{charId}";
         session.Nation = nation;
         session.Level = 70;
@@ -154,11 +154,11 @@ public class JuraidMountainTests
         caller.Room.Should().Be(1);
 
         // Verify participant was warped to Karus start coordinates (224, 272)
-        await _zoneTransitionService.Received(1)
+        await zoneTransitionService.Received(1)
             .ChangeZoneAsync(caller, (byte)ZoneId.JuradMountain, 224f, 272f);
 
         // Verify NPCs were spawned in instance room
-        var room = _instanceRooms.Get(1);
+        var room = instanceRooms.Get(1);
         room.Should().NotBeNull();
         // 2 Stage1 + 1 Bridge1 + 2 Stage2 + 1 Bridge2 + 2 Stage3 + 1 Bridge3 + 1 Devabird = 10 NPCs spawned
         room!.Npcs.Should().HaveCount(10);
@@ -171,7 +171,7 @@ public class JuraidMountainTests
         var karusPlayer = CreateTestSession(1, AccountNation.Karus);
         await service.StartMatchForCallerAsync(karusPlayer);
 
-        var room = _instanceRooms.Get(1)!;
+        var room = instanceRooms.Get(1)!;
         var stage1Monsters = room.Npcs.Where(n => n.NpcId == 8101).ToList();
         stage1Monsters.Should().HaveCount(2);
 
@@ -218,7 +218,7 @@ public class JuraidMountainTests
 
         await service.StartMatchesAsync([karusPlayer.CharacterId, elmoPlayer.CharacterId], 600);
 
-        var room = _instanceRooms.Get(1)!;
+        var room = instanceRooms.Get(1)!;
         var devabird = room.Npcs.FirstOrDefault(n => n.NpcId == 8106);
         devabird.Should().NotBeNull();
 
@@ -226,7 +226,7 @@ public class JuraidMountainTests
         await service.OnNpcKilledAsync(devabird!, karusPlayer);
 
         // Winning nation (Karus) receives 500 NP
-        await _loyaltyService.Received(1).ChangeAsync(karusPlayer, 500);
+        await loyaltyService.Received(1).ChangeAsync(karusPlayer, 500);
 
         // Karus receives 2x Silvery Gem (389196000)
         var karusGemSlot = karusPlayer.Inventory.FirstOrDefault(s => s.ItemId == 389196000);
@@ -248,7 +248,7 @@ public class JuraidMountainTests
 
         await service.StartMatchesAsync([karusPlayer.CharacterId, elmoPlayer.CharacterId], 600);
 
-        var room = _instanceRooms.Get(1)!;
+        var room = instanceRooms.Get(1)!;
         var stage1Monsters = room.Npcs.Where(n => n.NpcId == 8101).ToList();
         foreach (var m in stage1Monsters)
         {
@@ -321,7 +321,7 @@ public class JuraidMountainTests
     {
         var service = CreateService();
 
-        _gameDataService.TempleEventSchedules.Returns([
+        gameDataService.TempleEventSchedules.Returns([
             new TempleEventScheduleData { Id = 1, Event = TempleEvent.JuraidMountain, MinLevel = 40, MaxLevel = 83 }
         ]);
 
@@ -331,7 +331,7 @@ public class JuraidMountainTests
         await service.StartMatchForCallerAsync(lowLevelCaller);
 
         lowLevelCaller.ZoneId.Should().Be(21);
-        await _zoneTransitionService.DidNotReceiveWithAnyArgs()
+        await zoneTransitionService.DidNotReceiveWithAnyArgs()
             .ChangeZoneAsync(lowLevelCaller, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
 
         var highLevelCaller = CreateTestSession(102, AccountNation.Karus);

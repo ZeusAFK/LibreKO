@@ -2,21 +2,7 @@
 
 public static class ExpSeal
 {
-    public const byte SubOn = 1;
-    public const byte SubOff = 2;
-    public const byte SubStore = 3;
-    public const byte SubTotal = 4;
-    public const byte SubUseJar = 5;
-    public const byte Succeeded = 1;
-
-    public const byte StateUnknown = 0;
-    public const byte StateOn = 1;
-    public const byte StateOff = 2;
-
     public const int EmptyJar = 810354000;
-    public const int SmallJarFlag = 49;
-    public const int LargeJarFlag = 50;
-    public const int RebirthJarFlag = 51;
     public const int SmallJar = 810355000;
     public const int LargeJar = 810356000;
     public const int RebirthJar = 810357000;
@@ -37,24 +23,19 @@ public static class ExpSeal
     public const int ObtainText = 33359;
     public const int EmptyRefusalText = 33361;
 
-    private const short TooLittle = 2;
-    private const short WhileOn = 3;
-    private const short Empty = 6;
-    private const short RebirthLimit = 9;
-
-    public static int? StoreRefusal(short code) => code switch
+    public static int? StoreRefusal(ExpSealResult code) => code switch
     {
-        TooLittle => TooLittleText,
-        WhileOn => WhileOnText,
+        ExpSealResult.TooLittle => TooLittleText,
+        ExpSealResult.WhileOn => WhileOnText,
         _ => null,
     };
 
-    public static (int Id, bool WithCode)? UseRefusal(short code) => code switch
+    public static (int Id, bool WithCode)? UseRefusal(ExpSealResult code) => code switch
     {
-        Succeeded => null,
-        WhileOn => (WhileOnText, false),
-        Empty => (EmptyRefusalText, false),
-        RebirthLimit => (RebirthLimitText, false),
+        ExpSealResult.Succeeded => null,
+        ExpSealResult.WhileOn => (WhileOnText, false),
+        ExpSealResult.Empty => (EmptyRefusalText, false),
+        ExpSealResult.RebirthLimit => (RebirthLimitText, false),
         _ => (JarFailedText, true),
     };
 
@@ -64,11 +45,11 @@ public static class ExpSeal
         : amount <= 0 ? NoAmountText
         : null;
 
-    public static int JarForFlag(int flag) => flag switch
+    public static int JarForFlag(NpcDialogStyle flag) => flag switch
     {
-        SmallJarFlag => SmallJar,
-        LargeJarFlag => LargeJar,
-        RebirthJarFlag => RebirthJar,
+        NpcDialogStyle.SmallJar => SmallJar,
+        NpcDialogStyle.LargeJar => LargeJar,
+        NpcDialogStyle.RebirthJar => RebirthJar,
         _ => 0,
     };
 

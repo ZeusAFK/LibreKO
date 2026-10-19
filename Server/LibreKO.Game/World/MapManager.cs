@@ -6,8 +6,8 @@ namespace LibreKO.Game.World;
 
 public class MapManager(ILogger<MapManager> logger)
 {
-    private readonly Dictionary<short, SmdFile> _zoneMaps = [];
-    private readonly Dictionary<short, Dictionary<short, GameEventData>> _zoneEvents = [];
+    private readonly Dictionary<short, SmdFile> zoneMaps = [];
+    private readonly Dictionary<short, Dictionary<short, GameEventData>> zoneEvents = [];
 
     private const int WarpGroupZoneStride = 10;
 
@@ -30,7 +30,7 @@ public class MapManager(ILogger<MapManager> logger)
                 continue;
             }
 
-            _zoneMaps[zoneId] = smd;
+            zoneMaps[zoneId] = smd;
             loaded++;
         }
 
@@ -38,7 +38,7 @@ public class MapManager(ILogger<MapManager> logger)
             loaded, gameData.ZoneInfoTable.Count, mapDirectory);
 
         int objectCount = 0;
-        foreach (var (zoneId, smd) in _zoneMaps)
+        foreach (var (zoneId, smd) in zoneMaps)
             foreach (var row in gameData.MapObjectsByZone[zoneId])
                 if (smd.ObjectEvents.TryAdd(row.Index, ObjectEventOf(row)))
                     objectCount++;
@@ -57,10 +57,10 @@ public class MapManager(ILogger<MapManager> logger)
                 eventCount++;
             }
             if (dict.Count > 0)
-                _zoneEvents[zoneId] = dict;
+                zoneEvents[zoneId] = dict;
         }
         logger.LogInformation("Loaded {Count} zone events across {ZoneCount} zones",
-            eventCount, _zoneEvents.Count);
+            eventCount, zoneEvents.Count);
     }
 
     internal static ObjectEvent ObjectEventOf(MapObjectData row) => new()
@@ -78,7 +78,7 @@ public class MapManager(ILogger<MapManager> logger)
 
     public SmdFile? GetMap(short zoneId)
     {
-        return _zoneMaps.GetValueOrDefault(zoneId);
+        return zoneMaps.GetValueOrDefault(zoneId);
     }
 
     public float GetHeight(short zoneId, float x, float z)
@@ -154,7 +154,7 @@ public class MapManager(ILogger<MapManager> logger)
 
     public GameEventData? GetZoneEvent(short zoneId, short eventNum)
     {
-        if (_zoneEvents.TryGetValue(zoneId, out var events))
+        if (zoneEvents.TryGetValue(zoneId, out var events))
             return events.GetValueOrDefault(eventNum);
         return null;
     }
@@ -170,5 +170,5 @@ public class MapManager(ILogger<MapManager> logger)
         return GetZoneEvent(zoneId, (short)eventId);
     }
 
-    public int LoadedMapCount => _zoneMaps.Count;
+    public int LoadedMapCount => zoneMaps.Count;
 }

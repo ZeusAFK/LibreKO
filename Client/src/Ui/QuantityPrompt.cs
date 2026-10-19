@@ -3,20 +3,20 @@ using Godot;
 
 namespace LibreKO;
 
-public sealed partial class QuantityPrompt : CanvasLayer
+public sealed partial class QuantityPrompt : CanvasLayer, IClosableWindow
 {
     private const float BoxWidth = 320f;
     private const float FieldWidth = 150f;
 
-    private readonly TextureRect _icon;
-    private readonly Label _title;
-    private readonly Label _limit;
-    private readonly MoneyEdit _amount;
-    private readonly Button _ok;
-    private readonly Label _summary;
-    private long _max;
-    private Action<long>? _confirm;
-    private Func<long, string>? _summarise;
+    private readonly TextureRect iconRect;
+    private readonly Label titleLabel;
+    private readonly Label limitLabel;
+    private readonly MoneyEdit amount;
+    private readonly Button okButton;
+    private readonly Label summaryLabel;
+    private long max;
+    private Action<long>? confirm;
+    private Func<long, string>? summarise;
 
     public QuantityPrompt(int layer)
     {
@@ -46,20 +46,20 @@ public sealed partial class QuantityPrompt : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 10);
         root.AddChild(head);
-        _icon = new TextureRect
+        iconRect = new TextureRect
         {
             CustomMinimumSize = new Vector2(38, 38),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
         };
-        head.AddChild(_icon);
+        head.AddChild(iconRect);
         var headText = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         headText.AddThemeConstantOverride("separation", -2);
         head.AddChild(headText);
-        _title = UiTheme.Text("", 14, UiTheme.TextHi);
-        headText.AddChild(_title);
-        _limit = UiTheme.Text("", 11, UiTheme.Gold);
-        headText.AddChild(_limit);
+        titleLabel = UiTheme.Text("", 14, UiTheme.TextHi);
+        headText.AddChild(titleLabel);
+        limitLabel = UiTheme.Text("", 11, UiTheme.Gold);
+        headText.AddChild(limitLabel);
 
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 8);
@@ -67,17 +67,17 @@ public sealed partial class QuantityPrompt : CanvasLayer
         var label = UiTheme.Text("Quantity", 13, UiTheme.TextLo);
         label.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         row.AddChild(label);
-        _amount = new MoneyEdit(long.MaxValue, FieldWidth);
-        _amount.ValueChanged += _ => Refresh();
-        _amount.TextSubmitted += _ => Confirm();
-        row.AddChild(_amount);
+        amount = new MoneyEdit(long.MaxValue, FieldWidth);
+        amount.ValueChanged += _ => Refresh();
+        amount.TextSubmitted += _ => Confirm();
+        row.AddChild(amount);
         var all = new Button { Text = "All", FocusMode = Control.FocusModeEnum.None };
-        all.Pressed += () => { _amount.Value = _max; Refresh(); };
+        all.Pressed += () => { amount.Value = max; Refresh(); };
         row.AddChild(all);
 
-        _summary = UiTheme.Text("", 12, UiTheme.TextLo);
-        _summary.Visible = false;
-        root.AddChild(_summary);
+        summaryLabel = UiTheme.Text("", 12, UiTheme.TextLo);
+        summaryLabel.Visible = false;
+        root.AddChild(summaryLabel);
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 8);
@@ -85,47 +85,49 @@ public sealed partial class QuantityPrompt : CanvasLayer
         var cancel = new Button { Text = "Cancel", FocusMode = Control.FocusModeEnum.None };
         cancel.Pressed += Close;
         buttons.AddChild(cancel);
-        _ok = new Button { Text = "OK", FocusMode = Control.FocusModeEnum.None };
-        _ok.Pressed += Confirm;
-        buttons.AddChild(_ok);
+        okButton = new Button { Text = "OK", FocusMode = Control.FocusModeEnum.None };
+        okButton.Pressed += Confirm;
+        buttons.AddChild(okButton);
     }
 
     public void Open(Texture2D? icon, string title, string limit, long max, long start, Action<long> confirm,
         string okText = "OK", Func<long, string>? summary = null)
     {
-        _max = Math.Max(0, max);
-        _confirm = confirm;
-        _summarise = summary;
-        _summary.Visible = summary != null;
-        _ok.Text = okText;
-        _icon.Texture = icon;
-        _icon.Visible = icon != null;
-        _title.Text = title;
-        _limit.Text = limit;
-        _amount.Value = Math.Clamp(start, 0, _max);
+        this.max = Math.Max(0, max);
+        this.confirm = confirm;
+        summarise = summary;
+        summaryLabel.Visible = summary != null;
+        okButton.Text = okText;
+        iconRect.Texture = icon;
+        iconRect.Visible = icon != null;
+        titleLabel.Text = title;
+        limitLabel.Text = limit;
+        amount.Value = Math.Clamp(start, 0, this.max);
         Visible = true;
         Refresh();
-        if (!_amount.IsInsideTree()) return;
-        _amount.GrabFocus();
-        _amount.SelectAll();
+        if (!amount.IsInsideTree()) return;
+        amount.GrabFocus();
+        amount.SelectAll();
     }
+
+    public bool IsOpen => Visible;
 
     public void Close()
     {
         Visible = false;
-        _confirm = null;
+        confirm = null;
     }
 
     private void Refresh()
     {
-        _ok.Disabled = _amount.Value <= 0 || _amount.Value > _max;
-        if (_summarise != null) _summary.Text = _summarise(_amount.Value);
+        okButton.Disabled = amount.Value <= 0 || amount.Value > max;
+        if (summarise != null) summaryLabel.Text = summarise(amount.Value);
     }
 
     private void Confirm()
     {
-        long value = _amount.Value;
-        if (value <= 0 || value > _max || _confirm is not { } confirm) return;
+        long value = amount.Value;
+        if (value <= 0 || value > max || this.confirm is not { } confirm) return;
         Close();
         confirm(value);
     }

@@ -6,9 +6,9 @@ namespace LibreKO;
 
 public static partial class CharacterPreview
 {
-    private static Dictionary<int, string>? _bodyIndex;
-    private static Dictionary<int, int>? _armorItems;
-    private static Dictionary<int, (string Face, string Hair)>? _faceRaces;
+    private static Dictionary<int, string>? bodyIndex;
+    private static Dictionary<int, int>? armorItems;
+    private static Dictionary<int, (string Face, string Hair)>? faceRaces;
 
     private const string BodyIndexPath = "res://assets/characters/index.json";
 
@@ -24,15 +24,15 @@ public static partial class CharacterPreview
         SkinShare.ShareUnder(body);
         Graft(body, race, face, gear, hair, hairColour, enableShine);
         AttachWeapons(body, race, gear, enableShine);
-        foreach (var wingAnim in World.AttachWings(body, gear, race, 0, enableShine))
+        foreach (var wingAnim in WingRig.AttachWings(body, gear, race, 0, enableShine))
         {
             if (wingAnim == null) continue;
             string? wingClip = null;
-            World.PlayWingClip(wingAnim, ref wingClip, World.WingState.Breath);
+            WingRig.PlayWingClip(wingAnim, ref wingClip, WingState.Breath);
         }
-        World.AttachHandFx(body, gear, race, 0);
+        HandFxRig.AttachHandFx(body, gear, race, 0);
         ForceDoubleSided(body);
-        var ap = World.BodyAnim(body);
+        var ap = ModelNodes.BodyAnim(body);
         if (ap != null)
         {
             string[] idleCandidates = { "basic", "breath", "base", "stand", "wait", "idle" };
@@ -72,15 +72,15 @@ public static partial class CharacterPreview
 
     public static void Warm()
     {
-        _bodyIndex ??= LoadIdIndex(BodyIndexPath);
+        bodyIndex ??= LoadIdIndex(BodyIndexPath);
         LoadParts();
         _ = WeaponCatalog.Index;
     }
 
     private static PackedScene? ResolveBody(int race)
     {
-        _bodyIndex ??= LoadIdIndex(BodyIndexPath);
-        if (!_bodyIndex.TryGetValue(race, out var stem)) return null;
+        bodyIndex ??= LoadIdIndex(BodyIndexPath);
+        if (!bodyIndex.TryGetValue(race, out var stem)) return null;
         string path = $"res://assets/characters/{stem}.glb";
         return ResourceLoader.Exists(path) ? ResourceLoader.Load<PackedScene>(path) : null;
     }
@@ -149,8 +149,8 @@ public static partial class CharacterPreview
     }
 
     private static int ArmorResource(int itemId) =>
-        _armorItems != null
-        && (_armorItems.TryGetValue(itemId, out int r) || _armorItems.TryGetValue(Domain.ItemData.BaseId(itemId), out r))
+        armorItems != null
+        && (armorItems.TryGetValue(itemId, out int r) || armorItems.TryGetValue(Domain.ItemData.BaseId(itemId), out r))
             ? r : 0;
 
     private static bool GraftArmor(Dictionary<int, MeshInstance3D> parts, int partNode, int itemId, int resource, int race)
@@ -163,7 +163,7 @@ public static partial class CharacterPreview
 
     private static string? FacePartStem(int race, int face)
     {
-        if (_faceRaces == null || !_faceRaces.TryGetValue(race, out var rr) || rr.Face.Length == 0) return null;
+        if (faceRaces == null || !faceRaces.TryGetValue(race, out var rr) || rr.Face.Length == 0) return null;
         return FaceStem(rr.Face, face);
     }
 
@@ -172,7 +172,7 @@ public static partial class CharacterPreview
     private static string? HairPartStem(int race, int hair)
     {
         LoadParts();
-        if (_faceRaces == null || !_faceRaces.TryGetValue(race, out var rr) || rr.Hair.Length == 0) return null;
+        if (faceRaces == null || !faceRaces.TryGetValue(race, out var rr) || rr.Hair.Length == 0) return null;
         return HairStem(rr.Hair, hair);
     }
 
@@ -218,7 +218,7 @@ public static partial class CharacterPreview
     private static int VariantCount(int race, bool face)
     {
         LoadParts();
-        if (_faceRaces == null || !_faceRaces.TryGetValue(race, out var rr)) return 0;
+        if (faceRaces == null || !faceRaces.TryGetValue(race, out var rr)) return 0;
         string stem = face ? rr.Face : rr.Hair;
         if (stem.Length == 0) return 0;
         int n = 0;
@@ -228,20 +228,20 @@ public static partial class CharacterPreview
 
     private static void LoadParts()
     {
-        if (_armorItems != null) return;
-        _armorItems = new Dictionary<int, int>();
-        _faceRaces = new Dictionary<int, (string, string)>();
+        if (armorItems != null) return;
+        armorItems = new Dictionary<int, int>();
+        faceRaces = new Dictionary<int, (string, string)>();
         using (var f = Godot.FileAccess.Open("res://assets/items/armor/index.json", Godot.FileAccess.ModeFlags.Read))
             if (f != null && Json.ParseString(f.GetAsText()).AsGodotDictionary() is { } root
                 && root.TryGetValue("items", out var iv) && iv.AsGodotDictionary() is { } items)
                 foreach (var k in items.Keys)
-                    if (int.TryParse(k.AsString(), out int id)) _armorItems[id] = items[k].AsInt32();
+                    if (int.TryParse(k.AsString(), out int id)) armorItems[id] = items[k].AsInt32();
         using (var f = Godot.FileAccess.Open("res://assets/characters/faces.json", Godot.FileAccess.ModeFlags.Read))
             if (f != null && Json.ParseString(f.GetAsText()).AsGodotDictionary() is { } root
                 && root.TryGetValue("races", out var rv) && rv.AsGodotDictionary() is { } races)
                 foreach (var k in races.Keys)
                     if (int.TryParse(k.AsString(), out int rid) && races[k].AsGodotDictionary() is { } e)
-                        _faceRaces[rid] = (e.TryGetValue("facePart", out var fp) ? fp.AsString() : "",
+                        faceRaces[rid] = (e.TryGetValue("facePart", out var fp) ? fp.AsString() : "",
                                            e.TryGetValue("hairPart", out var hp) ? hp.AsString() : "");
     }
 

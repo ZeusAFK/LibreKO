@@ -17,15 +17,15 @@ namespace LibreKO.Login.Tests;
 
 public abstract class ServerTest : IDisposable
 {
-    private readonly InMemoryDatabaseRoot _dbRoot = new();
-    private readonly string _dbName = $"LibreKO_Test_{Guid.NewGuid()}";
+    private readonly InMemoryDatabaseRoot dbRoot = new();
+    private readonly string dbName = $"LibreKO_Test_{Guid.NewGuid()}";
 
     protected readonly IHost host;
     protected readonly SocketServer Server;
     protected readonly LoginServerSettings Settings;
 
-    private readonly CancellationTokenSource _cts = new();
-    private Task? _serverTask;
+    private readonly CancellationTokenSource cts = new();
+    private Task? serverTask;
 
     protected ServerTest(int? port = null)
     {
@@ -65,7 +65,7 @@ public abstract class ServerTest : IDisposable
             {
                 services.Configure<LoginServerSettings>(ctx.Configuration.GetSection(LoginServerSettings.SectionName));
                 services.AddDbContext<AppDbContext>(o => o
-                    .UseInMemoryDatabase(_dbName, _dbRoot)
+                    .UseInMemoryDatabase(dbName, dbRoot)
                     .ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning)));
                 services.AddMemoryCache();
 
@@ -94,7 +94,7 @@ public abstract class ServerTest : IDisposable
         InitializeDatabase();
     }
 
-    protected virtual void ConfigureServices(HostBuilderContext ctx, IServiceCollection services) { }
+    protected virtual void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services) { }
 
     protected virtual void SeedDatabase(AppDbContext context) { }
 
@@ -108,11 +108,11 @@ public abstract class ServerTest : IDisposable
 
     protected async Task<SocketServer> StartServerAsync()
     {
-        if (_serverTask == null)
+        if (serverTask == null)
         {
-            _serverTask = Task.Run(async () =>
+            serverTask = Task.Run(async () =>
             {
-                try { await Server.StartAsync(_cts.Token); }
+                try { await Server.StartAsync(cts.Token); }
                 catch (OperationCanceledException) { }
             });
             await Task.Delay(100);
@@ -122,10 +122,10 @@ public abstract class ServerTest : IDisposable
 
     protected Task<(TcpClient client, NetworkStream stream)> ConnectAsync() => ConnectAsync(Settings.BindHost, Settings.BindPort);
 
-    protected static async Task<(TcpClient client, NetworkStream stream)> ConnectAsync(string host, int port)
+    protected static async Task<(TcpClient client, NetworkStream stream)> ConnectAsync(string hostName, int port)
     {
         var tcpClient = new TcpClient(AddressFamily.InterNetwork);
-        await tcpClient.ConnectAsync(IPAddress.Parse(host), port);
+        await tcpClient.ConnectAsync(IPAddress.Parse(hostName), port);
         return (tcpClient, tcpClient.GetStream());
     }
 
@@ -158,10 +158,10 @@ public abstract class ServerTest : IDisposable
 
     public void Dispose()
     {
-        _cts.Cancel();
-        try { _serverTask?.Wait(TimeSpan.FromSeconds(5)); } catch { }
+        cts.Cancel();
+        try { serverTask?.Wait(TimeSpan.FromSeconds(5)); } catch { }
         host.Dispose();
-        _cts.Dispose();
+        cts.Dispose();
         GC.SuppressFinalize(this);
     }
 }

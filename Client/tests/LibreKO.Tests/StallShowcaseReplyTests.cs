@@ -37,14 +37,14 @@ public class StallShowcaseReplyTests
     public void APremiumStallSendsItsEightShowcaseItems()
     {
         var p = Head(PremiumFlags);
-        for (int i = 0; i < Net.MerchantStallDisplaySlotsPremium; i++) p.WriteInt(i == 3 ? 0 : 389010000 + i);
+        for (int i = 0; i < MerchantWire.StallDisplaySlotsPremium; i++) p.WriteInt(i == 3 ? 0 : 389010000 + i);
         p.ResetOffset();
 
         var reply = StallShowcaseReply.Read(p);
 
         Assert.NotNull(reply);
         Assert.Equal(StallShowcaseReply.NoSlot, reply.Value.Slot);
-        Assert.Equal(Net.MerchantStallDisplaySlotsPremium, reply.Value.ItemIds!.Length);
+        Assert.Equal(MerchantWire.StallDisplaySlotsPremium, reply.Value.ItemIds!.Length);
         Assert.Equal(0, reply.Value.ItemIds[3]);
         Assert.Equal(389010007, reply.Value.ItemIds[7]);
         Assert.Equal(0, p.RemainingBytes);

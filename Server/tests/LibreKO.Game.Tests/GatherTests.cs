@@ -22,6 +22,8 @@ public class GatherTests : GameTestBase
     private const int GemReward = 389205000;
     private const int MysteriousOre = 399210000;
     private const int MysteriousGoldOre = 399200000;
+    private const int GoldenYut = 810219000;
+    private const int BettingStake = 50000;
 
     private static IEnumerable<MiningFishingItemData> PeacetimeMiningPool(
         IEnumerable<MiningFishingItemData> rows, GatherTool tool)
@@ -58,6 +60,7 @@ public class GatherTests : GameTestBase
         gameData.GetItem(GoldenFishingRod).Returns(new ItemData { Num = GoldenFishingRod, Kind = KindFishingRod, Duration = 4000, Weight = 60 });
         gameData.GetItem(Rainworm).Returns(new ItemData { Num = Rainworm, Kind = 95, Duration = 1, Weight = 1, Countable = 1 });
         gameData.GetItem(GemReward).Returns(new ItemData { Num = GemReward, Kind = 255, Duration = 1, Weight = 1, Countable = 1 });
+        gameData.GetItem(GoldenYut).Returns(new ItemData { Num = GoldenYut, Kind = 95, Duration = 1, Weight = 0, Countable = 1 });
     }
 
     private static void ConfigurePool(IGameDataService gameData, params MiningFishingItemData[] rows)
@@ -538,7 +541,29 @@ public class GatherTests : GameTestBase
     }
 
     [Fact]
-    public async Task BettingGame_PaysTenThousandOnAWinAndKeepsTheStakeOtherwise()
+    public async Task BettingGame_WithAFullBag_RefusesWithoutTakingTheStake()
+    {
+        using var provider = CreateProvider(_ => { }, ConfigureItems);
+        var (session, sent) = CreateGatherer(provider, BattleZoneManager.ZONE_MORADON, MoradonMineX, MoradonMineZ, Mattock);
+        session.Money = BettingStake;
+        for (int i = InventoryConstants.InventoryStart; i < InventoryConstants.InventoryStart + InventoryConstants.HaveMax; i++)
+        {
+            session.Inventory[i].ItemId = Mattock;
+            session.Inventory[i].Count = 1;
+        }
+
+        await provider.GetRequiredService<IMiningPacketCoordinator>()
+            .HandleAsync(session.Client, Request(SubBetting));
+
+        session.Money.Should().Be(BettingStake);
+        var response = sent.Last();
+        response.ResetOffset();
+        response.ReadByte().Should().Be(SubBetting);
+        response.ReadUShort().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task BettingGame_TakesFiftyThousandAndPaysGoldenYutByTheResult()
     {
         using var provider = CreateProvider(_ => { }, ConfigureItems);
         var (session, sent) = CreateGatherer(provider, BattleZoneManager.ZONE_MORADON, MoradonMineX, MoradonMineZ, Mattock);
@@ -546,7 +571,8 @@ public class GatherTests : GameTestBase
 
         for (var round = 0; round < 40; round++)
         {
-            session.Money = 5000;
+            session.Money = BettingStake;
+            var before = GoldenYutCount(session);
             sent.Clear();
             await coordinator.HandleAsync(session.Client, Request(SubBetting));
 
@@ -561,25 +587,35 @@ public class GatherTests : GameTestBase
 
             playerRoll.Should().BeInRange(1, 5);
             npcRoll.Should().BeInRange(1, 5);
+            session.Money.Should().Be(0);
 
+            var gained = GoldenYutCount(session) - before;
             switch (code)
             {
                 case 1:
                     playerRoll.Should().BeGreaterThan(npcRoll);
-                    session.Money.Should().Be(10000);
+                    gained.Should().Be(3);
                     break;
                 case 2:
                     playerRoll.Should().Be(npcRoll);
-                    session.Money.Should().Be(0);
+                    gained.Should().Be(2);
                     break;
                 case 3:
                     playerRoll.Should().BeLessThan(npcRoll);
-                    session.Money.Should().Be(0);
+                    gained.Should().Be(1);
                     break;
                 default:
                     throw new Xunit.Sdk.XunitException($"unexpected betting result {code}");
             }
         }
+    }
+
+    private static int GoldenYutCount(UserSession session)
+    {
+        int total = 0;
+        for (int i = InventoryConstants.InventoryStart; i < InventoryConstants.InventoryStart + InventoryConstants.HaveMax; i++)
+            if (session.Inventory[i].ItemId == GoldenYut) total += session.Inventory[i].Count;
+        return total;
     }
 
     [Fact]

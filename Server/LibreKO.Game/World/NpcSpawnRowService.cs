@@ -24,7 +24,7 @@ public sealed class NpcSpawnRowService(
 {
     private const int SpawnPlacementRetries = 32;
 
-    private readonly ConcurrentDictionary<int, NpcPosData> _lastPersisted = new();
+    private readonly ConcurrentDictionary<int, NpcPosData> lastPersisted = new();
 
     public NpcPosData? Find(int rowIndex) =>
         rowIndex > 0 ? gameData.NpcPositions.FirstOrDefault(position => position.Index == rowIndex) : null;
@@ -58,7 +58,7 @@ public sealed class NpcSpawnRowService(
 
     public void Edit(NpcPosData pos, int x, int z, int direction, byte count, short respawn, short range)
     {
-        _lastPersisted.TryAdd(pos.Index, CloneForZone(pos, pos.ZoneId));
+        lastPersisted.TryAdd(pos.Index, CloneForZone(pos, pos.ZoneId));
         pos.LeftX = x;
         pos.TopZ = z;
         pos.Direction = direction;
@@ -68,9 +68,9 @@ public sealed class NpcSpawnRowService(
     }
 
     public NpcPosData LastPersisted(NpcPosData pos) =>
-        _lastPersisted.TryGetValue(pos.Index, out var persisted) ? persisted : CloneForZone(pos, pos.ZoneId);
+        lastPersisted.TryGetValue(pos.Index, out var persisted) ? persisted : CloneForZone(pos, pos.ZoneId);
 
-    public void MarkPersisted(NpcPosData pos) => _lastPersisted.TryRemove(pos.Index, out _);
+    public void MarkPersisted(NpcPosData pos) => lastPersisted.TryRemove(pos.Index, out _);
 
     public async Task<int> RespawnRowAsync(NpcPosData pos)
     {

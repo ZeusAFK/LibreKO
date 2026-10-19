@@ -12,43 +12,48 @@ public partial class PluginHost : Node
 
     public static PluginUi Ui { get; } = new();
     public static PluginGame Game { get; } = new();
-    public static IReadOnlyList<PluginInfo> All => _all;
+    public static IReadOnlyList<PluginInfo> All => all;
     public static bool RestartRequired { get; private set; }
     public static bool CodePluginsSupported => OS.GetName() != "Android" && OS.GetName() != "iOS";
-    public static PluginInfo? ActiveTheme => _all.FirstOrDefault(p => p.IsLoaded && p.Type == PluginType.UiTheme);
+    public static PluginInfo? ActiveTheme => all.FirstOrDefault(p => p.IsLoaded && p.Type == PluginType.UiTheme);
 
     public static event Action? ThemeChanged;
     public static bool PersistChoices { get; set; } = true;
 
-    private static readonly List<PluginInfo> _all = new();
-    private static readonly List<string> _resolveDirs = new();
-    private static readonly Dictionary<string, Assembly> _assemblies = new(StringComparer.OrdinalIgnoreCase);
-    private static bool _resolverInstalled;
-    private static bool _loadedOnce;
-    private static bool _themeArgSpent;
+    private static readonly List<PluginInfo> all = new();
+    private static readonly List<string> resolveDirs = new();
+    private static readonly Dictionary<string, Assembly> assemblies = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly List<(string Id, Assembly Assembly)> unloadedPendingSweep = new();
+    private static bool resolverInstalled;
+    private static bool loadedOnce;
+    private static bool themeArgSpent;
 
     public override void _Ready()
     {
         Config.Load();
-        if (_loadedOnce) return;
-        _loadedOnce = true;
+        if (loadedOnce) return;
+        loadedOnce = true;
         Discover();
         LoadEnabled();
     }
 
     public override void _ExitTree()
     {
-        foreach (var p in _all)
+        foreach (var p in all)
             ShutdownInstance(p);
     }
 
     private static Assembly? ShutdownInstance(PluginInfo p)
     {
-        if (p.Instance == null) return null;
-        var assembly = p.Instance.GetType().Assembly;
-        try { p.Instance.Shutdown(); }
-        catch (Exception ex) { GD.PushWarning($"[plugins] {p.Id} shutdown: {ex.Message}"); }
-        p.Instance = null;
+        var assembly = p.Instance?.GetType().Assembly;
+        if (p.Instance != null)
+        {
+            try { p.Instance.Shutdown(); }
+            catch (Exception ex) { GD.PushWarning($"[plugins] {p.Id} shutdown: {ex.Message}"); }
+            p.Instance = null;
+        }
+        p.Context?.Assets.Release();
+        p.Context = null;
         return assembly;
     }
 
@@ -66,9 +71,9 @@ public partial class PluginHost : Node
 
     public static void Discover()
     {
-        var running = _all.Where(p => p.State is PluginState.Loaded or PluginState.Failed)
+        var running = all.Where(p => p.State is PluginState.Loaded or PluginState.Failed)
             .ToDictionary(p => Path.GetFullPath(p.Directory), StringComparer.OrdinalIgnoreCase);
-        _all.Clear();
+        all.Clear();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var root in Roots())
         {
@@ -85,11 +90,11 @@ public partial class PluginHost : Node
                     info.State = PluginState.Invalid;
                     info.Message = $"duplicate id \"{info.Manifest.Id}\" (another folder already provides it)";
                 }
-                _all.Add(info);
+                all.Add(info);
             }
         }
         ApplyEnableStates();
-        GD.Print($"[plugins] {_all.Count} candidate(s) in {string.Join(", ", Roots().Where(Directory.Exists))}");
+        GD.Print($"[plugins] {all.Count} candidate(s) in {string.Join(", ", Roots().Where(Directory.Exists))}");
     }
 
     private static PluginInfo Inspect(string dir, string manifestPath)
@@ -119,14 +124,14 @@ public partial class PluginHost : Node
         return new PluginInfo(dir, manifest, PluginState.Disabled);
     }
 
-    public static string ThemeOverride() => _themeArgSpent ? "" :
+    public static string ThemeOverride() => themeArgSpent ? "" :
         OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith(ThemeArgPrefix, StringComparison.Ordinal))?[ThemeArgPrefix.Length..] ?? "";
 
     private static void ApplyEnableStates()
     {
         var exclusiveTaken = new Dictionary<PluginType, string>();
         string themeOverride = ThemeOverride();
-        foreach (var p in _all)
+        foreach (var p in all)
         {
             p.Enabled = p.Manifest != null
                         && (themeOverride.Length > 0 && p.Manifest.Exclusive ? p.Id == themeOverride : Config.PluginEnabled(p.Id));
@@ -154,7 +159,7 @@ public partial class PluginHost : Node
 
     private static void LoadEnabled()
     {
-        foreach (var p in _all)
+        foreach (var p in all)
             if (p.Enabled && p.State == PluginState.Disabled)
                 Load(p);
     }
@@ -163,11 +168,13 @@ public partial class PluginHost : Node
     {
         try
         {
-            var ctx = new PluginContext(p, _all, Ui.ForOwner(p.Id), Game);
+            var pluginContext = new PluginContext(p, all, Ui.ForOwner(p.Id), Game);
+            p.Context = pluginContext;
             if (p.Manifest!.HasCode)
             {
                 p.Instance = Instantiate(p);
-                p.Instance.Initialize(ctx);
+                DropPendingSweep(p.Instance.GetType().Assembly);
+                p.Instance.Initialize(pluginContext);
             }
             p.State = PluginState.Loaded;
             p.Message = "";
@@ -187,22 +194,36 @@ public partial class PluginHost : Node
     {
         var assembly = ShutdownInstance(p);
         Ui.RemoveOwner(p.Id);
-        int dropped = assembly != null ? Game.DropHandlersFrom(assembly) : 0;
-        if (dropped > 0) GD.PushWarning($"[plugins] {p.Id} left {dropped} game handler(s) subscribed; removed");
+        if (assembly != null) unloadedPendingSweep.Add((p.Id, assembly));
         p.State = PluginState.Disabled;
         p.Message = "";
         GD.Print($"[plugins] {p.Id} unloaded");
     }
 
+    private static void DropPendingSweep(Assembly assembly)
+    {
+        if (unloadedPendingSweep.RemoveAll(entry => entry.Assembly == assembly) > 0) Game.DropHandlersFrom(assembly);
+    }
+
+    public static void SweepUnloaded()
+    {
+        foreach (var (id, assembly) in unloadedPendingSweep)
+        {
+            int dropped = Game.DropHandlersFrom(assembly);
+            if (dropped > 0) GD.PushWarning($"[plugins] {id} left {dropped} game handler(s) subscribed; removed");
+        }
+        unloadedPendingSweep.Clear();
+    }
+
     public static void SwitchTheme(string? id)
     {
-        var target = id == null ? null : _all.FirstOrDefault(p => p.Type == PluginType.UiTheme && p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        var target = id == null ? null : all.FirstOrDefault(p => p.Type == PluginType.UiTheme && p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
         if (id != null && (target == null || !target.CanEnable)) return;
         var current = ActiveTheme;
         if (current == target) return;
-        _themeArgSpent = true;
+        themeArgSpent = true;
         if (current != null) Unload(current);
-        foreach (var p in _all)
+        foreach (var p in all)
             if (p.Manifest != null && p.Type == PluginType.UiTheme)
             {
                 if (PersistChoices) Config.SetPluginEnabled(p.Id, p == target);
@@ -217,7 +238,7 @@ public partial class PluginHost : Node
     {
         var manifest = info.Manifest!;
         string dll = Path.GetFullPath(Path.Combine(info.Directory, manifest.Assembly));
-        if (!_assemblies.TryGetValue(dll, out var asm))
+        if (!assemblies.TryGetValue(dll, out var asm))
         {
             var alc = AssemblyLoadContext.GetLoadContext(typeof(PluginHost).Assembly) ?? AssemblyLoadContext.Default;
             InstallResolver(alc, Path.GetDirectoryName(dll)!);
@@ -235,7 +256,7 @@ public partial class PluginHost : Node
                 }
             }
             RegisterGodotScripts(asm);
-            _assemblies[dll] = asm;
+            assemblies[dll] = asm;
         }
 
         Type? type = null;
@@ -261,12 +282,12 @@ public partial class PluginHost : Node
 
     private static void InstallResolver(AssemblyLoadContext alc, string dir)
     {
-        if (!_resolveDirs.Contains(dir, StringComparer.OrdinalIgnoreCase)) _resolveDirs.Add(dir);
-        if (_resolverInstalled) return;
-        _resolverInstalled = true;
+        if (!resolveDirs.Contains(dir, StringComparer.OrdinalIgnoreCase)) resolveDirs.Add(dir);
+        if (resolverInstalled) return;
+        resolverInstalled = true;
         alc.Resolving += (ctx, name) =>
         {
-            foreach (var d in _resolveDirs)
+            foreach (var d in resolveDirs)
             {
                 string candidate = Path.Combine(d, name.Name + ".dll");
                 if (File.Exists(candidate)) return ctx.LoadFromAssemblyPath(candidate);
@@ -286,7 +307,7 @@ public partial class PluginHost : Node
 
     public static void SetEnabled(string id, bool enabled)
     {
-        var target = _all.FirstOrDefault(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        var target = all.FirstOrDefault(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
         if (target?.Manifest == null) return;
         if (target.Type == PluginType.UiTheme && CodePluginsSupported)
         {
@@ -294,7 +315,7 @@ public partial class PluginHost : Node
             return;
         }
         if (enabled && target.Manifest.Exclusive)
-            foreach (var other in _all)
+            foreach (var other in all)
                 if (other != target && other.Manifest != null && other.Type == target.Type && Config.PluginEnabled(other.Id))
                     Config.SetPluginEnabled(other.Id, false);
         Config.SetPluginEnabled(id, enabled);

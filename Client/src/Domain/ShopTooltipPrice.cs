@@ -1,5 +1,7 @@
 ﻿namespace LibreKO.Domain;
 
+public readonly record struct ShopPricing(bool LoyaltyShop, long Wallet);
+
 public static class ShopTooltipPrice
 {
     public const int PurchasingPriceText = 4523;

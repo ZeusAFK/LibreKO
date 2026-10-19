@@ -24,8 +24,8 @@ public static class Backdrop
     private static readonly Dictionary<string, int> LastPick = new();
     private static readonly System.Random Rng = new();
 
-    private static string? _loginArt;
-    private static string? _loadingArt;
+    private static string? loginArt;
+    private static string? loadingArt;
 
     public static string[] Paths(string set)
     {
@@ -60,15 +60,15 @@ public static class Backdrop
         return paths[i];
     }
 
-    public static string LoginArt => _loginArt ??= Pick(LoginSet, RetailPreGame);
+    public static string LoginArt => loginArt ??= Pick(LoginSet, RetailPreGame);
 
     public static Fit LoginFit => LoginArt == RetailPreGame ? Fit.Cover : Fit.Framed;
 
-    public static void RerollLoginArt() => _loginArt = Pick(LoginSet, RetailPreGame);
+    public static void RerollLoginArt() => loginArt = Pick(LoginSet, RetailPreGame);
 
-    public static string LoadingArt => _loadingArt ??= Pick(LoadingSet, RetailLoading);
+    public static string LoadingArt => loadingArt ??= Pick(LoadingSet, RetailLoading);
 
-    public static void RerollLoadingArt() => _loadingArt = Pick(LoadingSet, RetailLoading);
+    public static void RerollLoadingArt() => loadingArt = Pick(LoadingSet, RetailLoading);
 
     public static BackdropRect? Build(Node parent, string resPath, Fit fit = Fit.Cover, bool bottomScrim = false)
     {
@@ -89,41 +89,41 @@ public partial class BackdropRect : Control
 {
     private static float MaxCrop => Platform.Pick(0.34f, 0.58f);
 
-    private static Shader? _blurShader;
+    private static Shader? blurShader;
 
-    private TextureRect _fill = null!;
-    private TextureRect _art = null!;
-    private Backdrop.Fit _fit;
-    private float _imgAspect = 4f / 3f;
+    private TextureRect fill = null!;
+    private TextureRect art = null!;
+    private Backdrop.Fit fit;
+    private float imgAspect = 4f / 3f;
 
     internal void Setup(Texture2D tex, Backdrop.Fit fit, bool bottomScrim)
     {
-        _fit = fit;
+        this.fit = fit;
         var size = tex.GetSize();
-        _imgAspect = size.Y > 0 ? size.X / size.Y : 1f;
+        imgAspect = size.Y > 0 ? size.X / size.Y : 1f;
 
         Name = "Backdrop";
         MouseFilter = MouseFilterEnum.Ignore;
         SetAnchorsPreset(LayoutPreset.FullRect);
 
-        _fill = NewRect(tex, TextureRect.StretchModeEnum.KeepAspectCovered);
-        _fill.Material = new ShaderMaterial { Shader = BlurShader() };
-        _fill.TextureRepeat = TextureRepeatEnum.Disabled;
-        AddChild(_fill);
+        fill = NewRect(tex, TextureRect.StretchModeEnum.KeepAspectCovered);
+        fill.Material = new ShaderMaterial { Shader = BlurShader() };
+        fill.TextureRepeat = TextureRepeatEnum.Disabled;
+        AddChild(fill);
 
-        _art = NewRect(tex, TextureRect.StretchModeEnum.KeepAspectCovered);
-        AddChild(_art);
+        art = NewRect(tex, TextureRect.StretchModeEnum.KeepAspectCovered);
+        AddChild(art);
 
         if (bottomScrim) AddChild(BottomScrim());
 
         Refit();
     }
 
-    public Material? ArtMaterial => _art?.Material;
+    public Material? ArtMaterial => art?.Material;
 
     public void SetArtMaterial(Material? material)
     {
-        if (_art != null) _art.Material = material;
+        if (art != null) art.Material = material;
     }
 
     public override void _Notification(int what)
@@ -133,17 +133,17 @@ public partial class BackdropRect : Control
 
     private void Refit()
     {
-        if (_art == null) return;
+        if (art == null) return;
         var box = Size;
-        float boxAspect = box.Y > 0.001f ? box.X / box.Y : _imgAspect;
-        float lo = Mathf.Min(_imgAspect, boxAspect), hi = Mathf.Max(_imgAspect, boxAspect);
+        float boxAspect = box.Y > 0.001f ? box.X / box.Y : imgAspect;
+        float lo = Mathf.Min(imgAspect, boxAspect), hi = Mathf.Max(imgAspect, boxAspect);
         float crop = hi > 0.001f ? 1f - lo / hi : 0f;
 
-        bool framed = crop > MaxCrop || (Platform.PointerUi && _fit == Backdrop.Fit.Framed);
-        _art.StretchMode = framed
+        bool framed = crop > MaxCrop || (Platform.PointerUi && fit == Backdrop.Fit.Framed);
+        art.StretchMode = framed
             ? TextureRect.StretchModeEnum.KeepAspectCentered
             : TextureRect.StretchModeEnum.KeepAspectCovered;
-        _fill.Visible = framed && crop > 0.001f;
+        fill.Visible = framed && crop > 0.001f;
     }
 
     private static TextureRect NewRect(Texture2D tex, TextureRect.StretchModeEnum stretch)
@@ -184,5 +184,5 @@ public partial class BackdropRect : Control
         return scrim;
     }
 
-    private static Shader BlurShader() => _blurShader ??= Shaders.Get("backdrop_blur");
+    private static Shader BlurShader() => blurShader ??= Shaders.Get("backdrop_blur");
 }

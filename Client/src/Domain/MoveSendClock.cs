@@ -13,27 +13,27 @@ public sealed class MoveSendClock
     public const float ClimbResend = 1f;
     public const float HeadingEpsilonDegrees = 0.05f;
 
-    private float _left;
-    private float _rotateLeft;
-    private bool _alternate;
-    private bool _hasSent;
-    private Vector2 _sentFrom;
-    private Vector2 _sentTo;
-    private float _sentY;
+    private float left;
+    private float rotateLeft;
+    private bool alternate;
+    private bool hasSent;
+    private Vector2 sentFrom;
+    private Vector2 sentTo;
+    private float sentY;
 
     public void Tick(float delta)
     {
-        _left -= delta;
-        _rotateLeft -= delta;
+        left -= delta;
+        rotateLeft -= delta;
     }
 
     public bool MoveDue(Vector2 position, float y, Vector2 heading)
     {
-        if (!_hasSent) return true;
-        bool moved = position != _sentFrom || Mathf.Abs(y - _sentY) >= ClimbResend;
-        if (_left < 0f) return moved;
-        if (_left >= (_alternate ? TurnCheckBelowAlternate : TurnCheckBelow) || !moved) return false;
-        var sent = _sentTo - _sentFrom;
+        if (!hasSent) return true;
+        bool moved = position != sentFrom || Mathf.Abs(y - sentY) >= ClimbResend;
+        if (left < 0f) return moved;
+        if (left >= (alternate ? TurnCheckBelowAlternate : TurnCheckBelow) || !moved) return false;
+        var sent = sentTo - sentFrom;
         var sentDir = sent.LengthSquared() > 0f ? sent.Normalized() : Vector2.Zero;
         var headingDir = heading.LengthSquared() > 0f ? heading.Normalized() : Vector2.Zero;
         return sentDir.Dot(headingDir) < TurnDot;
@@ -41,22 +41,22 @@ public sealed class MoveSendClock
 
     public void Sent(Vector2 from, Vector2 to, float y)
     {
-        _left = SendSeconds;
-        _alternate = !_alternate;
-        _hasSent = true;
-        _sentFrom = from;
-        _sentTo = to;
-        _sentY = y;
+        left = SendSeconds;
+        alternate = !alternate;
+        hasSent = true;
+        sentFrom = from;
+        sentTo = to;
+        sentY = y;
     }
 
-    public void Stopped() => _hasSent = false;
+    public void Stopped() => hasSent = false;
 
     public bool RotateDue(float headingDegrees, float lastSentDegrees) =>
-        _rotateLeft < 0f
+        rotateLeft < 0f
         && (float.IsNaN(lastSentDegrees) || Mathf.Abs(Mathf.AngleDifference(
             Mathf.DegToRad(headingDegrees), Mathf.DegToRad(lastSentDegrees))) > Mathf.DegToRad(HeadingEpsilonDegrees));
 
-    public void Rotated() => _rotateLeft = RotateSeconds;
+    public void Rotated() => rotateLeft = RotateSeconds;
 
     public static Vector2 Lead(Vector2 position, Vector2 facing, float signedSpeed)
     {

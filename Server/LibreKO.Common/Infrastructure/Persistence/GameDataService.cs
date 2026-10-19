@@ -10,7 +10,7 @@ namespace LibreKO.Common.Infrastructure.Persistence;
 
 public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameDataService> logger) : IGameDataService
 {
-    private readonly SemaphoreSlim _loadLock = new(1, 1);
+    private readonly SemaphoreSlim loadLock = new(1, 1);
 
     public IReadOnlyDictionary<byte, long> LevelUpTable { get; private set; } = new Dictionary<byte, long>();
     public IReadOnlyDictionary<byte, PetLevelData> PetLevelTable { get; private set; } = new Dictionary<byte, PetLevelData>();
@@ -49,7 +49,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
     public ILookup<(GatherType Type, GatherTool Tool, GatherWarStatus War), MiningFishingItemData> MiningFishingItemsByPool { get; private set; }
         = Enumerable.Empty<MiningFishingItemData>().ToLookup(x => (GatherType.Mining, GatherTool.Plain, GatherWarStatus.Peace));
     public IReadOnlyDictionary<int, EventTriggerData> EventTriggerTable { get; private set; } = new Dictionary<int, EventTriggerData>();
-    private IReadOnlyDictionary<(short NpcType, int TrapNumber), int> _eventTriggersByNpc = new Dictionary<(short, int), int>();
+    private IReadOnlyDictionary<(short NpcType, int TrapNumber), int> eventTriggersByNpc = new Dictionary<(short, int), int>();
     public IReadOnlyDictionary<(short Index, bool IsMonster), NpcItemData> NpcItemTable { get; private set; } = new Dictionary<(short, bool), NpcItemData>();
     public IReadOnlyDictionary<int, int[]> MakeItemGroupTable { get; private set; } = new Dictionary<int, int[]>();
     public IReadOnlyDictionary<int, AttendanceRewardData> AttendanceRewardTable { get; private set; } = new Dictionary<int, AttendanceRewardData>();
@@ -188,7 +188,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
 
     public int GetEventTrigger(short npcType, short trapNumber)
     {
-        return _eventTriggersByNpc.TryGetValue((npcType, trapNumber), out var triggerNum)
+        return eventTriggersByNpc.TryGetValue((npcType, trapNumber), out var triggerNum)
             ? triggerNum
             : EventTriggerData.NoTrigger;
     }
@@ -237,7 +237,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
         if (IsLoaded)
             return;
 
-        await _loadLock.WaitAsync(cancellationToken);
+        await loadLock.WaitAsync(cancellationToken);
 
         try
         {
@@ -304,7 +304,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
 
             var eventTriggers = await LoadListAsync(db.EventTriggers, "event trigger entries", cancellationToken);
             EventTriggerTable = eventTriggers.ToDictionary(x => x.Index);
-            _eventTriggersByNpc = eventTriggers
+            eventTriggersByNpc = eventTriggers
                 .GroupBy(x => (x.NpcType, x.NpcId))
                 .ToDictionary(group => group.Key, group => group.First().TriggerNum);
             NpcItemTable = await LoadDictionaryAsync(db.NpcItems, x => (x.Index, x.IsMonster), "monster drop table entries", cancellationToken);
@@ -351,7 +351,7 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
         }
         finally
         {
-            _loadLock.Release();
+            loadLock.Release();
         }
     }
 

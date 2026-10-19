@@ -15,12 +15,12 @@ public sealed class PowerUpStoreCart
         public long Total => (long)Entry.Price * Count;
     }
 
-    private readonly List<Line> _lines = [];
+    private readonly List<Line> lines = [];
 
-    public IReadOnlyList<Line> Lines => _lines;
-    public bool IsEmpty => _lines.Count == 0;
-    public int Units => _lines.Sum(l => l.Count);
-    public long Total => _lines.Sum(l => l.Total);
+    public IReadOnlyList<Line> Lines => lines;
+    public bool IsEmpty => lines.Count == 0;
+    public int Units => lines.Sum(l => l.Count);
+    public long Total => lines.Sum(l => l.Total);
 
     public bool Affordable(long balance) => Total <= balance;
 
@@ -29,7 +29,7 @@ public sealed class PowerUpStoreCart
         if (Find(entry.Id) is { } line)
             line.Count = Math.Min(LineCountMax, line.Count + Math.Max(1, count));
         else
-            _lines.Add(new Line { Entry = entry, Count = Math.Clamp(count, 1, LineCountMax) });
+            lines.Add(new Line { Entry = entry, Count = Math.Clamp(count, 1, LineCountMax) });
     }
 
     public bool CanIncrease(int entryId) => Find(entryId) is { } line && line.Count < LineCountMax;
@@ -44,15 +44,15 @@ public sealed class PowerUpStoreCart
         if (Find(entryId) is { } line && line.Count > 1) line.Count--;
     }
 
-    public void Remove(int entryId) => _lines.RemoveAll(l => l.Entry.Id == entryId);
+    public void Remove(int entryId) => lines.RemoveAll(l => l.Entry.Id == entryId);
 
-    public void Clear() => _lines.Clear();
+    public void Clear() => lines.Clear();
 
     public bool Reprice(IEnumerable<PowerUpStoreEntry> catalogue)
     {
         var byId = catalogue.ToDictionary(e => e.Id);
-        var changed = _lines.RemoveAll(l => !byId.ContainsKey(l.Entry.Id)) > 0;
-        foreach (var line in _lines)
+        var changed = lines.RemoveAll(l => !byId.ContainsKey(l.Entry.Id)) > 0;
+        foreach (var line in lines)
         {
             var current = byId[line.Entry.Id];
             if (current.Price != line.Entry.Price) changed = true;
@@ -61,5 +61,5 @@ public sealed class PowerUpStoreCart
         return changed;
     }
 
-    private Line? Find(int entryId) => _lines.FirstOrDefault(l => l.Entry.Id == entryId);
+    private Line? Find(int entryId) => lines.FirstOrDefault(l => l.Entry.Id == entryId);
 }

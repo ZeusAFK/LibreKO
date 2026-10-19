@@ -8,7 +8,7 @@ public static class CooldownCue
     public const float MinSoundRecastSeconds = 2f;
 
     public static void Collect(
-        Dictionary<int, double> readyAt, double since, double now,
+        IReadOnlyDictionary<int, double> readyAt, double since, double now,
         int[] hotbar, Func<int, float> recastSeconds, List<int> into)
     {
         into.Clear();

@@ -5,22 +5,22 @@ namespace LibreKO.Plugins;
 
 public sealed class PluginAssets
 {
-    private readonly string _root;
-    private readonly PluginLog _log;
-    private readonly Dictionary<string, Texture2D?> _textures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly string root;
+    private readonly PluginLog log;
+    private readonly Dictionary<string, Texture2D?> textures = new(StringComparer.OrdinalIgnoreCase);
 
     internal PluginAssets(string root, PluginLog log)
     {
-        _root = Path.GetFullPath(root);
-        _log = log;
+        this.root = Path.GetFullPath(root);
+        this.log = log;
     }
 
-    public string Root => _root;
+    public string Root => root;
 
     public string PathOf(string relative)
     {
-        string full = Path.GetFullPath(Path.Combine(_root, relative.Replace('\\', '/')));
-        if (!full.StartsWith(_root, StringComparison.OrdinalIgnoreCase))
+        string full = Path.GetFullPath(Path.Combine(root, relative.Replace('\\', '/')));
+        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException($"'{relative}' leaves the plugin folder");
         return full;
     }
@@ -43,17 +43,23 @@ public sealed class PluginAssets
         }
         catch (JsonException ex)
         {
-            _log.Error($"{relative}: {ex.Message}");
+            log.Error($"{relative}: {ex.Message}");
             return null;
         }
     }
 
     public Texture2D? Texture(string relative)
     {
-        if (_textures.TryGetValue(relative, out var cached)) return cached;
+        if (textures.TryGetValue(relative, out var cached)) return cached;
         var tex = LoadTexture(relative);
-        _textures[relative] = tex;
+        textures[relative] = tex;
         return tex;
+    }
+
+    internal void Release()
+    {
+        foreach (var texture in textures.Values) texture?.Dispose();
+        textures.Clear();
     }
 
     private Texture2D? LoadTexture(string relative)
@@ -61,10 +67,10 @@ public sealed class PluginAssets
         string p = PathOf(relative);
         if (!File.Exists(p))
         {
-            _log.Warn($"missing texture {relative}");
+            log.Warn($"missing texture {relative}");
             return null;
         }
-        var img = new Image();
+        using var img = new Image();
         byte[] bytes = File.ReadAllBytes(p);
         Error err = Path.GetExtension(p).ToLowerInvariant() switch
         {
@@ -75,7 +81,7 @@ public sealed class PluginAssets
         };
         if (err != Error.Ok)
         {
-            _log.Error($"{relative}: {err}");
+            log.Error($"{relative}: {err}");
             return null;
         }
         return ImageTexture.CreateFromImage(img);

@@ -8,7 +8,7 @@ public partial class FxInstance : Node3D
     private const int VisibilityRefreshFrames = 4;
 
     public float BundleLife;
-    private float _age;
+    private float age;
 
     public float AuthoredVelocity;
 
@@ -21,14 +21,14 @@ public partial class FxInstance : Node3D
 
     public bool Asleep;
     internal bool Driven { get; private set; }
-    private bool _registered, _released;
+    private bool registered, released;
     internal int PendingParts;
-    internal bool Released => _released;
-    private FxDriver? _driver;
-    private int _visibilityCountdown;
-    private Transform3D _pinned;
-    private bool _pinnedValid;
-    private readonly List<IFxPart> _parts = new();
+    internal bool Released => released;
+    private FxDriver? driver;
+    private int visibilityCountdown;
+    private Transform3D pinned;
+    private bool pinnedValid;
+    private readonly List<IFxPart> parts = new();
 
     public void Pin(Node3D anchor, Node3D facing, Vector3 offset, Vector3 direction,
         bool inheritScale = true, bool followRotation = false)
@@ -40,7 +40,7 @@ public partial class FxInstance : Node3D
         FollowDirection = direction;
         InheritFollowScale = inheritScale;
         FollowRotation = followRotation;
-        _pinnedValid = false;
+        pinnedValid = false;
         TickAim(0f);
     }
 
@@ -50,42 +50,42 @@ public partial class FxInstance : Node3D
     public float FlightSpeed;
     public float ArriveRadius = 0.6f;
     public float MaxFlightTime = 4f;
-    private float _flightAge;
+    private float flightAge;
 
     public void Release()
     {
-        if (_released) return;
-        _released = true;
+        if (released) return;
+        released = true;
         foreach (var child in GetChildren())
             if (child is Node3D part and IFxPooledPart) Fx.RecyclePart(part);
         QueueFree();
     }
 
-    internal void AddPart(IFxPart part) => _parts.Add(part);
+    internal void AddPart(IFxPart part) => parts.Add(part);
 
-    internal void RemovePart(IFxPart part) => _parts.Remove(part);
+    internal void RemovePart(IFxPart part) => parts.Remove(part);
 
-    private bool _layerUser;
+    private bool layerUser;
 
     public override void _EnterTree()
     {
         Driven = true;
-        if (!_layerUser) { _layerUser = true; FxLayer.Users++; }
-        if (_registered) return;
-        _driver = FxDriver.For(this);
-        if (_driver == null) return;
-        _driver.Add(this);
-        _registered = true;
-        _visibilityCountdown = 0;
+        if (!layerUser) { layerUser = true; FxLayer.Users++; }
+        if (registered) return;
+        driver = FxDriver.For(this);
+        if (driver == null) return;
+        driver.Add(this);
+        registered = true;
+        visibilityCountdown = 0;
     }
 
     public override void _ExitTree()
     {
         Driven = false;
-        if (_layerUser) { _layerUser = false; FxLayer.Users--; }
+        if (layerUser) { layerUser = false; FxLayer.Users--; }
     }
 
-    internal void Unregistered() => _registered = false;
+    internal void Unregistered() => registered = false;
 
     public static Basis AimBasis(Vector3 dir)
     {
@@ -99,10 +99,10 @@ public partial class FxInstance : Node3D
         return new Basis(axis.Normalized(), Mathf.Acos(Mathf.Clamp(fwd.Dot(dir), -1f, 1f)));
     }
 
-    private ulong _frame = ulong.MaxValue;
-    private bool _inverseValid, _frameInverseValid;
-    private Transform3D _inverse;
-    private Basis _frameInverse = Basis.Identity;
+    private ulong frame = ulong.MaxValue;
+    private bool inverseValid, frameInverseValid;
+    private Transform3D inverse;
+    private Basis frameInverse = Basis.Identity;
     internal Transform3D FrameXf;
     internal Transform3D CamXf;
     internal bool HasCam;
@@ -112,8 +112,8 @@ public partial class FxInstance : Node3D
     {
         get
         {
-            if (!_frameInverseValid) { _frameInverse = FrameXf.Basis.Orthonormalized().Inverse(); _frameInverseValid = true; }
-            return _frameInverse;
+            if (!frameInverseValid) { frameInverse = FrameXf.Basis.Orthonormalized().Inverse(); frameInverseValid = true; }
+            return frameInverse;
         }
     }
 
@@ -121,57 +121,57 @@ public partial class FxInstance : Node3D
     {
         get
         {
-            if (!_inverseValid) { _inverse = FrameXf.AffineInverse(); _inverseValid = true; }
-            return _inverse;
+            if (!inverseValid) { inverse = FrameXf.AffineInverse(); inverseValid = true; }
+            return inverse;
         }
     }
 
     internal void EnsureFrame()
     {
         ulong frame = Engine.GetProcessFrames();
-        if (frame == _frame) return;
-        _frame = frame;
+        if (frame == this.frame) return;
+        this.frame = frame;
         FrameXf = GlobalTransform;
         HasCam = Fx.FrameCamera(this, out CamXf);
         VisibleInTree = IsVisibleInTree();
-        _inverseValid = _frameInverseValid = false;
+        inverseValid = frameInverseValid = false;
     }
 
     internal void Tick(double delta, ulong frame, bool hasCam, in Transform3D camXf)
     {
         if (!TickSelf(delta, frame, hasCam, camXf)) return;
-        for (int i = 0; i < _parts.Count;)
+        for (int i = 0; i < parts.Count;)
         {
-            var part = _parts[i];
+            var part = parts[i];
             part.Tick(delta);
-            if (i < _parts.Count && ReferenceEquals(_parts[i], part)) i++;
+            if (i < parts.Count && ReferenceEquals(parts[i], part)) i++;
         }
     }
 
     private bool TickSelf(double delta, ulong frame, bool hasCam, in Transform3D camXf)
     {
         using var scope = Perf.Measure(Perf.Section.FxRoot);
-        if (_released || Asleep || Fx.ShuttingDown) return false;
+        if (released || Asleep || Fx.ShuttingDown) return false;
         if (FollowNode != null || FlightSpeed > 0f)
         {
             TickAim((float)delta);
-            if (_released) return false;
+            if (released) return false;
         }
-        _frame = frame;
-        FrameXf = _pinnedValid ? _pinned : GlobalTransform;
-        _inverseValid = _frameInverseValid = false;
+        this.frame = frame;
+        FrameXf = pinnedValid ? pinned : GlobalTransform;
+        inverseValid = frameInverseValid = false;
         HasCam = hasCam;
         CamXf = camXf;
-        if (--_visibilityCountdown <= 0)
+        if (--visibilityCountdown <= 0)
         {
             VisibleInTree = IsVisibleInTree();
-            _visibilityCountdown = VisibilityRefreshFrames;
+            visibilityCountdown = VisibilityRefreshFrames;
         }
-        if (VisibleInTree && _driver != null && _driver.Sees(FrameXf.Origin)) Perf.CountFxVisible();
+        if (VisibleInTree && driver != null && driver.Sees(FrameXf.Origin)) Perf.CountFxVisible();
         if (BundleLife > 0.001f && PendingParts == 0)
         {
-            _age += (float)delta;
-            if (_age > BundleLife) { Release(); return false; }
+            age += (float)delta;
+            if (age > BundleLife) { Release(); return false; }
         }
         return true;
     }
@@ -180,8 +180,8 @@ public partial class FxInstance : Node3D
     {
         if (FollowNode != null)
         {
-            if (!GodotObject.IsInstanceValid(FollowNode)) { FollowNode = null; _pinnedValid = false; return; }
-            if (!IsInsideTree() || !FollowNode.IsInsideTree()) { _pinnedValid = false; return; }
+            if (!GodotObject.IsInstanceValid(FollowNode)) { FollowNode = null; pinnedValid = false; return; }
+            if (!IsInsideTree() || !FollowNode.IsInsideTree()) { pinnedValid = false; return; }
             var follow = FollowNode.GlobalTransform;
             Basis basis;
             if (FollowRotation) basis = follow.Basis.Orthonormalized() * AimBasis(FollowDirection);
@@ -190,28 +190,28 @@ public partial class FxInstance : Node3D
                 Vector3 facing;
                 if (FacingNode == FollowNode) facing = follow.Basis * FollowDirection;
                 else if (FacingNode != null && GodotObject.IsInstanceValid(FacingNode)) facing = FacingNode.GlobalBasis * FollowDirection;
-                else facing = _pinnedValid ? _pinned.Basis.Z : GlobalBasis.Z;
+                else facing = pinnedValid ? this.pinned.Basis.Z : GlobalBasis.Z;
                 basis = AimBasis(facing);
             }
             float scale = InheritFollowScale ? follow.Basis.Scale.Y : 1f;
             if (scale <= 0.001f) scale = 1f;
             var pinned = new Transform3D(basis.Scaled(Vector3.One * scale), follow * FollowOffset);
-            if (!_pinnedValid || pinned != _pinned)
+            if (!pinnedValid || pinned != this.pinned)
             {
                 GlobalTransform = pinned;
-                _pinned = pinned;
-                _pinnedValid = true;
+                this.pinned = pinned;
+                pinnedValid = true;
             }
             return;
         }
 
-        _pinnedValid = false;
-        _flightAge += delta;
+        pinnedValid = false;
+        flightAge += delta;
         Vector3 aim = HomingTarget != null && GodotObject.IsInstanceValid(HomingTarget)
             ? HomingTarget.GlobalPosition + new Vector3(0, HomingHeight, 0)
             : HomingPoint;
         Vector3 to = aim - GlobalPosition;
-        if (to.Length() <= ArriveRadius || _flightAge > MaxFlightTime) { Release(); return; }
+        if (to.Length() <= ArriveRadius || flightAge > MaxFlightTime) { Release(); return; }
         Vector3 dir = to.Normalized();
         GlobalPosition += dir * FlightSpeed * delta;
         GlobalBasis = AimBasis(dir).Scaled(GlobalBasis.Scale);

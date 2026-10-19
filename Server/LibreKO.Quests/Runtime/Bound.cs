@@ -7,16 +7,16 @@ public sealed class ArgumentSet
 {
     public static readonly ArgumentSet Empty = new(new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase));
 
-    private readonly IReadOnlyDictionary<string, long> _values;
+    private readonly IReadOnlyDictionary<string, long> values;
 
-    public ArgumentSet(IReadOnlyDictionary<string, long> values) => _values = values;
+    public ArgumentSet(IReadOnlyDictionary<string, long> values) => this.values = values;
 
-    public IReadOnlyDictionary<string, long> Values => _values;
+    public IReadOnlyDictionary<string, long> Values => values;
 
-    public bool Has(string name) => _values.ContainsKey(name);
+    public bool Has(string name) => values.ContainsKey(name);
 
     public long Get(string name, long fallback = 0) =>
-        _values.TryGetValue(name, out var value) ? value : fallback;
+        values.TryGetValue(name, out var value) ? value : fallback;
 
     public int GetInt(string name, int fallback = 0) => (int)Get(name, fallback);
 }

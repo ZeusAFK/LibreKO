@@ -12,6 +12,15 @@
     <Using Include="LibreKO.Network" />
     <Using Include="LibreKO.Domain" />
     <Using Include="LibreKO.Plugins" />
+    <Using Include="LibreKO.Session" />
+    <Using Include="LibreKO.Network.Requests" />
+    <Using Include="LibreKO.Features" />
+    <Using Include="LibreKO.Features.Windows" />
+    <Using Include="LibreKO.Features.Hud" />
+    <Using Include="LibreKO.Features.Social" />
+    <Using Include="LibreKO.Features.Core" />
+    <Using Include="LibreKO.Presentation" />
+    <Using Include="LibreKO.Features.Entities" />
   </ItemGroup>
 
   <!--

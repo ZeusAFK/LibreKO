@@ -4,38 +4,38 @@ namespace LibreKO.Quests.Catalog;
 
 public sealed class JsonQuestCatalog : IQuestCatalog
 {
-    private readonly Dictionary<long, string> _items = [];
-    private readonly HashSet<long> _stacking = [];
-    private readonly Dictionary<long, string> _exchanges = [];
-    private readonly Dictionary<long, string> _quests = [];
-    private readonly Dictionary<long, string> _questTitles = [];
-    private readonly Dictionary<long, HashSet<long>> _questNpcs = [];
-    private readonly Dictionary<(long Npc, long Event), SortedSet<(long Quest, long Status)>> _triggers = [];
-    private readonly Dictionary<long, string> _npcs = [];
-    private readonly Dictionary<long, string> _zones = [];
-    private readonly Dictionary<long, string> _maps = [];
-    private readonly Dictionary<long, string> _talk = [];
-    private readonly Dictionary<long, string> _menu = [];
+    private readonly Dictionary<long, string> itemNames = [];
+    private readonly HashSet<long> stacking = [];
+    private readonly Dictionary<long, string> exchanges = [];
+    private readonly Dictionary<long, string> quests = [];
+    private readonly Dictionary<long, string> questTitles = [];
+    private readonly Dictionary<long, HashSet<long>> questNpcs = [];
+    private readonly Dictionary<(long Npc, long Event), SortedSet<(long Quest, long Status)>> triggers = [];
+    private readonly Dictionary<long, string> npcNames = [];
+    private readonly Dictionary<long, string> zones = [];
+    private readonly Dictionary<long, string> maps = [];
+    private readonly Dictionary<long, string> talk = [];
+    private readonly Dictionary<long, string> menu = [];
 
-    public bool KnowsItems => _items.Count > 0;
-    public bool KnowsExchanges => _exchanges.Count > 0;
-    public bool KnowsQuests => _quests.Count > 0;
-    public bool KnowsNpcs => _npcs.Count > 0;
-    public bool KnowsZones => _zones.Count > 0;
-    public bool KnowsText => _talk.Count > 0 || _menu.Count > 0;
+    public bool KnowsItems => itemNames.Count > 0;
+    public bool KnowsExchanges => exchanges.Count > 0;
+    public bool KnowsQuests => quests.Count > 0;
+    public bool KnowsNpcs => npcNames.Count > 0;
+    public bool KnowsZones => zones.Count > 0;
+    public bool KnowsText => talk.Count > 0 || menu.Count > 0;
 
-    public string? ItemName(long itemId) => Lookup(_items, itemId);
-    public bool ItemStacks(long itemId) => _stacking.Contains(itemId);
-    public string? ExchangeSummary(long exchangeId) => Lookup(_exchanges, exchangeId);
-    public string? QuestSummary(long questId) => Lookup(_quests, questId);
-    public string? QuestTitle(long questId) => Lookup(_questTitles, questId);
+    public string? ItemName(long itemId) => Lookup(itemNames, itemId);
+    public bool ItemStacks(long itemId) => stacking.Contains(itemId);
+    public string? ExchangeSummary(long exchangeId) => Lookup(exchanges, exchangeId);
+    public string? QuestSummary(long questId) => Lookup(quests, questId);
+    public string? QuestTitle(long questId) => Lookup(questTitles, questId);
 
     public IReadOnlyCollection<long> NpcsForQuest(long questId) =>
-        _questNpcs.TryGetValue(questId, out var npcs) ? npcs : [];
+        questNpcs.TryGetValue(questId, out var npcs) ? npcs : [];
 
     public string? EventTriggerSummary(long npcId, long eventId)
     {
-        if (!_triggers.TryGetValue((npcId, eventId), out var rows) || rows.Count == 0)
+        if (!triggers.TryGetValue((npcId, eventId), out var rows) || rows.Count == 0)
             return null;
 
         var parts = new List<string>();
@@ -60,11 +60,11 @@ public sealed class JsonQuestCatalog : IQuestCatalog
         255 => "on offer",
         _ => $"state {status}",
     };
-    public string? NpcName(long npcId) => Lookup(_npcs, npcId);
-    public string? ZoneName(long zoneId) => Lookup(_zones, zoneId);
-    public string? MapName(long mapId) => Lookup(_maps, mapId);
-    public string? TalkText(long textId) => Lookup(_talk, textId);
-    public string? MenuText(long textId) => Lookup(_menu, textId);
+    public string? NpcName(long npcId) => Lookup(npcNames, npcId);
+    public string? ZoneName(long zoneId) => Lookup(zones, zoneId);
+    public string? MapName(long mapId) => Lookup(maps, mapId);
+    public string? TalkText(long textId) => Lookup(talk, textId);
+    public string? MenuText(long textId) => Lookup(menu, textId);
 
     private static string? Lookup(Dictionary<long, string> map, long key) =>
         map.TryGetValue(key, out var value) ? value : null;
@@ -97,10 +97,10 @@ public sealed class JsonQuestCatalog : IQuestCatalog
         {
             if (!TryGetLong(row, "Num", out var id))
                 continue;
-            _items[id] = row.TryGetProperty("Name", out var name) ? name.GetString() ?? "?" : "?";
+            itemNames[id] = row.TryGetProperty("Name", out var name) ? name.GetString() ?? "?" : "?";
             if (row.TryGetProperty("Countable", out var countable) && countable.TryGetInt32(out var stacks)
                 && stacks != 0)
-                _stacking.Add(id);
+                stacking.Add(id);
         }
     }
 
@@ -127,7 +127,7 @@ public sealed class JsonQuestCatalog : IQuestCatalog
                     parts.Add($"+{Describe(reward)} x{Math.Max(1, count)}");
                 }
             }
-            _exchanges[id] = parts.Count == 0 ? "empty exchange row" : string.Join(", ", parts);
+            exchanges[id] = parts.Count == 0 ? "empty exchange row" : string.Join(", ", parts);
         }
     }
 
@@ -154,8 +154,8 @@ public sealed class JsonQuestCatalog : IQuestCatalog
             if (trigger > 0 && npc != 0)
             {
                 var key = (npc, trigger);
-                if (!_triggers.TryGetValue(key, out var seen))
-                    _triggers[key] = seen = [];
+                if (!triggers.TryGetValue(key, out var seen))
+                    triggers[key] = seen = [];
                 seen.Add((quest, status));
             }
 
@@ -172,16 +172,16 @@ public sealed class JsonQuestCatalog : IQuestCatalog
 
         foreach (var (quest, npcs) in npcsByQuest)
         {
-            _questNpcs[quest] = [.. npcs];
+            questNpcs[quest] = [.. npcs];
             var states = statesByQuest.TryGetValue(quest, out var found) ? found : [];
             var names = npcs
-                .Select(id => _npcs.TryGetValue(id, out var name) ? name : id.ToString())
+                .Select(id => npcNames.TryGetValue(id, out var name) ? name : id.ToString())
                 .Take(3)
                 .ToArray();
             var who = names.Length == 0
                 ? "no NPC"
                 : string.Join(", ", names) + (npcs.Count > names.Length ? ", …" : string.Empty);
-            _quests[quest] = $"{who} · states {string.Join("/", states)}";
+            quests[quest] = $"{who} · states {string.Join("/", states)}";
         }
     }
 
@@ -197,7 +197,7 @@ public sealed class JsonQuestCatalog : IQuestCatalog
                 continue;
             var text = title.GetString();
             if (text is { Length: > 0 })
-                _questTitles[id] = text;
+                questTitles[id] = text;
         }
     }
 
@@ -213,7 +213,7 @@ public sealed class JsonQuestCatalog : IQuestCatalog
             if (name is null or { Length: 0 })
                 continue;
             var where = row.TryGetProperty("Where", out var place) ? place.GetString() : null;
-            _maps[id] = where is { Length: > 0 } ? $"{name} \u2014 {where}" : name;
+            maps[id] = where is { Length: > 0 } ? $"{name} \u2014 {where}" : name;
         }
     }
 
@@ -223,7 +223,7 @@ public sealed class JsonQuestCatalog : IQuestCatalog
         {
             if (!TryGetLong(row, "Id", out var id))
                 continue;
-            _npcs[id] = row.TryGetProperty("Name", out var name) ? name.GetString() ?? "?" : "?";
+            npcNames[id] = row.TryGetProperty("Name", out var name) ? name.GetString() ?? "?" : "?";
         }
     }
 
@@ -233,7 +233,7 @@ public sealed class JsonQuestCatalog : IQuestCatalog
         {
             if (!TryGetLong(row, "ZoneNo", out var id))
                 continue;
-            _zones[id] = row.TryGetProperty("MapName", out var name) ? name.GetString() ?? "?" : "?";
+            zones[id] = row.TryGetProperty("MapName", out var name) ? name.GetString() ?? "?" : "?";
         }
     }
 
@@ -244,8 +244,8 @@ public sealed class JsonQuestCatalog : IQuestCatalog
         using var document = JsonDocument.Parse(File.ReadAllText(path));
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             return;
-        Fill(document.RootElement, "menu", _menu);
-        Fill(document.RootElement, "talk", _talk);
+        Fill(document.RootElement, "menu", menu);
+        Fill(document.RootElement, "talk", talk);
     }
 
     private static void Fill(JsonElement root, string property, Dictionary<long, string> target)
@@ -261,7 +261,7 @@ public sealed class JsonQuestCatalog : IQuestCatalog
     }
 
     private string Describe(long itemId) =>
-        _items.TryGetValue(itemId, out var name) ? name : itemId.ToString();
+        itemNames.TryGetValue(itemId, out var name) ? name : itemId.ToString();
 
     private static IEnumerable<JsonElement> ReadArray(string path)
     {

@@ -55,26 +55,26 @@ public class PartyGroup
 
 public class PartyManager
 {
-    private readonly Dictionary<int, PartyGroup> _parties = [];
-    private int _nextIndex = 1;
+    private readonly Dictionary<int, PartyGroup> parties = [];
+    private int nextIndex = 1;
 
     public PartyGroup? GetParty(int index)
     {
-        _parties.TryGetValue(index, out var party);
+        parties.TryGetValue(index, out var party);
         return party;
     }
 
     public PartyGroup CreateParty(short leaderId)
     {
-        var party = new PartyGroup(_nextIndex);
+        var party = new PartyGroup(nextIndex);
         party.MemberIds[0] = leaderId;
-        _parties[_nextIndex] = party;
-        _nextIndex++;
+        parties[nextIndex] = party;
+        nextIndex++;
         return party;
     }
 
     public void DeleteParty(int index)
     {
-        _parties.Remove(index);
+        parties.Remove(index);
     }
 }

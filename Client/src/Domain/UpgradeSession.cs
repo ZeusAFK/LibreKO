@@ -4,7 +4,7 @@ public enum UpgradeAnswerView { Reveal, Quiet }
 
 public sealed class UpgradeSession
 {
-    private bool _watching;
+    private bool watching;
 
     public bool Awaiting { get; private set; }
     public bool CanSend => !Awaiting;
@@ -12,16 +12,16 @@ public sealed class UpgradeSession
     public void Sent()
     {
         Awaiting = true;
-        _watching = true;
+        watching = true;
     }
 
-    public void Closed() => _watching = false;
+    public void Closed() => watching = false;
 
     public UpgradeAnswerView Answered()
     {
-        var view = Awaiting && _watching ? UpgradeAnswerView.Reveal : UpgradeAnswerView.Quiet;
+        var view = Awaiting && watching ? UpgradeAnswerView.Reveal : UpgradeAnswerView.Quiet;
         Awaiting = false;
-        _watching = false;
+        watching = false;
         return view;
     }
 }

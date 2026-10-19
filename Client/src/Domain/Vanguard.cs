@@ -32,8 +32,6 @@ public static class Vanguard
 
     public static int OthersCount(int count) => System.Math.Max(count - ListRows, 0);
 
-    public static string MarkLabel(int x, int z) => $"Enemy Vanguard-{x}:{z}";
-
     public static string GmLine(int index, string name, int x, int z) => $"{index}.{name}-{x}:{z}";
 
     public static int SlainText(int killerNation) => killerNation == Nations.ElMorad ? ElMoradSlainText : KarusSlainText;

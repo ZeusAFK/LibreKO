@@ -61,16 +61,16 @@ public interface IGameParty
     void ShowMemberMenu(int id);
     bool CommanderBarHidden { get; }
     void ShowCommanderBar();
-    byte RowMeterMode { get; }
+    PartyBoardMeterMode RowMeterMode { get; }
     int RowMeterShare(int id);
     void CycleRowMeter();
     bool WarBoardOpen { get; }
-    byte WarBoardMode { get; }
+    PartyBoardMeterMode WarBoardMode { get; }
     float WarBoardAlpha { get; }
     int WarBoardCooldown { get; }
     IReadOnlyList<GameWarBoardRow> WarBoardRows { get; }
     void ToggleWarBoard();
-    void SetWarBoardMode(byte mode);
+    void SetWarBoardMode(PartyBoardMeterMode mode);
     void SetWarBoardAlpha(float alpha);
     void MoveRow(int id, int step);
     void MoveRowTo(int id, int index);
@@ -106,19 +106,19 @@ public interface IGameTrade
 
 public sealed partial class PluginGame
 {
-    public IGameWhispers Whispers => _whispers;
-    public IGameParty Party => _party;
-    public IGameTrade Trade => _trade;
+    public IGameWhispers Whispers => whispers;
+    public IGameParty Party => party;
+    public IGameTrade Trade => trade;
 
-    private readonly WhispersProxy _whispers = new();
-    private readonly PartyProxy _party = new();
-    private readonly TradeProxy _trade = new();
+    private readonly WhispersProxy whispers = new();
+    private readonly PartyProxy party = new();
+    private readonly TradeProxy trade = new();
 
-    internal void AttachSocial(IGameWhispers whispers, IGameParty party, IGameTrade trade)
+    internal void AttachSocial(IGameWhispers whispersSource, IGameParty partySource, IGameTrade tradeSource)
     {
-        _whispers.Source = whispers;
-        _party.Source = party;
-        _trade.Source = trade;
+        whispers.Source = whispersSource;
+        party.Source = partySource;
+        trade.Source = tradeSource;
         RaiseWhispers();
         RaiseParty();
         RaiseTrade();
@@ -126,16 +126,16 @@ public sealed partial class PluginGame
 
     private void DetachSocial()
     {
-        _whispers.Source = null;
-        _party.Source = null;
-        _trade.Source = null;
-        _warp.Source = null;
+        whispers.Source = null;
+        party.Source = null;
+        trade.Source = null;
+        warp.Source = null;
     }
 
-    internal void RaiseWhispers() => _whispers.Raise();
-    internal void RaiseWhisperLine(string name, GameWhisperLine line) => _whispers.RaiseLine(name, line);
-    internal void RaiseParty() => _party.Raise();
-    internal void RaiseTrade() => _trade.Raise();
+    internal void RaiseWhispers() => whispers.Raise();
+    internal void RaiseWhisperLine(string name, GameWhisperLine line) => whispers.RaiseLine(name, line);
+    internal void RaiseParty() => party.Raise();
+    internal void RaiseTrade() => trade.Raise();
 
     private sealed class WhispersProxy : IGameWhispers
     {
@@ -179,16 +179,16 @@ public sealed partial class PluginGame
         public bool CommanderBarHidden => Source?.CommanderBarHidden ?? false;
         public void ShowCommanderBar() => Source?.ShowCommanderBar();
         public void ShowMemberMenu(int id) => Source?.ShowMemberMenu(id);
-        public byte RowMeterMode => Source?.RowMeterMode ?? 0;
+        public PartyBoardMeterMode RowMeterMode => Source?.RowMeterMode ?? PartyBoardMeterMode.Off;
         public int RowMeterShare(int id) => Source?.RowMeterShare(id) ?? -1;
         public void CycleRowMeter() => Source?.CycleRowMeter();
         public bool WarBoardOpen => Source?.WarBoardOpen ?? false;
-        public byte WarBoardMode => Source?.WarBoardMode ?? 0;
+        public PartyBoardMeterMode WarBoardMode => Source?.WarBoardMode ?? PartyBoardMeterMode.Off;
         public float WarBoardAlpha => Source?.WarBoardAlpha ?? 1f;
         public int WarBoardCooldown => Source?.WarBoardCooldown ?? 0;
         public IReadOnlyList<GameWarBoardRow> WarBoardRows => Source?.WarBoardRows ?? Array.Empty<GameWarBoardRow>();
         public void ToggleWarBoard() => Source?.ToggleWarBoard();
-        public void SetWarBoardMode(byte mode) => Source?.SetWarBoardMode(mode);
+        public void SetWarBoardMode(PartyBoardMeterMode mode) => Source?.SetWarBoardMode(mode);
         public void SetWarBoardAlpha(float alpha) => Source?.SetWarBoardAlpha(alpha);
         public void MoveRow(int id, int step) => Source?.MoveRow(id, step);
         public void MoveRowTo(int id, int index) => Source?.MoveRowTo(id, index);

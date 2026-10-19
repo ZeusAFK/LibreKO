@@ -36,7 +36,7 @@ public class ItemCombineService(
 
     private sealed record Recipe(ItemCombineRecipeData Data, IReadOnlyDictionary<int, int> Tally);
 
-    private IReadOnlyDictionary<int, IReadOnlyList<Recipe>>? _recipesByNpc;
+    private IReadOnlyDictionary<int, IReadOnlyList<Recipe>>? recipesByNpc;
 
     public async Task HandleAsync(UserSession session, Packet packet)
     {
@@ -171,7 +171,7 @@ public class ItemCombineService(
     }
 
     private IReadOnlyDictionary<int, IReadOnlyList<Recipe>> RecipesByNpc =>
-        _recipesByNpc ??= gameDataService.ItemCombineRecipes
+        recipesByNpc ??= gameDataService.ItemCombineRecipes
             .GroupBy(r => r.NpcId)
             .ToDictionary(
                 g => g.Key,

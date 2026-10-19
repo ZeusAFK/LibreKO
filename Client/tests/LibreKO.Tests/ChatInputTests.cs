@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -6,21 +7,21 @@ namespace LibreKO.Tests;
 public class ChatInputTests
 {
     [Theory]
-    [InlineData("hello", ChatType.Party, ChatType.Party)]
-    [InlineData("!hello", ChatType.General, ChatType.Shout)]
-    [InlineData("#hello", ChatType.General, ChatType.Party)]
-    [InlineData("$hello", ChatType.General, ChatType.Clan)]
-    [InlineData("&hello", ChatType.General, ChatType.Alliance)]
-    [InlineData("%hello", ChatType.General, ChatType.Command)]
-    [InlineData("@Rin hello", ChatType.General, ChatType.Private)]
-    [InlineData("|hello", ChatType.General, ChatType.NoahKnights)]
-    [InlineData("", ChatType.Shout, ChatType.Shout)]
+    [InlineData("hello", (byte)ChatType.Party, (byte)ChatType.Party)]
+    [InlineData("!hello", (byte)ChatType.General, (byte)ChatType.Shout)]
+    [InlineData("#hello", (byte)ChatType.General, (byte)ChatType.Party)]
+    [InlineData("$hello", (byte)ChatType.General, (byte)ChatType.Clan)]
+    [InlineData("&hello", (byte)ChatType.General, (byte)ChatType.Alliance)]
+    [InlineData("%hello", (byte)ChatType.General, (byte)ChatType.Command)]
+    [InlineData("@Rin hello", (byte)ChatType.General, (byte)ChatType.Private)]
+    [InlineData("|hello", (byte)ChatType.General, (byte)ChatType.NoahKnights)]
+    [InlineData("", (byte)ChatType.Shout, (byte)ChatType.Shout)]
     public void TheTypedPrefixPicksTheChannel(string text, byte selected, byte expected) =>
         Assert.Equal(expected, ChatPrefixes.ChannelFor(text, selected));
 
     [Fact]
     public void ACommandIsNotAChatChannel() =>
-        Assert.Equal(ChatPrefixes.NotChat, ChatPrefixes.ChannelFor("/w Rin hi", ChatType.Party));
+        Assert.Equal(ChatPrefixes.NotChat, ChatPrefixes.ChannelFor("/w Rin hi", (byte)ChatType.Party));
 
     [Fact]
     public void HistoryWalksBackAndReturnsTheDraft()

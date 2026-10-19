@@ -11,27 +11,21 @@ public readonly record struct WishPost(string Name, string Introduction, int Lev
 
 public readonly record struct WishRequest(int ClanId, string Leader, string ClanName, int Grade, int Type, int MarkVersion, string Message);
 
-public sealed record ClanBoardStatus(int State, IReadOnlyList<ClanApplicant> Applicants, int AppliedClanId, int AppliedMarkVersion, string AppliedClanName)
+public sealed record ClanBoardStatus(ClanBoardState State, IReadOnlyList<ClanApplicant> Applicants, int AppliedClanId, int AppliedMarkVersion, string AppliedClanName)
 {
-    public bool Staff => State == ClanBoards.StateStaff;
+    public bool Staff => State == ClanBoardState.Staff;
     public bool Applied => AppliedClanName.Length > 0;
 }
 
-public sealed record WishStatus(int Role, string RequestedName, int Received)
+public sealed record WishStatus(WishBoardRole Role, string RequestedName, int Received)
 {
-    public bool Recruiter => Role == ClanBoards.RoleRecruiter;
-    public bool Member => Role == ClanBoards.RoleMember;
-    public bool Seeker => Role >= ClanBoards.RoleSeeker;
+    public bool Recruiter => Role == WishBoardRole.Recruiter;
+    public bool Member => Role == WishBoardRole.Member;
+    public bool Seeker => Role >= WishBoardRole.Seeker;
 }
 
 public static class ClanBoards
 {
-    public const int StateStaff = 0;
-    public const int StateMember = 1;
-    public const int StateClanless = 2;
-    public const int RoleRecruiter = 0;
-    public const int RoleMember = 1;
-    public const int RoleSeeker = 2;
     public const int RowsPerPage = 8;
     public const int ApplicantsPerPage = 5;
     public const int MaxRequests = 9;
@@ -40,8 +34,6 @@ public static class ClanBoards
     public const int MinAge = 1;
     public const int MaxAge = 99;
     public const int NoTarget = -1;
-    public const byte KindRegister = 0;
-    public const byte KindDelete = 1;
     public const int TextOverLimit = 16502;
     public const int TextAgeWrong = 40063;
     public const int TextAlreadyRegistered = 16503;
@@ -73,16 +65,16 @@ public static class ClanBoards
     public const int TextNoRequests = 40054;
     public const int TextApplicantMessage = 16511;
 
-    public static int ApplyResultText(int kind, int code) => Pick(kind == KindDelete ? CancelApplyTexts : ApplyTexts, code);
+    public static int ApplyResultText(ClanBoardAction kind, int code) => Pick(kind == ClanBoardAction.Delete ? CancelApplyTexts : ApplyTexts, code);
 
-    public static int AdvertResultText(int kind, int code) => Pick(kind == KindDelete ? DeleteAdvertTexts : AdvertTexts, code);
+    public static int AdvertResultText(ClanBoardAction kind, int code) => Pick(kind == ClanBoardAction.Delete ? DeleteAdvertTexts : AdvertTexts, code);
 
     public static int PromoteText(int code) => PromoteTexts.GetValueOrDefault(code);
 
-    public static int IntroResultText(int action, int code) => Pick(action == KindDelete ? DeleteIntroTexts : IntroTexts, code);
+    public static int IntroResultText(ClanBoardAction action, int code) => Pick(action == ClanBoardAction.Delete ? DeleteIntroTexts : IntroTexts, code);
 
-    public static int RequestResultText(int action, int code) =>
-        (action == KindDelete ? CancelRequestTexts : RequestTexts).GetValueOrDefault(code);
+    public static int RequestResultText(ClanBoardAction action, int code) =>
+        (action == ClanBoardAction.Delete ? CancelRequestTexts : RequestTexts).GetValueOrDefault(code);
 
     public static int WishPromoteText(int code) => WishPromoteTexts.GetValueOrDefault(code);
 

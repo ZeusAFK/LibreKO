@@ -10,7 +10,7 @@ public class ControlStateReplyTests
     {
         var p = new Packet(GameOpcodes.GS_TARGET_STATE);
         p.WriteInt(901);
-        p.WriteByte(ControlStateReply.Stunned | ControlStateReply.Slowed);
+        p.WriteByte(ControlFlags.Stunned | ControlFlags.Slowed);
         p.WriteByte(40);
         p.WriteShort(100);
         p.WriteByte(2);
@@ -26,7 +26,7 @@ public class ControlStateReplyTests
 
         Assert.NotNull(reply);
         Assert.Equal(901, reply.Value.UnitId);
-        Assert.Equal(ControlStateReply.Stunned | ControlStateReply.Slowed, reply.Value.Flags);
+        Assert.Equal(ControlFlags.Stunned | ControlFlags.Slowed, reply.Value.Flags);
         Assert.Equal(40, reply.Value.MovePercent);
         Assert.Equal(2, reply.Value.Effects.Count);
         Assert.Equal(9500, reply.Value.LongestMs);

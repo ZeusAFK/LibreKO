@@ -16,23 +16,23 @@ public class VanguardTests
 {
     private const byte RonarkLand = (byte)ZoneId.RonarkLand;
 
-    private readonly SessionManager _sessions = new();
-    private readonly IGameDataService _gameData = Substitute.For<IGameDataService>();
-    private readonly IMagicStatusEffectService _magic = Substitute.For<IMagicStatusEffectService>();
-    private readonly ILoyaltyService _loyalty = Substitute.For<ILoyaltyService>();
-    private readonly IItemGrantService _items = Substitute.For<IItemGrantService>();
-    private readonly VanguardService _vanguards;
+    private readonly SessionManager sessions = new();
+    private readonly IGameDataService gameData = Substitute.For<IGameDataService>();
+    private readonly IMagicStatusEffectService magic = Substitute.For<IMagicStatusEffectService>();
+    private readonly ILoyaltyService loyalty = Substitute.For<ILoyaltyService>();
+    private readonly IItemGrantService items = Substitute.For<IItemGrantService>();
+    private readonly VanguardService vanguards;
 
     public VanguardTests()
     {
         var services = Substitute.For<IServiceProvider>();
-        services.GetService(typeof(IMagicStatusEffectService)).Returns(_magic);
-        services.GetService(typeof(ILoyaltyService)).Returns(_loyalty);
-        services.GetService(typeof(IItemGrantService)).Returns(_items);
+        services.GetService(typeof(IMagicStatusEffectService)).Returns(magic);
+        services.GetService(typeof(ILoyaltyService)).Returns(loyalty);
+        services.GetService(typeof(IItemGrantService)).Returns(items);
         services.GetService(typeof(IWorldPacketCoordinator)).Returns(Substitute.For<IWorldPacketCoordinator>());
-        _gameData.GetMagic(VanguardRules.RewardMarkSkill).Returns(new MagicData { Id = VanguardRules.RewardMarkSkill });
-        _gameData.GetItem(Arg.Any<int>()).Returns(call => new ItemData { Num = call.Arg<int>() });
-        _vanguards = new VanguardService(_sessions, _gameData, Substitute.For<IZoneTransitionService>(), services,
+        gameData.GetMagic(VanguardRules.RewardMarkSkill).Returns(new MagicData { Id = VanguardRules.RewardMarkSkill });
+        gameData.GetItem(Arg.Any<int>()).Returns(call => new ItemData { Num = call.Arg<int>() });
+        vanguards = new VanguardService(sessions, gameData, Substitute.For<IZoneTransitionService>(), services,
             NullLogger<VanguardService>.Instance);
     }
 
@@ -41,7 +41,7 @@ public class VanguardTests
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, id, id + 1000);
+        var session = sessions.CreateSession(client, id, id + 1000);
         session.Name = $"Player{id}";
         session.Nation = nation;
         session.ZoneId = RonarkLand;
@@ -77,7 +77,7 @@ public class VanguardTests
     private async Task Ticks(int count)
     {
         for (int i = 0; i < count; i++)
-            await _vanguards.TickAsync();
+            await vanguards.TickAsync();
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class VanguardTests
         var karus = Enumerable.Range(1, 7).Select(i => Player(i, AccountNation.Karus)).ToList();
         var elmo = Player(20, AccountNation.ElMorad);
 
-        await _vanguards.StartAsync();
+        await vanguards.StartAsync();
         await Ticks(1);
 
         karus.Count(p => Sent(p).Any(s => Is(s, VanguardPacketWriter.SubAppoint, VanguardPacketWriter.AppointInvite)))
@@ -119,19 +119,19 @@ public class VanguardTests
     public async Task AnInviteeIsAppointedAndMarkedAndAnyoneElseIsRefused()
     {
         var invitee = Player(1, AccountNation.Karus);
-        await _vanguards.StartAsync();
+        await vanguards.StartAsync();
         await Ticks(1);
         var late = Player(2, AccountNation.Karus);
 
-        await _vanguards.HandleAsync(invitee.Client, Accept());
-        await _vanguards.HandleAsync(late.Client, Accept());
+        await vanguards.HandleAsync(invitee.Client, Accept());
+        await vanguards.HandleAsync(late.Client, Accept());
 
         Sent(invitee).Last().Should().Match<Packet>(p =>
             Is(p, VanguardPacketWriter.SubAppoint, VanguardPacketWriter.AppointResult, VanguardPacketWriter.Appointed));
         Sent(late).Last().Should().Match<Packet>(p =>
             Is(p, VanguardPacketWriter.SubAppoint, VanguardPacketWriter.AppointResult, VanguardPacketWriter.AppointFailed));
-        _vanguards.IsWanted(invitee).Should().BeTrue();
-        await _magic.Received(1).ExecuteAsync(invitee, Arg.Any<MagicData>(), MagicSkillType.Buff,
+        vanguards.IsWanted(invitee).Should().BeTrue();
+        await magic.Received(1).ExecuteAsync(invitee, Arg.Any<MagicData>(), MagicSkillType.Buff,
             VanguardRules.RewardMarkSkill, invitee.CharacterId, Arg.Any<int[]>(), Arg.Any<bool>());
     }
 
@@ -140,9 +140,9 @@ public class VanguardTests
     {
         var vanguard = Player(1, AccountNation.Karus);
         var hunter = Player(2, AccountNation.ElMorad);
-        await _vanguards.StartAsync();
+        await vanguards.StartAsync();
         await Ticks(1);
-        await _vanguards.HandleAsync(vanguard.Client, Accept());
+        await vanguards.HandleAsync(vanguard.Client, Accept());
 
         await Ticks(VanguardRules.ListDelaySeconds);
 
@@ -157,32 +157,32 @@ public class VanguardTests
     {
         var vanguard = Player(1, AccountNation.Karus);
         var hunter = Player(2, AccountNation.ElMorad);
-        await _vanguards.StartAsync();
+        await vanguards.StartAsync();
         await Ticks(1);
-        await _vanguards.HandleAsync(vanguard.Client, Accept());
+        await vanguards.HandleAsync(vanguard.Client, Accept());
         await Ticks(VanguardRules.ListDelaySeconds);
 
-        await _vanguards.OnPlayerDiedAsync(vanguard, hunter);
+        await vanguards.OnPlayerDiedAsync(vanguard, hunter);
 
-        _vanguards.IsWanted(vanguard).Should().BeFalse();
+        vanguards.IsWanted(vanguard).Should().BeFalse();
         Sent(hunter).Should().Contain(p => Is(p, VanguardPacketWriter.SubWanted, VanguardPacketWriter.WantedRemove));
         Sent(hunter).Last().Should().Match<Packet>(p => Is(p, VanguardPacketWriter.SubClosed));
-        await _items.Received(1).GrantAsync(hunter, Arg.Any<ItemData>(), 1);
-        await _loyalty.Received(1).ChangeAsync(hunter, VanguardRules.KillerPartyLoyalty);
+        await items.Received(1).GrantAsync(hunter, Arg.Any<ItemData>(), 1);
+        await loyalty.Received(1).ChangeAsync(hunter, VanguardRules.KillerPartyLoyalty);
     }
 
     [Fact]
     public async Task SurvivorsAreRewardedWhenTheTimeRunsOut()
     {
         var vanguard = Player(1, AccountNation.Karus);
-        await _vanguards.StartAsync();
+        await vanguards.StartAsync();
         await Ticks(1);
-        await _vanguards.HandleAsync(vanguard.Client, Accept());
+        await vanguards.HandleAsync(vanguard.Client, Accept());
 
         await Ticks(VanguardRules.ActiveSeconds);
 
-        await _items.Received(1).GrantAsync(vanguard, Arg.Is<ItemData>(i => i.Num == VanguardRules.OffensiveEmblem), 1);
-        await _loyalty.Received(1).ChangeAsync(vanguard, VanguardRules.SurvivorLoyalty);
+        await items.Received(1).GrantAsync(vanguard, Arg.Is<ItemData>(i => i.Num == VanguardRules.OffensiveEmblem), 1);
+        await loyalty.Received(1).ChangeAsync(vanguard, VanguardRules.SurvivorLoyalty);
         Sent(vanguard).Last().Should().Match<Packet>(p => Is(p, VanguardPacketWriter.SubClosed));
     }
 

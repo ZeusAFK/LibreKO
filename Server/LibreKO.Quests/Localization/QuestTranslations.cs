@@ -14,21 +14,21 @@ public sealed class QuestTranslations : IQuestTranslations
     public const string SourceLanguage = "en";
     public const string FileExtension = ".po";
 
-    private readonly ConcurrentDictionary<string, IReadOnlyDictionary<string, string>> _byLanguage =
+    private readonly ConcurrentDictionary<string, IReadOnlyDictionary<string, string>> byLanguage =
         new(StringComparer.OrdinalIgnoreCase);
 
     public static QuestTranslations Empty { get; } = new();
 
-    public IReadOnlyCollection<string> Languages => (IReadOnlyCollection<string>)_byLanguage.Keys;
+    public IReadOnlyCollection<string> Languages => (IReadOnlyCollection<string>)byLanguage.Keys;
 
-    public bool Knows(string languageCode) => _byLanguage.ContainsKey(languageCode);
+    public bool Knows(string languageCode) => byLanguage.ContainsKey(languageCode);
 
     public string Translate(string languageCode, string text)
     {
         if (text.Length == 0 || string.Equals(languageCode, SourceLanguage, StringComparison.OrdinalIgnoreCase))
             return text;
 
-        if (!_byLanguage.TryGetValue(languageCode, out var table))
+        if (!byLanguage.TryGetValue(languageCode, out var table))
             return text;
 
         return table.TryGetValue(text, out var translated) && translated.Length > 0 ? translated : text;
@@ -43,7 +43,7 @@ public sealed class QuestTranslations : IQuestTranslations
                 continue;
             table[entry.MsgId] = entry.MsgStr;
         }
-        _byLanguage[languageCode] = table;
+        byLanguage[languageCode] = table;
     }
 
     public int LoadDirectory(string directory)
@@ -64,5 +64,5 @@ public sealed class QuestTranslations : IQuestTranslations
     }
 
     public int Count(string languageCode) =>
-        _byLanguage.TryGetValue(languageCode, out var table) ? table.Count : 0;
+        byLanguage.TryGetValue(languageCode, out var table) ? table.Count : 0;
 }

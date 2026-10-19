@@ -20,22 +20,38 @@ public readonly record struct SiegeCollected(short Result, int Coins, int Collec
 
 public readonly record struct SiegeTaxRates(short Result, short Moradon, short Delos, int DungeonFee);
 
-public readonly record struct SiegeRateChanged(byte Sub, short Result, int Value, short Zone);
+public readonly record struct SiegeRateChanged(SiegeOfficeSubOpcode Sub, short Result, int Value, short Zone);
 
 public static class SiegeWire
 {
-    public static Packet Request(params byte[] body)
+    public const short Success = 1;
+
+    public static Packet Guard(SiegeGuardSubOpcode sub)
     {
-        var p = new Packet(GameOpcodes.GS_SIEGE);
-        foreach (byte b in body) p.WriteByte(b);
+        var p = Request(SiegeWarSubOpcode.CastleGuard);
+        p.WriteByte((byte)sub);
+        return p;
+    }
+
+    public static Packet Office(SiegeOfficeSubOpcode sub)
+    {
+        var p = Request(SiegeWarSubOpcode.CastleOffice);
+        p.WriteByte((byte)sub);
         return p;
     }
 
     public static Packet Rate(SiegeRateKind kind, int value)
     {
-        var p = Request(SiegeWarfare.CastleOffice, SiegeWarfare.WireSub(kind));
+        var p = Office(SiegeWarfare.WireSub(kind));
         if (kind == SiegeRateKind.DungeonFee) p.WriteUInt((uint)value);
         else p.WriteUShort((ushort)value);
+        return p;
+    }
+
+    private static Packet Request(SiegeWarSubOpcode sub)
+    {
+        var p = new Packet(GameOpcodes.GS_SIEGE);
+        p.WriteByte((byte)sub);
         return p;
     }
 
@@ -43,7 +59,7 @@ public static class SiegeWire
     {
         short result = KingWire.I16(p);
         var rows = new List<SiegeScheduleRow>();
-        if (result == SiegeWarfare.Success)
+        if (result == SiegeWire.Success)
         {
             int count = KingWire.U8(p);
             for (int i = 0; i < count && p.RemainingBytes > 0; i++)
@@ -55,7 +71,7 @@ public static class SiegeWire
     public static SiegeChallengers ReadChallengers(Packet p)
     {
         short result = KingWire.I16(p);
-        if (result != SiegeWarfare.Success) return new SiegeChallengers(result, [], 0, 0, 0, 0, 0, 0, 0);
+        if (result != SiegeWire.Success) return new SiegeChallengers(result, [], 0, 0, 0, 0, 0, 0, 0);
         var clans = ReadClans(p);
         int signedUp = KingWire.U8(p);
         int chosen = KingWire.U8(p);
@@ -67,7 +83,7 @@ public static class SiegeWire
     public static SiegeDefenders ReadDefenders(Packet p)
     {
         short result = KingWire.I16(p);
-        return new SiegeDefenders(result, result == SiegeWarfare.Success ? ReadClans(p) : []);
+        return new SiegeDefenders(result, result == SiegeWire.Success ? ReadClans(p) : []);
     }
 
     private static List<SiegeClanRow> ReadClans(Packet p)
@@ -87,7 +103,7 @@ public static class SiegeWire
     public static SiegeCollected ReadCollected(Packet p)
     {
         short result = KingWire.I16(p);
-        return result == SiegeWarfare.Success
+        return result == SiegeWire.Success
             ? new SiegeCollected(result, KingWire.I32(p), KingWire.I32(p))
             : new SiegeCollected(result, 0, 0);
     }
@@ -95,17 +111,52 @@ public static class SiegeWire
     public static SiegeTaxRates ReadTaxRates(Packet p)
     {
         short result = KingWire.I16(p);
-        return result == SiegeWarfare.Success
+        return result == SiegeWire.Success
             ? new SiegeTaxRates(result, KingWire.I16(p), KingWire.I16(p), KingWire.I32(p))
             : new SiegeTaxRates(result, 0, 0, 0);
     }
 
-    public static SiegeRateChanged ReadRateChanged(Packet p, byte sub)
+    public static SiegeRateChanged ReadRateChanged(Packet p, SiegeOfficeSubOpcode sub)
     {
         short result = KingWire.I16(p);
-        if (result != SiegeWarfare.Success) return new SiegeRateChanged(sub, result, 0, 0);
-        if (sub == SiegeWarfare.DungeonFee) return new SiegeRateChanged(sub, result, KingWire.I32(p), 0);
+        if (result != SiegeWire.Success) return new SiegeRateChanged(sub, result, 0, 0);
+        if (sub == SiegeOfficeSubOpcode.DungeonFee) return new SiegeRateChanged(sub, result, KingWire.I32(p), 0);
         short rate = KingWire.I16(p);
         return new SiegeRateChanged(sub, result, rate, KingWire.I16(p));
     }
+}
+
+public enum SiegeWarSubOpcode : byte
+{
+    Base = 1,
+    Status = 2,
+    CastleGuard = 3,
+    CastleOffice = 4,
+    Points = 6,
+}
+
+public enum SiegeGuardSubOpcode : byte
+{
+    Apply = 1,
+    Schedule = 2,
+    Assault = 3,
+    Challengers = 4,
+    Defenders = 5,
+    Open = 7,
+}
+
+public enum SiegeApplyAction : byte
+{
+    Join = 1,
+    Cancel = 2,
+}
+
+public enum SiegeOfficeSubOpcode : byte
+{
+    Open = 1,
+    Collect = 2,
+    TaxList = 3,
+    MoradonRate = 4,
+    DelosRate = 5,
+    DungeonFee = 6,
 }

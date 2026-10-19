@@ -13,7 +13,7 @@ public interface IInGameOpcodeRouter
 
 public class InGameOpcodeRouter : IInGameOpcodeRouter
 {
-    private readonly FrozenDictionary<GameOpcodes, Func<IClient, Packet, Task>> _handlers;
+    private readonly FrozenDictionary<GameOpcodes, Func<IClient, Packet, Task>> handlers;
 
     public InGameOpcodeRouter(
         IAdminPacketCoordinator admin,
@@ -235,12 +235,12 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_RECOMMEND_USER] = NoOp,
         };
 
-        _handlers = map.ToFrozenDictionary();
-        logger.LogInformation("In-game opcode router initialized with {Count} handlers", _handlers.Count);
+        handlers = map.ToFrozenDictionary();
+        logger.LogInformation("In-game opcode router initialized with {Count} handlers", handlers.Count);
     }
 
     public Func<IClient, Packet, Task>? Resolve(GameOpcodes opcode)
-        => _handlers.GetValueOrDefault(opcode);
+        => handlers.GetValueOrDefault(opcode);
 
     private static Task NoOp(IClient client, Packet packet) => Task.CompletedTask;
 }

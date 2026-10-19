@@ -8,15 +8,15 @@ public sealed partial class RenderFaultWatch : Logger
 {
     private const string MissingUniformSet = "Uniforms were never supplied for set";
 
-    private static int _faults;
-    private static bool _installed;
+    private static int faults;
+    private static bool installed;
 
-    public static int Faults => Volatile.Read(ref _faults);
+    public static int Faults => Volatile.Read(ref faults);
 
     public static void Install()
     {
-        if (_installed) return;
-        _installed = true;
+        if (installed) return;
+        installed = true;
         OS.AddLogger(new RenderFaultWatch());
     }
 
@@ -24,6 +24,6 @@ public sealed partial class RenderFaultWatch : Logger
         bool editorNotify, int errorType, Array<ScriptBacktrace> scriptBacktraces)
     {
         if (code.Contains(MissingUniformSet) || rationale.Contains(MissingUniformSet))
-            Interlocked.Increment(ref _faults);
+            Interlocked.Increment(ref faults);
     }
 }

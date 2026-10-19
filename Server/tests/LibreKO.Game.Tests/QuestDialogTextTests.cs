@@ -65,20 +65,20 @@ public class QuestDialogTextTests : GameTestBase, IDisposable
         msgstr "{CloseSpanish}"
         """;
 
-    private readonly string _directory =
+    private readonly string directory =
         Path.Combine(Path.GetTempPath(), "kqt-" + Guid.NewGuid().ToString("N"));
 
     public QuestDialogTextTests()
     {
-        Directory.CreateDirectory(_directory);
-        File.WriteAllText(Path.Combine(_directory, "16079_Test.quest"), Script, new UTF8Encoding(false));
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "16079_Test.quest"), Script, new UTF8Encoding(false));
     }
 
     public void Dispose()
     {
         try
         {
-            Directory.Delete(_directory, recursive: true);
+            Directory.Delete(directory, recursive: true);
         }
         catch (IOException)
         {
@@ -195,8 +195,8 @@ public class QuestDialogTextTests : GameTestBase, IDisposable
             sessionManager,
             effects,
             translations,
-            TestHostEnvironmentFactory.Create(_directory),
-            Options.Create(new GameServerSettings { QuestsDirectory = _directory }),
+            TestHostEnvironmentFactory.Create(directory),
+            Options.Create(new GameServerSettings { QuestsDirectory = directory }),
             Substitute.For<ILogger<QuestScriptEngine>>());
 
         return (engine, session, sent);

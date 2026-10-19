@@ -10,8 +10,8 @@ public readonly struct GatherRegion
         ZoneId = zoneId; MinX = minX; MinZ = minZ; MaxX = maxX; MaxZ = maxZ;
     }
 
-    public bool Contains(int zoneId, float koX, float koZ)
-        => ZoneId == zoneId && koX >= MinX && koX <= MaxX && koZ >= MinZ && koZ <= MaxZ;
+    public bool Contains(int zoneId, float mapX, float mapZ)
+        => ZoneId == zoneId && mapX >= MinX && mapX <= MaxX && mapZ >= MinZ && mapZ <= MaxZ;
 }
 
 public static class GatherZones
@@ -35,14 +35,14 @@ public static class GatherZones
         new(ZoneKarus, 1106f, 915f, 1209f, 944f),
     };
 
-    public static bool IsMiningArea(int zoneId, float koX, float koZ) => In(Mining, zoneId, koX, koZ);
+    public static bool IsMiningArea(int zoneId, float mapX, float mapZ) => In(Mining, zoneId, mapX, mapZ);
 
-    public static bool IsFishingArea(int zoneId, float koX, float koZ) => In(Fishing, zoneId, koX, koZ);
+    public static bool IsFishingArea(int zoneId, float mapX, float mapZ) => In(Fishing, zoneId, mapX, mapZ);
 
-    private static bool In(GatherRegion[] regions, int zoneId, float koX, float koZ)
+    private static bool In(GatherRegion[] regions, int zoneId, float mapX, float mapZ)
     {
         foreach (var r in regions)
-            if (r.Contains(zoneId, koX, koZ)) return true;
+            if (r.Contains(zoneId, mapX, mapZ)) return true;
         return false;
     }
 }

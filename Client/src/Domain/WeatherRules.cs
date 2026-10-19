@@ -26,7 +26,7 @@ public static class WeatherRules
     {
         if (System.Array.IndexOf(FineZones, zone) >= 0) return Fine;
         if (zone == DrawnSunnyZone) return DrawnSunny;
-        return type == Snow ? Rain : type;
+        return type;
     }
 
     public static int Amount(int type, int amount) =>
@@ -38,7 +38,7 @@ public static class WeatherRules
         float light = type switch
         {
             Fine => FineLightFloor + (1f - FineLightFloor) * clear,
-            Rain => RainLightFloor + (1f - RainLightFloor) * clear,
+            Rain or Snow => RainLightFloor + (1f - RainLightFloor) * clear,
             _ => LightMax,
         };
         return System.Math.Clamp(light, LightMin, LightMax);

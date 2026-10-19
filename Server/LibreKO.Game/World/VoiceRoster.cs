@@ -42,66 +42,66 @@ public sealed class VoiceRoster
     public const int MaxFrameBytes = 400;
     private const long WindowMs = 1000;
 
-    private readonly object _gate = new();
-    private readonly Dictionary<int, VoiceMember> _byCharacter = [];
-    private readonly Dictionary<uint, VoiceMember> _bySession = [];
-    private readonly Dictionary<string, HashSet<int>> _rooms = [];
+    private readonly object gate = new();
+    private readonly Dictionary<int, VoiceMember> byCharacter = [];
+    private readonly Dictionary<uint, VoiceMember> bySession = [];
+    private readonly Dictionary<string, HashSet<int>> rooms = [];
 
     public VoiceMember? Join(int characterId, string roomKey, bool canSpeak, int maxPerRoom, out List<VoiceMember> others)
     {
-        lock (_gate)
+        lock (gate)
         {
             RemoveLocked(characterId);
-            var room = _rooms.TryGetValue(roomKey, out var set) ? set : _rooms[roomKey] = [];
-            others = room.Select(id => _byCharacter[id]).ToList();
+            var room = rooms.TryGetValue(roomKey, out var set) ? set : rooms[roomKey] = [];
+            others = room.Select(id => byCharacter[id]).ToList();
             if (maxPerRoom > 0 && room.Count >= maxPerRoom)
                 return null;
             uint session;
             do session = (uint)RandomNumberGenerator.GetInt32(1, int.MaxValue);
-            while (_bySession.ContainsKey(session));
+            while (bySession.ContainsKey(session));
             var member = new VoiceMember(characterId, roomKey, session, RandomNumberGenerator.GetBytes(VoiceSeal.KeyLength), canSpeak);
             room.Add(characterId);
-            _byCharacter[characterId] = member;
-            _bySession[session] = member;
+            byCharacter[characterId] = member;
+            bySession[session] = member;
             return member;
         }
     }
 
     public VoiceMember? Leave(int characterId, out List<int> others)
     {
-        lock (_gate)
+        lock (gate)
         {
             var member = RemoveLocked(characterId);
-            others = member != null && _rooms.TryGetValue(member.RoomKey, out var room) ? [.. room] : [];
+            others = member != null && rooms.TryGetValue(member.RoomKey, out var room) ? [.. room] : [];
             return member;
         }
     }
 
     public VoiceMember? Get(int characterId)
     {
-        lock (_gate) return _byCharacter.GetValueOrDefault(characterId);
+        lock (gate) return byCharacter.GetValueOrDefault(characterId);
     }
 
     public VoiceMember? BySession(uint sessionId)
     {
-        lock (_gate) return _bySession.GetValueOrDefault(sessionId);
+        lock (gate) return bySession.GetValueOrDefault(sessionId);
     }
 
     public List<VoiceMember> MembersOf(string roomKey)
     {
-        lock (_gate)
-            return _rooms.TryGetValue(roomKey, out var room) ? room.Select(id => _byCharacter[id]).ToList() : [];
+        lock (gate)
+            return rooms.TryGetValue(roomKey, out var room) ? room.Select(id => byCharacter[id]).ToList() : [];
     }
 
     public List<VoiceMember> ListenersOf(VoiceMember speaker)
     {
-        lock (_gate)
+        lock (gate)
         {
-            if (!_rooms.TryGetValue(speaker.RoomKey, out var room)) return [];
+            if (!rooms.TryGetValue(speaker.RoomKey, out var room)) return [];
             var listeners = new List<VoiceMember>(room.Count);
             foreach (int id in room)
             {
-                var member = _byCharacter[id];
+                var member = byCharacter[id];
                 if (id != speaker.CharacterId && member.Listening) listeners.Add(member);
             }
             return listeners;
@@ -112,7 +112,7 @@ public sealed class VoiceRoster
     {
         if (!speaker.CanSpeak || speaker.Silenced || (speaker.Flags & VoiceFlags.MicMuted) != 0 || bytes is 0 or > MaxFrameBytes)
             return false;
-        lock (_gate)
+        lock (gate)
         {
             if (nowMs - speaker.WindowStart >= WindowMs)
             {
@@ -130,18 +130,18 @@ public sealed class VoiceRoster
 
     public int CountIn(string roomKey)
     {
-        lock (_gate) return _rooms.TryGetValue(roomKey, out var room) ? room.Count : 0;
+        lock (gate) return rooms.TryGetValue(roomKey, out var room) ? room.Count : 0;
     }
 
     private VoiceMember? RemoveLocked(int characterId)
     {
-        if (!_byCharacter.Remove(characterId, out var member))
+        if (!byCharacter.Remove(characterId, out var member))
             return null;
-        _bySession.Remove(member.SessionId);
-        if (_rooms.TryGetValue(member.RoomKey, out var room))
+        bySession.Remove(member.SessionId);
+        if (rooms.TryGetValue(member.RoomKey, out var room))
         {
             room.Remove(characterId);
-            if (room.Count == 0) _rooms.Remove(member.RoomKey);
+            if (room.Count == 0) rooms.Remove(member.RoomKey);
         }
         member.Dispose();
         return member;

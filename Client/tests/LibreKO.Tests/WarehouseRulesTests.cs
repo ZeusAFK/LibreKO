@@ -7,7 +7,7 @@ public class WarehouseRulesTests
 {
     [Theory]
     [InlineData(156210000, 0, true)]
-    [InlineData(810433000, WarehouseRules.NonStorableRace, false)]
+    [InlineData(810433000, ItemData.Race.NoTradeSellStore, false)]
     [InlineData(1113331000, WarehouseRules.VaultTicketRaceFirst, false)]
     [InlineData(930540000, WarehouseRules.VaultTicketRaceLast, false)]
     [InlineData(WarehouseRules.NonStorableIdFirst, 0, false)]
@@ -22,11 +22,11 @@ public class WarehouseRulesTests
     [Theory]
     [InlineData(810433000, false)]
     [InlineData(WarehouseRules.NonStorableIdFirst, false)]
-    [InlineData(WarehouseRules.NoTradeIdFirst, true)]
-    [InlineData(WarehouseRules.NoTradeIdLast, true)]
-    [InlineData(WarehouseRules.NoTradeIdLast + 1, false)]
+    [InlineData(ItemData.NoTradeIdFirst, true)]
+    [InlineData(ItemData.NoTradeIdLast, true)]
+    [InlineData(ItemData.NoTradeIdLast + 1, false)]
     public void IsNoTradeIdMatchesTheRangeTheVipAndClanVaultsRefuse(int itemId, bool noTrade)
     {
-        Assert.Equal(noTrade, WarehouseRules.IsNoTradeId(itemId));
+        Assert.Equal(noTrade, ItemData.IsNoTradeId(itemId));
     }
 }

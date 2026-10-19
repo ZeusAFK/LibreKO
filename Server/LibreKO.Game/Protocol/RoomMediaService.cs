@@ -40,20 +40,20 @@ public sealed class RoomMediaService : IRoomMediaService
         public int Count { get; set; }
     }
 
-    private readonly SessionManager _sessions;
-    private readonly INationChatService _rooms;
-    private readonly IChatRoomHistory _history;
-    private readonly VoiceRoster _roster;
-    private readonly IVoiceRelay _relay;
-    private readonly IOptions<GameServerSettings> _settings;
-    private readonly ILogger<RoomMediaService> _logger;
-    private readonly TimeProvider _clock;
-    private readonly object _gate = new();
-    private readonly Dictionary<int, Upload> _uploads = [];
-    private readonly Dictionary<int, NoteQuota> _quotas = [];
-    private readonly HashSet<(string RoomKey, int CharacterId)> _silenced = [];
-    private readonly Dictionary<int, long> _lastReaction = [];
-    private uint _nextUpload;
+    private readonly SessionManager sessions;
+    private readonly INationChatService rooms;
+    private readonly IChatRoomHistory history;
+    private readonly VoiceRoster roster;
+    private readonly IVoiceRelay relay;
+    private readonly IOptions<GameServerSettings> settings;
+    private readonly ILogger<RoomMediaService> logger;
+    private readonly TimeProvider clock;
+    private readonly object gate = new();
+    private readonly Dictionary<int, Upload> uploads = [];
+    private readonly Dictionary<int, NoteQuota> quotas = [];
+    private readonly HashSet<(string RoomKey, int CharacterId)> silenced = [];
+    private readonly Dictionary<int, long> lastReaction = [];
+    private uint nextUpload;
 
     public RoomMediaService(
         SessionManager sessions,
@@ -65,22 +65,22 @@ public sealed class RoomMediaService : IRoomMediaService
         ILogger<RoomMediaService> logger,
         TimeProvider? clock = null)
     {
-        _sessions = sessions;
-        _rooms = rooms;
-        _history = history;
-        _roster = roster;
-        _relay = relay;
-        _settings = settings;
-        _logger = logger;
-        _clock = clock ?? TimeProvider.System;
-        _rooms.SeatReleased += OnSeatReleased;
+        this.sessions = sessions;
+        this.rooms = rooms;
+        this.history = history;
+        this.roster = roster;
+        this.relay = relay;
+        this.settings = settings;
+        this.logger = logger;
+        this.clock = clock ?? TimeProvider.System;
+        this.rooms.SeatReleased += OnSeatReleased;
     }
 
-    private ChatRoomSettings Settings => _settings.Value.ChatRooms;
+    private ChatRoomSettings Settings => settings.Value.ChatRooms;
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
-        var session = _sessions.GetByClientId(client.Id);
+        var session = sessions.GetByClientId(client.Id);
         if (session == null || packet.RemainingBytes < 1)
             return;
         byte sub = packet.ReadByte();
@@ -101,7 +101,7 @@ public sealed class RoomMediaService : IRoomMediaService
             case RoomMediaPacketWriter.VoiceTransport: UseTransport(session, packet); break;
             case RoomMediaPacketWriter.VoiceRoster: await SendRosterAsync(session); break;
             case RoomMediaPacketWriter.VoiceSilence: await SilenceAsync(session, packet); break;
-            default: _logger.LogDebug("Unhandled room media sub {Sub} from {Name}", sub, session.Name); break;
+            default: logger.LogDebug("Unhandled room media sub {Sub} from {Name}", sub, session.Name); break;
         }
     }
 
@@ -112,7 +112,7 @@ public sealed class RoomMediaService : IRoomMediaService
     {
         if (packet.RemainingBytes < 8) return;
         long before = packet.ReadLong();
-        if (!_rooms.TryGetSeat(session.CharacterId, out var seat))
+        if (!rooms.TryGetSeat(session.CharacterId, out var seat))
         {
             await session.Client.SendPacket(RoomMediaPacketWriter.HistoryPage([], false));
             return;
@@ -128,7 +128,7 @@ public sealed class RoomMediaService : IRoomMediaService
         string partnerName = packet.ReadString();
         if (packet.RemainingBytes < 8 || partnerName.Length is 0 or > PartnerNameMaxLength) return;
         long before = packet.ReadLong();
-        int partnerId = _sessions.GetByName(partnerName)?.CharacterId ?? await _history.CharacterIdOfAsync(partnerName);
+        int partnerId = sessions.GetByName(partnerName)?.CharacterId ?? await history.CharacterIdOfAsync(partnerName);
         if (partnerId == 0 || partnerId == session.CharacterId)
         {
             await session.Client.SendPacket(RoomMediaPacketWriter.DirectPage(partnerName, [], false));
@@ -141,14 +141,14 @@ public sealed class RoomMediaService : IRoomMediaService
 
     private async Task<(IReadOnlyList<ChatRoomMessage> Page, bool More)> PageOfAsync(string key, long before)
     {
-        var rows = await _history.PageAsync(key, before, RoomMediaPacketWriter.HistoryPageMax + 1);
+        var rows = await history.PageAsync(key, before, RoomMediaPacketWriter.HistoryPageMax + 1);
         bool more = rows.Count > RoomMediaPacketWriter.HistoryPageMax;
         return (more ? rows.Skip(rows.Count - RoomMediaPacketWriter.HistoryPageMax).ToList() : rows, more);
     }
 
     private async Task SendReactionsAsync(UserSession session, IReadOnlyList<ChatRoomMessage> page)
     {
-        var reactions = await _history.ReactionsOfAsync(page.Select(row => row.Id).ToList());
+        var reactions = await history.ReactionsOfAsync(page.Select(row => row.Id).ToList());
         if (reactions.Count > 0)
             await session.Client.SendPacket(RoomMediaPacketWriter.ReactionList(reactions));
     }
@@ -159,11 +159,11 @@ public sealed class RoomMediaService : IRoomMediaService
         ChatRoomMessage line;
         try
         {
-            line = await _history.AppendTextAsync(ChatRoomKeys.Direct(from.CharacterId, to.CharacterId), from.CharacterId, from.Name, text);
+            line = await history.AppendTextAsync(ChatRoomKeys.Direct(from.CharacterId, to.CharacterId), from.CharacterId, from.Name, text);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Whisper from {Name} was not stored", from.Name);
+            logger.LogWarning(ex, "Whisper from {Name} was not stored", from.Name);
             return;
         }
         await SendDirectAsync(from, to, line);
@@ -181,32 +181,32 @@ public sealed class RoomMediaService : IRoomMediaService
         long messageId = packet.ReadLong();
         string emoji = packet.ReadString().Trim();
         if (emoji.Length > ChatRoomReaction.EmojiMaxLength || emoji.Any(char.IsControl)) return;
-        long now = _clock.GetUtcNow().ToUnixTimeMilliseconds();
-        lock (_gate)
+        long now = clock.GetUtcNow().ToUnixTimeMilliseconds();
+        lock (gate)
         {
-            if (_lastReaction.TryGetValue(session.CharacterId, out long last) && now - last < ReactionMinIntervalMs) return;
-            _lastReaction[session.CharacterId] = now;
+            if (lastReaction.TryGetValue(session.CharacterId, out long last) && now - last < ReactionMinIntervalMs) return;
+            lastReaction[session.CharacterId] = now;
         }
-        var message = await _history.FindAsync(messageId);
+        var message = await history.FindAsync(messageId);
         if (message == null) return;
         IEnumerable<int> audience;
         int partner = ChatRoomKeys.PartnerOf(message.RoomKey, session.CharacterId);
         if (partner != 0) audience = [session.CharacterId, partner];
-        else if (_rooms.TryGetSeat(session.CharacterId, out var seat) && seat.Key == message.RoomKey) audience = seat.Members;
+        else if (rooms.TryGetSeat(session.CharacterId, out var seat) && seat.Key == message.RoomKey) audience = seat.Members;
         else return;
-        if (!await _history.ReactAsync(messageId, session.CharacterId, session.Name, emoji)) return;
+        if (!await history.ReactAsync(messageId, session.CharacterId, session.Name, emoji)) return;
         await SendToAsync(audience, RoomMediaPacketWriter.Reaction(messageId, session.CharacterId, session.Name, emoji));
     }
 
     private async Task KeepAsync(UserSession session, Packet packet)
     {
         if (packet.RemainingBytes < 1) return;
-        await _rooms.SetKeptAsync(session, packet.ReadByte() != 0);
+        await rooms.SetKeptAsync(session, packet.ReadByte() != 0);
     }
 
     private byte DirectRefusal(UserSession session, string partnerName, out UserSession? partner)
     {
-        partner = partnerName.Length is 0 or > PartnerNameMaxLength ? null : _sessions.GetByName(partnerName);
+        partner = partnerName.Length is 0 or > PartnerNameMaxLength ? null : sessions.GetByName(partnerName);
         if (session.BlockPrivateChat) return RoomMediaResults.Blocked;
         if (partner == null || partner == session) return RoomMediaResults.PartnerAway;
         if (partner.BlockPrivateChat) return RoomMediaResults.Blocked;
@@ -222,7 +222,7 @@ public sealed class RoomMediaService : IRoomMediaService
                 ? (refusal, ChatRoomKeys.Direct(session.CharacterId, partner!.CharacterId), partner.CharacterId)
                 : (refusal, "", 0);
         }
-        return _rooms.TryGetSeat(session.CharacterId, out var seat)
+        return rooms.TryGetSeat(session.CharacterId, out var seat)
             ? (RoomMediaResults.Ok, seat.Key, 0)
             : (RoomMediaResults.NotInRoom, "", 0);
     }
@@ -241,7 +241,7 @@ public sealed class RoomMediaService : IRoomMediaService
         }
         string partnerName = packet.RemainingBytes >= 2 ? packet.ReadString() : "";
         uint uploadId = 0;
-        var now = _clock.GetUtcNow().UtcDateTime;
+        var now = clock.GetUtcNow().UtcDateTime;
         var (result, key, partnerId) = NoteTarget(session, partnerName);
         if (result == RoomMediaResults.Ok)
         {
@@ -250,15 +250,15 @@ public sealed class RoomMediaService : IRoomMediaService
             else if (size <= 0 || size > Settings.NoteMaxBytes) result = RoomMediaResults.TooBig;
             else
             {
-                lock (_gate)
+                lock (gate)
                 {
                     var quota = QuotaOf(session.CharacterId, now);
                     if ((now - quota.Last).TotalSeconds < Settings.NoteMinIntervalSeconds) result = RoomMediaResults.TooSoon;
                     else if (quota.Count >= Settings.NotesPerDay) result = RoomMediaResults.DailyLimit;
                     else
                     {
-                        uploadId = ++_nextUpload;
-                        _uploads[session.CharacterId] = new Upload(uploadId, key, partnerId, size, waveform);
+                        uploadId = ++nextUpload;
+                        uploads[session.CharacterId] = new Upload(uploadId, key, partnerId, size, waveform);
                     }
                 }
             }
@@ -275,9 +275,9 @@ public sealed class RoomMediaService : IRoomMediaService
         ushort index = packet.ReadUShort();
         int length = packet.ReadUShort();
         bool bad;
-        lock (_gate)
+        lock (gate)
         {
-            bad = !_uploads.TryGetValue(session.CharacterId, out var upload) || upload.Id != id
+            bad = !uploads.TryGetValue(session.CharacterId, out var upload) || upload.Id != id
                 || index != upload.NextIndex || length > RoomMediaPacketWriter.ChunkBytes
                 || length > packet.RemainingBytes || upload.Received + length > upload.Data.Length;
             if (!bad)
@@ -286,7 +286,7 @@ public sealed class RoomMediaService : IRoomMediaService
                 upload.Received += length;
                 upload.NextIndex++;
             }
-            else _uploads.Remove(session.CharacterId);
+            else uploads.Remove(session.CharacterId);
         }
         if (bad)
             await session.Client.SendPacket(RoomMediaPacketWriter.Result(RoomMediaPacketWriter.NoteEnd, RoomMediaResults.BadUpload));
@@ -297,9 +297,9 @@ public sealed class RoomMediaService : IRoomMediaService
         if (packet.RemainingBytes < 4) return;
         uint id = packet.ReadUInt();
         Upload? upload;
-        lock (_gate)
+        lock (gate)
         {
-            if (!_uploads.Remove(session.CharacterId, out upload) || upload.Id != id) upload = null;
+            if (!uploads.Remove(session.CharacterId, out upload) || upload.Id != id) upload = null;
         }
         OggOpusInfo info = default;
         UserSession? partner = null;
@@ -320,15 +320,15 @@ public sealed class RoomMediaService : IRoomMediaService
         ChatRoomMessage note;
         try
         {
-            note = await _history.AppendNoteAsync(upload!.RoomKey, session.CharacterId, session.Name, info.DurationMs, upload.Data, upload.Waveform);
+            note = await history.AppendNoteAsync(upload!.RoomKey, session.CharacterId, session.Name, info.DurationMs, upload.Data, upload.Waveform);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Voice note from {Name} could not be stored", session.Name);
+            logger.LogError(ex, "Voice note from {Name} could not be stored", session.Name);
             await session.Client.SendPacket(RoomMediaPacketWriter.Result(RoomMediaPacketWriter.NoteEnd, RoomMediaResults.Failed));
             return;
         }
-        lock (_gate)
+        lock (gate)
         {
             var quota = QuotaOf(session.CharacterId, note.CreatedAt);
             quota.Last = note.CreatedAt;
@@ -337,7 +337,7 @@ public sealed class RoomMediaService : IRoomMediaService
         await session.Client.SendPacket(RoomMediaPacketWriter.Result(RoomMediaPacketWriter.NoteEnd, RoomMediaResults.Ok));
         if (partner != null)
             await SendDirectAsync(session, partner, note);
-        else if (_rooms.TryGetSeat(session.CharacterId, out var room))
+        else if (rooms.TryGetSeat(session.CharacterId, out var room))
             await SendToAsync(room.Members, RoomMediaPacketWriter.PostedRow(note));
     }
 
@@ -345,25 +345,25 @@ public sealed class RoomMediaService : IRoomMediaService
     {
         partner = null;
         if (upload.PartnerId == 0)
-            return _rooms.TryGetSeat(session.CharacterId, out var seat) && seat.Key == upload.RoomKey
+            return rooms.TryGetSeat(session.CharacterId, out var seat) && seat.Key == upload.RoomKey
                 ? RoomMediaResults.Ok
                 : RoomMediaResults.NotInRoom;
-        var online = _sessions.GetByCharacterId(upload.PartnerId);
+        var online = sessions.GetByCharacterId(upload.PartnerId);
         return online == null ? RoomMediaResults.PartnerAway : DirectRefusal(session, online.Name, out partner);
     }
 
     private bool CanRead(UserSession session, string roomKey) =>
         ChatRoomKeys.PartnerOf(roomKey, session.CharacterId) != 0
-        || _rooms.TryGetSeat(session.CharacterId, out var seat) && seat.Key == roomKey;
+        || rooms.TryGetSeat(session.CharacterId, out var seat) && seat.Key == roomKey;
 
     private async Task FetchNoteAsync(UserSession session, Packet packet)
     {
         if (packet.RemainingBytes < 8) return;
         long noteId = packet.ReadLong();
-        var note = await _history.FindNoteAsync(noteId);
+        var note = await history.FindNoteAsync(noteId);
         byte[]? file = null;
         if (note != null && CanRead(session, note.RoomKey))
-            file = await _history.ReadNoteAsync(note);
+            file = await history.ReadNoteAsync(note);
         if (file == null)
         {
             await session.Client.SendPacket(RoomMediaPacketWriter.NoteFetchRefused(noteId, RoomMediaResults.NotFound));
@@ -383,16 +383,16 @@ public sealed class RoomMediaService : IRoomMediaService
         byte result;
         VoiceMember? member = null;
         List<VoiceMember> others = [];
-        if (!_relay.Enabled) result = RoomMediaResults.VoiceOff;
-        else if (!_rooms.TryGetSeat(session.CharacterId, out var seat)) result = RoomMediaResults.NotInRoom;
+        if (!relay.Enabled) result = RoomMediaResults.VoiceOff;
+        else if (!rooms.TryGetSeat(session.CharacterId, out var seat)) result = RoomMediaResults.NotInRoom;
         else if (seat.Public) result = RoomMediaResults.PublicChannel;
         else
         {
             await LeaveOtherCallAsync(session.CharacterId, seat.Key);
-            member = _roster.Join(session.CharacterId, seat.Key, !Silenced(session), Settings.Voice.MaxVoicePerRoom, out others);
+            member = roster.Join(session.CharacterId, seat.Key, !Silenced(session), Settings.Voice.MaxVoicePerRoom, out others);
             result = member == null ? RoomMediaResults.VoiceFull : RoomMediaResults.Ok;
             if (member != null)
-                lock (_gate) member.Silenced = _silenced.Contains((seat.Key, session.CharacterId));
+                lock (gate) member.Silenced = silenced.Contains((seat.Key, session.CharacterId));
         }
         if (member == null)
         {
@@ -400,23 +400,23 @@ public sealed class RoomMediaService : IRoomMediaService
             return;
         }
         var peers = others.Select(o => new RoomMediaPacketWriter.VoicePeer(o.CharacterId, o.WireFlags)).ToList();
-        await session.Client.SendPacket(RoomMediaPacketWriter.Joined(_relay.UdpPort, member.SessionId, member.Key, member.WireFlags, peers));
+        await session.Client.SendPacket(RoomMediaPacketWriter.Joined(relay.UdpPort, member.SessionId, member.Key, member.WireFlags, peers));
         await SendToAsync(RoomAudience(member.RoomKey, session.CharacterId),
             RoomMediaPacketWriter.MemberEvent(session.CharacterId, RoomMediaPacketWriter.MemberJoined, member.WireFlags));
     }
 
     private async Task LeaveOtherCallAsync(int characterId, string roomKey)
     {
-        if (_roster.Get(characterId) is not { } current || current.RoomKey == roomKey) return;
-        if (_roster.Leave(characterId, out _) is not { } left) return;
+        if (roster.Get(characterId) is not { } current || current.RoomKey == roomKey) return;
+        if (roster.Leave(characterId, out _) is not { } left) return;
         await SendToAsync(RoomAudience(left.RoomKey, characterId),
             RoomMediaPacketWriter.MemberEvent(characterId, RoomMediaPacketWriter.MemberLeft, 0));
     }
 
     private async Task SendRosterAsync(UserSession session)
     {
-        var peers = _rooms.TryGetSeat(session.CharacterId, out var seat) && !seat.Public
-            ? _roster.MembersOf(seat.Key).Select(m => new RoomMediaPacketWriter.VoicePeer(m.CharacterId, m.WireFlags)).ToList()
+        var peers = rooms.TryGetSeat(session.CharacterId, out var seat) && !seat.Public
+            ? roster.MembersOf(seat.Key).Select(m => new RoomMediaPacketWriter.VoicePeer(m.CharacterId, m.WireFlags)).ToList()
             : [];
         await session.Client.SendPacket(RoomMediaPacketWriter.Roster(peers));
     }
@@ -426,31 +426,31 @@ public sealed class RoomMediaService : IRoomMediaService
         if (packet.RemainingBytes < 5) return;
         int targetId = packet.ReadInt();
         bool silence = packet.ReadByte() != 0;
-        if (!_rooms.TryGetSeat(session.CharacterId, out var seat) || seat.Public || seat.OwnerId != session.CharacterId)
+        if (!rooms.TryGetSeat(session.CharacterId, out var seat) || seat.Public || seat.OwnerId != session.CharacterId)
         {
             await session.Client.SendPacket(RoomMediaPacketWriter.Result(RoomMediaPacketWriter.VoiceSilence, RoomMediaResults.NotLeader));
             return;
         }
         if (targetId == session.CharacterId || !seat.Members.Contains(targetId)) return;
         bool changed;
-        lock (_gate)
-            changed = silence ? _silenced.Add((seat.Key, targetId)) : _silenced.Remove((seat.Key, targetId));
+        lock (gate)
+            changed = silence ? silenced.Add((seat.Key, targetId)) : silenced.Remove((seat.Key, targetId));
         if (!changed) return;
-        string targetName = _sessions.GetByCharacterId(targetId)?.Name ?? "";
-        await SendToAsync(_rooms.MembersOf(seat.Key), RoomMediaPacketWriter.SilenceNotice(targetId, silence, session.Name, targetName));
-        var target = _roster.Get(targetId);
+        string targetName = sessions.GetByCharacterId(targetId)?.Name ?? "";
+        await SendToAsync(rooms.MembersOf(seat.Key), RoomMediaPacketWriter.SilenceNotice(targetId, silence, session.Name, targetName));
+        var target = roster.Get(targetId);
         if (target == null || target.RoomKey != seat.Key) return;
         target.Silenced = silence;
-        await SendToAsync(_rooms.MembersOf(seat.Key),
+        await SendToAsync(rooms.MembersOf(seat.Key),
             RoomMediaPacketWriter.MemberEvent(targetId, RoomMediaPacketWriter.MemberFlags, target.WireFlags));
     }
 
     private IEnumerable<int> RoomAudience(string roomKey, int except) =>
-        _rooms.MembersOf(roomKey).Where(id => id != except);
+        rooms.MembersOf(roomKey).Where(id => id != except);
 
     private async Task LeaveVoiceAsync(UserSession session)
     {
-        var member = _roster.Leave(session.CharacterId, out _);
+        var member = roster.Leave(session.CharacterId, out _);
         await session.Client.SendPacket(RoomMediaPacketWriter.Result(RoomMediaPacketWriter.VoiceLeave,
             member == null ? RoomMediaResults.NotInRoom : RoomMediaResults.Ok));
         if (member != null)
@@ -462,7 +462,7 @@ public sealed class RoomMediaService : IRoomMediaService
     {
         if (packet.RemainingBytes < 1) return;
         byte flags = (byte)(packet.ReadByte() & VoiceFlags.ClientSettable);
-        var member = _roster.Get(session.CharacterId);
+        var member = roster.Get(session.CharacterId);
         if (member == null || member.Flags == flags) return;
         member.Flags = flags;
         await SendToAsync(RoomAudience(member.RoomKey, session.CharacterId),
@@ -475,37 +475,37 @@ public sealed class RoomMediaService : IRoomMediaService
         ushort seq = packet.ReadUShort();
         int length = packet.ReadUShort();
         if (length > packet.RemainingBytes) return;
-        var member = _roster.Get(session.CharacterId);
+        var member = roster.Get(session.CharacterId);
         if (member == null) return;
         var opus = packet.ReadBytes(length);
-        if (_roster.AllowFrame(member, opus.Length, _clock.GetUtcNow().ToUnixTimeMilliseconds()))
-            await _relay.ForwardAsync(member, seq, opus);
+        if (roster.AllowFrame(member, opus.Length, clock.GetUtcNow().ToUnixTimeMilliseconds()))
+            await relay.ForwardAsync(member, seq, opus);
     }
 
     private void UseTransport(UserSession session, Packet packet)
     {
         if (packet.RemainingBytes < 1) return;
         bool tcp = packet.ReadByte() != 0;
-        if (_roster.Get(session.CharacterId) is { } member)
+        if (roster.Get(session.CharacterId) is { } member)
             member.Tcp = tcp;
     }
 
     private void OnSeatReleased(int characterId, string roomKey)
     {
-        lock (_gate)
+        lock (gate)
         {
-            if (_uploads.TryGetValue(characterId, out var upload) && upload.PartnerId == 0) _uploads.Remove(characterId);
-            _silenced.Remove((roomKey, characterId));
+            if (uploads.TryGetValue(characterId, out var upload) && upload.PartnerId == 0) uploads.Remove(characterId);
+            silenced.Remove((roomKey, characterId));
         }
-        var member = _roster.Leave(characterId, out _);
+        var member = roster.Leave(characterId, out _);
         if (member == null) return;
         _ = SendToAsync(RoomAudience(roomKey, characterId), RoomMediaPacketWriter.MemberEvent(characterId, RoomMediaPacketWriter.MemberLeft, 0));
     }
 
     private NoteQuota QuotaOf(int characterId, DateTime now)
     {
-        if (!_quotas.TryGetValue(characterId, out var quota))
-            _quotas[characterId] = quota = new NoteQuota();
+        if (!quotas.TryGetValue(characterId, out var quota))
+            quotas[characterId] = quota = new NoteQuota();
         var today = DateOnly.FromDateTime(now);
         if (quota.Day != today)
         {
@@ -519,10 +519,10 @@ public sealed class RoomMediaService : IRoomMediaService
     {
         foreach (var id in characterIds)
         {
-            var member = _sessions.GetByCharacterId(id);
+            var member = sessions.GetByCharacterId(id);
             if (member == null) continue;
             try { await member.Client.SendPacket(packet); }
-            catch (Exception ex) { _logger.LogDebug(ex, "Room media send failed for {Id}", id); }
+            catch (Exception ex) { logger.LogDebug(ex, "Room media send failed for {Id}", id); }
         }
     }
 }

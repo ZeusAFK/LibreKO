@@ -11,11 +11,11 @@ public class MonthlyLoyaltyResetService(
     IServiceProvider serviceProvider,
     ILogger<MonthlyLoyaltyResetService> logger) : BackgroundService
 {
-    private int _lastResetMonth;
+    private int lastResetMonth;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _lastResetMonth = DateTime.UtcNow.Month;
+        lastResetMonth = DateTime.UtcNow.Month;
         logger.LogInformation("Monthly loyalty reset service started");
 
         using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
@@ -24,9 +24,9 @@ public class MonthlyLoyaltyResetService(
             try
             {
                 var now = DateTime.UtcNow;
-                if (now.Day == 1 && now.Month != _lastResetMonth)
+                if (now.Day == 1 && now.Month != lastResetMonth)
                 {
-                    _lastResetMonth = now.Month;
+                    lastResetMonth = now.Month;
                     await ResetMonthlyLoyalty();
                 }
             }

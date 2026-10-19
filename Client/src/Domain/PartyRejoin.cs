@@ -16,7 +16,7 @@ public sealed class PartyRejoin
     public const string TurnedOnFallback = "Party Member Re-Invite Mode After Unexpected Disconnection: on";
     public const string TurnedOffFallback = "Party Member Re-Invite Mode After Unexpected Disconnection: off";
 
-    private readonly Dictionary<int, string> _names = new();
+    private readonly Dictionary<int, string> names = new();
 
     public bool On { get; private set; } = true;
 
@@ -24,20 +24,20 @@ public sealed class PartyRejoin
 
     public void Remember(int id, string name)
     {
-        if (name.Length > 0) _names[id] = name;
+        if (name.Length > 0) names[id] = name;
     }
 
-    public void Forget(int id) => _names.Remove(id);
+    public void Forget(int id) => names.Remove(id);
 
-    public void Clear() => _names.Clear();
+    public void Clear() => names.Clear();
 
     public bool Recall(string name, bool amLeader, int partyCount, int maxMembers, bool alreadyMember)
     {
         if (!On || !amLeader || partyCount >= maxMembers || alreadyMember) return false;
-        foreach (var (id, remembered) in _names)
+        foreach (var (id, remembered) in names)
         {
             if (!string.Equals(remembered, name, StringComparison.OrdinalIgnoreCase)) continue;
-            _names.Remove(id);
+            names.Remove(id);
             return true;
         }
         return false;

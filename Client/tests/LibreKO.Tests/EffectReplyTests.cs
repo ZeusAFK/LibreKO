@@ -25,12 +25,12 @@ public class EffectReplyTests
     public void AnAnnouncementAddsTheWinnerName()
     {
         var p = new Packet(GameOpcodes.GS_EFFECT);
-        p.WriteInt(EffectReply.Announcement);
+        p.WriteInt(EffectWire.AnnouncementEntity);
         p.WriteInt(Item);
         p.WriteSByteString("Rikka");
         p.ResetOffset();
 
-        Assert.Equal(new EffectReply(EffectReply.Announcement, Item, "Rikka"), EffectReply.Read(p));
+        Assert.Equal(new EffectReply(EffectWire.AnnouncementEntity, Item, "Rikka"), EffectReply.Read(p));
         Assert.Equal(0, p.RemainingBytes);
     }
 }

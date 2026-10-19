@@ -1,42 +1,14 @@
 ﻿namespace LibreKO.Domain;
 
-public static class ItemRemove
-{
-    public const byte FromInventory = 0;
-    public const byte FromEquipment = 1;
-    public const byte FromMagicBag = 3;
-}
-
 public static class ItemMove
 {
-    public const byte InventoryToSlot = 1;
-    public const byte SlotToInventory = 2;
-    public const byte InventoryToInventory = 3;
-    public const byte SlotToSlot = 4;
-    public const byte InventoryToZone = 5;
-    public const byte ZoneToInventory = 6;
-    public const byte InventoryToCospre = 7;
-    public const byte CospreToInventory = 8;
-    public const byte InventoryToMagicBag = 9;
-    public const byte MagicBagToInventory = 10;
-    public const byte MagicBagToMagicBag = 11;
-    public const byte InventoryToPet = 12;
-    public const byte PetToInventory = 13;
-    public const byte InventoryToBagSlot = 14;
-    public const byte BagSlotToInventory = 15;
-
-    public const byte MoveRequest = 1;
-    public const byte ArrangeRequest = 2;
-
-    public const byte None = 0;
-
     public const ushort WholeStack = 0;
 
     public enum Region { Equip, Grid, Cospre, BagSlot, MagicBag }
 
     public static bool IsCarried(int abs) => RegionOf(abs) is Region.Grid or Region.MagicBag;
 
-    public static bool TryResolveSlots(byte direction, byte source, byte destination, out int from, out int to)
+    public static bool TryResolveSlots(ItemMoveDirection direction, byte source, byte destination, out int from, out int to)
     {
         (int Start, int Count) equip = (0, InventoryConstants.SlotMax),
             grid = (InventoryConstants.InventoryStart, InventoryConstants.HaveMax),
@@ -46,12 +18,12 @@ public static class ItemMove
             none = (0, 0);
         var (origin, target) = direction switch
         {
-            InventoryToSlot => (grid, equip), SlotToInventory => (equip, grid),
-            InventoryToInventory => (grid, grid), SlotToSlot => (equip, equip),
-            InventoryToCospre => (grid, costume), CospreToInventory => (costume, grid),
-            InventoryToBagSlot => (grid, bag), BagSlotToInventory => (bag, grid),
-            InventoryToMagicBag => (grid, contents), MagicBagToInventory => (contents, grid),
-            MagicBagToMagicBag => (contents, contents),
+            ItemMoveDirection.InventoryToSlot => (grid, equip), ItemMoveDirection.SlotToInventory => (equip, grid),
+            ItemMoveDirection.InventoryToInventory => (grid, grid), ItemMoveDirection.SlotToSlot => (equip, equip),
+            ItemMoveDirection.InventoryToCospre => (grid, costume), ItemMoveDirection.CospreToInventory => (costume, grid),
+            ItemMoveDirection.InventoryToBagSlot => (grid, bag), ItemMoveDirection.BagSlotToInventory => (bag, grid),
+            ItemMoveDirection.InventoryToMagicBag => (grid, contents), ItemMoveDirection.MagicBagToInventory => (contents, grid),
+            ItemMoveDirection.MagicBagToMagicBag => (contents, contents),
             _ => (none, none),
         };
         from = to = -1;
@@ -61,7 +33,7 @@ public static class ItemMove
         return true;
     }
 
-    public static void ApplyConfirmed(ItemSlot[] inventory, byte direction, int from, int to, int countable, ushort amount = WholeStack)
+    public static void ApplyConfirmed(ItemSlot[] inventory, ItemMoveDirection direction, int from, int to, int countable, ushort amount = WholeStack)
     {
         var source = inventory[from];
         var destination = inventory[to];
@@ -106,24 +78,24 @@ public static class ItemMove
         _ => abs - InventoryConstants.MagicBagStart,
     };
 
-    public static byte DirectionFor(Region from, Region to) => (from, to) switch
+    public static ItemMoveDirection DirectionFor(Region from, Region to) => (from, to) switch
     {
-        (Region.Grid, Region.Equip) => InventoryToSlot,
-        (Region.Equip, Region.Grid) => SlotToInventory,
-        (Region.Grid, Region.Grid) => InventoryToInventory,
-        (Region.Equip, Region.Equip) => SlotToSlot,
-        (Region.Grid, Region.Cospre) => InventoryToCospre,
-        (Region.Cospre, Region.Grid) => CospreToInventory,
-        (Region.Grid, Region.BagSlot) => InventoryToBagSlot,
-        (Region.BagSlot, Region.Grid) => BagSlotToInventory,
-        (Region.Grid, Region.MagicBag) => InventoryToMagicBag,
-        (Region.MagicBag, Region.Grid) => MagicBagToInventory,
-        (Region.MagicBag, Region.MagicBag) => MagicBagToMagicBag,
-        _ => None,
+        (Region.Grid, Region.Equip) => ItemMoveDirection.InventoryToSlot,
+        (Region.Equip, Region.Grid) => ItemMoveDirection.SlotToInventory,
+        (Region.Grid, Region.Grid) => ItemMoveDirection.InventoryToInventory,
+        (Region.Equip, Region.Equip) => ItemMoveDirection.SlotToSlot,
+        (Region.Grid, Region.Cospre) => ItemMoveDirection.InventoryToCospre,
+        (Region.Cospre, Region.Grid) => ItemMoveDirection.CospreToInventory,
+        (Region.Grid, Region.BagSlot) => ItemMoveDirection.InventoryToBagSlot,
+        (Region.BagSlot, Region.Grid) => ItemMoveDirection.BagSlotToInventory,
+        (Region.Grid, Region.MagicBag) => ItemMoveDirection.InventoryToMagicBag,
+        (Region.MagicBag, Region.Grid) => ItemMoveDirection.MagicBagToInventory,
+        (Region.MagicBag, Region.MagicBag) => ItemMoveDirection.MagicBagToMagicBag,
+        _ => ItemMoveDirection.None,
     };
 
-    public static bool Merges(byte direction, ItemSlot source, ItemSlot destination, int countable) =>
-        direction is InventoryToInventory or InventoryToMagicBag or MagicBagToInventory or MagicBagToMagicBag
+    public static bool Merges(ItemMoveDirection direction, ItemSlot source, ItemSlot destination, int countable) =>
+        direction is ItemMoveDirection.InventoryToInventory or ItemMoveDirection.InventoryToMagicBag or ItemMoveDirection.MagicBagToInventory or ItemMoveDirection.MagicBagToMagicBag
         && countable > 0
         && !source.IsEmpty
         && destination.ItemId == source.ItemId
@@ -132,10 +104,10 @@ public static class ItemMove
         && !destination.IsLinked
         && source.Count + destination.Count <= Inventory.StackMax;
 
-    public static bool SplitsAcross(byte direction) =>
-        direction is InventoryToInventory or InventoryToMagicBag or MagicBagToInventory or MagicBagToMagicBag;
+    public static bool SplitsAcross(ItemMoveDirection direction) =>
+        direction is ItemMoveDirection.InventoryToInventory or ItemMoveDirection.InventoryToMagicBag or ItemMoveDirection.MagicBagToInventory or ItemMoveDirection.MagicBagToMagicBag;
 
-    public static bool Splits(byte direction, ItemSlot source, ItemSlot destination, int countable, int amount) =>
+    public static bool Splits(ItemMoveDirection direction, ItemSlot source, ItemSlot destination, int countable, int amount) =>
         SplitsAcross(direction)
         && countable > 0
         && !source.IsEmpty
@@ -157,9 +129,9 @@ public sealed class StackDial
     public const int NotchesPerStep = 4;
     private static readonly int[] Steps = { 1, 5, 10, 50, 100 };
 
-    private int _direction;
-    private int _streak;
-    private double _lastNotchAt;
+    private int direction;
+    private int streak;
+    private double lastNotchAt;
 
     public StackDial(int total)
     {
@@ -179,11 +151,11 @@ public sealed class StackDial
     {
         if (direction == 0 || Total == 1) return Amount;
         direction = Math.Sign(direction);
-        bool quick = direction == _direction && now - _lastNotchAt <= StreakPauseSeconds;
-        _streak = quick ? _streak + 1 : 1;
-        _direction = direction;
-        _lastNotchAt = now;
-        int step = StepFor(_streak);
+        bool quick = direction == this.direction && now - lastNotchAt <= StreakPauseSeconds;
+        streak = quick ? streak + 1 : 1;
+        this.direction = direction;
+        lastNotchAt = now;
+        int step = StepFor(streak);
         if (direction == Up)
         {
             if (Amount == Total) return Wrap(1);
@@ -195,7 +167,7 @@ public sealed class StackDial
 
     private int Wrap(int amount)
     {
-        _streak = 1;
+        streak = 1;
         return Amount = amount;
     }
 }

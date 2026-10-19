@@ -22,5 +22,4 @@ public struct StallOwner
     public int CharacterId;
     public bool IsBuying;
     public byte Flags;
-    public bool IsPremium => (Flags & Net.MerchantPremiumFlagMask) != 0;
 }

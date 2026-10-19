@@ -100,13 +100,13 @@ public class SiegeWarfareTests
     [Fact]
     public void ARateChangeNamesTheZoneWhileAFeeChangeIsADoubleWord()
     {
-        var moradon = SiegeWire.ReadRateChanged(Reply((short)1, (short)4, (short)21), SiegeWarfare.MoradonRate);
-        var fee = SiegeWire.ReadRateChanged(Reply((short)1, 20_000), SiegeWarfare.DungeonFee);
+        var moradon = SiegeWire.ReadRateChanged(Reply((short)1, (short)4, (short)21), SiegeOfficeSubOpcode.MoradonRate);
+        var fee = SiegeWire.ReadRateChanged(Reply((short)1, 20_000), SiegeOfficeSubOpcode.DungeonFee);
 
         Assert.Equal((4, (short)21), (moradon.Value, moradon.Zone));
         Assert.Equal(20_000, fee.Value);
-        Assert.Equal(10232, SiegeWarfare.ChangedText(SiegeWarfare.MoradonRate));
-        Assert.Equal(10234, SiegeWarfare.ChangedText(SiegeWarfare.DungeonFee));
+        Assert.Equal(10232, SiegeWarfare.ChangedText(SiegeOfficeSubOpcode.MoradonRate));
+        Assert.Equal(10234, SiegeWarfare.ChangedText(SiegeOfficeSubOpcode.DungeonFee));
     }
 
     [Fact]
@@ -161,8 +161,15 @@ public class SiegeWarfareTests
     [Fact]
     public void AssaultAndApplyAreBareRequests()
     {
-        Assert.Equal(new byte[] { 0x6D, 3, 3 }, SiegeWire.Request(SiegeWarfare.CastleGuard, SiegeWarfare.Assault).GetBytes());
+        Assert.Equal(new byte[] { 0x6D, 3, 3 }, SiegeWire.Guard(SiegeGuardSubOpcode.Assault).GetBytes());
         Assert.Equal(new byte[] { 0x6D, 3, 1, 2 },
-            SiegeWire.Request(SiegeWarfare.CastleGuard, SiegeWarfare.Apply, SiegeWarfare.ApplyCancel).GetBytes());
+            ApplyCancel());
+    }
+
+    private static byte[] ApplyCancel()
+    {
+        var p = SiegeWire.Guard(SiegeGuardSubOpcode.Apply);
+        p.WriteByte((byte)SiegeApplyAction.Cancel);
+        return p.GetBytes();
     }
 }

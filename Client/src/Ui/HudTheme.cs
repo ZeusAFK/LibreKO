@@ -4,8 +4,8 @@ namespace LibreKO;
 
 public static class HudTheme
 {
-    private static Theme? _shared;
-    public static Theme Shared => _shared ??= Build();
+    private static Theme? shared;
+    public static Theme Shared => shared ??= Build();
 
     private const float ScrollBarWidth = 11f;
     private const float ScrollGrabberInset = 2f;

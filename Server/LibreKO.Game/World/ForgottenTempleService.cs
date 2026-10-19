@@ -49,96 +49,96 @@ public sealed class ForgottenTempleService(
     private const float CenterX = 150f;
     private const float CenterZ = 150f;
 
-    private readonly object _stateLock = new();
-    private bool _isActive;
-    private long _remainingSeconds;
-    private long _totalDurationSeconds;
-    private int _currentWave;
-    private bool _finalBossKilled;
-    private DateTime? _finishedAtUtc;
-    private bool _returnNoticeSent;
-    private bool _preWaveNoticeSent;
-    private byte _minLevel = TempleEventRules.ForgottenTempleHighMinLevel;
-    private byte _maxLevel = TempleEventRules.ForgottenTempleHighMaxLevel;
-    private ForgottenTempleTier _currentTier = ForgottenTempleTier.HighLevel;
-    private readonly HashSet<int> _lastWaveMonsterIds = [];
-    private bool _lastWaveSpawned;
+    private readonly object stateLock = new();
+    private bool isActive;
+    private long remainingSeconds;
+    private long totalDurationSeconds;
+    private int currentWave;
+    private bool finalBossKilled;
+    private DateTime? finishedAtUtc;
+    private bool returnNoticeSent;
+    private bool preWaveNoticeSent;
+    private byte minLevel = TempleEventRules.ForgottenTempleHighMinLevel;
+    private byte maxLevel = TempleEventRules.ForgottenTempleHighMaxLevel;
+    private ForgottenTempleTier currentTier = ForgottenTempleTier.HighLevel;
+    private readonly HashSet<int> lastWaveMonsterIds = [];
+    private bool lastWaveSpawned;
 
     public bool IsActive
     {
-        get { lock (_stateLock) return _isActive; }
+        get { lock (stateLock) return isActive; }
     }
 
     public long RemainingSeconds
     {
-        get { lock (_stateLock) return _remainingSeconds; }
+        get { lock (stateLock) return remainingSeconds; }
     }
 
     public int CurrentWave
     {
-        get { lock (_stateLock) return _currentWave; }
+        get { lock (stateLock) return currentWave; }
     }
 
     public ForgottenTempleTier CurrentTier
     {
-        get { lock (_stateLock) return _currentTier; }
+        get { lock (stateLock) return currentTier; }
     }
 
     public byte MinLevel
     {
-        get { lock (_stateLock) return _minLevel; }
+        get { lock (stateLock) return minLevel; }
     }
 
     public byte MaxLevel
     {
-        get { lock (_stateLock) return _maxLevel; }
+        get { lock (stateLock) return maxLevel; }
     }
 
     public void Start(int? durationMinutes = null, byte minLevel = TempleEventRules.ForgottenTempleHighMinLevel, byte maxLevel = TempleEventRules.ForgottenTempleHighMaxLevel)
     {
-        lock (_stateLock)
+        lock (stateLock)
         {
-            if (_isActive)
+            if (isActive)
             {
                 logger.LogWarning("Forgotten Temple start requested but event is already active");
                 return;
             }
 
             var minutes = durationMinutes ?? DefaultDurationMinutes;
-            _totalDurationSeconds = minutes * 60;
-            _remainingSeconds = _totalDurationSeconds;
-            _isActive = true;
-            _currentWave = 0;
-            _finalBossKilled = false;
-            _finishedAtUtc = null;
-            _returnNoticeSent = false;
-            _preWaveNoticeSent = false;
-            _lastWaveSpawned = false;
-            _lastWaveMonsterIds.Clear();
-            _minLevel = minLevel;
-            _maxLevel = maxLevel;
-            _currentTier = maxLevel <= TempleEventRules.ForgottenTempleLowMaxLevel ? ForgottenTempleTier.LowLevel : ForgottenTempleTier.HighLevel;
+            totalDurationSeconds = minutes * 60;
+            remainingSeconds = totalDurationSeconds;
+            isActive = true;
+            currentWave = 0;
+            finalBossKilled = false;
+            finishedAtUtc = null;
+            returnNoticeSent = false;
+            preWaveNoticeSent = false;
+            lastWaveSpawned = false;
+            lastWaveMonsterIds.Clear();
+            this.minLevel = minLevel;
+            this.maxLevel = maxLevel;
+            currentTier = maxLevel <= TempleEventRules.ForgottenTempleLowMaxLevel ? ForgottenTempleTier.LowLevel : ForgottenTempleTier.HighLevel;
 
             logger.LogInformation("Forgotten Temple ({Tier}) event started for levels {Min}-{Max} ({Minutes} mins)",
-                _currentTier, _minLevel, _maxLevel, minutes);
+                currentTier, this.minLevel, this.maxLevel, minutes);
         }
 
         DespawnFtMonsters();
-        string tierName = $"{_minLevel}-{_maxLevel}";
+        string tierName = $"{this.minLevel}-{this.maxLevel}";
         _ = sessionManager.BroadcastToAll(NoticePacketWriter.Broadcast($"### [Forgotten Temple] Forgotten Temple ({tierName}) has opened! You may now enter the temple. ###"));
     }
 
     public async Task CloseAsync()
     {
         bool wasActive;
-        lock (_stateLock)
+        lock (stateLock)
         {
-            wasActive = _isActive;
-            _isActive = false;
-            _remainingSeconds = 0;
-            _finishedAtUtc = null;
-            _lastWaveMonsterIds.Clear();
-            _lastWaveSpawned = false;
+            wasActive = isActive;
+            isActive = false;
+            remainingSeconds = 0;
+            finishedAtUtc = null;
+            lastWaveMonsterIds.Clear();
+            lastWaveSpawned = false;
         }
 
         if (!wasActive)
@@ -159,10 +159,10 @@ public sealed class ForgottenTempleService(
             return;
         }
 
-        if (!session.IsGM && (session.Level < _minLevel || session.Level > _maxLevel))
+        if (!session.IsGM && (session.Level < minLevel || session.Level > maxLevel))
         {
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                (byte)session.Nation, $"Your level ({session.Level}) does not meet the requirements for this Forgotten Temple ({_minLevel}-{_maxLevel})."));
+                (byte)session.Nation, $"Your level ({session.Level}) does not meet the requirements for this Forgotten Temple ({minLevel}-{maxLevel})."));
             return;
         }
 
@@ -177,15 +177,15 @@ public sealed class ForgottenTempleService(
             return;
 
         bool victory = false;
-        lock (_stateLock)
+        lock (stateLock)
         {
-            if (_lastWaveSpawned && !_finalBossKilled)
+            if (lastWaveSpawned && !finalBossKilled)
             {
-                _lastWaveMonsterIds.Remove(npc.UniqueId);
-                if (_lastWaveMonsterIds.Count == 0)
+                lastWaveMonsterIds.Remove(npc.UniqueId);
+                if (lastWaveMonsterIds.Count == 0)
                 {
-                    _finalBossKilled = true;
-                    _finishedAtUtc = DateTime.UtcNow;
+                    finalBossKilled = true;
+                    finishedAtUtc = DateTime.UtcNow;
                     victory = true;
                 }
             }
@@ -207,44 +207,44 @@ public sealed class ForgottenTempleService(
         bool victoryElapsed = false;
         int nextWaveToSpawn = 0;
 
-        lock (_stateLock)
+        lock (stateLock)
         {
-            if (_remainingSeconds > 0)
+            if (remainingSeconds > 0)
             {
-                _remainingSeconds--;
-                if (_remainingSeconds == 0)
+                remainingSeconds--;
+                if (remainingSeconds == 0)
                     timeExpired = true;
             }
 
-            var elapsed = _totalDurationSeconds - _remainingSeconds;
+            var elapsed = totalDurationSeconds - remainingSeconds;
 
             var waves = gameDataService.ForgottenTempleWaves
-                .Where(w => w.Tier == (byte)_currentTier)
+                .Where(w => w.Tier == (byte)currentTier)
                 .OrderBy(w => w.Wave)
                 .ToList();
 
             var firstWave = waves.FirstOrDefault();
             int preWaveNoticeAt = firstWave != null ? Math.Max(0, firstWave.StartSecond - PreWaveNoticeSeconds) : 0;
 
-            if (elapsed >= preWaveNoticeAt && !_preWaveNoticeSent)
+            if (elapsed >= preWaveNoticeAt && !preWaveNoticeSent)
             {
-                _preWaveNoticeSent = true;
+                preWaveNoticeSent = true;
                 _ = BroadcastZoneNoticeAsync($"### [Forgotten Temple] Warning: The dark seal is shattering! Monsters will emerge in {PreWaveNoticeSeconds} seconds! ###");
             }
 
-            var nextWave = waves.FirstOrDefault(w => w.Wave > _currentWave && elapsed >= w.StartSecond);
+            var nextWave = waves.FirstOrDefault(w => w.Wave > currentWave && elapsed >= w.StartSecond);
             if (nextWave != null)
             {
-                _currentWave = nextWave.Wave;
+                currentWave = nextWave.Wave;
                 nextWaveToSpawn = nextWave.Wave;
             }
 
-            if (_finalBossKilled && _finishedAtUtc.HasValue)
+            if (finalBossKilled && finishedAtUtc.HasValue)
             {
-                var victoryTime = (DateTime.UtcNow - _finishedAtUtc.Value).TotalSeconds;
-                if (!_returnNoticeSent && victoryTime >= (VictoryDelaySeconds - 10))
+                var victoryTime = (DateTime.UtcNow - finishedAtUtc.Value).TotalSeconds;
+                if (!returnNoticeSent && victoryTime >= (VictoryDelaySeconds - 10))
                 {
-                    _returnNoticeSent = true;
+                    returnNoticeSent = true;
                     _ = BroadcastZoneNoticeAsync("### [Forgotten Temple] Returning to Moradon in 10 seconds... ###");
                 }
 
@@ -272,14 +272,14 @@ public sealed class ForgottenTempleService(
     private async Task SpawnWaveAsync(int waveNumber)
     {
         var waves = gameDataService.ForgottenTempleWaves
-            .Where(w => w.Tier == (byte)_currentTier && w.Wave == waveNumber)
+            .Where(w => w.Tier == (byte)currentTier && w.Wave == waveNumber)
             .ToList();
 
         if (waves.Count == 0)
             return;
 
         var allTierWaves = gameDataService.ForgottenTempleWaves
-            .Where(w => w.Tier == (byte)_currentTier)
+            .Where(w => w.Tier == (byte)currentTier)
             .ToList();
         int maxWave = allTierWaves.Count > 0 ? allTierWaves.Max(w => w.Wave) : 0;
         bool isFinalWave = waveNumber == maxWave;
@@ -315,30 +315,30 @@ public sealed class ForgottenTempleService(
 
         if (isFinalWave)
         {
-            lock (_stateLock)
+            lock (stateLock)
             {
-                _lastWaveSpawned = true;
+                lastWaveSpawned = true;
                 foreach (var id in spawnedIds)
                 {
-                    _lastWaveMonsterIds.Add(id);
+                    lastWaveMonsterIds.Add(id);
                 }
             }
         }
 
         await BroadcastZoneNoticeAsync($"### [Forgotten Temple] Wave {waveNumber}: Monsters emerge from the darkness! ###");
-        logger.LogInformation("Forgotten Temple wave {Wave} spawned for Tier {Tier}", waveNumber, _currentTier);
+        logger.LogInformation("Forgotten Temple wave {Wave} spawned for Tier {Tier}", waveNumber, currentTier);
     }
 
     public async Task<bool> ForceSpawnWaveAsync(int waveNumber)
     {
         if (!IsActive) return false;
         var waveDef = gameDataService.ForgottenTempleWaves
-            .FirstOrDefault(w => w.Tier == (byte)_currentTier && w.Wave == waveNumber);
+            .FirstOrDefault(w => w.Tier == (byte)currentTier && w.Wave == waveNumber);
         if (waveDef == null) return false;
 
-        lock (_stateLock)
+        lock (stateLock)
         {
-            _currentWave = waveNumber;
+            currentWave = waveNumber;
         }
 
         await SpawnWaveAsync(waveNumber);

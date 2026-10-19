@@ -27,10 +27,10 @@ public partial class PriceChart : Control
 
     private enum Part { None, Bar, Max, Min }
 
-    private IReadOnlyList<MarketPriceDay> _days = Array.Empty<MarketPriceDay>();
-    private long _top = 10, _bottom;
-    private int _hoverDay = -1;
-    private Part _hoverPart;
+    private IReadOnlyList<MarketPriceDay> days = Array.Empty<MarketPriceDay>();
+    private long top = 10, bottom;
+    private int hoverDay = -1;
+    private Part hoverPart;
 
     public Func<int, string> DayLabel { get; set; } = index => $"{index + 1}";
     public Func<string, long, string> ValueTip { get; set; } = (label, value) => $"{label} {value:n0}";
@@ -48,15 +48,15 @@ public partial class PriceChart : Control
 
     public void ShowDays(IReadOnlyList<MarketPriceDay> days)
     {
-        _days = days;
-        (_top, _bottom) = MarketPrice.Scale(days);
+        this.days = days;
+        (top, bottom) = MarketPrice.Scale(days);
         HasData = true;
         QueueRedraw();
     }
 
     public void Clear()
     {
-        _days = Array.Empty<MarketPriceDay>();
+        days = Array.Empty<MarketPriceDay>();
         HasData = false;
         TooltipText = "";
         QueueRedraw();
@@ -75,8 +75,8 @@ public partial class PriceChart : Control
     private float ValueY(long value)
     {
         var plot = Plot;
-        long range = Math.Max(1, _top - _bottom);
-        float share = Mathf.Clamp((float)(value - _bottom) / range, 0f, 1f);
+        long range = Math.Max(1, top - bottom);
+        float share = Mathf.Clamp((float)(value - bottom) / range, 0f, 1f);
         return plot.End.Y - share * plot.Size.Y;
     }
 
@@ -93,9 +93,9 @@ public partial class PriceChart : Control
 
         if (HasData)
         {
-            DrawAxis(font, _top, plot.Position.Y);
-            DrawAxis(font, (_top + _bottom) / 2, mid);
-            DrawAxis(font, _bottom, plot.End.Y);
+            DrawAxis(font, top, plot.Position.Y);
+            DrawAxis(font, (top + bottom) / 2, mid);
+            DrawAxis(font, bottom, plot.End.Y);
         }
 
         for (int i = 0; i < MarketPrice.DaysShown; i++)
@@ -103,18 +103,18 @@ public partial class PriceChart : Control
             float x = Column(i);
             DrawString(font, new Vector2(x - 60f, Size.Y - PlotPadding - 4f), DayLabel(i), HorizontalAlignment.Center, 120f,
                 DayFontSize, UiTheme.TextLo);
-            if (!HasData || i >= _days.Count) continue;
+            if (!HasData || i >= days.Count) continue;
 
-            var day = _days[i];
+            var day = days[i];
             if (day.HasTrades)
             {
                 float y = ValueY(day.Average);
                 var bar = new Rect2(x - BarWidth / 2f, y, BarWidth, Math.Max(1f, plot.End.Y - y));
-                DrawRect(bar, _hoverDay == i && _hoverPart == Part.Bar ? BarHover : BarFill);
+                DrawRect(bar, hoverDay == i && hoverPart == Part.Bar ? BarHover : BarFill);
                 DrawRect(bar, BarEdge, filled: false, width: 1f);
             }
-            if (day.Max > 0) DrawMarker(x, ValueY(day.Max), MaxColor, pointsDown: true, _hoverDay == i && _hoverPart == Part.Max);
-            if (day.Min > 0) DrawMarker(x, ValueY(day.Min), MinColor, pointsDown: false, _hoverDay == i && _hoverPart == Part.Min);
+            if (day.Max > 0) DrawMarker(x, ValueY(day.Max), MaxColor, pointsDown: true, hoverDay == i && hoverPart == Part.Max);
+            if (day.Min > 0) DrawMarker(x, ValueY(day.Min), MinColor, pointsDown: false, hoverDay == i && hoverPart == Part.Min);
         }
     }
 
@@ -137,18 +137,18 @@ public partial class PriceChart : Control
     {
         if (@event is not InputEventMouseMotion motion) return;
         var (day, part) = HitTest(motion.Position);
-        if (day == _hoverDay && part == _hoverPart) return;
-        _hoverDay = day;
-        _hoverPart = part;
+        if (day == hoverDay && part == hoverPart) return;
+        hoverDay = day;
+        hoverPart = part;
         TooltipText = TipFor(day, part);
         QueueRedraw();
     }
 
     public override void _Notification(int what)
     {
-        if (what != NotificationMouseExit || _hoverDay < 0) return;
-        _hoverDay = -1;
-        _hoverPart = Part.None;
+        if (what != NotificationMouseExit || hoverDay < 0) return;
+        hoverDay = -1;
+        hoverPart = Part.None;
         TooltipText = "";
         QueueRedraw();
     }
@@ -156,11 +156,11 @@ public partial class PriceChart : Control
     private (int Day, Part Part) HitTest(Vector2 at)
     {
         if (!HasData) return (-1, Part.None);
-        for (int i = 0; i < _days.Count && i < MarketPrice.DaysShown; i++)
+        for (int i = 0; i < days.Count && i < MarketPrice.DaysShown; i++)
         {
             float x = Column(i);
             if (Math.Abs(at.X - x) > MarkerHalf + 6f) continue;
-            var day = _days[i];
+            var day = days[i];
             if (day.Max > 0 && Math.Abs(at.Y - ValueY(day.Max)) <= MarkerHeight + 2f) return (i, Part.Max);
             if (day.Min > 0 && Math.Abs(at.Y - ValueY(day.Min)) <= MarkerHeight + 2f) return (i, Part.Min);
             if (day.HasTrades && at.Y >= ValueY(day.Average) && at.Y <= Plot.End.Y) return (i, Part.Bar);
@@ -171,7 +171,7 @@ public partial class PriceChart : Control
     private string TipFor(int index, Part part)
     {
         if (index < 0) return "";
-        var day = _days[index];
+        var day = days[index];
         return part switch
         {
             Part.Bar => ValueTip(AverageLabel, day.Average),

@@ -13,23 +13,23 @@ public sealed class MasteryPoints
     public const int MasterTreeMinLevel = 60;
     public const int MasterTreeMaxPoints = 23;
 
-    private readonly byte[] _slots = new byte[SlotCount];
+    private readonly byte[] slots = new byte[SlotCount];
 
-    public int Pool => _slots[PoolSlot];
+    public int Pool => slots[PoolSlot];
 
     public int PointsForLevel
     {
         get
         {
             int total = 0;
-            foreach (byte v in _slots) total += v;
+            foreach (byte v in slots) total += v;
             return total;
         }
     }
 
     public static bool IsTree(int tree) => tree is >= FirstTree and <= LastTree;
 
-    public int InTree(int tree) => IsTree(tree) ? _slots[tree] : 0;
+    public int InTree(int tree) => IsTree(tree) ? slots[tree] : 0;
 
     public static bool ClassHasTree(int classCode, int tree)
     {
@@ -51,36 +51,36 @@ public sealed class MasteryPoints
     public bool CanSpend(int classCode, int tree, int level) =>
         Pool > 0 && InTree(tree) < CapInTree(classCode, tree, level);
 
-    public byte[] ToArray() => (byte[])_slots.Clone();
+    public byte[] ToArray() => (byte[])slots.Clone();
 
     public void Seed(byte[]? slots)
     {
-        Array.Clear(_slots);
+        Array.Clear(this.slots);
         if (slots == null) return;
-        Array.Copy(slots, _slots, Math.Min(slots.Length, SlotCount));
+        Array.Copy(slots, this.slots, Math.Min(slots.Length, SlotCount));
     }
 
-    public void SetPool(int pool) => _slots[PoolSlot] = Clamp(pool);
+    public void SetPool(int pool) => slots[PoolSlot] = Clamp(pool);
 
     public bool Spend(int tree)
     {
-        if (!IsTree(tree) || Pool < 1 || _slots[tree] == byte.MaxValue) return false;
-        _slots[PoolSlot]--;
-        _slots[tree]++;
+        if (!IsTree(tree) || Pool < 1 || slots[tree] == byte.MaxValue) return false;
+        slots[PoolSlot]--;
+        slots[tree]++;
         return true;
     }
 
     public void ApplyRejection(int tree, int serverValue)
     {
         if (!IsTree(tree)) return;
-        _slots[tree] = Clamp(serverValue);
-        if (_slots[PoolSlot] < byte.MaxValue) _slots[PoolSlot]++;
+        slots[tree] = Clamp(serverValue);
+        if (slots[PoolSlot] < byte.MaxValue) slots[PoolSlot]++;
     }
 
     public void ResetTrees(int pool)
     {
         SetPool(pool);
-        for (int tree = FirstTree; tree <= LastTree; tree++) _slots[tree] = 0;
+        for (int tree = FirstTree; tree <= LastTree; tree++) slots[tree] = 0;
     }
 
     public void ApplyTrees(int[] trees, int pool)
@@ -89,7 +89,7 @@ public sealed class MasteryPoints
         for (int tree = FirstTree; tree <= LastTree; tree++)
         {
             int index = tree - FirstTree;
-            _slots[tree] = index < trees.Length ? Clamp(trees[index]) : (byte)0;
+            slots[tree] = index < trees.Length ? Clamp(trees[index]) : (byte)0;
         }
     }
 

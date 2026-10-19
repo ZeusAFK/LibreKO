@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -17,8 +18,8 @@ public class SeekingPartyTests
     {
         static string Text(int id, string fallback) => fallback;
 
-        Assert.Equal("Seeking Party : Level 26 ~ 60", SeekingParty.Line(SeekingParty.SeekingBand, 40, Text));
-        Assert.Equal("Seeking_Party", SeekingParty.Line(SeekingParty.Seeking, 40, Text));
-        Assert.Null(SeekingParty.Line(SeekingParty.NotSeeking, 40, Text));
+        Assert.Equal("Seeking Party : Level 26 ~ 60", SeekingParty.Line(SeekingPartyState.SeekingBand, 40, Text));
+        Assert.Equal("Seeking_Party", SeekingParty.Line(SeekingPartyState.Seeking, 40, Text));
+        Assert.Null(SeekingParty.Line(SeekingPartyState.NotSeeking, 40, Text));
     }
 }

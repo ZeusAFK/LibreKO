@@ -14,22 +14,21 @@ public partial class Terrain : Node3D
     private static readonly Color LowColor = new(0.36f, 0.50f, 0.30f);
     private static readonly Color HighColor = new(0.62f, 0.60f, 0.55f);
 
-    private readonly List<MeshInstance3D> _chunks = new();
-    private KoHeightmap? _hm;
-    private KoGroundTex? _groundTex;
-    private Texture2DArray? _tileArray;
+    private readonly List<MeshInstance3D> chunks = new();
+    private Heightmap? heightmap;
+    private GroundTextures? groundTex;
+    private Texture2DArray? tileArray;
 
-    public bool HasTerrain => _hm != null;
-    public bool HasTileSurface => _groundTex != null;
+    public bool HasTileSurface => groundTex != null;
 
     public string ZoneStem { get; private set; } = "";
 
-    public float WorldExtent => _hm != null ? _hm.WorldExtent : 0f;
+    public float WorldExtent => heightmap != null ? heightmap.WorldExtent : 0f;
 
     public Vector3 MapCenterGodot()
     {
-        if (_hm == null) return Vector3.Zero;
-        float c = (_hm.MapSize - 1) * _hm.CellSize * 0.5f;
+        if (heightmap == null) return Vector3.Zero;
+        float c = (heightmap.MapSize - 1) * heightmap.CellSize * 0.5f;
         return Coord.ToGodot(c, 0, c);
     }
 
@@ -45,13 +44,13 @@ public partial class Terrain : Node3D
         Transform = new Transform3D(basis, pivot - basis * pivot);
     }
 
-    public Vector3 KoToWorld(float koX, float koY, float koZ)
-        => Transform * Coord.ToGodot(koX, koY, koZ);
+    public Vector3 MapToWorld(float mapX, float mapY, float mapZ)
+        => Transform * Coord.ToGodot(mapX, mapY, mapZ);
 
-    public (float x, float z) WorldToKo(Vector3 world)
+    public (float x, float z) WorldToMap(Vector3 world)
     {
         var local = Transform.AffineInverse() * world;
-        return Coord.ToKo(local.X, local.Z);
+        return Coord.ToMap(local.X, local.Z);
     }
 
     public bool Build(int zoneId)
@@ -63,22 +62,22 @@ public partial class Terrain : Node3D
     public bool BuildStem(string stem)
     {
         ZoneStem = stem;
-        _hm = KoHeightmap.LoadPng(stem);
-        if (_hm == null || _hm.MapSize < 2)
+        heightmap = Heightmap.LoadPng(stem);
+        if (heightmap == null || heightmap.MapSize < 2)
             return false;
 
-        _groundTex = KoGroundTex.LoadPng(stem);
-        if (_groundTex != null && _groundTex.MapSize != _hm.MapSize)
+        groundTex = GroundTextures.LoadPng(stem);
+        if (groundTex != null && groundTex.MapSize != heightmap.MapSize)
         {
-            GD.PrintErr($"[terrain] {stem} splat mapSize {_groundTex.MapSize} != hmap {_hm.MapSize}; ignoring tiles");
-            _groundTex = null;
+            GD.PrintErr($"[terrain] {stem} splat mapSize {groundTex.MapSize} != hmap {heightmap.MapSize}; ignoring tiles");
+            groundTex = null;
         }
-        _tileArray = null;
+        tileArray = null;
 
-        Material material = _groundTex != null ? MakeTileMaterial(_groundTex) : MakeMaterial();
-        _groundMat = material;
+        Material material = groundTex != null ? MakeTileMaterial(groundTex) : MakeMaterial();
+        groundMat = material;
         Active = this;
-        int n = _hm.MapSize;
+        int n = heightmap.MapSize;
         int chunksPerSide = (n - 1 + ChunkCells - 1) / ChunkCells;
         for (int cz = 0; cz < chunksPerSide; cz++)
             for (int cx = 0; cx < chunksPerSide; cx++)
@@ -86,7 +85,7 @@ public partial class Terrain : Node3D
 
         SetDebugOrientation(DefaultRot, DefaultMirX, DefaultMirZ);
 
-        int tileCount = _groundTex?.TileCount ?? 0;
+        int tileCount = groundTex?.TileCount ?? 0;
         GD.Print($"[terrain] {stem}: {(tileCount > 0 ? $"{tileCount} tile layers" : "height-tint fallback")}");
         return true;
     }
@@ -94,23 +93,23 @@ public partial class Terrain : Node3D
     public bool SampleHeight(float worldX, float worldZ, out float y)
     {
         y = 0f;
-        if (_hm == null) return false;
+        if (heightmap == null) return false;
 
-        float cell = _hm.CellSize;
+        float cell = heightmap.CellSize;
         float gx = worldX / cell;
         float gz = worldZ / cell;
         int x0 = Mathf.FloorToInt(gx);
         int z0 = Mathf.FloorToInt(gz);
-        int n = _hm.MapSize;
+        int n = heightmap.MapSize;
         if (x0 < 0 || z0 < 0 || x0 >= n - 1 || z0 >= n - 1)
             return false;
 
         float fx = gx - x0;
         float fz = gz - z0;
-        float h00 = _hm.HeightAt(x0, z0);
-        float h10 = _hm.HeightAt(x0 + 1, z0);
-        float h01 = _hm.HeightAt(x0, z0 + 1);
-        float h11 = _hm.HeightAt(x0 + 1, z0 + 1);
+        float h00 = heightmap.HeightAt(x0, z0);
+        float h10 = heightmap.HeightAt(x0 + 1, z0);
+        float h01 = heightmap.HeightAt(x0, z0 + 1);
+        float h11 = heightmap.HeightAt(x0 + 1, z0 + 1);
         float a = Mathf.Lerp(h00, h10, fx);
         float b = Mathf.Lerp(h01, h11, fx);
         y = Mathf.Lerp(a, b, fz);
@@ -119,7 +118,7 @@ public partial class Terrain : Node3D
 
     private void AddChunk(int cx, int cz, Material material)
     {
-        int n = _hm!.MapSize;
+        int n = heightmap!.MapSize;
         int x0 = cx * ChunkCells;
         int z0 = cz * ChunkCells;
         int x1 = Mathf.Min(x0 + ChunkCells, n - 1);
@@ -127,7 +126,7 @@ public partial class Terrain : Node3D
         if (x1 <= x0 || z1 <= z0)
             return;
 
-        float cell = _hm.CellSize;
+        float cell = heightmap.CellSize;
 
         var chunkOrigin = Coord.ToGodot(x0 * cell, 0, z0 * cell);
 
@@ -163,59 +162,59 @@ public partial class Terrain : Node3D
             VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Self,
         };
         AddChild(mi);
-        _chunks.Add(mi);
+        chunks.Add(mi);
     }
 
     public void SetDistanceCull(bool enabled)
     {
-        foreach (var c in _chunks)
+        foreach (var c in chunks)
             c.VisibilityRangeEnd = enabled ? RenderDistance : 0f;
     }
 
     public void ApplyViewDistance()
     {
         RenderDistance = RenderDistanceFull * Config.ViewDistance;
-        foreach (var c in _chunks)
+        foreach (var c in chunks)
             if (c.VisibilityRangeEnd > 0f) c.VisibilityRangeEnd = RenderDistance;
     }
 
     private void EmitVertex(SurfaceTool st, int x, int z, int cellX, int cellZ, Vector3 chunkOrigin, float cell)
     {
-        float h = _hm!.HeightAt(x, z);
+        float h = heightmap!.HeightAt(x, z);
         if (HasTileSurface)
         {
-            int ci = KoCornerIndex(x - cellX, z - cellZ);
-            int d1 = _groundTex!.Dir1At(cellX, cellZ);
-            int d2 = _groundTex.Dir2At(cellX, cellZ);
-            st.SetUV(new Vector2(KoGroundTex.TileDirU[d1, ci], KoGroundTex.TileDirV[d1, ci]));
-            st.SetUV2(new Vector2(KoGroundTex.TileDirU[d2, ci], KoGroundTex.TileDirV[d2, ci]));
-            int l1 = _groundTex.LayerAt(cellX, cellZ);
-            int l2 = _groundTex.Layer2At(cellX, cellZ);
-            bool has2 = l2 != KoGroundTex.NoTile;
-            st.SetCustom(0, new Color(l1 == KoGroundTex.NoTile ? 0 : l1,
+            int ci = MapCornerIndex(x - cellX, z - cellZ);
+            int d1 = groundTex!.Dir1At(cellX, cellZ);
+            int d2 = groundTex.Dir2At(cellX, cellZ);
+            st.SetUV(new Vector2(GroundTextures.TileDirU[d1, ci], GroundTextures.TileDirV[d1, ci]));
+            st.SetUV2(new Vector2(GroundTextures.TileDirU[d2, ci], GroundTextures.TileDirV[d2, ci]));
+            int l1 = groundTex.LayerAt(cellX, cellZ);
+            int l2 = groundTex.Layer2At(cellX, cellZ);
+            bool has2 = l2 != GroundTextures.NoTile;
+            st.SetCustom(0, new Color(l1 == GroundTextures.NoTile ? 0 : l1,
                                       has2 ? l2 : 0, has2 ? 1f : 0f, 0f));
         }
         else
         {
             st.SetUV(new Vector2(x - cellX, z - cellZ));
         }
-        float span = _hm.MaxHeight - _hm.MinHeight;
-        float t = span > 0f ? Mathf.Clamp((h - _hm.MinHeight) / span, 0f, 1f) : 0f;
+        float span = heightmap.MaxHeight - heightmap.MinHeight;
+        float t = span > 0f ? Mathf.Clamp((h - heightmap.MinHeight) / span, 0f, 1f) : 0f;
         st.SetColor(LowColor.Lerp(HighColor, t));
         st.SetNormal(GridNormal(x, z, cell));
         st.AddVertex(Coord.ToGodot(x * cell, h, z * cell) - chunkOrigin);
     }
 
-    private static int KoCornerIndex(int dx, int dz)
+    private static int MapCornerIndex(int dx, int dz)
         => (dx, dz) switch { (0, 0) => 2, (0, 1) => 0, (1, 1) => 1, _ => 3 };
 
     private Vector3 GridNormal(int x, int z, float cell)
     {
-        int n = _hm!.MapSize;
+        int n = heightmap!.MapSize;
         int xm = Mathf.Max(x - 1, 0), xp = Mathf.Min(x + 1, n - 1);
         int zm = Mathf.Max(z - 1, 0), zp = Mathf.Min(z + 1, n - 1);
-        float dhdx = (_hm.HeightAt(xp, z) - _hm.HeightAt(xm, z)) / ((xp - xm) * cell);
-        float dhdz = (_hm.HeightAt(x, zp) - _hm.HeightAt(x, zm)) / ((zp - zm) * cell);
+        float dhdx = (heightmap.HeightAt(xp, z) - heightmap.HeightAt(xm, z)) / ((xp - xm) * cell);
+        float dhdz = (heightmap.HeightAt(x, zp) - heightmap.HeightAt(x, zm)) / ((zp - zm) * cell);
         return Coord.DirToGodot(-dhdx, 1f, -dhdz).Normalized();
     }
 
@@ -231,25 +230,25 @@ public partial class Terrain : Node3D
 
     
 
-    private ShaderMaterial MakeTileMaterial(KoGroundTex tex)
+    private ShaderMaterial MakeTileMaterial(GroundTextures tex)
     {
-        _tileArray = tex.BuildTextureArray();
+        tileArray = tex.BuildTextureArray();
         var mat = Shaders.Material("terrain_tile");
-        mat.SetShaderParameter("tiles", _tileArray);
-        mat.SetShaderParameter("cell_size", _hm!.CellSize);
+        mat.SetShaderParameter("tiles", tileArray);
+        mat.SetShaderParameter("cell_size", heightmap!.CellSize);
         return mat;
     }
 
     public static Terrain? Active { get; private set; }
 
-    private Material? _groundMat;
+    private Material? groundMat;
 
     public override void _ExitTree()
     {
         if (Active == this) Active = null;
-        _tileArray = null;
-        foreach (var c in _chunks)
+        tileArray = null;
+        foreach (var c in chunks)
             c.QueueFree();
-        _chunks.Clear();
+        chunks.Clear();
     }
 }

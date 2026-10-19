@@ -1,6 +1,4 @@
-﻿using LibreKO.Domain;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public readonly record struct HatchedPet(int ItemId, int BagSlot, PetItemInfo Info);
 
@@ -50,6 +48,8 @@ public readonly record struct PetIncubationRequest(bool Transform, int ItemId, i
 
 public static class PetWire
 {
+    public const int FamiliarSummonSkill = 500117;
+
     public const int ItemRecordBytes = 19;
     public const byte HatchRefused = 0;
     public const byte HatchSucceeded = 1;
@@ -218,4 +218,36 @@ public static class PetWire
         transformed = new TransformedPet(pet, materialItemId, materialSlot);
         return true;
     }
+}
+
+public enum PetSubOpcode : byte
+{
+    ModeFunction = 1,
+    UseSkill = 2,
+}
+
+public enum PetFunction : byte
+{
+    Mode = 5,
+    Hp = 7,
+    TargetHp = 8,
+    Exp = 10,
+    LevelUp = 11,
+    Mp = 13,
+    Satisfaction = 15,
+    Food = 16,
+}
+
+public enum PetModeResult : short
+{
+    Succeeded = 1,
+}
+
+public enum PetMode : byte
+{
+    Summoned = 1,
+    Died = 2,
+    Attack = 3,
+    Defence = 4,
+    Looting = 8,
 }

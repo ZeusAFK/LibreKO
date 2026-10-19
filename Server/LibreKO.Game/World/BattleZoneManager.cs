@@ -108,7 +108,7 @@ public class BattleZoneManager
     public short ElmoradCount { get; set; }
 
     // PVP monument ownership per zone: zoneId -> nation (1=Karus, 2=Elmo)
-    private readonly Dictionary<byte, byte> _pvpMonumentNation = [];
+    private readonly Dictionary<byte, byte> pvpMonumentNation = [];
 
     public bool OpenBattleZone(byte type, byte zone)
     {
@@ -266,8 +266,8 @@ public class BattleZoneManager
         => BattleOpenedTime.HasValue ? DateTime.UtcNow - BattleOpenedTime.Value : TimeSpan.Zero;
 
     public byte GetPvpMonumentNation(byte zoneId)
-        => _pvpMonumentNation.TryGetValue(zoneId, out var nation) ? nation : (byte)0;
+        => pvpMonumentNation.TryGetValue(zoneId, out var nation) ? nation : (byte)0;
 
     public void SetPvpMonumentNation(byte zoneId, byte nation)
-        => _pvpMonumentNation[zoneId] = nation;
+        => pvpMonumentNation[zoneId] = nation;
 }

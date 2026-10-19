@@ -66,46 +66,46 @@ public sealed class UnderTheCastleService(
         new(803f, 839f, 110f, [PlwitoonsTearItemId, HornOfPluwitonItemId, TwinklingStarGlitterItemId]),
     ];
 
-    private readonly object _stateLock = new();
-    private bool _isActive;
-    private long _remainingSeconds;
-    private int _currentStage = 1;
-    private bool _finalBossKilled;
-    private DateTime? _finishedAtUtc;
-    private bool _returnNoticeSent;
+    private readonly object stateLock = new();
+    private bool isActive;
+    private long remainingSeconds;
+    private int currentStage = 1;
+    private bool finalBossKilled;
+    private DateTime? finishedAtUtc;
+    private bool returnNoticeSent;
 
     public bool IsActive
     {
-        get { lock (_stateLock) return _isActive; }
+        get { lock (stateLock) return isActive; }
     }
 
     public long RemainingSeconds
     {
-        get { lock (_stateLock) return _remainingSeconds; }
+        get { lock (stateLock) return remainingSeconds; }
     }
 
     public int CurrentStage
     {
-        get { lock (_stateLock) return _currentStage; }
+        get { lock (stateLock) return currentStage; }
     }
 
     public void Start(int? durationMinutes = null)
     {
-        lock (_stateLock)
+        lock (stateLock)
         {
-            if (_isActive)
+            if (isActive)
             {
                 logger.LogWarning("Under the Castle start requested but event is already active");
                 return;
             }
 
             var minutes = durationMinutes ?? (TempleEventRules.UnderTheCastleDurationSeconds / 60);
-            _remainingSeconds = minutes * 60;
-            _isActive = true;
-            _currentStage = 1;
-            _finalBossKilled = false;
-            _finishedAtUtc = null;
-            _returnNoticeSent = false;
+            remainingSeconds = minutes * 60;
+            isActive = true;
+            currentStage = 1;
+            finalBossKilled = false;
+            finishedAtUtc = null;
+            returnNoticeSent = false;
 
             logger.LogInformation("Under the Castle event started for {Minutes} minutes", minutes);
         }
@@ -117,12 +117,12 @@ public sealed class UnderTheCastleService(
     public async Task CloseAsync()
     {
         bool wasActive;
-        lock (_stateLock)
+        lock (stateLock)
         {
-            wasActive = _isActive;
-            _isActive = false;
-            _remainingSeconds = 0;
-            _finishedAtUtc = null;
+            wasActive = isActive;
+            isActive = false;
+            remainingSeconds = 0;
+            finishedAtUtc = null;
         }
 
         if (!wasActive)
@@ -164,34 +164,34 @@ public sealed class UnderTheCastleService(
         string? noticeMessage = null;
         bool victory = false;
 
-        lock (_stateLock)
+        lock (stateLock)
         {
-            if (_finalBossKilled)
+            if (finalBossKilled)
                 return;
 
-            if (npc.NpcId == EmperorMammothNpcId && _currentStage == 1)
+            if (npc.NpcId == EmperorMammothNpcId && currentStage == 1)
             {
-                _currentStage = 2;
+                currentStage = 2;
                 stageToUnlock = 1;
                 noticeMessage = $"### [Under The Castle] {npc.Name} defeated! Gate 1 is now OPEN! ###";
             }
-            else if (npc.NpcId == CrasherGimmickNpcId && _currentStage == 2)
+            else if (npc.NpcId == CrasherGimmickNpcId && currentStage == 2)
             {
-                _currentStage = 3;
+                currentStage = 3;
                 stageToUnlock = 2;
                 noticeMessage = $"### [Under The Castle] {npc.Name} defeated! Gate 2 is now OPEN! ###";
             }
-            else if ((npc.NpcId == ShackledLordFluwitonNpcId || npc.NpcId == ShackledLordFluwitonAltNpcId) && _currentStage == 3)
+            else if ((npc.NpcId == ShackledLordFluwitonNpcId || npc.NpcId == ShackledLordFluwitonAltNpcId) && currentStage == 3)
             {
-                _currentStage = 4;
+                currentStage = 4;
                 stageToUnlock = 3;
                 noticeMessage = $"### [Under The Castle] {npc.Name} defeated! Final Chamber Gate is now OPEN! ###";
             }
-            else if (npc.NpcId == PluwitonFinalBossNpcId && _currentStage == 4)
+            else if (npc.NpcId == PluwitonFinalBossNpcId && currentStage == 4)
             {
-                _currentStage = 5;
-                _finalBossKilled = true;
-                _finishedAtUtc = DateTime.UtcNow;
+                currentStage = 5;
+                finalBossKilled = true;
+                finishedAtUtc = DateTime.UtcNow;
                 victory = true;
                 noticeMessage = $"### [Under The Castle] {npc.Name} has been slain! Under The Castle has been conquered! Victory! ###";
             }
@@ -223,21 +223,21 @@ public sealed class UnderTheCastleService(
         bool timeExpired = false;
         bool victoryElapsed = false;
 
-        lock (_stateLock)
+        lock (stateLock)
         {
-            if (_remainingSeconds > 0)
+            if (remainingSeconds > 0)
             {
-                _remainingSeconds--;
-                if (_remainingSeconds == 0)
+                remainingSeconds--;
+                if (remainingSeconds == 0)
                     timeExpired = true;
             }
 
-            if (_finalBossKilled && _finishedAtUtc.HasValue)
+            if (finalBossKilled && finishedAtUtc.HasValue)
             {
-                var elapsed = (DateTime.UtcNow - _finishedAtUtc.Value).TotalSeconds;
-                if (!_returnNoticeSent && elapsed >= (VictoryDelaySeconds - 10))
+                var elapsed = (DateTime.UtcNow - finishedAtUtc.Value).TotalSeconds;
+                if (!returnNoticeSent && elapsed >= (VictoryDelaySeconds - 10))
                 {
-                    _returnNoticeSent = true;
+                    returnNoticeSent = true;
                     _ = BroadcastStageNoticeAsync("### [Under The Castle] Returning to Moradon in 10 seconds... ###");
                 }
 

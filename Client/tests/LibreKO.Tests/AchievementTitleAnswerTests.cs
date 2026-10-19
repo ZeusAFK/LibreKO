@@ -11,12 +11,12 @@ public class AchievementTitleAnswerTests
         var p = new Packet(GameOpcodes.GS_ACHIEVEMENT);
         p.WriteUShort(0);
         p.WriteUShort(42);
-        p.WriteShort(AchievementTitleAnswer.Done);
+        p.WriteShort((short)AchievementTitleResult.Done);
         p.ResetOffset();
 
-        var answer = AchievementTitleAnswer.Read(AchievementTitleAnswer.SelectCover, p);
+        var answer = AchievementTitleAnswer.Read(AchievementSubOpcode.SelectDisplayTitle, p);
 
-        Assert.Equal(new AchievementTitleAnswer(AchievementTitleAnswer.SelectCover, false, 42, AchievementTitleAnswer.Done, 0), answer);
+        Assert.Equal(new AchievementTitleAnswer(AchievementSubOpcode.SelectDisplayTitle, false, 42, AchievementTitleResult.Done, 0), answer);
     }
 
     [Fact]
@@ -25,28 +25,28 @@ public class AchievementTitleAnswerTests
         var select = new Packet(GameOpcodes.GS_ACHIEVEMENT);
         select.WriteUShort(0);
         select.WriteUShort(42);
-        select.WriteShort(AchievementTitleAnswer.SelectCooldown);
+        select.WriteShort((short)AchievementTitleResult.SelectCooldown);
         select.WriteUShort(30);
         select.ResetOffset();
         var reset = new Packet(GameOpcodes.GS_ACHIEVEMENT);
-        reset.WriteShort(AchievementTitleAnswer.ResetCooldown);
+        reset.WriteShort((short)AchievementTitleResult.ResetCooldown);
         reset.WriteUShort(12);
         reset.ResetOffset();
 
-        Assert.Equal(30, AchievementTitleAnswer.Read(AchievementTitleAnswer.SelectSkill, select)?.Seconds);
-        Assert.True(AchievementTitleAnswer.Read(AchievementTitleAnswer.ResetCover, reset)?.Cooldown);
+        Assert.Equal(30, AchievementTitleAnswer.Read(AchievementSubOpcode.SelectSkillTitle, select)?.Seconds);
+        Assert.True(AchievementTitleAnswer.Read(AchievementSubOpcode.ResetDisplayTitle, reset)?.Cooldown);
     }
 
     [Fact]
     public void AResetAnswerIsOnlyTheResult()
     {
         var p = new Packet(GameOpcodes.GS_ACHIEVEMENT);
-        p.WriteShort(AchievementTitleAnswer.Done);
+        p.WriteShort((short)AchievementTitleResult.Done);
         p.ResetOffset();
 
-        var answer = AchievementTitleAnswer.Read(AchievementTitleAnswer.ResetCover, p);
+        var answer = AchievementTitleAnswer.Read(AchievementSubOpcode.ResetDisplayTitle, p);
 
         Assert.True(answer?.Reset);
-        Assert.Equal(AchievementTitleAnswer.Done, answer?.Result);
+        Assert.Equal(AchievementTitleResult.Done, answer?.Result);
     }
 }

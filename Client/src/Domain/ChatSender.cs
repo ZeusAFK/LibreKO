@@ -12,7 +12,7 @@ public static class ChatSender
 
     private static readonly int[] HeroZones = { 31, 46 };
 
-    public static int MaskText(int zone, bool selfIsGm, int selfNation, int selfId, byte type, int senderNation, int senderId)
+    public static int MaskText(int zone, bool selfIsGm, int selfNation, int selfId, ChatType type, int senderNation, int senderId)
     {
         if (ZoneLooks.IsPathosZone(zone)) return PathoistText;
         if (selfIsGm || type == ChatType.GameMaster) return 0;
@@ -28,6 +28,6 @@ public static class ChatSender
         return 0;
     }
 
-    public static string Flatten(byte type, string message) =>
+    public static string Flatten(ChatType type, string message) =>
         type == ChatType.Private ? message : message.Replace(LineBreak, FlattenedBreak);
 }

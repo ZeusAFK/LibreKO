@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -30,9 +31,9 @@ public class FullMoonTests
     [Fact]
     public void TheBoardRefusesAnotherPartyTypeOrAnotherOpenBoard()
     {
-        Assert.Equal(37306, FullMoon.OpenRefusal(true, 3, FullMoon.NormalBoard, FullMoon.NoBoard)?.Id);
-        Assert.Equal(37307, FullMoon.OpenRefusal(false, 0, FullMoon.NormalBoard, FullMoon.NormalBoard)?.Id);
-        Assert.Null(FullMoon.OpenRefusal(true, 3, FullMoon.FullMoonBoard, FullMoon.FullMoonBoard));
-        Assert.Null(FullMoon.OpenRefusal(false, 0, FullMoon.NormalBoard, FullMoon.NoBoard));
+        Assert.Equal(37306, FullMoon.OpenRefusal(true, 3, PartyBoardType.Normal, null)?.Id);
+        Assert.Equal(37307, FullMoon.OpenRefusal(false, 0, PartyBoardType.Normal, PartyBoardType.Normal)?.Id);
+        Assert.Null(FullMoon.OpenRefusal(true, 3, PartyBoardType.FullMoon, PartyBoardType.FullMoon));
+        Assert.Null(FullMoon.OpenRefusal(false, 0, PartyBoardType.Normal, null));
     }
 }

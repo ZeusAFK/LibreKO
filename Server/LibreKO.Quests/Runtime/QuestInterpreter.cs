@@ -13,63 +13,63 @@ public sealed class QuestInterpreter
     public const int MaxEventHops = 8;
     public const int MaxStatements = 4096;
 
-    private readonly QuestProgram _program;
-    private readonly IQuestHost _host;
-    private readonly int _chosenReward;
-    private readonly List<int> _chain = [];
-    private int _statements;
-    private int? _pendingJump;
-    private string? _failure;
-    private bool _buildingGreeting;
-    private int _viewQuest = -1;
-    private bool _viewShown;
+    private readonly QuestProgram program;
+    private readonly IQuestHost host;
+    private readonly int chosenReward;
+    private readonly List<int> chain = [];
+    private int statements;
+    private int? pendingJump;
+    private string? failure;
+    private bool buildingGreeting;
+    private int viewQuest = -1;
+    private bool viewShown;
 
     public QuestInterpreter(QuestProgram program, IQuestHost host, int chosenReward = -1)
     {
-        _program = program;
-        _host = host;
-        _chosenReward = chosenReward;
+        this.program = program;
+        this.host = host;
+        this.chosenReward = chosenReward;
     }
 
     public QuestExecutionResult Run(int eventId)
     {
-        _buildingGreeting = _program.TryGetGreeting(out var greeting) && greeting == eventId;
+        buildingGreeting = program.TryGetGreeting(out var greeting) && greeting == eventId;
         var current = eventId;
         var visited = new HashSet<int>();
 
         while (true)
         {
-            if (!_program.TryGetEvent(current, out var entry))
+            if (!program.TryGetEvent(current, out var entry))
             {
-                var handled = _chain.Count > 0;
+                var handled = chain.Count > 0;
                 if (!handled)
-                    _failure ??= $"event {current} is not handled by {_program.FileName}";
-                return new QuestExecutionResult(handled, _statements, _chain, _failure);
+                    failure ??= $"event {current} is not handled by {program.FileName}";
+                return new QuestExecutionResult(handled, statements, chain, failure);
             }
 
             if (!visited.Add(current))
             {
-                _failure = $"event {current} was entered twice in one interaction";
-                return new QuestExecutionResult(true, _statements, _chain, _failure);
+                failure = $"event {current} was entered twice in one interaction";
+                return new QuestExecutionResult(true, statements, chain, failure);
             }
 
-            _chain.Add(current);
-            if (_chain.Count > MaxEventHops)
+            chain.Add(current);
+            if (chain.Count > MaxEventHops)
             {
-                _failure = $"more than {MaxEventHops} event hops in one interaction";
-                return new QuestExecutionResult(true, _statements, _chain, _failure);
+                failure = $"more than {MaxEventHops} event hops in one interaction";
+                return new QuestExecutionResult(true, statements, chain, failure);
             }
 
-            if (_program.TryGetGreeting(out var greetingId) && current == greetingId)
-                _buildingGreeting = true;
-            _pendingJump = null;
+            if (program.TryGetGreeting(out var greetingId) && current == greetingId)
+                buildingGreeting = true;
+            pendingJump = null;
             Execute(entry.Body);
 
-            if (_failure is not null)
-                return new QuestExecutionResult(true, _statements, _chain, _failure);
+            if (failure is not null)
+                return new QuestExecutionResult(true, statements, chain, failure);
 
-            if (_pendingJump is not { } next)
-                return new QuestExecutionResult(true, _statements, _chain, null);
+            if (pendingJump is not { } next)
+                return new QuestExecutionResult(true, statements, chain, null);
 
             current = next;
         }
@@ -79,12 +79,12 @@ public sealed class QuestInterpreter
     {
         foreach (var statement in body)
         {
-            if (_pendingJump is not null || _failure is not null)
+            if (pendingJump is not null || failure is not null)
                 return;
 
-            if (++_statements > MaxStatements)
+            if (++statements > MaxStatements)
             {
-                _failure = $"more than {MaxStatements} statements in one interaction";
+                failure = $"more than {MaxStatements} statements in one interaction";
                 return;
             }
 
@@ -99,8 +99,8 @@ public sealed class QuestInterpreter
                     var transfers = new List<BoundStatement.Action>();
                     var onSuccess = new List<BoundStatement>();
                     var selected = Collect(reward.Body, transfers, onSuccess);
-                    _host.ApplyReward(selected ? transfers : []);
-                    if (selected && !_host.ActionFailed)
+                    host.ApplyReward(selected ? transfers : []);
+                    if (selected && !host.ActionFailed)
                         Execute(onSuccess);
                     else if (reward.ElseBody is not null)
                         Execute(reward.ElseBody);
@@ -113,11 +113,11 @@ public sealed class QuestInterpreter
                     break;
 
                 case BoundStatement.Say say:
-                    _host.Say(say.Lines);
+                    host.Say(say.Lines);
                     break;
 
                 case BoundStatement.Goto jump:
-                    _pendingJump = jump.TargetEvent;
+                    pendingJump = jump.TargetEvent;
                     return;
 
                 case BoundStatement.If node:
@@ -142,10 +142,10 @@ public sealed class QuestInterpreter
     {
         if (choice.QuestId <= 0 || !choice.Button.Label.HasText)
             return choice;
-        if (_host.QuestStatus(choice.QuestId) is not (1 or 3))
+        if (host.QuestStatus(choice.QuestId) is not (1 or 3))
             return choice;
-        var goals = _program.Objectives.FirstOrDefault(o => o.QuestId == choice.QuestId);
-        var rewards = _program.RewardsFor(choice.QuestId, _host.PlayerClassGroup, _host.PlayerNation, _host.PlayerRebirthLevel);
+        var goals = program.Objectives.FirstOrDefault(o => o.QuestId == choice.QuestId);
+        var rewards = program.RewardsFor(choice.QuestId, host.PlayerClassGroup, host.PlayerNation, host.PlayerRebirthLevel);
         var measurable = goals is { Groups.Count: > 0 } || rewards is not null;
         var ready = measurable && ObjectivesComplete(choice.QuestId)
                     && (rewards is null || CostsAvailable(rewards)) && !WaitsOnFulfilment(choice.QuestId);
@@ -155,15 +155,15 @@ public sealed class QuestInterpreter
 
     private bool ShowDialog(BoundStatement.Dialog dialog)
     {
-        var greeting = _buildingGreeting;
-        if (_buildingGreeting)
+        var greeting = buildingGreeting;
+        if (buildingGreeting)
         {
-            _buildingGreeting = false;
-            var menu = dialog.Choices.Count == 0 ? _program.GreetingTopics : _program.AutomaticTopics;
+            buildingGreeting = false;
+            var menu = dialog.Choices.Count == 0 ? program.GreetingTopics : program.AutomaticTopics;
             dialog = dialog with
             {
                 Choices = [.. menu.Select(TagWithProgress), .. dialog.Choices],
-                Fallback = dialog.Fallback ?? _program.GreetingFallback
+                Fallback = dialog.Fallback ?? program.GreetingFallback
             };
         }
         var offered = new List<DialogButton>();
@@ -186,38 +186,38 @@ public sealed class QuestInterpreter
         if (gated > 0 && qualified == 0 && dialog.Fallback is { } instead)
         {
             Execute(instead);
-            return _failure is null;
+            return failure is null;
         }
         if (greeting && !dialog.Header.HasText && offered.Count == 0)
             return true;
 
         if (offered.Count > Binding.QuestVocabulary.MaxDialogButtons)
         {
-            _failure = $"The dialog offers more than {Binding.QuestVocabulary.MaxDialogButtons} buttons.";
+            failure = $"The dialog offers more than {Binding.QuestVocabulary.MaxDialogButtons} buttons.";
             return false;
         }
 
-        var questId = _viewQuest > 0 ? _viewQuest : dialog.QuestId;
-        if (_program.Flows.Any(f => f.QuestId == questId))
+        var questId = viewQuest > 0 ? viewQuest : dialog.QuestId;
+        if (program.Flows.Any(f => f.QuestId == questId))
         {
-            _viewShown = true;
-            _host.ShowQuestView(BuildView(questId, dialog.Header, offered, dialog.Page));
+            viewShown = true;
+            host.ShowQuestView(BuildView(questId, dialog.Header, offered, dialog.Page));
         }
         else
-            _host.ShowDialog(dialog.Style, dialog.QuestId, dialog.Header, offered);
+            host.ShowDialog(dialog.Style, dialog.QuestId, dialog.Header, offered);
         return true;
     }
 
     private bool WaitsOnFulfilment(int questId) =>
-        _host.QuestStatus(questId) == 1
-        && (_program.TextFor(questId, _host.PlayerNation, _host.PlayerClassGroup)?.FulfilElsewhere ?? false);
+        host.QuestStatus(questId) == 1
+        && (program.TextFor(questId, host.PlayerNation, host.PlayerClassGroup)?.FulfilElsewhere ?? false);
 
     private bool ObjectivesComplete(int questId)
     {
-        var goals = _program.Objectives.FirstOrDefault(o => o.QuestId == questId);
+        var goals = program.Objectives.FirstOrDefault(o => o.QuestId == questId);
         if (goals is not { Groups.Count: > 0 })
             return true;
-        var done = goals.Groups.Select((g, index) => _host.KillCount(questId, index + 1) >= g.Count);
+        var done = goals.Groups.Select((g, index) => host.KillCount(questId, index + 1) >= g.Count);
         return goals.Rule == ObjectiveRule.Any ? done.Any(v => v) : done.All(v => v);
     }
 
@@ -226,9 +226,9 @@ public sealed class QuestInterpreter
         .GroupBy(a => (a.Kind, Item: a.Arguments.GetInt("item")))
         .All(group => (long)(group.Key.Kind switch
         {
-            QuestActionKind.TakeGold => _host.PlayerCoins,
-            QuestActionKind.TakeNationalPoints => _host.PlayerLoyalty,
-            _ => _host.ItemCount(group.Key.Item)
+            QuestActionKind.TakeGold => host.PlayerCoins,
+            QuestActionKind.TakeNationalPoints => host.PlayerLoyalty,
+            _ => host.ItemCount(group.Key.Item)
         }) >= group.Sum(a => a.Arguments.Get("amount", a.Arguments.Get("count", 1))));
 
     private IReadOnlyList<BoundStatement.Action> ResolvePremium(IReadOnlyList<BoundStatement.Action> transfers)
@@ -239,7 +239,7 @@ public sealed class QuestInterpreter
         {
             Arguments = new ArgumentSet(new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase)
             {
-                ["amount"] = _host.PremiumType > 0 ? a.Arguments.Get("premium") : a.Arguments.Get("amount")
+                ["amount"] = host.PremiumType > 0 ? a.Arguments.Get("premium") : a.Arguments.Get("amount")
             })
         })];
     }
@@ -247,14 +247,14 @@ public sealed class QuestInterpreter
     public QuestView BuildView(int questId, DialogLine? dialogue = null, IReadOnlyList<DialogButton>? topics = null,
         QuestPageKind page = QuestPageKind.Quest)
     {
-        var flow = _program.Flows.Single(f => f.QuestId == questId);
-        var classGroup = _host.PlayerClassGroup;
-        var rewards = _program.RewardsFor(questId, classGroup, _host.PlayerNation, _host.PlayerRebirthLevel)
+        var flow = program.Flows.Single(f => f.QuestId == questId);
+        var classGroup = host.PlayerClassGroup;
+        var rewards = program.RewardsFor(questId, classGroup, host.PlayerNation, host.PlayerRebirthLevel)
             ?? throw new InvalidOperationException($"Quest {questId} has no rewards.");
         rewards = rewards with { Transfers = ResolvePremium(rewards.Transfers) };
-        var text = _program.TextFor(questId, _host.PlayerNation, classGroup)
+        var text = program.TextFor(questId, host.PlayerNation, classGroup)
             ?? throw new InvalidOperationException($"Quest {questId} has no text.");
-        var state = _host.QuestStatus(questId) switch
+        var state = host.QuestStatus(questId) switch
         {
             1 when text.FulfilElsewhere => QuestViewState.InProgress,
             1 or 3 => ObjectivesComplete(questId) && CostsAvailable(rewards)
@@ -263,9 +263,9 @@ public sealed class QuestInterpreter
             0 or 4 when flow.Requires is null || Evaluate(flow.Requires) => QuestViewState.Available,
             _ => QuestViewState.Locked
         };
-        var goals = _program.Objectives.FirstOrDefault(o => o.QuestId == questId);
-        return new QuestView(text, flow.BindingFor(_host.PlayerNation, _host.PlayerZone, classGroup)?.ZoneId ?? flow.ZoneId, state, goals,
-            goals?.Groups.Select((_, index) => _host.KillCount(questId, index + 1)).ToArray() ?? [],
+        var goals = program.Objectives.FirstOrDefault(o => o.QuestId == questId);
+        return new QuestView(text, flow.BindingFor(host.PlayerNation, host.PlayerZone, classGroup)?.ZoneId ?? flow.ZoneId, state, goals,
+            goals?.Groups.Select((_, index) => host.KillCount(questId, index + 1)).ToArray() ?? [],
             rewards, dialogue ?? DialogLine.FromText(text.Journal ?? string.Empty), topics ?? [], page, flow.AutoAccept);
     }
 
@@ -274,7 +274,7 @@ public sealed class QuestInterpreter
         var view = BuildView(questId);
         if (silent)
         {
-            _host.UpdateQuestView(view);
+            host.UpdateQuestView(view);
             return;
         }
         var role = view.State switch
@@ -285,13 +285,13 @@ public sealed class QuestInterpreter
             QuestViewState.Completed => "completed",
             _ => string.Empty
         };
-        _viewQuest = questId;
-        _viewShown = false;
-        if (_program.TryGetEntry(role, questId, out var id) && _program.TryGetEvent(id, out var entry))
+        viewQuest = questId;
+        viewShown = false;
+        if (program.TryGetEntry(role, questId, out var id) && program.TryGetEvent(id, out var entry))
             Execute(entry.Body);
-        if (!_viewShown && _pendingJump is null)
-            _host.ShowQuestView(view);
-        _viewQuest = -1;
+        if (!viewShown && pendingJump is null)
+            host.ShowQuestView(view);
+        viewQuest = -1;
     }
 
     private void ExecuteIf(BoundStatement.If node)
@@ -380,11 +380,11 @@ public sealed class QuestInterpreter
 
     private int SelectorValue(BoundStatement.Switch node) => node.Selector switch
     {
-        SwitchSelectorKind.PlayerClass => _host.PlayerClassGroup,
-        SwitchSelectorKind.PlayerNation => _host.PlayerNation,
-        SwitchSelectorKind.Event => _chain.Count > 0 ? _chain[^1] : 0,
-        SwitchSelectorKind.Roll => _host.RollDice(node.Max - 1),
-        SwitchSelectorKind.Reward => _chosenReward,
+        SwitchSelectorKind.PlayerClass => host.PlayerClassGroup,
+        SwitchSelectorKind.PlayerNation => host.PlayerNation,
+        SwitchSelectorKind.Event => chain.Count > 0 ? chain[^1] : 0,
+        SwitchSelectorKind.Roll => host.RollDice(node.Max - 1),
+        SwitchSelectorKind.Reward => chosenReward,
         _ => 0,
     };
 
@@ -393,7 +393,7 @@ public sealed class QuestInterpreter
         if (SelectCase(node) is { } chosen)
             Execute(chosen);
         else if (node.Selector == SwitchSelectorKind.Reward)
-            _host.ApplyReward([]);
+            host.ApplyReward([]);
     }
 
     private bool MatchesClass(long label, int group) =>
@@ -402,18 +402,18 @@ public sealed class QuestInterpreter
             QuestVocabulary.ClassGroupWarrior or QuestVocabulary.ClassGroupRogue
                 or QuestVocabulary.ClassGroupMage or QuestVocabulary.ClassGroupPriest
                 or QuestVocabulary.ClassGroupKurian => label == group,
-            _ => label == _host.PlayerClassSubtype,
+            _ => label == host.PlayerClassSubtype,
         };
 
 
     private BoundStatement.Action? Draw(BoundStatement.Action action)
     {
-        if (!_program.TryGetReward(action.Arguments.GetInt("reward"), out var reward))
+        if (!program.TryGetReward(action.Arguments.GetInt("reward"), out var reward))
             return null;
 
-        var row = reward.Rows[reward.Rows.Count == 1 ? 0 : _host.RollDice(reward.Rows.Count - 1)];
+        var row = reward.Rows[reward.Rows.Count == 1 ? 0 : host.RollDice(reward.Rows.Count - 1)];
         var total = row.Sum(choice => choice.Weight);
-        var roll = total <= 1 ? 0 : _host.RollDice((int)total - 1);
+        var roll = total <= 1 ? 0 : host.RollDice((int)total - 1);
         var chosen = row[^1];
         foreach (var choice in row)
         {
@@ -435,12 +435,12 @@ public sealed class QuestInterpreter
 
     private void ClaimQuest(int questId)
     {
-        if (_host.ActionFailed || _host.QuestStatus(questId) is not (1 or 3) || WaitsOnFulfilment(questId))
+        if (host.ActionFailed || host.QuestStatus(questId) is not (1 or 3) || WaitsOnFulfilment(questId))
             return;
-        var rewards = _program.RewardsFor(questId, _host.PlayerClassGroup, _host.PlayerNation, _host.PlayerRebirthLevel);
+        var rewards = program.RewardsFor(questId, host.PlayerClassGroup, host.PlayerNation, host.PlayerRebirthLevel);
         if (rewards is null)
         {
-            _failure = $"Quest {questId} has no declared Rewards.";
+            failure = $"Quest {questId} has no declared Rewards.";
             return;
         }
         if (!ObjectivesComplete(questId))
@@ -448,18 +448,18 @@ public sealed class QuestInterpreter
         var transfers = ResolvePremium(rewards.Transfers);
         if (rewards.Options.Count > 0)
         {
-            if (_chosenReward < 0 || _chosenReward >= rewards.Options.Count)
+            if (chosenReward < 0 || chosenReward >= rewards.Options.Count)
             {
-                _failure = $"Quest {questId} offers a choice of reward and none was chosen.";
+                failure = $"Quest {questId} offers a choice of reward and none was chosen.";
                 return;
             }
-            transfers = [.. transfers, rewards.Options[_chosenReward]];
+            transfers = [.. transfers, rewards.Options[chosenReward]];
         }
-        _host.ApplyReward(transfers);
-        if (_host.ActionFailed)
+        host.ApplyReward(transfers);
+        if (host.ActionFailed)
             return;
-        _host.SetQuestState(questId, 2);
-        if (transfers.Count > 0) _host.ShowReceipt(questId);
+        host.SetQuestState(questId, 2);
+        if (transfers.Count > 0) host.ShowReceipt(questId);
     }
 
     private void ExecuteAction(BoundStatement.Action action)
@@ -468,12 +468,12 @@ public sealed class QuestInterpreter
         switch (action.Kind)
         {
             case QuestActionKind.RefuseReward:
-                _host.ApplyReward([]);
+                host.ApplyReward([]);
                 break;
 
             case QuestActionKind.GiveRandomReward:
                 if (Draw(action) is { } prize)
-                    _host.GiveItem(prize.Arguments.GetInt("item"), prize.Arguments.GetInt("count", 1), 0);
+                    host.GiveItem(prize.Arguments.GetInt("item"), prize.Arguments.GetInt("count", 1), 0);
                 break;
 
             case QuestActionKind.Todo:
@@ -481,7 +481,7 @@ public sealed class QuestInterpreter
                 break;
 
             case QuestActionKind.SetQuestState:
-                _host.SetQuestState(args.GetInt("quest"), args.GetInt("status"));
+                host.SetQuestState(args.GetInt("quest"), args.GetInt("status"));
                 break;
 
             case QuestActionKind.ClaimQuest:
@@ -489,99 +489,99 @@ public sealed class QuestInterpreter
                 break;
 
             case QuestActionKind.GiveItem:
-                _host.GiveItem(args.GetInt("item"), args.GetInt("count", 1), RentalHours(args));
+                host.GiveItem(args.GetInt("item"), args.GetInt("count", 1), RentalHours(args));
                 break;
 
             case QuestActionKind.GivePremium:
-                _host.GivePremium(args.GetInt("type"), args.GetInt("days"));
+                host.GivePremium(args.GetInt("type"), args.GetInt("days"));
                 break;
 
             case QuestActionKind.GiveClanPremium:
-                _host.GiveClanPremium(args.GetInt("days"));
+                host.GiveClanPremium(args.GetInt("days"));
                 break;
 
             case QuestActionKind.GiveAchievement:
-                _host.GiveAchievement(args.GetInt("achievement"));
+                host.GiveAchievement(args.GetInt("achievement"));
                 break;
 
             case QuestActionKind.JoinTempleEvent:
-                _host.JoinTempleEvent();
+                host.JoinTempleEvent();
                 break;
 
             case QuestActionKind.JoinBlueSoccerTeam:
-                _host.JoinSoccerTeam(blue: true);
+                host.JoinSoccerTeam(blue: true);
                 break;
 
             case QuestActionKind.JoinRedSoccerTeam:
-                _host.JoinSoccerTeam(blue: false);
+                host.JoinSoccerTeam(blue: false);
                 break;
 
             case QuestActionKind.StartSoccerGame:
-                _host.StartSoccerGame();
+                host.StartSoccerGame();
                 break;
 
             case QuestActionKind.ShowRankBoard:
-                _host.ShowRankBoard();
+                host.ShowRankBoard();
                 break;
 
             case QuestActionKind.SetLevel:
-                _host.SetPlayerLevel(args.GetInt("level"));
+                host.SetPlayerLevel(args.GetInt("level"));
                 break;
 
             case QuestActionKind.SetDrakiRift:
-                _host.SetDrakiRift(args.GetInt("stage"), args.GetInt("substage"));
+                host.SetDrakiRift(args.GetInt("stage"), args.GetInt("substage"));
                 break;
 
             case QuestActionKind.TakeItem:
-                _host.TakeItem(args.GetInt("item"), args.GetInt("count", 1));
+                host.TakeItem(args.GetInt("item"), args.GetInt("count", 1));
                 break;
 
             case QuestActionKind.GiveGold:
-                _host.GiveGold(args.GetInt("amount"));
+                host.GiveGold(args.GetInt("amount"));
                 break;
 
             case QuestActionKind.TakeGold:
-                _host.TakeGold(args.GetInt("amount"));
+                host.TakeGold(args.GetInt("amount"));
                 break;
 
             case QuestActionKind.GiveExperience:
-                _host.GiveExp(args.GetInt("amount"));
+                host.GiveExp(args.GetInt("amount"));
                 break;
 
             case QuestActionKind.GiveNationalPoints:
-                _host.GiveLoyalty(args.GetInt("amount"));
+                host.GiveLoyalty(args.GetInt("amount"));
                 break;
 
             case QuestActionKind.TakeNationalPoints:
-                _host.TakeLoyalty(args.GetInt("amount"));
+                host.TakeLoyalty(args.GetInt("amount"));
                 break;
 
             case QuestActionKind.Exchange:
-                _host.RunExchange(args.GetInt("exchange"));
+                host.RunExchange(args.GetInt("exchange"));
                 break;
 
             case QuestActionKind.QuestExchange:
-                _host.RunQuestExchange(args.GetInt("exchange"), args.GetInt("award", _chosenReward));
+                host.RunQuestExchange(args.GetInt("exchange"), args.GetInt("award", chosenReward));
                 break;
 
             case QuestActionKind.GiveCash:
-                _host.GiveCash(args.GetInt("amount"));
+                host.GiveCash(args.GetInt("amount"));
                 break;
 
             case QuestActionKind.ChangeJob:
-                _host.ChangeJob(args.GetInt("class"), args.GetInt("mastered", 1) != 0);
+                host.ChangeJob(args.GetInt("class"), args.GetInt("mastered", 1) != 0);
                 break;
 
             case QuestActionKind.ExchangeTimes:
-                _host.RunCountExchange(args.GetInt("exchange"), args.GetInt("count", 1));
+                host.RunCountExchange(args.GetInt("exchange"), args.GetInt("count", 1));
                 break;
 
             case QuestActionKind.MiningExchange:
-                _host.RunMiningExchange(args.GetInt("ore"));
+                host.RunMiningExchange(args.GetInt("ore"));
                 break;
 
             case QuestActionKind.GenieExchange:
-                _host.RunGenieExchange(args.GetInt("item"), args.GetInt("hours"));
+                host.RunGenieExchange(args.GetInt("item"), args.GetInt("hours"));
                 break;
 
             case QuestActionKind.ExchangeRandom:
@@ -589,141 +589,147 @@ public sealed class QuestInterpreter
                 var first = args.GetInt("first");
                 var last = args.GetInt("last");
                 var span = Math.Max(0, last - first);
-                _host.RunExchange(first + _host.RollDice(span));
+                host.RunExchange(first + host.RollDice(span));
                 break;
             }
 
             case QuestActionKind.ShowMap:
-                if (_program.TryGetLocation(args.GetInt("map"), out var location))
-                    _host.ShowLocation(location, args.GetInt("quest", _viewQuest));
+                if (program.TryGetLocation(args.GetInt("map"), out var location))
+                    host.ShowLocation(location, args.GetInt("quest", viewQuest));
                 break;
 
             case QuestActionKind.Warp:
-                _host.TeleportToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
+                host.TeleportToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
                 break;
 
             case QuestActionKind.WarpClan:
-                _host.TeleportClanToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
+                host.TeleportClanToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
                 break;
 
             case QuestActionKind.WarpParty:
-                _host.TeleportPartyToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
+                host.TeleportPartyToZone(args.GetInt("zone"), args.GetInt("x"), args.GetInt("z"));
                 break;
 
             case QuestActionKind.EnterInstance:
-                _host.EnterInstance(args.GetInt("zone"), args.GetInt("set"), args.GetInt("x"), args.GetInt("z"));
+                host.EnterInstance(args.GetInt("zone"), args.GetInt("set"), args.GetInt("x"), args.GetInt("z"));
                 break;
 
             case QuestActionKind.EnterClanInstance:
-                _host.EnterClanInstance(args.GetInt("zone"), args.GetInt("set"), args.GetInt("x"), args.GetInt("z"));
+                host.EnterClanInstance(args.GetInt("zone"), args.GetInt("set"), args.GetInt("x"), args.GetInt("z"));
                 break;
 
             case QuestActionKind.Cast:
-                _host.CastSkill(args.GetInt("skill"));
+                host.CastSkill(args.GetInt("skill"));
                 break;
 
             case QuestActionKind.Effect:
-                _host.PlayEffect(args.GetInt("effect"));
+                host.PlayEffect(args.GetInt("effect"));
                 break;
 
             case QuestActionKind.DespawnNpc:
-                _host.DespawnNpc();
+                host.DespawnNpc();
                 break;
 
             case QuestActionKind.Summon:
-                _host.SummonNpc(args.GetInt("npc"), args.GetInt("count", 1), args.GetInt("x", 0), args.GetInt("z", 0));
+                host.SummonNpc(args.GetInt("npc"), args.GetInt("count", 1), args.GetInt("x", 0), args.GetInt("z", 0));
                 break;
 
             case QuestActionKind.NpcEffect:
-                _host.PlayNpcEffect(args.GetInt("effect"));
+                host.PlayNpcEffect(args.GetInt("effect"));
                 break;
 
             case QuestActionKind.PromoteClan:
-                _host.PromoteClan(action.Arguments.GetInt("rank"));
+                host.PromoteClan(action.Arguments.GetInt("rank"));
                 break;
 
             case QuestActionKind.TakeClanPoints:
-                _host.TakeClanPoints(action.Arguments.GetInt("amount"));
+                host.TakeClanPoints(action.Arguments.GetInt("amount"));
                 break;
 
             case QuestActionKind.Promote:
-                _host.PromotePlayer();
+                host.PromotePlayer();
                 break;
 
             case QuestActionKind.PromoteNovice:
-                _host.PromoteToNovice();
+                host.PromoteToNovice();
                 break;
 
             case QuestActionKind.ResetStats:
-                _host.ResetStatPoints();
+                host.ResetStatPoints();
                 break;
 
             case QuestActionKind.ResetSkills:
-                _host.ResetSkillPoints();
+                host.ResetSkillPoints();
                 break;
 
             case QuestActionKind.OpenRenamePanel:
-                _host.OpenRenamePanel();
+                host.OpenRenamePanel();
                 break;
 
             case QuestActionKind.OpenJobChangePanel:
-                _host.OpenJobChangePanel();
+                host.OpenJobChangePanel();
                 break;
 
             case QuestActionKind.OpenClanRenamePanel:
-                _host.OpenClanRenamePanel();
+                host.OpenClanRenamePanel();
                 break;
 
             case QuestActionKind.OpenRebirthPanel:
-                _host.OpenRebirthPanel();
+                host.OpenRebirthPanel();
                 break;
 
             case QuestActionKind.OpenRebirthResetPanel:
-                _host.OpenRebirthResetPanel();
+                host.OpenRebirthResetPanel();
                 break;
 
             case QuestActionKind.OpenRepurchaseWindow:
-                _host.OpenRepurchaseWindow();
+                host.OpenRepurchaseWindow();
                 break;
 
             case QuestActionKind.OpenFamiliarPanel:
-                _host.OpenFamiliarPanel();
+                host.OpenFamiliarPanel();
                 break;
 
             case QuestActionKind.OpenFamiliarShop:
-                _host.OpenFamiliarShop();
+                host.OpenFamiliarShop();
                 break;
 
             case QuestActionKind.OpenGenderChangePanel:
-                _host.OpenGenderChangePanel();
+                host.OpenGenderChangePanel();
                 break;
 
             case QuestActionKind.OpenFortunePanel:
-                _host.OpenFortunePanel();
+                host.OpenFortunePanel();
                 break;
             case QuestActionKind.OpenSpecialAuctionPanel:
-                _host.OpenSpecialAuctionPanel();
+                host.OpenSpecialAuctionPanel();
+                break;
+            case QuestActionKind.OpenYutGame:
+                host.OpenYutGame();
+                break;
+            case QuestActionKind.OpenDrakiRankBoard:
+                host.OpenDrakiRankBoard();
                 break;
             case QuestActionKind.OpenItemCombinePanel:
-                _host.OpenItemCombinePanel();
+                host.OpenItemCombinePanel();
                 break;
             case QuestActionKind.OpenCombineRecipeBook:
-                _host.OpenCombineRecipeBook();
+                host.OpenCombineRecipeBook();
                 break;
             case QuestActionKind.OpenDisassembleWindow:
-                _host.OpenDisassembleWindow();
+                host.OpenDisassembleWindow();
                 break;
 
             case QuestActionKind.OpenNationTransferPanel:
-                _host.OpenNationTransferPanel();
+                host.OpenNationTransferPanel();
                 break;
 
             case QuestActionKind.OpenStatSkillPanel:
-                _host.OpenStatSkillPanel();
+                host.OpenStatSkillPanel();
                 break;
 
             default:
-                _host.Unsupported(action.Kind.ToString());
+                host.Unsupported(action.Kind.ToString());
                 break;
         }
     }
@@ -745,55 +751,55 @@ public sealed class QuestInterpreter
         return node.Kind switch
         {
             QuestConditionKind.ItemCount =>
-                Compare(_host.ItemCount(args.GetInt("item")), node.Operator, args.GetInt("count")),
-            QuestConditionKind.HasItem => _host.ItemCount(args.GetInt("item")) > 0,
+                Compare(host.ItemCount(args.GetInt("item")), node.Operator, args.GetInt("count")),
+            QuestConditionKind.HasItem => host.ItemCount(args.GetInt("item")) > 0,
             QuestConditionKind.RoomFor =>
-                Compare(_host.PlayerFreeSlots, node.Operator, args.GetInt("count", 1)),
+                Compare(host.PlayerFreeSlots, node.Operator, args.GetInt("count", 1)),
             QuestConditionKind.CanReceiveItem =>
-                _host.HasRoomForItem(args.GetInt("item"), args.GetInt("count")),
-            QuestConditionKind.CanReceiveStacks => _host.CanReceiveStacks(args.GetInt("count")),
-            QuestConditionKind.PlayerWeight => Compare(_host.PlayerWeight, node.Operator, args.GetInt("value")),
-            QuestConditionKind.PlayerExperience => Compare(_host.PlayerExperience, node.Operator, args.GetInt("value")),
-            QuestConditionKind.QuestStatus => _host.QuestStatus(args.GetInt("quest")) == args.GetInt("status"),
+                host.HasRoomForItem(args.GetInt("item"), args.GetInt("count")),
+            QuestConditionKind.CanReceiveStacks => host.CanReceiveStacks(args.GetInt("count")),
+            QuestConditionKind.PlayerWeight => Compare(host.PlayerWeight, node.Operator, args.GetInt("value")),
+            QuestConditionKind.PlayerExperience => Compare(host.PlayerExperience, node.Operator, args.GetInt("value")),
+            QuestConditionKind.QuestStatus => host.QuestStatus(args.GetInt("quest")) == args.GetInt("status"),
             QuestConditionKind.QuestStatusIn =>
-                _host.QuestStatus(args.GetInt("quest")) is >= 0 and < 32 and var status
+                host.QuestStatus(args.GetInt("quest")) is >= 0 and < 32 and var status
                 && (args.GetInt("states") & (1 << status)) != 0,
-            QuestConditionKind.PlayerClass => MatchesClass(args.GetInt("class"), _host.PlayerClassGroup),
-            QuestConditionKind.PlayerClassSubtype => Compare(_host.PlayerClassSubtype, node.Operator, args.GetInt("value")),
-            QuestConditionKind.PlayerNation => _host.PlayerNation == args.GetInt("nation"),
-            QuestConditionKind.PlayerLevel => Compare(_host.PlayerLevel, node.Operator, args.GetInt("value")),
-            QuestConditionKind.RebirthLevel => Compare(_host.PlayerRebirthLevel, node.Operator, args.GetInt("value")),
-            QuestConditionKind.PlayerGold => Compare(_host.PlayerCoins, node.Operator, args.GetInt("amount")),
-            QuestConditionKind.PlayerNationalPoints => Compare(_host.PlayerLoyalty, node.Operator, args.GetInt("amount")),
+            QuestConditionKind.PlayerClass => MatchesClass(args.GetInt("class"), host.PlayerClassGroup),
+            QuestConditionKind.PlayerClassSubtype => Compare(host.PlayerClassSubtype, node.Operator, args.GetInt("value")),
+            QuestConditionKind.PlayerNation => host.PlayerNation == args.GetInt("nation"),
+            QuestConditionKind.PlayerLevel => Compare(host.PlayerLevel, node.Operator, args.GetInt("value")),
+            QuestConditionKind.RebirthLevel => Compare(host.PlayerRebirthLevel, node.Operator, args.GetInt("value")),
+            QuestConditionKind.PlayerGold => Compare(host.PlayerCoins, node.Operator, args.GetInt("amount")),
+            QuestConditionKind.PlayerNationalPoints => Compare(host.PlayerLoyalty, node.Operator, args.GetInt("amount")),
             QuestConditionKind.KillCount =>
-                Compare(_host.KillCount(args.GetInt("quest"), args.GetInt("group")), node.Operator, args.GetInt("count")),
-            QuestConditionKind.HasKillQuest => _host.HasActiveKillQuest(),
-            QuestConditionKind.LeadsClan => _host.IsClanLeader,
-            QuestConditionKind.InClan => _host.IsInClan,
+                Compare(host.KillCount(args.GetInt("quest"), args.GetInt("group")), node.Operator, args.GetInt("count")),
+            QuestConditionKind.HasKillQuest => host.HasActiveKillQuest(),
+            QuestConditionKind.LeadsClan => host.IsClanLeader,
+            QuestConditionKind.InClan => host.IsInClan,
             QuestConditionKind.ClanRank =>
-                Compare(_host.ClanRank, node.Operator, args.GetInt("rank")),
+                Compare(host.ClanRank, node.Operator, args.GetInt("rank")),
             QuestConditionKind.ClanGrade =>
-                Compare(_host.ClanGrade, node.Operator, args.GetInt("value")),
+                Compare(host.ClanGrade, node.Operator, args.GetInt("value")),
             QuestConditionKind.ClanPoints =>
-                Compare(_host.ClanPoints, node.Operator, args.GetInt("amount")),
+                Compare(host.ClanPoints, node.Operator, args.GetInt("amount")),
             QuestConditionKind.SkillPoints =>
-                Compare(_host.SkillPoints(args.GetInt("tree")), node.Operator, args.GetInt("amount")),
-            QuestConditionKind.InParty => _host.IsInParty,
-            QuestConditionKind.LeadsParty => _host.IsPartyLeader,
-            QuestConditionKind.IsKing => _host.IsKing,
-            QuestConditionKind.KrowazOpen => _host.KrowazOpen,
-            QuestConditionKind.DailyAvailable => _host.DailyRewardAvailable(args.GetInt("slot")),
-            QuestConditionKind.Weekday => _host.Weekday == args.GetInt("day"),
-            QuestConditionKind.HasEffect => _host.HasEffect(args.GetInt("skill")),
-            QuestConditionKind.HasPremium => Compare(_host.PremiumType, node.Operator, args.GetInt("value")),
-            QuestConditionKind.LastStepFailed => _host.ActionFailed,
-            QuestConditionKind.PlayerZone => _host.PlayerZone == args.GetInt("zone"),
-            QuestConditionKind.MonumentNation => _host.MonumentNation == args.GetInt("nation"),
-            QuestConditionKind.Chance => _host.RollChance(args.GetInt("percent")),
+                Compare(host.SkillPoints(args.GetInt("tree")), node.Operator, args.GetInt("amount")),
+            QuestConditionKind.InParty => host.IsInParty,
+            QuestConditionKind.LeadsParty => host.IsPartyLeader,
+            QuestConditionKind.IsKing => host.IsKing,
+            QuestConditionKind.KrowazOpen => host.KrowazOpen,
+            QuestConditionKind.DailyAvailable => host.DailyRewardAvailable(args.GetInt("slot")),
+            QuestConditionKind.Weekday => host.Weekday == args.GetInt("day"),
+            QuestConditionKind.HasEffect => host.HasEffect(args.GetInt("skill")),
+            QuestConditionKind.HasPremium => Compare(host.PremiumType, node.Operator, args.GetInt("value")),
+            QuestConditionKind.LastStepFailed => host.ActionFailed,
+            QuestConditionKind.PlayerZone => host.PlayerZone == args.GetInt("zone"),
+            QuestConditionKind.MonumentNation => host.MonumentNation == args.GetInt("nation"),
+            QuestConditionKind.Chance => host.RollChance(args.GetInt("percent")),
             QuestConditionKind.RollUnder => Compare(
-                _host.RollDice(args.GetInt("max") - 1), node.Operator, args.GetInt("value")),
+                host.RollDice(args.GetInt("max") - 1), node.Operator, args.GetInt("value")),
             QuestConditionKind.ReachedLevel =>
-                _host.ReachedLevel(args.GetInt("level"), args.GetInt("percent")),
+                host.ReachedLevel(args.GetInt("level"), args.GetInt("percent")),
             _ => false,
         };
     }

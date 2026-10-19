@@ -18,11 +18,11 @@ public sealed partial class EmoticonPicker : PopupPanel
 
     public event System.Action<string>? Picked;
 
-    private readonly GridContainer _emoticons;
-    private readonly GridContainer _emoji;
-    private readonly Button _emoticonsTab;
-    private readonly Button _emojiTabButton;
-    private static bool _emojiTab;
+    private readonly GridContainer emoticons;
+    private readonly GridContainer emojiGrid;
+    private readonly Button emoticonsTab;
+    private readonly Button emojiTabButton;
+    private static bool emojiTab;
 
     public EmoticonPicker()
     {
@@ -32,18 +32,18 @@ public sealed partial class EmoticonPicker : PopupPanel
         var tabs = new HBoxContainer();
         tabs.AddThemeConstantOverride("separation", Gap);
         column.AddChild(tabs);
-        _emoticons = Grid(Columns);
-        _emoji = Grid(EmojiColumns);
-        column.AddChild(_emoticons);
-        column.AddChild(_emoji);
+        emoticons = Grid(Columns);
+        emojiGrid = Grid(EmojiColumns);
+        column.AddChild(emoticons);
+        column.AddChild(emojiGrid);
         var group = new ButtonGroup();
-        _emoticonsTab = Tab("Emoticons", group, false);
-        _emojiTabButton = Tab("Emoji", group, true);
-        tabs.AddChild(_emoticonsTab);
-        tabs.AddChild(_emojiTabButton);
-        foreach (string emoji in Domain.Emoji.Picker) _emoji.AddChild(EmojiButton(emoji));
-        ShowTab(_emojiTab);
-        var grid = _emoticons;
+        emoticonsTab = Tab("Emoticons", group, false);
+        emojiTabButton = Tab("Emoji", group, true);
+        tabs.AddChild(emoticonsTab);
+        tabs.AddChild(emojiTabButton);
+        foreach (string emoji in Domain.Emoji.Picker) emojiGrid.AddChild(EmojiButton(emoji));
+        ShowTab(emojiTab);
+        var grid = emoticons;
         var sheet = GD.Load<Texture2D>(Emoticons.SheetPath);
         foreach (var e in Emoticons.All)
         {
@@ -78,7 +78,7 @@ public sealed partial class EmoticonPicker : PopupPanel
     {
         var tab = UiTheme.TopTabButton(caption, TabFontSize);
         tab.ButtonGroup = group;
-        tab.ButtonPressed = emoji == _emojiTab;
+        tab.ButtonPressed = emoji == emojiTab;
         tab.Pressed += () =>
         {
             ShowTab(emoji);
@@ -89,16 +89,16 @@ public sealed partial class EmoticonPicker : PopupPanel
 
     public void ShowEmojiTab()
     {
-        _emojiTabButton.SetPressedNoSignal(true);
-        _emoticonsTab.SetPressedNoSignal(false);
+        emojiTabButton.SetPressedNoSignal(true);
+        emoticonsTab.SetPressedNoSignal(false);
         ShowTab(true);
     }
 
     private void ShowTab(bool emoji)
     {
-        _emojiTab = emoji;
-        _emoticons.Visible = !emoji;
-        _emoji.Visible = emoji;
+        emojiTab = emoji;
+        emoticons.Visible = !emoji;
+        emojiGrid.Visible = emoji;
     }
 
     private Button EmojiButton(string emoji)

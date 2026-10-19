@@ -42,12 +42,12 @@ public sealed class VanguardService : BackgroundService, IVanguardService
         public bool Holds(int characterId) => Karus.Contains(characterId) || ElMorad.Contains(characterId);
     }
 
-    private readonly SessionManager _sessions;
-    private readonly IGameDataService _gameData;
-    private readonly IServiceProvider _services;
-    private readonly ILogger<VanguardService> _logger;
-    private readonly Dictionary<byte, Round> _rounds;
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly SessionManager sessions;
+    private readonly IGameDataService gameData;
+    private readonly IServiceProvider services;
+    private readonly ILogger<VanguardService> logger;
+    private readonly Dictionary<byte, Round> rounds;
+    private readonly SemaphoreSlim gate = new(1, 1);
 
     public VanguardService(
         SessionManager sessions,
@@ -56,11 +56,11 @@ public sealed class VanguardService : BackgroundService, IVanguardService
         IServiceProvider services,
         ILogger<VanguardService> logger)
     {
-        _sessions = sessions;
-        _gameData = gameData;
-        _services = services;
-        _logger = logger;
-        _rounds = VanguardRules.Zones.ToDictionary(zone => zone, zone => new Round { Zone = zone });
+        this.sessions = sessions;
+        this.gameData = gameData;
+        this.services = services;
+        this.logger = logger;
+        rounds = VanguardRules.Zones.ToDictionary(zone => zone, zone => new Round { Zone = zone });
         zones.PlayerLeavingZone += (session, _) => ReleaseAsync(session);
     }
 
@@ -77,40 +77,40 @@ public sealed class VanguardService : BackgroundService, IVanguardService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "Wanted event tick failed");
+                logger.LogError(ex, "Wanted event tick failed");
             }
         }
     }
 
     public async Task StartAsync()
     {
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
             Enabled = true;
-            foreach (var round in _rounds.Values.Where(r => r.Phase == VanguardPhase.Off))
+            foreach (var round in rounds.Values.Where(r => r.Phase == VanguardPhase.Off))
                 Wait(round, 1);
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
     }
 
     public async Task StopAsync()
     {
         List<Round> running;
-        await _gate.WaitAsync();
+        await gate.WaitAsync();
         try
         {
             Enabled = false;
-            running = _rounds.Values.Where(r => r.Phase is VanguardPhase.Accepting or VanguardPhase.Active).ToList();
-            foreach (var round in _rounds.Values.Except(running))
+            running = rounds.Values.Where(r => r.Phase is VanguardPhase.Accepting or VanguardPhase.Active).ToList();
+            foreach (var round in rounds.Values.Except(running))
                 round.Phase = VanguardPhase.Off;
         }
         finally
         {
-            _gate.Release();
+            gate.Release();
         }
 
         foreach (var round in running)
@@ -118,11 +118,11 @@ public sealed class VanguardService : BackgroundService, IVanguardService
     }
 
     public bool IsWanted(UserSession session) =>
-        _rounds.TryGetValue(session.ZoneId, out var round) && round.Holds(session.CharacterId);
+        rounds.TryGetValue(session.ZoneId, out var round) && round.Holds(session.CharacterId);
 
     internal async Task TickAsync()
     {
-        foreach (var round in _rounds.Values)
+        foreach (var round in rounds.Values)
         {
             switch (round.Phase)
             {
@@ -201,17 +201,17 @@ public sealed class VanguardService : BackgroundService, IVanguardService
             round.Invited.Add(session.CharacterId);
             await session.Client.SendPacket(VanguardPacketWriter.Invite());
         }
-        _logger.LogInformation("Wanted event: {Count} players invited in zone {Zone}", chosen.Count, round.Zone);
+        logger.LogInformation("Wanted event: {Count} players invited in zone {Zone}", chosen.Count, round.Zone);
     }
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
-        var session = _sessions.GetByClientId(client.Id);
+        var session = sessions.GetByClientId(client.Id);
         if (session == null || packet.RemainingBytes < 2 || packet.ReadByte() != VanguardPacketWriter.SubAppoint
             || packet.ReadByte() != VanguardPacketWriter.AcceptRequest)
             return;
 
-        if (!_rounds.TryGetValue(session.ZoneId, out var round) || round.Phase != VanguardPhase.Accepting
+        if (!rounds.TryGetValue(session.ZoneId, out var round) || round.Phase != VanguardPhase.Accepting
             || !round.Invited.Remove(session.CharacterId) || session.Hp <= 0)
         {
             await client.SendPacket(VanguardPacketWriter.Result(VanguardPacketWriter.AppointFailed));
@@ -227,14 +227,14 @@ public sealed class VanguardService : BackgroundService, IVanguardService
 
         side.Add(session.CharacterId);
         await client.SendPacket(VanguardPacketWriter.Result(VanguardPacketWriter.Appointed));
-        if (_gameData.GetMagic(VanguardRules.RewardMarkSkill) is { } magic)
-            await _services.GetRequiredService<IMagicStatusEffectService>().ExecuteAsync(
+        if (gameData.GetMagic(VanguardRules.RewardMarkSkill) is { } magic)
+            await services.GetRequiredService<IMagicStatusEffectService>().ExecuteAsync(
                 session, magic, MagicSkillType.Buff, VanguardRules.RewardMarkSkill, session.CharacterId, new int[7]);
     }
 
     public async Task OnPlayerDiedAsync(UserSession victim, UserSession? killer)
     {
-        if (!_rounds.TryGetValue(victim.ZoneId, out var round) || !round.Holds(victim.CharacterId))
+        if (!rounds.TryGetValue(victim.ZoneId, out var round) || !round.Holds(victim.CharacterId))
             return;
 
         await RemoveAsync(round, victim);
@@ -245,7 +245,7 @@ public sealed class VanguardService : BackgroundService, IVanguardService
 
     public async Task ReleaseAsync(UserSession session)
     {
-        if (!_rounds.TryGetValue(session.ZoneId, out var round))
+        if (!rounds.TryGetValue(session.ZoneId, out var round))
             return;
         round.Invited.Remove(session.CharacterId);
         if (!round.Holds(session.CharacterId))
@@ -270,7 +270,7 @@ public sealed class VanguardService : BackgroundService, IVanguardService
     private async Task EndRoundAsync(Round round, bool rewardSurvivors)
     {
         var survivors = rewardSurvivors
-            ? round.Karus.Concat(round.ElMorad).Select(_sessions.GetByCharacterId)
+            ? round.Karus.Concat(round.ElMorad).Select(sessions.GetByCharacterId)
                 .Where(s => s != null && s.ZoneId == round.Zone).Cast<UserSession>().ToList()
             : [];
         Wait(round, VanguardRules.WaitSeconds);
@@ -278,7 +278,7 @@ public sealed class VanguardService : BackgroundService, IVanguardService
         foreach (var survivor in survivors)
         {
             await GrantAsync(survivor, VanguardRules.OffensiveEmblem);
-            await _services.GetRequiredService<ILoyaltyService>().ChangeAsync(survivor, VanguardRules.SurvivorLoyalty);
+            await services.GetRequiredService<ILoyaltyService>().ChangeAsync(survivor, VanguardRules.SurvivorLoyalty);
         }
         foreach (var session in InZone(round.Zone))
             await session.Client.SendPacket(VanguardPacketWriter.Closed());
@@ -287,20 +287,20 @@ public sealed class VanguardService : BackgroundService, IVanguardService
     private async Task RewardKillerAsync(UserSession killer)
     {
         await GrantAsync(killer, Random.Shared.Next(2) == 0 ? VanguardRules.OffensiveEmblem : VanguardRules.DefensiveEmblem);
-        var party = killer.IsInParty ? _sessions.Parties.GetParty(killer.PartyIndex) : null;
+        var party = killer.IsInParty ? sessions.Parties.GetParty(killer.PartyIndex) : null;
         var members = party == null
             ? [killer]
-            : party.MemberIds.Where(id => id > 0).Select(id => _sessions.GetByCharacterId(id))
+            : party.MemberIds.Where(id => id > 0).Select(id => sessions.GetByCharacterId(id))
                 .Where(s => s != null && s.Hp > 0 && s.ZoneId == killer.ZoneId).Cast<UserSession>().ToList();
-        var loyalty = _services.GetRequiredService<ILoyaltyService>();
+        var loyalty = services.GetRequiredService<ILoyaltyService>();
         foreach (var member in members)
             await loyalty.ChangeAsync(member, VanguardRules.KillerPartyLoyalty);
     }
 
     private async Task GrantAsync(UserSession session, int itemId)
     {
-        if (_gameData.GetItem(itemId) is { } item)
-            await _services.GetRequiredService<IItemGrantService>().GrantAsync(session, item, 1);
+        if (gameData.GetItem(itemId) is { } item)
+            await services.GetRequiredService<IItemGrantService>().GrantAsync(session, item, 1);
     }
 
     private async Task SendListsAsync(Round round)
@@ -325,17 +325,17 @@ public sealed class VanguardService : BackgroundService, IVanguardService
 
     private async Task SendHomeFromBasesAsync(Round round)
     {
-        var world = _services.GetRequiredService<IWorldPacketCoordinator>();
+        var world = services.GetRequiredService<IWorldPacketCoordinator>();
         foreach (var nation in new[] { AccountNation.Karus, AccountNation.ElMorad })
             foreach (var session in Live(round, nation).Where(s => VanguardRules.InOwnBase(round.Zone, s.Nation, s.X, s.Z)).ToList())
                 await world.WarpAsync(session, VanguardRules.CentreX, VanguardRules.CentreZ);
     }
 
     private IEnumerable<UserSession> Live(Round round, AccountNation nation) =>
-        round.Of(nation).Select(_sessions.GetByCharacterId)
+        round.Of(nation).Select(sessions.GetByCharacterId)
             .Where(s => s != null && s.ZoneId == round.Zone).Cast<UserSession>();
 
-    private IEnumerable<UserSession> InZone(byte zone) => _sessions.GetAll().Where(s => s.ZoneId == zone).ToList();
+    private IEnumerable<UserSession> InZone(byte zone) => sessions.GetAll().Where(s => s.ZoneId == zone).ToList();
 
     private async Task SendToNationAsync(byte zone, AccountNation nation, Packet packet)
     {

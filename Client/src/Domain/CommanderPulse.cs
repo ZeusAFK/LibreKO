@@ -11,9 +11,9 @@ public sealed class CommanderPulse
     public const int RingImages = 10;
     public const int SweepImages = 9;
 
-    private int _direction = 1;
-    private double _sinceStep;
-    private int _frames;
+    private int direction = 1;
+    private double sinceStep;
+    private int frames;
 
     public int Alpha { get; private set; }
     public double Elapsed { get; private set; }
@@ -25,9 +25,9 @@ public sealed class CommanderPulse
     public void Start()
     {
         Alpha = StartAlpha;
-        _direction = 1;
-        _sinceStep = StepSeconds;
-        _frames = 0;
+        direction = 1;
+        sinceStep = StepSeconds;
+        frames = 0;
         Elapsed = 0;
         RingImage = 0;
         SweepImage = 0;
@@ -41,25 +41,25 @@ public sealed class CommanderPulse
     {
         if (!Running) return;
         Elapsed += delta;
-        _sinceStep += delta;
-        if (_sinceStep >= StepSeconds)
+        sinceStep += delta;
+        if (sinceStep >= StepSeconds)
         {
-            _sinceStep = 0;
-            Alpha += AlphaStep * _direction;
+            sinceStep = 0;
+            Alpha += AlphaStep * direction;
             if (Alpha >= MaxAlpha)
             {
                 Alpha = MaxAlpha;
-                _direction = -1;
+                direction = -1;
             }
             else if (Alpha <= 0)
             {
                 Alpha = 0;
-                _direction = 1;
+                direction = 1;
                 if (Elapsed > MinSeconds) Running = false;
             }
         }
-        if (++_frames < FramesPerImage) return;
-        _frames = 0;
+        if (++frames < FramesPerImage) return;
+        frames = 0;
         RingImage = (RingImage + 1) % RingImages;
         if (!Sweeping) return;
         if (++SweepImage >= SweepImages)

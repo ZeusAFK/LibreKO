@@ -14,32 +14,32 @@ public class PartyWarBoardTests
     private const int LeaderId = 1;
     private const int MemberId = 2;
 
-    private readonly SessionManager _sessions = new();
-    private readonly Dictionary<int, List<Packet>> _sent = [];
-    private readonly PartyWarBoardService _board;
-    private readonly UserSession _leader;
-    private readonly UserSession _member;
+    private readonly SessionManager sessions = new();
+    private readonly Dictionary<int, List<Packet>> sent = [];
+    private readonly PartyWarBoardService board;
+    private readonly UserSession leader;
+    private readonly UserSession member;
 
     public PartyWarBoardTests()
     {
-        _board = new PartyWarBoardService(_sessions, Substitute.For<ILogger<PartyWarBoardService>>());
-        _leader = Player(LeaderId);
-        _member = Player(MemberId);
-        var party = _sessions.Parties.CreateParty(LeaderId);
+        board = new PartyWarBoardService(sessions, Substitute.For<ILogger<PartyWarBoardService>>());
+        leader = Player(LeaderId);
+        member = Player(MemberId);
+        var party = sessions.Parties.CreateParty(LeaderId);
         party.MemberIds[1] = MemberId;
-        _leader.PartyIndex = _member.PartyIndex = party.Index;
-        _board.MemberJoined(party.Index, LeaderId);
-        _board.MemberJoined(party.Index, MemberId);
+        leader.PartyIndex = member.PartyIndex = party.Index;
+        board.MemberJoined(party.Index, LeaderId);
+        board.MemberJoined(party.Index, MemberId);
     }
 
     private UserSession Player(int id)
     {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
-        var sent = new List<Packet>();
-        _sent[id] = sent;
-        client.SendPacket(Arg.Do<Packet>(p => sent.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        return _sessions.CreateSession(client, id, id);
+        var packets = new List<Packet>();
+        sent[id] = packets;
+        client.SendPacket(Arg.Do<Packet>(p => packets.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        return sessions.CreateSession(client, id, id);
     }
 
     private static (byte Target, byte Mode, List<(int Id, short Share)> Rows) Read(Packet packet)
@@ -59,13 +59,13 @@ public class PartyWarBoardTests
     [Fact]
     public async Task ModesSentWithPartyCreateDecideWhatTheLeaderIsPushed()
     {
-        _board.SeedModes(_leader.PartyIndex, LeaderId, PartyWarBoardService.ModeHealing, PartyWarBoardService.ModeDamage);
-        _board.CountDamage(_member, 50);
-        _sent[LeaderId].Clear();
+        board.SeedModes(leader.PartyIndex, LeaderId, PartyWarBoardService.ModeHealing, PartyWarBoardService.ModeDamage);
+        board.CountDamage(member, 50);
+        sent[LeaderId].Clear();
 
-        await _board.PushAsync();
+        await board.PushAsync();
 
-        var pushed = _sent[LeaderId].Select(Read).Select(r => (r.Target, r.Mode)).ToList();
+        var pushed = sent[LeaderId].Select(Read).Select(r => (r.Target, r.Mode)).ToList();
         pushed.Should().BeEquivalentTo([(PartyWarBoardService.TargetRows, PartyWarBoardService.ModeHealing),
             (PartyWarBoardService.TargetBoard, PartyWarBoardService.ModeDamage)]);
     }
@@ -90,11 +90,11 @@ public class PartyWarBoardTests
     [Fact]
     public async Task AskingForAModeAnswersWithTheCurrentTable()
     {
-        _board.CountHealing(_member, 40);
+        board.CountHealing(member, 40);
 
-        await _board.SetModeAsync(_leader, PartyWarBoardService.TargetBoard, PartyWarBoardService.ModeHealing);
+        await board.SetModeAsync(leader, PartyWarBoardService.TargetBoard, PartyWarBoardService.ModeHealing);
 
-        var reply = Read(_sent[LeaderId].Single());
+        var reply = Read(sent[LeaderId].Single());
         reply.Target.Should().Be(PartyWarBoardService.TargetBoard);
         reply.Mode.Should().Be(PartyWarBoardService.ModeHealing);
         reply.Rows.Should().Equal((LeaderId, (short)0), (MemberId, (short)PartyWarBoardService.ShareScale));
@@ -103,50 +103,50 @@ public class PartyWarBoardTests
     [Fact]
     public async Task TurningAMeterOffSendsNothing()
     {
-        await _board.SetModeAsync(_leader, PartyWarBoardService.TargetRows, PartyWarBoardService.ModeOff);
+        await board.SetModeAsync(leader, PartyWarBoardService.TargetRows, PartyWarBoardService.ModeOff);
 
-        _sent[LeaderId].Should().BeEmpty();
+        sent[LeaderId].Should().BeEmpty();
     }
 
     [Fact]
     public async Task APushGoesOnlyToMembersWatchingThatMode()
     {
-        await _board.SetModeAsync(_member, PartyWarBoardService.TargetRows, PartyWarBoardService.ModeHealing);
-        _sent[MemberId].Clear();
-        _board.CountDamage(_leader, 90);
-        _board.CountDamage(_member, 10);
+        await board.SetModeAsync(member, PartyWarBoardService.TargetRows, PartyWarBoardService.ModeHealing);
+        sent[MemberId].Clear();
+        board.CountDamage(leader, 90);
+        board.CountDamage(member, 10);
 
-        await _board.PushAsync();
+        await board.PushAsync();
 
-        var leaderPush = Read(_sent[LeaderId].Single());
+        var leaderPush = Read(sent[LeaderId].Single());
         leaderPush.Target.Should().Be(PartyWarBoardService.TargetRows);
         leaderPush.Mode.Should().Be(PartyWarBoardService.ModeDamage);
         leaderPush.Rows.Should().Equal((LeaderId, (short)900), (MemberId, (short)100));
-        var memberPush = Read(_sent[MemberId].Single());
+        var memberPush = Read(sent[MemberId].Single());
         memberPush.Mode.Should().Be(PartyWarBoardService.ModeHealing);
     }
 
     [Fact]
     public async Task NothingIsPushedWhenNothingChanged()
     {
-        _board.CountDamage(_leader, 5);
-        await _board.PushAsync();
-        _sent[LeaderId].Clear();
+        board.CountDamage(leader, 5);
+        await board.PushAsync();
+        sent[LeaderId].Clear();
 
-        await _board.PushAsync();
+        await board.PushAsync();
 
-        _sent[LeaderId].Should().BeEmpty();
+        sent[LeaderId].Should().BeEmpty();
     }
 
     [Fact]
     public async Task AJoinerStartsFromZero()
     {
-        _board.CountDamage(_member, 50);
-        _board.MemberJoined(_member.PartyIndex, MemberId);
-        _board.CountDamage(_leader, 50);
+        board.CountDamage(member, 50);
+        board.MemberJoined(member.PartyIndex, MemberId);
+        board.CountDamage(leader, 50);
 
-        await _board.SetModeAsync(_leader, PartyWarBoardService.TargetBoard, PartyWarBoardService.ModeDamage);
+        await board.SetModeAsync(leader, PartyWarBoardService.TargetBoard, PartyWarBoardService.ModeDamage);
 
-        Read(_sent[LeaderId].Single()).Rows.Should().Equal((LeaderId, (short)1000), (MemberId, (short)0));
+        Read(sent[LeaderId].Single()).Rows.Should().Equal((LeaderId, (short)1000), (MemberId, (short)0));
     }
 }

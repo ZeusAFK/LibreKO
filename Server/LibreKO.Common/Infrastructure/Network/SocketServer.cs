@@ -23,17 +23,17 @@ public class SocketServer(
     private const int RateEntryStaleWindowMultiplier = 6;
     private static readonly TimeSpan RateSweepInterval = TimeSpan.FromMinutes(1);
 
-    private readonly IPAddress _bindAddress = bindHost == "*" ? IPAddress.Any : IPAddress.Parse(bindHost);
-    private readonly int _startPort = port;
-    private readonly int? _endPort = port + extraPorts;
-    private readonly List<TcpListener> _listeners = [];
-    private readonly List<Task> _acceptTasks = [];
-    private readonly ConcurrentDictionary<Guid, IClient> _clients = new();
-    private CancellationTokenSource _cts = new();
-    private Task? _sweepTask;
+    private readonly IPAddress bindAddress = bindHost == "*" ? IPAddress.Any : IPAddress.Parse(bindHost);
+    private readonly int startPort = port;
+    private readonly int? endPort = port + extraPorts;
+    private readonly List<TcpListener> listeners = [];
+    private readonly List<Task> acceptTasks = [];
+    private readonly ConcurrentDictionary<Guid, IClient> clients = new();
+    private CancellationTokenSource cts = new();
+    private Task? sweepTask;
 
-    private readonly ConcurrentDictionary<IPAddress, int> _connectionsPerIp = new();
-    private readonly ConcurrentDictionary<IPAddress, RateEntry> _connectionRate = new();
+    private readonly ConcurrentDictionary<IPAddress, int> connectionsPerIp = new();
+    private readonly ConcurrentDictionary<IPAddress, RateEntry> connectionRate = new();
 
     private sealed class RateEntry
     {
@@ -42,32 +42,32 @@ public class SocketServer(
         public readonly Lock Sync = new();
     }
 
-    public IReadOnlyCollection<IClient> GetConnectedClients() => [.. _clients.Values];
+    public IReadOnlyCollection<IClient> GetConnectedClients() => [.. clients.Values];
 
-    public IClient? FindClient(Guid clientId) => _clients.TryGetValue(clientId, out var client) ? client : null;
+    public IClient? FindClient(Guid clientId) => clients.TryGetValue(clientId, out var client) ? client : null;
 
-    public IClient? FindClientBySocket(Socket socket) => _clients.Values.FirstOrDefault(c => c.Socket == socket);
+    public IClient? FindClientBySocket(Socket socket) => clients.Values.FirstOrDefault(c => c.Socket == socket);
 
-    public IClient? FindClientByEndPoint(EndPoint endPoint) => _clients.Values.FirstOrDefault(c => c.Socket.RemoteEndPoint?.Equals(endPoint) == true);
+    public IClient? FindClientByEndPoint(EndPoint endPoint) => clients.Values.FirstOrDefault(c => c.Socket.RemoteEndPoint?.Equals(endPoint) == true);
 
-    public int ConnectedClientCount => _clients.Count;
+    public int ConnectedClientCount => clients.Count;
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var actualEnd = _endPort ?? _startPort;
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _sweepTask = SweepRateEntriesAsync(_cts.Token);
+        var actualEnd = endPort ?? startPort;
+        cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        sweepTask = SweepRateEntriesAsync(cts.Token);
 
         try
         {
-            for (var p = _startPort; p <= actualEnd; p++)
+            for (var p = startPort; p <= actualEnd; p++)
             {
                 try
                 {
-                    var listener = new TcpListener(_bindAddress, p);
+                    var listener = new TcpListener(bindAddress, p);
                     listener.Start();
-                    _listeners.Add(listener);
-                    _acceptTasks.Add(AcceptLoopAsync(listener, _cts.Token));
+                    listeners.Add(listener);
+                    acceptTasks.Add(AcceptLoopAsync(listener, cts.Token));
                 }
                 catch (SocketException ex)
                 {
@@ -75,15 +75,15 @@ public class SocketServer(
                 }
             }
 
-            if (_listeners.Count == 0)
+            if (listeners.Count == 0)
             {
                 logger.LogError("No listeners could be started. Stopping server.");
                 return;
             }
 
-            logger.LogInformation("Accepting connections on {BindHost}:{StartPort}{Range}", bindHost, _startPort, actualEnd == _startPort ? string.Empty : $"-{actualEnd}");
+            logger.LogInformation("Accepting connections on {BindHost}:{StartPort}{Range}", bindHost, startPort, actualEnd == startPort ? string.Empty : $"-{actualEnd}");
 
-            await Task.WhenAll(_acceptTasks);
+            await Task.WhenAll(acceptTasks);
 
         }
         catch (OperationCanceledException)
@@ -150,7 +150,7 @@ public class SocketServer(
                         continue;
                     }
 
-                    var held = _connectionsPerIp.AddOrUpdate(ip, 1, (_, c) => c + 1);
+                    var held = connectionsPerIp.AddOrUpdate(ip, 1, (_, c) => c + 1);
                     if (held > maxConnectionsPerIp)
                     {
                         ReleaseConnection(ip);
@@ -165,7 +165,7 @@ public class SocketServer(
                 socket.NoDelay = true;
 
                 var client = clientFactory.Create(socket);
-                _clients.TryAdd(client.Id, client);
+                clients.TryAdd(client.Id, client);
 
                 logger.LogTrace("Client connected: {RemoteEndPoint}", remote);
                 _ = Task.Run(() => HandleClientAsync(client, countedIp, remote, ct), ct);
@@ -192,9 +192,9 @@ public class SocketServer(
 
     private void ReleaseConnection(IPAddress ip)
     {
-        var remaining = _connectionsPerIp.AddOrUpdate(ip, 0, (_, c) => Math.Max(0, c - 1));
+        var remaining = connectionsPerIp.AddOrUpdate(ip, 0, (_, c) => Math.Max(0, c - 1));
         if (remaining == 0)
-            _connectionsPerIp.TryRemove(new KeyValuePair<IPAddress, int>(ip, 0));
+            connectionsPerIp.TryRemove(new KeyValuePair<IPAddress, int>(ip, 0));
     }
 
     private async Task SweepRateEntriesAsync(CancellationToken ct)
@@ -210,20 +210,20 @@ public class SocketServer(
                 var now = Environment.TickCount64;
                 var evicted = 0;
 
-                foreach (var (ip, entry) in _connectionRate)
+                foreach (var (ip, entry) in connectionRate)
                 {
                     lock (entry.Sync)
                     {
                         if (now - entry.WindowStart <= staleAfterMs)
                             continue;
 
-                        if (_connectionRate.TryRemove(new KeyValuePair<IPAddress, RateEntry>(ip, entry)))
+                        if (connectionRate.TryRemove(new KeyValuePair<IPAddress, RateEntry>(ip, entry)))
                             evicted++;
                     }
                 }
 
                 if (evicted > 0)
-                    logger.LogDebug("Evicted {Evicted} stale rate-limit entries, {Tracked} still tracked", evicted, _connectionRate.Count);
+                    logger.LogDebug("Evicted {Evicted} stale rate-limit entries, {Tracked} still tracked", evicted, connectionRate.Count);
             }
         }
         catch (OperationCanceledException)
@@ -236,7 +236,7 @@ public class SocketServer(
         var now = Environment.TickCount64;
         var windowMs = connectionRateWindowSeconds * 1000L;
 
-        var entry = _connectionRate.GetOrAdd(ip, _ => new RateEntry { Count = 0, WindowStart = now });
+        var entry = connectionRate.GetOrAdd(ip, _ => new RateEntry { Count = 0, WindowStart = now });
 
         lock (entry.Sync)
         {
@@ -253,16 +253,16 @@ public class SocketServer(
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await _cts.CancelAsync();
+        await cts.CancelAsync();
 
-        if (_sweepTask is not null)
+        if (sweepTask is not null)
         {
-            try { await _sweepTask; }
+            try { await sweepTask; }
             catch (Exception ex) { logger.LogDebug(ex, "Rate-limit sweep ended with an error"); }
-            _sweepTask = null;
+            sweepTask = null;
         }
 
-        foreach (var client in _clients.Values)
+        foreach (var client in clients.Values)
         {
             try
             {
@@ -277,9 +277,9 @@ public class SocketServer(
                 logger.LogError(ex, "Error disconnecting client {ClientId}", client.Id);
             }
         }
-        _clients.Clear();
+        clients.Clear();
 
-        foreach (var l in _listeners)
+        foreach (var l in listeners)
             l.Stop();
     }
 
@@ -318,7 +318,7 @@ public class SocketServer(
             if (countedIp != null)
                 ReleaseConnection(countedIp);
 
-            _clients.TryRemove(client.Id, out _);
+            clients.TryRemove(client.Id, out _);
 
             try { await packetHandler.OnClientDisconnected(client); }
             catch (Exception ex) { logger.LogWarning(ex, "Error in disconnect handler for client {Id}", client.Id); }

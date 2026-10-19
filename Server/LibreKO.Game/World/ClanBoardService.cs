@@ -69,15 +69,15 @@ public sealed class ClanBoardService(
     private sealed record WishPost(string Name, string Introduction, byte Level, byte Class, byte Age, byte Nation, DateTimeOffset Registered);
     private sealed record WishRequestEntry(short ClanId, string Leader, string Message);
 
-    private readonly object _gate = new();
-    private readonly Dictionary<short, Advert> _adverts = [];
-    private readonly Dictionary<short, DateTimeOffset> _clanPromotedAt = [];
-    private readonly Dictionary<string, Application> _applications = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, WishPost> _posts = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, List<WishRequestEntry>> _requests = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<short, string> _requestedBy = [];
-    private readonly Dictionary<string, DateTimeOffset> _wishPromotedAt = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, DateTimeOffset> _wishRefreshedAt = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object gate = new();
+    private readonly Dictionary<short, Advert> adverts = [];
+    private readonly Dictionary<short, DateTimeOffset> clanPromotedAt = [];
+    private readonly Dictionary<string, Application> applications = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, WishPost> posts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<WishRequestEntry>> requests = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<short, string> requestedBy = [];
+    private readonly Dictionary<string, DateTimeOffset> wishPromotedAt = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DateTimeOffset> wishRefreshedAt = new(StringComparer.OrdinalIgnoreCase);
 
     private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
 
@@ -98,15 +98,15 @@ public sealed class ClanBoardService(
 
     private Packet BoardStatusFor(UserSession session)
     {
-        lock (_gate)
+        lock (gate)
         {
             if (IsStaff(session))
-                return StaffStatus(_applications.Values.Where(a => a.ClanId == session.KnightsId)
+                return StaffStatus(applications.Values.Where(a => a.ClanId == session.KnightsId)
                     .Select(a => new Applicant(a.Level, a.Class, a.Name, a.Message)).ToList());
 
             byte state = session.KnightsId > 0 ? StateMember : StateClanless;
             AppliedClan? applied = null;
-            if (_applications.TryGetValue(session.Name, out var application)
+            if (applications.TryGetValue(session.Name, out var application)
                 && sessionManager.Knights.GetClan(application.ClanId) is { } clan)
                 applied = new AppliedClan(clan.Id, clan.MarkVersion, clan.Name);
             return ApplicantStatus(state, applied);
@@ -115,9 +115,9 @@ public sealed class ClanBoardService(
 
     private List<AdvertRow> AdvertPage(UserSession session, int page)
     {
-        lock (_gate)
+        lock (gate)
         {
-            return _adverts
+            return adverts
                 .Select(pair => (Clan: sessionManager.Knights.GetClan(pair.Key), Advert: pair.Value))
                 .Where(entry => entry.Clan != null && entry.Clan.Nation == (byte)session.Nation)
                 .OrderBy(entry => entry.Clan!.Grade)
@@ -152,13 +152,13 @@ public sealed class ClanBoardService(
         var clan = sessionManager.Knights.GetClan(clanId);
         if (clan == null || clan.Nation != (byte)session.Nation)
             return ApplyError;
-        lock (_gate)
+        lock (gate)
         {
-            if (!_adverts.ContainsKey(clanId))
+            if (!adverts.ContainsKey(clanId))
                 return ApplyNone;
-            if (_applications.TryGetValue(session.Name, out var existing))
+            if (applications.TryGetValue(session.Name, out var existing))
                 return existing.ClanId == clanId ? ApplyAlready : ApplyElsewhere;
-            _applications[session.Name] = new Application(clanId, session.Name, session.Level, (byte)session.Class, message);
+            applications[session.Name] = new Application(clanId, session.Name, session.Level, (byte)session.Class, message);
         }
         return CodeOk;
     }
@@ -168,15 +168,15 @@ public sealed class ClanBoardService(
         if (packet.RemainingBytes < 2)
             return ApplyError;
         string name = packet.ReadString();
-        lock (_gate)
+        lock (gate)
         {
-            if (!_applications.TryGetValue(name, out var application))
+            if (!applications.TryGetValue(name, out var application))
                 return ApplyNone;
             bool own = string.Equals(name, session.Name, StringComparison.OrdinalIgnoreCase);
             bool staffOfClan = IsStaff(session) && session.KnightsId == application.ClanId;
             if (!own && !staffOfClan)
                 return ApplyError;
-            _applications.Remove(name);
+            applications.Remove(name);
         }
         return CodeOk;
     }
@@ -200,23 +200,23 @@ public sealed class ClanBoardService(
     {
         if (text.Length == 0 || text.Length > MaxMessageBytes)
             return AdvertTooLong;
-        lock (_gate)
+        lock (gate)
         {
-            if (_adverts.ContainsKey(session.KnightsId))
+            if (adverts.ContainsKey(session.KnightsId))
                 return AdvertAlready;
-            _adverts[session.KnightsId] = new Advert(text);
+            adverts[session.KnightsId] = new Advert(text);
         }
         return CodeOk;
     }
 
     private byte DeleteAdvert(UserSession session)
     {
-        lock (_gate)
+        lock (gate)
         {
-            if (!_adverts.Remove(session.KnightsId))
+            if (!adverts.Remove(session.KnightsId))
                 return AdvertNone;
-            foreach (var name in _applications.Where(pair => pair.Value.ClanId == session.KnightsId).Select(pair => pair.Key).ToList())
-                _applications.Remove(name);
+            foreach (var name in applications.Where(pair => pair.Value.ClanId == session.KnightsId).Select(pair => pair.Key).ToList())
+                applications.Remove(name);
         }
         return CodeOk;
     }
@@ -225,20 +225,20 @@ public sealed class ClanBoardService(
     {
         var clan = ClanOf(session);
         byte? refusal = null;
-        lock (_gate)
+        lock (gate)
         {
             if (clan == null)
                 refusal = PromoteNoClan;
             else if (!IsStaff(session))
                 refusal = PromoteNotCommander;
-            else if (!_adverts.ContainsKey(clan.Id))
+            else if (!adverts.ContainsKey(clan.Id))
                 refusal = PromoteNoAdvert;
             else if (sessionManager.Battle.IsBattleActive)
                 refusal = PromoteWar;
-            else if (_clanPromotedAt.TryGetValue(clan.Id, out var last) && Now - last < ClanPromoteCooldown)
+            else if (clanPromotedAt.TryGetValue(clan.Id, out var last) && Now - last < ClanPromoteCooldown)
                 refusal = PromoteTooSoon;
             else
-                _clanPromotedAt[clan.Id] = Now;
+                clanPromotedAt[clan.Id] = Now;
         }
 
         if (refusal is { } code || clan == null)
@@ -285,12 +285,12 @@ public sealed class ClanBoardService(
     private async Task OpenWishAsync(UserSession session, byte pageByte, byte refresh)
     {
         bool tooSoon = false;
-        lock (_gate)
+        lock (gate)
         {
-            if (refresh == RefreshFlag && _wishRefreshedAt.TryGetValue(session.Name, out var last) && Now - last < WishRefreshCooldown)
+            if (refresh == RefreshFlag && wishRefreshedAt.TryGetValue(session.Name, out var last) && Now - last < WishRefreshCooldown)
                 tooSoon = true;
             else if (refresh == RefreshFlag)
-                _wishRefreshedAt[session.Name] = Now;
+                wishRefreshedAt[session.Name] = Now;
         }
         if (tooSoon)
         {
@@ -304,22 +304,22 @@ public sealed class ClanBoardService(
 
     private Packet WishStatusFor(UserSession session)
     {
-        lock (_gate)
+        lock (gate)
         {
             if (IsStaff(session))
-                return WishRecruiterStatus(_requestedBy.TryGetValue(session.KnightsId, out var name) ? name : "");
+                return WishRecruiterStatus(requestedBy.TryGetValue(session.KnightsId, out var name) ? name : "");
             if (session.KnightsId > 0)
                 return WishMemberStatus();
-            return WishSeekerStatus(_requests.TryGetValue(session.Name, out var list) ? list.Count : 0);
+            return WishSeekerStatus(requests.TryGetValue(session.Name, out var list) ? list.Count : 0);
         }
     }
 
     private List<WishRow> WishPageFor(UserSession session, int page)
     {
-        lock (_gate)
+        lock (gate)
         {
             DropExpiredPosts();
-            return _posts.Values
+            return posts.Values
                 .Where(post => post.Nation == (byte)session.Nation)
                 .OrderByDescending(post => post.Registered)
                 .Skip((page - 1) * RowsPerPage)
@@ -336,15 +336,15 @@ public sealed class ClanBoardService(
 
     private void DropExpiredPosts()
     {
-        foreach (var name in _posts.Where(pair => Now - pair.Value.Registered > WishPostLifetime).Select(pair => pair.Key).ToList())
-            _posts.Remove(name);
+        foreach (var name in posts.Where(pair => Now - pair.Value.Registered > WishPostLifetime).Select(pair => pair.Key).ToList())
+            posts.Remove(name);
     }
 
     private List<WishRequest> RequestsFor(string poster)
     {
-        lock (_gate)
+        lock (gate)
         {
-            if (!_requests.TryGetValue(poster, out var list))
+            if (!requests.TryGetValue(poster, out var list))
                 return [];
             return list.Select(request => sessionManager.Knights.GetClan(request.ClanId) is { } clan
                     ? new WishRequest(clan.Id, request.Leader, clan.Name, clan.Grade, clan.Flag, clan.MarkVersion, request.Message)
@@ -364,8 +364,8 @@ public sealed class ClanBoardService(
         else if (action == KindRegister)
             code = RegisterIntro(session, packet);
         else
-            lock (_gate)
-                code = _posts.Remove(session.Name) ? WishOk : WishFailed;
+            lock (gate)
+                code = posts.Remove(session.Name) ? WishOk : WishFailed;
         await session.Client.SendPacket(WishResult(WishIntroResult, action, code));
     }
 
@@ -377,12 +377,12 @@ public sealed class ClanBoardService(
         string text = packet.ReadSByteString();
         if (age is < MinAge or > MaxAge || text.Length == 0 || text.Length > MaxMessageBytes)
             return WishFailed;
-        lock (_gate)
+        lock (gate)
         {
             DropExpiredPosts();
-            if (_posts.ContainsKey(session.Name))
+            if (posts.ContainsKey(session.Name))
                 return WishAlready;
-            _posts[session.Name] = new WishPost(session.Name, text, session.Level, (byte)session.Class, age, (byte)session.Nation, Now);
+            posts[session.Name] = new WishPost(session.Name, text, session.Level, (byte)session.Class, age, (byte)session.Nation, Now);
         }
         return WishOk;
     }
@@ -403,20 +403,20 @@ public sealed class ClanBoardService(
         string message = packet.RemainingBytes >= 1 ? packet.ReadSByteString() : "";
         if (clanId != session.KnightsId || message.Length > MaxMessageBytes)
             return WishFailed;
-        lock (_gate)
+        lock (gate)
         {
-            if (!_posts.ContainsKey(poster))
+            if (!posts.ContainsKey(poster))
                 return WishFailed;
-            if (!_requests.TryGetValue(poster, out var list))
-                _requests[poster] = list = [];
+            if (!requests.TryGetValue(poster, out var list))
+                requests[poster] = list = [];
             if (list.Any(request => request.ClanId == clanId))
                 return WishAlready;
             if (list.Count >= MaxRequests)
                 return WishExceeded;
-            if (_requestedBy.TryGetValue(clanId, out var previous))
-                _requests.GetValueOrDefault(previous)?.RemoveAll(request => request.ClanId == clanId);
+            if (requestedBy.TryGetValue(clanId, out var previous))
+                requests.GetValueOrDefault(previous)?.RemoveAll(request => request.ClanId == clanId);
             list.Add(new WishRequestEntry(clanId, session.Name, message));
-            _requestedBy[clanId] = poster;
+            requestedBy[clanId] = poster;
         }
         return WishOk;
     }
@@ -426,18 +426,18 @@ public sealed class ClanBoardService(
         if (packet.RemainingBytes < 2)
             return WishFailed;
         short clanId = packet.ReadShort();
-        lock (_gate)
+        lock (gate)
         {
             if (IsStaff(session) && session.KnightsId == clanId)
             {
-                if (!_requestedBy.Remove(clanId, out var poster))
+                if (!requestedBy.Remove(clanId, out var poster))
                     return WishFailed;
-                _requests.GetValueOrDefault(poster)?.RemoveAll(request => request.ClanId == clanId);
+                requests.GetValueOrDefault(poster)?.RemoveAll(request => request.ClanId == clanId);
                 return WishOk;
             }
-            if (!_requests.TryGetValue(session.Name, out var list) || list.RemoveAll(request => request.ClanId == clanId) == 0)
+            if (!requests.TryGetValue(session.Name, out var list) || list.RemoveAll(request => request.ClanId == clanId) == 0)
                 return WishFailed;
-            _requestedBy.Remove(clanId);
+            requestedBy.Remove(clanId);
             return WishOk;
         }
     }
@@ -457,9 +457,9 @@ public sealed class ClanBoardService(
     private async Task AcceptAsync(UserSession session, short clanId)
     {
         var clan = sessionManager.Knights.GetClan(clanId);
-        lock (_gate)
+        lock (gate)
         {
-            if (clan == null || session.KnightsId > 0 || !_requests.TryGetValue(session.Name, out var list)
+            if (clan == null || session.KnightsId > 0 || !requests.TryGetValue(session.Name, out var list)
                 || list.All(request => request.ClanId != clanId))
                 clan = null;
         }
@@ -468,31 +468,31 @@ public sealed class ClanBoardService(
             await session.Client.SendPacket(WishResult(WishRequestResult, KindRegister, WishFailed));
             return;
         }
-        lock (_gate)
+        lock (gate)
         {
-            _posts.Remove(session.Name);
-            _applications.Remove(session.Name);
-            if (_requests.Remove(session.Name, out var accepted))
+            posts.Remove(session.Name);
+            applications.Remove(session.Name);
+            if (requests.Remove(session.Name, out var accepted))
                 foreach (var request in accepted)
-                    _requestedBy.Remove(request.ClanId);
+                    requestedBy.Remove(request.ClanId);
         }
     }
 
     private async Task PromoteSelfAsync(UserSession session)
     {
         byte? refusal = null;
-        lock (_gate)
+        lock (gate)
         {
             if (session.KnightsId > 0)
                 refusal = WishInClan;
-            else if (!_posts.ContainsKey(session.Name))
+            else if (!posts.ContainsKey(session.Name))
                 refusal = PromoteNotRegistered;
             else if (sessionManager.Battle.IsBattleActive)
                 refusal = PromoteWar;
-            else if (_wishPromotedAt.TryGetValue(session.Name, out var last) && Now - last < WishPromoteCooldown)
+            else if (wishPromotedAt.TryGetValue(session.Name, out var last) && Now - last < WishPromoteCooldown)
                 refusal = PromoteTooSoon;
             else
-                _wishPromotedAt[session.Name] = Now;
+                wishPromotedAt[session.Name] = Now;
         }
 
         if (refusal is { } code)

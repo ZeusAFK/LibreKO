@@ -18,25 +18,25 @@ public sealed partial class NearbyCard : PanelContainer
     public event Action<NearbyRow>? WhisperPicked;
     public event Action<NearbyRow, Vector2>? MenuPicked;
 
-    private readonly Control _list;
-    private readonly VScrollBar _bar;
-    private readonly List<RowView> _rows = new();
-    private readonly Label _empty;
-    private readonly StyleBoxFlat _style;
-    private List<NearbyRow> _all = new();
-    private int _first;
-    private int _visible = 1;
-    private float _rowHeight;
-    private bool? _scrollable;
+    private readonly Control list;
+    private readonly VScrollBar bar;
+    private readonly List<RowView> rowViews = new();
+    private readonly Label empty;
+    private readonly StyleBoxFlat style;
+    private List<NearbyRow> all = new();
+    private int first;
+    private int visible = 1;
+    private float rowHeight;
+    private bool? scrollable;
 
     public NearbyCard()
     {
         MouseFilter = MouseFilterEnum.Stop;
-        _style = new StyleBoxFlat { BorderColor = new Color(UiTheme.Edge, EdgeAlpha) };
-        _style.SetBorderWidthAll(1);
-        _style.SetCornerRadiusAll(6);
-        _style.ContentMarginLeft = _style.ContentMarginRight = _style.ContentMarginTop = _style.ContentMarginBottom = 6;
-        AddThemeStyleboxOverride("panel", _style);
+        style = new StyleBoxFlat { BorderColor = new Color(UiTheme.Edge, EdgeAlpha) };
+        style.SetBorderWidthAll(1);
+        style.SetCornerRadiusAll(6);
+        style.ContentMarginLeft = style.ContentMarginRight = style.ContentMarginTop = style.ContentMarginBottom = 6;
+        AddThemeStyleboxOverride("panel", style);
 
         var root = new VBoxContainer();
         root.AddThemeConstantOverride("separation", 4);
@@ -45,43 +45,43 @@ public sealed partial class NearbyCard : PanelContainer
         var body = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         body.AddThemeConstantOverride("separation", 3);
         root.AddChild(body);
-        _list = new Control
+        list = new Control
         {
             ClipContents = true,
             MouseFilter = MouseFilterEnum.Pass,
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
         };
-        _list.Resized += Refit;
-        body.AddChild(_list);
-        _empty = UiTheme.Text("No one nearby.", 11, UiTheme.TextDim, HorizontalAlignment.Center);
-        _empty.Visible = false;
-        _list.AddChild(_empty);
-        _bar = new VScrollBar
+        list.Resized += Refit;
+        body.AddChild(list);
+        empty = UiTheme.Text("No one nearby.", 11, UiTheme.TextDim, HorizontalAlignment.Center);
+        empty.Visible = false;
+        list.AddChild(empty);
+        bar = new VScrollBar
         {
             Step = 1,
             CustomMinimumSize = new Vector2(ScrollbarWidth, 0),
             SizeFlagsVertical = SizeFlags.ExpandFill,
             FocusMode = FocusModeEnum.None,
         };
-        UiTheme.ThinScrollbar(_bar);
-        _bar.ValueChanged += value =>
+        UiTheme.ThinScrollbar(bar);
+        bar.ValueChanged += value =>
         {
-            _first = (int)value;
+            first = (int)value;
             ShowRows();
         };
-        body.AddChild(_bar);
+        body.AddChild(bar);
     }
 
     public void SetBackground(float alpha)
     {
-        _style.BgColor = new Color(0, 0, 0, alpha);
-        _style.BorderColor = new Color(UiTheme.Edge, alpha > 0 ? EdgeAlpha : 0f);
+        style.BgColor = new Color(0, 0, 0, alpha);
+        style.BorderColor = new Color(UiTheme.Edge, alpha > 0 ? EdgeAlpha : 0f);
     }
 
     public void SetRows(List<NearbyRow> rows)
     {
-        _all = rows;
+        all = rows;
         ShowRows();
     }
 
@@ -91,52 +91,52 @@ public sealed partial class NearbyCard : PanelContainer
         row.Clicked += view => { if (view.Row is { } r) WhisperPicked?.Invoke(r); };
         row.Wheeled += Scroll;
         row.MenuRequested += (view, at) => { if (view.Row is { } r) MenuPicked?.Invoke(r, at); };
-        _rows.Add(row);
-        _list.AddChild(row);
+        rowViews.Add(row);
+        list.AddChild(row);
         return row;
     }
 
     private void Refit()
     {
-        if (_rows.Count == 0) AddRow();
-        if (_rowHeight <= 0) _rowHeight = _rows[0].GetCombinedMinimumSize().Y;
-        _visible = NearbyDock.RowsThatFit(_list.Size.Y, _rowHeight, RowGap);
-        while (_rows.Count <= _visible) AddRow();
-        for (int i = 0; i < _rows.Count; i++)
+        if (rowViews.Count == 0) AddRow();
+        if (rowHeight <= 0) rowHeight = rowViews[0].GetCombinedMinimumSize().Y;
+        visible = NearbyDock.RowsThatFit(list.Size.Y, rowHeight, RowGap);
+        while (rowViews.Count <= visible) AddRow();
+        for (int i = 0; i < rowViews.Count; i++)
         {
-            _rows[i].Position = new Vector2(0, i * (_rowHeight + RowGap));
-            _rows[i].Size = new Vector2(_list.Size.X, _rowHeight);
+            rowViews[i].Position = new Vector2(0, i * (rowHeight + RowGap));
+            rowViews[i].Size = new Vector2(list.Size.X, rowHeight);
         }
-        _empty.Size = new Vector2(_list.Size.X, _rowHeight);
+        empty.Size = new Vector2(list.Size.X, rowHeight);
         ShowRows();
     }
 
     private void ShowRows()
     {
-        _first = NearbyDock.ClampFirst(_first, _all.Count, _visible);
-        for (int i = 0; i < _rows.Count; i++)
+        first = NearbyDock.ClampFirst(first, all.Count, visible);
+        for (int i = 0; i < rowViews.Count; i++)
         {
-            int at = _first + i;
-            _rows[i].Show(i <= _visible && at < _all.Count ? _all[at] : null);
+            int at = first + i;
+            rowViews[i].Show(i <= visible && at < all.Count ? all[at] : null);
         }
-        _empty.Visible = _all.Count == 0;
+        empty.Visible = all.Count == 0;
         SyncBar();
     }
 
     private void SyncBar()
     {
-        _bar.MaxValue = Math.Max(_all.Count, _visible);
-        _bar.Page = _visible;
-        _bar.SetValueNoSignal(_first);
-        bool scrollable = _all.Count > _visible;
-        if (_scrollable == scrollable) return;
-        _scrollable = scrollable;
-        UiTheme.ThinScrollbarThumb(_bar, scrollable);
+        bar.MaxValue = Math.Max(all.Count, visible);
+        bar.Page = visible;
+        bar.SetValueNoSignal(first);
+        bool canScroll = all.Count > visible;
+        if (scrollable == canScroll) return;
+        scrollable = canScroll;
+        UiTheme.ThinScrollbarThumb(bar, canScroll);
     }
 
     private void Scroll(int rows)
     {
-        _first = NearbyDock.ClampFirst(_first + rows, _all.Count, _visible);
+        first = NearbyDock.ClampFirst(first + rows, all.Count, visible);
         ShowRows();
     }
 
@@ -165,10 +165,10 @@ public sealed partial class NearbyCard : PanelContainer
         public event Action<int>? Wheeled;
         public NearbyRow? Row { get; private set; }
 
-        private readonly ColorRect _stripe;
-        private readonly Label _name;
-        private readonly Label _distance;
-        private bool _muted;
+        private readonly ColorRect stripe;
+        private readonly Label name;
+        private readonly Label distance;
+        private bool muted;
 
         public RowView()
         {
@@ -177,16 +177,16 @@ public sealed partial class NearbyCard : PanelContainer
             var line = new HBoxContainer();
             line.AddThemeConstantOverride("separation", 6);
             AddChild(line);
-            _stripe = new ColorRect { CustomMinimumSize = new Vector2(StripeWidth, 0), MouseFilter = MouseFilterEnum.Ignore };
-            line.AddChild(_stripe);
-            _name = UiTheme.Text("", 12, UiTheme.TextHi);
-            _name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            _name.ClipText = true;
-            _name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-            line.AddChild(_name);
-            _distance = UiTheme.Text("", 11, UiTheme.TextLo, HorizontalAlignment.Right);
-            _distance.CustomMinimumSize = new Vector2(DistanceWidth, 0);
-            line.AddChild(_distance);
+            stripe = new ColorRect { CustomMinimumSize = new Vector2(StripeWidth, 0), MouseFilter = MouseFilterEnum.Ignore };
+            line.AddChild(stripe);
+            name = UiTheme.Text("", 12, UiTheme.TextHi);
+            name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            name.ClipText = true;
+            name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            line.AddChild(name);
+            distance = UiTheme.Text("", 11, UiTheme.TextLo, HorizontalAlignment.Right);
+            distance.CustomMinimumSize = new Vector2(DistanceWidth, 0);
+            line.AddChild(distance);
             Style();
         }
 
@@ -196,17 +196,17 @@ public sealed partial class NearbyCard : PanelContainer
             Visible = row != null;
             if (row is not { } r) return;
             bool inSight = r.Id != NearbyRoster.NotInSight;
-            _stripe.Color = RelationColour(r.Relation);
-            _name.Text = r.Name;
-            _name.AddThemeColorOverride("font_color", inSight ? UiTheme.TextHi : UiTheme.TextLo);
-            _distance.Text = $"{MathF.Round(r.Distance):0} m";
+            stripe.Color = RelationColour(r.Relation);
+            name.Text = r.Name;
+            name.AddThemeColorOverride("font_color", inSight ? UiTheme.TextHi : UiTheme.TextLo);
+            distance.Text = $"{MathF.Round(r.Distance):0} m";
             TooltipText = $"Whisper {r.Name}";
-            if (!inSight == _muted) return;
-            _muted = !inSight;
+            if (!inSight == muted) return;
+            muted = !inSight;
             Style();
         }
 
-        private void Style() => AddThemeStyleboxOverride("panel", UiTheme.Row(muted: _muted));
+        private void Style() => AddThemeStyleboxOverride("panel", UiTheme.Row(muted: muted));
 
         public override void _GuiInput(InputEvent ev)
         {

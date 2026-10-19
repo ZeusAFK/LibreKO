@@ -35,8 +35,8 @@ public sealed class VoiceRelayService(
 {
     private const int WindowsUdpConnReset = -1744830452;
 
-    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
-    private Socket? _socket;
+    private readonly TimeProvider clock = clock ?? TimeProvider.System;
+    private Socket? socket;
 
     public bool Enabled => settings.Value.ChatRooms.Voice.Enabled;
     public ushort UdpPort { get; private set; }
@@ -47,7 +47,7 @@ public sealed class VoiceRelayService(
         if (!voice.Enabled) return;
         try
         {
-            _socket = Bind(voice);
+            socket = Bind(voice);
         }
         catch (Exception ex) when (ex is SocketException or FormatException)
         {
@@ -65,7 +65,7 @@ public sealed class VoiceRelayService(
             SocketReceiveFromResult received;
             try
             {
-                received = await _socket.ReceiveFromAsync(buffer, SocketFlags.None, any, stoppingToken);
+                received = await socket.ReceiveFromAsync(buffer, SocketFlags.None, any, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -85,7 +85,7 @@ public sealed class VoiceRelayService(
                 logger.LogDebug(ex, "Voice datagram dropped");
             }
         }
-        _socket.Dispose();
+        socket.Dispose();
     }
 
     private static Socket Bind(VoiceSettings voice)
@@ -112,7 +112,7 @@ public sealed class VoiceRelayService(
             case VoiceDatagram.Frame when length > VoiceDatagram.ClientFrameHeader:
                 ushort seq = BinaryPrimitives.ReadUInt16LittleEndian(plain.AsSpan(1));
                 var opus = plain.AsMemory(VoiceDatagram.ClientFrameHeader, length - VoiceDatagram.ClientFrameHeader);
-                if (roster.AllowFrame(member, opus.Length, _clock.GetUtcNow().ToUnixTimeMilliseconds()))
+                if (roster.AllowFrame(member, opus.Length, clock.GetUtcNow().ToUnixTimeMilliseconds()))
                     await ForwardAsync(member, seq, opus);
                 break;
         }
@@ -146,7 +146,7 @@ public sealed class VoiceRelayService(
 
     private async Task SendSealedAsync(VoiceMember member, byte[] plain)
     {
-        if (_socket == null || member.Endpoint == null) return;
+        if (socket == null || member.Endpoint == null) return;
         var datagram = new byte[plain.Length + VoiceSeal.Overhead];
         int length;
         try
@@ -159,7 +159,7 @@ public sealed class VoiceRelayService(
         }
         try
         {
-            await _socket.SendToAsync(datagram.AsMemory(0, length), SocketFlags.None, member.Endpoint);
+            await socket.SendToAsync(datagram.AsMemory(0, length), SocketFlags.None, member.Endpoint);
         }
         catch (SocketException ex)
         {

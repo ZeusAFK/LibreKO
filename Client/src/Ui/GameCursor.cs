@@ -25,36 +25,36 @@ public static class GameCursor
     private static readonly System.Collections.Generic.Dictionary<string, Image?> Images =
         Shutdown.Track(new System.Collections.Generic.Dictionary<string, Image?>());
 
-    private static int _nation = Nations.NotSelected;
-    private static GameCursorKind _kind = GameCursorKind.Arrow;
-    private static string? _applied;
-    private static bool _enabled;
+    private static int nation = Nations.NotSelected;
+    private static GameCursorKind kind = GameCursorKind.Arrow;
+    private static string? applied;
+    private static bool enabled;
 
     public static void Enable()
     {
-        _enabled = true;
+        enabled = true;
         Apply(force: true);
     }
 
     public static void Disable()
     {
-        _enabled = false;
-        _applied = null;
+        enabled = false;
+        applied = null;
         foreach (var shape in Shapes)
             Input.SetCustomMouseCursor(null, shape);
     }
 
     public static void SetNation(int nation)
     {
-        if (_nation == nation) return;
-        _nation = nation;
+        if (GameCursor.nation == nation) return;
+        GameCursor.nation = nation;
         Apply();
     }
 
     public static void Set(GameCursorKind kind)
     {
-        if (_kind == kind) return;
-        _kind = kind;
+        if (GameCursor.kind == kind) return;
+        GameCursor.kind = kind;
         Apply();
     }
 
@@ -65,19 +65,19 @@ public static class GameCursor
         GameCursorKind.Attack => "attack",
         GameCursorKind.Repair => "repair",
         GameCursorKind.RepairAlt => "repair_alt",
-        GameCursorKind.Held => _nation == Nations.ElMorad ? "el_held" : "ka_held",
-        _ => _nation == Nations.ElMorad ? "el_idle" : "ka_idle",
+        GameCursorKind.Held => nation == Nations.ElMorad ? "el_held" : "ka_held",
+        _ => nation == Nations.ElMorad ? "el_idle" : "ka_idle",
     };
 
     private static void Apply(bool force = false)
     {
-        if (!_enabled) return;
-        string stem = Stem(_kind);
-        if (!force && stem == _applied) return;
+        if (!enabled) return;
+        string stem = Stem(kind);
+        if (!force && stem == applied) return;
         if (ImageOf(stem) is not { } image) return;
         foreach (var shape in Shapes)
             Input.SetCustomMouseCursor(image, shape, Vector2.Zero);
-        _applied = stem;
+        applied = stem;
     }
 
     private static Image? ImageOf(string stem)

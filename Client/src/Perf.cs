@@ -26,37 +26,37 @@ public static class Perf
 
     public enum Counter { FxSpawned, Count }
 
-    private static readonly long[] _ticks = new long[(int)Section.Count];
-    private static readonly int[] _calls = new int[(int)Section.Count];
-    private static readonly double[] _ms = new double[(int)Section.Count];
-    private static readonly double[] _callsPerFrame = new double[(int)Section.Count];
-    private static readonly int[] _counts = new int[(int)Counter.Count];
-    private static readonly int[] _totals = new int[(int)Counter.Count];
-    private static readonly long[] _frameTicks = new long[(int)Section.Count];
-    private static readonly int[] _frameCalls = new int[(int)Section.Count];
-    private static readonly int[] _perSecond = new int[(int)Counter.Count];
-    private static ulong _lastFrame;
-    private static int _lastGc0;
-    private static long _lastReportAt = Stopwatch.GetTimestamp();
+    private static readonly long[] ticks = new long[(int)Section.Count];
+    private static readonly int[] calls = new int[(int)Section.Count];
+    private static readonly double[] milliseconds = new double[(int)Section.Count];
+    private static readonly double[] callsPerFrame = new double[(int)Section.Count];
+    private static readonly int[] counts = new int[(int)Counter.Count];
+    private static readonly int[] totals = new int[(int)Counter.Count];
+    private static readonly long[] frameTicks = new long[(int)Section.Count];
+    private static readonly int[] frameCalls = new int[(int)Section.Count];
+    private static readonly int[] perSecond = new int[(int)Counter.Count];
+    private static ulong lastFrame;
+    private static int lastGc0;
+    private static long lastReportAt = Stopwatch.GetTimestamp();
 
     public readonly struct Scope : IDisposable
     {
-        private readonly Section _section;
-        private readonly long _start;
+        private readonly Section section;
+        private readonly long start;
 
         public Scope(Section section)
         {
-            _section = section;
-            _start = Stopwatch.GetTimestamp();
-            _calls[(int)section]++;
-            _frameCalls[(int)section]++;
+            this.section = section;
+            start = Stopwatch.GetTimestamp();
+            calls[(int)section]++;
+            frameCalls[(int)section]++;
         }
 
         public void Dispose()
         {
-            long elapsed = Stopwatch.GetTimestamp() - _start;
-            _ticks[(int)_section] += elapsed;
-            _frameTicks[(int)_section] += elapsed;
+            long elapsed = Stopwatch.GetTimestamp() - start;
+            ticks[(int)section] += elapsed;
+            frameTicks[(int)section] += elapsed;
         }
     }
 
@@ -64,27 +64,27 @@ public static class Perf
 
     public static void Tally(Counter counter)
     {
-        _counts[(int)counter]++;
-        _totals[(int)counter]++;
+        counts[(int)counter]++;
+        totals[(int)counter]++;
     }
 
-    public static int Total(Counter counter) => _totals[(int)counter];
+    public static int Total(Counter counter) => totals[(int)counter];
 
-    public static double FrameMs(Section section) => _frameTicks[(int)section] * 1000.0 / Stopwatch.Frequency;
+    public static double FrameMs(Section section) => frameTicks[(int)section] * 1000.0 / Stopwatch.Frequency;
 
-    public static int FrameCalls(Section section) => _frameCalls[(int)section];
+    public static int FrameCalls(Section section) => frameCalls[(int)section];
 
     public static void ClearFrame()
     {
-        Array.Clear(_frameTicks);
-        Array.Clear(_frameCalls);
+        Array.Clear(frameTicks);
+        Array.Clear(frameCalls);
     }
 
-    public static double Ms(Section section) => _ms[(int)section];
+    public static double Ms(Section section) => milliseconds[(int)section];
 
-    public static double Calls(Section section) => _callsPerFrame[(int)section];
+    public static double Calls(Section section) => callsPerFrame[(int)section];
 
-    public static int PerSecond(Counter counter) => _perSecond[(int)counter];
+    public static int PerSecond(Counter counter) => perSecond[(int)counter];
 
     public static int Gc0PerSecond { get; private set; }
 
@@ -98,51 +98,51 @@ public static class Perf
         + $"   emitters {(SkipEmitters ? "OFF" : "on")}   audio {(SkipAudio ? "OFF" : "on")}   fx {(SkipFx ? "OFF" : "on")}"
         + $"   lamps {(SkipLamps ? "OFF" : "on")} (lit {FxLampLight.Lit})";
     public static int FxVisible { get; private set; }
-    private static int _fxVisibleAccum;
-    private static ulong _fxVisibleFrame = ulong.MaxValue;
+    private static int fxVisibleAccum;
+    private static ulong fxVisibleFrame = ulong.MaxValue;
 
     public static void CountFxVisible()
     {
         ulong frame = Engine.GetProcessFrames();
-        if (frame != _fxVisibleFrame)
+        if (frame != fxVisibleFrame)
         {
-            FxVisible = _fxVisibleAccum;
-            _fxVisibleAccum = 0;
-            _fxVisibleFrame = frame;
+            FxVisible = fxVisibleAccum;
+            fxVisibleAccum = 0;
+            fxVisibleFrame = frame;
         }
-        _fxVisibleAccum++;
+        fxVisibleAccum++;
     }
 
     private const int FrameWindow = 2400;
-    private static readonly double[] _frameTimes = new double[FrameWindow];
-    private static readonly double[] _frameSorted = new double[FrameWindow];
-    private static readonly int[] _closeRing = new int[FrameWindow];
-    private static readonly int[] _fxVisibleRing = new int[FrameWindow];
-    private static int _frameHead, _frameCount;
+    private static readonly double[] frameTimes = new double[FrameWindow];
+    private static readonly double[] frameSorted = new double[FrameWindow];
+    private static readonly int[] closeRing = new int[FrameWindow];
+    private static readonly int[] fxVisibleRing = new int[FrameWindow];
+    private static int frameHead, frameCount;
     private static readonly double[] BucketEdgesMs = { 16.7, 33.3, 66.7, 133.3, 250.0 };
     private const int SparkFrames = 60;
     private const string SparkGlyphs = "▁▂▃▄▅▆▇█";
 
     public static void FrameTick(double delta)
     {
-        _frameTimes[_frameHead] = delta;
-        _closeRing[_frameHead] = CloseEntities;
-        _fxVisibleRing[_frameHead] = FxVisible;
-        _frameHead = (_frameHead + 1) % FrameWindow;
-        if (_frameCount < FrameWindow) _frameCount++;
+        frameTimes[frameHead] = delta;
+        closeRing[frameHead] = CloseEntities;
+        fxVisibleRing[frameHead] = FxVisible;
+        frameHead = (frameHead + 1) % FrameWindow;
+        if (frameCount < FrameWindow) frameCount++;
     }
 
-    public static double CloseEntitiesAverage(double windowSeconds) => WindowAverage(_closeRing, windowSeconds);
-    public static double FxVisibleAverage(double windowSeconds) => WindowAverage(_fxVisibleRing, windowSeconds);
+    public static double CloseEntitiesAverage(double windowSeconds) => WindowAverage(closeRing, windowSeconds);
+    public static double FxVisibleAverage(double windowSeconds) => WindowAverage(fxVisibleRing, windowSeconds);
 
     private static double WindowAverage(int[] ring, double windowSeconds)
     {
         int n = 0;
         double total = 0, sum = 0;
-        for (int i = 0; i < _frameCount && total < windowSeconds; i++)
+        for (int i = 0; i < frameCount && total < windowSeconds; i++)
         {
-            int slot = (_frameHead - 1 - i + FrameWindow) % FrameWindow;
-            total += _frameTimes[slot];
+            int slot = (frameHead - 1 - i + FrameWindow) % FrameWindow;
+            total += frameTimes[slot];
             sum += ring[slot];
             n++;
         }
@@ -151,34 +151,34 @@ public static class Perf
 
     public static int CopyRecentFrames(float[] dest)
     {
-        int n = Math.Min(dest.Length, _frameCount);
+        int n = Math.Min(dest.Length, frameCount);
         for (int i = 0; i < n; i++)
-            dest[n - 1 - i] = (float)(_frameTimes[(_frameHead - 1 - i + FrameWindow) % FrameWindow] * 1000.0);
+            dest[n - 1 - i] = (float)(frameTimes[(frameHead - 1 - i + FrameWindow) % FrameWindow] * 1000.0);
         return n;
     }
 
     public static string FrameSummary(double windowSeconds, out string histogram, out string spark)
     {
         histogram = spark = "";
-        if (_frameCount == 0) return "";
+        if (frameCount == 0) return "";
         int n = 0;
         double total = 0;
-        for (int i = 0; i < _frameCount && total < windowSeconds; i++)
+        for (int i = 0; i < frameCount && total < windowSeconds; i++)
         {
-            double t = _frameTimes[(_frameHead - 1 - i + FrameWindow) % FrameWindow];
-            _frameSorted[n++] = t;
+            double t = frameTimes[(frameHead - 1 - i + FrameWindow) % FrameWindow];
+            frameSorted[n++] = t;
             total += t;
         }
-        Array.Sort(_frameSorted, 0, n);
-        double p50 = _frameSorted[n / 2] * 1000.0;
-        double p95 = _frameSorted[Math.Min(n - 1, (int)(n * 0.95))] * 1000.0;
-        double worst = _frameSorted[n - 1] * 1000.0;
+        Array.Sort(frameSorted, 0, n);
+        double p50 = frameSorted[n / 2] * 1000.0;
+        double p95 = frameSorted[Math.Min(n - 1, (int)(n * 0.95))] * 1000.0;
+        double worst = frameSorted[n - 1] * 1000.0;
         double avgFps = total > 0 ? n / total : 0;
 
         var counts = new int[BucketEdgesMs.Length + 1];
         for (int i = 0; i < n; i++)
         {
-            double ms = _frameSorted[i] * 1000.0;
+            double ms = frameSorted[i] * 1000.0;
             int b = 0;
             while (b < BucketEdgesMs.Length && ms > BucketEdgesMs[b]) b++;
             counts[b]++;
@@ -193,10 +193,10 @@ public static class Perf
         histogram = sb.ToString().TrimEnd();
 
         var line = new System.Text.StringBuilder();
-        int shown = Math.Min(SparkFrames, _frameCount);
+        int shown = Math.Min(SparkFrames, frameCount);
         for (int i = shown - 1; i >= 0; i--)
         {
-            double ms = _frameTimes[(_frameHead - 1 - i + FrameWindow) % FrameWindow] * 1000.0;
+            double ms = frameTimes[(frameHead - 1 - i + FrameWindow) % FrameWindow] * 1000.0;
             int glyph = worst > 0 ? (int)Math.Round(ms / worst * (SparkGlyphs.Length - 1)) : 0;
             line.Append(SparkGlyphs[Math.Clamp(glyph, 0, SparkGlyphs.Length - 1)]);
         }
@@ -207,67 +207,67 @@ public static class Perf
     [System.Runtime.InteropServices.DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
 
-    private static readonly Dictionary<int, TimeSpan> _threadCpu = new();
-    private static uint _mainThreadId;
-    private static readonly List<(int Id, double Percent)> _busy = new();
+    private static readonly Dictionary<int, TimeSpan> threadCpu = new();
+    private static uint mainThreadId;
+    private static readonly List<(int Id, double Percent)> busy = new();
 
     public static string ThreadLoad()
     {
-        if (_busy.Count == 0) return "";
+        if (busy.Count == 0) return "";
         var sb = new System.Text.StringBuilder();
-        foreach (var (id, percent) in _busy)
-            sb.Append(sb.Length > 0 ? "  " : "").Append(id == (int)_mainThreadId ? "main" : $"t{id}").Append(' ')
+        foreach (var (id, percent) in busy)
+            sb.Append(sb.Length > 0 ? "  " : "").Append(id == (int)mainThreadId ? "main" : $"t{id}").Append(' ')
               .Append(percent.ToString("0")).Append('%');
         return sb.ToString();
     }
 
     private static void SampleThreads(double seconds)
     {
-        if (_mainThreadId == 0) _mainThreadId = GetCurrentThreadId();
-        _busy.Clear();
+        if (mainThreadId == 0) mainThreadId = GetCurrentThreadId();
+        busy.Clear();
         if (seconds <= 0) return;
         foreach (ProcessThread thread in Process.GetCurrentProcess().Threads)
         {
             TimeSpan total;
             try { total = thread.TotalProcessorTime; }
             catch (Exception) { continue; }
-            if (_threadCpu.TryGetValue(thread.Id, out var previous))
+            if (threadCpu.TryGetValue(thread.Id, out var previous))
             {
                 double percent = (total - previous).TotalSeconds / seconds * 100.0;
-                if (percent >= 5.0) _busy.Add((thread.Id, percent));
+                if (percent >= 5.0) busy.Add((thread.Id, percent));
             }
-            _threadCpu[thread.Id] = total;
+            threadCpu[thread.Id] = total;
         }
-        _busy.Sort((a, b) => b.Percent.CompareTo(a.Percent));
-        if (_busy.Count > 4) _busy.RemoveRange(4, _busy.Count - 4);
+        busy.Sort((a, b) => b.Percent.CompareTo(a.Percent));
+        if (busy.Count > 4) busy.RemoveRange(4, busy.Count - 4);
     }
 
-    public static double PendingMs(Section section) => _ticks[(int)section] * 1000.0 / Stopwatch.Frequency;
+    public static double PendingMs(Section section) => ticks[(int)section] * 1000.0 / Stopwatch.Frequency;
 
     public static void Report()
     {
         ulong frame = Engine.GetProcessFrames();
-        ulong frames = Math.Max(1, frame - _lastFrame);
-        _lastFrame = frame;
+        ulong frames = Math.Max(1, frame - lastFrame);
+        lastFrame = frame;
         double perFrameMs = 1000.0 / Stopwatch.Frequency / frames;
-        for (int i = 0; i < _ticks.Length; i++)
+        for (int i = 0; i < ticks.Length; i++)
         {
-            _ms[i] = _ticks[i] * perFrameMs;
-            _callsPerFrame[i] = _calls[i] / (double)frames;
-            _ticks[i] = 0;
-            _calls[i] = 0;
+            milliseconds[i] = ticks[i] * perFrameMs;
+            callsPerFrame[i] = calls[i] / (double)frames;
+            ticks[i] = 0;
+            calls[i] = 0;
         }
         long now = Stopwatch.GetTimestamp();
-        double seconds = (now - _lastReportAt) / (double)Stopwatch.Frequency;
-        _lastReportAt = now;
-        for (int i = 0; i < _counts.Length; i++)
+        double seconds = (now - lastReportAt) / (double)Stopwatch.Frequency;
+        lastReportAt = now;
+        for (int i = 0; i < counts.Length; i++)
         {
-            _perSecond[i] = seconds > 0 ? (int)Math.Round(_counts[i] / seconds) : 0;
-            _counts[i] = 0;
+            perSecond[i] = seconds > 0 ? (int)Math.Round(counts[i] / seconds) : 0;
+            counts[i] = 0;
         }
         int gc0 = GC.CollectionCount(0);
-        Gc0PerSecond = seconds > 0 ? (int)Math.Round((gc0 - _lastGc0) / seconds) : 0;
-        _lastGc0 = gc0;
+        Gc0PerSecond = seconds > 0 ? (int)Math.Round((gc0 - lastGc0) / seconds) : 0;
+        lastGc0 = gc0;
         SampleThreads(seconds);
     }
 }

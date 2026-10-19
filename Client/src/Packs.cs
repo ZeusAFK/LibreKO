@@ -22,10 +22,10 @@ public partial class Packs : Node
         ("objects.pck", "res://assets/objects"),
     };
 
-    public static IReadOnlyList<string> Missing => _missing;
+    public static IReadOnlyList<string> Missing => missing;
 
-    private static readonly List<string> _missing = new();
-    private static bool _downloadedMounted;
+    private static readonly List<string> missing = new();
+    private static bool downloadedMounted;
 
     public override void _Ready()
     {
@@ -47,15 +47,15 @@ public partial class Packs : Node
 
         MountLooseDir(dir.PathJoin("patches"), "patch");
 
-        if (_missing.Count > 0)
-            GD.PushError($"[packs] INCOMPLETE INSTALL — missing or unreadable: {string.Join(", ", _missing)}. " +
+        if (missing.Count > 0)
+            GD.PushError($"[packs] INCOMPLETE INSTALL — missing or unreadable: {string.Join(", ", missing)}. " +
                          "Content from these packs will fail to load.");
     }
 
     public static void MountDownloaded()
     {
-        if (_downloadedMounted) return;
-        _downloadedMounted = true;
+        if (downloadedMounted) return;
+        downloadedMounted = true;
         int content = MountLooseDir(DownloadedContentDir, "content");
         MountLooseDir(DownloadedPatchDir, "patch");
         ContentReady = content > 0;
@@ -90,14 +90,14 @@ public partial class Packs : Node
         if (!FileAccess.FileExists(osPath))
         {
             if (required)
-                _missing.Add(name);
+                missing.Add(name);
             return;
         }
         if (!ProjectSettings.LoadResourcePack(osPath))
         {
             GD.PushError($"[packs] failed to mount {osPath} (corrupt, truncated, or wrong engine version)");
             if (required)
-                _missing.Add(name);
+                missing.Add(name);
             return;
         }
         GD.Print($"[packs] mounted {name}");

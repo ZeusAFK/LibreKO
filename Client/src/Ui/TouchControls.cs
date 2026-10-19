@@ -16,7 +16,6 @@ public static class TouchControls
     public const float ThumbInset = 168f;
     public const int ActionSlots = 4;
     public const int ActionPages = 3;
-    public const float ClusterMargin = 44f;
     public const float PageButtonSize = 70f;
     public const float PageButtonAngle = 318f;
     public const float InteractButtonSize = 70f;
@@ -47,8 +46,6 @@ public static class TouchControls
     private static readonly float[] PotionAngles = { 172f, 205f };
 
     public static bool Available => Platform.TouchUi;
-
-    public static float ReservedBottom => Px(StickSize + StickMargin);
 
     private static float Px(float design) => design * Platform.TouchPixel;
 
@@ -365,13 +362,13 @@ public static class TouchControls
         return box;
     }
 
-    private static ShaderMaterial? _circleMask;
+    private static ShaderMaterial? circleMask;
 
     private static ShaderMaterial CircleMask()
     {
-        if (_circleMask != null) return _circleMask;
-        _circleMask = new ShaderMaterial { Shader = GD.Load<Shader>(CircleShaderPath) };
-        return _circleMask;
+        if (circleMask != null) return circleMask;
+        circleMask = new ShaderMaterial { Shader = GD.Load<Shader>(CircleShaderPath) };
+        return circleMask;
     }
 
     private static void AddSlotIcon(Godot.Button button, float size)
@@ -440,7 +437,7 @@ public partial class StopGlyph : Control
 
 public partial class TouchTapButton : Godot.Button
 {
-    private int _finger = -1;
+    private int finger = -1;
 
     public override void _GuiInput(InputEvent ev)
     {
@@ -454,15 +451,15 @@ public partial class TouchTapButton : Godot.Button
         {
             if (touch.Pressed)
             {
-                if (_finger < 0)
+                if (finger < 0)
                 {
-                    _finger = touch.Index;
+                    finger = touch.Index;
                     if (!Disabled) EmitSignal(BaseButton.SignalName.Pressed);
                 }
             }
-            else if (touch.Index == _finger)
+            else if (touch.Index == finger)
             {
-                _finger = -1;
+                finger = -1;
             }
             AcceptEvent();
             return;
@@ -499,15 +496,15 @@ public partial class CooldownWipe : Control
     private const int Segments = 64;
     private static readonly Color Shade = new(0.02f, 0.02f, 0.03f, 0.62f);
 
-    private float _remain;
+    private float remain;
 
     public float Remain
     {
         set
         {
             float clamped = Mathf.Clamp(value, 0f, 1f);
-            if (Mathf.Abs(clamped - _remain) < 0.004f) return;
-            _remain = clamped;
+            if (Mathf.Abs(clamped - remain) < 0.004f) return;
+            remain = clamped;
             bool on = clamped > 0.001f;
             if (Visible != on) Visible = on;
             if (on) QueueRedraw();
@@ -516,15 +513,15 @@ public partial class CooldownWipe : Control
 
     public override void _Draw()
     {
-        if (_remain <= 0.001f) return;
+        if (remain <= 0.001f) return;
         var centre = Size * 0.5f;
         float radius = Mathf.Min(Size.X, Size.Y) * 0.5f;
-        int steps = Mathf.Max(2, Mathf.CeilToInt(Segments * _remain));
+        int steps = Mathf.Max(2, Mathf.CeilToInt(Segments * remain));
 
         var fan = new Vector2[steps + 2];
         fan[0] = centre;
         float start = -Mathf.Pi * 0.5f;
-        float sweep = Mathf.Tau * _remain;
+        float sweep = Mathf.Tau * remain;
         for (int i = 0; i <= steps; i++)
         {
             float a = start + sweep * i / steps;
@@ -538,24 +535,24 @@ public partial class CloseGlyph : Control
 {
     public Color Tint = new(0.94f, 0.90f, 0.86f);
 
-    private bool _hot;
+    private bool hot;
 
     public override void _Ready()
     {
-        MouseEntered += () => { _hot = true; QueueRedraw(); };
-        MouseExited += () => { _hot = false; QueueRedraw(); };
+        MouseEntered += () => { hot = true; QueueRedraw(); };
+        MouseExited += () => { hot = false; QueueRedraw(); };
     }
 
     public override void _Draw()
     {
         var centre = Size * 0.5f;
         float r = Mathf.Min(Size.X, Size.Y) * 0.5f;
-        DrawCircle(centre, r, new Color(0.02f, 0.02f, 0.03f, _hot ? 0.86f : 0.66f), true, -1f, true);
+        DrawCircle(centre, r, new Color(0.02f, 0.02f, 0.03f, hot ? 0.86f : 0.66f), true, -1f, true);
         DrawArc(centre, r - 1f, 0f, Mathf.Tau, 40,
-                new Color(UiTheme.Gold, _hot ? 0.85f : 0.45f), 1.4f, true);
+                new Color(UiTheme.Gold, hot ? 0.85f : 0.45f), 1.4f, true);
 
         float k = r * 0.40f;
-        var tint = _hot ? UiTheme.GoldBright : Tint;
+        var tint = hot ? UiTheme.GoldBright : Tint;
         DrawLine(centre + new Vector2(-k, -k), centre + new Vector2(k, k), tint, 2.1f, true);
         DrawLine(centre + new Vector2(k, -k), centre + new Vector2(-k, k), tint, 2.1f, true);
     }
@@ -578,8 +575,8 @@ public partial class PageIndicator : Control
 {
     private const int FontSize = 17;
 
-    private readonly Label _label;
-    private readonly HBoxContainer _dots = new();
+    private readonly Label label;
+    private readonly HBoxContainer dots = new();
 
     public PageIndicator()
     {
@@ -588,18 +585,18 @@ public partial class PageIndicator : Control
         row.SetAnchorsPreset(LayoutPreset.FullRect);
         AddChild(row);
 
-        _label = UiTheme.Text("Page 1", FontSize, UiTheme.TextHi);
-        _label.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _label.AddThemeConstantOverride("outline_size", 4);
-        _label.VerticalAlignment = VerticalAlignment.Center;
-        row.AddChild(_label);
+        label = UiTheme.Text("Page 1", FontSize, UiTheme.TextHi);
+        label.AddThemeColorOverride("font_outline_color", Colors.Black);
+        label.AddThemeConstantOverride("outline_size", 4);
+        label.VerticalAlignment = VerticalAlignment.Center;
+        row.AddChild(label);
 
-        _dots.AddThemeConstantOverride("separation", (int)TouchControls.DotGap);
-        _dots.Alignment = BoxContainer.AlignmentMode.Center;
-        row.AddChild(_dots);
+        dots.AddThemeConstantOverride("separation", (int)TouchControls.DotGap);
+        dots.Alignment = BoxContainer.AlignmentMode.Center;
+        row.AddChild(dots);
 
         for (int i = 0; i < TouchControls.ActionPages; i++)
-            _dots.AddChild(new PageDot
+            dots.AddChild(new PageDot
             {
                 MouseFilter = MouseFilterEnum.Ignore,
                 CustomMinimumSize = Vector2.One * TouchControls.DotSize,
@@ -609,29 +606,29 @@ public partial class PageIndicator : Control
 
     public Vector2 Extent()
     {
-        float dots = TouchControls.ActionPages * (TouchControls.DotSize + TouchControls.DotGap);
-        float label = _label.GetMinimumSize().X + TouchControls.DotGap;
-        return new Vector2(label + dots, Mathf.Max(FontSize * 1.6f, TouchControls.DotSize));
+        float dotsWidth = TouchControls.ActionPages * (TouchControls.DotSize + TouchControls.DotGap);
+        float labelWidth = label.GetMinimumSize().X + TouchControls.DotGap;
+        return new Vector2(labelWidth + dotsWidth, Mathf.Max(FontSize * 1.6f, TouchControls.DotSize));
     }
 
     public void Show(int page)
     {
-        _label.Text = $"Page {page + 1}";
-        for (int i = 0; i < _dots.GetChildCount(); i++)
-            if (_dots.GetChild(i) is PageDot dot) dot.Active = i == page;
+        label.Text = $"Page {page + 1}";
+        for (int i = 0; i < dots.GetChildCount(); i++)
+            if (dots.GetChild(i) is PageDot dot) dot.Active = i == page;
     }
 }
 
 public partial class PageDot : Control
 {
-    private bool _active;
+    private bool active;
 
     public bool Active
     {
         set
         {
-            if (_active == value) return;
-            _active = value;
+            if (active == value) return;
+            active = value;
             QueueRedraw();
         }
     }
@@ -642,25 +639,25 @@ public partial class PageDot : Control
         float r = Mathf.Min(Size.X, Size.Y) * 0.5f;
         DrawCircle(centre, r, new Color(0f, 0f, 0f, 0.50f), true, -1f, true);
         DrawCircle(centre, r - 1.5f,
-                   _active ? UiTheme.GoldBright : new Color(UiTheme.TextLo, 0.42f), true, -1f, true);
+                   active ? UiTheme.GoldBright : new Color(UiTheme.TextLo, 0.42f), true, -1f, true);
     }
 }
 
 public sealed class TouchActionBar
 {
-    private readonly Godot.Button[] _slots;
-    private readonly Func<int, Texture2D?> _iconFor;
-    private readonly PageIndicator _indicator;
-    private readonly Godot.Button _attack;
-    private readonly Control _attackGlyph;
-    private readonly Godot.Button _npcButton;
-    private readonly Godot.Button _lootButton;
-    private readonly Godot.Button _anvilButton;
-    private readonly Godot.Button _teleportButton;
-    private readonly Godot.Button _userButton;
-    private readonly Godot.Button _marketButton;
-    private readonly Vector2 _hub;
-    private int _attackState = -1;
+    private readonly Godot.Button[] slots;
+    private readonly Func<int, Texture2D?> iconFor;
+    private readonly PageIndicator indicator;
+    private readonly Godot.Button attack;
+    private readonly Control attackGlyph;
+    private readonly Godot.Button npcButton;
+    private readonly Godot.Button lootButton;
+    private readonly Godot.Button anvilButton;
+    private readonly Godot.Button teleportButton;
+    private readonly Godot.Button userButton;
+    private readonly Godot.Button marketButton;
+    private readonly Vector2 hub;
+    private int attackState = -1;
 
     public Control Root { get; }
 
@@ -671,54 +668,54 @@ public sealed class TouchActionBar
                             Godot.Button userButton, Godot.Button marketButton)
     {
         Root = root;
-        _slots = slots;
-        _iconFor = iconFor;
-        _indicator = indicator;
-        _attack = attack;
-        _attackGlyph = attackGlyph;
-        _npcButton = npcButton;
-        _lootButton = lootButton;
-        _anvilButton = anvilButton;
-        _teleportButton = teleportButton;
-        _userButton = userButton;
-        _marketButton = marketButton;
-        _hub = hub;
+        this.slots = slots;
+        this.iconFor = iconFor;
+        this.indicator = indicator;
+        this.attack = attack;
+        this.attackGlyph = attackGlyph;
+        this.npcButton = npcButton;
+        this.lootButton = lootButton;
+        this.anvilButton = anvilButton;
+        this.teleportButton = teleportButton;
+        this.userButton = userButton;
+        this.marketButton = marketButton;
+        this.hub = hub;
         SetInteractionVisibility(false, false, false, false, false, false);
         SetAutoAttack(false, false);
     }
 
-    internal Godot.Button AutoAttackButtonForPreview => _attack;
+    internal Godot.Button AutoAttackButtonForPreview => attack;
 
-    internal Godot.Button SlotButtonForPreview(int index) => _slots[index];
+    internal Godot.Button SlotButtonForPreview(int index) => slots[index];
 
     public void AttachPotion(Control orb, int index)
     {
         Root.AddChild(orb);
-        TouchControls.PlacePotion(orb, _hub, index);
+        TouchControls.PlacePotion(orb, hub, index);
     }
 
     public void SetInteractionVisibility(bool npcNearby, bool lootNearby,
                                          bool anvilNearby, bool teleportNearby,
                                          bool userNearby, bool marketNearby)
     {
-        if (_npcButton.Visible != npcNearby) _npcButton.Visible = npcNearby;
-        if (_lootButton.Visible != lootNearby) _lootButton.Visible = lootNearby;
-        if (_anvilButton.Visible != anvilNearby) _anvilButton.Visible = anvilNearby;
-        if (_teleportButton.Visible != teleportNearby) _teleportButton.Visible = teleportNearby;
-        if (_userButton.Visible != userNearby) _userButton.Visible = userNearby;
-        if (_marketButton.Visible != marketNearby) _marketButton.Visible = marketNearby;
+        if (npcButton.Visible != npcNearby) npcButton.Visible = npcNearby;
+        if (lootButton.Visible != lootNearby) lootButton.Visible = lootNearby;
+        if (anvilButton.Visible != anvilNearby) anvilButton.Visible = anvilNearby;
+        if (teleportButton.Visible != teleportNearby) teleportButton.Visible = teleportNearby;
+        if (userButton.Visible != userNearby) userButton.Visible = userNearby;
+        if (marketButton.Visible != marketNearby) marketButton.Visible = marketNearby;
     }
 
     public void SetAutoAttack(bool hasTarget, bool attacking)
     {
         int state = !hasTarget ? 0 : attacking ? 2 : 1;
-        if (state == _attackState) return;
-        _attackState = state;
-        _attack.Modulate = new Color(1f, 1f, 1f, state == 0 ? 0.45f : 1f);
-        _attackGlyph.Visible = state != 2;
-        if (_attack.GetNodeOrNull<Control>(TouchControls.StopGlyphName) is { } stop)
+        if (state == attackState) return;
+        attackState = state;
+        attack.Modulate = new Color(1f, 1f, 1f, state == 0 ? 0.45f : 1f);
+        attackGlyph.Visible = state != 2;
+        if (attack.GetNodeOrNull<Control>(TouchControls.StopGlyphName) is { } stop)
             stop.Visible = state == 2;
-        _attack.TooltipText = state switch
+        attack.TooltipText = state switch
         {
             0 => "Auto attack (no target)",
             1 => "Start auto attack",
@@ -728,22 +725,22 @@ public sealed class TouchActionBar
 
     public void SetCooldown(int slot, float remain)
     {
-        if (slot < 0 || slot >= _slots.Length) return;
-        if (_slots[slot].GetNodeOrNull<CooldownWipe>(TouchControls.CooldownName) is { } wipe)
+        if (slot < 0 || slot >= slots.Length) return;
+        if (slots[slot].GetNodeOrNull<CooldownWipe>(TouchControls.CooldownName) is { } wipe)
             wipe.Remain = remain;
     }
 
     public void Refresh(int page = 0)
     {
-        for (int i = 0; i < _slots.Length; i++)
+        for (int i = 0; i < slots.Length; i++)
         {
-            var texture = _iconFor(i);
-            if (_slots[i].GetNodeOrNull<TextureRect>(TouchControls.IconChildName) is { } holder)
+            var texture = iconFor(i);
+            if (slots[i].GetNodeOrNull<TextureRect>(TouchControls.IconChildName) is { } holder)
                 holder.Texture = texture;
-            _slots[i].Text = texture == null ? (i + 1).ToString() : "";
+            slots[i].Text = texture == null ? (i + 1).ToString() : "";
         }
         int pages = TouchControls.ActionPages;
-        _indicator.Show(((page % pages) + pages) % pages);
+        indicator.Show(((page % pages) + pages) % pages);
     }
 }
 
@@ -752,9 +749,9 @@ public partial class TouchCameraZone : Control
     public Action<Vector2>? Orbit;
     public Action<Vector2>? TapTarget;
 
-    private bool _dragging;
-    private float _travelled;
-    private int _finger = -1;
+    private bool dragging;
+    private float travelled;
+    private int finger = -1;
 
     public override void _GuiInput(InputEvent ev)
     {
@@ -768,22 +765,22 @@ public partial class TouchCameraZone : Control
         {
             if (button.Pressed)
             {
-                _dragging = true;
-                _travelled = 0f;
+                dragging = true;
+                travelled = 0f;
             }
             else
             {
-                if (_dragging && _travelled < TouchControls.TapSlop)
+                if (dragging && travelled < TouchControls.TapSlop)
                     TapTarget?.Invoke(GetGlobalTransformWithCanvas() * button.Position);
-                _dragging = false;
+                dragging = false;
             }
             AcceptEvent();
             return;
         }
 
-        if (ev is InputEventMouseMotion motion && _dragging)
+        if (ev is InputEventMouseMotion motion && dragging)
         {
-            _travelled += motion.Relative.Length();
+            travelled += motion.Relative.Length();
             Orbit?.Invoke(motion.Relative);
             AcceptEvent();
         }
@@ -795,23 +792,23 @@ public partial class TouchCameraZone : Control
         {
             if (touch.Pressed)
             {
-                if (_finger >= 0) return;
-                _finger = touch.Index;
-                _travelled = 0f;
+                if (finger >= 0) return;
+                finger = touch.Index;
+                travelled = 0f;
             }
-            else if (touch.Index == _finger)
+            else if (touch.Index == finger)
             {
-                if (_travelled < TouchControls.TapSlop)
+                if (travelled < TouchControls.TapSlop)
                     TapTarget?.Invoke(GetGlobalTransformWithCanvas() * touch.Position);
-                _finger = -1;
+                finger = -1;
             }
             AcceptEvent();
             return;
         }
 
-        if (ev is InputEventScreenDrag drag && drag.Index == _finger)
+        if (ev is InputEventScreenDrag drag && drag.Index == finger)
         {
-            _travelled += drag.Relative.Length();
+            travelled += drag.Relative.Length();
             Orbit?.Invoke(drag.Relative);
             AcceptEvent();
         }

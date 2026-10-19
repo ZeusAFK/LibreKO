@@ -63,9 +63,9 @@ public sealed partial class DropWell : PanelContainer
 public sealed partial class ServicePager : HBoxContainer
 {
     private const float ArrowWidth = 28f;
-    private readonly Label _caption;
-    private readonly Button _previous;
-    private readonly Button _next;
+    private readonly Label caption;
+    private readonly Button previous;
+    private readonly Button next;
 
     public event Action<int>? PageChanged;
 
@@ -75,11 +75,11 @@ public sealed partial class ServicePager : HBoxContainer
     public ServicePager()
     {
         AddThemeConstantOverride("separation", 4);
-        _caption = UiTheme.Text("", 12, UiTheme.TextLo);
-        _caption.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        AddChild(_caption);
-        _previous = Arrow("<", "Previous page", -1);
-        _next = Arrow(">", "Next page", 1);
+        caption = UiTheme.Text("", 12, UiTheme.TextLo);
+        caption.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        AddChild(caption);
+        previous = Arrow("<", "Previous page", -1);
+        next = Arrow(">", "Next page", 1);
         Set(0, 1);
     }
 
@@ -96,9 +96,9 @@ public sealed partial class ServicePager : HBoxContainer
     {
         Pages = Math.Max(1, pages);
         Page = Paging.Step(page, 0, Pages);
-        _caption.Text = Paging.Caption(Page, Pages);
-        _previous.Disabled = Page == 0;
-        _next.Disabled = Page >= Pages - 1;
+        caption.Text = Paging.Caption(Page, Pages);
+        previous.Disabled = Page == 0;
+        next.Disabled = Page >= Pages - 1;
     }
 
     public void Step(int delta)
@@ -113,9 +113,9 @@ public sealed partial class ServicePager : HBoxContainer
 public sealed partial class ServiceTabs : HBoxContainer
 {
     private const int TabFontSize = 12;
-    private readonly List<Button> _buttons = new();
-    private readonly ButtonGroup _group = new();
-    private string[] _labels = Array.Empty<string>();
+    private readonly List<Button> buttons = new();
+    private readonly ButtonGroup group = new();
+    private string[] labels = Array.Empty<string>();
 
     public event Action<int>? Selected;
 
@@ -123,40 +123,40 @@ public sealed partial class ServiceTabs : HBoxContainer
 
     public ServiceTabs() => AddThemeConstantOverride("separation", 2);
 
-    public void SetTabs(IReadOnlyList<string> labels, int selected)
+    public void SetTabs(IReadOnlyList<string> tabLabels, int selected)
     {
-        _labels = new string[labels.Count];
-        for (int i = 0; i < labels.Count; i++)
+        labels = new string[tabLabels.Count];
+        for (int i = 0; i < tabLabels.Count; i++)
         {
-            _labels[i] = labels[i];
-            if (i == _buttons.Count)
+            labels[i] = tabLabels[i];
+            if (i == buttons.Count)
             {
                 var button = UiTheme.UnderlineTabButton("", TabFontSize);
-                button.ButtonGroup = _group;
+                button.ButtonGroup = group;
                 button.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
                 int index = i;
                 button.Pressed += () => Select(index);
-                _buttons.Add(button);
+                buttons.Add(button);
                 AddChild(button);
             }
-            _buttons[i].Text = labels[i];
-            _buttons[i].Visible = true;
+            buttons[i].Text = tabLabels[i];
+            buttons[i].Visible = true;
         }
-        for (int i = labels.Count; i < _buttons.Count; i++) _buttons[i].Visible = false;
-        if (labels.Count > 0) Select(Math.Clamp(selected, 0, labels.Count - 1), notify: false);
+        for (int i = tabLabels.Count; i < buttons.Count; i++) buttons[i].Visible = false;
+        if (tabLabels.Count > 0) Select(Math.Clamp(selected, 0, tabLabels.Count - 1), notify: false);
     }
 
     public void SetBadge(int index, string badge)
     {
-        if (index < 0 || index >= _labels.Length) return;
-        _buttons[index].Text = badge.Length > 0 ? $"{_labels[index]}  {badge}" : _labels[index];
+        if (index < 0 || index >= labels.Length) return;
+        buttons[index].Text = badge.Length > 0 ? $"{labels[index]}  {badge}" : labels[index];
     }
 
     public void Select(int index, bool notify = true)
     {
-        if (index < 0 || index >= _labels.Length) return;
+        if (index < 0 || index >= labels.Length) return;
         Current = index;
-        _buttons[index].ButtonPressed = true;
+        buttons[index].ButtonPressed = true;
         if (notify) Selected?.Invoke(index);
     }
 }
@@ -198,7 +198,7 @@ public sealed partial class DetailStrip : PanelContainer
 public sealed partial class StatusLabel : Label
 {
     private const int FontSize = 11;
-    private readonly StatusLine _line = new();
+    private readonly StatusLine line = new();
 
     public StatusLabel()
     {
@@ -213,32 +213,32 @@ public sealed partial class StatusLabel : Label
     {
         set
         {
-            _line.Hint = value;
+            line.Hint = value;
             Apply();
         }
     }
 
     public void Status(string text, bool bad)
     {
-        int token = _line.Show(text, bad);
+        int token = line.Show(text, bad);
         Apply();
         if (!IsInsideTree()) return;
         GetTree().CreateTimer(ServiceKit.StatusSeconds).Timeout += () =>
         {
-            if (IsInstanceValid(this) && _line.Expire(token)) Apply();
+            if (IsInstanceValid(this) && line.Expire(token)) Apply();
         };
     }
 
     public void ResetStatus()
     {
-        _line.Reset();
+        line.Reset();
         Apply();
     }
 
     private void Apply()
     {
-        Text = _line.Text;
-        AddThemeColorOverride("font_color", _line.Tone switch
+        Text = line.Text;
+        AddThemeColorOverride("font_color", line.Tone switch
         {
             StatusTone.Good => UiTheme.Good,
             StatusTone.Bad => UiTheme.Bad,
@@ -251,7 +251,7 @@ public sealed partial class FooterBand : PanelContainer
 {
     private const int PadSide = 10;
     private const int PadEdge = 6;
-    private readonly StatusLabel _status;
+    private readonly StatusLabel status;
 
     public HBoxContainer Left { get; } = new();
     public HBoxContainer Right { get; } = new();
@@ -269,24 +269,24 @@ public sealed partial class FooterBand : PanelContainer
         AddChild(row);
         Left.AddThemeConstantOverride("separation", 6);
         row.AddChild(Left);
-        _status = new StatusLabel();
-        row.AddChild(_status);
+        status = new StatusLabel();
+        row.AddChild(status);
         Right.AddThemeConstantOverride("separation", 6);
         row.AddChild(Right);
     }
 
-    public string Hint { set => _status.Hint = value; }
+    public string Hint { set => status.Hint = value; }
 
-    public void Status(string text, bool bad) => _status.Status(text, bad);
+    public void Status(string text, bool bad) => status.Status(text, bad);
 
-    public void ResetStatus() => _status.ResetStatus();
+    public void ResetStatus() => status.ResetStatus();
 }
 
 public sealed partial class MoneyPlaque : PanelContainer
 {
     private const float CoinSize = 14f;
-    private readonly Label _caption;
-    private readonly Label _value;
+    private readonly Label captionLabel;
+    private readonly Label value;
 
     public MoneyPlaque(string caption)
     {
@@ -311,21 +311,21 @@ public sealed partial class MoneyPlaque : PanelContainer
         var text = new VBoxContainer();
         text.AddThemeConstantOverride("separation", -3);
         row.AddChild(text);
-        _caption = UiTheme.Text("", 10, UiTheme.TextLo);
-        text.AddChild(_caption);
-        _value = UiTheme.Text("0", 13, UiTheme.GoldBright);
-        text.AddChild(_value);
+        captionLabel = UiTheme.Text("", 10, UiTheme.TextLo);
+        text.AddChild(captionLabel);
+        value = UiTheme.Text("0", 13, UiTheme.GoldBright);
+        text.AddChild(value);
         Caption = caption;
     }
 
-    public long Value { set => _value.Text = value.ToString("n0"); }
+    public long Value { set => this.value.Text = value.ToString("n0"); }
 
     public string Caption
     {
         set
         {
-            _caption.Text = value;
-            _caption.Visible = value.Length > 0;
+            captionLabel.Text = value;
+            captionLabel.Visible = value.Length > 0;
         }
     }
 }

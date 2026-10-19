@@ -12,7 +12,7 @@ public class QuestStringsTests
     {
         var packet = new Packet(GameOpcodes.GS_QUEST);
         packet.WriteBytes(Convert.FromHexString(hex));
-        Assert.Equal((byte)QuestSub.Text, packet.ReadByte());
+        Assert.Equal((byte)QuestSubOpcode.Text, packet.ReadByte());
         return packet;
     }
 

@@ -26,7 +26,7 @@ public class DeathNoticeTests
     [Fact]
     public void TheKillersNationComesFirst()
     {
-        var notice = Net.ReadDeathNotice(Notice(Nations.Karus, Nations.ElMorad, 1, DeathNotices.CoordinatesKind))!.Value;
+        var notice = ChatWire.ReadDeathNotice(Notice(Nations.Karus, Nations.ElMorad, 1, DeathNotices.CoordinatesKind))!.Value;
 
         Assert.Equal((Nations.Karus, Nations.ElMorad, true), (notice.KillerNation, notice.VictimNation, notice.VictimIsKing));
         Assert.Equal(("Rin", "Kai", 100, 200), (notice.KillerName, notice.VictimName, notice.X, notice.Z));
@@ -35,7 +35,7 @@ public class DeathNoticeTests
     [Fact]
     public void ADefeatedNoticeSwapsTheNations()
     {
-        var notice = Net.ReadDeathNotice(Notice(Nations.Karus, Nations.ElMorad, 0, DeathNotices.DefeatedKind))!.Value;
+        var notice = ChatWire.ReadDeathNotice(Notice(Nations.Karus, Nations.ElMorad, 0, DeathNotices.DefeatedKind))!.Value;
 
         Assert.Equal((Nations.ElMorad, Nations.Karus), (notice.KillerNation, notice.VictimNation));
     }

@@ -44,7 +44,7 @@ public static class ItemSearch
 
     public static bool IsTradeable(ItemData.Item def) =>
         !ItemData.IsNoTradeId(def.Id)
-        && def.Race != ItemData.QuestItemRace
+        && def.Race != ItemData.Race.Quest
         && def.Bound == 0;
 
     public static string TabOf(ItemSearchHit hit)

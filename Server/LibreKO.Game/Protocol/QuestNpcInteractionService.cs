@@ -34,7 +34,6 @@ public class QuestNpcInteractionService(
     IItemGrantService itemGrantService,
     IMagicItemUsageService magicItemUsageService) : IQuestNpcInteractionService
 {
-    private const byte WarehouseRequest = 0x10;
     private const byte NpcEventTouch = 2;
 
     public async Task HandleSelectMsgAsync(IClient client, Packet packet)
@@ -387,7 +386,7 @@ public class QuestNpcInteractionService(
     private static Packet BuildClanCapePacket() => NpcServicePacketWriter.ClanCapeNpc();
 
     private static Packet BuildWarehousePacket() =>
-        NpcServicePacketWriter.WarehouseNpc(WarehouseRequest);
+        NpcServicePacketWriter.WarehouseNpc(WarehouseSubOpcode.Request);
 
     private static Packet BuildClassChangePacket() => NpcServicePacketWriter.ClassChangeNpc();
 

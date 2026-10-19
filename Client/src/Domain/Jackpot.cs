@@ -4,7 +4,6 @@ namespace LibreKO.Domain;
 
 public static class Jackpot
 {
-    public const byte ExpSub = 2;
     public const int ExpText = 6094;
     public const int CoinText = 6093;
 

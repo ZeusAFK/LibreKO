@@ -49,7 +49,7 @@ public class ItemSmashTests
     public void ASuccessReadsTheItemAndEveryPiece()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
-        p.WriteByte(Net.ItemSmashSub);
+        p.WriteByte((byte)ItemUpgradeSubOpcode.Smash);
         p.WriteShort(ItemSmash.Succeeded);
         p.WriteInt(Sword);
         p.WriteByte(4);
@@ -76,7 +76,7 @@ public class ItemSmashTests
     public void ARefusalCarriesOnlyItsCode()
     {
         var p = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
-        p.WriteByte(Net.ItemSmashSub);
+        p.WriteByte((byte)ItemUpgradeSubOpcode.Smash);
         p.WriteShort(ItemSmash.WrongNpc);
         p.ResetOffset();
         p.ReadByte();

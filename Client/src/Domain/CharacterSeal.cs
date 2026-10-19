@@ -55,7 +55,7 @@ public static class CharacterSeal
         ? !slot.Empty && !string.Equals(slot.Name, selfName, StringComparison.OrdinalIgnoreCase)
         : slot.Empty;
 
-    public static int SealRefusalText(int result, int code) => result == CharacterSealWire.Extended
+    public static int SealRefusalText(CharacterSealResult result, int code) => result == CharacterSealResult.Extended
         ? code switch
         {
             RefusalBoundGear => BoundGearText,

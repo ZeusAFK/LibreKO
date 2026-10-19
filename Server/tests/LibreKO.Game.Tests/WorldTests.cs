@@ -1820,7 +1820,7 @@ public class WorldTests : GameTestBase
         sentPacket.Should().NotBeNull();
         sentPacket!.GetOpcode().Should().Be((byte)GameOpcodes.GS_WAREHOUSE);
         sentPacket.ResetOffset();
-        sentPacket.ReadByte().Should().Be(0x10);
+        sentPacket.ReadByte().Should().Be((byte)WarehouseSubOpcode.Request);
     }
 
     [Fact]

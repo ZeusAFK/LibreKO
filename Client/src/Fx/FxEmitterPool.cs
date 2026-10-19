@@ -49,21 +49,21 @@ internal static class FxEmitterPool
     private const int InstancesPerEmitter = 64;
     private const float SharedAabbHalf = 4096f;
 
-    private static readonly ViewportPool<FxPartKey, FxSharedEmitter> _emitters = new();
-    private static QuadMesh? _quad;
+    private static readonly ViewportPool<FxPartKey, FxSharedEmitter> emitters = new();
+    private static QuadMesh? quad;
 
-    internal static int Live => _emitters.Live;
+    internal static int Live => emitters.Live;
 
     internal static FxSharedEmitter? Acquire(Node part, FxPartKey key, FxParticleTemplate template)
     {
         var viewport = part.GetViewport();
         if (viewport == null) return null;
         ulong viewportId = viewport.GetInstanceId();
-        var shelf = _emitters.Shelf(viewportId, key);
+        var shelf = emitters.Shelf(viewportId, key);
         for (int i = shelf.Count - 1; i >= 0; i--)
         {
             var existing = shelf[i];
-            if (!GodotObject.IsInstanceValid(existing)) { _emitters.Forget(viewportId, key, existing); continue; }
+            if (!GodotObject.IsInstanceValid(existing)) { emitters.Forget(viewportId, key, existing); continue; }
             if (existing.Slots < InstancesPerEmitter) { existing.Slots++; return existing; }
         }
         var parent = FxBoardBatch.For(part);
@@ -81,14 +81,14 @@ internal static class FxEmitterPool
             VisibilityAabb = new Aabb(-Vector3.One * SharedAabbHalf, Vector3.One * (2f * SharedAabbHalf)),
             DrawOrder = template.Commutative ? GpuParticles3D.DrawOrderEnum.Index : GpuParticles3D.DrawOrderEnum.ViewDepth,
             ProcessMaterial = template.Process,
-            DrawPass1 = _quad ??= new QuadMesh { Size = Vector2.One },
+            DrawPass1 = quad ??= new QuadMesh { Size = Vector2.One },
             MaterialOverride = template.Material,
             Slots = 1,
             ViewportId = viewportId,
             Part = key,
         };
         parent.AddChild(emitter);
-        _emitters.Add(viewportId, key, emitter);
+        emitters.Add(viewportId, key, emitter);
         return emitter;
     }
 
@@ -97,12 +97,12 @@ internal static class FxEmitterPool
         if (emitter != null && GodotObject.IsInstanceValid(emitter) && emitter.Slots > 0) emitter.Slots--;
     }
 
-    internal static void Forget(FxSharedEmitter emitter) => _emitters.Forget(emitter.ViewportId, emitter.Part, emitter);
+    internal static void Forget(FxSharedEmitter emitter) => emitters.Forget(emitter.ViewportId, emitter.Part, emitter);
 
     internal static void Clear()
     {
-        foreach (var emitter in _emitters.Items)
+        foreach (var emitter in emitters.Items)
             if (GodotObject.IsInstanceValid(emitter)) emitter.QueueFree();
-        _emitters.Clear();
+        emitters.Clear();
     }
 }

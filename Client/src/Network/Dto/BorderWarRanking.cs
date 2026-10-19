@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public readonly record struct BorderWarRankRow(string Name, int Nation, int ClanId, string ClanName, int Points);
 
@@ -10,7 +8,6 @@ public sealed record BorderWarRanking(
     uint VictoryExp,
     uint BonusExp)
 {
-    public const int MaxRowsPerNation = 10;
     private const int RowHeadBytes = 1 + 2 + 2;
     private const int TailBytes = 4 + 4;
 
@@ -32,7 +29,7 @@ public sealed record BorderWarRanking(
         var rows = new List<BorderWarRankRow>();
         if (p.RemainingBytes < 2) return rows;
         int count = p.ReadUShort();
-        for (int i = 0; i < count && i < MaxRowsPerNation; i++)
+        for (int i = 0; i < count && i < RankWire.BorderWarRowsPerNation; i++)
         {
             if (p.RemainingBytes < 2) break;
             string name = p.ReadString();

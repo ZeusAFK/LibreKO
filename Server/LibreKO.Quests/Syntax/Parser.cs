@@ -5,11 +5,11 @@ namespace LibreKO.Quests.Syntax;
 
 public sealed class Parser
 {
-    private readonly SourceText _source;
-    private readonly DiagnosticBag _diagnostics;
-    private readonly List<Line> _lines;
-    private int _index;
-    private bool _hasBinding;
+    private readonly SourceText source;
+    private readonly DiagnosticBag diagnostics;
+    private readonly List<Line> lines;
+    private int index;
+    private bool hasBinding;
 
     private sealed record Line(IReadOnlyList<Token> Tokens, TextSpan Span, int Indent)
     {
@@ -30,9 +30,9 @@ public sealed class Parser
 
     public Parser(SourceText source, IReadOnlyList<Token> tokens, DiagnosticBag diagnostics)
     {
-        _source = source;
-        _diagnostics = diagnostics;
-        _lines = SplitLines(tokens);
+        this.source = source;
+        this.diagnostics = diagnostics;
+        lines = SplitLines(tokens);
         CheckIndentCharacters();
     }
 
@@ -56,9 +56,9 @@ public sealed class Parser
 
             if (line.Indent > 0)
             {
-                _diagnostics.Error(DiagnosticId.BadIndent, line.Span,
+                diagnostics.Error(DiagnosticId.BadIndent, line.Span,
                     "This line is indented but nothing opens a block above it.");
-                _index++;
+                index++;
                 continue;
             }
 
@@ -70,11 +70,11 @@ public sealed class Parser
                 if (declaration is not null)
                 {
                     if (handlers.Count > 0)
-                        _diagnostics.Error(DiagnosticId.DeclarationAfterHandler, declaration.Span,
+                        diagnostics.Error(DiagnosticId.DeclarationAfterHandler, declaration.Span,
                             "Names belong at the top of the file, above the first 'On'.");
                     declarations.Add(declaration);
                 }
-                _index++;
+                index++;
                 continue;
             }
 
@@ -84,7 +84,7 @@ public sealed class Parser
                 if (definition is not null)
                 {
                     if (handlers.Count > 0)
-                        _diagnostics.Error(DiagnosticId.DeclarationAfterHandler, definition.Span,
+                        diagnostics.Error(DiagnosticId.DeclarationAfterHandler, definition.Span,
                             "Rewards belong at the top of the file, above the first 'On'.");
                     rewards.Add(definition);
                 }
@@ -96,22 +96,22 @@ public sealed class Parser
                 var include = ParseInclude(line);
                 if (include is not null)
                 {
-                    if (handlers.Count > 0 || _hasBinding || declarations.Count > 0)
-                        _diagnostics.Error(DiagnosticId.DeclarationAfterHandler, include.Span,
+                    if (handlers.Count > 0 || hasBinding || declarations.Count > 0)
+                        diagnostics.Error(DiagnosticId.DeclarationAfterHandler, include.Span,
                             "Includes belong at the top of the file, above Bind and On.");
                     includes.Add(include);
                 }
-                _index++;
+                index++;
                 continue;
             }
 
             if (line.StartsWith("bind"))
             {
                 if (handlers.Count > 0)
-                    _diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
+                    diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
                         "Write every Bind line above the handlers.");
-                var first = !_hasBinding;
-                _hasBinding = true;
+                var first = !hasBinding;
+                hasBinding = true;
                 var npcTokens = new List<Token>();
                 Token? zoneToken = null;
                 Token? nationToken = null;
@@ -142,44 +142,44 @@ public sealed class Parser
                     }
                 }
                 if (position == 1 || position != line.Tokens.Count)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                         "Bind takes Npc <id>, Zone <id>, or Npc <id> Zone <id>, "
                         + "then an optional \"for <nation>\", \"for <class>\" or \"for <nation> <class>\".");
                 bindings.Add(new BindingSyntax(line.Span, npcTokens, zoneToken, nationToken, bindClassToken));
-                _index++;
+                index++;
                 continue;
             }
 
             if (line.StartsWith("npc") || line.StartsWith("zone"))
             {
-                _diagnostics.Error(DiagnosticId.UnknownDirective, line.Span,
+                diagnostics.Error(DiagnosticId.UnknownDirective, line.Span,
                     "A file binds with 'Bind', as in 'Bind Npc 16079 Zone 21'.");
-                _index++;
+                index++;
                 continue;
             }
 
             if (line.StartsWith("auto", "accept"))
             {
                 if (autoAccept || line.Tokens.Count != 2 || handlers.Count > 0)
-                    _diagnostics.Error(DiagnosticId.UnknownDirective, line.Span, "Write Auto accept once above the handlers.");
+                    diagnostics.Error(DiagnosticId.UnknownDirective, line.Span, "Write Auto accept once above the handlers.");
                 autoAccept = true;
-                _index++;
+                index++;
                 continue;
             }
 
             if (line.StartsWith("auto", "complete"))
             {
                 if (autoComplete || line.Tokens.Count != 2 || handlers.Count > 0)
-                    _diagnostics.Error(DiagnosticId.UnknownDirective, line.Span, "Write Auto complete once above the handlers.");
+                    diagnostics.Error(DiagnosticId.UnknownDirective, line.Span, "Write Auto complete once above the handlers.");
                 autoComplete = true;
-                _index++;
+                index++;
                 continue;
             }
 
             if (line.StartsWith("rewards"))
             {
                 if (handlers.Count > 0)
-                    _diagnostics.Error(DiagnosticId.DeclarationAfterHandler, line.Span,
+                    diagnostics.Error(DiagnosticId.DeclarationAfterHandler, line.Span,
                         "Rewards belongs above the first On handler.");
                 var position = 1;
                 Token? rewardNation = null, rewardClass = null, rebirthMin = null, rebirthMax = null;
@@ -194,14 +194,14 @@ public sealed class Parser
                         (r.Nation is null) != (rewardNation is null) || (r.ClassGroup is null) != (rewardClass is null)
                         || (r.RebirthMin is null) != (rebirthMin is null)
                         || (rebirthMin is null && SameWord(r.Nation, rewardNation) && SameWord(r.ClassGroup, rewardClass))))
-                    _diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
+                    diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
                         "This quest already has Rewards for that nation, class or rebirth range; every Rewards block names the same kind of scope, once.");
                 questRewards ??= [];
                 if (line.StartsWith("rewards", "none"))
                 {
                     ExpectEndOfLine(line, 2);
                     questRewards.Add(new QuestRewardsSyntax(line.Span, []));
-                    _index++;
+                    index++;
                 }
                 else
                 {
@@ -214,24 +214,24 @@ public sealed class Parser
             if (line.StartsWith("requires"))
             {
                 if (handlers.Count > 0)
-                    _diagnostics.Error(DiagnosticId.DeclarationAfterHandler, line.Span,
+                    diagnostics.Error(DiagnosticId.DeclarationAfterHandler, line.Span,
                         "Requires belongs above the first On handler.");
                 if (requires is not null)
-                    _diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
+                    diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
                         "This quest already has Requires; combine conditions with 'and' or 'or'.");
                 var position = 1;
                 requires = ParseCondition(line, ref position);
                 if (position != line.Tokens.Count)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                         "Requires takes one boolean condition.");
-                _index++;
+                index++;
                 continue;
             }
 
             if (line.StartsWith("quest"))
             {
                 if (handlers.Count > 0)
-                    _diagnostics.Error(DiagnosticId.DeclarationAfterHandler, line.Span,
+                    diagnostics.Error(DiagnosticId.DeclarationAfterHandler, line.Span,
                         "Quest belongs above the first On handler.");
                 var objectives = ParseObjectives();
                 if (objectives is not null)
@@ -245,27 +245,27 @@ public sealed class Parser
                 continue;
             }
 
-            _diagnostics.Error(DiagnosticId.UnknownDirective, line.Span,
+            diagnostics.Error(DiagnosticId.UnknownDirective, line.Span,
                 $"Expected a name or 'On', found {line.First}.",
                 "A quest file names the events other files enter, then answers each one with 'On \"name\":'.");
-            _index++;
+            index++;
         }
 
-        var span = _lines.Count == 0
+        var span = lines.Count == 0
             ? new TextSpan(0, 0)
-            : _lines[0].Span.Union(_lines[^1].Span);
+            : lines[0].Span.Union(lines[^1].Span);
         return new QuestFileSyntax(
-            span, _source, declarations, handlers, directives, includes, objectiveBlocks, rewards, _hasBinding,
+            span, source, declarations, handlers, directives, includes, objectiveBlocks, rewards, hasBinding,
             requires, questRewards, autoAccept, autoComplete, bindings);
     }
 
     private void CheckIndentCharacters()
     {
         char? unit = null;
-        foreach (var parsed in _lines)
+        foreach (var parsed in lines)
         {
-            var line = _source.GetLineIndex(parsed.First.Span.Start);
-            var text = _source.GetLineText(line);
+            var line = source.GetLineIndex(parsed.First.Span.Start);
+            var text = source.GetLineText(line);
             var leading = text.Length - text.TrimStart(' ', '\t').Length;
             if (leading == 0)
                 continue;
@@ -276,7 +276,7 @@ public sealed class Parser
 
             if (hasTab && hasSpace)
             {
-                _diagnostics.Error(DiagnosticId.MixedIndent, LineSpan(line, leading),
+                diagnostics.Error(DiagnosticId.MixedIndent, LineSpan(line, leading),
                     "This line indents with both tabs and spaces.");
                 continue;
             }
@@ -289,7 +289,7 @@ public sealed class Parser
             }
 
             if (unit != seen)
-                _diagnostics.Error(DiagnosticId.MixedIndent, LineSpan(line, leading),
+                diagnostics.Error(DiagnosticId.MixedIndent, LineSpan(line, leading),
                     unit == ' '
                         ? "This line indents with tabs; the rest of the file uses spaces."
                         : "This line indents with spaces; the rest of the file uses tabs.");
@@ -297,7 +297,7 @@ public sealed class Parser
     }
 
     private TextSpan LineSpan(int line, int length) =>
-        new(_source.GetPosition(new LinePosition(line, 0)), Math.Max(1, length));
+        new(source.GetPosition(new LinePosition(line, 0)), Math.Max(1, length));
 
     private IncludeSyntax? ParseInclude(Line line)
     {
@@ -306,16 +306,16 @@ public sealed class Parser
         var end = line.Span.End;
         if (start >= end)
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "'include' takes a path, as in 'include locations/moradon'.");
             return null;
         }
 
-        var raw = _source.Content[start..end];
+        var raw = source.Content[start..end];
         var trimmed = raw.Trim();
         if (trimmed.Length == 0)
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "'include' takes a path, as in 'include locations/moradon'.");
             return null;
         }
@@ -332,14 +332,14 @@ public sealed class Parser
         var isTable = opener.First.IsWord("rewardtable");
         if (opener.Tokens.Count != 2 || opener.Tokens[1].Kind != TokenKind.Word)
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Span,
                 $"'{opener.First.Text}' takes a name, as in '{opener.First.Text} forgotten_shrine'.");
-            _index++;
+            index++;
             return null;
         }
 
         var name = opener.Tokens[1];
-        _index++;
+        index++;
         var rows = new List<RewardRowSyntax>();
         IReadOnlyList<Token>? shared = null;
 
@@ -352,11 +352,11 @@ public sealed class Parser
                 if (rows.Count > 0)
                     rows[^1] = rows[^1] with { Weights = values };
                 else if (shared is not null)
-                    _diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
+                    diagnostics.Error(DiagnosticId.DuplicateDirective, line.Span,
                         "This reward already has a 'Weights' line.");
                 else
                     shared = values;
-                _index++;
+                index++;
                 continue;
             }
 
@@ -374,26 +374,26 @@ public sealed class Parser
                 var items = Names(line with { Tokens = [.. line.Tokens.Take(split)] }, 1);
                 var inline = split == line.Tokens.Count ? null : Numbers(line, split + 1);
                 rows.Add(new RewardRowSyntax(line.Span, items, inline));
-                _index++;
+                index++;
                 continue;
             }
 
             if (!isTable && ParsePoolEntry(line) is { } entry)
             {
                 rows.Add(entry);
-                _index++;
+                index++;
                 continue;
             }
 
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span, isTable
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span, isTable
                 ? "A RewardTable holds 'Weights' and 'Row' lines."
                 : "A RewardPool holds '<weight> <item>' lines.");
-            _index++;
+            index++;
         }
 
         if (rows.Count == 0)
         {
-            _diagnostics.Error(DiagnosticId.EmptyBlock, opener.Span,
+            diagnostics.Error(DiagnosticId.EmptyBlock, opener.Span,
                 $"'{opener.First.Text} {name.Text}' lists nothing to give.");
             return null;
         }
@@ -429,7 +429,7 @@ public sealed class Parser
         {
             if (at + 1 >= line.Tokens.Count || line.Tokens[at + 1].Kind != TokenKind.Number)
             {
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                     "A weight is a whole number, as in '810231000 weight 2'.");
                 return null;
             }
@@ -449,7 +449,7 @@ public sealed class Parser
             if (line.Tokens[index].Kind == TokenKind.Number)
                 values.Add(line.Tokens[index]);
             else if (line.Tokens[index].Kind != TokenKind.Comma)
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Tokens[index].Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, line.Tokens[index].Span,
                     "Weights are whole numbers.");
         }
         return values;
@@ -463,7 +463,7 @@ public sealed class Parser
             if (line.Tokens[index].Kind is TokenKind.Number or TokenKind.Word)
                 values.Add(line.Tokens[index]);
             else if (line.Tokens[index].Kind != TokenKind.Comma)
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Tokens[index].Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, line.Tokens[index].Span,
                     "A row lists item ids or named items.");
         }
         return values;
@@ -473,18 +473,18 @@ public sealed class Parser
     {
         var nameToken = line.First;
         if (nameToken.Kind == TokenKind.String)
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, nameToken.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, nameToken.Span,
                 "A name is written without quotes, as in chaos_3_offer = event 1205.",
                 "Quotes always mean literal text, so a quoted name would be ambiguous.");
         if (nameToken.Text.Trim().Length == 0)
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, nameToken.Span, "A name cannot be empty.");
+            diagnostics.Error(DiagnosticId.UnexpectedToken, nameToken.Span, "A name cannot be empty.");
             return null;
         }
 
         if (line.Tokens.Count < 4 || line.Tokens[1].Text != "=")
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 $"A name line reads {nameToken} = event 1205, or {nameToken} = quest 61.");
             return null;
         }
@@ -493,11 +493,11 @@ public sealed class Parser
         if (kindToken.IsWord("event") && line.Tokens[3].IsWord("from"))
         {
             var start = line.Tokens[3].Span.End;
-            var raw = _source.Content[start..line.Span.End];
+            var raw = source.Content[start..line.Span.End];
             var trimmed = raw.Trim().Trim('"');
             if (trimmed.Length == 0)
             {
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                     $"'{nameToken.Text} = event from' names the file that answers it, "
                     + "as in 'event_240 = event from 11610_0_0'.");
                 return null;
@@ -523,7 +523,7 @@ public sealed class Parser
             kind = SlotKind.TalkTextId;
         else
         {
-            _diagnostics.Error(DiagnosticId.UnknownDirective, kindToken.Span,
+            diagnostics.Error(DiagnosticId.UnknownDirective, kindToken.Span,
                 "A name line declares an event, a quest, an item, an npc or a location.",
                 "An event only this file reaches needs no name line — its 'On' block is the declaration.");
             return null;
@@ -533,7 +533,7 @@ public sealed class Parser
         {
             if (line.Tokens[3].Kind != TokenKind.String)
             {
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Tokens[3].Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, line.Tokens[3].Span,
                     "Text is declared with the words in quotes.");
                 return null;
             }
@@ -560,7 +560,7 @@ public sealed class Parser
 
         if (line.Tokens[3].Kind != TokenKind.Number)
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Tokens[3].Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Tokens[3].Span,
                 $"Expected an id, found {line.Tokens[3]}.");
             return null;
         }
@@ -575,7 +575,7 @@ public sealed class Parser
     {
         if (position >= line.Tokens.Count || line.Tokens[position].Kind != TokenKind.String)
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "A location needs the name the player sees, in quotes.",
                 "For example: \"worms\" = location \"Worm\" found \"Outside Moradon\" at 637 429 in zone 21");
             return null;
@@ -656,8 +656,8 @@ public sealed class Parser
         var opener = Current;
         if (opener.Tokens.Count < 2 || opener.Tokens[1].Kind != TokenKind.Number)
         {
-            _index++;
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Span,
+            index++;
+            diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Span,
                 "'Quest' takes the id of the quest whose objectives follow.");
             return null;
         }
@@ -681,13 +681,13 @@ public sealed class Parser
             }
             else
             {
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Tokens[position].Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Tokens[position].Span,
                     "A 'Quest' line takes the id, then the quest's title in quotes, "
                     + "then 'needs any' or 'needs all'.");
             }
         }
 
-        _index++;
+        index++;
 
         var groups = new List<KillGroupSyntax>();
         var collects = new List<CollectSyntax>();
@@ -703,50 +703,50 @@ public sealed class Parser
             if (Current.StartsWith("fulfil"))
             {
                 if (Current.Tokens.Count != 2 || !Current.Tokens[1].IsWord("elsewhere"))
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
                         "'Fulfil' in a Quest block takes 'elsewhere', as in 'Fulfil elsewhere'.");
                 else if (fulfilElsewhere)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
                         "This quest already has a Fulfil elsewhere declaration.");
                 fulfilElsewhere = true;
-                _index++;
+                index++;
                 continue;
             }
             if (Current.StartsWith("daily") && Current.Tokens.Count == 1)
             {
                 if (daily)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
                         "This quest already has a Daily declaration.");
                 daily = true;
-                _index++;
+                index++;
                 continue;
             }
             if (Current.StartsWith("repeat"))
             {
                 if (Current.Tokens.Count != 2 || !Current.Tokens[1].IsWord("always"))
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
                         "'Repeat' takes 'always', as in 'Repeat always'.");
                 else if (repeat || daily)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
                         "This quest already has a repetition declaration.");
                 repeat = true;
-                _index++;
+                index++;
                 continue;
             }
             if (Current.StartsWith("title"))
             {
                 if (Current.Tokens.Count != 4 || !Current.Tokens[1].IsWord("for")
                     || Current.Tokens[3].Kind != TokenKind.String)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, Current.Span,
                         "A 'Title' line names a nation or class and its title in quotes, "
                         + "like: Title for karus \"Marauders of Darkland\"");
                 else if (titles.Any(entry => entry.Nation.Text.Equals(Current.Tokens[2].Text,
                              StringComparison.OrdinalIgnoreCase)))
-                    _diagnostics.Error(DiagnosticId.DuplicateObjectives, Current.Span,
+                    diagnostics.Error(DiagnosticId.DuplicateObjectives, Current.Span,
                         "This quest already has a Title line for that nation.");
                 else
                     titles.Add(new NationTextSyntax(Current.Tokens[2], Current.Tokens[3]));
-                _index++;
+                index++;
                 continue;
             }
             if (Current.StartsWith("journal"))
@@ -756,7 +756,7 @@ public sealed class Parser
                 {
                     if (journals.Any(entry => entry.Nation.Text.Equals(Current.Tokens[2].Text,
                             StringComparison.OrdinalIgnoreCase)))
-                        _diagnostics.Error(DiagnosticId.DuplicateObjectives, Current.Span,
+                        diagnostics.Error(DiagnosticId.DuplicateObjectives, Current.Span,
                             "This quest already has a Journal line for that nation.");
                     journals.Add(new NationTextSyntax(Current.Tokens[2], Current.Tokens[3]));
                 }
@@ -764,7 +764,7 @@ public sealed class Parser
                 {
                     journal = ParseJournal(Current, journal);
                 }
-                _index++;
+                index++;
                 continue;
             }
 
@@ -773,7 +773,7 @@ public sealed class Parser
                 var granted = ParseGrant(Current);
                 if (granted is not null)
                     grants.Add(granted);
-                _index++;
+                index++;
                 continue;
             }
             if (Current.StartsWith("collect"))
@@ -781,25 +781,25 @@ public sealed class Parser
                 var collected = ParseCollect(Current);
                 if (collected is not null)
                     collects.Add(collected);
-                _index++;
+                index++;
                 continue;
             }
 
             var group = ParseKillGroup(Current);
             if (group is not null)
                 groups.Add(group);
-            _index++;
+            index++;
         }
 
         if (journal is not null && journals.Count > 0)
-            _diagnostics.Error(DiagnosticId.DuplicateObjectives, opener.Span,
+            diagnostics.Error(DiagnosticId.DuplicateObjectives, opener.Span,
                 "Write Journal once, or once per nation, not both.");
         if (title is not null && titles.Count > 0)
-            _diagnostics.Error(DiagnosticId.DuplicateObjectives, opener.Span,
+            diagnostics.Error(DiagnosticId.DuplicateObjectives, opener.Span,
                 "Write the title on the Quest line, or a Title line per nation, not both.");
-        if (!_hasBinding && groups.Count == 0 && collects.Count == 0 && title is null
+        if (!hasBinding && groups.Count == 0 && collects.Count == 0 && title is null
             && titles.Count == 0 && journal is null && journals.Count == 0)
-            _diagnostics.Error(DiagnosticId.EmptyBlock, opener.Span,
+            diagnostics.Error(DiagnosticId.EmptyBlock, opener.Span,
                 "A 'Quest' block needs a title, a 'Journal' line, a 'Kill' line or a 'Collect' line.");
 
         return new QuestObjectivesSyntax(
@@ -811,14 +811,14 @@ public sealed class Parser
     {
         if (line.Tokens.Count != 2 || line.Tokens[1].Kind != TokenKind.String)
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "A 'Journal' line takes the text the quest panel shows, in quotes.");
             return already;
         }
 
         if (already is not null)
         {
-            _diagnostics.Error(DiagnosticId.DuplicateObjectives, line.Span,
+            diagnostics.Error(DiagnosticId.DuplicateObjectives, line.Span,
                 "This quest already has a 'Journal' line.");
             return already;
         }
@@ -833,7 +833,7 @@ public sealed class Parser
             || line.Tokens[3].Kind is not (TokenKind.Number or TokenKind.Word)
             || !line.Tokens[4].IsWord("on") || !line.Tokens[5].IsWord("accept"))
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "A 'Give' line in a 'Quest' block hands the player an item as the quest starts, "
                 + "like: Give 1 of 900670000 on accept");
             return null;
@@ -859,7 +859,7 @@ public sealed class Parser
             || (!coins && (tokens.Count != 4 || !tokens[2].IsWord("of")
                 || tokens[3].Kind is not (TokenKind.Number or TokenKind.Word))))
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "A 'Collect' line names what the quest hands in, like: Collect 3 of 810418000, "
                 + "Collect 3000 coins, Collect 1 of 810090000 for warrior, or Collect 3 of 910091000 for elmorad");
             return null;
@@ -887,7 +887,7 @@ public sealed class Parser
             position++;
         }
         if (position == start || position != line.Tokens.Count)
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "\"for\" takes a nation, a class, or a nation and a class, and ends the line.");
         return (nation, group);
     }
@@ -898,7 +898,7 @@ public sealed class Parser
         position = tokens.Count;
         if (tokens.Count == 6 && tokens[3].Kind == TokenKind.Number && tokens[4].IsWord("to") && tokens[5].Kind == TokenKind.Number)
             return (tokens[3], tokens[5]);
-        _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+        diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
             "\"for rebirth\" takes the lowest and the highest rebirth level, as in Rewards for rebirth 1 to 5, and ends the line.");
         return (null, null);
     }
@@ -912,7 +912,7 @@ public sealed class Parser
             || line.Tokens[1].Kind != TokenKind.Number
             || !line.Tokens[2].IsWord("of"))
         {
-            _diagnostics.Error(DiagnosticId.UnknownAction, line.Span,
+            diagnostics.Error(DiagnosticId.UnknownAction, line.Span,
                 "A 'Quest' block takes 'Daily', 'Repeat always', 'Fulfil elsewhere', 'Title for', 'Journal', 'Kill', 'Collect' or 'Give .. on accept' lines.");
             return null;
         }
@@ -930,7 +930,7 @@ public sealed class Parser
                 && line.Tokens[position + 2].Kind == TokenKind.Number)
             {
                 if (zone is not null)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, token.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, token.Span,
                         "A 'Kill' line names one zone.");
                 zone = line.Tokens[position + 2];
                 position += 2;
@@ -945,7 +945,7 @@ public sealed class Parser
             }
             if (token.Kind is not (TokenKind.Number or TokenKind.Word))
             {
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, token.Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, token.Span,
                     $"{token} is not a monster.");
                 continue;
             }
@@ -953,7 +953,7 @@ public sealed class Parser
         }
 
         if (monsters.Count == 0)
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "This 'Kill' line names no monster.");
 
         return new KillGroupSyntax(line.Span, line.Tokens[1].Value, line.Tokens[1].Span, monsters, target, zone);
@@ -980,7 +980,7 @@ public sealed class Parser
         }
 
         if (events.Count == 0)
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, header.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, header.Span,
                 "'On' takes the name of an event, without quotes.");
 
         long? questId = null;
@@ -1006,7 +1006,7 @@ public sealed class Parser
         bool mayBeStub = false)
     {
         var inlineBody = TakeInlineBody(opener, ref position);
-        _index++;
+        index++;
 
         if (inlineBody is not null)
             return [inlineBody];
@@ -1026,7 +1026,7 @@ public sealed class Parser
         position++;
         if (position >= line.Tokens.Count)
         {
-            _diagnostics.Error(DiagnosticId.RedundantColon, colon.Span,
+            diagnostics.Error(DiagnosticId.RedundantColon, colon.Span,
                 "This ':' does nothing — the indented lines below already open the body.",
                 "A ':' belongs only before a body written on the same line.");
             return null;
@@ -1059,9 +1059,9 @@ public sealed class Parser
             {
                 if (line.Indent < blockIndent)
                     break;
-                _diagnostics.Error(DiagnosticId.BadIndent, line.Span,
+                diagnostics.Error(DiagnosticId.BadIndent, line.Span,
                     $"This line is indented {line.Indent} but the block around it is indented {blockIndent}.");
-                _index++;
+                index++;
                 continue;
             }
 
@@ -1072,13 +1072,13 @@ public sealed class Parser
 
         if (blockIndent < 0)
         {
-            var where = openedBy ?? (AtEnd ? _lines[^1].Span : Current.Span);
+            var where = openedBy ?? (AtEnd ? lines[^1].Span : Current.Span);
             if (mayBeStub)
-                _diagnostics.Warning(DiagnosticId.StubEvent, where,
+                diagnostics.Warning(DiagnosticId.StubEvent, where,
                     "This event is reached but does nothing yet.",
                     "The routing is in place; the body still has to be written.");
             else
-                _diagnostics.Error(DiagnosticId.EmptyBlock, where,
+                diagnostics.Error(DiagnosticId.EmptyBlock, where,
                     "This block has no indented lines under it.");
         }
 
@@ -1103,7 +1103,7 @@ public sealed class Parser
                 var elsePosition = 1;
                 var branch = ParseIndentedBlock(elseLine, ref elsePosition);
                 if (elseBody is not null)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, elseLine.Span,
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, elseLine.Span,
                         "This block already has an 'Else'.");
                 elseBody = branch;
             }
@@ -1126,7 +1126,7 @@ public sealed class Parser
             {
                 var position = guard + 1;
                 var condition = ParseCondition(line, ref position);
-                _lines[_index] = line with { Tokens = [.. line.Tokens.Take(guard)] };
+                lines[index] = line with { Tokens = [.. line.Tokens.Take(guard)] };
                 var offered = ParseStatement();
                 return offered is null
                     ? null
@@ -1137,7 +1137,7 @@ public sealed class Parser
         if ((line.StartsWith("button") || line.StartsWith("topic")) && line.Tokens[^1].IsWord("do"))
             return ParseButtonBlock();
 
-        _index++;
+        index++;
         return ParseAction(line);
     }
 
@@ -1158,9 +1158,9 @@ public sealed class Parser
         var resolved = ResolveAction(opener.Tokens, out _);
         if (resolved is null)
         {
-            _index++;
-            _diagnostics.Error(DiagnosticId.UnknownAction, opener.Span,
-                $"'{_source.GetText(opener.Span)}' is not something an NPC can do.");
+            index++;
+            diagnostics.Error(DiagnosticId.UnknownAction, opener.Span,
+                $"'{source.GetText(opener.Span)}' is not something an NPC can do.");
             return null;
         }
 
@@ -1196,7 +1196,7 @@ public sealed class Parser
 
             var body = ParseIndentedBlock(elseLine, ref elsePosition);
             if (elseBody is not null)
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, elseLine.Span, "This 'If' already has an 'Else'.");
+                diagnostics.Error(DiagnosticId.UnexpectedToken, elseLine.Span, "This 'If' already has an 'Else'.");
             elseBody = body;
         }
 
@@ -1239,19 +1239,19 @@ public sealed class Parser
                 max = opener.Tokens[position].Value;
                 position++;
                 if (max <= 0)
-                    _diagnostics.Error(DiagnosticId.BadArgumentCount, opener.Tokens[position - 1].Span,
+                    diagnostics.Error(DiagnosticId.BadArgumentCount, opener.Tokens[position - 1].Span,
                         "A roll needs a highest number of 1 or more.",
                         "'By roll of 5' rolls one of 0, 1, 2, 3, 4.");
             }
             else
             {
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Span,
                     "A roll says how high it goes, as in 'By roll of 20'.");
             }
         }
         else
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, opener.Span,
                 "This can branch by player class, by player nation, by event, or by roll of a number.");
             selector = SwitchSelectorKind.PlayerClass;
             position = 1;
@@ -1259,13 +1259,13 @@ public sealed class Parser
 
         if (position < opener.Tokens.Count && opener.Tokens[position].Kind == TokenKind.Colon)
         {
-            _diagnostics.Error(DiagnosticId.RedundantColon, opener.Tokens[position].Span,
+            diagnostics.Error(DiagnosticId.RedundantColon, opener.Tokens[position].Span,
                 "This ':' does nothing — the cases below already open the body.");
             position++;
         }
 
         ExpectEndOfLine(opener, position);
-        _index++;
+        index++;
 
         var cases = new List<CaseClauseSyntax>();
         IReadOnlyList<StatementSyntax>? defaultBody = null;
@@ -1280,9 +1280,9 @@ public sealed class Parser
             {
                 if (clause.Indent < caseIndent)
                     break;
-                _diagnostics.Error(DiagnosticId.BadIndent, clause.Span,
+                diagnostics.Error(DiagnosticId.BadIndent, clause.Span,
                     $"This case is indented {clause.Indent} but its siblings are indented {caseIndent}.");
-                _index++;
+                index++;
                 continue;
             }
 
@@ -1292,7 +1292,7 @@ public sealed class Parser
                 clausePosition = 1;
                 var body = ParseIndentedBlock(clause, ref clausePosition);
                 if (defaultBody is not null)
-                    _diagnostics.Error(DiagnosticId.UnexpectedToken, clause.Span, "This already has an 'Else'.");
+                    diagnostics.Error(DiagnosticId.UnexpectedToken, clause.Span, "This already has an 'Else'.");
                 defaultBody = body;
                 continue;
             }
@@ -1327,9 +1327,9 @@ public sealed class Parser
 
             if (labels.Count == 0)
             {
-                _diagnostics.Error(DiagnosticId.UnexpectedToken, clause.Span,
+                diagnostics.Error(DiagnosticId.UnexpectedToken, clause.Span,
                     "A case line lists what to match.");
-                _index++;
+                index++;
                 continue;
             }
 
@@ -1342,13 +1342,13 @@ public sealed class Parser
 
     private StatementSyntax? ParseTrade(Line line)
     {
-        _index++;
+        index++;
         var at = 1;
         while (at < line.Tokens.Count && !line.Tokens[at].IsWord("for"))
             at++;
         if (at == 1 || at >= line.Tokens.Count - 1)
         {
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, line.Span,
                 "Trade reads 'Trade 1 of 810207000 for 1 of 521511004'.",
                 "The right-hand side may also be 'random from <reward>'.");
             return null;
@@ -1377,13 +1377,13 @@ public sealed class Parser
         {
             var consumed = partial.Match.TokensConsumed;
             var badToken = consumed < line.Tokens.Count ? line.Tokens[consumed] : line.Tokens[^1];
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, badToken.Span,
+            diagnostics.Error(DiagnosticId.UnexpectedToken, badToken.Span,
                 $"This reads as '{partial.Signature.Text}', which does not take {badToken} here.");
             return null;
         }
 
-        _diagnostics.Error(DiagnosticId.UnknownAction, line.Span,
-            $"'{_source.GetText(line.Span)}' is not something an NPC can do.",
+        diagnostics.Error(DiagnosticId.UnknownAction, line.Span,
+            $"'{source.GetText(line.Span)}' is not something an NPC can do.",
             Suggest(line.Tokens));
         return null;
     }
@@ -1486,7 +1486,7 @@ public sealed class Parser
                 position++;
                 return inner;
             }
-            _diagnostics.Error(DiagnosticId.UnexpectedToken, open.Span, "This '(' has no matching ')'.");
+            diagnostics.Error(DiagnosticId.UnexpectedToken, open.Span, "This '(' has no matching ')'.");
             return inner;
         }
 
@@ -1498,7 +1498,7 @@ public sealed class Parser
         if (position >= line.Tokens.Count)
         {
             var span = line.Tokens.Count > 0 ? line.Tokens[^1].Span : line.Span;
-            _diagnostics.Error(DiagnosticId.UnknownCondition, span, "Expected something to test here.");
+            diagnostics.Error(DiagnosticId.UnknownCondition, span, "Expected something to test here.");
             return new ConditionSyntax.Invalid(span);
         }
 
@@ -1526,8 +1526,8 @@ public sealed class Parser
             var token = line.Tokens[position];
             var end = FindColon(line, position);
             var span = TextSpan.FromBounds(token.Span.Start, end);
-            _diagnostics.Error(DiagnosticId.UnknownCondition, span,
-                $"'{_source.GetText(span)}' is not something this language can test.",
+            diagnostics.Error(DiagnosticId.UnknownCondition, span,
+                $"'{source.GetText(span)}' is not something this language can test.",
                 "Conditions start with 'player', 'quest', 'daily', 'today' or 'chance'.");
             while (position < line.Tokens.Count && line.Tokens[position].Kind != TokenKind.Colon)
                 position++;
@@ -1556,7 +1556,7 @@ public sealed class Parser
         if (position >= line.Tokens.Count)
             return;
         var token = line.Tokens[position];
-        _diagnostics.Error(DiagnosticId.UnexpectedToken, token.Span, $"Unexpected {token} at the end of the line.");
+        diagnostics.Error(DiagnosticId.UnexpectedToken, token.Span, $"Unexpected {token} at the end of the line.");
     }
 
     private static string Suggest(IReadOnlyList<Token> tokens)
@@ -1600,9 +1600,9 @@ public sealed class Parser
         return previous[b.Length];
     }
 
-    private bool AtEnd => _index >= _lines.Count;
+    private bool AtEnd => index >= lines.Count;
 
-    private Line Current => _lines[_index];
+    private Line Current => lines[index];
 
     private List<Line> SplitLines(IReadOnlyList<Token> tokens)
     {
@@ -1636,8 +1636,8 @@ public sealed class Parser
 
     private int IndentOf(int offset)
     {
-        var position = _source.GetLinePosition(offset);
-        var text = _source.GetLineText(position.Line);
+        var position = source.GetLinePosition(offset);
+        var text = source.GetLineText(position.Line);
         var indent = 0;
         foreach (var c in text)
         {

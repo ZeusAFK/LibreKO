@@ -1,6 +1,6 @@
 ﻿namespace LibreKO.Network;
 
-public readonly record struct RoyaleSignUp(int Result, int Participants, int Seconds, int Mode);
+public readonly record struct RoyaleSignUp(KnightRoyaleSignUpResult Result, int Participants, int Seconds, int Mode);
 
 public readonly record struct RoyaleEntry(int Result, int Level, int MaxExp, int Exp);
 
@@ -12,42 +12,17 @@ public readonly record struct RoyaleLoot(int BoxId, int SlotOrCode, int ItemId, 
 
 public static class KnightRoyaleWire
 {
-    public const byte SubSignUp = 1;
-    public const byte SubEntry = 2;
-    public const byte SubProgress = 3;
-    public const byte SubNotice = 4;
-    public const byte SubLoot = 5;
-    public const byte SubItemAdd = 6;
-    public const byte SubRestore = 7;
-    public const byte SubDestroy = 8;
-    public const byte SubCombine = 9;
-
-    public const byte ProgressExp = 1;
-    public const byte ProgressStats = 2;
-
-    public const byte NoticeAbandoned = 1;
-    public const byte NoticeGas = 2;
-    public const byte NoticeChest = 3;
-    public const byte NoticeReward = 4;
-    public const byte NoticeWinner = 5;
-    public const byte NoticeDelegate = 6;
-    public const byte NoticeSurvivors = 7;
-
-    public const byte Apply = 1;
-    public const byte Cancel = 2;
-
     public const int LootFailed = 0xFFF9;
     public const int LootQuantity = 0xFFF5;
     public const int LootWeight = 0xFFFE;
-    public const int MaxBagSlot = 8;
 
     public static RoyaleSignUp ReadSignUp(Packet p)
     {
-        int result = p.RemainingBytes >= 1 ? p.ReadByte() : 0;
+        var result = p.RemainingBytes >= 1 ? (KnightRoyaleSignUpResult)p.ReadByte() : KnightRoyaleSignUpResult.Count;
         int participants = 0, seconds = 0, mode = 0;
-        if (result is Domain.KnightRoyale.SignUpCount or Domain.KnightRoyale.SignUpOpen && p.RemainingBytes >= 1)
+        if (result is KnightRoyaleSignUpResult.Count or KnightRoyaleSignUpResult.Open && p.RemainingBytes >= 1)
             participants = p.ReadByte();
-        if (result == Domain.KnightRoyale.SignUpOpen && p.RemainingBytes >= 3)
+        if (result == KnightRoyaleSignUpResult.Open && p.RemainingBytes >= 3)
         {
             seconds = p.ReadUShort();
             mode = p.ReadByte();
@@ -89,4 +64,51 @@ public static class KnightRoyaleWire
     public static Domain.KnightRoyale.Reward ReadReward(Packet p) => p.RemainingBytes >= 5
         ? new Domain.KnightRoyale.Reward(p.ReadByte(), p.ReadByte(), p.ReadByte(), p.ReadShort())
         : default;
+}
+
+public enum KnightRoyaleSubOpcode : byte
+{
+    SignUp = 1,
+    Entry = 2,
+    Progress = 3,
+    Notice = 4,
+    Loot = 5,
+    ItemAdd = 6,
+    Restore = 7,
+    Destroy = 8,
+    Combine = 9,
+}
+
+public enum KnightRoyaleProgressKind : byte
+{
+    Exp = 1,
+    Stats = 2,
+}
+
+public enum KnightRoyaleNoticeKind : byte
+{
+    Abandoned = 1,
+    Gas = 2,
+    Chest = 3,
+    Reward = 4,
+    Winner = 5,
+    Delegate = 6,
+    Survivors = 7,
+}
+
+public enum KnightRoyaleSignUpAction : byte
+{
+    Apply = 1,
+    Cancel = 2,
+}
+
+public enum KnightRoyaleSignUpResult : byte
+{
+    Count = 0,
+    Open = 1,
+    ApplyBack = 2,
+    Already = 3,
+    Rejected = 4,
+    Level = 5,
+    DuplicateIp = 6,
 }

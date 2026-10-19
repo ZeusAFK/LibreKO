@@ -13,7 +13,7 @@ internal static class EngineProfile
     private const double NanosPerMs = 1_000_000.0;
     private const float Smoothing = 0.1f;
 
-    private static readonly Dictionary<string, (double Cpu, double Gpu)> _smoothed = new();
+    private static readonly Dictionary<string, (double Cpu, double Gpu)> smoothed = new();
 
     internal static bool Enabled { get; private set; }
 
@@ -24,7 +24,7 @@ internal static class EngineProfile
         if (!Available) return;
         Enabled = !Enabled;
         EngineDebugger.ProfilerEnable(VisualProfiler, Enabled);
-        _smoothed.Clear();
+        smoothed.Clear();
     }
 
     internal static void Sample()
@@ -41,7 +41,7 @@ internal static class EngineProfile
             frame[name] = frame.TryGetValue(name, out var t) ? (t.Cpu + cpu, t.Gpu + gpu) : (cpu, gpu);
         }
         foreach (var (name, t) in frame)
-            _smoothed[name] = _smoothed.TryGetValue(name, out var s)
+            smoothed[name] = smoothed.TryGetValue(name, out var s)
                 ? (s.Cpu + (t.Cpu - s.Cpu) * Smoothing, s.Gpu + (t.Gpu - s.Gpu) * Smoothing)
                 : t;
     }
@@ -51,10 +51,10 @@ internal static class EngineProfile
         if (!Available) return "engine passes: start with --remote-debug to enable";
         if (!Enabled) return "engine passes: off (Ctrl+Shift+F11)";
         var sb = new StringBuilder("engine passes cpu:");
-        foreach (var (name, t) in _smoothed.OrderByDescending(kv => kv.Value.Cpu).Take(TopPasses))
+        foreach (var (name, t) in smoothed.OrderByDescending(kv => kv.Value.Cpu).Take(TopPasses))
             sb.Append($"  {name} {t.Cpu:0.00}");
         sb.Append("\nengine passes gpu:");
-        foreach (var (name, t) in _smoothed.OrderByDescending(kv => kv.Value.Gpu).Take(TopPasses))
+        foreach (var (name, t) in smoothed.OrderByDescending(kv => kv.Value.Gpu).Take(TopPasses))
             sb.Append($"  {name} {t.Gpu:0.00}");
         return sb.ToString();
     }
@@ -62,7 +62,7 @@ internal static class EngineProfile
     internal static string Report()
     {
         var sb = new StringBuilder("pass                                        cpu ms    gpu ms\n");
-        foreach (var (name, t) in _smoothed.OrderByDescending(kv => kv.Value.Cpu))
+        foreach (var (name, t) in smoothed.OrderByDescending(kv => kv.Value.Cpu))
             sb.AppendLine($"{name,-42} {t.Cpu,8:0.000} {t.Gpu,9:0.000}");
         return sb.ToString();
     }

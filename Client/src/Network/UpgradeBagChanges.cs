@@ -6,15 +6,11 @@ namespace LibreKO.Network;
 
 public static class UpgradeBagChanges
 {
-    private const byte RequestNormal = 1;
-    private const byte ResultFailed = 0;
-    private const byte ResultSucceeded = 1;
-
-    public static List<(int Abs, ItemSlot Slot)> For(byte upgradeType, byte result,
+    public static List<(int Abs, ItemSlot Slot)> For(ItemUpgradeKind upgradeType, ItemUpgradeResult result,
         IReadOnlyList<UpgradeSlotResult> slots, IReadOnlyList<ItemSlot> inventory, Func<int, short> durability)
     {
         var changes = new List<(int Abs, ItemSlot Slot)>();
-        if (upgradeType != RequestNormal || result is not (ResultSucceeded or ResultFailed) || slots.Count == 0)
+        if (upgradeType != ItemUpgradeKind.Normal || result is not (ItemUpgradeResult.Succeeded or ItemUpgradeResult.Failed) || slots.Count == 0)
             return changes;
 
         var working = new Dictionary<int, ItemSlot>();
@@ -27,10 +23,10 @@ public static class UpgradeBagChanges
                 var retained = abs < inventory.Count ? inventory[abs] : default;
                 retained.ItemId = origin.ItemId;
                 retained.Count = 1;
-                if (result == ResultSucceeded) retained.Durability = durability(origin.ItemId);
+                if (result == ItemUpgradeResult.Succeeded) retained.Durability = durability(origin.ItemId);
                 working[abs] = retained;
             }
-            else if (result == ResultFailed)
+            else if (result == ItemUpgradeResult.Failed)
                 working[abs] = default;
             if (working.TryGetValue(abs, out var changed)) changes.Add((abs, changed));
         }

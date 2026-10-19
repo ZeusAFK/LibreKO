@@ -11,12 +11,12 @@ public class FramedConn
     private static readonly byte[] Header = { 0xAA, 0x55 };
     private static readonly byte[] Tail = { 0x55, 0xAA };
 
-    private TcpClient? _tcp;
-    private NetworkStream? _stream;
-    private CancellationTokenSource? _cts;
-    private readonly object _sendLock = new();
-    private readonly object _receiveLock = new();
-    private int _attempt;
+    private TcpClient? tcp;
+    private NetworkStream? stream;
+    private CancellationTokenSource? cts;
+    private readonly object sendLock = new();
+    private readonly object receiveLock = new();
+    private int attempt;
 
     private const int ConnectTimeoutMs = 5000;
 
@@ -31,9 +31,9 @@ public class FramedConn
         ResetProtocolState();
         ConnectFailed = false;
         LastError = null;
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
-        int attempt = Volatile.Read(ref _attempt);
+        cts = new CancellationTokenSource();
+        var ct = cts.Token;
+        int attempt = Volatile.Read(ref this.attempt);
         _ = Task.Run(() =>
         {
             var tcp = new TcpClient { NoDelay = true };
@@ -42,7 +42,7 @@ public class FramedConn
                 if (!tcp.ConnectAsync(host, port).Wait(ConnectTimeoutMs, ct))
                 {
                     try { tcp.Close(); } catch { }
-                    lock (_receiveLock)
+                    lock (receiveLock)
                     {
                         if (!IsCurrent(attempt)) return;
                         LastError = $"connection to {host}:{port} timed out";
@@ -51,15 +51,15 @@ public class FramedConn
                     return;
                 }
                 NetworkStream stream;
-                lock (_receiveLock)
+                lock (receiveLock)
                 {
                     if (!IsCurrent(attempt))
                     {
                         try { tcp.Close(); } catch { }
                         return;
                     }
-                    _tcp = tcp;
-                    _stream = stream = tcp.GetStream();
+                    this.tcp = tcp;
+                    this.stream = stream = tcp.GetStream();
                     Connected = true;
                 }
                 ReceiveLoop(stream, ct, attempt);
@@ -68,7 +68,7 @@ public class FramedConn
             {
                 try { tcp.Close(); } catch { }
                 var cause = e.InnerException ?? e;
-                lock (_receiveLock)
+                lock (receiveLock)
                 {
                     if (!IsCurrent(attempt)) return;
                     Godot.GD.Print($"[net] connection to {host}:{port} failed: {cause.Message}");
@@ -91,12 +91,12 @@ public class FramedConn
         }
         : cause.Message;
 
-    private bool IsCurrent(int attempt) => Volatile.Read(ref _attempt) == attempt;
+    private bool IsCurrent(int attempt) => Volatile.Read(ref this.attempt) == attempt;
 
     public void Send(Packet packet)
     {
-        int attempt = Volatile.Read(ref _attempt);
-        var s = _stream;
+        int attempt = Volatile.Read(ref this.attempt);
+        var s = stream;
         if (s == null || !Connected) return;
         var body = TransformOutgoing(packet.GetBytes());
         var frame = new byte[2 + 2 + body.Length + 2];
@@ -106,11 +106,11 @@ public class FramedConn
         frame[^2] = Tail[0]; frame[^1] = Tail[1];
         try
         {
-            lock (_sendLock) { s.Write(frame, 0, frame.Length); s.Flush(); }
+            lock (sendLock) { s.Write(frame, 0, frame.Length); s.Flush(); }
         }
         catch (Exception e)
         {
-            lock (_receiveLock)
+            lock (receiveLock)
             {
                 if (!IsCurrent(attempt)) return;
                 LastError = e.Message;
@@ -143,7 +143,7 @@ public class FramedConn
 
                 var packet = BuildIncoming(body);
                 if (packet == null) continue;
-                lock (_receiveLock)
+                lock (receiveLock)
                 {
                     if (!IsCurrent(attempt)) return;
                     Incoming.Enqueue(packet);
@@ -152,12 +152,12 @@ public class FramedConn
         }
         catch (Exception e)
         {
-            lock (_receiveLock)
+            lock (receiveLock)
                 if (!ct.IsCancellationRequested && IsCurrent(attempt)) LastError = e.Message;
         }
         finally
         {
-            lock (_receiveLock)
+            lock (receiveLock)
                 if (IsCurrent(attempt)) Connected = false;
         }
     }
@@ -182,16 +182,16 @@ public class FramedConn
         CancellationTokenSource? cts;
         NetworkStream? stream;
         TcpClient? tcp;
-        lock (_receiveLock)
+        lock (receiveLock)
         {
-            Interlocked.Increment(ref _attempt);
+            Interlocked.Increment(ref attempt);
             Connected = false;
             Incoming.Clear();
-            cts = _cts;
-            stream = _stream;
-            tcp = _tcp;
-            _stream = null;
-            _tcp = null;
+            cts = this.cts;
+            stream = this.stream;
+            tcp = this.tcp;
+            this.stream = null;
+            this.tcp = null;
         }
         try { cts?.Cancel(); } catch { }
         try { stream?.Dispose(); } catch { }

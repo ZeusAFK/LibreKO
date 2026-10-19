@@ -38,7 +38,7 @@ public class NoahKnightsTests
         for (int i = 0; i < 5; i++) p.WriteByte(3);
         p.ResetOffset();
 
-        Net.ReadMyInfoTail(p, out int manner, out int rebirth, out _, out _, out _, out _, out _, out _);
+        MyInfoWire.ReadTail(p, out int manner, out int rebirth, out _, out _, out _, out _, out _, out _);
 
         Assert.Equal(1_234, manner);
         Assert.Equal(2, rebirth);

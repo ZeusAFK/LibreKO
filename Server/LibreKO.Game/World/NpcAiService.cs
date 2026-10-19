@@ -13,7 +13,7 @@ public class NpcAiService(
     ILogger<NpcAiService> logger) : BackgroundService
 {
     public const int TickMs = 250;
-    private readonly int _maxWorkerCount = Math.Max(
+    private readonly int maxWorkerCount = Math.Max(
         1,
         settings.Value.Global.ThreadPoolSize > 0
             ? settings.Value.Global.ThreadPoolSize
@@ -21,7 +21,7 @@ public class NpcAiService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("NPC AI service started ({TickMs}ms tick, {WorkerCount} workers)", TickMs, _maxWorkerCount);
+        logger.LogInformation("NPC AI service started ({TickMs}ms tick, {WorkerCount} workers)", TickMs, maxWorkerCount);
 
         var sw = new Stopwatch();
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(TickMs));
@@ -50,7 +50,7 @@ public class NpcAiService(
 
     private async Task ProcessActiveNpcsAsync(NpcInstance[] activeNpcs, long nowTicks, CancellationToken stoppingToken)
     {
-        var workerCount = Math.Min(_maxWorkerCount, activeNpcs.Length);
+        var workerCount = Math.Min(maxWorkerCount, activeNpcs.Length);
         if (workerCount <= 1)
         {
             await ProcessNpcRangeAsync(activeNpcs, 0, activeNpcs.Length, nowTicks, stoppingToken);

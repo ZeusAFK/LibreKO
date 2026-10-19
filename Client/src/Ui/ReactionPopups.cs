@@ -18,7 +18,7 @@ public sealed partial class ReactionBar : PopupPanel
     private static readonly Color Hover = new(1f, 1f, 1f, 0.1f);
     private static readonly Color Chosen = new(1f, 1f, 1f, 0.18f);
 
-    private readonly List<(string Emoji, Button Button)> _picks = [];
+    private readonly List<(string Emoji, Button Button)> picks = [];
 
     public event Action<string>? Picked;
     public event Action? More;
@@ -43,7 +43,7 @@ public sealed partial class ReactionBar : PopupPanel
                 Picked?.Invoke(picked);
             };
             row.AddChild(button);
-            _picks.Add((emoji, button));
+            picks.Add((emoji, button));
         }
         var plus = Cellular("+", PlusSize);
         plus.TooltipText = "More emoji and emoticons";
@@ -83,7 +83,7 @@ public sealed partial class ReactionBar : PopupPanel
 
     public void ShowAbove(Rect2 anchor, string current)
     {
-        foreach (var (emoji, button) in _picks)
+        foreach (var (emoji, button) in picks)
             button.AddThemeStyleboxOverride("normal", emoji == current ? Round(Chosen) : new StyleBoxEmpty());
         ResetSize();
         var room = GetTree().Root.GetVisibleRect().Size;
@@ -117,12 +117,12 @@ public sealed partial class ReactionDetails : PopupPanel
     private static readonly Color Divider = new(1f, 1f, 1f, 0.08f);
     private static readonly Color RowHover = new(1f, 1f, 1f, 0.06f);
 
-    private readonly Label _title;
-    private readonly HBoxContainer _chips;
-    private readonly VBoxContainer _list;
-    private readonly ScrollContainer _scroll;
-    private string _filter = "";
-    private int _self;
+    private readonly Label title;
+    private readonly HBoxContainer chips;
+    private readonly VBoxContainer list;
+    private readonly ScrollContainer scroll;
+    private string filter = "";
+    private int self;
 
     public RoomPost? Post { get; private set; }
 
@@ -141,25 +141,25 @@ public sealed partial class ReactionDetails : PopupPanel
         var column = new VBoxContainer { CustomMinimumSize = new Vector2(Width, 0) };
         column.AddThemeConstantOverride("separation", 8);
         AddChild(column);
-        _title = UiTheme.Text("", TitleSize, UiTheme.TextLo);
-        column.AddChild(_title);
-        _chips = new HBoxContainer();
-        _chips.AddThemeConstantOverride("separation", 6);
-        column.AddChild(_chips);
+        title = UiTheme.Text("", TitleSize, UiTheme.TextLo);
+        column.AddChild(title);
+        chips = new HBoxContainer();
+        chips.AddThemeConstantOverride("separation", 6);
+        column.AddChild(chips);
         column.AddChild(new ColorRect { Color = Divider, CustomMinimumSize = new Vector2(0, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
-        _scroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
-        UiTheme.ThinScrollbar(_scroll.GetVScrollBar());
-        column.AddChild(_scroll);
-        _list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _list.AddThemeConstantOverride("separation", 0);
-        _scroll.AddChild(_list);
+        scroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        UiTheme.ThinScrollbar(scroll.GetVScrollBar());
+        column.AddChild(scroll);
+        list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        list.AddThemeConstantOverride("separation", 0);
+        scroll.AddChild(list);
     }
 
     public void ShowFor(RoomPost post, int self, Rect2 anchor)
     {
         Post = post;
-        _self = self;
-        _filter = "";
+        this.self = self;
+        filter = "";
         Fill(post);
         ResetSize();
         var room = GetTree().Root.GetVisibleRect().Size;
@@ -188,9 +188,9 @@ public sealed partial class ReactionDetails : PopupPanel
     {
         var reactions = post.Reactions;
         var tally = reactions.Tally();
-        if (_filter.Length > 0 && !tally.Any(each => each.Emoji == _filter)) _filter = "";
-        _title.Text = ReactionRules.Title(reactions.Total);
-        Empty(_chips);
+        if (filter.Length > 0 && !tally.Any(each => each.Emoji == filter)) filter = "";
+        title.Text = ReactionRules.Title(reactions.Total);
+        Empty(chips);
         var add = UiTheme.IconButton(UiIcons.Get("system/smiley"), "Add a reaction");
         add.CustomMinimumSize = new Vector2(30, 26);
         add.AddThemeStyleboxOverride("normal", ChipStyle(false));
@@ -203,18 +203,18 @@ public sealed partial class ReactionDetails : PopupPanel
             Hide();
             AddRequested?.Invoke();
         };
-        _chips.AddChild(add);
-        foreach (var each in tally) _chips.AddChild(Chip(each));
+        chips.AddChild(add);
+        foreach (var each in tally) chips.AddChild(Chip(each));
 
-        Empty(_list);
-        foreach (var reaction in reactions.Listed(_filter, _self)) _list.AddChild(Row(reaction));
-        int rows = _list.GetChildCount();
-        _scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(ListMaxHeight, rows * RowHeight));
+        Empty(list);
+        foreach (var reaction in reactions.Listed(filter, self)) list.AddChild(Row(reaction));
+        int rows = list.GetChildCount();
+        scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(ListMaxHeight, rows * RowHeight));
     }
 
     private Control Chip(ReactionCount count)
     {
-        bool chosen = _filter == count.Emoji;
+        bool chosen = filter == count.Emoji;
         var chip = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Stop, MouseDefaultCursorShape = Control.CursorShape.PointingHand };
         chip.AddThemeStyleboxOverride("panel", ChipStyle(chosen));
         var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -229,7 +229,7 @@ public sealed partial class ReactionDetails : PopupPanel
         {
             if (ev is not InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) return;
             chip.AcceptEvent();
-            _filter = _filter == emoji ? "" : emoji;
+            filter = filter == emoji ? "" : emoji;
             if (Post != null) Callable.From(() => { Fill(Post); ResetSize(); }).CallDeferred();
         };
         return chip;
@@ -247,7 +247,7 @@ public sealed partial class ReactionDetails : PopupPanel
 
     private Control Row(Reaction reaction)
     {
-        bool mine = reaction.CharacterId == _self;
+        bool mine = reaction.CharacterId == self;
         var row = new PanelContainer
         {
             CustomMinimumSize = new Vector2(0, RowHeight),

@@ -19,21 +19,21 @@ public class SoccerTests
 
     private sealed record Player(UserSession Session, IClient Client, List<Packet> Sent);
 
-    private readonly SessionManager _sessions = new();
-    private readonly IWorldMovementService _movement = Substitute.For<IWorldMovementService>();
-    private readonly SoccerService _soccer;
-    private readonly NpcInstance _ball;
+    private readonly SessionManager sessions = new();
+    private readonly IWorldMovementService movement = Substitute.For<IWorldMovementService>();
+    private readonly SoccerService soccer;
+    private readonly NpcInstance ball;
 
     public SoccerTests()
     {
-        var provider = new ServiceCollection().AddSingleton(_movement).BuildServiceProvider();
-        _soccer = new SoccerService(_sessions, provider, NullLogger<SoccerService>.Instance);
-        _ball = new NpcInstance
+        var provider = new ServiceCollection().AddSingleton(movement).BuildServiceProvider();
+        soccer = new SoccerService(sessions, provider, NullLogger<SoccerService>.Instance);
+        ball = new NpcInstance
         {
             NpcId = SoccerService.BallNpcId, NpcType = NpcData.TypeSoccerBall, Name = "Football", IsMonster = true,
             ZoneId = Moradon, X = SoccerPitch.CentreX, Z = SoccerPitch.CentreZ,
         };
-        _sessions.Regions.SpawnNpc(_ball);
+        sessions.Regions.SpawnNpc(ball);
     }
 
     private Player Join(int id, string name, byte zone = Moradon)
@@ -42,13 +42,13 @@ public class SoccerTests
         client.Id.Returns(Guid.NewGuid());
         var sent = new List<Packet>();
         client.SendPacket(Arg.Do<Packet>(p => sent.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, id, id);
+        var session = sessions.CreateSession(client, id, id);
         session.Name = name;
         session.ZoneId = zone;
         session.Nation = AccountNation.Karus;
         session.X = SoccerPitch.CentreX;
         session.Z = NearBallZ;
-        _sessions.Regions.UpdateRegion(session);
+        sessions.Regions.UpdateRegion(session);
         return new Player(session, client, sent);
     }
 
@@ -102,39 +102,39 @@ public class SoccerTests
     {
         var rin = Join(1, "Rin");
 
-        (await _soccer.JoinAsync(rin.Session, SoccerService.TeamBlue)).Should().Be(SoccerJoinResult.Joined);
+        (await soccer.JoinAsync(rin.Session, SoccerService.TeamBlue)).Should().Be(SoccerJoinResult.Joined);
 
         rin.Session.SoccerTeam.Should().Be(SoccerService.TeamBlue);
         SoccerPackets(rin).Should().ContainSingle().Which.Should().Equal(SoccerPacketWriter.Clock(0).GetData());
         rin.Sent.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_STATE_CHANGE);
-        await _movement.Received(1).WarpAsync(rin.Session, (ushort)(SoccerPitch.CentreX * 10), (ushort)(SoccerPitch.BlueKickOffZ * 10));
+        await movement.Received(1).WarpAsync(rin.Session, (ushort)(SoccerPitch.CentreX * 10), (ushort)(SoccerPitch.BlueKickOffZ * 10));
     }
 
     [Fact]
     public async Task JoiningIsRefusedOutsideMoradonTwiceOrIntoAFullTeam()
     {
         var away = Join(1, "Away", zone: (byte)ZoneId.RonarkLand);
-        (await _soccer.JoinAsync(away.Session, SoccerService.TeamRed)).Should().Be(SoccerJoinResult.WrongZone);
+        (await soccer.JoinAsync(away.Session, SoccerService.TeamRed)).Should().Be(SoccerJoinResult.WrongZone);
 
         for (int i = 0; i < SoccerService.MaxTeamPlayers; i++)
-            await _soccer.JoinAsync(Join(10 + i, $"Red{i}").Session, SoccerService.TeamRed);
+            await soccer.JoinAsync(Join(10 + i, $"Red{i}").Session, SoccerService.TeamRed);
         var late = Join(50, "Late");
-        (await _soccer.JoinAsync(late.Session, SoccerService.TeamRed)).Should().Be(SoccerJoinResult.TeamFull);
-        (await _soccer.JoinAsync(late.Session, SoccerService.TeamBlue)).Should().Be(SoccerJoinResult.Joined);
-        (await _soccer.JoinAsync(late.Session, SoccerService.TeamRed)).Should().Be(SoccerJoinResult.AlreadyIn);
+        (await soccer.JoinAsync(late.Session, SoccerService.TeamRed)).Should().Be(SoccerJoinResult.TeamFull);
+        (await soccer.JoinAsync(late.Session, SoccerService.TeamBlue)).Should().Be(SoccerJoinResult.Joined);
+        (await soccer.JoinAsync(late.Session, SoccerService.TeamRed)).Should().Be(SoccerJoinResult.AlreadyIn);
     }
 
     [Fact]
     public async Task AMatchNeedsBothTeamsUnlessItIsPractice()
     {
         var rin = Join(1, "Rin");
-        await _soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
+        await soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
 
-        (await _soccer.StartAsync(rin.Session)).Should().BeFalse();
+        (await soccer.StartAsync(rin.Session)).Should().BeFalse();
         var kai = Join(2, "Kai");
-        await _soccer.JoinAsync(kai.Session, SoccerService.TeamRed);
-        (await _soccer.StartAsync(rin.Session)).Should().BeTrue();
-        _soccer.Running.Should().BeTrue();
+        await soccer.JoinAsync(kai.Session, SoccerService.TeamRed);
+        (await soccer.StartAsync(rin.Session)).Should().BeTrue();
+        soccer.Running.Should().BeTrue();
         SoccerPackets(kai).Last().Should().Equal(SoccerPacketWriter.Clock(SoccerService.MatchSeconds).GetData());
     }
 
@@ -142,30 +142,30 @@ public class SoccerTests
     public async Task ABallKickedIntoTheRedGoalScoresForBlueAndNamesTheKicker()
     {
         var rin = Join(1, "Rin");
-        await _soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
-        await _soccer.StartAsync(rin.Session, practice: true);
-        _ball.X = 672f;
-        _ball.Z = 125f;
+        await soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
+        await soccer.StartAsync(rin.Session, practice: true);
+        ball.X = 672f;
+        ball.Z = 125f;
         rin.Session.Z = 128f;
 
-        (await _soccer.KickAsync(rin.Session, _ball.UniqueId, KickTo(672f, 112f))).Should().BeTrue();
+        (await soccer.KickAsync(rin.Session, ball.UniqueId, KickTo(672f, 112f))).Should().BeTrue();
         rin.Sent.Clear();
-        await _soccer.TickAsync();
+        await soccer.TickAsync();
 
         SoccerPackets(rin).Should().ContainSingle().Which.Should()
             .Equal(SoccerPacketWriter.Goal(rin.Session.CharacterId, SoccerService.TeamBlue, SoccerService.TeamRed, 1, 0).GetData());
-        (_ball.X, _ball.Z).Should().Be((SoccerPitch.CentreX, SoccerPitch.CentreZ));
+        (ball.X, ball.Z).Should().Be((SoccerPitch.CentreX, SoccerPitch.CentreZ));
     }
 
     [Fact]
     public async Task OnlyAPlayerOnATeamNextToTheBallCanKickIt()
     {
         var rin = Join(1, "Rin");
-        (await _soccer.KickAsync(rin.Session, _ball.UniqueId, KickTo(672f, 170f))).Should().BeFalse();
+        (await soccer.KickAsync(rin.Session, ball.UniqueId, KickTo(672f, 170f))).Should().BeFalse();
 
-        await _soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
+        await soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
         rin.Session.Z = SoccerPitch.CentreZ + SoccerPitch.MaxKickerDistance * 2;
-        (await _soccer.KickAsync(rin.Session, _ball.UniqueId, KickTo(672f, 170f))).Should().BeFalse();
+        (await soccer.KickAsync(rin.Session, ball.UniqueId, KickTo(672f, 170f))).Should().BeFalse();
     }
 
     [Fact]
@@ -173,18 +173,18 @@ public class SoccerTests
     {
         var rin = Join(1, "Rin");
         var kai = Join(2, "Kai");
-        await _soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
-        await _soccer.JoinAsync(kai.Session, SoccerService.TeamRed);
-        await _soccer.StartAsync(rin.Session);
+        await soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
+        await soccer.JoinAsync(kai.Session, SoccerService.TeamRed);
+        await soccer.StartAsync(rin.Session);
         rin.Sent.Clear();
 
-        await _soccer.FinishAsync();
+        await soccer.FinishAsync();
 
         SoccerPackets(rin).Should().ContainSingle().Which.Should().Equal(SoccerPacketWriter.End(SoccerService.Draw, 0, 0).GetData());
         rin.Session.SoccerTeam.Should().Be(SoccerService.TeamNone);
-        _soccer.TeamOf(kai.Session.CharacterId).Should().Be(SoccerService.TeamNone);
-        _soccer.Running.Should().BeFalse();
-        await _movement.Received(1).WarpAsync(kai.Session, (ushort)(SoccerPitch.RedExitX * 10), (ushort)(SoccerPitch.RedExitZ * 10));
+        soccer.TeamOf(kai.Session.CharacterId).Should().Be(SoccerService.TeamNone);
+        soccer.Running.Should().BeFalse();
+        await movement.Received(1).WarpAsync(kai.Session, (ushort)(SoccerPitch.RedExitX * 10), (ushort)(SoccerPitch.RedExitZ * 10));
     }
 
     [Fact]
@@ -192,20 +192,20 @@ public class SoccerTests
     {
         var rin = Join(1, "Rin");
         var kai = Join(2, "Kai");
-        await _soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
-        await _soccer.JoinAsync(kai.Session, SoccerService.TeamRed);
-        await _soccer.StartAsync(rin.Session);
+        await soccer.JoinAsync(rin.Session, SoccerService.TeamBlue);
+        await soccer.JoinAsync(kai.Session, SoccerService.TeamRed);
+        await soccer.StartAsync(rin.Session);
 
-        await _soccer.LeaveAsync(kai.Session);
-        await _soccer.TickAsync();
+        await soccer.LeaveAsync(kai.Session);
+        await soccer.TickAsync();
 
-        _soccer.Running.Should().BeFalse();
+        soccer.Running.Should().BeFalse();
     }
 
     [Fact]
     public void TheBallCannotBeHitAndHasNoAi()
     {
-        _ball.IsAttackable.Should().BeFalse();
-        _ball.HasAi.Should().BeFalse();
+        ball.IsAttackable.Should().BeFalse();
+        ball.HasAi.Should().BeFalse();
     }
 }

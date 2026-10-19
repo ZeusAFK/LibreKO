@@ -9,10 +9,10 @@ public class RoomMediaTests
     private static readonly DateTime Noon = new(2026, 10, 11, 12, 0, 0, DateTimeKind.Utc);
     private static readonly uint NoonUnix = (uint)new DateTimeOffset(Noon).ToUnixTimeSeconds();
 
-    private static Packet Media(byte sub)
+    private static Packet Media(RoomMediaSubOpcode sub)
     {
         var p = new Packet(GameOpcodes.GS_ROOM_MEDIA);
-        p.WriteByte(sub);
+        p.WriteByte((byte)sub);
         return p;
     }
 
@@ -51,7 +51,7 @@ public class RoomMediaTests
     [Fact]
     public void AHistoryPageReadsTextAndNoteRowsAndTheMoreFlag()
     {
-        var p = Media(RoomMediaSubs.History);
+        var p = Media(RoomMediaSubOpcode.History);
         p.WriteByte(2);
         WriteTextRow(p, 41, 7, "Rikka", "Morning 🙏");
         WriteNoteRow(p, 42, 9, "Borin", 124, 31000);
@@ -74,7 +74,7 @@ public class RoomMediaTests
     [Fact]
     public void APostedRowIsTheSameRowShape()
     {
-        var p = Media(RoomMediaSubs.Posted);
+        var p = Media(RoomMediaSubOpcode.Posted);
         WriteNoteRow(p, 77, 3, "Arwen", 47, 12000);
 
         var row = RoomMediaReplies.ReadRow(Ready(p));
@@ -90,8 +90,8 @@ public class RoomMediaTests
     public void TheVoiceJoinReplyCarriesPortSessionKeyAndPeers()
     {
         var key = Enumerable.Range(1, VoiceSeal.KeyLength).Select(i => (byte)i).ToArray();
-        var p = Media(RoomMediaSubs.VoiceJoin);
-        p.WriteByte(RoomMediaResults.Ok);
+        var p = Media(RoomMediaSubOpcode.VoiceJoin);
+        p.WriteByte((byte)RoomMediaResult.Ok);
         p.WriteUShort(15002);
         p.WriteUInt(0xA1B2C3D4);
         p.WriteByte((byte)key.Length);
@@ -104,7 +104,7 @@ public class RoomMediaTests
         p.WriteByte(VoiceFlags.MicMuted | VoiceFlags.Deafened);
 
         var ready = Ready(p);
-        Assert.Equal(RoomMediaResults.Ok, ready.ReadByte());
+        Assert.Equal((byte)RoomMediaResult.Ok, ready.ReadByte());
         var session = RoomMediaReplies.ReadJoined(ready);
 
         Assert.NotNull(session);
@@ -119,7 +119,7 @@ public class RoomMediaTests
     [Fact]
     public void TheVoiceRosterListsWhoIsInTheCall()
     {
-        var p = Media(RoomMediaSubs.VoiceRoster);
+        var p = Media(RoomMediaSubOpcode.VoiceRoster);
         p.WriteUShort(2);
         p.WriteInt(1001);
         p.WriteByte(0);
@@ -134,8 +134,8 @@ public class RoomMediaTests
     [Fact]
     public void AJoinReplyWithAWrongKeyLengthIsRefused()
     {
-        var p = Media(RoomMediaSubs.VoiceJoin);
-        p.WriteByte(RoomMediaResults.Ok);
+        var p = Media(RoomMediaSubOpcode.VoiceJoin);
+        p.WriteByte((byte)RoomMediaResult.Ok);
         p.WriteUShort(15002);
         p.WriteUInt(1);
         p.WriteByte(8);
@@ -151,12 +151,12 @@ public class RoomMediaTests
     public void NoteFetchHeaderAndChunksAssembleTheFile()
     {
         var file = Enumerable.Range(0, 20000).Select(i => (byte)(i * 7)).ToArray();
-        var header = Media(RoomMediaSubs.NoteFetch);
-        header.WriteByte(RoomMediaResults.Ok);
+        var header = Media(RoomMediaSubOpcode.NoteFetch);
+        header.WriteByte((byte)RoomMediaResult.Ok);
         header.WriteLong(55);
         header.WriteUInt((uint)file.Length);
         var parsed = RoomMediaReplies.ReadNoteHeader(Ready(header));
-        Assert.Equal(new RoomMediaReplies.NoteHeader(RoomMediaResults.Ok, 55, file.Length), parsed);
+        Assert.Equal(new RoomMediaReplies.NoteHeader(RoomMediaResult.Ok, 55, file.Length), parsed);
 
         var downloads = new VoiceNoteDownloads();
         Assert.True(downloads.Start(55, file.Length));
@@ -165,7 +165,7 @@ public class RoomMediaTests
         for (int offset = 0; offset < file.Length; offset += VoiceNoteRules.ChunkBytes, index++)
         {
             int length = Math.Min(VoiceNoteRules.ChunkBytes, file.Length - offset);
-            var chunk = Media(RoomMediaSubs.NoteData);
+            var chunk = Media(RoomMediaSubOpcode.NoteData);
             chunk.WriteLong(55);
             chunk.WriteUShort(index);
             chunk.WriteUShort((ushort)length);
@@ -194,18 +194,18 @@ public class RoomMediaTests
     [Fact]
     public void ARefusedFetchHasNoSizeAndAnOversizedOneIsNotStarted()
     {
-        var refused = Media(RoomMediaSubs.NoteFetch);
-        refused.WriteByte(RoomMediaResults.NotFound);
+        var refused = Media(RoomMediaSubOpcode.NoteFetch);
+        refused.WriteByte((byte)RoomMediaResult.NotFound);
         refused.WriteLong(9);
-        Assert.Equal(new RoomMediaReplies.NoteHeader(RoomMediaResults.NotFound, 9, 0), RoomMediaReplies.ReadNoteHeader(Ready(refused)));
+        Assert.Equal(new RoomMediaReplies.NoteHeader(RoomMediaResult.NotFound, 9, 0), RoomMediaReplies.ReadNoteHeader(Ready(refused)));
         Assert.False(new VoiceNoteDownloads().Start(9, VoiceNoteRules.MaxBytes + 1));
     }
 
     [Fact]
     public void TheSilenceNoticeNamesTheLeaderAndTheTarget()
     {
-        var notice = Media(RoomMediaSubs.VoiceSilence);
-        notice.WriteByte(RoomMediaResults.Ok);
+        var notice = Media(RoomMediaSubOpcode.VoiceSilence);
+        notice.WriteByte((byte)RoomMediaResult.Ok);
         notice.WriteInt(1002);
         notice.WriteByte(1);
         notice.WriteString("Tester10");
@@ -216,8 +216,8 @@ public class RoomMediaTests
         Assert.Equal(new RoomMediaReplies.SilenceNotice(1002, true, "Tester10", "Borin"), read);
         Assert.Equal("Tester10 silenced Borin's microphone.", read!.Value.Text);
         Assert.Equal("Tester10 let Borin speak again.", (read.Value with { Silenced = false }).Text);
-        var refused = Media(RoomMediaSubs.VoiceSilence);
-        refused.WriteByte(RoomMediaResults.NotLeader);
+        var refused = Media(RoomMediaSubOpcode.VoiceSilence);
+        refused.WriteByte((byte)RoomMediaResult.NotLeader);
         Assert.Null(RoomMediaReplies.ReadSilenceNotice(Ready(refused)));
     }
 
@@ -236,14 +236,14 @@ public class RoomMediaTests
     [Fact]
     public void VoiceStateAndTcpFramesRead()
     {
-        var state = Media(RoomMediaSubs.VoiceState);
+        var state = Media(RoomMediaSubOpcode.VoiceState);
         state.WriteInt(1002);
-        state.WriteByte(RoomMediaSubs.MemberFlags);
+        state.WriteByte((byte)RoomMemberChange.Flags);
         state.WriteByte(VoiceFlags.MicMuted);
-        Assert.Equal(new RoomMediaReplies.VoiceChange(1002, RoomMediaSubs.MemberFlags, VoiceFlags.MicMuted),
+        Assert.Equal(new RoomMediaReplies.VoiceChange(1002, RoomMemberChange.Flags, VoiceFlags.MicMuted),
             RoomMediaReplies.ReadVoiceChange(Ready(state)));
 
-        var frame = Media(RoomMediaSubs.VoiceFrame);
+        var frame = Media(RoomMediaSubOpcode.VoiceFrame);
         frame.WriteInt(1);
         frame.WriteUShort(77);
         frame.WriteUShort(3);
@@ -331,9 +331,9 @@ public class RoomMediaTests
     [Fact]
     public void EveryRefusalHasAMessage()
     {
-        for (byte code = RoomMediaResults.NotInRoom; code <= RoomMediaResults.Failed; code++)
+        for (var code = RoomMediaResult.NotInRoom; code <= RoomMediaResult.Failed; code++)
             Assert.NotEmpty(RoomMediaResults.Text(code));
-        Assert.Empty(RoomMediaResults.Text(RoomMediaResults.Ok));
+        Assert.Empty(RoomMediaResults.Text(RoomMediaResult.Ok));
     }
 
     [Fact]

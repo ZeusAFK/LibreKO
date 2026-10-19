@@ -14,26 +14,26 @@ namespace LibreKO.Game.Tests;
 
 public class UnderTheCastleTests
 {
-    private readonly SessionManager _sessionManager;
-    private readonly IGameDataService _gameData;
-    private readonly IZoneTransitionService _zoneTransition;
-    private readonly INpcSpawnRowService _spawnRows;
-    private readonly INpcLifecycleService _lifecycle;
-    private readonly IItemGrantService _itemGrant;
-    private readonly ILogger<UnderTheCastleService> _logger;
-    private readonly UnderTheCastleService _service;
+    private readonly SessionManager sessionManager;
+    private readonly IGameDataService gameData;
+    private readonly IZoneTransitionService zoneTransition;
+    private readonly INpcSpawnRowService spawnRows;
+    private readonly INpcLifecycleService lifecycle;
+    private readonly IItemGrantService itemGrant;
+    private readonly ILogger<UnderTheCastleService> logger;
+    private readonly UnderTheCastleService service;
 
     public UnderTheCastleTests()
     {
-        _sessionManager = new SessionManager();
-        _gameData = Substitute.For<IGameDataService>();
-        _zoneTransition = Substitute.For<IZoneTransitionService>();
-        _spawnRows = Substitute.For<INpcSpawnRowService>();
-        _lifecycle = Substitute.For<INpcLifecycleService>();
-        _itemGrant = Substitute.For<IItemGrantService>();
-        _logger = Substitute.For<ILogger<UnderTheCastleService>>();
+        sessionManager = new SessionManager();
+        gameData = Substitute.For<IGameDataService>();
+        zoneTransition = Substitute.For<IZoneTransitionService>();
+        spawnRows = Substitute.For<INpcSpawnRowService>();
+        lifecycle = Substitute.For<INpcLifecycleService>();
+        itemGrant = Substitute.For<IItemGrantService>();
+        logger = Substitute.For<ILogger<UnderTheCastleService>>();
 
-        _gameData.GetItem(Arg.Any<int>()).Returns(ci =>
+        gameData.GetItem(Arg.Any<int>()).Returns(ci =>
         {
             var num = ci.Arg<int>();
             return new ItemData
@@ -43,21 +43,21 @@ public class UnderTheCastleTests
             };
         });
 
-        _gameData.NpcPositions.Returns(new List<NpcPosData>
+        gameData.NpcPositions.Returns(new List<NpcPosData>
         {
             new() { Index = 1000, ZoneId = UnderTheCastleService.UtcZoneId, NpcId = 9565, Room = 86 },
             new() { Index = 1001, ZoneId = UnderTheCastleService.UtcZoneId, NpcId = UnderTheCastleService.Gate1DoorNpcId, TrapNumber = 1, Room = 86 },
             new() { Index = 1002, ZoneId = UnderTheCastleService.UtcZoneId, NpcId = UnderTheCastleService.EmperorMammothNpcId, Room = 86 },
         });
 
-        _service = new UnderTheCastleService(
-            _sessionManager,
-            _gameData,
-            _zoneTransition,
-            _spawnRows,
-            _lifecycle,
-            _itemGrant,
-            _logger);
+        service = new UnderTheCastleService(
+            sessionManager,
+            gameData,
+            zoneTransition,
+            spawnRows,
+            lifecycle,
+            itemGrant,
+            logger);
     }
 
     private UserSession CreateTestSession(int charId, byte zoneId = 21, int level = 80, bool isGm = false, float x = 0f, float z = 0f)
@@ -66,7 +66,7 @@ public class UnderTheCastleTests
         client.Id.Returns(Guid.NewGuid());
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        var session = _sessionManager.CreateSession(client, characterId: charId, accountId: charId * 10);
+        var session = sessionManager.CreateSession(client, characterId: charId, accountId: charId * 10);
         session.Name = $"Player_{charId}";
         session.Nation = AccountNation.Karus;
         session.Level = (byte)level;
@@ -80,25 +80,25 @@ public class UnderTheCastleTests
     [Fact]
     public void Start_ActivatesEvent_AndSetsDefaults()
     {
-        _service.IsActive.Should().BeFalse();
+        service.IsActive.Should().BeFalse();
 
-        _service.Start(60);
+        service.Start(60);
 
-        _service.IsActive.Should().BeTrue();
-        _service.RemainingSeconds.Should().Be(3600);
-        _service.CurrentStage.Should().Be(1);
+        service.IsActive.Should().BeTrue();
+        service.RemainingSeconds.Should().Be(3600);
+        service.CurrentStage.Should().Be(1);
     }
 
     [Fact]
     public async Task CloseAsync_DeactivatesEvent_AndResetsState()
     {
-        _service.Start(60);
-        _service.IsActive.Should().BeTrue();
+        service.Start(60);
+        service.IsActive.Should().BeTrue();
 
-        await _service.CloseAsync();
+        await service.CloseAsync();
 
-        _service.IsActive.Should().BeFalse();
-        _service.RemainingSeconds.Should().Be(0);
+        service.IsActive.Should().BeFalse();
+        service.RemainingSeconds.Should().Be(0);
     }
 
     [Fact]
@@ -106,9 +106,9 @@ public class UnderTheCastleTests
     {
         var player = CreateTestSession(101, level: 80, isGm: false);
 
-        await _service.EnterAsync(player);
+        await service.EnterAsync(player);
 
-        await _zoneTransition.DidNotReceive().ChangeZoneAsync(player, UnderTheCastleService.UtcZoneId, Arg.Any<float>(), Arg.Any<float>());
+        await zoneTransition.DidNotReceive().ChangeZoneAsync(player, UnderTheCastleService.UtcZoneId, Arg.Any<float>(), Arg.Any<float>());
     }
 
     [Fact]
@@ -116,17 +116,17 @@ public class UnderTheCastleTests
     {
         var player = CreateTestSession(101, level: 80, isGm: false);
 
-        _service.Start(60);
+        service.Start(60);
 
-        await _service.EnterAsync(player);
+        await service.EnterAsync(player);
 
-        await _zoneTransition.Received(1).ChangeZoneAsync(player, UnderTheCastleService.UtcZoneId, 69f, 64f);
+        await zoneTransition.Received(1).ChangeZoneAsync(player, UnderTheCastleService.UtcZoneId, 69f, 64f);
     }
 
     [Fact]
     public async Task DespawnedGate_HasRespawnTypeNever_AndIsNotReturnedByGetDeadNpcsReadyToRespawn()
     {
-        var realLifecycle = new NpcLifecycleService(_sessionManager, NullLogger<NpcLifecycleService>.Instance);
+        var realLifecycle = new NpcLifecycleService(sessionManager, NullLogger<NpcLifecycleService>.Instance);
         var gate = new NpcInstance
         {
             NpcId = UnderTheCastleService.Gate1DoorNpcId,
@@ -136,20 +136,20 @@ public class UnderTheCastleTests
             RespawnDelayMs = 1000
         };
 
-        _spawnRows.Spawn(Arg.Any<NpcPosData>()).Returns([gate]);
+        spawnRows.Spawn(Arg.Any<NpcPosData>()).Returns([gate]);
 
-        _service.Start(60);
+        service.Start(60);
 
         gate.RespawnType.Should().Be(NpcRespawnType.Never);
 
-        _sessionManager.Regions.SpawnNpc(gate);
+        sessionManager.Regions.SpawnNpc(gate);
         await realLifecycle.DespawnAsync(gate);
 
         gate.IsDead.Should().BeTrue();
         gate.CanRespawn.Should().BeFalse();
 
         var farFutureTicks = gate.DeathTimeTicks + TimeSpan.FromMinutes(10).Ticks;
-        var readyToRespawn = _sessionManager.Regions.GetDeadNpcsReadyToRespawn(farFutureTicks).ToList();
+        var readyToRespawn = sessionManager.Regions.GetDeadNpcsReadyToRespawn(farFutureTicks).ToList();
 
         readyToRespawn.Should().NotContain(gate);
     }
@@ -168,7 +168,7 @@ public class UnderTheCastleTests
         // Player 3: Completely outside area and outside boss radius -> 0 Trophies, no craft items
         var player3 = CreateTestSession(103, zoneId: UnderTheCastleService.UtcZoneId, x: 500f, z: 500f);
 
-        _service.Start(60);
+        service.Start(60);
 
         var mammoth = new NpcInstance
         {
@@ -180,20 +180,20 @@ public class UnderTheCastleTests
             IsMonster = true
         };
 
-        await _service.OnNpcKilledAsync(mammoth, player1);
+        await service.OnNpcKilledAsync(mammoth, player1);
 
-        _service.CurrentStage.Should().Be(2);
+        service.CurrentStage.Should().Be(2);
 
         // Player 1 got 2 trophies and 1 star glitter
-        await _itemGrant.Received(1).GrantAsync(player1, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TrophyOfFlameItemId), 2);
-        await _itemGrant.Received(1).GrantAsync(player1, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TwinklingStarGlitterItemId), 1);
+        await itemGrant.Received(1).GrantAsync(player1, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TrophyOfFlameItemId), 2);
+        await itemGrant.Received(1).GrantAsync(player1, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TwinklingStarGlitterItemId), 1);
 
         // Player 2 got 1 trophy and 1 star glitter
-        await _itemGrant.Received(1).GrantAsync(player2, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TrophyOfFlameItemId), 1);
-        await _itemGrant.Received(1).GrantAsync(player2, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TwinklingStarGlitterItemId), 1);
+        await itemGrant.Received(1).GrantAsync(player2, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TrophyOfFlameItemId), 1);
+        await itemGrant.Received(1).GrantAsync(player2, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TwinklingStarGlitterItemId), 1);
 
         // Player 3 received nothing
-        await _itemGrant.DidNotReceive().GrantAsync(player3, Arg.Any<ItemData>(), Arg.Any<int>());
+        await itemGrant.DidNotReceive().GrantAsync(player3, Arg.Any<ItemData>(), Arg.Any<int>());
     }
 
     [Fact]
@@ -205,22 +205,22 @@ public class UnderTheCastleTests
 
         var player = CreateTestSession(101, zoneId: UnderTheCastleService.UtcZoneId, x: 805f, z: 840f);
 
-        _service.Start(60);
+        service.Start(60);
 
         // Advance from stage 1 -> 2 -> 3 -> 4
         var mammoth = new NpcInstance { UniqueId = 5001, NpcId = UnderTheCastleService.EmperorMammothNpcId, ZoneId = UnderTheCastleService.UtcZoneId, X = 121f, Z = 297f, IsMonster = true };
-        await _service.OnNpcKilledAsync(mammoth, player);
-        _service.CurrentStage.Should().Be(2);
+        await service.OnNpcKilledAsync(mammoth, player);
+        service.CurrentStage.Should().Be(2);
 
         var crasher = new NpcInstance { UniqueId = 5002, NpcId = UnderTheCastleService.CrasherGimmickNpcId, ZoneId = UnderTheCastleService.UtcZoneId, X = 520f, Z = 494f, IsMonster = true };
-        await _service.OnNpcKilledAsync(crasher, player);
-        _service.CurrentStage.Should().Be(3);
+        await service.OnNpcKilledAsync(crasher, player);
+        service.CurrentStage.Should().Be(3);
 
         var flw = new NpcInstance { UniqueId = 5003, NpcId = UnderTheCastleService.ShackledLordFluwitonNpcId, ZoneId = UnderTheCastleService.UtcZoneId, X = 642f, Z = 351f, IsMonster = true };
-        await _service.OnNpcKilledAsync(flw, player);
-        _service.CurrentStage.Should().Be(4);
+        await service.OnNpcKilledAsync(flw, player);
+        service.CurrentStage.Should().Be(4);
 
-        _itemGrant.ClearReceivedCalls();
+        itemGrant.ClearReceivedCalls();
 
         var finalBoss = new NpcInstance
         {
@@ -232,15 +232,15 @@ public class UnderTheCastleTests
             IsMonster = true
         };
 
-        await _service.OnNpcKilledAsync(finalBoss, player);
+        await service.OnNpcKilledAsync(finalBoss, player);
 
-        _service.CurrentStage.Should().Be(5);
+        service.CurrentStage.Should().Be(5);
 
         // In area and near boss -> 2 trophies
-        await _itemGrant.Received(1).GrantAsync(player, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TrophyOfFlameItemId), 2);
+        await itemGrant.Received(1).GrantAsync(player, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TrophyOfFlameItemId), 2);
         // Stage 4 rewards: PlwitoonsTear, HornOfPluwiton, TwinklingStarGlitter
-        await _itemGrant.Received(1).GrantAsync(player, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.PlwitoonsTearItemId), 1);
-        await _itemGrant.Received(1).GrantAsync(player, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.HornOfPluwitonItemId), 1);
-        await _itemGrant.Received(1).GrantAsync(player, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TwinklingStarGlitterItemId), 1);
+        await itemGrant.Received(1).GrantAsync(player, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.PlwitoonsTearItemId), 1);
+        await itemGrant.Received(1).GrantAsync(player, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.HornOfPluwitonItemId), 1);
+        await itemGrant.Received(1).GrantAsync(player, Arg.Is<ItemData>(i => i.Num == UnderTheCastleService.TwinklingStarGlitterItemId), 1);
     }
 }

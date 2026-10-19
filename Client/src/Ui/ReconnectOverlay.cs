@@ -1,18 +1,15 @@
-﻿using System;
-using Godot;
-using LibreKO.Network;
+﻿using Godot;
 
 namespace LibreKO;
 
 public partial class ReconnectOverlay : CanvasLayer
 {
-    private const int OverlayLayer = 125;
-
-    private ReconnectDialog _dialog = null!;
+    private ReconnectDialog dialog = null!;
+    private ReconnectSupervisor reconnect = null!;
 
     public override void _Ready()
     {
-        Layer = OverlayLayer;
+        Layer = UiLayers.Reconnect;
         Visible = false;
 
         var dim = new ColorRect
@@ -23,39 +20,40 @@ public partial class ReconnectOverlay : CanvasLayer
         dim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(dim);
 
-        _dialog = new ReconnectDialog();
-        _dialog.CloseGamePressed += CloseGame;
-        AddChild(_dialog);
+        dialog = new ReconnectDialog();
+        dialog.CloseGamePressed += CloseGame;
+        AddChild(dialog);
 
-        Net.I.ReconnectChangedEvent += Refresh;
+        reconnect = Game.Connection.Reconnect;
+        reconnect.ChangedEvent += Refresh;
     }
 
     public override void _ExitTree()
     {
-        if (GodotObject.IsInstanceValid(Net.I)) Net.I.ReconnectChangedEvent -= Refresh;
+        reconnect.ChangedEvent -= Refresh;
     }
 
     public override void _Process(double delta)
     {
-        if (Visible && Net.I.ReconnectState == Net.ReconnectPhase.Visible)
-            _dialog.SetWait(Net.I.ReconnectRetryIn);
+        if (Visible && reconnect.State == ReconnectPhase.Visible)
+            dialog.SetWait(reconnect.RetryIn);
     }
 
     private void Refresh()
     {
-        switch (Net.I.ReconnectState)
+        switch (reconnect.State)
         {
-            case Net.ReconnectPhase.Visible:
-                _dialog.SetReconnecting(Net.I.ReconnectAttempt);
-                _dialog.SetWait(Net.I.ReconnectRetryIn);
+            case ReconnectPhase.Visible:
+                dialog.SetReconnecting(reconnect.Attempt);
+                dialog.SetWait(reconnect.RetryIn);
                 Visible = true;
                 break;
-            case Net.ReconnectPhase.Failed:
-                _dialog.SetFailed(Net.I.ReconnectFailure);
+            case ReconnectPhase.Failed:
+                dialog.SetFailed(reconnect.Failure);
                 Visible = true;
                 break;
             default:
-                _dialog.SetIdle();
+                dialog.SetIdle();
                 Visible = false;
                 break;
         }
@@ -71,15 +69,15 @@ public partial class ReconnectDialog : PanelContainer
 
     public event Action? CloseGamePressed;
 
-    private Label _headline = null!;
-    private Label _status = null!;
-    private Label _hint = null!;
-    private ProgressBar _attempts = null!;
-    private Button _close = null!;
-    private bool _animating;
-    private int _waitSeconds;
-    private double _dotsAccum;
-    private int _dots;
+    private Label headline = null!;
+    private Label status = null!;
+    private Label hint = null!;
+    private ProgressBar attempts = null!;
+    private Button close = null!;
+    private bool animating;
+    private int waitSeconds;
+    private double dotsAccum;
+    private int dots;
 
     public override void _Ready()
     {
@@ -105,22 +103,22 @@ public partial class ReconnectDialog : PanelContainer
         body.AddThemeConstantOverride("separation", 12);
         margin.AddChild(body);
 
-        _headline = UiTheme.Text("", 14, UiTheme.Warning, HorizontalAlignment.Center);
-        _headline.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        body.AddChild(_headline);
+        headline = UiTheme.Text("", 14, UiTheme.Warning, HorizontalAlignment.Center);
+        headline.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        body.AddChild(headline);
 
-        _status = UiTheme.Text("", 13, UiTheme.TextLo, HorizontalAlignment.Center);
-        _status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        body.AddChild(_status);
+        status = UiTheme.Text("", 13, UiTheme.TextLo, HorizontalAlignment.Center);
+        status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        body.AddChild(status);
 
-        _hint = UiTheme.Text("", 12, UiTheme.TextDim, HorizontalAlignment.Center);
-        _hint.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        body.AddChild(_hint);
+        hint = UiTheme.Text("", 12, UiTheme.TextDim, HorizontalAlignment.Center);
+        hint.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        body.AddChild(hint);
 
-        _attempts = new ProgressBar
+        attempts = new ProgressBar
         {
             MinValue = 0,
-            MaxValue = Net.MaxReconnectAttempts,
+            MaxValue = ReconnectSupervisor.MaxAttempts,
             Value = 0,
             ShowPercentage = false,
             CustomMinimumSize = new Vector2(0, 10),
@@ -134,65 +132,65 @@ public partial class ReconnectDialog : PanelContainer
         track.SetCornerRadiusAll(3);
         var fill = new StyleBoxFlat { BgColor = UiTheme.Gold };
         fill.SetCornerRadiusAll(2);
-        _attempts.AddThemeStyleboxOverride("background", track);
-        _attempts.AddThemeStyleboxOverride("fill", fill);
-        body.AddChild(_attempts);
+        attempts.AddThemeStyleboxOverride("background", track);
+        attempts.AddThemeStyleboxOverride("fill", fill);
+        body.AddChild(attempts);
 
-        _close = Ui.MenuButton("Close Game", 38, 16);
-        _close.Visible = false;
-        _close.Pressed += () => CloseGamePressed?.Invoke();
-        body.AddChild(_close);
+        close = Ui.MenuButton("Close Game", 38, 16);
+        close.Visible = false;
+        close.Pressed += () => CloseGamePressed?.Invoke();
+        body.AddChild(close);
     }
 
     public void SetReconnecting(int attempt)
     {
-        _headline.Text = "The connection to the server was lost.";
-        _status.Text = $"Reconnecting — attempt {Mathf.Max(1, attempt)} of {Net.MaxReconnectAttempts}";
-        _attempts.Value = Mathf.Max(1, attempt);
-        _attempts.Visible = true;
-        _hint.Visible = true;
-        _close.Visible = false;
-        _animating = true;
-        _dots = 0;
-        _dotsAccum = 0;
+        headline.Text = "The connection to the server was lost.";
+        status.Text = $"Reconnecting — attempt {Mathf.Max(1, attempt)} of {ReconnectSupervisor.MaxAttempts}";
+        attempts.Value = Mathf.Max(1, attempt);
+        attempts.Visible = true;
+        hint.Visible = true;
+        close.Visible = false;
+        animating = true;
+        dots = 0;
+        dotsAccum = 0;
         ApplyHint();
     }
 
     public void SetWait(int seconds)
     {
-        if (!_animating || seconds == _waitSeconds) return;
-        _waitSeconds = seconds;
+        if (!animating || seconds == waitSeconds) return;
+        waitSeconds = seconds;
         ApplyHint();
     }
 
     public void SetFailed(string reason)
     {
-        _headline.Text = "Could not reconnect to the server.";
-        _status.Text = reason.Length > 0 ? reason : "The game has to be closed.";
-        _hint.Visible = false;
-        _attempts.Visible = false;
-        _close.Visible = true;
-        _animating = false;
+        headline.Text = "Could not reconnect to the server.";
+        status.Text = reason.Length > 0 ? reason : "The game has to be closed.";
+        hint.Visible = false;
+        attempts.Visible = false;
+        close.Visible = true;
+        animating = false;
     }
 
     public void SetIdle()
     {
-        _animating = false;
-        _close.Visible = false;
+        animating = false;
+        close.Visible = false;
     }
 
     public override void _Process(double delta)
     {
-        if (!_animating || _waitSeconds > 0) return;
-        _dotsAccum += delta;
-        if (_dotsAccum < DotsInterval) return;
-        _dotsAccum = 0;
-        _dots = (_dots + 1) % 4;
+        if (!animating || waitSeconds > 0) return;
+        dotsAccum += delta;
+        if (dotsAccum < DotsInterval) return;
+        dotsAccum = 0;
+        dots = (dots + 1) % 4;
         ApplyHint();
     }
 
     private void ApplyHint() =>
-        _hint.Text = _waitSeconds > 0
-            ? $"Next attempt in {_waitSeconds} s"
-            : "Contacting the server" + new string('.', _dots);
+        hint.Text = waitSeconds > 0
+            ? $"Next attempt in {waitSeconds} s"
+            : "Contacting the server" + new string('.', dots);
 }

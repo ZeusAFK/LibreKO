@@ -10,8 +10,8 @@ public class Packet(byte opcode)
     private const byte Utf8ContinuationMask = 0xC0;
     private const byte Utf8Continuation = 0x80;
 
-    private readonly MemoryStream _stream = new();
-    private int _readOffset = 0;
+    private readonly MemoryStream stream = new();
+    private int readOffset = 0;
 
     public Packet(LoginOpcodes opcode) : this((byte)opcode) { }
     public Packet(GameOpcodes opcode) : this((byte)opcode) { }
@@ -20,70 +20,70 @@ public class Packet(byte opcode)
 
     private void EnsureReadable(int bytes)
     {
-        if (_readOffset + bytes > _stream.Length)
-            throw new InvalidDataException($"Packet underflow: need {bytes} bytes at offset {_readOffset}, but only {_stream.Length - _readOffset} remain");
+        if (readOffset + bytes > stream.Length)
+            throw new InvalidDataException($"Packet underflow: need {bytes} bytes at offset {readOffset}, but only {stream.Length - readOffset} remain");
     }
 
     public byte ReadByte()
     {
         EnsureReadable(1);
-        var data = _stream.GetBuffer();
-        return data[_readOffset++];
+        var data = stream.GetBuffer();
+        return data[readOffset++];
     }
 
     public short ReadShort()
     {
         EnsureReadable(2);
-        var value = BitConverter.ToInt16(_stream.GetBuffer(), _readOffset);
-        _readOffset += 2;
+        var value = BitConverter.ToInt16(stream.GetBuffer(), readOffset);
+        readOffset += 2;
         return value;
     }
 
     public ushort ReadUShort()
     {
         EnsureReadable(2);
-        var value = BitConverter.ToUInt16(_stream.GetBuffer(), _readOffset);
-        _readOffset += 2;
+        var value = BitConverter.ToUInt16(stream.GetBuffer(), readOffset);
+        readOffset += 2;
         return value;
     }
 
     public int ReadInt()
     {
         EnsureReadable(4);
-        var value = BitConverter.ToInt32(_stream.GetBuffer(), _readOffset);
-        _readOffset += 4;
+        var value = BitConverter.ToInt32(stream.GetBuffer(), readOffset);
+        readOffset += 4;
         return value;
     }
 
     public uint ReadUInt()
     {
         EnsureReadable(4);
-        var value = BitConverter.ToUInt32(_stream.GetBuffer(), _readOffset);
-        _readOffset += 4;
+        var value = BitConverter.ToUInt32(stream.GetBuffer(), readOffset);
+        readOffset += 4;
         return value;
     }
 
     public long ReadLong()
     {
         EnsureReadable(8);
-        var value = BitConverter.ToInt64(_stream.GetBuffer(), _readOffset);
-        _readOffset += 8;
+        var value = BitConverter.ToInt64(stream.GetBuffer(), readOffset);
+        readOffset += 8;
         return value;
     }
 
     public ulong ReadULong()
     {
         EnsureReadable(8);
-        var value = BitConverter.ToUInt64(_stream.GetBuffer(), _readOffset);
-        _readOffset += 8;
+        var value = BitConverter.ToUInt64(stream.GetBuffer(), readOffset);
+        readOffset += 8;
         return value;
     }
 
     public float ReadFloat()
     {
         EnsureReadable(4);
-        var value = BitConverter.ToSingle(_stream.GetBuffer(), _readOffset);
-        _readOffset += 4;
+        var value = BitConverter.ToSingle(stream.GetBuffer(), readOffset);
+        readOffset += 4;
         return value;
     }
 
@@ -93,8 +93,8 @@ public class Packet(byte opcode)
         if (length < 0)
             throw new InvalidDataException($"Packet string has negative length: {length}");
         EnsureReadable(length);
-        var str = Encoding.UTF8.GetString(_stream.GetBuffer(), _readOffset, length);
-        _readOffset += length;
+        var str = Encoding.UTF8.GetString(stream.GetBuffer(), readOffset, length);
+        readOffset += length;
         return str;
     }
 
@@ -102,8 +102,8 @@ public class Packet(byte opcode)
     {
         var length = ReadUShort();
         EnsureReadable(length);
-        var value = Encoding.UTF8.GetString(_stream.GetBuffer(), _readOffset, length);
-        _readOffset += length;
+        var value = Encoding.UTF8.GetString(stream.GetBuffer(), readOffset, length);
+        readOffset += length;
         return value;
     }
 
@@ -113,8 +113,8 @@ public class Packet(byte opcode)
             throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative");
         EnsureReadable(count);
         var result = new byte[count];
-        Buffer.BlockCopy(_stream.GetBuffer(), _readOffset, result, 0, count);
-        _readOffset += count;
+        Buffer.BlockCopy(stream.GetBuffer(), readOffset, result, 0, count);
+        readOffset += count;
         return result;
     }
 
@@ -122,56 +122,56 @@ public class Packet(byte opcode)
 
     public void WriteByte(byte value)
     {
-        _stream.WriteByte(value);
+        stream.WriteByte(value);
     }
 
     public void WriteShort(short value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(short)];
         BinaryPrimitives.WriteInt16LittleEndian(buffer, value);
-        _stream.Write(buffer);
+        stream.Write(buffer);
     }
 
     public void WriteUShort(ushort value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(ushort)];
         BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
-        _stream.Write(buffer);
+        stream.Write(buffer);
     }
 
     public void WriteInt(int value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(int)];
         BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
-        _stream.Write(buffer);
+        stream.Write(buffer);
     }
 
     public void WriteUInt(uint value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(uint)];
         BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
-        _stream.Write(buffer);
+        stream.Write(buffer);
     }
 
     public void WriteLong(long value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(long)];
         BinaryPrimitives.WriteInt64LittleEndian(buffer, value);
-        _stream.Write(buffer);
+        stream.Write(buffer);
     }
 
     public void WriteULong(ulong value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
         BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
-        _stream.Write(buffer);
+        stream.Write(buffer);
     }
 
     public void WriteFloat(float value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(float)];
         BinaryPrimitives.WriteSingleLittleEndian(buffer, value);
-        _stream.Write(buffer);
+        stream.Write(buffer);
     }
 
     public void WriteString(string value)
@@ -180,7 +180,7 @@ public class Packet(byte opcode)
         if (bytes.Length > short.MaxValue)
             throw new ArgumentException($"String too long for WriteString: {bytes.Length} bytes (max {short.MaxValue})");
         WriteShort((short)bytes.Length);
-        _stream.Write(bytes);
+        stream.Write(bytes);
     }
 
     public void WriteSByteString(string value)
@@ -190,15 +190,15 @@ public class Packet(byte opcode)
         while (length > 0 && length < bytes.Length && (bytes[length] & Utf8ContinuationMask) == Utf8Continuation)
             length--;
         WriteByte((byte)length);
-        _stream.Write(bytes, 0, length);
+        stream.Write(bytes, 0, length);
     }
 
     public string ReadSByteString()
     {
         var length = ReadByte();
         EnsureReadable(length);
-        var str = Encoding.UTF8.GetString(_stream.GetBuffer(), _readOffset, length);
-        _readOffset += length;
+        var str = Encoding.UTF8.GetString(stream.GetBuffer(), readOffset, length);
+        readOffset += length;
         return str;
     }
 
@@ -209,29 +209,29 @@ public class Packet(byte opcode)
             throw new ArgumentException(
                 $"String too long for WriteUtf8String: {bytes.Length} bytes (max {ushort.MaxValue})");
         WriteUShort((ushort)bytes.Length);
-        _stream.Write(bytes);
+        stream.Write(bytes);
     }
 
     public void WriteBytes(byte[] data)
     {
-        _stream.Write(data);
+        stream.Write(data);
     }
 
     // Accessors
 
-    public byte[] GetData() => _stream.ToArray();
+    public byte[] GetData() => stream.ToArray();
     public byte GetOpcode() => opcode;
-    public int GetLength() => (int)_stream.Length;
+    public int GetLength() => (int)stream.Length;
     public byte[] GetBytes()
     {
-        var len = (int)_stream.Length;
+        var len = (int)stream.Length;
         var result = new byte[1 + len];
         result[0] = opcode;
-        _stream.GetBuffer().AsSpan(0, len).CopyTo(result.AsSpan(1));
+        stream.GetBuffer().AsSpan(0, len).CopyTo(result.AsSpan(1));
         return result;
     }
-    public void ResetOffset() => _readOffset = 0;
-    public int RemainingBytes => (int)_stream.Length - _readOffset;
+    public void ResetOffset() => readOffset = 0;
+    public int RemainingBytes => (int)stream.Length - readOffset;
 
     private const int CompressionThreshold = 500;
 

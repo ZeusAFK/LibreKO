@@ -17,15 +17,15 @@ public sealed class WarpListPacketWriter
     public readonly record struct Entry(
         short WarpId, string Name, string Announce, short ZoneId, short MaxUsers, uint Fee);
 
-    private readonly WarpListSubOpcode _sub;
-    private readonly byte _result;
-    private readonly IReadOnlyCollection<Entry>? _entries;
+    private readonly WarpListSubOpcode sub;
+    private readonly byte result;
+    private readonly IReadOnlyCollection<Entry>? entries;
 
     private WarpListPacketWriter(WarpListSubOpcode sub, byte result, IReadOnlyCollection<Entry>? entries)
     {
-        _sub = sub;
-        _result = result;
-        _entries = entries;
+        this.sub = sub;
+        this.result = result;
+        this.entries = entries;
     }
 
     public static Packet Menu(IReadOnlyCollection<Entry> entries) => new WarpListPacketWriter(WarpListSubOpcode.Menu, 0, entries).Build();
@@ -35,16 +35,16 @@ public sealed class WarpListPacketWriter
     private Packet Build()
     {
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
-        packet.WriteByte((byte)_sub);
+        packet.WriteByte((byte)sub);
 
-        if (_entries is null)
+        if (entries is null)
         {
-            packet.WriteByte(_result);
+            packet.WriteByte(result);
             return packet;
         }
 
-        packet.WriteShort((short)_entries.Count);
-        foreach (var entry in _entries)
+        packet.WriteShort((short)entries.Count);
+        foreach (var entry in entries)
         {
             packet.WriteShort(entry.WarpId);
             packet.WriteString(entry.Name);

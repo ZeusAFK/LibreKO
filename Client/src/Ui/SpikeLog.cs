@@ -14,13 +14,13 @@ internal static class SpikeLog
     private const int CompileSampleFrames = 15;
     private const string FileName = "spikes.txt";
 
-    private static double _averageMs;
-    private static long _compiles = -1;
-    private static int _compileAge;
-    private static readonly int[] _gc = new int[3];
-    private static int _fxSpawned;
-    private static bool _started;
-    private static string? _file;
+    private static double averageMs;
+    private static long compiles = -1;
+    private static int compileAge;
+    private static readonly int[] collectionCounts = new int[3];
+    private static int fxSpawned;
+    private static bool started;
+    private static string? file;
 
     internal static int Count { get; private set; }
     internal static string Last { get; private set; } = "";
@@ -29,12 +29,12 @@ internal static class SpikeLog
     {
         double ms = delta * 1000.0;
         int fxSpawned = Perf.Total(Perf.Counter.FxSpawned);
-        if (_started && ms >= Math.Max(MinSpikeMs, _averageMs * SpikeFactor)) Record(ms, fxSpawned);
-        else if (++_compileAge >= CompileSampleFrames) SampleCompiles();
-        _averageMs = _started ? _averageMs + (ms - _averageMs) * AverageBlend : ms;
-        for (int g = 0; g < _gc.Length; g++) _gc[g] = GC.CollectionCount(g);
-        _fxSpawned = fxSpawned;
-        _started = true;
+        if (started && ms >= Math.Max(MinSpikeMs, averageMs * SpikeFactor)) Record(ms, fxSpawned);
+        else if (++compileAge >= CompileSampleFrames) SampleCompiles();
+        averageMs = started ? averageMs + (ms - averageMs) * AverageBlend : ms;
+        for (int g = 0; g < collectionCounts.Length; g++) collectionCounts[g] = GC.CollectionCount(g);
+        SpikeLog.fxSpawned = fxSpawned;
+        started = true;
         Perf.ClearFrame();
     }
 
@@ -49,10 +49,10 @@ internal static class SpikeLog
 
     private static long SampleCompiles()
     {
-        long before = _compiles;
-        _compiles = PipelineCompiles();
-        _compileAge = 0;
-        return before < 0 ? 0 : Math.Max(0, _compiles - before);
+        long before = compiles;
+        compiles = PipelineCompiles();
+        compileAge = 0;
+        return before < 0 ? 0 : Math.Max(0, compiles - before);
     }
 
     private static void Record(double ms, int fxSpawned)
@@ -67,13 +67,13 @@ internal static class SpikeLog
             .Take(TopSections)
             .Select(x => x.Calls > 1 ? $"{x.Section} {x.Ms:0.0} x{x.Calls}" : $"{x.Section} {x.Ms:0.0}");
         var split = FrameProbe.Last;
-        string gc = string.Join("/", Enumerable.Range(0, _gc.Length).Select(g => GC.CollectionCount(g) - _gc[g]));
+        string gc = string.Join("/", Enumerable.Range(0, SpikeLog.collectionCounts.Length).Select(g => GC.CollectionCount(g) - SpikeLog.collectionCounts[g]));
         string sections = string.Join(", ", top);
         Last = $"{ms:0} ms: {(sections.Length > 0 ? sections : "no timed section")}";
         var sb = new StringBuilder();
-        sb.Append($"{Time.GetTimeStringFromSystem()}  frame {Engine.GetProcessFrames()}  {ms,6:0.0} ms (avg {_averageMs:0.0})  ");
+        sb.Append($"{Time.GetTimeStringFromSystem()}  frame {Engine.GetProcessFrames()}  {ms,6:0.0} ms (avg {averageMs:0.0})  ");
         sb.Append($"[{sections}]  split {split.Process:0.0}/{split.Flush:0.0}/{split.Draw:0.0}/{split.Other:0.0}  ");
-        sb.Append($"pipelines +{compiles}  gc {gc}  fx spawned {fxSpawned - _fxSpawned}  close {Perf.CloseEntities}  effects {Perf.FxVisible}");
+        sb.Append($"pipelines +{compiles}  gc {gc}  fx spawned {fxSpawned - SpikeLog.fxSpawned}  close {Perf.CloseEntities}  effects {Perf.FxVisible}");
         Write(sb.ToString());
     }
 
@@ -82,12 +82,12 @@ internal static class SpikeLog
         if (CaptureFiles.Exported) return;
         try
         {
-            if (_file == null)
+            if (file == null)
             {
-                _file = CaptureFiles.Path(FileName);
-                System.IO.File.AppendAllText(_file, $"=== session {Time.GetDatetimeStringFromSystem()}{System.Environment.NewLine}");
+                file = CaptureFiles.Path(FileName);
+                System.IO.File.AppendAllText(file, $"=== session {Time.GetDatetimeStringFromSystem()}{System.Environment.NewLine}");
             }
-            System.IO.File.AppendAllText(_file, line + System.Environment.NewLine);
+            System.IO.File.AppendAllText(file, line + System.Environment.NewLine);
         }
         catch (System.IO.IOException) { }
     }

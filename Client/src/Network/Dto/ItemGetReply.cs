@@ -1,16 +1,7 @@
-﻿using System;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public readonly record struct ItemGetReply
 {
-    public const byte Failed = 0;
-    public const byte Taken = 1;
-    public const byte PartyCoins = 2;
-    public const byte PartyMember = 3;
-    public const byte TakenToSlot = 5;
-    public const byte TemporaryKept = 7;
-    public const byte TemporaryLost = 8;
     public const byte GoldPosition = byte.MaxValue;
     public const int NoBundleSlot = -1;
 
@@ -21,7 +12,7 @@ public readonly record struct ItemGetReply
     public const int BundleSlotBytes = 2;
     public const int TemporaryBytes = 1 + 4;
 
-    public byte Result { get; init; }
+    public ItemGetResult Result { get; init; }
     public int BundleId { get; init; }
     public int Failure { get; init; }
     public byte Position { get; init; }
@@ -31,36 +22,36 @@ public readonly record struct ItemGetReply
     public int BundleSlot { get; init; }
     public string? Looter { get; init; }
 
-    public bool IsGold => Result == PartyCoins || Position == GoldPosition;
+    public bool IsGold => Result == ItemGetResult.PartyCoins || Position == GoldPosition;
 
     public static ItemGetReply? Read(Packet p)
     {
         if (p.RemainingBytes < HeaderBytes) return null;
-        var reply = new ItemGetReply { Result = p.ReadByte(), BundleId = p.ReadInt(), BundleSlot = NoBundleSlot };
+        var reply = new ItemGetReply { Result = (ItemGetResult)p.ReadByte(), BundleId = p.ReadInt(), BundleSlot = NoBundleSlot };
 
-        if (reply.Result == Failed)
+        if (reply.Result == ItemGetResult.Failed)
             return reply with { Failure = p.RemainingBytes >= FailureBytes ? p.ReadInt() : 0 };
 
-        if (reply.Result == PartyMember)
+        if (reply.Result == ItemGetResult.PartyMember)
         {
             if (p.RemainingBytes < 4) return null;
             reply = reply with { ItemId = p.ReadInt(), Looter = p.ReadString() };
             return p.RemainingBytes >= BundleSlotBytes ? reply with { BundleSlot = p.ReadUShort() } : reply;
         }
 
-        if (reply.Result is TemporaryKept or TemporaryLost)
+        if (reply.Result is ItemGetResult.TemporaryKept or ItemGetResult.TemporaryLost)
         {
             if (p.RemainingBytes < TemporaryBytes) return null;
             p.ReadByte();
             return reply with { ItemId = p.ReadInt() };
         }
 
-        if (reply.Result == PartyCoins)
+        if (reply.Result == ItemGetResult.PartyCoins)
             return p.RemainingBytes < PartyCoinBytes
                 ? null
                 : reply with { Position = p.ReadByte(), ItemId = p.ReadInt(), Money = p.ReadInt() };
 
-        if (reply.Result is not (Taken or TakenToSlot) || p.RemainingBytes < TakenBytes) return null;
+        if (reply.Result is not (ItemGetResult.Taken or ItemGetResult.TakenToSlot) || p.RemainingBytes < TakenBytes) return null;
         reply = reply with
         {
             Position = p.ReadByte(),

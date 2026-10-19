@@ -78,6 +78,20 @@ public class ItemRemoveWriterTests
         packet.ReadByte().Should().Be((byte)ItemRemoveReason.SystemError);
         packet.RemainingBytes.Should().Be(0);
     }
+
+    [Theory]
+    [InlineData(ItemRemoveReason.SystemError, 0)]
+    [InlineData(ItemRemoveReason.NoVipKeyPassword, 20)]
+    [InlineData(ItemRemoveReason.VipKeyLocked, 21)]
+    [InlineData(ItemRemoveReason.WrongVipKeyPassword, 22)]
+    public void Failed_UsesTheReasonCodesRetailShows(ItemRemoveReason reason, byte code)
+    {
+        var packet = ItemRemovePacketWriter.Failed(reason);
+        packet.ResetOffset();
+
+        packet.ReadByte().Should().Be((byte)ItemRemoveResult.Failed);
+        packet.ReadByte().Should().Be(code);
+    }
 }
 
 public class BundleOpenWriterTests

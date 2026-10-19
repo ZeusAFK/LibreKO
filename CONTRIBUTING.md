@@ -97,9 +97,9 @@ Nothing in the tree names a path on someone's machine.
 
 ## Architecture rules
 
-The two halves mirror each other: the client's `src/Network`, `src/Domain` and `src/World` folders
-follow the server's `Protocol`, `Common/Domain` and game layers, and types that cross the wire share
-their names on both sides.
+The two halves mirror each other: the client's `src/Network`, `src/Domain`, `src/Session` and
+`src/Features` folders follow the server's `Protocol`, `Common/Domain` and game layers, and types that
+cross the wire share their names on both sides.
 
 ### Server
 
@@ -130,13 +130,23 @@ writer, not in the entities.
 CRC and the cipher are a contract between the two halves: a change to any of them lands on both
 sides in the same change.
 
-**Adding a packet end to end.** The opcode goes into the shared opcode list; the parse lives in the
-matching `Net.<Domain>.cs` partial and raises an event from the facade; the owning
-`World.<Domain>.cs` or system subscribes. Outgoing packets are all in `Net.Senders.cs`.
+**Adding a packet end to end.** The opcode goes into the shared opcode list; the family's reader in
+`src/Network/Readers` reads it, its sub-opcodes and results are enums in the family's
+`src/Network/Dto/<Family>Wire.cs`, and the reader applies it to the family's session slice in
+`src/Session`, which stores the state and raises its event; the owning feature subscribes. Outgoing
+packets are methods on the family's class in `src/Network/Requests`. `ServerWireTests` runs every
+server packet writer through the client's readers, so a layout that drifts fails a test.
 
-**New world features are systems, not partials.** A new facet is a class that takes `IWorldContext`
-and owns its state. The remaining `World` partials are being extracted into systems, and new work
-does not add to them.
+**State lives in the session.** A slice owns its state, shows its collections read-only and changes
+them through named operations (`ApplyWeather`, `ApplyItemMove`); nothing else assigns to it. Readers
+take the clock they stamp deadlines with, so every reader runs in a unit test. An event that carries
+several values carries a record.
+
+**A feature is a sealed class with its dependencies in its constructor.** It takes the slices,
+requests and features it uses, subscribes in `Build` and unsubscribes in `Dispose`, and owns its own
+state behind named operations. `Game.Session` and `Game.Requests` are named only where objects are put
+together (`WorldRoot`, the connection, the pre-game scenes); only the routers take `WorldRoot`.
+`Domain` calls no Godot engine API beyond its value types.
 
 **Keys come from `KeyBinds`.** Every action is rebindable, so game code never tests a `Key`
 directly.

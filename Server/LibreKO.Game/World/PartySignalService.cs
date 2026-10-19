@@ -57,16 +57,16 @@ public sealed class PartySignalService(
         public bool Lost;
     }
 
-    private readonly Func<long> _now = clock ?? (() => Environment.TickCount64);
-    private readonly ConcurrentDictionary<int, Signal> _signals = new();
-    private readonly ConcurrentDictionary<int, Dictionary<int, Reading>> _sentTables = new();
+    private readonly Func<long> currentTicks = clock ?? (() => Environment.TickCount64);
+    private readonly ConcurrentDictionary<int, Signal> signals = new();
+    private readonly ConcurrentDictionary<int, Dictionary<int, Reading>> sentTables = new();
 
     public void Echo(UserSession session, uint token)
     {
-        if (!_signals.TryGetValue(session.CharacterId, out var signal))
+        if (!signals.TryGetValue(session.CharacterId, out var signal))
             return;
 
-        var now = _now();
+        var now = currentTicks();
         lock (signal)
         {
             var index = signal.Pending.FindIndex(probe => probe.Token == token);
@@ -91,14 +91,14 @@ public sealed class PartySignalService(
 
     public async Task TickAsync()
     {
-        var now = _now();
+        var now = currentTicks();
         var parties = MembersByParty();
         Forget(parties);
 
         foreach (var (partyIndex, members) in parties)
         {
             foreach (var member in members)
-                MarkMissed(_signals.GetOrAdd(member.CharacterId, _ => new Signal()));
+                MarkMissed(signals.GetOrAdd(member.CharacterId, _ => new Signal()));
 
             await PublishIfChangedAsync(partyIndex, members);
 
@@ -110,16 +110,16 @@ public sealed class PartySignalService(
     private void Forget(Dictionary<int, List<UserSession>> parties)
     {
         var tracked = parties.Values.SelectMany(members => members).Select(member => member.CharacterId).ToHashSet();
-        foreach (var characterId in _signals.Keys)
+        foreach (var characterId in signals.Keys)
         {
             if (!tracked.Contains(characterId))
-                _signals.TryRemove(characterId, out _);
+                signals.TryRemove(characterId, out _);
         }
 
-        foreach (var partyIndex in _sentTables.Keys)
+        foreach (var partyIndex in sentTables.Keys)
         {
             if (!parties.ContainsKey(partyIndex))
-                _sentTables.TryRemove(partyIndex, out _);
+                sentTables.TryRemove(partyIndex, out _);
         }
     }
 
@@ -135,13 +135,13 @@ public sealed class PartySignalService(
     private async Task PublishIfChangedAsync(int partyIndex, List<UserSession> members)
     {
         var readings = ReadingsOf(members);
-        var sent = _sentTables.GetValueOrDefault(partyIndex);
+        var sent = sentTables.GetValueOrDefault(partyIndex);
         var changed = readings.Any(reading =>
             sent == null || !sent.TryGetValue(reading.Key, out var before) || before != reading.Value);
         if (!changed)
             return;
 
-        _sentTables[partyIndex] = readings;
+        sentTables[partyIndex] = readings;
         var table = PartyPacketWriter.SignalTable(EntriesOf(readings));
         foreach (var member in members)
             await member.Client.SendPacket(table);
@@ -150,7 +150,7 @@ public sealed class PartySignalService(
     private async Task ProbeAsync(UserSession member, long now)
     {
         var token = (uint)Random.Shared.Next();
-        var signal = _signals.GetOrAdd(member.CharacterId, _ => new Signal());
+        var signal = signals.GetOrAdd(member.CharacterId, _ => new Signal());
         lock (signal)
         {
             signal.Pending.Add((token, now));
@@ -163,7 +163,7 @@ public sealed class PartySignalService(
 
     private Reading? ReadingOf(int characterId)
     {
-        if (!_signals.TryGetValue(characterId, out var signal))
+        if (!signals.TryGetValue(characterId, out var signal))
             return null;
 
         lock (signal)

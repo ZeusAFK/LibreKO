@@ -14,19 +14,19 @@ public static class FriendReplies
         return new FriendEntry { Name = name, CharId = charId, Status = status };
     }
 
-    public static (byte Code, FriendEntry Added)? ReadAdd(Packet p)
+    public static (FriendAddResult Code, FriendEntry Added)? ReadAdd(Packet p)
     {
         if (p.RemainingBytes < 1) return null;
-        byte code = p.ReadByte();
-        if (code != FriendTexts.Succeeded || p.RemainingBytes < StatusTailBytes) return (code, new FriendEntry { Name = "" });
+        var code = (FriendAddResult)p.ReadByte();
+        if (code != FriendAddResult.Succeeded || p.RemainingBytes < StatusTailBytes) return (code, new FriendEntry { Name = "" });
         return (code, ReadStatus(p));
     }
 
-    public static (byte Code, string Name)? ReadRemove(Packet p)
+    public static (FriendRemoveResult Code, string Name)? ReadRemove(Packet p)
     {
         if (p.RemainingBytes < 1) return null;
-        byte code = p.ReadByte();
-        string name = code == FriendTexts.Succeeded && p.RemainingBytes >= 2 ? p.ReadString().Trim() : "";
+        var code = (FriendRemoveResult)p.ReadByte();
+        string name = code == FriendRemoveResult.Succeeded && p.RemainingBytes >= 2 ? p.ReadString().Trim() : "";
         return (code, name);
     }
 }

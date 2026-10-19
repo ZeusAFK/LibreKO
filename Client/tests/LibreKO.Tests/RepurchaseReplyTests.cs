@@ -27,12 +27,12 @@ public class RepurchaseReplyTests
     [Fact]
     public void AListCarriesRowItemPriceAndDeletionTime()
     {
-        var reply = RepurchaseReply.Read(Reply(RepurchaseReply.Open, (byte)1, (byte)2,
+        var reply = RepurchaseReply.Read(Reply((byte)RepurchaseSubOpcode.Open, (byte)1, (byte)2,
             (byte)0, Sword, 6_000, 1_800_259_200u,
             (byte)1, Sword + 1, 9_000, 1_800_300_000u));
 
         Assert.True(reply.Ok);
-        Assert.Equal(RepurchaseReply.Open, reply.Op);
+        Assert.Equal((byte)RepurchaseSubOpcode.Open, (byte)reply.Op);
         Assert.Equal(2, reply.Rows.Count);
         Assert.Equal(new RepurchaseRow(1, Sword + 1, 9_000, 1_800_300_000u), reply.Rows[1]);
     }
@@ -40,7 +40,7 @@ public class RepurchaseReplyTests
     [Fact]
     public void ABoughtReplySkipsOneByteBeforeTheBagSlot()
     {
-        var reply = RepurchaseReply.Read(Reply(RepurchaseReply.Buy, RepurchaseReply.Succeeded, (byte)0,
+        var reply = RepurchaseReply.Read(Reply((byte)RepurchaseSubOpcode.Buy, (byte)RepurchaseResult.Succeeded, (byte)0,
             (byte)4, Sword, (byte)0));
 
         Assert.True(reply.Ok);
@@ -51,9 +51,9 @@ public class RepurchaseReplyTests
     [Fact]
     public void ARefusedReplyCarriesTheErrorCode()
     {
-        var reply = RepurchaseReply.Read(Reply(RepurchaseReply.Buy, (byte)2, (byte)0, Sword, RepurchaseReply.Expired));
+        var reply = RepurchaseReply.Read(Reply((byte)RepurchaseSubOpcode.Buy, (byte)2, (byte)0, Sword, (short)RepurchaseError.Expired));
 
         Assert.False(reply.Ok);
-        Assert.Equal(RepurchaseReply.Expired, reply.Error);
+        Assert.Equal((short)RepurchaseError.Expired, (short)reply.Error);
     }
 }

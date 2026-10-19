@@ -17,12 +17,12 @@ public sealed class AchievementState
 
     public readonly record struct Entry(int Progress, AchievementProgressState State);
 
-    private readonly Dictionary<int, Entry> _entries = new();
+    private readonly Dictionary<int, Entry> entries = new();
 
-    public IReadOnlyDictionary<int, Entry> Entries => _entries;
+    public IReadOnlyDictionary<int, Entry> Entries => entries;
 
     public Entry Of(int achievementId) =>
-        _entries.TryGetValue(achievementId, out var entry) ? entry : new Entry(0, AchievementProgressState.InProgress);
+        entries.TryGetValue(achievementId, out var entry) ? entry : new Entry(0, AchievementProgressState.InProgress);
 
     public bool IsClaimed(int achievementId) => Of(achievementId).State == AchievementProgressState.Claimed;
 
@@ -31,7 +31,7 @@ public sealed class AchievementState
     public void MarkClaimed(int achievementId)
     {
         var entry = Of(achievementId);
-        _entries[achievementId] = entry with { State = AchievementProgressState.Claimed };
+        entries[achievementId] = entry with { State = AchievementProgressState.Claimed };
     }
 
     public bool Advance(AchievementData definition, int amount)
@@ -53,19 +53,19 @@ public sealed class AchievementState
         var state = progress >= definition.Target
             ? AchievementProgressState.Achieved
             : AchievementProgressState.InProgress;
-        _entries[definition.Id] = new Entry(progress, state);
+        entries[definition.Id] = new Entry(progress, state);
         return state == AchievementProgressState.Achieved;
     }
 
     public byte[] Serialize()
     {
-        if (_entries.Count == 0) return [];
+        if (entries.Count == 0) return [];
 
-        var data = new byte[2 + _entries.Count * BytesPerEntry];
-        BitConverter.TryWriteBytes(data.AsSpan(0), (short)_entries.Count);
+        var data = new byte[2 + entries.Count * BytesPerEntry];
+        BitConverter.TryWriteBytes(data.AsSpan(0), (short)entries.Count);
 
         var offset = 2;
-        foreach (var (achievementId, entry) in _entries)
+        foreach (var (achievementId, entry) in entries)
         {
             BitConverter.TryWriteBytes(data.AsSpan(offset), (short)achievementId);
             BitConverter.TryWriteBytes(data.AsSpan(offset + 2), entry.Progress);
@@ -85,7 +85,7 @@ public sealed class AchievementState
 
     public void Load(byte[]? data)
     {
-        _entries.Clear();
+        entries.Clear();
         if (data == null || data.Length < 2) return;
 
         var count = BitConverter.ToInt16(data, 0);
@@ -94,7 +94,7 @@ public sealed class AchievementState
         {
             var achievementId = BitConverter.ToInt16(data, offset);
             var progress = BitConverter.ToInt32(data, offset + 2);
-            _entries[achievementId] = new Entry(progress, StateFrom(data[offset + 6]));
+            entries[achievementId] = new Entry(progress, StateFrom(data[offset + 6]));
             offset += BytesPerEntry;
         }
     }

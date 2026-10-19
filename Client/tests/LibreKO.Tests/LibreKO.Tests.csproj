@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <RootNamespace>LibreKO.Tests</RootNamespace>
+    <ServerGameProject>$(MSBuildThisFileDirectory)../../../Server/LibreKO.Game/LibreKO.Game.csproj</ServerGameProject>
+    <ServerGameDir>$(MSBuildThisFileDirectory)obj/server/</ServerGameDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +18,14 @@
 
   <ItemGroup>
     <ProjectReference Include="../../LibreKO.csproj" />
+    <ProjectReference Include="$(ServerGameProject)" ReferenceOutputAssembly="false" AdditionalProperties="OutDir=$(ServerGameDir)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>ServerGameDir</_Parameter1>
+      <_Parameter2>$(ServerGameDir)</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

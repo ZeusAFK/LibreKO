@@ -18,21 +18,21 @@ public class ClanBoardTests
 
     private sealed class FakeTimeProvider(DateTimeOffset start) : TimeProvider
     {
-        private DateTimeOffset _now = start;
-        public override DateTimeOffset GetUtcNow() => _now;
-        public void Advance(TimeSpan by) => _now += by;
+        private DateTimeOffset now = start;
+        public override DateTimeOffset GetUtcNow() => now;
+        public void Advance(TimeSpan by) => now += by;
     }
 
-    private readonly SessionManager _sessions = new();
-    private readonly IKnightsMembershipPacketService _membership = Substitute.For<IKnightsMembershipPacketService>();
-    private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 9, 12, 0, 0, TimeSpan.Zero));
-    private readonly ClanBoardService _boards;
+    private readonly SessionManager sessions = new();
+    private readonly IKnightsMembershipPacketService membership = Substitute.For<IKnightsMembershipPacketService>();
+    private readonly FakeTimeProvider clock = new(new DateTimeOffset(2026, 10, 9, 12, 0, 0, TimeSpan.Zero));
+    private readonly ClanBoardService boards;
 
     public ClanBoardTests()
     {
-        _sessions.Knights.AddClan(Wolves, new KnightsEntity { Id = Wolves, Name = "Wolves", Chief = "Alpha", Nation = 1, Grade = 3, Flag = 2, MarkVersion = 4 });
-        _boards = new ClanBoardService(_sessions, _membership, _clock);
-        _membership.JoinFromBoardAsync(Arg.Any<UserSession>(), Arg.Any<KnightsEntity>()).Returns(true);
+        sessions.Knights.AddClan(Wolves, new KnightsEntity { Id = Wolves, Name = "Wolves", Chief = "Alpha", Nation = 1, Grade = 3, Flag = 2, MarkVersion = 4 });
+        boards = new ClanBoardService(sessions, membership, clock);
+        membership.JoinFromBoardAsync(Arg.Any<UserSession>(), Arg.Any<KnightsEntity>()).Returns(true);
     }
 
     private Player Join(int id, string name, short clan = 0, byte fame = 0)
@@ -41,7 +41,7 @@ public class ClanBoardTests
         client.Id.Returns(Guid.NewGuid());
         var sent = new List<Packet>();
         client.SendPacket(Arg.Do<Packet>(p => sent.Add(p)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, id, id);
+        var session = sessions.CreateSession(client, id, id);
         session.Name = name;
         session.KnightsId = clan;
         session.KnightsFame = fame;
@@ -67,7 +67,7 @@ public class ClanBoardTests
     }
 
     private async Task Advertise(Player chief, string text) =>
-        await _boards.HandleAdvertAsync(chief.Session, Request(KnightsSubOpcode.ClanAdvanceRegister, p =>
+        await boards.HandleAdvertAsync(chief.Session, Request(KnightsSubOpcode.ClanAdvanceRegister, p =>
         {
             p.WriteByte(ClanBoardPacketWriter.KindRegister);
             p.WriteString(text);
@@ -81,7 +81,7 @@ public class ClanBoardTests
         await Advertise(chief, "We hunt every night");
         Head(chief.Sent.Single(), 3).Should().Equal((byte)KnightsSubOpcode.ClanAdvanceRegister, ClanBoardPacketWriter.KindRegister, 0);
 
-        await _boards.HandleBoardAsync(seeker.Session, Request(KnightsSubOpcode.ClanAdvance, p => { p.WriteByte(1); p.WriteByte(1); }));
+        await boards.HandleBoardAsync(seeker.Session, Request(KnightsSubOpcode.ClanAdvance, p => { p.WriteByte(1); p.WriteByte(1); }));
 
         seeker.Sent.Should().HaveCount(2);
         Head(seeker.Sent[0], 3).Should().Equal((byte)KnightsSubOpcode.ClanAdvance, ClanBoardPacketWriter.BoardStatus, ClanBoardPacketWriter.StateClanless);
@@ -105,14 +105,14 @@ public class ClanBoardTests
         await Advertise(chief, "Join us");
         var apply = Request(KnightsSubOpcode.ClanAdvanceApply, p => { p.WriteByte(0); p.WriteShort(Wolves); p.WriteString("Hello"); });
 
-        await _boards.HandleApplyAsync(seeker.Session, apply);
-        await _boards.HandleApplyAsync(seeker.Session, Request(KnightsSubOpcode.ClanAdvanceApply, p => { p.WriteByte(0); p.WriteShort(Wolves); p.WriteString("Again"); }));
+        await boards.HandleApplyAsync(seeker.Session, apply);
+        await boards.HandleApplyAsync(seeker.Session, Request(KnightsSubOpcode.ClanAdvanceApply, p => { p.WriteByte(0); p.WriteShort(Wolves); p.WriteString("Again"); }));
 
         Head(seeker.Sent[0], 3).Should().Equal((byte)KnightsSubOpcode.ClanAdvanceApply, 0, 0);
         Head(seeker.Sent[1], 3).Should().Equal((byte)KnightsSubOpcode.ClanAdvanceApply, 0, 2);
 
         chief.Sent.Clear();
-        await _boards.HandleBoardAsync(chief.Session, Request(KnightsSubOpcode.ClanAdvance, p => { p.WriteByte(1); p.WriteByte(1); }));
+        await boards.HandleBoardAsync(chief.Session, Request(KnightsSubOpcode.ClanAdvance, p => { p.WriteByte(1); p.WriteByte(1); }));
         var status = chief.Sent[0];
         Head(status, 3).Should().Equal((byte)KnightsSubOpcode.ClanAdvance, ClanBoardPacketWriter.BoardStatus, ClanBoardPacketWriter.StateStaff);
         status.ReadShort().Should().Be(1);
@@ -121,7 +121,7 @@ public class ClanBoardTests
         status.ReadString().Should().Be("Rin");
         status.ReadString().Should().Be("Hello");
 
-        await _boards.HandleApplyAsync(chief.Session, Request(KnightsSubOpcode.ClanAdvanceApply, p => { p.WriteByte(1); p.WriteString("Rin"); }));
+        await boards.HandleApplyAsync(chief.Session, Request(KnightsSubOpcode.ClanAdvanceApply, p => { p.WriteByte(1); p.WriteString("Rin"); }));
         Head(chief.Sent.Last(), 3).Should().Equal((byte)KnightsSubOpcode.ClanAdvanceApply, 1, 0);
     }
 
@@ -136,17 +136,17 @@ public class ClanBoardTests
         await Advertise(chief, "Join us");
         chief.Sent.Clear();
 
-        await _boards.HandlePromoteAsync(chief.Session);
+        await boards.HandlePromoteAsync(chief.Session);
         Head(chief.Sent.Single(), 2).Should().Equal((byte)KnightsSubOpcode.ClanAdvancePromote, ClanBoardPacketWriter.PromoteBroadcast);
         member.Sent.Should().Contain(p => Head(p, 2)[1] == ClanBoardPacketWriter.PromoteBroadcast);
 
         chief.Sent.Clear();
-        await _boards.HandlePromoteAsync(chief.Session);
+        await boards.HandlePromoteAsync(chief.Session);
         Head(chief.Sent.Single(), 2).Should().Equal((byte)KnightsSubOpcode.ClanAdvancePromote, 4);
 
-        _clock.Advance(ClanBoardService.ClanPromoteCooldown);
+        clock.Advance(ClanBoardService.ClanPromoteCooldown);
         chief.Sent.Clear();
-        await _boards.HandlePromoteAsync(chief.Session);
+        await boards.HandlePromoteAsync(chief.Session);
         Head(chief.Sent.Single(), 2).Should().Equal((byte)KnightsSubOpcode.ClanAdvancePromote, ClanBoardPacketWriter.PromoteBroadcast);
     }
 
@@ -155,13 +155,13 @@ public class ClanBoardTests
     {
         var chief = Join(1, "Alpha", Wolves, ClanRules.FameChief);
         var seeker = Join(2, "Rin");
-        await _boards.HandleWishAsync(seeker.Session, Request(KnightsSubOpcode.WishBoard, p =>
+        await boards.HandleWishAsync(seeker.Session, Request(KnightsSubOpcode.WishBoard, p =>
         {
             p.WriteByte(2); p.WriteByte(0); p.WriteByte(25); p.WriteSByteString("Priest looking for a clan");
         }));
         Head(seeker.Sent.Single(), 4).Should().Equal((byte)KnightsSubOpcode.WishBoard, ClanBoardPacketWriter.WishIntroResult, 0, 1);
 
-        await _boards.HandleWishAsync(chief.Session, Request(KnightsSubOpcode.WishBoard, p => { p.WriteByte(0); p.WriteByte(1); p.WriteByte(0); }));
+        await boards.HandleWishAsync(chief.Session, Request(KnightsSubOpcode.WishBoard, p => { p.WriteByte(0); p.WriteByte(1); p.WriteByte(0); }));
         var status = chief.Sent[0];
         Head(status, 4).Should().Equal((byte)KnightsSubOpcode.WishBoard, ClanBoardPacketWriter.WishPage, ClanBoardPacketWriter.WishPageStatus, ClanBoardPacketWriter.RoleRecruiter);
         var rows = chief.Sent[1];
@@ -176,22 +176,22 @@ public class ClanBoardTests
         rows.ReadInt().Should().Be(seeker.Session.CharacterId);
         rows.ReadString().Should().Be("2026-10-09");
 
-        await _boards.HandleWishAsync(chief.Session, Request(KnightsSubOpcode.WishBoard, p =>
+        await boards.HandleWishAsync(chief.Session, Request(KnightsSubOpcode.WishBoard, p =>
         {
             p.WriteByte(3); p.WriteByte(0); p.WriteShort(Wolves); p.WriteSByteString("Rin"); p.WriteSByteString("Come with us");
         }));
         Head(chief.Sent.Last(), 4).Should().Equal((byte)KnightsSubOpcode.WishBoard, ClanBoardPacketWriter.WishRequestResult, 0, 1);
 
         seeker.Sent.Clear();
-        await _boards.HandleWishAsync(seeker.Session, Request(KnightsSubOpcode.WishBoard, p => p.WriteByte(1)));
+        await boards.HandleWishAsync(seeker.Session, Request(KnightsSubOpcode.WishBoard, p => p.WriteByte(1)));
         var list = seeker.Sent.Single();
         Head(list, 3).Should().Equal((byte)KnightsSubOpcode.WishBoard, ClanBoardPacketWriter.WishRequests, 1);
         list.ReadShort().Should().Be(Wolves);
         list.ReadString().Should().Be("Alpha");
         list.ReadString().Should().Be("Wolves");
 
-        await _boards.HandleWishAsync(seeker.Session, Request(KnightsSubOpcode.WishBoard, p => { p.WriteByte(5); p.WriteShort(Wolves); }));
-        await _membership.Received(1).JoinFromBoardAsync(seeker.Session, Arg.Is<KnightsEntity>(c => c.Id == Wolves));
+        await boards.HandleWishAsync(seeker.Session, Request(KnightsSubOpcode.WishBoard, p => { p.WriteByte(5); p.WriteShort(Wolves); }));
+        await membership.Received(1).JoinFromBoardAsync(seeker.Session, Arg.Is<KnightsEntity>(c => c.Id == Wolves));
     }
 
     [Fact]
@@ -200,9 +200,9 @@ public class ClanBoardTests
         var seeker = Join(2, "Rin");
         var refresh = () => Request(KnightsSubOpcode.WishBoard, p => { p.WriteByte(0); p.WriteByte(1); p.WriteByte(1); });
 
-        await _boards.HandleWishAsync(seeker.Session, refresh());
+        await boards.HandleWishAsync(seeker.Session, refresh());
         seeker.Sent.Clear();
-        await _boards.HandleWishAsync(seeker.Session, refresh());
+        await boards.HandleWishAsync(seeker.Session, refresh());
 
         Head(seeker.Sent.Single(), 3).Should().Equal((byte)KnightsSubOpcode.WishBoard, ClanBoardPacketWriter.WishPage, ClanBoardPacketWriter.WishPageTooSoon);
     }

@@ -12,17 +12,17 @@ public class UserSession
 {
     public const int SelectMessageEventCount = 12;
 
-    private readonly Lock _sync = new();
+    private readonly Lock sync = new();
 
     public void WithLock(Action<UserSession> mutator)
     {
-        using var scope = _sync.EnterScope();
+        using var scope = sync.EnterScope();
         mutator(this);
     }
 
     public T WithLock<T>(Func<UserSession, T> reader)
     {
-        using var scope = _sync.EnterScope();
+        using var scope = sync.EnterScope();
         return reader(this);
     }
 
@@ -35,8 +35,8 @@ public class UserSession
         }
 
         var (first, second) = a.CharacterId < b.CharacterId ? (a, b) : (b, a);
-        using var s1 = first._sync.EnterScope();
-        using var s2 = second._sync.EnterScope();
+        using var s1 = first.sync.EnterScope();
+        using var s2 = second.sync.EnterScope();
         mutator(a, b);
     }
 
@@ -188,15 +188,15 @@ public class UserSession
 
     public ushort GenieMinutes => (ushort)Math.Min(Math.Ceiling(GenieTime.RemainingSeconds / 60), ushort.MaxValue);
 
-    private bool _genieActive;
+    private bool genieActive;
     public bool GenieActive
     {
-        get { using var scope = _sync.EnterScope(); return _genieActive; }
+        get { using var scope = sync.EnterScope(); return genieActive; }
         set
         {
-            using var scope = _sync.EnterScope();
+            using var scope = sync.EnterScope();
             if (value) GenieTime.Resume(); else GenieTime.Pause();
-            _genieActive = value;
+            genieActive = value;
         }
     }
 
@@ -245,15 +245,15 @@ public class UserSession
     // Party
     public int PartyIndex { get; set; } = -1;
     public bool IsInParty => PartyIndex >= 0;
-    private bool _isPartyLeader;
+    private bool isPartyLeader;
 
     public bool IsPartyLeader
     {
-        get => _isPartyLeader;
+        get => isPartyLeader;
         set
         {
-            if (_isPartyLeader == value) return;
-            _isPartyLeader = value;
+            if (isPartyLeader == value) return;
+            isPartyLeader = value;
             PartyLeaderChanged?.Invoke(this);
         }
     }
@@ -283,8 +283,8 @@ public class UserSession
     public bool HasFullAngerGauge => AngerGauge >= 5;
 
     // Active buffs: magicId -> ActiveBuff
-    private readonly ConcurrentDictionary<int, ActiveBuff> _activeBuffs = new();
-    public IReadOnlyDictionary<int, ActiveBuff> ActiveBuffs => _activeBuffs;
+    private readonly ConcurrentDictionary<int, ActiveBuff> activeBuffs = new();
+    public IReadOnlyDictionary<int, ActiveBuff> ActiveBuffs => activeBuffs;
     public ConcurrentDictionary<int, ActiveOverTimeEffect> ActiveOverTimeEffects { get; } = new();
 
     public ConcurrentDictionary<int, long> SkillCooldowns { get; } = new();
@@ -488,13 +488,13 @@ public class UserSession
 
     public short DisplayTitleId { get; set; }
 
-    private AchievementTitleData? _titleBonuses;
+    private AchievementTitleData? titleBonuses;
 
-    public void InvalidateTitleBonuses() => _titleBonuses = null;
+    public void InvalidateTitleBonuses() => titleBonuses = null;
 
     public AchievementTitleData TitleBonuses(IGameDataService gameData)
     {
-        if (_titleBonuses != null) return _titleBonuses;
+        if (titleBonuses != null) return titleBonuses;
 
         var totals = new AchievementTitleData();
         foreach (var (achievementId, entry) in Achievements.Entries)
@@ -506,7 +506,7 @@ public class UserSession
             totals.Add(title);
         }
 
-        return _titleBonuses = totals;
+        return titleBonuses = totals;
     }
 
     public byte[] SerializeQuestData() => UserSessionBinaryState.SerializeQuestData(
@@ -522,7 +522,7 @@ public class UserSession
 
     public void SetBuff(int skillId, ActiveBuff buff)
     {
-        _activeBuffs[skillId] = buff;
+        activeBuffs[skillId] = buff;
         BuffsChanged?.Invoke(this);
     }
 
@@ -530,7 +530,7 @@ public class UserSession
 
     public bool RemoveBuff(int skillId, [MaybeNullWhen(false)] out ActiveBuff removed)
     {
-        if (!_activeBuffs.TryRemove(skillId, out removed))
+        if (!activeBuffs.TryRemove(skillId, out removed))
             return false;
 
         BuffsChanged?.Invoke(this);
@@ -540,9 +540,9 @@ public class UserSession
     public int RemoveBuffsWhere(Func<int, ActiveBuff, bool> match)
     {
         var removed = 0;
-        foreach (var (skillId, buff) in _activeBuffs)
+        foreach (var (skillId, buff) in activeBuffs)
         {
-            if (match(skillId, buff) && _activeBuffs.TryRemove(skillId, out _))
+            if (match(skillId, buff) && activeBuffs.TryRemove(skillId, out _))
                 removed++;
         }
 
@@ -553,15 +553,15 @@ public class UserSession
 
     public void ClearBuffs()
     {
-        if (_activeBuffs.IsEmpty)
+        if (activeBuffs.IsEmpty)
             return;
 
-        _activeBuffs.Clear();
+        activeBuffs.Clear();
         BuffsChanged?.Invoke(this);
     }
 
     public IReadOnlyList<int> LiveBuffIds() =>
-        _activeBuffs
+        activeBuffs
             .Where(entry => !entry.Value.IsExpired)
             .Select(entry => entry.Key)
             .Order()

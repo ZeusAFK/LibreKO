@@ -13,8 +13,6 @@ public enum DailyRankChangeIcon { None, Up, Down, Same }
 
 public static class DailyRank
 {
-    public const byte SubBoard = 1;
-    public const byte SubReset = 3;
     public const int BoardSlots = 9;
     public const int FirstBoard = 0;
     public const int AdonisBoard = 1;

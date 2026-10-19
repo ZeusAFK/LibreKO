@@ -18,55 +18,55 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
     private const int TriangleCorners = 3;
     private const float ScaleStepSeconds = 1f / 90f;
 
-    private float _lastFade = float.NaN;
-    private Vector2 _lastUv = new(float.NaN, float.NaN);
-    private int _lastTextureFrame = -1;
-    private bool _animated;
+    private float lastFade = float.NaN;
+    private Vector2 lastUv = new(float.NaN, float.NaN);
+    private int lastTextureFrame = -1;
+    private bool animated;
 
-    private readonly List<SurfaceState> _surfaces = new();
-    private FxInstance? _root;
-    private bool? _shown;
-    private bool _done;
-    private Vector3 _localOrigin;
+    private readonly List<SurfaceState> surfaces = new();
+    private FxInstance? root;
+    private bool? shown;
+    private bool done;
+    private Vector3 localOrigin;
     private static readonly Dictionary<ulong, bool> OpaqueTextures = new();
-    private float _age;
-    private Vector3 _initPos, _initVel, _accel, _basePos, _baseScale, _spin, _unitScale, _scaleVel, _scaleAccel;
-    private Vector2 _textureMove;
-    private Quaternion _baseRot = Quaternion.Identity;
-    private float _start, _life, _fadeIn, _fadeOut, _meshFps, _texFps, _hideTime, _showTime, _sizeScale = 1f;
-    private bool _textureLoop, _shapeLoop, _viewFix;
-    private int _textureMoveDirection;
+    private float age;
+    private Vector3 initPos, initVel, accel, basePos, baseScale, spin, unitScale, scaleVel, scaleAccel;
+    private Vector2 textureMove;
+    private Quaternion baseRot = Quaternion.Identity;
+    private float start, life, fadeIn, fadeOut, meshFps, texFps, hideTime, showTime, sizeScale = 1f;
+    private bool textureLoop, shapeLoop, viewFix;
+    private int textureMoveDirection;
 
-    private Vector3[]? _posKeys, _scaleKeys;
-    private Quaternion[]? _rotKeys;
-    private float _posRate, _rotRate, _scaleRate, _wholeFrame;
+    private Vector3[]? posKeys, scaleKeys;
+    private Quaternion[]? rotKeys;
+    private float posRate, rotRate, scaleRate, wholeFrame;
 
     public FxPartKey? PoolKey { get; set; }
 
     public void Reset()
     {
-        _age = 0f;
-        _shown = null;
-        foreach (var surface in _surfaces) surface.Current = null;
-        _lastFade = float.NaN;
-        _lastUv = new Vector2(float.NaN, float.NaN);
-        _lastTextureFrame = -1;
+        age = 0f;
+        shown = null;
+        foreach (var surface in surfaces) surface.Current = null;
+        lastFade = float.NaN;
+        lastUv = new Vector2(float.NaN, float.NaN);
+        lastTextureFrame = -1;
         Transparency = 0f;
         Visible = true;
-        _done = false;
+        done = false;
     }
 
-    private static readonly Dictionary<FxPartKey, FxMesh> _prototypes = Shutdown.Track(new Dictionary<FxPartKey, FxMesh>());
+    private static readonly Dictionary<FxPartKey, FxMesh> prototypes = Shutdown.Track(new Dictionary<FxPartKey, FxMesh>());
 
     public static FxMesh? Build(Godot.Collections.Dictionary p, FxPartKey? key = null)
     {
         if (key is { } pooledKey)
         {
             if (Fx.TakePooledPart(pooledKey) is FxMesh pooled) return pooled;
-            if (_prototypes.TryGetValue(pooledKey, out var prototype)) return prototype.Clone(pooledKey);
+            if (prototypes.TryGetValue(pooledKey, out var prototype)) return prototype.Clone(pooledKey);
         }
         var built = BuildFresh(p, key);
-        if (built != null && key is { } protoKey) _prototypes[protoKey] = built.Clone(protoKey);
+        if (built != null && key is { } protoKey) prototypes[protoKey] = built.Clone(protoKey);
         return built;
     }
 
@@ -77,21 +77,21 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
             CastShadow = ShadowCastingSetting.Off,
             Layers = FxShading.LayerBit,
             Mesh = Mesh,
-            _initPos = _initPos, _initVel = _initVel, _accel = _accel, _spin = _spin,
-            _start = _start, _life = _life, _fadeIn = _fadeIn, _fadeOut = _fadeOut,
-            _meshFps = _meshFps, _texFps = _texFps, _hideTime = _hideTime, _showTime = _showTime,
-            _textureLoop = _textureLoop, _shapeLoop = _shapeLoop, _viewFix = _viewFix,
-            _unitScale = _unitScale, _scaleVel = _scaleVel, _scaleAccel = _scaleAccel, _sizeScale = _sizeScale,
-            _textureMoveDirection = _textureMoveDirection, _textureMove = _textureMove,
-            _basePos = _basePos, _baseScale = _baseScale, _baseRot = _baseRot, _wholeFrame = _wholeFrame,
-            _posKeys = _posKeys, _posRate = _posRate, _scaleKeys = _scaleKeys, _scaleRate = _scaleRate,
-            _rotKeys = _rotKeys, _rotRate = _rotRate, _animated = _animated,
+            initPos = initPos, initVel = initVel, accel = accel, spin = spin,
+            start = start, life = life, fadeIn = fadeIn, fadeOut = fadeOut,
+            meshFps = meshFps, texFps = texFps, hideTime = hideTime, showTime = showTime,
+            textureLoop = textureLoop, shapeLoop = shapeLoop, viewFix = viewFix,
+            unitScale = unitScale, scaleVel = scaleVel, scaleAccel = scaleAccel, sizeScale = sizeScale,
+            textureMoveDirection = textureMoveDirection, textureMove = textureMove,
+            basePos = basePos, baseScale = baseScale, baseRot = baseRot, wholeFrame = wholeFrame,
+            posKeys = posKeys, posRate = posRate, scaleKeys = scaleKeys, scaleRate = scaleRate,
+            rotKeys = rotKeys, rotRate = rotRate, animated = animated,
             PoolKey = key,
         };
-        for (int i = 0; i < _surfaces.Count; i++)
+        for (int i = 0; i < surfaces.Count; i++)
         {
-            var s = _surfaces[i];
-            c._surfaces.Add(new SurfaceState
+            var s = surfaces[i];
+            c.surfaces.Add(new SurfaceState
             {
                 Transparent = s.Transparent, Opaque = s.Opaque, LayerDepth = s.LayerDepth,
                 FrameCount = s.FrameCount, WritesDepth = s.WritesDepth, Current = s.Transparent,
@@ -111,62 +111,62 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
         {
             CastShadow = ShadowCastingSetting.Off,
             Layers = FxShading.LayerBit,
-            _initPos = Fx.ReadVec3(p, "initPos"),
-            _initVel = Fx.ReadVec3(p, "initVel"),
-            _accel = Fx.ReadVec3(p, "accel"),
-            _spin = Fx.ReadSpinRate(p),
-            _start = Fx.ReadF(p, "startTime"),
-            _life = Fx.ReadF(p, "life"),
-            _fadeIn = Fx.ReadF(p, "fadeIn"),
-            _fadeOut = Fx.ReadF(p, "fadeOut"),
-            _meshFps = Mathf.Max(0.001f, Fx.ReadF(p, "meshFps", 30f)),
-            _texFps = Fx.ReadF(p, "texFPS"),
-            _hideTime = Fx.ReadF(p, "hideTime"),
-            _showTime = Fx.ReadF(p, "showTime"),
-            _textureLoop = ReadBool(p, "textureLoop"),
-            _shapeLoop = ReadBool(p, "shapeLoop"),
-            _viewFix = ReadBool(p, "viewFix"),
-            _unitScale = ReadVec3Or(p, "unitScale", Vector3.One),
-            _sizeScale = Fx.ReadF(p, "bundleScale", 1f),
-            _scaleVel = ReadVec3Or(p, "scaleVel", Vector3.Zero),
-            _scaleAccel = ReadVec3Or(p, "scaleAccel", Vector3.Zero),
-            _textureMoveDirection = p.ContainsKey("textureMoveDirection") ? p["textureMoveDirection"].AsInt32() : 0,
-            _textureMove = ReadVec2Or(p, "textureMove", Vector2.Zero),
+            initPos = Fx.ReadVec3(p, "initPos"),
+            initVel = Fx.ReadVec3(p, "initVel"),
+            accel = Fx.ReadVec3(p, "accel"),
+            spin = Fx.ReadSpinRate(p),
+            start = Fx.ReadF(p, "startTime"),
+            life = Fx.ReadF(p, "life"),
+            fadeIn = Fx.ReadF(p, "fadeIn"),
+            fadeOut = Fx.ReadF(p, "fadeOut"),
+            meshFps = Mathf.Max(0.001f, Fx.ReadF(p, "meshFps", 30f)),
+            texFps = Fx.ReadF(p, "texFPS"),
+            hideTime = Fx.ReadF(p, "hideTime"),
+            showTime = Fx.ReadF(p, "showTime"),
+            textureLoop = ReadBool(p, "textureLoop"),
+            shapeLoop = ReadBool(p, "shapeLoop"),
+            viewFix = ReadBool(p, "viewFix"),
+            unitScale = ReadVec3Or(p, "unitScale", Vector3.One),
+            sizeScale = Fx.ReadF(p, "bundleScale", 1f),
+            scaleVel = ReadVec3Or(p, "scaleVel", Vector3.Zero),
+            scaleAccel = ReadVec3Or(p, "scaleAccel", Vector3.Zero),
+            textureMoveDirection = p.ContainsKey("textureMoveDirection") ? p["textureMoveDirection"].AsInt32() : 0,
+            textureMove = ReadVec2Or(p, "textureMove", Vector2.Zero),
             PoolKey = key,
         };
 
         var basev = shape["base"].AsGodotDictionary();
-        n._basePos = n._initPos;
-        n._baseScale = ReadVec3Or(basev, "scale", Vector3.One);
+        n.basePos = n.initPos;
+        n.baseScale = ReadVec3Or(basev, "scale", Vector3.One);
         var rq = basev["rot"].AsGodotArray();
         if (rq.Count == 4)
-            n._baseRot = new Quaternion((float)rq[0].AsDouble(), (float)rq[1].AsDouble(),
+            n.baseRot = new Quaternion((float)rq[0].AsDouble(), (float)rq[1].AsDouble(),
                                         (float)rq[2].AsDouble(), (float)rq[3].AsDouble()).Normalized();
-        n._wholeFrame = (float)shape["wholeFrame"].AsDouble();
-        n._posKeys = ReadVecKeys(shape, "posKeys"); n._posRate = KeyRate(shape, "posRate");
-        n._scaleKeys = ReadVecKeys(shape, "scaleKeys"); n._scaleRate = KeyRate(shape, "scaleRate");
-        n._rotKeys = ReadQuatKeys(shape, "rotKeys"); n._rotRate = KeyRate(shape, "rotRate");
+        n.wholeFrame = (float)shape["wholeFrame"].AsDouble();
+        n.posKeys = ReadVecKeys(shape, "posKeys"); n.posRate = KeyRate(shape, "posRate");
+        n.scaleKeys = ReadVecKeys(shape, "scaleKeys"); n.scaleRate = KeyRate(shape, "scaleRate");
+        n.rotKeys = ReadQuatKeys(shape, "rotKeys"); n.rotRate = KeyRate(shape, "rotRate");
 
         var (mesh, surfaceParts) = SharedShapeMesh(p["meshRef"].AsString(), shape);
         if (mesh == null || surfaceParts.Count == 0) return null;
         n.Mesh = mesh;
         for (int surf = 0; surf < surfaceParts.Count; surf++)
         {
-            var surfState = MakeMeshMaterial(surfaceParts[surf], p, n._textureLoop);
+            var surfState = MakeMeshMaterial(surfaceParts[surf], p, n.textureLoop);
             n.SetSurfaceOverrideMaterial(surf, surfState.Transparent);
             surfState.Current = surfState.Transparent;
-            n._surfaces.Add(surfState);
-            if (surfState.FrameCount > 1) n._animated = true;
+            n.surfaces.Add(surfState);
+            if (surfState.FrameCount > 1) n.animated = true;
         }
         return n;
     }
 
-    private static readonly Dictionary<string, (ArrayMesh? Mesh, List<Godot.Collections.Dictionary> Parts)> _meshCache = Shutdown.Track(new Dictionary<string, (ArrayMesh? Mesh, List<Godot.Collections.Dictionary> Parts)>());
+    private static readonly Dictionary<string, (ArrayMesh? Mesh, List<Godot.Collections.Dictionary> Parts)> meshCache = Shutdown.Track(new Dictionary<string, (ArrayMesh? Mesh, List<Godot.Collections.Dictionary> Parts)>());
 
     private static (ArrayMesh? Mesh, List<Godot.Collections.Dictionary> Parts) SharedShapeMesh(
         string meshRef, Godot.Collections.Dictionary shape)
     {
-        if (_meshCache.TryGetValue(meshRef, out var cached)) return cached;
+        if (meshCache.TryGetValue(meshRef, out var cached)) return cached;
         using var scope = Perf.Measure(Perf.Section.FxBuildShape);
         var mesh = new ArrayMesh();
         var parts = new List<Godot.Collections.Dictionary>();
@@ -201,7 +201,7 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
             parts.Add(sp);
         }
         var entry = (parts.Count > 0 ? mesh : null, parts);
-        _meshCache[meshRef] = entry;
+        meshCache[meshRef] = entry;
         return entry;
     }
 
@@ -243,9 +243,9 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
     }
 
     internal bool SurfaceOpaque(int index) =>
-        index < _surfaces.Count && _surfaces[index].Opaque is { } opaque && ReferenceEquals(_surfaces[index].Current, opaque);
+        index < surfaces.Count && surfaces[index].Opaque is { } opaque && ReferenceEquals(surfaces[index].Current, opaque);
 
-    internal bool SurfaceWritesDepth(int index) => index < _surfaces.Count && _surfaces[index].WritesDepth;
+    internal bool SurfaceWritesDepth(int index) => index < surfaces.Count && surfaces[index].WritesDepth;
 
     private static bool IsOpaque(Texture2D texture)
     {
@@ -297,87 +297,87 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
         return frames;
     }
 
-    private Viewport? _viewport;
+    private Viewport? viewport;
 
     public override void _EnterTree()
     {
-        _viewport = GetViewport();
-        _root = GetParent() as FxInstance;
-        if (_root == null) return;
-        _root.AddPart(this);
+        viewport = GetViewport();
+        root = GetParent() as FxInstance;
+        if (root == null) return;
+        root.AddPart(this);
         SetProcess(false);
     }
 
     public override void _Ready()
     {
-        if (_root != null) SetProcess(false);
+        if (root != null) SetProcess(false);
     }
 
     public override void _ExitTree()
     {
-        _root?.RemovePart(this);
-        _root = null;
+        root?.RemovePart(this);
+        root = null;
     }
 
-    private void SetShown(bool shown)
+    private void SetShown(bool show)
     {
-        if (_shown == shown) return;
-        _shown = shown;
-        Visible = shown;
+        if (shown == show) return;
+        shown = show;
+        Visible = show;
     }
 
-    internal void ResetShown() => _shown = null;
+    internal void ResetShown() => shown = null;
 
     public override void _Process(double delta) => Tick(delta);
 
     public void Tick(double delta)
     {
         using var scope = Perf.Measure(Perf.Section.FxMesh);
-        if (_done || Fx.ShuttingDown) return;
-        _age += (float)delta;
-        float localT = _age - _start;
+        if (done || Fx.ShuttingDown) return;
+        age += (float)delta;
+        float localT = age - start;
         if (localT < 0f) { SetShown(false); return; }
-        if (!Fx.PartAge(localT, _life, _fadeIn, _fadeOut, out float t, out float a))
+        if (!Fx.PartAge(localT, life, fadeIn, fadeOut, out float t, out float a))
         {
             SetShown(false);
-            _done = true;
-            if (_root == null) SetProcess(false);
+            done = true;
+            if (root == null) SetProcess(false);
             Fx.RecyclePart(this);
             return;
         }
-        if (Fx.PartHidden(localT, _hideTime, _showTime)) { SetShown(false); return; }
+        if (Fx.PartHidden(localT, hideTime, showTime)) { SetShown(false); return; }
         SetShown(true);
 
-        Vector3 pos = _initPos + _initVel * t + 0.5f * _accel * (t * t);
-        Vector3 sPos = _basePos, sScale = _baseScale;
-        Quaternion sRot = _baseRot;
+        Vector3 pos = initPos + initVel * t + 0.5f * accel * (t * t);
+        Vector3 sPos = basePos, sScale = baseScale;
+        Quaternion sRot = baseRot;
 
-        if (_wholeFrame > 0.001f && (_posKeys != null || _rotKeys != null || _scaleKeys != null))
+        if (wholeFrame > 0.001f && (posKeys != null || rotKeys != null || scaleKeys != null))
         {
-            float frame = ShapeFrame(t * _meshFps);
-            if (_posKeys != null) sPos = SampleVec(_posKeys, _posRate, frame);
-            if (_scaleKeys != null) sScale = SampleVec(_scaleKeys, _scaleRate, frame);
-            if (_rotKeys != null) sRot = SampleQuat(_rotKeys, _rotRate, frame);
+            float frame = ShapeFrame(t * meshFps);
+            if (posKeys != null) sPos = SampleVec(posKeys, posRate, frame);
+            if (scaleKeys != null) sScale = SampleVec(scaleKeys, scaleRate, frame);
+            if (rotKeys != null) sRot = SampleQuat(rotKeys, rotRate, frame);
         }
 
         float swell = t * t * (t + ScaleStepSeconds) / (2f * ScaleStepSeconds);
-        Vector3 runtimeScale = (_unitScale + _scaleVel * t + _scaleAccel * swell) * _sizeScale;
+        Vector3 runtimeScale = (unitScale + scaleVel * t + scaleAccel * swell) * sizeScale;
         runtimeScale = new Vector3(Mathf.Max(0f, runtimeScale.X), Mathf.Max(0f, runtimeScale.Y),
                                    Mathf.Max(0f, runtimeScale.Z));
-        Basis orient = FxSpin.MeshOrientation(_spin, t);
-        if (_viewFix)
+        Basis orient = FxSpin.MeshOrientation(spin, t);
+        if (viewFix)
         {
             bool hasCam;
             Transform3D camXf;
             Basis parentInverse;
             Vector3 worldPos;
-            if (_root != null)
+            if (root != null)
             {
-                _root.EnsureFrame();
-                hasCam = _root.HasCam;
-                camXf = _root.CamXf;
-                parentInverse = _root.FrameInverse;
-                worldPos = _root.FrameXf * _localOrigin;
+                root.EnsureFrame();
+                hasCam = root.HasCam;
+                camXf = root.CamXf;
+                parentInverse = root.FrameInverse;
+                worldPos = root.FrameXf * localOrigin;
             }
             else
             {
@@ -401,36 +401,36 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
         }
         var partBasis = orient * Basis.FromScale(runtimeScale);
         var shapeBasis = new Basis(sRot) * Basis.FromScale(sScale);
-        _localOrigin = pos + partBasis * sPos;
-        Transform = new Transform3D(partBasis * shapeBasis, _localOrigin);
+        localOrigin = pos + partBasis * sPos;
+        Transform = new Transform3D(partBasis * shapeBasis, localOrigin);
 
-        if (a != _lastFade)
+        if (a != lastFade)
         {
-            _lastFade = a;
+            lastFade = a;
             SetInstanceShaderParameter(FxMeshMaterial.FadeParam, a);
         }
-        if (_textureMoveDirection != 0)
+        if (textureMoveDirection != 0)
         {
-            var uv = new Vector2(_textureMove.X * t, _textureMove.Y * t);
-            if (uv != _lastUv)
+            var uv = new Vector2(textureMove.X * t, textureMove.Y * t);
+            if (uv != lastUv)
             {
-                _lastUv = uv;
+                lastUv = uv;
                 SetInstanceShaderParameter(FxMeshMaterial.UvOffsetParam, uv);
             }
         }
-        if (_animated && _texFps > 0f)
+        if (animated && texFps > 0f)
         {
-            int textureFrame = Mathf.Max(0, (int)(t * _texFps));
-            if (textureFrame != _lastTextureFrame)
+            int textureFrame = Mathf.Max(0, (int)(t * texFps));
+            if (textureFrame != lastTextureFrame)
             {
-                _lastTextureFrame = textureFrame;
+                lastTextureFrame = textureFrame;
                 SetInstanceShaderParameter(FxMeshMaterial.FrameParam, (float)textureFrame);
             }
         }
-        for (int i = 0; i < _surfaces.Count; i++)
+        for (int i = 0; i < surfaces.Count; i++)
         {
-            var s = _surfaces[i];
-            Material want = s.LayerDepth != null && FxLayer.DrawsEffectsIn(_viewport) ? s.LayerDepth
+            var s = surfaces[i];
+            Material want = s.LayerDepth != null && FxLayer.DrawsEffectsIn(viewport) ? s.LayerDepth
                 : s.Opaque != null && a >= 1f ? s.Opaque
                 : s.Transparent;
             if (ReferenceEquals(s.Current, want)) continue;
@@ -441,9 +441,9 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
 
     private float ShapeFrame(float frame)
     {
-        if (_wholeFrame <= 1.0f) return 0f;
-        float span = _wholeFrame - 1.0f;
-        if (_shapeLoop)
+        if (wholeFrame <= 1.0f) return 0f;
+        float span = wholeFrame - 1.0f;
+        if (shapeLoop)
             frame = Mathf.PosMod(frame, span);
         else
         {
@@ -468,7 +468,7 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
         return keys[i].Slerp(keys[j], Mathf.Clamp(kp - i, 0f, 1f));
     }
 
-    private static readonly Dictionary<string, Godot.Collections.Dictionary?> _shapeCache = new();
+    private static readonly Dictionary<string, Godot.Collections.Dictionary?> shapeCache = new();
 
     internal static Godot.Collections.Dictionary? LoadShapeJson(string meshRef) => LoadShape(meshRef);
 
@@ -485,7 +485,7 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
 
     private static Godot.Collections.Dictionary? LoadShape(string meshRef)
     {
-        if (_shapeCache.TryGetValue(meshRef, out var cached)) return cached;
+        if (shapeCache.TryGetValue(meshRef, out var cached)) return cached;
         using var scope = Perf.Measure(Perf.Section.FxLoadShape);
         string path = $"res://assets/fx/mesh/{meshRef}.json";
         Godot.Collections.Dictionary? dict = null;
@@ -498,7 +498,7 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
                 if (parsed.VariantType == Variant.Type.Dictionary) dict = parsed.AsGodotDictionary();
             }
         }
-        _shapeCache[meshRef] = dict;
+        shapeCache[meshRef] = dict;
         return dict;
     }
 

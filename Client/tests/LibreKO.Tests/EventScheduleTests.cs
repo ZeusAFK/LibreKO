@@ -136,7 +136,7 @@ public class EventScheduleTests
         p.WriteByte(30);
         p.ResetOffset();
 
-        var schedule = EventScheduleReader.Read(p);
+        var schedule = EventScheduleWire.Read(p);
 
         Assert.NotNull(schedule);
         Assert.Equal(TimeSpan.FromHours(1), schedule!.ClockOffset);

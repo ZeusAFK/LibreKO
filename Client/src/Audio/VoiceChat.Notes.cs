@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using Godot;
-using LibreKO.Domain;
+﻿using Godot;
 
 namespace LibreKO;
 
@@ -20,19 +15,19 @@ public partial class VoiceChat
         Missing,
     }
 
-    private VoiceNoteRecorder? _recorder;
-    private AudioStreamPlayer? _notePlayer;
-    private long _playingNote;
-    private readonly HashSet<long> _loadingNotes = new();
-    private readonly HashSet<long> _missingNotes = new();
-    private readonly HashSet<long> _decodingNotes = new();
-    private (long Note, float Fraction) _seekOnPlay;
-    private (long Note, float Fraction) _previewPlaying;
-    private bool _netHooked;
-    private string _noticeTarget = "";
+    private VoiceNoteRecorder? recorder;
+    private AudioStreamPlayer? notePlayer;
+    private long playingNote;
+    private readonly HashSet<long> loadingNotes = new();
+    private readonly HashSet<long> missingNotes = new();
+    private readonly HashSet<long> decodingNotes = new();
+    private (long Note, float Fraction) seekOnPlay;
+    private (long Note, float Fraction) previewPlaying;
+    private bool netHooked;
+    private string noticeTarget = "";
 
-    public bool Recording => _recorder != null;
-    public double RecordingSeconds => _recorder?.Seconds ?? 0;
+    public bool Recording => recorder != null;
+    public double RecordingSeconds => recorder?.Seconds ?? 0;
     public string RecordingTarget { get; private set; } = "";
 
     public bool RecordingFor(string target) =>
@@ -43,10 +38,10 @@ public partial class VoiceChat
 
     public bool StartRecording(string target = "")
     {
-        if (Recording || (target.Length == 0 && !Net.I.NationChat.InRoom)) return false;
-        _noticeTarget = target;
+        if (Recording || (target.Length == 0 && !nationChat.NationChat.InRoom)) return false;
+        noticeTarget = target;
         if (!AskForMicrophone(() => StartRecording(target))) return false;
-        _recorder = new VoiceNoteRecorder();
+        recorder = new VoiceNoteRecorder();
         RecordingTarget = target;
         RetainMic(InVoice);
         StateChanged?.Invoke();
@@ -55,8 +50,8 @@ public partial class VoiceChat
 
     public void StopRecording(bool send)
     {
-        if (_recorder is not { } recorder) return;
-        _recorder = null;
+        if (this.recorder is not { } recorder) return;
+        this.recorder = null;
         RetainMic(InVoice);
         byte[] file = recorder.Finish();
         double seconds = recorder.Seconds;
@@ -68,50 +63,50 @@ public partial class VoiceChat
 
     private void RecordFrame(float[] frame, bool voice)
     {
-        if (_recorder == null) return;
-        _recorder.Write(frame, voice);
-        if (_recorder.Full) StopRecording(send: true);
+        if (recorder == null) return;
+        recorder.Write(frame, voice);
+        if (recorder.Full) StopRecording(send: true);
     }
 
     public NoteState StateOf(long noteId) =>
-        _previewPlaying.Note == noteId && noteId != 0 ? NoteState.Playing
-        : _missingNotes.Contains(noteId) ? NoteState.Missing
-        : _loadingNotes.Contains(noteId) ? NoteState.Loading
-        : _playingNote == noteId && _notePlayer is { Playing: true } ? NoteState.Playing
+        previewPlaying.Note == noteId && noteId != 0 ? NoteState.Playing
+        : missingNotes.Contains(noteId) ? NoteState.Missing
+        : loadingNotes.Contains(noteId) ? NoteState.Loading
+        : playingNote == noteId && notePlayer is { Playing: true } ? NoteState.Playing
         : NoteState.Idle;
 
     public float NoteProgress(long noteId)
     {
-        if (_previewPlaying.Note == noteId && noteId != 0) return _previewPlaying.Fraction;
-        if (_playingNote != noteId || _notePlayer?.Stream is not AudioStreamWav wav || !_notePlayer.Playing) return 0f;
+        if (previewPlaying.Note == noteId && noteId != 0) return previewPlaying.Fraction;
+        if (playingNote != noteId || notePlayer?.Stream is not AudioStreamWav wav || !notePlayer.Playing) return 0f;
         double length = wav.GetLength();
-        return length <= 0 ? 0f : (float)Math.Clamp(_notePlayer.GetPlaybackPosition() / length, 0, 1);
+        return length <= 0 ? 0f : (float)Math.Clamp(notePlayer.GetPlaybackPosition() / length, 0, 1);
     }
 
     public float LoadProgress(long noteId) =>
-        !_loadingNotes.Contains(noteId) ? 0f
-        : _decodingNotes.Contains(noteId) ? 1f
-        : _previewLoading.Note == noteId ? _previewLoading.Fraction
-        : Net.I.NoteDownloadProgress(noteId);
+        !loadingNotes.Contains(noteId) ? 0f
+        : decodingNotes.Contains(noteId) ? 1f
+        : previewLoading.Note == noteId ? previewLoading.Fraction
+        : roomMedia.NoteDownloads.Progress(noteId);
 
-    private (long Note, float Fraction) _previewLoading;
+    private (long Note, float Fraction) previewLoading;
 
     internal void PreviewNote(long playing, float played, long loading, float loaded)
     {
-        _previewPlaying = (playing, played);
-        _previewLoading = (loading, loaded);
-        _loadingNotes.Clear();
-        if (loading != 0) _loadingNotes.Add(loading);
+        previewPlaying = (playing, played);
+        previewLoading = (loading, loaded);
+        loadingNotes.Clear();
+        if (loading != 0) loadingNotes.Add(loading);
     }
 
     public void SeekNote(long noteId, float fraction)
     {
-        if (StateOf(noteId) == NoteState.Playing && _notePlayer?.Stream is AudioStreamWav wav)
+        if (StateOf(noteId) == NoteState.Playing && notePlayer?.Stream is AudioStreamWav wav)
         {
-            _notePlayer.Seek((float)(wav.GetLength() * fraction));
+            notePlayer.Seek((float)(wav.GetLength() * fraction));
             return;
         }
-        _seekOnPlay = (noteId, fraction);
+        seekOnPlay = (noteId, fraction);
         if (StateOf(noteId) == NoteState.Idle) ToggleNote(noteId);
     }
 
@@ -122,7 +117,7 @@ public partial class VoiceChat
             StopNote();
             return;
         }
-        if (_loadingNotes.Contains(noteId)) return;
+        if (loadingNotes.Contains(noteId)) return;
         HookNet();
         if (NoteById(noteId) is { } note && CachePath(note) is var cached && File.Exists(cached)
             && new FileInfo(cached).Length == note.Size)
@@ -130,29 +125,29 @@ public partial class VoiceChat
             DecodeAndPlay(noteId, File.ReadAllBytes(cached));
             return;
         }
-        _missingNotes.Remove(noteId);
-        _loadingNotes.Add(noteId);
-        Net.I.SendVoiceNoteFetch(noteId);
+        missingNotes.Remove(noteId);
+        loadingNotes.Add(noteId);
+        roomMediaRequests.VoiceNoteFetch(noteId);
         StateChanged?.Invoke();
     }
 
     public void StopNote()
     {
-        _notePlayer?.Stop();
-        _playingNote = 0;
+        notePlayer?.Stop();
+        playingNote = 0;
         StateChanged?.Invoke();
     }
 
     private void HookNet()
     {
-        if (_netHooked) return;
-        _netHooked = true;
-        Net.I.VoiceNoteFetchedEvent += OnNoteFetched;
-        Net.I.VoiceNoteMissingEvent += OnNoteMissing;
+        if (netHooked) return;
+        netHooked = true;
+        roomMedia.VoiceNoteFetchedEvent += OnNoteFetched;
+        roomMedia.VoiceNoteMissingEvent += OnNoteMissing;
         TreeExiting += () =>
         {
-            Net.I.VoiceNoteFetchedEvent -= OnNoteFetched;
-            Net.I.VoiceNoteMissingEvent -= OnNoteMissing;
+            roomMedia.VoiceNoteFetchedEvent -= OnNoteFetched;
+            roomMedia.VoiceNoteMissingEvent -= OnNoteMissing;
         };
     }
 
@@ -176,16 +171,16 @@ public partial class VoiceChat
 
     private void OnNoteMissing(long noteId)
     {
-        _loadingNotes.Remove(noteId);
-        _missingNotes.Add(noteId);
-        NoteNotice?.Invoke(Net.I.DirectPartnerOf(noteId), RoomMediaResults.Text(RoomMediaResults.NotFound));
+        loadingNotes.Remove(noteId);
+        missingNotes.Add(noteId);
+        NoteNotice?.Invoke(roomMedia.DirectPartnerOf(noteId), RoomMediaResults.Text(RoomMediaResult.NotFound));
         StateChanged?.Invoke();
     }
 
     private void DecodeAndPlay(long noteId, byte[] file)
     {
-        _loadingNotes.Add(noteId);
-        _decodingNotes.Add(noteId);
+        loadingNotes.Add(noteId);
+        decodingNotes.Add(noteId);
         StateChanged?.Invoke();
         Task.Run(() =>
         {
@@ -202,11 +197,11 @@ public partial class VoiceChat
 
     private void Play(long noteId, short[]? pcm)
     {
-        _loadingNotes.Remove(noteId);
-        _decodingNotes.Remove(noteId);
+        loadingNotes.Remove(noteId);
+        decodingNotes.Remove(noteId);
         if (pcm == null || pcm.Length == 0)
         {
-            _missingNotes.Add(noteId);
+            missingNotes.Add(noteId);
             StateChanged?.Invoke();
             return;
         }
@@ -219,35 +214,35 @@ public partial class VoiceChat
             Stereo = false,
             Data = bytes,
         };
-        if (_notePlayer == null)
+        if (notePlayer == null)
         {
-            _notePlayer = new AudioStreamPlayer { Name = "VoiceNote", Bus = BusVoiceChat };
-            _notePlayer.Finished += () =>
+            notePlayer = new AudioStreamPlayer { Name = "VoiceNote", Bus = BusVoiceChat };
+            notePlayer.Finished += () =>
             {
-                _playingNote = 0;
+                playingNote = 0;
                 StateChanged?.Invoke();
             };
-            AddChild(_notePlayer);
+            AddChild(notePlayer);
         }
-        _notePlayer.Stream = wav;
-        _playingNote = noteId;
-        float from = _seekOnPlay.Note == noteId ? (float)(wav.GetLength() * _seekOnPlay.Fraction) : 0f;
-        _seekOnPlay = default;
-        _notePlayer.Play(from);
+        notePlayer.Stream = wav;
+        playingNote = noteId;
+        float from = seekOnPlay.Note == noteId ? (float)(wav.GetLength() * seekOnPlay.Fraction) : 0f;
+        seekOnPlay = default;
+        notePlayer.Play(from);
         StateChanged?.Invoke();
     }
 
     private void ProcessNotes()
     {
-        if (_recorder != null && RecordingTarget.Length == 0 && !Net.I.NationChat.InRoom) StopRecording(send: false);
+        if (recorder != null && RecordingTarget.Length == 0 && !nationChat.NationChat.InRoom) StopRecording(send: false);
     }
 
     private static string CacheRoot() => ProjectSettings.GlobalizePath(NoteCacheDir);
 
-    private static string CachePath(RoomPost note) => Path.Combine(CacheRoot(), VoiceNoteRules.CacheName(Net.I.ServerHost, note));
+    private static string CachePath(RoomPost note) => Path.Combine(CacheRoot(), VoiceNoteRules.CacheName(Game.Connection.ServerHost, note));
 
-    private static RoomPost? NoteById(long noteId) =>
-        Net.I.FindChatPost(noteId) is { Kind: RoomPostKind.VoiceNote } note ? note : null;
+    private RoomPost? NoteById(long noteId) =>
+        roomMedia.FindChatPost(noteId) is { Kind: RoomPostKind.VoiceNote } note ? note : null;
 
     private static void PruneNoteCache()
     {

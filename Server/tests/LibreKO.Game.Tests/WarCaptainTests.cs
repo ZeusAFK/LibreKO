@@ -19,15 +19,15 @@ public class WarCaptainTests
     private const byte WarZone = BattleZoneManager.ZONE_BATTLE4;
     private const byte FameMember = 5;
 
-    private readonly SessionManager _sessions = new();
-    private readonly IKingSystemRuntimeService _kings = Substitute.For<IKingSystemRuntimeService>();
-    private readonly IZoneTransitionService _zones = Substitute.For<IZoneTransitionService>();
-    private readonly WarCaptainService _captains;
+    private readonly SessionManager sessions = new();
+    private readonly IKingSystemRuntimeService kings = Substitute.For<IKingSystemRuntimeService>();
+    private readonly IZoneTransitionService zones = Substitute.For<IZoneTransitionService>();
+    private readonly WarCaptainService captains;
 
     public WarCaptainTests()
     {
-        _captains = new WarCaptainService(_sessions, Options.Create(new GameServerSettings()), _kings,
-            Substitute.For<IGameDataService>(), _zones, NullLogger<WarCaptainService>.Instance);
+        captains = new WarCaptainService(sessions, Options.Create(new GameServerSettings()), kings,
+            Substitute.For<IGameDataService>(), zones, NullLogger<WarCaptainService>.Instance);
     }
 
     private UserSession Player(int id, short clan, byte fame, byte zone = WarZone)
@@ -35,7 +35,7 @@ public class WarCaptainTests
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var session = _sessions.CreateSession(client, id, id + 1000);
+        var session = sessions.CreateSession(client, id, id + 1000);
         session.Name = $"Player{id}";
         session.Nation = AccountNation.Karus;
         session.ZoneId = zone;
@@ -45,7 +45,7 @@ public class WarCaptainTests
     }
 
     private void Clan(short id, int points) =>
-        _sessions.Knights.AddClan(id, new KnightsEntity { Id = id, Name = $"Clan{id}", Nation = (byte)AccountNation.Karus, Points = points });
+        sessions.Knights.AddClan(id, new KnightsEntity { Id = id, Name = $"Clan{id}", Nation = (byte)AccountNation.Karus, Points = points });
 
     [Fact]
     public async Task TheChiefsOfTheTopFiveClansInTheWarBecomeCaptains()
@@ -55,23 +55,23 @@ public class WarCaptainTests
         var member = Player(10, 6, FameMember);
         var away = Player(11, 5, ClanRules.FameChief, (byte)ZoneId.Moradon);
 
-        await _captains.SelectAsync();
+        await captains.SelectAsync();
 
         chiefs[0].KnightsFame.Should().Be(ClanRules.FameChief);
         chiefs.Skip(1).Should().OnlyContain(s => s.KnightsFame == WarCaptainService.CaptainFame);
         member.KnightsFame.Should().Be(FameMember);
         away.KnightsFame.Should().Be(ClanRules.FameChief);
-        _captains.IsCaptain(chiefs[5]).Should().BeTrue();
+        captains.IsCaptain(chiefs[5]).Should().BeTrue();
     }
 
     [Fact]
     public async Task TheKingInTheWarIsACaptainToo()
     {
         var king = Player(1, 0, 0);
-        _kings.GetKingData(AccountNation.Karus).Returns(new KingSystemData { Nation = (byte)AccountNation.Karus });
-        _kings.IsKing(king, Arg.Any<KingSystemData>()).Returns(true);
+        kings.GetKingData(AccountNation.Karus).Returns(new KingSystemData { Nation = (byte)AccountNation.Karus });
+        kings.IsKing(king, Arg.Any<KingSystemData>()).Returns(true);
 
-        await _captains.SelectAsync();
+        await captains.SelectAsync();
 
         king.KnightsFame.Should().Be(WarCaptainService.CaptainFame);
     }
@@ -81,12 +81,12 @@ public class WarCaptainTests
     {
         Clan(1, 100);
         var chief = Player(1, 1, ClanRules.FameChief);
-        await _captains.SelectAsync();
+        await captains.SelectAsync();
 
-        await _captains.ResetAsync();
+        await captains.ResetAsync();
 
         chief.KnightsFame.Should().Be(ClanRules.FameChief);
-        _captains.IsCaptain(chief).Should().BeFalse();
+        captains.IsCaptain(chief).Should().BeFalse();
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class WarCaptainTests
     {
         var stale = Player(1, 1, WarCaptainService.CaptainFame);
 
-        _zones.ZoneAbilitySent += Raise.Event<Func<UserSession, Task>>(stale);
+        zones.ZoneAbilitySent += Raise.Event<Func<UserSession, Task>>(stale);
 
         stale.KnightsFame.Should().Be(ClanRules.FameChief);
     }

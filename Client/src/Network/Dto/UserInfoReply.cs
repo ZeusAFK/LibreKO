@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using LibreKO.Domain;
-
-namespace LibreKO.Network;
+﻿namespace LibreKO.Network;
 
 public sealed record UserInfoReply(
     string Name,
@@ -21,17 +18,13 @@ public sealed record UserInfoReply(
     int[] RankPlaces,
     IReadOnlyList<RankMark> Marks)
 {
-    public const byte Accepted = 1;
-    public const byte NoUser = 2;
-    public const byte NoUserAgain = 3;
-
     public bool InParty => PartyMarker != UserInfoCard.NoParty;
 
     public static (byte Result, UserInfoReply? Info) Read(Packet p)
     {
         if (p.RemainingBytes < 1) return (0, null);
-        byte result = p.ReadByte();
-        if (result != Accepted) return (result, null);
+        var result = (PlayerInspectResult)p.ReadByte();
+        if (result != PlayerInspectResult.Accepted) return ((byte)result, null);
 
         string name = p.ReadSByteString();
         int level = p.ReadByte();
@@ -72,7 +65,7 @@ public sealed record UserInfoReply(
                 if (amount > 0) marks.Add(new RankMark(id + UserInfoCard.SpecialMarkFirst, 0, 0, amount));
             }
         }
-        return (result, new UserInfoReply(name, level, cls, loyalty, monthly, clanId, markVersion, clanFlag, clanGrade,
+        return ((byte)result, new UserInfoReply(name, level, cls, loyalty, monthly, clanId, markVersion, clanFlag, clanGrade,
             clanName, clanChief, clanRanking, rebirth, party, places, marks));
     }
 }

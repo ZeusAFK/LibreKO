@@ -21,17 +21,17 @@ public enum NpcState : byte
 
 public class NpcInstance
 {
-    private readonly Lock _sync = new();
+    private readonly Lock sync = new();
 
     public void WithLock(Action<NpcInstance> mutator)
     {
-        using var scope = _sync.EnterScope();
+        using var scope = sync.EnterScope();
         mutator(this);
     }
 
     public T WithLock<T>(Func<NpcInstance, T> reader)
     {
-        using var scope = _sync.EnterScope();
+        using var scope = sync.EnterScope();
         return reader(this);
     }
 
@@ -392,7 +392,7 @@ public class NpcInstance
     private const int MillisecondsPerSecond = 1000;
     public static bool FollowsAPath(NpcMoveType moveType) =>
         moveType is NpcMoveType.PatrolLoop or NpcMoveType.PatrolOnce or NpcMoveType.ScriptedPath;
-    private static readonly Random _spawnRng = new();
+    private static readonly Random spawnRng = new();
 
     public static (float X, float Z) RandomSpawnPoint(NpcPosData pos)
     {
@@ -400,8 +400,8 @@ public class NpcInstance
             return (pos.LeftX, pos.TopZ);
 
         var span = pos.SpawnRange * SpawnPrecision;
-        var x = (pos.LeftX * SpawnPrecision + _spawnRng.Next(-span, span + 1)) / (float)SpawnPrecision;
-        var z = (pos.TopZ * SpawnPrecision + _spawnRng.Next(-span, span + 1)) / (float)SpawnPrecision;
+        var x = (pos.LeftX * SpawnPrecision + spawnRng.Next(-span, span + 1)) / (float)SpawnPrecision;
+        var z = (pos.TopZ * SpawnPrecision + spawnRng.Next(-span, span + 1)) / (float)SpawnPrecision;
         return (x, z);
     }
 

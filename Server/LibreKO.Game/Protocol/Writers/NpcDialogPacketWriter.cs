@@ -18,6 +18,8 @@ public sealed class NpcDialogPacketWriter
     public const byte GenderChangePanelStyle = 53;
     public const byte FortunePanelStyle = 16;
     public const byte SpecialAuctionPanelStyle = 58;
+    public const byte YutGameStyle = 22;
+    public const byte DrakiRankBoardStyle = 54;
     public const byte FullMoonBoardStyle = 57;
     public const byte ItemCombinePanelStyle = 18;
     public const byte CombineRecipeBookStyle = 21;
@@ -118,6 +120,12 @@ public sealed class NpcDialogPacketWriter
 
     public static Packet SpecialAuctionPanel(int npcId, string scriptFile) =>
         SelectMessage(npcId, SpecialAuctionPanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
+
+    public static Packet YutGame(int npcId, string scriptFile) =>
+        SelectMessage(npcId, YutGameStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
+
+    public static Packet DrakiRankBoard(int npcId, string scriptFile) =>
+        SelectMessage(npcId, DrakiRankBoardStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
 
     public static Packet ItemCombinePanel(int npcId, string scriptFile) =>
         SelectMessage(npcId, ItemCombinePanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);

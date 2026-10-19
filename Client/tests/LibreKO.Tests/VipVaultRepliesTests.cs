@@ -66,7 +66,7 @@ public class VipVaultRepliesTests
     public void AKeyReplyNamesTheStorageAndItsNewEnd()
     {
         var p = new Packet(GameOpcodes.GS_VIP_WAREHOUSE);
-        p.WriteByte(VipVaultKeyReply.Succeeded);
+        p.WriteByte((byte)VipWarehouseResult.Succeeded);
         p.WriteByte(VipVaultContents.OwnStorage);
         p.WriteUInt(ExpiresAt);
         p.ResetOffset();
@@ -91,6 +91,6 @@ public class VipVaultRepliesTests
         var reply = VipVaultKeyReply.Read(p);
 
         Assert.NotNull(reply);
-        Assert.Equal(code, reply.Value.Result);
+        Assert.Equal(code, (byte)reply.Value.Result);
     }
 }

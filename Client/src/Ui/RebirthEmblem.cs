@@ -14,34 +14,34 @@ public partial class RebirthEmblem : Control
     private static readonly Color Halo = new(0.86f, 0.18f, 0.16f, 1f);
     private static readonly Color Number = new(1.00f, 0.82f, 0.39f);
 
-    private readonly Label _count;
-    private float _fraction;
-    private bool _ready;
-    private float _pulse;
+    private readonly Label count;
+    private float fraction;
+    private bool ready;
+    private float pulse;
 
     public RebirthEmblem(float size)
     {
         CustomMinimumSize = new Vector2(size, size);
         Size = CustomMinimumSize;
         MouseFilter = MouseFilterEnum.Stop;
-        _count = HudStyle.Label(12, HorizontalAlignment.Center);
-        _count.AddThemeColorOverride("font_color", Number);
-        _count.AddThemeConstantOverride("outline_size", 2);
-        _count.SetAnchorsPreset(LayoutPreset.FullRect);
-        _count.VerticalAlignment = VerticalAlignment.Center;
-        _count.MouseFilter = MouseFilterEnum.Ignore;
-        AddChild(_count);
+        count = HudStyle.Label(12, HorizontalAlignment.Center);
+        count.AddThemeColorOverride("font_color", Number);
+        count.AddThemeConstantOverride("outline_size", 2);
+        count.SetAnchorsPreset(LayoutPreset.FullRect);
+        count.VerticalAlignment = VerticalAlignment.Center;
+        count.MouseFilter = MouseFilterEnum.Ignore;
+        AddChild(count);
         SetProcess(false);
     }
 
     public void Set(int rebirths, float fraction, bool ready, string tooltip)
     {
-        _count.Text = rebirths.ToString();
-        _fraction = Mathf.Clamp(fraction, 0f, 1f);
+        count.Text = rebirths.ToString();
+        this.fraction = Mathf.Clamp(fraction, 0f, 1f);
         TooltipText = tooltip;
-        if (_ready != ready)
+        if (this.ready != ready)
         {
-            _ready = ready;
+            this.ready = ready;
             SetProcess(ready);
             if (!ready) Modulate = Colors.White;
         }
@@ -50,8 +50,8 @@ public partial class RebirthEmblem : Control
 
     public override void _Process(double delta)
     {
-        _pulse = (_pulse + (float)delta / PulseSeconds) % 1f;
-        float wave = 0.5f + 0.5f * Mathf.Cos(_pulse * Mathf.Tau);
+        pulse = (pulse + (float)delta / PulseSeconds) % 1f;
+        float wave = 0.5f + 0.5f * Mathf.Cos(pulse * Mathf.Tau);
         Modulate = new Color(1f, 1f, 1f, Mathf.Lerp(PulseLow, 1f, wave));
     }
 
@@ -61,8 +61,8 @@ public partial class RebirthEmblem : Control
         var centre = Size * 0.5f;
         DrawCircle(centre, radius, Disc);
         DrawArc(centre, radius, 0f, Mathf.Tau, RingPoints, Track, RingWidth, true);
-        if (_fraction > 0f)
-            DrawArc(centre, radius, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * _fraction, RingPoints, Halo, RingWidth, true);
+        if (fraction > 0f)
+            DrawArc(centre, radius, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * fraction, RingPoints, Halo, RingWidth, true);
         DrawArc(centre, radius + RingWidth * 0.5f + 0.5f, 0f, Mathf.Tau, RingPoints, Edge, 1f, true);
     }
 }

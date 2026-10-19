@@ -19,20 +19,20 @@ public static class ItemShine
 
     private const string MetaKey = "gko_shine";
     internal const string ClassicParam = "item_shine_classic";
-    private static bool _globalsReady;
+    private static bool globalsReady;
 
     internal static void EnsureGlobals()
     {
-        if (_globalsReady) return;
-        _globalsReady = true;
-        RenderingServer.GlobalShaderParameterAdd(ClassicParam, RenderingServer.GlobalShaderParameterType.Float, ClassicValue);
+        if (globalsReady) return;
+        globalsReady = true;
+        RenderingServer.GlobalShaderParameterSet(ClassicParam, ClassicValue);
     }
 
     private static float ClassicValue => Config.Shine == LibreKO.Domain.ShineStyle.Classic ? 1f : 0f;
 
     internal static void ApplyStyle()
     {
-        if (!_globalsReady) return;
+        if (!globalsReady) return;
         RenderingServer.GlobalShaderParameterSet(ClassicParam, ClassicValue);
     }
 
@@ -189,12 +189,12 @@ public static class ItemShine
         return driver;
     }
 
-    private static readonly Dictionary<(ulong Source, int Level, int Part), (StandardMaterial3D Surface, ShaderMaterial Shine)> _sharedShine = Shutdown.Track(new Dictionary<(ulong Source, int Level, int Part), (StandardMaterial3D Surface, ShaderMaterial Shine)>());
+    private static readonly Dictionary<(ulong Source, int Level, int Part), (StandardMaterial3D Surface, ShaderMaterial Shine)> sharedShine = Shutdown.Track(new Dictionary<(ulong Source, int Level, int Part), (StandardMaterial3D Surface, ShaderMaterial Shine)>());
 
     private static (StandardMaterial3D Surface, ShaderMaterial Shine) SharedShine(StandardMaterial3D src, int level, int partIndex)
     {
         var key = (src.GetInstanceId(), level, partIndex);
-        if (_sharedShine.TryGetValue(key, out var cached)) return cached;
+        if (sharedShine.TryGetValue(key, out var cached)) return cached;
         var mat = (StandardMaterial3D)src.Duplicate();
         var shine = new ShaderMaterial { Shader = ShineShader, NextPass = mat.NextPass };
         shine.SetShaderParameter("albedo_texture", src.AlbedoTexture);
@@ -214,7 +214,7 @@ public static class ItemShine
         shine.SetShaderParameter("phase", b.Y);
         ApplyTiming(shine);
         mat.NextPass = shine;
-        _sharedShine[key] = (mat, shine);
+        sharedShine[key] = (mat, shine);
         return (mat, shine);
     }
 
@@ -235,13 +235,13 @@ public static class ItemShine
         shine.SetShaderParameter("cycle_seconds", CycleSeconds);
     }
 
-    private static Shader? _shineShader;
+    private static Shader? shineShader;
     private static Shader ShineShader
     {
         get
         {
             EnsureGlobals();
-            return _shineShader ??= GD.Load<Shader>("res://shaders/item_shine.gdshader");
+            return shineShader ??= GD.Load<Shader>("res://shaders/item_shine.gdshader");
         }
     }
 }

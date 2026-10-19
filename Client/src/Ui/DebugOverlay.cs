@@ -1,15 +1,16 @@
 ﻿using Godot;
+using LibreKO.Scene;
 
 namespace LibreKO;
 
 public partial class DebugOverlay : CanvasLayer
 {
-    private RichTextLabel _label = null!;
-    private VBoxContainer _stack = null!;
-    private FrameGraph _graph = null!;
+    private RichTextLabel label = null!;
+    private VBoxContainer stack = null!;
+    private FrameGraph graph = null!;
     private const float GraphHeight = 96f;
-    private double _accum;
-    private bool _detail;
+    private double accum;
+    private bool detail;
     private const float CompactWidth = 320f;
     private const float DetailWidth = 860f;
     private const double FrameWindowSeconds = 10.0;
@@ -20,10 +21,10 @@ public partial class DebugOverlay : CanvasLayer
 
     public override void _Ready()
     {
-        Layer = 128;
+        Layer = UiLayers.DebugOverlay;
         Visible = false;
 
-        _label = new RichTextLabel
+        label = new RichTextLabel
         {
             BbcodeEnabled = true,
             FitContent = true,
@@ -31,71 +32,71 @@ public partial class DebugOverlay : CanvasLayer
             AutowrapMode = TextServer.AutowrapMode.Off,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        _graph = new FrameGraph
+        graph = new FrameGraph
         {
             Visible = false,
             CustomMinimumSize = new Vector2(DetailWidth, GraphHeight),
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        _stack = new VBoxContainer
+        stack = new VBoxContainer
         {
             CustomMinimumSize = new Vector2(CompactWidth, 0f),
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        HudPlacement.Stats(new Vector2(HudAnchor.Edge, HudAnchor.Edge)).ApplyTo(_stack);
-        _label.AddThemeFontSizeOverride("normal_font_size", 14);
-        _label.AddThemeColorOverride("font_outline_color", Colors.Black);
-        _label.AddThemeConstantOverride("outline_size", 4);
-        _stack.AddChild(_graph);
-        _stack.AddChild(_label);
-        AddChild(_stack);
+        HudPlacement.Stats(new Vector2(HudAnchor.Edge, HudAnchor.Edge)).ApplyTo(stack);
+        label.AddThemeFontSizeOverride("normal_font_size", 14);
+        label.AddThemeColorOverride("font_outline_color", Colors.Black);
+        label.AddThemeConstantOverride("outline_size", 4);
+        stack.AddChild(graph);
+        stack.AddChild(label);
+        AddChild(stack);
     }
 
-    private bool InWorld => GetTree().CurrentScene is World;
+    private bool InWorld => GetTree().CurrentScene is WorldRoot;
 
-    private readonly AutoBisect _auto = new();
-    private bool _probed;
+    private readonly AutoBisect auto = new();
+    private bool probed;
 
     private void SetDetail(bool detail)
     {
-        _detail = detail;
-        _stack.CustomMinimumSize = new Vector2(_detail ? DetailWidth : CompactWidth, 0f);
-        _graph.Visible = _detail;
-        _accum = 1.0;
+        this.detail = detail;
+        stack.CustomMinimumSize = new Vector2(this.detail ? DetailWidth : CompactWidth, 0f);
+        graph.Visible = this.detail;
+        accum = 1.0;
     }
 
     public override void _Process(double delta)
     {
         Perf.FrameTick(delta);
-        if (!_probed) { _probed = true; Callable.From(() => FrameProbe.Install(GetTree().Root)).CallDeferred(); }
-        _auto.Tick(delta);
+        if (!probed) { probed = true; Callable.From(() => FrameProbe.Install(GetTree().Root)).CallDeferred(); }
+        auto.Tick(delta);
         EngineProfile.Sample();
         bool show = InWorld && Config.ShowStats;
         if (Visible != show) Visible = show;
-        FrameProbe.Detailed = show && _detail;
+        FrameProbe.Detailed = show && detail;
         if (!show) return;
 
-        _accum += delta;
-        if (_accum < 0.25)
+        accum += delta;
+        if (accum < 0.25)
             return;
-        _accum = 0;
+        accum = 0;
 
         double fps = Engine.GetFramesPerSecond();
         double avgMs = fps > 0 ? 1000.0 / fps : 0;
 
         string c = FpsColor(fps);
         string text = $"[color={c}]FPS {fps:0}[/color]   [color={c}]{avgMs:0} ms[/color]{Ping()}";
-        if (_auto.Running) text += $"\n[color={Yellow}]{_auto.Status}[/color]";
-        if (_detail)
+        if (auto.Running) text += $"\n[color={Yellow}]{auto.Status}[/color]";
+        if (detail)
             text += "\n" + Breakdown();
-        _label.Text = $"[right]{text}[/right]";
+        label.Text = $"[right]{text}[/right]";
     }
 
     private static string Ping()
     {
-        if (Net.I is not { Connected: true } net)
+        if (Game.Connection is not { Connected: true } connection)
             return "";
-        int ms = net.PingMs;
+        int ms = connection.PingMs;
         return ms < 0
             ? $"   [color={Red}]PING —[/color]"
             : $"   [color={PingColor(ms)}]PING {ms} ms[/color]";
@@ -170,17 +171,17 @@ public partial class DebugOverlay : CanvasLayer
             $"[color={dim}]{Render3D()}   {RenderTimes()}[/color]";
     }
 
-    private static bool _measuringRender;
+    private static bool measuringRender;
 
     private static string RenderTimes()
     {
         if (Engine.GetMainLoop() is not SceneTree { Root: { } vp })
             return "";
         var rid = vp.GetViewportRid();
-        if (!_measuringRender)
+        if (!measuringRender)
         {
             RenderingServer.ViewportSetMeasureRenderTime(rid, true);
-            _measuringRender = true;
+            measuringRender = true;
             return "";
         }
         double cpu = RenderingServer.ViewportGetMeasuredRenderTimeCpu(rid);
@@ -233,26 +234,26 @@ public partial class DebugOverlay : CanvasLayer
         else if (Is(KeyAction.PerfSkipLamps, chord)) Perf.SkipLamps = !Perf.SkipLamps;
         else if (Is(KeyAction.PerfCensus, chord)) GD.Print($"[census] {SceneCensus.Write(GetTree())}");
         else if (Is(KeyAction.PerfEngineProfile, chord)) EngineProfile.Toggle();
-        else if (Is(KeyAction.PerfAutoBisect, chord) && !_auto.Running)
+        else if (Is(KeyAction.PerfAutoBisect, chord) && !auto.Running)
         {
             Visible = true;
             Config.SetShowStats(true);
             SetDetail(true);
-            _auto.Start(GetTree(), SetDetail);
+            auto.Start(GetTree(), SetDetail);
         }
-        else if (Is(KeyAction.PerfHudSweep, chord) && !_auto.Running)
+        else if (Is(KeyAction.PerfHudSweep, chord) && !auto.Running)
         {
             Visible = true;
             Config.SetShowStats(true);
             SetDetail(true);
-            _auto.StartHudSweep(GetTree());
+            auto.StartHudSweep(GetTree());
         }
-        else if (Is(KeyAction.PerfSceneSweep, chord) && !_auto.Running)
+        else if (Is(KeyAction.PerfSceneSweep, chord) && !auto.Running)
         {
             Visible = true;
             Config.SetShowStats(true);
             SetDetail(true);
-            _auto.StartSceneSweep(GetTree());
+            auto.StartSceneSweep(GetTree());
         }
         else return false;
         return true;
@@ -270,10 +271,10 @@ public partial class DebugOverlay : CanvasLayer
         var bind = KeyBinds.Get(KeyAction.PerformanceOverlay);
         if (!bind.Assigned || chord != bind) return;
 
-        if (!Visible) { Visible = true; _detail = false; }
-        else if (!_detail) _detail = true;
-        else { Visible = false; _detail = false; }
-        SetDetail(_detail);
+        if (!Visible) { Visible = true; detail = false; }
+        else if (!detail) detail = true;
+        else { Visible = false; detail = false; }
+        SetDetail(detail);
         Config.SetShowStats(Visible);
     }
 }

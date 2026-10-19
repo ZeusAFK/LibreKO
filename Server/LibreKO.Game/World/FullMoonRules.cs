@@ -28,7 +28,6 @@ public static class FullMoonRules
     public const int BlancNpcId = 31718;
     public const int PriestOfFullMoonNpcId = 31737;
 
-    // Exchange Items & Costs (Blanc)
     public const int OldDrakiSupplyBoxItem = 810678000;
     public const int OldDrakiSupplyBoxCost = 85;
     public const int DrakiSupplyBoxItem = 810596000;
@@ -42,7 +41,6 @@ public static class FullMoonRules
     public const int LunarTattoo30DaysItem = 810927000;
     public const int LunarTattoo30DaysCost = 300;
 
-    // Priest Items & Costs
     public const int DrainRestoreItem = 914060000;
     public const int DrainRestoreCost = 2;
     public const int FireStrikeItem = 914061000;
@@ -58,7 +56,6 @@ public static class FullMoonRules
     public const int GodsShieldItem = 914078000;
     public const int GodsShieldCost = 2;
 
-    // Dialog & Button IDs
     public const int BlancTalkId = 44689;
     public const int PriestTalkId = 44690;
     public const int PriestNotEnoughCoinsTalkId = 44691;

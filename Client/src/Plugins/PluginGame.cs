@@ -236,6 +236,7 @@ public interface IGameCommands
     void TradeWithTarget();
     void InviteTarget();
     void ShowExitMenu();
+    void OpenSettings() { }
     void Run(KeyAction action);
 }
 
@@ -348,54 +349,54 @@ public sealed partial class PluginGame
 {
     public bool Available { get; private set; }
 
-    public IGameCharacter Character => _character;
-    public IGameInventory Inventory => _inventory;
-    public IGameTarget Target => _target;
-    public IGameWindows Windows => _windows;
-    public IGameChat Chat => _chat;
-    public IGameHotbar Hotbar => _hotbar;
-    public IGameMap Map => _map;
-    public IGameCommands Commands => _commands;
-    public IGameLog Log => _log;
-    public IGameQuests Quests => _quests;
-    public IGameSkills Skills => _skills;
-    public IGameVendor Vendor => _vendor;
-    public IGameWarehouse Warehouse => _warehouse;
-    public IGameVipVault VipVault => _vipVault;
+    public IGameCharacter Character => character;
+    public IGameInventory Inventory => inventory;
+    public IGameTarget Target => target;
+    public IGameWindows Windows => windows;
+    public IGameChat Chat => chat;
+    public IGameHotbar Hotbar => hotbar;
+    public IGameMap Map => map;
+    public IGameCommands Commands => commands;
+    public IGameLog Log => log;
+    public IGameQuests Quests => quests;
+    public IGameSkills Skills => skills;
+    public IGameVendor Vendor => vendor;
+    public IGameWarehouse Warehouse => warehouse;
+    public IGameVipVault VipVault => vipVault;
 
     public event Action? BecameAvailable;
     public event Action? BecameUnavailable;
 
-    private readonly CharacterProxy _character = new();
-    private readonly InventoryProxy _inventory = new();
-    private readonly TargetProxy _target = new();
-    private readonly WindowsProxy _windows = new();
-    private readonly ChatProxy _chat = new();
-    private readonly HotbarProxy _hotbar = new();
-    private readonly MapProxy _map = new();
-    private readonly CommandsProxy _commands = new();
-    private readonly LogProxy _log = new();
-    private readonly QuestsProxy _quests = new();
-    private readonly SkillsProxy _skills = new();
-    private readonly VendorProxy _vendor = new();
-    private readonly WarehouseProxy _warehouse = new();
-    private readonly VipVaultProxy _vipVault = new();
+    private readonly CharacterProxy character = new();
+    private readonly InventoryProxy inventory = new();
+    private readonly TargetProxy target = new();
+    private readonly WindowsProxy windows = new();
+    private readonly ChatProxy chat = new();
+    private readonly HotbarProxy hotbar = new();
+    private readonly MapProxy map = new();
+    private readonly CommandsProxy commands = new();
+    private readonly LogProxy log = new();
+    private readonly QuestsProxy quests = new();
+    private readonly SkillsProxy skills = new();
+    private readonly VendorProxy vendor = new();
+    private readonly WarehouseProxy warehouse = new();
+    private readonly VipVaultProxy vipVault = new();
 
-    internal void Attach(IGameCharacter character, IGameInventory inventory, IGameTarget target,
-        IGameWindows windows, IGameChat chat, IGameHotbar hotbar, IGameMap map, IGameCommands commands,
-        IGameLog log, IGameQuests quests, IGameSkills skills)
+    internal void Attach(IGameCharacter characterSource, IGameInventory inventorySource, IGameTarget targetSource,
+        IGameWindows windowsSource, IGameChat chatSource, IGameHotbar hotbarSource, IGameMap mapSource, IGameCommands commandsSource,
+        IGameLog logSource, IGameQuests questsSource, IGameSkills skillsSource)
     {
-        _skills.Source = skills;
-        _character.Source = character;
-        _inventory.Source = inventory;
-        _target.Source = target;
-        _windows.Source = windows;
-        _chat.Source = chat;
-        _hotbar.Source = hotbar;
-        _map.Source = map;
-        _commands.Source = commands;
-        _log.Source = log;
-        _quests.Source = quests;
+        skills.Source = skillsSource;
+        character.Source = characterSource;
+        inventory.Source = inventorySource;
+        target.Source = targetSource;
+        windows.Source = windowsSource;
+        chat.Source = chatSource;
+        hotbar.Source = hotbarSource;
+        map.Source = mapSource;
+        commands.Source = commandsSource;
+        log.Source = logSource;
+        quests.Source = questsSource;
         Available = true;
         BecameAvailable?.Invoke();
         RaiseCharacter();
@@ -412,37 +413,37 @@ public sealed partial class PluginGame
         if (!Available) return;
         Available = false;
         BecameUnavailable?.Invoke();
-        _character.Source = null;
-        _inventory.Source = null;
-        _target.Source = null;
-        _windows.Source = null;
-        _chat.Source = null;
-        _hotbar.Source = null;
-        _map.Source = null;
-        _commands.Source = null;
-        _log.Source = null;
-        _quests.Source = null;
-        _skills.Source = null;
-        _vendor.Source = null;
-        _warehouse.Source = null;
-        _vipVault.Source = null;
-        _attendance.Source = null;
-        _userInfo.Source = null;
-        _repurchase.Source = null;
-        _userVote.Source = null;
-        _equipView.Source = null;
-        _capeShop.Source = null;
-        _genie.Source = null;
+        character.Source = null;
+        inventory.Source = null;
+        target.Source = null;
+        windows.Source = null;
+        chat.Source = null;
+        hotbar.Source = null;
+        map.Source = null;
+        commands.Source = null;
+        log.Source = null;
+        quests.Source = null;
+        skills.Source = null;
+        vendor.Source = null;
+        warehouse.Source = null;
+        vipVault.Source = null;
+        attendance.Source = null;
+        userInfo.Source = null;
+        repurchase.Source = null;
+        userVote.Source = null;
+        equipView.Source = null;
+        capeShop.Source = null;
+        genie.Source = null;
         DetachSocial();
         DetachAppearance();
-        _friends.Source = null;
+        friends.Source = null;
     }
 
-    internal void AttachServices(IGameVendor vendor, IGameWarehouse warehouse, IGameVipVault vipVault)
+    internal void AttachServices(IGameVendor vendorSource, IGameWarehouse warehouseSource, IGameVipVault vipVaultSource)
     {
-        _vendor.Source = vendor;
-        _warehouse.Source = warehouse;
-        _vipVault.Source = vipVault;
+        vendor.Source = vendorSource;
+        warehouse.Source = warehouseSource;
+        vipVault.Source = vipVaultSource;
         RaiseVendor();
         RaiseWarehouse();
         RaiseVipVault();
@@ -472,22 +473,22 @@ public sealed partial class PluginGame
         return dropped;
     }
 
-    internal void RaiseVendor() => _vendor.Raise();
-    internal void RaiseWarehouse() => _warehouse.Raise();
-    internal void RaiseVipVault() => _vipVault.Raise();
+    internal void RaiseVendor() => vendor.Raise();
+    internal void RaiseWarehouse() => warehouse.Raise();
+    internal void RaiseVipVault() => vipVault.Raise();
 
-    internal void RaiseCharacter() => _character.Raise();
-    internal void RaiseInventory() => _inventory.Raise();
-    internal void RaiseTarget() => _target.Raise();
-    internal void RaiseHotbar() => _hotbar.Raise();
-    internal void RaiseHotbarReady(IReadOnlyList<int> skillIds) => _hotbar.RaiseReady(skillIds);
-    internal void RaiseMap() => _map.Raise();
-    internal void RaiseTopRightRow() => _windows.RaiseRow();
-    internal void RaiseQuests() => _quests.Raise();
-    internal void RaiseSkills() => _skills.Raise();
-    internal void RaiseChatLine(GameChatLine line) => _chat.RaiseLine(line);
-    internal void RaiseChatInputRequested() => _chat.RaiseInputRequested();
-    internal void RaiseLogLine(GameLogLine line) => _log.RaiseLine(line);
+    internal void RaiseCharacter() => character.Raise();
+    internal void RaiseInventory() => inventory.Raise();
+    internal void RaiseTarget() => target.Raise();
+    internal void RaiseHotbar() => hotbar.Raise();
+    internal void RaiseHotbarReady(IReadOnlyList<int> skillIds) => hotbar.RaiseReady(skillIds);
+    internal void RaiseMap() => map.Raise();
+    internal void RaiseTopRightRow() => windows.RaiseRow();
+    internal void RaiseQuests() => quests.Raise();
+    internal void RaiseSkills() => skills.Raise();
+    internal void RaiseChatLine(GameChatLine line) => chat.RaiseLine(line);
+    internal void RaiseChatInputRequested() => chat.RaiseInputRequested();
+    internal void RaiseLogLine(GameLogLine line) => log.RaiseLine(line);
 
     private sealed class CharacterProxy : IGameCharacter
     {
@@ -653,6 +654,7 @@ public sealed partial class PluginGame
         public void TradeWithTarget() => Source?.TradeWithTarget();
         public void InviteTarget() => Source?.InviteTarget();
         public void ShowExitMenu() => Source?.ShowExitMenu();
+        public void OpenSettings() => Source?.OpenSettings();
         public void Run(KeyAction action) => Source?.Run(action);
     }
 

@@ -22,8 +22,8 @@ public class PremiumBonusTests
         p.WriteShort(0);
         p.ResetOffset();
 
-        Assert.Equal((1, 5, 72), Net.ReadPremiumList(p));
-        var bonuses = Net.ReadPremiumBonuses(p);
+        Assert.Equal((1, 5, 72), PremiumWire.ReadList(p));
+        var bonuses = PremiumWire.ReadBonuses(p);
 
         Assert.Equal(new[]
         {
@@ -41,7 +41,7 @@ public class PremiumBonusTests
         p.WriteByte(0);
         p.ResetOffset();
 
-        Assert.Equal((0, 0, 0), Net.ReadPremiumList(p));
+        Assert.Equal((0, 0, 0), PremiumWire.ReadList(p));
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class PremiumBonusTests
         var p = new Packet(GameOpcodes.GS_PREMIUM);
         p.ResetOffset();
 
-        Assert.Empty(Net.ReadPremiumBonuses(p));
+        Assert.Empty(PremiumWire.ReadBonuses(p));
     }
 
     [Fact]

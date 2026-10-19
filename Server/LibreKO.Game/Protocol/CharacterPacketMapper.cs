@@ -78,7 +78,8 @@ public class CharacterPacketMapper
             character.Face,
             character.Hair,
             character.MapId,
-            equipment);
+            equipment,
+            character.NameChangeRequired);
     }
 
     public static Packet BuildSelectCharacterSuccess(SelectCharacterPacketContext context) =>

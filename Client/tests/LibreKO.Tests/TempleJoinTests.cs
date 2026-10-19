@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -6,24 +7,24 @@ namespace LibreKO.Tests;
 public class TempleJoinTests
 {
     [Theory]
-    [InlineData(TempleJoin.AlreadyJoined, 17999)]
-    [InlineData(TempleJoin.NeedsMapOfChaos, 18801)]
-    [InlineData(TempleJoin.LadderPoints, 41005)]
-    [InlineData(TempleJoin.ApplyLadderPoints, 41005)]
-    [InlineData(TempleJoin.LevelTooLow, 44543)]
-    [InlineData(TempleJoin.DuplicateIp, 44422)]
-    [InlineData(TempleJoin.NotOpen, 44545)]
-    [InlineData(TempleJoin.Joined, 0)]
-    [InlineData(TempleJoin.LevelTooHigh, 0)]
+    [InlineData((byte)TempleJoinResult.AlreadyJoined, 17999)]
+    [InlineData((byte)TempleJoinResult.NeedsMapOfChaos, 18801)]
+    [InlineData((byte)TempleJoinResult.LadderPoints, 41005)]
+    [InlineData((byte)TempleJoinResult.ApplyLadderPoints, 41005)]
+    [InlineData((byte)TempleJoinResult.LevelTooLow, 44543)]
+    [InlineData((byte)TempleJoinResult.DuplicateIp, 44422)]
+    [InlineData((byte)TempleJoinResult.NotOpen, 44545)]
+    [InlineData((byte)TempleJoinResult.Joined, 0)]
+    [InlineData((byte)TempleJoinResult.LevelTooHigh, 0)]
     public void ResultCodesUseTheirTexts(byte result, int text) =>
-        Assert.Equal(text, TempleJoin.TextId(result));
+        Assert.Equal(text, TempleJoin.TextId((TempleJoinResult)result));
 
     [Fact]
     public void BothJoinedAndAlreadyJoinedLeaveYouSignedUp()
     {
-        Assert.True(TempleJoin.SignedUp(TempleJoin.Joined));
-        Assert.True(TempleJoin.SignedUp(TempleJoin.AlreadyJoined));
-        Assert.False(TempleJoin.SignedUp(TempleJoin.NotOpen));
+        Assert.True(TempleJoin.SignedUp(TempleJoinResult.Joined));
+        Assert.True(TempleJoin.SignedUp(TempleJoinResult.AlreadyJoined));
+        Assert.False(TempleJoin.SignedUp(TempleJoinResult.NotOpen));
     }
 
     [Fact]

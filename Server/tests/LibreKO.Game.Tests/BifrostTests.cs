@@ -17,14 +17,14 @@ namespace LibreKO.Game.Tests;
 
 public class BifrostTests
 {
-    private readonly SessionManager _sessions = new();
-    private readonly IZoneTransitionService _zoneTransition = Substitute.For<IZoneTransitionService>();
-    private readonly ILogger<BifrostEventService> _logger = Substitute.For<ILogger<BifrostEventService>>();
-    private readonly IBifrostEventService _bifrostService;
+    private readonly SessionManager sessions = new();
+    private readonly IZoneTransitionService zoneTransition = Substitute.For<IZoneTransitionService>();
+    private readonly ILogger<BifrostEventService> logger = Substitute.For<ILogger<BifrostEventService>>();
+    private readonly IBifrostEventService bifrostService;
 
     public BifrostTests()
     {
-        _bifrostService = new BifrostEventService(_sessions, Options.Create(new GameServerSettings()), new ScheduleClock(), _zoneTransition, _logger);
+        bifrostService = new BifrostEventService(sessions, Options.Create(new GameServerSettings()), new ScheduleClock(), zoneTransition, logger);
     }
 
     private static UserSession CreateSession(int id, string name)
@@ -37,18 +37,18 @@ public class BifrostTests
     [Fact]
     public void Start_InitializesMonumentFightPhase()
     {
-        _bifrostService.Start(monumentMinutes: 20, loserDelayMinutes: 15, farmingMinutes: 60);
+        bifrostService.Start(monumentMinutes: 20, loserDelayMinutes: 15, farmingMinutes: 60);
 
-        _bifrostService.IsActive.Should().BeTrue();
-        _bifrostService.Phase.Should().Be(BifrostPhase.MonumentFight);
-        _bifrostService.WinnerNation.Should().Be(AccountNation.None);
-        _bifrostService.RemainingSecs.Should().Be(20 * 60);
+        bifrostService.IsActive.Should().BeTrue();
+        bifrostService.Phase.Should().Be(BifrostPhase.MonumentFight);
+        bifrostService.WinnerNation.Should().Be(AccountNation.None);
+        bifrostService.RemainingSecs.Should().Be(20 * 60);
     }
 
     [Fact]
     public async Task MonumentKilled_ByKarusPlayer_TransitionsToFarmingPhaseWithKarusAsWinner()
     {
-        _bifrostService.Start(monumentMinutes: 30, loserDelayMinutes: 30, farmingMinutes: 60);
+        bifrostService.Start(monumentMinutes: 30, loserDelayMinutes: 30, farmingMinutes: 60);
 
         var killerSession = CreateSession(1, "KarusHero");
         killerSession.Nation = AccountNation.Karus;
@@ -60,12 +60,12 @@ public class BifrostTests
             Hp = 0
         };
 
-        await _bifrostService.OnMonumentKilledAsync(monument, killerSession);
+        await bifrostService.OnMonumentKilledAsync(monument, killerSession);
 
-        _bifrostService.Phase.Should().Be(BifrostPhase.Farming);
-        _bifrostService.WinnerNation.Should().Be(AccountNation.Karus);
-        _bifrostService.RemainingSecs.Should().Be(60 * 60);
-        _bifrostService.LoserDelayRemainingSecs.Should().Be(30 * 60);
+        bifrostService.Phase.Should().Be(BifrostPhase.Farming);
+        bifrostService.WinnerNation.Should().Be(AccountNation.Karus);
+        bifrostService.RemainingSecs.Should().Be(60 * 60);
+        bifrostService.LoserDelayRemainingSecs.Should().Be(30 * 60);
     }
 
     [Fact]
@@ -78,17 +78,17 @@ public class BifrostTests
         elmoUser.Nation = AccountNation.ElMorad;
 
         // 1. Not active
-        _bifrostService.Close();
-        _bifrostService.CanEnter(karusUser).Should().Be(BifrostEntryResult.NotActive);
+        bifrostService.Close();
+        bifrostService.CanEnter(karusUser).Should().Be(BifrostEntryResult.NotActive);
 
         // 2. Monument phase
-        _bifrostService.Start();
-        _bifrostService.CanEnter(karusUser).Should().Be(BifrostEntryResult.MonumentNotFallen);
+        bifrostService.Start();
+        bifrostService.CanEnter(karusUser).Should().Be(BifrostEntryResult.MonumentNotFallen);
 
         // 3. Farming phase with Karus winner
-        _bifrostService.SetWinner(AccountNation.Karus);
-        _bifrostService.CanEnter(karusUser).Should().Be(BifrostEntryResult.Success);
-        _bifrostService.CanEnter(elmoUser).Should().Be(BifrostEntryResult.LoserDelayActive);
+        bifrostService.SetWinner(AccountNation.Karus);
+        bifrostService.CanEnter(karusUser).Should().Be(BifrostEntryResult.Success);
+        bifrostService.CanEnter(elmoUser).Should().Be(BifrostEntryResult.LoserDelayActive);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class BifrostTests
     {
         var transitionMock = Substitute.For<IZoneTransitionService>();
         var bifrostService = new BifrostEventService(
-            _sessions,
+            sessions,
             Options.Create(new GameServerSettings()),
             new ScheduleClock(),
             transitionMock,
@@ -123,15 +123,15 @@ public class BifrostTests
     [Fact]
     public async Task MonumentTimeout_ResultsInDrawAndClosesEvent()
     {
-        _bifrostService.Start(monumentMinutes: 1, loserDelayMinutes: 1, farmingMinutes: 1);
+        bifrostService.Start(monumentMinutes: 1, loserDelayMinutes: 1, farmingMinutes: 1);
 
         for (int i = 0; i < 60; i++)
         {
-            await _bifrostService.TickAsync();
+            await bifrostService.TickAsync();
         }
 
-        _bifrostService.IsActive.Should().BeFalse();
-        _bifrostService.Phase.Should().Be(BifrostPhase.Inactive);
+        bifrostService.IsActive.Should().BeFalse();
+        bifrostService.Phase.Should().Be(BifrostPhase.Inactive);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class BifrostTests
     {
         var transitionMock = Substitute.For<IZoneTransitionService>();
         var bifrostService = new BifrostEventService(
-            _sessions,
+            sessions,
             Options.Create(new GameServerSettings()),
             new ScheduleClock(),
             transitionMock,
@@ -150,7 +150,7 @@ public class BifrostTests
         var playerInBifrost = CreateSession(10, "BifrostFarmer");
         playerInBifrost.Nation = AccountNation.Karus;
         playerInBifrost.ZoneId = BifrostRules.ZoneBifrost;
-        _sessions.RegisterSession(playerInBifrost);
+        sessions.RegisterSession(playerInBifrost);
 
         // Simulate ticks until farming expires (default 60 minutes)
         for (int i = 0; i < 60 * 60; i++)
@@ -190,7 +190,7 @@ public class BifrostTests
         var bifrostMock = Substitute.For<IBifrostEventService>();
         var session = CreateSession(1, "GateUser");
         session.ZoneId = BifrostRules.ZoneRonarkLand;
-        _sessions.RegisterSession(session);
+        sessions.RegisterSession(session);
 
         var gateNpc = new NpcInstance
         {
@@ -201,10 +201,10 @@ public class BifrostTests
             X = session.X,
             Z = session.Z
         };
-        _sessions.Regions.SpawnNpc(gateNpc);
+        sessions.Regions.SpawnNpc(gateNpc);
 
         var coordinator = new QuestNpcInteractionService(
-            _sessions,
+            sessions,
             Substitute.For<IGameDataService>(),
             Substitute.For<IQuestDialogRunner>(),
             Substitute.For<IKingSystemRuntimeService>(),
@@ -232,7 +232,7 @@ public class BifrostTests
     {
         var transitionMock = Substitute.For<IZoneTransitionService>();
         var bifrostService = new BifrostEventService(
-            _sessions,
+            sessions,
             Options.Create(new GameServerSettings()),
             new ScheduleClock(),
             transitionMock,
@@ -254,7 +254,7 @@ public class BifrostTests
     {
         var transitionMock = Substitute.For<IZoneTransitionService>();
         var bifrostService = new BifrostEventService(
-            _sessions,
+            sessions,
             Options.Create(new GameServerSettings()),
             new ScheduleClock(),
             transitionMock,

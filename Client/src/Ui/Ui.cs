@@ -8,20 +8,6 @@ public static class Ui
         Backdrop.Fit fit = Backdrop.Fit.Cover, bool bottomScrim = false)
         => Backdrop.Build(parent, resPath, fit, bottomScrim);
 
-    public static void PreGameBackdrop(Control scene)
-    {
-        Background(scene, Backdrop.LoginArt, Backdrop.LoginFit);
-        if (scene.GetNodeOrNull<Panel>("Panel") is { } p)
-            p.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
-
-        if (scene.GetNodeOrNull<Control>("Panel/Center") is { } center) AutoScale(center);
-        if (scene.GetNodeOrNull<Control>("Panel/Center/VBox") is { } form)
-        {
-            form.AddThemeConstantOverride("separation", 10);
-            FormCard(form);
-        }
-    }
-
     public static void FormCard(Control form, Vector2? padding = null)
     {
         Node? host = form.GetParent();
@@ -248,7 +234,7 @@ public partial class FormScaler : Node
     public Control Target = null!;
     public float BaseHeight = 1080f, Min = 0.6f, Max = 2.0f;
     public Vector2 Pivot = new(0.5f, 0.5f);
-    private bool _queued;
+    private bool queued;
 
     public override void _Ready()
     {
@@ -268,14 +254,14 @@ public partial class FormScaler : Node
 
     private void QueueArrange()
     {
-        if (_queued) return;
-        _queued = true;
+        if (queued) return;
+        queued = true;
         Callable.From(Arrange).CallDeferred();
     }
 
     private void Arrange()
     {
-        _queued = false;
+        queued = false;
         if (!IsInstanceValid(Target)) { QueueFree(); return; }
         var box = Target.Size;
         if (box.X < 1f || box.Y < 1f) return;
@@ -318,52 +304,55 @@ public partial class SettingsPanel : CanvasLayer
         (CospreKinds.Emblems, "Emblems"), (CospreKinds.PathosGlow, "Pathos Glow"),
     };
 
-    private readonly System.Collections.Generic.List<Vector2I> _resolutions = new();
-    private readonly System.Collections.Generic.Dictionary<CospreKinds, CheckButton> _cospreShown = new();
-    private OptionButton _screen = null!;
-    private OptionButton _preset = null!;
-    private OptionButton _shadowLevel = null!, _ssaoLevel = null!;
-    private OptionButton _renderer = null!;
-    private CheckButton _showTitles = null!;
-    private CheckButton _questNotices = null!;
-    private Button _applyButton = null!;
-    private bool _dirty;
-    private bool _presetApplying;
+    private readonly System.Collections.Generic.List<Vector2I> resolutions = new();
+    private readonly System.Collections.Generic.Dictionary<CospreKinds, CheckButton> cospreShown = new();
+    private OptionButton screenPicker = null!;
+    private OptionButton presetPicker = null!;
+    private OptionButton shadowLevel = null!, ssaoLevel = null!;
+    private OptionButton renderer = null!;
+    private CheckButton showTitles = null!;
+    private CheckButton questNotices = null!;
+    private CheckButton tradeBlock = null!;
+    private Button applyButton = null!;
+    private bool dirty;
+    private bool presetApplying;
 
     private const int TabWidth = 660;
     private const int TabHeight = 660;
     private const int TouchScreenMargin = 10;
 
-    private OptionButton _mode = null!;
-    private OptionButton _language = null!;
-    private OptionButton _res = null!;
-    private CheckButton _volFog = null!, _bloom = null!, _clouds = null!;
-    private CheckButton _fxLayer = null!;
-    private OptionButton _crowdMode = null!;
-    private OptionButton _itemShine = null!;
-    private CheckButton _capes = null!;
-    private OptionButton _aa = null!;
-    private OptionButton _upscale = null!;
-    private OptionButton _upscaleQuality = null!;
-    private CheckButton _vsync = null!;
-    private OptionButton _fps = null!;
-    private CheckButton _fxAmbient = null!, _fxNumbers = null!, _fxCombatLog = null!;
-    private HSlider _fxDistance = null!;
-    private HSlider _uiScale = null!;
-    private HSlider _nameScale = null!;
-    private HSlider _hotbarScale = null!;
-    private HSlider _hotbarGap = null!;
-    private HSlider _viewDistance = null!;
-    private HSlider _brightness = null!, _contrast = null!, _nightBrightness = null!, _fog = null!;
-    private HSlider _camTurnSpeed = null!, _camEdgeSpeed = null!;
-    private HSlider? _moveStick, _lookStick;
-    private CheckButton _camEdgePan = null!;
-    private CheckButton _cameraShake = null!;
-    private CheckButton _sndOn = null!;
-    private CheckButton _sndOthers = null!;
-    private HSlider _volMaster = null!, _volMusic = null!, _volSfx = null!, _volUi = null!, _volVoice = null!;
+    private OptionButton modePicker = null!;
+    private OptionButton languagePicker = null!;
+    private OptionButton res = null!;
+    private CheckButton volFog = null!, bloom = null!, clouds = null!;
+    private OptionButton crowdMode = null!;
+    private OptionButton itemShine = null!;
+    private CheckButton capes = null!;
+    private OptionButton antiAliasing = null!;
+    private OptionButton upscale = null!;
+    private OptionButton upscaleQuality = null!;
+    private CheckButton vsync = null!;
+    private OptionButton fps = null!;
+    private CheckButton fxAmbient = null!, fxNumbers = null!, combatLog = null!;
+    private HSlider fxDistance = null!;
+    private HSlider uiScale = null!;
+    private HSlider nameScale = null!;
+    private HSlider hotbarScale = null!;
+    private HSlider hotbarGap = null!;
+    private HSlider viewDistance = null!;
+    private HSlider brightness = null!, contrast = null!, nightBrightness = null!, fog = null!;
+    private HSlider camTurnSpeed = null!, camEdgeSpeed = null!;
+    private HSlider? moveStick, lookStick;
+    private CheckButton camEdgePan = null!;
+    private CheckButton cameraShake = null!;
+    private CheckButton sndOn = null!;
+    private CheckButton sndOthers = null!;
+    private HSlider volMaster = null!, volMusic = null!, volSfx = null!, volUi = null!, volVoice = null!;
 
-    public static void Open(Node parent) => parent.AddChild(new SettingsPanel { Layer = 200 });
+    public static void Open(Node parent, IClientSettingsRequests? settingsRequests) =>
+        parent.AddChild(new SettingsPanel { Layer = UiLayers.Settings, SettingsRequests = settingsRequests });
+
+    public IClientSettingsRequests? SettingsRequests { get; init; }
 
     public int InitialTab { get; init; }
 
@@ -438,13 +427,13 @@ public partial class SettingsPanel : CanvasLayer
         var ok = new Button { Text = "OK", CustomMinimumSize = ActionButtonSize };
         ok.Pressed += () =>
         {
-            if (_dirty) ApplyAll();
+            if (dirty) ApplyAll();
             QueueFree();
         };
         btns.AddChild(ok);
-        _applyButton = new Button { Text = "Apply", CustomMinimumSize = ActionButtonSize, Disabled = true };
-        _applyButton.Pressed += ApplyAll;
-        btns.AddChild(_applyButton);
+        applyButton = new Button { Text = "Apply", CustomMinimumSize = ActionButtonSize, Disabled = true };
+        applyButton.Pressed += ApplyAll;
+        btns.AddChild(applyButton);
         var cancel = new Button { Text = "Cancel", CustomMinimumSize = ActionButtonSize };
         cancel.Pressed += QueueFree;
         btns.AddChild(cancel);
@@ -468,53 +457,53 @@ public partial class SettingsPanel : CanvasLayer
 
     private void MarkDirty()
     {
-        _dirty = true;
-        _applyButton.Disabled = false;
+        dirty = true;
+        applyButton.Disabled = false;
     }
 
     private void ApplyAll()
     {
         {
-            Config.SetScreen(_screen.GetSelectedId());
-            var resolution = _resolutions.Count > 0 ? _resolutions[Mathf.Clamp(_res.Selected, 0, _resolutions.Count - 1)]
+            Config.SetScreen(screenPicker.GetSelectedId());
+            var resolution = resolutions.Count > 0 ? resolutions[Mathf.Clamp(res.Selected, 0, resolutions.Count - 1)]
                 : new Vector2I(Config.WinWidth, Config.WinHeight);
-            Config.SetVideo((Config.VideoMode)_mode.Selected, resolution.X, resolution.Y, _vsync.ButtonPressed);
-            Config.SetGraphics(LevelAt(_shadowLevel), LevelAt(_ssaoLevel), _volFog.ButtonPressed,
-                               _bloom.ButtonPressed, _clouds.ButtonPressed, _capes.ButtonPressed,
-                               (Config.AaMode)_aa.Selected, (Config.UpscaleMode)_upscale.Selected,
-                               (Config.UpscaleLevel)_upscaleQuality.Selected, (Config.FpsCap)_fps.Selected);
-            Config.SetShowTitles(_showTitles.ButtonPressed);
-            Config.SetQuestNotices(_questNotices.ButtonPressed);
+            Config.SetVideo((Config.VideoMode)modePicker.Selected, resolution.X, resolution.Y, vsync.ButtonPressed);
+            Config.SetGraphics(LevelAt(shadowLevel), LevelAt(ssaoLevel), volFog.ButtonPressed,
+                               bloom.ButtonPressed, clouds.ButtonPressed, capes.ButtonPressed,
+                               (Config.AaMode)antiAliasing.Selected, (Config.UpscaleMode)upscale.Selected,
+                               (Config.UpscaleLevel)upscaleQuality.Selected, (Config.FpsCap)fps.Selected);
+            Config.SetShowTitles(showTitles.ButtonPressed);
+            Config.SetQuestNotices(questNotices.ButtonPressed);
+            Config.SetTradeRequestsBlocked(tradeBlock.ButtonPressed);
             var hidden = CospreKinds.None;
-            foreach (var (kind, check) in _cospreShown)
+            foreach (var (kind, check) in cospreShown)
                 if (!check.ButtonPressed) hidden |= kind;
             Config.SetHiddenCospre(hidden);
-            Config.SetEffects(_fxAmbient.ButtonPressed, (int)_fxDistance.Value, _fxNumbers.ButtonPressed,
-                              _fxCombatLog.ButtonPressed);
-            Config.SetFxLayer(_fxLayer.ButtonPressed);
-            Config.SetCrowdMode((LibreKO.Domain.CrowdMode)_crowdMode.Selected);
-            Config.SetShineStyle((LibreKO.Domain.ShineStyle)_itemShine.Selected);
-            Config.SetControls((float)_camTurnSpeed.Value, _camEdgePan.ButtonPressed, (float)_camEdgeSpeed.Value);
-            Config.SetCameraShake(_cameraShake.ButtonPressed);
-            if (_moveStick != null && _lookStick != null)
-                Config.SetStickSensitivity((float)_moveStick.Value, (float)_lookStick.Value);
-            Config.SetUiScale((float)_uiScale.Value);
-            Config.SetNamePlateScale((float)_nameScale.Value);
-            Config.SetHotbarLook((float)_hotbarScale.Value, (int)_hotbarGap.Value);
+            Config.SetEffects(fxAmbient.ButtonPressed, (int)fxDistance.Value, fxNumbers.ButtonPressed,
+                              combatLog.ButtonPressed);
+            Config.SetCrowdMode((LibreKO.Domain.CrowdMode)crowdMode.Selected);
+            Config.SetShineStyle((LibreKO.Domain.ShineStyle)itemShine.Selected);
+            Config.SetControls((float)camTurnSpeed.Value, camEdgePan.ButtonPressed, (float)camEdgeSpeed.Value);
+            Config.SetCameraShake(cameraShake.ButtonPressed);
+            if (moveStick != null && lookStick != null)
+                Config.SetStickSensitivity((float)moveStick.Value, (float)lookStick.Value);
+            Config.SetUiScale((float)uiScale.Value);
+            Config.SetNamePlateScale((float)nameScale.Value);
+            Config.SetHotbarLook((float)hotbarScale.Value, (int)hotbarGap.Value);
             ApplyLanguage();
-            Config.SetViewDistance((float)_viewDistance.Value);
-            Config.SetLighting((int)_brightness.Value, (int)_contrast.Value, (int)_nightBrightness.Value, (int)_fog.Value);
-            Config.SetOtherPlayersSounds(_sndOthers.ButtonPressed);
-            Config.SetAudio(_sndOn.ButtonPressed, Config.AudioMuted, (float)_volMaster.Value,
-                            (float)_volMusic.Value, (float)_volSfx.Value,
-                            (float)_volUi.Value, (float)_volVoice.Value);
-            var driver = (Config.RenderDriver)_renderer.Selected;
+            Config.SetViewDistance((float)viewDistance.Value);
+            Config.SetLighting((int)brightness.Value, (int)contrast.Value, (int)nightBrightness.Value, (int)fog.Value);
+            Config.SetOtherPlayersSounds(sndOthers.ButtonPressed);
+            Config.SetAudio(sndOn.ButtonPressed, Config.AudioMuted, (float)volMaster.Value,
+                            (float)volMusic.Value, (float)volSfx.Value,
+                            (float)volUi.Value, (float)volVoice.Value);
+            var driver = (Config.RenderDriver)renderer.Selected;
             if (Config.SetRenderer(driver) || !Config.RendererRunning(driver))
                 Notice.Confirm(this, "The renderer changes after a restart. Restart now?", "Restart", "Later",
                     RestartClient, title: "Renderer");
         }
-        _dirty = false;
-        _applyButton.Disabled = true;
+        dirty = false;
+        applyButton.Disabled = true;
     }
 
     private void RestartClient()
@@ -550,46 +539,46 @@ public partial class SettingsPanel : CanvasLayer
     }
 
     private GraphicsChoice CurrentGraphics() => new(
-        LevelAt(_shadowLevel), LevelAt(_ssaoLevel), _volFog.ButtonPressed, _bloom.ButtonPressed, _clouds.ButtonPressed,
-        _aa.Selected, (float)_viewDistance.Value);
+        LevelAt(shadowLevel), LevelAt(ssaoLevel), volFog.ButtonPressed, bloom.ButtonPressed, clouds.ButtonPressed,
+        antiAliasing.Selected, (float)viewDistance.Value);
 
     private void ApplyPreset(GraphicsPreset preset)
     {
         if (preset == GraphicsPreset.Custom) return;
         var choice = GraphicsPresets.Of(preset);
-        _presetApplying = true;
-        _shadowLevel.Selected = System.Array.FindIndex(LevelChoices, c => c.Level == choice.Shadows);
-        _ssaoLevel.Selected = System.Array.FindIndex(LevelChoices, c => c.Level == choice.Ssao);
-        _volFog.ButtonPressed = choice.VolumetricFog;
-        _bloom.ButtonPressed = choice.Bloom;
-        _clouds.ButtonPressed = choice.Clouds;
-        _aa.Selected = choice.AntiAlias;
-        _viewDistance.Value = choice.ViewDistance;
-        _presetApplying = false;
+        presetApplying = true;
+        shadowLevel.Selected = System.Array.FindIndex(LevelChoices, c => c.Level == choice.Shadows);
+        ssaoLevel.Selected = System.Array.FindIndex(LevelChoices, c => c.Level == choice.Ssao);
+        volFog.ButtonPressed = choice.VolumetricFog;
+        bloom.ButtonPressed = choice.Bloom;
+        clouds.ButtonPressed = choice.Clouds;
+        antiAliasing.Selected = choice.AntiAlias;
+        viewDistance.Value = choice.ViewDistance;
+        presetApplying = false;
         MarkDirty();
     }
 
     private void RefreshPreset()
     {
-        if (_presetApplying) return;
-        _preset.Selected = (int)GraphicsPresets.Match(CurrentGraphics());
+        if (presetApplying) return;
+        presetPicker.Selected = (int)GraphicsPresets.Match(CurrentGraphics());
     }
 
     private void FillResolutions(int screen)
     {
         var native = DisplayServer.ScreenGetSize(screen >= 0 ? screen : DisplayServer.WindowGetCurrentScreen());
-        _resolutions.Clear();
+        resolutions.Clear();
         foreach (var size in CommonResolutions)
-            if (size.X <= native.X && size.Y <= native.Y) _resolutions.Add(size);
-        if (!_resolutions.Contains(native)) _resolutions.Add(native);
-        _res.Clear();
-        int selected = _resolutions.Count - 1;
-        for (int i = 0; i < _resolutions.Count; i++)
+            if (size.X <= native.X && size.Y <= native.Y) resolutions.Add(size);
+        if (!resolutions.Contains(native)) resolutions.Add(native);
+        res.Clear();
+        int selected = resolutions.Count - 1;
+        for (int i = 0; i < resolutions.Count; i++)
         {
-            _res.AddItem($"{_resolutions[i].X} x {_resolutions[i].Y}{(_resolutions[i] == native ? "  (native)" : "")}", i);
-            if (_resolutions[i].X == Config.WinWidth && _resolutions[i].Y == Config.WinHeight) selected = i;
+            res.AddItem($"{resolutions[i].X} x {resolutions[i].Y}{(resolutions[i] == native ? "  (native)" : "")}", i);
+            if (resolutions[i].X == Config.WinWidth && resolutions[i].Y == Config.WinHeight) selected = i;
         }
-        _res.Selected = selected;
+        res.Selected = selected;
     }
 
     private static Vector2 ActionButtonSize =>
@@ -604,52 +593,52 @@ public partial class SettingsPanel : CanvasLayer
 
     private void ApplyLanguage()
     {
-        var index = Mathf.Clamp(_language.Selected, 0, LanguageChoices.Length - 1);
+        var index = Mathf.Clamp(languagePicker.Selected, 0, LanguageChoices.Length - 1);
         var chosen = LanguageChoices[index].Language;
         if (chosen == Config.Language)
             return;
 
         Config.SetLanguage(chosen);
-        Net.I?.SendLanguage(chosen);
+        SettingsRequests?.Language(chosen);
     }
 
     private void BuildDisplayTab(VBoxContainer vb)
     {
-        vb.AddChild(Row("Language", _language = new OptionButton()));
+        vb.AddChild(Row("Language", languagePicker = new OptionButton()));
         foreach (var (language, label) in LanguageChoices)
-            _language.AddItem(label, (int)language);
-        _language.Selected = Array.FindIndex(LanguageChoices, c => c.Language == Config.Language);
-        if (_language.Selected < 0)
-            _language.Selected = 0;
+            languagePicker.AddItem(label, (int)language);
+        languagePicker.Selected = Array.FindIndex(LanguageChoices, c => c.Language == Config.Language);
+        if (languagePicker.Selected < 0)
+            languagePicker.Selected = 0;
 
-        var screenRow = Row("Monitor", _screen = new OptionButton());
+        var screenRow = Row("Monitor", screenPicker = new OptionButton());
         screenRow.Visible = Platform.PointerUi;
         vb.AddChild(screenRow);
-        _screen.AddItem("Current", Config.CurrentScreen);
+        screenPicker.AddItem("Current", Config.CurrentScreen);
         for (int s = 0; s < DisplayServer.GetScreenCount(); s++)
         {
             var size = DisplayServer.ScreenGetSize(s);
-            _screen.AddItem($"Monitor {s + 1}  ({size.X} x {size.Y})", s);
+            screenPicker.AddItem($"Monitor {s + 1}  ({size.X} x {size.Y})", s);
         }
-        _screen.Selected = Mathf.Max(0, _screen.GetItemIndex(Config.Screen));
-        _screen.ItemSelected += _ => FillResolutions(_screen.GetSelectedId());
+        screenPicker.Selected = Mathf.Max(0, screenPicker.GetItemIndex(Config.Screen));
+        screenPicker.ItemSelected += _ => FillResolutions(screenPicker.GetSelectedId());
 
-        var windowRow = Row("Window", _mode = new OptionButton());
+        var windowRow = Row("Window", modePicker = new OptionButton());
         windowRow.Visible = Platform.PointerUi;
         vb.AddChild(windowRow);
-        _mode.AddItem("Windowed", 0);
-        _mode.AddItem("Borderless Fullscreen", 1);
-        _mode.AddItem("Fullscreen", 2);
-        _mode.Selected = (int)Config.WindowMode;
-        _mode.ItemSelected += _ => _res.Disabled = _mode.Selected != 0;
+        modePicker.AddItem("Windowed", 0);
+        modePicker.AddItem("Borderless Fullscreen", 1);
+        modePicker.AddItem("Fullscreen", 2);
+        modePicker.Selected = (int)Config.WindowMode;
+        modePicker.ItemSelected += _ => res.Disabled = modePicker.Selected != 0;
 
-        var resRow = Row("Resolution", _res = new OptionButton());
+        var resRow = Row("Resolution", res = new OptionButton());
         resRow.Visible = Platform.PointerUi;
         vb.AddChild(resRow);
         FillResolutions(Config.Screen);
-        _res.Disabled = Config.WindowMode != Config.VideoMode.Windowed;
+        res.Disabled = Config.WindowMode != Config.VideoMode.Windowed;
 
-        _uiScale = new HSlider
+        uiScale = new HSlider
         {
             MinValue = Config.UiScaleMin, MaxValue = Config.UiScaleMax, Step = Config.UiScaleStep,
             Value = Config.EffectiveUiScale, CustomMinimumSize = new Vector2(0, 18),
@@ -659,13 +648,13 @@ public partial class SettingsPanel : CanvasLayer
             Text = UiScaleText(Config.EffectiveUiScale),
             CustomMinimumSize = new Vector2(52, 0),
         };
-        _uiScale.ValueChanged += v => scaleValue.Text = UiScaleText((float)v);
-        var scaleRow = Row("UI Size", _uiScale);
+        uiScale.ValueChanged += v => scaleValue.Text = UiScaleText((float)v);
+        var scaleRow = Row("UI Size", uiScale);
         scaleRow.AddChild(scaleValue);
         scaleRow.TooltipText = "Scales every menu, window and HUD element. Larger values suit small or touch screens.";
         vb.AddChild(scaleRow);
 
-        _nameScale = new HSlider
+        nameScale = new HSlider
         {
             MinValue = Config.NamePlateScaleMin, MaxValue = Config.NamePlateScaleMax, Step = Config.NamePlateScaleStep,
             Value = Config.NamePlateScale, CustomMinimumSize = new Vector2(0, 18),
@@ -675,32 +664,32 @@ public partial class SettingsPanel : CanvasLayer
             Text = UiScaleText(Config.NamePlateScale),
             CustomMinimumSize = new Vector2(52, 0),
         };
-        _nameScale.ValueChanged += v => nameScaleValue.Text = UiScaleText((float)v);
-        var nameScaleRow = Row("Name Size", _nameScale);
+        nameScale.ValueChanged += v => nameScaleValue.Text = UiScaleText((float)v);
+        var nameScaleRow = Row("Name Size", nameScale);
         nameScaleRow.AddChild(nameScaleValue);
         nameScaleRow.TooltipText = "Size of the names over characters, monsters and NPCs.";
         vb.AddChild(nameScaleRow);
 
-        _hotbarScale = new HSlider
+        hotbarScale = new HSlider
         {
             MinValue = HotbarLayout.ScaleMin, MaxValue = HotbarLayout.ScaleMax, Step = HotbarLayout.ScaleStep,
             Value = Config.HotbarScale, CustomMinimumSize = new Vector2(0, 18),
         };
         var hotbarScaleValue = new Label { Text = UiScaleText(Config.HotbarScale), CustomMinimumSize = new Vector2(52, 0) };
-        _hotbarScale.ValueChanged += v => hotbarScaleValue.Text = UiScaleText((float)v);
-        var hotbarScaleRow = Row("Skill Bar Size", _hotbarScale);
+        hotbarScale.ValueChanged += v => hotbarScaleValue.Text = UiScaleText((float)v);
+        var hotbarScaleRow = Row("Skill Bar Size", hotbarScale);
         hotbarScaleRow.AddChild(hotbarScaleValue);
         hotbarScaleRow.TooltipText = "Size of the skill bars.";
         vb.AddChild(hotbarScaleRow);
 
-        _hotbarGap = new HSlider
+        hotbarGap = new HSlider
         {
             MinValue = HotbarLayout.GapMin, MaxValue = HotbarLayout.GapMax, Step = 1,
             Value = Config.HotbarGap, CustomMinimumSize = new Vector2(0, 18),
         };
         var hotbarGapValue = new Label { Text = $"{Config.HotbarGap} px", CustomMinimumSize = new Vector2(52, 0) };
-        _hotbarGap.ValueChanged += v => hotbarGapValue.Text = $"{(int)v} px";
-        var hotbarGapRow = Row("Skill Bar Gap", _hotbarGap);
+        hotbarGap.ValueChanged += v => hotbarGapValue.Text = $"{(int)v} px";
+        var hotbarGapRow = Row("Skill Bar Gap", hotbarGap);
         hotbarGapRow.AddChild(hotbarGapValue);
         hotbarGapRow.TooltipText = "Space between the slots of the skill bars.";
         vb.AddChild(hotbarGapRow);
@@ -712,50 +701,60 @@ public partial class SettingsPanel : CanvasLayer
         resetRow.TooltipText = "Forgets every moved or resized window and puts it back where it starts.";
         vb.AddChild(resetRow);
 
-        var vsyncRow = Row("V-Sync", _vsync = new CheckButton { ButtonPressed = Config.VSync });
+        var vsyncRow = Row("V-Sync", vsync = new CheckButton { ButtonPressed = Config.VSync });
         vsyncRow.Visible = Platform.PointerUi;
         vsyncRow.TooltipText = "Caps the frame rate to your monitor's refresh rate. Turn it off to see "
                                + "what the other graphics settings are actually doing.";
         vb.AddChild(vsyncRow);
 
-        vb.AddChild(Row("FPS Limit", _fps = new OptionButton()));
+        vb.AddChild(Row("FPS Limit", fps = new OptionButton()));
         foreach (var (label, id) in new[] { ("Unlimited", 0), ("30", 1), ("60", 2), ("120", 3), ("144", 4), ("240", 5) })
-            _fps.AddItem(label, id);
-        _fps.Selected = (int)Config.FpsLimit;
+            fps.AddItem(label, id);
+        fps.Selected = (int)Config.FpsLimit;
 
-        var titlesRow = Row("Show Titles", _showTitles = new CheckButton { ButtonPressed = Config.ShowTitles });
+        var titlesRow = Row("Show Titles", showTitles = new CheckButton { ButtonPressed = Config.ShowTitles });
         titlesRow.TooltipText = "Achievement titles under the names of characters.";
         vb.AddChild(titlesRow);
 
-        var questRow = Row("Quest Notifications", _questNotices = new CheckButton { ButtonPressed = Config.QuestNotices });
+        var questRow = Row("Quest Notifications", questNotices = new CheckButton { ButtonPressed = Config.QuestNotices });
         questRow.TooltipText = "The quest progress notice in the middle of the screen when you kill or collect for a quest.";
         vb.AddChild(questRow);
 
+        var combatLogRow = Row("Combat Log", combatLog = new CheckButton { ButtonPressed = Config.CombatLog });
+        combatLogRow.TooltipText = "The combat log window with damage, skills, loot and system notices.";
+        vb.AddChild(combatLogRow);
+
+        var tradeRow = Row("Refuse Trade Requests", tradeBlock = new CheckButton { ButtonPressed = Config.TradeRequestsBlocked });
+        tradeRow.TooltipText = "Other players' trade requests are declined. The Block_Trade_Request and Allow_Trade_Request commands switch it too.";
+        vb.AddChild(tradeRow);
+
         RestoreButton(vb, () =>
         {
-            _screen.Selected = 0;
-            _mode.Selected = (int)Config.DefaultOf<Config.VideoMode>(nameof(Config.WindowMode), "video", "mode");
-            _uiScale.Value = Config.DefaultOf<float>(nameof(Config.UiScale), "video", "ui_scale");
-            _nameScale.Value = Config.DefaultOf<float>(nameof(Config.NamePlateScale), "video", "name_plate_scale");
-            _hotbarScale.Value = Config.DefaultOf<float>(nameof(Config.HotbarScale), "hotbar", "scale");
-            _hotbarGap.Value = Config.DefaultOf<int>(nameof(Config.HotbarGap), "hotbar", "gap");
-            _vsync.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.VSync), "video", "vsync");
-            _fps.Selected = (int)Config.DefaultOf<Config.FpsCap>(nameof(Config.FpsLimit), "graphics", "fps_limit");
-            _showTitles.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.ShowTitles), "hud", "show_titles");
-            _questNotices.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.QuestNotices), "hud", "quest_notices");
+            screenPicker.Selected = 0;
+            modePicker.Selected = (int)Config.DefaultOf<Config.VideoMode>(nameof(Config.WindowMode), "video", "mode");
+            uiScale.Value = Config.DefaultOf<float>(nameof(Config.UiScale), "video", "ui_scale");
+            nameScale.Value = Config.DefaultOf<float>(nameof(Config.NamePlateScale), "video", "name_plate_scale");
+            hotbarScale.Value = Config.DefaultOf<float>(nameof(Config.HotbarScale), "hotbar", "scale");
+            hotbarGap.Value = Config.DefaultOf<int>(nameof(Config.HotbarGap), "hotbar", "gap");
+            vsync.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.VSync), "video", "vsync");
+            fps.Selected = (int)Config.DefaultOf<Config.FpsCap>(nameof(Config.FpsLimit), "graphics", "fps_limit");
+            showTitles.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.ShowTitles), "hud", "show_titles");
+            questNotices.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.QuestNotices), "hud", "quest_notices");
+            combatLog.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.CombatLog), "hud", "combat_log");
+            tradeBlock.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.TradeRequestsBlocked), "user_option", "trade_state");
         });
     }
 
     private void BuildGraphicsTab(VBoxContainer vb)
     {
-        var presetRow = Row("Quality", _preset = new OptionButton());
+        var presetRow = Row("Quality", presetPicker = new OptionButton());
         foreach (var preset in GraphicsPresets.Named)
-            _preset.AddItem(preset.ToString(), (int)preset);
-        _preset.AddItem("Custom", (int)GraphicsPreset.Custom);
-        _preset.ItemSelected += index => ApplyPreset((GraphicsPreset)_preset.GetItemId((int)index));
+            presetPicker.AddItem(preset.ToString(), (int)preset);
+        presetPicker.AddItem("Custom", (int)GraphicsPreset.Custom);
+        presetPicker.ItemSelected += index => ApplyPreset((GraphicsPreset)presetPicker.GetItemId((int)index));
         presetRow.TooltipText = "Sets shadows, occlusion, fog, bloom, clouds, anti-aliasing and view distance together.";
         vb.AddChild(presetRow);
-        _viewDistance = new HSlider
+        viewDistance = new HSlider
         {
             MinValue = Config.ViewDistanceMin, MaxValue = Config.ViewDistanceMax, Step = 0.05,
             Value = Config.ViewDistance, CustomMinimumSize = new Vector2(0, 18),
@@ -765,132 +764,127 @@ public partial class SettingsPanel : CanvasLayer
             Text = ViewDistanceText(Config.ViewDistance),
             CustomMinimumSize = new Vector2(52, 0),
         };
-        _viewDistance.ValueChanged += v => viewValue.Text = ViewDistanceText((float)v);
-        var viewRow = Row("View Distance", _viewDistance);
+        viewDistance.ValueChanged += v => viewValue.Text = ViewDistanceText((float)v);
+        var viewRow = Row("View Distance", viewDistance);
         viewRow.AddChild(viewValue);
         viewRow.TooltipText = "How far terrain, objects and characters draw. Lower values run faster on phones.";
         vb.AddChild(viewRow);
 
-        _brightness = LightRow(vb, "Brightness", LightSliders.Brightness, Config.Brightness);
-        _contrast = LightRow(vb, "Contrast", LightSliders.Contrast, Config.Contrast);
-        _nightBrightness = LightRow(vb, "Night Brightness", LightSliders.NightBrightness, Config.NightBrightness);
-        _fog = LightRow(vb, "Fog", LightSliders.Fog, Config.Fog);
+        brightness = LightRow(vb, "Brightness", LightSliders.Brightness, Config.Brightness);
+        contrast = LightRow(vb, "Contrast", LightSliders.Contrast, Config.Contrast);
+        nightBrightness = LightRow(vb, "Night Brightness", LightSliders.NightBrightness, Config.NightBrightness);
+        fog = LightRow(vb, "Fog", LightSliders.Fog, Config.Fog);
 
-        vb.AddChild(Row("Shadows", _shadowLevel = LevelPicker(Config.ShadowQuality)));
-        vb.AddChild(Row("Ambient Occlusion", _ssaoLevel = LevelPicker(Config.SsaoQuality)));
-        vb.AddChild(Row("Volumetric Fog", _volFog = new CheckButton { ButtonPressed = Config.VolumetricFog }));
-        vb.AddChild(Row("Bloom", _bloom = new CheckButton { ButtonPressed = Config.Bloom }));
-        var fxLayerRow = Row("Accurate Effect Blending", _fxLayer = new CheckButton { ButtonPressed = Config.FxLayer });
-        fxLayerRow.TooltipText = "Blends spells and effects the way the original client does, outside bloom and tone mapping.";
-        vb.AddChild(fxLayerRow);
-        var crowdRow = Row("Crowd Mode", _crowdMode = new OptionButton());
+        vb.AddChild(Row("Shadows", shadowLevel = LevelPicker(Config.ShadowQuality)));
+        vb.AddChild(Row("Ambient Occlusion", ssaoLevel = LevelPicker(Config.SsaoQuality)));
+        vb.AddChild(Row("Volumetric Fog", volFog = new CheckButton { ButtonPressed = Config.VolumetricFog }));
+        vb.AddChild(Row("Bloom", bloom = new CheckButton { ButtonPressed = Config.Bloom }));
+        var crowdRow = Row("Crowd Mode", crowdMode = new OptionButton());
         foreach (LibreKO.Domain.CrowdMode mode in System.Enum.GetValues<LibreKO.Domain.CrowdMode>())
-            _crowdMode.AddItem(LibreKO.Domain.CrowdModes.Label(mode), (int)mode);
-        _crowdMode.Selected = (int)Config.Crowd;
+            crowdMode.AddItem(LibreKO.Domain.CrowdModes.Label(mode), (int)mode);
+        crowdMode.Selected = (int)Config.Crowd;
         crowdRow.TooltipText = "How many effects other players' skills and gathering may show in a crowd. "
             + "Your own, your target's and your party's effects always show.";
         vb.AddChild(crowdRow);
-        vb.AddChild(Row("Clouds", _clouds = new CheckButton { ButtonPressed = Config.Clouds }));
-        var capeRow = Row("Clan Capes", _capes = new CheckButton { ButtonPressed = Config.Capes });
+        vb.AddChild(Row("Clouds", clouds = new CheckButton { ButtonPressed = Config.Clouds }));
+        var capeRow = Row("Clan Capes", capes = new CheckButton { ButtonPressed = Config.Capes });
         capeRow.TooltipText = "Simulated cloth on every player in range. Costs a lot of frame time.";
         vb.AddChild(capeRow);
-        vb.AddChild(Row("Anti-Aliasing", _aa = new OptionButton()));
+        vb.AddChild(Row("Anti-Aliasing", antiAliasing = new OptionButton()));
         foreach (var (label, id) in new[] { ("Off", 0), ("FXAA", 1), ("MSAA 2x", 2), ("MSAA 4x", 3) })
-            _aa.AddItem(label, id);
-        _aa.Selected = (int)Config.AntiAlias;
+            antiAliasing.AddItem(label, id);
+        antiAliasing.Selected = (int)Config.AntiAlias;
 
-        var upscaleRow = Row("Upscaling", _upscale = new OptionButton());
+        var upscaleRow = Row("Upscaling", upscale = new OptionButton());
         foreach (var (label, id) in new[] { ("Off", 0), ("FSR 1.0", 1), ("FSR 2.2", 2) })
-            _upscale.AddItem(label, id);
-        _upscale.Selected = (int)Config.Upscale;
-        _upscale.Disabled = !Config.UpscaleSupported;
+            upscale.AddItem(label, id);
+        upscale.Selected = (int)Config.Upscale;
+        upscale.Disabled = !Config.UpscaleSupported;
         upscaleRow.TooltipText = Config.UpscaleSupported
             ? "Renders the world below screen resolution and upscales it. The interface stays sharp. "
               + "FSR 2.2 is sharper but can smear fast-moving effects."
             : "Not available on this renderer.";
         vb.AddChild(upscaleRow);
 
-        var qualityRow = Row("Upscale Quality", _upscaleQuality = new OptionButton());
+        var qualityRow = Row("Upscale Quality", upscaleQuality = new OptionButton());
         foreach (var (label, id) in new[]
                  {
                      ("Ultra Quality", 0), ("Quality", 1), ("Balanced", 2),
                      ("Performance", 3), ("Ultra Performance", 4),
                  })
-            _upscaleQuality.AddItem(label, id);
-        _upscaleQuality.Selected = (int)Config.UpscaleQuality;
+            upscaleQuality.AddItem(label, id);
+        upscaleQuality.Selected = (int)Config.UpscaleQuality;
         var internalRes = new Label { CustomMinimumSize = new Vector2(120, 0) };
         void ShowInternalRes()
         {
             var target = GetWindow().Size;
-            float s = Config.ScaleFor((Config.UpscaleLevel)_upscaleQuality.Selected);
-            internalRes.Text = _upscaleQuality.Disabled
+            float s = Config.ScaleFor((Config.UpscaleLevel)upscaleQuality.Selected);
+            internalRes.Text = upscaleQuality.Disabled
                 ? "—"
                 : $"{target.X * s:0} x {target.Y * s:0}";
         }
-        _upscaleQuality.ItemSelected += _ => ShowInternalRes();
-        _upscale.ItemSelected += i =>
+        upscaleQuality.ItemSelected += _ => ShowInternalRes();
+        upscale.ItemSelected += i =>
         {
-            _upscaleQuality.Disabled = i == (long)Config.UpscaleMode.Off || !Config.UpscaleSupported;
+            upscaleQuality.Disabled = i == (long)Config.UpscaleMode.Off || !Config.UpscaleSupported;
             ShowInternalRes();
         };
-        _upscaleQuality.Disabled = Config.Upscale == Config.UpscaleMode.Off || !Config.UpscaleSupported;
+        upscaleQuality.Disabled = Config.Upscale == Config.UpscaleMode.Off || !Config.UpscaleSupported;
         ShowInternalRes();
         qualityRow.AddChild(internalRes);
         qualityRow.TooltipText = "How far below screen resolution the world is drawn before upscaling.";
         vb.AddChild(qualityRow);
 
-        var rendererRow = Row("Renderer", _renderer = new OptionButton());
-        _renderer.AddItem("Direct3D 12", (int)Config.RenderDriver.Direct3D12);
-        _renderer.AddItem("Vulkan", (int)Config.RenderDriver.Vulkan);
-        _renderer.Selected = (int)Config.Renderer;
+        var rendererRow = Row("Renderer", renderer = new OptionButton());
+        renderer.AddItem("Direct3D 12", (int)Config.RenderDriver.Direct3D12);
+        renderer.AddItem("Vulkan", (int)Config.RenderDriver.Vulkan);
+        renderer.Selected = (int)Config.Renderer;
         rendererRow.TooltipText = $"The graphics API. Changing it needs a restart. Running now: {Config.RunningDriver}.";
         rendererRow.Visible = OS.GetName() == "Windows";
         vb.AddChild(rendererRow);
 
-        _preset.Selected = (int)GraphicsPresets.Match(CurrentGraphics());
-        _shadowLevel.ItemSelected += _ => RefreshPreset();
-        _ssaoLevel.ItemSelected += _ => RefreshPreset();
-        _volFog.Toggled += _ => RefreshPreset();
-        _bloom.Toggled += _ => RefreshPreset();
-        _clouds.Toggled += _ => RefreshPreset();
-        _aa.ItemSelected += _ => RefreshPreset();
-        _viewDistance.ValueChanged += _ => RefreshPreset();
+        presetPicker.Selected = (int)GraphicsPresets.Match(CurrentGraphics());
+        shadowLevel.ItemSelected += _ => RefreshPreset();
+        ssaoLevel.ItemSelected += _ => RefreshPreset();
+        volFog.Toggled += _ => RefreshPreset();
+        bloom.Toggled += _ => RefreshPreset();
+        clouds.Toggled += _ => RefreshPreset();
+        antiAliasing.ItemSelected += _ => RefreshPreset();
+        viewDistance.ValueChanged += _ => RefreshPreset();
 
         RestoreButton(vb, () =>
         {
             ApplyPreset(GraphicsPreset.High);
-            _fxLayer.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.FxLayer), "graphics", "fx_layer");
-            _crowdMode.Selected = (int)Config.DefaultOf<LibreKO.Domain.CrowdMode>(nameof(Config.Crowd), "graphics", "crowd_mode");
-            _capes.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.Capes), "graphics", "capes");
-            _upscale.Selected = (int)Config.DefaultOf<Config.UpscaleMode>(nameof(Config.Upscale), "graphics", "upscale");
-            _upscaleQuality.Selected = (int)Config.DefaultOf<Config.UpscaleLevel>(nameof(Config.UpscaleQuality), "graphics", "upscale_quality");
-            _brightness.Value = LightRange.Neutral;
-            _contrast.Value = LightRange.Neutral;
-            _nightBrightness.Value = LightRange.Neutral;
-            _fog.Value = LightRange.Neutral;
-            _renderer.Selected = (int)Config.RenderDriver.Direct3D12;
+            crowdMode.Selected = (int)Config.DefaultOf<LibreKO.Domain.CrowdMode>(nameof(Config.Crowd), "graphics", "crowd_mode");
+            capes.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.Capes), "graphics", "capes");
+            upscale.Selected = (int)Config.DefaultOf<Config.UpscaleMode>(nameof(Config.Upscale), "graphics", "upscale");
+            upscaleQuality.Selected = (int)Config.DefaultOf<Config.UpscaleLevel>(nameof(Config.UpscaleQuality), "graphics", "upscale_quality");
+            brightness.Value = LightRange.Neutral;
+            contrast.Value = LightRange.Neutral;
+            nightBrightness.Value = LightRange.Neutral;
+            fog.Value = LightRange.Neutral;
+            renderer.Selected = (int)Config.RenderDriver.Direct3D12;
         });
     }
 
     private void BuildEffectsTab(VBoxContainer vb)
     {
-        vb.AddChild(Row("World Effects", _fxAmbient = new CheckButton { ButtonPressed = Config.FxAmbient }));
-        _fxDistance = new HSlider
+        vb.AddChild(Row("World Effects", fxAmbient = new CheckButton { ButtonPressed = Config.FxAmbient }));
+        fxDistance = new HSlider
         {
             MinValue = 40, MaxValue = 400, Step = 10, Value = Config.FxDistance,
             CustomMinimumSize = new Vector2(0, 18),
         };
         var dist = new Label { Text = $"{Config.FxDistance} m", CustomMinimumSize = new Vector2(52, 0) };
-        _fxDistance.ValueChanged += v => dist.Text = $"{(int)v} m";
-        var distRow = Row("Effect Distance", _fxDistance);
+        fxDistance.ValueChanged += v => dist.Text = $"{(int)v} m";
+        var distRow = Row("Effect Distance", fxDistance);
         distRow.AddChild(dist);
         vb.AddChild(distRow);
-        vb.AddChild(Row("Damage Numbers", _fxNumbers = new CheckButton { ButtonPressed = Config.DamageNumbers }));
-        vb.AddChild(Row("Combat Log", _fxCombatLog = new CheckButton { ButtonPressed = Config.CombatLog }));
-        var shineRow = Row("Item Shine", _itemShine = new OptionButton());
+        vb.AddChild(Row("Damage Numbers", fxNumbers = new CheckButton { ButtonPressed = Config.DamageNumbers }));
+        var shineRow = Row("Item Shine", itemShine = new OptionButton());
         foreach (LibreKO.Domain.ShineStyle style in System.Enum.GetValues<LibreKO.Domain.ShineStyle>())
-            _itemShine.AddItem(LibreKO.Domain.ShineStyles.Label(style), (int)style);
-        _itemShine.Selected = (int)Config.Shine;
+            itemShine.AddItem(LibreKO.Domain.ShineStyles.Label(style), (int)style);
+        itemShine.Selected = (int)Config.Shine;
         shineRow.TooltipText = "How upgraded gear glows: our gold glow, or the classic look that brightens the item's own colours.";
         vb.AddChild(shineRow);
 
@@ -899,7 +893,7 @@ public partial class SettingsPanel : CanvasLayer
         foreach (var (kind, label) in CospreChoices)
         {
             var shown = new CheckButton { ButtonPressed = (Config.HiddenCospre & kind) == 0 };
-            _cospreShown[kind] = shown;
+            cospreShown[kind] = shown;
             var row = Row($"Show {label}", shown);
             row.TooltipText = "Hides this kind of costume piece on other players to save frame time; yours always shows.";
             vb.AddChild(row);
@@ -907,47 +901,46 @@ public partial class SettingsPanel : CanvasLayer
 
         RestoreButton(vb, () =>
         {
-            _fxAmbient.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.FxAmbient), "effects", "ambient");
-            _fxDistance.Value = Config.DefaultOf<int>(nameof(Config.FxDistance), "effects", "distance");
-            _fxNumbers.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.DamageNumbers), "effects", "damage_numbers");
-            _fxCombatLog.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.CombatLog), "hud", "combat_log");
-            _itemShine.Selected = (int)Config.DefaultOf<LibreKO.Domain.ShineStyle>(nameof(Config.Shine), "effects", "item_shine");
-            foreach (var check in _cospreShown.Values) check.ButtonPressed = true;
+            fxAmbient.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.FxAmbient), "effects", "ambient");
+            fxDistance.Value = Config.DefaultOf<int>(nameof(Config.FxDistance), "effects", "distance");
+            fxNumbers.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.DamageNumbers), "effects", "damage_numbers");
+            itemShine.Selected = (int)Config.DefaultOf<LibreKO.Domain.ShineStyle>(nameof(Config.Shine), "effects", "item_shine");
+            foreach (var check in cospreShown.Values) check.ButtonPressed = true;
         });
     }
 
     private void BuildControlsTab(VBoxContainer vb)
     {
-        _camTurnSpeed = new HSlider
+        camTurnSpeed = new HSlider
         {
             MinValue = Config.CamTurnSpeedMin, MaxValue = Config.CamTurnSpeedMax, Step = 10,
             Value = Config.CamTurnSpeed, CustomMinimumSize = new Vector2(0, 18),
         };
         var turnValue = new Label { Text = TurnSpeedText(Config.CamTurnSpeed), CustomMinimumSize = new Vector2(52, 0) };
-        _camTurnSpeed.ValueChanged += v => turnValue.Text = TurnSpeedText((float)v);
-        var turnRow = Row("Camera Turn Speed", _camTurnSpeed);
+        camTurnSpeed.ValueChanged += v => turnValue.Text = TurnSpeedText((float)v);
+        var turnRow = Row("Camera Turn Speed", camTurnSpeed);
         turnRow.AddChild(turnValue);
         turnRow.TooltipText = "How fast the middle-mouse click spins the camera a half turn.";
         turnRow.Visible = Platform.PointerUi;
         vb.AddChild(turnRow);
 
-        var shakeRow = Row("Camera Shake", _cameraShake = new CheckButton { ButtonPressed = Config.CameraShake });
+        var shakeRow = Row("Camera Shake", cameraShake = new CheckButton { ButtonPressed = Config.CameraShake });
         shakeRow.TooltipText = "Let gates, rolling stones and rockslides shake the camera.";
         vb.AddChild(shakeRow);
 
-        var edgeRow = Row("Screen Edge Panning", _camEdgePan = new CheckButton { ButtonPressed = Config.CamEdgePan });
+        var edgeRow = Row("Screen Edge Panning", camEdgePan = new CheckButton { ButtonPressed = Config.CamEdgePan });
         edgeRow.TooltipText = "In fullscreen, hold the cursor against the left or right border to turn the camera.";
         edgeRow.Visible = Platform.PointerUi;
         vb.AddChild(edgeRow);
 
-        _camEdgeSpeed = new HSlider
+        camEdgeSpeed = new HSlider
         {
             MinValue = Config.CamEdgePanSpeedMin, MaxValue = Config.CamEdgePanSpeedMax, Step = 1,
             Value = Config.CamEdgePanSpeed, CustomMinimumSize = new Vector2(0, 18),
         };
         var edgeValue = new Label { Text = TurnSpeedText(Config.CamEdgePanSpeed), CustomMinimumSize = new Vector2(52, 0) };
-        _camEdgeSpeed.ValueChanged += v => edgeValue.Text = TurnSpeedText((float)v);
-        var edgeSpeedRow = Row("Edge Pan Speed", _camEdgeSpeed);
+        camEdgeSpeed.ValueChanged += v => edgeValue.Text = TurnSpeedText((float)v);
+        var edgeSpeedRow = Row("Edge Pan Speed", camEdgeSpeed);
         edgeSpeedRow.AddChild(edgeValue);
         edgeSpeedRow.TooltipText = $"The original client turns at {Config.CamEdgePanSpeedRetail:0} °/s.";
         edgeSpeedRow.Visible = Platform.PointerUi;
@@ -955,20 +948,20 @@ public partial class SettingsPanel : CanvasLayer
 
         if (!Platform.PointerUi)
         {
-            vb.AddChild(StickRow("Move Stick", out _moveStick, Config.MoveStickSensitivity,
+            vb.AddChild(StickRow("Move Stick", out moveStick, Config.MoveStickSensitivity,
                                  "How far the left stick pushes before the character runs flat out."));
-            vb.AddChild(StickRow("Look Stick", out _lookStick, Config.LookStickSensitivity,
+            vb.AddChild(StickRow("Look Stick", out lookStick, Config.LookStickSensitivity,
                                  "How fast the right stick swings the camera."));
         }
 
         RestoreButton(vb, () =>
         {
-            _camTurnSpeed.Value = Config.DefaultOf<float>(nameof(Config.CamTurnSpeed), "controls", "cam_turn_speed");
-            _cameraShake.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.CameraShake), "controls", "camera_shake");
-            _camEdgePan.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.CamEdgePan), "controls", "cam_edge_pan");
-            _camEdgeSpeed.Value = Config.DefaultOf<float>(nameof(Config.CamEdgePanSpeed), "controls", "cam_edge_pan_speed");
-            if (_moveStick != null) _moveStick.Value = Config.DefaultOf<float>(nameof(Config.MoveStickSensitivity), "controls", "move_stick");
-            if (_lookStick != null) _lookStick.Value = Config.DefaultOf<float>(nameof(Config.LookStickSensitivity), "controls", "look_stick");
+            camTurnSpeed.Value = Config.DefaultOf<float>(nameof(Config.CamTurnSpeed), "controls", "cam_turn_speed");
+            cameraShake.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.CameraShake), "controls", "camera_shake");
+            camEdgePan.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.CamEdgePan), "controls", "cam_edge_pan");
+            camEdgeSpeed.Value = Config.DefaultOf<float>(nameof(Config.CamEdgePanSpeed), "controls", "cam_edge_pan_speed");
+            if (moveStick != null) moveStick.Value = Config.DefaultOf<float>(nameof(Config.MoveStickSensitivity), "controls", "move_stick");
+            if (lookStick != null) lookStick.Value = Config.DefaultOf<float>(nameof(Config.LookStickSensitivity), "controls", "look_stick");
         });
     }
 
@@ -1010,23 +1003,23 @@ public partial class SettingsPanel : CanvasLayer
 
     private void BuildSoundTab(VBoxContainer vb)
     {
-        vb.AddChild(Row("Enabled", _sndOn = new CheckButton { ButtonPressed = Config.AudioEnabled }));
-        vb.AddChild(Row("Other players' sounds", _sndOthers = new CheckButton { ButtonPressed = Config.OtherPlayersSounds }));
-        vb.AddChild(VolumeRow("Master", Audio.BusMaster, out _volMaster, Config.MasterVolume));
-        vb.AddChild(VolumeRow("Music", Audio.BusMusic, out _volMusic, Config.MusicVolume));
-        vb.AddChild(VolumeRow("Sound effects", Audio.BusSfx, out _volSfx, Config.SfxVolume));
-        vb.AddChild(VolumeRow("Interface sounds", Audio.BusUi, out _volUi, Config.UiVolume));
-        vb.AddChild(VolumeRow("Voice", Audio.BusVoice, out _volVoice, Config.VoiceVolume));
+        vb.AddChild(Row("Enabled", sndOn = new CheckButton { ButtonPressed = Config.AudioEnabled }));
+        vb.AddChild(Row("Other players' sounds", sndOthers = new CheckButton { ButtonPressed = Config.OtherPlayersSounds }));
+        vb.AddChild(VolumeRow("Master", Audio.BusMaster, out volMaster, Config.MasterVolume));
+        vb.AddChild(VolumeRow("Music", Audio.BusMusic, out volMusic, Config.MusicVolume));
+        vb.AddChild(VolumeRow("Sound effects", Audio.BusSfx, out volSfx, Config.SfxVolume));
+        vb.AddChild(VolumeRow("Interface sounds", Audio.BusUi, out volUi, Config.UiVolume));
+        vb.AddChild(VolumeRow("Voice", Audio.BusVoice, out volVoice, Config.VoiceVolume));
 
         RestoreButton(vb, () =>
         {
-            _sndOn.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.AudioEnabled), "audio", "enabled");
-            _sndOthers.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.OtherPlayersSounds), "audio", "other_players");
-            _volMaster.Value = Config.DefaultOf<float>(nameof(Config.MasterVolume), "audio", "master");
-            _volMusic.Value = Config.DefaultOf<float>(nameof(Config.MusicVolume), "audio", "music");
-            _volSfx.Value = Config.DefaultOf<float>(nameof(Config.SfxVolume), "audio", "sfx");
-            _volUi.Value = Config.DefaultOf<float>(nameof(Config.UiVolume), "audio", "ui");
-            _volVoice.Value = Config.DefaultOf<float>(nameof(Config.VoiceVolume), "audio", "voice");
+            sndOn.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.AudioEnabled), "audio", "enabled");
+            sndOthers.ButtonPressed = Config.DefaultOf<bool>(nameof(Config.OtherPlayersSounds), "audio", "other_players");
+            volMaster.Value = Config.DefaultOf<float>(nameof(Config.MasterVolume), "audio", "master");
+            volMusic.Value = Config.DefaultOf<float>(nameof(Config.MusicVolume), "audio", "music");
+            volSfx.Value = Config.DefaultOf<float>(nameof(Config.SfxVolume), "audio", "sfx");
+            volUi.Value = Config.DefaultOf<float>(nameof(Config.UiVolume), "audio", "ui");
+            volVoice.Value = Config.DefaultOf<float>(nameof(Config.VoiceVolume), "audio", "voice");
         });
     }
 

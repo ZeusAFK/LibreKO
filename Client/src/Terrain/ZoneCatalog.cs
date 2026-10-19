@@ -68,13 +68,6 @@ public static class ZoneCatalog
         new(109, "freezone_a", "Dark Ardream"),
     };
 
-    public static bool Knows(int zoneId)
-    {
-        foreach (var z in All)
-            if (z.Id == zoneId) return true;
-        return false;
-    }
-
     public static string Name(int zoneId)
     {
         foreach (var z in All)

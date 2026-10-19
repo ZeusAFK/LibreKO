@@ -6,15 +6,15 @@ public static class CloudField
 {
     private const int Size = 256;
 
-    private static ImageTexture? _tex;
-    private static byte[]? _px;
+    private static ImageTexture? tex;
+    private static byte[]? pixels;
 
     public static ImageTexture Texture
     {
         get
         {
-            if (_tex == null) Bake();
-            return _tex!;
+            if (tex == null) Bake();
+            return tex!;
         }
     }
 
@@ -41,8 +41,8 @@ public static class CloudField
 
     private static float Tap(Vector2 uv, int channel)
     {
-        if (_px == null) Bake();
-        var p = _px!;
+        if (pixels == null) Bake();
+        var p = pixels!;
         float fx = (uv.X - Mathf.Floor(uv.X)) * Size - 0.5f;
         float fy = (uv.Y - Mathf.Floor(uv.Y)) * Size - 0.5f;
         int x0 = Mathf.FloorToInt(fx), y0 = Mathf.FloorToInt(fy);
@@ -84,10 +84,10 @@ public static class CloudField
             data[i * 4 + 2] = To8(cir[i]);
             data[i * 4 + 3] = 255;
         }
-        _px = data;
+        pixels = data;
         var img = Image.CreateFromData(Size, Size, false, Image.Format.Rgba8, data);
         img.GenerateMipmaps();
-        _tex = ImageTexture.CreateFromImage(img);
+        tex = ImageTexture.CreateFromImage(img);
     }
 
     private static void Normalize(float[] v)

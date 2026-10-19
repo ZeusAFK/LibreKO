@@ -38,18 +38,18 @@ public sealed class ActiveCollectionRace(CollectionRaceData race, IReadOnlyList<
     public CollectionRaceProgress ProgressOf(UserSession player) =>
         Progress.GetOrAdd(player.CharacterId, _ => new CollectionRaceProgress(Objectives.Count));
 
-    private int _winners;
+    private int winners;
 
-    public int Winners => Volatile.Read(ref _winners);
+    public int Winners => Volatile.Read(ref winners);
     public int MaxWinners => Math.Max(0, Race.MaxWinners);
     public bool IsFull => MaxWinners > 0 && Winners >= MaxWinners;
 
     public int TryClaimPlace()
     {
-        var place = Interlocked.Increment(ref _winners);
+        var place = Interlocked.Increment(ref winners);
         if (MaxWinners == 0 || place <= MaxWinners)
             return place;
-        Interlocked.Decrement(ref _winners);
+        Interlocked.Decrement(ref winners);
         return 0;
     }
 }
@@ -71,8 +71,8 @@ public class CollectionRaceService : ICollectionRaceService
     private readonly ScheduleClock scheduleClock;
     private readonly ILogger<CollectionRaceService> logger;
 
-    private readonly ConcurrentDictionary<byte, ActiveCollectionRace> _activeByZone = new();
-    private int _lastAutoCheckMinute = -1;
+    private readonly ConcurrentDictionary<byte, ActiveCollectionRace> activeByZone = new();
+    private int lastAutoCheckMinute = -1;
 
     public CollectionRaceService(
         SessionManager sessionManager,
@@ -92,9 +92,9 @@ public class CollectionRaceService : ICollectionRaceService
         playerProgressionService.LevelChanged += SyncPlayerAsync;
     }
 
-    public IReadOnlyCollection<ActiveCollectionRace> ActiveRaces => _activeByZone.Values.ToArray();
+    public IReadOnlyCollection<ActiveCollectionRace> ActiveRaces => activeByZone.Values.ToArray();
 
-    public ActiveCollectionRace? GetActive(byte zoneId) => _activeByZone.GetValueOrDefault(zoneId);
+    public ActiveCollectionRace? GetActive(byte zoneId) => activeByZone.GetValueOrDefault(zoneId);
 
     public async Task StartRaceAsync(int raceId, UserSession? gm = null)
     {
@@ -117,10 +117,10 @@ public class CollectionRaceService : ICollectionRaceService
         var now = DateTime.UtcNow;
         var startedAt = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
         var active = new ActiveCollectionRace(race, objectives, startedAt.AddMinutes(duration));
-        if (!_activeByZone.TryAdd(race.ZoneId, active))
+        if (!activeByZone.TryAdd(race.ZoneId, active))
         {
             if (gm != null)
-                await SendNoticeAsync(gm, $"Zone {race.ZoneId} already has an active Collection Race ('{_activeByZone[race.ZoneId].Race.Name}').");
+                await SendNoticeAsync(gm, $"Zone {race.ZoneId} already has an active Collection Race ('{activeByZone[race.ZoneId].Race.Name}').");
             return;
         }
 
@@ -138,7 +138,7 @@ public class CollectionRaceService : ICollectionRaceService
 
     public async Task EndRaceAsync(int raceId, bool forced = false, UserSession? gm = null)
     {
-        var active = _activeByZone.Values.FirstOrDefault(a => a.Race.Id == raceId);
+        var active = activeByZone.Values.FirstOrDefault(a => a.Race.Id == raceId);
         if (active == null)
         {
             if (gm != null)
@@ -165,7 +165,7 @@ public class CollectionRaceService : ICollectionRaceService
 
     private async Task EndAsync(ActiveCollectionRace active, bool forced)
     {
-        if (!_activeByZone.TryRemove(new KeyValuePair<byte, ActiveCollectionRace>(active.Race.ZoneId, active)))
+        if (!activeByZone.TryRemove(new KeyValuePair<byte, ActiveCollectionRace>(active.Race.ZoneId, active)))
             return;
 
         logger.LogInformation("Collection Race '{Name}' ended. Forced: {Forced}", active.Race.Name, forced);
@@ -192,14 +192,14 @@ public class CollectionRaceService : ICollectionRaceService
         }
 
         var scheduleNow = scheduleClock.UtcNow;
-        if (scheduleNow.Minute == _lastAutoCheckMinute)
+        if (scheduleNow.Minute == lastAutoCheckMinute)
             return;
 
-        _lastAutoCheckMinute = scheduleNow.Minute;
+        lastAutoCheckMinute = scheduleNow.Minute;
 
         foreach (var race in gameDataService.CollectionRaceTable.Values)
         {
-            if (!race.AutoStart || _activeByZone.ContainsKey(race.ZoneId))
+            if (!race.AutoStart || activeByZone.ContainsKey(race.ZoneId))
                 continue;
 
             if (gameDataService.CollectionRaceSchedulesByRace[race.Id].Any(s => s.Matches(scheduleNow)))

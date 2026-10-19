@@ -26,8 +26,8 @@ public class MarketPriceService(
     private const int RequestLength = 4;
     private static readonly TimeSpan MinimumInterval = TimeSpan.FromSeconds(1);
 
-    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
-    private readonly SemaphoreSlim _writeLock = new(1, 1);
+    private readonly TimeProvider clock = clock ?? TimeProvider.System;
+    private readonly SemaphoreSlim writeLock = new(1, 1);
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -42,7 +42,7 @@ public class MarketPriceService(
             return;
         }
 
-        var now = _clock.GetUtcNow().UtcDateTime;
+        var now = clock.GetUtcNow().UtcDateTime;
         if (now - session.MarketPriceAskedAt < MinimumInterval)
         {
             await client.SendPacket(MarketPricePacketWriter.Result(MarketPricePacketWriter.TooSoon));
@@ -69,9 +69,9 @@ public class MarketPriceService(
         if (buyer.IsBot || seller.IsBot || unitPrice <= 0 || quantity <= 0)
             return;
 
-        var now = _clock.GetUtcNow().UtcDateTime;
+        var now = clock.GetUtcNow().UtcDateTime;
         var day = DateOnly.FromDateTime(now);
-        await _writeLock.WaitAsync();
+        await writeLock.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -97,7 +97,7 @@ public class MarketPriceService(
         }
         finally
         {
-            _writeLock.Release();
+            writeLock.Release();
         }
     }
 

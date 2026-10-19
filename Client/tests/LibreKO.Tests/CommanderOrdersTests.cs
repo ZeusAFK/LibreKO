@@ -1,4 +1,5 @@
 ﻿using LibreKO.Domain;
+using LibreKO.Network;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -10,37 +11,37 @@ public class CommanderOrdersTests
     {
         Assert.Equal(6, CommanderOrders.Bar.Length);
         Assert.Equal(CommanderOrders.MarkingSkill, CommanderOrders.Bar[0].Skill);
-        Assert.Equal(CommanderOrders.None, CommanderOrders.Bar[0].Order);
-        Assert.Equal(492067, CommanderOrders.SkillOf(CommanderOrders.Back));
-        Assert.Equal(492072, CommanderOrders.SkillOf(CommanderOrders.Left));
+        Assert.Equal((byte)CommanderOrder.None, (byte)CommanderOrders.Bar[0].Order);
+        Assert.Equal(492067, CommanderOrders.SkillOf(CommanderOrder.Back));
+        Assert.Equal(492072, CommanderOrders.SkillOf(CommanderOrder.Left));
     }
 
     [Theory]
-    [InlineData(CommanderOrders.Forward, false, 340001)]
-    [InlineData(CommanderOrders.Back, true, 340002)]
-    [InlineData(CommanderOrders.BackHome, true, 340003)]
-    [InlineData(CommanderOrders.Right, false, 340001)]
-    [InlineData(CommanderOrders.Left, false, 340001)]
+    [InlineData((byte)CommanderOrder.Forward, false, 340001)]
+    [InlineData((byte)CommanderOrder.Back, true, 340002)]
+    [InlineData((byte)CommanderOrder.BackHome, true, 340003)]
+    [InlineData((byte)CommanderOrder.Right, false, 340001)]
+    [InlineData((byte)CommanderOrder.Left, false, 340001)]
     public void EachOrderHasItsFlashAndSound(byte order, bool red, int sound)
     {
-        Assert.Equal(red, CommanderOrders.RedFlash(order));
-        Assert.Equal(sound, CommanderOrders.Sound(order));
+        Assert.Equal(red, CommanderOrders.RedFlash((CommanderOrder)order));
+        Assert.Equal(sound, CommanderOrders.Sound((CommanderOrder)order));
     }
 
     [Theory]
-    [InlineData(CommanderOrders.Forward, 0, false)]
-    [InlineData(CommanderOrders.Back, 1, true)]
-    [InlineData(CommanderOrders.BackHome, 2, true)]
-    [InlineData(CommanderOrders.Right, 3, false)]
-    [InlineData(CommanderOrders.Left, 4, false)]
+    [InlineData((byte)CommanderOrder.Forward, 0, false)]
+    [InlineData((byte)CommanderOrder.Back, 1, true)]
+    [InlineData((byte)CommanderOrder.BackHome, 2, true)]
+    [InlineData((byte)CommanderOrder.Right, 3, false)]
+    [InlineData((byte)CommanderOrder.Left, 4, false)]
     public void EachOrderHasItsBadgeGlyphAndRing(byte order, int glyph, bool redRing)
     {
-        Assert.Equal(glyph, CommanderOrders.Glyph(order));
+        Assert.Equal(glyph, CommanderOrders.Glyph((CommanderOrder)order));
         Assert.Equal(redRing, CommanderOrders.RedRing(glyph));
     }
 
     [Fact]
-    public void OrderFourShowsNothing() => Assert.Equal(CommanderOrders.NoGlyph, CommanderOrders.Glyph(4));
+    public void OrderFourShowsNothing() => Assert.Equal(CommanderOrders.NoGlyph, CommanderOrders.Glyph((CommanderOrder)4));
 
     [Fact]
     public void ThePulseRunsAtLeastFiveSecondsAndStopsWhenFaded()
@@ -93,11 +94,11 @@ public class CommanderOrdersTests
     [Fact]
     public void EachOrderDrawsTheCellThe2619BadgeLayoutNames()
     {
-        Assert.Equal(0, CommanderOrders.SheetCell(CommanderOrders.Forward));
-        Assert.Equal(1, CommanderOrders.SheetCell(CommanderOrders.Left));
-        Assert.Equal(2, CommanderOrders.SheetCell(CommanderOrders.Right));
-        Assert.Equal(3, CommanderOrders.SheetCell(CommanderOrders.BackHome));
-        Assert.Equal(4, CommanderOrders.SheetCell(CommanderOrders.Back));
-        Assert.Equal(CommanderOrders.NoGlyph, CommanderOrders.SheetCell(CommanderOrders.None));
+        Assert.Equal(0, CommanderOrders.SheetCell(CommanderOrder.Forward));
+        Assert.Equal(1, CommanderOrders.SheetCell(CommanderOrder.Left));
+        Assert.Equal(2, CommanderOrders.SheetCell(CommanderOrder.Right));
+        Assert.Equal(3, CommanderOrders.SheetCell(CommanderOrder.BackHome));
+        Assert.Equal(4, CommanderOrders.SheetCell(CommanderOrder.Back));
+        Assert.Equal(CommanderOrders.NoGlyph, CommanderOrders.SheetCell(CommanderOrder.None));
     }
 }

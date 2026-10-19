@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using Godot;
-using LibreKO.Network;
 
 namespace LibreKO;
 
@@ -12,7 +9,7 @@ public static class Shutdown
     private const int WatchdogMs = 6000;
     private const int TeardownFrames = 2;
 
-    private static bool _started;
+    private static bool started;
     private static readonly List<Action> Releases = new();
 
     internal static T Track<T>(T cache) where T : class, IDictionary
@@ -38,8 +35,8 @@ public static class Shutdown
 
     public static async System.Threading.Tasks.Task Begin(Node source, int layer)
     {
-        if (_started) return;
-        _started = true;
+        if (started) return;
+        started = true;
         Diag.Phase = "shutdown";
         new System.Threading.Thread(() =>
         {
@@ -56,8 +53,8 @@ public static class Shutdown
         Ui.Background(canvas, "res://assets/backgrounds/closing.jpg");
         await source.ToSignal(tree.CreateTimer(FadeSeconds), SceneTreeTimer.SignalName.Timeout);
 
-        try { Net.I?.Disconnect(expected: true); } catch { }
-        try { LoginNet.I?.Disconnect(expected: true); } catch { }
+        try { Game.Connection?.Disconnect(expected: true); } catch { }
+        try { Game.LoginServer?.Disconnect(expected: true); } catch { }
 
         GameCursor.Disable();
         tree.CurrentScene?.QueueFree();

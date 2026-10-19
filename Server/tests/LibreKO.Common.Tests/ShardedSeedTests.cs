@@ -5,19 +5,19 @@ namespace LibreKO.Common.Tests;
 
 public class ShardedSeedTests : IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "libreko-seed-" + Guid.NewGuid().ToString("N"));
-    private readonly string _previousRoot = SeedDataLocation.Root;
+    private readonly string root = Path.Combine(Path.GetTempPath(), "libreko-seed-" + Guid.NewGuid().ToString("N"));
+    private readonly string previousRoot = SeedDataLocation.Root;
 
     public ShardedSeedTests()
     {
-        Directory.CreateDirectory(Path.Combine(_root, "Seed", "Data"));
-        SeedDataLocation.Root = _root;
+        Directory.CreateDirectory(Path.Combine(root, "Seed", "Data"));
+        SeedDataLocation.Root = root;
     }
 
     public void Dispose()
     {
-        SeedDataLocation.Root = _previousRoot;
-        Directory.Delete(_root, recursive: true);
+        SeedDataLocation.Root = previousRoot;
+        Directory.Delete(root, recursive: true);
         GC.SuppressFinalize(this);
     }
 
@@ -34,7 +34,7 @@ public class ShardedSeedTests : IDisposable
     }
 
     private void Write(string fileName, string json) =>
-        File.WriteAllText(Path.Combine(_root, "Seed", "Data", fileName), json);
+        File.WriteAllText(Path.Combine(root, "Seed", "Data", fileName), json);
 
     [Fact]
     public void ShardsStandInForTheSingleFile()

@@ -37,7 +37,7 @@ public sealed class ChatRoomHistory(
     private const string NoteExtension = ".opus";
     private const int PruneBatch = 500;
 
-    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
+    private readonly TimeProvider clock = clock ?? TimeProvider.System;
 
     private ChatRoomSettings Rooms => settings.Value.ChatRooms;
 
@@ -53,7 +53,7 @@ public sealed class ChatRoomHistory(
             Kind = ChatRoomMessageKind.Text,
             SenderCharacterId = senderId,
             SenderName = senderName,
-            CreatedAt = _clock.GetUtcNow().UtcDateTime,
+            CreatedAt = clock.GetUtcNow().UtcDateTime,
             Text = text,
         };
         db.ChatRoomMessages.Add(line);
@@ -63,7 +63,7 @@ public sealed class ChatRoomHistory(
 
     public async Task<ChatRoomMessage> AppendNoteAsync(string roomKey, int senderId, string senderName, int durationMs, byte[] file, byte[] waveform)
     {
-        var now = _clock.GetUtcNow().UtcDateTime;
+        var now = clock.GetUtcNow().UtcDateTime;
         string relative = Path.Combine(now.ToString("yyyy"), now.ToString("MM"), now.ToString("dd"), Guid.NewGuid().ToString("N") + NoteExtension);
         string full = Path.Combine(NotesRoot, relative);
         Directory.CreateDirectory(Path.GetDirectoryName(full)!);
@@ -101,7 +101,7 @@ public sealed class ChatRoomHistory(
 
     public async Task<IReadOnlyList<ChatRoomMessage>> PageAsync(string roomKey, long beforeId, int count)
     {
-        var since = _clock.GetUtcNow().UtcDateTime.AddDays(-Rooms.HistoryDays);
+        var since = clock.GetUtcNow().UtcDateTime.AddDays(-Rooms.HistoryDays);
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var query = db.ChatRoomMessages.AsNoTracking().Where(m => m.RoomKey == roomKey && m.CreatedAt >= since);
@@ -152,7 +152,7 @@ public sealed class ChatRoomHistory(
                 CharacterId = characterId,
                 CharacterName = characterName,
                 Emoji = emoji,
-                CreatedAt = _clock.GetUtcNow().UtcDateTime,
+                CreatedAt = clock.GetUtcNow().UtcDateTime,
             });
         }
         else if (current.Emoji == emoji) return false;
@@ -160,7 +160,7 @@ public sealed class ChatRoomHistory(
         {
             current.Emoji = emoji;
             current.CharacterName = characterName;
-            current.CreatedAt = _clock.GetUtcNow().UtcDateTime;
+            current.CreatedAt = clock.GetUtcNow().UtcDateTime;
         }
         await db.SaveChangesAsync();
         return true;
@@ -220,7 +220,7 @@ public sealed class ChatRoomHistory(
 
     public async Task<ChatRoomPruneResult> PruneAsync()
     {
-        var cutoff = _clock.GetUtcNow().UtcDateTime.AddDays(-Rooms.HistoryDays);
+        var cutoff = clock.GetUtcNow().UtcDateTime.AddDays(-Rooms.HistoryDays);
         int rows = 0, files = 0;
         while (true)
         {

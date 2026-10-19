@@ -15,6 +15,7 @@ public static class CostumeLook
     public const int LowerPart = 1;
     public const int HandsPart = 2;
     public const int FeetPart = 3;
+    public const int FacePart = 4;
     public const int HeadPart = 5;
 
     private const int CategorySpan = 10_000_000;

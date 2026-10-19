@@ -12,26 +12,6 @@ public enum SiegeRateKind
 
 public static class SiegeWarfare
 {
-    public const byte CastleGuard = 3;
-    public const byte CastleOffice = 4;
-
-    public const byte Apply = 1;
-    public const byte Schedule = 2;
-    public const byte Assault = 3;
-    public const byte Challengers = 4;
-    public const byte Defenders = 5;
-    public const byte GuardOpen = 7;
-    public const byte ApplyJoin = 1;
-    public const byte ApplyCancel = 2;
-
-    public const byte OfficeOpen = 1;
-    public const byte Collect = 2;
-    public const byte TaxList = 3;
-    public const byte MoradonRate = 4;
-    public const byte DelosRate = 5;
-    public const byte DungeonFee = 6;
-
-    public const short Success = 1;
     public const byte CastleWarType = 2;
     public const int RateMin = 0;
     public const int RateMax = 5;
@@ -103,8 +83,6 @@ public static class SiegeWarfare
 
     public static int DayText(int weekday) => DayTextBase + weekday;
 
-    public static bool KnownWeekday(int weekday) => weekday is >= FirstWeekday and <= LastWeekday;
-
     public static int NationText(int nation) => nation switch
     {
         Nations.Karus => KarusText,
@@ -138,17 +116,17 @@ public static class SiegeWarfare
         _ => FeeConfirmText,
     };
 
-    public static byte WireSub(SiegeRateKind kind) => kind switch
+    public static SiegeOfficeSubOpcode WireSub(SiegeRateKind kind) => kind switch
     {
-        SiegeRateKind.Moradon => MoradonRate,
-        SiegeRateKind.Delos => DelosRate,
-        _ => DungeonFee,
+        SiegeRateKind.Moradon => SiegeOfficeSubOpcode.MoradonRate,
+        SiegeRateKind.Delos => SiegeOfficeSubOpcode.DelosRate,
+        _ => SiegeOfficeSubOpcode.DungeonFee,
     };
 
-    public static int ChangedText(byte sub) => sub switch
+    public static int ChangedText(SiegeOfficeSubOpcode sub) => sub switch
     {
-        MoradonRate => MoradonChangedText,
-        DelosRate => DelosChangedText,
+        SiegeOfficeSubOpcode.MoradonRate => MoradonChangedText,
+        SiegeOfficeSubOpcode.DelosRate => DelosChangedText,
         _ => FeeChangedText,
     };
 

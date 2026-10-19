@@ -23,20 +23,20 @@ public class QuestHelperZoneTests : GameTestBase, IDisposable
             Topic "Close" goto close
         """;
 
-    private readonly string _directory =
+    private readonly string directory =
         Path.Combine(Path.GetTempPath(), "kq-" + Guid.NewGuid().ToString("N"));
 
     public QuestHelperZoneTests()
     {
-        Directory.CreateDirectory(_directory);
-        File.WriteAllText(Path.Combine(_directory, $"{OsirisProtoId}.quest"), OsirisScript);
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, $"{OsirisProtoId}.quest"), OsirisScript);
     }
 
     public void Dispose()
     {
         try
         {
-            Directory.Delete(_directory, recursive: true);
+            Directory.Delete(directory, recursive: true);
         }
         catch (IOException)
         {
@@ -58,7 +58,7 @@ public class QuestHelperZoneTests : GameTestBase, IDisposable
                     IsMonster = false,
                 });
             },
-            settings => settings.QuestsDirectory = _directory);
+            settings => settings.QuestsDirectory = directory);
 
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());

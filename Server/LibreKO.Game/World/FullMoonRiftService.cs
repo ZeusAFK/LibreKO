@@ -25,19 +25,19 @@ public interface IFullMoonRiftService
 
 public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 {
-    private readonly SessionManager _sessionManager;
-    private readonly IGameDataService _gameData;
-    private readonly IMagicItemUsageService _itemUsage;
-    private readonly IItemGrantService _itemGrant;
-    private readonly IMonsterAggressionPolicy _aggression;
-    private readonly IZoneTransitionService _zoneTransition;
-    private readonly InstanceRoomRegistry _rooms;
-    private readonly IFullMoonRiftStageProvider _stageProvider;
-    private readonly IUserNotificationService _userNotification;
-    private readonly ILogger<FullMoonRiftService> _logger;
-    private readonly ConcurrentDictionary<ushort, FullMoonRiftRoomState> _activeRooms = new();
-    private readonly Timer? _timer;
-    private int _checkingTimeouts;
+    private readonly SessionManager sessionManager;
+    private readonly IGameDataService gameData;
+    private readonly IMagicItemUsageService itemUsage;
+    private readonly IItemGrantService itemGrant;
+    private readonly IMonsterAggressionPolicy aggression;
+    private readonly IZoneTransitionService zoneTransition;
+    private readonly InstanceRoomRegistry rooms;
+    private readonly IFullMoonRiftStageProvider stageProvider;
+    private readonly IUserNotificationService userNotification;
+    private readonly ILogger<FullMoonRiftService> logger;
+    private readonly ConcurrentDictionary<ushort, FullMoonRiftRoomState> activeRooms = new();
+    private readonly Timer? timer;
+    private int checkingTimeouts;
 
     public FullMoonRiftService(
         SessionManager sessionManager,
@@ -52,28 +52,28 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         ILogger<FullMoonRiftService> logger,
         bool startTimer = true)
     {
-        _sessionManager = sessionManager;
-        _gameData = gameData;
-        _itemUsage = itemUsage;
-        _itemGrant = itemGrant;
-        _aggression = aggression;
-        _zoneTransition = zoneTransition;
-        _rooms = rooms;
-        _stageProvider = stageProvider;
-        _userNotification = userNotification;
-        _logger = logger;
+        this.sessionManager = sessionManager;
+        this.gameData = gameData;
+        this.itemUsage = itemUsage;
+        this.itemGrant = itemGrant;
+        this.aggression = aggression;
+        this.zoneTransition = zoneTransition;
+        this.rooms = rooms;
+        this.stageProvider = stageProvider;
+        this.userNotification = userNotification;
+        this.logger = logger;
 
-        _rooms.RoomClosed += room => _ = OnRoomClosedAsync(room);
+        this.rooms.RoomClosed += room => _ = OnRoomClosedAsync(room);
 
         if (startTimer)
         {
-            _timer = new Timer(OnTimerTick, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            timer = new Timer(OnTimerTick, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
     }
 
     private void OnTimerTick(object? _)
     {
-        if (Interlocked.CompareExchange(ref _checkingTimeouts, 1, 0) != 0)
+        if (Interlocked.CompareExchange(ref checkingTimeouts, 1, 0) != 0)
             return;
 
         _ = Task.Run(async () =>
@@ -84,18 +84,18 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking Full Moon Rift timeouts");
+                logger.LogError(ex, "Error checking Full Moon Rift timeouts");
             }
             finally
             {
-                Interlocked.Exchange(ref _checkingTimeouts, 0);
+                Interlocked.Exchange(ref checkingTimeouts, 0);
             }
         });
     }
 
     public async Task<bool> HandlePartyEntryAsync(UserSession session)
     {
-        var party = session.IsInParty ? _sessionManager.Parties.GetParty(session.PartyIndex) : null;
+        var party = session.IsInParty ? sessionManager.Parties.GetParty(session.PartyIndex) : null;
         if (party == null)
         {
             await session.Client.SendPacket(EventPacketWriter.FullMoonEntry(FullMoonRules.NoParty));
@@ -116,7 +116,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         }
 
         var members = party.MemberIds.Where(id => id >= 0)
-            .Select(id => _sessionManager.GetByCharacterId(id))
+            .Select(id => sessionManager.GetByCharacterId(id))
             .OfType<UserSession>().ToList();
 
         var underLeveled = members.Where(m => m.Level < FullMoonRules.MinEntryLevel).ToList();
@@ -167,11 +167,11 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         foreach (var member in members)
         {
             member.DailyOps[(int)DailyOperation.FullMoonRift] = entryTimestamp;
-            await _itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem);
+            await itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem);
         }
 
         var duration = TimeSpan.FromMinutes(FullMoonRules.RoomDurationMinutes);
-        var room = _rooms.Open((byte)ZoneId.DungeonDefence, (short)difficulty, duration, endsOnBossKill: false);
+        var room = rooms.Open((byte)ZoneId.DungeonDefence, (short)difficulty, duration, endsOnBossKill: false);
 
         var now = DateTime.UtcNow;
         var state = new FullMoonRiftRoomState
@@ -188,17 +188,17 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 
         foreach (var member in members)
         {
-            _rooms.Join(room, member);
+            rooms.Join(room, member);
             state.Participants[member.CharacterId] = 0;
             member.InstanceReturn = (member.ZoneId, member.X, member.Z);
-            await _zoneTransition.ChangeZoneAsync(member, (byte)ZoneId.DungeonDefence, FullMoonRules.SpawnX, FullMoonRules.SpawnZ);
+            await zoneTransition.ChangeZoneAsync(member, (byte)ZoneId.DungeonDefence, FullMoonRules.SpawnX, FullMoonRules.SpawnZ);
             await member.Client.SendPacket(BifrostPacketWriter.InstanceTimer((ushort)duration.TotalSeconds));
         }
 
         SpawnInitialTowers(room);
 
-        _activeRooms[room.Id] = state;
-        _logger.LogInformation("Full Moon Rift room {Room} opened by {Leader} (difficulty={Diff}, stage={Stage}, members={Count})",
+        activeRooms[room.Id] = state;
+        logger.LogInformation("Full Moon Rift room {Room} opened by {Leader} (difficulty={Diff}, stage={Stage}, members={Count})",
             room.Id, session.Name, difficulty, startStageId, members.Count);
 
         return true;
@@ -208,9 +208,9 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
     {
         var now = DateTime.UtcNow;
 
-        foreach (var (roomId, state) in _activeRooms.ToArray())
+        foreach (var (roomId, state) in activeRooms.ToArray())
         {
-            var room = _rooms.Get(roomId);
+            var room = rooms.Get(roomId);
             if (room == null)
             {
                 DropRoomState(roomId);
@@ -261,10 +261,10 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 
     private async Task SpawnWaveAsync(InstanceRoom room, FullMoonRiftRoomState state)
     {
-        var stageInfo = _stageProvider.GetStage(state.CurrentStageId);
+        var stageInfo = stageProvider.GetStage(state.CurrentStageId);
         if (stageInfo == null || stageInfo.Spawns.Count == 0)
         {
-            _logger.LogWarning("Stage {Stage} not found or empty for Full Moon Rift room {Room}, completing run", state.CurrentStageId, room.Id);
+            logger.LogWarning("Stage {Stage} not found or empty for Full Moon Rift room {Room}, completing run", state.CurrentStageId, room.Id);
             lock (state.Lock)
             {
                 state.Completed = true;
@@ -280,7 +280,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 
         foreach (var memberId in room.Members.Keys)
         {
-            if (_sessionManager.GetByCharacterId(memberId) is { } member)
+            if (sessionManager.GetByCharacterId(memberId) is { } member)
                 await member.Client.SendPacket(counterPacket);
         }
 
@@ -322,7 +322,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             state.RemainingMonsters = monsterCount;
             state.WaveActive = true;
         }
-        _logger.LogInformation("Full Moon Rift room {Room} spawned stage {Stage} with {Count} monsters",
+        logger.LogInformation("Full Moon Rift room {Room} spawned stage {Stage} with {Count} monsters",
             room.Id, state.CurrentStageId, monsterCount);
     }
 
@@ -331,10 +331,10 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         if (npc.ZoneId != (byte)ZoneId.DungeonDefence || npc.Room == 0)
             return;
 
-        if (!_activeRooms.TryGetValue((ushort)npc.Room, out var state))
+        if (!activeRooms.TryGetValue((ushort)npc.Room, out var state))
             return;
 
-        var room = _rooms.Get(state.RoomId);
+        var room = rooms.Get(state.RoomId);
         if (room == null)
             return;
 
@@ -361,7 +361,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             var towersPacket = EventPacketWriter.FullMoonTowersLeft((byte)towersLeft);
             foreach (var memberId in room.Members.Keys)
             {
-                if (_sessionManager.GetByCharacterId(memberId) is { } member)
+                if (sessionManager.GetByCharacterId(memberId) is { } member)
                     await member.Client.SendPacket(towersPacket);
             }
             return;
@@ -396,7 +396,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
                 {
                     state.CurrentStageId++;
                     nextStage = state.CurrentStageId;
-                    var nextStageInfo = _stageProvider.GetStage(nextStage);
+                    var nextStageInfo = stageProvider.GetStage(nextStage);
                     interval = nextStageInfo?.SpawnIntervalSeconds ?? 10;
                     state.NextSpawnTime = DateTime.UtcNow.AddSeconds(interval);
                 }
@@ -411,13 +411,13 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
                 var timerPacket = BifrostPacketWriter.InstanceTimer(FullMoonRules.FinishGraceSeconds);
                 foreach (var memberId in room.Members.Keys)
                 {
-                    if (_sessionManager.GetByCharacterId(memberId) is { } member)
+                    if (sessionManager.GetByCharacterId(memberId) is { } member)
                         await member.Client.SendPacket(timerPacket);
                 }
             }
             else
             {
-                _logger.LogInformation("Full Moon Rift room {Room} advanced to stage {Stage} in {Sec}s",
+                logger.LogInformation("Full Moon Rift room {Room} advanced to stage {Stage} in {Sec}s",
                     room.Id, nextStage, interval);
             }
         }
@@ -425,15 +425,15 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 
     private async Task GrantKillRewardsAsync(UserSession killer, InstanceRoom room, FullMoonRiftRoomState state, int npcId)
     {
-        if (_gameData.GetItem(FullMoonRules.MonsterCoinItem) is { } coinItem)
+        if (gameData.GetItem(FullMoonRules.MonsterCoinItem) is { } coinItem)
         {
-            await _itemGrant.GrantAsync(killer, coinItem, 2);
+            await itemGrant.GrantAsync(killer, coinItem, 2);
         }
 
         var jewelCount = state.CurrentStageId >= FullMoonRules.HardMinStage ? 2 : 1;
-        if (_gameData.GetItem(FullMoonRules.RiftJewelItem) is { } jewelItem)
+        if (gameData.GetItem(FullMoonRules.RiftJewelItem) is { } jewelItem)
         {
-            await _itemGrant.GrantAsync(killer, jewelItem, jewelCount);
+            await itemGrant.GrantAsync(killer, jewelItem, jewelCount);
         }
 
         foreach (var memberId in room.Members.Keys)
@@ -441,9 +441,9 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             if (memberId == killer.CharacterId)
                 continue;
 
-            if (_sessionManager.GetByCharacterId(memberId) is { } member && _gameData.GetItem(FullMoonRules.MonsterCoinItem) is { } cItem)
+            if (sessionManager.GetByCharacterId(memberId) is { } member && gameData.GetItem(FullMoonRules.MonsterCoinItem) is { } cItem)
             {
-                await _itemGrant.GrantAsync(member, cItem, 1);
+                await itemGrant.GrantAsync(member, cItem, 1);
             }
         }
     }
@@ -452,16 +452,16 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
     {
         foreach (var memberId in room.Members.Keys)
         {
-            if (_sessionManager.GetByCharacterId(memberId) is { } member)
+            if (sessionManager.GetByCharacterId(memberId) is { } member)
             {
                 await StripMonsterCoinsAsync(member);
                 var returnPoint = member.InstanceReturn ?? ((byte)ZoneId.Moradon, 0f, 0f);
-                await _zoneTransition.ChangeZoneAsync(member, returnPoint.ZoneId, returnPoint.X, returnPoint.Z);
+                await zoneTransition.ChangeZoneAsync(member, returnPoint.ZoneId, returnPoint.X, returnPoint.Z);
             }
         }
 
         DropRoomState(room.Id);
-        _rooms.Close(room);
+        rooms.Close(room);
     }
 
     private async Task StripMonsterCoinsAsync(UserSession session)
@@ -484,10 +484,10 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             return;
 
         foreach (var slot in removed)
-            await _userNotification.SendStackChangeAsync(session, slot, 0, 0, 0);
+            await userNotification.SendStackChangeAsync(session, slot, 0, 0, 0);
 
-        session.RecalculateStatsWithBuffs(_gameData);
-        await _userNotification.SendWeightChangeAsync(session);
+        session.RecalculateStatsWithBuffs(gameData);
+        await userNotification.SendWeightChangeAsync(session);
     }
 
     private async Task OnRoomClosedAsync(InstanceRoom room)
@@ -495,11 +495,11 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         if (room.ZoneId != (byte)ZoneId.DungeonDefence)
             return;
 
-        if (_activeRooms.TryGetValue(room.Id, out var state))
+        if (activeRooms.TryGetValue(room.Id, out var state))
         {
             foreach (var charId in state.Participants.Keys)
             {
-                if (_sessionManager.GetByCharacterId(charId) is { } member)
+                if (sessionManager.GetByCharacterId(charId) is { } member)
                     await StripMonsterCoinsAsync(member);
             }
             DropRoomState(room.Id);
@@ -523,10 +523,10 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 
     private NpcInstance? SpawnNpcAt(InstanceRoom room, int npcId, float x, float z, bool isMonster, short direction = 0)
     {
-        var npcData = _gameData.GetNpc(npcId, isMonster: isMonster);
+        var npcData = gameData.GetNpc(npcId, isMonster: isMonster);
         if (npcData == null)
         {
-            _logger.LogWarning("Entity {NpcId} (monster={IsMonster}) not found in game data", npcId, isMonster);
+            logger.LogWarning("Entity {NpcId} (monster={IsMonster}) not found in game data", npcId, isMonster);
             return null;
         }
 
@@ -546,16 +546,16 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         var npc = NpcInstance.FromData(npcData, pos, 0);
         npc.Room = room.Id;
         npc.RespawnType = NpcRespawnType.Never;
-        var height = _sessionManager.Maps?.GetHeight(npc.ZoneId, npc.X, npc.Z) ?? 0f;
+        var height = sessionManager.Maps?.GetHeight(npc.ZoneId, npc.X, npc.Z) ?? 0f;
         npc.Y = height;
         npc.SpawnY = height;
 
-        _sessionManager.Regions.SpawnNpc(npc);
+        sessionManager.Regions.SpawnNpc(npc);
 
         if (isMonster)
         {
-            _aggression.Apply(npc);
-            _sessionManager.Regions.MarkNpcEngaged(npc);
+            aggression.Apply(npc);
+            sessionManager.Regions.MarkNpcEngaged(npc);
         }
 
         room.Npcs.Add(npc);
@@ -566,17 +566,17 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
     {
         foreach (var memberId in room.Members.Keys)
         {
-            if (_sessionManager.GetByCharacterId(memberId) is { } member)
+            if (sessionManager.GetByCharacterId(memberId) is { } member)
                 await member.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)member.Nation, message));
         }
     }
 
-    public void DropRoomState(ushort roomId) => _activeRooms.TryRemove(roomId, out _);
+    public void DropRoomState(ushort roomId) => activeRooms.TryRemove(roomId, out _);
 
-    public FullMoonRiftRoomState? GetRoomState(ushort roomId) => _activeRooms.GetValueOrDefault(roomId);
+    public FullMoonRiftRoomState? GetRoomState(ushort roomId) => activeRooms.GetValueOrDefault(roomId);
 
     public void Dispose()
     {
-        _timer?.Dispose();
+        timer?.Dispose();
     }
 }

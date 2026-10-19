@@ -11,7 +11,7 @@ public class QuestObjectivesTests
     {
         var packet = new Packet(GameOpcodes.GS_QUEST);
         packet.WriteBytes(Convert.FromHexString(hex));
-        Assert.Equal((byte)QuestSub.Objectives, packet.ReadByte());
+        Assert.Equal((byte)QuestSubOpcode.Objectives, packet.ReadByte());
         return packet;
     }
 

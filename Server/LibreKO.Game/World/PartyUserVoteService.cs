@@ -34,8 +34,8 @@ public sealed class PartyUserVoteService(
         public DateTimeOffset Expires;
     }
 
-    private readonly ConcurrentDictionary<int, Vote> _votes = new();
-    private readonly ConcurrentDictionary<int, DateTimeOffset> _cooldowns = new();
+    private readonly ConcurrentDictionary<int, Vote> votes = new();
+    private readonly ConcurrentDictionary<int, DateTimeOffset> cooldowns = new();
 
     private PartyVoteSettings Rules => settings.Value.PartyVote;
     private TimeSpan WarningsLast => TimeSpan.FromDays(Rules.WarningDays);
@@ -52,11 +52,11 @@ public sealed class PartyUserVoteService(
         session.Money -= PartyUserVoteRules.Cost;
         await notifications.SendGoldLossAsync(session, PartyUserVoteRules.Cost);
         var now = time.GetUtcNow();
-        _cooldowns[party.Index] = now.AddSeconds(PartyUserVoteRules.CooldownSeconds);
+        cooldowns[party.Index] = now.AddSeconds(PartyUserVoteRules.CooldownSeconds);
         var vote = new Vote { TargetId = targetId, Expires = now.AddSeconds(PartyUserVoteRules.AnswerSeconds) };
         foreach (var member in OnlineMembers(party))
             if (member.CharacterId != targetId) vote.Voters.Add(member.CharacterId);
-        _votes[party.Index] = vote;
+        votes[party.Index] = vote;
 
         string targetName = sessionManager.GetByCharacterId(targetId)?.Name ?? "";
         var ask = PartyPacketWriter.UserVoteAsk(targetName, reason, reason == PartyUserVoteRules.ReasonOther ? text : "");
@@ -67,7 +67,7 @@ public sealed class PartyUserVoteService(
 
     public async Task AnswerAsync(UserSession session, byte answer)
     {
-        if (!session.IsInParty || !_votes.TryGetValue(session.PartyIndex, out var vote)) return;
+        if (!session.IsInParty || !votes.TryGetValue(session.PartyIndex, out var vote)) return;
         if (!vote.Voters.Contains(session.CharacterId) || vote.Answers.ContainsKey(session.CharacterId))
         {
             await session.Client.SendPacket(PartyPacketWriter.UserVoteRefused(PartyUserVoteRules.AlreadyAnswered));
@@ -90,7 +90,7 @@ public sealed class PartyUserVoteService(
     public async Task ExpireDueAsync()
     {
         var now = time.GetUtcNow();
-        foreach (var (partyIndex, vote) in _votes)
+        foreach (var (partyIndex, vote) in votes)
             if (now >= vote.Expires) await FinishAsync(partyIndex);
     }
 
@@ -109,9 +109,9 @@ public sealed class PartyUserVoteService(
         if (party == null || targetId == session.CharacterId || party.FindMember((short)targetId) < 0
             || sessionManager.GetByCharacterId(targetId) == null)
             return PartyUserVoteRules.NoSuchUser;
-        if (_votes.ContainsKey(party.Index)) return PartyUserVoteRules.AlreadyRunning;
+        if (votes.ContainsKey(party.Index)) return PartyUserVoteRules.AlreadyRunning;
         if (OnlineMembers(party).Count < PartyUserVoteRules.MinimumVoters) return PartyUserVoteRules.TooFewVoters;
-        if (_cooldowns.TryGetValue(party.Index, out var until) && time.GetUtcNow() < until) return PartyUserVoteRules.CoolingDown;
+        if (cooldowns.TryGetValue(party.Index, out var until) && time.GetUtcNow() < until) return PartyUserVoteRules.CoolingDown;
         if (reason is 0 or > PartyUserVoteRules.LastReason) return PartyUserVoteRules.NoSuchUser;
         if (reason == PartyUserVoteRules.ReasonOther && !PartyUserVoteRules.TextFits(text)) return PartyUserVoteRules.TextTooLong;
         if (session.Money < PartyUserVoteRules.Cost) return PartyUserVoteRules.NotEnoughCoins;
@@ -128,7 +128,7 @@ public sealed class PartyUserVoteService(
 
     private async Task FinishAsync(int partyIndex)
     {
-        if (!_votes.TryRemove(partyIndex, out var vote)) return;
+        if (!votes.TryRemove(partyIndex, out var vote)) return;
         bool warned = PartyUserVoteRules.Warns(vote.Answers.Values);
         var result = PartyPacketWriter.UserVoteResult(warned);
         foreach (int voterId in vote.Voters)

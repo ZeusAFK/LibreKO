@@ -33,9 +33,9 @@ public partial class Boot : Control
 
     private void TerrainSelfTest(string stem)
     {
-        var hm = KoHeightmap.LoadPng(stem);
-        var tex = KoGroundTex.LoadPng(stem);
-        var objs = KoObjects.LoadJson(stem);
+        var hm = Heightmap.LoadPng(stem);
+        var tex = GroundTextures.LoadPng(stem);
+        var objs = ZoneObjects.LoadJson(stem);
         bool ok = hm != null && hm.MapSize > 2 && tex != null && tex.TileCount > 0 && objs != null && objs.Names.Length > 0;
         GetTree().Quit(ok ? 0 : 1);
     }

@@ -8,10 +8,10 @@ public class GenieTimeBalanceTests
 {
     private sealed class Clock : TimeProvider
     {
-        private long _ticks;
+        private long ticks;
         public override long TimestampFrequency => TimeSpan.TicksPerSecond;
-        public override long GetTimestamp() => _ticks;
-        public void Advance(double seconds) => _ticks += (long)(seconds * TimestampFrequency);
+        public override long GetTimestamp() => ticks;
+        public void Advance(double seconds) => ticks += (long)(seconds * TimestampFrequency);
     }
 
     [Fact]

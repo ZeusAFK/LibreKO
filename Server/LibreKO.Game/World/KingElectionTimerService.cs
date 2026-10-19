@@ -28,7 +28,7 @@ public class KingElectionTimerService(
     private const byte ELECTION_LIST_SENATOR = 3;
     private const byte ELECTION_LIST_CANDIDATE = 4;
 
-    private DateTime _lastBroadcast = DateTime.MinValue;
+    private DateTime lastBroadcast = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -146,9 +146,9 @@ public class KingElectionTimerService(
     private bool ShouldBroadcast(DateTime now)
     {
         // Broadcast reminder every 30 minutes
-        if ((now - _lastBroadcast).TotalMinutes >= 30)
+        if ((now - lastBroadcast).TotalMinutes >= 30)
         {
-            _lastBroadcast = now;
+            lastBroadcast = now;
             return true;
         }
         return false;

@@ -80,9 +80,11 @@ public static class GmItemId
 {
     public static readonly Color Color = new(1f, 0.85f, 0.2f);
 
+    public static bool Shown { get; set; }
+
     public static Control Wrap(Control preview, int id)
     {
-        if (!Net.I.IsGm)
+        if (!Shown)
             return preview;
 
         var box = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };

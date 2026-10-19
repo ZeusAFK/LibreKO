@@ -10,10 +10,10 @@ public static class Diag
     private const int TraceRing = 64;
 
     private static readonly object Gate = new();
-    private static readonly string[] _trace = new string[TraceRing];
-    private static int _traceAt;
-    private static string _path = "";
-    private static bool _installed;
+    private static readonly string[] trace = new string[TraceRing];
+    private static int traceAt;
+    private static string path = "";
+    private static bool installed;
 
     public static string Phase { get; set; } = "startup";
     public static bool SlowLog { get; set; }
@@ -40,9 +40,9 @@ public static class Diag
     {
         lock (Gate)
         {
-            if (_installed) return;
-            _installed = true;
-            _path = System.IO.Path.Combine(OS.GetUserDataDir(), "faults.log");
+            if (installed) return;
+            installed = true;
+            path = System.IO.Path.Combine(OS.GetUserDataDir(), "faults.log");
         }
 
         AppDomain.CurrentDomain.UnhandledException += (_, a) =>
@@ -58,8 +58,8 @@ public static class Diag
     {
         lock (Gate)
         {
-            _trace[_traceAt] = $"{DateTime.Now:HH:mm:ss.fff} {what}";
-            _traceAt = (_traceAt + 1) % TraceRing;
+            trace[traceAt] = $"{DateTime.Now:HH:mm:ss.fff} {what}";
+            traceAt = (traceAt + 1) % TraceRing;
         }
     }
 
@@ -89,7 +89,7 @@ public static class Diag
             }
             for (int i = 0; i < TraceRing; i++)
             {
-                string? line = _trace[(_traceAt + i) % TraceRing];
+                string? line = trace[(traceAt + i) % TraceRing];
                 if (line != null) sb.Append("  · ").AppendLine(line);
             }
             text = sb.ToString();
@@ -100,12 +100,12 @@ public static class Diag
 
     private static void Append(string text)
     {
-        if (_path.Length == 0) return;
+        if (path.Length == 0) return;
         try
         {
-            var info = new System.IO.FileInfo(_path);
+            var info = new System.IO.FileInfo(path);
             if (info.Exists && info.Length > MaxLogBytes) info.Delete();
-            System.IO.File.AppendAllText(_path, text + System.Environment.NewLine);
+            System.IO.File.AppendAllText(path, text + System.Environment.NewLine);
         }
         catch { }
     }

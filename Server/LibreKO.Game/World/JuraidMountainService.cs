@@ -105,10 +105,10 @@ public sealed class JuraidMountainService(
     public const int FinishedMatchClosureDelaySeconds = 20;
     public const int FinishedMatchWarningDelaySeconds = 10;
 
-    private readonly ConcurrentDictionary<ushort, JuraidMatch> _activeMatches = new();
-    private int _nextSetCounter;
+    private readonly ConcurrentDictionary<ushort, JuraidMatch> activeMatches = new();
+    private int nextSetCounter;
 
-    public bool HasActiveMatches => !_activeMatches.IsEmpty;
+    public bool HasActiveMatches => !activeMatches.IsEmpty;
 
     public async Task StartMatchesAsync(IReadOnlyList<int> participantCharacterIds, int durationSeconds)
     {
@@ -171,7 +171,7 @@ public sealed class JuraidMountainService(
 
     private async Task<JuraidMatch> CreateAndLaunchMatchAsync(List<UserSession> participants, int durationSeconds)
     {
-        short set = (short)((Interlocked.Increment(ref _nextSetCounter) - 1) % 5 + 1);
+        short set = (short)((Interlocked.Increment(ref nextSetCounter) - 1) % 5 + 1);
 
         var duration = TimeSpan.FromSeconds(durationSeconds > 0 ? durationSeconds : TempleEventRules.JuraidMountainDurationSeconds);
         var instanceRoom = instanceRooms.Open(JuraidZoneId, set, duration);
@@ -192,7 +192,7 @@ public sealed class JuraidMountainService(
                 match.ElmoradMembers.Add(p.CharacterId);
         }
 
-        _activeMatches[match.RoomId] = match;
+        activeMatches[match.RoomId] = match;
 
         instanceEntryService.Populate(match.InstanceRoom);
         foreach (var npc in match.InstanceRoom.Npcs)
@@ -280,7 +280,7 @@ public sealed class JuraidMountainService(
         if (npc.ZoneId != JuraidZoneId || npc.Room == 0)
             return;
 
-        if (!_activeMatches.TryGetValue(npc.Room, out var match))
+        if (!activeMatches.TryGetValue(npc.Room, out var match))
             return;
 
         int bridgeToUnlock = 0;
@@ -404,7 +404,7 @@ public sealed class JuraidMountainService(
 
     public async Task OnPlayerKilledAsync(UserSession victim, UserSession killer)
     {
-        if (victim.ZoneId != JuraidZoneId || !_activeMatches.TryGetValue(victim.Room, out var match) || match.IsCompleted)
+        if (victim.ZoneId != JuraidZoneId || !activeMatches.TryGetValue(victim.Room, out var match) || match.IsCompleted)
             return;
         if (killer.Room != match.RoomId || killer.Nation == victim.Nation)
             return;
@@ -482,15 +482,15 @@ public sealed class JuraidMountainService(
 
     public async Task CancelAllMatchesAsync()
     {
-        if (_activeMatches.IsEmpty)
+        if (activeMatches.IsEmpty)
             return;
 
-        logger.LogInformation("Cancelling / finalizing all active Juraid Mountain matches ({Count})", _activeMatches.Count);
+        logger.LogInformation("Cancelling / finalizing all active Juraid Mountain matches ({Count})", activeMatches.Count);
 
         var timeoutWinReward = GetReward(TempleEventRewardOutcome.TimeoutWin);
         var timeoutReward = GetReward(TempleEventRewardOutcome.Timeout);
 
-        foreach (var match in _activeMatches.Values.ToList())
+        foreach (var match in activeMatches.Values.ToList())
         {
             lock (match)
             {
@@ -564,11 +564,11 @@ public sealed class JuraidMountainService(
 
     public async Task TickAsync()
     {
-        if (_activeMatches.IsEmpty)
+        if (activeMatches.IsEmpty)
             return;
 
         var now = DateTime.UtcNow;
-        foreach (var match in _activeMatches.Values.ToList())
+        foreach (var match in activeMatches.Values.ToList())
         {
             if (!match.IsCompleted || match.FinishedAtUtc == null)
                 continue;
@@ -610,7 +610,7 @@ public sealed class JuraidMountainService(
         }
 
         instanceRooms.Close(match.InstanceRoom);
-        _activeMatches.TryRemove(match.RoomId, out _);
+        activeMatches.TryRemove(match.RoomId, out _);
     }
 
     private async Task SendNoticeToRoomAsync(JuraidMatch match, string message)

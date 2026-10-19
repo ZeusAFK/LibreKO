@@ -8,12 +8,12 @@ public static class Build
     private const string VersionResPath = "res://version.txt";
     private const string ApkBuildResPath = "res://apkbuild.txt";
 
-    private static string? _version;
-    private static int _apkBuild = -1;
+    private static string? version;
+    private static int apkBuild = -1;
 
-    public static string Version => _version ??= ReadVersion();
+    public static string Version => version ??= ReadVersion();
 
-    public static int ApkBuild => _apkBuild >= 0 ? _apkBuild : _apkBuild = ReadApkBuild();
+    public static int ApkBuild => apkBuild >= 0 ? apkBuild : apkBuild = ReadApkBuild();
 
     public static void Pin()
     {

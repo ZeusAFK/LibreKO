@@ -78,6 +78,16 @@ public class ScriptDialogService(
         queuedPackets.Add(NpcDialogPacketWriter.SpecialAuctionPanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
     }
 
+    public void SendYutGame()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.YutGame(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
+
+    public void SendDrakiRankBoard()
+    {
+        queuedPackets.Add(NpcDialogPacketWriter.DrakiRankBoard(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
+    }
+
     public void SendItemCombinePanel()
     {
         queuedPackets.Add(NpcDialogPacketWriter.ItemCombinePanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));

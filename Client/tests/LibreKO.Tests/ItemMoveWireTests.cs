@@ -20,11 +20,11 @@ public class ItemMoveWireTests
     [Fact]
     public void AMoveCarriesItsAmountAfterTheDestination()
     {
-        var bytes = ItemMoveWire.Move(ItemMove.MagicBagToInventory, Potion, 3, 7, 25).GetBytes();
+        var bytes = ItemMoveWire.Move(ItemMoveDirection.MagicBagToInventory, Potion, 3, 7, 25).GetBytes();
 
         Assert.Equal(new byte[]
         {
-            (byte)GameOpcodes.GS_ITEM_MOVE, ItemMove.MoveRequest, ItemMove.MagicBagToInventory,
+            (byte)GameOpcodes.GS_ITEM_MOVE, (byte)ItemMoveSubOpcode.Move, (byte)ItemMoveDirection.MagicBagToInventory,
             0x50, 0xD2, 0x2F, 0x17, 3, 7, 25, 0,
         }, bytes);
     }
@@ -32,44 +32,44 @@ public class ItemMoveWireTests
     [Fact]
     public void AWholeStackMoveSendsNoAmount()
     {
-        var bytes = ItemMoveWire.Move(ItemMove.InventoryToSlot, Potion, 0, 6, ItemMove.WholeStack).GetBytes();
+        var bytes = ItemMoveWire.Move(ItemMoveDirection.InventoryToSlot, Potion, 0, 6, ItemMove.WholeStack).GetBytes();
 
         Assert.Equal(new byte[]
         {
-            (byte)GameOpcodes.GS_ITEM_MOVE, ItemMove.MoveRequest, ItemMove.InventoryToSlot,
+            (byte)GameOpcodes.GS_ITEM_MOVE, (byte)ItemMoveSubOpcode.Move, (byte)ItemMoveDirection.InventoryToSlot,
             0x50, 0xD2, 0x2F, 0x17, 0, 6,
         }, bytes);
     }
 
     [Theory]
-    [InlineData(ItemMove.InventoryToInventory)]
-    [InlineData(ItemMove.InventoryToMagicBag)]
-    [InlineData(ItemMove.MagicBagToInventory)]
-    [InlineData(ItemMove.MagicBagToMagicBag)]
-    public void PartOfAStackSplitsInTheBagAndTheMagicBags(byte direction)
+    [InlineData(ItemMoveDirection.InventoryToInventory)]
+    [InlineData(ItemMoveDirection.InventoryToMagicBag)]
+    [InlineData(ItemMoveDirection.MagicBagToInventory)]
+    [InlineData(ItemMoveDirection.MagicBagToMagicBag)]
+    public void PartOfAStackSplitsInTheBagAndTheMagicBags(ItemMoveDirection direction)
     {
         Assert.True(ItemMove.Splits(direction, Stack(Potion, 10), default, Stackable, 4));
         Assert.True(ItemMove.Splits(direction, Stack(Potion, 10), Stack(Potion, 5), Stackable, 4));
     }
 
     [Theory]
-    [InlineData(ItemMove.SlotToInventory)]
-    [InlineData(ItemMove.InventoryToSlot)]
-    [InlineData(ItemMove.InventoryToPet)]
-    public void OtherMovesNeverSplit(byte direction) =>
+    [InlineData(ItemMoveDirection.SlotToInventory)]
+    [InlineData(ItemMoveDirection.InventoryToSlot)]
+    [InlineData(ItemMoveDirection.InventoryToPet)]
+    public void OtherMovesNeverSplit(ItemMoveDirection direction) =>
         Assert.False(ItemMove.Splits(direction, Stack(Potion, 10), default, Stackable, 4));
 
     [Fact]
     public void OnlyAStackableUnlinkedPartWithRoomSplits()
     {
-        Assert.False(ItemMove.Splits(ItemMove.InventoryToMagicBag, Stack(Potion, 10), default, Single, 4));
-        Assert.False(ItemMove.Splits(ItemMove.InventoryToMagicBag, Stack(Potion, 10, uniqueId: 42), default, Stackable, 4));
-        Assert.False(ItemMove.Splits(ItemMove.InventoryToMagicBag, Stack(Potion, 10), default, Stackable, 10));
-        Assert.False(ItemMove.Splits(ItemMove.InventoryToMagicBag, Stack(Potion, 10), default, Stackable, ItemMove.WholeStack));
-        Assert.False(ItemMove.Splits(ItemMove.InventoryToMagicBag, Stack(Potion, 10), Stack(OtherPotion, 1), Stackable, 4));
-        Assert.False(ItemMove.Splits(ItemMove.InventoryToMagicBag, Stack(Potion, 10), Stack(Potion, 1, flag: Rented), Stackable, 4));
-        Assert.False(ItemMove.Splits(ItemMove.InventoryToMagicBag, Stack(Potion, 10), Stack(Potion, 9996), Stackable, 4));
-        Assert.True(ItemMove.Splits(ItemMove.InventoryToMagicBag, Stack(Potion, 10), Stack(Potion, 9995), Stackable, 4));
+        Assert.False(ItemMove.Splits(ItemMoveDirection.InventoryToMagicBag, Stack(Potion, 10), default, Single, 4));
+        Assert.False(ItemMove.Splits(ItemMoveDirection.InventoryToMagicBag, Stack(Potion, 10, uniqueId: 42), default, Stackable, 4));
+        Assert.False(ItemMove.Splits(ItemMoveDirection.InventoryToMagicBag, Stack(Potion, 10), default, Stackable, 10));
+        Assert.False(ItemMove.Splits(ItemMoveDirection.InventoryToMagicBag, Stack(Potion, 10), default, Stackable, ItemMove.WholeStack));
+        Assert.False(ItemMove.Splits(ItemMoveDirection.InventoryToMagicBag, Stack(Potion, 10), Stack(OtherPotion, 1), Stackable, 4));
+        Assert.False(ItemMove.Splits(ItemMoveDirection.InventoryToMagicBag, Stack(Potion, 10), Stack(Potion, 1, flag: Rented), Stackable, 4));
+        Assert.False(ItemMove.Splits(ItemMoveDirection.InventoryToMagicBag, Stack(Potion, 10), Stack(Potion, 9996), Stackable, 4));
+        Assert.True(ItemMove.Splits(ItemMoveDirection.InventoryToMagicBag, Stack(Potion, 10), Stack(Potion, 9995), Stackable, 4));
     }
 
     [Fact]

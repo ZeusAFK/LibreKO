@@ -54,10 +54,14 @@ public class MiningPacketCoordinator(
     private const int WearMin = 2;
     private const int WearMax = 5;
 
-    private const int BettingStake = 5000;
-    private const int BettingPrize = 10000;
+    private const int BettingStake = 50000;
+    private const int GoldenYut = 810219000;
+    private const ushort GoldenYutForAWin = 3;
+    private const ushort GoldenYutForADraw = 2;
+    private const ushort GoldenYutForALoss = 1;
     private const byte BettingRollMin = 1;
     private const byte BettingRollMax = 5;
+    private const ushort BettingRefused = 0;
     private const ushort BettingWon = 1;
     private const ushort BettingTied = 2;
     private const ushort BettingLost = 3;
@@ -429,32 +433,34 @@ public class MiningPacketCoordinator(
         if (session.Hp <= 0)
             return;
 
-        var result = BettingNoCoins;
+        ushort result;
         byte playerRoll = 0;
         byte npcRoll = 0;
 
-        if (session.Money >= BettingStake)
+        if (session.Money < BettingStake)
+        {
+            result = BettingNoCoins;
+        }
+        else if (!CanHold(session, GoldenYut, GoldenYutForAWin))
+        {
+            result = BettingRefused;
+        }
+        else
         {
             session.Money -= BettingStake;
             await userNotificationService.SendGoldLossAsync(session, BettingStake);
 
             playerRoll = (byte)Random.Shared.Next(BettingRollMin, BettingRollMax + 1);
             npcRoll = (byte)Random.Shared.Next(BettingRollMin, BettingRollMax + 1);
+            result = playerRoll > npcRoll ? BettingWon : playerRoll < npcRoll ? BettingLost : BettingTied;
 
-            if (playerRoll > npcRoll)
+            var prize = result switch
             {
-                result = BettingWon;
-                session.Money += BettingPrize;
-                await userNotificationService.SendGoldGainAsync(session, BettingPrize);
-            }
-            else if (playerRoll < npcRoll)
-            {
-                result = BettingLost;
-            }
-            else
-            {
-                result = BettingTied;
-            }
+                BettingWon => GoldenYutForAWin,
+                BettingTied => GoldenYutForADraw,
+                _ => GoldenYutForALoss,
+            };
+            await TryGiveItemAsync(session, GoldenYut, prize);
         }
 
         var packet = MiningPacketWriter.BettingResult(
@@ -462,20 +468,21 @@ public class MiningPacketCoordinator(
         await sessionManager.Regions.SendToRegion(session, packet, excludeSender: false);
     }
 
-    private async Task<bool> TryGiveItemAsync(UserSession session, int itemId, ushort count)
+    private bool CanHold(UserSession session, int itemId, ushort count)
     {
         var itemData = gameDataService.GetItem(itemId);
-        if (itemData == null)
+        return itemData != null
+            && session.Stats.ItemWeight + (long)itemData.Weight * count <= session.Stats.MaxWeight
+            && session.FindSlotForItem(itemId, gameDataService, count) >= 0;
+    }
+
+    private async Task<bool> TryGiveItemAsync(UserSession session, int itemId, ushort count)
+    {
+        if (!CanHold(session, itemId, count))
             return false;
 
-        var addedWeight = (long)itemData.Weight * count;
-        if (session.Stats.ItemWeight + addedWeight > session.Stats.MaxWeight)
-            return false;
-
+        var itemData = gameDataService.GetItem(itemId)!;
         var slotIndex = session.FindSlotForItem(itemId, gameDataService, count);
-        if (slotIndex < 0)
-            return false;
-
         var slot = session.Inventory[slotIndex];
         var isNewItem = slot.IsEmpty;
         slot.ItemId = itemId;

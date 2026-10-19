@@ -37,7 +37,7 @@ public class ClanMemoTests
     private static Packet ServerReply(byte result, string memo)
     {
         var p = new Packet(GameOpcodes.GS_KNIGHTS_PROCESS);
-        p.WriteByte(Net.KnMemo);
+        p.WriteByte((byte)KnightsSubOpcode.UpdateMemo);
         p.WriteByte(ClanMemo.WriteKind);
         p.WriteByte(result);
         p.WriteString(memo);

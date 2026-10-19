@@ -40,7 +40,7 @@ public class SpecialAuctionService(
     public const int LogDays = SpecialAuctionSchedule.DaysPerGroup;
     public const int ResultRetentionDays = 30;
 
-    private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly SemaphoreSlim stateLock = new(1, 1);
     private TimeProvider Clock => clock ?? TimeProvider.System;
     private DateTime Now => Clock.GetUtcNow().UtcDateTime;
     private int Channel => settings.Value.ServerId;
@@ -146,7 +146,7 @@ public class SpecialAuctionService(
         if (total != coins + checkSlots.Count * CheckValue)
             return SpecialAuctionPacketWriter.PriceNotAccurate;
 
-        if (!await _lock.WaitAsync(0))
+        if (!await stateLock.WaitAsync(0))
             return SpecialAuctionPacketWriter.Busy;
         try
         {
@@ -190,7 +190,7 @@ public class SpecialAuctionService(
         }
         finally
         {
-            _lock.Release();
+            stateLock.Release();
         }
 
         if (coins > 0)
@@ -214,7 +214,7 @@ public class SpecialAuctionService(
         if (channel != Channel)
             return SpecialAuctionPacketWriter.WrongChannel;
 
-        await _lock.WaitAsync();
+        await stateLock.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -241,7 +241,7 @@ public class SpecialAuctionService(
         }
         finally
         {
-            _lock.Release();
+            stateLock.Release();
         }
 
         await statePersister.SaveAsync(session);
@@ -289,7 +289,7 @@ public class SpecialAuctionService(
         if (channel != Channel)
             return SpecialAuctionPacketWriter.ClaimWrongChannel;
 
-        await _lock.WaitAsync();
+        await stateLock.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -309,7 +309,7 @@ public class SpecialAuctionService(
         }
         finally
         {
-            _lock.Release();
+            stateLock.Release();
         }
 
         await statePersister.SaveAsync(session);
@@ -362,7 +362,7 @@ public class SpecialAuctionService(
             return;
 
         List<AuctionResultView> ended;
-        await _lock.WaitAsync();
+        await stateLock.WaitAsync();
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -396,7 +396,7 @@ public class SpecialAuctionService(
         }
         finally
         {
-            _lock.Release();
+            stateLock.Release();
         }
 
         logger.LogInformation("Akara's Altar auction {Serial} settled: {Sold} of {Lots} lots sold", serial,

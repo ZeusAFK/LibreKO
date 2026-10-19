@@ -8,13 +8,14 @@ public sealed class CharacterSheet
     public const int MaxLevel = 83;
 
     public const int StatCount = 5;
+    public static readonly string[] StatLabels = { "STR", "HP", "DEX", "INT", "MP" };
     public const int StatMax = 255;
     public const int BaseStatTotal = 290;
     public const int ResistCount = 6;
 
     public const int TypeStr = 1, TypeSta = 2, TypeDex = 3, TypeInt = 4, TypeMag = 5;
 
-    private readonly int[] _resist = new int[ResistCount];
+    private readonly int[] resist = new int[ResistCount];
 
     public int Str { get; private set; }
     public int Sta { get; private set; }
@@ -36,7 +37,7 @@ public sealed class CharacterSheet
     public long Exp { get; private set; }
     public long MaxExp { get; private set; }
 
-    public int ResistAt(int index) => (uint)index < ResistCount ? _resist[index] : 0;
+    public int ResistAt(int index) => (uint)index < ResistCount ? resist[index] : 0;
 
     public bool CanAllocate => Points > 0;
 
@@ -52,37 +53,37 @@ public sealed class CharacterSheet
         0 => Str, 1 => Sta, 2 => Dex, 3 => Intel, 4 => Mag, _ => 0,
     };
 
-    private readonly int[] _statBonus = new int[StatCount];
+    private readonly int[] statBonus = new int[StatCount];
 
-    public int StatBonusAtRow(int row) => (uint)row < StatCount ? _statBonus[row] : 0;
+    public int StatBonusAtRow(int row) => (uint)row < StatCount ? statBonus[row] : 0;
 
     public void SeedStatBonuses(int str, int sta, int dex, int intel, int mag)
     {
-        _statBonus[0] = str; _statBonus[1] = sta; _statBonus[2] = dex;
-        _statBonus[3] = intel; _statBonus[4] = mag;
+        statBonus[0] = str; statBonus[1] = sta; statBonus[2] = dex;
+        statBonus[3] = intel; statBonus[4] = mag;
     }
 
-    private readonly int[] _rebirthBonus = new int[StatCount];
+    private readonly int[] rebirthBonus = new int[StatCount];
 
     public int RebirthLevel { get; private set; }
 
-    public int RebirthBonusAtRow(int row) => (uint)row < StatCount ? _rebirthBonus[row] : 0;
+    public int RebirthBonusAtRow(int row) => (uint)row < StatCount ? rebirthBonus[row] : 0;
 
     public string LevelLabel => RebirthLevel > 0 ? $"{Level}/{RebirthLevel}" : Level.ToString();
 
     public void SeedRebirth(int level, int str, int sta, int dex, int intel, int mag)
     {
         RebirthLevel = level;
-        _rebirthBonus[0] = str; _rebirthBonus[1] = sta; _rebirthBonus[2] = dex;
-        _rebirthBonus[3] = intel; _rebirthBonus[4] = mag;
+        rebirthBonus[0] = str; rebirthBonus[1] = sta; rebirthBonus[2] = dex;
+        rebirthBonus[3] = intel; rebirthBonus[4] = mag;
     }
 
     public void ApplyRebirthReset(byte[] picks)
     {
         for (int i = 0; i < StatCount && i < picks.Length; i++)
         {
-            _statBonus[i] += picks[i] - _rebirthBonus[i];
-            _rebirthBonus[i] = picks[i];
+            statBonus[i] += picks[i] - rebirthBonus[i];
+            rebirthBonus[i] = picks[i];
         }
     }
 
@@ -91,8 +92,8 @@ public sealed class CharacterSheet
         RebirthLevel++;
         for (int i = 0; i < StatCount && i < picks.Length; i++)
         {
-            _rebirthBonus[i] += picks[i];
-            _statBonus[i] += picks[i];
+            rebirthBonus[i] += picks[i];
+            statBonus[i] += picks[i];
         }
     }
 
@@ -119,8 +120,8 @@ public sealed class CharacterSheet
 
     public void SeedResists(int fire, int cold, int lightning, int magic, int disease, int poison)
     {
-        _resist[0] = fire; _resist[1] = cold; _resist[2] = lightning;
-        _resist[3] = magic; _resist[4] = disease; _resist[5] = poison;
+        resist[0] = fire; resist[1] = cold; resist[2] = lightning;
+        resist[3] = magic; resist[4] = disease; resist[5] = poison;
     }
 
     public bool ApplyPointChange(int wireType, int newValue, int totalHit)
@@ -167,11 +168,11 @@ public sealed class CharacterSheet
     {
         Ap = s.TotalHit;
         Ac = s.TotalAc;
-        _statBonus[0] = s.StrBonus; _statBonus[1] = s.StaBonus; _statBonus[2] = s.DexBonus;
-        _statBonus[3] = s.IntBonus; _statBonus[4] = s.ChaBonus;
+        statBonus[0] = s.StrBonus; statBonus[1] = s.StaBonus; statBonus[2] = s.DexBonus;
+        statBonus[3] = s.IntBonus; statBonus[4] = s.ChaBonus;
         SetMaxWeight(s.MaxWeight);
-        _resist[0] = s.FireR; _resist[1] = s.ColdR; _resist[2] = s.LightningR;
-        _resist[3] = s.MagicR; _resist[4] = s.DiseaseR; _resist[5] = s.PoisonR;
+        resist[0] = s.FireR; resist[1] = s.ColdR; resist[2] = s.LightningR;
+        resist[3] = s.MagicR; resist[4] = s.DiseaseR; resist[5] = s.PoisonR;
     }
 
     public void ApplyExp(long exp) => Exp = exp;
@@ -183,6 +184,8 @@ public sealed class CharacterSheet
         Np = np;
         MonthlyNp = monthly;
     }
+
+    public void SetNp(int np) => Np = np;
 
     public int Manner { get; private set; }
 

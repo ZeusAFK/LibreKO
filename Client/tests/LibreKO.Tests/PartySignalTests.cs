@@ -27,7 +27,7 @@ public class PartySignalTests
     {
         var p = FromServer(Probe);
 
-        Assert.Equal(Net.SubPartySignal, p.ReadByte());
+        Assert.Equal((byte)PartySubOpcode.SignalProbe, p.ReadByte());
         var probe = PartySignalProbe.Read(p);
 
         Assert.NotNull(probe);
@@ -58,7 +58,7 @@ public class PartySignalTests
     {
         var p = FromServer(TwoPings);
 
-        Assert.Equal(Net.SubPartySignalTable, p.ReadByte());
+        Assert.Equal((byte)PartySubOpcode.SignalTable, p.ReadByte());
         var table = PartySignalTable.Read(p);
 
         Assert.NotNull(table);
@@ -92,7 +92,7 @@ public class PartySignalTests
     {
         var p = FromServer(Progress);
 
-        Assert.Equal(Net.SubPartyLevelProgress, p.ReadByte());
+        Assert.Equal((byte)PartySubOpcode.LevelProgress, p.ReadByte());
         var progress = PartyLevelProgress.Read(p);
 
         Assert.NotNull(progress);

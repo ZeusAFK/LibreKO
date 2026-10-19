@@ -263,11 +263,11 @@ public class QuestDailyTests
 
     private sealed class RetailHarness : IDisposable
     {
-        private readonly string _directory = Path.Combine(Path.GetTempPath(), "quest-retail-" + Guid.NewGuid());
-        private readonly IClient _client = Substitute.For<IClient>();
-        private readonly short _questId;
-        private readonly NpcInstance _npc;
-        private readonly QuestScriptEngine _engine;
+        private readonly string directory = Path.Combine(Path.GetTempPath(), "quest-retail-" + Guid.NewGuid());
+        private readonly IClient client = Substitute.For<IClient>();
+        private readonly short questId;
+        private readonly NpcInstance npc;
+        private readonly QuestScriptEngine engine;
         public IGameDataService Data { get; } = Substitute.For<IGameDataService>();
         public Clock Time { get; } = new();
         public UserSession Session { get; }
@@ -276,27 +276,27 @@ public class QuestDailyTests
         public RetailHarness(short questId, short npcId, AccountNation nation,
             [System.Runtime.CompilerServices.CallerFilePath] string source = "")
         {
-            _questId = questId;
-            Directory.CreateDirectory(_directory);
+            this.questId = questId;
+            Directory.CreateDirectory(directory);
             var root = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, "..", ".."));
             var file = $"{npcId}_71_{questId}.quest";
-            File.Copy(Path.Combine(root, "LibreKO.Game", "Quests", file), Path.Combine(_directory, file));
+            File.Copy(Path.Combine(root, "LibreKO.Game", "Quests", file), Path.Combine(directory, file));
             var sessions = new SessionManager();
-            _client.Id.Returns(Guid.NewGuid());
-            Session = sessions.CreateSession(_client, 1, 1);
+            client.Id.Returns(Guid.NewGuid());
+            Session = sessions.CreateSession(client, 1, 1);
             Session.Level = 61;
             Session.Class = nation == AccountNation.Karus ? (short)101 : (short)201;
             Session.Nation = nation;
             Session.Hp = 100;
             Session.ZoneId = 71;
-            _npc = sessions.Regions.SpawnNpc(new NpcInstance { NpcId = npcId, ZoneId = 71, Hp = 100, MaxHp = 100 });
+            npc = sessions.Regions.SpawnNpc(new NpcInstance { NpcId = npcId, ZoneId = 71, Hp = 100, MaxHp = 100 });
             Session.Quest.EventNpcId = npcId;
-            Session.Quest.EventNpcUniqueId = _npc.UniqueId;
-            _engine = new QuestScriptEngine(Data, sessions, new ForwardingEffectApplier(), QuestTranslations.Empty,
-                TestHostEnvironmentFactory.Create(_directory), Options.Create(new GameServerSettings { QuestsDirectory = _directory }),
+            Session.Quest.EventNpcUniqueId = npc.UniqueId;
+            engine = new QuestScriptEngine(Data, sessions, new ForwardingEffectApplier(), QuestTranslations.Empty,
+                TestHostEnvironmentFactory.Create(directory), Options.Create(new GameServerSettings { QuestsDirectory = directory }),
                 Substitute.For<ILogger<QuestScriptEngine>>(), Time);
-            var runner = new QuestDialogRunner(_engine, Substitute.For<ILogger<QuestDialogRunner>>());
-            Progression = new QuestProgressionService(sessions, Data, runner, _engine,
+            var runner = new QuestDialogRunner(engine, Substitute.For<ILogger<QuestDialogRunner>>());
+            Progression = new QuestProgressionService(sessions, Data, runner, engine,
                 Substitute.For<ICharacterStatePersister>(), Substitute.For<ILogger<QuestProgressionService>>(), clock: Time);
         }
 
@@ -304,32 +304,32 @@ public class QuestDailyTests
         {
             var packet = new Packet(GameOpcodes.GS_QUEST);
             packet.WriteByte((byte)operation);
-            packet.WriteInt(_questId);
-            return Progression.HandleQuestAsync(_client, packet);
+            packet.WriteInt(questId);
+            return Progression.HandleQuestAsync(client, packet);
         }
 
         public async Task RunFulfilDirectly()
         {
-            _engine.TryGetEntry(_npc.NpcId, 71, QuestProgram.FulfilEvent, _questId, out var file, out var entry)
+            engine.TryGetEntry(npc.NpcId, 71, QuestProgram.FulfilEvent, questId, out var file, out var entry)
                 .Should().BeTrue();
-            (await _engine.ExecuteAsync(Session, _npc, entry, -1, file)).Should().BeTrue();
+            (await engine.ExecuteAsync(Session, npc, entry, -1, file)).Should().BeTrue();
         }
 
         public async Task ClaimThroughNpcTopic()
         {
-            _engine.TryGetGreeting(_npc.NpcId, 71, out var file, out var greeting).Should().BeTrue();
-            (await _engine.ExecuteAsync(Session, _npc, greeting, -1, file)).Should().BeTrue();
+            engine.TryGetGreeting(npc.NpcId, 71, out var file, out var greeting).Should().BeTrue();
+            (await engine.ExecuteAsync(Session, npc, greeting, -1, file)).Should().BeTrue();
             for (var click = 0; click < 1; click++)
             {
                 var entry = Session.Quest.SelectMessageEvents[0];
                 entry.Should().BeGreaterThan(0);
-                (await _engine.ExecuteAsync(Session, _npc, entry, -1, file)).Should().BeTrue();
+                (await engine.ExecuteAsync(Session, npc, entry, -1, file)).Should().BeTrue();
             }
-            Session.Quest.StatusOf(_questId).Should().Be(QuestStatus.ReadyToTurnIn);
+            Session.Quest.StatusOf(questId).Should().Be(QuestStatus.ReadyToTurnIn);
             await Request(QuestSubOpcode.CheckFulfill);
         }
 
-        public void Dispose() => Directory.Delete(_directory, true);
+        public void Dispose() => Directory.Delete(directory, true);
     }
 
     [Theory]

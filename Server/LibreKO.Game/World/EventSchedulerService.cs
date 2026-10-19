@@ -34,13 +34,13 @@ public class EventSchedulerService(
     ScheduleClock scheduleClock,
     ILogger<EventSchedulerService> logger) : BackgroundService
 {
-    private DateTime _lastWarOpen = DateTime.MinValue;
-    private bool _banishPending;
-    private DateTime _banishTime;
-    private DateTime _lastScheduleMinute = DateTime.MinValue;
+    private DateTime lastWarOpen = DateTime.MinValue;
+    private bool banishPending;
+    private DateTime banishTime;
+    private DateTime lastScheduleMinute = DateTime.MinValue;
 
-    private readonly object _runsLock = new();
-    private readonly Dictionary<TempleEvent, TempleEventRun> _runs = [];
+    private readonly object runsLock = new();
+    private readonly Dictionary<TempleEvent, TempleEventRun> runs = [];
 
     private sealed class TempleEventRun(TempleEvent contest, byte minLevel, byte maxLevel, DateTime calledAt, DateTime start)
     {
@@ -64,14 +64,14 @@ public class EventSchedulerService(
 
     internal IReadOnlyList<TempleEventStatus> TempleEventsAt(DateTime utcNow)
     {
-        lock (_runsLock)
-            return _runs.Values.OrderBy(r => r.CalledAt).Select(r => r.Status(utcNow)).ToList();
+        lock (runsLock)
+            return runs.Values.OrderBy(r => r.CalledAt).Select(r => r.Status(utcNow)).ToList();
     }
 
     public bool IsTempleEventRunning(TempleEvent contest)
     {
-        lock (_runsLock)
-            return _runs.ContainsKey(contest);
+        lock (runsLock)
+            return runs.ContainsKey(contest);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -130,16 +130,18 @@ public class EventSchedulerService(
                 await BroadcastBattleResult(winner);
                 await nereidMonuments.AnnounceResultAsync(winner);
 
+                var closedZone = battle.BattleZone;
                 battle.CloseBattleZone();
-                _banishPending = true;
-                _banishTime = DateTime.UtcNow.AddSeconds(60);
+                await sessionManager.BroadcastToAll(BattleEventPacketWriter.ZoneClosed(closedZone));
+                banishPending = true;
+                banishTime = DateTime.UtcNow.AddSeconds(60);
             }
         }
-        else if (!_banishPending)
+        else if (!banishPending)
         {
             // Check if it's time to open a new battle
             var interval = TimeSpan.FromMinutes(settings.Value.Events.BattleIntervalMinutes);
-            if (DateTime.UtcNow - _lastWarOpen >= interval && sessionManager.GetAll().Count() >= settings.Value.Events.MinPlayersForWar)
+            if (DateTime.UtcNow - lastWarOpen >= interval && sessionManager.GetAll().Count() >= settings.Value.Events.MinPlayersForWar)
             {
                 await OpenNextBattle();
             }
@@ -154,26 +156,22 @@ public class EventSchedulerService(
                         BattleZoneManager.ZONE_BATTLE5, BattleZoneManager.ZONE_BATTLE6];
         byte zone = zones[Random.Shared.Next(zones.Length)];
 
-        if (!sessionManager.Battle.OpenBattleZone(BattleZoneManager.NATION_BATTLE, zone))
+        if (!sessionManager.Battle.OpenBattleZone(BattleZoneManager.BATTLEZONE_OPEN, zone))
             return;
 
-        _lastWarOpen = DateTime.UtcNow;
+        lastWarOpen = DateTime.UtcNow;
         logger.LogInformation("Opened battle zone {Zone}", zone);
 
         // Broadcast war open to all players
-        var pkt = BattleEventPacketWriter.Opened(
-            BattleZoneManager.BATTLEZONE_OPEN, zone,
-            (short)settings.Value.Events.BattleDurationMinutes);
-        await sessionManager.BroadcastToAll(pkt);
+        await sessionManager.BroadcastToAll(BattleEventPacketWriter.ZoneOpened(BattleZoneManager.BATTLEZONE_OPEN, zone));
     }
 
     private async Task BroadcastBattleResult(byte winner)
     {
         // Winner announcement
-        var pkt = BattleEventPacketWriter.Notice(
-            winner > 0 ? BattleZoneManager.DECLARE_WINNER : BattleZoneManager.BATTLEZONE_CLOSE,
-            winner);
-        await sessionManager.BroadcastToAll(pkt);
+        if (winner > 0)
+            foreach (var packet in BattleEventPacketWriter.Winner(winner))
+                await sessionManager.BroadcastToAll(packet);
 
         // Award loyalty to participants of winning side
         int loyaltyReward = settings.Value.Events.BattleWinLoyalty;
@@ -197,19 +195,15 @@ public class EventSchedulerService(
 
     private async Task TickBanish()
     {
-        if (!_banishPending || DateTime.UtcNow < _banishTime) return;
+        if (!banishPending || DateTime.UtcNow < banishTime) return;
 
-        _banishPending = false;
+        banishPending = false;
         logger.LogInformation("Banishing players from battle zones");
 
         // Warp all players in battle zones back to their nation's start position
         foreach (var session in sessionManager.GetAll())
         {
             if (!BattleZoneManager.IsBattleZone(session.ZoneId)) continue;
-
-            // Send banish notification
-            var banishPkt = BattleEventPacketWriter.Banished(BattleZoneManager.DECLARE_BAN);
-            await session.Client.SendPacket(banishPkt);
 
             // Zone change back to nation zone
             byte homeZone = session.Nation == AccountNation.Karus ? (byte)1 : (byte)2;
@@ -221,9 +215,9 @@ public class EventSchedulerService(
     {
         var scheduleNow = ScheduleTime.Now(settings.Value.Events, scheduleUtcNow ?? utcNow);
         var minute = scheduleNow.Date.AddHours(scheduleNow.Hour).AddMinutes(scheduleNow.Minute);
-        if (minute != _lastScheduleMinute)
+        if (minute != lastScheduleMinute)
         {
-            _lastScheduleMinute = minute;
+            lastScheduleMinute = minute;
             foreach (var schedule in DueSchedules(scheduleNow))
             {
                 var contest = schedule.Event;
@@ -239,7 +233,7 @@ public class EventSchedulerService(
             if (run.JoinOpen && utcNow >= run.Start)
             {
                 int entrants;
-                lock (_runsLock)
+                lock (runsLock)
                 {
                     run.JoinOpen = false;
                     entrants = run.Participants.Count;
@@ -274,16 +268,16 @@ public class EventSchedulerService(
 
     private List<TempleEventRun> RunsSnapshot()
     {
-        lock (_runsLock)
-            return _runs.Values.OrderBy(r => r.CalledAt).ToList();
+        lock (runsLock)
+            return runs.Values.OrderBy(r => r.CalledAt).ToList();
     }
 
     private void Remove(TempleEventRun run)
     {
-        lock (_runsLock)
+        lock (runsLock)
         {
-            if (_runs.TryGetValue(run.Contest, out var current) && ReferenceEquals(current, run))
-                _runs.Remove(run.Contest);
+            if (runs.TryGetValue(run.Contest, out var current) && ReferenceEquals(current, run))
+                runs.Remove(run.Contest);
         }
     }
 
@@ -296,14 +290,14 @@ public class EventSchedulerService(
         byte maxLevel)
     {
         var run = new TempleEventRun(contest, minLevel, maxLevel, now, now.AddSeconds(joinWindowSeconds));
-        lock (_runsLock)
+        lock (runsLock)
         {
-            if (_runs.ContainsKey(contest))
+            if (runs.ContainsKey(contest))
             {
                 logger.LogInformation("{Contest} is already running; this call is skipped", contest);
                 return;
             }
-            _runs[contest] = run;
+            runs[contest] = run;
             if (autoJoinSession != null && run.Fits(autoJoinSession.Level) && !InAnotherRun(run, autoJoinSession.CharacterId))
                 run.Participants.Add(autoJoinSession.CharacterId);
         }
@@ -334,7 +328,7 @@ public class EventSchedulerService(
     }
 
     private bool InAnotherRun(TempleEventRun run, int characterId) =>
-        _runs.Values.Any(r => !ReferenceEquals(r, run) && r.Participants.Contains(characterId));
+        runs.Values.Any(r => !ReferenceEquals(r, run) && r.Participants.Contains(characterId));
 
     private static Packet SignUpClosed(TempleEvent contest) =>
         BifrostPacketWriter.Remaining(TempleSubOpcode.BifrostRemaining, 0, (byte)contest);
@@ -342,7 +336,7 @@ public class EventSchedulerService(
     private async Task WarpParticipantsToEventAsync(TempleEventRun run)
     {
         List<int> participants;
-        lock (_runsLock)
+        lock (runsLock)
             participants = run.Participants.ToList();
 
         logger.LogInformation("Warping {Count} participants to zone {Zone} for {Contest}",
@@ -452,13 +446,13 @@ public class EventSchedulerService(
 
     public TempleEvent SignUpFor(UserSession session)
     {
-        lock (_runsLock)
+        lock (runsLock)
             return PickSignUp(session)?.Contest ?? TempleEvent.None;
     }
 
     private TempleEventRun? PickSignUp(UserSession session)
     {
-        var open = _runs.Values.Where(r => r.JoinOpen).OrderByDescending(r => r.CalledAt).ToList();
+        var open = runs.Values.Where(r => r.JoinOpen).OrderByDescending(r => r.CalledAt).ToList();
         return open.FirstOrDefault(r => r.Participants.Contains(session.CharacterId))
             ?? open.FirstOrDefault(r => r.Fits(session.Level))
             ?? open.FirstOrDefault();
@@ -466,9 +460,9 @@ public class EventSchedulerService(
 
     public TempleJoinResult TryJoinTempleEvent(UserSession session, TempleEvent contest = TempleEvent.None)
     {
-        lock (_runsLock)
+        lock (runsLock)
         {
-            var run = contest == TempleEvent.None ? PickSignUp(session) : _runs.GetValueOrDefault(contest);
+            var run = contest == TempleEvent.None ? PickSignUp(session) : runs.GetValueOrDefault(contest);
             if (run is not { JoinOpen: true })
                 return TempleJoinResult.NotOpen;
             if (run.Participants.Contains(session.CharacterId))
@@ -491,8 +485,8 @@ public class EventSchedulerService(
     public (ushort Karus, ushort ElMorad) TempleSignUps(TempleEvent contest)
     {
         List<int> participants;
-        lock (_runsLock)
-            participants = _runs.TryGetValue(contest, out var run) ? run.Participants.ToList() : [];
+        lock (runsLock)
+            participants = runs.TryGetValue(contest, out var run) ? run.Participants.ToList() : [];
 
         ushort karus = 0, elMorad = 0;
         foreach (var player in Sessions(participants))
@@ -506,9 +500,9 @@ public class EventSchedulerService(
     public TempleEvent LeaveTempleEvent(int characterId)
     {
         var leftSignUp = TempleEvent.None;
-        lock (_runsLock)
+        lock (runsLock)
         {
-            foreach (var run in _runs.Values)
+            foreach (var run in runs.Values)
             {
                 if (run.Participants.Remove(characterId) && run.JoinOpen)
                     leftSignUp = run.Contest;
@@ -544,11 +538,11 @@ public class EventSchedulerService(
     public async Task<bool> CancelTempleEventAsync(TempleEvent contest = TempleEvent.None)
     {
         List<TempleEventRun> cancelled;
-        lock (_runsLock)
+        lock (runsLock)
         {
-            cancelled = _runs.Values.Where(r => contest == TempleEvent.None || r.Contest == contest).ToList();
+            cancelled = runs.Values.Where(r => contest == TempleEvent.None || r.Contest == contest).ToList();
             foreach (var run in cancelled)
-                _runs.Remove(run.Contest);
+                runs.Remove(run.Contest);
         }
 
         foreach (var run in cancelled)

@@ -20,17 +20,17 @@ public interface IGameFriends
 
 public sealed partial class PluginGame
 {
-    public IGameFriends Friends => _friends;
+    public IGameFriends Friends => friends;
 
-    private readonly FriendsProxy _friends = new();
+    private readonly FriendsProxy friends = new();
 
-    internal void AttachFriends(IGameFriends friends)
+    internal void AttachFriends(IGameFriends friendsSource)
     {
-        _friends.Source = friends;
+        friends.Source = friendsSource;
         RaiseFriends();
     }
 
-    internal void RaiseFriends() => _friends.Raise();
+    internal void RaiseFriends() => friends.Raise();
 
     private sealed class FriendsProxy : IGameFriends
     {
