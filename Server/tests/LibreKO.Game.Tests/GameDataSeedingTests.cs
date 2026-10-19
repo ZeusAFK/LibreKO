@@ -41,6 +41,25 @@ public class GameDataSeedingTests
     }
 
     [Fact]
+    public void ItemSellSeed_EverySpawnedShopHasItsListAndEachCellOneItem()
+    {
+        var sells = new ItemSellSeed().GetSeedData().ToList();
+        sells.Select(row => (row.SellingGroup, row.Line, row.Index)).Should().OnlyHaveUniqueItems();
+
+        var spawned = new NpcPosSeed().GetSeedData().Select(row => row.NpcId).ToHashSet();
+        var shops = new NpcSeed().GetSeedData()
+            .Where(npc => spawned.Contains(npc.Id) && npc.SellingGroup > 0
+                && npc.NpcType is NpcData.TypeTradeMerchant or NpcData.TypeRepairMerchant or NpcData.TypeFamiliarTamer)
+            .Select(npc => npc.SellingGroup)
+            .Distinct()
+            .ToList();
+
+        shops.Should().NotBeEmpty();
+        shops.Should().OnlyContain(group => sells.Any(row => row.SellingGroup == group),
+            "a merchant with no list would refuse every purchase");
+    }
+
+    [Fact]
     public void HardenedSeeds_EmitUniqueKeys()
     {
         var levelRows = new LevelUpSeed().GetSeedData().ToList();

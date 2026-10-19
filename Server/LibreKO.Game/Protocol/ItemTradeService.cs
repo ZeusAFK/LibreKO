@@ -136,7 +136,8 @@ public class ItemTradeService(
             var npcId = packet.ReadInt();
 
             var npc = sessionManager.Regions.GetNpc(npcId);
-            if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc) || npc.SellingGroup != sellingGroup)
+            if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc)
+                || !OpensShop(npc) || npc.SellingGroup != sellingGroup)
             {
                 await SendItemTradeErrorAsync(session, ItemTradeRefusal.CannotTrade);
                 return;
@@ -339,6 +340,7 @@ public class ItemTradeService(
                     || entry.Count == 0
                     || entry.Count > InventoryConstants.MaxStackCount
                     || (type == 1 && !usedPositions.Add(entry.Position))
+                    || (type == 1 && !IsOnShopList(npc.SellingGroup, entry))
                     || (type == 1 && itemData.Countable == 0 && entry.Count != 1)
                     || (type == 2 && (entry.ItemId >= ItemNoTrade || UnsellableRaces.Contains(itemData.Race))))
                     return Refuse(ItemTradeRefusal.CannotTrade);
@@ -484,8 +486,18 @@ public class ItemTradeService(
     private static bool RepairsItems(NpcInstance npc) =>
         npc.NpcType is NpcData.TypeTradeMerchant or NpcData.TypeRepairMerchant;
 
+    private static bool OpensShop(NpcInstance npc) =>
+        npc.NpcType is NpcData.TypeTradeMerchant or NpcData.TypeRepairMerchant or NpcData.TypeFamiliarTamer;
+
+    private bool IsOnShopList(int sellingGroup, NpcTradeEntry entry) =>
+        gameDataService.ItemSellsByGroup[sellingGroup]
+            .Any(sold => sold.Line == entry.Line && sold.Index == entry.Index && sold.ItemId == entry.ItemId);
+
     private static bool IsInNpcRange(UserSession session, NpcInstance npc)
     {
+        if (npc.ZoneId != session.ZoneId)
+            return false;
+
         var dx = session.X - npc.X;
         var dz = session.Z - npc.Z;
         return dx * dx + dz * dz <= GameConstants.MaxNpcInteractionRangeSq;

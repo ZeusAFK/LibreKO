@@ -272,6 +272,14 @@ public abstract class GameTestBase
         return repository;
     }
 
+    protected static ILookup<int, ItemSellData> ShopList(int sellingGroup, params int[] itemIds) =>
+        itemIds
+            .Select((itemId, index) => new ItemSellData
+            {
+                SellingGroup = sellingGroup, Line = 0, Index = (byte)index, ItemId = itemId,
+            })
+            .ToLookup(sold => sold.SellingGroup);
+
     protected static CoefficientData CreateBasicCoefficient(short classId)
     {
         return new CoefficientData

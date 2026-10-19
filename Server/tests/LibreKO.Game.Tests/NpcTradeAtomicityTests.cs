@@ -120,7 +120,9 @@ public class NpcTradeAtomicityTests : GameTestBase
             if (type == Buy)
             {
                 packet.WriteByte(0);
-                packet.WriteByte(0);
+                var cell = Array.IndexOf(ShopItems, itemId);
+                cell.Should().BeGreaterThanOrEqualTo(0, $"item {itemId} needs a cell on the test shop's list");
+                packet.WriteByte((byte)cell);
             }
         }
 
@@ -128,10 +130,13 @@ public class NpcTradeAtomicityTests : GameTestBase
         await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, packet);
     }
 
+    private static readonly int[] ShopItems = [Potion, Arrow, Sword];
+
     private static ServiceProvider Provider() => CreateProvider(_ => { }, StockItems);
 
     private static void StockItems(IGameDataService gameData)
     {
+        gameData.ItemSellsByGroup.Returns(ShopList(SellingGroup, ShopItems));
         gameData.GetItem(Potion).Returns(new ItemData
         {
             Num = Potion, Countable = 1, BuyPrice = PotionPrice, SellPrice = 1, Weight = 1, Race = 1, SellingGroup = SellingGroup,
@@ -170,7 +175,7 @@ public class NpcTradeAtomicityTests : GameTestBase
             Z = 10,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11,
+            NpcType = NpcData.TypeTradeMerchant,
         });
         return (session, client, npc);
     }

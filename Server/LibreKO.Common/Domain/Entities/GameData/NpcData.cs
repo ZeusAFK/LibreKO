@@ -40,6 +40,7 @@ public class NpcData
     public const byte TypeRollingStone = 181;
     public const byte TypeSoccerBall = 197;
     public const byte TypeDisassembler = 222;
+    public const byte TypeFamiliarTamer = 223;
     public const byte TypeGuardSummon = 255;
 
     public int Id { get; set; }

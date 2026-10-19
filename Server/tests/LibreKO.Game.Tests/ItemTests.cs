@@ -1396,7 +1396,7 @@ public class ItemTests : GameTestBase
             Z = 10,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11
+            NpcType = NpcData.TypeTradeMerchant
         });
 
         var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
@@ -1473,7 +1473,7 @@ public class ItemTests : GameTestBase
             Z = 10,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11
+            NpcType = NpcData.TypeTradeMerchant
         });
 
         var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
@@ -1510,6 +1510,7 @@ public class ItemTests : GameTestBase
                     Duration = 20,
                     Weight = 15
                 });
+                gameData.ItemSellsByGroup.Returns(ShopList(1, itemId));
             });
 
         var client = Substitute.For<IClient>();
@@ -1539,7 +1540,7 @@ public class ItemTests : GameTestBase
             Z = 10,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11
+            NpcType = NpcData.TypeTradeMerchant
         });
 
         var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);

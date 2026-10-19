@@ -19,6 +19,7 @@ public class ItemRepairTests : GameTestBase
     private const int SaleTypeNoRepair = 2;
     private const byte BagPosition = 2;
     private const byte PowerUpStoreKind = (byte)ItemKind.PowerUpStore;
+    private const byte OtherZone = 2;
 
     [Fact]
     public async Task AMerchantRepairsAWornItem()
@@ -57,6 +58,20 @@ public class ItemRepairTests : GameTestBase
             session.Inventory[InventoryConstants.InventoryStart].Durability.Should().Be(WornDurability);
             session.Money.Should().Be(1_000_000);
             sent.Should().Contain(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_ITEM_REPAIR);
+        }
+    }
+
+    [Fact]
+    public async Task AMerchantInAnotherZoneDoesNotRepair()
+    {
+        var (provider, session, _, npc) = Setup(NpcData.TypeTradeMerchant, SaleTypeNormal);
+        using (provider)
+        {
+            session.ZoneId = OtherZone;
+            await provider.GetRequiredService<IItemPacketCoordinator>().HandleRepairAsync(session.Client, Repair(npc));
+
+            session.Inventory[InventoryConstants.InventoryStart].Durability.Should().Be(WornDurability);
+            session.Money.Should().Be(1_000_000);
         }
     }
 

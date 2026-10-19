@@ -111,7 +111,7 @@ public class BusyGateTests : GameTestBase
             Z = session.Z,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11,
+            NpcType = NpcData.TypeTradeMerchant,
         });
 
         var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
