@@ -87,8 +87,20 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         }
         else
         {
-            session.InitExchange(true);
-            target.InitExchange(true);
+            List<ExchangeItem> unplacedSession = [], unplacedTarget = [];
+            var paired = false;
+            UserSession.WithBoth(session, target, (s, t) =>
+            {
+                paired = s.Trade.ExchangeUser == t.CharacterId && t.Trade.ExchangeUser == s.CharacterId;
+                if (!paired)
+                    return;
+                unplacedSession = s.InitExchange(true);
+                unplacedTarget = t.InitExchange(true);
+            });
+            LogUnplaced(session, unplacedSession);
+            LogUnplaced(target, unplacedTarget);
+            if (!paired)
+                return;
         }
 
         await target.Client.SendPacket(ExchangePacketWriter.Result(
