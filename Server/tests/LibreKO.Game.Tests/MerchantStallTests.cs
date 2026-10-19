@@ -152,6 +152,20 @@ public class MerchantStallTests : GameTestBase
     }
 
     [Fact]
+    public async Task GoldHandedBackByAClosingStallStopsAtTheCoinCap()
+    {
+        using var market = new Market();
+        var owner = market.Player(96015, gold: StartingGold);
+        await market.OpenBuyingStallAsync(owner, (Ware, 5, Price));
+        // Gold reached the purse by some route while the stall held its share.
+        owner.Money = ExchangePacketConstants.CoinMax - 1_000;
+
+        await market.SendAsync(owner, MerchantSubOpcode.BuyClose);
+
+        owner.Money.Should().Be(ExchangePacketConstants.CoinMax, "a refund must never wrap the purse past the cap");
+    }
+
+    [Fact]
     public async Task ASaveWhileABuyingStallIsOpenKeepsTheGoldItHolds()
     {
         using var market = new Market();

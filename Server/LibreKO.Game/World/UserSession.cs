@@ -660,18 +660,20 @@ public class UserSession
         return true;
     }
 
-    // Hands back the gold a buying stall still holds and returns how much that was.
+    // Hands back the gold a buying stall still holds, never past the coin cap, and returns how
+    // much the purse grew.
     public int ReleaseBuyMerchantGold() => WithLock(s =>
     {
-        var held = s.Trade.BuyMerchantGold;
+        var before = s.Money;
+        s.Money = (int)Math.Min((long)s.Money + s.Trade.BuyMerchantGold, Protocol.ExchangePacketConstants.CoinMax);
         s.Trade.BuyMerchantGold = 0;
-        s.Money += held;
-        return held;
+        return s.Money - before;
     });
 
-    // The purse as it is saved: gold a buying stall holds is still the owner's.
-    public int SavedMoney =>
-        (int)Math.Min((long)Money + Trade.BuyMerchantGold, Protocol.ExchangePacketConstants.CoinMax);
+    // The purse as it is saved: gold a buying stall holds is still the owner's. Read under the
+    // lock so a stall opening or closing meanwhile is counted once.
+    public int SavedMoney => WithLock(s =>
+        (int)Math.Min((long)s.Money + s.Trade.BuyMerchantGold, Protocol.ExchangePacketConstants.CoinMax));
 
     public void CompleteExchange()
     {
