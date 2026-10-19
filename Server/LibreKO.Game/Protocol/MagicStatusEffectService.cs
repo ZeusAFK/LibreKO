@@ -163,6 +163,7 @@ public class MagicStatusEffectService(
     private const int AreaTarget = -1;
     private const int ReflectCurseChance = 25;
     private const float NpcDebuffReachSlack = 3f;
+    private const float PlayerReachSlack = 3f;
 
     private async Task ExecuteBuffAsync(
         UserSession caster, MagicData magic, int skillId, int targetId, int[] data, bool isPrimary)
@@ -531,10 +532,10 @@ public class MagicStatusEffectService(
 
         var special = (SpecialMagicType)type5Data.Type;
 
-        if (targetId == AreaTarget && IsCleanse(special))
+        if (targetId == AreaTarget && IsCleanse(special) && IsAreaMoral((SkillMoral)magic.Moral))
         {
             var moral = (SkillMoral)magic.Moral;
-            foreach (var member in AreaPlayers(caster, moral, 0, caster.X, caster.Z).ToList())
+            foreach (var member in AreaPlayers(caster, moral, magic.Range, caster.X, caster.Z).ToList())
             {
                 await CleanseAsync(member, special);
                 await sessionManager.Regions.SendToRegion(
@@ -553,8 +554,8 @@ public class MagicStatusEffectService(
             target = caster;
         else
         {
-            var resolved = sessionManager.GetByCharacterId(targetId);
-            if (resolved == null)
+            var resolved = targetId == AreaTarget && IsCleanse(special) ? caster : sessionManager.GetByCharacterId(targetId);
+            if (resolved == null || (IsCleanse(special) && !MayCleanse(caster, resolved, magic)))
             {
                 await SendMagicFailAsync(caster, skillId);
                 return;
@@ -612,6 +613,24 @@ public class MagicStatusEffectService(
     private static bool IsCleanse(SpecialMagicType special) =>
         special is SpecialMagicType.RemoveDot or SpecialMagicType.RemoveBuff or SpecialMagicType.RemoveBless;
 
+    private static bool IsAreaMoral(SkillMoral moral) =>
+        moral is SkillMoral.PartyAll or SkillMoral.AreaEnemy or SkillMoral.AreaFriend or SkillMoral.AreaAll
+            or SkillMoral.SelfArea;
+
+    // A cure only reaches a player the row may touch (a friend, or an enemy for a dispel),
+    // in the caster's zone and within the row's range.
+    private static bool MayCleanse(UserSession caster, UserSession target, MagicData magic)
+    {
+        var moral = (SkillMoral)magic.Moral;
+        if (moral == SkillMoral.Self || target == caster)
+            return target == caster && !IsHostileMoral(moral);
+
+        return target.Hp > 0
+            && target.ZoneId == caster.ZoneId
+            && WithinRadius(target.X, target.Z, caster.X, caster.Z, magic.Range + PlayerReachSlack)
+            && AcceptsAreaPlayer(caster, target, moral);
+    }
+
     private async Task CleanseAsync(UserSession target, SpecialMagicType special)
     {
         if (special == SpecialMagicType.RemoveDot)
@@ -637,7 +656,8 @@ public class MagicStatusEffectService(
             return;
         }
 
-        if (await ClearDebuffsAsync(target))
+        // A cure lifts curses; removing a blessing (a dispel) lifts the helpful ones.
+        if (await ClearCastBuffsAsync(target, helpful: special == SpecialMagicType.RemoveBless))
         {
             target.RebuildSpecialStates(gameDataService);
             target.RecalculateStatsWithBuffs(gameDataService);
@@ -645,17 +665,24 @@ public class MagicStatusEffectService(
         }
     }
 
-    private async Task<bool> ClearDebuffsAsync(UserSession target)
+    private bool IsHelpfulBuff(int magicId, ActiveBuff buff) =>
+        gameDataService.GetMagic(magicId) is { } magic
+        && MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, magicId, out var type4Data)
+            ? MagicBuffClassifier.IsBuff(type4Data)
+            : MagicBuffClassifier.IsBuff(new MagicType4Data { BuffType = (byte)buff.BuffType });
+
+    private async Task<bool> ClearCastBuffsAsync(UserSession target, bool helpful)
     {
-        // A debuff is any type-4 buff cast by someone other than the target itself.
-        var debuffIds = target.ActiveBuffs
-            .Where(kv => kv.Value.CasterId != target.CharacterId && kv.Value.BuffType != BuffType.None)
+        // Only type-4 effects someone else cast on the target, of the asked kind.
+        var liftedIds = target.ActiveBuffs
+            .Where(kv => kv.Value.CasterId != target.CharacterId && kv.Value.BuffType != BuffType.None
+                && IsHelpfulBuff(kv.Key, kv.Value) == helpful)
             .Select(kv => kv.Key)
             .ToList();
-        if (debuffIds.Count == 0)
+        if (liftedIds.Count == 0)
             return false;
 
-        foreach (var id in debuffIds)
+        foreach (var id in liftedIds)
         {
             if (target.RemoveBuff(id, out var removed) && removed.BuffType != BuffType.None)
             {
