@@ -98,6 +98,15 @@ public class MagicPacketCoordinator(
             return;
         }
 
+        if (RequiresLearnedSkill((MagicProcessOpcode)magicOpcode) && !session.IsGM
+            && !MagicSkillRequirement.IsCastableBy(magic, session.Class))
+        {
+            logger.LogWarning("Refusing skill {SkillId} from {Name}: not a skill of class {Class}",
+                skillId, session.Name, session.Class);
+            await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
+            return;
+        }
+
         if (RequiresLearnedSkill((MagicProcessOpcode)magicOpcode)
             && !MagicSkillRequirement.IsGranted(magic, session.TransformId))
         {

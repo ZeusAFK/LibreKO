@@ -458,6 +458,7 @@ public class MagicWarpTests : GameTestBase
     private static async Task Cast(
         ServiceProvider provider, IClient client, int skillId, UserSession caster, int targetId, int[] data)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

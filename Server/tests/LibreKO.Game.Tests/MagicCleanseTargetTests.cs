@@ -14,7 +14,7 @@ namespace LibreKO.Game.Tests;
 public class MagicCleanseTargetTests : GameTestBase
 {
     private const int CureCurse = 111525;
-    private const int Dispel = 300133;
+    private const int Dispel = 490409;
     private const int Shield = 190100;
     private const int Curse = 190001;
     private const byte RemoveBuffSubtype = 2;
@@ -150,6 +150,7 @@ public class MagicCleanseTargetTests : GameTestBase
 
     private static async Task Cast(ServiceProvider provider, UserSession caster, int skillId, int targetId)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

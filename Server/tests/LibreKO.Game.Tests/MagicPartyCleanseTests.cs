@@ -84,6 +84,7 @@ public class MagicPartyCleanseTests : GameTestBase
 
     private static async Task Cast(ServiceProvider provider, UserSession caster, int skillId, int targetId)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

@@ -269,6 +269,7 @@ public class MagicDirectTypeTests : GameTestBase
     private static async Task CastAtGround(
         ServiceProvider provider, IClient client, int skillId, UserSession caster, int koX, int koZ)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);
@@ -332,6 +333,7 @@ public class MagicDirectTypeTests : GameTestBase
     private static async Task Cast(
         ServiceProvider provider, IClient client, int skillId, UserSession caster, int targetId)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

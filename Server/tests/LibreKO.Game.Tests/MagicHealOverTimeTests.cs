@@ -176,6 +176,7 @@ public class MagicHealOverTimeTests : GameTestBase
         ServiceProvider provider, IClient client, MagicProcessOpcode opcode, int skillId, UserSession caster,
         int targetId, float x = 0, float z = 0)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)opcode);
         packet.WriteInt(skillId);

@@ -272,6 +272,16 @@ public abstract class GameTestBase
         return repository;
     }
 
+    protected static void TakeTheClassOf(UserSession caster, int skillId)
+    {
+        var classId = (short)(skillId / SkillIdsPerClass);
+        if (ClassIdHelper.GetNation(classId) is Common.Enums.AccountNation.Karus or Common.Enums.AccountNation.ElMorad
+            && ClassIdHelper.GetSubtype(classId) is >= (int)Common.Enums.ClassSubtype.WarriorBeginner and <= (int)Common.Enums.ClassSubtype.KurianMastered)
+            caster.Class = classId;
+    }
+
+    private const int SkillIdsPerClass = 1000;
+
     protected static ILookup<int, ItemSellData> ShopList(int sellingGroup, params int[] itemIds) =>
         itemIds
             .Select((itemId, index) => new ItemSellData

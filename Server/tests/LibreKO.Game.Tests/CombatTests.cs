@@ -875,7 +875,7 @@ public class CombatTests : GameTestBase
         var session = sessionManager.CreateSession(client, characterId: 530, accountId: 630);
         session.Hp = 100;
         session.Name = "Mage";
-        session.Class = 101;
+        session.Class = 202;
         session.Level = 20;
         session.Strength = 50;
         session.Stamina = 50;
@@ -1215,7 +1215,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 541, accountId: 641);
-        session.Class = 201;
+        session.Class = 207;
         session.Level = 20;
         session.ZoneId = 1;
         session.X = 20;
@@ -1487,7 +1487,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 542, accountId: 642);
-        session.Class = 201;
+        session.Class = 207;
         session.Level = 20;
         session.ZoneId = 1;
         session.X = 20;
@@ -2511,7 +2511,8 @@ public class CombatTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var mage = sessionManager.CreateSession(client, characterId: 562, accountId: 662);
         mage.Name = "Mage";
-        mage.Class = 101;
+        mage.Class = 209;
+        mage.Magic = 186;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;
@@ -2604,7 +2605,8 @@ public class CombatTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var mage = sessionManager.CreateSession(client, characterId: 563, accountId: 663);
         mage.Name = "Mage";
-        mage.Class = 101;
+        mage.Class = 209;
+        mage.Magic = 186;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;
@@ -2732,7 +2734,8 @@ public class CombatTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var mage = sessionManager.CreateSession(client, characterId: 5631, accountId: 6631);
         mage.Name = "Mage";
-        mage.Class = 101;
+        mage.Class = 209;
+        mage.Magic = 186;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;

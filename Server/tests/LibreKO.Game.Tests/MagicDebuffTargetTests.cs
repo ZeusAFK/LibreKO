@@ -461,6 +461,7 @@ public class MagicDebuffTargetTests : GameTestBase
     private static async Task Send(
         ServiceProvider provider, IClient client, int skillId, UserSession caster, int targetId, int x, int z)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

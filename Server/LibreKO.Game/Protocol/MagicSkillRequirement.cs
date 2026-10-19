@@ -17,6 +17,9 @@ public static class MagicSkillRequirement
     private const int FirstNationBuffLine = 1;
     private const int LastNationBuffLine = 5;
     private const int TreesPerClass = 10;
+    private const int SkillIdsPerClass = 1000;
+    private const int FirstMonsterSkillPrefix = 300;
+    private const int LastMonsterSkillPrefix = 309;
 
     public const int NoNationRole = 0;
     public const int NationRoleFirstBand = 1;
@@ -65,12 +68,20 @@ public static class MagicSkillRequirement
     public static bool IsClassPassive(MagicData magic) =>
         magic.PrimaryType == MagicSkillType.None && IsClassTree(magic.Skill);
 
-    private static bool IsClassTree(int skillTree)
+    public static bool IsCastableBy(MagicData magic, int classId)
     {
-        var classId = (short)(skillTree / TreesPerClass);
-        return ClassIdHelper.GetNation(classId) is AccountNation.Karus or AccountNation.ElMorad
-            && ClassIdHelper.GetSubtype(classId) is >= (int)ClassSubtype.WarriorBeginner and <= (int)ClassSubtype.KurianMastered;
+        var prefix = magic.Id / SkillIdsPerClass;
+        if (IsPlayerClass((short)prefix))
+            return prefix == classId;
+
+        return magic.UseItem != 0 || prefix is < FirstMonsterSkillPrefix or > LastMonsterSkillPrefix;
     }
+
+    private static bool IsClassTree(int skillTree) => IsPlayerClass((short)(skillTree / TreesPerClass));
+
+    private static bool IsPlayerClass(short classId) =>
+        ClassIdHelper.GetNation(classId) is AccountNation.Karus or AccountNation.ElMorad
+        && ClassIdHelper.GetSubtype(classId) is >= (int)ClassSubtype.WarriorBeginner and <= (int)ClassSubtype.KurianMastered;
 
     public static string Describe(MagicData magic)
     {
