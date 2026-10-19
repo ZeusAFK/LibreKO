@@ -244,7 +244,11 @@ public class TradeEscrowTests : GameTestBase
         var told = Sent(giverClient).Any(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE && FirstByte(p) == ExchangePacketConstants.ExchangeCancel);
         var traded = CountInBag(taker, Sword) == 1;
         (told && traded).Should().BeFalse("a trade is either called off or completed, and the player is told which");
-        (CountInBag(giver, Sword) + CountInBag(taker, Sword)).Should().Be(1);
+        told.Should().BeTrue("here the cancel came first");
+        traded.Should().BeFalse();
+        CountInBag(giver, Sword).Should().Be(1);
+        giver.Trade.IsTrading.Should().BeFalse();
+        taker.Trade.IsTrading.Should().BeFalse();
     }
 
     [Fact]

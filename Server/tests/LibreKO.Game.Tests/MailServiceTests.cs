@@ -289,7 +289,30 @@ public class MailServiceTests : GameTestBase
 
         await mail.ClaimAttachmentAsync(bob, mailId, 0);
 
-        ClaimMessage(bobSent).Should().Be("The attachment could not be delivered.");
+        ClaimMessage(bobSent).Should().Be("An attachment could not be delivered.");
+    }
+
+    [Theory]
+    [InlineData(true, "Attachment claimed. An attachment could not be delivered.")]
+    [InlineData(false, "Not enough room in your inventory. An attachment could not be delivered.")]
+    public async Task ClaimAsync_NamesADroppedAttachmentNextToWhatHappenedToTheRest(bool room, string expected)
+    {
+        const int retiredItem = 123_456_789;
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        if (!room)
+            FillBagLeaving(bob, 0);
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your things.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, retiredItem, 1),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+
+        ClaimMessage(bobSent).Should().Be(expected);
     }
 
     private static string ClaimMessage(List<Packet> sent)

@@ -258,6 +258,8 @@ public class MailService(
 
         var delivered = false;
         var itemsDelivered = false;
+        var dropped = 0;
+        var tried = chosen.Count(a => a.Remaining > 0);
         foreach (var attachment in chosen.Where(a => a.Remaining > 0))
         {
             switch (attachment.Kind)
@@ -289,6 +291,9 @@ public class MailService(
                     delivered = true;
                     break;
                 default:
+                    // An item no longer in the item table is dropped (marked claimed) by the delivery.
+                    if (gameDataService.GetItem(attachment.ItemId) == null)
+                        dropped++;
                     if (await DeliverItemAsync(session, attachment))
                         delivered = itemsDelivered = true;
                     break;
@@ -319,13 +324,18 @@ public class MailService(
             (false, true) => "room in your purse",
             _ => "room in your inventory",
         };
-        var chosenSettled = !goldWaiting && !itemsWaiting;
-        var message = chosenSettled && !delivered
-                ? chosen.Count == 1 ? "The attachment could not be delivered." : "The attachments could not be delivered."
-            : complete ? "Attachments claimed."
-            : chosenSettled ? "Attachment claimed."
-            : delivered ? $"Some attachments are still waiting. Make {room} and claim again."
-            : $"Not enough {room}.";
+        var outcome = goldWaiting || itemsWaiting
+            ? delivered ? $"Some attachments are still waiting. Make {room} and claim again." : $"Not enough {room}."
+            : !delivered ? null
+            : tried - dropped > 1 ? "Attachments claimed."
+            : "Attachment claimed.";
+        var lost = dropped switch
+        {
+            0 => null,
+            1 => "An attachment could not be delivered.",
+            _ => $"{dropped} attachments could not be delivered.",
+        };
+        var message = string.Join(" ", new[] { outcome, lost }.Where(part => part != null));
         await session.Client.SendPacket(MailPacketWriter.ClaimResult(delivered, mailId, message));
         if (firstRead)
             await session.Client.SendPacket(MailPacketWriter.Unread(await UnreadCountAsync(db, session.CharacterId)));
