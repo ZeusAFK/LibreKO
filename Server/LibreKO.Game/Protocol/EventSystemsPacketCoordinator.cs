@@ -17,6 +17,7 @@ public interface IEventSystemsPacketCoordinator
     Task HandleMapEventAsync(IClient client, Packet packet);
     Task OpenBattleZoneAsync(byte type, byte zone);
     Task CloseBattleZoneAsync();
+    Task OnBattleNpcKilledAsync(NpcInstance npc, UserSession killer);
     Task AssignRivalAsync(UserSession player, UserSession rival);
     Task RemoveRivalAsync(UserSession player);
     Task UpdateAngerGaugeAsync(UserSession player, byte gauge);
@@ -114,18 +115,6 @@ public class EventSystemsPacketCoordinator(
         {
             case BattleEventSubOpcode.Open:
                 await HandleBattleEventOpenAsync(session);
-                break;
-
-            case BattleEventSubOpcode.MapEventResult:
-                HandleBattleMapEventResult(packet);
-                break;
-
-            case BattleEventSubOpcode.Result:
-                await HandleBattleEventResultAsync(session, packet);
-                break;
-
-            case BattleEventSubOpcode.MaxUser:
-                await HandleBattleEventMaxUserAsync(session, packet);
                 break;
 
             case BattleEventSubOpcode.KillUser:
@@ -315,52 +304,26 @@ public class EventSystemsPacketCoordinator(
         await session.Client.SendPacket(packet);
     }
 
-    private void HandleBattleMapEventResult(Packet packet)
+    public async Task OnBattleNpcKilledAsync(NpcInstance npc, UserSession killer)
     {
         var battle = sessionManager.Battle;
-        if (!battle.IsBattleActive || packet.RemainingBytes < 1)
+        var warder = BattleZoneManager.IsWarder(npc.SpecialType);
+        if (!battle.IsBattleActive
+            || npc.ZoneId != battle.BattleZone
+            || (!warder && !BattleZoneManager.IsKeeper(npc.SpecialType))
+            || !npc.IsNationOwned
+            || (byte)npc.Nation == (byte)killer.Nation)
             return;
 
-        var nation = packet.ReadByte();
-        if (nation == 1)
-            battle.KarusOpenFlag = true;
-        else if (nation == 2)
-            battle.ElmoradOpenFlag = true;
-    }
+        await loyaltyService.ChangeAsync(killer, warder ? WarderKillLoyalty : GatekeeperKillLoyalty);
 
-    private async Task HandleBattleEventResultAsync(UserSession session, Packet packet)
-    {
-        var battle = sessionManager.Battle;
-        if (!battle.IsBattleActive || packet.RemainingBytes < 1)
-            return;
-
-        packet.ReadByte();
-        var winnerNation = battle.RegisterNpcKill((byte)session.Nation);
-        if (winnerNation > 0)
-        {
-            battle.Victory = winnerNation;
-            await AnnounceBattleResultAsync(winnerNation);
-        }
-
+        var winnerNation = battle.RegisterNpcKill((byte)killer.Nation);
         battle.BattleSaved = true;
-    }
-
-    private async Task HandleBattleEventMaxUserAsync(UserSession session, Packet packet)
-    {
-        var battle = sessionManager.Battle;
-        if (!battle.IsBattleActive || packet.RemainingBytes < 1)
+        if (winnerNation == 0 || battle.Victory != 0)
             return;
 
-        var npcType = packet.ReadByte();
-        var loyaltyReward = npcType switch
-        {
-            >= 3 and <= 6 => WarderKillLoyalty,
-            7 or 8 => GatekeeperKillLoyalty,
-            _ => 0
-        };
-
-        if (loyaltyReward > 0)
-            await loyaltyService.ChangeAsync(session, loyaltyReward);
+        battle.Victory = winnerNation;
+        await AnnounceBattleResultAsync(winnerNation);
     }
 
     private async Task AnnounceBattleResultAsync(byte winnerNation)

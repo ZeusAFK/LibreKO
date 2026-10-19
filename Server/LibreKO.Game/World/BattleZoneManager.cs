@@ -65,6 +65,17 @@ public class BattleZoneManager
     // NPC kill threshold for victory (zones 1-3)
     public const int NPC_KILL_VICTORY_COUNT = 3;
 
+    public const short FirstWarderSpecialType = 90;
+    public const short LastWarderSpecialType = 93;
+    public const short FirstKeeperSpecialType = 98;
+    public const short LastKeeperSpecialType = 99;
+
+    public static bool IsWarder(short specialType)
+        => specialType is >= FirstWarderSpecialType and <= LastWarderSpecialType;
+
+    public static bool IsKeeper(short specialType)
+        => specialType is >= FirstKeeperSpecialType and <= LastKeeperSpecialType;
+
     // Max users per nation in battle zone
     public const int MAX_BATTLE_ZONE_USERS = 150;
 
@@ -98,8 +109,6 @@ public class BattleZoneManager
     public byte[] MonumentOwners { get; } = new byte[MonumentCount];
 
     // Flags
-    public bool KarusOpenFlag { get; set; }
-    public bool ElmoradOpenFlag { get; set; }
     public bool BanishFlag { get; set; }
     public bool BattleSaved { get; set; }
 
@@ -131,8 +140,6 @@ public class BattleZoneManager
         KarusMonuments = 0;
         ElmoMonuments = 0;
         Array.Clear(MonumentOwners);
-        KarusOpenFlag = false;
-        ElmoradOpenFlag = false;
         BanishFlag = false;
         BattleSaved = false;
         KarusCount = 0;
@@ -163,8 +170,6 @@ public class BattleZoneManager
         KarusMonuments = 0;
         ElmoMonuments = 0;
         Array.Clear(MonumentOwners);
-        KarusOpenFlag = false;
-        ElmoradOpenFlag = false;
         BattleSaved = false;
         KarusCount = 0;
         ElmoradCount = 0;

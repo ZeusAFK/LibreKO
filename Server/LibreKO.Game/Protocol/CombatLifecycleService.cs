@@ -213,6 +213,7 @@ public class CombatLifecycleService(
 
         await combatRewardService.AwardNpcKillAsync(npc, rewardRecipient);
         await petService.AwardKillAsync(npc);
+        await eventSystemsPacketCoordinator.OnBattleNpcKilledAsync(npc, rewardRecipient);
     }
 
     public async Task HandlePlayerDeathAsync(UserSession victim, UserSession? killer)

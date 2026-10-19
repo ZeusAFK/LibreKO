@@ -317,6 +317,7 @@ public class NpcInstance
 
     public byte SpawnActType { get; set; }
     public short TrapNumber { get; set; }
+    public short SpecialType { get; set; }
     public bool UsesNpcSpawnStyle => SpawnActType >= 100;
     public bool IsAlive => Hp > 0;
     public bool IsNpc => !IsMonster;
@@ -431,6 +432,7 @@ public class NpcInstance
             NpcType = npc.NpcType,
             SpawnActType = pos.ActType,
             TrapNumber = pos.TrapNumber,
+            SpecialType = pos.SpecialType,
             Group = npc.Group,
             Level = npc.Level,
             MaxHp = npc.Hp,
