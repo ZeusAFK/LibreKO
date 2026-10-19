@@ -76,12 +76,15 @@ public class MagicExecutionService(
 
     private bool AreaCastAllowed(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
-        if (targetId == AreaTarget && !IsAreaCast(magic, skillId))
+        MagicSkillType[] types = [magic.PrimaryType, magic.SecondaryType];
+        var centred = data.Length > AreaCentreZ && (data[AreaCentreX] != 0 || data[AreaCentreZ] != 0);
+        var centresAnOverTimeArea = centred && types.Contains(MagicSkillType.OverTime)
+            && MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, skillId, out var type3) && type3.Radius > 0;
+        if ((targetId == AreaTarget || centresAnOverTimeArea) && !IsAreaCast(magic, skillId))
             return false;
 
-        var centred = data.Length > AreaCentreZ && (data[AreaCentreX] != 0 || data[AreaCentreZ] != 0);
         return !centred
-            || magic.PrimaryType is not (MagicSkillType.Melee or MagicSkillType.OverTime or MagicSkillType.Buff or MagicSkillType.Area)
+            || !types.Any(type => type is MagicSkillType.Melee or MagicSkillType.OverTime or MagicSkillType.Buff or MagicSkillType.Area)
             || Within(caster, data[AreaCentreX], data[AreaCentreZ], 0f, magic.Range > 0 ? magic.Range : MeleeReach);
     }
 

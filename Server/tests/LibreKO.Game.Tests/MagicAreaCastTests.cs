@@ -16,6 +16,8 @@ public class MagicAreaCastTests : GameTestBase
     private const int AreaCurse = 111751;
     private const int Meteor = 110556;
     private const int Slash = 105503;
+    private const int Firebolt = 110503;
+    private const int BurstNova = 110570;
     private const int Sweep = 105725;
     private const int AreaTarget = -1;
     private const byte Ronark = (byte)ZoneId.RonarkLand;
@@ -53,6 +55,33 @@ public class MagicAreaCastTests : GameTestBase
         (worm.Hp < WormHp).Should().Be(hurt);
     }
 
+    [Fact]
+    public async Task ASingleTargetSpellWithARadiusCannotBeCentredOnACrowd()
+    {
+        using var provider = Provider();
+        var mage = Player(provider, 784, AccountNation.Karus, Here, Moradon);
+        var aimedAt = Worm(provider, Here + 10);
+        var bystander = Worm(provider, Here + 25);
+
+        await Cast(provider, mage, Firebolt, aimedAt.UniqueId, bystander.X, bystander.Z);
+
+        bystander.Hp.Should().Be(WormHp, "the client never sends a centre with a single target");
+    }
+
+    [Theory]
+    [InlineData(0f, true)]
+    [InlineData(60f, false)]
+    public async Task ASecondTypeAreaStaysWithinTheSkillsRange(float distance, bool hurt)
+    {
+        using var provider = Provider();
+        var mage = Player(provider, 785, AccountNation.Karus, Here, Moradon);
+        var worm = Worm(provider, Here + distance + 2);
+
+        await Cast(provider, mage, BurstNova, AreaTarget, Here + distance, Here);
+
+        (worm.Hp < WormHp).Should().Be(hurt);
+    }
+
     [Theory]
     [InlineData(Sweep, true)]
     [InlineData(Slash, false)]
@@ -86,9 +115,20 @@ public class MagicAreaCastTests : GameTestBase
         {
             Id = Meteor, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.AreaEnemy, Range = MeteorRange,
         });
+        gameData.GetMagic(Firebolt).Returns(new MagicData
+        {
+            Id = Firebolt, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.Enemy, Range = MeteorRange,
+        });
+        gameData.GetMagic(BurstNova).Returns(new MagicData
+        {
+            Id = BurstNova, Type1 = (byte)MagicSkillType.Special, Type2 = (byte)MagicSkillType.OverTime,
+            Moral = (byte)SkillMoral.SelfArea, Range = MeteorRange,
+        });
         gameData.MagicType3Table.Returns(new Dictionary<int, MagicType3Data>
         {
             [Meteor] = new() { Id = Meteor, DirectType = 1, FirstDamage = -120, Attribute = 1, Radius = 5 },
+            [Firebolt] = new() { Id = Firebolt, DirectType = 1, FirstDamage = -120, Attribute = 1, Radius = 5 },
+            [BurstNova] = new() { Id = BurstNova, DirectType = 1, FirstDamage = -120, Attribute = 1, Radius = 5 },
         });
         foreach (var (id, moral) in new[] { (Slash, SkillMoral.Enemy), (Sweep, SkillMoral.AreaEnemy) })
             gameData.GetMagic(id).Returns(new MagicData { Id = id, Type1 = (byte)MagicSkillType.Melee, Moral = (byte)moral, Range = 5 });
