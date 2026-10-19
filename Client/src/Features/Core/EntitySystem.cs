@@ -242,7 +242,7 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
     {
         if (info.Id == context.Self.CharId)
         {
-            self.ApplyPersonalRank(info.PersonalRank);
+            self.ApplyNationRanks(info.KnightsRank, info.PersonalRank);
             return;
         }
         if (!info.IsNpc && ZoneLooks.HidesOtherPlayers(context.Zone)) return;

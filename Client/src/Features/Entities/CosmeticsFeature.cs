@@ -51,7 +51,7 @@ internal sealed class CosmeticsFeature : IFeature
     {
         entityPlates.ClanFameApplied += OnClanFame;
         entities.EntitySpawned += OnEntitySeen;
-        self.PersonalRankEvent += OnPersonalRank;
+        self.NationRanksEvent += OnNationRanks;
         entities.EntityRefreshed += OnEntitySeen;
         stealth.StealthLookChanged += RefreshRankAuraFor;
         cosmetics.HelmetEvent += OnHelmet;
@@ -65,7 +65,7 @@ internal sealed class CosmeticsFeature : IFeature
     {
         entityPlates.ClanFameApplied -= OnClanFame;
         entities.EntitySpawned -= OnEntitySeen;
-        self.PersonalRankEvent -= OnPersonalRank;
+        self.NationRanksEvent -= OnNationRanks;
         entities.EntityRefreshed -= OnEntitySeen;
         stealth.StealthLookChanged -= RefreshRankAuraFor;
         cosmetics.HelmetEvent -= OnHelmet;
@@ -82,7 +82,7 @@ internal sealed class CosmeticsFeature : IFeature
         if (!info.IsNpc) RefreshRankAuraFor(info.Id, context.Entities.StealthIds.Contains(info.Id));
     }
 
-    private void OnPersonalRank() =>
+    private void OnNationRanks() =>
         RefreshRankAuraFor(context.Self.CharId, context.Entities.StealthIds.Contains(context.Self.CharId));
 
     internal void ToggleHelmet()
@@ -193,14 +193,23 @@ internal sealed class CosmeticsFeature : IFeature
 
     internal void RefreshRankAuraFor(int charId, bool stealthed)
     {
-        if (charId == context.Self.CharId) RefreshRankAura(context.Self.Body, self.PersonalRank, stealthed, self.IsKing, userOption.OwnRankAuraShown);
+        if (charId == context.Self.CharId)
+        {
+            RefreshRankAura(context.Self.Body, self.PersonalRank, stealthed, self.IsKing, userOption.OwnRankAuraShown);
+            SetPlateRank(context.Self.Plate(), self.KnightsRank, self.PersonalRank);
+        }
         else if (context.Entities.Views.TryGetValue(charId, out var e) && !e.IsNpc)
         {
             RefreshRankAura(e.Body, e.PersonalRank, stealthed, shown: userOption.RankAuraShown(charId));
-            string? symbol = RankSymbol.PlatePath(e.KnightsRank, e.PersonalRank);
-            e.Plate?.SetRank(symbol != null ? GD.Load<Texture2D>(symbol) : null);
+            SetPlateRank(e.Plate, e.KnightsRank, e.PersonalRank);
             e.Plate?.SetNameMark(NameMark.For(e.ClanFame, e.ClanFlag, context.Zone, e.Nation == self.Nation));
         }
+    }
+
+    private static void SetPlateRank(PlateStack? plate, int knightsRank, int personalRank)
+    {
+        string? symbol = RankSymbol.PlatePath(knightsRank, personalRank);
+        plate?.SetRank(symbol != null ? GD.Load<Texture2D>(symbol) : null);
     }
 
     private void RefreshPlateTitles()
