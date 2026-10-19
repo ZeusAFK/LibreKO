@@ -295,6 +295,7 @@ public class NationTests : GameTestBase
     [InlineData((byte)ZoneId.Delos, 12)]
     [InlineData((byte)ZoneId.NapiesGorge, 12)]
     [InlineData((byte)ZoneId.Arena, 11)]
+    [InlineData((byte)ZoneId.Prison, 12)]
     public async Task ChallengePacketCoordinator_HandleAsync_RefusesDuelsInWarAndArenaZones(byte zone, byte error)
     {
         using var provider = CreateProvider(_ => { });
@@ -321,6 +322,82 @@ public class NationTests : GameTestBase
         reply.Should().NotBeNull();
         reply!.ResetOffset();
         reply.ReadByte().Should().Be(error);
+        requester.Trade.IsRequestingChallenge.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ChallengePacketCoordinator_HandleAsync_APlayerCannotChallengeThemselves()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var zoneTransitionService = Substitute.For<IZoneTransitionService>();
+        var coordinator = new ChallengePacketCoordinator(sessionManager, zoneTransitionService,
+            Substitute.For<ILogger<ChallengePacketCoordinator>>());
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var player = sessionManager.CreateSession(client, characterId: 134, accountId: 144);
+        player.Name = "Loner";
+        player.ZoneId = 21;
+        player.Hp = 100;
+
+        var request = new Packet(GameOpcodes.GS_CHALLENGE);
+        request.WriteByte(1);
+        request.WriteSByteString("Loner");
+        await coordinator.HandleAsync(client, request);
+
+        var accept = new Packet(GameOpcodes.GS_CHALLENGE);
+        accept.WriteByte(3);
+        await coordinator.HandleAsync(client, accept);
+
+        player.Trade.IsRequestingChallenge.Should().BeFalse();
+        player.Trade.IsChallengeRequested.Should().BeFalse();
+        await zoneTransitionService.DidNotReceiveWithAnyArgs().ChangeZoneAsync(default!, default, default, default);
+    }
+
+    [Fact]
+    public async Task ChallengePacketCoordinator_HandleAsync_AnAcceptFromPrisonDoesNotLeaveIt()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var zoneTransitionService = Substitute.For<IZoneTransitionService>();
+        var coordinator = new ChallengePacketCoordinator(sessionManager, zoneTransitionService,
+            Substitute.For<ILogger<ChallengePacketCoordinator>>());
+
+        IClient Client()
+        {
+            var client = Substitute.For<IClient>();
+            client.Id.Returns(Guid.NewGuid());
+            client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+            return client;
+        }
+
+        var requesterClient = Client();
+        var requester = sessionManager.CreateSession(requesterClient, characterId: 135, accountId: 145);
+        requester.Name = "Accomplice";
+        requester.ZoneId = 21;
+        requester.Hp = 100;
+        var prisonerClient = Client();
+        var prisoner = sessionManager.CreateSession(prisonerClient, characterId: 136, accountId: 146);
+        prisoner.Name = "Prisoner";
+        prisoner.ZoneId = 21;
+        prisoner.Hp = 100;
+
+        var request = new Packet(GameOpcodes.GS_CHALLENGE);
+        request.WriteByte(1);
+        request.WriteSByteString("Prisoner");
+        await coordinator.HandleAsync(requesterClient, request);
+        prisoner.Trade.IsChallengeRequested.Should().BeTrue();
+
+        requester.ZoneId = (byte)ZoneId.Prison;
+        prisoner.ZoneId = (byte)ZoneId.Prison;
+        var accept = new Packet(GameOpcodes.GS_CHALLENGE);
+        accept.WriteByte(3);
+        await coordinator.HandleAsync(prisonerClient, accept);
+
+        await zoneTransitionService.DidNotReceiveWithAnyArgs().ChangeZoneAsync(default!, default, default, default);
+        prisoner.Trade.IsChallengeRequested.Should().BeFalse();
         requester.Trade.IsRequestingChallenge.Should().BeFalse();
     }
 
