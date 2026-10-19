@@ -24,6 +24,8 @@ public static class PlayerRig
     public static int LookRace(int race, int classCode) =>
         race == PuriTuarek && CharacterClassCatalog.Family(classCode) == MageFamily ? PuriTuarekMagician : race;
 
+    public static int PartRace(int lookRace) => lookRace == PuriTuarekMagician ? PuriTuarek : lookRace;
+
     public static int StandardRace(int race) => race switch
     {
         KarusKurian => KarusBase,

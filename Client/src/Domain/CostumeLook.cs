@@ -48,7 +48,7 @@ public static class CostumeLook
 
     public static string[] PartStems(int prefix, int resource, int race)
     {
-        string stem = ArmorStem(resource, race);
+        string stem = ArmorStem(resource, PlayerRig.PartRace(race));
         return prefix == 0 ? new[] { stem } : new[] { $"{prefix:D2}_{stem}", stem };
     }
 

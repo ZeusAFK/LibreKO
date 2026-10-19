@@ -17,4 +17,14 @@ public class PlayerLookRaceTests
     {
         Assert.Equal(expected, PlayerRig.LookRace(race, classCode));
     }
+
+    [Theory]
+    [InlineData(PlayerRig.PuriTuarekMagician, PlayerRig.PuriTuarek)]
+    [InlineData(PlayerRig.PuriTuarek, PlayerRig.PuriTuarek)]
+    [InlineData(PlayerRig.ArkTuarek, PlayerRig.ArkTuarek)]
+    [InlineData(PlayerRig.KarusKurian, PlayerRig.KarusKurian)]
+    [InlineData(PlayerRig.ElMoradWoman, PlayerRig.ElMoradWoman)]
+    [InlineData(PlayerRig.ElMoradKurian, PlayerRig.ElMoradKurian)]
+    public void TheMagicianLookWearsThePuriTuarekParts(int lookRace, int partRace) =>
+        Assert.Equal(partRace, PlayerRig.PartRace(lookRace));
 }
