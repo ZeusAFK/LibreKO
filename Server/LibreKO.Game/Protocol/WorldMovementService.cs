@@ -284,7 +284,7 @@ public class WorldMovementService(
     public async Task HandleRecvWarpAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || packet.RemainingBytes < 4)
+        if (session == null || !session.IsGM || packet.RemainingBytes < 4)
             return;
 
         await WarpAsync(session, packet.ReadUShort(), packet.ReadUShort());
