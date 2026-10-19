@@ -162,6 +162,19 @@ public class GatherTests : GameTestBase
     }
 
     [Fact]
+    public async Task MiningStart_WhileSettingUpAStall_IsRejected()
+    {
+        using var provider = CreateProvider(_ => { }, ConfigureItems);
+        var (session, _) = CreateGatherer(provider, BattleZoneManager.ZONE_MORADON, MoradonMineX, MoradonMineZ, Mattock);
+        session.Trade.IsSellingMerchantPreparing = true;
+
+        await provider.GetRequiredService<IMiningPacketCoordinator>()
+            .HandleAsync(session.Client, Request(SubMiningStart));
+
+        session.IsMining.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task MiningStart_WithoutPickaxe_IsRejected()
     {
         using var provider = CreateProvider(_ => { }, ConfigureItems);

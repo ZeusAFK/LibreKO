@@ -200,6 +200,30 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task ClaimAsync_IsRefusedWhileTrading()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your items.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, 1_000),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+        bob.Trade.ExchangeUser = 9_999;
+
+        await mail.ClaimAsync(bob, mailId);
+
+        bob.Money.Should().Be(0);
+        CountInBag(bob, Apple).Should().Be(0);
+        bob.Trade.ExchangeUser = -1;
+        await mail.ClaimAsync(bob, mailId);
+        bob.Money.Should().Be(1_000, "the attachments wait in the mail until the trade is over");
+        CountInBag(bob, Apple).Should().Be(4);
+    }
+
+    [Fact]
     public async Task ClaimAsync_GoldStopsAtTheCoinCap_AndTheRestWaitsForTheNextClaim()
     {
         using var provider = Provider();

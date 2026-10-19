@@ -18,7 +18,7 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
 {
     public async Task RequestAsync(UserSession session, Packet packet)
     {
-        if (session.Hp <= 0 || session.Trade.IsMerchanting)
+        if (CannotStartTrade(session))
         {
             await SendCancelAsync(session);
             return;
@@ -34,9 +34,8 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         var target = sessionManager.GetByCharacterId(destId);
         if (target == null
             || target.Trade.IsTrading
-            || target.Trade.IsMerchanting
+            || CannotStartTrade(target)
             || target.ZoneId != session.ZoneId
-            || target.Hp <= 0
             || target.CharacterId == session.CharacterId
             || target.AccountId == session.AccountId
             || !ExchangePacketConstants.IsWithinTradeRange(session, target)
@@ -58,8 +57,7 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
 
     public async Task AgreeAsync(UserSession session, Packet packet)
     {
-        if (!session.Trade.IsTrading || session.Hp <= 0 || session.Trade.IsMerchanting
-            || session.Trade.AskedForExchange)
+        if (!session.Trade.IsTrading || session.Trade.AskedForExchange)
             return;
 
         var agreed = packet.ReadByte();
@@ -72,8 +70,8 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         }
 
         if (agreed == 0
-            || target.Hp <= 0
-            || target.Trade.IsMerchanting
+            || CannotStartTrade(session)
+            || CannotStartTrade(target)
             || target.CharacterId == session.CharacterId
             || target.AccountId == session.AccountId
             || !ExchangePacketConstants.IsWithinTradeRange(session, target)
@@ -122,6 +120,11 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
             await SendCancelAsync(target);
         }
     }
+
+    // Dead, keeping or setting up a stall, or gathering: such a player can neither ask for a
+    // trade nor take one up, so no one is ever trading and selling or gathering at once.
+    private static bool CannotStartTrade(UserSession session) =>
+        session.Hp <= 0 || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.IsGathering;
 
     private void LogUnplaced(UserSession session, ExchangeReturn? returned) =>
         returned?.LogLosses(logger, session.Name);

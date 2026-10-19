@@ -121,6 +121,22 @@ public class LootCoinTests : GameTestBase
         }
     }
 
+    [Fact]
+    public async Task ATradingPlayerCannotPickUpLoot()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (looter, _) = CreatePlayer(sessionManager, 218, level: 40, x: 100, z: 100);
+        looter.Money = 1000;
+        looter.Trade.ExchangeUser = 9_999;
+        var bundle = CoinBox(sessionManager, looter, coins: 200);
+
+        await provider.GetRequiredService<ILootPacketCoordinator>().HandleItemGetAsync(looter.Client, TakeCoins(bundle));
+
+        looter.Money.Should().Be(1000, "a trading player's purse takes nothing in");
+        sessionManager.Regions.GetBundle(bundle.BundleId).Should().NotBeNull();
+    }
+
     [Theory]
     [InlineData(SuperNoah, 1300)]
     [InlineData(HyperNoah, 1400)]

@@ -888,6 +888,7 @@ public class ShoppingMallTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 27, accountId: 37);
         session.Name = "Mailer";
+        session.Hp = 100;
         session.Stats.MaxWeight = 100;
         session.Stats.ItemWeight = 5;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = itemId;
@@ -924,6 +925,42 @@ public class ShoppingMallTests : GameTestBase
         await using var scope = provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         (await db.MailBoxes.SingleAsync(mail => mail.LetterId == letterId)).Status.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ShoppingMallPacketCoordinator_HandleAsync_LetterGetItemIsRefusedWhileTrading()
+    {
+        const int itemId = 810003000;
+        const int letterId = 1003;
+
+        using var provider = CreateProvider(
+            db => db.MailBoxes.Add(new MailBox
+            {
+                LetterId = letterId, RecipientId = "Mailer", SenderId = "Sender", Subject = "Gift", Message = "Take it",
+                Type = 2, Status = 1, ItemId = itemId, Count = 2, Durability = 10, Coins = 0,
+                SendDate = DateTime.UtcNow, Deleted = false,
+            }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1, Weight = 1, Duration = 10 }));
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 28, accountId: 38);
+        session.Name = "Mailer";
+        session.Hp = 100;
+        session.Stats.MaxWeight = 100;
+        session.Trade.ExchangeUser = 9_999;
+
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(6);
+        request.WriteByte(4);
+        request.WriteInt(letterId);
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        session.Inventory.Should().NotContain(slot => slot.ItemId == itemId, "a trading player's bag takes nothing in");
+        await using var scope = provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        (await db.MailBoxes.SingleAsync(mail => mail.LetterId == letterId)).Status.Should().Be(1);
     }
 
     [Fact]
@@ -972,6 +1009,7 @@ public class ShoppingMallTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 28, accountId: 38);
         session.Name = "Mailer";
+        session.Hp = 100;
         session.Stats.MaxWeight = 10;
         session.Stats.ItemWeight = 0;
 

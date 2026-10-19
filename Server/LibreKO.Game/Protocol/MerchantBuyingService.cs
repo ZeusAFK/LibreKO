@@ -31,7 +31,7 @@ public class MerchantBuyingService(
     {
         var result =
             session.Hp <= 0 ? BuyingMerchantResult.WhileDead
-            : session.Trade.IsTrading ? BuyingMerchantResult.WhileMerchanting
+            : session.Trade.IsTrading || session.IsGathering ? BuyingMerchantResult.WhileMerchanting
             : session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing ? BuyingMerchantResult.WhileMerchanting
             : !IsBuyingMerchantZone(session) ? BuyingMerchantResult.NotAllowedHere
             : session.Level < MerchantPacketConstants.MinimumBuyingMerchantLevel ? BuyingMerchantResult.UnderLevelled
@@ -56,6 +56,7 @@ public class MerchantBuyingService(
 
         if (session.Hp <= 0
             || session.Trade.IsTrading
+            || session.IsGathering
             || session.Trade.IsMerchanting
             || !session.Trade.IsBuyingMerchantPreparing
             || wantedCount == 0

@@ -111,12 +111,19 @@ public class LootPacketCoordinator(
     public async Task HandleItemGetAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || session.Hp <= 0 || packet.RemainingBytes < 10)
+        if (session == null || packet.RemainingBytes < 10)
             return;
 
         var bundleId = packet.ReadInt();
         var itemId = packet.ReadInt();
         var slotId = packet.ReadUShort();
+        // A busy player's bag and purse may be counted on by a trade or a stall, so nothing lands in them.
+        if (session.IsBusy)
+        {
+            await SendItemGetErrorAsync(session, bundleId);
+            return;
+        }
+
         var bundle = sessionManager.Regions.GetBundle(bundleId);
         if (bundle == null)
         {

@@ -249,6 +249,12 @@ public class ShoppingMallLetterMutationService(
             return;
 
         var letterId = packet.ReadInt();
+        if (session.IsBusy)
+        {
+            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
+                ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Rejected));
+            return;
+        }
 
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

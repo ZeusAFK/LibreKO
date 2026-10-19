@@ -1,11 +1,14 @@
 using FluentAssertions;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 
@@ -181,6 +184,31 @@ public class TradeEscrowTests : GameTestBase
         giver.Trade.IsTrading.Should().BeFalse();
         taker.Trade.IsTrading.Should().BeFalse();
         taker.Trade.ExchangeItemList.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ADeadTraderWhoLogsOutGetsTheirOfferBackBeforeTheSave()
+    {
+        using var provider = CreateProvider(db => db.Characters.Add(new Character
+        {
+            Id = GiverId, AccountId = GiverId + 1000, Name = $"Trader{GiverId}", Race = 1, Class = 101, Face = 1, Hair = 1,
+            Level = 10, Hp = 100, Mp = 100, MapId = BattleZoneManager.ZONE_MORADON,
+            Items = new byte[InventoryConstants.InventoryTotal * 8], SkillPointData = new byte[9],
+        }), StockItems);
+        var (giver, taker, giverClient, _) = OpenTrade(provider);
+        giverClient.CharacterId = GiverId;
+        StockSword(giver);
+
+        await SendAsync(provider, giverClient, AddPacket(SwordPos, Sword, 1));
+        // Killed by something that did not end the trade, then gone.
+        giver.Hp = 0;
+        await provider.GetRequiredService<ISessionTerminationService>().LogoutAsync(giverClient);
+
+        CountInBag(giver, Sword).Should().Be(1);
+        taker.Trade.IsTrading.Should().BeFalse();
+        await using var scope = provider.CreateAsyncScope();
+        var row = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.SingleAsync(c => c.Id == GiverId);
+        row.Items.Should().Equal(giver.SerializeItems(), "the offered sword is saved back in the bag");
     }
 
     [Fact]

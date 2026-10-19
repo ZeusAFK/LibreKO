@@ -236,6 +236,13 @@ public class MailService(
 
     private async Task ClaimAsync(UserSession session, int mailId, int? attachmentIndex)
     {
+        // A busy player's bag and purse may be counted on by a trade or a stall, so nothing lands in them.
+        if (session.IsBusy)
+        {
+            await session.Client.SendPacket(MailPacketWriter.ClaimResult(false, mailId, "You cannot claim mail while trading, keeping a stall, gathering or dead."));
+            return;
+        }
+
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var mail = await InboxQuery(db, session.CharacterId).FirstOrDefaultAsync(m => m.Id == mailId);

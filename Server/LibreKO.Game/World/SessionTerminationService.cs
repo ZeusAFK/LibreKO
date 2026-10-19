@@ -174,8 +174,9 @@ public class SessionTerminationService(
 
     private async Task ReleaseWorldStateAsync(UserSession session)
     {
+        // Even a dead player's escrowed offers go back before the save below.
         if (session.Trade.IsTrading)
-            await exchangePacketCoordinator.CancelAsync(session);
+            await exchangePacketCoordinator.CancelAsync(session, isOnDeath: true);
         if (session.Trade.IsRequestingChallenge || session.Trade.IsChallengeRequested)
             await challengePacketCoordinator.CancelAsync(session);
         if (session.HasRival)

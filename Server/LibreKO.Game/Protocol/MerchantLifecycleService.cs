@@ -37,7 +37,7 @@ public class MerchantLifecycleService(
         {
             openResult = OpenWhileDead;
         }
-        else if (session.Trade.IsTrading)
+        else if (session.Trade.IsTrading || session.IsGathering)
         {
             openResult = OpenWhileTrading;
         }
@@ -95,7 +95,8 @@ public class MerchantLifecycleService(
         var toSlave = packet.RemainingBytes > 0 && packet.ReadByte() != 0;
         var staged = session.Trade.MerchantItems.Count(item => item is { IsEmpty: false });
         var refusal =
-            advertMessage.Length > MerchantPacketConstants.MaxAdvertLength ? $"advert is {advertMessage.Length} characters"
+            session.Hp <= 0 || session.Trade.IsTrading || session.IsGathering ? "dead, trading or gathering"
+            : advertMessage.Length > MerchantPacketConstants.MaxAdvertLength ? $"advert is {advertMessage.Length} characters"
             : staged == 0 ? "no items staged"
             : null;
 
