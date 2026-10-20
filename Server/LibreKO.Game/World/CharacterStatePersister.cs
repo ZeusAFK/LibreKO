@@ -150,7 +150,7 @@ public class CharacterStatePersister(
                     ApplyToCharacter(active, character, mapper);
                     mapper.ApplyToWarehouse(active, warehouse);
                 });
-                await db.SaveChangesAsync(cancellationToken);
+                await SaveOnceAsync(db, character, stored, cancellationToken);
                 return StateCommit.Saved;
             }
             catch (Exception exception)
@@ -170,6 +170,23 @@ public class CharacterStatePersister(
         {
             session.CharacterPersistenceGate.Release();
         }
+    }
+
+    // A store that retries a save runs it in a transaction and first asks whether a lost answer was a write.
+    private async Task SaveOnceAsync(AppDbContext db, Character character, (int Money, byte[] Items) stored, CancellationToken cancellationToken)
+    {
+        var strategy = db.Database.CreateExecutionStrategy();
+        if (!strategy.RetriesOnFailure)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        await strategy.ExecuteInTransactionAsync(
+            token => db.SaveChangesAsync(acceptAllChangesOnSuccess: false, token),
+            _ => WasWrittenAsync(character, stored),
+            cancellationToken);
+        db.ChangeTracker.AcceptAllChanges();
     }
 
     // A save can be written and still report a failure; undoing it then would duplicate what it moved.

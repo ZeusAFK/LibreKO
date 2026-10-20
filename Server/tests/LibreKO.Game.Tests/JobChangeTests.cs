@@ -8,6 +8,8 @@ using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 
@@ -191,6 +193,51 @@ public class JobChangeTests : GameTestBase
                 Meanwhile();
             return queryExpression;
         }
+    }
+
+    [Fact]
+    public async Task ARetryingStoreCanTellAWrittenSaveFromALostOne()
+    {
+        LostAnswer.Answers.Clear();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options
+            .ReplaceService<IExecutionStrategyFactory, LostAnswerFactory>()
+            .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))));
+        var player = Player(provider);
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        LostAnswer.Answers.Should().Equal([true],
+            "a save whose answer is lost is checked against the store before it is run again, and this one was written");
+        (await StoredAsync(provider)).Class.Should().NotBe(Warrior);
+    }
+
+    // A store that retries and asks, after each save, whether it was written, as when the answer to a commit is lost.
+    private sealed class LostAnswer(DbContext context) : IExecutionStrategy
+    {
+        public static System.Collections.Concurrent.ConcurrentQueue<bool> Answers { get; } = new();
+
+        public bool RetriesOnFailure => true;
+
+        public TResult Execute<TState, TResult>(
+            TState state, Func<DbContext, TState, TResult> operation, Func<DbContext, TState, ExecutionResult<TResult>>? verifySucceeded) =>
+            operation(context, state);
+
+        public async Task<TResult> ExecuteAsync<TState, TResult>(
+            TState state,
+            Func<DbContext, TState, CancellationToken, Task<TResult>> operation,
+            Func<DbContext, TState, CancellationToken, Task<ExecutionResult<TResult>>>? verifySucceeded,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await operation(context, state, cancellationToken);
+            if (verifySucceeded != null)
+                Answers.Enqueue((await verifySucceeded(context, state, cancellationToken)).IsSuccessful);
+            return result;
+        }
+    }
+
+    private sealed class LostAnswerFactory(ICurrentDbContext current) : IExecutionStrategyFactory
+    {
+        public IExecutionStrategy Create() => new LostAnswer(current.Context);
     }
 
     [Fact]
