@@ -169,13 +169,15 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             return false;
         }
 
-        // Only members whose voucher was spent go in.
+        // Only members still free whose voucher was spent go in, and each is checked again just before the move.
         var entryTimestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var entering = new List<UserSession>();
+        var lastEntries = new Dictionary<int, int>();
         foreach (var member in members)
         {
-            if (!await itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem))
+            if (!member.MayBeMovedByOthers || !await itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem))
                 continue;
+            lastEntries[member.CharacterId] = member.DailyOps[(int)DailyOperation.FullMoonRift];
             member.DailyOps[(int)DailyOperation.FullMoonRift] = entryTimestamp;
             entering.Add(member);
         }
@@ -208,6 +210,12 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 
         foreach (var member in members)
         {
+            if (!member.MayBeMovedByOthers)
+            {
+                await GiveVoucherBackAsync(member, lastEntries[member.CharacterId]);
+                continue;
+            }
+
             rooms.Join(room, member);
             state.Participants[member.CharacterId] = 0;
             member.InstanceReturn = (member.ZoneId, member.X, member.Z);
@@ -222,6 +230,13 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             room.Id, session.Name, difficulty, startStageId, members.Count);
 
         return true;
+    }
+
+    private async Task GiveVoucherBackAsync(UserSession member, int lastEntry)
+    {
+        member.DailyOps[(int)DailyOperation.FullMoonRift] = lastEntry;
+        if (gameData.GetItem(FullMoonRules.VoucherItem) is { } voucher)
+            await itemGrant.GrantAsync(member, voucher, 1);
     }
 
     public async Task CheckTimeoutsAsync()
