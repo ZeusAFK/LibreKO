@@ -225,7 +225,15 @@ public sealed class CharacterSealService(
         return uniqueId != 0
             && (session.WithLock(s => s.Inventory.Any(slot => slot.IsSealedCharacter && slot.UniqueId == uniqueId))
                 || Offered(session)
-                || session.Trade.IsTrading && sessionManager.GetByCharacterId(session.Trade.ExchangeUser) is { } partner && Offered(partner));
+                || sessionManager.GetByCharacterId(session.Trade.ExchangeUser) is { } partner && TradeWith(session, partner) && Offered(partner));
+    }
+
+    private static bool TradeWith(UserSession session, UserSession partner)
+    {
+        var open = false;
+        UserSession.WithBoth(session, partner, (s, p) => open = s.Trade.ExchangeAccepted && p.Trade.ExchangeAccepted
+            && s.Trade.ExchangeUser == p.CharacterId && p.Trade.ExchangeUser == s.CharacterId);
+        return open;
     }
 
     private async Task<Packet> SheetAsync(int uniqueId)

@@ -149,6 +149,7 @@ public class CharacterSealTests : GameTestBase
     [InlineData(RingAt.Nowhere, false)]
     [InlineData(RingAt.Bag, true)]
     [InlineData(RingAt.PartnersOffer, true)]
+    [InlineData(RingAt.AskedPartnersOffer, false)]
     public async Task ASealedCharactersSheetIsShownOnlyForARingThePlayerCanSee(RingAt where, bool shown)
     {
         using var provider = Provider();
@@ -163,6 +164,13 @@ public class CharacterSealTests : GameTestBase
                 holder.Trade.ExchangeItemList.Add(new ExchangeItem { ItemId = InventoryConstants.CypherRing, Count = 1, UniqueId = 11 });
                 holder.Trade.ExchangeUser = viewer.CharacterId;
                 viewer.Trade.ExchangeUser = holder.CharacterId;
+                holder.Trade.ExchangeAccepted = viewer.Trade.ExchangeAccepted = true;
+                break;
+            case RingAt.AskedPartnersOffer:
+                holder.Trade.ExchangeItemList.Add(new ExchangeItem { ItemId = InventoryConstants.CypherRing, Count = 1, UniqueId = 11 });
+                holder.Trade.ExchangeUser = Stranger;
+                holder.Trade.ExchangeAccepted = true;
+                viewer.Trade.ExchangeUser = holder.CharacterId;
                 break;
         }
 
@@ -174,7 +182,9 @@ public class CharacterSealTests : GameTestBase
         (reply.ReadByte() == CharacterSealPacketWriter.Succeeded).Should().Be(shown, "a sealed character's bag and gold are no one else's business");
     }
 
-    public enum RingAt { Nowhere, Bag, PartnersOffer }
+    public enum RingAt { Nowhere, Bag, PartnersOffer, AskedPartnersOffer }
+
+    private const int Stranger = 40;
 
     private static Packet SheetRequest(int uniqueId)
     {
