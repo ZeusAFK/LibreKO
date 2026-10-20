@@ -3266,6 +3266,9 @@ namespace LibreKO.Common.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("varchar(2000)");
 
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<byte>("Face")
                         .HasColumnType("tinyint unsigned");
 
