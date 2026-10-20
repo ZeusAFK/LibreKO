@@ -22,6 +22,7 @@ public class JobChangeTests : GameTestBase
     private const byte Master = 0;
     private const byte Level = 10;
     private const short PlayerHp = 100;
+    private const int StunRow = 110560;
 
     [Fact]
     public async Task AJobChangeSpendsTheTokenAndSavesTheClassAndRaceTogether()
@@ -65,6 +66,77 @@ public class JobChangeTests : GameTestBase
 
         player.Class.Should().Be(Warrior, "a job change refills HP and MP, which is no way out of a fight");
         Token(player).ItemId.Should().Be(InventoryConstants.ItemJobChange);
+    }
+
+    [Fact]
+    public async Task APlayerWhoDiesDuringTheSaveIsNotRevived()
+    {
+        UserSession? player = null;
+        var blow = new DuringWarehouseRead { Meanwhile = () => player!.Hp = 0 };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(blow)));
+        player = Player(provider);
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Hp.Should().Be(0, "a job change refills only the living");
+        player.Class.Should().Be(Warrior);
+        Token(player).ItemId.Should().Be(InventoryConstants.ItemJobChange);
+    }
+
+    [Fact]
+    public async Task APlayerKilledWhileTheJobIsSavedStaysDead()
+    {
+        UserSession? player = null;
+        var blow = new DuringSave { Meanwhile = () => player!.Hp = 0 };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(blow)));
+        player = Player(provider);
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Class.Should().NotBe(Warrior, "the job was saved");
+        player.Hp.Should().Be(0, "a job change refills only the living");
+    }
+
+    private sealed class DuringSave : SaveChangesInterceptor
+    {
+        public Action Meanwhile { get; init; } = () => { };
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            Meanwhile();
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+    }
+
+    [Fact]
+    public async Task AHeldPlayerCannotChangeJob()
+    {
+        using var provider = Provider();
+        var player = Player(provider);
+        player.SetBuff(StunRow, new ActiveBuff
+        {
+            MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+        });
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Class.Should().Be(Warrior);
+        Token(player).ItemId.Should().Be(InventoryConstants.ItemJobChange);
+    }
+
+    private sealed class DuringWarehouseRead : Microsoft.EntityFrameworkCore.Diagnostics.IQueryExpressionInterceptor
+    {
+        public Action Meanwhile { get; init; } = () => { };
+
+        public System.Linq.Expressions.Expression QueryCompilationStarting(
+            System.Linq.Expressions.Expression queryExpression, QueryExpressionEventData eventData)
+        {
+            if (queryExpression is System.Linq.Expressions.MethodCallExpression { Arguments: [Microsoft.EntityFrameworkCore.Query.EntityQueryRootExpression root, ..] }
+                && root.EntityType.ClrType == typeof(Warehouse))
+                Meanwhile();
+            return queryExpression;
+        }
     }
 
     [Fact]

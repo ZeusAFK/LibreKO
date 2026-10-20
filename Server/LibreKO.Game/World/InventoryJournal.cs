@@ -32,10 +32,10 @@ public sealed class InventoryJournal(UserSession session)
         session.Trade.MerchantItems[index] = new MerchantItem();
     }
 
-    // One of an item leaves the first bag slot holding it, or nothing does.
-    public bool TakeOneFromBag(int itemId)
+    // One of an item leaves the first slot holding it, magic bags included as the item checks count them, or nothing does.
+    public bool TakeOne(int itemId)
     {
-        for (var index = InventoryConstants.InventoryStart; index < InventoryConstants.InventoryStart + InventoryConstants.HaveMax; index++)
+        for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length; index++)
         {
             if (session.Inventory[index].ItemId != itemId || session.Inventory[index].Count == 0)
                 continue;

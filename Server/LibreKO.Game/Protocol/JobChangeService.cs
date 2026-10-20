@@ -83,7 +83,7 @@ public class JobChangeService(
         }));
         if (outcome != StateCommit.Saved)
         {
-            await SendFailAsync(session, JobChangeOutcome.NoTokenOrSameClass);
+            await SendFailAsync(session, outcome == StateCommit.Failed ? JobChangeOutcome.JobError : JobChangeOutcome.NoTokenOrSameClass);
             return;
         }
 
@@ -93,8 +93,13 @@ public class JobChangeService(
         var coefficient = gameDataService.GetCoefficient(session.Class);
         if (coefficient != null)
             session.RecalculateStats(coefficient, gameDataService);
-        session.Hp = session.MaxHp;
-        session.Mp = session.MaxMp;
+        session.WithLock(s =>
+        {
+            if (s.Hp <= 0)
+                return;
+            s.Hp = s.MaxHp;
+            s.Mp = s.MaxMp;
+        });
 
         await session.Client.SendPacket(ClassChangePacketWriter.JobChangeResult(JobChangeOutcome.Succeeded));
 
@@ -112,7 +117,7 @@ public class JobChangeService(
 
     private static bool TakeToken(UserSession session, InventoryJournal journal, int tokenId, short newClass, byte newRace)
     {
-        if (!journal.TakeOneFromBag(tokenId))
+        if (session.IsBusy || session.IsHeld || session.IsInCombat || !journal.TakeOne(tokenId))
             return false;
 
         session.Class = newClass;

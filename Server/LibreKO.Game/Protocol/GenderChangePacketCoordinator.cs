@@ -56,7 +56,7 @@ public class GenderChangePacketCoordinator(
             var character = await db.Characters.FindAsync(session.CharacterId);
             if (character == null || !session.WithLock(s =>
                 {
-                    if (!journal.TakeOneFromBag(GenderChangeItem))
+                    if (!journal.TakeOne(GenderChangeItem))
                         return false;
                     (s.Race, s.Face, s.Hair) = (race, face, hair);
                     return true;
@@ -72,7 +72,8 @@ public class GenderChangePacketCoordinator(
         }));
         if (outcome != StateCommit.Saved)
         {
-            await client.SendPacket(GenderChangePacketWriter.Result(GenderChangePacketWriter.NoItem));
+            await client.SendPacket(GenderChangePacketWriter.Result(
+                outcome == StateCommit.Failed ? GenderChangePacketWriter.Failed : GenderChangePacketWriter.NoItem));
             return;
         }
 
