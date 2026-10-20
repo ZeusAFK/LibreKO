@@ -97,31 +97,25 @@ public static class TempleEventHelpers
 
         if (party.MemberCount <= 2 || party.LeaderId == (short)session.CharacterId)
         {
-            var deletePacket = PartyPacketWriter.Disband();
-            await combatNotificationService.SendToPartyAsync(party, deletePacket);
-            for (var i = 0; i < PartyGroup.MaxMembers; i++)
-            {
-                if (party.MemberIds[i] < 0)
-                    continue;
+            var members = sessionManager.Parties.DeleteParty(party.Index);
+            if (members == null)
+                return;
 
-                var m = sessionManager.GetByCharacterId(party.MemberIds[i]);
+            await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
+            foreach (var memberId in members)
+            {
+                var m = sessionManager.GetByCharacterId(memberId);
                 if (m != null)
                 {
                     m.PartyIndex = -1;
                     m.IsPartyLeader = false;
                 }
             }
-            sessionManager.Parties.DeleteParty(party.Index);
         }
-        else
+        else if (party.TryLeave((short)session.CharacterId))
         {
-            var pos = party.FindMember((short)session.CharacterId);
-            if (pos >= 0)
-            {
-                party.MemberIds[pos] = -1;
-                var removePkt = PartyPacketWriter.MemberLeft(session.CharacterId);
-                await combatNotificationService.SendToPartyAsync(party, removePkt);
-            }
+            var removePkt = PartyPacketWriter.MemberLeft(session.CharacterId);
+            await combatNotificationService.SendToPartyAsync(party, removePkt);
         }
     }
 
@@ -134,26 +128,20 @@ public static class TempleEventHelpers
             return;
 
         var party = sessionManager.Parties.GetParty(partyIndex);
-        if (party == null)
+        var members = sessionManager.Parties.DeleteParty(partyIndex);
+        if (party == null || members == null)
             return;
 
-        var deletePacket = PartyPacketWriter.Disband();
-        await combatNotificationService.SendToPartyAsync(party, deletePacket);
-
-        for (var i = 0; i < PartyGroup.MaxMembers; i++)
+        await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
+        foreach (var memberId in members)
         {
-            if (party.MemberIds[i] < 0)
-                continue;
-
-            var member = sessionManager.GetByCharacterId(party.MemberIds[i]);
+            var member = sessionManager.GetByCharacterId(memberId);
             if (member != null)
             {
                 member.PartyIndex = -1;
                 member.IsPartyLeader = false;
             }
         }
-
-        sessionManager.Parties.DeleteParty(partyIndex);
     }
 
     public static async Task<bool> TryGiveItemAsync(

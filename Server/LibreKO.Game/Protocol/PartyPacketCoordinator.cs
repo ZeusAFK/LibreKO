@@ -244,7 +244,7 @@ public class PartyPacketCoordinator(
         if (deliberate && sessionManager.GetByCharacterId(party.LeaderId) is { } partyLeader)
             await partyLeader.Client.SendPacket(PartyPacketWriter.RejoinForget(memberId));
 
-        party.MemberIds[memberPos] = -1;
+        party.TryLeave(memberId);
         partyWarBoard.MemberLeft(party.Index, memberId);
         if (party.CommandLeaderId == memberId)
         {
@@ -273,15 +273,16 @@ public class PartyPacketCoordinator(
         if (!await InviteAllowedAsync(session, target, boardType))
             return;
 
+        var created = false;
         if ((PartyRequest)subOpcode == PartyRequest.Create)
         {
-            if (session.IsInParty)
+            if (session.IsInParty || !TryCreatePartyLedBy(session, boardType))
             {
                 await SendErrorAsync(session, PartyInviteError.CannotParty);
                 return;
             }
 
-            CreatePartyLedBy(session, boardType);
+            created = true;
             partyWarBoard.SeedModes(session.PartyIndex, session.CharacterId, rowMeterMode, boardMeterMode);
         }
         else
@@ -300,10 +301,27 @@ public class PartyPacketCoordinator(
             }
         }
 
-        target!.InvitedToParty = session.PartyIndex;
+        if (!target!.TryOfferPartyInvite(session.PartyIndex, PartyStands))
+        {
+            if (created)
+                DropUnformedParty(session);
+            await SendErrorAsync(session, PartyInviteError.CannotParty);
+            return;
+        }
 
         var invite = PartyPacketWriter.Invite(session.CharacterId, session.Name);
         await target.Client.SendPacket(invite);
+    }
+
+    private bool PartyStands(int index) => sessionManager.Parties.GetParty(index) != null;
+
+    private void DropUnformedParty(UserSession leader)
+    {
+        var index = leader.PartyIndex;
+        sessionManager.Parties.DeleteParty(index);
+        partyWarBoard.PartyDeleted(index);
+        leader.PartyIndex = -1;
+        leader.IsPartyLeader = false;
     }
 
     public async Task BoardInviteAsync(UserSession inviter, string targetName, byte boardType)
@@ -312,25 +330,24 @@ public class PartyPacketCoordinator(
         if (!await InviteAllowedAsync(inviter, target, boardType) || !await HasRoomToInviteAsync(inviter))
             return;
 
-        target!.BoardInvite = new PartyBoardInvite(inviter.CharacterId, boardType);
+        target!.OfferBoardInvite(new PartyBoardInvite(inviter.CharacterId, boardType));
         await target.Client.SendPacket(PartyBbsPacketWriter.BoardInvite(
             boardType, inviter.Name, (byte)inviter.Level, (short)inviter.Class));
     }
 
-    // A board accept answers the invite this player was sent, and only once.
+    // A board accept answers an invite this player was sent, and only once.
     public async Task BoardAcceptAsync(UserSession target, string inviterName, byte boardType)
     {
         var inviter = sessionManager.GetByName(inviterName);
-        var invite = target.BoardInvite;
-        if (inviter == null || invite != new PartyBoardInvite(inviter.CharacterId, boardType))
+        if (inviter == null || !target.TryTakeBoardInvite(new PartyBoardInvite(inviter.CharacterId, boardType)))
             return;
 
-        target.BoardInvite = null;
         if (!await InviteAllowedAsync(inviter, target, boardType) || !await HasRoomToInviteAsync(inviter))
             return;
 
-        if (!inviter.IsInParty)
-            CreatePartyLedBy(inviter, boardType);
+        if (!inviter.IsInParty && !TryCreatePartyLedBy(inviter, boardType))
+            return;
+
         target.PartyIndex = inviter.PartyIndex;
         await InsertAsync(target);
     }
@@ -394,14 +411,20 @@ public class PartyPacketCoordinator(
         return true;
     }
 
-    private void CreatePartyLedBy(UserSession leader, byte boardType)
+    private bool TryCreatePartyLedBy(UserSession leader, byte boardType)
     {
         var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
         party.BoardType = boardType;
+        if (!leader.TryStartParty(party.Index))
+        {
+            sessionManager.Parties.DeleteParty(party.Index);
+            return false;
+        }
+
         partyWarBoard.MemberJoined(party.Index, leader.CharacterId);
-        leader.PartyIndex = party.Index;
         leader.IsPartyLeader = true;
         logger.LogInformation("{Name} created party {PartyIndex}", leader.Name, party.Index);
+        return true;
     }
 
     private const int PartyLevelGap = 8;
@@ -432,20 +455,15 @@ public class PartyPacketCoordinator(
             return;
         }
 
-        if (party.FindMember((short)session.CharacterId) >= 0)
+        if (!party.TryJoin((short)session.CharacterId))
         {
             session.PartyIndex = -1;
             return;
         }
 
-        var slot = party.FindEmptySlot();
-        if (slot < 0)
-        {
-            session.PartyIndex = -1;
-            return;
-        }
-
-        party.MemberIds[slot] = (short)session.CharacterId;
+        session.ForgetBoardInvites();
+        if (session.InvitedToParty >= 0)
+            await CancelAsync(session);
         partyWarBoard.MemberJoined(party.Index, session.CharacterId);
         await StopSeekingAsync(session);
         if (sessionManager.GetByCharacterId(party.LeaderId) is { } leader)
@@ -502,22 +520,27 @@ public class PartyPacketCoordinator(
     // Joining answers the invite this player was sent; a member is not a pending invitee.
     private async Task AcceptInviteAsync(UserSession session)
     {
-        if (session.InvitedToParty < 0 || session.IsInParty)
+        if (session.IsInParty)
+        {
+            await CancelAsync(session);
+            return;
+        }
+
+        var invitedTo = session.TakePartyInvite();
+        if (invitedTo < 0)
             return;
 
-        session.PartyIndex = session.InvitedToParty;
-        session.InvitedToParty = -1;
+        session.PartyIndex = invitedTo;
         await InsertAsync(session);
     }
 
     private async Task CancelAsync(UserSession session)
     {
-        if (session.InvitedToParty < 0)
+        var invitedTo = session.TakePartyInvite();
+        if (invitedTo < 0)
             return;
 
-        var party = sessionManager.Parties.GetParty(session.InvitedToParty);
-        session.InvitedToParty = -1;
-
+        var party = sessionManager.Parties.GetParty(invitedTo);
         if (party == null)
             return;
 
@@ -552,39 +575,29 @@ public class PartyPacketCoordinator(
             return;
         }
 
+        var members = sessionManager.Parties.DeleteParty(party.Index);
+        if (members == null)
+            return;
+
         logger.LogInformation("Party {PartyIndex} deleted by {Name}", party.Index, session.Name);
-
-        var deletePacket = PartyPacketWriter.Disband();
-        await combatNotificationService.SendToPartyAsync(party, deletePacket);
-
-        for (var i = 0; i < PartyGroup.MaxMembers; i++)
+        await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
+        foreach (var memberId in members)
         {
-            if (party.MemberIds[i] < 0)
-                continue;
-
-            var member = sessionManager.GetByCharacterId(party.MemberIds[i]);
-            if (member != null)
+            if (sessionManager.GetByCharacterId(memberId) is { } member)
             {
                 member.PartyIndex = -1;
                 member.IsPartyLeader = false;
             }
         }
 
-        sessionManager.Parties.DeleteParty(party.Index);
         partyWarBoard.PartyDeleted(party.Index);
     }
 
     private async Task PromoteAsync(UserSession session, short newLeaderId)
     {
         var party = sessionManager.Parties.GetParty(session.PartyIndex);
-        if (party == null || party.LeaderId != (short)session.CharacterId)
+        if (party == null || !party.TryPromote((short)session.CharacterId, newLeaderId))
             return;
-
-        var memberPos = party.FindMember(newLeaderId);
-        if (memberPos <= 0)
-            return;
-
-        (party.MemberIds[0], party.MemberIds[memberPos]) = (party.MemberIds[memberPos], party.MemberIds[0]);
 
         session.IsPartyLeader = false;
         var newLeader = sessionManager.GetByCharacterId(newLeaderId);

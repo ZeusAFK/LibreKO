@@ -211,6 +211,158 @@ public class PartyWireTests : GameTestBase
         target.IsInParty.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task ASecondInviteWaitsUntilTheFirstIsAnswered()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var first = CreateMember(sessionManager, 530);
+        var secondSent = new List<Packet>();
+        var second = CreateMember(sessionManager, 531, secondSent);
+        var target = CreateMember(sessionManager, 532);
+
+        await parties.HandleAsync(first.Client, InviteOf(target));
+        await parties.HandleAsync(second.Client, InviteOf(target));
+        await parties.HandleAsync(target.Client, Permit(accept: true));
+
+        target.PartyIndex.Should().Be(first.PartyIndex, "the answer goes to the invite the player saw first");
+        second.IsInParty.Should().BeFalse("a refused inviter is not left in a party the client never shows");
+        RejectionsIn(secondSent).Should().Contain((short)PartyInviteError.CannotParty);
+    }
+
+    [Fact]
+    public async Task AnInviteWhosePartyIsGoneStandsInNoOnesWay()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var first = CreateMember(sessionManager, 533);
+        var second = CreateMember(sessionManager, 534);
+        var target = CreateMember(sessionManager, 535);
+        await parties.HandleAsync(first.Client, InviteOf(target));
+        await parties.HandleAsync(first.Client, Request(PartyRequest.Delete));
+
+        await parties.HandleAsync(second.Client, InviteOf(target));
+
+        target.InvitedToParty.Should().Be(second.PartyIndex);
+    }
+
+    [Fact]
+    public async Task EachOpenBoardInviteCanStillBeAccepted()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var board = provider.GetRequiredService<IPartyBbsPacketCoordinator>();
+        var first = CreateMember(sessionManager, 536);
+        var second = CreateMember(sessionManager, 537);
+        var target = CreateMember(sessionManager, 538);
+        await board.HandleAsync(first.Client, BoardPacket(PartyBbsPacketWriter.SubInvite, target.Name));
+        await board.HandleAsync(second.Client, BoardPacket(PartyBbsPacketWriter.SubInvite, target.Name));
+
+        await board.HandleAsync(target.Client, BoardPacket(PartyBbsPacketWriter.SubInviteAccept, first.Name));
+
+        target.PartyIndex.Should().Be(first.PartyIndex);
+        first.IsPartyLeader.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task JoiningThroughTheBoardWithdrawsAnOpenInvite()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var board = provider.GetRequiredService<IPartyBbsPacketCoordinator>();
+        var inviter = CreateMember(sessionManager, 539);
+        var boardInviter = CreateMember(sessionManager, 540);
+        var target = CreateMember(sessionManager, 541);
+        await parties.HandleAsync(inviter.Client, InviteOf(target));
+        var invitersParty = inviter.PartyIndex;
+        await board.HandleAsync(boardInviter.Client, BoardPacket(PartyBbsPacketWriter.SubInvite, target.Name));
+
+        await board.HandleAsync(target.Client, BoardPacket(PartyBbsPacketWriter.SubInviteAccept, boardInviter.Name));
+
+        target.PartyIndex.Should().Be(boardInviter.PartyIndex);
+        target.InvitedToParty.Should().Be(-1);
+        sessionManager.Parties.GetParty(invitersParty).Should().BeNull("the other inviter's party of one was only waiting on this player");
+        inviter.IsInParty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AnAcceptAfterTheLeaderDisbandedJoinsNothing()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var leader = CreateMember(sessionManager, 542);
+        var target = CreateMember(sessionManager, 543);
+        await parties.HandleAsync(leader.Client, InviteOf(target));
+        var party = sessionManager.Parties.GetParty(leader.PartyIndex)!;
+        sessionManager.Parties.DeleteParty(party.Index);
+
+        await parties.HandleAsync(target.Client, Permit(accept: true));
+
+        target.IsInParty.Should().BeFalse("a party that came down takes no one in");
+        party.FindMember((short)target.CharacterId).Should().BeNegative();
+    }
+
+    [Fact]
+    public async Task JoiningAPartySpendsTheBoardInvitesBeforeIt()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var board = provider.GetRequiredService<IPartyBbsPacketCoordinator>();
+        var boardInviter = CreateMember(sessionManager, 546);
+        var leader = CreateMember(sessionManager, 547);
+        var target = CreateMember(sessionManager, 548);
+        await board.HandleAsync(boardInviter.Client, BoardPacket(PartyBbsPacketWriter.SubInvite, target.Name));
+        await parties.HandleAsync(leader.Client, InviteOf(target));
+        await parties.HandleAsync(target.Client, Permit(accept: true));
+        await parties.HandleAsync(target.Client, Request(PartyRequest.Delete));
+
+        await board.HandleAsync(target.Client, BoardPacket(PartyBbsPacketWriter.SubInviteAccept, boardInviter.Name));
+
+        target.IsInParty.Should().BeFalse("joining a party answered every invite still open");
+        boardInviter.IsInParty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AMemberWhoAcceptsAnInviteWithdrawsIt()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var inviter = CreateMember(sessionManager, 544);
+        var target = CreateMember(sessionManager, 545);
+        await parties.HandleAsync(inviter.Client, InviteOf(target));
+        var invitersParty = inviter.PartyIndex;
+        var eventParty = sessionManager.Parties.CreateParty((short)target.CharacterId);
+        target.PartyIndex = eventParty.Index;
+
+        await parties.HandleAsync(target.Client, Permit(accept: true));
+
+        target.PartyIndex.Should().Be(eventParty.Index);
+        sessionManager.Parties.GetParty(invitersParty).Should().BeNull("the inviter is not left leading a party of one");
+    }
+
+    private static Packet Permit(bool accept)
+    {
+        var packet = new Packet(GameOpcodes.GS_PARTY);
+        packet.WriteByte((byte)PartyRequest.Permit);
+        packet.WriteByte(accept ? (byte)1 : (byte)0);
+        packet.ResetOffset();
+        return packet;
+    }
+
+    private static Packet Request(PartyRequest request)
+    {
+        var packet = new Packet(GameOpcodes.GS_PARTY);
+        packet.WriteByte((byte)request);
+        packet.ResetOffset();
+        return packet;
+    }
+
     private static Packet BoardPacket(byte sub, string name)
     {
         var packet = new Packet(GameOpcodes.GS_PARTY_BBS);

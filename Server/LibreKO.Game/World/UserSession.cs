@@ -306,10 +306,64 @@ public class UserSession
     public byte RebMagic { get; set; }
 
     // Party
-    public int PartyIndex { get; set; } = -1;
+    private int partyIndex = -1;
+
+    public int PartyIndex
+    {
+        get => Volatile.Read(ref partyIndex);
+        set => Volatile.Write(ref partyIndex, value);
+    }
+
     public bool IsInParty => PartyIndex >= 0;
-    public int InvitedToParty { get; set; } = -1;
-    public PartyBoardInvite? BoardInvite { get; set; }
+
+    // A player starts a party only from outside every party.
+    public bool TryStartParty(int index) => Interlocked.CompareExchange(ref partyIndex, index, -1) == -1;
+
+    private int invitedToParty = -1;
+
+    public int InvitedToParty
+    {
+        get => Volatile.Read(ref invitedToParty);
+        set => Volatile.Write(ref invitedToParty, value);
+    }
+
+    // An invite stands until it is answered or its party is gone.
+    public bool TryOfferPartyInvite(int index, Func<int, bool> partyStands)
+    {
+        var pending = InvitedToParty;
+        return (pending < 0 || !partyStands(pending))
+            && Interlocked.CompareExchange(ref invitedToParty, index, pending) == pending;
+    }
+
+    public int TakePartyInvite() => Interlocked.Exchange(ref invitedToParty, -1);
+
+    private const int MaxBoardInvites = PartyGroup.MaxMembers;
+    private readonly List<PartyBoardInvite> boardInvites = [];
+
+    // Several board invites wait at once; past the cap the oldest makes way.
+    public void OfferBoardInvite(PartyBoardInvite invite)
+    {
+        lock (boardInvites)
+        {
+            boardInvites.RemoveAll(pending => pending.InviterId == invite.InviterId);
+            if (boardInvites.Count >= MaxBoardInvites)
+                boardInvites.RemoveAt(0);
+            boardInvites.Add(invite);
+        }
+    }
+
+    public bool TryTakeBoardInvite(PartyBoardInvite answer)
+    {
+        lock (boardInvites)
+            return boardInvites.Remove(answer);
+    }
+
+    public void ForgetBoardInvites()
+    {
+        lock (boardInvites)
+            boardInvites.Clear();
+    }
+
     private bool isPartyLeader;
 
     public bool IsPartyLeader
