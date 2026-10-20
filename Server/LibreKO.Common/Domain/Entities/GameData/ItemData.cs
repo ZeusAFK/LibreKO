@@ -23,6 +23,8 @@ public class ItemData
     public byte Race { get; set; }
     public bool IsUntradeable => Race == UntradeableRace;
     private const byte UntradeableRace = 20;
+    public bool IsUnmailable => Race == UnmailableRace;
+    private const byte UnmailableRace = 7;
     public byte Class { get; set; }
     public short Damage { get; set; }
     public short MinDamage { get; set; }

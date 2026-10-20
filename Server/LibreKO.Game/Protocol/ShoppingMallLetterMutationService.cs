@@ -34,7 +34,6 @@ public class ShoppingMallLetterMutationService(
     private const byte DeleteTooMany = unchecked((byte)-3);
     private const byte SendToSelf = unchecked((byte)-6);
     private const byte SendItemNotMailable = unchecked((byte)-32);
-    private const byte UnmailableRace = 7;
 
     public async Task HandleSendAsync(UserSession session, Packet packet)
     {
@@ -151,7 +150,7 @@ public class ShoppingMallLetterMutationService(
 
             itemData = gameDataService.GetItem(itemId);
             if (itemData == null
-                || itemData.Race == UnmailableRace
+                || itemData.IsUnmailable
                 || itemData.IsUntradeable
                 || itemId >= InventoryConstants.ItemGold)
             {

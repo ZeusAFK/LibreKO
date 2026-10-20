@@ -1298,6 +1298,28 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task AnItemOfTheUnmailableRaceIsNotSentByLetter()
+    {
+        const int itemId = 810003000;
+        const byte unmailableRace = 7;
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { AccountId = 1, Name = "Recipient" },
+                new Character { Id = 36, AccountId = 46, Name = "Sender" }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Race = unmailableRace }));
+        var (session, client, sent) = LetterWriter(provider, characterId: 36, accountId: 46);
+        var item = session.Inventory[InventoryConstants.InventoryStart];
+        item.ItemId = itemId;
+        item.Count = 1;
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>()
+            .HandleAsync(client, LetterWithItem("Recipient", itemId, 0));
+
+        LetterResult(sent).Should().Be(unchecked((byte)-32));
+        item.ItemId.Should().Be(itemId);
+    }
+
+    [Fact]
     public async Task ALetterStillHoldingItsItemIsNotDeleted()
     {
         using var provider = CreateProvider(db => db.MailBoxes.AddRange(

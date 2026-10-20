@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -6,6 +6,7 @@ public sealed class ShoppingMallPacketWriter
 {
     public const byte Failed = 0;
     public const byte Succeeded = 1;
+    public const byte LetterTypePlain = 1;
     public const byte LetterTypeWithItem = 2;
 
     public readonly record struct Letter(
