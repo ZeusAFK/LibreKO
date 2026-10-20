@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LibreKO.Common.Domain.Entities;
@@ -17,6 +17,8 @@ public class MailBox
     public int ItemId { get; set; }
     public short Count { get; set; }
     public short Durability { get; set; }
+    public byte Flag { get; set; }
+    public long ExpiresAt { get; set; }
     public long SerialNumber { get; set; }
     public int Coins { get; set; }
     public bool Deleted { get; set; }
@@ -38,6 +40,8 @@ public class MailBox
             builder.Property(p => p.ItemId).HasColumnName("nItemID");
             builder.Property(p => p.Count).HasColumnName("sCount");
             builder.Property(p => p.Durability).HasColumnName("sDurability");
+            builder.Property(p => p.Flag).HasColumnName("bFlag");
+            builder.Property(p => p.ExpiresAt).HasColumnName("nExpiresAt");
             builder.Property(p => p.SerialNumber).HasColumnName("nSerialNum");
             builder.Property(p => p.Coins).HasColumnName("nCoins");
             builder.Property(p => p.Deleted).HasColumnName("bDeleted");

@@ -3931,6 +3931,12 @@ namespace LibreKO.Common.Migrations
                     b.Property<short>("Durability")
                         .HasColumnType("smallint");
 
+                    b.Property<long>("ExpiresAt")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte>("Flag")
+                        .HasColumnType("tinyint unsigned");
+
                     b.Property<int>("ItemId")
                         .HasColumnType("int");
 
@@ -3938,6 +3944,9 @@ namespace LibreKO.Common.Migrations
                         .HasColumnType("tinyint unsigned");
 
                     b.Property<int>("MailId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UniqueId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -3971,6 +3980,14 @@ namespace LibreKO.Common.Migrations
                     b.Property<short>("Durability")
                         .HasColumnType("smallint")
                         .HasColumnName("sDurability");
+
+                    b.Property<long>("ExpiresAt")
+                        .HasColumnType("bigint")
+                        .HasColumnName("nExpiresAt");
+
+                    b.Property<byte>("Flag")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("bFlag");
 
                     b.Property<int>("ItemId")
                         .HasColumnType("int")

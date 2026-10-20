@@ -11,7 +11,8 @@ using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.Protocol;
 
-public readonly record struct MailAttachmentDraft(MailAttachmentKind Kind, int ItemId, int Count, short Durability = 0);
+public readonly record struct MailAttachmentDraft(
+    MailAttachmentKind Kind, int ItemId, int Count, short Durability = 0, byte Flag = 0, long ExpiresAt = 0, int UniqueId = 0);
 
 public readonly record struct MailItemPick(byte Slot, ushort Count);
 
@@ -174,11 +175,12 @@ public class MailService(
         foreach (var (slot, count, itemData) in picks)
         {
             var entry = session.Inventory[slot];
-            var durability = entry.Durability;
+            var sent = new MailAttachmentDraft(MailAttachmentKind.Item, itemData.Num, count,
+                count == entry.Count ? entry.Durability : itemData.Duration, entry.Flag, entry.ExpiresAt, entry.UniqueId);
             entry.Count = (ushort)(entry.Count - count);
             if (entry.Count == 0)
                 entry.Clear();
-            drafts.Add(new MailAttachmentDraft(MailAttachmentKind.Item, itemData.Num, count, entry.IsEmpty ? durability : itemData.Duration));
+            drafts.Add(sent);
             await userNotificationService.SendStackChangeAsync(session, (byte)slot, entry.ItemId, entry.Count, entry.Durability);
         }
 
@@ -349,8 +351,8 @@ public class MailService(
     private enum ItemDelivery { NoRoom, Delivered, Dropped }
 
     // Reads the item once, so the claim and its message agree even if the item table is reloaded
-    // meanwhile. An item no longer in the table is dropped (marked claimed). A mail item is fresh,
-    // so it only joins a stack of the same plain item, and an empty slot gets its count set.
+    // meanwhile. An item no longer in the table is dropped (marked claimed). A mail item joins only
+    // a stack of the very same item (state, expiry and link), and an empty slot gets its count set.
     private async Task<ItemDelivery> DeliverItemAsync(UserSession session, MailAttachment attachment)
     {
         var itemData = gameDataService.GetItem(attachment.ItemId);
@@ -363,7 +365,7 @@ public class MailService(
         var delivered = false;
         while (attachment.Remaining > 0)
         {
-            var slot = BagSlotFor(session, attachment.ItemId, itemData.Countable != 0);
+            var slot = BagSlotFor(session, attachment, itemData.Countable != 0);
             if (slot < 0)
                 break;
 
@@ -375,7 +377,10 @@ public class MailService(
                 entry.Clear();
                 entry.ItemId = attachment.ItemId;
                 entry.Count = (ushort)portion;
-                entry.Durability = attachment.Durability > 0 ? attachment.Durability : itemData.Duration;
+                entry.Durability = attachment.Durability;
+                entry.Flag = attachment.Flag;
+                entry.ExpiresAt = attachment.ExpiresAt;
+                entry.UniqueId = attachment.UniqueId;
             }
             else
             {
@@ -390,7 +395,7 @@ public class MailService(
         return delivered ? ItemDelivery.Delivered : ItemDelivery.NoRoom;
     }
 
-    private static int BagSlotFor(UserSession session, int itemId, bool countable)
+    private static int BagSlotFor(UserSession session, MailAttachment attachment, bool countable)
     {
         var bag = session.Inventory.AsSpan(InventoryConstants.InventoryStart, InventoryConstants.HaveMax);
         if (countable)
@@ -398,8 +403,8 @@ public class MailService(
             for (var i = 0; i < bag.Length; i++)
             {
                 var slot = bag[i];
-                if (slot.ItemId == itemId && slot.Flag == 0 && slot.ExpiresAt == 0 && slot.UniqueId == 0
-                    && slot.Count < InventoryConstants.MaxStackCount)
+                if (slot.ItemId == attachment.ItemId && slot.Flag == attachment.Flag && slot.ExpiresAt == attachment.ExpiresAt
+                    && slot.UniqueId == attachment.UniqueId && slot.Count < InventoryConstants.MaxStackCount)
                     return InventoryConstants.InventoryStart + i;
             }
         }
@@ -436,7 +441,11 @@ public class MailService(
             Body = Truncate(body, MailLimits.BodyMax),
             SentAt = DateTime.UtcNow,
             Attachments = attachments
-                .Select(a => new MailAttachment { Kind = a.Kind, ItemId = a.ItemId, Count = a.Count, Durability = a.Durability })
+                .Select(a => new MailAttachment
+                {
+                    Kind = a.Kind, ItemId = a.ItemId, Count = a.Count, Durability = a.Durability,
+                    Flag = a.Flag, ExpiresAt = a.ExpiresAt, UniqueId = a.UniqueId,
+                })
                 .ToList(),
         };
 

@@ -928,6 +928,97 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ASentLetterStoresTheItemsStateExpiryAndSerial()
+    {
+        const long rentalEnds = 4_102_444_800;
+        const int serial = 4242;
+
+        using var provider = CreateProvider(
+            db => db.Characters.Add(new Character
+            {
+                AccountId = 1, Slot = 0, Name = "Recipient", Race = 1, Class = 101, Face = 1, Hair = 1, Level = 10,
+                Hp = 100, Mp = 100, MapId = 1, Items = new byte[InventoryConstants.InventoryTotal * 8], SkillPointData = new byte[9],
+            }),
+            gameData => gameData.GetItem(InventoryConstants.CypherRing).Returns(new ItemData
+            {
+                Num = InventoryConstants.CypherRing, Duration = 1,
+            }));
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 29, accountId: 39);
+        session.Hp = 100;
+        session.Name = "Sender";
+        session.Money = 20000;
+        var ring = session.Inventory[InventoryConstants.InventoryStart];
+        ring.ItemId = InventoryConstants.CypherRing;
+        ring.Count = 1;
+        ring.Durability = 1;
+        ring.Flag = (byte)ItemFlag.NotBound;
+        ring.ExpiresAt = rentalEnds;
+        ring.UniqueId = serial;
+
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(6);
+        request.WriteByte(6);
+        request.WriteSByteString("Recipient");
+        request.WriteSByteString("Subject");
+        request.WriteByte(2);
+        request.WriteInt(InventoryConstants.CypherRing);
+        request.WriteByte(0);
+        request.WriteInt(0);
+        request.WriteString("Message");
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        await using var scope = provider.CreateAsyncScope();
+        var letter = await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.SingleAsync();
+        letter.SerialNumber.Should().Be(serial, "the letter must not drop the sealed character the ring holds");
+        letter.Flag.Should().Be((byte)ItemFlag.NotBound);
+        letter.ExpiresAt.Should().Be(rentalEnds);
+    }
+
+    [Fact]
+    public async Task ALetterItemArrivesWithItsStateExpiryAndSerialAndJoinsNoOtherStack()
+    {
+        const int itemId = 810003000;
+        const int letterId = 1002;
+        const long rentalEnds = 4_102_444_800;
+        const int serial = 4242;
+
+        using var provider = CreateProvider(
+            db => db.MailBoxes.Add(new MailBox
+            {
+                LetterId = letterId, RecipientId = "Mailer", SenderId = "Sender", Subject = "Gift", Message = "Take it",
+                Type = 2, Status = 1, ItemId = itemId, Count = 2, Durability = 10, Flag = (byte)ItemFlag.NotBound,
+                ExpiresAt = rentalEnds, SerialNumber = serial, Coins = 0, SendDate = DateTime.UtcNow, Deleted = false,
+            }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1, Weight = 1, Duration = 10 }));
+
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 28, accountId: 38);
+        session.Name = "Mailer";
+        session.Hp = 100;
+        session.Stats.MaxWeight = 100;
+        session.Inventory[InventoryConstants.InventoryStart].ItemId = itemId;
+        session.Inventory[InventoryConstants.InventoryStart].Count = 3;
+
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(6);
+        request.WriteByte(4);
+        request.WriteInt(letterId);
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        session.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(3);
+        var arrived = session.Inventory.Single(slot => slot.ItemId == itemId && slot.UniqueId == serial);
+        arrived.Count.Should().Be(2);
+        arrived.Flag.Should().Be((byte)ItemFlag.NotBound);
+        arrived.ExpiresAt.Should().Be(rentalEnds);
+    }
+
+    [Fact]
     public async Task ShoppingMallPacketCoordinator_HandleAsync_LetterGetItemIsRefusedWhileTrading()
     {
         const int itemId = 810003000;

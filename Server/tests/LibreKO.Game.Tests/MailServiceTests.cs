@@ -20,6 +20,10 @@ public class MailServiceTests : GameTestBase
     private const int BobId = 2;
     private const int Apple = 810418000;
     private const int Sword = 110110001;
+    private const long RentalEnds = 4_102_444_800;
+    private const int SealedCharacter = 4242;
+    private const ushort Held = 3;
+    private const ushort Sent = 5;
 
     private static ServiceProvider Provider() => CreateProvider(
         db => db.Characters.AddRange(
@@ -29,6 +33,10 @@ public class MailServiceTests : GameTestBase
         {
             gameData.GetItem(Apple).Returns(new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 });
             gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Name = "Sword", Countable = 0, Duration = 5000, Weight = 1 });
+            gameData.GetItem(InventoryConstants.CypherRing).Returns(new ItemData
+            {
+                Num = InventoryConstants.CypherRing, Name = "Cypher Ring", Countable = 0, Duration = 1, Weight = 1,
+            });
         });
 
     private static void FillBagLeaving(UserSession session, int freeSlots)
@@ -114,6 +122,63 @@ public class MailServiceTests : GameTestBase
         var unread = MailPacket(bobSent, MailPacketWriter.SubUnread);
         unread.ReadUShort().Should().Be(1);
         bobSent.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_NOTICE);
+    }
+
+    [Fact]
+    public async Task AMailedItemArrivesAsItWasSent()
+    {
+        using var provider = Provider();
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var sword = alice.Inventory[InventoryConstants.InventoryStart];
+        sword.ItemId = Sword;
+        sword.Count = 1;
+        sword.Durability = 0;
+        sword.Flag = (byte)ItemFlag.NotBound;
+        sword.ExpiresAt = RentalEnds;
+        var ring = alice.Inventory[InventoryConstants.InventoryStart + 1];
+        ring.ItemId = InventoryConstants.CypherRing;
+        ring.Count = 1;
+        ring.UniqueId = SealedCharacter;
+        var mail = provider.GetRequiredService<IMailService>();
+
+        await mail.SendAsync(alice, "Bob", "Kit", "For you.", 0,
+        [
+            new MailItemPick((byte)InventoryConstants.InventoryStart, 1),
+            new MailItemPick((byte)(InventoryConstants.InventoryStart + 1), 1),
+        ]);
+        EmptyBag(bob);
+        await mail.ClaimAsync(bob, await FirstMailIdAsync(mail, bob, bobSent));
+
+        var bag = bob.Inventory.Skip(InventoryConstants.InventoryStart).Take(InventoryConstants.HaveMax).ToList();
+        var got = bag.Single(slot => slot.ItemId == Sword);
+        got.Durability.Should().Be(0, "the post does not repair a broken sword");
+        got.Flag.Should().Be((byte)ItemFlag.NotBound);
+        got.ExpiresAt.Should().Be(RentalEnds);
+        bag.Single(slot => slot.ItemId == InventoryConstants.CypherRing).UniqueId.Should().Be(SealedCharacter);
+    }
+
+    [Fact]
+    public async Task AMailedTimedStackDoesNotJoinAPermanentOne()
+    {
+        using var provider = Provider();
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var apples = alice.Inventory[InventoryConstants.InventoryStart];
+        apples.ItemId = Apple;
+        apples.Count = Sent;
+        apples.ExpiresAt = RentalEnds;
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendAsync(alice, "Bob", "Apples", "Fresh.", 0, [new MailItemPick((byte)InventoryConstants.InventoryStart, Sent)]);
+        EmptyBag(bob);
+        var own = bob.Inventory[InventoryConstants.InventoryStart];
+        own.ItemId = Apple;
+        own.Count = Held;
+
+        await mail.ClaimAsync(bob, await FirstMailIdAsync(mail, bob, bobSent));
+
+        own.Count.Should().Be(Held);
+        bob.Inventory.Single(slot => slot.ItemId == Apple && slot.ExpiresAt == RentalEnds).Count.Should().Be(Sent);
     }
 
     [Fact]

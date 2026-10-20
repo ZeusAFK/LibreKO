@@ -70,6 +70,9 @@ public class ShoppingMallLetterMutationService(
         var itemId = 0;
         short itemDurability = 0;
         short itemCount = 0;
+        byte itemFlag = 0;
+        long itemExpiresAt = 0;
+        var itemSerial = 0;
         var cost = ShoppingMallLetterProtocol.LetterSendCost;
         ItemSlot? itemSlot = null;
         byte sourcePosition = 0;
@@ -166,6 +169,9 @@ public class ShoppingMallLetterMutationService(
 
             itemDurability = itemSlot.Durability;
             itemCount = (short)itemSlot.Count;
+            itemFlag = itemSlot.Flag;
+            itemExpiresAt = itemSlot.ExpiresAt;
+            itemSerial = itemSlot.UniqueId;
         }
 
         session.Money -= cost;
@@ -190,7 +196,9 @@ public class ShoppingMallLetterMutationService(
             ItemId = itemId,
             Count = itemCount,
             Durability = itemDurability,
-            SerialNumber = 0,
+            Flag = itemFlag,
+            ExpiresAt = itemExpiresAt,
+            SerialNumber = itemSerial,
             Coins = coins,
             Deleted = false
         });
@@ -275,18 +283,22 @@ public class ShoppingMallLetterMutationService(
         }
 
         var slot = -1;
+        ExchangeItem? enclosed = null;
         if (letter.ItemId > 0)
         {
-            slot = session.FindSlotForItem(letter.ItemId, gameDataService, (ushort)letter.Count);
-            if (slot < 0)
+            var itemData = gameDataService.GetItem(letter.ItemId);
+            if (itemData != null)
             {
-                await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
-                    ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Rejected));
-                return;
+                enclosed = new ExchangeItem
+                {
+                    ItemId = letter.ItemId, Count = letter.Count, Durability = letter.Durability, Flag = letter.Flag,
+                    ExpiresAt = letter.ExpiresAt, UniqueId = (int)letter.SerialNumber, Countable = itemData.Countable != 0,
+                };
+                slot = ItemPlacement.FindForDelivery(
+                    session.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, enclosed);
             }
 
-            var itemData = gameDataService.GetItem(letter.ItemId);
-            if (itemData == null || !CanReceiveItem(session, itemData, letter.Count))
+            if (itemData == null || slot < 0 || !CanReceiveItem(session, itemData, letter.Count))
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
                     ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Rejected));
@@ -310,15 +322,14 @@ public class ShoppingMallLetterMutationService(
             return;
         }
 
-        if (letter.ItemId > 0)
+        if (enclosed != null)
         {
             var slotEntry = session.Inventory[slot];
             var isNewItem = slotEntry.IsEmpty;
-            slotEntry.ItemId = letter.ItemId;
-            slotEntry.Count += (ushort)letter.Count;
-            slotEntry.Durability = isNewItem
-                ? letter.Durability
-                : (short)(slotEntry.Durability + letter.Durability);
+            var durability = slotEntry.Durability;
+            ItemPlacement.Put(slotEntry, enclosed);
+            if (!isNewItem)
+                slotEntry.Durability = (short)(durability + letter.Durability);
 
             await userNotificationService.SendStackChangeAsync(
                 session,

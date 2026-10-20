@@ -12,6 +12,9 @@ public class MailAttachment
     public int ItemId { get; set; }
     public int Count { get; set; }
     public short Durability { get; set; }
+    public byte Flag { get; set; }
+    public long ExpiresAt { get; set; }
+    public int UniqueId { get; set; }
     public int ClaimedCount { get; set; }
 
     public int Remaining => Math.Max(0, Count - ClaimedCount);
