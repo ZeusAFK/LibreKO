@@ -37,6 +37,7 @@ public class KingSystemRuntimeService(
     public const ushort ElmoradKingCape = 98;
 
     private static readonly Lock Purses = new();
+    private static readonly SemaphoreSlim Writes = new(1, 1);
 
     // The treasury, tax and tribute change only under one lock, so a tax arriving cannot undo a spend.
     public static bool TrySpendTreasury(KingSystemData kingData, int amount)
@@ -87,17 +88,30 @@ public class KingSystemRuntimeService(
     public static ushort KingCapeOf(AccountNation nation) =>
         nation == AccountNation.ElMorad ? ElmoradKingCape : KarusKingCape;
 
+    // Writes run one at a time, each storing the value as it stands when the write runs, so the newest value is stored last.
     public async Task PersistKingPropertyAsync<TProperty>(
         KingSystemData kingData,
         Expression<Func<KingSystemData, TProperty>> propertySelector)
     {
-        logger.LogInformation("King property persisted for nation {Nation}", kingData.Nation);
+        var read = propertySelector.Compile();
+        await Writes.WaitAsync();
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var stored = new KingSystemData { Nation = kingData.Nation };
+            db.Attach(stored);
+            var property = db.Entry(stored).Property(propertySelector);
+            property.CurrentValue = read(kingData);
+            property.IsModified = true;
+            await db.SaveChangesAsync();
+        }
+        finally
+        {
+            Writes.Release();
+        }
 
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        db.Attach(kingData);
-        db.Entry(kingData).Property(propertySelector).IsModified = true;
-        await db.SaveChangesAsync();
+        logger.LogInformation("King property persisted for nation {Nation}", kingData.Nation);
     }
 
     public async Task BroadcastToNationAsync(AccountNation nation, Packet packet)

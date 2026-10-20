@@ -2,8 +2,11 @@
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 
@@ -16,6 +19,7 @@ public class KingPurseTests : GameTestBase
     private const int Treasury = 1_000;
     private const int Prize = 100;
     private const int Rounds = 200_000;
+    private static readonly TimeSpan RivalWait = TimeSpan.FromMilliseconds(300);
 
     [Fact]
     public async Task APrizeIsPaidFromTheTreasury()
@@ -71,12 +75,55 @@ public class KingPurseTests : GameTestBase
         winner.MonthlyLoyalty.Should().Be(int.MaxValue);
     }
 
-    private static ServiceProvider Provider(KingSystemData kingdom) => CreateProvider(db =>
+    [Fact]
+    public async Task ATreasuryWriteStartedLaterIsStoredLast()
+    {
+        var kingdom = new KingSystemData { Nation = (byte)AccountNation.Karus, KingName = King, NationalTreasury = Treasury };
+        var saves = new FirstSaveWaits();
+        using var provider = Provider(kingdom, services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(saves)));
+        var runtime = provider.GetRequiredService<IKingSystemRuntimeService>();
+        saves.Meanwhile = () =>
+        {
+            KingSystemRuntimeService.TrySpendTreasury(kingdom, Prize);
+            return runtime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
+        };
+
+        await runtime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
+        await saves.Rival;
+
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().KingSystem.AsNoTracking().SingleAsync())
+            .NationalTreasury.Should().Be(Treasury - Prize, "a spend stored after a tax is not overwritten by the older value");
+    }
+
+    // The first save waits a while for a rival write started inside it, which can finish only if nothing holds it back.
+    private sealed class FirstSaveWaits : SaveChangesInterceptor
+    {
+        private int saves;
+
+        public Func<Task> Meanwhile { get; set; } = () => Task.CompletedTask;
+        public Task Rival { get; private set; } = Task.CompletedTask;
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref saves) == 1)
+            {
+                Rival = Task.Run(Meanwhile);
+                await Task.WhenAny(Rival, Task.Delay(RivalWait, cancellationToken));
+            }
+
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+    }
+
+    private static ServiceProvider Provider(KingSystemData kingdom, Action<IServiceCollection>? configure = null) => CreateProvider(db =>
         {
             db.KingSystem.Add(new KingSystemData { Nation = kingdom.Nation, KingName = kingdom.KingName, NationalTreasury = kingdom.NationalTreasury });
             db.SaveChanges();
         }, gameData =>
-        gameData.KingSystemTable.Returns(new Dictionary<byte, KingSystemData> { [(byte)AccountNation.Karus] = kingdom }));
+        gameData.KingSystemTable.Returns(new Dictionary<byte, KingSystemData> { [(byte)AccountNation.Karus] = kingdom }),
+        configureServices: configure);
 
     private static (UserSession King, UserSession Winner) Players(ServiceProvider provider, int winnerPurse)
     {
