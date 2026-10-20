@@ -55,15 +55,17 @@ public class ItemUpgradeService(
     private const int ItemBlessingLogos = 890092000;
 
 
-    private const short ItemClassUnclassified = 0;
-    private const short ItemClassLow = 1;
-    private const short ItemClassMiddle = 2;
-    private const short ItemClassHigh = 3;
-    private const short ItemClassReverse = 4;
-    private const short ItemClassRebirth = 5;
-    private const short ItemClassUnique = 7;
-    private const short ItemClassKrowaz = 33;
-    private const short ItemClassKrowazRebirth = 35;
+    private const int ItemClassUnclassified = 0;
+    private const int ItemClassLow = 1;
+    private const int ItemClassMiddle = 2;
+    private const int ItemClassHigh = 3;
+    private const int ItemClassHighReverse = 4;
+    private const int ItemClassRebirth = 5;
+    private const int ItemClassUnique = 7;
+    private const int ItemClassUniqueHighReverse = 8;
+    private const int ItemClassKrowaz = 33;
+    private const int ItemClassKrowazHighReverse = 34;
+    private const int ItemClassKrowazRebirth = 35;
 
     private const byte AccessoryKindEarring = 91;
     private const byte AccessoryKindNecklace = 92;
@@ -320,6 +322,7 @@ public class ItemUpgradeService(
         var hasLogos = logosCount > 0;
         var itemType = (short)originItemData.ItemType;
         var grade = ResolveGrade(originItemData, originItemId);
+        var itemClass = originItemData.GradeClass(gameDataService.ItemGradeBonuses);
 
         if (hasLogos && !IsUpgradeableItemType(itemType))
         {
@@ -338,11 +341,11 @@ public class ItemUpgradeService(
             return;
         }
 
-        if (!IsScrollAllowed(originItemData, scrollClass))
+        if (!IsScrollAllowed(originItemData, itemClass, scrollClass))
         {
             logger.LogWarning(
                 "Upgrade rejected for {Name}: scroll {ScrollId} ({ScrollClass}) does not fit item {OriginItemId} class {ItemClass}",
-                session.Name, scrollId, scrollClass, originItemId, originItemData.ItemClass);
+                session.Name, scrollId, scrollClass, originItemId, itemClass);
             await SendUpgradeResultAsync(session, responseSubOpcode, upgradeType, UpgradeNoMatch, itemIds, positions);
             return;
         }
@@ -361,7 +364,7 @@ public class ItemUpgradeService(
         {
             logger.LogWarning(
                 "Upgrade recipe not found for {Name}: originItem={OriginItemId} scroll={ScrollId} type={ItemType} class={ItemClass} grade={Grade}",
-                session.Name, originItemId, scrollId, itemType, originItemData.ItemClass, grade);
+                session.Name, originItemId, scrollId, itemType, itemClass, grade);
             await SendUpgradeResultAsync(session, responseSubOpcode, upgradeType, UpgradeNoMatch, itemIds, positions);
             return;
         }
@@ -393,7 +396,7 @@ public class ItemUpgradeService(
         logger.LogInformation(
             "Upgrade recipe matched for {Name}: recipe={RecipeIndex} originItem={OriginItemId} targetItem={UpgradedItemId} scroll={ScrollId} protection={ProtectionId} type={ItemType} class={ItemClass} grade={Grade} genRate={GenRate} reqNoah={ReqNoah}",
             session.Name, recipe.Index, originItemId, upgradedItemId, scrollId, protectionId, itemType,
-            originItemData.ItemClass, grade, genRate, requiredNoah);
+            itemClass, grade, genRate, requiredNoah);
 
         if (session.Money < requiredNoah)
         {
@@ -540,26 +543,28 @@ public class ItemUpgradeService(
         _ => ScrollClass.None
     };
 
-    private static ScrollClass ItemScrollClass(short itemClass) => itemClass switch
+    private static ScrollClass ItemScrollClass(int itemClass) => itemClass switch
     {
         ItemClassLow => ScrollClass.LowClass,
         ItemClassUnclassified => ScrollClass.LowClass,
         ItemClassMiddle => ScrollClass.MiddleClass,
         ItemClassHigh => ScrollClass.HighClass,
+        ItemClassHighReverse => ScrollClass.HighClass,
         ItemClassUnique => ScrollClass.HighClass,
+        ItemClassUniqueHighReverse => ScrollClass.HighClass,
         ItemClassKrowaz => ScrollClass.HighClass,
-        ItemClassReverse => ScrollClass.Rebirth,
+        ItemClassKrowazHighReverse => ScrollClass.HighClass,
         ItemClassRebirth => ScrollClass.Rebirth,
         ItemClassKrowazRebirth => ScrollClass.Rebirth,
         _ => ScrollClass.None
     };
 
-    private static bool IsScrollAllowed(ItemData item, ScrollClass scroll)
+    private static bool IsScrollAllowed(ItemData item, int itemClass, ScrollClass scroll)
     {
         if (scroll == ScrollClass.Accessories)
             return item.Kind is AccessoryKindEarring or AccessoryKindNecklace or AccessoryKindRing or AccessoryKindBelt;
 
-        return ItemScrollClass(item.ItemClass) switch
+        return ItemScrollClass(itemClass) switch
         {
             ScrollClass.LowClass => scroll is ScrollClass.LowClass or ScrollClass.MiddleClass or ScrollClass.HighClass
                 or ScrollClass.ClassUpgrade,
