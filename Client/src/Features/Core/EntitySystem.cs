@@ -508,7 +508,7 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
         var after = new Vector2(to.X, to.Z);
         foreach (var e in Ents.Values)
         {
-            if (e.Dead || !e.Attackable || !GodotObject.IsInstanceValid(e.Body)) continue;
+            if (e.Dead || !UnitBlocking.CanBlock(e.Attackable, e.IsMonster, e.NpcType) || !GodotObject.IsInstanceValid(e.Body)) continue;
             var at = new Vector2(e.Body.Position.X, e.Body.Position.Z);
             if (at.DistanceSquaredTo(after) > UnitBlocking.Reach * UnitBlocking.Reach) continue;
             float height = e.IsNpc ? SkillFxRig.EntityLocalBox(e).Size.Y * e.Body.Scale.Y : UnitBlocking.PlayerHeight;
