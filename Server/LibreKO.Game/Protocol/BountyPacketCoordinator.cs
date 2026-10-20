@@ -72,9 +72,11 @@ public class BountyPacketCoordinator(
         try
         {
             await LoadAndExpireAsync();
-            foreach (var bounty in board)
+            foreach (var bounty in board.Where(b => b.TargetCharacterId == victim.CharacterId
+                         && b.PosterCharacterId != killer.CharacterId
+                         && !Hunters(b.Id).Contains(killer.CharacterId)).ToList())
             {
-                if (bounty.PosterCharacterId != killer.CharacterId && bounty.TargetCharacterId == victim.CharacterId)
+                if (await TrySaveAsync(db => db.BountyHunters.Add(new BountyHunter { BountyId = bounty.Id, CharacterId = killer.CharacterId })))
                     Hunters(bounty.Id).Add(killer.CharacterId);
             }
         }
@@ -226,6 +228,7 @@ public class BountyPacketCoordinator(
             if (!payee.WithLock(s => TryCredit(s, bounty.Reward)))
                 return Task.FromResult(false);
             db.Bounties.Remove(new Bounty { Id = bounty.Id });
+            db.BountyHunters.RemoveRange(HunterRows(bounty));
             return Task.FromResult(true);
         }, () => payee.WithLock(s => s.Money = Math.Max(0, s.Money - bounty.Reward)));
         if (outcome != StateCommit.Saved)
@@ -242,11 +245,13 @@ public class BountyPacketCoordinator(
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             board.AddRange(await db.Bounties.AsNoTracking().OrderBy(b => b.Id).ToListAsync());
+            foreach (var hunter in await db.BountyHunters.AsNoTracking().ToListAsync())
+                Hunters(hunter.BountyId).Add(hunter.CharacterId);
             loaded = true;
         }
 
         var expiredBefore = time.GetUtcNow().UtcDateTime.AddDays(-BountyLifetimeDays);
-        foreach (var bounty in board.Where(b => b.PostedAt <= expiredBefore).ToList())
+        foreach (var bounty in board.Where(b => b.PostedAt <= expiredBefore && Hunters(b.Id).Count == 0).ToList())
         {
             if (!await TryReturnByMailAsync(bounty))
                 continue;
@@ -273,6 +278,26 @@ public class BountyPacketCoordinator(
         catch (DbUpdateException exception)
         {
             logger.LogError(exception, "Could not return expired bounty {Id}", bounty.Id);
+            return false;
+        }
+    }
+
+    private IEnumerable<BountyHunter> HunterRows(Bounty bounty) =>
+        Hunters(bounty.Id).Select(hunter => new BountyHunter { BountyId = bounty.Id, CharacterId = hunter }).ToList();
+
+    private async Task<bool> TrySaveAsync(Action<AppDbContext> change)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            change(db);
+            await db.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException exception)
+        {
+            logger.LogError(exception, "Bounty board save failed");
             return false;
         }
     }

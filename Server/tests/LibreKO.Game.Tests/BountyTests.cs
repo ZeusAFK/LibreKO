@@ -281,6 +281,60 @@ public class BountyTests : GameTestBase
         hunter.Session.Money.Should().Be(StartingGold + Reward);
     }
 
+    [Fact]
+    public async Task AHuntersClaimSurvivesARestartAndBlocksAWithdrawal()
+    {
+        using var provider = CreateProvider(_ => { });
+        var poster = CreatePlayer(provider, 1232, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1233, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1234, AccountNation.Karus);
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        var bountyId = (await BountyIdOnAsync(provider, poster, target.Session.Name))!.Value;
+        target.Session.Hp = 0;
+        await provider.GetRequiredService<ICombatLifecycleService>().HandlePlayerDeathAsync(target.Session, hunter.Session);
+
+        var restarted = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider);
+        await restarted.HandleAsync(poster.Client, BountyPacket(WithdrawSub, bountyId));
+        await restarted.HandleAsync(hunter.Client, BountyPacket(ClaimSub, bountyId));
+
+        poster.Session.Money.Should().Be(StartingGold - Reward, "the poster cannot take back a bounty a hunter has earned");
+        hunter.Session.Money.Should().Be(StartingGold + Reward, "the kill still counts after a restart");
+    }
+
+    [Fact]
+    public async Task AnEarnedBountyDoesNotExpire()
+    {
+        var clock = new Clock();
+        using var provider = CreateProvider(_ => { });
+        var board = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider, (TimeProvider)clock);
+        var poster = CreatePlayer(provider, 1235, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1236, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1237, AccountNation.Karus);
+        var post = new Packet(GameOpcodes.GS_BOUNTY);
+        post.WriteByte(PostSub);
+        post.WriteSByteString(target.Session.Name);
+        post.WriteInt(Reward);
+        await board.HandleAsync(poster.Client, post);
+        await board.OnPlayerKilledAsync(target.Session, hunter.Session);
+
+        clock.Now = clock.Now.AddDays(ExpiryDays);
+        await board.HandleAsync(poster.Client, BountyPacket(ListSub));
+        var list = poster.Sent.Last(sent => sent.GetOpcode() == (byte)GameOpcodes.GS_BOUNTY);
+        list.ResetOffset();
+        list.ReadByte();
+
+        list.ReadUShort().Should().Be(1, "the hunter's reward is not handed back to the poster");
+    }
+
+    private static Packet BountyPacket(byte sub, int? bountyId = null)
+    {
+        var packet = new Packet(GameOpcodes.GS_BOUNTY);
+        packet.WriteByte(sub);
+        if (bountyId is { } id)
+            packet.WriteInt(id);
+        return packet;
+    }
+
     private sealed class SaveFaults : SaveChangesInterceptor
     {
         public bool Failing { get; set; }

@@ -230,6 +230,19 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("Bounties");
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.BountyHunter", b =>
+                {
+                    b.Property<int>("BountyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("int");
+
+                    b.HasKey("BountyId", "CharacterId");
+
+                    b.ToTable("BountyHunters");
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Character", b =>
                 {
                     b.Property<int>("Id")
