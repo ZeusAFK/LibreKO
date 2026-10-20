@@ -21,6 +21,7 @@ public class MagicArcheryTests : GameTestBase
     private const int Knife = 370007000;
     private const byte KnifeKind = 95;
     private const int StrangeShot = 107777;
+    private const int PowerShot = 490358;
     private const int StrangeAmmo = 399999000;
     private const byte StrangeAmmoKind = 97;
     private const ushort Quiver = 50;
@@ -111,14 +112,16 @@ public class MagicArcheryTests : GameTestBase
         worm.Hp.Should().BeLessThan(WormHp);
     }
 
-    [Fact]
-    public async Task AClassShotNeedsABowUnlessItThrowsSomething()
+    [Theory]
+    [InlineData(StrangeShot)]
+    [InlineData(PowerShot)]
+    public async Task AShotNeedsABowUnlessItThrowsSomething(int shot)
     {
         using var provider = Provider();
         var (archer, client) = ArcherWith(provider, bow: false, ammo: StrangeAmmo);
         var worm = Worm(provider);
 
-        await Send(provider, client, archer, MagicProcessOpcode.Flying, StrangeShot, worm.UniqueId);
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, shot, worm.UniqueId);
 
         Arrows(archer).Should().Be(Quiver);
     }
@@ -156,7 +159,7 @@ public class MagicArcheryTests : GameTestBase
 
     private static ServiceProvider Provider(Clock? clock = null) => CreateProvider(_ => { }, gameData =>
     {
-        foreach (var (id, ammo) in new[] { (Shot, Arrow), (Volley, Arrow), (KnifeThrow, Knife), (StrangeShot, StrangeAmmo) })
+        foreach (var (id, ammo) in new[] { (Shot, Arrow), (Volley, Arrow), (KnifeThrow, Knife), (StrangeShot, StrangeAmmo), (PowerShot, StrangeAmmo) })
             gameData.GetMagic(id).Returns(new MagicData
             {
                 Id = id, Type1 = (byte)MagicSkillType.Ranged, Moral = 7, Range = 40, UseItem = ammo, Msp = 5,
@@ -167,6 +170,7 @@ public class MagicArcheryTests : GameTestBase
             [Volley] = new() { Id = Volley, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = VolleyArrows },
             [KnifeThrow] = new() { Id = KnifeThrow, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
             [StrangeShot] = new() { Id = StrangeShot, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
+            [PowerShot] = new() { Id = PowerShot, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
         });
         gameData.GetItem(Bow).Returns(new ItemData { Num = Bow, Kind = 70, Slot = 4, Delay = 150, Range = 350, Duration = 83 });
         gameData.GetItem(Arrow).Returns(new ItemData { Num = Arrow, Kind = 120, Countable = 1, Duration = 1, ReqLevelMax = 83 });

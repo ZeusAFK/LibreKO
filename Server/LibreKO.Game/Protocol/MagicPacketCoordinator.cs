@@ -506,8 +506,7 @@ public class MagicPacketCoordinator(
             excludeSender: false);
     }
 
-    private bool NeedsABow(MagicData magic) =>
-        MagicSkillRequirement.IsClassSkill(magic.Id) && gameDataService.GetItem(magic.UseItem)?.Category != ItemKind.Etc;
+    private bool NeedsABow(MagicData magic) => gameDataService.GetItem(magic.UseItem)?.Category != ItemKind.Etc;
 
     private async Task<bool> TryPaySkillCostAsync(UserSession session, MagicData magic, int skillId)
     {
