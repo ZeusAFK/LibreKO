@@ -432,7 +432,7 @@ public class SlaveMerchantTests : GameTestBase
             foreach (var buyer in buyers)
             {
                 buyer.Money = BuyerPurse;
-                buyer.Trade.MerchantTargetUserId = slave.CharacterId;
+                buyer.Trade.LookAt(slave.CharacterId, slave.Trade.StallGeneration);
             }
 
             var steps = buyers.Select(buyer => (Func<Task>)(() => BuyAs(provider, buyer, Scroll, 1))).ToList();
@@ -471,7 +471,7 @@ public class SlaveMerchantTests : GameTestBase
         await provider.GetRequiredService<IMerchantLifecycleService>().RequestStallAsync(owner, open, MerchantSubOpcode.SellingStallRequest);
         owner.Trade.MerchantTargetUserId.Should().Be(-1);
 
-        owner.Trade.MerchantTargetUserId = slave.CharacterId;
+        owner.Trade.LookAt(slave.CharacterId, slave.Trade.StallGeneration);
         await BuyAs(provider, owner, Scroll, 1);
 
         owner.Money.Should().Be(1_000_000);
@@ -498,7 +498,7 @@ public class SlaveMerchantTests : GameTestBase
         await provider.GetRequiredService<IMerchantLifecycleService>().RequestStallAsync(alt, open, MerchantSubOpcode.SellingStallRequest);
         alt.Trade.MerchantTargetUserId.Should().Be(-1);
 
-        alt.Trade.MerchantTargetUserId = slave.CharacterId;
+        alt.Trade.LookAt(slave.CharacterId, slave.Trade.StallGeneration);
         await BuyAs(provider, alt, Scroll, 1);
 
         alt.Money.Should().Be(BuyerPurse);
@@ -1039,7 +1039,7 @@ public class SlaveMerchantTests : GameTestBase
         seller.Trade.MerchantItems[0].UniqueId = LinkedSerial;
         seller.Trade.MerchantState = MerchantMode.Selling;
         buyer.Money = BuyerPurse;
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await BuyAs(provider, buyer, InventoryConstants.CypherRing, 1);
 
@@ -1075,7 +1075,7 @@ public class SlaveMerchantTests : GameTestBase
         seller.Trade.MerchantState = MerchantMode.Selling;
         seller.Inventory[StackSlot].Count = 1;
         buyer.Money = BuyerPurse;
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await BuyAs(provider, buyer, Scroll, 2);
 
@@ -1223,7 +1223,7 @@ public class SlaveMerchantTests : GameTestBase
         if (buyer == null)
             (buyer, sent) = Player(provider, BuyerId, "Buyer");
         buyer.Money = BuyerPurse;
-        buyer.Trade.MerchantTargetUserId = slave.CharacterId;
+        buyer.Trade.LookAt(slave.CharacterId, slave.Trade.StallGeneration);
         await BuyAs(provider, buyer, slave.Trade.MerchantItems[0].ItemId, count);
         return sent;
     }

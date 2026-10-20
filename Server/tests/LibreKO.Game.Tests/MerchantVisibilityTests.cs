@@ -169,7 +169,7 @@ public class MerchantVisibilityTests : GameTestBase
         seller.ZoneId = 21;
         seller.Hp = 100;
         seller.Money = 200;
-        seller.Trade.MerchantTargetUserId = merchant.CharacterId;
+        seller.Trade.LookAt(merchant.CharacterId, merchant.Trade.StallGeneration);
         seller.Inventory[InventoryConstants.SlotMax].ItemId = itemId;
         seller.Inventory[InventoryConstants.SlotMax].Count = 4;
         sessionManager.Regions.AddToRegion(seller);

@@ -262,7 +262,7 @@ public class MerchantBotTests : GameTestBase
 
         // Real buyer arrives with money
         var buyer = CreatePlayer(sessionManager, characterId: 2001, accountId: 3001, out _, money: 1000);
-        buyer.Trade.MerchantTargetUserId = bot.CharacterId;
+        buyer.Trade.LookAt(bot.CharacterId, bot.Trade.StallGeneration);
 
         // Buyer buys 2 units of ItemId from slot 0
         var buyPacket = new Packet(GameOpcodes.GS_MERCHANT);

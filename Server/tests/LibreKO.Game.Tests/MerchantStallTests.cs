@@ -38,7 +38,7 @@ public class MerchantStallTests : GameTestBase
         // The listed item left the slot by some route; something else sits there now.
         Stock(Bag(seller, BagPos), Other, 1);
         var buyer = market.Player(96002, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await market.BuyAsync(buyer, Ware, 1);
 
@@ -60,7 +60,7 @@ public class MerchantStallTests : GameTestBase
         seller.Trade.MerchantState = MerchantMode.Selling;
         ring.UniqueId = 777;
         var buyer = market.Player(96004, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await market.BuyAsync(buyer, InventoryConstants.CypherRing, 1);
 
@@ -82,7 +82,7 @@ public class MerchantStallTests : GameTestBase
         await market.ListAsync(seller, Ware, BagPos);
         seller.Trade.MerchantState = MerchantMode.Selling;
         var buyer = market.Player(96042, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
         switch (busy)
         {
             case BusyAs.Trading: buyer.Trade.ExchangeUser = SomeoneElse; break;
@@ -106,7 +106,7 @@ public class MerchantStallTests : GameTestBase
         var owner = market.Player(96061, gold: Price);
         await market.OpenBuyingStallAsync(owner, (Ware, 1, Price));
         var seller = market.Player(96062, gold: 0);
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
         Stock(Bag(seller, BagPos), Ware, 1);
         seller.IsMining = true;
 
@@ -125,7 +125,7 @@ public class MerchantStallTests : GameTestBase
         await market.ListAsync(seller, Ware, BagPos);
         seller.Trade.MerchantState = MerchantMode.Selling;
         var buyer = market.Player(96060, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
         buyer.Room = OtherRoom;
 
         await market.BuyAsync(buyer, Ware, 1);
@@ -142,7 +142,7 @@ public class MerchantStallTests : GameTestBase
         await market.ListAsync(seller, Ware, BagPos);
         seller.Trade.MerchantState = MerchantMode.Selling;
         var buyer = market.Player(96044, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
         buyer.X = FarAway;
 
         await market.BuyAsync(buyer, Ware, 1);
@@ -159,7 +159,7 @@ public class MerchantStallTests : GameTestBase
         ListByHand(seller, Ware, count: 1);
         seller.Trade.MerchantItems[StallSlot].OriginalSlot = byte.MaxValue;
         var buyer = market.Player(96046, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await market.BuyAsync(buyer, Ware, 1);
 
@@ -178,7 +178,7 @@ public class MerchantStallTests : GameTestBase
         Bag(seller, BagPos).Flag = (byte)ItemFlag.Bound;
         seller.Trade.MerchantItems[StallSlot].Flag = (byte)ItemFlag.Bound;
         var buyer = market.Player(96048, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await market.BuyAsync(buyer, Ware, 1);
 
@@ -196,7 +196,7 @@ public class MerchantStallTests : GameTestBase
         seller.Trade.MerchantState = MerchantMode.Selling;
         Bag(seller, BagPos).ExpiresAt = RentalEnds;
         var buyer = market.Player(96050, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await market.BuyAsync(buyer, Ware, 1);
 
@@ -213,7 +213,7 @@ public class MerchantStallTests : GameTestBase
         seller.Trade.MerchantState = MerchantMode.Selling;
         Bag(seller, BagPos).Flag = (byte)ItemFlag.SealedPremium;
         var buyer = market.Player(96052, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await market.BuyAsync(buyer, Ware, 1);
 
@@ -270,7 +270,7 @@ public class MerchantStallTests : GameTestBase
         await market.SendAsync(seller, MerchantSubOpcode.Close);
         await market.ListAsync(seller, Ware, BagPos);
         seller.Trade.MerchantState = MerchantMode.Selling;
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, buyer.Trade.ViewedStallGeneration);
         await market.BuyAsync(buyer, Ware, 1);
 
         buyer.Money.Should().Be(StartingGold, "a look begun before the stall closed shows the earlier stall");
@@ -280,6 +280,29 @@ public class MerchantStallTests : GameTestBase
         await market.BuyAsync(buyer, Ware, 1);
 
         CountIn(buyer, Ware).Should().Be(1, "a fresh look buys from the stall as it is now");
+    }
+
+    [Fact]
+    public async Task ALookAtAStallBeforeItsOwnerLoggedBackInBuysNothingFromTheNewStall()
+    {
+        using var market = new Market();
+        var seller = market.Player(96073, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var buyer = market.Player(96074, gold: StartingGold);
+        await market.SendAsync(buyer, MerchantSubOpcode.ItemList, packet => packet.WriteInt(seller.CharacterId));
+        var staleLook = buyer.Trade.ViewedStallGeneration;
+
+        var returned = market.Player(seller.CharacterId, gold: 0);
+        Stock(Bag(returned, BagPos), Ware, 1);
+        await market.ListAsync(returned, Ware, BagPos);
+        returned.Trade.MerchantState = MerchantMode.Selling;
+        buyer.Trade.LookAt(returned.CharacterId, staleLook);
+        await market.BuyAsync(buyer, Ware, 1);
+
+        buyer.Money.Should().Be(StartingGold, "a stall opened in a new session is not the one the buyer looked at");
+        CountIn(buyer, Ware).Should().Be(0);
     }
 
     [Fact]
@@ -313,7 +336,7 @@ public class MerchantStallTests : GameTestBase
 
         await market.SendAsync(owner, MerchantSubOpcode.BuyClose);
         await market.OpenBuyingStallAsync(owner, (Ware, 1, Price));
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, seller.Trade.ViewedStallGeneration);
         await market.SellAsync(seller, BagPos, 1);
 
         seller.Money.Should().Be(0, "a look begun before the stall closed shows the earlier stall");
@@ -334,7 +357,7 @@ public class MerchantStallTests : GameTestBase
         await market.ListAsync(seller, Ware, BagPos);
         seller.Trade.MerchantState = MerchantMode.Selling;
         var buyer = market.Player(96064, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
         seller.Trade.MerchantViewerId = buyer.CharacterId;
 
         await market.SendAsync(seller, MerchantSubOpcode.Close);
@@ -354,7 +377,7 @@ public class MerchantStallTests : GameTestBase
         var owner = market.Player(96065, gold: Price);
         await market.OpenBuyingStallAsync(owner, (Ware, 1, Price));
         var seller = market.Player(96066, gold: 0);
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
         Stock(Bag(seller, BagPos), Ware, 1);
 
         await market.SendAsync(owner, MerchantSubOpcode.BuyClose);
@@ -395,7 +418,7 @@ public class MerchantStallTests : GameTestBase
         var owner = market.Player(96067, gold: Price);
         await market.OpenBuyingStallAsync(owner, (Ware, 1, Price));
         var seller = market.Player(96068, gold: 0);
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
         Stock(Bag(seller, BagPos), Ware, 1);
         if (timed)
             Bag(seller, BagPos).ExpiresAt = RentalEnds;
@@ -417,7 +440,7 @@ public class MerchantStallTests : GameTestBase
         await market.ListAsync(seller, Ware, BagPos);
         seller.Trade.MerchantState = MerchantMode.Selling;
         var buyer = market.Player(96054, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await market.BuyAsync(buyer, Ware, 1);
 
@@ -436,7 +459,7 @@ public class MerchantStallTests : GameTestBase
         await market.ListAsync(seller, InventoryConstants.CypherRing, BagPos);
         seller.Trade.MerchantState = MerchantMode.Selling;
         var buyer = market.Player(96056, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await market.BuyAsync(buyer, InventoryConstants.CypherRing, 1);
 
@@ -452,8 +475,8 @@ public class MerchantStallTests : GameTestBase
         Stock(Bag(seller, BagPos), Ware, 1);
         var first = market.Player(96006, gold: StartingGold);
         var second = market.Player(96007, gold: StartingGold);
-        first.Trade.MerchantTargetUserId = seller.CharacterId;
-        second.Trade.MerchantTargetUserId = seller.CharacterId;
+        first.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
+        second.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         // The item is looked up before the locks and again inside them.
         market.HoldEachRequestAtLookups(2);
@@ -476,7 +499,7 @@ public class MerchantStallTests : GameTestBase
         var second = market.Player(96010, gold: 0);
         foreach (var seller in new[] { first, second })
         {
-            seller.Trade.MerchantTargetUserId = owner.CharacterId;
+            seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
             Stock(Bag(seller, BagPos), Ware, 1);
         }
 
@@ -503,7 +526,7 @@ public class MerchantStallTests : GameTestBase
         owner.Money.Should().Be(StartingGold - 5 * Price, "the stall holds the gold for its whole list");
 
         var seller = market.Player(96012, gold: 0);
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
         Stock(Bag(seller, BagPos), Ware, 2);
         await market.SellAsync(seller, BagPos, 2);
 

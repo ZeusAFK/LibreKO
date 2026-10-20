@@ -27,11 +27,12 @@ public class TradeState
     public int MerchantTargetUserId { get; set; } = -1;
     public int MerchantViewerId { get; set; } = -1;
 
-    private int stallGeneration;
+    private static int stallGenerations;
+    private int stallGeneration = Interlocked.Increment(ref stallGenerations);
 
-    // A look at a stall holds only for the stall that was open when the look began.
+    // A look at a stall holds only for the stall that was open when the look began, and no two stalls ever share a count.
     public int StallGeneration => Volatile.Read(ref stallGeneration);
-    public void EndStall() => Interlocked.Increment(ref stallGeneration);
+    public void EndStall() => Volatile.Write(ref stallGeneration, Interlocked.Increment(ref stallGenerations));
     public int ViewedStallGeneration { get; private set; }
 
     public void LookAt(int merchantId, int generation) => (MerchantTargetUserId, ViewedStallGeneration) = (merchantId, generation);
