@@ -16,6 +16,11 @@ namespace LibreKO.Game.Tests;
 
 public class WorldTests : GameTestBase
 {
+    private const short ResetClass = 101;
+    private const byte ResetLevel = 30;
+    private const byte ResetRace = 1;
+    private const int ResetPurse = 2_000_000;
+    private const byte SpentStrength = 80;
     [Fact]
     public void NpcInstance_UsesNpcSpawnStyle_DistinguishesMonsterFromNpcStyleSpawn()
     {
@@ -2033,14 +2038,14 @@ public class WorldTests : GameTestBase
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 195, accountId: 205);
-        (session.Class, session.Level, session.Race, session.Money, session.Strength) = (101, 30, 1, 2_000_000, 80);
+        (session.Class, session.Level, session.Race, session.Money, session.Strength) = (ResetClass, ResetLevel, ResetRace, ResetPurse, SpentStrength);
         var packet = new Packet(GameOpcodes.GS_CLASS_CHANGE);
         packet.WriteByte((byte)ClassChangeSubOpcode.StatReset);
 
         await provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>().HandleClassChangeAsync(client, packet);
 
-        session.Strength.Should().Be(80, "a reset is offered by the Grand Merchant");
-        session.Money.Should().Be(2_000_000);
+        session.Strength.Should().Be(SpentStrength, "a reset is offered by the Grand Merchant");
+        session.Money.Should().Be(ResetPurse);
     }
 
     [Theory]
@@ -2054,7 +2059,7 @@ public class WorldTests : GameTestBase
         client.Id.Returns(Guid.NewGuid());
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 196, accountId: 206);
-        (session.Class, session.Level, session.Race, session.Money, session.Strength) = (101, 30, 1, 2_000_000, 80);
+        (session.Class, session.Level, session.Race, session.Money, session.Strength) = (ResetClass, ResetLevel, ResetRace, ResetPurse, SpentStrength);
         var packet = new Packet(GameOpcodes.GS_CLASS_CHANGE);
         packet.WriteByte((byte)sub);
         packet.WriteByte(0);
@@ -2063,7 +2068,7 @@ public class WorldTests : GameTestBase
 
         client.ReceivedCalls().Where(call => call.GetMethodInfo().Name == nameof(IClient.SendPacket))
             .Should().BeEmpty("resets are offered by their NPC, and a request from anywhere else is not heard");
-        session.Money.Should().Be(2_000_000);
+        session.Money.Should().Be(ResetPurse);
     }
 
     private static (IClient Client, UserSession Session, Func<Packet?> Sent) CreateMasterySession(

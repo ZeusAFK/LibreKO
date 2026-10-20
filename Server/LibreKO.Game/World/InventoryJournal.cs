@@ -34,7 +34,7 @@ public sealed class InventoryJournal(UserSession session)
         session.Trade.MerchantItems[index] = new MerchantItem();
     }
 
-    // One of an item leaves the first slot holding it, magic bags included as the item checks count them, or nothing does.
+    // One of an item leaves the first slot holding it, magic bags included, or nothing does.
     public bool TakeOne(int itemId)
     {
         for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length; index++)
@@ -121,6 +121,8 @@ public sealed class InventoryJournal(UserSession session)
                 CopyInto(before, now);
             else if (now.ItemId == left.ItemId && (before.IsEmpty || before.ItemId == left.ItemId))
                 MoveCountBack(now, left.Count - (before.IsEmpty ? 0 : before.Count));
+            else if (Taken(before, left) is { } taken)
+                PutBack(taken);
         }
 
         foreach (var (index, (entry, count)) in stall)
@@ -131,6 +133,30 @@ public sealed class InventoryJournal(UserSession session)
         }
 
         session.Money = (int)Math.Clamp(session.Money - moneyMoved, 0, ExchangePacketConstants.CoinMax);
+    }
+
+    private static ItemSlot? Taken(ItemSlot before, ItemSlot left)
+    {
+        if (before.IsEmpty || (before.ItemId == left.ItemId && left.Count >= before.Count))
+            return null;
+
+        var taken = Copy(before);
+        if (before.ItemId == left.ItemId)
+            taken.Count = (ushort)(before.Count - left.Count);
+        return taken;
+    }
+
+    // What the change took from a slot another change has filled since goes back into a free slot.
+    private void PutBack(ItemSlot taken)
+    {
+        var item = new ExchangeItem
+        {
+            ItemId = taken.ItemId, Count = taken.Count, Durability = taken.Durability, Flag = taken.Flag,
+            ExpiresAt = taken.ExpiresAt, UniqueId = taken.UniqueId,
+        };
+        var index = ItemPlacement.FindForDelivery(session.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item);
+        if (index >= 0)
+            ItemPlacement.Put(session.Inventory[index], item);
     }
 
     private static void MoveCountBack(ItemSlot slot, int moved)

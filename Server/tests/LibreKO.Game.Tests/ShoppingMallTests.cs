@@ -699,11 +699,11 @@ public class ShoppingMallTests : GameTestBase
         var slot = session.Inventory[InventoryConstants.InventoryStart];
         (slot.ItemId, slot.Count, slot.Durability) = (held, 1, 100);
         var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
-        request.WriteByte(6);
-        request.WriteByte(6);
+        request.WriteByte(ShoppingMallLetterProtocol.StoreLetter);
+        request.WriteByte(ShoppingMallLetterProtocol.LetterSend);
         request.WriteSByteString("Recipient");
         request.WriteSByteString("Subject");
-        request.WriteByte(2);
+        request.WriteByte(ShoppingMallPacketWriter.LetterTypeWithItem);
         request.WriteInt(named);
         request.WriteByte(0);
         request.WriteInt(0);

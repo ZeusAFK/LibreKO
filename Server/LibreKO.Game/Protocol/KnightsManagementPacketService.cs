@@ -257,7 +257,7 @@ public class KnightsManagementPacketService(
         }
 
         var amount = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
-        if (!await loyaltyService.TryDonateToKnightsAsync(session, amount))
+        if (!await loyaltyService.TryDonateToKnightsAsync(session, clan.Id, amount))
         {
             await session.Client.SendPacket(KnightsPacketWriter.DonateRefused(KnightsDonateResult.NotEnoughPoints));
             return;

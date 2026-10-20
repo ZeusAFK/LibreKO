@@ -214,12 +214,12 @@ public class UserSession
     public short KnightsId
     {
         get => knightsId;
-        set
+        set => WithLock(session =>
         {
-            if (knightsId != value)
-                ClanBattleEnemy = 0;
-            knightsId = value;
-        }
+            if (session.knightsId != value)
+                session.ClanBattleEnemy = 0;
+            session.knightsId = value;
+        });
     }
 
     public int ClanOnlineCount { get; set; }

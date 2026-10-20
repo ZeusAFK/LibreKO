@@ -28,7 +28,7 @@ public static class TempleEventHelpers
         var party = SeatParty(sessionManager, sessions);
         if (party == null)
             return -1;
-        var leader = sessions.First(session => session.CharacterId == party.LeaderId);
+        var leader = sessions.First(session => (short)session.CharacterId == party.LeaderId);
 
         for (var i = 0; i < PartyGroup.MaxMembers; i++)
         {
@@ -112,9 +112,10 @@ public static class TempleEventHelpers
 
         var index = session.PartyIndex;
         var party = sessionManager.Parties.GetParty(index);
-        if (session.TryLeaveParty(index))
-            session.IsPartyLeader = false;
+        if (!session.TryLeaveParty(index))
+            return;
 
+        session.IsPartyLeader = false;
         if (party == null)
             return;
 

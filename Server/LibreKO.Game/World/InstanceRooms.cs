@@ -169,7 +169,7 @@ public sealed class InstanceEntryService(
         {
             if (member.CharacterId == session.CharacterId || member.KnightsId != session.KnightsId)
                 continue;
-            if (member.Room != 0 || ZoneRules.IsTempleEvent(member.ZoneId))
+            if (member.Room != 0 || !member.MayBeMovedByOthers || ZoneRules.IsTempleEvent(member.ZoneId))
                 continue;
             yield return member;
         }

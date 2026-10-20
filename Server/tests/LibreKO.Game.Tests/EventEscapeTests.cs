@@ -206,14 +206,13 @@ public class EventEscapeTests : GameTestBase
     {
         var transitions = Substitute.For<IZoneTransitionService>();
         var items = Substitute.For<IMagicItemUsageService>();
-        var grants = Substitute.For<IItemGrantService>();
+        var mail = Substitute.For<IMailService>();
         using var provider = CreateProvider(_ => { },
-            gameData => gameData.GetItem(FullMoonRules.VoucherItem).Returns(new ItemData { Num = FullMoonRules.VoucherItem }),
             configureServices: services =>
             {
                 services.AddSingleton(transitions);
                 services.AddSingleton(items);
-                services.AddSingleton(grants);
+                services.AddSingleton(mail);
             });
         var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
         items.TryConsumeItemAsync(Arg.Any<UserSession>(), FullMoonRules.VoucherItem).Returns(true);
@@ -223,7 +222,10 @@ public class EventEscapeTests : GameTestBase
         await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
 
         await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
-        await grants.Received(1).GrantAsync(member, Arg.Is<ItemData>(item => item.Num == FullMoonRules.VoucherItem), 1);
+        await mail.Received(1).SendSystemMailAsync(member.CharacterId, Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Is<IReadOnlyList<MailAttachmentDraft>>(drafts => drafts.Single().ItemId == FullMoonRules.VoucherItem), Arg.Any<MailKind>());
+        Notices(member).Should().ContainSingle(notice => notice.Contains("stayed behind"));
+        Notices(leader).Should().Contain(notice => notice.Contains(member.Name));
         FullMoonRules.HasEnteredToday(member).Should().BeFalse("a member who did not go in used up no entry");
         FullMoonRules.HasEnteredToday(leader).Should().BeTrue();
     }
@@ -242,6 +244,24 @@ public class EventEscapeTests : GameTestBase
         await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
         Notices(member).Should().ContainSingle(notice => notice.Contains("stayed behind"));
         Notices(leader).Should().Contain(notice => notice.Contains(member.Name));
+    }
+
+    [Fact]
+    public async Task AClanDungeonPassesOverABusyMemberElsewhereWithoutAWord()
+    {
+        const short clan = 41;
+        var transitions = Substitute.For<IZoneTransitionService>();
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(transitions));
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var opener = Player(sessions, 1, (byte)ZoneId.Moradon);
+        var busy = Player(sessions, 2, (byte)ZoneId.Prison);
+        opener.KnightsId = busy.KnightsId = clan;
+
+        await provider.GetRequiredService<IInstanceEntryService>().EnterClanAsync(opener, Coliseum, 1, 0f, 0f);
+
+        await transitions.DidNotReceive().ChangeZoneAsync(busy, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
+        Notices(busy).Should().BeEmpty("a clan room does not tell every clan member who cannot come, wherever they are");
+        Notices(opener).Should().NotContain(notice => notice.Contains(busy.Name), "nor does it tell the opener who is in Prison");
     }
 
     [Fact]
@@ -282,6 +302,32 @@ public class EventEscapeTests : GameTestBase
         }
 
         return (leader, member);
+    }
+
+    [Fact]
+    public async Task AFullMoonRiftNoOneCouldEnterIsNotLeftOpen()
+    {
+        var transitions = Substitute.For<IZoneTransitionService>();
+        var items = Substitute.For<IMagicItemUsageService>();
+        using var provider = CreateProvider(_ => { }, configureServices: services =>
+        {
+            services.AddSingleton(transitions);
+            services.AddSingleton(items);
+            services.AddSingleton(Substitute.For<IMailService>());
+        });
+        var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
+        items.TryConsumeItemAsync(Arg.Any<UserSession>(), FullMoonRules.VoucherItem).Returns(true);
+        items.When(usage => usage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem)).Do(_ =>
+        {
+            TieUp(leader, Tie.Trading, member);
+            TieUp(member, Tie.Fighting, leader);
+        });
+        var rooms = provider.GetRequiredService<InstanceRoomRegistry>();
+
+        var entered = await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
+
+        entered.Should().BeFalse();
+        rooms.Rooms.Should().BeEmpty("a room with no one in it is closed again");
     }
 
     [Fact]

@@ -196,6 +196,21 @@ public class JobChangeTests : GameTestBase
     }
 
     [Fact]
+    public async Task PointsEarnedWhileAFailedJobChangeIsSavedAreKept()
+    {
+        UserSession? player = null;
+        var earned = new DuringSave { Meanwhile = () => player!.StatPoints += EarnedPoints };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(earned, new ClassFaults())));
+        player = Player(provider);
+        var points = player.StatPoints;
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Class.Should().Be(Warrior);
+        player.StatPoints.Should().Be((short)(points + EarnedPoints), "the undo takes back what the change gave, not what came after it");
+    }
+
+    [Fact]
     public async Task ARetryingStoreCanTellAWrittenSaveFromALostOne()
     {
         LostAnswer.Answers.Clear();

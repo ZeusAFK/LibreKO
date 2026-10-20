@@ -281,13 +281,14 @@ public class Client(Socket socket, ServerType serverType, ILogger<Client> logger
 
     public const string WithheldCredentials = "(credentials withheld)";
 
-    // A login or kick request carries the password in the clear inside the decrypted packet.
+    // Packets that can carry a password, a PIN or a social number are never written out.
     public static string LoggedBytes(ServerType serverType, Packet packet)
     {
         var opcode = packet.GetOpcode();
         var credentials = serverType == ServerType.Login
             ? opcode is (byte)LoginOpcodes.LS_LOGIN or (byte)LoginOpcodes.LS_MGAME_LOGIN or (byte)LoginOpcodes.LS_OTP
-            : opcode is (byte)GameOpcodes.GS_LOGIN or (byte)GameOpcodes.GS_KICKOUT;
+            : opcode is (byte)GameOpcodes.GS_LOGIN or (byte)GameOpcodes.GS_KICKOUT or (byte)GameOpcodes.GS_DELETE_CHARACTER
+                or (byte)GameOpcodes.GS_ITEM_UPGRADE or (byte)GameOpcodes.GS_VIP_WAREHOUSE or (byte)GameOpcodes.GS_NATION_CHAT;
         return credentials ? WithheldCredentials : Convert.ToHexString(packet.GetBytes());
     }
 

@@ -111,7 +111,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     public static string AddressOf(IClient client) =>
         (client.Socket?.RemoteEndPoint as IPEndPoint)?.Address is { } address ? Bucket(address) : string.Empty;
 
-    // One IPv6 network counts as one address, since its owner holds every address in it.
+    // One IPv6 network counts as one address.
     public static string Bucket(IPAddress address)
     {
         if (address.IsIPv4MappedToIPv6)

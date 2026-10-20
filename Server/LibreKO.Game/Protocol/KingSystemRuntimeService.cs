@@ -38,6 +38,7 @@ public class KingSystemRuntimeService(
 
     private static readonly Lock Purses = new();
     private static readonly SemaphoreSlim Writes = new(1, 1);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(byte Nation, string Property), byte> Waiting = new();
 
     // The treasury, tax and tribute change only under one lock.
     public static bool TrySpendTreasury(KingSystemData kingData, int amount)
@@ -89,14 +90,20 @@ public class KingSystemRuntimeService(
         nation == AccountNation.ElMorad ? ElmoradKingCape : KarusKingCape;
 
     // Writes run one at a time, each storing the value as it stands when it runs.
+    // A write already waiting stores the newest value when it runs, so another one for the same value adds nothing.
     public async Task PersistKingPropertyAsync<TProperty>(
         KingSystemData kingData,
         Expression<Func<KingSystemData, TProperty>> propertySelector)
     {
+        var waiting = (kingData.Nation, ((MemberExpression)propertySelector.Body).Member.Name);
+        if (!Waiting.TryAdd(waiting, 0))
+            return;
+
         var read = propertySelector.Compile();
         await Writes.WaitAsync();
         try
         {
+            Waiting.TryRemove(waiting, out _);
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var stored = new KingSystemData { Nation = kingData.Nation };

@@ -82,7 +82,6 @@ public sealed class ClanMatchService : BackgroundService, IClanMatchService
         foreach (var (clan, team, x, z) in new[] { (a, TeamA, StartAX, StartAZ), (b, TeamB, StartBX, StartBZ) })
             foreach (var fighter in sessions.GetAll().Where(s => s.KnightsId == clan.Id && s.Hp > 0 && s.MayBeMovedByOthers).Take(MaxFighters).ToList())
             {
-                // A fighter is checked again just before their move.
                 if (fighter.Hp <= 0 || !fighter.MayBeMovedByOthers)
                     continue;
                 fighter.MatchTeam = team;

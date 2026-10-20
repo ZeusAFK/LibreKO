@@ -26,7 +26,6 @@ public class JobChangeService(
 
     public async Task HandlePromoteNoviceAsync(UserSession session, byte changeType, byte newJob)
     {
-        // No job change while busy, held or fighting.
         if (!Enum.IsDefined((JobChangeTarget)newJob) || changeType is > 1
             || session.IsBusy || session.IsHeld || session.IsInCombat)
         {
@@ -67,14 +66,20 @@ public class JobChangeService(
         var oldRace = session.Race;
         var journal = new InventoryJournal(session);
         Job? before = null;
+        Job? after = null;
+        var tiedUp = false;
         // The token and the new job are saved together, and the job's race with them.
         var outcome = await statePersister.CommitAsync(session, async db =>
         {
             var character = await db.Characters.FindAsync(session.CharacterId);
             if (character == null || !journal.Apply(s =>
                 {
+                    tiedUp = s.IsBusy || s.IsHeld || s.IsInCombat;
                     before = JobOf(s);
-                    return TakeToken(s, journal, tokenId, newClass, newRace);
+                    if (tiedUp || !TakeToken(s, journal, tokenId, newClass, newRace))
+                        return false;
+                    after = JobOf(s);
+                    return true;
                 }))
                 return false;
 
@@ -83,11 +88,11 @@ public class JobChangeService(
         }, () => session.WithLock(s =>
         {
             journal.Restore();
-            Restore(s, before!);
+            Restore(s, before!, after!);
         }));
         if (outcome != StateCommit.Saved)
         {
-            await SendFailAsync(session, outcome == StateCommit.Failed ? JobChangeOutcome.JobError : JobChangeOutcome.NoTokenOrSameClass);
+            await SendFailAsync(session, outcome == StateCommit.Failed || tiedUp ? JobChangeOutcome.JobError : JobChangeOutcome.NoTokenOrSameClass);
             return;
         }
 
@@ -121,7 +126,7 @@ public class JobChangeService(
 
     private static bool TakeToken(UserSession session, InventoryJournal journal, int tokenId, short newClass, byte newRace)
     {
-        if (session.IsBusy || session.IsHeld || session.IsInCombat || !journal.TakeOne(tokenId))
+        if (!journal.TakeOne(tokenId))
             return false;
 
         session.Class = newClass;
@@ -136,11 +141,19 @@ public class JobChangeService(
         session.Class, session.Race, session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic,
         session.StatPoints, (byte[])session.SkillPoints.Clone());
 
-    private static void Restore(UserSession session, Job job)
+    // The class goes back whole, and stats and points by what the change moved, so points earned meanwhile stay.
+    private static void Restore(UserSession session, Job before, Job after)
     {
-        (session.Class, session.Race, session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic) =
-            (job.Class, job.Race, job.Strength, job.Stamina, job.Dexterity, job.Intelligence, job.Magic);
-        session.StatPoints = job.StatPoints;
-        Array.Copy(job.SkillPoints, session.SkillPoints, job.SkillPoints.Length);
+        (session.Class, session.Race) = (before.Class, before.Race);
+        session.Strength = Back(session.Strength, before.Strength, after.Strength);
+        session.Stamina = Back(session.Stamina, before.Stamina, after.Stamina);
+        session.Dexterity = Back(session.Dexterity, before.Dexterity, after.Dexterity);
+        session.Intelligence = Back(session.Intelligence, before.Intelligence, after.Intelligence);
+        session.Magic = Back(session.Magic, before.Magic, after.Magic);
+        session.StatPoints = (short)Math.Clamp(session.StatPoints + before.StatPoints - after.StatPoints, 0, short.MaxValue);
+        for (var index = 0; index < before.SkillPoints.Length; index++)
+            session.SkillPoints[index] = Back(session.SkillPoints[index], before.SkillPoints[index], after.SkillPoints[index]);
     }
+
+    private static byte Back(byte now, byte before, byte after) => (byte)Math.Clamp(now + before - after, 0, byte.MaxValue);
 }

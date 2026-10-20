@@ -118,6 +118,7 @@ public class InventoryJournalTests
         session.WithLock(_ => journal.Restore());
 
         session.Inventory[Bag].ItemId.Should().Be(Arrow, "the undo does not overwrite an item that arrived after the change");
+        session.Inventory.Where(slot => slot.ItemId == Potion).Sum(slot => slot.Count).Should().Be(1, "the potion the change took comes back elsewhere");
     }
 
     [Fact]

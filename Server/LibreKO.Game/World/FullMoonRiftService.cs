@@ -36,6 +36,10 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
     private readonly IUserNotificationService userNotification;
     private readonly ILogger<FullMoonRiftService> logger;
     private readonly ConcurrentDictionary<ushort, FullMoonRiftRoomState> activeRooms = new();
+    private readonly IMailService mail;
+    private const string StayedBehindNotice = "You stayed behind: you were busy, held or fighting when the Full Moon Rift opened.";
+    private const string VoucherBackSubject = "Full Moon Rift voucher";
+    private const string VoucherBackBody = "You stayed behind when your party entered the Full Moon Rift, so your voucher is returned.";
     private readonly Timer? timer;
     private int checkingTimeouts;
 
@@ -49,9 +53,11 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         InstanceRoomRegistry rooms,
         IFullMoonRiftStageProvider stageProvider,
         IUserNotificationService userNotification,
+        IMailService mail,
         ILogger<FullMoonRiftService> logger,
         bool startTimer = true)
     {
+        this.mail = mail;
         this.sessionManager = sessionManager;
         this.gameData = gameData;
         this.itemUsage = itemUsage;
@@ -173,9 +179,16 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         var entryTimestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var entering = new List<UserSession>();
         var lastEntries = new Dictionary<int, int>();
+        var leftBehind = new List<string>();
         foreach (var member in members)
         {
-            if (!member.MayBeMovedByOthers || !await itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem))
+            if (!member.MayBeMovedByOthers)
+            {
+                await StayBehindAsync(member, leftBehind);
+                continue;
+            }
+
+            if (!await itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem))
                 continue;
             lastEntries[member.CharacterId] = member.DailyOps[(int)DailyOperation.FullMoonRift];
             member.DailyOps[(int)DailyOperation.FullMoonRift] = entryTimestamp;
@@ -213,6 +226,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             if (!member.MayBeMovedByOthers)
             {
                 await GiveVoucherBackAsync(member, lastEntries[member.CharacterId]);
+                await StayBehindAsync(member, leftBehind);
                 continue;
             }
 
@@ -221,6 +235,17 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             member.InstanceReturn = (member.ZoneId, member.X, member.Z);
             await zoneTransition.ChangeZoneAsync(member, (byte)ZoneId.DungeonDefence, FullMoonRules.SpawnX, FullMoonRules.SpawnZ);
             await member.Client.SendPacket(BifrostPacketWriter.InstanceTimer((ushort)duration.TotalSeconds));
+        }
+
+        if (leftBehind.Count > 0)
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                $"{string.Join(", ", leftBehind)} stayed behind."));
+
+        if (state.Participants.IsEmpty)
+        {
+            rooms.Close(room);
+            await session.Client.SendPacket(EventPacketWriter.FullMoonEntry(FullMoonRules.InstanceFailed));
+            return false;
         }
 
         SpawnInitialTowers(room);
@@ -232,11 +257,18 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         return true;
     }
 
+    // A voucher comes back by mail, which a busy or full bag only waits for.
     private async Task GiveVoucherBackAsync(UserSession member, int lastEntry)
     {
         member.DailyOps[(int)DailyOperation.FullMoonRift] = lastEntry;
-        if (gameData.GetItem(FullMoonRules.VoucherItem) is { } voucher)
-            await itemGrant.GrantAsync(member, voucher, 1);
+        await mail.SendSystemMailAsync(member.CharacterId, VoucherBackSubject, VoucherBackBody,
+            [new MailAttachmentDraft(MailAttachmentKind.Item, FullMoonRules.VoucherItem, 1)]);
+    }
+
+    private static async Task StayBehindAsync(UserSession member, List<string> leftBehind)
+    {
+        leftBehind.Add(member.Name);
+        await member.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)member.Nation, StayedBehindNotice));
     }
 
     public async Task CheckTimeoutsAsync()

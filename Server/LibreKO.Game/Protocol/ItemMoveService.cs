@@ -207,7 +207,6 @@ public class ItemMoveService(
             return;
         }
 
-        // A stack is never moved onto its own slot.
         if (sourceIndex == destinationIndex)
         {
             await SendItemMoveResponseAsync(session, 0);

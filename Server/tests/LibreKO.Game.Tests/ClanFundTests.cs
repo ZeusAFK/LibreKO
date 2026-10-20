@@ -48,6 +48,7 @@ public class ClanFundTests : GameTestBase
     {
         using var provider = Provider();
         var player = Player(provider);
+        player.KnightsId = ClanId;
         player.Loyalty = ClanRules.DonorKeepsNationalPoints + Rounds;
         var loyalty = provider.GetRequiredService<ILoyaltyService>();
         var accepted = 0;
@@ -55,7 +56,7 @@ public class ClanFundTests : GameTestBase
         Together(() =>
         {
             for (var twice = 0; twice < 2; twice++)
-                if (loyalty.TryDonateToKnightsAsync(player, 1).GetAwaiter().GetResult())
+                if (loyalty.TryDonateToKnightsAsync(player, ClanId, 1).GetAwaiter().GetResult())
                     Interlocked.Increment(ref accepted);
         });
 
@@ -78,12 +79,42 @@ public class ClanFundTests : GameTestBase
         Together(() =>
         {
             loyalty.ChangeAsync(player, 1).GetAwaiter().GetResult();
-            loyalty.TryDonateToKnightsAsync(player, 1).GetAwaiter().GetResult().Should().BeTrue();
+            loyalty.TryDonateToKnightsAsync(player, ClanId, 1).GetAwaiter().GetResult().Should().BeTrue();
         });
 
         player.KnightsPoints.Should().Be(2 * Rounds, "each gain gives its point to the clan and each donation gives one");
         player.Loyalty.Should().Be(ClanRules.DonorKeepsNationalPoints);
         clan.ClanPointFund.Should().Be(Rounds);
+    }
+
+    [Fact]
+    public async Task APlayerNoLongerInTheClanDonatesNothingToIt()
+    {
+        using var provider = Provider();
+        var player = Player(provider);
+        player.Loyalty = ClanRules.DonorKeepsNationalPoints + Rounds;
+
+        (await provider.GetRequiredService<ILoyaltyService>().TryDonateToKnightsAsync(player, ClanId, 1)).Should().BeFalse(
+            "a player put out of the clan as they donated gives it nothing");
+        player.Loyalty.Should().Be(ClanRules.DonorKeepsNationalPoints + Rounds);
+    }
+
+    [Fact]
+    public async Task AGainForAPlayerNoLongerInTheClanContributesNothingToIt()
+    {
+        using var provider = Provider();
+        var clan = Clan(fund: 0);
+        provider.GetRequiredService<SessionManager>().Knights.AddClan(ClanId, clan);
+        var player = Player(provider);
+        player.KnightsId = ClanId;
+        var loyalty = provider.GetRequiredService<ILoyaltyService>();
+        player.KnightsId = 0;
+
+        await loyalty.ChangeAsync(player, 1);
+
+        clan.ClanPointFund.Should().Be(0);
+        player.KnightsPoints.Should().Be(0);
+        player.Loyalty.Should().Be(1);
     }
 
     // Every thread is released at once and runs its share of the rounds, so the steps overlap from the first round.

@@ -19,6 +19,8 @@ public class KingPurseTests : GameTestBase
     private const int Treasury = 1_000;
     private const int Prize = 100;
     private const int Rounds = 200_000;
+    private const int WritersAtOnce = 5;
+    private const int SavesForAWriteAndOneWaiting = 2;
     private static readonly TimeSpan RivalWait = TimeSpan.FromMilliseconds(300);
 
     [Fact]
@@ -96,6 +98,28 @@ public class KingPurseTests : GameTestBase
             .NationalTreasury.Should().Be(Treasury - Prize, "a spend stored after a tax is not overwritten by the older value");
     }
 
+    [Fact]
+    public async Task TreasuryWritesWaitingTogetherAreStoredOnce()
+    {
+        var kingdom = new KingSystemData { Nation = (byte)AccountNation.Karus, KingName = King, NationalTreasury = Treasury };
+        var saves = new FirstSaveWaits();
+        using var provider = Provider(kingdom, services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(saves)));
+        var runtime = provider.GetRequiredService<IKingSystemRuntimeService>();
+        saves.Meanwhile = () =>
+        {
+            KingSystemRuntimeService.TrySpendTreasury(kingdom, Prize);
+            return Task.WhenAll(Enumerable.Range(0, WritersAtOnce).Select(_ => runtime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury)));
+        };
+
+        await runtime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
+        await saves.Rival;
+
+        saves.Saves.Should().Be(SavesForAWriteAndOneWaiting, "writes queued behind one another take in the newest value once");
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().KingSystem.AsNoTracking().SingleAsync())
+            .NationalTreasury.Should().Be(Treasury - Prize);
+    }
+
     // The first save waits a while for a rival write started inside it, which can finish only if nothing holds it back.
     private sealed class FirstSaveWaits : SaveChangesInterceptor
     {
@@ -103,6 +127,7 @@ public class KingPurseTests : GameTestBase
 
         public Func<Task> Meanwhile { get; set; } = () => Task.CompletedTask;
         public Task Rival { get; private set; } = Task.CompletedTask;
+        public int Saves => Volatile.Read(ref saves);
 
         public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)

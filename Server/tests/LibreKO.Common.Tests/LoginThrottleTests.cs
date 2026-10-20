@@ -185,6 +185,10 @@ public class LoginThrottleTests
     [InlineData(ServerType.Login, (byte)LoginOpcodes.LS_MGAME_LOGIN, true)]
     [InlineData(ServerType.Game, (byte)GameOpcodes.GS_LOGIN, true)]
     [InlineData(ServerType.Game, (byte)GameOpcodes.GS_KICKOUT, true)]
+    [InlineData(ServerType.Game, (byte)GameOpcodes.GS_DELETE_CHARACTER, true)]
+    [InlineData(ServerType.Game, (byte)GameOpcodes.GS_ITEM_UPGRADE, true)]
+    [InlineData(ServerType.Game, (byte)GameOpcodes.GS_VIP_WAREHOUSE, true)]
+    [InlineData(ServerType.Game, (byte)GameOpcodes.GS_NATION_CHAT, true)]
     [InlineData(ServerType.Game, (byte)GameOpcodes.GS_MOVE, false)]
     public void APasswordNeverReachesTheLog(ServerType serverType, byte opcode, bool withheld)
     {

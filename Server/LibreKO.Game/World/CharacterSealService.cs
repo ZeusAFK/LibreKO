@@ -227,7 +227,7 @@ public sealed class CharacterSealService(
         return true;
     }
 
-    // A sheet is shown for a ring in the player's bag or in their open trade, as the client asks.
+    // A sheet is shown only for a ring in the player's bag or in their open trade.
     private bool SeesRing(UserSession session, int uniqueId)
     {
         bool Offered(UserSession trader) =>

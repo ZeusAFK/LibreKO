@@ -20,7 +20,7 @@ public class ItemTradeService(
     IUserNotificationService userNotificationService,
     IKingSystemRuntimeService kingSystemRuntimeService) : IItemTradeService
 {
-    public const int RepurchaseNpcId = 18004;
+    public const int RepurchaseNpcId = CharacterDevelopmentPacketCoordinator.GrandMerchantNpcId;
     private const int ItemNoTrade = 900000001;
     private const int LoyaltyMerchantSellingGroup = 249000;
     private const int SaleTypeFull = 1;
