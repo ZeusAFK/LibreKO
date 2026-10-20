@@ -14,6 +14,16 @@ namespace LibreKO.Game.Tests;
 public class LootCoinTests : GameTestBase
 {
     private const byte Moradon = 21;
+    private const short Warrior = 101;
+    private const int SuperNoah = 504003;
+    private const int HyperNoah = 504004;
+    private const int CospreItem = 900000000;
+
+    private static readonly (int Skill, int Item, short Uses, short Percent)[] NoahScrolls =
+    [
+        (SuperNoah, 810050000, 1, 150),
+        (HyperNoah, 810051000, 10, 200),
+    ];
 
     [Fact]
     public async Task AKilledMonsterLeavesItsCoinsInTheLootBox()
@@ -109,6 +119,164 @@ public class LootCoinTests : GameTestBase
             share.ReadInt().Should().Be(money);
             share.RemainingBytes.Should().Be(0);
         }
+    }
+
+    [Theory]
+    [InlineData(SuperNoah, 1300)]
+    [InlineData(HyperNoah, 1400)]
+    public async Task ANoahScrollRaisesTheCoinsALooterPicksUp(int scroll, int money)
+    {
+        using var provider = CreateProvider(_ => { }, NoahScrollData);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (looter, sent) = CreatePlayer(sessionManager, 212, level: 40, x: 100, z: 100);
+        looter.Money = 1000;
+        await ReadScrollAsync(provider, looter, scroll);
+        var bundle = CoinBox(sessionManager, looter, coins: 200);
+
+        await provider.GetRequiredService<ILootPacketCoordinator>().HandleItemGetAsync(looter.Client, TakeCoins(bundle));
+
+        looter.Money.Should().Be(money);
+        var reply = sent.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_ITEM_GET);
+        reply.ResetOffset();
+        reply.ReadByte().Should().Be(ItemGetPacketWriter.ResultSuccess);
+        reply.ReadInt().Should().Be(bundle.BundleId);
+        reply.ReadByte().Should().Be(ItemGetPacketWriter.PositionGold);
+        reply.ReadInt().Should().Be(InventoryConstants.ItemGold);
+        reply.ReadUShort().Should().Be(200);
+        reply.ReadInt().Should().Be(money);
+    }
+
+    [Fact]
+    public async Task AHyperNoahScrollDoublesTheCoinsThePremiumBonusRaised()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            NoahScrollData(gameData);
+            gameData.GetPremiumProperty(Arg.Any<byte>(), PremiumPropertyType.Noah).Returns(50);
+        });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (looter, _) = CreatePlayer(sessionManager, 213, level: 40, x: 100, z: 100);
+        await ReadScrollAsync(provider, looter, HyperNoah);
+        var bundle = CoinBox(sessionManager, looter, coins: 200);
+
+        await provider.GetRequiredService<ILootPacketCoordinator>().HandleItemGetAsync(looter.Client, TakeCoins(bundle));
+
+        looter.Money.Should().Be(600);
+    }
+
+    [Fact]
+    public async Task AHyperNoahScrollAndASetCoinBonusAddUp()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            NoahScrollData(gameData);
+            gameData.GetItem(CospreItem).Returns(new ItemData { Num = CospreItem, Kind = (byte)ItemKind.Cospre });
+            gameData.GetSetItem(CospreItem).Returns(new SetItemData { SetIndex = CospreItem, CoinBonusPercent = 30 });
+        });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (looter, _) = CreatePlayer(sessionManager, 214, level: 40, x: 100, z: 100);
+        looter.Inventory[InventoryConstants.CospreStart] = new ItemSlot { ItemId = CospreItem, Count = 1 };
+        await ReadScrollAsync(provider, looter, HyperNoah);
+        looter.Stats.ItemCoinBonusPercent.Should().Be(30);
+        var bundle = CoinBox(sessionManager, looter, coins: 200);
+
+        await provider.GetRequiredService<ILootPacketCoordinator>().HandleItemGetAsync(looter.Client, TakeCoins(bundle));
+
+        looter.Money.Should().Be(460);
+    }
+
+    [Fact]
+    public async Task OnlyThePartyMemberWithAHyperNoahScrollGetsMoreOfTheSharedCoins()
+    {
+        using var provider = CreateProvider(_ => { }, NoahScrollData);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (leader, _) = CreatePlayer(sessionManager, 310, level: 30, x: 100, z: 100);
+        var (member, _) = CreatePlayer(sessionManager, 311, level: 10, x: 110, z: 100);
+        var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
+        party.MemberIds[1] = (short)member.CharacterId;
+        leader.PartyIndex = member.PartyIndex = party.Index;
+        leader.IsPartyLeader = true;
+        await ReadScrollAsync(provider, member, HyperNoah);
+
+        var bundle = CoinBox(sessionManager, leader, coins: 400);
+        bundle.OwnerPartyIndex = party.Index;
+        await provider.GetRequiredService<ILootPacketCoordinator>().HandleItemGetAsync(leader.Client, TakeCoins(bundle));
+
+        leader.Money.Should().Be(300);
+        member.Money.Should().Be(200);
+    }
+
+    [Fact]
+    public async Task TheCoinBonusEndsWithTheNoahScroll()
+    {
+        using var provider = CreateProvider(_ => { }, NoahScrollData);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var (looter, _) = CreatePlayer(sessionManager, 215, level: 40, x: 100, z: 100);
+        await ReadScrollAsync(provider, looter, HyperNoah);
+        await provider.GetRequiredService<IMagicExecutionService>().CancelAsync(looter, HyperNoah);
+        var bundle = CoinBox(sessionManager, looter, coins: 200);
+
+        await provider.GetRequiredService<ILootPacketCoordinator>().HandleItemGetAsync(looter.Client, TakeCoins(bundle));
+
+        looter.Money.Should().Be(200);
+    }
+
+    [Fact]
+    public async Task ANoahScrollKeepsItsCoinBonusAfterRelogging()
+    {
+        using var provider = CreateProvider(_ => { }, NoahScrollData);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var gameData = provider.GetRequiredService<IGameDataService>();
+        var (before, _) = CreatePlayer(sessionManager, 216, level: 40, x: 100, z: 100);
+        await ReadScrollAsync(provider, before, HyperNoah);
+        var saved = before.SerializeSavedMagic();
+        sessionManager.RemoveSession(before);
+
+        var (looter, _) = CreatePlayer(sessionManager, 217, level: 40, x: 100, z: 100);
+        looter.LoadSavedMagic(saved, gameData);
+        looter.RecalculateStatsWithBuffs(gameData);
+        var bundle = CoinBox(sessionManager, looter, coins: 200);
+
+        await provider.GetRequiredService<ILootPacketCoordinator>().HandleItemGetAsync(looter.Client, TakeCoins(bundle));
+
+        looter.Money.Should().Be(400);
+    }
+
+    private static void NoahScrollData(IGameDataService gameData)
+    {
+        gameData.GetCoefficient(Arg.Any<short>()).Returns(CreateBasicCoefficient(Warrior));
+        gameData.MagicType4Table.Returns(NoahScrolls.ToDictionary(
+            scroll => scroll.Skill,
+            scroll => new MagicType4Data
+            {
+                Id = scroll.Skill, BuffType = (byte)BuffType.NoahBonus, Duration = 3600, ExpPct = scroll.Percent,
+            }));
+        foreach (var scroll in NoahScrolls)
+        {
+            gameData.GetMagic(scroll.Skill).Returns(new MagicData
+            {
+                Id = scroll.Skill, Moral = 1, ItemGroup = 9, UseItem = scroll.Item, SuccessRate = 100,
+                Type1 = (byte)MagicSkillType.Buff,
+            });
+            gameData.GetItem(scroll.Item).Returns(new ItemData
+            {
+                Num = scroll.Item, Kind = (byte)ItemKind.PowerUpStore, Duration = scroll.Uses, ReqLevelMax = 60,
+            });
+        }
+    }
+
+    private static async Task ReadScrollAsync(ServiceProvider provider, UserSession player, int skill)
+    {
+        var scroll = NoahScrolls.Single(entry => entry.Skill == skill);
+        player.Class = Warrior;
+        player.Inventory[InventoryConstants.InventoryStart] = new ItemSlot
+        {
+            ItemId = scroll.Item, Count = 1, Durability = scroll.Uses,
+        };
+        var magic = provider.GetRequiredService<IGameDataService>().GetMagic(skill)!;
+        await provider.GetRequiredService<IMagicExecutionService>()
+            .ExecuteAsync(player, magic, skill, player.CharacterId, new int[7]);
+        player.ActiveBuffs.Should().ContainKey(skill);
     }
 
     private static LootBundle CoinBox(SessionManager sessionManager, UserSession owner, ushort coins)

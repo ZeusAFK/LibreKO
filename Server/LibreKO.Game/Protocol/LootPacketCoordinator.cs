@@ -27,6 +27,7 @@ public class LootPacketCoordinator(
     private const byte LootSuccess = 1;
     private const int CoinMax = 2_100_000_000;
     private const float PartyCoinRange = 50f;
+    private const int PercentScale = 100;
 
     public async Task HandleItemDropAsync(IClient client, Packet packet)
     {
@@ -271,14 +272,15 @@ public class LootPacketCoordinator(
         long gained = coins;
         var premiumPercent = gameDataService.GetPremiumProperty(s.PremiumType, PremiumPropertyType.Noah);
         if (premiumPercent > 0)
-            gained = gained * (100 + premiumPercent) / 100;
+            gained = gained * (PercentScale + premiumPercent) / PercentScale;
 
         var kingPercent = kingEventState.GetNoahBonus(s.Nation);
         if (kingPercent > 0)
-            gained = gained * (100 + kingPercent) / 100;
+            gained = gained * (PercentScale + kingPercent) / PercentScale;
 
-        if (s.Stats.ItemCoinBonusPercent > 0)
-            gained = gained * (100 + s.Stats.ItemCoinBonusPercent) / 100;
+        var noahGainPercent = s.NoahGainAmount + s.Stats.ItemCoinBonusPercent;
+        if (noahGainPercent > PercentScale)
+            gained = gained * noahGainPercent / PercentScale;
 
         s.Money = (int)Math.Min(s.Money + gained, CoinMax);
         return s.Money;
