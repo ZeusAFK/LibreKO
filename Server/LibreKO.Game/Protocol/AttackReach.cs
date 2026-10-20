@@ -9,17 +9,17 @@ public static class AttackReach
     public const float Melee = 6f;
     public const float PlayerBodyRadius = 1f;
     public const float RangeUnitsPerMetre = 10f;
-    private const float LateReportSeconds = 0.5f;
     private const float SpeedUnitsPerMetre = 10f;
 
     public static float MovementLag(UserSession session, long now)
     {
         var sinceReport = (float)(now - session.LastMoveTicks) / TimeSpan.TicksPerSecond;
-        if (session.MoveOldEcho != WorldMovementService.MoveEchoMove || sinceReport > MovePace.ReportSeconds + LateReportSeconds)
+        if (session.MoveOldEcho != WorldMovementService.MoveEchoMove || sinceReport > MovePace.ReportSeconds + MovePace.LateReportSeconds)
             return 0f;
 
         var speed = Math.Min(Math.Abs((int)session.MoveOldSpeed) / SpeedUnitsPerMetre, MovePace.TopSpeed(session, now));
-        return Math.Min(speed, session.LastStepSpeed) * Math.Clamp(sinceReport, 0f, MovePace.ReportSeconds);
+        var ran = Math.Min(speed, session.LastStepSpeed) * Math.Clamp(sinceReport, 0f, MovePace.ReportSeconds);
+        return Math.Min(ran, session.LastStepDistance);
     }
 
     public static ItemData? HeldBow(UserSession session, IGameDataService gameData) =>

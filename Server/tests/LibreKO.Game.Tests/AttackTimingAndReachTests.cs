@@ -70,6 +70,24 @@ public class AttackTimingAndReachTests : GameTestBase
     }
 
     [Fact]
+    public async Task TwoReportsAMomentApartGiveNoReach()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        const float nudge = 0.1f;
+        var worm = Monster(provider, Here + nudge + 14.1f);
+
+        await Move(provider, attacker, Sprint, Moving);
+        clock.Advance(10);
+        await Move(provider, attacker, Sprint, Moving, Here + nudge);
+        clock.Advance(1000);
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(0, "a tenth of a metre covered is a tenth of a metre of reach");
+    }
+
+    [Fact]
     public async Task ASwingStandsThePlayerUp()
     {
         using var provider = Provider(new Clock());
@@ -112,6 +130,7 @@ public class AttackTimingAndReachTests : GameTestBase
         attacker.MoveOldSpeed = speed;
         attacker.MoveOldEcho = echo;
         attacker.LastStepSpeed = lastStepSpeed;
+        attacker.LastStepDistance = lastStepSpeed * MovePace.ReportSeconds;
         attacker.LastMoveTicks = clock.Now.AddMilliseconds(-sinceReportMs).UtcTicks;
         var worm = Monster(provider, Here + 14);
 
@@ -140,6 +159,7 @@ public class AttackTimingAndReachTests : GameTestBase
         runner.MoveOldSpeed = Sprint;
         runner.MoveOldEcho = echo;
         runner.LastStepSpeed = SprintStep;
+        runner.LastStepDistance = SprintStep;
         runner.LastMoveTicks = clock.Now.AddSeconds(-1).UtcTicks;
         sessions.Regions.AddToRegion(runner);
 
@@ -154,11 +174,12 @@ public class AttackTimingAndReachTests : GameTestBase
         var clock = new Clock();
         using var provider = Provider(clock);
         var (attacker, sent) = Attacker(provider);
+        var nearWorm = Monster(provider, Here + 14);
         var worm = Monster(provider, Here + RunStep + 14);
 
         await Move(provider, attacker, Sprint, Starting);
         clock.Advance(1000);
-        await Swing(provider, attacker, worm);
+        await Swing(provider, attacker, nearWorm);
         Swings(sent).Should().Be(0, "a report that the run starts is not yet a run");
 
         clock.Advance(500);

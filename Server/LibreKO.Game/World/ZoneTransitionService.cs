@@ -25,7 +25,8 @@ public class ZoneTransitionService(
     IPetService petService,
     ILogger<ZoneTransitionService> logger,
     IPartyPacketCoordinator? partyCoordinator = null,
-    IMerchantLifecycleService? merchantLifecycle = null) : IZoneTransitionService
+    IMerchantLifecycleService? merchantLifecycle = null,
+    TimeProvider? timeProvider = null) : IZoneTransitionService
 {
     private const byte ZoneAbilityUpdate = 1;
     private const byte DefaultTariff = 10;
@@ -86,7 +87,7 @@ public class ZoneTransitionService(
         session.Ground = GroundEffect.None;
         session.X = x;
         session.Z = z;
-        MovePace.Placed(session, DateTime.UtcNow.Ticks);
+        MovePace.Placed(session, (timeProvider ?? TimeProvider.System).GetUtcNow().UtcTicks);
         session.Y = ResolveTargetHeight(newZone, x, z);
         session.SpeedLastX = 0f;
         session.SpeedLastZ = 0f;

@@ -44,7 +44,8 @@ public class CombatLifecycleService(
     IClanMatchService clanMatchService,
     IBountyPacketCoordinator bountyPacketCoordinator,
     IMerchantLifecycleService merchantLifecycleService,
-    ILogger<CombatLifecycleService> logger) : ICombatLifecycleService
+    ILogger<CombatLifecycleService> logger,
+    TimeProvider? timeProvider = null) : ICombatLifecycleService
 {
     public const int NoKillerId = -1;
 
@@ -149,7 +150,7 @@ public class CombatLifecycleService(
 
         session.X = x;
         session.Z = z;
-        MovePace.Placed(session, DateTime.UtcNow.Ticks);
+        MovePace.Placed(session, (timeProvider ?? TimeProvider.System).GetUtcNow().UtcTicks);
 
         await SendRespawnAsync(client, session);
 

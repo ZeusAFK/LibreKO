@@ -109,6 +109,9 @@ public class UserSession
     public long LastMoveTicks { get; set; }
     public float MoveBudget { get; set; }
     public float LastStepSpeed { get; set; }
+    public float LastStepDistance { get; set; }
+    public long HoldSinceTicks { get; private set; }
+    public long HoldUntilTicks { get; private set; }
     public long MoveBudgetTicks { get; set; }
     public long PlacedTicks { get; set; }
     public HashSet<short> OfferedWarps { get; } = [];
@@ -545,6 +548,14 @@ public class UserSession
 
     public void SetBuff(int skillId, ActiveBuff buff)
     {
+        if (buff.BuffType is BuffType.Freeze or BuffType.Stun)
+        {
+            var start = buff.ExpireTicks - buff.Duration * TimeSpan.TicksPerSecond;
+            if (HoldUntilTicks <= start)
+                HoldSinceTicks = start;
+            HoldUntilTicks = Math.Max(HoldUntilTicks, buff.ExpireTicks);
+        }
+
         activeBuffs[skillId] = buff;
         BuffsChanged?.Invoke(this);
     }

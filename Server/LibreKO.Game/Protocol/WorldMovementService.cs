@@ -122,8 +122,9 @@ public class WorldMovementService(
         var sinceReport = (float)(now - session.LastMoveTicks) / TimeSpan.TicksPerSecond;
         var stepX = newX - session.X;
         var stepZ = newZ - session.Z;
+        session.LastStepDistance = MathF.Sqrt(stepX * stepX + stepZ * stepZ);
         session.LastStepSpeed = session.MoveOldEcho != MoveEchoFinish && sinceReport > 0f
-            ? MathF.Sqrt(stepX * stepX + stepZ * stepZ) / sinceReport
+            ? session.LastStepDistance / sinceReport
             : 0f;
         if (stepped || willX != session.MoveOldWillX || willZ != session.MoveOldWillZ)
             await stealthService.RevealAsync(session, InvisibilityType.DispelOnMove);

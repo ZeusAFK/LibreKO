@@ -145,11 +145,7 @@ public class MovementAuthorityTests : GameTestBase
         }
 
         const short stunSeconds = 3;
-        runner.SetBuff(Stun, new ActiveBuff
-        {
-            MagicId = Stun, BuffType = BuffType.Stun, Duration = stunSeconds,
-            ExpireTicks = clock.Now.AddSeconds(stunSeconds).UtcTicks,
-        });
+        StunFor(runner, clock, stunSeconds);
         clock.Advance(600);
         var stoppedAt = Here + beforeStun * RunStep + 1.8f;
         await Move(provider, runner, stoppedAt, Here);
@@ -159,6 +155,74 @@ public class MovementAuthorityTests : GameTestBase
         clock.Advance(1000);
         await Move(provider, runner, stoppedAt + 3f, Here);
         runner.X.Should().Be(stoppedAt, "nothing banked before the stun walks a stunned player");
+    }
+
+    [Fact]
+    public async Task AStunJustAfterAReportLetsTheRunToItIn()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (runner, sent) = Player(provider, 1030);
+        const int beforeStun = 3;
+        for (var step = 1; step <= beforeStun; step++)
+        {
+            clock.Advance(ReportMs);
+            await Move(provider, runner, Here + step * RunStep, Here);
+        }
+
+        clock.Advance(ReportMs + 10);
+        StunFor(runner, clock, 3);
+        clock.Advance(40);
+        var stoppedAt = Here + beforeStun * RunStep + 6.8f;
+        await Move(provider, runner, stoppedAt, Here);
+
+        runner.X.Should().BeApproximately(stoppedAt, 0.1f, "the client reports a frame after 1.5 s, and ran until it learnt of the stun");
+        Warps(sent).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RefreshingAStunOpensNoNewWayOut()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (held, _) = Player(provider, 1031);
+        const int refreshes = 6;
+        const int everyMs = 1000;
+        const float creep = 2f;
+        StunFor(held, clock, 10);
+
+        var x = Here;
+        for (var refresh = 0; refresh < refreshes; refresh++)
+        {
+            clock.Advance(everyMs / 2);
+            x += creep;
+            await Move(provider, held, x, Here);
+            clock.Advance(everyMs / 2);
+            held.RemoveBuff(Stun);
+            StunFor(held, clock, 10);
+        }
+
+        held.X.Should().BeLessThan(Here + 5, "a refreshed stun is the same hold, not a new half second of running");
+    }
+
+    [Fact]
+    public async Task ASlowLimitsTheDistanceSavedUp()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (slowed, _) = Player(provider, 1032);
+        slowed.SpeedAmount = 50;
+        const int standingReports = 4;
+        const int everyMs = 2900;
+
+        for (var report = 0; report < standingReports; report++)
+        {
+            clock.Advance(everyMs);
+            await Move(provider, slowed, Here, Here);
+        }
+        await Move(provider, slowed, Here + 12, Here);
+
+        slowed.X.Should().Be(Here, "three seconds at half speed are under 9 m, however long the player stood");
     }
 
     [Fact]
@@ -199,7 +263,7 @@ public class MovementAuthorityTests : GameTestBase
     [Fact]
     public async Task AReportSentBeforeAGameMasterSummonDoesNotUndoIt()
     {
-        using var provider = CreateProvider(_ => { });
+        using var provider = Provider(new Clock());
         var (summoned, sent) = Player(provider, 1025);
         var (gm, _) = Player(provider, 1026);
         gm.IsGM = true;
@@ -218,7 +282,7 @@ public class MovementAuthorityTests : GameTestBase
     [Fact]
     public async Task AReportSentBeforeAZoneChangeDoesNotUndoIt()
     {
-        using var provider = CreateProvider(_ => { });
+        using var provider = Provider(new Clock());
         var (traveller, sent) = Player(provider, 1028);
         const float arrival = Here + 10;
 
@@ -233,7 +297,7 @@ public class MovementAuthorityTests : GameTestBase
     [Fact]
     public async Task AReportSentBeforeARespawnDoesNotUndoIt()
     {
-        using var provider = CreateProvider(_ => { });
+        using var provider = Provider(new Clock());
         var (victim, sent) = Player(provider, 1029);
         const float personArenaX = 710f;
         const float personArenaZ = 466f;
@@ -595,6 +659,13 @@ public class MovementAuthorityTests : GameTestBase
         packet.WriteUShort(0);
         return provider.GetRequiredService<IWorldMovementService>().HandleMoveAsync(mover.Client, packet);
     }
+
+    private static void StunFor(UserSession player, Clock clock, short seconds) =>
+        player.SetBuff(Stun, new ActiveBuff
+        {
+            MagicId = Stun, BuffType = BuffType.Stun, Duration = seconds,
+            ExpireTicks = clock.Now.AddSeconds(seconds).UtcTicks,
+        });
 
     private static int Warps(List<Packet> sent) => sent.Count(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_WARP);
 
