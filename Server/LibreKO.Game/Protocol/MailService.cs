@@ -299,112 +299,152 @@ public class MailService(
             return;
         }
 
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var mail = await InboxQuery(db, session.CharacterId).FirstOrDefaultAsync(m => m.Id == mailId);
-        var ordered = mail?.Attachments.OrderBy(a => a.Id).ToList() ?? [];
-        var chosen = attachmentIndex is { } index
-            ? ordered.Where((_, position) => position == index).ToList()
-            : ordered;
-        if (mail == null || !mail.HasUnclaimedAttachments || chosen.All(a => a.Remaining == 0))
+        var journal = new InventoryJournal(session);
+        var claim = new MailClaim();
+        // The bag, the purse and the mail are saved together.
+        var outcome = await statePersister.CommitAsync(session, async db =>
+        {
+            var mail = await InboxQuery(db, session.CharacterId).FirstOrDefaultAsync(m => m.Id == mailId);
+            var ordered = mail?.Attachments.OrderBy(a => a.Id).ToList() ?? [];
+            var chosen = attachmentIndex is { } index
+                ? ordered.Where((_, position) => position == index).ToList()
+                : ordered;
+            if (mail == null || !mail.HasUnclaimedAttachments || chosen.All(a => a.Remaining == 0))
+                return false;
+
+            claim.Tried = chosen.Count(a => a.Remaining > 0);
+            session.WithLock(_ => Deliver(session, chosen, journal, claim));
+            claim.GoldWaiting = chosen.Any(a => a.Remaining > 0 && a.Kind == MailAttachmentKind.Gold);
+            claim.ItemsWaiting = chosen.Any(a => a.Remaining > 0 && a.Kind != MailAttachmentKind.Gold);
+            if (mail.Attachments.All(a => a.Remaining == 0))
+                mail.ClaimedAt = DateTime.UtcNow;
+            claim.FirstRead = claim.Delivered && mail.ReadAt == null;
+            if (claim.FirstRead)
+                mail.ReadAt = DateTime.UtcNow;
+            return claim.Delivered || claim.Dropped > 0;
+        }, journal.Restore);
+
+        if (outcome == StateCommit.Failed)
+        {
+            await session.Client.SendPacket(MailPacketWriter.ClaimResult(false, mailId, "The claim could not be saved. Try again."));
+            return;
+        }
+
+        if (claim.Tried == 0)
         {
             await session.Client.SendPacket(MailPacketWriter.ClaimResult(false, mailId, "Nothing to claim."));
             return;
         }
 
-        var delivered = false;
-        var itemsDelivered = false;
-        var dropped = 0;
-        var tried = chosen.Count(a => a.Remaining > 0);
+        foreach (var slot in journal.TouchedSlots)
+        {
+            var entry = session.Inventory[slot];
+            await userNotificationService.SendStackChangeAsync(session, (byte)slot, entry.ItemId, entry.Count, entry.Durability, journal.WasEmpty(slot));
+        }
+
+        if (claim.Gold > 0)
+            await userNotificationService.SendGoldGainAsync(session, claim.Gold);
+        // Rewards that cannot be undone are paid once the claim is saved.
+        if (claim.Experience > 0)
+            await playerProgressionService.AwardExperienceAsync(session, claim.Experience);
+        if (claim.NationalPoints > 0)
+            await loyaltyService.ChangeAsync(session, claim.NationalPoints);
+
+        if (journal.TouchedSlots.Count > 0)
+        {
+            session.RecalculateStatsWithBuffs(gameDataService);
+            await userNotificationService.SendWeightChangeAsync(session);
+        }
+
+        // Only the attachments this claim tried are named.
+        var room = (claim.ItemsWaiting, claim.GoldWaiting) switch
+        {
+            (true, true) => "room in your inventory and your purse",
+            (false, true) => "room in your purse",
+            _ => "room in your inventory",
+        };
+        var waiting = claim.Waiting == 1 ? "An attachment is" : "Some attachments are";
+        var message = claim.GoldWaiting || claim.ItemsWaiting
+            ? claim.Delivered ? $"{waiting} still waiting. Make {room} and claim again." : $"Not enough {room}."
+            : !claim.Delivered ? null
+            : claim.Tried - claim.Dropped > 1 ? "Attachments claimed."
+            : "Attachment claimed.";
+        var lost = claim.Dropped switch
+        {
+            0 => null,
+            1 => "An attachment could not be delivered.",
+            _ => $"{claim.Dropped} attachments could not be delivered.",
+        };
+        var text = string.Join(" ", new[] { message, lost }.Where(part => part != null));
+        await session.Client.SendPacket(MailPacketWriter.ClaimResult(claim.Delivered, mailId, text));
+        if (claim.FirstRead)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await session.Client.SendPacket(MailPacketWriter.Unread(await UnreadCountAsync(db, session.CharacterId)));
+        }
+    }
+
+    private sealed class MailClaim
+    {
+        public int Tried { get; set; }
+        public int Dropped { get; set; }
+        public bool Delivered { get; set; }
+        public int Gold { get; set; }
+        public long Experience { get; set; }
+        public int NationalPoints { get; set; }
+        public bool GoldWaiting { get; set; }
+        public bool ItemsWaiting { get; set; }
+        public bool FirstRead { get; set; }
+        public int Waiting => (GoldWaiting ? 1 : 0) + (ItemsWaiting ? 1 : 0);
+    }
+
+    private void Deliver(UserSession session, List<MailAttachment> chosen, InventoryJournal journal, MailClaim claim)
+    {
         foreach (var attachment in chosen.Where(a => a.Remaining > 0))
         {
             switch (attachment.Kind)
             {
                 case MailAttachmentKind.Gold:
                     // Only what fits under the coin cap is claimed; the rest waits in the mail.
-                    var remaining = attachment.Remaining;
-                    var credited = session.WithLock(s =>
+                    var take = (int)Math.Clamp(ExchangePacketConstants.CoinMax - (long)session.Money, 0, attachment.Remaining);
+                    if (take > 0)
                     {
-                        var take = (int)Math.Clamp(ExchangePacketConstants.CoinMax - (long)s.Money, 0, remaining);
-                        s.Money += take;
-                        return take;
-                    });
-                    if (credited > 0)
-                    {
-                        attachment.ClaimedCount += credited;
-                        await userNotificationService.SendGoldGainAsync(session, credited);
-                        delivered = true;
+                        journal.AddMoney(take);
+                        attachment.ClaimedCount += take;
+                        claim.Gold += take;
+                        claim.Delivered = true;
                     }
                     break;
                 case MailAttachmentKind.Experience:
-                    await playerProgressionService.AwardExperienceAsync(session, attachment.Remaining);
+                    claim.Experience += attachment.Remaining;
                     attachment.ClaimedCount = attachment.Count;
-                    delivered = true;
+                    claim.Delivered = true;
                     break;
                 case MailAttachmentKind.NationalPoints:
-                    await loyaltyService.ChangeAsync(session, attachment.Remaining);
+                    claim.NationalPoints += attachment.Remaining;
                     attachment.ClaimedCount = attachment.Count;
-                    delivered = true;
+                    claim.Delivered = true;
                     break;
                 default:
-                    switch (await DeliverItemAsync(session, attachment))
+                    switch (DeliverItem(session, attachment, journal))
                     {
                         case ItemDelivery.Delivered:
-                            delivered = itemsDelivered = true;
+                            claim.Delivered = true;
                             break;
                         case ItemDelivery.Dropped:
-                            dropped++;
+                            claim.Dropped++;
                             break;
                     }
                     break;
             }
         }
-
-        if (itemsDelivered)
-        {
-            session.RecalculateStatsWithBuffs(gameDataService);
-            await userNotificationService.SendWeightChangeAsync(session);
-        }
-
-        var complete = mail.Attachments.All(a => a.Remaining == 0);
-        if (complete)
-            mail.ClaimedAt = DateTime.UtcNow;
-        var firstRead = delivered && mail.ReadAt == null;
-        if (firstRead)
-            mail.ReadAt = DateTime.UtcNow;
-        await db.SaveChangesAsync();
-
-        // Only the attachments this claim tried are named.
-        var goldWaiting = chosen.Any(a => a.Remaining > 0 && a.Kind == MailAttachmentKind.Gold);
-        var itemsWaiting = chosen.Any(a => a.Remaining > 0 && a.Kind != MailAttachmentKind.Gold);
-        var room = (itemsWaiting, goldWaiting) switch
-        {
-            (true, true) => "room in your inventory and your purse",
-            (false, true) => "room in your purse",
-            _ => "room in your inventory",
-        };
-        var waiting = chosen.Count(a => a.Remaining > 0) == 1 ? "An attachment is" : "Some attachments are";
-        var outcome = goldWaiting || itemsWaiting
-            ? delivered ? $"{waiting} still waiting. Make {room} and claim again." : $"Not enough {room}."
-            : !delivered ? null
-            : tried - dropped > 1 ? "Attachments claimed."
-            : "Attachment claimed.";
-        var lost = dropped switch
-        {
-            0 => null,
-            1 => "An attachment could not be delivered.",
-            _ => $"{dropped} attachments could not be delivered.",
-        };
-        var message = string.Join(" ", new[] { outcome, lost }.Where(part => part != null));
-        await session.Client.SendPacket(MailPacketWriter.ClaimResult(delivered, mailId, message));
-        if (firstRead)
-            await session.Client.SendPacket(MailPacketWriter.Unread(await UnreadCountAsync(db, session.CharacterId)));
     }
 
     private enum ItemDelivery { NoRoom, Delivered, Dropped }
 
     // One read of the item, so the claim and its message agree even if the item table reloads meanwhile.
-    private async Task<ItemDelivery> DeliverItemAsync(UserSession session, MailAttachment attachment)
+    private ItemDelivery DeliverItem(UserSession session, MailAttachment attachment, InventoryJournal journal)
     {
         var itemData = gameDataService.GetItem(attachment.ItemId);
         if (itemData == null)
@@ -420,7 +460,7 @@ public class MailService(
             if (slot < 0)
                 break;
 
-            var entry = session.Inventory[slot];
+            var entry = journal.Slot(slot);
             var isNew = entry.IsEmpty;
             var portion = itemData.Countable == 0 ? 1 : Math.Min(attachment.Remaining, InventoryConstants.MaxStackCount - (isNew ? 0 : entry.Count));
             if (isNew)
@@ -438,7 +478,6 @@ public class MailService(
                 entry.Count = (ushort)(entry.Count + portion);
             }
 
-            await userNotificationService.SendStackChangeAsync(session, (byte)slot, entry.ItemId, entry.Count, entry.Durability, isNew);
             attachment.ClaimedCount += portion;
             delivered = true;
         }

@@ -277,6 +277,56 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task AClaimSavesTheBagWithTheMail()
+    {
+        using var provider = Provider();
+        var (bob, _) = Online(provider, BobId, "Bob");
+        bob.Money = Purse;
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Gift", "A gift.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, Held, 1),
+            new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, MailedGold),
+        ]);
+
+        await mail.ClaimAsync(bob, await StoredMailIdAsync(provider));
+
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var stored = await db.Characters.AsNoTracking().SingleAsync(c => c.Id == BobId);
+        stored.Money.Should().Be(Purse + MailedGold, "a crash after the claim must not leave the mail claimable with the gold unsaved");
+        stored.Items.Should().Equal(bob.SerializeItems());
+        (await db.Mails.AsNoTracking().SingleAsync()).ClaimedAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task AClaimWhoseSaveFailsKeepsTheMailAndLeavesTheBagAndPurse()
+    {
+        var faults = new ClaimSaveFaults();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        bob.Money = Purse;
+        var experience = bob.Experience;
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Gift", "A gift.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, Held, 1),
+            new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, MailedGold),
+            new MailAttachmentDraft(MailAttachmentKind.Experience, 0, MailedGold),
+        ]);
+        faults.Armed = true;
+
+        await mail.ClaimAsync(bob, await StoredMailIdAsync(provider));
+
+        CountInBag(bob, Apple).Should().Be(0);
+        bob.Money.Should().Be(Purse);
+        bob.Experience.Should().Be(experience, "a reward that cannot be undone is paid only once the claim is saved");
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Failed);
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.AsNoTracking().SingleAsync()).ClaimedAt.Should().BeNull();
+    }
+
+    [Fact]
     public async Task ClaimAsync_IsRefusedWhileTrading()
     {
         using var provider = Provider();
@@ -796,6 +846,23 @@ public class MailServiceTests : GameTestBase
     {
         using var scope = provider.CreateScope();
         return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.CountAsync();
+    }
+
+    private static async Task<int> StoredMailIdAsync(ServiceProvider provider)
+    {
+        using var scope = provider.CreateScope();
+        return (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.AsNoTracking().SingleAsync()).Id;
+    }
+
+    private sealed class ClaimSaveFaults : SaveChangesInterceptor
+    {
+        public bool Armed { get; set; }
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            Armed && eventData.Context?.ChangeTracker.Entries<MailAttachment>().Any(entry => entry.State == EntityState.Modified) == true
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
     private sealed class MailSaveFaults : SaveChangesInterceptor
