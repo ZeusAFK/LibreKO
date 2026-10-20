@@ -207,9 +207,15 @@ public class ItemMoveService(
             return;
         }
 
+        // A stack moved onto its own slot would merge into itself and then be cleared.
+        if (sourceIndex == destinationIndex)
+        {
+            await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
         var splits = amount != ItemStackRule.WholeStack && amount != sourceItem.Count;
-        if (splits && (sourceIndex == destinationIndex
-                || !ItemStackRule.Splits(direction, sourceItem, destinationItem, itemData, amount)))
+        if (splits && !ItemStackRule.Splits(direction, sourceItem, destinationItem, itemData, amount))
         {
             logger.LogDebug(
                 "Rejected item move for {Name}: cannot split {Amount} of {Count} from slot {SourceIndex} to {DestinationIndex}",

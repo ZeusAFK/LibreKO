@@ -30,6 +30,7 @@ public class ItemAuthorityTests : GameTestBase
     private const short WornDurability = 37;
     private const long RentalEnds = 1_900_000_000;
     private const ushort Stack = 5;
+    private const int SealedCharacter = 4242;
     private const byte Moved = 1;
     private const int Purse = 1000;
     private const int GenieGold = 20_000;
@@ -218,6 +219,37 @@ public class ItemAuthorityTests : GameTestBase
         bundle.TryClaimSlot(1, seen).Should().BeFalse("another entry of the same item now sits where this one was seen");
         bundle.Items.Should().Equal(second, third);
         bundle.TryClaimSlot(0, seen).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AStackMovedOntoItsOwnSlotStaysWhole()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2015);
+        Put(Bag(player, BagFirst), Potion).Count = Stack;
+
+        await MoveItem(provider, client, ItemMoveDirection.InventoryToInventory, Potion, BagFirst, BagFirst);
+
+        Bag(player, BagFirst).ItemId.Should().Be(Potion, "a stack merged into itself would be cleared");
+        Bag(player, BagFirst).Count.Should().Be(Stack);
+    }
+
+    [Fact]
+    public async Task ARingHoldingASealedCharacterIsNotDestroyed()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2016);
+        var ring = Put(Bag(player, BagFirst), InventoryConstants.CypherRing);
+        ring.UniqueId = SealedCharacter;
+        var remove = new Packet(GameOpcodes.GS_ITEM_REMOVE);
+        remove.WriteByte((byte)ItemRemoveSource.Inventory);
+        remove.WriteByte(BagFirst);
+        remove.WriteInt(InventoryConstants.CypherRing);
+
+        await provider.GetRequiredService<IItemRemoveService>().HandleAsync(client, Reset(remove));
+
+        ring.ItemId.Should().Be(InventoryConstants.CypherRing, "destroying the ring would lose the character sealed in it");
+        ring.UniqueId.Should().Be(SealedCharacter);
     }
 
     [Fact]
