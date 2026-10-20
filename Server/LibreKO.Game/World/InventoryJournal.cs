@@ -5,6 +5,12 @@ namespace LibreKO.Game.World;
 
 public sealed class InventoryJournal(UserSession session)
 {
+    private static readonly int[] Carried =
+    [
+        .. Enumerable.Range(InventoryConstants.InventoryStart, InventoryConstants.HaveMax),
+        .. Enumerable.Range(InventoryConstants.MagicBagStart, InventoryConstants.MagicBagTotal),
+    ];
+
     private readonly Dictionary<int, ItemSlot> slots = [];
     private readonly Dictionary<int, ItemSlot> written = [];
     private readonly Dictionary<int, (MerchantItem? Entry, ushort Count)> stall = [];
@@ -111,18 +117,24 @@ public sealed class InventoryJournal(UserSession session)
         return true;
     });
 
-    // Gold and stacks go back by what the change moved; a slot changed since in any other way stays as the later change left it.
+    // What the change made is taken back wherever it lies, and what it took goes back only once all it made is back.
     public void Restore()
     {
+        var made = new List<(int Index, ItemSlot Part)>();
+        var took = new List<(int Index, ItemSlot Part, bool Stacks)>();
         foreach (var (index, before) in slots)
         {
-            var now = session.Inventory[index];
-            if (!written.TryGetValue(index, out var left) || Same(now, left))
-                CopyInto(before, now);
-            else if (now.ItemId == left.ItemId && (before.IsEmpty || before.ItemId == left.ItemId))
-                MoveCountBack(now, left.Count - (before.IsEmpty ? 0 : before.Count));
-            else if (Taken(before, left) is { } taken)
-                PutBack(taken);
+            if (written.TryGetValue(index, out var left))
+                Split(index, before, left, made, took);
+            else
+                CopyInto(before, session.Inventory[index]);
+        }
+
+        var missing = made.Sum(entry => TakeBack(entry.Index, entry.Part));
+        if (missing == 0)
+        {
+            foreach (var (index, part, stacks) in took)
+                PutBack(index, part, stacks);
         }
 
         foreach (var (index, (entry, count)) in stall)
@@ -135,42 +147,72 @@ public sealed class InventoryJournal(UserSession session)
         session.Money = (int)Math.Clamp(session.Money - moneyMoved, 0, ExchangePacketConstants.CoinMax);
     }
 
-    private static ItemSlot? Taken(ItemSlot before, ItemSlot left)
+    private static void Split(int index, ItemSlot before, ItemSlot left,
+        List<(int Index, ItemSlot Part)> made, List<(int Index, ItemSlot Part, bool Stacks)> took)
     {
-        if (before.IsEmpty || (before.ItemId == left.ItemId && left.Count >= before.Count))
-            return null;
+        var stacks = before.Count > 1;
+        if (!before.IsEmpty && !left.IsEmpty && !Alike(before, left))
+        {
+            made.Add((index, Copy(left)));
+            took.Add((index, Copy(before), stacks));
+            return;
+        }
 
-        var taken = Copy(before);
-        if (before.ItemId == left.ItemId)
-            taken.Count = (ushort)(before.Count - left.Count);
-        return taken;
+        var moved = CountOf(left) - CountOf(before);
+        if (moved > 0)
+            made.Add((index, Part(left, moved)));
+        else if (moved < 0)
+            took.Add((index, Part(before, -moved), stacks));
     }
 
-    // What the change took from a slot another change has filled since goes back into a free slot.
-    private void PutBack(ItemSlot taken)
+    // The slot the change filled gives first, then the rest of the carried bag.
+    private int TakeBack(int index, ItemSlot part)
+    {
+        var owed = (int)part.Count;
+        foreach (var slot in Carried.Prepend(index).Distinct().Select(at => session.Inventory[at]).Where(slot => SameItem(slot, part)))
+        {
+            var taken = Math.Min(owed, slot.Count);
+            slot.Count = (ushort)(slot.Count - taken);
+            if (slot.Count == 0)
+                slot.Clear();
+            owed -= taken;
+            if (owed == 0)
+                break;
+        }
+
+        return owed;
+    }
+
+    // Only what the change cut from a stack goes back onto a stack; a single item needs an empty slot.
+    private void PutBack(int index, ItemSlot part, bool stacks)
     {
         var item = new ExchangeItem
         {
-            ItemId = taken.ItemId, Count = taken.Count, Durability = taken.Durability, Flag = taken.Flag,
-            ExpiresAt = taken.ExpiresAt, UniqueId = taken.UniqueId,
+            ItemId = part.ItemId, Count = part.Count, Durability = part.Durability, Flag = part.Flag,
+            ExpiresAt = part.ExpiresAt, UniqueId = part.UniqueId, Countable = stacks,
         };
-        var index = ItemPlacement.FindForDelivery(session.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item);
-        if (index >= 0)
-            ItemPlacement.Put(session.Inventory[index], item);
+        var home = session.Inventory[index];
+        var target = home.IsEmpty || ItemPlacement.StacksOnto(home, item)
+            ? index
+            : ItemPlacement.FindForReturn(session.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item);
+        if (target >= 0)
+            ItemPlacement.Put(session.Inventory[target], item);
     }
 
-    private static void MoveCountBack(ItemSlot slot, int moved)
+    private static int CountOf(ItemSlot slot) => slot.IsEmpty ? 0 : slot.Count;
+
+    private static ItemSlot Part(ItemSlot slot, int count)
     {
-        var count = Math.Min(slot.Count - moved, InventoryConstants.MaxStackCount);
-        if (count > 0)
-            slot.Count = (ushort)count;
-        else
-            slot.Clear();
+        var part = Copy(slot);
+        part.Count = (ushort)count;
+        return part;
     }
 
-    private static bool Same(ItemSlot slot, ItemSlot other) =>
-        slot.ItemId == other.ItemId && slot.Count == other.Count && slot.Durability == other.Durability
-        && slot.Flag == other.Flag && slot.ExpiresAt == other.ExpiresAt && slot.UniqueId == other.UniqueId;
+    private static bool SameItem(ItemSlot slot, ItemSlot other) =>
+        !slot.IsEmpty && slot.ItemId == other.ItemId && slot.UniqueId == other.UniqueId
+        && slot.Flag == other.Flag && slot.ExpiresAt == other.ExpiresAt;
+
+    private static bool Alike(ItemSlot slot, ItemSlot other) => SameItem(slot, other) && slot.Durability == other.Durability;
 
     public static void CopyInto(ItemSlot from, ItemSlot to)
     {

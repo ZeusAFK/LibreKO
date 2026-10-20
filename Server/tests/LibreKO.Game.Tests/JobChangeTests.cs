@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
@@ -26,6 +27,9 @@ public class JobChangeTests : GameTestBase
     private const short PlayerHp = 100;
     private const int StunRow = 110560;
     private const short EarnedPoints = 3;
+    private const byte TrainedStrength = 90;
+    private const byte TrainedMastery = 4;
+    private const byte SpentPoints = 2;
 
     [Fact]
     public async Task AJobChangeSpendsTheTokenAndSavesTheClassAndRaceTogether()
@@ -208,6 +212,55 @@ public class JobChangeTests : GameTestBase
 
         player.Class.Should().Be(Warrior);
         player.StatPoints.Should().Be((short)(points + EarnedPoints), "the undo takes back what the change gave, not what came after it");
+    }
+
+    [Fact]
+    public async Task StatPointsSpentWhileAFailedJobChangeIsSavedComeBackOutOfTheStats()
+    {
+        UserSession? player = null;
+        var spent = new DuringSave
+        {
+            Meanwhile = () =>
+            {
+                player!.StatPoints -= SpentPoints;
+                player.Magic += SpentPoints;
+            },
+        };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(spent, new ClassFaults())));
+        player = Player(provider);
+        (player.Strength, player.StatPoints) = (TrainedStrength, 0);
+        var magic = player.Magic;
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Class.Should().Be(Warrior);
+        player.Magic.Should().Be(magic, "the points spent came from the change, so the magic they bought goes with it");
+        player.Strength.Should().Be(TrainedStrength, "only a stat raised since pays the points back");
+        player.StatPoints.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task MasteryPointsSpentWhileAFailedJobChangeIsSavedComeBackOutOfTheTree()
+    {
+        UserSession? player = null;
+        const int tree = ProgressionTable.MasteryClassFirstSlot;
+        var spent = new DuringSave
+        {
+            Meanwhile = () =>
+            {
+                player!.SkillPoints[ProgressionTable.MasteryPoolSlot] -= SpentPoints;
+                player.SkillPoints[tree] += SpentPoints;
+            },
+        };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(spent, new ClassFaults())));
+        player = Player(provider);
+        player.SkillPoints[tree] = TrainedMastery;
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Class.Should().Be(Warrior);
+        player.SkillPoints[tree].Should().Be(TrainedMastery, "the points spent came from the change, so the mastery they bought goes with it");
+        player.SkillPoints[ProgressionTable.MasteryPoolSlot].Should().Be(0);
     }
 
     [Fact]

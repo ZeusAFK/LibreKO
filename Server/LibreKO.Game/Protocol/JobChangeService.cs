@@ -21,8 +21,9 @@ public class JobChangeService(
     ICombatNotificationService combatNotificationService,
     ILogger<JobChangeService> logger) : IJobChangeService
 {
-    private sealed record Job(short Class, byte Race, byte Strength, byte Stamina, byte Dexterity, byte Intelligence, byte Magic,
-        short StatPoints, byte[] SkillPoints);
+    private const int FreeStats = 0;
+
+    private sealed record Job(short Class, byte Race, int[] Stats, int[] Skills);
 
     public async Task HandlePromoteNoviceAsync(UserSession session, byte changeType, byte newJob)
     {
@@ -137,23 +138,47 @@ public class JobChangeService(
         return true;
     }
 
-    private static Job JobOf(UserSession session) => new(
-        session.Class, session.Race, session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic,
-        session.StatPoints, (byte[])session.SkillPoints.Clone());
+    private static Job JobOf(UserSession session) => new(session.Class, session.Race, StatsOf(session), SkillsOf(session));
+
+    // Free points come first, at FreeStats.
+    private static int[] StatsOf(UserSession session) =>
+        [session.StatPoints, session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic];
+
+    private static int[] SkillsOf(UserSession session) => [.. session.SkillPoints.Select(points => (int)points)];
 
     // The class goes back whole, and stats and points by what the change moved, so points earned meanwhile stay.
     private static void Restore(UserSession session, Job before, Job after)
     {
         (session.Class, session.Race) = (before.Class, before.Race);
-        session.Strength = Back(session.Strength, before.Strength, after.Strength);
-        session.Stamina = Back(session.Stamina, before.Stamina, after.Stamina);
-        session.Dexterity = Back(session.Dexterity, before.Dexterity, after.Dexterity);
-        session.Intelligence = Back(session.Intelligence, before.Intelligence, after.Intelligence);
-        session.Magic = Back(session.Magic, before.Magic, after.Magic);
-        session.StatPoints = (short)Math.Clamp(session.StatPoints + before.StatPoints - after.StatPoints, 0, short.MaxValue);
-        for (var index = 0; index < before.SkillPoints.Length; index++)
-            session.SkillPoints[index] = Back(session.SkillPoints[index], before.SkillPoints[index], after.SkillPoints[index]);
+        var stats = Back(StatsOf(session), before.Stats, after.Stats, FreeStats);
+        if (stats is [var points, var strength, var stamina, var dexterity, var intelligence, var magic])
+        {
+            session.StatPoints = (short)Math.Min(points, short.MaxValue);
+            (session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic) =
+                (Capped(strength), Capped(stamina), Capped(dexterity), Capped(intelligence), Capped(magic));
+        }
+
+        var skills = Back(SkillsOf(session), before.Skills, after.Skills, ProgressionTable.MasteryPoolSlot);
+        for (var index = 0; index < skills.Length; index++)
+            session.SkillPoints[index] = Capped(skills[index]);
     }
 
-    private static byte Back(byte now, byte before, byte after) => (byte)Math.Clamp(now + before - after, 0, byte.MaxValue);
+    // Points spent since the change come back out of what they raised, so the undo leaves no more than there was.
+    private static int[] Back(int[] now, int[] before, int[] after, int pool)
+    {
+        var back = now.Select((value, index) => value + before[index] - after[index]).ToArray();
+        for (var index = 0; index < back.Length && back[pool] < 0; index++)
+        {
+            if (index == pool)
+                continue;
+
+            var spent = Math.Clamp(now[index] - after[index], 0, -back[pool]);
+            back[index] -= spent;
+            back[pool] += spent;
+        }
+
+        return [.. back.Select(value => Math.Max(value, 0))];
+    }
+
+    private static byte Capped(int value) => (byte)Math.Min(value, byte.MaxValue);
 }
