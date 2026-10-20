@@ -207,7 +207,7 @@ public class ItemMoveService(
             return;
         }
 
-        // A stack moved onto its own slot would merge into itself and then be cleared.
+        // A stack is never moved onto its own slot.
         if (sourceIndex == destinationIndex)
         {
             await SendItemMoveResponseAsync(session, 0);

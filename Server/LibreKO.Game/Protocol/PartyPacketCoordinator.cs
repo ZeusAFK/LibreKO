@@ -342,7 +342,7 @@ public class PartyPacketCoordinator(
         if (!await InviteAllowedAsync(inviter, target, boardType))
             return;
 
-        // The inviter's party is read once, so the checks and the join are about the same party.
+        // The inviter's party is read once, and the checks and the join are about that party.
         var index = inviter.PartyIndex;
         var created = index < 0;
         if (created)

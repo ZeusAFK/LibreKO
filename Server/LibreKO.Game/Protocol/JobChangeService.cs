@@ -26,7 +26,7 @@ public class JobChangeService(
 
     public async Task HandlePromoteNoviceAsync(UserSession session, byte changeType, byte newJob)
     {
-        // A job change refills HP and MP, so it is no revive and no way out of a fight.
+        // No job change while busy, held or fighting.
         if (!Enum.IsDefined((JobChangeTarget)newJob) || changeType is > 1
             || session.IsBusy || session.IsHeld || session.IsInCombat)
         {

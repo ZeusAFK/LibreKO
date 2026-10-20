@@ -28,6 +28,7 @@ public class KingGovernancePacketService(
     private const int KingsSceptor = 910_074_000;
     private const int MaxIntroLength = 200;
     private const int MaxRoyalOrderLength = 255;
+    private const int WeatherCost = 100_000;
 
     public async Task HandleTaxAsync(UserSession session, Packet packet)
     {
@@ -357,7 +358,7 @@ public class KingGovernancePacketService(
             return;
         }
 
-        if (!KingSystemRuntimeService.TrySpendTreasury(kingData, 100_000))
+        if (!KingSystemRuntimeService.TrySpendTreasury(kingData, WeatherCost))
         {
             await session.Client.SendPacket(KingPacketWriter.EventResult(KingPacketConstants.EventWeather, KingPacketConstants.EventTreasuryShort));
             return;

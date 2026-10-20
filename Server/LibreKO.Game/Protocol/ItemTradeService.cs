@@ -233,7 +233,7 @@ public class ItemTradeService(
         var itemId = packet.ReadInt();
         packet.ReadInt();
         var itemData = gameDataService.GetItem(itemId);
-        // The client names the merchant's kind, not the merchant, so the one spoken to stands in.
+        // The merchant spoken to stands in for the kind the client names.
         if (!NpcPresence.IsAt(sessionManager, session, RepurchaseNpcId) || itemData == null || session.IsBusy)
         {
             await client.SendPacket(ItemTradePacketWriter.RepurchaseRefused(itemId, RepurchaseGenericError));

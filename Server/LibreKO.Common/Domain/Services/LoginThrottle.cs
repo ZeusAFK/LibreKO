@@ -33,8 +33,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
     private long nextPruneTicks;
 
-    // An attempt is counted before its password is checked, so attempts sent at once cannot all slip under the limit;
-    // an address over the limit, for one login or in all, waits out the window before a password is checked.
+    // An attempt counts before its password is checked, and an address over a limit waits out the window.
     public bool TryAttempt(string address, string login)
     {
         var name = Normal(login);
@@ -50,7 +49,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         return true;
     }
 
-    // A name guessed from many addresses is answered more slowly, so its owner is slowed but never locked out.
+    // A name guessed from many addresses is answered more slowly but never locked.
     public TimeSpan SlowdownFor(string login)
     {
         if (!byName.TryGetValue(Normal(login), out var failures))
@@ -110,7 +109,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
 
     private int Count(ConcurrentDictionary<string, Failures> table, string key)
     {
-        // Expired entries are swept at most once a minute, so a flood of new names cannot make every attempt sweep.
+        // Expired entries are swept at most once a minute.
         var due = Volatile.Read(ref nextPruneTicks);
         if (table.Count > TrackedBeforePruning && Now.UtcTicks >= due
             && Interlocked.CompareExchange(ref nextPruneTicks, (Now + PruneInterval).UtcTicks, due) == due)

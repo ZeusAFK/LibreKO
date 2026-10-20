@@ -90,7 +90,7 @@ public sealed class InventoryJournal(UserSession session)
         moneyMoved += amount;
     }
 
-    // A restore looks for what the change left, so it is taken under the same lock as the change.
+    // What the change left is taken under the same lock as the change.
     public void Seal()
     {
         written.Clear();

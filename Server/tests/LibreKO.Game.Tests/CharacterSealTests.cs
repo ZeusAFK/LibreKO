@@ -30,11 +30,12 @@ public class CharacterSealTests : GameTestBase
     private const int Plain = 389010000;
     private const int TradeLocked = 389020000;
     private const int Unknown = 389030000;
+    private const int NoTradeNumber = 900_100_000;
     private const byte TradeLockedRace = 70;
     private const int PetSerial = 31;
     private const int CarriedAt = InventoryConstants.InventoryStart;
 
-    public enum Carried { Bound, Rented, Timed, TradeLockedData, PetLink, UnknownItem }
+    public enum Carried { Bound, Rented, Timed, TradeLockedData, NoTradeNumber, PetLink, UnknownItem }
 
     private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null) => CreateProvider(db =>
     {
@@ -49,6 +50,7 @@ public class CharacterSealTests : GameTestBase
         gameData.GetItem(InventoryConstants.CypherRing).Returns(new ItemData { Num = InventoryConstants.CypherRing, Kind = CharacterSealService.RingKind, Duration = 1 });
         gameData.GetItem(Plain).Returns(new ItemData { Num = Plain, Duration = 1 });
         gameData.GetItem(TradeLocked).Returns(new ItemData { Num = TradeLocked, Duration = 1, Race = TradeLockedRace });
+        gameData.GetItem(NoTradeNumber).Returns(new ItemData { Num = NoTradeNumber, Duration = 1 });
     }, configureServices: configureServices);
 
     [Theory]
@@ -56,6 +58,7 @@ public class CharacterSealTests : GameTestBase
     [InlineData(Carried.Rented, CharacterSealService.RentalItemRefusal)]
     [InlineData(Carried.Timed, CharacterSealService.RentalItemRefusal)]
     [InlineData(Carried.TradeLockedData, CharacterSealService.BoundItemRefusal)]
+    [InlineData(Carried.NoTradeNumber, CharacterSealService.BoundItemRefusal)]
     [InlineData(Carried.PetLink, CharacterSealService.BoundItemRefusal)]
     [InlineData(Carried.UnknownItem, CharacterSealService.BoundItemRefusal)]
     public async Task ACharacterCarryingWhatCouldNotBeTradedIsNotSealed(Carried what, short refusal)
@@ -75,6 +78,9 @@ public class CharacterSealTests : GameTestBase
                 break;
             case Carried.TradeLockedData:
                 item.ItemId = TradeLocked;
+                break;
+            case Carried.NoTradeNumber:
+                item.ItemId = NoTradeNumber;
                 break;
             case Carried.PetLink:
                 item.UniqueId = PetSerial;

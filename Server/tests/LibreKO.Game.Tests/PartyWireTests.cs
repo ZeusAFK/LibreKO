@@ -494,7 +494,7 @@ public class PartyWireTests : GameTestBase
         players[^1].IsInParty.Should().BeFalse("a player with no seat holds no party's index");
     }
 
-    // Each round shifts one side a little later than the other, so the two requests meet at every point of each other.
+    // Each round starts one side a little later than the other.
     private static async Task AtOnceAsync(int round, Func<Task> first, Func<Task> second)
     {
         var shift = round % RaceSweep;
