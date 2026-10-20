@@ -23,6 +23,7 @@ public class JobChangeTests : GameTestBase
     private const byte Level = 10;
     private const short PlayerHp = 100;
     private const int StunRow = 110560;
+    private const short EarnedPoints = 3;
 
     [Fact]
     public async Task AJobChangeSpendsTheTokenAndSavesTheClassAndRaceTogether()
@@ -154,6 +155,21 @@ public class JobChangeTests : GameTestBase
         player.Strength.Should().Be(strength);
         Token(player).ItemId.Should().Be(InventoryConstants.ItemJobChange);
         (await StoredAsync(provider)).Class.Should().Be(Warrior);
+    }
+
+    [Fact]
+    public async Task PointsEarnedWhileAFailedJobChangeWaitsAreKept()
+    {
+        UserSession? player = null;
+        var earned = new DuringWarehouseRead { Meanwhile = () => player!.StatPoints += EarnedPoints };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(earned, new ClassFaults())));
+        player = Player(provider);
+        var points = player.StatPoints;
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Class.Should().Be(Warrior);
+        player.StatPoints.Should().Be((short)(points + EarnedPoints), "a failed change puts back the job as it found it, not as it was asked for");
     }
 
     private static ServiceProvider Provider(Action<IServiceCollection>? configure = null) => CreateProvider(db =>

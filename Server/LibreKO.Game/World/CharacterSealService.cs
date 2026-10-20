@@ -133,7 +133,7 @@ public sealed class CharacterSealService(
                 return false;
             }
 
-            if (!session.WithLock(_ => MakeRing(journal.Slot(position), scrollId, target.Id)))
+            if (!journal.Apply(_ => MakeRing(journal.Slot(position), scrollId, target.Id)))
                 return false;
 
             target.Sealed = true;
@@ -191,7 +191,7 @@ public sealed class CharacterSealService(
                 || !CharacterRaceNations.BelongsTo(sealedCharacter.Race, session.Nation))
                 return false;
 
-            if (!session.WithLock(_ => TakeRing(journal.Slot(position), ringId, uniqueId)))
+            if (!journal.Apply(_ => TakeRing(journal.Slot(position), ringId, uniqueId)))
                 return false;
 
             sealedCharacter.Sealed = false;

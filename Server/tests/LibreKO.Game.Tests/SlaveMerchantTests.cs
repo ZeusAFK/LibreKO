@@ -36,6 +36,8 @@ public class SlaveMerchantTests : GameTestBase
     private const int InstanceRoom = 4;
     private const long RentalEnds = 4_102_444_800;
     private const ushort Kept = 3;
+    private const ushort Owned = 4;
+    private const ushort PickedUp = 3;
 
     [Fact]
     public async Task ACertificateAddsItsHoursAndIsUsedUp()
@@ -381,6 +383,35 @@ public class SlaveMerchantTests : GameTestBase
         var record = (await Records(provider)).Single();
         record.EarnedNoah.Should().Be(0);
         record.ItemsJson.Should().Contain("\"Count\":5");
+    }
+
+    [Fact]
+    public async Task AFailedSaleKeepsWhatTheBuyerPickedUpMeanwhile()
+    {
+        var faults = new SaveFaults();
+        using var provider = Provider(faults);
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, 5);
+        Stage(owner, Scroll, StackSlot, count: 5, stock: 5);
+        await Insert(provider, owner, toSlave: true);
+        var slave = Slave(provider);
+        var (buyer, _) = Player(provider, BuyerId, "Buyer");
+        var stack = buyer.Inventory[InventoryConstants.SlotMax];
+        (stack.ItemId, stack.Count, stack.Durability) = (Scroll, Owned, 1);
+        var pickedUp = false;
+        faults.Fails = _ =>
+        {
+            if (!pickedUp)
+                stack.Count += PickedUp;
+            pickedUp = true;
+            return true;
+        };
+
+        await Buy(provider, slave, count: 2);
+
+        faults.Fails = _ => false;
+        stack.Count.Should().Be(Owned + PickedUp, "the undo takes back the scrolls bought and keeps the ones picked up");
+        slave.Trade.MerchantItems[0].Count.Should().Be(5);
     }
 
     [Fact]

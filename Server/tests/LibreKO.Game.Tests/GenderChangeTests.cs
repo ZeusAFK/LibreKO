@@ -23,6 +23,7 @@ public class GenderChangeTests : GameTestBase
     private const byte NoItem = 2;
     private const byte NewFace = 5;
     private const int NewHair = 0x04_10_20_30;
+    private const int RestyledHair = 0x01_02_03_04;
 
     [Theory]
     [InlineData(101, new byte[] { 1 })]
@@ -77,6 +78,21 @@ public class GenderChangeTests : GameTestBase
         await using var scope = provider.CreateAsyncScope();
         (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.AsNoTracking().SingleAsync(c => c.Name == "Changer"))
             .Race.Should().Be((byte)CharacterRace.ElMoradMale);
+    }
+
+    [Fact]
+    public async Task ALookChangedWhileAFailedChangeWaitsIsKept()
+    {
+        UserSession? changer = null;
+        var restyle = new DuringWarehouseRead { Meanwhile = () => changer!.Hair = RestyledHair };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(restyle, new RaceFaults())));
+        IClient client;
+        (changer, _, client) = await Player(provider, 208, (byte)CharacterRace.ElMoradMale, carriesItem: true);
+
+        await Ask(provider, client, (byte)CharacterRace.ElMoradFemale);
+
+        changer.Race.Should().Be((byte)CharacterRace.ElMoradMale);
+        changer.Hair.Should().Be(RestyledHair, "a failed change puts back the look as it found it");
     }
 
     private sealed class RaceFaults : SaveChangesInterceptor

@@ -182,7 +182,7 @@ public class MiscPacketCoordinator(
             {
                 var character = await db.Characters.FindAsync(session.CharacterId);
                 if (character == null || await db.Characters.AnyAsync(other => other.Name == newName)
-                    || !session.WithLock(_ => journal.TakeOne(ScrollOfIdentity)))
+                    || !journal.Apply(_ => journal.TakeOne(ScrollOfIdentity)))
                     return false;
 
                 character.Name = newName;
@@ -268,7 +268,7 @@ public class MiscPacketCoordinator(
             {
                 var stored = await db.Knights.FindAsync(clan.Id);
                 if (stored == null || await db.Knights.AnyAsync(other => other.Id != clan.Id && other.Name == newName)
-                    || !session.WithLock(_ => journal.TakeOne(ClanNameScroll)))
+                    || !journal.Apply(_ => journal.TakeOne(ClanNameScroll)))
                     return false;
 
                 stored.Name = newName;

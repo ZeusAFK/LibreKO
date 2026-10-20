@@ -66,12 +66,16 @@ public class JobChangeService(
         var oldClass = session.Class;
         var oldRace = session.Race;
         var journal = new InventoryJournal(session);
-        var before = session.WithLock(JobOf);
+        Job? before = null;
         // The token and the new job are saved together, and the job's race with them.
         var outcome = await statePersister.CommitAsync(session, async db =>
         {
             var character = await db.Characters.FindAsync(session.CharacterId);
-            if (character == null || !session.WithLock(s => TakeToken(s, journal, tokenId, newClass, newRace)))
+            if (character == null || !journal.Apply(s =>
+                {
+                    before = JobOf(s);
+                    return TakeToken(s, journal, tokenId, newClass, newRace);
+                }))
                 return false;
 
             character.Race = newRace;
@@ -79,7 +83,7 @@ public class JobChangeService(
         }, () => session.WithLock(s =>
         {
             journal.Restore();
-            Restore(s, before);
+            Restore(s, before!);
         }));
         if (outcome != StateCommit.Saved)
         {

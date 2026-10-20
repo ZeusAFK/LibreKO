@@ -1,12 +1,14 @@
 ﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Game.Protocol;
 
 namespace LibreKO.Game.World;
 
 public sealed class InventoryJournal(UserSession session)
 {
     private readonly Dictionary<int, ItemSlot> slots = [];
+    private readonly Dictionary<int, ItemSlot> written = [];
     private readonly Dictionary<int, (MerchantItem? Entry, ushort Count)> stall = [];
-    private int? money;
+    private long moneyMoved;
 
     public IReadOnlyCollection<int> TouchedSlots => slots.Keys;
 
@@ -84,14 +86,43 @@ public sealed class InventoryJournal(UserSession session)
 
     public void AddMoney(long amount)
     {
-        money ??= session.Money;
         session.Money = checked((int)(session.Money + amount));
+        moneyMoved += amount;
     }
 
+    // A restore looks for what the change left, so it is taken under the same lock as the change.
+    public void Seal()
+    {
+        written.Clear();
+        foreach (var index in slots.Keys)
+            written[index] = Copy(session.Inventory[index]);
+    }
+
+    public T Apply<T>(Func<UserSession, T> change) => session.WithLock(active =>
+    {
+        var result = change(active);
+        Seal();
+        return result;
+    });
+
+    public void Apply(Action<UserSession> change) => Apply(active =>
+    {
+        change(active);
+        return true;
+    });
+
+    // Gold and stacks go back by what the change moved; a slot changed since in any other way stays as the later change left it.
     public void Restore()
     {
         foreach (var (index, before) in slots)
-            CopyInto(before, session.Inventory[index]);
+        {
+            var now = session.Inventory[index];
+            if (!written.TryGetValue(index, out var left) || Same(now, left))
+                CopyInto(before, now);
+            else if (now.ItemId == left.ItemId && (before.IsEmpty || before.ItemId == left.ItemId))
+                MoveCountBack(now, left.Count - (before.IsEmpty ? 0 : before.Count));
+        }
+
         foreach (var (index, (entry, count)) in stall)
         {
             session.Trade.MerchantItems[index] = entry!;
@@ -99,9 +130,21 @@ public sealed class InventoryJournal(UserSession session)
                 entry.Count = count;
         }
 
-        if (money is { } previous)
-            session.Money = previous;
+        session.Money = (int)Math.Clamp(session.Money - moneyMoved, 0, ExchangePacketConstants.CoinMax);
     }
+
+    private static void MoveCountBack(ItemSlot slot, int moved)
+    {
+        var count = Math.Min(slot.Count - moved, InventoryConstants.MaxStackCount);
+        if (count > 0)
+            slot.Count = (ushort)count;
+        else
+            slot.Clear();
+    }
+
+    private static bool Same(ItemSlot slot, ItemSlot other) =>
+        slot.ItemId == other.ItemId && slot.Count == other.Count && slot.Durability == other.Durability
+        && slot.Flag == other.Flag && slot.ExpiresAt == other.ExpiresAt && slot.UniqueId == other.UniqueId;
 
     public static void CopyInto(ItemSlot from, ItemSlot to)
     {

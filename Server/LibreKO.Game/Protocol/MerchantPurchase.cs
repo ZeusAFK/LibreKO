@@ -60,6 +60,8 @@ public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, in
         if (RemainingCount == 0)
             merchantJournal.ClearStallEntry(merchantSlot);
 
+        buyerJournal.Seal();
+        merchantJournal.Seal();
         return true;
     }
 

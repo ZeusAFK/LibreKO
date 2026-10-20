@@ -135,7 +135,7 @@ public class SlaveMerchantService(
         var outcome = await statePersister.CommitAsync(owner, async db =>
         {
             var time = await db.SlaveMerchantTimes.FindAsync(owner.CharacterId);
-            if (time == null || time.Hours < 1 || !owner.WithLock(active => Take(active, staged, journal)))
+            if (time == null || time.Hours < 1 || !journal.Apply(active => Take(active, staged, journal)))
                 return false;
 
             time.Hours--;
@@ -297,7 +297,7 @@ public class SlaveMerchantService(
                 if (held.Count == 0)
                     return false;
 
-                owner.WithLock(active => TakeHome(active, held, journal, tally, db));
+                journal.Apply(active => TakeHome(active, held, journal, tally, db));
                 return true;
             }, () => owner.WithLock(_ => journal.Restore()));
 
@@ -394,7 +394,7 @@ public class SlaveMerchantService(
                 ? StateCommit.Unchanged
                 : await statePersister.CommitAsync(owner, async db =>
                 {
-                    if (!owner.WithLock(_ => TakeOne(owner, slotIndex, itemId, journal)))
+                    if (!journal.Apply(_ => TakeOne(owner, slotIndex, itemId, journal)))
                         return false;
 
                     hours = await AddHoursAsync(db, owner.CharacterId, added);

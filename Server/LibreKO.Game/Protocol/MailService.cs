@@ -314,7 +314,7 @@ public class MailService(
                 return false;
 
             claim.Tried = chosen.Count(a => a.Remaining > 0);
-            session.WithLock(_ => Deliver(session, chosen, journal, claim));
+            journal.Apply(_ => Deliver(session, chosen, journal, claim));
             claim.GoldWaiting = chosen.Any(a => a.Remaining > 0 && a.Kind == MailAttachmentKind.Gold);
             claim.ItemsWaiting = chosen.Any(a => a.Remaining > 0 && a.Kind != MailAttachmentKind.Gold);
             if (mail.Attachments.All(a => a.Remaining == 0))

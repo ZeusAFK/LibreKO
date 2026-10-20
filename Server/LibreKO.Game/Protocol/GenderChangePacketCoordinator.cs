@@ -47,17 +47,17 @@ public class GenderChangePacketCoordinator(
             return;
         }
 
-        var oldRace = session.Race;
-        var (oldFace, oldHair) = (session.Face, session.Hair);
+        var (oldRace, oldFace, oldHair) = (session.Race, session.Face, session.Hair);
         var journal = new InventoryJournal(session);
         // The item and the new look are saved together, and the race with them.
         var outcome = await statePersister.CommitAsync(session, async db =>
         {
             var character = await db.Characters.FindAsync(session.CharacterId);
-            if (character == null || !session.WithLock(s =>
+            if (character == null || !journal.Apply(s =>
                 {
                     if (!journal.TakeOne(GenderChangeItem))
                         return false;
+                    (oldRace, oldFace, oldHair) = (s.Race, s.Face, s.Hair);
                     (s.Race, s.Face, s.Hair) = (race, face, hair);
                     return true;
                 }))

@@ -318,7 +318,7 @@ public class ShoppingMallLetterMutationService(
                 return false;
             }
 
-            if (!session.WithLock(_ => TakeLetter(session, letter, journal, out slot)))
+            if (!journal.Apply(_ => TakeLetter(session, letter, journal, out slot)))
                 return false;
 
             coins = letter.Coins;

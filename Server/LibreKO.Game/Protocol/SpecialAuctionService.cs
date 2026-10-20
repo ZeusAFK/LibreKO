@@ -174,7 +174,7 @@ public class SpecialAuctionService(
                 answer = top?.CharacterId == session.CharacterId ? SpecialAuctionPacketWriter.AlreadyTopBidder
                     : lotBids.Any(b => b.CharacterId == session.CharacterId) ? SpecialAuctionPacketWriter.CollectFirst
                     : total < (top?.Total(CheckValue) ?? lot.StartPrice) + lot.Step ? SpecialAuctionPacketWriter.NotEnoughBalance
-                    : session.WithLock(s => TakeStake(s, journal, checkSlots, coins));
+                    : journal.Apply(s => TakeStake(s, journal, checkSlots, coins));
                 if (answer != SpecialAuctionPacketWriter.Success)
                     return false;
 
@@ -240,7 +240,7 @@ public class SpecialAuctionService(
                     && b.Serial == serial && b.Slot == slot && b.ItemId == itemId && b.Count == count && b.ClosedAt == null);
                 answer = bid == null ? SpecialAuctionPacketWriter.NoHistory
                     : bid.Status is AuctionBidStatus.Top or AuctionBidStatus.Won ? SpecialAuctionPacketWriter.AlreadyTopBidder
-                    : session.WithLock(s => GiveBack(s, journal, bid));
+                    : journal.Apply(s => GiveBack(s, journal, bid));
                 if (answer != SpecialAuctionPacketWriter.Success)
                     return false;
 
@@ -356,7 +356,7 @@ public class SpecialAuctionService(
                     return false;
                 }
 
-                if (!session.WithLock(_ => journal.DeliverAll(item, count)))
+                if (!journal.Apply(_ => journal.DeliverAll(item, count)))
                 {
                     answer = SpecialAuctionPacketWriter.BagFull;
                     return false;
