@@ -257,16 +257,13 @@ public class KnightsManagementPacketService(
         }
 
         var amount = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
-        if (amount <= 0
-            || amount > session.Loyalty
-            || session.Loyalty - amount < ClanRules.DonorKeepsNationalPoints)
+        if (!await loyaltyService.TryDonateToKnightsAsync(session, amount))
         {
             await session.Client.SendPacket(KnightsPacketWriter.DonateRefused(KnightsDonateResult.NotEnoughPoints));
             return;
         }
 
-        clan.ClanPointFund = (int)Math.Min((long)clan.ClanPointFund + amount, int.MaxValue);
-        await loyaltyService.DonateToKnightsAsync(session, amount);
+        ClanRules.AddToFund(clan, amount);
 
         using (var scope = scopeFactory.CreateScope())
         {

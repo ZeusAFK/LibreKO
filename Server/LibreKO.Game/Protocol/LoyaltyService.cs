@@ -10,7 +10,7 @@ public interface ILoyaltyService
     Task ChangeAsync(UserSession session, int changeAmount);
     Task AwardKillAsync(UserSession session, int amount);
     Task SetAsync(UserSession session, int loyalty);
-    Task DonateToKnightsAsync(UserSession session, int amount);
+    Task<bool> TryDonateToKnightsAsync(UserSession session, int amount);
 }
 
 public class LoyaltyService(
@@ -36,7 +36,7 @@ public class LoyaltyService(
 
     private async Task ApplyAsync(UserSession session, int changeAmount)
     {
-        var kept = changeAmount - AutoContribution(session, changeAmount);
+        var contribution = AutoContribution(session, changeAmount);
         session.WithLock(s =>
         {
             if (changeAmount < 0)
@@ -45,7 +45,8 @@ public class LoyaltyService(
                 return;
             }
 
-            s.Loyalty = Gained(s.Loyalty, kept);
+            s.KnightsPoints += contribution;
+            s.Loyalty = Gained(s.Loyalty, changeAmount - contribution);
             s.MonthlyLoyalty = Gained(s.MonthlyLoyalty, changeAmount);
             s.DailyLoyalty = Gained(s.DailyLoyalty, changeAmount);
         });
@@ -72,16 +73,19 @@ public class LoyaltyService(
             return 0;
 
         var contribution = Math.Min(gained, ClanRules.AutoContribution(clan.Members));
-        clan.ClanPointFund = (int)Math.Min((long)clan.ClanPointFund + contribution, int.MaxValue);
-        session.KnightsPoints += contribution;
+        ClanRules.AddToFund(clan, contribution);
         clanStanding.MarkDirty(clan.Id);
         return contribution;
     }
 
     public async Task SetAsync(UserSession session, int loyalty)
     {
-        var gained = loyalty > session.Loyalty;
-        session.Loyalty = Math.Max(0, loyalty);
+        var gained = session.WithLock(s =>
+        {
+            var raised = loyalty > s.Loyalty;
+            s.Loyalty = Math.Max(0, loyalty);
+            return raised;
+        });
 
         await session.Client.SendPacket(
             LoyaltyChangePacketWriter.Totals(session.Loyalty, session.MonthlyLoyalty));
@@ -90,10 +94,23 @@ public class LoyaltyService(
             await achievementProgressService.RefreshAsync(session);
     }
 
-    public async Task DonateToKnightsAsync(UserSession session, int amount)
+    public async Task<bool> TryDonateToKnightsAsync(UserSession session, int amount)
     {
-        session.Loyalty = Math.Max(0, session.Loyalty - amount);
-        session.KnightsPoints += amount;
+        if (!session.WithLock(s => TryDonate(s, amount)))
+            return false;
+
         await achievementProgressService.RefreshAsync(session);
+        return true;
+    }
+
+    // A donor keeps a floor of national points; the check and the payment are one step.
+    private static bool TryDonate(UserSession session, int amount)
+    {
+        if (amount <= 0 || (long)session.Loyalty - amount < ClanRules.DonorKeepsNationalPoints)
+            return false;
+
+        session.Loyalty -= amount;
+        session.KnightsPoints += amount;
+        return true;
     }
 }

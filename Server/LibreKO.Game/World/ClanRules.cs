@@ -1,4 +1,5 @@
-﻿using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Domain.Entities;
+using LibreKO.Common.Enums;
 
 namespace LibreKO.Game.World;
 
@@ -34,6 +35,33 @@ public static class ClanRules
     public const byte FameViceChief = 2;
     public const byte FameOfficer = 6;
     public const byte FameTrainee = 5;
+
+    private static readonly Lock Funds = new();
+
+    // A clan's point fund changes only under one lock, so changes arriving together all count.
+    public static void AddToFund(KnightsEntity clan, long amount)
+    {
+        lock (Funds)
+            clan.ClanPointFund = (int)Math.Clamp(clan.ClanPointFund + amount, 0, int.MaxValue);
+    }
+
+    public static bool TrySpendFund(KnightsEntity clan, int amount)
+    {
+        lock (Funds)
+        {
+            if (amount < 0 || clan.ClanPointFund < amount)
+                return false;
+
+            clan.ClanPointFund -= amount;
+            return true;
+        }
+    }
+
+    public static void ChangeFund(KnightsEntity clan, Action<KnightsEntity> change)
+    {
+        lock (Funds)
+            change(clan);
+    }
 
     public static short CapeForType(ClanType type, short current) => type switch
     {

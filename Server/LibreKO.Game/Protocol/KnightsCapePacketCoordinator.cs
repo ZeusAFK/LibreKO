@@ -114,12 +114,6 @@ public class KnightsCapePacketCoordinator(
                     return;
                 }
 
-                if (capeDef.BuyPrice > 0 && session.Money < capeDef.BuyPrice)
-                {
-                    await SendFailAsync(client, CapeResult.NotEnoughCoins);
-                    return;
-                }
-
                 reqCoins = capeDef.BuyPrice;
                 reqClanPoints = capeDef.BuyLoyalty;
             }
@@ -136,28 +130,20 @@ public class KnightsCapePacketCoordinator(
             reqClanPoints += PaintCostClanPoints;
         }
 
-        if (opcode == OpcodeNormalPurchase && session.Money < reqCoins)
-        {
-            await SendFailAsync(client, CapeResult.NotEnoughCoins);
-            return;
-        }
-
-        // Paint costs clan points however it is asked for.
-        if (reqClanPoints > 0 && clan.ClanPointFund < reqClanPoints)
+        // Paint costs clan points however it is asked for; the points, then the ticket and the coins, are each taken in one step.
+        if (!ClanRules.TrySpendFund(clan, reqClanPoints))
         {
             await SendFailAsync(client, CapeResult.NotEnoughClanPoints);
             return;
         }
 
-        // ── Apply changes ─────────────────────────────────────────────────
-        if (opcode == OpcodeTicketPurchase && capeId >= 0)
+        var useTicket = opcode == OpcodeTicketPurchase && capeId >= 0;
+        if (!session.WithLock(s => PayForCape(s, reqCoins, useTicket)))
         {
-            if (!ConsumeOneTicket(session))
-                return;
+            ClanRules.AddToFund(clan, reqClanPoints);
+            await SendFailAsync(client, useTicket ? CapeResult.MissingPurchaseItem : CapeResult.NotEnoughCoins);
+            return;
         }
-
-        session.Money -= reqCoins;
-        clan.ClanPointFund -= reqClanPoints;
 
         if (capeId >= 0) clan.Cape = capeId;
         if (applyingPaint)
@@ -201,6 +187,15 @@ public class KnightsCapePacketCoordinator(
             if (slot.ItemId == itemId && slot.Count > 0) return true;
         }
         return false;
+    }
+
+    private static bool PayForCape(UserSession session, int coins, bool useTicket)
+    {
+        if (session.Money < coins || (useTicket && !ConsumeOneTicket(session)))
+            return false;
+
+        session.Money -= coins;
+        return true;
     }
 
     private static bool ConsumeOneTicket(UserSession session)

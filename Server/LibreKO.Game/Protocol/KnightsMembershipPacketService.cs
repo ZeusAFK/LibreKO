@@ -524,8 +524,12 @@ public class KnightsMembershipPacketService(
 
     private async Task<int> RefundDonationAsync(KnightsEntity? clan, UserSession member)
     {
-        var donated = member.KnightsPoints;
-        member.KnightsPoints = 0;
+        var donated = member.WithLock(s =>
+        {
+            var points = s.KnightsPoints;
+            s.KnightsPoints = 0;
+            return points;
+        });
         if (donated <= 0)
             return 0;
 
@@ -542,8 +546,7 @@ public class KnightsMembershipPacketService(
         }
 
         var refund = ClanDonationCalculator.RefundFor(donated, keepsEverything);
-        member.Loyalty = (int)Math.Min(
-            ClanDonationCalculator.LoyaltyMax, (long)member.Loyalty + refund);
+        member.WithLock(s => s.Loyalty = (int)Math.Min(ClanDonationCalculator.LoyaltyMax, (long)s.Loyalty + refund));
 
         try
         {
@@ -580,10 +583,12 @@ public class KnightsMembershipPacketService(
         if (clan == null)
             return;
 
-        var (grade, fund) = ClanDonationCalculator.WithdrawDonation(
-            (ClanType)clan.Flag, clan.ClanPointFund, donated);
-        clan.Flag = (byte)grade;
-        clan.ClanPointFund = fund;
+        ClanRules.ChangeFund(clan, held =>
+        {
+            var (grade, fund) = ClanDonationCalculator.WithdrawDonation((ClanType)held.Flag, held.ClanPointFund, donated);
+            held.Flag = (byte)grade;
+            held.ClanPointFund = fund;
+        });
     }
 
     private static bool TryPayForClan(UserSession session)
