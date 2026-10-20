@@ -225,7 +225,7 @@ public class CombatLifecycleService(
 
     public async Task HandlePlayerDeathAsync(UserSession victim, UserSession? killer)
     {
-        if (!victim.TryRecordDeath())
+        if (victim.IsBot || !victim.TryRecordDeath())
             return;
 
         if (killer?.CharacterId == victim.CharacterId)

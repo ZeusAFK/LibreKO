@@ -176,6 +176,61 @@ public class SlaveMerchantTests : GameTestBase
     }
 
     [Fact]
+    public async Task ZoneSweepsDeathsAndStallClosesLeaveASlaveSelling()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Sweeper");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, Scroll, StackSlot, count: 4, stock: 10);
+        await Insert(provider, owner, toSlave: true);
+        var slave = Slave(provider);
+        var zone = slave.ZoneId;
+
+        await provider.GetRequiredService<IZoneTransitionService>().ChangeZoneAsync(slave, (byte)ZoneId.Moradon, 0f, 0f);
+        await provider.GetRequiredService<INpcAiDeathService>().HandlePlayerKilledByNpcAsync(slave, new NpcInstance());
+        await provider.GetRequiredService<ICombatLifecycleService>().HandlePlayerDeathAsync(slave, killer: null);
+        await provider.GetRequiredService<IMerchantLifecycleService>().CloseAsync(slave, MerchantInOut.StallClosed);
+
+        slave.ZoneId.Should().Be(zone, "an event sweep would close the stall and lose what it holds");
+        slave.Trade.IsMerchanting.Should().BeTrue();
+        slave.Trade.MerchantItems[0].Count.Should().Be(4);
+        slave.Deaths.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AHandOverNeedsAStallBeingSetUp()
+    {
+        using var provider = Provider();
+        var (owner, sent) = Player(provider, OwnerId, "Rusher");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, Scroll, StackSlot, count: 4, stock: 10);
+        owner.Trade.MerchantState = MerchantMode.Selling;
+
+        await Insert(provider, owner, toSlave: true);
+
+        Slaves(provider).Should().BeEmpty("an open stall's items are already on sale");
+        owner.Inventory[StackSlot].Count.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task ABusyOwnerCollectsNothing()
+    {
+        using var provider = Provider();
+        var (owner, sent) = Player(provider, OwnerId, "Juggler");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, Scroll, StackSlot, count: 4, stock: 10);
+        await Insert(provider, owner, toSlave: true);
+        owner.Trade.ExchangeUser = BuyerId;
+        var collect = new Packet(GameOpcodes.GS_SLAVE_MERCHANT);
+        collect.WriteByte((byte)SlaveMerchantSub.Collect);
+        collect.ResetOffset();
+
+        await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, collect);
+
+        Slaves(provider).Should().ContainSingle("a trade or a stall counts on the bag staying as it is");
+    }
+
+    [Fact]
     public async Task SalesPayTheSlaveAndCollectingPaysTheOwnerAndBringsTheRestBack()
     {
         using var provider = Provider();

@@ -67,6 +67,10 @@ public class MerchantLifecycleService(
 
     public async Task CloseAsync(UserSession session, MerchantInOut? merchantInOutType)
     {
+        // A slave merchant's stall is closed only by the slave merchant service, which saves what it holds.
+        if (session is SlaveMerchantBotSession)
+            return;
+
         // A buying stall closes through its own path, which hands back the gold it holds.
         if (session.Trade.IsBuyingMerchant || session.Trade.IsBuyingMerchantPreparing || session.Trade.BuyMerchantGold > 0)
             await merchantBuyingService.CloseAsync(session, broadcast: merchantInOutType.HasValue);
@@ -96,6 +100,7 @@ public class MerchantLifecycleService(
         var staged = session.Trade.MerchantItems.Count(item => item is { IsEmpty: false });
         var refusal =
             session.Hp <= 0 || session.Trade.IsTrading || session.IsGathering ? "dead, trading or gathering"
+            : !session.Trade.IsSellingMerchantPreparing || session.Trade.IsMerchanting ? "no stall is being set up"
             : advertMessage.Length > MerchantPacketConstants.MaxAdvertLength ? $"advert is {advertMessage.Length} characters"
             : staged == 0 ? "no items staged"
             : null;

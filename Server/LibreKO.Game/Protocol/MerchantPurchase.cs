@@ -94,6 +94,8 @@ public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, in
         if (sellerSlot.ItemId != itemId || sellerSlot.Count < count || !sellerSlot.IsTradable
             || sellerSlot.Flag != entry.Flag || sellerSlot.ExpiresAt != entry.ExpiresAt || sellerSlot.UniqueId != entry.UniqueId)
             return "the seller no longer holds that";
+        if (sellerSlot.HasExpired(DateTimeOffset.UtcNow.ToUnixTimeSeconds()))
+            return "the item has run out";
 
         UnitPrice = entry.Price;
         Cost = (long)UnitPrice * count;

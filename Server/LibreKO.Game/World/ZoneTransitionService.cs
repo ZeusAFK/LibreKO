@@ -40,9 +40,10 @@ public class ZoneTransitionService(
     public event Func<UserSession, byte, Task>? PlayerLeavingZone;
     public event Func<UserSession, Task>? ZoneAbilitySent;
 
+    // A merchant bot stays where its stall was set up.
     public async Task ChangeZoneAsync(UserSession session, byte newZone, float x, float z)
     {
-        if (session.IsWarping)
+        if (session.IsWarping || session.IsBot)
             return;
 
         if (ZoneRules.BarsReborn(newZone) && session.RebirthLevel > 0 && !session.IsGM)

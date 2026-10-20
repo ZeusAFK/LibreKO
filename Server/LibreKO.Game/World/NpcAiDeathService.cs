@@ -20,7 +20,7 @@ public class NpcAiDeathService(
 {
     public async Task HandlePlayerKilledByNpcAsync(UserSession target, NpcInstance npc)
     {
-        if (!target.TryRecordDeath())
+        if (target.IsBot || !target.TryRecordDeath())
             return;
 
         var deadPacket = DeathPacketWriter.PlayerDeath(target.CharacterId, npc.UniqueId);

@@ -103,6 +103,7 @@ public class TradeTests : GameTestBase
         bagSlot.ItemId = itemId;
         bagSlot.Count = 3;
         bagSlot.Durability = 25;
+        session.Trade.IsSellingMerchantPreparing = true;
 
         var add = new Packet(GameOpcodes.GS_MERCHANT);
         add.WriteByte((byte)MerchantSubOpcode.ItemAdd);

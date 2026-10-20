@@ -38,7 +38,8 @@ public class MerchantListingService(
 
         var itemData = gameDataService.GetItem(itemId);
         var refusal =
-            itemData == null ? "no such item"
+            !StallBeingSetUp(session) ? "no stall is being set up"
+            : itemData == null ? "no such item"
             : srcPos >= InventoryConstants.HaveMax ? "source slot out of range"
             : dstPos >= session.Trade.MerchantItems.Length ? "stall slot out of range"
             : IsNoTradeItem(itemId) ? "item cannot be traded"
@@ -97,7 +98,7 @@ public class MerchantListingService(
     {
         var slotIndex = packet.ReadByte();
 
-        if (slotIndex >= session.Trade.MerchantItems.Length)
+        if (slotIndex >= session.Trade.MerchantItems.Length || !StallBeingSetUp(session))
         {
             await session.Client.SendPacket(
                 MerchantPacketWriter.Result(MerchantSubOpcode.ItemCancel, MerchantPacketWriter.Failed));
@@ -117,6 +118,10 @@ public class MerchantListingService(
         await session.Client.SendPacket(MerchantPacketWriter.ItemCancelled(
             MerchantSubOpcode.ItemCancel, slotIndex));
     }
+
+    // A stall's listings change only while it is being set up; once open, a buyer pays the price they saw.
+    private static bool StallBeingSetUp(UserSession session) =>
+        session.Trade.IsSellingMerchantPreparing && !session.Trade.IsMerchanting;
 
     public async Task ListItemsAsync(UserSession session, Packet packet)
     {

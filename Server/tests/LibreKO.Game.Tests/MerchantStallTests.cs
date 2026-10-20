@@ -221,6 +221,44 @@ public class MerchantStallTests : GameTestBase
     }
 
     [Fact]
+    public async Task AnOpenStallsListingsDoNotChange()
+    {
+        using var market = new Market();
+        var seller = market.Player(96060, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+
+        await market.SendAsync(seller, MerchantSubOpcode.ItemCancel, packet => packet.WriteByte(StallSlot));
+        var keptAfterCancel = seller.Trade.MerchantItems[StallSlot]!.ItemId;
+        await market.ListAsync(seller, Ware, BagPos);
+
+        keptAfterCancel.Should().Be(Ware, "a buyer pays the price they saw, so an open stall cannot be re-listed");
+        seller.Trade.MerchantItems[StallSlot]!.Price.Should().Be(Price);
+    }
+
+    [Fact]
+    public async Task AnExpiredItemOnAStallIsNotSold()
+    {
+        using var market = new Market();
+        var seller = market.Player(96061, gold: 0);
+        var ware = Bag(seller, BagPos);
+        Stock(ware, Ware, 1);
+        ware.ExpiresAt = RentalEnds;
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        ware.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeSeconds();
+        seller.Trade.MerchantItems[StallSlot]!.ExpiresAt = ware.ExpiresAt;
+        var buyer = market.Player(96062, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        buyer.Money.Should().Be(StartingGold);
+        buyer.Inventory.Should().NotContain(slot => slot.ItemId == Ware);
+    }
+
+    [Fact]
     public async Task AListedItemIsBoughtWithItsFlagExpiryAndSerial()
     {
         using var market = new Market();
@@ -571,14 +609,18 @@ public class MerchantStallTests : GameTestBase
             return session;
         }
 
-        public Task ListAsync(UserSession seller, int itemId, byte bagPos) => SendAsync(seller, MerchantSubOpcode.ItemAdd, packet =>
+        public Task ListAsync(UserSession seller, int itemId, byte bagPos)
         {
-            packet.WriteInt(itemId);
-            packet.WriteUShort(1);
-            packet.WriteInt(Price);
-            packet.WriteByte(bagPos);
-            packet.WriteByte(StallSlot);
-        });
+            seller.Trade.IsSellingMerchantPreparing = true;
+            return SendAsync(seller, MerchantSubOpcode.ItemAdd, packet =>
+            {
+                packet.WriteInt(itemId);
+                packet.WriteUShort(1);
+                packet.WriteInt(Price);
+                packet.WriteByte(bagPos);
+                packet.WriteByte(StallSlot);
+            });
+        }
 
         public Task BuyAsync(UserSession buyer, int itemId, ushort count) => SendAsync(buyer, MerchantSubOpcode.ItemBuy, packet =>
         {
