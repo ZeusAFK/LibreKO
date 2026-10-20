@@ -537,6 +537,7 @@ public class GatherTests : GameTestBase
     {
         using var provider = CreateProvider(_ => { }, ConfigureItems);
         var (session, sent) = CreateGatherer(provider, BattleZoneManager.ZONE_MORADON, MoradonMineX, MoradonMineZ, Mattock);
+        StandAt(provider, session, MiningPacketCoordinator.GamblerNpcId);
         session.Money = 100;
 
         await provider.GetRequiredService<IMiningPacketCoordinator>()
@@ -558,6 +559,7 @@ public class GatherTests : GameTestBase
     {
         using var provider = CreateProvider(_ => { }, ConfigureItems);
         var (session, sent) = CreateGatherer(provider, BattleZoneManager.ZONE_MORADON, MoradonMineX, MoradonMineZ, Mattock);
+        StandAt(provider, session, MiningPacketCoordinator.GamblerNpcId);
         session.Money = BettingStake;
         for (int i = InventoryConstants.InventoryStart; i < InventoryConstants.InventoryStart + InventoryConstants.HaveMax; i++)
         {
@@ -576,10 +578,24 @@ public class GatherTests : GameTestBase
     }
 
     [Fact]
+    public async Task BettingGame_AwayFromTheGamblerTakesNoStake()
+    {
+        using var provider = CreateProvider(_ => { }, ConfigureItems);
+        var (session, sent) = CreateGatherer(provider, BattleZoneManager.ZONE_MORADON, MoradonMineX, MoradonMineZ, Mattock);
+        session.Money = BettingStake;
+
+        await provider.GetRequiredService<IMiningPacketCoordinator>().HandleAsync(session.Client, Request(SubBetting));
+
+        session.Money.Should().Be(BettingStake, "a bet is placed with Gambler Yoot");
+        GoldenYutCount(session).Should().Be(0);
+    }
+
+    [Fact]
     public async Task BettingGame_TakesFiftyThousandAndPaysGoldenYutByTheResult()
     {
         using var provider = CreateProvider(_ => { }, ConfigureItems);
         var (session, sent) = CreateGatherer(provider, BattleZoneManager.ZONE_MORADON, MoradonMineX, MoradonMineZ, Mattock);
+        StandAt(provider, session, MiningPacketCoordinator.GamblerNpcId);
         var coordinator = provider.GetRequiredService<IMiningPacketCoordinator>();
 
         for (var round = 0; round < 40; round++)

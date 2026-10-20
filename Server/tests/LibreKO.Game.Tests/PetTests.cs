@@ -130,6 +130,23 @@ public class PetTests : GameTestBase
     }
 
     [Fact]
+    public async Task AnEggHatchesOnlyAtTheFamiliarTamer()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, _) = Player(sessions, 701);
+        var bystander = sessions.Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = KateNpcId + 1, NpcType = NpcData.TypeTalk, ZoneId = Zone, X = 102, Z = 101, Hp = 1, MaxHp = 1,
+        });
+        PutEgg(owner, 0);
+
+        await provider.GetRequiredService<IPetService>().HatchAsync(owner, bystander.NpcId, EggId, 0, PetName);
+
+        owner.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(EggId, "naming the NPC beside the player does not make it a tamer");
+    }
+
+    [Fact]
     public async Task HatchingTurnsTheEggIntoAKaulLinkedToANewFamiliar()
     {
         using var provider = Provider();
@@ -1203,7 +1220,7 @@ public class PetTests : GameTestBase
     private static NpcInstance Kate(SessionManager sessions) =>
         sessions.Regions.SpawnNpc(new NpcInstance
         {
-            NpcId = KateNpcId, NpcType = NpcData.TypeTalk, ZoneId = Zone, X = 102, Z = 101, Hp = 1, MaxHp = 1,
+            NpcId = KateNpcId, NpcType = NpcData.TypeFamiliarTamer, ZoneId = Zone, X = 102, Z = 101, Hp = 1, MaxHp = 1,
         });
 
     private static NpcInstance Monster(SessionManager sessions, float x, float z, int hp) =>

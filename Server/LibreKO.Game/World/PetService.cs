@@ -750,7 +750,8 @@ public sealed class PetService(
 
     private bool TrainerNearby(UserSession session, int npcId) =>
         sessionManager.Regions.GetNearbyNpcs(session)
-            .Any(npc => npc.NpcId == npcId && npc.IsAlive && npc.ZoneId == session.ZoneId && IsInRange(session, npc));
+            .Any(npc => npc.NpcId == npcId && npc.NpcType == NpcData.TypeFamiliarTamer && npc.IsAlive
+                && npc.ZoneId == session.ZoneId && IsInRange(session, npc));
 
     private static bool IsInRange(UserSession session, NpcInstance npc)
     {

@@ -20,6 +20,7 @@ public class ItemTradeService(
     IUserNotificationService userNotificationService,
     IKingSystemRuntimeService kingSystemRuntimeService) : IItemTradeService
 {
+    public const int RepurchaseNpcId = 18004;
     private const int ItemNoTrade = 900000001;
     private const int LoyaltyMerchantSellingGroup = 249000;
     private const int SaleTypeFull = 1;
@@ -230,10 +231,10 @@ public class ItemTradeService(
 
         var row = packet.ReadByte();
         var itemId = packet.ReadInt();
-        var npcId = packet.ReadInt();
-        var npc = sessionManager.Regions.GetNpc(npcId);
+        packet.ReadInt();
         var itemData = gameDataService.GetItem(itemId);
-        if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc) || itemData == null || session.IsBusy)
+        // The client names the merchant's kind, not the merchant, so the one spoken to stands in.
+        if (!NpcPresence.IsAt(sessionManager, session, RepurchaseNpcId) || itemData == null || session.IsBusy)
         {
             await client.SendPacket(ItemTradePacketWriter.RepurchaseRefused(itemId, RepurchaseGenericError));
             return;

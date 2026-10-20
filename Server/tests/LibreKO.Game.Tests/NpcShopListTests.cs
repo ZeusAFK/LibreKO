@@ -159,7 +159,7 @@ public class NpcShopListTests : GameTestBase
     {
         using var provider = Provider();
         var (session, client) = Shopper(provider);
-        var npc = Npc(provider, WeaponShop, zone: npcZone);
+        GrandMerchant(provider, session, npcZone);
         var sold = new ItemSlot { ItemId = Spear, Count = 1, Durability = 100 };
         RepurchaseRules.Record(session.Repurchases, sold, 1, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
@@ -168,7 +168,7 @@ public class NpcShopListTests : GameTestBase
         packet.WriteByte(ItemTradePacketWriter.RepurchaseBuy);
         packet.WriteByte(0);
         packet.WriteInt(Spear);
-        packet.WriteInt(npc.UniqueId);
+        packet.WriteInt(ItemTradeService.RepurchaseNpcId);
         packet.ResetOffset();
         await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, packet);
 
@@ -193,11 +193,36 @@ public class NpcShopListTests : GameTestBase
     }
 
     [Fact]
+    public async Task AnItemIsBoughtBackOnlyFromTheGrandMerchantSpokenTo()
+    {
+        using var provider = Provider();
+        var (session, client) = Shopper(provider);
+        var monster = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = MonsterNpcId, IsMonster = true, ZoneId = Zone, X = 10, Z = 10, MaxHp = 1, Hp = 1,
+        });
+        session.Quest.EventNpcUniqueId = monster.UniqueId;
+        var sold = new ItemSlot { ItemId = Spear, Count = 1, Durability = 100 };
+        RepurchaseRules.Record(session.Repurchases, sold, 1, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+        var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
+        packet.WriteByte((byte)ItemTradeResult.Repurchase);
+        packet.WriteByte(ItemTradePacketWriter.RepurchaseBuy);
+        packet.WriteByte(0);
+        packet.WriteInt(Spear);
+        packet.WriteInt(ItemTradeService.RepurchaseNpcId);
+        packet.ResetOffset();
+        await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, packet);
+
+        Bag(session).IsEmpty.Should().BeTrue("naming an NPC in range is not speaking to the Grand Merchant");
+    }
+
+    [Fact]
     public async Task ABoughtBackItemKeepsItsFlagAndDoesNotJoinAPlainStack()
     {
         using var provider = Provider();
         var (session, client) = Shopper(provider);
-        var npc = Npc(provider, PotionShop);
+        GrandMerchant(provider, session, Zone);
         Stock(Bag(session), Potion, Held);
         var sold = new ItemSlot { ItemId = Potion, Count = 2, Durability = 100, Flag = (byte)ItemFlag.NotBound };
         RepurchaseRules.Record(session.Repurchases, sold, 2, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
@@ -207,7 +232,7 @@ public class NpcShopListTests : GameTestBase
         packet.WriteByte(ItemTradePacketWriter.RepurchaseBuy);
         packet.WriteByte(0);
         packet.WriteInt(Potion);
-        packet.WriteInt(npc.UniqueId);
+        packet.WriteInt(ItemTradeService.RepurchaseNpcId);
         packet.ResetOffset();
         await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, packet);
 
@@ -291,6 +316,15 @@ public class NpcShopListTests : GameTestBase
         session.Stats = new DerivedStats { MaxWeight = 10_000 };
         return (session, client);
     }
+
+    // The client sends the merchant's kind; the merchant it spoke to is the one that counts.
+    private static void GrandMerchant(ServiceProvider provider, UserSession session, byte zone) =>
+        session.Quest.EventNpcUniqueId = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = ItemTradeService.RepurchaseNpcId, ZoneId = zone, X = 10, Z = 10, MaxHp = 1, Hp = 1, NpcType = NpcData.TypeTradeMerchant,
+        }).UniqueId;
+
+    private const int MonsterNpcId = 101;
 
     private static NpcInstance Npc(
         ServiceProvider provider, int sellingGroup, byte npcType = NpcData.TypeTradeMerchant, byte zone = Zone) =>

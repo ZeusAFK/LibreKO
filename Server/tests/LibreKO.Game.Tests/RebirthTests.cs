@@ -32,6 +32,11 @@ public class RebirthTests
         var slot = session.Inventory[InventoryConstants.SlotMax];
         slot.ItemId = QualificationOfRebirth;
         slot.Count = 1;
+        session.Quest.EventNpcUniqueId = sessions.Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = CharacterDevelopmentPacketCoordinator.FortuneTellerNpcId, ZoneId = session.ZoneId, X = session.X, Z = session.Z,
+            Hp = 1, MaxHp = 1,
+        }).UniqueId;
         var progression = Substitute.For<IPlayerProgressionService>();
         var gameData = Substitute.For<IGameDataService>();
         gameData.GetMaxExpForLevel(Arg.Any<byte>()).Returns(LevelExperience);
@@ -43,6 +48,18 @@ public class RebirthTests
             Substitute.For<IUserNotificationService>(),
             Substitute.For<ILogger<CharacterDevelopmentPacketCoordinator>>());
         return (coordinator, session, client, progression);
+    }
+
+    [Fact]
+    public async Task ARebirthAwayFromTheFortuneTellerKeepsTheQualification()
+    {
+        var (coordinator, session, client, progression) = Arrange(ProgressionTable.MaxLevel);
+        session.Quest.EventNpcUniqueId = 0;
+
+        await coordinator.HandleClassChangeAsync(client, RebirthRequest(1, 0, 1, 0, 0));
+
+        session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(QualificationOfRebirth, "a rebirth is offered by the Fortune Teller");
+        await progression.DidNotReceiveWithAnyArgs().CompleteRebirthAsync(default!);
     }
 
     private static Packet RebirthRequest(byte str, byte sta, byte dex, byte intel, byte cha)

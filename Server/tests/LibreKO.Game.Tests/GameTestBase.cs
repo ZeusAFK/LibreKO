@@ -288,6 +288,17 @@ public abstract class GameTestBase
         session.Quest.EventNpcUniqueId = keeper.UniqueId;
     }
 
+    protected static NpcInstance StandAt(ServiceProvider provider, UserSession session, int npcId, byte npcType = 0)
+    {
+        var npc = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = npcId, NpcType = npcType, Name = "Merchant", ZoneId = session.ZoneId,
+            X = session.X, Z = session.Z, SpawnX = session.X, SpawnZ = session.Z, Hp = 1, MaxHp = 1,
+        });
+        session.Quest.EventNpcUniqueId = npc.UniqueId;
+        return npc;
+    }
+
     protected static void TakeTheClassOf(UserSession caster, int skillId)
     {
         if (MagicSkillRequirement.IsClassSkill(skillId))

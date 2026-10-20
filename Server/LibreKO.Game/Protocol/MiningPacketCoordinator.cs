@@ -428,9 +428,11 @@ public class MiningPacketCoordinator(
         await userNotificationService.SendStatUpdateAsync(session);
     }
 
+    public const int GamblerNpcId = 29083;
+
     private async Task BettingGameAsync(UserSession session)
     {
-        if (session.Hp <= 0)
+        if (session.IsBusy || !NpcPresence.IsAt(sessionManager, session, GamblerNpcId))
             return;
 
         ushort result;

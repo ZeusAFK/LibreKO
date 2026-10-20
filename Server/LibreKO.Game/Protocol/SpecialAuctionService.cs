@@ -32,6 +32,7 @@ public class SpecialAuctionService(
     TimeProvider? clock = null) : ISpecialAuctionService
 {
     public const int MythrilCheck = 1399299001;
+    public const int AltarNpcId = 31774;
     public const long CheckValue = 1_000_000_000;
     public const long CoinUnit = 1_000_000;
     public const long MaxCoins = 999 * CoinUnit;
@@ -57,22 +58,31 @@ public class SpecialAuctionService(
                 await TodayAsync(session);
                 break;
             case SpecialAuctionPacketWriter.BidSub:
-                await client.SendPacket(SpecialAuctionPacketWriter.BidResult(await BidAsync(session, packet)));
+                await client.SendPacket(SpecialAuctionPacketWriter.BidResult(AtTheAltar(session)
+                    ? await BidAsync(session, packet)
+                    : SpecialAuctionPacketWriter.Busy));
                 break;
             case SpecialAuctionPacketWriter.CollectSub:
-                await client.SendPacket(SpecialAuctionPacketWriter.CollectResult(await CollectAsync(session, packet)));
+                await client.SendPacket(SpecialAuctionPacketWriter.CollectResult(AtTheAltar(session)
+                    ? await CollectAsync(session, packet)
+                    : SpecialAuctionPacketWriter.NoHistory));
                 break;
             case SpecialAuctionPacketWriter.MyInfoSub:
                 await MyInfoAsync(session);
                 break;
             case SpecialAuctionPacketWriter.ClaimSub:
-                await client.SendPacket(SpecialAuctionPacketWriter.ClaimResult(await ClaimAsync(session, packet)));
+                await client.SendPacket(SpecialAuctionPacketWriter.ClaimResult(AtTheAltar(session)
+                    ? await ClaimAsync(session, packet)
+                    : SpecialAuctionPacketWriter.NoWin));
                 break;
             case SpecialAuctionPacketWriter.LogSub:
                 await LogAsync(session);
                 break;
         }
     }
+
+    // Gold and items change hands only at Akara's Altar; the lists can be read anywhere.
+    private bool AtTheAltar(UserSession session) => NpcPresence.IsAt(sessionManager, session, AltarNpcId);
 
     private IReadOnlyList<SpecialAuctionLotData> LotsOf(int serial) =>
         Group <= 0 ? [] : gameDataService.SpecialAuctionLotsByRow[SpecialAuctionSchedule.Row(Group, SpecialAuctionSchedule.DayOf(serial))]

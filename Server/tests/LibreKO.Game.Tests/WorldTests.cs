@@ -2006,6 +2006,7 @@ public class WorldTests : GameTestBase
         packet.WriteByte((byte)ClassChangeSubOpcode.StatReset);
 
         var coordinator = provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>();
+        StandAt(provider, session, CharacterDevelopmentPacketCoordinator.GrandMerchantNpcId);
         await coordinator.HandleClassChangeAsync(client, packet);
 
         session.Strength.Should().Be(65);
@@ -2020,6 +2021,23 @@ public class WorldTests : GameTestBase
         sentPacket.ReadByte().Should().Be((byte)ClassChangeSubOpcode.StatReset);
         sentPacket.ReadByte().Should().Be(1);
         sentPacket.ReadInt().Should().Be(session.Money);
+    }
+
+    [Fact]
+    public async Task AStatResetAwayFromTheGrandMerchantChangesNothing()
+    {
+        using var provider = CreateProvider(_ => { }, gameData => gameData.GetCoefficient((short)101).Returns(CreateBasicCoefficient(101)));
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 195, accountId: 205);
+        (session.Class, session.Level, session.Race, session.Money, session.Strength) = (101, 30, 1, 2_000_000, 80);
+        var packet = new Packet(GameOpcodes.GS_CLASS_CHANGE);
+        packet.WriteByte((byte)ClassChangeSubOpcode.StatReset);
+
+        await provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>().HandleClassChangeAsync(client, packet);
+
+        session.Strength.Should().Be(80, "a reset is offered by the Grand Merchant");
+        session.Money.Should().Be(2_000_000);
     }
 
     private static (IClient Client, UserSession Session, Func<Packet?> Sent) CreateMasterySession(

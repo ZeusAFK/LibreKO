@@ -85,6 +85,7 @@ public class SpecialAuctionTests : GameTestBase
         session.ZoneId = 21;
         session.Hp = 100;
         session.Money = money;
+        StandAt(provider, session, SpecialAuctionService.AltarNpcId);
         for (var i = 0; i < checks; i++)
         {
             session.Inventory[InventoryConstants.SlotMax + i].ItemId = Check;
@@ -511,6 +512,23 @@ public class SpecialAuctionTests : GameTestBase
         first.Session.Money.Should().Be(purse);
         CountOf(first, Check).Should().Be(0);
         Rows(await Send(provider, first, MyInfo)).Should().ContainSingle("the bid waits until its coins and checks fit");
+    }
+
+    [Fact]
+    public async Task ABidOrAClaimAwayFromTheAltarMovesNothing()
+    {
+        var (provider, _) = Provider();
+        using var _p = provider;
+        var player = Join(provider, 100, "Wanderer", 10_000_000, checks: 1);
+        SeedWin(provider, player, Earrings, count: 1);
+        player.Session.Quest.EventNpcUniqueId = 0;
+
+        (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 0)).ReadShort().Should().Be(SpecialAuctionPacketWriter.Busy);
+        (await ClaimWin(provider, player, Earrings, 1)).ReadShort().Should().Be(SpecialAuctionPacketWriter.NoWin);
+
+        player.Session.Money.Should().Be(10_000_000, "gold and items change hands only at Akara's Altar");
+        CountOf(player, Check).Should().Be(1);
+        CountOf(player, Earrings).Should().Be(0);
     }
 
     private static int CountOf(Player player, int itemId) =>
