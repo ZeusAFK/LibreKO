@@ -410,6 +410,28 @@ public class MagicReachTests : GameTestBase
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AScrollIsCastWhileTradingOrGathering(bool gathering)
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 812, AccountNation.Karus, Moradon, Here);
+        var friend = Player(provider, 813, AccountNation.Karus, Moradon, Here + 30);
+        var bag = caster.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = ScrollItem;
+        bag.Count = TwoScrolls;
+        bag.Durability = 1;
+        if (gathering)
+            caster.IsMining = true;
+        else
+            caster.Trade.ExchangeUser = friend.CharacterId;
+
+        await Cast(provider, caster, SummonScroll, friend.CharacterId);
+
+        bag.Count.Should().Be(1, "a trade's offers are out of the bag and gathering only adds to it");
+    }
+
+    [Theory]
     [InlineData(true, 1)]
     [InlineData(false, TwoScrolls)]
     public async Task ACurePotionIsSpentOnlyOnSomeoneThere(bool friendThere, ushort potionsLeft)

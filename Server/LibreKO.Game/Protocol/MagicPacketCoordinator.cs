@@ -372,8 +372,9 @@ public class MagicPacketCoordinator(
         int targetId,
         int[] data)
     {
+        // A stall's buyer could take the reagent between this check and its spend.
         if (magic.UseItem != 0 && PaysFromTheCastersBag(magic, skillId)
-            && ((session.Hp > 0 && session.IsBusy)
+            && (session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing
                 || (magic.PrimaryType != MagicSkillType.Transform && !magicItemUsageService.CanUseSkillItems(session, magic))))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
