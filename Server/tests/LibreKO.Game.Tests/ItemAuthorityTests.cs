@@ -105,6 +105,20 @@ public class ItemAuthorityTests : GameTestBase
     }
 
     [Fact]
+    public async Task ADropNamingAnotherItemThanTheSlotHoldsDropsNothing()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2090);
+        Put(Bag(player, BagFirst), Untradeable);
+        var bundles = Bundles(client);
+
+        await Drop(provider, client, BagFirst, Potion, 1);
+
+        bundles.Should().BeEmpty("the slot holds another item than the one named");
+        Bag(player, BagFirst).ItemId.Should().Be(Untradeable);
+    }
+
+    [Fact]
     public async Task ATimedItemIsNotDropped()
     {
         using var provider = Provider();

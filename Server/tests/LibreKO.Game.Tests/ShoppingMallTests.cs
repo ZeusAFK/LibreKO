@@ -589,7 +589,7 @@ public class ShoppingMallTests : GameTestBase
     [Fact]
     public async Task ShoppingMallPacketCoordinator_HandleAsync_LetterSendUsesInventoryRelativeSlot()
     {
-        const int itemId = 910001000;
+        const int itemId = 389070000;
 
         using var provider = CreateProvider(
             db =>
@@ -630,6 +630,7 @@ public class ShoppingMallTests : GameTestBase
         var session = sessionManager.CreateSession(client, characterId: 24, accountId: 34);
         session.Name = "Sender";
         session.Money = 20000;
+        session.Hp = 100;
         session.Inventory[InventoryConstants.RightHand].ItemId = itemId;
         session.Inventory[InventoryConstants.RightHand].Durability = 100;
         session.Inventory[InventoryConstants.RightHand].Count = 1;
@@ -661,6 +662,59 @@ public class ShoppingMallTests : GameTestBase
         await using var scope = provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         (await db.MailBoxes.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ALetterNamingAnotherItemThanTheSlotHoldsSendsNothing()
+    {
+        const int named = 389050000;
+        const int held = 389060000;
+        const byte tradeLockedRace = 70;
+        const int purse = 20_000;
+
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character
+                {
+                    AccountId = 1, Slot = 0, Name = "Recipient", Race = 1, Class = 101, Level = 10, MapId = 1,
+                    Items = new byte[InventoryConstants.InventoryTotal * 8], SkillPointData = new byte[9],
+                },
+                new Character
+                {
+                    Id = 26, AccountId = 36, Slot = 0, Name = "Sender", Race = 1, Class = 101, Level = 10, MapId = 1,
+                    Items = new byte[InventoryConstants.InventoryTotal * 8], SkillPointData = new byte[9],
+                }),
+            gameData =>
+            {
+                gameData.GetItem(named).Returns(new ItemData { Num = named, Race = 1 });
+                gameData.GetItem(held).Returns(new ItemData { Num = held, Race = tradeLockedRace });
+            });
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 26, accountId: 36);
+        session.Name = "Sender";
+        session.Money = purse;
+        session.Hp = session.MaxHp = 100;
+        var slot = session.Inventory[InventoryConstants.InventoryStart];
+        (slot.ItemId, slot.Count, slot.Durability) = (held, 1, 100);
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(6);
+        request.WriteByte(6);
+        request.WriteSByteString("Recipient");
+        request.WriteSByteString("Subject");
+        request.WriteByte(2);
+        request.WriteInt(named);
+        request.WriteByte(0);
+        request.WriteInt(0);
+        request.WriteString("Message");
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        slot.ItemId.Should().Be(held, "the slot holds another item than the one named");
+        session.Money.Should().Be(purse);
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.CountAsync()).Should().Be(0);
     }
 
     [Fact]
