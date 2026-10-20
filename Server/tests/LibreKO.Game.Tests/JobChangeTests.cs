@@ -301,7 +301,6 @@ public class JobChangeTests : GameTestBase
         player.Class.Should().NotBe(Warrior);
     }
 
-    // The first save of a new class reaches nothing, as a commit rolled back after its answer was lost.
     private sealed class FirstClassSaveLost : SaveChangesInterceptor
     {
         private int lost;
@@ -314,7 +313,7 @@ public class JobChangeTests : GameTestBase
                 : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    // A store that retries, and asks after a failed attempt whether it was written, as when the answer to a commit is lost.
+    // Asks whether a save was written only after a failed attempt, as EF does.
     private sealed class LostAnswer(DbContext context) : IExecutionStrategy
     {
         public static System.Collections.Concurrent.ConcurrentQueue<bool> Answers { get; } = new();

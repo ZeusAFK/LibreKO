@@ -24,6 +24,7 @@ public class ShoppingMallStoreService(
     IGameDataService gameData,
     IMailService mailService,
     IServiceScopeFactory scopeFactory,
+    SealGates sealGates,
     ILogger<ShoppingMallStoreService> logger) : IShoppingMallStoreService
 {
     public const byte StorePurchase = 8;
@@ -41,7 +42,7 @@ public class ShoppingMallStoreService(
 
     private readonly record struct CartLine(PusItemData Entry, int Count, int UnitPrice);
 
-    private readonly record struct Recipient(int CharacterId, string Name, byte Level, short Class, short KnightsId);
+    private readonly record struct Recipient(int CharacterId, string Name, byte Level, short Class, short KnightsId, bool Sealed);
 
     public async Task HandleOpenAsync(UserSession session)
     {
@@ -165,6 +166,10 @@ public class ShoppingMallStoreService(
             recipientId = recipient.CharacterId;
         }
 
+        using var turn = gift ? await sealGates.EnterAsync(recipientId) : null;
+        if (gift && await db.Characters.Where(c => c.Id == recipientId).Select(c => c.Sealed).FirstOrDefaultAsync())
+            return PowerUpStoreResult.RecipientNotFound;
+
         var catalogIds = requested.Select(line => line.CatalogId).Distinct().ToList();
         var entries = await db.PusItems.AsNoTracking()
             .Where(x => catalogIds.Contains(x.Id))
@@ -241,10 +246,10 @@ public class ShoppingMallStoreService(
             return (PowerUpStoreResult.RecipientNotFound, default);
 
         var found = await db.Characters.AsNoTracking()
-            .Where(c => c.Name == name)
-            .Select(c => new Recipient(c.Id, c.Name, c.Level, c.Class, c.KnightsId))
+            .Where(c => c.Name == name && c.DeletionTime == null)
+            .Select(c => new Recipient(c.Id, c.Name, c.Level, c.Class, c.KnightsId, c.Sealed))
             .FirstOrDefaultAsync();
-        if (found.Name == null)
+        if (found.Name == null || found.Sealed)
             return (PowerUpStoreResult.RecipientNotFound, default);
         if (found.CharacterId == session.CharacterId)
             return (PowerUpStoreResult.RecipientIsSelf, default);

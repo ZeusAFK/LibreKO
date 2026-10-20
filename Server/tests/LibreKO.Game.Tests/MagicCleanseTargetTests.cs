@@ -242,6 +242,23 @@ public class MagicCleanseTargetTests : GameTestBase
         enemy.ActiveBuffs.Should().NotContainKey(Shield);
     }
 
+    [Fact]
+    public async Task ADispelWithNoSideCastOnTheAreaSparesFriendsAndStripsEnemies()
+    {
+        using var provider = CreateProvider(_ => { }, gameData => Sideless(gameData, SkillMoral.SelfArea));
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 975, AccountNation.Karus, RonarkLand, x: 100, z: 100);
+        var ally = CreatePlayer(sessions, 976, AccountNation.Karus, RonarkLand, x: 105, z: 100);
+        var enemy = CreatePlayer(sessions, 977, AccountNation.ElMorad, RonarkLand, x: 105, z: 105);
+        Give(ally, Shield, BuffType.Ac);
+        Give(enemy, Shield, BuffType.Ac);
+
+        await Cast(provider, caster, SidelessDispel, -1);
+
+        ally.ActiveBuffs.Should().ContainKey(Shield, "a dispel cast on the area strips enemies only, whatever its moral");
+        enemy.ActiveBuffs.Should().NotContainKey(Shield);
+    }
+
     private static void Sideless(IGameDataService gameData, SkillMoral moral)
     {
         Rows(gameData);

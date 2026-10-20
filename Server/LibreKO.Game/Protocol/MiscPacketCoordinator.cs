@@ -174,7 +174,7 @@ public class MiscPacketCoordinator(
         }
 
         // The new name and the bag without the scroll are saved together.
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         StateCommit outcome;
         await NameRules.Changes.WaitAsync();
         try
@@ -261,7 +261,7 @@ public class MiscPacketCoordinator(
         }
 
         // The clan's new name and the chief's bag without the scroll are saved together.
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         StateCommit outcome;
         await NameRules.Changes.WaitAsync();
         try

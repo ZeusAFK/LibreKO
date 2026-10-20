@@ -130,7 +130,7 @@ public class SlaveMerchantService(
             HeartbeatAt = now,
         };
 
-        var journal = new InventoryJournal(owner);
+        var journal = new InventoryJournal(owner, logger);
         var hoursLeft = 0;
         var outcome = await statePersister.CommitAsync(owner, async db =>
         {
@@ -289,7 +289,7 @@ public class SlaveMerchantService(
                 return;
             }
 
-            var journal = new InventoryJournal(owner);
+            var journal = new InventoryJournal(owner, logger);
             var tally = new CollectTally();
             var outcome = await statePersister.CommitAsync(owner, async db =>
             {
@@ -388,7 +388,7 @@ public class SlaveMerchantService(
         {
             var added = HoursOf(itemId);
             var slotIndex = InventoryConstants.InventoryStart + bagPosition;
-            var journal = new InventoryJournal(owner);
+            var journal = new InventoryJournal(owner, logger);
             var hours = 0;
             var outcome = added == 0 || bagPosition >= InventoryConstants.HaveMax || !BagIsFree(owner)
                 ? StateCommit.Unchanged

@@ -122,7 +122,7 @@ public class KingPurseTests : GameTestBase
     }
 
     [Fact]
-    public async Task EveryTreasuryRequestThatSharedAFailedWriteFails()
+    public async Task AFailedTreasuryWriteDropsNoOneAndTheNextWriteStoresTheValue()
     {
         var kingdom = new KingSystemData { Nation = (byte)AccountNation.Karus, KingName = King, NationalTreasury = Treasury };
         var saves = new FirstSaveWaits { LaterSavesFail = true };
@@ -137,10 +137,14 @@ public class KingPurseTests : GameTestBase
         };
 
         await runtime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
-        var rival = () => saves.Rival;
+        await saves.Rival;
+        requests.Should().OnlyContain(request => request.IsCompletedSuccessfully, "a write that failed is logged, not thrown at every player whose change it carried");
 
-        await rival.Should().ThrowAsync<DbUpdateException>();
-        requests.Should().OnlyContain(request => request.IsFaulted, "a request that shared a failed write learns it failed, as its own write would have");
+        saves.LaterSavesFail = false;
+        await runtime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().KingSystem.AsNoTracking().SingleAsync())
+            .NationalTreasury.Should().Be(Treasury - Prize, "the next write stores the value as it stands");
     }
 
     [Fact]
@@ -172,7 +176,7 @@ public class KingPurseTests : GameTestBase
         }
     }
 
-    // The first save starts the rival writes before it goes on, and waits a while for them, as they finish only if nothing holds them back.
+    // The first save waits a while for a rival write started inside it, which can finish only if nothing holds it back.
     private sealed class FirstSaveWaits : SaveChangesInterceptor
     {
         private int saves;
@@ -180,7 +184,7 @@ public class KingPurseTests : GameTestBase
         public Func<Task> Meanwhile { get; set; } = () => Task.CompletedTask;
         public Task Rival { get; private set; } = Task.CompletedTask;
         public int Saves => Volatile.Read(ref saves);
-        public bool LaterSavesFail { get; init; }
+        public bool LaterSavesFail { get; set; }
 
         public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
@@ -199,7 +203,6 @@ public class KingPurseTests : GameTestBase
         }
     }
 
-    // The first save waits until it is let go.
     private sealed class FirstSaveHeld : SaveChangesInterceptor
     {
         private int saves;

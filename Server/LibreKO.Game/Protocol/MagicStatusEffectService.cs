@@ -540,7 +540,8 @@ public class MagicStatusEffectService(
         if (targetId == AreaTarget && IsCleanse(special) && IsAreaMoral((SkillMoral)magic.Moral))
         {
             var moral = (SkillMoral)magic.Moral;
-            foreach (var member in AreaPlayers(caster, moral, magic.Range > 0 ? magic.Range + PlayerReachSlack : 0, caster.X, caster.Z).ToList())
+            var side = PvpRules.CureMoral(moral, special == SpecialMagicType.RemoveBless);
+            foreach (var member in AreaPlayers(caster, side, magic.Range > 0 ? magic.Range + PlayerReachSlack : 0, caster.X, caster.Z).ToList())
             {
                 await CleanseAsync(member, special);
                 await sessionManager.Regions.SendToRegion(

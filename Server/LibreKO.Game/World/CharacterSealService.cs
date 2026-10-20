@@ -8,6 +8,7 @@ using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.World;
 
@@ -23,7 +24,8 @@ public sealed class CharacterSealService(
     IUserNotificationService notifications,
     ICharacterStatePersister statePersister,
     SessionManager sessionManager,
-    SealGates sealGates) : ICharacterSealService
+    SealGates sealGates,
+    ILogger<CharacterSealService> logger) : ICharacterSealService
 {
     public const int CypherRing = InventoryConstants.CypherRing;
     public const byte ScrollKind = 250;
@@ -125,7 +127,7 @@ public sealed class CharacterSealService(
 
         using var turn = await sealGates.EnterAsync(targetId.Value);
         var position = InventoryConstants.InventoryStart + bagPos;
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         var answer = CharacterSealPacketWriter.SealFailed(GenericFailure);
         Character? sealedCharacter = null;
         var outcome = await statePersister.CommitAsync(session, async db =>
@@ -208,7 +210,7 @@ public sealed class CharacterSealService(
 
         var position = InventoryConstants.InventoryStart + bagPos;
         var uniqueId = ring.UniqueId;
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         var outcome = await statePersister.CommitAsync(session, async db =>
         {
             var sealedCharacter = await db.Characters.FindAsync(uniqueId);

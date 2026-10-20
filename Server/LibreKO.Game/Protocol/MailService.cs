@@ -311,7 +311,7 @@ public class MailService(
             return;
         }
 
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         var claim = new MailClaim();
         // The bag, the purse and the mail are saved together.
         var outcome = await statePersister.CommitAsync(session, async db =>

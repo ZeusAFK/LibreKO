@@ -168,7 +168,7 @@ public class MerchantListingService(
             return;
         }
 
-        var purchase = new MerchantPurchase(session, merchant, itemId, count, merchantSlot);
+        var purchase = new MerchantPurchase(session, merchant, itemId, count, merchantSlot, logger);
         var sold = merchant is SlaveMerchantBotSession slave
             ? await slaveMerchants.SellAsync(slave, purchase, () => AnnounceAsync(purchase))
             : await SellAsync(purchase);

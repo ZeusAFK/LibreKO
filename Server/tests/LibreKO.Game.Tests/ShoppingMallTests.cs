@@ -497,6 +497,7 @@ public class ShoppingMallTests : GameTestBase
             provider.GetRequiredService<IGameDataService>(),
             mail,
             provider.GetRequiredService<IServiceScopeFactory>(),
+            provider.GetRequiredService<SealGates>(),
             NullLogger<ShoppingMallStoreService>.Instance);
         var request = CartRequest("", (1, 1));
         request.ReadByte();
@@ -522,6 +523,41 @@ public class ShoppingMallTests : GameTestBase
         reply.ReadSByteString().Should().Be("Friend");
         reply.ReadByte().Should().Be(72);
         reply.ReadUShort().Should().Be(211);
+    }
+
+    [Fact]
+    public async Task Purchase_AsAGift_RefusesASealedOrDeletedFriend()
+    {
+        using var provider = StoreProvider(entries: 1);
+        var (buyer, sent) = StoreBuyer(provider, knightCash: 1_000);
+        var coordinator = provider.GetRequiredService<IShoppingMallPacketCoordinator>();
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            (await db.Characters.SingleAsync(c => c.Id == FriendId)).Sealed = true;
+            await db.SaveChangesAsync();
+        }
+
+        await coordinator.HandleAsync(buyer.Client, CartRequest("Friend", (1, 1)));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientNotFound,
+            "a sealed character's mail would go into its ring");
+        await coordinator.HandleAsync(buyer.Client, RecipientCheckRequest("Friend"));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCheckRecipient).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientNotFound,
+            "the store does not offer a sealed character as a recipient");
+
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var friend = await db.Characters.SingleAsync(c => c.Id == FriendId);
+            (friend.Sealed, friend.DeletionTime) = (false, DateTime.UtcNow);
+            await db.SaveChangesAsync();
+        }
+
+        await coordinator.HandleAsync(buyer.Client, CartRequest("Friend", (1, 1)));
+        PurchaseReply(sent, ShoppingMallStoreService.PurchaseCart).ReadByte().Should().Be((byte)PowerUpStoreResult.RecipientNotFound);
+
+        buyer.KnightCash.Should().Be(1_000);
+        (await MailsAsync(provider)).Should().BeEmpty();
     }
 
     [Fact]

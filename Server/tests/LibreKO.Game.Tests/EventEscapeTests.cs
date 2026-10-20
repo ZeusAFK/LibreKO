@@ -195,6 +195,7 @@ public class EventEscapeTests : GameTestBase
         FullMoonRules.HasEnteredToday(member).Should().BeFalse("a member who did not go in used up no entry");
         FullMoonRules.HasEnteredToday(leader).Should().BeTrue();
     }
+
     [Fact]
     public async Task ADungeonLeavesATiedUpMemberBehindAndSaysSo()
     {
@@ -302,6 +303,7 @@ public class EventEscapeTests : GameTestBase
         expired.Count.Should().Be(1, "a voucher that ran out is no payment");
         valid.IsEmpty.Should().BeTrue();
     }
+
     private static int Vouchers(UserSession player) =>
         player.Inventory.Where(slot => slot.ItemId == FullMoonRules.VoucherItem).Sum(slot => slot.Count);
 

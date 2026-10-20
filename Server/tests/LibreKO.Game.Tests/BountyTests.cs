@@ -32,6 +32,7 @@ public class BountyTests : GameTestBase
     private const int SeededOthers = 250;
     private static readonly TimeSpan DeathWait = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan PastTheLoadRest = TimeSpan.FromSeconds(BountyPacketCoordinator.RetrySeconds + 1);
+    private static readonly TimeSpan PastTheWake = TimeSpan.FromSeconds(BountyPacketCoordinator.WakeSeconds + 1);
     private const int KillsWhileDown = 10;
 
     [Fact]
@@ -977,6 +978,76 @@ public class BountyTests : GameTestBase
         clock.Now += PastTheLoadRest;
         await board.HandleAsync(bystander.Client, BountyPacket(ListSub));
         faults.Attempts.Should().Be(tried + targets.Length, "after the rest the board tries again");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TheKillerOrThePosterWakesARestingKillAfterAFewSeconds(bool byPoster)
+    {
+        var clock = new Clock();
+        var faults = new SaveFaults { Applies = context => context.ChangeTracker.Entries<BountyHunter>().Any() };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services =>
+            {
+                services.AddSingleton<TimeProvider>(clock);
+                services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults));
+            });
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+        var poster = CreatePlayer(provider, 1340, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1341, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1342, AccountNation.Karus);
+        var bystander = CreatePlayer(provider, 1343, AccountNation.Karus);
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        var bountyId = await StoredBountyIdAsync(provider);
+        faults.Failing = true;
+        board.RecordKill(target.Session, hunter.Session);
+        await faults.Thrown;
+        faults.Failing = false;
+        await board.HandleAsync(bystander.Client, BountyPacket(ListSub));
+        await board.HandleAsync(hunter.Client, BountyPacket(ClaimSub, bountyId));
+        hunter.Session.Money.Should().Be(StartingGold, "a kill rests a few seconds before anyone wakes it");
+
+        clock.Now += PastTheWake;
+        if (byPoster)
+            await board.HandleAsync(poster.Client, BountyPacket(WithdrawSub, bountyId));
+        else
+            await board.HandleAsync(hunter.Client, BountyPacket(ClaimSub, bountyId));
+
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().BountyHunters.CountAsync(h => h.CharacterId == hunter.Session.CharacterId))
+            .Should().Be(byPoster ? 1 : 0, "the request tried the resting kill again");
+        hunter.Session.Money.Should().Be(byPoster ? StartingGold : StartingGold + Reward);
+        poster.Session.Money.Should().Be(StartingGold - Reward, "an earned bounty is not withdrawn");
+    }
+
+    [Fact]
+    public async Task ABystanderCannotWakeAnotherPlayersRestingKill()
+    {
+        var clock = new Clock();
+        var faults = new SaveFaults { Applies = context => context.ChangeTracker.Entries<BountyHunter>().Any() };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services =>
+            {
+                services.AddSingleton<TimeProvider>(clock);
+                services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults));
+            });
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+        var poster = CreatePlayer(provider, 1344, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1345, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1346, AccountNation.Karus);
+        var other = CreatePlayer(provider, 1347, AccountNation.Karus);
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        var bountyId = await StoredBountyIdAsync(provider);
+        faults.Failing = true;
+        board.RecordKill(target.Session, hunter.Session);
+        await faults.Thrown;
+        var tried = faults.Attempts;
+        clock.Now += PastTheWake;
+
+        await board.HandleAsync(other.Client, BountyPacket(ClaimSub, bountyId));
+
+        faults.Attempts.Should().Be(tried, "only the killer's claim or the poster's withdrawal tries the resting kill again");
     }
 
     [Fact]

@@ -160,7 +160,7 @@ public class SpecialAuctionService(
 
         if (!await stateLock.WaitAsync(0))
             return SpecialAuctionPacketWriter.Busy;
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         var answer = SpecialAuctionPacketWriter.Busy;
         try
         {
@@ -228,7 +228,7 @@ public class SpecialAuctionService(
             return SpecialAuctionPacketWriter.WrongChannel;
 
         await stateLock.WaitAsync();
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         var answer = SpecialAuctionPacketWriter.NoHistory;
         long coins = 0;
         try
@@ -338,7 +338,7 @@ public class SpecialAuctionService(
             return SpecialAuctionPacketWriter.ClaimWrongChannel;
 
         await stateLock.WaitAsync();
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         var answer = SpecialAuctionPacketWriter.NoWin;
         try
         {

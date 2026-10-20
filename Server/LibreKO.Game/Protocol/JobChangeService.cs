@@ -65,7 +65,7 @@ public class JobChangeService(
 
         var oldClass = session.Class;
         var oldRace = session.Race;
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         Job? before = null;
         Job? after = null;
         var tiedUp = false;

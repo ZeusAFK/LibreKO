@@ -303,7 +303,7 @@ public class ShoppingMallLetterMutationService(
             return;
         }
 
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         var refusal = Rejected;
         var slot = -1;
         var coins = 0;

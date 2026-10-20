@@ -42,6 +42,8 @@ public class BountyPacketCoordinator(
     private const string RewardSubject = "Bounty reward";
     public const int RetrySeconds = 30;
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(RetrySeconds);
+    public const int WakeSeconds = 5;
+    private static readonly TimeSpan WakeDelay = TimeSpan.FromSeconds(WakeSeconds);
 
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -162,6 +164,13 @@ public class BountyPacketCoordinator(
 
     private bool Resting(Dictionary<int, long> rests, int id) => rests.TryGetValue(id, out var until) && Now < until;
 
+    // Only the killer or the poster wakes a target, and no sooner than a few seconds into its rest.
+    private void Wake(Bounty bounty)
+    {
+        if (restingTargets.TryGetValue(bounty.TargetCharacterId, out var until) && Now >= until - RetryDelay.Ticks + WakeDelay.Ticks)
+            restingTargets.Remove(bounty.TargetCharacterId);
+    }
+
     private async Task SendBountyListAsync(UserSession session)
     {
         List<BountyPacketWriter.Entry>? entries = null;
@@ -261,6 +270,9 @@ public class BountyPacketCoordinator(
         await gate.WaitAsync();
         try
         {
+            if (board.FirstOrDefault(b => b.Id == bountyId) is { } wanted
+                && unsaved.Any(kill => kill.VictimId == wanted.TargetCharacterId && kill.KillerId == session.CharacterId))
+                Wake(wanted);
             var bounty = await RefreshBoardAsync() ? board.FirstOrDefault(b => b.Id == bountyId) : null;
             if (bounty != null && Hunters(bounty.Id).Contains(session.CharacterId)
                 && await PayAndCloseAsync(session, bounty))
@@ -296,6 +308,8 @@ public class BountyPacketCoordinator(
         await gate.WaitAsync();
         try
         {
+            if (board.FirstOrDefault(b => b.Id == bountyId && b.PosterCharacterId == session.CharacterId) is { } own)
+                Wake(own);
             var bounty = await RefreshBoardAsync()
                 ? board.FirstOrDefault(b => b.Id == bountyId && b.PosterCharacterId == session.CharacterId)
                 : null;

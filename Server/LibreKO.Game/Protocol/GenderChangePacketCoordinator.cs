@@ -48,7 +48,7 @@ public class GenderChangePacketCoordinator(
         }
 
         var (oldRace, oldFace, oldHair) = (session.Race, session.Face, session.Hair);
-        var journal = new InventoryJournal(session);
+        var journal = new InventoryJournal(session, logger);
         // The item and the new look are saved together, and the race with them.
         var outcome = await statePersister.CommitAsync(session, async db =>
         {

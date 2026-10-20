@@ -89,7 +89,7 @@ public class KingSystemRuntimeService(
     public static ushort KingCapeOf(AccountNation nation) =>
         nation == AccountNation.ElMorad ? ElmoradKingCape : KarusKingCape;
 
-    // A request that finds a write for its value still waiting shares that write and its outcome.
+    // A request that finds a write for its value still waiting shares that write; a failed write is logged, and the next one stores the value as it stands.
     public Task PersistKingPropertyAsync<TProperty>(
         KingSystemData kingData,
         Expression<Func<KingSystemData, TProperty>> propertySelector)
@@ -121,7 +121,12 @@ public class KingSystemRuntimeService(
             logger.LogInformation("King property persisted for nation {Nation}", kingData.Nation);
             write.SetResult();
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "Could not store the King's {Property} for nation {Nation}", key.Property, key.Nation);
+            write.SetResult();
+        }
+        catch (OperationCanceledException exception)
         {
             write.SetException(exception);
         }

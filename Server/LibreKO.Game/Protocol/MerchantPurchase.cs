@@ -1,15 +1,17 @@
 ﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Game.World;
+using Microsoft.Extensions.Logging;
 
 using static LibreKO.Game.Protocol.MerchantPacketConstants;
 
 namespace LibreKO.Game.Protocol;
 
-public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, int itemId, ushort count, byte merchantSlot)
+public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, int itemId, ushort count, byte merchantSlot,
+    ILogger? logger = null)
 {
-    private readonly InventoryJournal buyerJournal = new(buyer);
-    private readonly InventoryJournal merchantJournal = new(merchant);
+    private readonly InventoryJournal buyerJournal = new(buyer, logger);
+    private readonly InventoryJournal merchantJournal = new(merchant, logger);
 
     public UserSession Buyer => buyer;
     public UserSession Merchant => merchant;

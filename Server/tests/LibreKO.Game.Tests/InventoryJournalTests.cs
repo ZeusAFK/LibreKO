@@ -250,6 +250,40 @@ public class InventoryJournalTests
     }
 
     [Fact]
+    public void WhatFindsNoRoomAnywhereIsLogged()
+    {
+        var session = Player();
+        Put(session, Potion, 1);
+        var log = new ErrorLog();
+        var journal = new InventoryJournal(session, log);
+        journal.Apply(_ => journal.TakeOne(Potion));
+        for (var index = Bag; index < Bag + InventoryConstants.HaveMax; index++)
+            (session.Inventory[index].ItemId, session.Inventory[index].Count) = (Scroll, 1);
+        foreach (var slot in session.Warehouse)
+            (slot.ItemId, slot.Count) = (Scroll, 1);
+
+        session.WithLock(_ => journal.Restore());
+
+        log.Errors.Should().ContainSingle(error => error.Contains(Potion.ToString()), "an item the undo cannot place anywhere is lost, so it is logged");
+    }
+
+    private sealed class ErrorLog : Microsoft.Extensions.Logging.ILogger
+    {
+        public List<string> Errors { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state,
+            Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == Microsoft.Extensions.Logging.LogLevel.Error)
+                Errors.Add(formatter(state, exception));
+        }
+    }
+
+    [Fact]
     public void WhatFindsNoRoomInTheBagGoesToTheWarehouse()
     {
         var session = Player();

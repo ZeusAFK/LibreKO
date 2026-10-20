@@ -36,6 +36,8 @@ public class CharacterSealTests : GameTestBase
     private const int CarriedAt = InventoryConstants.InventoryStart;
     private const int SenderPurse = 100_000;
     private const int MailedGold = 100;
+    private const int GiftCatalogId = 1;
+    private const int GiftPrice = 100;
     private static readonly TimeSpan SendWait = TimeSpan.FromMilliseconds(300);
 
     public enum Carried { Bound, Rented, Timed, TradeLockedData, NoTradeNumber, PetLink, UnknownItem }
@@ -360,11 +362,12 @@ public class CharacterSealTests : GameTestBase
                 : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    public enum Sent { Mail, Letter }
+    public enum Sent { Mail, Letter, Gift }
 
     [Theory]
     [InlineData(Sent.Mail)]
     [InlineData(Sent.Letter)]
+    [InlineData(Sent.Gift)]
     public async Task WhatIsSentWhileTheCharacterIsBeingSealedWaitsAndIsRefused(Sent what)
     {
         UserSession? sender = null;
@@ -374,9 +377,12 @@ public class CharacterSealTests : GameTestBase
         {
             Meanwhile = () =>
             {
-                sending = what == Sent.Mail
-                    ? services!.GetRequiredService<IMailService>().SendAsync(sender!, "Velkan", "Gift", "Gift", MailedGold, [])
-                    : services!.GetRequiredService<IShoppingMallLetterMutationService>().HandleSendAsync(sender!, LetterRequest("Velkan"));
+                sending = what switch
+                {
+                    Sent.Mail => services!.GetRequiredService<IMailService>().SendAsync(sender!, "Velkan", "Gift", "Gift", MailedGold, []),
+                    Sent.Letter => services!.GetRequiredService<IShoppingMallLetterMutationService>().HandleSendAsync(sender!, LetterRequest("Velkan")),
+                    _ => services!.GetRequiredService<IShoppingMallStoreService>().HandlePurchaseAsync(sender!, GiftRequest("Velkan")),
+                };
                 return Task.WhenAny(sending, Task.Delay(SendWait));
             },
         };
@@ -384,6 +390,15 @@ public class CharacterSealTests : GameTestBase
         services = provider;
         sender = Session(provider, 20, AccountB, "Buyer");
         sender.Money = SenderPurse;
+        sender.KnightCash = SenderPurse;
+        await using (var seeding = provider.CreateAsyncScope())
+        {
+            var seed = seeding.ServiceProvider.GetRequiredService<AppDbContext>();
+            seed.PusItems.Add(new PusItemData { Id = GiftCatalogId, ItemId = Plain, Price = GiftPrice, Category = 1 });
+            seed.Friendships.Add(new Friendship { CharacterId = 20, FriendCharacterId = 11, AddedAt = DateTime.UtcNow });
+            await seed.SaveChangesAsync();
+        }
+
         var sealer = Session(provider, 10, AccountA, "Zeus");
         sealer.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
         sealer.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
@@ -397,6 +412,20 @@ public class CharacterSealTests : GameTestBase
         (await db.Mails.CountAsync(mail => mail.RecipientCharacterId == 11)).Should().Be(0, "nothing reaches a character between its seal's check and its save");
         (await db.MailBoxes.CountAsync(letter => letter.RecipientId == "Velkan")).Should().Be(0);
         sender.Money.Should().Be(SenderPurse, "what was refused cost nothing");
+        sender.KnightCash.Should().Be(SenderPurse);
+    }
+
+    private static Packet GiftRequest(string recipient)
+    {
+        var packet = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        packet.WriteByte(ShoppingMallStoreService.PurchaseCart);
+        packet.WriteSByteString(recipient);
+        packet.WriteByte(1);
+        packet.WriteInt(GiftCatalogId);
+        packet.WriteUShort(1);
+        packet.WriteInt(GiftPrice);
+        packet.ResetOffset();
+        return packet;
     }
 
     private static Packet LetterRequest(string recipient)

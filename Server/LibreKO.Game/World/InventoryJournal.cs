@@ -1,9 +1,10 @@
 ﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Game.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.World;
 
-public sealed class InventoryJournal(UserSession session)
+public sealed class InventoryJournal(UserSession session, ILogger? logger = null)
 {
     private static readonly int[] Carried =
     [
@@ -236,8 +237,9 @@ public sealed class InventoryJournal(UserSession session)
         var home = session.Inventory[index];
         if (home.IsEmpty || ItemPlacement.StacksOnto(home, item))
             ItemPlacement.Put(home, item);
-        else
-            session.ReturnEscrowedItem(item);
+        else if (!session.ReturnEscrowedItem(item))
+            logger?.LogError("Undo for {Name} found no room in the bag or the warehouse for item {ItemId} x{Count}; it is lost",
+                session.Name, item.ItemId, item.Count);
     }
 
     private static int CountOf(ItemSlot slot) => slot.IsEmpty ? 0 : slot.Count;
@@ -252,7 +254,6 @@ public sealed class InventoryJournal(UserSession session)
     private static bool SameItem(ItemSlot slot, ItemSlot other) =>
         !slot.IsEmpty && slot.ItemId == other.ItemId && slot.UniqueId == other.UniqueId
         && slot.Flag == other.Flag && slot.ExpiresAt == other.ExpiresAt;
-
 
     public static void CopyInto(ItemSlot from, ItemSlot to)
     {
