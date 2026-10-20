@@ -28,6 +28,8 @@ public class SlaveMerchantTests : GameTestBase
     private const int ScrollPrice = 2000;
     private const int StackSlot = InventoryConstants.InventoryStart;
     private const int CertificateBagPosition = 3;
+    private const byte SweptTo = (byte)ZoneId.ElMoradCamp1;
+    private const byte MonsterType = 7;
     private const int BuyerPurse = 1_000_000;
     private const int LinkedSerial = 77;
     private const int AltId = 2003;
@@ -50,6 +52,25 @@ public class SlaveMerchantTests : GameTestBase
         reply.ReadUShort().Should().Be(SlaveMerchantService.OneDayHours);
         (await HoursOf(provider, OwnerId)).Should().Be(SlaveMerchantService.OneDayHours);
         (await StoredItems(provider, OwnerId)).Should().Equal(owner.SerializeItems());
+    }
+
+    [Fact]
+    public async Task ABusyOwnerRedeemsNoCertificate()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        GiveCertificate(owner, SlaveMerchantService.OneDayCertificate);
+        owner.Trade.ExchangeUser = BuyerId;
+        var redeem = new Packet(GameOpcodes.GS_SLAVE_MERCHANT);
+        redeem.WriteByte((byte)SlaveMerchantSub.Redeem);
+        redeem.WriteByte(CertificateBagPosition);
+        redeem.WriteInt(SlaveMerchantService.OneDayCertificate);
+        redeem.ResetOffset();
+
+        await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, redeem);
+
+        owner.Inventory[InventoryConstants.InventoryStart + CertificateBagPosition].ItemId.Should().Be(SlaveMerchantService.OneDayCertificate);
+        (await HoursOf(provider, OwnerId)).Should().Be(0);
     }
 
     [Fact]
@@ -186,12 +207,14 @@ public class SlaveMerchantTests : GameTestBase
         var slave = Slave(provider);
         var zone = slave.ZoneId;
 
-        await provider.GetRequiredService<IZoneTransitionService>().ChangeZoneAsync(slave, (byte)ZoneId.Moradon, 0f, 0f);
-        await provider.GetRequiredService<INpcAiDeathService>().HandlePlayerKilledByNpcAsync(slave, new NpcInstance());
+        await provider.GetRequiredService<IZoneTransitionService>().ChangeZoneAsync(slave, SweptTo, 0f, 0f);
+        await provider.GetRequiredService<INpcAiDeathService>().HandlePlayerKilledByNpcAsync(slave, new NpcInstance { NpcType = MonsterType });
         await provider.GetRequiredService<ICombatLifecycleService>().HandlePlayerDeathAsync(slave, killer: null);
         await provider.GetRequiredService<IMerchantLifecycleService>().CloseAsync(slave, MerchantInOut.StallClosed);
 
         slave.ZoneId.Should().Be(zone, "an event sweep would close the stall and lose what it holds");
+        slave.IsWarping.Should().BeFalse();
+        slave.KillerNpcType.Should().Be(0, "a monster cannot kill a slave");
         slave.Trade.IsMerchanting.Should().BeTrue();
         slave.Trade.MerchantItems[0].Count.Should().Be(4);
         slave.Deaths.Should().Be(0);

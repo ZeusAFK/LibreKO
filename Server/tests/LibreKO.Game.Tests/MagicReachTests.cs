@@ -496,6 +496,24 @@ public class MagicReachTests : GameTestBase
     }
 
     [Fact]
+    public async Task AStunnedPlayerCannotUseAnItemThatHidesThroughItsSecondType()
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 819, AccountNation.Karus, Moradon, Here, hp: PlayerHp / 2);
+        HoldReagent(provider, caster, HealthPotionItem, count: TwoScrolls);
+        provider.GetRequiredService<IGameDataService>().GetMagic(HealthPotion).Returns(new MagicData
+        {
+            Id = HealthPotion, Type1 = (byte)MagicSkillType.OverTime, Type2 = (byte)MagicSkillType.Stealth,
+            Moral = (byte)SkillMoral.Self, UseItem = HealthPotionItem,
+        });
+        Stun(caster);
+
+        await Cast(provider, caster, HealthPotion, caster.CharacterId);
+
+        caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(TwoScrolls, "a held player does not go into hiding");
+    }
+
+    [Fact]
     public async Task AStunnedPlayersBrokenCastIsStillLetGo()
     {
         using var provider = Provider();
@@ -524,6 +542,7 @@ public class MagicReachTests : GameTestBase
         var caster = Player(provider, 812, AccountNation.Karus, Moradon, Here, hp: PlayerHp / 2);
         HoldReagent(provider, caster, HealthPotionItem);
         Stun(caster, hold);
+        UserSessionMagicState.ApplyBuffBonuses(caster);
         var worm = Worm(provider, Here + 10);
 
         await Cast(provider, caster, FireBlast, worm.UniqueId);

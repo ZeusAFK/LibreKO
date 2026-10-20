@@ -21,6 +21,7 @@ public class SessionLifecycleTests : GameTestBase
     private const byte SecondStep = 2;
     private const byte GetLanguage = ClientSettingsPacketCoordinator.SubGetLanguage;
     private const byte SetLanguage = ClientSettingsPacketCoordinator.SubSetLanguage;
+    private const int OwnCloseSeconds = 5;
 
     [Fact]
     public async Task EachStepOfTheGameStartRunsOncePerLogin()
@@ -109,6 +110,22 @@ public class SessionLifecycleTests : GameTestBase
         await ask;
 
         Languages(sent).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ALogoutFromTheSessionsOwnPacketDoesNotWaitForItself()
+    {
+        using var provider = Provider();
+        var (client, _) = await SignedInAsync(provider, First);
+        await GameStart(provider, client, FirstStep);
+        var logout = new Packet(GameOpcodes.GS_LOGOUT);
+        logout.ResetOffset();
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        await provider.GetRequiredService<IPacketHandler>().HandlePacket(client, logout);
+
+        provider.GetRequiredService<SessionManager>().GetByClientId(client.Id).Should().BeNull();
+        clock.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(OwnCloseSeconds), "the close runs inside the packet it waits for");
     }
 
     [Fact]
