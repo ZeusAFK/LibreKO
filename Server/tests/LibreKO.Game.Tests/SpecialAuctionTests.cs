@@ -17,6 +17,7 @@ namespace LibreKO.Game.Tests;
 
 public class SpecialAuctionTests : GameTestBase
 {
+    private const float FarFromTheAltar = 100f;
     private const int Earrings = 1310610106;
     private const int Necklace = 1320510810;
     private const int Check = SpecialAuctionService.MythrilCheck;
@@ -544,6 +545,38 @@ public class SpecialAuctionTests : GameTestBase
         player.Session.Money.Should().Be(10_000_000, "gold and items change hands only at Akara's Altar");
         CountOf(player, Check).Should().Be(1);
         CountOf(player, Earrings).Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ACollectAwayFromTheAltarOrOutOfItsReachMovesNothing(bool outOfReach)
+    {
+        var (provider, _) = Provider();
+        using var _p = provider;
+        var first = Join(provider, 100, "First", 10_000_000, checks: 1);
+        var second = Join(provider, 200, "Second", 10_000_000, checks: 2);
+        (await PlaceBid(provider, first, 0, Earrings, 2 * Million, 0)).ReadShort().Should().Be(1);
+        (await PlaceBid(provider, second, 0, Earrings, 2 * Million, 0, 1)).ReadShort().Should().Be(1);
+        var row = Rows(await Send(provider, first, MyInfo)).Single();
+        if (outOfReach)
+            first.Session.X += FarFromTheAltar;
+        else
+            first.Session.Quest.EventNpcUniqueId = 0;
+
+        await Send(provider, first, Collect, p =>
+        {
+            p.WriteInt(row.Channel);
+            p.WriteByte(row.Day);
+            p.WriteByte(row.Slot);
+            p.WriteInt(row.Item);
+            p.WriteShort(row.Count);
+            p.WriteInt(row.Serial);
+            p.WriteByte(0);
+        });
+
+        first.Session.Money.Should().Be((int)(10_000_000 - 2 * Million), "an outbid stake comes back only at Akara's Altar");
+        CountOf(first, Check).Should().Be(0);
     }
 
     private static int CountOf(Player player, int itemId) =>

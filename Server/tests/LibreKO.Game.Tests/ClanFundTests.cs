@@ -12,6 +12,7 @@ namespace LibreKO.Game.Tests;
 public class ClanFundTests : GameTestBase
 {
     private const int Rounds = 20_000;
+    private const int Threads = 8;
     private const short ClanId = 90;
     private const int PlayerId = 660;
     private const int Small = 10;
@@ -21,7 +22,7 @@ public class ClanFundTests : GameTestBase
     {
         var clan = Clan(fund: Rounds);
 
-        Parallel.For(0, Rounds, _ =>
+        Together(() =>
         {
             ClanRules.AddToFund(clan, 1);
             ClanRules.TrySpendFund(clan, 1).Should().BeTrue();
@@ -51,10 +52,11 @@ public class ClanFundTests : GameTestBase
         var loyalty = provider.GetRequiredService<ILoyaltyService>();
         var accepted = 0;
 
-        Parallel.For(0, 2 * Rounds, _ =>
+        Together(() =>
         {
-            if (loyalty.TryDonateToKnightsAsync(player, 1).GetAwaiter().GetResult())
-                Interlocked.Increment(ref accepted);
+            for (var twice = 0; twice < 2; twice++)
+                if (loyalty.TryDonateToKnightsAsync(player, 1).GetAwaiter().GetResult())
+                    Interlocked.Increment(ref accepted);
         });
 
         accepted.Should().Be(Rounds);
@@ -73,7 +75,7 @@ public class ClanFundTests : GameTestBase
         player.Loyalty = ClanRules.DonorKeepsNationalPoints + Rounds;
         var loyalty = provider.GetRequiredService<ILoyaltyService>();
 
-        Parallel.For(0, Rounds, _ =>
+        Together(() =>
         {
             loyalty.ChangeAsync(player, 1).GetAwaiter().GetResult();
             loyalty.TryDonateToKnightsAsync(player, 1).GetAwaiter().GetResult().Should().BeTrue();
@@ -82,6 +84,20 @@ public class ClanFundTests : GameTestBase
         player.KnightsPoints.Should().Be(2 * Rounds, "each gain gives its point to the clan and each donation gives one");
         player.Loyalty.Should().Be(ClanRules.DonorKeepsNationalPoints);
         clan.ClanPointFund.Should().Be(Rounds);
+    }
+
+    // Every thread is released at once and runs its share of the rounds, so the steps overlap from the first round.
+    private static void Together(Action round)
+    {
+        using var start = new Barrier(Threads);
+        var threads = Enumerable.Range(0, Threads).Select(_ => new Thread(() =>
+        {
+            start.SignalAndWait();
+            for (var step = 0; step < Rounds / Threads; step++)
+                round();
+        })).ToList();
+        threads.ForEach(thread => thread.Start());
+        threads.ForEach(thread => thread.Join());
     }
 
     private static KnightsEntity Clan(int fund) => new()

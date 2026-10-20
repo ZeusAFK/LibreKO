@@ -2043,6 +2043,29 @@ public class WorldTests : GameTestBase
         session.Money.Should().Be(2_000_000);
     }
 
+    [Theory]
+    [InlineData(ClassChangeSubOpcode.SkillReset)]
+    [InlineData(ClassChangeSubOpcode.StatResetCost)]
+    [InlineData(ClassChangeSubOpcode.RebirthStatReset)]
+    public async Task AResetOrARebirthResetAwayFromItsNpcIsNotAnswered(ClassChangeSubOpcode sub)
+    {
+        using var provider = CreateProvider(_ => { }, gameData => gameData.GetCoefficient((short)101).Returns(CreateBasicCoefficient(101)));
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 196, accountId: 206);
+        (session.Class, session.Level, session.Race, session.Money, session.Strength) = (101, 30, 1, 2_000_000, 80);
+        var packet = new Packet(GameOpcodes.GS_CLASS_CHANGE);
+        packet.WriteByte((byte)sub);
+        packet.WriteByte(0);
+
+        await provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>().HandleClassChangeAsync(client, packet);
+
+        client.ReceivedCalls().Where(call => call.GetMethodInfo().Name == nameof(IClient.SendPacket))
+            .Should().BeEmpty("resets are offered by their NPC, and a request from anywhere else is not heard");
+        session.Money.Should().Be(2_000_000);
+    }
+
     private static (IClient Client, UserSession Session, Func<Packet?> Sent) CreateMasterySession(
         ServiceProvider provider, short classId, byte level, int characterId)
     {

@@ -591,6 +591,21 @@ public class GatherTests : GameTestBase
     }
 
     [Fact]
+    public async Task BettingGame_ABusyPlayerAtTheGamblerBetsNothing()
+    {
+        using var provider = CreateProvider(_ => { }, ConfigureItems);
+        var (session, _) = CreateGatherer(provider, BattleZoneManager.ZONE_MORADON, MoradonMineX, MoradonMineZ, Mattock);
+        StandAt(provider, session, MiningPacketCoordinator.GamblerNpcId);
+        session.Money = BettingStake;
+        session.Trade.ExchangeUser = session.CharacterId + 1;
+
+        await provider.GetRequiredService<IMiningPacketCoordinator>().HandleAsync(session.Client, Request(SubBetting));
+
+        session.Money.Should().Be(BettingStake, "a purse a trade counts on is not staked");
+        GoldenYutCount(session).Should().Be(0);
+    }
+
+    [Fact]
     public async Task BettingGame_TakesFiftyThousandAndPaysGoldenYutByTheResult()
     {
         using var provider = CreateProvider(_ => { }, ConfigureItems);

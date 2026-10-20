@@ -42,19 +42,15 @@ public class ClanCreationTests : GameTestBase
         using var provider = Provider(hooks);
         var founder = Founder(provider, FounderId);
         var rival = Founder(provider, RivalId);
-        var rivalChecks = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Task? rivalFounding = null;
-        var checks = 0;
-        hooks.BeforeNameCheck = async () =>
+        var creates = 0;
+        hooks.BeforeCreate = async () =>
         {
-            if (Interlocked.Increment(ref checks) > 1)
-            {
-                rivalChecks.TrySetResult();
+            if (Interlocked.Increment(ref creates) > 1)
                 return;
-            }
 
             rivalFounding = Task.Run(() => Create(provider, rival, ClanName));
-            await Task.WhenAny(rivalChecks.Task, Task.Delay(RivalWait));
+            await Task.WhenAny(rivalFounding, Task.Delay(RivalWait));
         };
 
         await Create(provider, founder, ClanName);
@@ -141,6 +137,7 @@ public class ClanCreationTests : GameTestBase
     private sealed class Hooks
     {
         public Func<Task> BeforeNameCheck { get; set; } = () => Task.CompletedTask;
+        public Func<Task> BeforeCreate { get; set; } = () => Task.CompletedTask;
         public Action AfterCreate { get; set; } = () => { };
         public bool FailCreate { get; set; }
     }
@@ -157,6 +154,7 @@ public class ClanCreationTests : GameTestBase
         {
             if (hooks.FailCreate)
                 throw new DbUpdateException("the database went away");
+            await hooks.BeforeCreate();
             await inner.CreateAsync(clan);
             hooks.AfterCreate();
         }

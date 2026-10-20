@@ -731,6 +731,26 @@ public class DrakiTowerTests : GameTestBase
         await itemUsage.DidNotReceiveWithAnyArgs().TryConsumeItemAsync(default!, default);
     }
 
+    [Fact]
+    public async Task HandleEnterAsync_ABusyPlayerAtTheRift_EntersNothing()
+    {
+        var session = CreatePlayer(zone: (byte)ZoneId.ElMoradCamp1);
+        session.DrakiEntranceLimit = 0;
+        session.DrakiEntranceLimitResetDate = DateTime.UtcNow.Date;
+        AtTheRift(session);
+        session.Trade.ExchangeUser = session.CharacterId + 1;
+        itemUsage.CanUseItem(session, DrakiTowerRules.CertificateOfDrakiItem).Returns(true);
+        itemUsage.TryConsumeItemAsync(session, DrakiTowerRules.CertificateOfDrakiItem).Returns(true);
+        var packet = new Packet((byte)GameOpcodes.GS_EVENT);
+        packet.WriteInt(DrakiTowerRules.CertificateOfDrakiItem);
+        packet.WriteByte(1);
+
+        await service.HandleEnterAsync(session, packet);
+
+        session.Room.Should().Be(0, "a player in a trade is not taken into the tower");
+        await itemUsage.DidNotReceiveWithAnyArgs().TryConsumeItemAsync(default!, default);
+    }
+
     private void AtTheRift(UserSession session) =>
         session.Quest.EventNpcUniqueId = sessionManager.Regions.SpawnNpc(new NpcInstance
         {
