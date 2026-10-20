@@ -88,6 +88,7 @@ internal sealed partial class UpgradeFeature : IFeature, IClosableWindow
     private Tween? scanTween;
     private UpgradeResult? pendingResult;
     private ProgressBar compoundGauge = null!;
+    private Gradient anvilSeamGlow = null!;
     private const float CompoundGaugeHeight = 18f;
     private BagCompanion? anvilCompanion;
     private AnvilBench anvilBench = AnvilBench.Item;
@@ -271,16 +272,16 @@ internal sealed partial class UpgradeFeature : IFeature, IClosableWindow
         AnvilLidBottom = AnvilLid(top: false);
         AnvilLids.AddChild(AnvilLidBottom);
 
-        var glow = new Gradient
+        anvilSeamGlow = new Gradient
         {
             Offsets = new[] { 0f, 0.5f, 1f },
-            Colors = new[] { new Color(UiTheme.GoldVivid, 0f), UiTheme.GoldBright, new Color(UiTheme.GoldVivid, 0f) },
+            Colors = SeamColours(fails: false),
         };
         AnvilSeam = new TextureRect
         {
             Texture = new GradientTexture2D
             {
-                Gradient = glow, Width = 1, Height = 16,
+                Gradient = anvilSeamGlow, Width = 1, Height = 16,
                 FillFrom = new Vector2(0, 0), FillTo = new Vector2(0, 1),
             },
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
@@ -795,13 +796,24 @@ internal sealed partial class UpgradeFeature : IFeature, IClosableWindow
         ApplyResult(result, onBench: watched);
     }
 
+    internal static bool ScanFails(ItemUpgradeResult code) => code == ItemUpgradeResult.Failed;
+
+    private static Color[] SeamColours(bool fails)
+    {
+        Color edge = fails ? UiTheme.Bad : UiTheme.GoldVivid;
+        Color core = fails ? UiTheme.Bad : UiTheme.GoldBright;
+        return new[] { new Color(edge, 0f), core, new Color(edge, 0f) };
+    }
+
     private void StartScan(UpgradeResult result)
     {
         pendingResult = result;
         scanTween?.Kill();
         ResetAnvilLids();
+        bool fails = ScanFails(result.ResultCode);
         if (anvilBench == AnvilBench.Accessory)
         {
+            compoundGauge.AddThemeStyleboxOverride("fill", UiKit.CachedMeterFill(fails ? UiTheme.Bad : UiTheme.Gold));
             compoundGauge.Value = 0;
             compoundGauge.Visible = true;
             var fill = context.Root.CreateTween();
@@ -810,6 +822,7 @@ internal sealed partial class UpgradeFeature : IFeature, IClosableWindow
             scanTween = fill;
             return;
         }
+        anvilSeamGlow.Colors = SeamColours(fails);
         AnvilLids.Visible = true;
         var tween = context.Root.CreateTween();
         tween.TweenProperty(AnvilLidTop, "anchor_bottom", 0.5f, AnvilLidSeconds);
