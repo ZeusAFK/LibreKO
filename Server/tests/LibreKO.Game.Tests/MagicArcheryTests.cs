@@ -22,6 +22,9 @@ public class MagicArcheryTests : GameTestBase
     private const byte KnifeKind = 95;
     private const int StrangeShot = 107777;
     private const int PowerShot = 490358;
+    private const int PoisonShot = 107550;
+    private const short PoisonPerTick = -100;
+    private const byte PoisonTicks = 20;
     private const int StrangeAmmo = 399999000;
     private const byte StrangeAmmoKind = 97;
     private const ushort Quiver = 50;
@@ -77,6 +80,23 @@ public class MagicArcheryTests : GameTestBase
 
         worm.Hp.Should().BeLessThan(WormHp, "the arrow was spent when it was loosed, not when it lands");
         Arrows(archer).Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData((ushort)1)]
+    [InlineData(Quiver)]
+    public async Task APoisonShotTakesOnlyItsOwnArrowAndPoisonsEvenWithTheLast(ushort loaded)
+    {
+        using var provider = Provider();
+        var (archer, client) = ArcherWith(provider, bow: true);
+        archer.Inventory[InventoryConstants.InventoryStart].Count = loaded;
+        var worm = Worm(provider);
+
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, PoisonShot, worm.UniqueId);
+        await Send(provider, client, archer, MagicProcessOpcode.Effecting, PoisonShot, worm.UniqueId);
+
+        worm.ActiveOverTimeEffects.Should().ContainKey(PoisonShot, "the poison rides on the arrow already loosed");
+        Arrows(archer).Should().Be(loaded - 1);
     }
 
     [Fact]
@@ -216,8 +236,18 @@ public class MagicArcheryTests : GameTestBase
             {
                 Id = id, Type1 = (byte)MagicSkillType.Ranged, Moral = 7, Range = 40, UseItem = ammo, Msp = 5,
             });
+        gameData.GetMagic(PoisonShot).Returns(new MagicData
+        {
+            Id = PoisonShot, Type1 = (byte)MagicSkillType.Ranged, Type2 = (byte)MagicSkillType.OverTime, Moral = 7, Range = 40,
+            UseItem = Arrow, Msp = 5,
+        });
+        gameData.MagicType3Table.Returns(new Dictionary<int, MagicType3Data>
+        {
+            [PoisonShot] = new() { Id = PoisonShot, DirectType = 1, TimeDamage = PoisonPerTick, Duration = PoisonTicks },
+        });
         gameData.MagicType2Table.Returns(new Dictionary<int, MagicType2Data>
         {
+            [PoisonShot] = new() { Id = PoisonShot, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
             [Shot] = new() { Id = Shot, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
             [Volley] = new() { Id = Volley, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = VolleyArrows },
             [KnifeThrow] = new() { Id = KnifeThrow, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },

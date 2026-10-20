@@ -188,6 +188,32 @@ public class MagicReachTests : GameTestBase
     }
 
     [Fact]
+    public async Task AHealStrikeAsASecondTypeLeavesTheReagentToTheFirst()
+    {
+        using var provider = Provider();
+        var priest = Player(provider, 814, AccountNation.Karus, Ronark, Here);
+        TakeTheClassOf(priest, Heal);
+        priest.Inventory[InventoryConstants.RightHand].ItemId = Mace;
+        priest.Inventory[InventoryConstants.RightHand].Count = 1;
+        priest.RecalculateStats(CreateBasicCoefficient(priest.Class), provider.GetRequiredService<IGameDataService>());
+        var bag = priest.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = CureItem;
+        bag.Count = TwoScrolls;
+        bag.Durability = 1;
+        var enemy = Player(provider, 815, AccountNation.ElMorad, Ronark, Here + 5);
+        var healWithReagent = new MagicData
+        {
+            Id = Heal, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.FriendWithMe, Range = 20, UseItem = CureItem,
+        };
+
+        await provider.GetRequiredService<MagicOverTimeService>()
+            .ExecuteAsync(priest, healWithReagent, Heal, enemy.CharacterId, new int[7], isPrimary: false);
+
+        enemy.Hp.Should().BeLessThan(PlayerHp);
+        bag.Count.Should().Be(TwoScrolls, "the first type has paid the reagent");
+    }
+
+    [Fact]
     public async Task AnArmedHealOnAnEnemyWhoCannotBeAttackedDoesNothing()
     {
         using var provider = Provider();

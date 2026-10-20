@@ -35,7 +35,8 @@ public class MagicOverTimeService(
     public static bool HasHealOverTime(UserSession session) =>
         session.ActiveOverTimeEffects.Values.Any(effect => effect.TickAmount > 0);
 
-    public async Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    public async Task<bool> ExecuteAsync(
+        UserSession caster, MagicData magic, int skillId, int targetId, int[] data, bool isPrimary = true)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, skillId, out var type3Data))
         {
@@ -43,7 +44,8 @@ public class MagicOverTimeService(
             return false;
         }
 
-        if (magic.UseItem != 0)
+        // A second type rides on the first type's reagent, which that type has checked and spent.
+        if (isPrimary && magic.UseItem != 0)
         {
             if ((magic.ItemGroup == PotionItemGroup && !caster.CanUsePotions)
                 || !magicItemUsageService.CanUseSkillItems(caster, magic))
@@ -76,7 +78,7 @@ public class MagicOverTimeService(
 
         var isHeal = (SkillMoral)magic.Moral is SkillMoral.Self or SkillMoral.FriendWithMe
             or SkillMoral.FriendExceptMe or SkillMoral.Party or SkillMoral.PartyAll or SkillMoral.AreaFriend;
-        if (isHeal && await TryHealStrikeAsync(caster, magic, skillId, targetId, type3Data, data))
+        if (isHeal && await TryHealStrikeAsync(caster, magic, skillId, targetId, type3Data, data, isPrimary))
             return true;
 
         var playerTargets = new List<UserSession>();
@@ -103,7 +105,7 @@ public class MagicOverTimeService(
             actualTargetIds.Add(npcTarget.UniqueId);
         }
 
-        if (!await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
+        if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
         {
             await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
             return false;
@@ -169,7 +171,8 @@ public class MagicOverTimeService(
     }
 
     private async Task<bool> TryHealStrikeAsync(
-        UserSession caster, MagicData magic, int skillId, int targetId, MagicType3Data type3Data, int[] data)
+        UserSession caster, MagicData magic, int skillId, int targetId, MagicType3Data type3Data, int[] data,
+        bool isPrimary)
     {
         if (targetId == caster.CharacterId
             || !HealStrike.Turns(caster.HealStrikesEnemies, (SkillMoral)magic.Moral, (MagicDirectType)type3Data.DirectType))
@@ -191,7 +194,7 @@ public class MagicOverTimeService(
             return false;
         }
 
-        if (!await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
+        if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
         {
             await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
             return true;

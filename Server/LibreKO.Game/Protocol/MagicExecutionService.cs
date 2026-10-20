@@ -210,7 +210,7 @@ public class MagicExecutionService(
             case MagicSkillType.OverTime:
             case MagicSkillType.Area:
                 await stealthService.RevealAsync(session, InvisibilityType.None);
-                return await magicCombatEffectService.ExecuteAsync(session, magic, skillType, skillId, targetId, data);
+                return await magicCombatEffectService.ExecuteAsync(session, magic, skillType, skillId, targetId, data, isPrimary);
             case MagicSkillType.Buff:
             case MagicSkillType.Special:
             case MagicSkillType.Transform:

@@ -9,7 +9,7 @@ public interface IMagicCombatEffectService
 {
     Task<bool> ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
-        int[] data);
+        int[] data, bool isPrimary = true);
     Task CancelAsync(UserSession target, int skillId);
 }
 
@@ -21,14 +21,14 @@ public class MagicCombatEffectService(
 {
     public Task<bool> ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
-        int[] data)
+        int[] data, bool isPrimary = true)
     {
         caster.MarkCombat();
         return skillType switch
         {
             MagicSkillType.Melee => meleeService.ExecuteAsync(caster, magic, skillId, targetId, data),
             MagicSkillType.Ranged => rangedService.ExecuteAsync(caster, magic, skillId, targetId, data),
-            MagicSkillType.OverTime => overTimeService.ExecuteAsync(caster, magic, skillId, targetId, data),
+            MagicSkillType.OverTime => overTimeService.ExecuteAsync(caster, magic, skillId, targetId, data, isPrimary),
             MagicSkillType.Area => areaService.ExecuteAsync(caster, magic, skillId, targetId, data),
             _ => Task.FromResult(false)
         };

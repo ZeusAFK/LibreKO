@@ -59,6 +59,20 @@ public class MagicSecondTypeTests
     }
 
     [Fact]
+    public async Task ADamageOverTimeSecondTypeIsToldItIsTheSecond()
+    {
+        var (execution, combat, _, _) = CreateExecutionService();
+        var magic = new MagicData { Id = SkillId, Type1 = 2, Type2 = 3 };
+
+        await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
+
+        await combat.Received(1).ExecuteAsync(
+            Arg.Any<UserSession>(), magic, MagicSkillType.Ranged, SkillId, TargetId, Arg.Any<int[]>(), true);
+        await combat.Received(1).ExecuteAsync(
+            Arg.Any<UserSession>(), magic, MagicSkillType.OverTime, SkillId, TargetId, Arg.Any<int[]>(), false);
+    }
+
+    [Fact]
     public async Task AFirstTypeThatIsRefusedRunsNothingElse()
     {
         var (execution, combat, status, _) = CreateExecutionService();
