@@ -65,11 +65,7 @@ public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, in
         return true;
     }
 
-    public void Undo()
-    {
-        buyerJournal.Restore();
-        merchantJournal.Restore();
-    }
+    public void Undo() => InventoryJournal.RestoreTogether(buyerJournal, merchantJournal);
 
     private string? Check(IGameDataService gameData)
     {

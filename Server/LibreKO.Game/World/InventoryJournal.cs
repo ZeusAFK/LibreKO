@@ -117,23 +117,83 @@ public sealed class InventoryJournal(UserSession session)
         return true;
     });
 
-    // What the change made is taken back wherever it lies, and what it took goes back only once all it made is back.
+    // Whole once all it made is back; short of that, a change that took anything stands and one that took nothing goes back as far as it can.
     public void Restore()
     {
-        var made = new List<(int Index, ItemSlot Part)>();
-        var took = new List<(int Index, ItemSlot Part, bool Stacks)>();
+        var change = Split();
+        var whole = IsWhole(change);
+        if (whole || (change.Took.Count == 0 && moneyMoved >= 0))
+            Undo(change, whole);
+    }
+
+    // Journals of one exchange go back together or not at all.
+    public static void RestoreTogether(params InventoryJournal[] journals)
+    {
+        if (journals.All(journal => journal.IsWhole(journal.Split())))
+        {
+            foreach (var journal in journals)
+                journal.Restore();
+        }
+    }
+
+    private sealed record Change(
+        List<(int Index, ItemSlot Part)> Made,
+        List<(int Index, ItemSlot Part, bool Stacks)> Took,
+        List<(int Index, ItemSlot Before, int Wear)> Worn,
+        List<int> Unsealed);
+
+    private Change Split()
+    {
+        var change = new Change([], [], [], []);
         foreach (var (index, before) in slots)
         {
-            if (written.TryGetValue(index, out var left))
-                Split(index, before, left, made, took);
-            else
-                CopyInto(before, session.Inventory[index]);
+            if (!written.TryGetValue(index, out var left))
+            {
+                change.Unsealed.Add(index);
+                continue;
+            }
+
+            var stacks = before.Count > 1;
+            if (!before.IsEmpty && !left.IsEmpty && !SameItem(before, left))
+            {
+                change.Made.Add((index, Copy(left)));
+                change.Took.Add((index, Copy(before), stacks));
+                continue;
+            }
+
+            if (!before.IsEmpty && !left.IsEmpty && before.Durability != left.Durability)
+                change.Worn.Add((index, Copy(before), left.Durability - before.Durability));
+            var moved = CountOf(left) - CountOf(before);
+            if (moved > 0)
+                change.Made.Add((index, Part(left, moved)));
+            else if (moved < 0)
+                change.Took.Add((index, Part(before, -moved), stacks));
         }
 
-        var missing = made.Sum(entry => TakeBack(entry.Index, entry.Part));
-        if (missing == 0)
+        return change;
+    }
+
+    private bool IsWhole(Change change) =>
+        (moneyMoved <= 0 || session.Money >= moneyMoved)
+        && change.Made.GroupBy(entry => (entry.Part.ItemId, entry.Part.UniqueId, entry.Part.Flag, entry.Part.ExpiresAt))
+            .All(kind => Holding(kind.Select(entry => entry.Index), kind.First().Part).Sum(slot => slot.Count) >= kind.Sum(entry => entry.Part.Count));
+
+    private void Undo(Change change, bool whole)
+    {
+        foreach (var index in change.Unsealed)
+            CopyInto(slots[index], session.Inventory[index]);
+        foreach (var (index, part) in change.Made)
+            TakeBack(index, part);
+        foreach (var (index, before, wear) in change.Worn)
         {
-            foreach (var (index, part, stacks) in took)
+            var slot = session.Inventory[index];
+            if (SameItem(slot, before))
+                slot.Durability = (short)(slot.Durability - wear);
+        }
+
+        if (whole)
+        {
+            foreach (var (index, part, stacks) in change.Took)
                 PutBack(index, part, stacks);
         }
 
@@ -147,29 +207,13 @@ public sealed class InventoryJournal(UserSession session)
         session.Money = (int)Math.Clamp(session.Money - moneyMoved, 0, ExchangePacketConstants.CoinMax);
     }
 
-    private static void Split(int index, ItemSlot before, ItemSlot left,
-        List<(int Index, ItemSlot Part)> made, List<(int Index, ItemSlot Part, bool Stacks)> took)
-    {
-        var stacks = before.Count > 1;
-        if (!before.IsEmpty && !left.IsEmpty && !Alike(before, left))
-        {
-            made.Add((index, Copy(left)));
-            took.Add((index, Copy(before), stacks));
-            return;
-        }
+    private IEnumerable<ItemSlot> Holding(IEnumerable<int> first, ItemSlot kind) =>
+        first.Concat(Carried).Distinct().Select(at => session.Inventory[at]).Where(slot => SameItem(slot, kind));
 
-        var moved = CountOf(left) - CountOf(before);
-        if (moved > 0)
-            made.Add((index, Part(left, moved)));
-        else if (moved < 0)
-            took.Add((index, Part(before, -moved), stacks));
-    }
-
-    // The slot the change filled gives first, then the rest of the carried bag.
-    private int TakeBack(int index, ItemSlot part)
+    private void TakeBack(int index, ItemSlot part)
     {
         var owed = (int)part.Count;
-        foreach (var slot in Carried.Prepend(index).Distinct().Select(at => session.Inventory[at]).Where(slot => SameItem(slot, part)))
+        foreach (var slot in Holding([index], part))
         {
             var taken = Math.Min(owed, slot.Count);
             slot.Count = (ushort)(slot.Count - taken);
@@ -179,11 +223,9 @@ public sealed class InventoryJournal(UserSession session)
             if (owed == 0)
                 break;
         }
-
-        return owed;
     }
 
-    // Only what the change cut from a stack goes back onto a stack; a single item needs an empty slot.
+    // Only what the change cut from a stack goes back onto a stack, and what finds no room in the bag goes to the warehouse.
     private void PutBack(int index, ItemSlot part, bool stacks)
     {
         var item = new ExchangeItem
@@ -192,11 +234,10 @@ public sealed class InventoryJournal(UserSession session)
             ExpiresAt = part.ExpiresAt, UniqueId = part.UniqueId, Countable = stacks,
         };
         var home = session.Inventory[index];
-        var target = home.IsEmpty || ItemPlacement.StacksOnto(home, item)
-            ? index
-            : ItemPlacement.FindForReturn(session.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item);
-        if (target >= 0)
-            ItemPlacement.Put(session.Inventory[target], item);
+        if (home.IsEmpty || ItemPlacement.StacksOnto(home, item))
+            ItemPlacement.Put(home, item);
+        else
+            session.ReturnEscrowedItem(item);
     }
 
     private static int CountOf(ItemSlot slot) => slot.IsEmpty ? 0 : slot.Count;
@@ -212,7 +253,6 @@ public sealed class InventoryJournal(UserSession session)
         !slot.IsEmpty && slot.ItemId == other.ItemId && slot.UniqueId == other.UniqueId
         && slot.Flag == other.Flag && slot.ExpiresAt == other.ExpiresAt;
 
-    private static bool Alike(ItemSlot slot, ItemSlot other) => SameItem(slot, other) && slot.Durability == other.Durability;
 
     public static void CopyInto(ItemSlot from, ItemSlot to)
     {

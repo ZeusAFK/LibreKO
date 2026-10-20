@@ -38,6 +38,8 @@ public class SlaveMerchantTests : GameTestBase
     private const ushort Kept = 3;
     private const ushort Owned = 4;
     private const ushort PickedUp = 3;
+    private const ushort Stock = 5;
+    private const ushort Bought = 2;
 
     [Fact]
     public async Task ACertificateAddsItsHoursAndIsUsedUp()
@@ -412,6 +414,36 @@ public class SlaveMerchantTests : GameTestBase
         faults.Fails = _ => false;
         stack.Count.Should().Be(Owned + PickedUp, "the undo takes back the scrolls bought and keeps the ones picked up");
         slave.Trade.MerchantItems[0].Count.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task AFailedSaleWhoseGoodsLeftTheBuyersBagStandsForBoth()
+    {
+        var faults = new SaveFaults();
+        using var provider = Provider(faults);
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, Stock);
+        Stage(owner, Scroll, StackSlot, count: Stock, stock: Stock);
+        await Insert(provider, owner, toSlave: true);
+        var slave = Slave(provider);
+        var (buyer, _) = Player(provider, BuyerId, "Buyer");
+        faults.Fails = _ =>
+        {
+            foreach (var slot in buyer.Inventory.Where(slot => slot.ItemId == Scroll))
+            {
+                InventoryJournal.CopyInto(slot, buyer.Warehouse[0]);
+                slot.Clear();
+            }
+
+            return true;
+        };
+
+        await Buy(provider, slave, count: Bought);
+
+        faults.Fails = _ => false;
+        buyer.Warehouse[0].Count.Should().Be(Bought);
+        slave.Trade.MerchantItems[0].Count.Should().Be(Stock - Bought, "the scrolls are still the buyer's, so the sale stands for the slave too");
+        buyer.Money.Should().Be(BuyerPurse - Bought * ScrollPrice);
     }
 
     [Fact]

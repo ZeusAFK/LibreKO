@@ -22,6 +22,9 @@ public class InventoryJournalTests
     private const ushort PickedUp = 5;
     private const short Worn = 5;
     private const short Repaired = 50;
+    private const int TwoPotions = 2;
+    private const ushort Topped = 3;
+    private const ushort Used = 4;
 
     [Fact]
     public void GoldThatArrivesBeforeAFailedChangeIsUndoneStays()
@@ -126,7 +129,7 @@ public class InventoryJournalTests
     }
 
     [Fact]
-    public void WhatAChangeTookIsNotHandedBackWhenWhatItMadeWasPartlySpent()
+    public void AChangeWhoseOutputWasPartlySpentStands()
     {
         var session = Player();
         Put(session, Potion, 1);
@@ -140,8 +143,125 @@ public class InventoryJournalTests
 
         session.WithLock(_ => journal.Restore());
 
-        Total(session, Arrow).Should().Be(0, "the arrows left from a change that was never saved are taken back");
-        Total(session, Potion).Should().Be(0, "the potion paid for the arrows that were spent");
+        Total(session, Arrow).Should().Be(Stack - Moved, "the potion paid for the arrows, and some of them were spent");
+        Total(session, Potion).Should().Be(0, "the potion does not come back on top of the arrows");
+    }
+
+    [Fact]
+    public void GoldPaidIsNotHandedBackWhenWhatItBoughtLeftTheBag()
+    {
+        var session = Player();
+        session.Money = Purse;
+        var journal = new InventoryJournal(session);
+        journal.Apply(_ =>
+        {
+            journal.AddMoney(-Price);
+            journal.DeliverAll(new ItemData { Num = Arrow, Countable = 1, Duration = 1 }, Stack);
+        });
+        InventoryJournal.CopyInto(session.Inventory[Bag], session.Warehouse[0]);
+        session.Inventory[Bag].Clear();
+
+        session.WithLock(_ => journal.Restore());
+
+        session.Money.Should().Be(Purse - Price, "the arrows the gold paid for are still the player's");
+        session.Warehouse[0].Count.Should().Be(Stack);
+    }
+
+    [Fact]
+    public void JournalsOfOneExchangeGoBackTogetherOrNotAtAll()
+    {
+        var buyer = Player();
+        var seller = Player();
+        buyer.Money = Purse;
+        Put(seller, Arrow, Stack);
+        var bought = new InventoryJournal(buyer);
+        var sold = new InventoryJournal(seller);
+        bought.Apply(_ =>
+        {
+            bought.AddMoney(-Price);
+            bought.DeliverAll(new ItemData { Num = Arrow, Countable = 1, Duration = 1 }, Stack);
+        });
+        sold.Apply(_ =>
+        {
+            sold.AddMoney(Price);
+            sold.Slot(Bag).Clear();
+        });
+        InventoryJournal.CopyInto(buyer.Inventory[Bag], buyer.Warehouse[0]);
+        buyer.Inventory[Bag].Clear();
+
+        UserSession.WithBoth(buyer, seller, (_, _) => InventoryJournal.RestoreTogether(bought, sold));
+
+        Total(seller, Arrow).Should().Be(0, "the arrows are still the buyer's, so the sale stands for the seller too");
+        seller.Money.Should().Be(Price);
+        buyer.Money.Should().Be(Purse - Price);
+    }
+
+    [Fact]
+    public void GoodsSoldAreNotHandedBackWhenTheGoldTheyFetchedWasSpent()
+    {
+        var session = Player();
+        Put(session, Arrow, Stack);
+        var journal = new InventoryJournal(session);
+        journal.Apply(_ =>
+        {
+            journal.AddMoney(Price);
+            journal.Slot(Bag).Clear();
+        });
+        session.Money -= Price;
+
+        session.WithLock(_ => journal.Restore());
+
+        Total(session, Arrow).Should().Be(0, "the gold the arrows fetched is spent, so the sale stands");
+        session.Money.Should().Be(0);
+    }
+
+    [Fact]
+    public void ATopUpThatAlsoRaisedDurabilityTakesBackOnlyWhatItAdded()
+    {
+        var session = Player();
+        Put(session, Potion, PickedUp);
+        var journal = new InventoryJournal(session);
+        journal.Apply(_ =>
+        {
+            var slot = journal.Slot(Bag);
+            slot.Count += Topped;
+            slot.Durability++;
+        });
+        session.Inventory[Bag].Count -= Used;
+
+        session.WithLock(_ => journal.Restore());
+
+        session.Inventory[Bag].Count.Should().Be(PickedUp + Topped - Used - Topped, "only the potions the change added are taken back");
+        session.Inventory[Bag].Durability.Should().Be(1);
+    }
+
+    [Fact]
+    public void WhatAChangeMadeIsTakenBackFromAMagicBag()
+    {
+        var session = Player();
+        var journal = new InventoryJournal(session);
+        journal.Apply(_ => journal.DeliverAll(new ItemData { Num = Arrow, Countable = 1, Duration = 1 }, Stack));
+        InventoryJournal.CopyInto(session.Inventory[Bag], session.Inventory[InventoryConstants.MagicBagStart]);
+        session.Inventory[Bag].Clear();
+
+        session.WithLock(_ => journal.Restore());
+
+        Total(session, Arrow).Should().Be(0, "a magic bag is carried too");
+    }
+
+    [Fact]
+    public void WhatFindsNoRoomInTheBagGoesToTheWarehouse()
+    {
+        var session = Player();
+        Put(session, Potion, 1);
+        var journal = new InventoryJournal(session);
+        journal.Apply(_ => journal.TakeOne(Potion));
+        for (var index = Bag; index < Bag + InventoryConstants.HaveMax; index++)
+            (session.Inventory[index].ItemId, session.Inventory[index].Count) = (Scroll, 1);
+
+        session.WithLock(_ => journal.Restore());
+
+        session.Warehouse.Should().ContainSingle(slot => slot.ItemId == Potion, "a full bag does not swallow what the undo hands back");
     }
 
     [Fact]
@@ -199,7 +319,7 @@ public class InventoryJournalTests
         session.WithLock(_ => journal.Restore());
 
         session.Inventory[Bag].Count.Should().Be(1, "only a stack the change cut takes items back onto itself");
-        Total(session, Potion).Should().Be(1 + 1);
+        Total(session, Potion).Should().Be(TwoPotions);
     }
 
     [Fact]
