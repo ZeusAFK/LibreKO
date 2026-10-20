@@ -66,7 +66,7 @@ public class ClientSettingsPacketCoordinator(
         }
 
         session.Language = language;
-        if (session.TryTakeClientSave(Environment.TickCount64))
+        if (session.TryTakeClientSave(UserSession.SinceBoot))
             await statePersister.SaveAsync(session);
 
         logger.LogInformation("{Name} switched language to {Language}", session.Name, language);

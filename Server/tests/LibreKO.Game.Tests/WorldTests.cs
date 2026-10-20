@@ -325,6 +325,36 @@ public class WorldTests : GameTestBase
     }
 
     [Fact]
+    public async Task GracefulShutdownLogsEverySessionOutSideBySide()
+    {
+        var sessionManager = new SessionManager();
+        var stuckClient = Substitute.For<IClient>();
+        stuckClient.Id.Returns(Guid.NewGuid());
+        sessionManager.CreateSession(stuckClient, characterId: 903, accountId: 1903);
+        var nextClient = Substitute.For<IClient>();
+        nextClient.Id.Returns(Guid.NewGuid());
+        sessionManager.CreateSession(nextClient, characterId: 904, accountId: 1904);
+        var stuck = new TaskCompletionSource();
+        var terminationService = Substitute.For<ISessionTerminationService>();
+        terminationService.LogoutAsync(stuckClient, Arg.Any<CancellationToken>()).Returns(stuck.Task);
+        terminationService.LogoutAsync(nextClient, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var service = new GracefulShutdownService(
+            sessionManager,
+            terminationService,
+            Substitute.For<IAccountLockService>(),
+            Substitute.For<Microsoft.Extensions.Logging.ILogger<GracefulShutdownService>>());
+
+        var stop = service.StopAsync(new CancellationToken(canceled: true));
+        var nextLoggedOutMeanwhile = terminationService.ReceivedCalls()
+            .Any(call => call.GetArguments()[0] == nextClient);
+        stuck.SetResult();
+        await stop;
+
+        nextLoggedOutMeanwhile.Should().BeTrue("one stuck session holds up no other session's save");
+        await terminationService.Received(1).LogoutAsync(nextClient, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task WorldPacketCoordinator_HandleMoveAsync_KeepsTheCurrentPositionAndBroadcastsTheClientsDestination()
     {
         using var provider = CreateProvider(_ => { });

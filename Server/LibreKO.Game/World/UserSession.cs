@@ -66,16 +66,19 @@ public class UserSession
 
     public bool TryBeginGame() => Interlocked.CompareExchange(ref gameStarted, 1, 0) == 0;
 
-    public const int ClientSaveCooldownMs = 10_000;
-    private long lastClientSaveMs;
+    private const int ClientSaveCooldownSeconds = 10;
+    public static readonly TimeSpan ClientSaveCooldown = TimeSpan.FromSeconds(ClientSaveCooldownSeconds);
+    private long lastClientSaveTicks;
 
-    // A save the client asks for runs at most once per cooldown.
-    public bool TryTakeClientSave(long nowMs)
+    // A save the client asks for runs at most once per cooldown; now is monotonic time since boot.
+    public bool TryTakeClientSave(TimeSpan now)
     {
-        var last = Interlocked.Read(ref lastClientSaveMs);
-        return (last == 0 || nowMs - last >= ClientSaveCooldownMs)
-            && Interlocked.CompareExchange(ref lastClientSaveMs, nowMs, last) == last;
+        var last = Interlocked.Read(ref lastClientSaveTicks);
+        return (last == 0 || now.Ticks - last >= ClientSaveCooldown.Ticks)
+            && Interlocked.CompareExchange(ref lastClientSaveTicks, now.Ticks, last) == last;
     }
+
+    public static TimeSpan SinceBoot => TimeSpan.FromMilliseconds(Environment.TickCount64);
     public bool NationTransferCommitted { get; set; }
     public string Name { get; set; } = string.Empty;
     public AccountNation Nation { get; set; }

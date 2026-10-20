@@ -22,6 +22,7 @@ public class SessionLifecycleTests : GameTestBase
     private const byte GetLanguage = ClientSettingsPacketCoordinator.SubGetLanguage;
     private const byte SetLanguage = ClientSettingsPacketCoordinator.SubSetLanguage;
     private const int OwnCloseSeconds = 5;
+    private const int PacketInProgressMs = 50;
 
     [Fact]
     public async Task EachStepOfTheGameStartRunsOncePerLogin()
@@ -66,7 +67,7 @@ public class SessionLifecycleTests : GameTestBase
         initializer.InitializeAsync(client).Returns(async _ =>
         {
             await provider.GetRequiredService<IAccountLockService>().ReleaseAsync(client);
-            return sessions.CreateSession(client, client.CharacterId, client.AccountId);
+            return (UserSession?)sessions.CreateSession(client, client.CharacterId, client.AccountId);
         });
 
         await GameStart(provider, client, step);
@@ -87,11 +88,14 @@ public class SessionLifecycleTests : GameTestBase
         await session.PacketGate.WaitAsync();
 
         var takeover = termination.EvictForTakeoverAsync(session);
+        await Task.Delay(PacketInProgressMs);
         var savedWhileThePacketRan = persister.ReceivedCalls().Any();
+        var finishedWhileThePacketRan = takeover.IsCompleted;
         session.PacketGate.Release();
         await takeover;
 
         savedWhileThePacketRan.Should().BeFalse("the last save comes after the packet it was handling");
+        finishedWhileThePacketRan.Should().BeFalse();
         await persister.Received(1).SaveAndSealAsync(session, Arg.Any<CancellationToken>());
     }
 
@@ -129,14 +133,73 @@ public class SessionLifecycleTests : GameTestBase
     }
 
     [Fact]
+    public async Task AnOwnLogoutMeetingAKickDoesNotWaitForTheKick()
+    {
+        using var provider = Provider();
+        var (client, _) = await SignedInAsync(provider, First);
+        await GameStart(provider, client, FirstStep);
+        var session = provider.GetRequiredService<SessionManager>().GetByClientId(client.Id)!;
+        var termination = provider.GetRequiredService<ISessionTerminationService>();
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        await session.PacketGate.WaitAsync();
+        var kick = termination.LogoutAsync(client);
+        using (PacketTurn.Of(session))
+            await termination.LogoutAsync(client);
+        session.PacketGate.Release();
+        await kick;
+
+        provider.GetRequiredService<SessionManager>().GetByClientId(client.Id).Should().BeNull();
+        clock.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(OwnCloseSeconds), "the kick waits for this packet, so this packet does not wait for the kick");
+    }
+
+    [Fact]
+    public async Task ARepeatedSecondStepTellsTheClanAndFriendsOnce()
+    {
+        var knights = Substitute.For<IKnightsRuntimeService>();
+        var social = Substitute.For<ISocialPacketCoordinator>();
+        using var provider = CreateProvider(SeedAccount, configureServices: services =>
+        {
+            services.AddSingleton(knights);
+            services.AddSingleton(social);
+        });
+        var (client, _) = await SignedInAsync(provider, First);
+        await GameStart(provider, client, FirstStep);
+
+        await GameStart(provider, client, SecondStep);
+        await GameStart(provider, client, SecondStep);
+
+        await knights.Received(1).NotifyMemberOnlineAsync(Arg.Any<UserSession>());
+        await social.Received(1).NotifyFriendLoggedInAsync(Arg.Any<UserSession>());
+    }
+
+    [Fact]
     public void AClientSaveIsAllowedAgainAfterTheCooldown()
     {
         var session = new UserSession(Client([]), 1, 1);
-        const long start = 1_000;
+        var start = TimeSpan.FromSeconds(1);
 
         session.TryTakeClientSave(start).Should().BeTrue();
-        session.TryTakeClientSave(start + UserSession.ClientSaveCooldownMs - 1).Should().BeFalse();
-        session.TryTakeClientSave(start + UserSession.ClientSaveCooldownMs).Should().BeTrue();
+        session.TryTakeClientSave(start + UserSession.ClientSaveCooldown - TimeSpan.FromMilliseconds(1)).Should().BeFalse();
+        session.TryTakeClientSave(start + UserSession.ClientSaveCooldown).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ASaveTheClientAsksForTwiceInARowRunsOnce()
+    {
+        var termination = Substitute.For<ISessionTerminationService>();
+        using var provider = CreateProvider(SeedAccount, configureServices: services => services.AddSingleton(termination));
+        var (client, _) = await SignedInAsync(provider, First);
+        await GameStart(provider, client, FirstStep);
+
+        for (var ask = 0; ask < 2; ask++)
+        {
+            var save = new Packet(GameOpcodes.GS_DATASAVE);
+            save.ResetOffset();
+            await provider.GetRequiredService<IPacketHandler>().HandlePacket(client, save);
+        }
+
+        await termination.Received(1).SaveAsync(Arg.Any<UserSession>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

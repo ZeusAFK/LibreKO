@@ -101,10 +101,13 @@ public class SessionTerminationService(
         }
     }
 
+    // A packet of this session never waits for a close of this session.
+    private static bool IsOwnPacket(UserSession session) => ReferenceEquals(PacketTurn.Current, session);
+
     // A close from another connection lets that connection's packet in progress finish first.
     private async Task<bool> WaitForPacketInProgressAsync(UserSession session)
     {
-        if (ReferenceEquals(PacketTurn.Current, session))
+        if (IsOwnPacket(session))
             return false;
 
         if (await session.PacketGate.WaitAsync(TimeSpan.FromSeconds(OtherConnectionWaitSeconds)))
@@ -145,6 +148,9 @@ public class SessionTerminationService(
 
         if (!session.TryBeginClosing())
         {
+            if (IsOwnPacket(session))
+                return;
+
             await session.Closed.WaitAsync(cancellationToken);
             client.CharacterId = 0;
             return;

@@ -156,6 +156,23 @@ public class CharacterCommitTests : GameTestBase
         await characters.DidNotReceive().UpdateQuestDataAsync(Arg.Any<int>(), Arg.Any<byte[]>());
     }
 
+    [Fact]
+    public async Task AQuestSaveQueuedBeforeTheSealIsDroppedAfterIt()
+    {
+        var characters = Substitute.For<ICharacterRepository>();
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddScoped(_ => characters));
+        var session = Session(provider);
+        var persister = provider.GetRequiredService<ICharacterStatePersister>();
+
+        await session.CharacterPersistenceGate.WaitAsync();
+        await persister.SaveQuestStateAsync(session);
+        session.SealSaves();
+        session.CharacterPersistenceGate.Release();
+        await Task.Delay(QuestSavePollMs * QuestSavePolls);
+
+        await characters.DidNotReceive().UpdateQuestDataAsync(Arg.Any<int>(), Arg.Any<byte[]>());
+    }
+
     private static UserSession Session(ServiceProvider provider)
     {
         var client = Substitute.For<IClient>();
