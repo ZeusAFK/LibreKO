@@ -6,23 +6,30 @@ namespace LibreKO.Game.Tests;
 public class PartyGroupTests
 {
     private const short Leader = 1;
-    private const int Joiners = 40;
+    private const int Joiners = PartyGroup.MaxMembers;
+    private const int JoinRounds = 200;
     private const int Parties = 500;
 
     [Fact]
     public void PlayersJoiningAtOnceFillEachSlotOnce()
     {
-        var party = new PartyManager().CreateParty(Leader);
-        var joined = new System.Collections.Concurrent.ConcurrentBag<short>();
-
-        Parallel.For(Leader + 1, Leader + 1 + Joiners, joiner =>
+        for (var round = 0; round < JoinRounds; round++)
         {
-            if (party.TryJoin((short)joiner))
-                joined.Add((short)joiner);
-        });
+            var party = new PartyManager().CreateParty(Leader);
+            var joined = new System.Collections.Concurrent.ConcurrentBag<short>();
+            using var start = new Barrier(Joiners);
+            var threads = Enumerable.Range(Leader + 1, Joiners).Select(joiner => new Thread(() =>
+            {
+                start.SignalAndWait();
+                if (party.TryJoin((short)joiner))
+                    joined.Add((short)joiner);
+            })).ToList();
+            threads.ForEach(thread => thread.Start());
+            threads.ForEach(thread => thread.Join());
 
-        party.MemberIds.Should().OnlyHaveUniqueItems();
-        party.MemberIds.Skip(1).Should().BeEquivalentTo(joined, "everyone told they joined holds a slot");
+            party.MemberIds.Should().OnlyHaveUniqueItems();
+            party.MemberIds.Skip(1).Should().BeEquivalentTo(joined, "everyone told they joined holds a slot");
+        }
     }
 
     [Fact]

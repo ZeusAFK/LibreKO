@@ -328,16 +328,17 @@ public class WorldTests : GameTestBase
     public async Task GracefulShutdownLogsEverySessionOutSideBySide()
     {
         var sessionManager = new SessionManager();
-        var stuckClient = Substitute.For<IClient>();
-        stuckClient.Id.Returns(Guid.NewGuid());
-        sessionManager.CreateSession(stuckClient, characterId: 903, accountId: 1903);
-        var nextClient = Substitute.For<IClient>();
-        nextClient.Id.Returns(Guid.NewGuid());
-        sessionManager.CreateSession(nextClient, characterId: 904, accountId: 1904);
-        var stuck = new TaskCompletionSource();
+        var clients = new[] { 903, 904 }.Select(characterId =>
+        {
+            var client = Substitute.For<IClient>();
+            client.Id.Returns(Guid.NewGuid());
+            sessionManager.CreateSession(client, characterId, accountId: characterId + 1000);
+            return client;
+        }).ToList();
+        var stuck = clients.ToDictionary(client => client, _ => new TaskCompletionSource());
         var terminationService = Substitute.For<ISessionTerminationService>();
-        terminationService.LogoutAsync(stuckClient, Arg.Any<CancellationToken>()).Returns(stuck.Task);
-        terminationService.LogoutAsync(nextClient, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        foreach (var client in clients)
+            terminationService.LogoutAsync(client, Arg.Any<CancellationToken>()).Returns(stuck[client].Task);
         var service = new GracefulShutdownService(
             sessionManager,
             terminationService,
@@ -345,13 +346,15 @@ public class WorldTests : GameTestBase
             Substitute.For<Microsoft.Extensions.Logging.ILogger<GracefulShutdownService>>());
 
         var stop = service.StopAsync(new CancellationToken(canceled: true));
-        var nextLoggedOutMeanwhile = terminationService.ReceivedCalls()
-            .Any(call => call.GetArguments()[0] == nextClient);
-        stuck.SetResult();
+        var startedBeforeAnyFinished = clients.Count(client =>
+            terminationService.ReceivedCalls().Any(call => call.GetArguments()[0] == client));
+        foreach (var hold in stuck.Values)
+            hold.SetResult();
         await stop;
 
-        nextLoggedOutMeanwhile.Should().BeTrue("one stuck session holds up no other session's save");
-        await terminationService.Received(1).LogoutAsync(nextClient, CancellationToken.None);
+        startedBeforeAnyFinished.Should().Be(clients.Count, "one stuck session holds up no other session's save");
+        foreach (var client in clients)
+            await terminationService.Received(1).LogoutAsync(client, CancellationToken.None);
     }
 
     [Fact]
