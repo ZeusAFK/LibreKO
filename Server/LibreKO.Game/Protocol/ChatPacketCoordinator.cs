@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
@@ -149,16 +149,6 @@ public class ChatPacketCoordinator(
                         {
                             try { await member.Client.SendPacket(result); } catch (Exception ex) { logger.LogDebug(ex, "Chat broadcast failed for {Id}", member.CharacterId); }
                         }
-                    }
-                }
-                break;
-
-            case ChatType.SeekingParty:
-                foreach (var player in sessionManager.GetAll())
-                {
-                    if (player.ZoneId == session.ZoneId && player.Nation == session.Nation)
-                    {
-                        try { await player.Client.SendPacket(result); } catch (Exception ex) { logger.LogDebug(ex, "Chat broadcast failed for {Id}", player.CharacterId); }
                     }
                 }
                 break;

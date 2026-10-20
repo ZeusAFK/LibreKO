@@ -59,5 +59,18 @@ public class NoahKnightsChatTests : GameTestBase
         ChatLines(peerLines).Should().Be(0);
     }
 
+    [Fact]
+    public async Task TheZoneChatTheClientNeverSendsReachesNoOne()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (_, speaker) = Player(sessions, 420, "Caller", 30, AccountNation.Karus);
+        var (listenerLines, _) = Player(sessions, 421, "Listener", 30, AccountNation.Karus);
+
+        await provider.GetRequiredService<IChatPacketCoordinator>().HandleAsync(speaker, (byte)ChatType.SeekingParty, "Anyone?");
+
+        ChatLines(listenerLines).Should().Be(0, "type 19 would be a free zone-wide shout");
+    }
+
     private const int NoahKnightsLevel = ChatPacketCoordinator.NoahKnightsMaxLevel;
 }

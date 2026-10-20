@@ -119,10 +119,6 @@ public class SocialPacketCoordinator(
                 await HandleFriendRequestAsync(client, session);
                 break;
 
-            case 2:
-                await HandleFriendReportAsync(client, packet);
-                break;
-
             case (byte)FriendSubOpcode.Add:
                 await HandleFriendAddAsync(client, session, packet);
                 break;
@@ -194,31 +190,6 @@ public class SocialPacketCoordinator(
         }
 
         await client.SendPacket(FriendPacketWriter.Details(details));
-    }
-
-    private async Task HandleFriendReportAsync(IClient client, Packet packet)
-    {
-        var count = packet.ReadUShort();
-        if (count > 24)
-            return;
-
-        var friends = new List<FriendPacketWriter.Status>(count);
-        var names = new List<string>(count);
-        for (var i = 0; i < count; i++)
-        {
-            var friendName = packet.ReadSByteString();
-            if (string.IsNullOrEmpty(friendName) || friendName.Length > MaxFriendNameLength)
-                return;
-
-            names.Add(friendName);
-            friends.Add(FriendStatus(friendName));
-        }
-
-        await client.SendPacket(FriendPacketWriter.StatusList(friends, count));
-
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await SendFriendDetailsAsync(client, db, names);
     }
 
     private async Task HandleFriendAddAsync(IClient client, UserSession session, Packet packet)

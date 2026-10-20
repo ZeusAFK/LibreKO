@@ -752,6 +752,30 @@ public class WorldTests : GameTestBase
     }
 
     [Fact]
+    public async Task AFriendReportTheClientNeverSendsTellsNothing()
+    {
+        using var provider = CreateProvider(_ => { });
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        sessionManager.CreateSession(client, characterId: 601, accountId: 701).Name = "Asker";
+        var stranger = sessionManager.CreateSession(Substitute.For<IClient>(), characterId: 602, accountId: 702);
+        stranger.Name = "Stranger";
+        var report = new Packet(GameOpcodes.GS_FRIEND_PROCESS);
+        report.WriteByte(2);
+        report.WriteUShort(1);
+        report.WriteSByteString(stranger.Name);
+        report.ResetOffset();
+
+        await provider.GetRequiredService<ISocialPacketCoordinator>().HandleFriendProcessAsync(client, report);
+
+        sentPackets.Should().BeEmpty("sub 2 told the zone, level and id of any name");
+    }
+
+    [Fact]
     public async Task SocialPacketCoordinator_HandleFriendProcessAsync_RequestUsesInt32FriendIds()
     {
         using var provider = CreateProvider(db =>
