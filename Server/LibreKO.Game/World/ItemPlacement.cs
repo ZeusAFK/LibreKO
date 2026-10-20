@@ -17,7 +17,6 @@ public static class ItemPlacement
         && IsSameItem(slot, item)
         && slot.Count + item.Count <= InventoryConstants.MaxStackCount;
 
-    // Its own slot first, then the first empty one, as the client restores it, then a stack of the same item.
     public static int FindForReturn(ItemSlot[] slots, int start, int length, ExchangeItem item, int preferred = -1)
     {
         if (preferred >= start && preferred < start + length
@@ -28,7 +27,6 @@ public static class ItemPlacement
         return empty >= 0 ? empty : FirstStack(slots, start, length, item);
     }
 
-    // A matching stack first, then the first empty slot.
     public static int FindForDelivery(ItemSlot[] slots, int start, int length, ExchangeItem item)
     {
         var stack = FirstStack(slots, start, length, item);

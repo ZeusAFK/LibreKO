@@ -170,8 +170,6 @@ public class MagicStatusEffectService(
     private const int ReflectCurseChance = 25;
     private const float NpcDebuffReachSlack = 3f;
     private const float PlayerReachSlack = 3f;
-    // As wide as the cast's own reach check, so it never refuses what that one allowed.
-    private const float CastReachSlack = 20f;
 
     private async Task<bool> ExecuteBuffAsync(
         UserSession caster, MagicData magic, int skillId, int targetId, int[] data, bool isPrimary)
@@ -635,8 +633,8 @@ public class MagicStatusEffectService(
             && target.ZoneId == caster.ZoneId
             && target.Room == caster.Room
             && AttackReach.Within(caster, target.X, target.Z,
-                (magic.Range > 0 ? magic.Range : AttackReach.Melee) + AttackReach.PlayerBodyRadius * 2 + CastReachSlack)
-            && AcceptsAreaPlayer(caster, target, moral);
+                (magic.Range > 0 ? magic.Range : AttackReach.Melee) + AttackReach.PlayerBodyRadius * 2 + AttackReach.SkillSlack)
+            && PvpRules.MayTouch(caster, target, moral, static () => false);
     }
 
     private async Task CleanseAsync(UserSession target, SpecialMagicType special)

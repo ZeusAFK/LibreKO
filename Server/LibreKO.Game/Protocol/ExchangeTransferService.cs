@@ -67,7 +67,6 @@ public class ExchangeTransferService(
             return;
         }
 
-        // The offer is taken out of the bag into escrow, so nothing is left behind in the slot.
         var outcome = session.WithLock(s =>
         {
             if (s.Trade.ExchangeOk || !s.Trade.ExchangeAccepted || s.Trade.ExchangeUser != target.CharacterId)
@@ -104,7 +103,6 @@ public class ExchangeTransferService(
                 SrcPos = srcPos,
             };
 
-            // More of a stack already on offer joins that offer.
             var existing = offer.Countable
                 ? s.Trade.ExchangeItemList.Find(entry => entry.SrcPos == srcPos
                     && entry.ItemId == itemId
@@ -302,7 +300,6 @@ public class ExchangeTransferService(
         return itemCount <= freeSlots;
     }
 
-    // An item with no room on the receiver's side goes back to the giver.
     private List<ExchangeItem> ExecuteExchange(UserSession receiver, UserSession giver)
     {
         var delivered = new List<ExchangeItem>();

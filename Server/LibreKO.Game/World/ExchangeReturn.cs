@@ -2,7 +2,6 @@
 
 namespace LibreKO.Game.World;
 
-// What handing escrowed offers back did, for the client and the logs.
 public sealed class ExchangeReturn
 {
     public List<int> BagSlots { get; } = [];

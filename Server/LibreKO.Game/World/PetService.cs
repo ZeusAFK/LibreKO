@@ -372,6 +372,7 @@ public sealed class PetService(
         session.Pet = null;
         if (state.Npc is { } npc)
         {
+            npc.TryBeginDeath();
             npc.Hp = 0;
             npc.State = NpcState.Dead;
             await sessionManager.Regions.BroadcastFromNpc(npc, NpcPacketMapper.BuildInOutPacket(npc, InOutType.Out));

@@ -1,4 +1,5 @@
-﻿namespace LibreKO.Game.World;
+﻿using LibreKO.Common.Enums;
+namespace LibreKO.Game.World;
 
 public static class PvpRules
 {
@@ -44,6 +45,17 @@ public static class PvpRules
         return attacker.Nation != target.Nation
             && BattleZoneManager.AllowsNationCombat(attacker.ZoneId);
     }
+
+    // One rule for who an aimed skill may touch, both before the cast is paid and when it lands.
+    public static bool MayTouch(UserSession caster, UserSession target, SkillMoral moral, Func<bool> healStrikes) => moral switch
+    {
+        SkillMoral.Enemy or SkillMoral.AreaEnemy or SkillMoral.Npc => CanAttackPlayer(caster, target),
+        SkillMoral.Party or SkillMoral.PartyAll => caster.IsInParty && target.PartyIndex == caster.PartyIndex,
+        SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe or SkillMoral.AreaFriend or SkillMoral.Clan
+            or SkillMoral.ClanAll or SkillMoral.CorpseFriend
+            => !IsHostile(caster, target) || (healStrikes() && CanAttackPlayer(caster, target)),
+        _ => true,
+    };
 
     private static bool AtClanWar(UserSession attacker, UserSession target)
         => attacker.ClanBattleEnemy > 0 && attacker.ClanBattleEnemy == target.KnightsId;

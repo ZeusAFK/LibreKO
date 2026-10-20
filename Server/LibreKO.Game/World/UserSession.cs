@@ -822,7 +822,6 @@ public class UserSession
         return returned;
     }
 
-    // Its own slot, else a free one, else the warehouse.
     public bool ReturnEscrowedItem(ExchangeItem item, ExchangeReturn? returned = null)
     {
         if (item.SrcPos is >= InventoryConstants.InventoryStart and < InventoryConstants.InventoryStart + InventoryConstants.HaveMax)
@@ -847,7 +846,6 @@ public class UserSession
         return true;
     }
 
-    // Hands back the gold a buying stall still holds, the same way an offer's gold comes back.
     public (int ToPurse, int ToWarehouse, long Lost) ReleaseBuyMerchantGold() => WithLock(s =>
     {
         var held = s.Trade.BuyMerchantGold;
@@ -900,7 +898,6 @@ public class UserSession
         return copies;
     }
 
-    // Held gold goes into the purse up to the coin cap and the rest into the warehouse.
     public (int ToPurse, int ToWarehouse, long Lost) ReturnHeldGold(long amount)
     {
         var (toPurse, toWarehouse) = SplitHeldGold(amount);

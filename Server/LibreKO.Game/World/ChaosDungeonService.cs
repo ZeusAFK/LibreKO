@@ -161,7 +161,7 @@ public sealed class ChaosDungeonService : IChaosDungeonService
         if (npc.ZoneId != ChaosRules.Zone || npc.NpcId != ChaosRules.CubeNpcId)
             return false;
         if (session.Hp <= 0 || !activeMatches.TryGetValue(session.Room, out var match) || match.IsCompleted
-            || npc.Room != match.RoomId || !npc.IsAlive)
+            || npc.Room != match.RoomId || !npc.IsAlive || !npc.TryBeginDeath())
             return true;
 
         var ordered = ChaosRules.Ordered(match.Scores.Values);

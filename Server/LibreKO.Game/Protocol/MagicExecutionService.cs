@@ -25,8 +25,6 @@ public class MagicExecutionService(
     private const int AreaCentreX = 0;
     private const int AreaCentreZ = 2;
     private const float RangedPlayerShortcut = 38f;
-    // Movement slack: the server's positions can trail what the client saw.
-    private const float SkillReachSlack = 20f;
     private const int PercentScale = 100;
 
     public bool AllowsTarget(UserSession session, MagicData magic, int skillId, int targetId, int[] data) =>
@@ -145,16 +143,8 @@ public class MagicExecutionService(
         _ => false,
     };
 
-    private bool MayTouch(UserSession caster, UserSession target, MagicData magic, int skillId) => (SkillMoral)magic.Moral switch
-    {
-        SkillMoral.Enemy or SkillMoral.AreaEnemy or SkillMoral.Npc => PvpRules.CanAttackPlayer(caster, target),
-        SkillMoral.Party or SkillMoral.PartyAll => caster.IsInParty && target.PartyIndex == caster.PartyIndex,
-        SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe or SkillMoral.AreaFriend or SkillMoral.Clan
-            or SkillMoral.ClanAll or SkillMoral.CorpseFriend
-            => !PvpRules.IsHostile(caster, target)
-                || (HealStrikes(caster, magic, skillId) && PvpRules.CanAttackPlayer(caster, target)),
-        _ => true,
-    };
+    private bool MayTouch(UserSession caster, UserSession target, MagicData magic, int skillId) =>
+        PvpRules.MayTouch(caster, target, (SkillMoral)magic.Moral, () => HealStrikes(caster, magic, skillId));
 
     private bool HealStrikes(UserSession caster, MagicData magic, int skillId) =>
         MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, skillId, out var type3)
@@ -183,7 +173,7 @@ public class MagicExecutionService(
     }
 
     private static bool Within(UserSession caster, float x, float z, float targetRadius, float reach) =>
-        AttackReach.Within(caster, x, z, reach + AttackReach.PlayerBodyRadius + targetRadius + SkillReachSlack);
+        AttackReach.Within(caster, x, z, reach + AttackReach.PlayerBodyRadius + targetRadius + AttackReach.SkillSlack);
 
     private bool HasTypeData(MagicData magic, MagicSkillType skillType, int skillId) => skillType switch
     {

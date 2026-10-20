@@ -219,7 +219,7 @@ public class NpcAiBehaviorService(
         await sessionManager.Regions.BroadcastFromNpc(
             monster, AttackPacketWriter.Create(AttackPacketWriter.TypeMelee, result, monster.UniqueId, tower.UniqueId));
 
-        if (result == AttackResult.TargetDead)
+        if (result == AttackResult.TargetDead && tower.TryBeginDeath())
         {
             tower.DeathTimeTicks = DateTime.UtcNow.Ticks;
             tower.State = NpcState.Dead;

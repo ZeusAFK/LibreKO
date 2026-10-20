@@ -31,7 +31,6 @@ public class RoulettePacketCoordinator(
         public readonly int Gold = gold;
     }
 
-    // Weight is the slice's share of the wheel.
     private static readonly RouletteSlice[] RouletteWheel =
     {
         new(40, 1_000),

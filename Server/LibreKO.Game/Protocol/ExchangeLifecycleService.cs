@@ -71,6 +71,7 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         }
 
         ExchangeReturn? returnedSession = null, returnedTarget = null;
+        var refusedAccept = false;
         if (agreed == 0
             || CannotStartTrade(session)
             || CannotStartTrade(target)
@@ -82,6 +83,7 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         {
             returnedSession = session.WithLock(s => s.InitExchange(false));
             returnedTarget = target.WithLock(t => t.Trade.ExchangeUser == session.CharacterId ? t.InitExchange(false) : null);
+            refusedAccept = agreed != 0;
             agreed = 0;
         }
         else
@@ -106,6 +108,8 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
 
         await target.Client.SendPacket(ExchangePacketWriter.Result(
             ExchangePacketConstants.ExchangeAgree, agreed));
+        if (refusedAccept)
+            await SendCancelAsync(session);
         await SettleReturnAsync(session, returnedSession);
         await SettleReturnAsync(target, returnedTarget);
     }

@@ -72,6 +72,22 @@ public class BattleNpcKillTests : GameTestBase
     }
 
     [Fact]
+    public async Task AWarderAnEventTookAwayPaysNothingToABlowThatLandsAfter()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        sessionManager.Battle.OpenBattleZone(BattleZoneManager.NATION_BATTLE, WarZone);
+        var (karus, _) = CreatePlayer(provider, characterId: 966, AccountNation.Karus);
+        var warder = SpawnBattleNpc(sessionManager, BattleZoneManager.FirstWarderSpecialType, EntityNation.ElMorad, karus);
+
+        await provider.GetRequiredService<INpcLifecycleService>().DespawnAsync(warder);
+        await provider.GetRequiredService<ICombatLifecycleService>().HandleNpcDeathAsync(warder, karus);
+
+        karus.Loyalty.Should().Be(0, "an NPC the event removed is no kill");
+        sessionManager.Battle.KilledElmoNpc.Should().Be(0);
+    }
+
+    [Fact]
     public async Task KillingTheEnemyWardersAndKeeperWinsTheWarOnce()
     {
         using var provider = CreateProvider(_ => { });

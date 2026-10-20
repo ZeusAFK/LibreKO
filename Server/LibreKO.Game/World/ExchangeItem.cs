@@ -1,6 +1,5 @@
 ﻿namespace LibreKO.Game.World;
 
-// An offer held out of the bag, with its whole identity, until the trade ends.
 public class ExchangeItem
 {
     public int ItemId { get; set; }
