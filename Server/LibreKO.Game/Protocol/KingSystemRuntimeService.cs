@@ -36,6 +36,48 @@ public class KingSystemRuntimeService(
     public const ushort KarusKingCape = 97;
     public const ushort ElmoradKingCape = 98;
 
+    private static readonly Lock Purses = new();
+
+    // The treasury, tax and tribute change only under one lock, so a tax arriving cannot undo a spend.
+    public static bool TrySpendTreasury(KingSystemData kingData, int amount)
+    {
+        lock (Purses)
+        {
+            if (amount <= 0 || kingData.NationalTreasury < amount)
+                return false;
+
+            kingData.NationalTreasury -= amount;
+            return true;
+        }
+    }
+
+    public static void ReturnToTreasury(KingSystemData kingData, int amount)
+    {
+        lock (Purses)
+            kingData.NationalTreasury = (int)Math.Min((long)kingData.NationalTreasury + amount, ExchangePacketConstants.CoinMax);
+    }
+
+    public static void AddTax(KingSystemData kingData, int treasury, int territory)
+    {
+        lock (Purses)
+        {
+            kingData.NationalTreasury = (int)Math.Min((long)kingData.NationalTreasury + treasury, ExchangePacketConstants.CoinMax);
+            kingData.TerritoryTax = (int)Math.Min((long)kingData.TerritoryTax + territory, ExchangePacketConstants.CoinMax);
+        }
+    }
+
+    public static (int FromTax, int FromTribute) CollectFund(KingSystemData kingData, long room)
+    {
+        lock (Purses)
+        {
+            var fromTax = (int)Math.Min(Math.Max(kingData.TerritoryTax, 0), room);
+            var fromTribute = (int)Math.Min(Math.Max(kingData.Tribute, 0), room - fromTax);
+            kingData.TerritoryTax -= fromTax;
+            kingData.Tribute -= fromTribute;
+            return (fromTax, fromTribute);
+        }
+    }
+
     public static bool IsKingName(KingSystemData? kingData, string name) =>
         kingData != null && string.Equals(kingData.KingName?.Trim(), name, StringComparison.OrdinalIgnoreCase);
 

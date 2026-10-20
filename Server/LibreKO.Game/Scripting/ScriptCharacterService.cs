@@ -49,8 +49,11 @@ public class ScriptCharacterService(
 
     public void GiveLoyalty(int _uid, int amount)
     {
-        session.Loyalty += amount;
-        session.MonthlyLoyalty += amount;
+        session.WithLock(s =>
+        {
+            s.Loyalty = LoyaltyService.Gained(s.Loyalty, amount);
+            s.MonthlyLoyalty = LoyaltyService.Gained(s.MonthlyLoyalty, amount);
+        });
         QueueLoyaltyUpdate();
     }
 

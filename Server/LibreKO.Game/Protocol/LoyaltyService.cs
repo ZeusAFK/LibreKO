@@ -36,16 +36,19 @@ public class LoyaltyService(
 
     private async Task ApplyAsync(UserSession session, int changeAmount)
     {
-        if (changeAmount < 0)
+        var kept = changeAmount - AutoContribution(session, changeAmount);
+        session.WithLock(s =>
         {
-            session.Loyalty = Math.Max(0, session.Loyalty + changeAmount);
-        }
-        else
-        {
-            session.Loyalty += changeAmount - AutoContribution(session, changeAmount);
-            session.MonthlyLoyalty += changeAmount;
-            session.DailyLoyalty += changeAmount;
-        }
+            if (changeAmount < 0)
+            {
+                s.Loyalty = Math.Max(0, s.Loyalty + changeAmount);
+                return;
+            }
+
+            s.Loyalty = Gained(s.Loyalty, kept);
+            s.MonthlyLoyalty = Gained(s.MonthlyLoyalty, changeAmount);
+            s.DailyLoyalty = Gained(s.DailyLoyalty, changeAmount);
+        });
 
         await session.Client.SendPacket(
             LoyaltyChangePacketWriter.Totals(session.Loyalty, session.MonthlyLoyalty));
@@ -53,6 +56,9 @@ public class LoyaltyService(
         if (changeAmount > 0)
             await achievementProgressService.RefreshAsync(session);
     }
+
+    // A total of national points stops at the largest value it can hold instead of wrapping negative.
+    internal static int Gained(int total, long gain) => (int)Math.Clamp(total + gain, 0, int.MaxValue);
 
     private int AutoContribution(UserSession session, int gained)
     {

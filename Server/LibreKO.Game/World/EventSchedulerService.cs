@@ -182,8 +182,11 @@ public class EventSchedulerService(
                 if (BattleZoneManager.IsBattleZone(session.ZoneId) &&
                     (byte)session.Nation == winner)
                 {
-                    session.Loyalty += loyaltyReward;
-                    session.MonthlyLoyalty += loyaltyReward;
+                    session.WithLock(s =>
+                    {
+                        s.Loyalty = LoyaltyService.Gained(s.Loyalty, loyaltyReward);
+                        s.MonthlyLoyalty = LoyaltyService.Gained(s.MonthlyLoyalty, loyaltyReward);
+                    });
 
                     var loyaltyPkt = LoyaltyChangePacketWriter.Totals(
                         session.Loyalty, session.MonthlyLoyalty);

@@ -142,14 +142,13 @@ public class KingGovernancePacketService(
             return;
         }
 
-        var room = Math.Max(0L, (long)ExchangePacketConstants.CoinMax - session.Money);
-        var fromTax = (int)Math.Min(Math.Max(kingData.TerritoryTax, 0), room);
-        var fromTribute = (int)Math.Min(Math.Max(kingData.Tribute, 0), room - fromTax);
-        var collected = fromTax + fromTribute;
-
-        session.Money += collected;
-        kingData.TerritoryTax -= fromTax;
-        kingData.Tribute -= fromTribute;
+        var collected = session.WithLock(s =>
+        {
+            var (fromTax, fromTribute) = KingSystemRuntimeService.CollectFund(
+                kingData, Math.Max(0L, (long)ExchangePacketConstants.CoinMax - s.Money));
+            s.Money += fromTax + fromTribute;
+            return fromTax + fromTribute;
+        });
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.TerritoryTax);
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.Tribute);
         logger.LogInformation("King {Name} collected {Amount} coins of King's Fund in nation {Nation}", session.Name, collected, session.Nation);
@@ -250,13 +249,12 @@ public class KingGovernancePacketService(
         }
 
         var cost = 50_000_000 * amount;
-        if (kingData.NationalTreasury < cost)
+        if (!KingSystemRuntimeService.TrySpendTreasury(kingData, cost))
         {
             await session.Client.SendPacket(KingPacketWriter.EventResult(KingPacketConstants.EventNoah, KingPacketConstants.EventTreasuryShort));
             return;
         }
 
-        kingData.NationalTreasury -= cost;
         kingEventState.ActivateNoahBonus(session.Nation, amount, TimeSpan.FromMinutes(30));
         logger.LogInformation("King {Name} activated {Amount}% Noah bonus for nation {Nation}", session.Name, amount, session.Nation);
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.NationalTreasury);
@@ -283,13 +281,12 @@ public class KingGovernancePacketService(
         }
 
         var cost = 30_000_000 * amount;
-        if (kingData.NationalTreasury < cost)
+        if (!KingSystemRuntimeService.TrySpendTreasury(kingData, cost))
         {
             await session.Client.SendPacket(KingPacketWriter.EventResult(KingPacketConstants.EventExp, KingPacketConstants.EventTreasuryShort));
             return;
         }
 
-        kingData.NationalTreasury -= cost;
         kingEventState.ActivateExpBonus(session.Nation, amount, TimeSpan.FromMinutes(30));
         logger.LogInformation("King {Name} activated {Amount}% EXP bonus for nation {Nation}", session.Name, amount, session.Nation);
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.NationalTreasury);
@@ -316,7 +313,7 @@ public class KingGovernancePacketService(
         var target = sessionManager.GetByName(targetName);
         short refusal = target == null || target.Nation != session.Nation ? KingPacketConstants.PrizeNoTarget
             : amount <= 0 ? KingPacketConstants.PrizeBadAmount
-            : kingData.NationalTreasury < amount ? KingPacketConstants.PrizeTreasuryShort
+            : !KingSystemRuntimeService.TrySpendTreasury(kingData, amount) ? KingPacketConstants.PrizeTreasuryShort
             : KingPacketConstants.EventOk;
         if (refusal != KingPacketConstants.EventOk || target == null)
         {
@@ -324,8 +321,20 @@ public class KingGovernancePacketService(
             return;
         }
 
-        kingData.NationalTreasury -= amount;
-        target.Money += amount;
+        // The prize lands whole in the winner's purse, or goes back to the treasury.
+        if (!target.WithLock(t =>
+            {
+                if ((long)t.Money + amount > ExchangePacketConstants.CoinMax)
+                    return false;
+                t.Money += amount;
+                return true;
+            }))
+        {
+            KingSystemRuntimeService.ReturnToTreasury(kingData, amount);
+            await session.Client.SendPacket(KingPacketWriter.EventResult(KingPacketConstants.EventPrize, KingPacketConstants.PrizeBadAmount));
+            return;
+        }
+
         await userNotificationService.SendGoldGainAsync(target, amount);
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.NationalTreasury);
 
@@ -348,13 +357,12 @@ public class KingGovernancePacketService(
             return;
         }
 
-        if (kingData.NationalTreasury < 100_000)
+        if (!KingSystemRuntimeService.TrySpendTreasury(kingData, 100_000))
         {
             await session.Client.SendPacket(KingPacketWriter.EventResult(KingPacketConstants.EventWeather, KingPacketConstants.EventTreasuryShort));
             return;
         }
 
-        kingData.NationalTreasury -= 100_000;
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.NationalTreasury);
 
         await session.Client.SendPacket(KingPacketWriter.EventResult(KingPacketConstants.EventWeather, KingPacketConstants.EventOk));

@@ -466,8 +466,7 @@ public class ItemTradeService(
         if (kingData == null || string.IsNullOrWhiteSpace(kingData.KingName))
             return;
         var (treasury, territory) = NpcTariff.KingSplit(tax);
-        kingData.NationalTreasury = (int)Math.Min((long)kingData.NationalTreasury + treasury, ExchangePacketConstants.CoinMax);
-        kingData.TerritoryTax = (int)Math.Min((long)kingData.TerritoryTax + territory, ExchangePacketConstants.CoinMax);
+        KingSystemRuntimeService.AddTax(kingData, treasury, territory);
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.NationalTreasury);
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.TerritoryTax);
     }
