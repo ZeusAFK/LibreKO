@@ -149,6 +149,7 @@ public class CombatLifecycleService(
 
         session.X = x;
         session.Z = z;
+        MovePace.Placed(session, DateTime.UtcNow.Ticks);
 
         await SendRespawnAsync(client, session);
 

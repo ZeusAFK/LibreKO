@@ -1,29 +1,42 @@
-﻿using LibreKO.Game.Protocol;
+﻿using LibreKO.Common.Enums;
 
 namespace LibreKO.Game.World;
 
 public static class MovePace
 {
-    // The client runs at 4.5 m/s, scaled by its speed percent.
+    // The client runs at 4.5 m/s, scaled by its speed percent, and stops only for Freeze and Stun.
     public const float RunMetresPerSecond = 4.5f;
+    public const float ReportSeconds = 1.5f;
     public const float LeadSeconds = 1.5f;
-    // Retail's speed check allowed a quarter over the class's speed.
     private const int TolerancePercent = 125;
     private const int PercentScale = 100;
     private const float CreditSeconds = 3f;
     private const float SlackMetres = 1f;
-    private const byte HeldFlags = ControlFlags.Stunned | ControlFlags.Frozen;
+    private const float HoldNoticeSeconds = 0.5f;
+
+    public static bool IsHeld(UserSession session, long nowTicks) => HeldSince(session, nowTicks) != null;
 
     public static float TopSpeed(UserSession session, long nowTicks) =>
-        (ControlStateService.Of(session, nowTicks).Flags & HeldFlags) != 0
-            ? 0f
-            : RunMetresPerSecond * session.SpeedAmount / PercentScale * TolerancePercent / PercentScale;
+        IsHeld(session, nowTicks) ? 0f : RunSpeed(session.SpeedAmount);
 
     public static bool TryStep(UserSession session, float x, float z, long nowTicks)
     {
-        var top = TopSpeed(session, nowTicks);
-        var elapsed = Math.Clamp((float)(nowTicks - session.MoveBudgetTicks) / TimeSpan.TicksPerSecond, 0f, CreditSeconds);
-        var budget = Math.Min(session.MoveBudget + top * elapsed, top * CreditSeconds);
+        var fullRun = RunSpeed(Math.Max(session.SpeedAmount, (byte)PercentScale));
+        float budget;
+        if (HeldSince(session, nowTicks) is { } heldSince)
+        {
+            var noticed = heldSince + (long)(HoldNoticeSeconds * TimeSpan.TicksPerSecond);
+            var runningSince = session.MoveBudgetTicks >= heldSince - (long)(ReportSeconds * TimeSpan.TicksPerSecond)
+                ? session.MoveBudgetTicks
+                : heldSince;
+            budget = Math.Min(session.MoveBudget, 0f) + fullRun * Seconds(Math.Min(nowTicks, noticed) - runningSince);
+        }
+        else
+        {
+            budget = Math.Min(
+                session.MoveBudget + RunSpeed(session.SpeedAmount) * Seconds(nowTicks - session.MoveBudgetTicks),
+                fullRun * CreditSeconds);
+        }
         session.MoveBudgetTicks = nowTicks;
 
         var dx = x - session.X;
@@ -35,8 +48,15 @@ public static class MovePace
             return false;
         }
 
-        session.MoveBudget = Math.Max(0f, budget - distance);
+        session.MoveBudget = budget - distance;
         return true;
+    }
+
+    public static void Placed(UserSession session, long nowTicks)
+    {
+        session.PlacedTicks = nowTicks;
+        session.MoveBudget = 0f;
+        session.MoveBudgetTicks = nowTicks;
     }
 
     public static bool LeadsTooFar(UserSession session, float curX, float curZ, float willX, float willZ, long nowTicks)
@@ -46,4 +66,22 @@ public static class MovePace
         var dz = willZ - curZ;
         return dx * dx + dz * dz > reach * reach;
     }
+
+    private static long? HeldSince(UserSession session, long nowTicks)
+    {
+        long? since = null;
+        foreach (var buff in session.ActiveBuffs.Values)
+        {
+            if (buff.BuffType is not (BuffType.Freeze or BuffType.Stun) || buff.ExpireTicks <= nowTicks)
+                continue;
+            var start = Math.Min(nowTicks, buff.ExpireTicks - buff.Duration * TimeSpan.TicksPerSecond);
+            since = since is { } earlier ? Math.Min(earlier, start) : start;
+        }
+        return since;
+    }
+
+    private static float Seconds(long ticks) => Math.Clamp((float)ticks / TimeSpan.TicksPerSecond, 0f, CreditSeconds);
+
+    private static float RunSpeed(byte speedAmount) =>
+        RunMetresPerSecond * speedAmount / PercentScale * TolerancePercent / PercentScale;
 }

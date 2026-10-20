@@ -1815,6 +1815,7 @@ public class AdminPacketCoordinator(
         await worldPacketCoordinator.BroadcastUserInOutAsync(session, InOutType.Out);
         session.X = x;
         session.Z = z;
+        MovePace.Placed(session, DateTime.UtcNow.Ticks);
         sessionManager.Regions.UpdateRegion(session);
 
         await session.Client.SendPacket(MovementPacketWriter.Warp(

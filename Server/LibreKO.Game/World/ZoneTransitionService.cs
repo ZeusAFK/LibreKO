@@ -86,6 +86,7 @@ public class ZoneTransitionService(
         session.Ground = GroundEffect.None;
         session.X = x;
         session.Z = z;
+        MovePace.Placed(session, DateTime.UtcNow.Ticks);
         session.Y = ResolveTargetHeight(newZone, x, z);
         session.SpeedLastX = 0f;
         session.SpeedLastZ = 0f;

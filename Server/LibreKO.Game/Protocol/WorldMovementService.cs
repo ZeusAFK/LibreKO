@@ -5,6 +5,8 @@ using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using LibreKO.Game.Configuration;
 using LibreKO.Game.Protocol.Writers;
 
 namespace LibreKO.Game.Protocol;
@@ -51,7 +53,8 @@ public class WorldMovementService(
     IKrowazTrapService krowazTrapService,
     IGenieActivationService genieActivation,
     ILogger<WorldMovementService> logger,
-    TimeProvider? timeProvider = null) : IWorldMovementService
+    TimeProvider? timeProvider = null,
+    IOptions<GameServerSettings>? settings = null) : IWorldMovementService
 {
     public const byte MoveEchoFinish = 0;
     private const byte MoveEchoStart = 1;
@@ -61,7 +64,6 @@ public class WorldMovementService(
 
     private const short DamageZoneHp = 10;
     private const int PlacementGraceMs = 1000;
-    // The NPC and gate ranges are 10 m; this leaves room to step back from them.
     private const float WarpListReach = 15f;
 
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
@@ -101,7 +103,7 @@ public class WorldMovementService(
             return;
 
         var now = time.GetUtcNow().UtcTicks;
-        if (!session.IsGM && !MovePace.TryStep(session, newX, newZ, now))
+        if (!RunsFree(session) && !MovePace.TryStep(session, newX, newZ, now))
         {
             logger.LogDebug("Move refused for {Name}: ({FromX:F1},{FromZ:F1}) to ({X:F1},{Z:F1}) is faster than it can run",
                 session.Name, session.X, session.Z, newX, newZ);
@@ -113,7 +115,7 @@ public class WorldMovementService(
         if (echo == MoveEchoFinish
             || (sessionManager.Maps != null
                 && !sessionManager.Maps.IsValidPosition(session.ZoneId, willX / PositionScale, willZ / PositionScale))
-            || (!session.IsGM && MovePace.LeadsTooFar(session, newX, newZ, willX / PositionScale, willZ / PositionScale, now)))
+            || (!RunsFree(session) && MovePace.LeadsTooFar(session, newX, newZ, willX / PositionScale, willZ / PositionScale, now)))
             (willX, willZ, willY) = (curX, curZ, curY);
 
         var stepped = newX != session.X || newZ != session.Z;
@@ -241,6 +243,9 @@ public class WorldMovementService(
         _ => false,
     };
 
+    private bool RunsFree(UserSession session) =>
+        session.IsGM || settings?.Value.PublicDemo.GrantGameMasterSpeedToEveryone == true;
+
     private static ushort Tenths(float metres) => (ushort)Math.Clamp(metres * PositionScale, 0f, ushort.MaxValue);
 
     public async Task HandleHomeAsync(IClient client)
@@ -281,7 +286,7 @@ public class WorldMovementService(
         var realZ = posZ / 10.0f;
 
         await session.Client.SendPacket(MovementPacketWriter.Warp(posX, posZ));
-        session.PlacedTicks = time.GetUtcNow().UtcTicks;
+        MovePace.Placed(session, time.GetUtcNow().UtcTicks);
 
         await worldVisibilityService.BroadcastUserInOutAsync(session, InOutType.Out);
         sessionManager.Regions.DropAggroOn(session.CharacterId);
@@ -301,7 +306,7 @@ public class WorldMovementService(
 
     public async Task DisplaceAsync(UserSession session, float x, float z)
     {
-        session.PlacedTicks = time.GetUtcNow().UtcTicks;
+        MovePace.Placed(session, time.GetUtcNow().UtcTicks);
         session.X = x;
         session.Y = ResolveTargetHeight(session.ZoneId, x, z);
         session.Z = z;

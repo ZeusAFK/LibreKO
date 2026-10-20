@@ -350,7 +350,6 @@ public class UserSession
 
     // Quest & NPC interaction state
     public QuestState Quest { get; } = new();
-    // A client that never finishes loading the new zone is no longer shielded after this.
     private const int WarpingTimeoutSeconds = 60;
     public long WarpingUntilTicks { get; set; }
 

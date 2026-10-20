@@ -67,8 +67,8 @@ public class LootBundle
         return false;
     }
 
-    public bool IsBeside(UserSession player, float range) =>
-        player.ZoneId == ZoneId && player.Room == Room && DistanceSquaredTo(player.X, player.Z) <= range;
+    public bool IsBeside(UserSession player, float rangeSquared) =>
+        player.ZoneId == ZoneId && player.Room == Room && DistanceSquaredTo(player.X, player.Z) <= rangeSquared;
 
     public float DistanceSquaredTo(float x, float z)
     {

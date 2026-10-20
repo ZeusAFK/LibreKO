@@ -33,6 +33,7 @@ public class MovementAuthorityTests : GameTestBase
     private const short GateProto = 561;
     private const short LeverProto = 2561;
     private const int Stun = 490500;
+    private const byte OperatorSummon = 7;
     private const ushort LootCoins = 200;
 
     private sealed class Clock : TimeProvider
@@ -96,7 +97,7 @@ public class MovementAuthorityTests : GameTestBase
     }
 
     [Fact]
-    public async Task StandingStillDoesNotSaveUpForAJump()
+    public async Task StandingStillSavesUpOnlyAFewSecondsOfRunning()
     {
         var clock = new Clock();
         using var provider = Provider(clock);
@@ -105,8 +106,160 @@ public class MovementAuthorityTests : GameTestBase
 
         clock.Advance(aMinuteMs);
         await Move(provider, jumper, Here + 30, Here);
+        jumper.X.Should().Be(Here, "a minute of standing still buys three seconds of running, not a minute's");
 
-        jumper.X.Should().Be(Here, "only a few seconds of running are ever held in hand");
+        await Move(provider, jumper, Here + 15, Here);
+        jumper.X.Should().Be(Here + 15);
+    }
+
+    [Fact]
+    public async Task AFloodOfTinyStepsGetsNoFartherThanARun()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (flooder, sent) = Player(provider, 1021);
+        const int packets = 200;
+        const int everyMs = 10;
+
+        for (var step = 1; step <= packets; step++)
+        {
+            clock.Advance(everyMs);
+            await Move(provider, flooder, Here + step, Here);
+        }
+
+        flooder.X.Should().BeLessThan(Here + 30, "two seconds of running plus three in hand is all a flood may cover");
+        Warps(sent).Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task AStunThatLandsMidRunLetsTheLastStepInAndHoldsTheNext()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (runner, sent) = Player(provider, 1022);
+        const int beforeStun = 4;
+        for (var step = 1; step <= beforeStun; step++)
+        {
+            clock.Advance(ReportMs);
+            await Move(provider, runner, Here + step * RunStep, Here);
+        }
+
+        const short stunSeconds = 3;
+        runner.SetBuff(Stun, new ActiveBuff
+        {
+            MagicId = Stun, BuffType = BuffType.Stun, Duration = stunSeconds,
+            ExpireTicks = clock.Now.AddSeconds(stunSeconds).UtcTicks,
+        });
+        clock.Advance(600);
+        var stoppedAt = Here + beforeStun * RunStep + 1.8f;
+        await Move(provider, runner, stoppedAt, Here);
+        runner.X.Should().Be(stoppedAt, "the client ran until it learnt of the stun");
+        Warps(sent).Should().Be(0);
+
+        clock.Advance(1000);
+        await Move(provider, runner, stoppedAt + 3f, Here);
+        runner.X.Should().Be(stoppedAt, "nothing banked before the stun walks a stunned player");
+    }
+
+    [Fact]
+    public async Task ASleepDoesNotHoldThePlayerAsTheClientDoesNot()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (sleeper, _) = Player(provider, 1023);
+        sleeper.SetBuff(Stun, new ActiveBuff
+        {
+            MagicId = Stun, BuffType = BuffType.Sleep, ExpireTicks = clock.Now.AddMinutes(1).UtcTicks,
+        });
+
+        clock.Advance(ReportMs);
+        await Move(provider, sleeper, Here + 3, Here);
+
+        sleeper.X.Should().Be(Here + 3);
+    }
+
+    [Fact]
+    public async Task AReportSentBeforeAPullDoesNotUndoIt()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (pulled, sent) = Player(provider, 1024);
+        const float pulledTo = Here + 15;
+
+        await provider.GetRequiredService<IWorldMovementService>().DisplaceAsync(pulled, pulledTo, Here);
+        await Move(provider, pulled, Here + 1, Here);
+        pulled.X.Should().Be(pulledTo);
+        Warps(sent).Should().Be(0, "a report already in flight is dropped, not answered");
+
+        clock.Advance(ReportMs);
+        await Move(provider, pulled, pulledTo + 3, Here);
+        pulled.X.Should().Be(pulledTo + 3);
+    }
+
+    [Fact]
+    public async Task AReportSentBeforeAGameMasterSummonDoesNotUndoIt()
+    {
+        using var provider = CreateProvider(_ => { });
+        var (summoned, sent) = Player(provider, 1025);
+        var (gm, _) = Player(provider, 1026);
+        gm.IsGM = true;
+        gm.X = Here + 10;
+        var packet = new Packet(GameOpcodes.GS_OPERATOR);
+        packet.WriteByte(OperatorSummon);
+        packet.WriteSByteString(summoned.Name);
+
+        await provider.GetRequiredService<IAdminPacketCoordinator>().HandleOperatorAsync(gm.Client, packet);
+        await Move(provider, summoned, Here + 1, Here);
+
+        summoned.X.Should().Be(Here + 10);
+        Warps(sent).Should().Be(1, "only the summon's own warp is sent");
+    }
+
+    [Fact]
+    public async Task AReportSentBeforeAZoneChangeDoesNotUndoIt()
+    {
+        using var provider = CreateProvider(_ => { });
+        var (traveller, sent) = Player(provider, 1028);
+        const float arrival = Here + 10;
+
+        await provider.GetRequiredService<IZoneTransitionService>().ChangeZoneAsync(traveller, Moradon, arrival, Here);
+        traveller.IsWarping = false;
+        await Move(provider, traveller, Here + 1, Here);
+
+        traveller.X.Should().Be(arrival);
+        Warps(sent).Should().Be(0, "a report already in flight is dropped, not answered");
+    }
+
+    [Fact]
+    public async Task AReportSentBeforeARespawnDoesNotUndoIt()
+    {
+        using var provider = CreateProvider(_ => { });
+        var (victim, sent) = Player(provider, 1029);
+        const float personArenaX = 710f;
+        const float personArenaZ = 466f;
+        victim.X = personArenaX;
+        victim.Z = personArenaZ;
+        victim.ArenaId = ArenaZones.MoradonPersonArena;
+        victim.Hp = 0;
+
+        await provider.GetRequiredService<ICombatLifecycleService>().HandleRegeneAsync(victim.Client, victim, 1);
+        var respawnedAt = victim.X;
+        await Move(provider, victim, personArenaX, personArenaZ);
+
+        victim.X.Should().Be(respawnedAt);
+        Warps(sent).Should().Be(0, "a report already in flight is dropped, not answered");
+    }
+
+    [Fact]
+    public async Task ThePublicDemoSpeedGrantRunsFree()
+    {
+        using var provider = CreateProvider(_ => { }, _ => { },
+            settings => settings.PublicDemo.GrantGameMasterSpeedToEveryone = true);
+        var (runner, _) = Player(provider, 1027);
+
+        await Move(provider, runner, Here + 30, Here);
+
+        runner.X.Should().Be(Here + 30, "the demo gives everyone the game master's speed");
     }
 
     [Fact]
@@ -156,15 +309,17 @@ public class MovementAuthorityTests : GameTestBase
         var clock = new Clock();
         using var provider = Provider(clock);
         var (stunned, _) = Player(provider, 1006);
+        const short stunSeconds = 60;
         stunned.SetBuff(Stun, new ActiveBuff
         {
-            MagicId = Stun, BuffType = BuffType.Stun, ExpireTicks = clock.Now.AddMinutes(1).UtcTicks,
+            MagicId = Stun, BuffType = BuffType.Stun, Duration = stunSeconds,
+            ExpireTicks = clock.Now.AddSeconds(stunSeconds).UtcTicks,
         });
 
         clock.Advance(ReportMs);
-        await Move(provider, stunned, Here + 3, Here);
+        await Move(provider, stunned, Here + 5, Here);
 
-        stunned.X.Should().Be(Here);
+        stunned.X.Should().Be(Here, "a player standing when the stun landed may cover only what half a second allows");
     }
 
     [Fact]
@@ -338,10 +493,16 @@ public class MovementAuthorityTests : GameTestBase
         });
         var gate = ObjectNpc(sessionManager, GateProto, GateType, Moradon, Here);
         var otherGate = ObjectNpc(sessionManager, GateProto, GateType, Elsewhere, Here);
+        var gateDownTheRoad = ObjectNpc(sessionManager, GateProto, GateType, Moradon, Here + 50);
+        var notAGate = ObjectNpc(sessionManager, LeverProto, LeverType, Moradon, Here);
         var (player, _) = Player(provider, 1017);
 
         await TouchObject(provider, player, GateObject, otherGate.UniqueId);
         otherGate.GateOpen.Should().Be(0, "a gate in another zone is not the gate at this object");
+        await TouchObject(provider, player, GateObject, gateDownTheRoad.UniqueId);
+        gateDownTheRoad.GateOpen.Should().Be(0, "a gate elsewhere in the zone is not the gate at this object");
+        await TouchObject(provider, player, GateObject, notAGate.UniqueId);
+        notAGate.GateOpen.Should().Be(0, "a lever is not a gate");
 
         await TouchObject(provider, player, GateObject, gate.UniqueId);
         gate.GateOpen.Should().Be(1);
@@ -369,14 +530,16 @@ public class MovementAuthorityTests : GameTestBase
         lever.GateOpen.Should().Be(1);
     }
 
-    [Fact]
-    public async Task LootDroppedInAnotherZoneCannotBeOpenedOrPickedUp()
+    [Theory]
+    [InlineData(Elsewhere, 0)]
+    [InlineData(Moradon, 1)]
+    public async Task LootDroppedInAnotherZoneOrRoomCannotBeOpenedOrPickedUp(byte zone, ushort room)
     {
         using var provider = Provider(new Clock());
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var (looter, sent) = Player(provider, 1019);
         looter.Money = Purse;
-        var bundle = sessionManager.Regions.CreateBundle(Elsewhere, looter.Room, looter.X, looter.Z, looter.Y);
+        var bundle = sessionManager.Regions.CreateBundle(zone, room, looter.X, looter.Z, looter.Y);
         bundle.OwnerCharId = looter.CharacterId;
         bundle.Items.Add(new LootItem { ItemId = InventoryConstants.ItemGold, Count = LootCoins });
         var loot = provider.GetRequiredService<ILootPacketCoordinator>();

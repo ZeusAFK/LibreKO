@@ -181,6 +181,21 @@ public class MagicReachTests : GameTestBase
         enemy.Hp.Should().Be(PlayerHp / 2, "a blinking enemy can be neither struck nor healed");
     }
 
+    [Theory]
+    [InlineData(MagicProcessOpcode.Casting)]
+    [InlineData(MagicProcessOpcode.Effecting)]
+    public async Task CastingStandsThePlayerUp(MagicProcessOpcode stage)
+    {
+        using var provider = Provider();
+        var priest = Player(provider, 803, AccountNation.Karus, Moradon, Here);
+        var friend = Player(provider, 804, AccountNation.Karus, Moradon, Here + 5, hp: PlayerHp / 2);
+        priest.IsSitting = true;
+
+        await Cast(provider, priest, Heal, friend.CharacterId, stage);
+
+        priest.IsSitting.Should().BeFalse("sitting regenerates faster only while sitting");
+    }
+
     [Fact]
     public async Task ARefusedReagentSpellCanBeCastAgainAtOnce()
     {

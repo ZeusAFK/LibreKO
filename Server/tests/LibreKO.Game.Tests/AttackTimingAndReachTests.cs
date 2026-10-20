@@ -21,6 +21,7 @@ public class AttackTimingAndReachTests : GameTestBase
     private const byte Starting = 1;
     private const byte Moving = 3;
     private const float SprintStep = 6.75f;
+    private const float RunStep = 6.75f;
     private const short Sprint = 67;
 
     private sealed class Clock : TimeProvider
@@ -98,7 +99,7 @@ public class AttackTimingAndReachTests : GameTestBase
     [Theory]
     [InlineData(0, Moving, 1000, SprintStep, false)]
     [InlineData(Sprint, Moving, 1000, SprintStep, true)]
-    [InlineData(Sprint, Starting, 1000, 0f, true)]
+    [InlineData(Sprint, Starting, 1000, SprintStep, false)]
     [InlineData(Sprint, Moving, 1000, 0f, false)]
     [InlineData(Sprint, WorldMovementService.MoveEchoFinish, 1000, SprintStep, false)]
     [InlineData(Sprint, Moving, 5000, SprintStep, false)]
@@ -153,9 +154,15 @@ public class AttackTimingAndReachTests : GameTestBase
         var clock = new Clock();
         using var provider = Provider(clock);
         var (attacker, sent) = Attacker(provider);
-        var worm = Monster(provider, Here + 14);
+        var worm = Monster(provider, Here + RunStep + 14);
 
         await Move(provider, attacker, Sprint, Starting);
+        clock.Advance(1000);
+        await Swing(provider, attacker, worm);
+        Swings(sent).Should().Be(0, "a report that the run starts is not yet a run");
+
+        clock.Advance(500);
+        await Move(provider, attacker, Sprint, Moving, Here + RunStep);
         clock.Advance(1000);
         await Swing(provider, attacker, worm);
         Swings(sent).Should().Be(1);
@@ -277,10 +284,10 @@ public class AttackTimingAndReachTests : GameTestBase
         await provider.GetRequiredService<ICombatPacketCoordinator>().HandleAttackAsync(attacker.Client, packet);
     }
 
-    private static Task Move(ServiceProvider provider, UserSession mover, short speed, byte echo)
+    private static Task Move(ServiceProvider provider, UserSession mover, short speed, byte echo, float? to = null)
     {
         var packet = new Packet(GameOpcodes.GS_MOVE);
-        var x = (ushort)(mover.X * 10);
+        var x = (ushort)((to ?? mover.X) * 10);
         var z = (ushort)(mover.Z * 10);
         packet.WriteUShort(x);
         packet.WriteUShort(z);
