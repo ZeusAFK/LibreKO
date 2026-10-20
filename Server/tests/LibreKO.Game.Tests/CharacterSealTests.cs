@@ -145,6 +145,46 @@ public class CharacterSealTests : GameTestBase
         velkan.AccountId.Should().Be(AccountA);
     }
 
+    [Theory]
+    [InlineData(RingAt.Nowhere, false)]
+    [InlineData(RingAt.Bag, true)]
+    [InlineData(RingAt.PartnersOffer, true)]
+    public async Task ASealedCharactersSheetIsShownOnlyForARingThePlayerCanSee(RingAt where, bool shown)
+    {
+        using var provider = Provider();
+        var (holder, ring) = await SealedVelkanAsync(provider);
+        var viewer = Session(provider, 30, AccountB, "Viewer");
+        switch (where)
+        {
+            case RingAt.Bag:
+                InventoryJournal.CopyInto(ring, viewer.Inventory[InventoryConstants.InventoryStart]);
+                break;
+            case RingAt.PartnersOffer:
+                holder.Trade.ExchangeItemList.Add(new ExchangeItem { ItemId = InventoryConstants.CypherRing, Count = 1, UniqueId = 11 });
+                holder.Trade.ExchangeUser = viewer.CharacterId;
+                viewer.Trade.ExchangeUser = holder.CharacterId;
+                break;
+        }
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(viewer, SheetRequest(11));
+
+        var reply = LastSent(viewer);
+        reply.ReadByte().Should().Be(CharacterSealPacketWriter.SealSub);
+        reply.ReadByte().Should().Be(CharacterSealPacketWriter.SheetSub);
+        (reply.ReadByte() == CharacterSealPacketWriter.Succeeded).Should().Be(shown, "a sealed character's bag and gold are no one else's business");
+    }
+
+    public enum RingAt { Nowhere, Bag, PartnersOffer }
+
+    private static Packet SheetRequest(int uniqueId)
+    {
+        var packet = new Packet(GameOpcodes.GS_ITEM_UPGRADE);
+        packet.WriteByte(CharacterSealPacketWriter.SheetSub);
+        packet.WriteInt(uniqueId);
+        packet.ResetOffset();
+        return packet;
+    }
+
     private static async Task<(UserSession Buyer, ItemSlot Ring)> SealedVelkanAsync(ServiceProvider provider)
     {
         var sealer = Session(provider, 10, AccountA, "Zeus");

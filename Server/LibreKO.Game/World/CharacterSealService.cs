@@ -20,7 +20,8 @@ public sealed class CharacterSealService(
     IServiceScopeFactory scopes,
     IGameDataService gameData,
     IUserNotificationService notifications,
-    ICharacterStatePersister statePersister) : ICharacterSealService
+    ICharacterStatePersister statePersister,
+    SessionManager sessionManager) : ICharacterSealService
 {
     public const int CypherRing = InventoryConstants.CypherRing;
     public const byte ScrollKind = 250;
@@ -65,8 +66,13 @@ public sealed class CharacterSealService(
                 break;
             }
             case CharacterSealPacketWriter.SheetSub when packet.RemainingBytes >= sizeof(int):
-                await session.Client.SendPacket(await SheetAsync(packet.ReadInt()));
+            {
+                var uniqueId = packet.ReadInt();
+                await session.Client.SendPacket(SeesRing(session, uniqueId)
+                    ? await SheetAsync(uniqueId)
+                    : CharacterSealPacketWriter.SheetRefused());
                 break;
+            }
             case CharacterSealPacketWriter.AchievementsSub:
                 await session.Client.SendPacket(CharacterSealPacketWriter.NoAchievements());
                 break;
@@ -208,6 +214,18 @@ public sealed class CharacterSealService(
 
         ring.Clear();
         return true;
+    }
+
+    // A sheet is shown for a ring in the player's bag or in their open trade, as the client asks.
+    private bool SeesRing(UserSession session, int uniqueId)
+    {
+        bool Offered(UserSession trader) =>
+            trader.WithLock(t => t.Trade.ExchangeItemList.Any(item => item.ItemId == CypherRing && item.UniqueId == uniqueId));
+
+        return uniqueId != 0
+            && (session.WithLock(s => s.Inventory.Any(slot => slot.IsSealedCharacter && slot.UniqueId == uniqueId))
+                || Offered(session)
+                || session.Trade.IsTrading && sessionManager.GetByCharacterId(session.Trade.ExchangeUser) is { } partner && Offered(partner));
     }
 
     private async Task<Packet> SheetAsync(int uniqueId)
