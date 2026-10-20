@@ -27,7 +27,6 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 {
     private readonly SessionManager sessionManager;
     private readonly IGameDataService gameData;
-    private readonly IMagicItemUsageService itemUsage;
     private readonly IItemGrantService itemGrant;
     private readonly IMonsterAggressionPolicy aggression;
     private readonly IZoneTransitionService zoneTransition;
@@ -36,31 +35,25 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
     private readonly IUserNotificationService userNotification;
     private readonly ILogger<FullMoonRiftService> logger;
     private readonly ConcurrentDictionary<ushort, FullMoonRiftRoomState> activeRooms = new();
-    private readonly IMailService mail;
     private const string StayedBehindNotice = "You stayed behind: you were busy, held or fighting when the Full Moon Rift opened.";
-    private const string VoucherBackSubject = "Full Moon Rift voucher";
-    private const string VoucherBackBody = "You stayed behind when your party entered the Full Moon Rift, so your voucher is returned.";
+    private const int NoVoucher = -1;
     private readonly Timer? timer;
     private int checkingTimeouts;
 
     public FullMoonRiftService(
         SessionManager sessionManager,
         IGameDataService gameData,
-        IMagicItemUsageService itemUsage,
         IItemGrantService itemGrant,
         IMonsterAggressionPolicy aggression,
         IZoneTransitionService zoneTransition,
         InstanceRoomRegistry rooms,
         IFullMoonRiftStageProvider stageProvider,
         IUserNotificationService userNotification,
-        IMailService mail,
         ILogger<FullMoonRiftService> logger,
         bool startTimer = true)
     {
-        this.mail = mail;
         this.sessionManager = sessionManager;
         this.gameData = gameData;
-        this.itemUsage = itemUsage;
         this.itemGrant = itemGrant;
         this.aggression = aggression;
         this.zoneTransition = zoneTransition;
@@ -175,65 +168,49 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             return false;
         }
 
-        // Only members still free whose voucher was spent go in, and each is checked again just before the move.
+        // Each member is checked, pays and is moved with nothing in between, so no one tied up meanwhile pays or goes in.
         var entryTimestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var entering = new List<UserSession>();
-        var lastEntries = new Dictionary<int, int>();
+        var difficulty = FullMoonRules.DifficultyForPartySize(members.Count);
+        var startStageId = FullMoonRules.StartingStageForDifficulty(difficulty);
+        var duration = TimeSpan.FromMinutes(FullMoonRules.RoomDurationMinutes);
+        InstanceRoom? room = null;
+        FullMoonRiftRoomState? state = null;
         var leftBehind = new List<string>();
         foreach (var member in members)
         {
-            if (!member.MayBeMovedByOthers)
+            var (free, spent) = member.WithLock(m => m.MayBeMovedByOthers ? (true, SpendVoucher(m, entryTimestamp)) : (false, NoVoucher));
+            if (!free)
             {
                 await StayBehindAsync(member, leftBehind);
                 continue;
             }
 
-            if (!await itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem))
+            if (spent == NoVoucher)
                 continue;
-            lastEntries[member.CharacterId] = member.DailyOps[(int)DailyOperation.FullMoonRift];
+
+            if (room == null || state == null)
+            {
+                room = rooms.Open((byte)ZoneId.DungeonDefence, (short)difficulty, duration, endsOnBossKill: false);
+                var now = DateTime.UtcNow;
+                state = new FullMoonRiftRoomState
+                {
+                    RoomId = room.Id,
+                    Difficulty = difficulty,
+                    CurrentStageId = startStageId,
+                    StartTime = now,
+                    NextSpawnTime = now.AddSeconds(FullMoonRules.InitialSpawnDelaySeconds),
+                    Deadline = now + duration,
+                    WaveActive = false,
+                    RemainingTowers = FullMoonRules.InitialTowers.Length
+                };
+            }
+
             member.DailyOps[(int)DailyOperation.FullMoonRift] = entryTimestamp;
-            entering.Add(member);
-        }
-
-        if (entering.Count == 0)
-        {
-            await session.Client.SendPacket(EventPacketWriter.FullMoonEntry(FullMoonRules.MemberWithoutVoucher));
-            return false;
-        }
-
-        members = entering;
-        var difficulty = FullMoonRules.DifficultyForPartySize(members.Count);
-        var startStageId = FullMoonRules.StartingStageForDifficulty(difficulty);
-
-        var duration = TimeSpan.FromMinutes(FullMoonRules.RoomDurationMinutes);
-        var room = rooms.Open((byte)ZoneId.DungeonDefence, (short)difficulty, duration, endsOnBossKill: false);
-
-        var now = DateTime.UtcNow;
-        var state = new FullMoonRiftRoomState
-        {
-            RoomId = room.Id,
-            Difficulty = difficulty,
-            CurrentStageId = startStageId,
-            StartTime = now,
-            NextSpawnTime = now.AddSeconds(FullMoonRules.InitialSpawnDelaySeconds),
-            Deadline = now + duration,
-            WaveActive = false,
-            RemainingTowers = FullMoonRules.InitialTowers.Length
-        };
-
-        foreach (var member in members)
-        {
-            if (!member.MayBeMovedByOthers)
-            {
-                await GiveVoucherBackAsync(member, lastEntries[member.CharacterId]);
-                await StayBehindAsync(member, leftBehind);
-                continue;
-            }
-
             rooms.Join(room, member);
             state.Participants[member.CharacterId] = 0;
             member.InstanceReturn = (member.ZoneId, member.X, member.Z);
             await zoneTransition.ChangeZoneAsync(member, (byte)ZoneId.DungeonDefence, FullMoonRules.SpawnX, FullMoonRules.SpawnZ);
+            await SendVoucherSpentAsync(member, spent);
             await member.Client.SendPacket(BifrostPacketWriter.InstanceTimer((ushort)duration.TotalSeconds));
         }
 
@@ -241,9 +218,8 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
                 $"{string.Join(", ", leftBehind)} stayed behind."));
 
-        if (state.Participants.IsEmpty)
+        if (room == null || state == null)
         {
-            rooms.Close(room);
             await session.Client.SendPacket(EventPacketWriter.FullMoonEntry(FullMoonRules.InstanceFailed));
             return false;
         }
@@ -252,17 +228,35 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 
         activeRooms[room.Id] = state;
         logger.LogInformation("Full Moon Rift room {Room} opened by {Leader} (difficulty={Diff}, stage={Stage}, members={Count})",
-            room.Id, session.Name, difficulty, startStageId, members.Count);
+            room.Id, session.Name, difficulty, startStageId, state.Participants.Count);
 
         return true;
     }
 
-    // A voucher comes back by mail, which a busy or full bag only waits for.
-    private async Task GiveVoucherBackAsync(UserSession member, int lastEntry)
+    // Only a voucher that has not run out pays.
+    private static int SpendVoucher(UserSession member, long now)
     {
-        member.DailyOps[(int)DailyOperation.FullMoonRift] = lastEntry;
-        await mail.SendSystemMailAsync(member.CharacterId, VoucherBackSubject, VoucherBackBody,
-            [new MailAttachmentDraft(MailAttachmentKind.Item, FullMoonRules.VoucherItem, 1)]);
+        for (var index = InventoryConstants.InventoryStart; index < member.Inventory.Length; index++)
+        {
+            var slot = member.Inventory[index];
+            if (slot.ItemId != FullMoonRules.VoucherItem || slot.Count == 0 || slot.HasExpired(now))
+                continue;
+
+            slot.Count--;
+            if (slot.Count == 0)
+                slot.Clear();
+            return index;
+        }
+
+        return NoVoucher;
+    }
+
+    private async Task SendVoucherSpentAsync(UserSession member, int index)
+    {
+        var slot = member.Inventory[index];
+        await userNotification.SendStackChangeAsync(member, (byte)index, slot.ItemId, slot.Count, slot.Durability);
+        member.RecalculateStatsWithBuffs(gameData);
+        await userNotification.SendWeightChangeAsync(member);
     }
 
     private static async Task StayBehindAsync(UserSession member, List<string> leftBehind)

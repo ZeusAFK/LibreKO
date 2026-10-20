@@ -143,13 +143,7 @@ public class EventEscapeTests : GameTestBase
     public async Task AFullMoonPartyWithAMemberWhoIsTiedUpDoesNotEnter(Tie tie)
     {
         var transitions = Substitute.For<IZoneTransitionService>();
-        var items = Substitute.For<IMagicItemUsageService>();
-        items.TryConsumeItemAsync(Arg.Any<UserSession>(), FullMoonRules.VoucherItem).Returns(true);
-        using var provider = CreateProvider(_ => { }, configureServices: services =>
-        {
-            services.AddSingleton(transitions);
-            services.AddSingleton(items);
-        });
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(transitions));
         var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
         TieUp(member, tie, leader);
 
@@ -157,7 +151,8 @@ public class EventEscapeTests : GameTestBase
 
         entered.Should().BeFalse();
         await transitions.DidNotReceiveWithAnyArgs().ChangeZoneAsync(default!, default, default, default);
-        await items.DidNotReceiveWithAnyArgs().TryConsumeItemAsync(default!, default);
+        Vouchers(leader).Should().Be(1);
+        Vouchers(member).Should().Be(1);
     }
 
     [Fact]
@@ -181,55 +176,25 @@ public class EventEscapeTests : GameTestBase
     }
 
     [Fact]
-    public async Task AFullMoonMemberTiedUpBeforePayingPaysNothingAndStaysBehind()
+    public async Task AFullMoonMemberTiedUpWhileOthersGoInPaysNothingAndStaysBehind()
     {
         var transitions = Substitute.For<IZoneTransitionService>();
-        var items = Substitute.For<IMagicItemUsageService>();
-        using var provider = CreateProvider(_ => { }, configureServices: services =>
-        {
-            services.AddSingleton(transitions);
-            services.AddSingleton(items);
-        });
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(transitions));
         var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
-        items.TryConsumeItemAsync(Arg.Any<UserSession>(), FullMoonRules.VoucherItem).Returns(true);
-        items.When(usage => usage.TryConsumeItemAsync(leader, FullMoonRules.VoucherItem)).Do(_ => TieUp(member, Tie.Trading, leader));
-
-        await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
-
-        await items.DidNotReceive().TryConsumeItemAsync(member, Arg.Any<int>());
-        await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
-        await transitions.Received(1).ChangeZoneAsync(leader, (byte)ZoneId.DungeonDefence, Arg.Any<float>(), Arg.Any<float>());
-    }
-
-    [Fact]
-    public async Task AFullMoonMemberTiedUpAfterPayingStaysBehindWithTheVoucherBack()
-    {
-        var transitions = Substitute.For<IZoneTransitionService>();
-        var items = Substitute.For<IMagicItemUsageService>();
-        var mail = Substitute.For<IMailService>();
-        using var provider = CreateProvider(_ => { },
-            configureServices: services =>
-            {
-                services.AddSingleton(transitions);
-                services.AddSingleton(items);
-                services.AddSingleton(mail);
-            });
-        var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
-        items.TryConsumeItemAsync(Arg.Any<UserSession>(), FullMoonRules.VoucherItem).Returns(true);
         transitions.When(t => t.ChangeZoneAsync(leader, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>()))
             .Do(_ => TieUp(member, Tie.Trading, leader));
 
         await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
 
+        await transitions.Received(1).ChangeZoneAsync(leader, (byte)ZoneId.DungeonDefence, Arg.Any<float>(), Arg.Any<float>());
         await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
-        await mail.Received(1).SendSystemMailAsync(member.CharacterId, Arg.Any<string>(), Arg.Any<string>(),
-            Arg.Is<IReadOnlyList<MailAttachmentDraft>>(drafts => drafts.Single().ItemId == FullMoonRules.VoucherItem), Arg.Any<MailKind>());
+        Vouchers(member).Should().Be(1, "a member is charged only together with the move");
+        Vouchers(leader).Should().Be(0);
         Notices(member).Should().ContainSingle(notice => notice.Contains("stayed behind"));
         Notices(leader).Should().Contain(notice => notice.Contains(member.Name));
         FullMoonRules.HasEnteredToday(member).Should().BeFalse("a member who did not go in used up no entry");
         FullMoonRules.HasEnteredToday(leader).Should().BeTrue();
     }
-
     [Fact]
     public async Task ADungeonLeavesATiedUpMemberBehindAndSaysSo()
     {
@@ -305,44 +270,13 @@ public class EventEscapeTests : GameTestBase
     }
 
     [Fact]
-    public async Task AFullMoonRiftNoOneCouldEnterIsNotLeftOpen()
-    {
-        var transitions = Substitute.For<IZoneTransitionService>();
-        var items = Substitute.For<IMagicItemUsageService>();
-        using var provider = CreateProvider(_ => { }, configureServices: services =>
-        {
-            services.AddSingleton(transitions);
-            services.AddSingleton(items);
-            services.AddSingleton(Substitute.For<IMailService>());
-        });
-        var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
-        items.TryConsumeItemAsync(Arg.Any<UserSession>(), FullMoonRules.VoucherItem).Returns(true);
-        items.When(usage => usage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem)).Do(_ =>
-        {
-            TieUp(leader, Tie.Trading, member);
-            TieUp(member, Tie.Fighting, leader);
-        });
-        var rooms = provider.GetRequiredService<InstanceRoomRegistry>();
-
-        var entered = await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
-
-        entered.Should().BeFalse();
-        rooms.Rooms.Should().BeEmpty("a room with no one in it is closed again");
-    }
-
-    [Fact]
     public async Task OnlyFullMoonMembersWhoseVoucherWasSpentGoIn()
     {
         var transitions = Substitute.For<IZoneTransitionService>();
-        var items = Substitute.For<IMagicItemUsageService>();
-        using var provider = CreateProvider(_ => { }, configureServices: services =>
-        {
-            services.AddSingleton(transitions);
-            services.AddSingleton(items);
-        });
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(transitions));
         var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
-        items.TryConsumeItemAsync(leader, FullMoonRules.VoucherItem).Returns(true);
-        items.TryConsumeItemAsync(member, FullMoonRules.VoucherItem).Returns(false);
+        transitions.When(t => t.ChangeZoneAsync(leader, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>()))
+            .Do(_ => member.Inventory[InventoryConstants.InventoryStart].Clear());
 
         await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
 
@@ -350,6 +284,26 @@ public class EventEscapeTests : GameTestBase
         await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
         FullMoonRules.HasEnteredToday(member).Should().BeFalse("a member who spent nothing used up no entry");
     }
+
+    [Fact]
+    public async Task AFullMoonVoucherThatRanOutDoesNotPay()
+    {
+        var transitions = Substitute.For<IZoneTransitionService>();
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(transitions));
+        var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
+        var expired = member.Inventory[InventoryConstants.InventoryStart];
+        var valid = member.Inventory[InventoryConstants.InventoryStart + 1];
+        (valid.ItemId, valid.Count) = (expired.ItemId, expired.Count);
+        expired.ExpiresAt = DateTimeOffset.UtcNow.AddDays(-1).ToUnixTimeSeconds();
+
+        await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
+
+        await transitions.Received(1).ChangeZoneAsync(member, (byte)ZoneId.DungeonDefence, Arg.Any<float>(), Arg.Any<float>());
+        expired.Count.Should().Be(1, "a voucher that ran out is no payment");
+        valid.IsEmpty.Should().BeTrue();
+    }
+    private static int Vouchers(UserSession player) =>
+        player.Inventory.Where(slot => slot.ItemId == FullMoonRules.VoucherItem).Sum(slot => slot.Count);
 
     private static void TieUp(UserSession player, Tie tie, UserSession partner)
     {
