@@ -238,6 +238,46 @@ public class MerchantStallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ABuyerWhoLookedBeforeTheStallClosedBuysNothingFromItsReopening()
+    {
+        using var market = new Market();
+        var seller = market.Player(96063, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var buyer = market.Player(96064, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        seller.Trade.MerchantViewerId = buyer.CharacterId;
+
+        await market.SendAsync(seller, MerchantSubOpcode.Close);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        await market.BuyAsync(buyer, Ware, 1);
+
+        buyer.Money.Should().Be(StartingGold, "the buyer saw the earlier stall and its prices");
+        CountIn(buyer, Ware).Should().Be(0);
+        seller.Trade.MerchantViewerId.Should().Be(-1);
+    }
+
+    [Fact]
+    public async Task ASellerWhoLookedBeforeABuyingStallClosedSellsNothingToItsReopening()
+    {
+        using var market = new Market();
+        var owner = market.Player(96065, gold: Price);
+        await market.OpenBuyingStallAsync(owner, (Ware, 1, Price));
+        var seller = market.Player(96066, gold: 0);
+        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        Stock(Bag(seller, BagPos), Ware, 1);
+
+        await market.SendAsync(owner, MerchantSubOpcode.BuyClose);
+        await market.OpenBuyingStallAsync(owner, (Ware, 1, Price));
+        await market.SellAsync(seller, BagPos, 1);
+
+        seller.Money.Should().Be(0, "the seller saw the earlier stall and its prices");
+        CountIn(seller, Ware).Should().Be(1);
+    }
+
+    [Fact]
     public async Task AnExpiredItemOnAStallIsNotSold()
     {
         using var market = new Market();

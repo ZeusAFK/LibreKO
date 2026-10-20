@@ -21,16 +21,15 @@ public sealed class SlaveMerchantPacketCoordinator(
         if (session == null || session.Hp <= 0 || packet.RemainingBytes < 1)
             return;
 
-        // Collecting and redeeming move items, so they wait until the owner is free.
         switch ((SlaveMerchantSub)packet.ReadByte())
         {
             case SlaveMerchantSub.Status:
                 await slaveMerchants.SendStatusAsync(session);
                 break;
-            case SlaveMerchantSub.Collect when !session.IsBusy:
+            case SlaveMerchantSub.Collect:
                 await slaveMerchants.CollectAsync(session);
                 break;
-            case SlaveMerchantSub.Redeem when packet.RemainingBytes >= RedeemBytes && !session.IsBusy:
+            case SlaveMerchantSub.Redeem when packet.RemainingBytes >= RedeemBytes:
                 await slaveMerchants.RedeemAsync(session, packet.ReadByte(), packet.ReadInt());
                 break;
         }

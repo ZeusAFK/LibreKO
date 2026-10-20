@@ -54,23 +54,48 @@ public class SlaveMerchantTests : GameTestBase
         (await StoredItems(provider, OwnerId)).Should().Equal(owner.SerializeItems());
     }
 
-    [Fact]
-    public async Task ABusyOwnerRedeemsNoCertificate()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ABusyOwnerRedeemsNoCertificate(bool atAnOpenStall)
     {
         using var provider = Provider();
-        var (owner, _) = Player(provider, OwnerId, "Trader");
+        var (owner, sent) = Player(provider, OwnerId, "Trader");
         GiveCertificate(owner, SlaveMerchantService.OneDayCertificate);
-        owner.Trade.ExchangeUser = BuyerId;
+        if (atAnOpenStall)
+            owner.Trade.MerchantState = MerchantMode.Selling;
+        else
+            owner.Trade.ExchangeUser = BuyerId;
+
+        await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, RedeemRequest());
+
+        owner.Inventory[InventoryConstants.InventoryStart + CertificateBagPosition].ItemId.Should().Be(SlaveMerchantService.OneDayCertificate);
+        (await HoursOf(provider, OwnerId)).Should().Be(0);
+        Last(sent, SlaveMerchantSub.Redeem).ReadByte().Should().Be((byte)SlaveMerchantRedeemResult.Failed, "the client is told the certificate was not used");
+    }
+
+    [Fact]
+    public async Task APlayerSettingUpAStallRedeemsACertificate()
+    {
+        using var provider = Provider();
+        var (owner, sent) = Player(provider, OwnerId, "Trader");
+        GiveCertificate(owner, SlaveMerchantService.OneDayCertificate);
+        owner.Trade.IsSellingMerchantPreparing = true;
+
+        await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, RedeemRequest());
+
+        (await HoursOf(provider, OwnerId)).Should().Be(SlaveMerchantService.OneDayHours, "the stall panel itself asks for a certificate");
+        Last(sent, SlaveMerchantSub.Redeem).ReadByte().Should().Be((byte)SlaveMerchantRedeemResult.Added);
+    }
+
+    private static Packet RedeemRequest()
+    {
         var redeem = new Packet(GameOpcodes.GS_SLAVE_MERCHANT);
         redeem.WriteByte((byte)SlaveMerchantSub.Redeem);
         redeem.WriteByte(CertificateBagPosition);
         redeem.WriteInt(SlaveMerchantService.OneDayCertificate);
         redeem.ResetOffset();
-
-        await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, redeem);
-
-        owner.Inventory[InventoryConstants.InventoryStart + CertificateBagPosition].ItemId.Should().Be(SlaveMerchantService.OneDayCertificate);
-        (await HoursOf(provider, OwnerId)).Should().Be(0);
+        return redeem;
     }
 
     [Fact]
@@ -251,6 +276,7 @@ public class SlaveMerchantTests : GameTestBase
         await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, collect);
 
         Slaves(provider).Should().ContainSingle("a trade or a stall counts on the bag staying as it is");
+        Last(sent, SlaveMerchantSub.Collect).ReadByte().Should().Be((byte)SlaveMerchantCollectResult.Failed);
     }
 
     [Fact]

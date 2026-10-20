@@ -273,12 +273,17 @@ public class SlaveMerchantService(
         await owner.Client.SendPacket(SlaveMerchantPacketWriter.Status(open: false, hours, held?.EarnedNoah ?? 0, Lines(items)));
     }
 
+    // Items reach or leave the bag only while it is not tied up in a trade, an open stall or gathering.
+    private static bool BagIsFree(UserSession owner) =>
+        !owner.Trade.IsTrading && !owner.Trade.IsMerchanting && !owner.IsGathering;
+
     public async Task CollectAsync(UserSession owner)
     {
         await gate.WaitAsync();
         try
         {
-            if (activeByOwner.TryGetValue(owner.CharacterId, out var bot) && !await CloseAsync(bot, closing: null))
+            if (!BagIsFree(owner)
+                || activeByOwner.TryGetValue(owner.CharacterId, out var bot) && !await CloseAsync(bot, closing: null))
             {
                 await owner.Client.SendPacket(SlaveMerchantPacketWriter.CollectFailed());
                 return;
@@ -385,7 +390,7 @@ public class SlaveMerchantService(
             var slotIndex = InventoryConstants.InventoryStart + bagPosition;
             var journal = new InventoryJournal(owner);
             var hours = 0;
-            var outcome = added == 0 || bagPosition >= InventoryConstants.HaveMax
+            var outcome = added == 0 || bagPosition >= InventoryConstants.HaveMax || !BagIsFree(owner)
                 ? StateCommit.Unchanged
                 : await statePersister.CommitAsync(owner, async db =>
                 {

@@ -78,6 +78,17 @@ public class SessionManager
 
     public IEnumerable<UserSession> GetAll() => sessionsByCharacterId.Values;
 
+    // A stall that closed is looked at afresh once it opens again.
+    public void ForgetStall(UserSession merchant)
+    {
+        merchant.Trade.MerchantViewerId = -1;
+        foreach (var looker in GetAll())
+        {
+            if (looker.Trade.MerchantTargetUserId == merchant.CharacterId)
+                looker.Trade.MerchantTargetUserId = -1;
+        }
+    }
+
     public NpcInstance[] GetActiveAiNpcsSnapshot()
     {
         var activeNpcs = new List<NpcInstance>();

@@ -278,6 +278,7 @@ public class MerchantBuyingService(
         if (session.Trade.IsBuyingMerchant)
             session.Trade.MerchantState = MerchantMode.None;
         session.Trade.MerchantTargetUserId = -1;
+        sessionManager.ForgetStall(session);
 
         var refund = session.ReleaseBuyMerchantGold();
         if (refund.ToPurse > 0)

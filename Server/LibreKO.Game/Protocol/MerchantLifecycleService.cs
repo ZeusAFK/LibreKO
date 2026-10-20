@@ -67,7 +67,7 @@ public class MerchantLifecycleService(
 
     public async Task CloseAsync(UserSession session, MerchantInOut? merchantInOutType)
     {
-        // A slave merchant's stall is closed only by the slave merchant service, which saves what it holds.
+        // A slave merchant's stall is closed only by the slave merchant service.
         if (session is SlaveMerchantBotSession)
             return;
 
@@ -85,6 +85,7 @@ public class MerchantLifecycleService(
         session.Trade.IsSellingMerchantPreparing = false;
         session.Trade.MerchantTargetUserId = -1;
         session.Trade.MerchantAdvert = string.Empty;
+        sessionManager.ForgetStall(session);
 
         if (!merchantInOutType.HasValue)
             return;
