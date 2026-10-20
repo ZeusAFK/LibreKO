@@ -27,6 +27,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     {
         public int Count;
         public DateTimeOffset Since;
+        public bool Retired;
     }
 
     private sealed class Table
@@ -89,8 +90,13 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         Uncount(byName, name);
         if (address.Length == 0)
             return;
-        if (byAddressAndName.Entries.TryRemove(Key(address, name), out _))
-            Interlocked.Decrement(ref byAddressAndName.Size);
+        var key = Key(address, name);
+        if (byAddressAndName.Entries.TryGetValue(key, out var pair))
+        {
+            lock (pair)
+                Retire(byAddressAndName, key, pair);
+        }
+
         Uncount(byAddress, address);
     }
 
@@ -135,28 +141,35 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
             return Now - failures.Since < Window && failures.Count >= limit;
     }
 
-    // Each table sweeps its expired entries at most once a minute, and a full one makes room by dropping its oldest.
+    // A table sweeps expired entries once a minute and drops its oldest when full; an attempt whose entry left meanwhile counts on a fresh one.
     private int Count(Table table, string key)
     {
-        var due = Volatile.Read(ref table.NextPruneTicks);
-        if (Now.UtcTicks >= due && Interlocked.CompareExchange(ref table.NextPruneTicks, (Now + PruneInterval).UtcTicks, due) == due)
-            Prune(table);
-
-        if (!table.Entries.TryGetValue(key, out var failures))
+        while (true)
         {
-            if (Volatile.Read(ref table.Size) >= MaxTracked)
-                MakeRoom(table);
-            var added = new Failures { Since = Now };
-            failures = table.Entries.GetOrAdd(key, added);
-            if (ReferenceEquals(failures, added))
-                Interlocked.Increment(ref table.Size);
-        }
+            var found = table.Entries.TryGetValue(key, out var failures);
+            var now = Now;
+            var due = Volatile.Read(ref table.NextPruneTicks);
+            if (now.UtcTicks >= due && Interlocked.CompareExchange(ref table.NextPruneTicks, (now + PruneInterval).UtcTicks, due) == due)
+                Prune(table, now);
 
-        lock (failures)
-        {
-            if (Now - failures.Since >= Window)
-                (failures.Count, failures.Since) = (0, Now);
-            return ++failures.Count;
+            if (!found || failures == null)
+            {
+                if (Volatile.Read(ref table.Size) >= MaxTracked)
+                    MakeRoom(table, now);
+                var added = new Failures { Since = now };
+                failures = table.Entries.GetOrAdd(key, added);
+                if (ReferenceEquals(failures, added))
+                    Interlocked.Increment(ref table.Size);
+            }
+
+            lock (failures)
+            {
+                if (failures.Retired)
+                    continue;
+                if (now - failures.Since >= Window)
+                    (failures.Count, failures.Since) = (0, now);
+                return ++failures.Count;
+            }
         }
     }
 
@@ -165,33 +178,38 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         if (!table.Entries.TryGetValue(key, out var failures))
             return;
 
-        bool empty;
         lock (failures)
         {
             failures.Count = Math.Max(0, failures.Count - 1);
-            empty = failures.Count == 0;
+            if (failures.Count == 0)
+                Retire(table, key, failures);
         }
+    }
 
-        if (empty && table.Entries.TryRemove(KeyValuePair.Create(key, failures)))
+    // Only under the entry's own lock, so a count waiting on that lock sees the entry is gone.
+    private static void Retire(Table table, string key, Failures failures)
+    {
+        failures.Retired = true;
+        if (table.Entries.TryRemove(KeyValuePair.Create(key, failures)))
             Interlocked.Decrement(ref table.Size);
     }
 
-    private void MakeRoom(Table table)
+    private static void MakeRoom(Table table, DateTimeOffset now)
     {
         if (Interlocked.CompareExchange(ref table.Evicting, 1, 0) != 0)
             return;
 
         try
         {
-            Prune(table);
+            Prune(table, now);
             var excess = Volatile.Read(ref table.Size) - KeptAfterEviction;
             if (excess <= 0)
                 return;
 
-            foreach (var (key, _) in table.Entries.OrderBy(entry => entry.Value.Since).Take(excess).ToList())
+            foreach (var (key, failures) in table.Entries.OrderBy(entry => entry.Value.Since).Take(excess).ToList())
             {
-                if (table.Entries.TryRemove(key, out _))
-                    Interlocked.Decrement(ref table.Size);
+                lock (failures)
+                    Retire(table, key, failures);
             }
         }
         finally
@@ -200,15 +218,15 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         }
     }
 
-    private void Prune(Table table)
+    private static void Prune(Table table, DateTimeOffset now)
     {
         foreach (var (key, failures) in table.Entries)
         {
-            bool expired;
             lock (failures)
-                expired = Now - failures.Since >= Window;
-            if (expired && table.Entries.TryRemove(key, out _))
-                Interlocked.Decrement(ref table.Size);
+            {
+                if (now - failures.Since >= Window)
+                    Retire(table, key, failures);
+            }
         }
     }
 }

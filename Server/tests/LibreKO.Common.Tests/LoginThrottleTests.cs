@@ -18,7 +18,15 @@ public class LoginThrottleTests
     private sealed class Clock : TimeProvider
     {
         public DateTimeOffset Now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
-        public override DateTimeOffset GetUtcNow() => Now;
+        public Action? OnNextRead { get; set; }
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            var meanwhile = OnNextRead;
+            OnNextRead = null;
+            meanwhile?.Invoke();
+            return Now;
+        }
     }
 
     [Fact]
@@ -180,6 +188,22 @@ public class LoginThrottleTests
         }
 
         throttle.SlowdownFor("victim").Should().Be(LoginThrottle.SlowdownStep, "a login that let its player in leaves nothing behind to crowd out a guessed name");
+    }
+
+    [Fact]
+    public void AnAttemptCountedAsItsEntryIsDroppedIsNotLost()
+    {
+        var clock = new Clock();
+        var throttle = new LoginThrottle(clock);
+        throttle.TryAttempt(string.Empty, "victim");
+        clock.OnNextRead = () => throttle.Succeeded(string.Empty, "victim");
+
+        throttle.TryAttempt(string.Empty, "victim");
+        for (var guess = 0; guess < LoginThrottle.FailuresBeforeSlowing; guess++)
+            throttle.TryAttempt(string.Empty, "victim");
+
+        throttle.SlowdownFor("victim").Should().Be(LoginThrottle.SlowdownStep,
+            "an attempt that looked its entry up just before a success dropped it still counts");
     }
 
     [Fact]
