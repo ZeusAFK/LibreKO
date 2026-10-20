@@ -53,8 +53,10 @@ public class SessionLifecycleTests : GameTestBase
         (await StoredAsync(provider, First)).IsOnline.Should().BeFalse("a step 2 in flight during a kick would write an old row over the final save");
     }
 
-    [Fact]
-    public async Task AGameStartWhoseAccountWasLostWhileLoadingLeavesNoSession()
+    [Theory]
+    [InlineData(FirstStep)]
+    [InlineData(SecondStep)]
+    public async Task AGameStartWhoseAccountWasLostWhileLoadingLeavesNoSession(byte step)
     {
         var initializer = Substitute.For<IGameSessionInitializer>();
         using var provider = CreateProvider(SeedAccount, configureServices: services => services.AddScoped(_ => initializer));
@@ -66,7 +68,7 @@ public class SessionLifecycleTests : GameTestBase
             return sessions.CreateSession(client, client.CharacterId, client.AccountId);
         });
 
-        await GameStart(provider, client, FirstStep);
+        await GameStart(provider, client, step);
 
         sessions.GetByClientId(client.Id).Should().BeNull("a kick that landed while the character loaded leaves no session behind");
     }

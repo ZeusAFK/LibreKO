@@ -282,15 +282,9 @@ public class GamePacketHandler(
             if (sessionManager.GetByClientId(client.Id) != null)
                 return;
 
-            session = await gameSessionInitializer.InitializeAsync(client);
+            session = await InitializeOwnedAsync(client, gameSessionInitializer);
             if (session == null)
                 return;
-
-            if (!accountLockService.Owns(client))
-            {
-                sessionManager.RemoveSession(session);
-                return;
-            }
 
             logger.LogDebug(
                 "GameStart subOp=1: {Name} (id={Id}) entered zone={Zone} pos=({X},{Z}) region=({RX},{RZ})",
@@ -299,7 +293,7 @@ public class GamePacketHandler(
 
         if (subOpcode == 2)
         {
-            session = sessionManager.GetByClientId(client.Id) ?? await gameSessionInitializer.InitializeAsync(client);
+            session = sessionManager.GetByClientId(client.Id) ?? await InitializeOwnedAsync(client, gameSessionInitializer);
             if (session == null || !session.TryBeginGame())
                 return;
         }
@@ -344,6 +338,17 @@ public class GamePacketHandler(
             if (session.Hp <= 0)
                 await SendReconnectDeathStateAsync(session);
         }
+    }
+
+    // A kick that lands while the character loads leaves no session behind.
+    private async Task<UserSession?> InitializeOwnedAsync(IClient client, IGameSessionInitializer gameSessionInitializer)
+    {
+        var session = await gameSessionInitializer.InitializeAsync(client);
+        if (session == null || accountLockService.Owns(client))
+            return session;
+
+        sessionManager.RemoveSession(session);
+        return null;
     }
 
     private static async Task SendReconnectDeathStateAsync(UserSession session)
