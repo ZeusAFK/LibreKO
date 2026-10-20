@@ -150,7 +150,7 @@ public class MailService(
             return;
         }
 
-        // A sealed character cannot log in, so a mail to it could hold the very ring that unseals it.
+        // A sealed character cannot log in to claim it.
         if (recipient.Sealed)
         {
             await Fail(session, $"{recipient.Name} is sealed and cannot receive mail.");
@@ -198,7 +198,7 @@ public class MailService(
             await NotifyNewMailAsync(online, session.Name, db);
     }
 
-    // Checked and taken in one locked step, so nothing can change or expire an item in between.
+    // Checked and taken in one locked step.
     private string? TakeAttachments(UserSession session, int gold, IReadOnlyList<MailItemPick> items,
         List<MailAttachmentDraft> drafts, List<(int Slot, ExchangeItem Item)> taken)
     {
@@ -251,7 +251,6 @@ public class MailService(
         return null;
     }
 
-    // The bag or purse may have filled while the save ran, so what no longer fits goes to the warehouse.
     private void GiveBackAttachments(UserSession session, int gold, List<(int Slot, ExchangeItem Item)> taken)
     {
         if (session.ReturnHeldGold(gold).Lost > 0)

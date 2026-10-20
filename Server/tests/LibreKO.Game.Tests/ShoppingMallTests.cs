@@ -1275,6 +1275,29 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ALetterWhoseSaveFailsPutsTheItemBackInItsOwnSlot()
+    {
+        const int itemId = 810002000;
+        const byte ownSlot = 5;
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { AccountId = 1, Name = "Recipient" },
+                new Character { Id = 35, AccountId = 45, Name = "Sender" }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Race = 1 }),
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(
+                options => options.AddInterceptors(new LetterSaveFaults())));
+        var (session, client, _) = LetterWriter(provider, characterId: 35, accountId: 45);
+        var item = session.Inventory[InventoryConstants.InventoryStart + ownSlot];
+        item.ItemId = itemId;
+        item.Count = 1;
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>()
+            .HandleAsync(client, LetterWithItem("Recipient", itemId, ownSlot));
+
+        item.ItemId.Should().Be(itemId, "the client puts the item back where it was");
+    }
+
+    [Fact]
     public async Task ALetterStillHoldingItsItemIsNotDeleted()
     {
         using var provider = CreateProvider(db => db.MailBoxes.AddRange(

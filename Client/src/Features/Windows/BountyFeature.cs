@@ -148,10 +148,10 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         }
     }
 
-    private void OnClaim(int bountyId, bool ok)
+    private void OnClaim(BountyOutcome outcome)
     {
-        status.Text = ok ? "" : ClaimRefused;
-        if (ok) requests.List();
+        status.Text = outcome.Succeeded ? "" : ClaimRefused;
+        if (outcome.Succeeded) requests.List();
     }
 
     private void OnWithdraw(BountyOutcome outcome)

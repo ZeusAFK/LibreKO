@@ -34,8 +34,7 @@ public class ShoppingMallLetterMutationService(
     private const byte DeleteTooMany = unchecked((byte)-3);
     private const byte SendToSelf = unchecked((byte)-6);
     private const byte SendItemNotMailable = unchecked((byte)-32);
-    private const byte LetterUnclaimed = 1;
-    private const byte LetterClaimed = 2;
+    private const byte UnmailableRace = 7;
 
     public async Task HandleSendAsync(UserSession session, Packet packet)
     {
@@ -130,7 +129,7 @@ public class ShoppingMallLetterMutationService(
             .Where(character => character.Name == recipientName && character.DeletionTime == null)
             .Select(character => new { character.Sealed })
             .FirstOrDefaultAsync();
-        // A sealed character cannot log in, so a letter to it could hold the very ring that unseals it.
+        // A sealed character cannot log in to claim it.
         if (recipient == null || recipient.Sealed)
         {
             await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
@@ -152,7 +151,7 @@ public class ShoppingMallLetterMutationService(
 
             itemData = gameDataService.GetItem(itemId);
             if (itemData == null
-                || itemData.Race == 7
+                || itemData.Race == UnmailableRace
                 || itemData.IsUntradeable
                 || itemId >= InventoryConstants.ItemGold)
             {
@@ -173,7 +172,7 @@ public class ShoppingMallLetterMutationService(
             unitOfWork.MailBoxes.Add(new MailBox
             {
                 SendDate = DateTime.UtcNow,
-                Status = LetterUnclaimed,
+                Status = ShoppingMallLetterProtocol.LetterStatusNew,
                 SenderId = session.Name,
                 RecipientId = recipientName,
                 Subject = subject,
@@ -212,7 +211,7 @@ public class ShoppingMallLetterMutationService(
             await userNotificationService.SendUnreadNotificationAsync(online);
     }
 
-    // Checked and taken in one locked step, so nothing can change or expire the item in between.
+    // Checked and taken in one locked step.
     private static (bool Taken, ExchangeItem? Item, byte Refusal) TakeLetterCost(
         UserSession session, int sourceIndex, int itemId, ItemData? itemData, int cost)
     {
@@ -240,7 +239,6 @@ public class ShoppingMallLetterMutationService(
         return (true, item, Succeeded);
     }
 
-    // The bag or purse may have filled while the save ran, so what no longer fits goes to the warehouse.
     private void GiveBackLetterCost(UserSession session, int cost, ExchangeItem? item)
     {
         if (session.ReturnHeldGold(cost).Lost > 0)
@@ -275,7 +273,7 @@ public class ShoppingMallLetterMutationService(
         // A letter whose item or coins were never taken would take them with it.
         var letters = await db.MailBoxes
             .Where(mail => letterIds.Contains(mail.LetterId) && mail.RecipientId == session.Name && !mail.Deleted
-                && !(mail.Type == ShoppingMallPacketWriter.LetterTypeWithItem && mail.Status == LetterUnclaimed))
+                && !(mail.Type == ShoppingMallPacketWriter.LetterTypeWithItem && mail.Status == ShoppingMallLetterProtocol.LetterStatusNew))
             .ToListAsync();
 
         foreach (var letter in letters)
@@ -308,7 +306,7 @@ public class ShoppingMallLetterMutationService(
             .OrderBy(mail => mail.LetterId)
             .FirstOrDefaultAsync(mail => mail.LetterId == letterId
                 && mail.RecipientId == session.Name
-                && mail.Status == LetterUnclaimed
+                && mail.Status == ShoppingMallLetterProtocol.LetterStatusNew
                 && mail.Type == ShoppingMallPacketWriter.LetterTypeWithItem
                 && !mail.Deleted);
 
@@ -379,7 +377,7 @@ public class ShoppingMallLetterMutationService(
         if (coins > 0)
             await userNotificationService.SendGoldGainAsync(session, coins);
 
-        letter.Status = LetterClaimed;
+        letter.Status = ShoppingMallLetterProtocol.LetterStatusRead;
         await db.SaveChangesAsync();
 
         await session.Client.SendPacket(ShoppingMallPacketWriter.Result(

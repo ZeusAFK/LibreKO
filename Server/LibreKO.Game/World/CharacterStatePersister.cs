@@ -115,7 +115,7 @@ public class CharacterStatePersister(
                 return StateCommit.Failed;
             }
 
-            // An escrowed offer with no room in the bag is saved in the warehouse, so it is written too.
+            // The warehouse holds escrowed offers that found no room in the bag.
             var warehouse = await db.Warehouses.SingleOrDefaultAsync(entry => entry.AccountId == session.AccountId, cancellationToken)
                 ?? db.Warehouses.Add(new Warehouse { AccountId = session.AccountId }).Entity;
             try

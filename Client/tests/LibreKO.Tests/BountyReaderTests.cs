@@ -50,11 +50,23 @@ public class BountyReaderTests
     }
 
     [Fact]
+    public void AClaimResultReachesTheBoard()
+    {
+        var (dispatcher, session) = Readers();
+        BountyOutcome? announced = null;
+        session.Bounty.BountyClaimEvent += outcome => announced = outcome;
+
+        dispatcher.Dispatch(Result(BountySubOpcode.Claim, BountyResult.Succeeded));
+
+        Assert.Equal(new BountyOutcome(BountyId, true), announced);
+    }
+
+    [Fact]
     public void AWithdrawResultIsNotTakenForAClaim()
     {
         var (dispatcher, session) = Readers();
         var claims = 0;
-        session.Bounty.BountyClaimEvent += (_, _) => claims++;
+        session.Bounty.BountyClaimEvent += _ => claims++;
 
         dispatcher.Dispatch(Result(BountySubOpcode.Withdraw, BountyResult.Failed));
 
