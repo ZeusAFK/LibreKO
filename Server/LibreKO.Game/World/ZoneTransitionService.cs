@@ -92,8 +92,6 @@ public class ZoneTransitionService(
         session.Z = z;
         MovePace.Placed(session, (timeProvider ?? TimeProvider.System).GetUtcNow().UtcTicks);
         session.Y = ResolveTargetHeight(newZone, x, z);
-        session.SpeedLastX = 0f;
-        session.SpeedLastZ = 0f;
         session.Quest.BindPoint = -1;
 
         logger.LogDebug("ZoneChange for {Name}: zone={Zone} X={X} Z={Z} Y={Y} PosX={PosX} PosZ={PosZ} PosY={PosY}",

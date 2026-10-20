@@ -123,10 +123,6 @@ public class UserSession
     // fan-out to a fixed cadence (instead of one broadcast per received move packet).
     public volatile bool MovePending;
 
-    // Speed-hack check: last validated position. Reset on warp/zone change.
-    public float SpeedLastX { get; set; }
-    public float SpeedLastZ { get; set; }
-
     // Derived stats
     public short MaxHp { get; set; }
     public short Hp { get; set; }

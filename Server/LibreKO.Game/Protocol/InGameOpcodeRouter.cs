@@ -217,7 +217,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_SANTA] = (c, _) => misc.HandleSantaAsync(c),
             [GameOpcodes.GS_MINING] = mining.HandleAsync,
 
-            [GameOpcodes.GS_SPEEDHACK_CHECK] = world.HandleSpeedHackCheckAsync,
+            [GameOpcodes.GS_SPEEDHACK_CHECK] = NoOp,
             [GameOpcodes.GS_CONCURRENTUSER] = misc.HandleConcurrentUserAsync,
             [GameOpcodes.GS_ZONE_CONCURRENT] = misc.HandleZoneConcurrentAsync,
             [GameOpcodes.GS_LOGOSSHOUT] = misc.HandleLogosShoutAsync,

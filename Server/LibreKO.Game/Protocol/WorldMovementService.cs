@@ -31,7 +31,6 @@ public interface IWorldMovementService
     Task HandleWarpListAsync(IClient client, Packet packet);
     Task HandleZoneChangeAsync(IClient client, Packet packet);
     Task HandleStealthAsync(IClient client, Packet packet);
-    Task HandleSpeedHackCheckAsync(IClient client, Packet packet);
     Task SendWarpListAsync(UserSession session, IReadOnlyCollection<WarpListEntry> warps);
 }
 
@@ -298,8 +297,6 @@ public class WorldMovementService(
         session.X = realX;
         session.Y = ResolveTargetHeight(session.ZoneId, realX, realZ);
         session.Z = realZ;
-        session.SpeedLastX = 0f;
-        session.SpeedLastZ = 0f;
         sessionManager.Regions.UpdateRegion(session);
         await zoneTransitionService.RefreshArenaAsync(session);
 
@@ -317,8 +314,6 @@ public class WorldMovementService(
         session.X = x;
         session.Y = ResolveTargetHeight(session.ZoneId, x, z);
         session.Z = z;
-        session.SpeedLastX = 0f;
-        session.SpeedLastZ = 0f;
         session.MoveOldWillX = (ushort)(x * PositionScale);
         session.MoveOldWillZ = (ushort)(z * PositionScale);
         await zoneTransitionService.RefreshArenaAsync(session);
@@ -340,46 +335,6 @@ public class WorldMovementService(
             return;
 
         await WarpAsync(session, packet.ReadUShort(), packet.ReadUShort());
-    }
-
-    private const byte CommandCaptainFame = 100;
-
-    public async Task HandleSpeedHackCheckAsync(IClient client, Packet packet)
-    {
-        var session = sessionManager.GetByClientId(client.Id);
-        if (session == null) return;
-        if (session.IsGM) return;
-
-        var baseClass = ClassIdHelper.GetSubtype(session.Class);
-        bool isRogue = baseClass is 2 or 7 or 8;
-        bool isCaptain = session.Fame == CommandCaptainFame;
-        float maxSpeed = (isRogue || isCaptain ? 90f : 67f) + 17f;
-
-        var lastX = session.SpeedLastX;
-        var lastZ = session.SpeedLastZ;
-
-        if (lastX == 0f && lastZ == 0f)
-        {
-            session.SpeedLastX = session.X;
-            session.SpeedLastZ = session.Z;
-            return;
-        }
-
-        var dx = session.X - lastX;
-        var dz = session.Z - lastZ;
-        var range = (dx * dx + dz * dz) / 100f;
-
-        if (range >= maxSpeed)
-        {
-            logger.LogWarning("Speed hack from {Name}: range={Range:F1} > limit={Limit:F1}, warping back to ({X:F0},{Z:F0})",
-                session.Name, range, maxSpeed, lastX, lastZ);
-            await WarpAsync(session, (ushort)((ushort)lastX * 10), (ushort)((ushort)lastZ * 10));
-        }
-        else
-        {
-            session.SpeedLastX = session.X;
-            session.SpeedLastZ = session.Z;
-        }
     }
 
     public async Task HandleWarpListAsync(IClient client, Packet packet)

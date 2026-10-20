@@ -101,6 +101,23 @@ public class MovementAuthorityTests : GameTestBase
     }
 
     [Fact]
+    public async Task TheSpeedCheckPacketDoesNotTakeAPlayerBack()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (runner, sent) = Player(provider, 1004);
+        var speedCheck = provider.GetRequiredService<IInGameOpcodeRouter>().Resolve(GameOpcodes.GS_SPEEDHACK_CHECK)!;
+        const float farAway = 200f;
+
+        await speedCheck(runner.Client, new Packet(GameOpcodes.GS_SPEEDHACK_CHECK));
+        runner.X = Here + farAway;
+        await speedCheck(runner.Client, new Packet(GameOpcodes.GS_SPEEDHACK_CHECK));
+
+        runner.X.Should().Be(Here + farAway, "the client chooses when this packet is sent, so it must not move anyone");
+        Warps(sent).Should().Be(0);
+    }
+
+    [Fact]
     public async Task StandingStillSavesUpOnlyAFewSecondsOfRunning()
     {
         var clock = new Clock();
