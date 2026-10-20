@@ -82,7 +82,10 @@ public class MerchantListingService(
             Durability = slot.Durability,
             Count = count,
             Price = price,
-            OriginalSlot = (byte)absPos
+            OriginalSlot = (byte)absPos,
+            Flag = slot.Flag,
+            ExpiresAt = slot.ExpiresAt,
+            UniqueId = slot.UniqueId,
         };
 
         await session.Client.SendPacket(MerchantPacketWriter.ItemAdded(

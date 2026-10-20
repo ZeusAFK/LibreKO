@@ -77,16 +77,22 @@ public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, in
             return "the stall is closed";
         if (IsOwnStall(merchant, buyer))
             return "that is the buyer's own stall";
+        if (buyer.IsBusy)
+            return "the buyer is busy";
+        if (!ExchangePacketConstants.IsWithinTradeRange(buyer, merchant))
+            return "the buyer is not at the stall";
 
         var entry = merchant.Trade.MerchantItems[merchantSlot];
         var itemData = gameData.GetItem(itemId);
-        if (entry == null || entry.IsEmpty || entry.ItemId != itemId || entry.Count < count)
+        if (entry == null || entry.IsEmpty || entry.ItemId != itemId || entry.Count < count
+            || entry.OriginalSlot >= merchant.Inventory.Length)
             return "the stall no longer holds that";
         if (itemData == null || (itemData.Countable == 0 && count != 1))
             return "not stackable but count is not 1";
 
         var sellerSlot = merchant.Inventory[entry.OriginalSlot];
-        if (sellerSlot.ItemId != itemId || sellerSlot.Count < count)
+        if (sellerSlot.ItemId != itemId || sellerSlot.Count < count || !sellerSlot.IsTradable
+            || sellerSlot.Flag != entry.Flag || sellerSlot.ExpiresAt != entry.ExpiresAt || sellerSlot.UniqueId != entry.UniqueId)
             return "the seller no longer holds that";
 
         UnitPrice = entry.Price;
@@ -94,7 +100,12 @@ public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, in
         if (!IsSanePrice(Cost) || Cost > buyer.Money || !CanReceive(merchant, Cost))
             return "price out of range";
 
-        Destination = buyer.FindSlotForItem(itemId, gameData, count);
+        Destination = ItemPlacement.FindForDelivery(buyer.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax,
+            new ExchangeItem
+            {
+                ItemId = itemId, Count = count, Durability = sellerSlot.Durability, Flag = sellerSlot.Flag,
+                ExpiresAt = sellerSlot.ExpiresAt, UniqueId = sellerSlot.UniqueId, Countable = itemData.Countable != 0,
+            });
         return Destination < 0 ? "no free bag slot" : null;
     }
 }

@@ -1,7 +1,8 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
@@ -22,6 +23,11 @@ public class MerchantStallTests : GameTestBase
     private const int StartingGold = 10_000;
     private const byte StallSlot = 0;
     private const byte BagPos = 0;
+    private const byte OtherBagPos = 1;
+    private const long RentalEnds = 4_102_444_800;
+    private const int RingSerial = 4242;
+    private const float FarAway = 500f;
+    private const int SomeoneElse = 1;
 
     [Fact]
     public async Task ABuyFromASlotThatNoLongerHoldsTheListedItemSellsNothing()
@@ -61,6 +67,171 @@ public class MerchantStallTests : GameTestBase
         CountIn(buyer, InventoryConstants.CypherRing).Should().Be(0, "the slot holds a different character than the one listed");
         buyer.Money.Should().Be(StartingGold);
         ring.UniqueId.Should().Be(777);
+    }
+
+    [Fact]
+    public async Task ABuyerInTheMiddleOfATradeBuysNothing()
+    {
+        using var market = new Market();
+        var seller = market.Player(96041, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var buyer = market.Player(96042, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.ExchangeUser = SomeoneElse;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        CountIn(buyer, Ware).Should().Be(0, "a buyer who is trading cannot also buy from a stall");
+        buyer.Money.Should().Be(StartingGold);
+    }
+
+    [Fact]
+    public async Task ABuyerAwayFromTheStallBuysNothing()
+    {
+        using var market = new Market();
+        var seller = market.Player(96043, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var buyer = market.Player(96044, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.X = FarAway;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        CountIn(buyer, Ware).Should().Be(0, "a stall sells only to someone standing at it");
+        buyer.Money.Should().Be(StartingGold);
+    }
+
+    [Fact]
+    public async Task AListingThatPointsPastTheBagSellsNothing()
+    {
+        using var market = new Market();
+        var seller = market.Player(96045, gold: 0);
+        ListByHand(seller, Ware, count: 1);
+        seller.Trade.MerchantItems[StallSlot].OriginalSlot = byte.MaxValue;
+        var buyer = market.Player(96046, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        CountIn(buyer, Ware).Should().Be(0);
+        buyer.Money.Should().Be(StartingGold);
+    }
+
+    [Fact]
+    public async Task AnItemThatCanNoLongerBeTradedSellsNothing()
+    {
+        using var market = new Market();
+        var seller = market.Player(96047, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        Bag(seller, BagPos).Flag = (byte)ItemFlag.Bound;
+        seller.Trade.MerchantItems[StallSlot].Flag = (byte)ItemFlag.Bound;
+        var buyer = market.Player(96048, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        CountIn(buyer, Ware).Should().Be(0, "a bound item is not sold even if the listing says bound too");
+        Bag(seller, BagPos).Count.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AnItemWhoseExpiryChangedSinceItWasListedSellsNothing()
+    {
+        using var market = new Market();
+        var seller = market.Player(96049, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        Bag(seller, BagPos).ExpiresAt = RentalEnds;
+        var buyer = market.Player(96050, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        CountIn(buyer, Ware).Should().Be(0, "a permanent item was listed and a timed one sits in the slot now");
+    }
+
+    [Fact]
+    public async Task AnItemWhoseFlagChangedSinceItWasListedSellsNothing()
+    {
+        using var market = new Market();
+        var seller = market.Player(96051, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        Bag(seller, BagPos).Flag = (byte)ItemFlag.SealedPremium;
+        var buyer = market.Player(96052, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        CountIn(buyer, Ware).Should().Be(0, "the slot holds the item under another flag than the one listed");
+    }
+
+    [Fact]
+    public async Task AListedItemIsBoughtWithItsFlagExpiryAndSerial()
+    {
+        using var market = new Market();
+        var seller = market.Player(96053, gold: 0);
+        var ware = Bag(seller, BagPos);
+        Stock(ware, Ware, 1);
+        ware.Flag = (byte)ItemFlag.NotBound;
+        ware.ExpiresAt = RentalEnds;
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var buyer = market.Player(96054, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        var bought = buyer.Inventory.Skip(InventoryConstants.InventoryStart).Single(slot => slot.ItemId == Ware);
+        bought.Flag.Should().Be((byte)ItemFlag.NotBound);
+        bought.ExpiresAt.Should().Be(RentalEnds);
+    }
+
+    [Fact]
+    public async Task AListedSealedCharacterIsBoughtWithItsSerial()
+    {
+        using var market = new Market();
+        var seller = market.Player(96055, gold: 0);
+        var ring = Bag(seller, BagPos);
+        Stock(ring, InventoryConstants.CypherRing, 1);
+        ring.UniqueId = RingSerial;
+        await market.ListAsync(seller, InventoryConstants.CypherRing, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var buyer = market.Player(96056, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+
+        await market.BuyAsync(buyer, InventoryConstants.CypherRing, 1);
+
+        buyer.Inventory.Single(slot => slot.ItemId == InventoryConstants.CypherRing).UniqueId.Should().Be(RingSerial);
+    }
+
+    [Fact]
+    public async Task ATimedItemBoughtDoesNotJoinAPermanentStack()
+    {
+        using var market = new Market();
+        var seller = market.Player(96057, gold: 0);
+        var ware = Bag(seller, BagPos);
+        Stock(ware, Ware, 1);
+        ware.ExpiresAt = RentalEnds;
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var buyer = market.Player(96058, gold: StartingGold);
+        Stock(Bag(buyer, OtherBagPos), Ware, 1);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        Bag(buyer, OtherBagPos).Count.Should().Be(1, "the timed item must not merge into the permanent stack");
+        Bag(buyer, OtherBagPos).ExpiresAt.Should().Be(0);
+        Bag(buyer, BagPos).ExpiresAt.Should().Be(RentalEnds);
     }
 
     [Fact]

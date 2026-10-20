@@ -859,6 +859,7 @@ public class SlaveMerchantTests : GameTestBase
         var (buyer, _) = Player(provider, BuyerId, "Buyer");
         Stage(seller, InventoryConstants.CypherRing, StackSlot, count: 1, stock: 1);
         seller.Inventory[StackSlot].UniqueId = LinkedSerial;
+        seller.Trade.MerchantItems[0].UniqueId = LinkedSerial;
         seller.Trade.MerchantState = MerchantMode.Selling;
         buyer.Money = BuyerPurse;
         buyer.Trade.MerchantTargetUserId = seller.CharacterId;
@@ -869,6 +870,22 @@ public class SlaveMerchantTests : GameTestBase
         bought.UniqueId.Should().Be(LinkedSerial);
         seller.Inventory[StackSlot].IsEmpty.Should().BeTrue();
         seller.Money.Should().Be(ScrollPrice);
+    }
+
+    [Fact]
+    public async Task ARingHandedToASlaveSellsWithItsSerial()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, InventoryConstants.CypherRing, StackSlot, count: 1, stock: 1);
+        owner.Inventory[StackSlot].UniqueId = LinkedSerial;
+        await Insert(provider, owner, toSlave: true);
+
+        await Buy(provider, Slave(provider), 1);
+
+        var buyer = provider.GetRequiredService<SessionManager>().GetByCharacterId(BuyerId)!;
+        buyer.Inventory.Single(slot => slot.ItemId == InventoryConstants.CypherRing).UniqueId.Should().Be(LinkedSerial);
     }
 
     [Fact]

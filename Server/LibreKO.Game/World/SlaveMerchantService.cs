@@ -725,6 +725,9 @@ public class SlaveMerchantService(
             Price = item.Price,
             Durability = item.Durability,
             OriginalSlot = (byte)bagSlot,
+            Flag = item.Flag,
+            ExpiresAt = item.ExpiresAt,
+            UniqueId = item.UniqueId,
         };
     }
 
