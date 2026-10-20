@@ -60,6 +60,7 @@ public class WarehouseStorageTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteByte(0);
         packet.WriteInt(1);
+        StandAtWarehouseKeeper(provider, client);
         await provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, packet);
 
         var reply = sent.Single(p => p.GetOpcode() == (byte)GameOpcodes.GS_WAREHOUSE);

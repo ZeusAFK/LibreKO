@@ -66,6 +66,7 @@ public class WarehouseMoveTests : GameTestBase
         packet.WriteByte(srcCell);
         packet.WriteByte(dstCell);
         if (dstPage is { } page) packet.WriteByte(page);
+        StandAtWarehouseKeeper(provider, client);
         await provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, packet);
         return session;
     }

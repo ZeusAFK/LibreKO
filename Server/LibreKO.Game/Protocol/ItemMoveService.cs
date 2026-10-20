@@ -222,6 +222,17 @@ public class ItemMoveService(
             return;
         }
 
+        var swaps = !splits && !destinationItem.IsEmpty && !ItemStackRule.Merges(direction, sourceItem, destinationItem, itemData);
+        if (swaps && !itemInventoryRuleService.TakesDisplaced(
+                session, direction, resolvedSourcePosition, gameDataService.GetItem(destinationItem.ItemId)))
+        {
+            logger.LogDebug(
+                "Rejected item move for {Name}: item {ItemId} cannot take slot {SourceIndex} in a swap",
+                session.Name, destinationItem.ItemId, sourceIndex);
+            await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
         var sourceItemIdBeforeMove = sourceItem.ItemId;
         var destinationItemIdBeforeMove = destinationItem.ItemId;
 
@@ -233,7 +244,7 @@ public class ItemMoveService(
             sourceItem.Clear();
         }
         else if (!destinationItem.IsEmpty)
-            SwapItems(sourceItem, destinationItem);
+            sourceItem.SwapWith(destinationItem);
         else
             MoveItem(sourceItem, destinationItem);
 
@@ -314,16 +325,6 @@ public class ItemMoveService(
             item.ExpiresAt = arranged[offset].ExpiresAt;
             item.UniqueId = arranged[offset].UniqueId;
         }
-    }
-
-    private static void SwapItems(ItemSlot sourceItem, ItemSlot destinationItem)
-    {
-        (sourceItem.ItemId, destinationItem.ItemId) = (destinationItem.ItemId, sourceItem.ItemId);
-        (sourceItem.Durability, destinationItem.Durability) = (destinationItem.Durability, sourceItem.Durability);
-        (sourceItem.Count, destinationItem.Count) = (destinationItem.Count, sourceItem.Count);
-        (sourceItem.Flag, destinationItem.Flag) = (destinationItem.Flag, sourceItem.Flag);
-        (sourceItem.ExpiresAt, destinationItem.ExpiresAt) = (destinationItem.ExpiresAt, sourceItem.ExpiresAt);
-        (sourceItem.UniqueId, destinationItem.UniqueId) = (destinationItem.UniqueId, sourceItem.UniqueId);
     }
 
     private static void SplitItems(ItemSlot sourceItem, ItemSlot destinationItem, ushort amount)

@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
@@ -156,18 +156,10 @@ public class ClanWarehousePacketCoordinator(
                 }
 
                 var destination = slots[realDst];
-                if (!CanMergeOrPlace(itemData, destination, itemId, count))
+                if (!ItemTransfer.Fits(source, destination, itemData, count))
                     return false;
 
-                var destinationWasEmpty = destination.IsEmpty;
-                destination.ItemId = itemId;
-                destination.Count += (ushort)count;
-                destination.Flag = source.Flag;
-                if (destinationWasEmpty) destination.Durability = source.Durability;
-                if (destination.Count > ItemCountMax) destination.Count = ItemCountMax;
-
-                source.Count -= (ushort)count;
-                if (source.Count == 0) source.Clear();
+                ItemTransfer.Move(source, destination, count);
 
                 var coefficient = gameDataService.GetCoefficient(s.Class);
                 if (coefficient != null)
@@ -264,17 +256,10 @@ public class ClanWarehousePacketCoordinator(
                     return false;
 
                 var destination = s.Inventory[absDst];
-                if (!CanMergeOrPlace(itemData, destination, itemId, count))
+                if (!ItemTransfer.Fits(source, destination, itemData, count))
                     return false;
 
-                var destinationWasEmpty = destination.IsEmpty;
-                destination.ItemId = itemId;
-                destination.Count += (ushort)count;
-                destination.Flag = source.Flag;
-                if (destinationWasEmpty) destination.Durability = source.Durability;
-
-                source.Count -= (ushort)count;
-                if (source.Count == 0) source.Clear();
+                ItemTransfer.Move(source, destination, count);
 
                 var coefficient = gameDataService.GetCoefficient(s.Class);
                 if (coefficient != null)
@@ -333,11 +318,7 @@ public class ClanWarehousePacketCoordinator(
             if (source.ItemId != itemId || !destination.IsEmpty)
                 return false;
 
-            destination.ItemId = source.ItemId;
-            destination.Durability = source.Durability;
-            destination.Count = source.Count;
-            destination.Flag = source.Flag;
-            source.Clear();
+            ItemTransfer.Move(source, destination, source.Count);
             return true;
         }, false);
 
@@ -381,11 +362,7 @@ public class ClanWarehousePacketCoordinator(
             if (source.ItemId != itemId || !destination.IsEmpty)
                 return false;
 
-            destination.ItemId = source.ItemId;
-            destination.Durability = source.Durability;
-            destination.Count = source.Count;
-            destination.Flag = source.Flag;
-            source.Clear();
+            ItemTransfer.Move(source, destination, source.Count);
             return true;
         });
 
@@ -400,12 +377,6 @@ public class ClanWarehousePacketCoordinator(
     private static bool IsLeaderOrAssistant(UserSession session)
         => session.KnightsFame == 1 || session.KnightsFame == 2;
 
-    private static bool CanMergeOrPlace(ItemData itemData, ItemSlot destination, int itemId, int count)
-    {
-        if (destination.IsEmpty) return true;
-        if (destination.ItemId != itemId || itemData.Countable == 0) return false;
-        return destination.Count + count <= ItemCountMax;
-    }
 
     private async Task PersistClanAsync(KnightsEntity clan, bool items)
     {

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -183,6 +183,7 @@ public class BusyGateTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteByte(WarePos);
         packet.WriteByte(OtherPos);
+        StandAtWarehouseKeeper(provider, client);
         await provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, Reset(packet));
 
         var idle = state == Busy.None;
@@ -283,6 +284,7 @@ public class BusyGateTests : GameTestBase
         packet.WriteByte(src);
         packet.WriteByte(dst);
         packet.WriteInt(count);
+        StandAtWarehouseKeeper(provider, client);
         await provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, Reset(packet));
     }
 

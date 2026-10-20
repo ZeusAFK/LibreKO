@@ -625,6 +625,7 @@ public class TradeTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteInt(1);
 
+        StandAtWarehouseKeeper(provider, client);
         var coordinator = provider.GetRequiredService<IWarehousePacketCoordinator>();
         await coordinator.HandleAsync(client, packet);
 
@@ -665,6 +666,7 @@ public class TradeTests : GameTestBase
         var packet = new Packet(GameOpcodes.GS_WAREHOUSE);
         packet.WriteByte(1);
 
+        StandAtWarehouseKeeper(provider, client);
         var coordinator = provider.GetRequiredService<IWarehousePacketCoordinator>();
         await coordinator.HandleAsync(client, packet);
 
@@ -714,6 +716,7 @@ public class TradeTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteInt(2000);
 
+        StandAtWarehouseKeeper(provider, client);
         var coordinator = provider.GetRequiredService<IWarehousePacketCoordinator>();
         await coordinator.HandleAsync(client, packet);
 
@@ -752,6 +755,7 @@ public class TradeTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteInt(2000);
 
+        StandAtWarehouseKeeper(provider, client);
         var coordinator = provider.GetRequiredService<IWarehousePacketCoordinator>();
         await coordinator.HandleAsync(client, packet);
 

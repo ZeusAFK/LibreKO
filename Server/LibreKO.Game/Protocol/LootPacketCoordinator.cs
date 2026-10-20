@@ -50,22 +50,28 @@ public class LootPacketCoordinator(
         var dropped = session.WithLock(s =>
         {
             var slot = s.Inventory[absPos];
-            if (slot.ItemId != itemId || slot.Count < count)
-                return false;
+            if (slot.ItemId != itemId || slot.Count < count || !slot.IsTradable
+                || !ExchangeTransferService.IsTradableItem(itemData, itemId, pos))
+                return null;
+            var loot = new LootItem
+            {
+                ItemId = itemId, Count = count, Durability = slot.Durability, Flag = slot.Flag,
+                ExpiresAt = slot.ExpiresAt, UniqueId = slot.UniqueId,
+            };
             slot.Count -= count;
             if (slot.Count == 0)
                 slot.Clear();
             var coefficient = gameDataService.GetCoefficient(s.Class);
             if (coefficient != null)
                 s.RecalculateStats(coefficient, gameDataService);
-            return true;
+            return loot;
         });
 
-        if (!dropped)
+        if (dropped == null)
             return;
 
         var bundle = sessionManager.Regions.CreateBundle(session.ZoneId, session.Room, session.X, session.Z, session.Y);
-        bundle.Items.Add(new LootItem { ItemId = itemId, Count = count });
+        bundle.Items.Add(dropped);
         logger.LogDebug("{Name} dropped item {ItemId} x{Count}", session.Name, itemId, count);
 
         var result = ItemDropPacketWriter
@@ -183,9 +189,10 @@ public class LootPacketCoordinator(
             await SendItemGetErrorAsync(session, bundleId);
             return;
         }
-        var peekedCount = snapshot[slotId].Count;
+        var peeked = Delivery(snapshot[slotId], itemData);
 
-        var slotIndex = session.WithLock(s => s.FindSlotForItem(itemId, gameDataService, peekedCount));
+        var slotIndex = session.WithLock(s =>
+            ItemPlacement.FindForDelivery(s.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, peeked));
         if (slotIndex < 0)
         {
             var noRoom = ItemGetPacketWriter.NoRoom(bundleId);
@@ -204,12 +211,7 @@ public class LootPacketCoordinator(
         var picked = session.WithLock(s =>
         {
             var dst = s.Inventory[slotIndex];
-            dst.ItemId = itemId;
-            dst.Count += claimed.Count;
-            if (dst.Count > 9999)
-                dst.Count = 9999;
-            if (dst.Durability == 0)
-                dst.Durability = itemData.Duration;
+            ItemPlacement.Put(dst, Delivery(claimed, itemData));
             var coefficient = gameDataService.GetCoefficient(s.Class);
             if (coefficient != null)
                 s.RecalculateStats(coefficient, gameDataService);
@@ -229,6 +231,17 @@ public class LootPacketCoordinator(
         await userNotificationService.SendWeightChangeAsync(session);
         await collectionRaceService.HandleItemGainAsync(session, itemId);
     }
+
+    private static ExchangeItem Delivery(LootItem loot, ItemData itemData) => new()
+    {
+        ItemId = loot.ItemId,
+        Count = loot.Count,
+        Durability = loot.Durability != 0 ? loot.Durability : itemData.Duration,
+        Flag = loot.Flag,
+        ExpiresAt = loot.ExpiresAt,
+        UniqueId = loot.UniqueId,
+        Countable = itemData.Countable != 0,
+    };
 
     private async Task TellPartyAsync(UserSession looter, int bundleId, int itemId, ushort slotId)
     {

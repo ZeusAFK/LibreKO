@@ -23,6 +23,7 @@ public static class ItemStackRule
         && (destination.IsEmpty
             || destination.ItemId == source.ItemId
             && destination.Flag == source.Flag
+            && destination.ExpiresAt == source.ExpiresAt
             && destination.UniqueId == 0
             && amount + destination.Count <= InventoryConstants.MaxStackCount);
 
@@ -35,6 +36,7 @@ public static class ItemStackRule
         && !source.IsEmpty
         && destination.ItemId == source.ItemId
         && destination.Flag == source.Flag
+        && destination.ExpiresAt == source.ExpiresAt
         && source.UniqueId == 0
         && destination.UniqueId == 0
         && source.Count + destination.Count <= InventoryConstants.MaxStackCount;

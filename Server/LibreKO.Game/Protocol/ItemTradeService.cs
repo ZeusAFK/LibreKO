@@ -197,7 +197,7 @@ public class ItemTradeService(
             {
                 if (s.Inventory[sourceIndex].ItemId != itemId)
                     return false;
-                SwapItems(s.Inventory[sourceIndex], s.Inventory[destinationIndex]);
+                s.Inventory[sourceIndex].SwapWith(s.Inventory[destinationIndex]);
                 return true;
             });
 
@@ -501,14 +501,6 @@ public class ItemTradeService(
         var dx = session.X - npc.X;
         var dz = session.Z - npc.Z;
         return dx * dx + dz * dz <= GameConstants.MaxNpcInteractionRangeSq;
-    }
-
-    private static void SwapItems(ItemSlot sourceItem, ItemSlot destinationItem)
-    {
-        (sourceItem.ItemId, destinationItem.ItemId) = (destinationItem.ItemId, sourceItem.ItemId);
-        (sourceItem.Durability, destinationItem.Durability) = (destinationItem.Durability, sourceItem.Durability);
-        (sourceItem.Count, destinationItem.Count) = (destinationItem.Count, sourceItem.Count);
-        (sourceItem.Flag, destinationItem.Flag) = (destinationItem.Flag, sourceItem.Flag);
     }
 
     private static async Task SendRepairResponseAsync(UserSession session, ItemRepairResult result)

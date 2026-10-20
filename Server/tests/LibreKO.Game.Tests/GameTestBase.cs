@@ -274,6 +274,20 @@ public abstract class GameTestBase
 
     protected const byte ListedSpellDamageCharisma = 186;
 
+    private const short WarehouseKeeperId = 12001;
+
+    protected static void StandAtWarehouseKeeper(ServiceProvider provider, IClient client)
+    {
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var session = sessions.GetByClientId(client.Id)!;
+        var keeper = sessions.Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = WarehouseKeeperId, Name = "Inn Hostess", NpcType = NpcData.TypeWarehouse, ZoneId = session.ZoneId,
+            X = session.X, Z = session.Z, SpawnX = session.X, SpawnZ = session.Z, Hp = 1, MaxHp = 1,
+        });
+        session.Quest.EventNpcUniqueId = keeper.UniqueId;
+    }
+
     protected static void TakeTheClassOf(UserSession caster, int skillId)
     {
         if (MagicSkillRequirement.IsClassSkill(skillId))

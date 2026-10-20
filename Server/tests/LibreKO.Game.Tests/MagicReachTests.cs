@@ -18,6 +18,9 @@ public class MagicReachTests : GameTestBase
     private const int Curse = 111757;
     private const int PartyHeal = 490214;
     private const int Binding = 105630;
+    private const int StoneBinding = 105632;
+    private const int BindingStone = 379091000;
+    private const short StoneBindingMana = 15;
     private const int Mace = 1111471741;
     private const short FireBlastMana = 40;
     private const short FireBlastRecast = 50;
@@ -213,6 +216,29 @@ public class MagicReachTests : GameTestBase
     }
 
     [Theory]
+    [InlineData(0, false, 0, 0)]
+    [InlineData(2, true, 1, StoneBindingMana)]
+    public async Task ASkillThatNeedsAReagentCastsOnlyWithItAndSpendsIt(ushort stones, bool provoked, ushort stonesLeft, short manaSpent)
+    {
+        using var provider = Provider();
+        var warrior = Player(provider, 805, AccountNation.Karus, Moradon, Here);
+        var bag = warrior.Inventory[InventoryConstants.InventoryStart];
+        if (stones > 0)
+        {
+            bag.ItemId = BindingStone;
+            bag.Count = stones;
+            bag.Durability = 1;
+        }
+        var worm = Worm(provider, Here + 10);
+
+        await Cast(provider, warrior, StoneBinding, worm.UniqueId);
+
+        (worm.Hp < WormHp).Should().Be(provoked);
+        bag.Count.Should().Be(stonesLeft);
+        warrior.Mp.Should().Be((short)(warrior.MaxMp - manaSpent), "a skill refused for want of its reagent costs no mana");
+    }
+
+    [Theory]
     [InlineData(10f, true)]
     [InlineData(200f, false)]
     public async Task ABindingReachesOnlyAMonsterWithinItsRange(float distance, bool provoked)
@@ -264,9 +290,16 @@ public class MagicReachTests : GameTestBase
         {
             Id = Binding, Type1 = (byte)MagicSkillType.Area, Moral = (byte)SkillMoral.Enemy, Range = 30,
         });
+        gameData.GetMagic(StoneBinding).Returns(new MagicData
+        {
+            Id = StoneBinding, Type1 = (byte)MagicSkillType.Area, Moral = (byte)SkillMoral.Enemy, Range = 30, UseItem = BindingStone,
+            Msp = StoneBindingMana,
+        });
+        gameData.GetItem(BindingStone).Returns(new ItemData { Num = BindingStone, Countable = 1, Duration = 1 });
         gameData.MagicType7Table.Returns(new Dictionary<int, MagicType7Data>
         {
             [Binding] = new() { Id = Binding, TargetChange = (byte)MagicAreaTargetChange.Provoke, HitRate = 100, Duration = 9, Damage = 10 },
+            [StoneBinding] = new() { Id = StoneBinding, TargetChange = (byte)MagicAreaTargetChange.Provoke, HitRate = 100, Duration = 9, Damage = 10 },
         });
         gameData.GetItemOps(Mace).Returns(
             [new ItemOpData { ItemId = Mace, TriggerType = HealStrike.ItemOpOnEquip, SkillId = HealStrike.ArmingSkill, TriggerRate = 100 }]);

@@ -94,6 +94,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         session.AttendanceClaimedDays = character.AttendanceClaimedDays;
         session.AttendanceClaimedBonus = character.AttendanceClaimedBonus;
         session.AttendanceCheckedOn = character.AttendanceCheckedOn;
+        session.GenieRewardClaimedOn = character.GenieRewardClaimedOn;
         session.SealedExperience = character.SealedExperience;
         session.ExpSealOn = character.ExpSealOn;
 
@@ -173,6 +174,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         character.AttendanceClaimedDays = session.AttendanceClaimedDays;
         character.AttendanceClaimedBonus = session.AttendanceClaimedBonus;
         character.AttendanceCheckedOn = session.AttendanceCheckedOn;
+        character.GenieRewardClaimedOn = session.GenieRewardClaimedOn;
         character.SealedExperience = session.SealedExperience;
         character.ExpSealOn = session.ExpSealOn;
 

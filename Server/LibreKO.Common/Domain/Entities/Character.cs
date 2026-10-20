@@ -94,6 +94,7 @@ public class Character : Entity
     public int AttendanceClaimedDays { get; set; }
     public byte AttendanceClaimedBonus { get; set; }
     public DateTime? AttendanceCheckedOn { get; set; }
+    public DateTime? GenieRewardClaimedOn { get; set; }
 
     public long SealedExperience { get; set; }
     public bool ExpSealOn { get; set; }
@@ -159,6 +160,7 @@ public class Character : Entity
             builder.Property(p => p.AttendanceClaimedDays);
             builder.Property(p => p.AttendanceClaimedBonus);
             builder.Property(p => p.AttendanceCheckedOn);
+            builder.Property(p => p.GenieRewardClaimedOn);
             builder.Property(p => p.SealedExperience);
             builder.Property(p => p.ExpSealOn);
             builder.Property(p => p.Sealed);

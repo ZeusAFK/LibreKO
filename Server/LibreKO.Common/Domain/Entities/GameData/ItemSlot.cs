@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 
 namespace LibreKO.Common.Domain.Entities.GameData;
 
@@ -42,6 +42,16 @@ public class ItemSlot
             return;
         ExpiresAt = nowUnixSeconds + (long)hours * SecondsPerHour;
         Flag = (byte)ItemFlag.Rented;
+    }
+
+    public void SwapWith(ItemSlot other)
+    {
+        (ItemId, other.ItemId) = (other.ItemId, ItemId);
+        (Durability, other.Durability) = (other.Durability, Durability);
+        (Count, other.Count) = (other.Count, Count);
+        (Flag, other.Flag) = (other.Flag, Flag);
+        (ExpiresAt, other.ExpiresAt) = (other.ExpiresAt, ExpiresAt);
+        (UniqueId, other.UniqueId) = (other.UniqueId, UniqueId);
     }
 
     public void Clear()

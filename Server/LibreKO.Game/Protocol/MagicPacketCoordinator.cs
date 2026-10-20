@@ -435,11 +435,35 @@ public class MagicPacketCoordinator(
         int targetId,
         int[] data)
     {
+        var paysHere = !PaysItsOwnReagent(magic, skillId);
+        if (paysHere && !magicItemUsageService.CanUseSkillItems(session, magic))
+        {
+            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
+            return;
+        }
+
         if (magic.PrimaryType != MagicSkillType.Ranged && !await TryPaySkillCostAsync(session, magic, skillId))
             return;
 
+        if (paysHere && !await magicItemUsageService.TryConsumeSkillItemAsync(session, magic))
+        {
+            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
+            return;
+        }
+
         await magicExecutionService.ExecuteAsync(session, magic, skillId, targetId, data);
     }
+
+    private bool PaysItsOwnReagent(MagicData magic, int skillId) => magic.PrimaryType switch
+    {
+        MagicSkillType.Ranged or MagicSkillType.Buff or MagicSkillType.Transform => true,
+        MagicSkillType.Special => MagicTypeLookup.TryResolve(gameDataService.MagicType5Table, magic, skillId, out var type5)
+            && (SpecialMagicType)type5.Type is SpecialMagicType.Resurrection or SpecialMagicType.ResurrectionSelf
+                or SpecialMagicType.LifeCrystal,
+        MagicSkillType.Stealth => MagicTypeLookup.TryResolve(gameDataService.MagicType9Table, magic, skillId, out var type9)
+            && (MagicStealthType)type9.StateChange == MagicStealthType.PetSummon,
+        _ => false,
+    };
 
     private async Task ExecuteOverTimeWithManaCostAsync(
         UserSession session,

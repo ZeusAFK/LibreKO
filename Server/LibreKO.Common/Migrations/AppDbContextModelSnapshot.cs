@@ -282,6 +282,9 @@ namespace LibreKO.Common.Migrations
                     b.Property<double>("GenieRemainingSeconds")
                         .HasColumnType("double");
 
+                    b.Property<DateTime?>("GenieRewardClaimedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("Hair")
                         .HasColumnType("int");
 

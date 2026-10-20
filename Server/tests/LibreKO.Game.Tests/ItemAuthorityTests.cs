@@ -1,0 +1,333 @@
+﻿using FluentAssertions;
+using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Enums;
+using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Game.Protocol;
+using LibreKO.Game.Protocol.Writers;
+using LibreKO.Game.World;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+
+namespace LibreKO.Game.Tests;
+
+public class ItemAuthorityTests : GameTestBase
+{
+    private const int Ring = 310110001;
+    private const int OtherRing = 310120001;
+    private const int HighRing = 310210001;
+    private const int Sword = 110110001;
+    private const int Potion = 389010000;
+    private const int Untradeable = 389020000;
+    private const byte RingSlot = 12;
+    private const byte OneHandRight = 1;
+    private const byte HighLevel = 70;
+    private const byte PlayerLevel = 30;
+    private const byte UntradeableRace = 20;
+    private const byte Moradon = (byte)ZoneId.Moradon;
+    private const float Here = 500f;
+    private const byte BagFirst = 0;
+    private const byte BagSecond = 1;
+    private const short WornDurability = 37;
+    private const long RentalEnds = 1_900_000_000;
+    private const ushort Stack = 5;
+    private const byte Moved = 1;
+    private const int Purse = 1000;
+    private const int GenieGold = 20_000;
+    private const byte GenieClaim = 2;
+    private const int ShortReply = 8;
+
+    [Theory]
+    [InlineData(Sword, false)]
+    [InlineData(HighRing, false)]
+    [InlineData(OtherRing, true)]
+    public async Task UnequippingOntoABagItemPutsItInTheSlotOnlyIfItMayGoThere(int bagItem, bool swapped)
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2001);
+        Put(player.Inventory[InventoryConstants.RightRing], Ring);
+        Put(Bag(player, BagFirst), bagItem);
+
+        await MoveItem(provider, client, ItemMoveDirection.SlotToInventory, Ring, InventoryConstants.RightRing, BagFirst);
+
+        player.Inventory[InventoryConstants.RightRing].ItemId.Should().Be(swapped ? bagItem : Ring);
+        Bag(player, BagFirst).ItemId.Should().Be(swapped ? Ring : bagItem);
+    }
+
+    [Fact]
+    public async Task AnItemThatCannotBeTradedCannotBeDropped()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2002);
+        Put(Bag(player, BagFirst), Sword).Flag = (byte)ItemFlag.Rented;
+        Put(Bag(player, BagSecond), Untradeable);
+
+        await Drop(provider, client, BagFirst, Sword, 1);
+        await Drop(provider, client, BagSecond, Untradeable, 1);
+
+        Bag(player, BagFirst).ItemId.Should().Be(Sword, "a rented item stays with its renter");
+        Bag(player, BagSecond).ItemId.Should().Be(Untradeable);
+    }
+
+    [Fact]
+    public async Task ADroppedItemIsPickedUpAsItWas()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2003);
+        var sword = Put(Bag(player, BagFirst), Sword);
+        sword.Durability = WornDurability;
+        sword.ExpiresAt = RentalEnds;
+        var bundles = Bundles(client);
+
+        await Drop(provider, client, BagFirst, Sword, 1);
+        var bundle = provider.GetRequiredService<SessionManager>().Regions.GetBundle(bundles.Single())!;
+        bundle.DropTimeTicks -= TimeSpan.FromMilliseconds(LootBundle.OwnerExclusiveMs + 1).Ticks;
+        await Pick(provider, client, bundle.BundleId, Sword);
+
+        var picked = player.Inventory.Skip(InventoryConstants.InventoryStart).Take(InventoryConstants.HaveMax)
+            .Single(slot => slot.ItemId == Sword);
+        picked.Durability.Should().Be(WornDurability, "a pickup does not repair");
+        picked.ExpiresAt.Should().Be(RentalEnds, "a pickup does not make a timed item permanent");
+    }
+
+    [Fact]
+    public async Task ANpcSwapKeepsEachItemsExpiry()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2004);
+        Put(Bag(player, BagFirst), Sword).ExpiresAt = RentalEnds;
+        Put(Bag(player, BagSecond), Ring);
+        var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
+        packet.WriteByte(3);
+        packet.WriteInt(Sword);
+        packet.WriteByte(BagFirst);
+        packet.WriteByte(BagSecond);
+
+        await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, Reset(packet));
+
+        Bag(player, BagSecond).ItemId.Should().Be(Sword);
+        Bag(player, BagSecond).ExpiresAt.Should().Be(RentalEnds);
+        Bag(player, BagFirst).ExpiresAt.Should().Be(0, "the ring was never timed");
+    }
+
+    [Fact]
+    public async Task ATimedStackDoesNotMergeIntoAPermanentOne()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2005);
+        var timed = Put(Bag(player, BagFirst), Potion);
+        timed.Count = Stack;
+        timed.ExpiresAt = RentalEnds;
+        Put(Bag(player, BagSecond), Potion).Count = Stack;
+
+        await MoveItem(provider, client, ItemMoveDirection.InventoryToInventory, Potion,
+            BagFirst, BagSecond);
+
+        Bag(player, BagSecond).Count.Should().Be(Stack, "potions that expire are not added to ones that do not");
+    }
+
+    [Fact]
+    public async Task StoringAnItemKeepsItsExpiryAndDoesNotRelabelAStack()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2006);
+        StandAtWarehouseKeeper(provider, client);
+        Put(Bag(player, BagFirst), Sword).ExpiresAt = RentalEnds;
+        var sealedPotions = Put(Bag(player, BagSecond), Potion);
+        sealedPotions.Count = Stack;
+        sealedPotions.Flag = (byte)ItemFlag.Bound;
+        Put(player.Warehouse[1], Potion).Count = Stack;
+
+        await Store(provider, client, Sword, BagFirst, 0, 1);
+        await Store(provider, client, Potion, BagSecond, 1, Stack);
+
+        player.Warehouse[0].ExpiresAt.Should().Be(RentalEnds);
+        player.Warehouse[1].Flag.Should().Be(0, "bound potions are not poured into a stack of free ones");
+        player.Warehouse[1].Count.Should().Be(Stack);
+    }
+
+    [Theory]
+    [InlineData(true, 0f, true)]
+    [InlineData(true, 50f, false)]
+    [InlineData(false, 0f, false)]
+    public async Task TheWarehouseOpensOnlyAtAKeeperNearby(bool talkedToKeeper, float keeperDistance, bool opened)
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2007);
+        if (talkedToKeeper)
+        {
+            StandAtWarehouseKeeper(provider, client);
+            provider.GetRequiredService<SessionManager>().Regions.GetNpc(player.Quest.EventNpcUniqueId)!.X += keeperDistance;
+        }
+        var sent = Sent(client);
+        var packet = new Packet(GameOpcodes.GS_WAREHOUSE);
+        packet.WriteByte((byte)WarehouseSubOpcode.Open);
+
+        await provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, Reset(packet));
+
+        sent.Any(reply => reply.GetOpcode() == (byte)GameOpcodes.GS_WAREHOUSE && reply.GetLength() > ShortReply).Should().Be(opened);
+    }
+
+    [Fact]
+    public async Task TheRouletteHandsOutNoFreeSpins()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2008);
+        player.Money = Purse;
+        var packet = new Packet(GameOpcodes.GS_EVENT_BOARD);
+        packet.WriteByte((byte)EventBoardSubOpcode.RouletteSpin);
+
+        await provider.GetRequiredService<IRoulettePacketCoordinator>().HandleAsync(client, Reset(packet));
+
+        player.Money.Should().Be(Purse, "a spin needs a coin, and no one is given coins for nothing");
+    }
+
+    [Fact]
+    public async Task TheGenieGoldComesOnceADayAndTheDayIsSaved()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2009);
+        player.Money = Purse;
+        var genie = provider.GetRequiredService<IGeniePacketCoordinator>();
+
+        await genie.HandleAsync(client, Claim());
+        await genie.HandleAsync(client, Claim());
+
+        player.Money.Should().Be(Purse + GenieGold);
+        var saved = new Common.Domain.Entities.Character();
+        new UserSessionCharacterMapper().ApplyToCharacter(player, saved);
+        saved.GenieRewardClaimedOn.Should().Be(DateTime.UtcNow.Date, "a restart must not forget today's claim");
+    }
+
+    [Fact]
+    public async Task AGenieClaimLoadedFromTheDatabaseCountsForToday()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2010);
+        player.Money = Purse;
+        player.GenieRewardClaimedOn = DateTime.UtcNow.Date;
+
+        await provider.GetRequiredService<IGeniePacketCoordinator>().HandleAsync(client, Claim());
+
+        player.Money.Should().Be(Purse);
+    }
+
+    private static ServiceProvider Provider() => CreateProvider(_ => { }, gameData =>
+    {
+        foreach (var (id, level) in new[] { (Ring, (byte)1), (OtherRing, (byte)1), (HighRing, HighLevel) })
+            gameData.GetItem(id).Returns(new ItemData
+            {
+                Num = id, Kind = (byte)ItemKind.Ring, Slot = RingSlot, ReqLevel = level, Duration = 100,
+            });
+        gameData.GetItem(Sword).Returns(new ItemData
+        {
+            Num = Sword, Kind = (byte)ItemKind.SwordOneHand, Slot = OneHandRight, Duration = 100, Damage = 10,
+        });
+        gameData.GetItem(Potion).Returns(new ItemData { Num = Potion, Countable = 1, Duration = 1 });
+        gameData.GetItem(Untradeable).Returns(new ItemData { Num = Untradeable, Race = UntradeableRace, Duration = 1 });
+    });
+
+    private static (UserSession Player, IClient Client) Player(ServiceProvider provider, int id)
+    {
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var player = sessions.CreateSession(client, id, id + 100);
+        player.Name = $"Holder{id}";
+        player.Level = PlayerLevel;
+        player.ZoneId = Moradon;
+        player.Nation = AccountNation.Karus;
+        player.Hp = player.MaxHp = 100;
+        player.X = Here;
+        player.Z = Here;
+        sessions.Regions.AddToRegion(player);
+        return (player, client);
+    }
+
+    private static List<Packet> Sent(IClient client)
+    {
+        var sent = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        return sent;
+    }
+
+    private static List<int> Bundles(IClient client)
+    {
+        var bundles = new List<int>();
+        client.SendPacket(Arg.Do<Packet>(packet =>
+        {
+            if (packet.GetOpcode() != (byte)GameOpcodes.GS_ITEM_DROP)
+                return;
+            packet.ResetOffset();
+            packet.ReadInt();
+            bundles.Add(packet.ReadInt());
+        }), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        return bundles;
+    }
+
+    private static ItemSlot Bag(UserSession player, byte position) => player.Inventory[InventoryConstants.InventoryStart + position];
+
+    private static ItemSlot Put(ItemSlot slot, int itemId)
+    {
+        slot.ItemId = itemId;
+        slot.Count = 1;
+        slot.Durability = 100;
+        return slot;
+    }
+
+    private static Task MoveItem(
+        ServiceProvider provider, IClient client, ItemMoveDirection direction, int itemId, int source, int destination)
+    {
+        var packet = new Packet(GameOpcodes.GS_ITEM_MOVE);
+        packet.WriteByte(Moved);
+        packet.WriteByte((byte)direction);
+        packet.WriteInt(itemId);
+        packet.WriteByte((byte)source);
+        packet.WriteByte((byte)destination);
+        return provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(client, Reset(packet));
+    }
+
+    private static Task Drop(ServiceProvider provider, IClient client, byte position, int itemId, ushort count)
+    {
+        var packet = new Packet(GameOpcodes.GS_ITEM_DROP);
+        packet.WriteByte(position);
+        packet.WriteInt(itemId);
+        packet.WriteUShort(count);
+        return provider.GetRequiredService<ILootPacketCoordinator>().HandleItemDropAsync(client, Reset(packet));
+    }
+
+    private static Task Pick(ServiceProvider provider, IClient client, int bundleId, int itemId)
+    {
+        var packet = new Packet(GameOpcodes.GS_ITEM_GET);
+        packet.WriteInt(bundleId);
+        packet.WriteInt(itemId);
+        packet.WriteUShort(0);
+        return provider.GetRequiredService<ILootPacketCoordinator>().HandleItemGetAsync(client, Reset(packet));
+    }
+
+    private static Task Store(ServiceProvider provider, IClient client, int itemId, byte from, byte to, int count)
+    {
+        var packet = new Packet(GameOpcodes.GS_WAREHOUSE);
+        packet.WriteByte((byte)WarehouseSubOpcode.Input);
+        packet.WriteInt(0);
+        packet.WriteInt(itemId);
+        packet.WriteByte(0);
+        packet.WriteByte(from);
+        packet.WriteByte(to);
+        packet.WriteInt(count);
+        return provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, Reset(packet));
+    }
+
+    private static Packet Claim()
+    {
+        var packet = new Packet(GameOpcodes.GS_GENIE);
+        packet.WriteByte(GenieClaim);
+        return Reset(packet);
+    }
+
+    private static Packet Reset(Packet packet)
+    {
+        packet.ResetOffset();
+        return packet;
+    }
+}

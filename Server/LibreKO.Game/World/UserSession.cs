@@ -249,6 +249,7 @@ public class UserSession
     public int AttendanceClaimedDays { get; set; }
     public byte AttendanceClaimedBonus { get; set; }
     public DateTime? AttendanceCheckedOn { get; set; }
+    public DateTime? GenieRewardClaimedOn { get; set; }
 
     // Rebirth (WIZ_REBIRTH 0xD3). Snapshot stats stored at rebirth time.
     public short RebirthLevel { get; set; }
