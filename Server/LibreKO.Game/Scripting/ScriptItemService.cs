@@ -317,8 +317,7 @@ public class ScriptItemService(
 
     private const byte UniqueItemType = 4;
 
-    // The gold an exchange gives, less any gold it takes, has to fit under the coin cap: a reward
-    // cut at the cap would lose the rest after the exchange had already taken its items.
+    // The net gold must fit under the cap before the exchange takes any item.
     private bool GoldRewardFits(IEnumerable<(int itemId, int count)> taken, IEnumerable<(int itemId, int count)> given)
     {
         var gained = given.Where(entry => entry.itemId == InventoryConstants.ItemGold).Sum(entry => (long)entry.count);

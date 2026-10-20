@@ -94,8 +94,7 @@ public class MerchantBuyingService(
             };
         }
 
-        // The stall takes the gold its whole list could cost out of the purse now, so two
-        // sellers at once, or the owner spending it meanwhile, can never pay out more than that.
+        // The whole list is paid for up front, so no sale can pay out more than the owner had.
         var held = session.WithLock(s =>
         {
             if (totalCost > s.Money)
@@ -173,8 +172,7 @@ public class MerchantBuyingService(
             return;
         }
 
-        // Everything is checked again and the sale made under both players' locks, so two
-        // sellers cannot both be paid for the last wanted item or handed the same empty slot.
+        // Checked again under both locks, so two sellers cannot both fill the last wanted item.
         var sellerIndex = InventoryConstants.SlotMax + sellerSlot;
         Sale? sale = null;
         UserSession.WithBoth(session, merchant!, (seller, buyer) =>

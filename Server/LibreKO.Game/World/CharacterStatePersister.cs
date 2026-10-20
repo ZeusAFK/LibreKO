@@ -79,8 +79,7 @@ public class CharacterStatePersister(
         var dailyOp = await dailyOpRepository.GetOrCreateByCharacterId(session.CharacterId);
         var account = await accountRepository.GetById(session.AccountId);
 
-        // One snapshot under the player's lock, so a sale or trade landing mid-save is saved
-        // whole or not at all, never as new gold with the old bag.
+        // One snapshot under the lock, so a sale landing mid-save is saved whole or not at all.
         session.WithLock(s =>
         {
             ApplyToCharacter(s, character, userSessionCharacterMapper);

@@ -50,8 +50,7 @@ public class ZoneTransitionService(
             return;
         }
 
-        // A stall stays where it was set up: leaving the zone closes it, setup flags and a buying
-        // stall's held gold included.
+        // Leaving the zone closes a stall, its held gold included.
         if (session.ZoneId != newZone && merchantLifecycle != null
             && (session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.Trade.BuyMerchantGold > 0))
             await merchantLifecycle.CloseAsync(session, MerchantInOut.StallClosed);

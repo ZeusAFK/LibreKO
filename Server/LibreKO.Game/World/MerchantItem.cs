@@ -1,4 +1,4 @@
-namespace LibreKO.Game.World;
+﻿namespace LibreKO.Game.World;
 
 public class MerchantItem
 {

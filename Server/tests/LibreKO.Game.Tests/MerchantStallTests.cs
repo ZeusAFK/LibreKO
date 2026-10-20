@@ -13,8 +13,7 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// A stall sale is checked and made under both players' locks, sells only what the seller's
-// slot still holds, and a buying stall pays out of gold it took when it opened.
+// Stall sales run under both players' locks and sell only what the seller's slot holds.
 public class MerchantStallTests : GameTestBase
 {
     private const int Ware = 379_080_000;
@@ -293,8 +292,7 @@ public class MerchantStallTests : GameTestBase
         first.Trade.MerchantTargetUserId = seller.CharacterId;
         second.Trade.MerchantTargetUserId = seller.CharacterId;
 
-        // The item is looked up once before the locks and once more inside them, after the stock
-        // is checked and before it is written.
+        // The item is looked up before the locks and again inside them.
         market.HoldEachRequestAtLookups(2);
         await Task.WhenAll(
             Task.Run(() => market.BuyAsync(first, Ware, 1)),
@@ -319,8 +317,7 @@ public class MerchantStallTests : GameTestBase
             Stock(Bag(seller, BagPos), Ware, 1);
         }
 
-        // The sale is checked once outside the locks (lookups 1-2) and again inside them (3-4),
-        // and the item is looked up once more right before it is written (5).
+        // Lookups 1-2 are outside the locks, 3-4 inside, and 5 right before the write.
         market.HoldEachRequestAtLookups(3, 5);
         await Task.WhenAll(
             Task.Run(() => market.SellAsync(first, BagPos, 1)),
@@ -441,8 +438,7 @@ public class MerchantStallTests : GameTestBase
         using var halfWay = new ManualResetEventSlim();
         using var saved = new ManualResetEventSlim();
 
-        // Another connection changes the player in one locked step: pays, then takes the item
-        // and loses some health. The save must see all of that or none of it.
+        // Another connection pays, takes the item and hurts the player in one locked step.
         var purchase = Task.Run(() => owner.WithLock(s =>
         {
             s.Money -= Price;
@@ -539,9 +535,7 @@ public class MerchantStallTests : GameTestBase
             });
         }
 
-        // From now on each request waits at each of the given item lookups until the other
-        // request gets there too (or a second passes), so two players' requests reach the stall
-        // together: both past their checks before either one writes, unless a lock keeps them apart.
+        // Each request now waits at these lookups until the other arrives or a second passes.
         public void HoldEachRequestAtLookups(params int[] points)
         {
             foreach (var point in points)

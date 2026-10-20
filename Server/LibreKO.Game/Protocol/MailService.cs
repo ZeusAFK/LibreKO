@@ -322,8 +322,7 @@ public class MailService(
             mail.ReadAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
-        // Gold waits for room in the purse, everything else for room in the bag; only the
-        // attachments this claim tried are named.
+        // Only the attachments this claim tried are named.
         var goldWaiting = chosen.Any(a => a.Remaining > 0 && a.Kind == MailAttachmentKind.Gold);
         var itemsWaiting = chosen.Any(a => a.Remaining > 0 && a.Kind != MailAttachmentKind.Gold);
         var room = (itemsWaiting, goldWaiting) switch
@@ -352,9 +351,7 @@ public class MailService(
 
     private enum ItemDelivery { NoRoom, Delivered, Dropped }
 
-    // Reads the item once, so the claim and its message agree even if the item table is reloaded
-    // meanwhile. An item no longer in the table is dropped (marked claimed). A mail item joins only
-    // a stack of the very same item (state, expiry and link), and an empty slot gets its count set.
+    // One read of the item, so the claim and its message agree even if the item table reloads meanwhile.
     private async Task<ItemDelivery> DeliverItemAsync(UserSession session, MailAttachment attachment)
     {
         var itemData = gameDataService.GetItem(attachment.ItemId);

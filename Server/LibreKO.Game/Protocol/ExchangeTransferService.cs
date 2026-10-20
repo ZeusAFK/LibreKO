@@ -302,8 +302,7 @@ public class ExchangeTransferService(
         return itemCount <= freeSlots;
     }
 
-    // Delivers the giver's escrowed offer to the receiver by identity and returns the items that
-    // arrived; an item with no room goes back to the giver instead.
+    // An item with no room on the receiver's side goes back to the giver.
     private List<ExchangeItem> ExecuteExchange(UserSession receiver, UserSession giver)
     {
         var delivered = new List<ExchangeItem>();

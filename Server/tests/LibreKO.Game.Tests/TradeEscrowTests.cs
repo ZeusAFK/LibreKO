@@ -172,8 +172,7 @@ public class TradeEscrowTests : GameTestBase
         StockPotions(taker);
 
         await SendAsync(provider, takerClient, AddPacket(PotionPos, Potion, PotionStack));
-        // A pickup of the same potion, but one that expires, lands in the freed slot. The client
-        // would stack the offer back onto it; the server keeps the two apart.
+        // The same potion, but timed, lands in the freed slot; the offer must not join it.
         var filled = BagSlot(taker, PotionPos);
         filled.ItemId = Potion;
         filled.Count = 1;

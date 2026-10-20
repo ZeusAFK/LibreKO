@@ -13,12 +13,10 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// While a player trades, keeps or sets up a stall, gathers or lies dead, nothing moves an
-// item out of their bag: a trade or a stall may be counting on it.
+// A trade or a stall may count on a busy player's bag.
 public class BusyGateTests : GameTestBase
 {
-    // None is the control: the same request from an idle player goes through, so a busy
-    // player's refusal is down to being busy and nothing else.
+    // None is the control: an idle player's same request goes through.
     public enum Busy { None, Trading, Selling, Preparing, Gathering, Dead }
 
     private const int CharacterId = 93001;

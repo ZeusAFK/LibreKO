@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
@@ -9,8 +9,7 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// An NPC purchase or sale checks every line before it changes anything, then applies all of
-// them and settles the gold once.
+// An NPC purchase or sale checks every line before it changes anything.
 public class NpcTradeAtomicityTests : GameTestBase
 {
     private const byte Buy = 1;

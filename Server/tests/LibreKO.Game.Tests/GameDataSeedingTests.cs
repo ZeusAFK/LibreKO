@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Infrastructure.Persistence.Seed;
 using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 using System.Collections;

@@ -2,9 +2,7 @@
 
 namespace LibreKO.Game.World;
 
-// What handing a trade's escrowed offers back did: the bag slots it touched (where each offer
-// went and the slot it came from), the gold that went into the purse or, past the coin cap,
-// into the warehouse, and whatever found no room anywhere.
+// What handing escrowed offers back did, for the client and the logs.
 public sealed class ExchangeReturn
 {
     public List<int> BagSlots { get; } = [];

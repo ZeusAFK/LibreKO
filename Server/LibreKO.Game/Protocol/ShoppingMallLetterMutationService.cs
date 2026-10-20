@@ -306,8 +306,7 @@ public class ShoppingMallLetterMutationService(
             }
         }
 
-        // The coins go into the purse under the lock and only if all of them fit under the cap;
-        // otherwise nothing is handed out and the letter waits.
+        // All the coins fit under the cap or none are handed out.
         var coins = letter.Coins;
         if (coins > 0 && !session.WithLock(s =>
             {

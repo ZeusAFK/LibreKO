@@ -111,17 +111,13 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         await SettleReturnAsync(target, returnedTarget);
     }
 
-    // notifySelf is false only for the player's own cancel, whose client has already closed the
-    // window. A cancel the server starts (range, death, logout) is news to the player's client,
-    // which must close the window and put its offer back before the resync below.
+    // notifySelf is false only for the player's own cancel; that client has closed its window already.
     public async Task CancelAsync(UserSession session, bool isOnDeath = false, bool notifySelf = true)
     {
         if (!isOnDeath && session.Hp <= 0)
             return;
 
-        // Whether the trade is still on and calling it off are one step under the player's lock,
-        // so a decision completing the trade meanwhile either happens first (and nothing is
-        // cancelled) or finds the trade gone; the player is never told both.
+        // Checking and ending the trade is one locked step, so a decision that completes it is never also cancelled.
         var partnerId = -1;
         var returnedSession = session.WithLock(s =>
         {
@@ -148,9 +144,7 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
             await SettleReturnAsync(target, returnedTarget);
     }
 
-    // Once the player's client knows the trade is over (and has put its offer back the way it
-    // guesses), tells it where each offer really went and what its purse holds, and logs
-    // whatever found no room anywhere.
+    // Runs after the client knows the trade is over, to tell it where each offer really went.
     public async Task SettleReturnAsync(UserSession session, ExchangeReturn? returned)
     {
         if (returned == null)
@@ -176,8 +170,7 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         }
     }
 
-    // Dead, keeping or setting up a stall, or gathering: such a player can neither ask for a
-    // trade nor take one up, so no one is ever trading and selling or gathering at once.
+    // A trade never overlaps death, a stall, its setup or gathering.
     private static bool CannotStartTrade(UserSession session) =>
         session.Hp <= 0 || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.IsGathering;
 

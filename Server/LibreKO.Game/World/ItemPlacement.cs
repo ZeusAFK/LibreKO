@@ -1,10 +1,8 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 
 namespace LibreKO.Game.World;
 
-// Puts an escrowed item back into a slot array by identity: into an empty slot, or onto a stack
-// of the very same item (id, unique id, flag and expiry). A count is never added to a slot
-// that holds anything else.
+// An item goes only into an empty slot or onto a stack of the very same item.
 public static class ItemPlacement
 {
     public static bool IsSameItem(ItemSlot slot, ExchangeItem item) =>
@@ -19,8 +17,7 @@ public static class ItemPlacement
         && IsSameItem(slot, item)
         && slot.Count + item.Count <= InventoryConstants.MaxStackCount;
 
-    // Its own slot first, then the first empty slot, as the client restores it; a matching
-    // stack only when neither is left.
+    // Its own slot first, then the first empty one, as the client restores it.
     public static int FindForReturn(ItemSlot[] slots, int start, int length, ExchangeItem item, int preferred = -1)
     {
         if (preferred >= start && preferred < start + length

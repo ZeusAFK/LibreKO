@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -9,8 +9,7 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// No one is ever trading and keeping (or setting up) a stall at once, or trading or keeping a
-// stall while gathering: each of those counts on the bag staying as it is.
+// Trading, a stall and gathering never overlap: each counts on the bag.
 public class TradeStallOverlapTests : GameTestBase
 {
     private const int AskerId = 97001;

@@ -1,7 +1,6 @@
-namespace LibreKO.Game.World;
+﻿namespace LibreKO.Game.World;
 
-// An offered item is held here, out of the bag, until the trade completes or is cancelled.
-// It carries the whole item identity so it goes back, or across, as the same item.
+// An offer held out of the bag, with its whole identity, until the trade ends.
 public class ExchangeItem
 {
     public int ItemId { get; set; }

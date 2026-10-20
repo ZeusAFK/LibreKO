@@ -231,8 +231,7 @@ public class UserSession
     public DateTime LastPieceExchangeTime { get; set; } = DateTime.MinValue;
     public bool IsGathering => IsMining || IsFishing;
 
-    // Dead, trading, keeping or setting up a stall, or gathering: every handler that moves an
-    // item refuses while this holds, so nothing moves an item a trade or a stall counts on.
+    // Every item-moving handler refuses while this holds: a trade or a stall may count on the bag.
     public bool IsBusy =>
         Hp <= 0 || Trade.IsTrading || Trade.IsMerchanting || Trade.IsMerchantPreparing || IsGathering;
 
@@ -667,8 +666,7 @@ public class UserSession
         return -1;
     }
 
-    // Hands every escrowed offer back: gold into the purse (and past the coin cap into the
-    // warehouse), each item by identity into the bag. Call under this session's lock.
+    // Call under this session's lock.
     public ExchangeReturn InitExchange(bool start)
     {
         var returned = new ExchangeReturn();
@@ -699,9 +697,7 @@ public class UserSession
         return returned;
     }
 
-    // Its own bag slot when that is still free (or holds the same stack), else any free bag slot,
-    // else the warehouse, so a slot filled during the trade never costs the item. The bag slots
-    // involved are noted in returned, for the client.
+    // Its own slot, else a free one, else the warehouse.
     public bool ReturnEscrowedItem(ExchangeItem item, ExchangeReturn? returned = null)
     {
         if (item.SrcPos is >= InventoryConstants.InventoryStart and < InventoryConstants.InventoryStart + InventoryConstants.HaveMax)
@@ -734,9 +730,7 @@ public class UserSession
         return s.ReturnHeldGold(held);
     });
 
-    // The purse and warehouse gold as they are saved: gold a buying stall holds is still the
-    // owner's, split the way closing the stall would split it. Read under the lock so a stall
-    // opening or closing meanwhile is counted once.
+    // Gold a stall or a trade holds aside is saved as if it had come back.
     public int SavedMoney => WithLock(s => s.Money + s.SplitHeldGold(s.HeldGold).ToPurse);
 
     public int SavedWarehouseMoney => WithLock(s => s.WarehouseMoney + s.SplitHeldGold(s.HeldGold).ToWarehouse);
@@ -781,9 +775,7 @@ public class UserSession
         return copies;
     }
 
-    // Gold held aside (an offer in a trade, a buying stall's purse) goes back into the purse up to
-    // the coin cap and the rest into the warehouse, so a purse that grew meanwhile loses none of
-    // it. Only what fits in neither is lost.
+    // Held gold goes into the purse up to the coin cap and the rest into the warehouse.
     private (int ToPurse, int ToWarehouse, long Lost) ReturnHeldGold(long amount)
     {
         var (toPurse, toWarehouse) = SplitHeldGold(amount);
