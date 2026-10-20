@@ -62,6 +62,12 @@ public class SessionTerminationService(
 
     public async Task EvictForTakeoverAsync(UserSession session)
     {
+        if (!session.TryBeginClosing())
+        {
+            await session.Closed;
+            return;
+        }
+
         session.Client.ExpectedClose = true;
         await RemoveFromWorldAsync(session);
         await knightsRuntime.NotifyMemberOfflineAsync(session);
@@ -77,14 +83,18 @@ public class SessionTerminationService(
 
         try
         {
-            if (!session.IsBot && !await characterStatePersister.SaveAsync(session))
+            if (!session.IsBot && !await characterStatePersister.SaveAndSealAsync(session))
                 logger.LogWarning("Could not save character state during login takeover for {Name}", session.Name);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Error saving character state during login takeover for {Name}", session.Name);
         }
-        sessionManager.RemoveSession(session);
+        finally
+        {
+            sessionManager.RemoveSession(session);
+            session.MarkClosed();
+        }
     }
 
     private async Task TerminateAsync(IClient client, bool unexpectedDisconnect, CancellationToken cancellationToken)
@@ -116,6 +126,13 @@ public class SessionTerminationService(
             return;
         }
 
+        if (!session.TryBeginClosing())
+        {
+            await session.Closed;
+            client.CharacterId = 0;
+            return;
+        }
+
         if (unexpectedDisconnect)
             logger.LogInformation("Client disconnected unexpectedly: {Name} (CharId={CharId})", session.Name, session.CharacterId);
 
@@ -135,6 +152,7 @@ public class SessionTerminationService(
             sessionManager.RemoveSession(session);
             await MarkOfflineAsync(session.CharacterId, cancellationToken);
             client.CharacterId = 0;
+            session.MarkClosed();
         }
     }
 
@@ -159,12 +177,20 @@ public class SessionTerminationService(
 
     private async Task CleanupAsync(UserSession session, CancellationToken cancellationToken)
     {
-        await ReleaseWorldStateAsync(session);
+        // The final save runs even when releasing world state fails.
+        try
+        {
+            await ReleaseWorldStateAsync(session);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
+        }
 
         await DisconnectDbGate.WaitAsync(cancellationToken);
         try
         {
-            await characterStatePersister.SaveAsync(session, cancellationToken);
+            await characterStatePersister.SaveAndSealAsync(session, cancellationToken);
         }
         finally
         {

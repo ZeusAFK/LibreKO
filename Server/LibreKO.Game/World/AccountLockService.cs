@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
@@ -118,9 +118,9 @@ public class AccountLockService(
         }
     }
 
+    // The evicted connection loses the claim at once, but the account stays taken until its session is saved.
     private async Task EvictAsync(AccountClaim claim)
     {
-        claims.TryRemove(new KeyValuePair<int, AccountClaim>(claim.AccountId, claim));
         accountByClient.TryRemove(new KeyValuePair<Guid, int>(claim.Client.Id, claim.AccountId));
 
         logger.LogInformation(
@@ -137,6 +137,10 @@ public class AccountLockService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Error terminating evicted session for account {AccountId}", claim.AccountId);
+        }
+        finally
+        {
+            claims.TryRemove(new KeyValuePair<int, AccountClaim>(claim.AccountId, claim));
         }
 
         var evicted = claim.Client;

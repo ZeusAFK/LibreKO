@@ -104,6 +104,32 @@ public class CharacterCommitTests : GameTestBase
         undone.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task NothingIsWrittenAfterTheFinalSave()
+    {
+        using var provider = CreateProvider(
+            db => db.Characters.Add(new Character { Id = CharacterId, AccountId = CharacterId, Name = "Committer", Money = Purse }));
+        var session = Session(provider);
+        var persister = provider.GetRequiredService<ICharacterStatePersister>();
+        var changed = false;
+
+        (await persister.SaveAndSealAsync(session)).Should().BeTrue();
+        session.Money = Purse - Price;
+        var saved = await persister.SaveAsync(session);
+        var committed = await persister.CommitAsync(session, _ =>
+        {
+            changed = true;
+            return Task.FromResult(true);
+        }, () => { });
+
+        saved.Should().BeFalse();
+        committed.Should().Be(StateCommit.Unchanged);
+        changed.Should().BeFalse("a closed session makes no more changes");
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.SingleAsync(c => c.Id == CharacterId))
+            .Money.Should().Be(Purse, "a newer session may already have loaded the account");
+    }
+
     private static UserSession Session(ServiceProvider provider)
     {
         var client = Substitute.For<IClient>();

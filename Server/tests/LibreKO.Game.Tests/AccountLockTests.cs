@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
@@ -80,6 +80,26 @@ public class AccountLockTests : GameTestBase
         await termination.Received(1).LogoutAsync(holder, Arg.Any<CancellationToken>());
         service.Owns(holder).Should().BeFalse();
 
+        (await service.AcquireAsync(CreateClient(connected: true), AccountId)).Granted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task KickAsync_KeepsTheAccountTakenUntilTheEvictedSessionIsSaved()
+    {
+        var (service, termination, _) = CreateService();
+        var holder = CreateClient(connected: true);
+        await service.AcquireAsync(holder, AccountId);
+        var saving = new TaskCompletionSource();
+        termination.LogoutAsync(holder, Arg.Any<CancellationToken>()).Returns(saving.Task);
+
+        var kick = service.KickAsync(AccountId);
+        var holderHeard = service.Owns(holder);
+        var takenWhileSaving = await service.AcquireAsync(CreateClient(connected: true), AccountId);
+        saving.SetResult();
+        await kick;
+
+        holderHeard.Should().BeFalse("the kicked connection is not heard from the moment it is kicked");
+        takenWhileSaving.Granted.Should().BeFalse("its account is not loaded again before its save is done");
         (await service.AcquireAsync(CreateClient(connected: true), AccountId)).Granted.Should().BeTrue();
     }
 

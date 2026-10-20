@@ -94,6 +94,7 @@ public class BeautyAppearanceTests : GameTestBase
         var (client, sent) = RecordingClient();
         client.AccountId.Returns(accountId);
         client.CharacterId.Returns(characterId);
+        await provider.GetRequiredService<IAccountLockService>().AcquireAsync(client, accountId);
 
         var sessions = provider.GetRequiredService<SessionManager>();
         var session = sessions.CreateSession(client, characterId, accountId);

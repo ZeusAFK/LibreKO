@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
@@ -66,7 +66,8 @@ public class ClientSettingsPacketCoordinator(
         }
 
         session.Language = language;
-        _ = statePersister.SaveAsync(session);
+        if (session.TryTakeClientSave(DateTime.UtcNow.Ticks))
+            await statePersister.SaveAsync(session);
 
         logger.LogInformation("{Name} switched language to {Language}", session.Name, language);
         await client.SendPacket(ClientSettingsPacketWriter.Language(language, accepted: true));

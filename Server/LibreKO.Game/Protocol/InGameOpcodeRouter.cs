@@ -192,7 +192,8 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_DATASAVE] = async (c, _) =>
             {
                 var session = sessionManager.GetByClientId(c.Id);
-                if (session != null) await sessionTermination.SaveAsync(session);
+                if (session != null && session.TryTakeClientSave(DateTime.UtcNow.Ticks))
+                    await sessionTermination.SaveAsync(session);
             },
             // GS_CONCURRENTUSER is routed to misc.HandleConcurrentUserAsync below
             // (the real GM-gated handler). The inline lambda that used to live here

@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
@@ -116,21 +116,21 @@ public class PreGamePacketCoordinator(
         if (result.CharacterId == 0)
             return result.Packet;
 
-        var existingSession = sessionManager.GetByCharacterId(result.CharacterId);
-        if (existingSession != null && existingSession.Client.Id != client.Id)
+        // An earlier session of this account is saved and gone before this one loads, whichever character it played.
+        var earlierSessions = sessionManager.GetAll()
+            .Where(other => other.AccountId == client.AccountId && other.Client.Id != client.Id && !other.IsBot)
+            .ToList();
+        foreach (var earlier in earlierSessions)
         {
-            // Character is already online on another connection — almost always a fast
-            // reconnect whose previous session's async cleanup (a full save) hasn't run
-            // yet. Evict the stale session synchronously and let this client take over,
-            // instead of rejecting: under load the old session lingers long enough that
-            // repeated rejects turn into an endless login loop.
             logger.LogInformation(
-                "Character {Character} already online; taking over from previous session {SessionId}",
+                "Account {AccountId} selecting {Character}; taking over from previous session {SessionId} ({Earlier})",
+                client.AccountId,
                 characterName,
-                existingSession.Client.Id);
+                earlier.Client.Id,
+                earlier.Name);
 
-            await sessionTerminationService.EvictForTakeoverAsync(existingSession);
-            existingSession.Client.Disconnect();
+            await sessionTerminationService.EvictForTakeoverAsync(earlier);
+            earlier.Client.Disconnect();
         }
 
         client.CharacterId = result.CharacterId;

@@ -11,6 +11,7 @@ namespace LibreKO.Game.World;
 public interface ICharacterStatePersister
 {
     Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default);
+    Task<bool> SaveAndSealAsync(UserSession session, CancellationToken cancellationToken = default);
     Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
         CancellationToken cancellationToken = default);
     Task SetOnlineStateAsync(int characterId, bool isOnline, CancellationToken cancellationToken = default);
@@ -48,7 +49,13 @@ public class CharacterStatePersister(
         public UserSession Session = null!;
     }
 
-    public async Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default)
+    public Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default) =>
+        SaveAsync(session, seal: false, cancellationToken);
+
+    public Task<bool> SaveAndSealAsync(UserSession session, CancellationToken cancellationToken = default) =>
+        SaveAsync(session, seal: true, cancellationToken);
+
+    private async Task<bool> SaveAsync(UserSession session, bool seal, CancellationToken cancellationToken)
     {
         if (session.IsBot)
             return false;
@@ -56,7 +63,18 @@ public class CharacterStatePersister(
         await session.CharacterPersistenceGate.WaitAsync(cancellationToken);
         try
         {
-            return await SaveUnderGateAsync(session);
+            if (session.SavesSealed)
+                return false;
+
+            try
+            {
+                return await SaveUnderGateAsync(session);
+            }
+            finally
+            {
+                if (seal)
+                    session.SavesSealed = true;
+            }
         }
         finally
         {
@@ -105,6 +123,9 @@ public class CharacterStatePersister(
         await session.CharacterPersistenceGate.WaitAsync(cancellationToken);
         try
         {
+            if (session.SavesSealed)
+                return StateCommit.Unchanged;
+
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var mapper = scope.ServiceProvider.GetRequiredService<IUserSessionCharacterMapper>();
@@ -198,7 +219,7 @@ public class CharacterStatePersister(
 
     public Task SaveQuestStateAsync(UserSession session, CancellationToken cancellationToken = default)
     {
-        if (session.IsBot)
+        if (session.IsBot || session.SavesSealed)
             return Task.CompletedTask;
 
         var slot = questSaveSlots.GetOrAdd(session.CharacterId, static _ => new QuestSaveSlot());
@@ -231,6 +252,9 @@ public class CharacterStatePersister(
                 slot.Dirty = false;
                 session = slot.Session;
             }
+
+            if (session.SavesSealed)
+                continue;
 
             await questSaveGate.WaitAsync();
             try

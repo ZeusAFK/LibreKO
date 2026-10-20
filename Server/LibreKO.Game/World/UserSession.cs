@@ -44,6 +44,33 @@ public class UserSession
     public int CharacterId { get; }
     public int AccountId { get; }
     public SemaphoreSlim CharacterPersistenceGate { get; } = new(1, 1);
+
+    private int closing;
+    private readonly TaskCompletionSource closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // A session closes once; whoever comes second waits for the first close to finish.
+    public bool TryBeginClosing() => Interlocked.CompareExchange(ref closing, 1, 0) == 0;
+    public bool IsClosing => Volatile.Read(ref closing) == 1;
+    public Task Closed => closed.Task;
+    public void MarkClosed() => closed.TrySetResult();
+
+    // After the final save nothing more is written for this session.
+    public volatile bool SavesSealed;
+
+    private int gameStarted;
+
+    public bool TryBeginGame() => Interlocked.CompareExchange(ref gameStarted, 1, 0) == 0;
+
+    private const int ClientSaveCooldownMs = 10_000;
+    private long lastClientSaveTicks;
+
+    // A save the client asks for runs at most once per cooldown.
+    public bool TryTakeClientSave(long nowTicks)
+    {
+        var last = Interlocked.Read(ref lastClientSaveTicks);
+        return (last == 0 || nowTicks - last >= ClientSaveCooldownMs * TimeSpan.TicksPerMillisecond)
+            && Interlocked.CompareExchange(ref lastClientSaveTicks, nowTicks, last) == last;
+    }
     public bool NationTransferCommitted { get; set; }
     public string Name { get; set; } = string.Empty;
     public AccountNation Nation { get; set; }

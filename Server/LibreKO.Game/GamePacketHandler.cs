@@ -42,8 +42,14 @@ public class GamePacketHandler(
     public async Task OnClientDisconnected(IClient client)
     {
         lastPingTicks.TryRemove(client.Id, out _);
-        await sessionTerminationService.DisconnectAsync(client);
-        await accountLockService.ReleaseAsync(client);
+        try
+        {
+            await sessionTerminationService.DisconnectAsync(client);
+        }
+        finally
+        {
+            await accountLockService.ReleaseAsync(client);
+        }
     }
 
     private async Task HandlePingAsync(IClient client, Packet packet)
@@ -62,10 +68,14 @@ public class GamePacketHandler(
     {
         var opcode = (GameOpcodes)packet.GetOpcode();
 
+        // A compressed packet is taken only from a signed-in connection, and never holds another.
         if (opcode == GameOpcodes.GS_COMPRESS_PACKET)
         {
+            if (client.AccountId == 0)
+                return;
+
             var decompressed = Packet.Decompress(packet);
-            if (decompressed != null)
+            if (decompressed != null && (GameOpcodes)decompressed.GetOpcode() != GameOpcodes.GS_COMPRESS_PACKET)
                 await HandlePacket(client, decompressed);
             return;
         }
@@ -80,6 +90,11 @@ public class GamePacketHandler(
         // handlers are singleton coordinators that scope their own DB work. Skip the
         // per-packet DI scope + DbContext entirely for it — only the rare per-connection
         // auth / pre-game / game-start paths need scoped services.
+        // A connection that lost its account to a kick, or whose session is closing, is heard no more.
+        if (client.AccountId != 0
+            && (!accountLockService.Owns(client) || sessionManager.GetByClientId(client.Id) is { IsClosing: true }))
+            return;
+
         if (client.AccountId != 0 && client.CharacterId != 0)
         {
             await HandleInGamePacket(client, packet, opcode);
@@ -241,8 +256,12 @@ public class GamePacketHandler(
             return;
         }
 
+        // Each step of the game start runs once per login.
         if (subOpcode == 1)
         {
+            if (sessionManager.GetByClientId(client.Id) != null)
+                return;
+
             session = await gameSessionInitializer.InitializeAsync(client);
             if (session == null)
                 return;
@@ -271,7 +290,7 @@ public class GamePacketHandler(
         if (subOpcode == 2)
         {
             session ??= sessionManager.GetByClientId(client.Id) ?? await gameSessionInitializer.InitializeAsync(client);
-            if (session == null)
+            if (session == null || !session.TryBeginGame())
                 return;
 
             logger.LogDebug(
