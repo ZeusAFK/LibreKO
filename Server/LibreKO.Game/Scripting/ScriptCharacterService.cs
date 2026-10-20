@@ -172,6 +172,10 @@ public class ScriptCharacterService(
                 return NoJobChangeToken;
 
             s.Race = resolved.Value.NewRace;
+            s.Class = resolved.Value.NewClass;
+            s.ApplyBaseStats();
+            s.StatPoints = ProgressionTable.StatPointsForLevel(s.Level);
+            s.ResetMasteryPoints();
             ApplyPromotion(resolved.Value.NewClass);
             return null;
         });

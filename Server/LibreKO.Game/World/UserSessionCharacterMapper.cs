@@ -149,6 +149,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         character.SkillPointData = (byte[])session.SkillPoints.Clone();
         character.Bind = session.Quest.BindPoint;
         character.Class = session.Class;
+        character.Race = session.Race;
         character.Hair = session.Hair;
         character.Face = session.Face;
         character.Loyalty = session.Loyalty;

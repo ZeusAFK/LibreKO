@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -14,6 +15,8 @@ namespace LibreKO.Game.Tests;
 public class QuestRewardSlotTests
 {
     private const int StunRow = 110560;
+    private const byte JobLevel = 60;
+    private const byte SpentStrength = 200;
     private const int Filler = 700_000_000;
     private const int Reward = 123;
     private const int BackHalfSlot = 20;
@@ -103,6 +106,27 @@ public class QuestRewardSlotTests
         context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeTrue();
 
         CountChangePositions().Should().Equal((byte)BackHalfSlot);
+    }
+
+    [Fact]
+    public void AQuestJobChangeResetsTheStatsAndIsSavedWithItsRace()
+    {
+        session.Class = 101;
+        session.Race = 1;
+        session.Nation = AccountNation.Karus;
+        session.Level = JobLevel;
+        session.Strength = SpentStrength;
+        session.StatPoints = 0;
+        Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
+
+        context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeTrue();
+
+        session.StatPoints.Should().Be(ProgressionTable.StatPointsForLevel(JobLevel), "a new job starts from its own base stats, as the packet path does");
+        session.Strength.Should().NotBe(SpentStrength);
+        var row = new Character();
+        new UserSessionCharacterMapper().ApplyToCharacter(session, row);
+        row.Race.Should().Be(session.Race, "the next save writes the race the job changed");
+        row.Class.Should().Be(session.Class);
     }
 
     public enum Tie { Trading, Stunned, Fighting }
