@@ -436,10 +436,7 @@ public class NpcAiMagicService(
         var buffType = (BuffType)type4Data.BuffType;
         var existingKey = target.ActiveBuffs
             .FirstOrDefault(entry => entry.Value.BuffType == buffType && buffType != BuffType.None).Key;
-        if (existingKey > 0)
-            target.RemoveBuff(existingKey);
-
-        target.SetBuff(magic.Id, new ActiveBuff
+        target.ReplaceBuff(existingKey, magic.Id, new ActiveBuff
         {
             MagicId = magic.Id,
             CasterId = -npc.UniqueId,

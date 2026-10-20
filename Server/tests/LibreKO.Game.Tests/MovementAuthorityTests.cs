@@ -35,6 +35,10 @@ public class MovementAuthorityTests : GameTestBase
     private const int Stun = 490500;
     private const byte OperatorSummon = 7;
     private const ushort LootCoins = 200;
+    private const float TooFar = 40;
+    private const int Freeze = 490501;
+    private const short FreezeSeconds = 2;
+    private const byte FrozenSpeed = 1;
 
     private sealed class Clock : TimeProvider
     {
@@ -68,7 +72,7 @@ public class MovementAuthorityTests : GameTestBase
         var (jumper, sent) = Player(provider, 1002);
 
         clock.Advance(ReportMs);
-        await Move(provider, jumper, Here + 30, Here);
+        await Move(provider, jumper, Here + TooFar, Here);
 
         jumper.X.Should().Be(Here);
         var back = sent.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_WARP);
@@ -83,7 +87,7 @@ public class MovementAuthorityTests : GameTestBase
         var clock = new Clock();
         using var provider = Provider(clock);
         var (hacker, sent) = Player(provider, 1003);
-        const float hackStep = 9f;
+        const float hackStep = 15f;
         const int everyMs = 1000;
 
         for (var step = 1; step <= Steps; step++)
@@ -105,8 +109,8 @@ public class MovementAuthorityTests : GameTestBase
         const int aMinuteMs = 60_000;
 
         clock.Advance(aMinuteMs);
-        await Move(provider, jumper, Here + 30, Here);
-        jumper.X.Should().Be(Here, "a minute of standing still buys three seconds of running, not a minute's");
+        await Move(provider, jumper, Here + TooFar, Here);
+        jumper.X.Should().Be(Here, "a minute of standing still buys six seconds of running, not a minute's");
 
         await Move(provider, jumper, Here + 15, Here);
         jumper.X.Should().Be(Here + 15);
@@ -127,7 +131,7 @@ public class MovementAuthorityTests : GameTestBase
             await Move(provider, flooder, Here + step, Here);
         }
 
-        flooder.X.Should().BeLessThan(Here + 30, "two seconds of running plus three in hand is all a flood may cover");
+        flooder.X.Should().BeLessThan(Here + 50, "two seconds of running plus six in hand is all a flood may cover");
         Warps(sent).Should().BeGreaterThan(0);
     }
 
@@ -198,8 +202,7 @@ public class MovementAuthorityTests : GameTestBase
             x += creep;
             await Move(provider, held, x, Here);
             clock.Advance(everyMs / 2);
-            held.RemoveBuff(Stun);
-            StunFor(held, clock, 10);
+            held.ReplaceBuff(Stun, Stun, StunBuff(clock, 10));
         }
 
         held.X.Should().BeLessThan(Here + 5, "a refreshed stun is the same hold, not a new half second of running");
@@ -220,9 +223,9 @@ public class MovementAuthorityTests : GameTestBase
             clock.Advance(everyMs);
             await Move(provider, slowed, Here, Here);
         }
-        await Move(provider, slowed, Here + 12, Here);
+        await Move(provider, slowed, Here + 20, Here);
 
-        slowed.X.Should().Be(Here, "three seconds at half speed are under 9 m, however long the player stood");
+        slowed.X.Should().Be(Here, "six seconds at half speed are under 17 m, however long the player stood");
     }
 
     [Fact]
@@ -327,6 +330,96 @@ public class MovementAuthorityTests : GameTestBase
     }
 
     [Fact]
+    public async Task ThreeReportsBunchedByAThreeSecondStallAreAccepted()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (runner, sent) = Player(provider, 1006);
+        const int beforeStall = 6;
+        const int bunched = 3;
+        for (var step = 1; step <= beforeStall; step++)
+        {
+            clock.Advance(ReportMs);
+            await Move(provider, runner, Here + step * RunStep, Here);
+        }
+
+        clock.Advance(bunched * ReportMs);
+        for (var step = beforeStall + 1; step <= beforeStall + bunched; step++)
+            await Move(provider, runner, Here + step * RunStep, Here);
+
+        runner.X.Should().BeApproximately(Here + (beforeStall + bunched) * RunStep, 0.1f);
+        Warps(sent).Should().Be(0, "a Wi-Fi stall is not a speed hack");
+    }
+
+    [Fact]
+    public async Task TheStepRightAfterAFreezeEndsRunsAtFullSpeed()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (thawed, sent) = Player(provider, 1007);
+        thawed.SetBuff(Freeze, new ActiveBuff
+        {
+            MagicId = Freeze, BuffType = BuffType.Freeze, Duration = FreezeSeconds, BonusSpeed = FrozenSpeed,
+            ExpireTicks = clock.Now.AddSeconds(FreezeSeconds).UtcTicks,
+        });
+        thawed.SpeedAmount = FrozenSpeed;
+        clock.Advance(FreezeSeconds * 1000 + ReportMs);
+
+        await Move(provider, thawed, Here + RunStep, Here);
+
+        thawed.X.Should().BeApproximately(Here + RunStep, 0.1f, "the freeze is over even if the buff sweep has not run yet");
+        Warps(sent).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ACuredStunIsOverSoTheNextStunAllowsTheRunBeforeIt()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (cured, sent) = Player(provider, 1008);
+        const int cureMs = 500;
+        const int runMs = 2000;
+        const float ranBeforeTheStun = 10f;
+        StunFor(cured, clock, 10);
+        clock.Advance(cureMs);
+        cured.RemoveBuff(Stun);
+        await Move(provider, cured, Here + 1, Here);
+
+        clock.Advance(runMs);
+        StunFor(cured, clock, 10);
+        await Move(provider, cured, Here + 1 + ranBeforeTheStun, Here);
+
+        cured.X.Should().Be(Here + 1 + ranBeforeTheStun, "the second stun is a new hold, not the first one carried on");
+        Warps(sent).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task CuringOneHoldKeepsWhenTheOtherBegan()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (held, _) = Player(provider, 1009);
+        const float creep = 5f;
+        StunFor(held, clock, 10);
+        clock.Advance(1000);
+        held.SetBuff(Freeze, new ActiveBuff
+        {
+            MagicId = Freeze, BuffType = BuffType.Freeze, Duration = 10, BonusSpeed = FrozenSpeed,
+            ExpireTicks = clock.Now.AddSeconds(10).UtcTicks,
+        });
+        clock.Advance(1500);
+        await Move(provider, held, Here, Here);
+        clock.Advance(500);
+        held.ReplaceBuff(Stun, Stun, StunBuff(clock, 10));
+        clock.Advance(1000);
+        held.RemoveBuff(Freeze);
+
+        await Move(provider, held, Here + creep, Here);
+
+        held.X.Should().Be(Here, "the stun still holds the player from when it first landed");
+    }
+
+    [Fact]
     public async Task HonestStepsThatArriveTogetherAfterALagAreAccepted()
     {
         var clock = new Clock();
@@ -357,14 +450,15 @@ public class MovementAuthorityTests : GameTestBase
         var (runner, _) = Player(provider, 1005);
         runner.SpeedAmount = speedAmount;
         const float swiftStep = RunStep * 1.5f;
+        const int longRun = 30;
 
-        for (var step = 1; step <= Steps; step++)
+        for (var step = 1; step <= longRun; step++)
         {
             clock.Advance(ReportMs);
             await Move(provider, runner, Here + step * swiftStep, Here, Swift);
         }
 
-        (runner.X >= Here + Steps * swiftStep - 0.1f).Should().Be(keptUp);
+        (runner.X >= Here + longRun * swiftStep - 0.1f).Should().Be(keptUp);
     }
 
     [Fact]
@@ -661,11 +755,13 @@ public class MovementAuthorityTests : GameTestBase
     }
 
     private static void StunFor(UserSession player, Clock clock, short seconds) =>
-        player.SetBuff(Stun, new ActiveBuff
-        {
-            MagicId = Stun, BuffType = BuffType.Stun, Duration = seconds,
-            ExpireTicks = clock.Now.AddSeconds(seconds).UtcTicks,
-        });
+        player.SetBuff(Stun, StunBuff(clock, seconds));
+
+    private static ActiveBuff StunBuff(Clock clock, short seconds) => new()
+    {
+        MagicId = Stun, BuffType = BuffType.Stun, Duration = seconds,
+        ExpireTicks = clock.Now.AddSeconds(seconds).UtcTicks,
+    };
 
     private static int Warps(List<Packet> sent) => sent.Count(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_WARP);
 

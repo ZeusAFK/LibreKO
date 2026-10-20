@@ -569,8 +569,24 @@ public class UserSession
         if (!activeBuffs.TryRemove(skillId, out removed))
             return false;
 
+        if (removed.BuffType is BuffType.Freeze or BuffType.Stun)
+            ForgetEndedHold();
         BuffsChanged?.Invoke(this);
         return true;
+    }
+
+    public void ReplaceBuff(int replacedSkillId, int skillId, ActiveBuff buff)
+    {
+        activeBuffs.TryRemove(replacedSkillId, out _);
+        SetBuff(skillId, buff);
+    }
+
+    private void ForgetEndedHold()
+    {
+        if (activeBuffs.Values.Any(buff => buff.BuffType is BuffType.Freeze or BuffType.Stun))
+            return;
+        HoldSinceTicks = 0;
+        HoldUntilTicks = 0;
     }
 
     public int RemoveBuffsWhere(Func<int, ActiveBuff, bool> match)
@@ -583,7 +599,10 @@ public class UserSession
         }
 
         if (removed > 0)
+        {
+            ForgetEndedHold();
             BuffsChanged?.Invoke(this);
+        }
         return removed;
     }
 

@@ -364,14 +364,12 @@ public class MagicStatusEffectService(
         {
             if (!isDebuff)
                 return (BuffOutcome.Refused, target);
-
-            target.RemoveBuff(existingKey);
         }
 
         logger.LogDebug("Buff {SkillId} applied to {Name} type={BuffType} duration={Duration}s",
             skillId, target.Name, buffType, type4Data.Duration);
 
-        target.SetBuff(skillId, new ActiveBuff
+        target.ReplaceBuff(existingKey, skillId, new ActiveBuff
         {
             MagicId = skillId,
             CasterId = caster.CharacterId,

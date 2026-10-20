@@ -12,18 +12,18 @@ public static class MovePace
     public const float LateReportSeconds = 0.5f;
     private const int TolerancePercent = 125;
     private const int PercentScale = 100;
-    private const float CreditSeconds = 3f;
+    private const float CreditSeconds = 6f;
     private const float SlackMetres = 1f;
     private const float HoldNoticeSeconds = 0.5f;
 
     public static bool IsHeld(UserSession session, long nowTicks) => HeldSince(session, nowTicks) != null;
 
     public static float TopSpeed(UserSession session, long nowTicks) =>
-        IsHeld(session, nowTicks) ? 0f : RunSpeed(session.SpeedAmount);
+        IsHeld(session, nowTicks) ? 0f : RunSpeed(PaceSpeed(session, nowTicks));
 
     public static bool TryStep(UserSession session, float x, float z, long nowTicks)
     {
-        var fullRun = RunSpeed(Math.Max(session.SpeedAmount, (byte)PercentScale));
+        var fullRun = RunSpeed(Math.Max(PaceSpeed(session, nowTicks), (byte)PercentScale));
         float budget;
         if (HeldSince(session, nowTicks) is { } heldSince)
         {
@@ -35,7 +35,7 @@ public static class MovePace
         }
         else
         {
-            var run = RunSpeed(session.SpeedAmount);
+            var run = RunSpeed(PaceSpeed(session, nowTicks));
             budget = Math.Min(session.MoveBudget + run * Seconds(nowTicks - session.MoveBudgetTicks), run * CreditSeconds);
         }
         session.MoveBudgetTicks = nowTicks;
@@ -85,6 +85,11 @@ public static class MovePace
             held = Math.Min(held, session.HoldSinceTicks);
         return Math.Min(held, nowTicks);
     }
+
+    private static byte PaceSpeed(UserSession session, long nowTicks) =>
+        session.ActiveBuffs.Values.Any(buff => buff.BuffType == BuffType.Freeze && buff.ExpireTicks <= nowTicks)
+            ? UserSessionMagicState.LiveSpeedAmount(session, nowTicks)
+            : session.SpeedAmount;
 
     private static float Seconds(long ticks) => Math.Clamp((float)ticks / TimeSpan.TicksPerSecond, 0f, CreditSeconds);
 
