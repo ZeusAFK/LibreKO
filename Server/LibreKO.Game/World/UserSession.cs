@@ -208,7 +208,20 @@ public class UserSession
     public int TransformSkillId { get; set; }
 
     // Clan/Knights
-    public short KnightsId { get; set; }
+    private short knightsId;
+
+    // A player who changes clan leaves their clan's war behind.
+    public short KnightsId
+    {
+        get => knightsId;
+        set
+        {
+            if (knightsId != value)
+                ClanBattleEnemy = 0;
+            knightsId = value;
+        }
+    }
+
     public int ClanOnlineCount { get; set; }
     public SiegeSide SiegeSide { get; set; }
     public int TowerHostId { get; set; }

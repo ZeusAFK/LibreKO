@@ -66,6 +66,23 @@ public class ClanBattleTests
     }
 
     [Fact]
+    public async Task AMemberWhoLeavesTheClanMidWarLeavesTheWarBehind()
+    {
+        var (sessions, battles) = Arrange();
+        var alpha = Join(sessions, 1, "Alpha", Wolves);
+        var beta = Join(sessions, 2, "Beta", Doves);
+        var wolf = Join(sessions, 3, "Cub", Wolves);
+        await battles.ChallengeAsync(alpha.Session, beta.Session.CharacterId);
+        await battles.AnswerAsync(beta.Session, accept: true, alpha.Session.CharacterId);
+
+        wolf.Session.KnightsId = 0;
+
+        PvpRules.CanAttackPlayer(wolf.Session, beta.Session).Should().BeFalse("the war was the clan's, not the player's");
+        await battles.SurrenderAsync(alpha.Session);
+        wolf.Session.ClanBattleEnemy.Should().Be(0);
+    }
+
+    [Fact]
     public async Task OnlyLeadersOfTheSameNationMayChallenge()
     {
         var (sessions, battles) = Arrange();
