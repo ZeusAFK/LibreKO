@@ -43,7 +43,7 @@ public sealed class TargetStatePacketCoordinator(SessionManager sessionManager, 
         var now = DateTime.UtcNow.Ticks;
         if (sessionManager.GetByCharacterId(targetId) is { } player)
         {
-            if (player.ZoneId != viewer.ZoneId)
+            if (!Sight.Sees(viewer, player))
                 return null;
 
             var effects = player.ActiveBuffs.Values
