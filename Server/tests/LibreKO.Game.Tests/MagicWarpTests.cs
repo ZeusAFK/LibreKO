@@ -16,6 +16,7 @@ public class MagicWarpTests : GameTestBase
 {
     private const int EscapeId = 209035;
     private const int SummonFriendId = 209004;
+    private const int FragmentOfManes = 492063;
     private const int RetrieveClanMemberId = 490042;
     private const int RetrieveClanMemberScroll = 389042000;
     private const short Wolves = 71;
@@ -143,6 +144,74 @@ public class MagicWarpTests : GameTestBase
         var busy = trading || selling || mining;
         friend.X.Should().BeApproximately(busy ? 800 : 512, 0.5f, "a trade, a stall or gathering counts on the player staying put");
         caster.X.Should().BeApproximately(512, 0.5f);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task EscapeLeavesAPartyMemberWhoMayNotBeRecalled(bool noRecall, bool carriesManes)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 800, z: 800);
+        var party = sessionManager.Parties.CreateParty((short)caster.CharacterId);
+        party.MemberIds[1] = (short)friend.CharacterId;
+        caster.PartyIndex = party.Index;
+        caster.IsPartyLeader = true;
+        friend.PartyIndex = party.Index;
+        friend.CanTeleport = !noRecall;
+        if (carriesManes)
+            friend.SetBuff(FragmentOfManes, new ActiveBuff
+            {
+                MagicId = FragmentOfManes, CasterId = friend.CharacterId, BuffType = BuffType.FragmentOfManes,
+                ExpireTicks = DateTime.UtcNow.AddMinutes(1).Ticks,
+            });
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        friend.X.Should().BeApproximately(800, 0.5f);
+        caster.X.Should().BeApproximately(512, 0.5f);
+    }
+
+    [Fact]
+    public async Task EscapeIsRefusedUnderNoRecall()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (_, caster, client) = CreateCaster(provider);
+        var startX = caster.X;
+        caster.CanTeleport = false;
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        caster.X.Should().BeApproximately(startX, 0.5f);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task SummonFriendLeavesAMemberUnderNoRecallOrMidWarp(bool noRecall, bool warping)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, SummonFriendId, SkillMoral.Party, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        caster.X = 250;
+        caster.Z = 260;
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.PartyIndex = friend.PartyIndex = 1;
+        friend.CanTeleport = !noRecall;
+        friend.IsWarping = warping;
+
+        await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
+
+        friend.X.Should().BeApproximately(700, 0.5f);
     }
 
     [Fact]

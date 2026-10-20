@@ -251,10 +251,11 @@ public class WorldMovementService(
     public async Task HandleHomeAsync(IClient client)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || session.Hp <= 0 || session.Hp < session.MaxHp / 2 || session.ZoneId == ChaosRules.Zone)
+        if (session == null || session.Hp <= 0 || session.Hp < session.MaxHp / 2 || session.ZoneId == ChaosRules.Zone
+            || !session.CanTeleport || session.IsHeld)
             return;
 
-        if (session.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
+        if (session.CarriesManes)
         {
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice(
                 (byte)session.Nation,

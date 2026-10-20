@@ -15,6 +15,7 @@ public class GenieTownTests : GameTestBase
 {
     private const short TownX = 512;
     private const int GenieSeconds = 30 * 60;
+    private const int StunRow = 110560;
 
     [Fact]
     public async Task HomeStopsARunningGenie()
@@ -69,6 +70,26 @@ public class GenieTownTests : GameTestBase
 
         player.GenieActive.Should().BeTrue();
         playerSent.Should().NotContain(p => p.GetOpcode() == (byte)GameOpcodes.GS_GENIE_SYSTEM);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task HomeIsRefusedUnderNoRecallOrWhileHeld(bool noRecall, bool stunned)
+    {
+        using var provider = CreateProvider(_ => { }, StartInTown);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (player, _) = Join(sessions, characterId: 900, x: 100);
+        player.CanTeleport = !noRecall;
+        if (stunned)
+            player.SetBuff(StunRow, new ActiveBuff
+            {
+                MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+            });
+
+        await provider.GetRequiredService<IWorldMovementService>().HandleHomeAsync(player.Client);
+
+        player.X.Should().BeApproximately(100, 0.5f);
     }
 
     private static void StartInTown(IGameDataService gameData) =>

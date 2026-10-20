@@ -69,6 +69,9 @@ public class MagicMovementEffectService(
 
     private async Task<bool> WarpToBindPointAsync(UserSession caster, MagicData magic)
     {
+        if (!caster.CanTeleport)
+            return false;
+
         if ((SkillMoral)magic.Moral != SkillMoral.PartyAll)
             return await SendHomeAsync(caster);
 
@@ -83,7 +86,8 @@ public class MagicMovementEffectService(
                 continue;
 
             var member = sessionManager.GetByCharacterId(memberId);
-            if (member == null || member.Hp <= 0 || (member != caster && member.IsBusy))
+            if (member == null || member.Hp <= 0 || !member.CanTeleport || member.CarriesManes
+                || (member != caster && member.IsBusy))
                 continue;
 
             warped |= await SendHomeAsync(member);
@@ -120,10 +124,12 @@ public class MagicMovementEffectService(
         if (target == null
             || target.CharacterId == caster.CharacterId
             || target.IsBusy
+            || target.IsWarping
+            || !target.CanTeleport
             || target.ZoneId != caster.ZoneId
             || target.Room != caster.Room
             || !MaySummon(caster, target, (SkillMoral)magic.Moral)
-            || target.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
+            || target.CarriesManes)
             return false;
 
         await worldMovementService.WarpAsync(target, (ushort)caster.GetPosX, (ushort)caster.GetPosZ);

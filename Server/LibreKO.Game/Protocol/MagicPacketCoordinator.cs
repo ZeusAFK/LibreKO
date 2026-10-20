@@ -135,8 +135,7 @@ public class MagicPacketCoordinator(
             return;
         }
 
-        var isFragmentCarrier = session.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired);
-        if (isFragmentCarrier)
+        if (session.CarriesManes)
         {
             if (magic.PrimaryType == MagicSkillType.Warp)
             {
