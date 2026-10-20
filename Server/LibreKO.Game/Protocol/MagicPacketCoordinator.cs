@@ -462,7 +462,7 @@ public class MagicPacketCoordinator(
                 return;
             }
 
-            if (LoosesArrows(magic) && AttackReach.HeldBow(session, gameDataService) == null)
+            if (NeedsABow(magic) && AttackReach.HeldBow(session, gameDataService) == null)
             {
                 await SendMagicFailAsync(session, magic.Id, MagicFailCode.KillFlying);
                 return;
@@ -506,8 +506,8 @@ public class MagicPacketCoordinator(
             excludeSender: false);
     }
 
-    private bool LoosesArrows(MagicData magic) =>
-        magic.UseItem != 0 && gameDataService.GetItem(magic.UseItem)?.Category == ItemKind.Arrow;
+    private bool NeedsABow(MagicData magic) =>
+        MagicSkillRequirement.IsClassSkill(magic.Id) && gameDataService.GetItem(magic.UseItem)?.Category != ItemKind.Etc;
 
     private async Task<bool> TryPaySkillCostAsync(UserSession session, MagicData magic, int skillId)
     {

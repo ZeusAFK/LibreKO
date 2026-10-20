@@ -11,10 +11,17 @@ public static class AttackReach
     public const float RangeUnitsPerMetre = 10f;
     // A moving client reports where it is only every 1.5 s.
     private const float MoveReportSeconds = 1.5f;
+    private const float LateReportSeconds = 0.5f;
     private const float SpeedUnitsPerMetre = 10f;
 
-    public static float MovementLag(UserSession session) =>
-        Math.Abs((int)session.MoveOldSpeed) / SpeedUnitsPerMetre * MoveReportSeconds;
+    public static float MovementLag(UserSession session, long now)
+    {
+        var sinceReport = (float)(now - session.LastMoveTicks) / TimeSpan.TicksPerSecond;
+        if (session.MoveOldEcho == WorldMovementService.MoveEchoFinish || sinceReport > MoveReportSeconds + LateReportSeconds)
+            return 0f;
+
+        return Math.Abs((int)session.MoveOldSpeed) / SpeedUnitsPerMetre * Math.Clamp(sinceReport, 0f, MoveReportSeconds);
+    }
 
     public static ItemData? HeldBow(UserSession session, IGameDataService gameData) =>
         new[] { InventoryConstants.LeftHand, InventoryConstants.RightHand }

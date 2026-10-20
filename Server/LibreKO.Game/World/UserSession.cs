@@ -106,6 +106,7 @@ public class UserSession
     public ushort MoveOldWillZ { get; set; }
     public ushort MoveOldWillY { get; set; }
     public short MoveOldSpeed { get; set; }
+    public long LastMoveTicks { get; set; }
     public byte MoveOldEcho { get; set; }
 
     // Set when this player moved; the movement-broadcast service coalesces the GS_MOVE

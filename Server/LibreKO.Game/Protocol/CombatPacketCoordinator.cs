@@ -91,13 +91,14 @@ public class CombatPacketCoordinator(
             return;
         }
 
+        var now = time.GetUtcNow().UtcTicks;
         var target = sessionManager.GetByCharacterId(targetId);
         var npcInReach = target == null ? sessionManager.Regions.GetNpc(targetId) : null;
         var inReach = target != null
             ? target.Room == session.Room && WithinAttackReach(
-                session, target.X, target.Z, AttackReach.PlayerBodyRadius + AttackReach.MovementLag(target), weaponProto, isBowAttack)
+                session, target.X, target.Z, AttackReach.PlayerBodyRadius + AttackReach.MovementLag(target, now), weaponProto, isBowAttack, now)
             : npcInReach != null && npcInReach.Room == session.Room
-                && WithinAttackReach(session, npcInReach.X, npcInReach.Z, npcInReach.BulkRadius, weaponProto, isBowAttack);
+                && WithinAttackReach(session, npcInReach.X, npcInReach.Z, npcInReach.BulkRadius, weaponProto, isBowAttack, now);
         if (!inReach)
         {
             logger.LogDebug("Attack rejected for {Name}: target {Target} out of reach", session.Name, targetId);
@@ -188,10 +189,10 @@ public class CombatPacketCoordinator(
     }
 
     private static bool WithinAttackReach(
-        UserSession session, float targetX, float targetZ, float targetRadius, ItemData? weapon, bool isBowAttack)
+        UserSession session, float targetX, float targetZ, float targetRadius, ItemData? weapon, bool isBowAttack, long now)
     {
         var weaponReach = isBowAttack && weapon != null ? weapon.Range / AttackReach.RangeUnitsPerMetre : AttackReach.Melee;
-        var reach = weaponReach + AttackReach.PlayerBodyRadius + targetRadius + MovementSlack + AttackReach.MovementLag(session);
+        var reach = weaponReach + AttackReach.PlayerBodyRadius + targetRadius + MovementSlack + AttackReach.MovementLag(session, now);
         return AttackReach.Within(session, targetX, targetZ, reach);
     }
 

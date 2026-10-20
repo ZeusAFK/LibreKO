@@ -20,6 +20,9 @@ public class MagicArcheryTests : GameTestBase
     private const int KnifeThrow = 107656;
     private const int Knife = 370007000;
     private const byte KnifeKind = 95;
+    private const int StrangeShot = 107777;
+    private const int StrangeAmmo = 399999000;
+    private const byte StrangeAmmoKind = 97;
     private const ushort Quiver = 50;
     private const int WormHp = 100_000;
     private const short Archer = 107;
@@ -109,6 +112,18 @@ public class MagicArcheryTests : GameTestBase
     }
 
     [Fact]
+    public async Task AClassShotNeedsABowUnlessItThrowsSomething()
+    {
+        using var provider = Provider();
+        var (archer, client) = ArcherWith(provider, bow: false, ammo: StrangeAmmo);
+        var worm = Worm(provider);
+
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, StrangeShot, worm.UniqueId);
+
+        Arrows(archer).Should().Be(Quiver);
+    }
+
+    [Fact]
     public async Task ArrowsAreNotLoosedFasterThanABowIsDrawn()
     {
         var clock = new Clock();
@@ -141,7 +156,7 @@ public class MagicArcheryTests : GameTestBase
 
     private static ServiceProvider Provider(Clock? clock = null) => CreateProvider(_ => { }, gameData =>
     {
-        foreach (var (id, ammo) in new[] { (Shot, Arrow), (Volley, Arrow), (KnifeThrow, Knife) })
+        foreach (var (id, ammo) in new[] { (Shot, Arrow), (Volley, Arrow), (KnifeThrow, Knife), (StrangeShot, StrangeAmmo) })
             gameData.GetMagic(id).Returns(new MagicData
             {
                 Id = id, Type1 = (byte)MagicSkillType.Ranged, Moral = 7, Range = 40, UseItem = ammo, Msp = 5,
@@ -151,10 +166,12 @@ public class MagicArcheryTests : GameTestBase
             [Shot] = new() { Id = Shot, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
             [Volley] = new() { Id = Volley, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = VolleyArrows },
             [KnifeThrow] = new() { Id = KnifeThrow, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
+            [StrangeShot] = new() { Id = StrangeShot, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
         });
         gameData.GetItem(Bow).Returns(new ItemData { Num = Bow, Kind = 70, Slot = 4, Delay = 150, Range = 350, Duration = 83 });
         gameData.GetItem(Arrow).Returns(new ItemData { Num = Arrow, Kind = 120, Countable = 1, Duration = 1, ReqLevelMax = 83 });
         gameData.GetItem(Knife).Returns(new ItemData { Num = Knife, Kind = KnifeKind, Countable = 1, Duration = 1, ReqLevelMax = 83 });
+        gameData.GetItem(StrangeAmmo).Returns(new ItemData { Num = StrangeAmmo, Kind = StrangeAmmoKind, Countable = 1, Duration = 1, ReqLevelMax = 83 });
     }, configureServices: services =>
     {
         if (clock != null)

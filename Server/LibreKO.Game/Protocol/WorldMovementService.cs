@@ -50,15 +50,18 @@ public class WorldMovementService(
     ISoccerService soccerService,
     IKrowazTrapService krowazTrapService,
     IGenieActivationService genieActivation,
-    ILogger<WorldMovementService> logger) : IWorldMovementService
+    ILogger<WorldMovementService> logger,
+    TimeProvider? timeProvider = null) : IWorldMovementService
 {
-    private const byte MoveEchoFinish = 0;
+    public const byte MoveEchoFinish = 0;
     private const byte MoveEchoStart = 1;
     private const byte MoveEchoMove = 3;
 
     private const float PositionScale = 10f;
 
     private const short DamageZoneHp = 10;
+
+    private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
 
     public async Task HandleMoveAsync(IClient client, Packet packet)
     {
@@ -107,6 +110,7 @@ public class WorldMovementService(
         session.Z = newZ;
         session.MoveOldEcho = echo;
         session.MoveOldSpeed = speed;
+        session.LastMoveTicks = time.GetUtcNow().UtcTicks;
         session.MoveOldWillX = willX;
         session.MoveOldWillY = willY;
         session.MoveOldWillZ = willZ;

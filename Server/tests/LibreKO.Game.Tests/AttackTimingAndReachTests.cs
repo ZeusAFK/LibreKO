@@ -18,6 +18,8 @@ public class AttackTimingAndReachTests : GameTestBase
     private const short HasteAttackSpeed = 150;
     private const byte Zone = 21;
     private const float Here = 500f;
+    private const byte Moving = 3;
+    private const short Sprint = 67;
 
     private sealed class Clock : TimeProvider
     {
@@ -78,18 +80,42 @@ public class AttackTimingAndReachTests : GameTestBase
     }
 
     [Theory]
-    [InlineData(0, false)]
-    [InlineData(67, true)]
-    public async Task ARunningAttackerReachesWhatItsLastReportLagsBehind(short speed, bool reached)
+    [InlineData(0, Moving, 1000, false)]
+    [InlineData(Sprint, Moving, 1000, true)]
+    [InlineData(Sprint, WorldMovementService.MoveEchoFinish, 1000, false)]
+    [InlineData(Sprint, Moving, 5000, false)]
+    public async Task ARunningAttackerReachesWhatItsLastReportLagsBehind(short speed, byte echo, int sinceReportMs, bool reached)
     {
-        using var provider = Provider(new Clock());
+        var clock = new Clock();
+        using var provider = Provider(clock);
         var (attacker, sent) = Attacker(provider);
         attacker.MoveOldSpeed = speed;
+        attacker.MoveOldEcho = echo;
+        attacker.LastMoveTicks = clock.Now.AddMilliseconds(-sinceReportMs).UtcTicks;
         var worm = Monster(provider, Here + 14);
 
         await Swing(provider, attacker, worm);
 
-        (Swings(sent) == 1).Should().Be(reached, "a sprinter's position is up to 1.5 s old");
+        (Swings(sent) == 1).Should().Be(reached, "a sprinter may be a second's run past its last report, but not after it stopped or went quiet");
+    }
+
+    [Fact]
+    public async Task AMoveReportStartsTheRunningAllowanceAndAStopEndsIt()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        var worm = Monster(provider, Here + 14);
+
+        await Move(provider, attacker, Sprint, Moving);
+        clock.Advance(1000);
+        await Swing(provider, attacker, worm);
+        Swings(sent).Should().Be(1);
+
+        await Move(provider, attacker, 0, WorldMovementService.MoveEchoFinish);
+        clock.Advance(2000);
+        await Swing(provider, attacker, worm);
+        Swings(sent).Should().Be(1, "a stopped player is where it said");
     }
 
     [Fact]
@@ -193,6 +219,19 @@ public class AttackTimingAndReachTests : GameTestBase
         packet.WriteByte(0);
         packet.ResetOffset();
         await provider.GetRequiredService<ICombatPacketCoordinator>().HandleAttackAsync(attacker.Client, packet);
+    }
+
+    private static Task Move(ServiceProvider provider, UserSession mover, short speed, byte echo)
+    {
+        var packet = new Packet(GameOpcodes.GS_MOVE);
+        var x = (ushort)(mover.X * 10);
+        var z = (ushort)(mover.Z * 10);
+        packet.WriteUShort(x);
+        packet.WriteUShort(z);
+        packet.WriteUShort(0);
+        packet.WriteShort(speed);
+        packet.WriteByte(echo);
+        return provider.GetRequiredService<IWorldMovementService>().HandleMoveAsync(mover.Client, packet);
     }
 
     private static int Swings(List<Packet> sent) => sent.Count(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_ATTACK);
