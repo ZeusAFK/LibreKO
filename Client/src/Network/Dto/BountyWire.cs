@@ -14,6 +14,8 @@ public enum BountyResult : byte
     Succeeded = 1,
 }
 
+public readonly record struct BountyOutcome(int BountyId, bool Succeeded);
+
 public struct BountyEntry
 {
     public int Id;

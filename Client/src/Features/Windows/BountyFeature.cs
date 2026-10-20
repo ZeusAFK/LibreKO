@@ -4,7 +4,7 @@ namespace LibreKO.Features.Windows;
 
 internal sealed class BountyFeature : IFeature, IClosableWindow
 {
-    internal const string PostRefused = "The bounty was not posted. Check the name, the reward and your gold; a player keeps at most five open.";
+    internal const string PostRefused = "The bounty was not posted. Check the name, the reward, your gold and how many bounties you already have open.";
     internal const string ClaimRefused = "The bounty could not be claimed.";
     internal const string WithdrawRefused = "The bounty could not be withdrawn: someone may have earned it, or your purse is full.";
 
@@ -154,8 +154,8 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         if (ok) requests.List();
     }
 
-    private void OnWithdraw(int bountyId, bool ok)
+    private void OnWithdraw(BountyOutcome outcome)
     {
-        status.Text = ok ? "" : WithdrawRefused;
+        status.Text = outcome.Succeeded ? "" : WithdrawRefused;
     }
 }

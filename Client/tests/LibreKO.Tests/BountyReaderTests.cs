@@ -41,12 +41,12 @@ public class BountyReaderTests
     public void AWithdrawResultReachesTheBoard(BountyResult result, bool ok)
     {
         var (dispatcher, session) = Readers();
-        (int Id, bool Ok)? announced = null;
-        session.Bounty.BountyWithdrawEvent += (id, succeeded) => announced = (id, succeeded);
+        BountyOutcome? announced = null;
+        session.Bounty.BountyWithdrawEvent += outcome => announced = outcome;
 
         dispatcher.Dispatch(Result(BountySubOpcode.Withdraw, result));
 
-        Assert.Equal((BountyId, ok), announced);
+        Assert.Equal(new BountyOutcome(BountyId, ok), announced);
     }
 
     [Fact]

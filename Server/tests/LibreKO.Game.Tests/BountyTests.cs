@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Linq.Expressions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -314,7 +315,6 @@ public class BountyTests : GameTestBase
         var bountyId = (await BountyIdOnAsync(provider, poster, target.Session.Name))!.Value;
         target.Session.Hp = 0;
         await provider.GetRequiredService<ICombatLifecycleService>().HandlePlayerDeathAsync(target.Session, hunter.Session);
-        // The board saves every recorded kill before its next use.
         await provider.GetRequiredService<IBountyPacketCoordinator>().HandleAsync(poster.Client, BountyPacket(ListSub));
 
         var restarted = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider);
@@ -326,7 +326,7 @@ public class BountyTests : GameTestBase
     }
 
     [Fact]
-    public async Task AnEarnedBountyDoesNotExpire()
+    public async Task AnEarnedBountyThatRunsOutIsMailedToItsHunter()
     {
         var clock = new Clock();
         using var provider = CreateProvider(_ => { });
@@ -334,20 +334,14 @@ public class BountyTests : GameTestBase
         var poster = CreatePlayer(provider, 1235, AccountNation.Karus);
         var target = CreatePlayer(provider, 1236, AccountNation.ElMorad);
         var hunter = CreatePlayer(provider, 1237, AccountNation.Karus);
-        var post = new Packet(GameOpcodes.GS_BOUNTY);
-        post.WriteByte(PostSub);
-        post.WriteSByteString(target.Session.Name);
-        post.WriteInt(Reward);
-        await board.HandleAsync(poster.Client, post);
+        await board.HandleAsync(poster.Client, PostPacket(target.Session.Name, Reward));
         board.RecordKill(target.Session, hunter.Session);
 
         clock.Now = clock.Now.AddDays(ExpiryDays);
         await board.HandleAsync(poster.Client, BountyPacket(ListSub));
-        var list = poster.Sent.Last(sent => sent.GetOpcode() == (byte)GameOpcodes.GS_BOUNTY);
-        list.ResetOffset();
-        list.ReadByte();
 
-        list.ReadUShort().Should().Be(1, "the hunter's reward is not handed back to the poster");
+        (await GoldMailedToAsync(provider, hunter)).Should().Be(Reward, "the hunter earned it, claimed or not");
+        (await GoldMailedToAsync(provider, poster)).Should().Be(0, "the hunter's reward is not handed back to the poster");
     }
 
     [Fact]
@@ -433,7 +427,7 @@ public class BountyTests : GameTestBase
     }
 
     [Fact]
-    public async Task AKillWhoseSaveFailedStillEarnsTheBountyAndKeepsItFromExpiring()
+    public async Task AKillWhoseSaveFailedStillEarnsTheBounty()
     {
         var clock = new Clock();
         var faults = new SaveFaults { Applies = context => context.ChangeTracker.Entries<BountyHunter>().Any() };
@@ -450,11 +444,13 @@ public class BountyTests : GameTestBase
         await faults.Thrown;
         clock.Now = clock.Now.AddDays(ExpiryDays);
         await board.HandleAsync(poster.Client, BountyPacket(ListSub));
+        (await GoldMailedToAsync(provider, poster)).Should().Be(0, "a bounty does not run out while a kill on its target waits for its save");
         faults.Failing = false;
 
         await board.HandleAsync(hunter.Client, BountyPacket(ClaimSub, bountyId));
 
-        hunter.Session.Money.Should().Be(StartingGold + Reward, "the kill waited for the database and the bounty waited for the kill");
+        (await GoldMailedToAsync(provider, hunter)).Should().Be(Reward, "the kill waited for the database, and the bounty that ran out meanwhile went to its hunter");
+        (await GoldMailedToAsync(provider, poster)).Should().Be(0);
     }
 
     [Fact]
@@ -498,6 +494,217 @@ public class BountyTests : GameTestBase
         await ClaimAsync(provider, hunter, bountyId);
 
         hunter.Session.Money.Should().Be(StartingGold + Reward, "a kill whose save was written but not confirmed is retried without a duplicate");
+    }
+
+    [Fact]
+    public async Task OnlyTheFirstKillEarnsABounty()
+    {
+        using var provider = CreateProvider(_ => { });
+        var poster = CreatePlayer(provider, 1260, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1261, AccountNation.ElMorad);
+        var first = CreatePlayer(provider, 1262, AccountNation.Karus);
+        var second = CreatePlayer(provider, 1263, AccountNation.Karus);
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        var bountyId = await StoredBountyIdAsync(provider);
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+
+        board.RecordKill(target.Session, first.Session);
+        board.RecordKill(target.Session, second.Session);
+        await ClaimAsync(provider, second, bountyId);
+        await ClaimAsync(provider, first, bountyId);
+
+        second.Session.Money.Should().Be(StartingGold, "the bounty was already earned when the second kill came");
+        first.Session.Money.Should().Be(StartingGold + Reward);
+    }
+
+    [Fact]
+    public async Task AnEarnedBountyNoLongerCountsTowardThePostersLimit()
+    {
+        using var provider = CreateProvider(_ => { });
+        var poster = CreatePlayer(provider, 1264, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1265, AccountNation.ElMorad);
+        var other = CreatePlayer(provider, 1266, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1267, AccountNation.Karus);
+        for (var post = 0; post < OpenBountyLimit; post++)
+            await PostAsync(provider, poster, target.Session.Name, SmallReward);
+        provider.GetRequiredService<IBountyPacketCoordinator>().RecordKill(target.Session, hunter.Session);
+
+        await PostAsync(provider, poster, other.Session.Name, SmallReward);
+
+        LastResult(poster, PostSub).Should().Be(BountyPacketWriter.Succeeded, "a hunter who never claims must not lock the poster out");
+    }
+
+    [Fact]
+    public async Task AStuckKillHoldsUpOnlyItsOwnTarget()
+    {
+        var clock = new Clock();
+        var stuckBountyId = 0;
+        var faults = new SaveFaults
+        {
+            Applies = context => context.ChangeTracker.Entries<BountyHunter>().Any(entry => entry.Entity.BountyId == stuckBountyId),
+        };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var board = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider, (TimeProvider)clock);
+        var poster = CreatePlayer(provider, 1268, AccountNation.Karus);
+        var stuck = CreatePlayer(provider, 1269, AccountNation.ElMorad);
+        var unhunted = CreatePlayer(provider, 1270, AccountNation.ElMorad);
+        var later = CreatePlayer(provider, 1271, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1272, AccountNation.Karus);
+        await board.HandleAsync(poster.Client, PostPacket(stuck.Session.Name, Reward));
+        await board.HandleAsync(poster.Client, PostPacket(unhunted.Session.Name, SmallReward));
+        stuckBountyId = (await BountyIdOnAsync(board, poster, stuck.Session.Name))!.Value;
+        faults.Failing = true;
+        board.RecordKill(stuck.Session, hunter.Session);
+        await faults.Thrown;
+
+        clock.Now = clock.Now.AddDays(ExpiryDays);
+        await board.HandleAsync(poster.Client, PostPacket(later.Session.Name, SmallReward));
+        var laterId = (await BountyIdOnAsync(board, poster, later.Session.Name))!.Value;
+        board.RecordKill(later.Session, hunter.Session);
+        await board.HandleAsync(hunter.Client, BountyPacket(ClaimSub, laterId));
+
+        hunter.Session.Money.Should().Be(StartingGold + SmallReward, "a later kill on another target is not queued behind the stuck one");
+        (await GoldMailedToAsync(provider, poster)).Should().Be(SmallReward, "the unhunted bounty still runs out and goes back to its poster");
+        (await BountyIdOnAsync(board, poster, stuck.Session.Name)).Should().Be(stuckBountyId, "only the stuck kill's own bounty waits");
+    }
+
+    [Fact]
+    public async Task ABountyOnASealedCharacterIsRefused()
+    {
+        using var provider = CreateProvider(_ => { });
+        var poster = CreatePlayer(provider, 1273, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1274, AccountNation.ElMorad);
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            (await db.Characters.SingleAsync(c => c.Id == target.Session.CharacterId)).Sealed = true;
+            await db.SaveChangesAsync();
+        }
+
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+
+        poster.Session.Money.Should().Be(StartingGold, "a sealed character cannot be hunted");
+        LastResult(poster, PostSub).Should().Be(BountyPacketWriter.Failed);
+    }
+
+    [Fact]
+    public async Task AnUnexpectedDatabaseErrorOnAKillDoesNotEndTheSession()
+    {
+        var faults = new SaveFaults
+        {
+            Applies = context => context.ChangeTracker.Entries<BountyHunter>().Any(),
+            Error = () => new InvalidOperationException("the connection dropped"),
+        };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var poster = CreatePlayer(provider, 1275, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1276, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1277, AccountNation.Karus);
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        faults.Failing = true;
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+        board.RecordKill(target.Session, hunter.Session);
+        await faults.Thrown;
+
+        var list = () => board.HandleAsync(poster.Client, BountyPacket(ListSub));
+
+        await list.Should().NotThrowAsync("the server drops a client whose handler throws");
+    }
+
+    [Fact]
+    public async Task ABoardWhoseLoadFailsHalfwayLoadsEachBountyOnceLater()
+    {
+        var faults = new QueryFaults { Matches = query => query.Type.GenericTypeArguments.FirstOrDefault() == typeof(BountyHunter) };
+        using var provider = CreateProvider(
+            db => db.Bounties.Add(new Bounty
+            {
+                PosterCharacterId = 1278, PosterName = "Bounty1278", TargetCharacterId = 1279, TargetName = "Bounty1279",
+                Reward = Reward, PostedAt = DateTime.UtcNow,
+            }),
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var poster = CreatePlayer(provider, 1278, AccountNation.Karus);
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+        faults.Failing = true;
+        var failedList = () => board.HandleAsync(poster.Client, BountyPacket(ListSub));
+        await failedList.Should().NotThrowAsync("a board that cannot load answers nothing rather than dropping the player");
+        faults.Failing = false;
+
+        await board.HandleAsync(poster.Client, BountyPacket(ListSub));
+
+        var list = poster.Sent.Last(sent => sent.GetOpcode() == (byte)GameOpcodes.GS_BOUNTY);
+        list.ResetOffset();
+        list.ReadByte();
+        list.ReadUShort().Should().Be(1, "the half-done first load must not leave a copy behind");
+    }
+
+    [Fact]
+    public async Task ATargetLookupThatFailsRefusesThePostAndKeepsTheSession()
+    {
+        var faults = new QueryFaults
+        {
+            Matches = query => query.ToString() is var text && text.Contains(nameof(Character.Sealed)) && text.Contains(nameof(Character.DeletionTime)),
+        };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var poster = CreatePlayer(provider, 1280, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1281, AccountNation.ElMorad);
+        faults.Failing = true;
+
+        var post = () => PostAsync(provider, poster, target.Session.Name, Reward);
+
+        await post.Should().NotThrowAsync("the server drops a client whose handler throws");
+        poster.Session.Money.Should().Be(StartingGold);
+        LastResult(poster, PostSub).Should().Be(BountyPacketWriter.Failed);
+    }
+
+    [Fact]
+    public async Task AnExpiryWhoseMailCannotBeSavedKeepsTheBountyAndTheSession()
+    {
+        var clock = new Clock();
+        var faults = new SaveFaults
+        {
+            Applies = context => context.ChangeTracker.Entries<Mail>().Any(),
+            Error = () => new InvalidOperationException("the connection dropped"),
+        };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var board = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider, (TimeProvider)clock);
+        var poster = CreatePlayer(provider, 1282, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1283, AccountNation.ElMorad);
+        await board.HandleAsync(poster.Client, PostPacket(target.Session.Name, Reward));
+        clock.Now = clock.Now.AddDays(ExpiryDays);
+        faults.Failing = true;
+
+        var list = () => board.HandleAsync(poster.Client, BountyPacket(ListSub));
+
+        await list.Should().NotThrowAsync("the server drops a client whose handler throws");
+        IdOn(poster, target.Session.Name).Should().NotBeNull("the bounty waits for a save that can return its gold");
+    }
+
+    private sealed class QueryFaults : IQueryExpressionInterceptor
+    {
+        public bool Failing { get; set; }
+        public Func<Expression, bool> Matches { get; init; } = _ => true;
+
+        public Expression QueryCompilationStarting(Expression queryExpression, QueryExpressionEventData eventData) =>
+            Failing && Matches(queryExpression) ? throw new InvalidOperationException("the connection dropped") : queryExpression;
+    }
+
+    private static async Task<int> GoldMailedToAsync(IServiceProvider provider, Player player)
+    {
+        using var scope = provider.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails
+            .Where(mail => mail.RecipientCharacterId == player.Session.CharacterId)
+            .SelectMany(mail => mail.Attachments)
+            .Where(attachment => attachment.Kind == MailAttachmentKind.Gold)
+            .SumAsync(attachment => attachment.Count);
+    }
+
+    private static async Task<int?> BountyIdOnAsync(BountyPacketCoordinator board, Player viewer, string target)
+    {
+        await board.HandleAsync(viewer.Client, BountyPacket(ListSub));
+        return IdOn(viewer, target);
     }
 
     private static Packet PostPacket(string target, int reward)
@@ -553,6 +760,7 @@ public class BountyTests : GameTestBase
 
         public bool Failing { get; set; }
         public Func<DbContext, bool> Applies { get; init; } = _ => true;
+        public Func<Exception> Error { get; init; } = () => new DbUpdateException("the database went away");
         public Task Thrown => thrown.Task;
 
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
@@ -562,7 +770,7 @@ public class BountyTests : GameTestBase
                 return base.SavingChangesAsync(eventData, result, cancellationToken);
 
             thrown.TrySetResult();
-            throw new DbUpdateException("the database went away");
+            throw Error();
         }
     }
 
@@ -604,7 +812,11 @@ public class BountyTests : GameTestBase
         var packet = new Packet(GameOpcodes.GS_BOUNTY);
         packet.WriteByte(ListSub);
         await provider.GetRequiredService<IBountyPacketCoordinator>().HandleAsync(viewer.Client, packet);
+        return IdOn(viewer, target);
+    }
 
+    private static int? IdOn(Player viewer, string target)
+    {
         var list = viewer.Sent.Last(sent => sent.GetOpcode() == (byte)GameOpcodes.GS_BOUNTY);
         list.ResetOffset();
         list.ReadByte().Should().Be(ListSub);
