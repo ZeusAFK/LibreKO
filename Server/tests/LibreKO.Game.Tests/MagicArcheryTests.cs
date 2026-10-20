@@ -127,6 +127,43 @@ public class MagicArcheryTests : GameTestBase
     }
 
     [Fact]
+    public async Task ARefusedArrowCannotBeTurnedOnAnotherTarget()
+    {
+        using var provider = Provider();
+        var (archer, client) = ArcherWith(provider, bow: true);
+        var near = Worm(provider);
+        var far = Worm(provider, x: 300);
+
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, Shot, near.UniqueId);
+        await Send(provider, client, archer, MagicProcessOpcode.Effecting, Shot, far.UniqueId);
+        await Send(provider, client, archer, MagicProcessOpcode.Effecting, Shot, near.UniqueId);
+
+        far.Hp.Should().Be(WormHp);
+        near.Hp.Should().Be(WormHp, "the one arrow loosed was spent on the refused hit");
+    }
+
+    [Fact]
+    public async Task AnArrowAtAPlayerOutOfReachIsNotLoosed()
+    {
+        using var provider = Provider();
+        var (archer, client) = ArcherWith(provider, bow: true);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var farClient = Substitute.For<IClient>();
+        farClient.Id.Returns(Guid.NewGuid());
+        var far = sessions.CreateSession(farClient, characterId: 761, accountId: 861);
+        far.Nation = AccountNation.ElMorad;
+        far.ZoneId = archer.ZoneId;
+        far.X = archer.X + 200;
+        far.Z = archer.Z;
+        far.Hp = far.MaxHp = 500;
+        sessions.Regions.AddToRegion(far);
+
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, Shot, far.CharacterId);
+
+        Arrows(archer).Should().Be(Quiver);
+    }
+
+    [Fact]
     public async Task ArrowsAreNotLoosedFasterThanABowIsDrawn()
     {
         var clock = new Clock();

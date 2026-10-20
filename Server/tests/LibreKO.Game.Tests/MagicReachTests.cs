@@ -21,6 +21,17 @@ public class MagicReachTests : GameTestBase
     private const int Mace = 1111471741;
     private const short FireBlastMana = 40;
     private const short FireBlastRecast = 50;
+    private const int StoneSpell = 110554;
+    private const int StoneOfMage = 379059000;
+    private const byte StoneSpellCastTenths = 15;
+    private const short StoneSpellRecast = 600;
+
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => Now;
+        public void Advance(int milliseconds) => Now = Now.AddMilliseconds(milliseconds);
+    }
     private const short FireBlastRange = 20;
     private const short HealAmount = 200;
     private const byte Moradon = (byte)ZoneId.Moradon;
@@ -153,6 +164,39 @@ public class MagicReachTests : GameTestBase
         enemy.Hp.Should().BeLessThan(PlayerHp);
     }
 
+    [Fact]
+    public async Task AnArmedHealOnAnEnemyWhoCannotBeAttackedDoesNothing()
+    {
+        using var provider = Provider();
+        var priest = Player(provider, 800, AccountNation.Karus, Ronark, Here);
+        TakeTheClassOf(priest, Heal);
+        priest.Inventory[InventoryConstants.RightHand].ItemId = Mace;
+        priest.Inventory[InventoryConstants.RightHand].Count = 1;
+        priest.RecalculateStats(CreateBasicCoefficient(priest.Class), provider.GetRequiredService<IGameDataService>());
+        var enemy = Player(provider, 801, AccountNation.ElMorad, Ronark, Here + 5, hp: PlayerHp / 2);
+        enemy.BlinkUntilTicks = DateTime.UtcNow.AddMinutes(1).Ticks;
+
+        await Cast(provider, priest, Heal, enemy.CharacterId);
+
+        enemy.Hp.Should().Be(PlayerHp / 2, "a blinking enemy can be neither struck nor healed");
+    }
+
+    [Fact]
+    public async Task ARefusedReagentSpellCanBeCastAgainAtOnce()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var mage = Player(provider, 802, AccountNation.Karus, Moradon, Here);
+        var worm = Worm(provider, Here + 200);
+
+        await Cast(provider, mage, StoneSpell, worm.UniqueId, MagicProcessOpcode.Casting);
+        clock.Advance(StoneSpellCastTenths * 100);
+        await Cast(provider, mage, StoneSpell, worm.UniqueId);
+
+        mage.SkillCooldowns.Should().NotContainKey(StoneSpell, "the client gives the timer of a refused skill back");
+        mage.AcceptedCasts.Should().NotContainKey(StoneSpell);
+    }
+
     [Theory]
     [InlineData(10f, true)]
     [InlineData(200f, false)]
@@ -181,8 +225,13 @@ public class MagicReachTests : GameTestBase
         victim.ActiveBuffs.ContainsKey(Curse).Should().Be(cursed);
     }
 
-    private static ServiceProvider Provider() => CreateProvider(_ => { }, gameData =>
+    private static ServiceProvider Provider(Clock? clock = null) => CreateProvider(_ => { }, gameData =>
     {
+        gameData.GetMagic(StoneSpell).Returns(new MagicData
+        {
+            Id = StoneSpell, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.Enemy, Range = FireBlastRange,
+            CastTime = StoneSpellCastTenths, ReCastTime = StoneSpellRecast, UseItem = StoneOfMage,
+        });
         gameData.GetMagic(FireBlast).Returns(new MagicData
         {
             Id = FireBlast, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.Enemy, Range = FireBlastRange,
@@ -213,6 +262,7 @@ public class MagicReachTests : GameTestBase
         gameData.MagicType3Table.Returns(new Dictionary<int, MagicType3Data>
         {
             [FireBlast] = new() { Id = FireBlast, DirectType = 1, FirstDamage = -120, Attribute = 1 },
+            [StoneSpell] = new() { Id = StoneSpell, DirectType = 1, FirstDamage = -120, Attribute = 1 },
             [Heal] = new() { Id = Heal, DirectType = 1, FirstDamage = HealAmount },
             [PartyHeal] = new() { Id = PartyHeal, DirectType = 1, FirstDamage = HealAmount },
         });
@@ -220,6 +270,10 @@ public class MagicReachTests : GameTestBase
         {
             [Curse] = new() { Id = Curse, BuffType = (byte)BuffType.Ac, Ac = -50, Duration = 30 },
         });
+    }, configureServices: services =>
+    {
+        if (clock != null)
+            services.AddSingleton<TimeProvider>(clock);
     });
 
     private static UserSession Player(
@@ -252,11 +306,13 @@ public class MagicReachTests : GameTestBase
             SpawnZ = Here, Hp = WormHp, MaxHp = WormHp, Ac = 5, EvadeRate = 1,
         });
 
-    private static async Task Cast(ServiceProvider provider, UserSession caster, int skillId, int targetId)
+    private static async Task Cast(
+        ServiceProvider provider, UserSession caster, int skillId, int targetId,
+        MagicProcessOpcode stage = MagicProcessOpcode.Effecting)
     {
         TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
-        packet.WriteByte((byte)MagicProcessOpcode.Effecting);
+        packet.WriteByte((byte)stage);
         packet.WriteInt(skillId);
         packet.WriteInt(caster.CharacterId);
         packet.WriteInt(targetId);

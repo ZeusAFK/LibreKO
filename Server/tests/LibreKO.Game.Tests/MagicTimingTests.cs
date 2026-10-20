@@ -71,6 +71,52 @@ public class MagicTimingTests
     }
 
     [Fact]
+    public void ARefusedSkillWithoutAFlightGetsItsCooldownBack()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var scroll = Magic(490213, castTenths: 15, recastTenths: 600, useItem: 379098000);
+
+        timing.OnCastAccepted(session, scroll);
+        clock.Advance(TimeSpan.FromSeconds(1.5));
+        timing.OnReleaseRefused(session, scroll);
+
+        timing.CheckCasting(session, scroll).Should().Be(MagicTimingVerdict.Allowed, "the client gives the timer back too");
+        timing.CheckRelease(session, scroll).Should().Be(MagicTimingVerdict.NotCast, "the refused cast is spent");
+    }
+
+    [Fact]
+    public void ARefusedSkillWithAFlightKeepsItsCooldownAsTheClientDoes()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var bolt = Magic(Inferno, castTenths: 15, recastTenths: 100);
+        bolt.FlyingEffect = 1;
+
+        timing.OnCastAccepted(session, bolt);
+        clock.Advance(TimeSpan.FromSeconds(1.5));
+        timing.OnReleaseRefused(session, bolt);
+
+        session.CastingSkillId.Should().Be(0);
+        timing.CheckCasting(session, bolt).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void ARefusedArrowIsSpentLikeAMiss()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var shot = new MagicData { Id = Archery, Type1 = 2, CastTime = 13, UseItem = 391010000 };
+
+        timing.OnCastAccepted(session, shot);
+        clock.Advance(TimeSpan.FromMilliseconds(400));
+        timing.OnVolleyAccepted(session, shot, arrows: 1);
+        timing.OnReleaseRefused(session, shot);
+
+        session.PendingArrowHits.Should().BeEmpty();
+    }
+
+    [Fact]
     public void ABowLoosesNoFasterThanItIsDrawn()
     {
         var (timing, clock) = Subject();

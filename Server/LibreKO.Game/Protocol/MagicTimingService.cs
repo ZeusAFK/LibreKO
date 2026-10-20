@@ -30,6 +30,8 @@ public interface IMagicTimingService
     void OnReleaseAccepted(UserSession session, MagicData magic, bool armCooldown = true);
 
     void OnCastAborted(UserSession session, int skillId);
+
+    void OnReleaseRefused(UserSession session, MagicData magic);
 }
 
 public sealed class MagicTimingService(IGameDataService gameDataService, TimeProvider? timeProvider = null) : IMagicTimingService
@@ -177,6 +179,25 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         session.PendingArrowHits.TryRemove(skillId, out _);
         session.AcceptedCasts.TryRemove(skillId, out _);
         session.SkillCooldowns.TryRemove(skillId, out _);
+    }
+
+    public void OnReleaseRefused(UserSession session, MagicData magic)
+    {
+        if (magic.PrimaryType == MagicSkillType.Ranged)
+        {
+            OnReleaseAccepted(session, magic);
+            return;
+        }
+
+        if (session.CastingSkillId == magic.Id)
+            ClearCast(session);
+        session.AcceptedCasts.TryRemove(magic.Id, out _);
+        // The client gives a failed skill its timer back unless the skill has a flight.
+        if (magic.FlyingEffect > 0)
+            return;
+
+        session.SkillBurstTicks = 0;
+        session.SkillCooldowns.TryRemove(magic.Id, out _);
     }
 
     private void ArmCooldown(UserSession session, MagicData magic, long now)

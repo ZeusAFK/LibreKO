@@ -99,6 +99,32 @@ public class AttackTimingAndReachTests : GameTestBase
         (Swings(sent) == 1).Should().Be(reached, "a sprinter may be a second's run past its last report, but not after it stopped or went quiet");
     }
 
+    [Theory]
+    [InlineData(Moving, true)]
+    [InlineData(WorldMovementService.MoveEchoFinish, false)]
+    public async Task ARunningTargetIsReachedWhereItsLastReportLagsBehind(byte echo, bool reached)
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var runnerClient = Substitute.For<IClient>();
+        runnerClient.Id.Returns(Guid.NewGuid());
+        var runner = sessions.CreateSession(runnerClient, characterId: 912, accountId: 913);
+        runner.ZoneId = Zone;
+        runner.X = Here + 14;
+        runner.Z = Here;
+        runner.Hp = runner.MaxHp = 100;
+        runner.MoveOldSpeed = Sprint;
+        runner.MoveOldEcho = echo;
+        runner.LastMoveTicks = clock.Now.AddSeconds(-1).UtcTicks;
+        sessions.Regions.AddToRegion(runner);
+
+        await SwingAt(provider, attacker, runner.CharacterId);
+
+        (Swings(sent) == 1).Should().Be(reached);
+    }
+
     [Fact]
     public async Task AMoveReportStartsTheRunningAllowanceAndAStopEndsIt()
     {
@@ -207,12 +233,15 @@ public class AttackTimingAndReachTests : GameTestBase
             AttackRange = 3, SearchRange = 8, TracingRange = 20,
         });
 
-    private static async Task Swing(ServiceProvider provider, UserSession attacker, NpcInstance target)
+    private static Task Swing(ServiceProvider provider, UserSession attacker, NpcInstance target) =>
+        SwingAt(provider, attacker, target.UniqueId);
+
+    private static async Task SwingAt(ServiceProvider provider, UserSession attacker, int targetId)
     {
         var packet = new Packet(GameOpcodes.GS_ATTACK);
         packet.WriteByte(1);
         packet.WriteByte(0);
-        packet.WriteInt(target.UniqueId);
+        packet.WriteInt(targetId);
         packet.WriteShort(SwordDelay);
         packet.WriteShort(0);
         packet.WriteByte(0);

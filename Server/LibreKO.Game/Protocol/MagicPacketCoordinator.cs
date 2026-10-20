@@ -205,7 +205,7 @@ public class MagicPacketCoordinator(
                 if (!OpensTransformationList(session, magic)
                     && !magicExecutionService.AllowsTarget(session, magic, skillId, targetId, data))
                 {
-                    magicTimingService.OnCastAborted(session, skillId);
+                    magicTimingService.OnReleaseRefused(session, magic);
                     await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
                     return;
                 }
