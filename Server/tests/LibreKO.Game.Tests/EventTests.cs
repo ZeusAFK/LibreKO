@@ -143,6 +143,7 @@ public class EventTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId, accountId: 208);
         session.Name = "Original";
+        session.Hp = 200;
         session.ZoneId = 1;
         session.X = 10;
         session.Z = 10;

@@ -32,6 +32,24 @@ public sealed class InventoryJournal(UserSession session)
         session.Trade.MerchantItems[index] = new MerchantItem();
     }
 
+    // One of an item leaves the first bag slot holding it, or nothing does.
+    public bool TakeOneFromBag(int itemId)
+    {
+        for (var index = InventoryConstants.InventoryStart; index < InventoryConstants.InventoryStart + InventoryConstants.HaveMax; index++)
+        {
+            if (session.Inventory[index].ItemId != itemId || session.Inventory[index].Count == 0)
+                continue;
+
+            var slot = Slot(index);
+            slot.Count--;
+            if (slot.Count == 0)
+                slot.Clear();
+            return true;
+        }
+
+        return false;
+    }
+
     public void AddMoney(long amount)
     {
         money ??= session.Money;

@@ -6,6 +6,7 @@ using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using LibreKO.Game.Protocol.Writers;
@@ -36,8 +37,13 @@ public class MiscPacketCoordinator(
     IMagicItemUsageService magicItemUsageService,
     ISpecialAuctionService specialAuctionService,
     TimeWeatherBroadcastService timeWeather,
+    ICharacterStatePersister statePersister,
+    IUserNotificationService userNotificationService,
     ILogger<MiscPacketCoordinator> logger) : IMiscPacketCoordinator
 {
+    // One rename at a time, so two players cannot both take the same free name.
+    private static readonly SemaphoreSlim NameChanges = new(1, 1);
+
     private const byte CommandAuthority = 0x01;
 
     private const byte NameChangeRequest = 0;
@@ -148,6 +154,12 @@ public class MiscPacketCoordinator(
             return;
         }
 
+        if (session.IsBusy || KingSystemRuntimeService.IsKingOf(gameDataService, session.Nation, session.Name))
+        {
+            await SendNameChangeResultAsync(session, NameChangeInvalid);
+            return;
+        }
+
         if (await specialAuctionService.HasOpenAuctionAsync(session.CharacterId))
         {
             await SendNameChangeResultAsync(session, NameChangeAuctionOpen);
@@ -160,27 +172,37 @@ public class MiscPacketCoordinator(
             return;
         }
 
-        using var scope = serviceProvider.CreateScope();
-        var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-        if (await characterRepository.IsNameTaken(newName))
+        // The new name and the bag without the scroll are saved together.
+        var journal = new InventoryJournal(session);
+        StateCommit outcome;
+        await NameChanges.WaitAsync();
+        try
         {
-            await SendNameChangeResultAsync(session, NameChangeInvalid);
-            return;
+            outcome = await statePersister.CommitAsync(session, async db =>
+            {
+                var character = await db.Characters.FindAsync(session.CharacterId);
+                if (character == null || await db.Characters.AnyAsync(other => other.Name == newName)
+                    || !session.WithLock(_ => journal.TakeOneFromBag(ScrollOfIdentity)))
+                    return false;
+
+                character.Name = newName;
+                return true;
+            }, () => session.WithLock(_ => journal.Restore()));
+        }
+        finally
+        {
+            NameChanges.Release();
         }
 
-        var character = await characterRepository.GetById(session.CharacterId);
-        if (character == null)
+        if (outcome != StateCommit.Saved)
         {
             await SendNameChangeResultAsync(session, NameChangeInvalid);
             return;
         }
 
         var oldName = session.Name;
-        character.Name = newName;
-        await characterRepository.UpdateAsync(character);
-
         session.Name = newName;
-        await magicItemUsageService.TryConsumeItemAsync(session, ScrollOfIdentity);
+        await SendTouchedSlotsAsync(session, journal);
 
         logger.LogInformation("Player {OldName} changed name to {NewName}", oldName, newName);
 
@@ -221,6 +243,12 @@ public class MiscPacketCoordinator(
             return;
         }
 
+        if (session.IsBusy)
+        {
+            await SendClanNameChangeResultAsync(session, NameChangeInvalid);
+            return;
+        }
+
         // Case-insensitive uniqueness check across all clans.
         var clanNameTaken = sessionManager.Knights.GetAll()
             .Any(k => k.Id != clan.Id && string.Equals(k.Name, newName, StringComparison.OrdinalIgnoreCase));
@@ -230,14 +258,37 @@ public class MiscPacketCoordinator(
             return;
         }
 
+        // The clan's new name and the chief's bag without the scroll are saved together.
+        var journal = new InventoryJournal(session);
+        StateCommit outcome;
+        await NameChanges.WaitAsync();
+        try
+        {
+            outcome = await statePersister.CommitAsync(session, async db =>
+            {
+                var stored = await db.Knights.FindAsync(clan.Id);
+                if (stored == null || await db.Knights.AnyAsync(other => other.Id != clan.Id && other.Name == newName)
+                    || !session.WithLock(_ => journal.TakeOneFromBag(ClanNameScroll)))
+                    return false;
+
+                stored.Name = newName;
+                return true;
+            }, () => session.WithLock(_ => journal.Restore()));
+        }
+        finally
+        {
+            NameChanges.Release();
+        }
+
+        if (outcome != StateCommit.Saved)
+        {
+            await SendClanNameChangeResultAsync(session, NameChangeInvalid);
+            return;
+        }
+
         var oldName = clan.Name;
         clan.Name = newName;
-
-        using var scope = serviceProvider.CreateScope();
-        var knightsRepo = scope.ServiceProvider.GetRequiredService<IKnightsRepository>();
-        await knightsRepo.UpdateAsync(clan);
-
-        await magicItemUsageService.TryConsumeItemAsync(session, ClanNameScroll);
+        await SendTouchedSlotsAsync(session, journal);
 
         // Update the in-memory KnightsName for online clan members so their
         // user-info packets reflect the new clan name on next refresh.
@@ -258,6 +309,18 @@ public class MiscPacketCoordinator(
         // so their UIs flip in one shot.
         var success = MiscPacketWriter.ClanRenamed(ClanNameSuccess, newName);
         await knightsRuntimeService.NotifyOnlineClanMembersAsync(clan.Id, success);
+    }
+
+    private async Task SendTouchedSlotsAsync(UserSession session, InventoryJournal journal)
+    {
+        foreach (var index in journal.TouchedSlots)
+        {
+            var slot = session.Inventory[index];
+            await userNotificationService.SendStackChangeAsync(session, (byte)index, slot.ItemId, slot.Count, slot.Durability);
+        }
+
+        session.RecalculateStatsWithBuffs(gameDataService);
+        await userNotificationService.SendWeightChangeAsync(session);
     }
 
     public async Task HandleSantaAsync(IClient client)

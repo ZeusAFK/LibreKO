@@ -16,6 +16,8 @@ public class ClanRenameTests : GameTestBase
     private const short ClanId = 15;
     private const byte ClanRenameRequest = 16;
     private const byte ChiefFame = 1;
+    private const int ChiefId = 500;
+    private const short AliveHp = 100;
 
     [Fact]
     public async Task TheChiefsScrollLeavesTheBagWhenTheClanIsRenamed()
@@ -24,6 +26,7 @@ public class ClanRenameTests : GameTestBase
             db =>
             {
                 db.Knights.Add(new KnightsEntity { Id = ClanId, Name = "Devs", Chief = "Chief", Nation = (byte)AccountNation.Karus, Flag = 1, Members = 1 });
+                db.Characters.Add(new Character { Id = ChiefId, AccountId = ChiefId + 1, Name = "Chief", KnightsId = ClanId, Fame = ChiefFame });
                 db.SaveChanges();
             },
             gameData => gameData.GetItem(ClanNameScroll).Returns(new ItemData
@@ -38,8 +41,9 @@ public class ClanRenameTests : GameTestBase
         client.Id.Returns(Guid.NewGuid());
         var sent = new List<Packet>();
         client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-        var chief = sessions.CreateSession(client, characterId: 500, accountId: 501);
+        var chief = sessions.CreateSession(client, characterId: ChiefId, accountId: ChiefId + 1);
         chief.Name = "Chief";
+        chief.Hp = AliveHp;
         chief.Level = 60;
         chief.Nation = AccountNation.Karus;
         chief.ZoneId = 21;
