@@ -608,6 +608,35 @@ public abstract class GameTestBase
     }
 
     protected sealed record CharacterInfoEntry(string Name, (int ItemId, short Durability)[] Equipment);
+
+    // Writes the save, then reports it as failed, as a lost answer from the database would.
+    protected sealed class FailsAfterWriting(Func<DbContext, bool> applies) : SaveChangesInterceptor
+    {
+        private bool pending;
+
+        public bool Armed { get; set; }
+        public Action<DbContext> Meanwhile { get; init; } = _ => { };
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            pending = Armed && eventData.Context is { } context && applies(context);
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        public override ValueTask<int> SavedChangesAsync(
+            SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
+        {
+            if (!pending)
+                return base.SavedChangesAsync(eventData, result, cancellationToken);
+
+            pending = false;
+            Armed = false;
+            if (eventData.Context is { } context)
+                Meanwhile(context);
+            throw new DbUpdateException("the answer was lost");
+        }
+    }
 }
 
 internal static class TestHostEnvironmentFactory

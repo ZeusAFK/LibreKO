@@ -118,6 +118,7 @@ public class CharacterStatePersister(
             // The warehouse holds escrowed offers that found no room in the bag.
             var warehouse = await db.Warehouses.SingleOrDefaultAsync(entry => entry.AccountId == session.AccountId, cancellationToken)
                 ?? db.Warehouses.Add(new Warehouse { AccountId = session.AccountId }).Entity;
+            var stored = (character.Money, character.Items);
             try
             {
                 if (!await change(db))
@@ -133,6 +134,12 @@ public class CharacterStatePersister(
             }
             catch (Exception exception)
             {
+                if (await WasWrittenAsync(character, stored))
+                {
+                    logger.LogWarning(exception, "The commit of {Name} reported a failure but was written; the change stands", session.Name);
+                    return StateCommit.Saved;
+                }
+
                 logger.LogError(exception, "Could not commit {Name}; the change is undone", session.Name);
                 undo();
                 return StateCommit.Failed;
@@ -141,6 +148,29 @@ public class CharacterStatePersister(
         finally
         {
             session.CharacterPersistenceGate.Release();
+        }
+    }
+
+    // A save can be written and still report a failure; undoing it then would duplicate what it moved.
+    private async Task<bool> WasWrittenAsync(Character written, (int Money, byte[] Items) before)
+    {
+        if (written.Money == before.Money && written.Items.AsSpan().SequenceEqual(before.Items))
+            return false;
+
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var now = await db.Characters.AsNoTracking()
+                .Where(c => c.Id == written.Id)
+                .Select(c => new { c.Money, c.Items })
+                .FirstOrDefaultAsync();
+            return now != null && now.Money == written.Money && now.Items.AsSpan().SequenceEqual(written.Items);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "Could not check whether character {CharacterId}'s commit was written", written.Id);
+            return false;
         }
     }
 

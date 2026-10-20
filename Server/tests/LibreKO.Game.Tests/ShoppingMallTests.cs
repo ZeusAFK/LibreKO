@@ -1320,6 +1320,33 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ALetterWrittenButReportedAsFailedIsNotGivenBack()
+    {
+        const int itemId = 810002000;
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<MailBox>().Any(entry => entry.State == EntityState.Added));
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { AccountId = 1, Name = "Recipient" },
+                new Character { Id = 37, AccountId = 47, Name = "Sender" }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Race = 1 }),
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (session, client, sent) = LetterWriter(provider, characterId: 37, accountId: 47);
+        var item = session.Inventory[InventoryConstants.InventoryStart];
+        item.ItemId = itemId;
+        item.Count = 1;
+        faults.Armed = true;
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>()
+            .HandleAsync(client, LetterWithItem("Recipient", itemId, 0));
+
+        item.IsEmpty.Should().BeTrue("the letter was written, so giving the item back would duplicate it");
+        session.Money.Should().Be(20000 - ShoppingMallLetterProtocol.LetterSendItemCost);
+        LetterResult(sent).Should().Be(1);
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.CountAsync()).Should().Be(1);
+    }
+
+    [Fact]
     public async Task ALetterStillHoldingItsItemIsNotDeleted()
     {
         using var provider = CreateProvider(db => db.MailBoxes.AddRange(

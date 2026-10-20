@@ -165,8 +165,12 @@ public class BountyPacketCoordinator(
                 }, () => session.WithLock(s => GiveBack(s, reward)));
                 if (outcome == StateCommit.Saved)
                 {
-                    board.Add(bounty);
                     posted = bounty;
+                    // A save whose answer was lost leaves the new row's id unknown, so the board is read again.
+                    if (bounty.Id > 0)
+                        board.Add(bounty);
+                    else
+                        ForgetBoard();
                 }
             }
         }
@@ -441,6 +445,13 @@ public class BountyPacketCoordinator(
                 logger.LogError(exception, "Could not tell {Name} of a bounty mail", online.Name);
             }
         }
+    }
+
+    private void ForgetBoard()
+    {
+        board.Clear();
+        huntersByBounty.Clear();
+        loaded = false;
     }
 
     private void Forget(Bounty bounty)

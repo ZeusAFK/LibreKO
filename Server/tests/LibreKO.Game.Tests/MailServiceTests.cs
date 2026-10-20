@@ -734,6 +734,27 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task AMailWrittenButReportedAsFailedIsNotGivenBack()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added));
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        alice.Money = Purse;
+        var apples = alice.Inventory[InventoryConstants.InventoryStart];
+        apples.ItemId = Apple;
+        apples.Count = Sent;
+        faults.Armed = true;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Apples", "", MailedGold,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, Held)]);
+
+        apples.Count.Should().Be(Sent - Held, "the mail was written, so giving the apples back would duplicate them");
+        alice.Money.Should().Be(Purse - MailedGold);
+        (await MailCountAsync(provider)).Should().Be(1);
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(1);
+    }
+
+    [Fact]
     public async Task TheExpirySweepWaitsForThePlayersLock()
     {
         using var provider = Provider();

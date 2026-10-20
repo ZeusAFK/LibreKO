@@ -778,11 +778,74 @@ public class BountyTests : GameTestBase
     }
 
     [Fact]
-    public async Task AClaimWrittenButReportedAsFailedIsLoggedForAHandPayout()
+    public async Task AClaimWrittenButReportedAsFailedStillPays()
     {
         var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Bounty>().Any(entry => entry.State == EntityState.Deleted));
         using var provider = CreateProvider(_ => { },
             configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var poster = CreatePlayer(provider, 1311, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1312, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1313, AccountNation.Karus);
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        var bountyId = await StoredBountyIdAsync(provider);
+        provider.GetRequiredService<IBountyPacketCoordinator>().RecordKill(target.Session, hunter.Session);
+        faults.Armed = true;
+
+        await ClaimAsync(provider, hunter, bountyId);
+
+        hunter.Session.Money.Should().Be(StartingGold + Reward, "the claim was written, so undoing it in memory would lose the reward at the next save");
+        LastResult(hunter, ClaimSub).Should().Be(BountyPacketWriter.Succeeded);
+    }
+
+    [Fact]
+    public async Task APostWrittenButReportedAsFailedStands()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Bounty>().Any(entry => entry.State == EntityState.Added));
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var poster = CreatePlayer(provider, 1314, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1315, AccountNation.ElMorad);
+        faults.Armed = true;
+
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+
+        poster.Session.Money.Should().Be(StartingGold - Reward, "a refund of a written post would hand the gold out twice");
+        (await BountyIdOnAsync(provider, poster, target.Session.Name)).Should().Be(await StoredBountyIdAsync(provider));
+    }
+
+    [Fact]
+    public async Task APostWhoseNewIdWasLostReadsTheBoardAgain()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Bounty>().Any(entry => entry.State == EntityState.Added))
+        {
+            Meanwhile = context =>
+            {
+                foreach (var entry in context.ChangeTracker.Entries<Bounty>())
+                    entry.Entity.Id = 0;
+            },
+        };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var poster = CreatePlayer(provider, 1316, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1317, AccountNation.ElMorad);
+        faults.Armed = true;
+
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        var listedId = (await BountyIdOnAsync(provider, poster, target.Session.Name))!.Value;
+        listedId.Should().Be(await StoredBountyIdAsync(provider), "the board read the stored row again");
+
+        await WithdrawAsync(provider, poster, listedId);
+
+        poster.Session.Money.Should().Be(StartingGold, "the listed bounty is the stored one, so it can be withdrawn");
+    }
+
+    [Fact]
+    public async Task AClaimWhoseWriteCannotBeConfirmedIsLoggedForAHandPayout()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Bounty>().Any(entry => entry.State == EntityState.Deleted));
+        var check = new QueryFaults { Matches = query => query.ToString() is var text && text.Contains("c.Money") && text.Contains("c.Items") };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults, check)));
         var logger = new ListLogger();
         var board = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider, (ILogger<BountyPacketCoordinator>)logger);
         var poster = CreatePlayer(provider, 1308, AccountNation.Karus);
@@ -792,6 +855,7 @@ public class BountyTests : GameTestBase
         var bountyId = await StoredBountyIdAsync(provider);
         board.RecordKill(target.Session, hunter.Session);
         faults.Armed = true;
+        check.Failing = true;
 
         await board.HandleAsync(hunter.Client, BountyPacket(ClaimSub, bountyId));
 
@@ -903,31 +967,6 @@ public class BountyTests : GameTestBase
         await ClaimAsync(provider, hunter, bountyId);
 
         (await BountyIdOnAsync(provider, poster, target.Session.Name)).Should().BeNull("the close was written, so the bounty is gone");
-    }
-
-    private sealed class FailsAfterWriting(Func<DbContext, bool> applies) : SaveChangesInterceptor
-    {
-        private bool pending;
-
-        public bool Armed { get; set; }
-
-        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
-            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
-        {
-            pending = Armed && eventData.Context is { } context && applies(context);
-            return base.SavingChangesAsync(eventData, result, cancellationToken);
-        }
-
-        public override ValueTask<int> SavedChangesAsync(
-            SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
-        {
-            if (!pending)
-                return base.SavedChangesAsync(eventData, result, cancellationToken);
-
-            pending = false;
-            Armed = false;
-            throw new DbUpdateException("the answer was lost");
-        }
     }
 
     private sealed class QueryFaults : IQueryExpressionInterceptor
