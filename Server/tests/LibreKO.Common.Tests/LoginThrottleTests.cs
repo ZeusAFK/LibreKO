@@ -167,6 +167,39 @@ public class LoginThrottleTests
     private static string Filler(int address) => $"10.{address >> 16 & 0xFF}.{address >> 8 & 0xFF}.{address & 0xFF}";
 
     [Fact]
+    public void LoginsThatSucceedTakeNoRoomFromAGuessedName()
+    {
+        var throttle = new LoginThrottle();
+        for (var guess = 0; guess <= LoginThrottle.FailuresBeforeSlowing; guess++)
+            throttle.TryAttempt($"192.0.2.{guess}", "victim");
+
+        for (var name = 0; name < LoginThrottle.MaxTracked; name++)
+        {
+            throttle.TryAttempt(Address, $"new{name}");
+            throttle.Succeeded(Address, $"new{name}");
+        }
+
+        throttle.SlowdownFor("victim").Should().Be(LoginThrottle.SlowdownStep, "a login that let its player in leaves nothing behind to crowd out a guessed name");
+    }
+
+    [Fact]
+    public void AFullTableDropsItsOldestEntriesFirst()
+    {
+        var clock = new Clock();
+        var throttle = new LoginThrottle(clock);
+        for (var name = 0; name < LoginThrottle.MaxTracked - 1; name++)
+            throttle.TryAttempt(string.Empty, $"name{name}");
+        clock.Now += TimeSpan.FromSeconds(1);
+        for (var guess = 0; guess <= LoginThrottle.FailuresBeforeSlowing; guess++)
+            throttle.TryAttempt($"192.0.2.{guess}", "victim");
+        clock.Now += TimeSpan.FromSeconds(1);
+
+        throttle.TryAttempt(string.Empty, "newcomer");
+
+        throttle.SlowdownFor("victim").Should().Be(LoginThrottle.SlowdownStep, "a full table drops its oldest entries, not the newest");
+    }
+
+    [Fact]
     public void ExpiredAttemptsAreSweptFromEveryTable()
     {
         var clock = new Clock();

@@ -82,7 +82,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         }
     }
 
-    // A login that let the player in was no failure: it clears the name for this address and takes its attempt back.
+    // A login that let the player in was no failure: it clears the name for this address and takes its attempt back, keeping no empty entry.
     public void Succeeded(string address, string login)
     {
         var name = Normal(login);
@@ -165,8 +165,15 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         if (!table.Entries.TryGetValue(key, out var failures))
             return;
 
+        bool empty;
         lock (failures)
+        {
             failures.Count = Math.Max(0, failures.Count - 1);
+            empty = failures.Count == 0;
+        }
+
+        if (empty && table.Entries.TryRemove(KeyValuePair.Create(key, failures)))
+            Interlocked.Decrement(ref table.Size);
     }
 
     private void MakeRoom(Table table)
