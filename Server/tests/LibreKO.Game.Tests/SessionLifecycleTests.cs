@@ -149,6 +149,45 @@ public class SessionLifecycleTests : GameTestBase
     }
 
     [Fact]
+    public async Task ATakeoverMeetingADropWaitsForTheDropsSave()
+    {
+        using var provider = Provider();
+        var persister = Substitute.For<ICharacterStatePersister>();
+        var saving = new TaskCompletionSource<bool>();
+        persister.SaveAndSealAsync(Arg.Any<UserSession>(), Arg.Any<CancellationToken>()).Returns(saving.Task);
+        var termination = ActivatorUtilities.CreateInstance<SessionTerminationService>(provider, persister);
+        var client = Client([]);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, 1, 1);
+        session.Name = First;
+
+        var drop = termination.DisconnectAsync(client);
+        var takeover = termination.EvictForTakeoverAsync(session);
+        var takeoverWaited = !takeover.IsCompleted;
+        saving.SetResult(true);
+        await Task.WhenAll(drop, takeover);
+
+        takeoverWaited.Should().BeTrue("the next session loads only after the dropped one is saved");
+        await persister.Received(1).SaveAndSealAsync(session, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task TheAccountIsLetGoEvenWhenTheDisconnectFails()
+    {
+        var termination = Substitute.For<ISessionTerminationService>();
+        termination.DisconnectAsync(Arg.Any<IClient>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("the database went away"));
+        using var provider = CreateProvider(SeedAccount, configureServices: services => services.AddSingleton(termination));
+        var (client, _) = await SignedInAsync(provider, characterName: null);
+
+        var disconnect = () => provider.GetRequiredService<IPacketHandler>().OnClientDisconnected(client);
+
+        await disconnect.Should().ThrowAsync<InvalidOperationException>();
+        provider.GetRequiredService<IAccountLockService>().Owns(client).Should().BeFalse();
+        (await provider.GetRequiredService<IAccountLockService>().AcquireAsync(Client([]), await GetAccountIdAsync(provider, Login)))
+            .Granted.Should().BeTrue("a failed disconnect must not lock the account for good");
+    }
+
+    [Fact]
     public async Task TheFinalSaveRunsWhenLettingGoOfTheWorldFails()
     {
         using var provider = Provider();
@@ -187,7 +226,9 @@ public class SessionLifecycleTests : GameTestBase
         await persister.Received(1).SaveAsync(Arg.Any<UserSession>(), Arg.Any<CancellationToken>());
     }
 
-    private static ServiceProvider Provider() => CreateProvider(db =>
+    private static ServiceProvider Provider() => CreateProvider(SeedAccount);
+
+    private static void SeedAccount(Common.Infrastructure.Persistence.AppDbContext db)
     {
         db.Accounts.Add(new Account { Login = Login, Password = "pw", Nation = AccountNation.Karus });
         db.SaveChanges();
@@ -195,7 +236,7 @@ public class SessionLifecycleTests : GameTestBase
         db.Characters.AddRange(
             Character(accountId, First, slot: 0),
             Character(accountId, Second, slot: 1));
-    });
+    }
 
     private static Character Character(int accountId, string name, byte slot) => new()
     {

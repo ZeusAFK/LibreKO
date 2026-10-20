@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.World;
@@ -18,6 +19,9 @@ public class CharacterCommitTests : GameTestBase
     private const int Purse = 1_000;
     private const int Price = 100;
     private const int Ring = InventoryConstants.CypherRing;
+    private const int QuestSaveWaitSeconds = 5;
+    private const int QuestSavePollMs = 20;
+    private const int QuestSavePolls = 10;
 
     [Fact]
     public async Task AFailedCommitThatLeftGoldAndBagAloneIsUndone()
@@ -128,6 +132,28 @@ public class CharacterCommitTests : GameTestBase
         using var scope = provider.CreateScope();
         (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.SingleAsync(c => c.Id == CharacterId))
             .Money.Should().Be(Purse, "a newer session may already have loaded the account");
+    }
+
+    [Fact]
+    public async Task ASealedSessionQueuesNoQuestSave()
+    {
+        var characters = Substitute.For<ICharacterRepository>();
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddScoped(_ => characters));
+        var session = Session(provider);
+        var persister = provider.GetRequiredService<ICharacterStatePersister>();
+        await persister.SaveQuestStateAsync(session);
+        var deadline = DateTime.UtcNow.AddSeconds(QuestSaveWaitSeconds);
+        while (characters.ReceivedCalls().Count() == 0 && DateTime.UtcNow < deadline)
+            await Task.Delay(QuestSavePollMs);
+        var savedWhileOpen = characters.ReceivedCalls().Count();
+        characters.ClearReceivedCalls();
+
+        session.SavesSealed = true;
+        await persister.SaveQuestStateAsync(session);
+        await Task.Delay(QuestSavePollMs * QuestSavePolls);
+
+        savedWhileOpen.Should().BeGreaterThan(0, "an open session's quest state is saved");
+        await characters.DidNotReceive().UpdateQuestDataAsync(Arg.Any<int>(), Arg.Any<byte[]>());
     }
 
     private static UserSession Session(ServiceProvider provider)
