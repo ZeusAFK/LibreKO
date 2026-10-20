@@ -482,6 +482,39 @@ public class TradeEscrowTests : GameTestBase
     }
 
     [Fact]
+    public async Task ACommitDuringATradeSavesAnOfferOnlyTheWarehouseHasRoomFor()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var (giver, _, giverClient, _) = OpenTrade(provider);
+        StockSword(giver);
+        await SendAsync(provider, giverClient, AddPacket(SwordPos, Sword, 1));
+        foreach (var slot in BagSlots(giver))
+        {
+            slot.ItemId = Potion;
+            slot.Count = 1;
+        }
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Characters.Add(new Character { Id = giver.CharacterId, AccountId = giver.AccountId, Name = giver.Name });
+            await db.SaveChangesAsync();
+        }
+
+        var outcome = await provider.GetRequiredService<ICharacterStatePersister>()
+            .CommitAsync(giver, _ => Task.FromResult(true), () => { });
+
+        outcome.Should().Be(StateCommit.Saved);
+        using var check = provider.CreateScope();
+        var saved = await check.ServiceProvider.GetRequiredService<AppDbContext>().Warehouses
+            .SingleAsync(entry => entry.AccountId == giver.AccountId);
+        var warehouse = new ItemSlot[giver.Warehouse.Length];
+        for (var i = 0; i < warehouse.Length; i++)
+            warehouse[i] = new ItemSlot();
+        UserSessionBinaryState.LoadWarehouse(warehouse, saved.Items);
+        warehouse.Should().Contain(slot => slot.ItemId == Sword, "a crash before the next full save must not lose the offer");
+    }
+
+    [Fact]
     public async Task ASaveDuringATradeKeepsWhatIsOffered()
     {
         using var provider = CreateProvider(_ => { }, StockItems);

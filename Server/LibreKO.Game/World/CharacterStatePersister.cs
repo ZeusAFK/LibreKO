@@ -2,6 +2,7 @@
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -114,12 +115,19 @@ public class CharacterStatePersister(
                 return StateCommit.Failed;
             }
 
+            // An escrowed offer with no room in the bag is saved in the warehouse, so it is written too.
+            var warehouse = await db.Warehouses.SingleOrDefaultAsync(entry => entry.AccountId == session.AccountId, cancellationToken)
+                ?? db.Warehouses.Add(new Warehouse { AccountId = session.AccountId }).Entity;
             try
             {
                 if (!await change(db))
                     return StateCommit.Unchanged;
 
-                session.WithLock(active => ApplyToCharacter(active, character, mapper));
+                session.WithLock(active =>
+                {
+                    ApplyToCharacter(active, character, mapper);
+                    mapper.ApplyToWarehouse(active, warehouse);
+                });
                 await db.SaveChangesAsync(cancellationToken);
                 return StateCommit.Saved;
             }
