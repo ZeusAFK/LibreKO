@@ -34,6 +34,7 @@ public class MailServiceTests : GameTestBase
     private const int Purse = 1_000;
     private const int MailedGold = 100;
     private const long LongExpired = 1;
+    private const int MailedPoints = 50;
     private static readonly TimeSpan SweepGrace = TimeSpan.FromMilliseconds(300);
 
     private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null, Action<Common.Domain.Services.IGameDataService>? gameData = null) => CreateProvider(
@@ -318,6 +319,35 @@ public class MailServiceTests : GameTestBase
         (await db.Mails.AsNoTracking().SingleAsync()).ClaimedAt.Should().NotBeNull();
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExperienceAndNationalPointsArePaidOnlyOnceTheClaimIsSaved(bool saveFails)
+    {
+        var faults = new ClaimSaveFaults { Armed = false };
+        var progression = Substitute.For<IPlayerProgressionService>();
+        var loyalty = Substitute.For<ILoyaltyService>();
+        using var provider = Provider(services =>
+        {
+            services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults));
+            services.AddSingleton(progression);
+            services.AddSingleton(loyalty);
+        });
+        var (bob, _) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Gift", "A gift.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Experience, 0, MailedGold),
+            new MailAttachmentDraft(MailAttachmentKind.NationalPoints, 0, MailedPoints),
+        ]);
+        faults.Armed = saveFails;
+
+        await mail.ClaimAsync(bob, await StoredMailIdAsync(provider));
+
+        await progression.Received(saveFails ? 0 : 1).AwardExperienceAsync(bob, MailedGold);
+        await loyalty.Received(saveFails ? 0 : 1).ChangeAsync(bob, MailedPoints);
+    }
+
     [Fact]
     public async Task AClaimWhoseSaveFailsKeepsTheMailAndLeavesTheBagAndPurse()
     {
@@ -325,13 +355,11 @@ public class MailServiceTests : GameTestBase
         using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
         var (bob, bobSent) = Online(provider, BobId, "Bob");
         bob.Money = Purse;
-        var experience = bob.Experience;
         var mail = provider.GetRequiredService<IMailService>();
         await mail.SendSystemMailAsync(BobId, "Gift", "A gift.",
         [
             new MailAttachmentDraft(MailAttachmentKind.Item, Apple, Held, 1),
             new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, MailedGold),
-            new MailAttachmentDraft(MailAttachmentKind.Experience, 0, MailedGold),
         ]);
         faults.Armed = true;
 
@@ -339,7 +367,6 @@ public class MailServiceTests : GameTestBase
 
         CountInBag(bob, Apple).Should().Be(0);
         bob.Money.Should().Be(Purse);
-        bob.Experience.Should().Be(experience, "a reward that cannot be undone is paid only once the claim is saved");
         MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Failed);
         using var scope = provider.CreateScope();
         (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.AsNoTracking().SingleAsync()).ClaimedAt.Should().BeNull();

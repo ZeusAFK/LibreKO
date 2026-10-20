@@ -18,15 +18,20 @@ public class EventEscapeTests : GameTestBase
     private const int Coliseum = (int)ZoneId.CaitharosArena;
     private const short PlayerHp = 1000;
     private const int StunRow = 110560;
+    private const int JoinWindowSeconds = 600;
+    private const byte FittingLevel = 60;
 
     [Theory]
-    [InlineData(false, false, true)]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    public async Task LeavingAnEventTakesAPlayerOutOnlyWhenFreeAndOutOfAFight(bool fighting, bool stunned, bool leaves)
+    [InlineData(false, false, false, true)]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(false, false, true, false)]
+    public async Task LeavingAnEventTakesAPlayerOutOnlyWhenFreeAndOutOfAFight(bool fighting, bool stunned, bool trading, bool leaves)
     {
         using var provider = CreateProvider(_ => { });
         var player = Player(provider.GetRequiredService<SessionManager>(), 1, SnowWar);
+        if (trading)
+            player.Trade.ExchangeUser = 2;
         if (fighting)
             player.MarkCombat();
         if (stunned)
@@ -45,6 +50,31 @@ public class EventEscapeTests : GameTestBase
         replies.Any(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_EVENT && packet.ReadByte() == TempleEventDisband)
             .Should().Be(leaves, "the client takes any leave reply to mean the player left");
         replies.Any(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_CHAT).Should().Be(!leaves);
+    }
+
+    [Theory]
+    [InlineData(SnowWar, false)]
+    [InlineData((byte)ZoneId.Moradon, true)]
+    public async Task AFighterKeepsTheSignUpInsideAnEventAndMayDropItOutside(byte zone, bool dropped)
+    {
+        using var provider = CreateProvider(_ => { });
+        var player = Player(provider.GetRequiredService<SessionManager>(), 1, zone);
+        player.Level = FittingLevel;
+        var scheduler = provider.GetRequiredService<EventSchedulerService>();
+        await scheduler.CallTempleEventAsync(TempleEvent.ForgottenTemple, joinWindowSeconds: JoinWindowSeconds,
+            minLevel: FittingLevel, maxLevel: FittingLevel);
+        scheduler.TryJoinTempleEvent(player, TempleEvent.ForgottenTemple).Should().Be(TempleJoinResult.Joined);
+        player.MarkCombat();
+        var leave = new Packet(GameOpcodes.GS_EVENT);
+        leave.WriteByte(TempleEventDisband);
+        leave.ResetOffset();
+
+        await provider.GetRequiredService<IEventSystemsPacketCoordinator>().HandleEventAsync(player.Client, leave);
+
+        scheduler.TryJoinTempleEvent(player, TempleEvent.ForgottenTemple)
+            .Should().Be(dropped ? TempleJoinResult.Joined : TempleJoinResult.AlreadyJoined,
+                "a fight holds a player inside an event, not to a sign-up made in town");
+        player.ZoneId.Should().Be(zone);
     }
 
     public enum Tie { InPrison, Trading, Stunned, Fighting }
