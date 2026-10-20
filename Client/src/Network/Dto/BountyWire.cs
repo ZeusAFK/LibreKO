@@ -16,10 +16,18 @@ public enum BountyResult : byte
 
 public readonly record struct BountyOutcome(int BountyId, bool Succeeded);
 
+public enum BountyStanding : byte
+{
+    Open = 0,
+    Own = 1,
+    Earned = 2,
+}
+
 public struct BountyEntry
 {
     public int Id;
     public string Target;
     public string Poster;
     public int Reward;
+    public BountyStanding Standing;
 }

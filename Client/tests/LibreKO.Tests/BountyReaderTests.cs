@@ -49,6 +49,30 @@ public class BountyReaderTests
         Assert.Equal(new BountyOutcome(BountyId, ok), announced);
     }
 
+    [Theory]
+    [InlineData(BountyStanding.Open)]
+    [InlineData(BountyStanding.Own)]
+    [InlineData(BountyStanding.Earned)]
+    public void AListRowKeepsItsStanding(BountyStanding standing)
+    {
+        var (dispatcher, session) = Readers();
+        List<BountyEntry>? listed = null;
+        session.Bounty.BountyListEvent += list => listed = list;
+        var p = new Packet(GameOpcodes.GS_BOUNTY);
+        p.WriteByte((byte)BountySubOpcode.List);
+        p.WriteUShort(1);
+        p.WriteInt(BountyId);
+        p.WriteSByteString("Target");
+        p.WriteSByteString("Poster");
+        p.WriteInt(BountyId);
+        p.WriteByte((byte)standing);
+        p.ResetOffset();
+
+        dispatcher.Dispatch(p);
+
+        Assert.Equal(standing, Assert.Single(listed!).Standing);
+    }
+
     [Fact]
     public void AClaimResultReachesTheBoard()
     {

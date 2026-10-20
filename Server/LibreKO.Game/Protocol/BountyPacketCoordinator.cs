@@ -8,6 +8,7 @@ using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.Protocol;
@@ -25,7 +26,7 @@ public class BountyPacketCoordinator(
     ICharacterStatePersister statePersister,
     IServiceScopeFactory scopeFactory,
     ILogger<BountyPacketCoordinator> logger,
-    TimeProvider? timeProvider = null) : IBountyPacketCoordinator
+    TimeProvider? timeProvider = null) : IBountyPacketCoordinator, IHostedService
 {
     public const byte BountySubList = 1;
     public const byte BountySubPost = 2;
@@ -39,6 +40,8 @@ public class BountyPacketCoordinator(
     private const int MaxListedBounties = 200;
     private const string ReturnSubject = "Bounty returned";
     private const string RewardSubject = "Bounty reward";
+    public const int LoadRetrySeconds = 30;
+    private static readonly TimeSpan LoadRetryDelay = TimeSpan.FromSeconds(LoadRetrySeconds);
 
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -48,8 +51,30 @@ public class BountyPacketCoordinator(
     private readonly List<Kill> unsaved = [];
     private readonly ConcurrentQueue<int> unreadNotices = new();
     private bool loaded;
+    private long loadRetryAtTicks;
+    private int draining;
 
     private sealed record Kill(int VictimId, int KillerId, DateTime At);
+
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    // Kills still queued at shutdown are saved before the server stops.
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await gate.WaitAsync(CancellationToken.None);
+        try
+        {
+            Interlocked.Exchange(ref loadRetryAtTicks, 0);
+            await RefreshBoardAsync();
+            var lost = kills.Count + unsaved.Count;
+            if (lost > 0)
+                logger.LogWarning("{Count} bounty kill(s) could not be saved before the shutdown", lost);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -82,27 +107,39 @@ public class BountyPacketCoordinator(
         _ = SaveKillsAsync();
     }
 
+    // One task saves the queued kills, and stops while the board cannot load.
     private async Task SaveKillsAsync()
     {
-        try
+        while (!kills.IsEmpty && !LoadResting && Interlocked.CompareExchange(ref draining, 1, 0) == 0)
         {
-            await gate.WaitAsync();
             try
             {
-                await RefreshBoardAsync();
+                await gate.WaitAsync();
+                try
+                {
+                    await RefreshBoardAsync();
+                }
+                finally
+                {
+                    gate.Release();
+                }
+
+                await SendUnreadNoticesAsync();
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Could not save a bounty kill; the next use of the board tries again");
+                return;
             }
             finally
             {
-                gate.Release();
+                Volatile.Write(ref draining, 0);
             }
-
-            await SendUnreadNoticesAsync();
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Could not save a bounty kill; the next use of the board tries again");
         }
     }
+
+    private bool LoadResting => !Volatile.Read(ref loaded) && time.GetUtcNow().UtcDateTime.Ticks < Interlocked.Read(ref loadRetryAtTicks);
+
 
     private async Task SendBountyListAsync(UserSession session)
     {
@@ -115,7 +152,7 @@ public class BountyPacketCoordinator(
                     .ThenByDescending(b => HasEarned(b, session.CharacterId))
                     .ThenByDescending(b => b.Id)
                     .Take(MaxListedBounties)
-                    .Select(b => new BountyPacketWriter.Entry(b.Id, b.TargetName, b.PosterName, b.Reward))
+                    .Select(b => new BountyPacketWriter.Entry(b.Id, b.TargetName, b.PosterName, b.Reward, StandingOf(b, session)))
                     .ToList();
         }
         finally
@@ -163,6 +200,8 @@ public class BountyPacketCoordinator(
                     db.Bounties.Add(bounty);
                     return Task.FromResult(true);
                 }, () => session.WithLock(s => GiveBack(s, reward)));
+                if (outcome == StateCommit.Failed)
+                    await RemoveStrayPostAsync(bounty, session);
                 if (outcome == StateCommit.Saved)
                 {
                     posted = bounty;
@@ -270,8 +309,8 @@ public class BountyPacketCoordinator(
             return Task.FromResult(true);
         }, () => payee.WithLock(s => s.Money = Math.Max(0, s.Money - bounty.Reward)));
         if (outcome == StateCommit.Failed && await ForgetIfClosedAsync(bounty))
-            logger.LogError("Bounty {Id} was closed for character {CharacterId} but the save reported a failure; {Reward} coins must be paid by hand",
-                bounty.Id, payee.CharacterId, bounty.Reward);
+            logger.LogError("Bounty {Id} was closed for character {CharacterId} but the save reported a failure; unless a bounty mail already "
+                + "paid them, {Reward} coins must be paid by hand: check the character's mails first", bounty.Id, payee.CharacterId, bounty.Reward);
         if (outcome != StateCommit.Saved)
             return false;
 
@@ -279,11 +318,19 @@ public class BountyPacketCoordinator(
         return true;
     }
 
-    // Queued kills are recorded before any bounty runs out.
+    // Queued kills are recorded before any bounty runs out; a board that failed to load rests before it tries again.
     private async Task<bool> RefreshBoardAsync()
     {
-        if (!loaded && !await TryLoadAsync())
-            return false;
+        if (!loaded)
+        {
+            if (LoadResting)
+                return false;
+            if (!await TryLoadAsync())
+            {
+                Interlocked.Exchange(ref loadRetryAtTicks, (time.GetUtcNow().UtcDateTime + LoadRetryDelay).Ticks);
+                return false;
+            }
+        }
 
         await RecordQueuedKillsAsync();
         var expiredBefore = time.GetUtcNow().UtcDateTime.AddDays(-BountyLifetimeDays);
@@ -478,6 +525,34 @@ public class BountyPacketCoordinator(
             return null;
         }
     }
+
+    // A post reported as failed may still have been written; its refunded poster must not also have a live bounty.
+    private async Task RemoveStrayPostAsync(Bounty bounty, UserSession poster)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var strays = await db.Bounties.Where(b => b.PosterCharacterId == bounty.PosterCharacterId
+                && b.TargetCharacterId == bounty.TargetCharacterId && b.PostedAt == bounty.PostedAt).ToListAsync();
+            if (strays.Count == 0)
+                return;
+
+            db.Bounties.RemoveRange(strays);
+            await db.SaveChangesAsync();
+            logger.LogWarning("A bounty posted by {Name} was written although its save reported a failure; it was taken down", poster.Name);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "A bounty posted by {Name} on {Target} for {Reward} at {PostedAt} may be stored although the poster kept "
+                + "the coins; delete it by hand if it is", poster.Name, bounty.TargetName, bounty.Reward, bounty.PostedAt);
+        }
+    }
+
+    private byte StandingOf(Bounty bounty, UserSession viewer) =>
+        bounty.PosterCharacterId == viewer.CharacterId ? BountyPacketWriter.StandingOwn
+        : HasEarned(bounty, viewer.CharacterId) ? BountyPacketWriter.StandingEarned
+        : BountyPacketWriter.StandingOpen;
 
     private bool HasEarned(Bounty bounty, int characterId) =>
         huntersByBounty.TryGetValue(bounty.Id, out var hunters) && hunters.Contains(characterId);

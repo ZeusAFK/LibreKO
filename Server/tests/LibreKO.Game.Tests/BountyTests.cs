@@ -10,6 +10,7 @@ using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
@@ -30,6 +31,8 @@ public class BountyTests : GameTestBase
     private const int ListedLimit = 200;
     private const int SeededOthers = 250;
     private static readonly TimeSpan DeathWait = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan PastTheLoadRest = TimeSpan.FromSeconds(BountyPacketCoordinator.LoadRetrySeconds + 1);
+    private const int KillsWhileDown = 10;
 
     [Fact]
     public async Task PostingABountyTakesTheRewardFromThePoster()
@@ -621,20 +624,26 @@ public class BountyTests : GameTestBase
     [Fact]
     public async Task ABoardWhoseLoadFailsHalfwayLoadsEachBountyOnceLater()
     {
+        var clock = new Clock();
         var faults = new QueryFaults { Matches = query => query.Type.GenericTypeArguments.FirstOrDefault() == typeof(BountyHunter) };
         using var provider = CreateProvider(
             db => db.Bounties.Add(new Bounty
             {
                 PosterCharacterId = 1278, PosterName = "Bounty1278", TargetCharacterId = 1279, TargetName = "Bounty1279",
-                Reward = Reward, PostedAt = DateTime.UtcNow,
+                Reward = Reward, PostedAt = clock.Now.UtcDateTime,
             }),
-            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+            configureServices: services =>
+            {
+                services.AddSingleton<TimeProvider>(clock);
+                services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults));
+            });
         var poster = CreatePlayer(provider, 1278, AccountNation.Karus);
         var board = provider.GetRequiredService<IBountyPacketCoordinator>();
         faults.Failing = true;
         var failedList = () => board.HandleAsync(poster.Client, BountyPacket(ListSub));
         await failedList.Should().NotThrowAsync("a board that cannot load answers nothing rather than dropping the player");
         faults.Failing = false;
+        clock.Now += PastTheLoadRest;
 
         await board.HandleAsync(poster.Client, BountyPacket(ListSub));
 
@@ -721,6 +730,7 @@ public class BountyTests : GameTestBase
         list.ReadSByteString();
         list.ReadSByteString().Should().Be("Bounty1284", "the viewer's own bounties come first, however old");
         list.ReadInt();
+        list.ReadByte().Should().Be(BountyPacketWriter.StandingOwn);
         list.ReadInt();
         list.ReadSByteString();
         list.ReadSByteString().Should().Be($"Poster{SeededOthers - 1}", "then the newest");
@@ -971,11 +981,130 @@ public class BountyTests : GameTestBase
 
     private sealed class QueryFaults : IQueryExpressionInterceptor
     {
+        private int attempts;
+        private readonly TaskCompletionSource tried = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public bool Failing { get; set; }
         public Func<Expression, bool> Matches { get; init; } = _ => true;
+        public int Attempts => Volatile.Read(ref attempts);
+        public Task Tried => tried.Task;
 
-        public Expression QueryCompilationStarting(Expression queryExpression, QueryExpressionEventData eventData) =>
-            Failing && Matches(queryExpression) ? throw new InvalidOperationException("the connection dropped") : queryExpression;
+        public Expression QueryCompilationStarting(Expression queryExpression, QueryExpressionEventData eventData)
+        {
+            if (!Failing || !Matches(queryExpression))
+                return queryExpression;
+
+            Interlocked.Increment(ref attempts);
+            tried.TrySetResult();
+            throw new InvalidOperationException("the connection dropped");
+        }
+    }
+
+    [Fact]
+    public async Task EachRowSaysWhetherItIsTheViewersOwnEarnedOrOpen()
+    {
+        using var provider = CreateProvider(_ => { });
+        var poster = CreatePlayer(provider, 1320, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1321, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1322, AccountNation.Karus);
+        var bystander = CreatePlayer(provider, 1323, AccountNation.Karus);
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+        board.RecordKill(target.Session, hunter.Session);
+
+        foreach (var (viewer, standing) in new[]
+                 {
+                     (poster, BountyPacketWriter.StandingOwn), (hunter, BountyPacketWriter.StandingEarned), (bystander, BountyPacketWriter.StandingOpen),
+                 })
+        {
+            await board.HandleAsync(viewer.Client, BountyPacket(ListSub));
+            StandingOn(viewer, target.Session.Name).Should().Be(standing, "the client picks Withdraw or Claim from this, not from a name");
+        }
+    }
+
+    [Fact]
+    public async Task KillsWhileTheBoardCannotLoadTryTheDatabaseOnceAndRequestsAreRefusedAtOnce()
+    {
+        var faults = new QueryFaults { Matches = query => query.Type.GenericTypeArguments.FirstOrDefault() == typeof(Bounty), Failing = true };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var target = CreatePlayer(provider, 1324, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1325, AccountNation.Karus);
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+
+        for (var kill = 0; kill < KillsWhileDown; kill++)
+            board.RecordKill(target.Session, hunter.Session);
+        await faults.Tried;
+        await board.HandleAsync(hunter.Client, PostPacket(target.Session.Name, Reward));
+
+        faults.Attempts.Should().Be(1, "after a failed load the board rests instead of every kill trying the database again");
+        LastResult(hunter, PostSub).Should().Be(BountyPacketWriter.Failed);
+        hunter.Session.Money.Should().Be(StartingGold);
+    }
+
+    [Fact]
+    public async Task KillsQueuedAtShutdownAreSavedBeforeTheServerStops()
+    {
+        var faults = new QueryFaults { Matches = query => query.Type.GenericTypeArguments.FirstOrDefault() == typeof(Bounty), Failing = true };
+        using var provider = CreateProvider(
+            db => db.Bounties.Add(new Bounty
+            {
+                PosterCharacterId = 1326, PosterName = "Bounty1326", TargetCharacterId = 1327, TargetName = "Bounty1327",
+                Reward = Reward, PostedAt = DateTime.UtcNow.AddMinutes(-1),
+            }),
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var target = CreatePlayer(provider, 1327, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1328, AccountNation.Karus);
+        var board = provider.GetRequiredService<BountyPacketCoordinator>();
+        board.RecordKill(target.Session, hunter.Session);
+        await faults.Tried;
+        faults.Failing = false;
+
+        await ((IHostedService)board).StopAsync(CancellationToken.None);
+
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().BountyHunters.CountAsync(h => h.CharacterId == hunter.Session.CharacterId))
+            .Should().Be(1, "a kill still queued when the server stops is saved, not lost");
+    }
+
+    [Fact]
+    public async Task APostWrittenButNotConfirmedIsTakenDownWithItsRefund()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Bounty>().Any(entry => entry.State == EntityState.Added));
+        var check = new QueryFaults { Matches = query => query.ToString() is var text && text.Contains("c.Money") && text.Contains("c.Items") };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults, check)));
+        var poster = CreatePlayer(provider, 1329, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1330, AccountNation.ElMorad);
+        faults.Armed = true;
+        check.Failing = true;
+
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+
+        poster.Session.Money.Should().Be(StartingGold, "the post was reported as failed and its gold came back");
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Bounties.CountAsync())
+            .Should().Be(0, "a bounty its poster was refunded for would pay out coins no one paid in");
+    }
+
+    private static byte? StandingOn(Player viewer, string target)
+    {
+        var list = viewer.Sent.Last(sent => sent.GetOpcode() == (byte)GameOpcodes.GS_BOUNTY);
+        list.ResetOffset();
+        list.ReadByte();
+        var count = list.ReadUShort();
+        for (var entry = 0; entry < count; entry++)
+        {
+            list.ReadInt();
+            var name = list.ReadSByteString();
+            list.ReadSByteString();
+            list.ReadInt();
+            var standing = list.ReadByte();
+            if (name == target)
+                return standing;
+        }
+
+        return null;
     }
 
     private static async Task<int> GoldMailedToAsync(IServiceProvider provider, Player player)
@@ -1114,6 +1243,7 @@ public class BountyTests : GameTestBase
             var name = list.ReadSByteString();
             list.ReadSByteString();
             list.ReadInt();
+            list.ReadByte();
             if (name == target)
                 return id;
         }

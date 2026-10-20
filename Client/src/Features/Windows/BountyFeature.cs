@@ -124,10 +124,18 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
             hb.AddChild(UiTheme.Text($"{b.Reward:N0}g", 12, UiTheme.Gold));
 
             int id = b.Id;
-            var own = b.Poster == (self.LastEnter.Name ?? "");
-            var btn = new Button { Text = own ? "Withdraw" : "Claim", FocusMode = Control.FocusModeEnum.None };
-            btn.Pressed += own ? () => requests.Withdraw(id) : () => requests.Claim(id);
-            hb.AddChild(btn);
+            if (b.Standing == BountyStanding.Own)
+            {
+                var withdraw = new Button { Text = "Withdraw", FocusMode = Control.FocusModeEnum.None };
+                withdraw.Pressed += () => requests.Withdraw(id);
+                hb.AddChild(withdraw);
+            }
+            else if (b.Standing == BountyStanding.Earned)
+            {
+                var claim = new Button { Text = "Claim", FocusMode = Control.FocusModeEnum.None };
+                claim.Pressed += () => requests.Claim(id);
+                hb.AddChild(claim);
+            }
 
             listBox.AddChild(row);
         }

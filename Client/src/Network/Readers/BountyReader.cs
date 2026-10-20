@@ -28,7 +28,8 @@ internal sealed class BountyReader : IPacketReader
                 string target = p.ReadSByteString();
                 string poster = p.ReadSByteString();
                 int reward = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
-                list.Add(new BountyEntry { Id = id, Target = target, Poster = poster, Reward = reward });
+                var standing = p.RemainingBytes >= 1 ? (BountyStanding)p.ReadByte() : BountyStanding.Open;
+                list.Add(new BountyEntry { Id = id, Target = target, Poster = poster, Reward = reward, Standing = standing });
             }
             bounty.RaiseBountyList(list);
         }
