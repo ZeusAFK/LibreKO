@@ -9,7 +9,7 @@ namespace LibreKO.Game.Protocol;
 public interface IMagicExecutionService
 {
     bool AllowsTarget(UserSession session, MagicData magic, int skillId, int targetId, int[] data);
-    Task ExecuteAsync(UserSession session, MagicData magic, int skillId, int targetId, int[] data);
+    Task<bool> ExecuteAsync(UserSession session, MagicData magic, int skillId, int targetId, int[] data);
     Task CancelAsync(UserSession session, int skillId);
 }
 
@@ -32,9 +32,9 @@ public class MagicExecutionService(
     public bool AllowsTarget(UserSession session, MagicData magic, int skillId, int targetId, int[] data) =>
         AreaCastAllowed(session, magic, skillId, targetId, data) && MayReach(session, magic, skillId, targetId);
 
-    public async Task ExecuteAsync(UserSession session, MagicData magic, int skillId, int targetId, int[] data)
+    public async Task<bool> ExecuteAsync(UserSession session, MagicData magic, int skillId, int targetId, int[] data)
     {
-        await ExecuteTypeAsync(session, magic, magic.PrimaryType, skillId, targetId, data, isPrimary: true);
+        var tookEffect = await ExecuteTypeAsync(session, magic, magic.PrimaryType, skillId, targetId, data, isPrimary: true);
 
         if (magic.SecondaryType != MagicSkillType.None
             && HasTypeData(magic, magic.SecondaryType, skillId))
@@ -44,6 +44,7 @@ public class MagicExecutionService(
         }
 
         await ExecuteExtendedEffectAsync(session, magic, skillId, targetId, data);
+        return tookEffect;
     }
 
     private const int ExtendedEffectOffset = 80000;
@@ -191,7 +192,7 @@ public class MagicExecutionService(
     private static bool Has<T>(IReadOnlyDictionary<int, T> table, MagicData magic, int skillId)
         where T : class => MagicTypeLookup.TryResolve(table, magic, skillId, out _);
 
-    private async Task ExecuteTypeAsync(
+    private async Task<bool> ExecuteTypeAsync(
         UserSession session, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
         int[] data, bool isPrimary)
     {
@@ -203,19 +204,17 @@ public class MagicExecutionService(
             case MagicSkillType.Area:
                 await stealthService.RevealAsync(session, InvisibilityType.None);
                 await magicCombatEffectService.ExecuteAsync(session, magic, skillType, skillId, targetId, data);
-                break;
+                return true;
             case MagicSkillType.Buff:
             case MagicSkillType.Special:
             case MagicSkillType.Transform:
             case MagicSkillType.Stealth:
-                await magicStatusEffectService.ExecuteAsync(session, magic, skillType, skillId, targetId, data, isPrimary);
-                break;
+                return await magicStatusEffectService.ExecuteAsync(session, magic, skillType, skillId, targetId, data, isPrimary);
             case MagicSkillType.Warp:
-                await magicMovementEffectService.ExecuteAsync(session, magic, skillId, targetId, data);
-                break;
+                return await magicMovementEffectService.ExecuteAsync(session, magic, skillId, targetId, data);
             default:
                 if (!isPrimary)
-                    break;
+                    return false;
 
                 await sessionManager.Regions.SendToRegion(
                     session,
@@ -226,7 +225,7 @@ public class MagicExecutionService(
                         targetId,
                         data),
                     excludeSender: false);
-                break;
+                return false;
         }
     }
 

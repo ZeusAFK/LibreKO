@@ -11,7 +11,7 @@ namespace LibreKO.Game.Protocol;
 
 public interface IMagicStatusEffectService
 {
-    Task ExecuteAsync(
+    Task<bool> ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
         int[] data, bool isPrimary = true);
     Task CancelAsync(UserSession session, int skillId);
@@ -39,17 +39,23 @@ public class MagicStatusEffectService(
 
     public event Func<UserSession, int, Task>? TransformationEnded;
 
-    public Task ExecuteAsync(
+    public Task<bool> ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
         int[] data, bool isPrimary = true) =>
         skillType switch
         {
-            MagicSkillType.Buff => ExecuteBuffAsync(caster, magic, skillId, targetId, data, isPrimary),
+            MagicSkillType.Buff => Ran(ExecuteBuffAsync(caster, magic, skillId, targetId, data, isPrimary)),
             MagicSkillType.Special => ExecuteSpecialAsync(caster, magic, skillId, targetId),
-            MagicSkillType.Transform => ExecuteTransformAsync(caster, magic, skillId, targetId),
+            MagicSkillType.Transform => Ran(ExecuteTransformAsync(caster, magic, skillId, targetId)),
             MagicSkillType.Stealth => ExecuteStealthAsync(caster, magic, skillId, targetId, data),
-            _ => Task.CompletedTask
+            _ => Task.FromResult(false)
         };
+
+    private static async Task<bool> Ran(Task effect)
+    {
+        await effect;
+        return true;
+    }
 
     public async Task CancelAsync(UserSession session, int skillId)
     {
@@ -522,12 +528,12 @@ public class MagicStatusEffectService(
 
     private const byte PotionItemGroup = 9;
 
-    private async Task ExecuteSpecialAsync(UserSession caster, MagicData magic, int skillId, int targetId)
+    private async Task<bool> ExecuteSpecialAsync(UserSession caster, MagicData magic, int skillId, int targetId)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType5Table, magic, skillId, out var type5Data))
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         var special = (SpecialMagicType)type5Data.Type;
@@ -545,7 +551,7 @@ public class MagicStatusEffectService(
                         (short)member.CharacterId, [0, SkillSucceeded]),
                     excludeSender: false);
             }
-            return;
+            return true;
         }
 
         // Sub-types 4 (self-resurrect) and 6 (life crystal) always target the caster.
@@ -558,7 +564,7 @@ public class MagicStatusEffectService(
             if (resolved == null || (IsCleanse(special) && !MayCleanse(caster, resolved, magic)))
             {
                 await SendMagicFailAsync(caster, skillId);
-                return;
+                return false;
             }
             target = resolved;
         }
@@ -578,23 +584,23 @@ public class MagicStatusEffectService(
                 if (target.Hp > 0)
                 {
                     await SendMagicFailAsync(caster, skillId);
-                    return;
+                    return false;
                 }
 
                 if (special == SpecialMagicType.Resurrection)
                 {
                     await resurrectionOfferService.OfferAsync(caster, target, skillId);
-                    return;
+                    return true;
                 }
 
                 if (!await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
                 {
                     await SendMagicFailAsync(caster, skillId);
-                    return;
+                    return false;
                 }
 
                 await resurrectionOfferService.ReviveAsync(caster, target, skillId, type5Data);
-                return;
+                return true;
             }
         }
 
@@ -608,6 +614,7 @@ public class MagicStatusEffectService(
                 targetId,
                 [0, 1]),
             excludeSender: false);
+        return true;
     }
 
     private static bool IsCleanse(SpecialMagicType special) =>
@@ -810,12 +817,12 @@ public class MagicStatusEffectService(
     private const byte ZoneForgottenTemple = (byte)ZoneId.ForgottenTemple;
     private const byte ZoneDungeonDefence = (byte)ZoneId.DungeonDefence;
 
-    private async Task ExecuteStealthAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    private async Task<bool> ExecuteStealthAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType9Table, magic, skillId, out var type9Data))
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         var target = (SkillMoral)magic.Moral == SkillMoral.Self
@@ -837,11 +844,12 @@ public class MagicStatusEffectService(
         if (!applied)
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         if (stealthType is MagicStealthType.DispelOnMove or MagicStealthType.DispelOnAttack)
             await AnnounceStealthAsync(caster, target, skillId, type9Data, data);
+        return true;
     }
 
     private async Task<bool> HideAsync(

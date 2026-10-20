@@ -445,13 +445,9 @@ public class MagicPacketCoordinator(
         if (magic.PrimaryType != MagicSkillType.Ranged && !await TryPaySkillCostAsync(session, magic, skillId))
             return;
 
-        if (paysHere && !await magicItemUsageService.TryConsumeSkillItemAsync(session, magic))
-        {
-            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
-            return;
-        }
-
-        await magicExecutionService.ExecuteAsync(session, magic, skillId, targetId, data);
+        var tookEffect = await magicExecutionService.ExecuteAsync(session, magic, skillId, targetId, data);
+        if (paysHere && tookEffect && !await magicItemUsageService.TryConsumeSkillItemAsync(session, magic))
+            logger.LogWarning("{Name} cast {SkillId} but its reagent was gone before it could be taken", session.Name, skillId);
     }
 
     private bool PaysItsOwnReagent(MagicData magic, int skillId) => magic.PrimaryType switch

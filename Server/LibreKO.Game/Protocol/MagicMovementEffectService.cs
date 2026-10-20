@@ -10,7 +10,7 @@ namespace LibreKO.Game.Protocol;
 
 public interface IMagicMovementEffectService
 {
-    Task ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data);
+    Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data);
 }
 
 public class MagicMovementEffectService(
@@ -20,16 +20,16 @@ public class MagicMovementEffectService(
     ISoccerService soccerService,
     ILogger<MagicMovementEffectService> logger) : IMagicMovementEffectService
 {
-    public async Task ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    public async Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType8Table, magic, skillId, out var type8Data))
         {
             await caster.Client.SendPacket(MagicProcessPacketWriter.CreateFail(skillId, caster.CharacterId));
-            return;
+            return false;
         }
 
         var warpType = (MagicWarpType)type8Data.WarpType;
-        var moved = warpType switch
+        bool? moved = warpType switch
         {
             MagicWarpType.BindPoint => await WarpToBindPointAsync(caster, magic),
             MagicWarpType.SummonInZone => await SummonToCasterAsync(caster, targetId),
@@ -41,10 +41,10 @@ public class MagicMovementEffectService(
             _ => Unhandled(warpType, skillId, caster),
         };
 
-        if (!moved)
+        if (moved == false)
         {
             await caster.Client.SendPacket(MagicProcessPacketWriter.CreateFail(skillId, caster.CharacterId));
-            return;
+            return false;
         }
 
         await sessionManager.Regions.SendToRegion(
@@ -56,14 +56,15 @@ public class MagicMovementEffectService(
                 targetId,
                 data),
             excludeSender: false);
+        return moved == true;
     }
 
-    private bool Unhandled(MagicWarpType warpType, int skillId, UserSession caster)
+    private bool? Unhandled(MagicWarpType warpType, int skillId, UserSession caster)
     {
         logger.LogDebug(
             "Warp type {WarpType} has no destination rule: skill={SkillId} caster={Name}",
             warpType, skillId, caster.Name);
-        return true;
+        return null;
     }
 
     private async Task<bool> WarpToBindPointAsync(UserSession caster, MagicData magic)

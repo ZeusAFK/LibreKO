@@ -20,6 +20,16 @@ public class MagicReachTests : GameTestBase
     private const int Binding = 105630;
     private const int StoneBinding = 105632;
     private const int BindingStone = 379091000;
+    private const int SummonScroll = 490050;
+    private const int ChamberScroll = 490088;
+    private const int ScrollItem = 389050000;
+    private const int ShoutRow = 492010;
+    private const int ShoutItem = 900747000;
+    private const ushort TwoScrolls = 2;
+    private const int OddStealthRow = 490211;
+    private const int CureRow = 490300;
+    private const int CureItem = 389060000;
+    private const int NoOne = 99_999;
     private const short StoneBindingMana = 15;
     private const int Mace = 1111471741;
     private const short FireBlastMana = 40;
@@ -239,6 +249,46 @@ public class MagicReachTests : GameTestBase
     }
 
     [Theory]
+    [InlineData(SummonScroll, PlayerHp, 1)]
+    [InlineData(SummonScroll, 0, TwoScrolls)]
+    [InlineData(ChamberScroll, PlayerHp, TwoScrolls)]
+    [InlineData(ShoutRow, PlayerHp, TwoScrolls)]
+    [InlineData(OddStealthRow, PlayerHp, TwoScrolls)]
+    public async Task AScrollIsSpentOnlyWhenItsCastTakesEffect(int skillId, short friendHp, ushort scrollsLeft)
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 806, AccountNation.Karus, Moradon, Here);
+        var friend = Player(provider, 807, AccountNation.Karus, Moradon, Here + 30, friendHp);
+        var reagent = skillId == ShoutRow ? ShoutItem : ScrollItem;
+        var bag = caster.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = reagent;
+        bag.Count = TwoScrolls;
+        bag.Durability = 1;
+
+        await Cast(provider, caster, skillId, friend.CharacterId);
+
+        bag.Count.Should().Be(scrollsLeft);
+    }
+
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(false, TwoScrolls)]
+    public async Task ACurePotionIsSpentOnlyOnSomeoneThere(bool friendThere, ushort potionsLeft)
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 808, AccountNation.Karus, Moradon, Here);
+        var friend = Player(provider, 809, AccountNation.Karus, Moradon, Here + 5);
+        var bag = caster.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = CureItem;
+        bag.Count = TwoScrolls;
+        bag.Durability = 1;
+
+        await Cast(provider, caster, CureRow, friendThere ? friend.CharacterId : NoOne);
+
+        bag.Count.Should().Be(potionsLeft);
+    }
+
+    [Theory]
     [InlineData(10f, true)]
     [InlineData(200f, false)]
     public async Task ABindingReachesOnlyAMonsterWithinItsRange(float distance, bool provoked)
@@ -296,6 +346,37 @@ public class MagicReachTests : GameTestBase
             Msp = StoneBindingMana,
         });
         gameData.GetItem(BindingStone).Returns(new ItemData { Num = BindingStone, Countable = 1, Duration = 1 });
+        foreach (var (row, item, type) in new[]
+                 {
+                     (SummonScroll, ScrollItem, MagicSkillType.Warp), (ChamberScroll, ScrollItem, MagicSkillType.Warp),
+                     (ShoutRow, ShoutItem, MagicSkillType.None), (OddStealthRow, ScrollItem, MagicSkillType.Stealth),
+                 })
+        {
+            gameData.GetMagic(row).Returns(new MagicData
+            {
+                Id = row, Type1 = (byte)type, Moral = (byte)SkillMoral.FriendWithMe, UseItem = item, ItemGroup = 9,
+            });
+            gameData.GetItem(item).Returns(new ItemData { Num = item, Countable = 1, Duration = 1 });
+        }
+        gameData.MagicType8Table.Returns(new Dictionary<int, MagicType8Data>
+        {
+            [SummonScroll] = new() { Id = SummonScroll, WarpType = (byte)MagicWarpType.SummonInZone },
+            [ChamberScroll] = new() { Id = ChamberScroll, WarpType = (byte)MagicWarpType.ChamberScroll },
+        });
+        gameData.MagicType9Table.Returns(new Dictionary<int, MagicType9Data>
+        {
+            [OddStealthRow] = new() { Id = OddStealthRow, StateChange = (byte)MagicStealthType.Absoluteness },
+        });
+        gameData.GetMagic(CureRow).Returns(new MagicData
+        {
+            Id = CureRow, Type1 = (byte)MagicSkillType.Special, Moral = (byte)SkillMoral.FriendWithMe, Range = 20,
+            UseItem = CureItem, ItemGroup = 9,
+        });
+        gameData.GetItem(CureItem).Returns(new ItemData { Num = CureItem, Countable = 1, Duration = 1 });
+        gameData.MagicType5Table.Returns(new Dictionary<int, MagicType5Data>
+        {
+            [CureRow] = new() { Id = CureRow, Type = (byte)SpecialMagicType.RemoveDot },
+        });
         gameData.MagicType7Table.Returns(new Dictionary<int, MagicType7Data>
         {
             [Binding] = new() { Id = Binding, TargetChange = (byte)MagicAreaTargetChange.Provoke, HitRate = 100, Duration = 9, Damage = 10 },
