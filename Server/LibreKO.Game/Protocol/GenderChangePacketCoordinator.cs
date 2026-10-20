@@ -13,10 +13,11 @@ public interface IGenderChangePacketCoordinator
 }
 
 public class GenderChangePacketCoordinator(
-    IServiceScopeFactory scopeFactory,
     SessionManager sessionManager,
     IMagicItemUsageService magicItemUsageService,
     IZoneTransitionService zoneTransitionService,
+    ICharacterStatePersister statePersister,
+    IUserNotificationService userNotifications,
     ILogger<GenderChangePacketCoordinator> logger) : IGenderChangePacketCoordinator
 {
     public const int GenderChangeItem = 810594000;
@@ -47,28 +48,41 @@ public class GenderChangePacketCoordinator(
         }
 
         var oldRace = session.Race;
-        session.Race = race;
-        session.Face = face;
-        session.Hair = hair;
-        await magicItemUsageService.TryConsumeItemAsync(session, GenderChangeItem);
-        await PersistAsync(session);
+        var (oldFace, oldHair) = (session.Face, session.Hair);
+        var journal = new InventoryJournal(session);
+        // The item and the new look are saved together, and the race with them.
+        var outcome = await statePersister.CommitAsync(session, async db =>
+        {
+            var character = await db.Characters.FindAsync(session.CharacterId);
+            if (character == null || !session.WithLock(s =>
+                {
+                    if (!journal.TakeOneFromBag(GenderChangeItem))
+                        return false;
+                    (s.Race, s.Face, s.Hair) = (race, face, hair);
+                    return true;
+                }))
+                return false;
+
+            character.Race = race;
+            return true;
+        }, () => session.WithLock(s =>
+        {
+            journal.Restore();
+            (s.Race, s.Face, s.Hair) = (oldRace, oldFace, oldHair);
+        }));
+        if (outcome != StateCommit.Saved)
+        {
+            await client.SendPacket(GenderChangePacketWriter.Result(GenderChangePacketWriter.NoItem));
+            return;
+        }
+
+        var stack = journal.TouchedSlots.Single();
+        var item = session.Inventory[stack];
+        await userNotifications.SendStackChangeAsync(session, (byte)stack, item.ItemId, item.Count, item.Durability);
 
         logger.LogInformation("Gender change for {Name}: race {OldRace}→{NewRace}", session.Name, oldRace, race);
 
         await client.SendPacket(GenderChangePacketWriter.Change(session.CharacterId, race, face, hair));
         await zoneTransitionService.ChangeZoneAsync(session, session.ZoneId, session.X, session.Z);
-    }
-
-    private async Task PersistAsync(UserSession session)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var characters = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-        var character = await characters.GetById(session.CharacterId);
-        if (character == null)
-            return;
-        character.Race = session.Race;
-        character.Face = session.Face;
-        character.Hair = session.Hair;
-        await characters.UpdateAsync(character);
     }
 }

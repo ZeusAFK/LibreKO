@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -16,14 +16,19 @@ public interface IJobChangeService
 
 public class JobChangeService(
     IGameDataService gameDataService,
-    IServiceScopeFactory scopeFactory,
+    ICharacterStatePersister statePersister,
+    IUserNotificationService userNotifications,
     ICombatNotificationService combatNotificationService,
     ILogger<JobChangeService> logger) : IJobChangeService
 {
+    private sealed record Job(short Class, byte Race, byte Strength, byte Stamina, byte Dexterity, byte Intelligence, byte Magic,
+        short StatPoints, byte[] SkillPoints);
 
     public async Task HandlePromoteNoviceAsync(UserSession session, byte changeType, byte newJob)
     {
-        if (!Enum.IsDefined((JobChangeTarget)newJob) || changeType is > 1)
+        // A job change refills HP and MP, so it is no revive and no way out of a fight.
+        if (!Enum.IsDefined((JobChangeTarget)newJob) || changeType is > 1
+            || session.IsBusy || session.IsHeld || session.IsInCombat)
         {
             await SendFailAsync(session, JobChangeOutcome.JobError);
             return;
@@ -58,28 +63,38 @@ public class JobChangeService(
         }
         var (newClass, newRace) = resolved.Value;
 
-        if (!ConsumeToken(session, tokenId))
+        var oldClass = session.Class;
+        var oldRace = session.Race;
+        var journal = new InventoryJournal(session);
+        var before = session.WithLock(JobOf);
+        // The token and the new job are saved together, and the job's race with them.
+        var outcome = await statePersister.CommitAsync(session, async db =>
+        {
+            var character = await db.Characters.FindAsync(session.CharacterId);
+            if (character == null || !session.WithLock(s => TakeToken(s, journal, tokenId, newClass, newRace)))
+                return false;
+
+            character.Race = newRace;
+            return true;
+        }, () => session.WithLock(s =>
+        {
+            journal.Restore();
+            Restore(s, before);
+        }));
+        if (outcome != StateCommit.Saved)
         {
             await SendFailAsync(session, JobChangeOutcome.NoTokenOrSameClass);
             return;
         }
 
-        var oldClass = session.Class;
-        var oldRace = session.Race;
-        session.Class = newClass;
-        session.Race = newRace;
-
-        session.ApplyBaseStats();
-        session.StatPoints = ProgressionTable.StatPointsForLevel(session.Level);
-        session.ResetMasteryPoints();
-
+        var stack = journal.TouchedSlots.Single();
+        var token = session.Inventory[stack];
+        await userNotifications.SendStackChangeAsync(session, (byte)stack, token.ItemId, token.Count, token.Durability);
         var coefficient = gameDataService.GetCoefficient(session.Class);
         if (coefficient != null)
             session.RecalculateStats(coefficient, gameDataService);
         session.Hp = session.MaxHp;
         session.Mp = session.MaxMp;
-
-        _ = PersistAsync(session);
 
         await session.Client.SendPacket(ClassChangePacketWriter.JobChangeResult(JobChangeOutcome.Succeeded));
 
@@ -95,44 +110,28 @@ public class JobChangeService(
         await session.Client.SendPacket(ClassChangePacketWriter.JobChangeResult(outcome));
     }
 
-    private static bool ConsumeToken(UserSession session, int itemId)
+    private static bool TakeToken(UserSession session, InventoryJournal journal, int tokenId, short newClass, byte newRace)
     {
-        for (var i = InventoryConstants.SlotMax; i < InventoryConstants.SlotMax + InventoryConstants.HaveMax; i++)
-        {
-            var slot = session.Inventory[i];
-            if (slot.ItemId == itemId && slot.Count > 0)
-            {
-                slot.Count--;
-                if (slot.Count == 0) slot.Clear();
-                return true;
-            }
-        }
-        return false;
+        if (!journal.TakeOneFromBag(tokenId))
+            return false;
+
+        session.Class = newClass;
+        session.Race = newRace;
+        session.ApplyBaseStats();
+        session.StatPoints = ProgressionTable.StatPointsForLevel(session.Level);
+        session.ResetMasteryPoints();
+        return true;
     }
 
-    private async Task PersistAsync(UserSession session)
-    {
-        try
-        {
-            using var scope = scopeFactory.CreateScope();
-            var charRepo = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-            var character = await charRepo.GetById(session.CharacterId);
-            if (character == null) return;
-            character.Class = session.Class;
-            character.Race = session.Race;
-            character.Strength = session.Strength;
-            character.Stamina = session.Stamina;
-            character.Dexterity = session.Dexterity;
-            character.Intelligence = session.Intelligence;
-            character.Magic = session.Magic;
-            character.StatPoints = session.StatPoints;
-            character.SkillPointData = session.SkillPoints;
-            await charRepo.UpdateAsync(character);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Job change persist failed for {Name}", session.Name);
-        }
-    }
+    private static Job JobOf(UserSession session) => new(
+        session.Class, session.Race, session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic,
+        session.StatPoints, (byte[])session.SkillPoints.Clone());
 
+    private static void Restore(UserSession session, Job job)
+    {
+        (session.Class, session.Race, session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic) =
+            (job.Class, job.Race, job.Strength, job.Stamina, job.Dexterity, job.Intelligence, job.Magic);
+        session.StatPoints = job.StatPoints;
+        Array.Copy(job.SkillPoints, session.SkillPoints, job.SkillPoints.Length);
+    }
 }
