@@ -191,6 +191,21 @@ public class SessionLifecycleTests : GameTestBase
     }
 
     [Fact]
+    public async Task ALoginThatSucceedsClearsTheMissesBeforeIt()
+    {
+        using var provider = Provider();
+        using var scope = provider.CreateScope();
+        var preGame = scope.ServiceProvider.GetRequiredService<IPreGameService>();
+
+        for (var round = 0; round < 2; round++)
+        {
+            for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName - 1; miss++)
+                await preGame.LoginAsync(Login, "typo", Owner);
+            (await preGame.LoginAsync(Login, "pw", Owner)).Success.Should().BeTrue("a player's own typos are forgiven once they get in");
+        }
+    }
+
+    [Fact]
     public void AClientSaveIsAllowedAgainAfterTheCooldown()
     {
         var session = new UserSession(Client([]), 1, 1);

@@ -59,7 +59,9 @@ public class LoginService(
     public async Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN,
         LoginRequestFlags flags = LoginRequestFlags.None, string address = "")
     {
-        var locked = throttle.IsLocked(address, login);
+        var locked = !throttle.TryAttempt(address, login);
+        if (!locked)
+            await Task.Delay(throttle.SlowdownFor(login));
         var account = locked ? null : await accountRepository.GetByLogin(login);
         short remainingPremiumHours = 0;
         Server? occupiedServer = null;
@@ -129,9 +131,7 @@ public class LoginService(
             remainingPremiumHours = account.RemainingPremiumHours;
         }
 
-        if (!locked && result is LoginResult.IdNotFound or LoginResult.InvalidPassword)
-            throttle.Failed(address, login);
-        else if (result == LoginResult.Success)
+        if (result is not (LoginResult.IdNotFound or LoginResult.InvalidPassword))
             throttle.Succeeded(address, login);
 
         return result switch

@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Net;
+using FluentAssertions;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using Xunit;
@@ -9,6 +10,7 @@ public class LoginThrottleTests
 {
     private const string Address = "203.0.113.7";
     private const string OtherAddress = "198.51.100.9";
+    private const int Burst = 64;
 
     private sealed class Clock : TimeProvider
     {
@@ -21,13 +23,27 @@ public class LoginThrottleTests
     {
         var throttle = new LoginThrottle();
 
-        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
-            throttle.IsLocked(Address, "victim").Should().BeFalse();
-        Fail(throttle, Address, "victim", LoginThrottle.MaxFailuresPerName);
+        Attempts(throttle, Address, "victim", LoginThrottle.MaxFailuresPerName).Should().OnlyContain(allowed => allowed);
 
-        throttle.IsLocked(Address, "victim").Should().BeTrue();
-        throttle.IsLocked(Address, "VICTIM").Should().BeTrue("a login name is matched without case");
-        throttle.IsLocked(OtherAddress, "victim").Should().BeFalse("an attacker cannot lock someone else out of their account");
+        throttle.TryAttempt(Address, "victim").Should().BeFalse();
+        throttle.TryAttempt(Address, "VICTIM ").Should().BeFalse("the database matches the name without case or trailing spaces");
+        throttle.TryAttempt(Address, "Víctim").Should().BeFalse("nor accents");
+        throttle.TryAttempt(OtherAddress, "victim").Should().BeTrue("an attacker cannot lock someone else out of their account");
+    }
+
+    [Fact]
+    public void AttemptsSentAtOnceCannotAllSlipUnderTheLimit()
+    {
+        var throttle = new LoginThrottle();
+        var allowed = 0;
+
+        Parallel.For(0, Burst, _ =>
+        {
+            if (throttle.TryAttempt(Address, "victim"))
+                Interlocked.Increment(ref allowed);
+        });
+
+        allowed.Should().Be(LoginThrottle.MaxFailuresPerName);
     }
 
     [Fact]
@@ -36,10 +52,10 @@ public class LoginThrottleTests
         var throttle = new LoginThrottle();
 
         for (var name = 0; name < LoginThrottle.MaxFailuresPerAddress; name++)
-            throttle.Failed(Address, $"guess{name}");
+            throttle.TryAttempt(Address, $"guess{name}").Should().BeTrue();
 
-        throttle.IsLocked(Address, "fresh").Should().BeTrue("one address cannot try a password on account after account");
-        throttle.IsLocked(OtherAddress, "fresh").Should().BeFalse();
+        throttle.TryAttempt(Address, "fresh").Should().BeFalse("one address cannot try a password on account after account");
+        throttle.TryAttempt(OtherAddress, "fresh").Should().BeTrue();
     }
 
     [Fact]
@@ -47,15 +63,52 @@ public class LoginThrottleTests
     {
         var clock = new Clock();
         var throttle = new LoginThrottle(clock);
-        Fail(throttle, Address, "owner", LoginThrottle.MaxFailuresPerName - 1);
+        Attempts(throttle, Address, "owner", LoginThrottle.MaxFailuresPerName - 1);
+        throttle.TryAttempt(Address, "owner").Should().BeTrue();
         throttle.Succeeded(Address, "owner");
-        Fail(throttle, Address, "owner", LoginThrottle.MaxFailuresPerName - 1);
-        throttle.IsLocked(Address, "owner").Should().BeFalse("the success started the count again");
 
-        Fail(throttle, Address, "owner", 1);
-        throttle.IsLocked(Address, "owner").Should().BeTrue();
+        Attempts(throttle, Address, "owner", LoginThrottle.MaxFailuresPerName).Should().OnlyContain(allowed => allowed,
+            "the success started the count again");
+        throttle.TryAttempt(Address, "owner").Should().BeFalse();
         clock.Now += LoginThrottle.Window;
-        throttle.IsLocked(Address, "owner").Should().BeFalse("the lock lasts one window");
+        throttle.TryAttempt(Address, "owner").Should().BeTrue("the lock lasts one window");
+    }
+
+    [Fact]
+    public void ANameGuessedFromManyAddressesIsSlowedButNotLocked()
+    {
+        var throttle = new LoginThrottle();
+        for (var guess = 0; guess < LoginThrottle.FailuresBeforeSlowing; guess++)
+            throttle.TryAttempt($"192.0.2.{guess}", "victim");
+        throttle.SlowdownFor("victim").Should().Be(TimeSpan.Zero);
+
+        throttle.TryAttempt("192.0.2.200", "victim");
+
+        throttle.SlowdownFor("Victim").Should().Be(LoginThrottle.SlowdownStep);
+        throttle.TryAttempt(OtherAddress, "victim").Should().BeTrue("the owner still gets in, only more slowly");
+        for (var guess = 0; guess < LoginThrottle.FailuresBeforeSlowing; guess++)
+            throttle.TryAttempt($"198.18.0.{guess}", "victim");
+        throttle.SlowdownFor("victim").Should().Be(LoginThrottle.MaxSlowdown);
+    }
+
+    [Fact]
+    public void AnIpv6NetworkCountsAsOneAddress()
+    {
+        LoginThrottle.Bucket(IPAddress.Parse("2001:db8:1:2:aaaa::1"))
+            .Should().Be(LoginThrottle.Bucket(IPAddress.Parse("2001:db8:1:2:bbbb::9")));
+        LoginThrottle.Bucket(IPAddress.Parse("2001:db8:1:3::1"))
+            .Should().NotBe(LoginThrottle.Bucket(IPAddress.Parse("2001:db8:1:2::1")));
+        LoginThrottle.Bucket(IPAddress.Parse("::ffff:203.0.113.7")).Should().Be(Address);
+    }
+
+    [Fact]
+    public void AnUnknownAddressSharesNoBucket()
+    {
+        var throttle = new LoginThrottle();
+        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerAddress; miss++)
+            throttle.TryAttempt(string.Empty, "someone");
+
+        throttle.TryAttempt(string.Empty, "anyone").Should().BeTrue();
     }
 
     [Theory]
@@ -73,9 +126,6 @@ public class LoginThrottleTests
         (Client.LoggedBytes(serverType, packet) == Client.WithheldCredentials).Should().Be(withheld);
     }
 
-    private static void Fail(LoginThrottle throttle, string address, string login, int times)
-    {
-        for (var miss = 0; miss < times; miss++)
-            throttle.Failed(address, login);
-    }
+    private static List<bool> Attempts(LoginThrottle throttle, string address, string login, int times) =>
+        Enumerable.Range(0, times).Select(_ => throttle.TryAttempt(address, login)).ToList();
 }

@@ -52,16 +52,16 @@ public class PreGameService(
 
     public async Task<GameLoginResult> LoginAsync(string login, string password, string address = "")
     {
-        if (throttle.IsLocked(address, login))
+        if (!throttle.TryAttempt(address, login))
         {
             logger.LogWarning("Too many failed logins for {Login} from {Address}; refused without checking", login, address);
             return new(0, 0, false);
         }
 
+        await Task.Delay(throttle.SlowdownFor(login));
         var account = await accountRepository.GetByLogin(login);
         if (account == null || !PasswordHasher.Verify(password, account.Password))
         {
-            throttle.Failed(address, login);
             logger.LogWarning("Login failed for {Login}: invalid credentials", login);
             return new(0, 0, false);
         }
