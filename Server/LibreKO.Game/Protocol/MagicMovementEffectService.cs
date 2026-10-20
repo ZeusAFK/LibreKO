@@ -116,9 +116,10 @@ public class MagicMovementEffectService(
     private async Task<bool> SummonToCasterAsync(UserSession caster, MagicData magic, int targetId)
     {
         var target = sessionManager.GetByCharacterId(targetId);
+        // A trade, a stall or gathering counts on the player staying where they are.
         if (target == null
             || target.CharacterId == caster.CharacterId
-            || target.Hp <= 0
+            || target.IsBusy
             || target.ZoneId != caster.ZoneId
             || target.Room != caster.Room
             || !MaySummon(caster, target, (SkillMoral)magic.Moral)

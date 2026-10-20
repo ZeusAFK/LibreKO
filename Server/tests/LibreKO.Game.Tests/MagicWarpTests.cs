@@ -151,6 +151,30 @@ public class MagicWarpTests : GameTestBase
     }
 
     [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task SummonFriendLeavesABusyPartyMemberWhereTheyAre(bool trading, bool selling, bool mining)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, SummonFriendId, SkillMoral.Party, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.PartyIndex = friend.PartyIndex = 1;
+        if (trading)
+            friend.Trade.ExchangeUser = caster.CharacterId;
+        if (selling)
+            friend.Trade.MerchantState = MerchantMode.Selling;
+        friend.IsMining = mining;
+
+        await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
+
+        var busy = trading || selling || mining;
+        friend.X.Should().BeApproximately(busy ? 700 : caster.X, 0.5f, "a trade, a stall or gathering counts on the player staying put");
+    }
+
+    [Theory]
     [InlineData(Wolves, true)]
     [InlineData(Hounds, false)]
     public async Task RetrievingAClanMemberPullsOnlySomeoneOfTheCastersClan(short clan, bool pulled)
