@@ -1241,6 +1241,40 @@ public class ShoppingMallTests : GameTestBase
     }
 
     [Fact]
+    public async Task ALetterWhoseSaveFailsSendsWhatNoLongerFitsToTheWarehouse()
+    {
+        const int itemId = 810002000;
+        var faults = new LetterSaveFaults();
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { AccountId = 1, Name = "Recipient" },
+                new Character { Id = 34, AccountId = 44, Name = "Sender" }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Race = 1 }),
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (session, client, _) = LetterWriter(provider, characterId: 34, accountId: 44);
+        var item = session.Inventory[InventoryConstants.InventoryStart];
+        item.ItemId = itemId;
+        item.Count = 1;
+        item.Durability = 25;
+        faults.Meanwhile = () =>
+        {
+            for (var slot = 0; slot < InventoryConstants.HaveMax; slot++)
+            {
+                session.Inventory[InventoryConstants.InventoryStart + slot].ItemId = InventoryConstants.CypherRing;
+                session.Inventory[InventoryConstants.InventoryStart + slot].Count = 1;
+            }
+            session.Money = ExchangePacketConstants.CoinMax;
+        };
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>()
+            .HandleAsync(client, LetterWithItem("Recipient", itemId, 0));
+
+        session.Warehouse.Should().Contain(slot => slot.ItemId == itemId && slot.Durability == 25,
+            "the bag filled while the save ran, and the item must not vanish");
+        session.WarehouseMoney.Should().Be(ShoppingMallLetterProtocol.LetterSendItemCost);
+    }
+
+    [Fact]
     public async Task ALetterStillHoldingItsItemIsNotDeleted()
     {
         using var provider = CreateProvider(db => db.MailBoxes.AddRange(
@@ -1307,11 +1341,17 @@ public class ShoppingMallTests : GameTestBase
 
     private sealed class LetterSaveFaults : Microsoft.EntityFrameworkCore.Diagnostics.SaveChangesInterceptor
     {
+        public Action Meanwhile { get; set; } = () => { };
+
         public override ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>> SavingChangesAsync(
             Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData eventData,
-            Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
-            eventData.Context?.ChangeTracker.Entries<MailBox>().Any(entry => entry.State == EntityState.Added) == true
-                ? throw new DbUpdateException("the database went away")
-                : base.SavingChangesAsync(eventData, result, cancellationToken);
+            Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (eventData.Context?.ChangeTracker.Entries<MailBox>().Any(entry => entry.State == EntityState.Added) != true)
+                return base.SavingChangesAsync(eventData, result, cancellationToken);
+
+            Meanwhile();
+            throw new DbUpdateException("the database went away");
+        }
     }
 }

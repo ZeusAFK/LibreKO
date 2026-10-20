@@ -235,7 +235,7 @@ public class MailService(
             taken.Add((slot, new ExchangeItem
             {
                 ItemId = entry.ItemId, Count = count, Durability = entry.Durability, Flag = entry.Flag,
-                ExpiresAt = entry.ExpiresAt, UniqueId = entry.UniqueId, Countable = itemData.Countable != 0,
+                ExpiresAt = entry.ExpiresAt, UniqueId = entry.UniqueId, Countable = itemData.Countable != 0, SrcPos = (byte)slot,
             }));
             entry.Count = (ushort)(entry.Count - count);
             if (entry.Count == 0)
@@ -251,15 +251,14 @@ public class MailService(
         return null;
     }
 
+    // The bag or purse may have filled while the save ran, so what no longer fits goes to the warehouse.
     private void GiveBackAttachments(UserSession session, int gold, List<(int Slot, ExchangeItem Item)> taken)
     {
-        session.Money = (int)Math.Min((long)session.Money + gold, ExchangePacketConstants.CoinMax);
-        foreach (var (slot, item) in taken)
+        if (session.ReturnHeldGold(gold).Lost > 0)
+            logger.LogError("{Name}'s unsent mail gold found no room to come back", session.Name);
+        foreach (var (_, item) in taken)
         {
-            var back = ItemPlacement.FindForReturn(session.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item, slot);
-            if (back >= 0)
-                ItemPlacement.Put(session.Inventory[back], item);
-            else
+            if (!session.ReturnEscrowedItem(item))
                 logger.LogError("{Name}'s unsent mail item {ItemId} x{Count} found no room to come back", session.Name, item.ItemId, item.Count);
         }
     }

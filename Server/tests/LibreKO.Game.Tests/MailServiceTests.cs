@@ -709,6 +709,31 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task AMailWhoseSaveFailsSendsWhatNoLongerFitsToTheWarehouse()
+    {
+        var faults = new MailSaveFaults();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        alice.Money = Purse;
+        var sword = alice.Inventory[InventoryConstants.InventoryStart];
+        sword.ItemId = Sword;
+        sword.Count = 1;
+        sword.ExpiresAt = RentalEnds;
+        faults.Meanwhile = () =>
+        {
+            FillBagLeaving(alice, 0);
+            alice.Money = ExchangePacketConstants.CoinMax;
+        };
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Kit", "", MailedGold,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, 1)]);
+
+        alice.Warehouse.Should().Contain(slot => slot.ItemId == Sword && slot.ExpiresAt == RentalEnds,
+            "the bag filled while the save ran, and the sword must not vanish");
+        alice.WarehouseMoney.Should().Be(MailedGold);
+    }
+
+    [Fact]
     public async Task TheExpirySweepWaitsForThePlayersLock()
     {
         using var provider = Provider();
@@ -754,10 +779,16 @@ public class MailServiceTests : GameTestBase
 
     private sealed class MailSaveFaults : SaveChangesInterceptor
     {
+        public Action Meanwhile { get; set; } = () => { };
+
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
-            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
-            eventData.Context?.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added) == true
-                ? throw new DbUpdateException("the database went away")
-                : base.SavingChangesAsync(eventData, result, cancellationToken);
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (eventData.Context?.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added) != true)
+                return base.SavingChangesAsync(eventData, result, cancellationToken);
+
+            Meanwhile();
+            throw new DbUpdateException("the database went away");
+        }
     }
 }

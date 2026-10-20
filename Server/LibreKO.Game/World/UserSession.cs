@@ -776,7 +776,7 @@ public class UserSession
     }
 
     // Held gold goes into the purse up to the coin cap and the rest into the warehouse.
-    private (int ToPurse, int ToWarehouse, long Lost) ReturnHeldGold(long amount)
+    public (int ToPurse, int ToWarehouse, long Lost) ReturnHeldGold(long amount)
     {
         var (toPurse, toWarehouse) = SplitHeldGold(amount);
         Money += toPurse;
