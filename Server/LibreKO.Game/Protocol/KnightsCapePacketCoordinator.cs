@@ -19,9 +19,9 @@ public class KnightsCapePacketCoordinator(
     ILogger<KnightsCapePacketCoordinator> logger) : IKnightsCapePacketCoordinator
 {
     private const byte OpcodeNormalPurchase = 0;
-    private const byte OpcodeTicketPurchase = 1;
+    public const byte OpcodeTicketPurchase = 1;
     private const int CastellanTicketItem = 914006000;
-    private const int PaintCostClanPoints = 36000;
+    public const int PaintCostClanPoints = 36000;
     private const byte ChiefFame = 1;
     private const byte ClanFlagPromoted = 2;
 
@@ -142,7 +142,8 @@ public class KnightsCapePacketCoordinator(
             return;
         }
 
-        if (opcode == OpcodeNormalPurchase && reqClanPoints > 0 && clan.ClanPointFund < reqClanPoints)
+        // Paint costs clan points however it is asked for.
+        if (reqClanPoints > 0 && clan.ClanPointFund < reqClanPoints)
         {
             await SendFailAsync(client, CapeResult.NotEnoughClanPoints);
             return;
@@ -155,11 +156,8 @@ public class KnightsCapePacketCoordinator(
                 return;
         }
 
-        if (opcode == OpcodeNormalPurchase)
-        {
-            session.Money -= reqCoins;
-            clan.ClanPointFund -= reqClanPoints;
-        }
+        session.Money -= reqCoins;
+        clan.ClanPointFund -= reqClanPoints;
 
         if (capeId >= 0) clan.Cape = capeId;
         if (applyingPaint)
