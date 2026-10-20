@@ -194,6 +194,8 @@ public class LootPacketCoordinator(
 
         var picked = session.WithLock(s =>
         {
+            if (s.IsBusy)
+                return (Outcome: Pickup.Gone, Slot: -1, Count: (ushort)0, Money: 0);
             var slotIndex = ItemPlacement.FindForDelivery(s.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, delivery);
             if (slotIndex < 0)
                 return (Outcome: Pickup.NoRoom, Slot: slotIndex, Count: (ushort)0, Money: 0);

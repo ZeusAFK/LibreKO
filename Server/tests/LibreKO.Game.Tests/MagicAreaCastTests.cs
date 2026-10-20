@@ -107,6 +107,10 @@ public class MagicAreaCastTests : GameTestBase
         {
             Id = AreaCurse, Type1 = (byte)MagicSkillType.Buff, Moral = (byte)SkillMoral.AreaEnemy, Range = 20,
         });
+        gameData.MagicType5Table.Returns(new Dictionary<int, MagicType5Data>
+        {
+            [BurstNova] = new() { Id = BurstNova, Type = (byte)SpecialMagicType.RemoveDot },
+        });
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
         {
             [SingleCurse] = new() { Id = SingleCurse, BuffType = (byte)BuffType.Ac, Ac = -50, Duration = 30 },

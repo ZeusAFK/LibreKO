@@ -34,6 +34,11 @@ public class MagicReachTests : GameTestBase
     private const int StrayWarp = 490052;
     private const int StrayWarpCurse = StrayWarp + 80000;
     private const ushort ManyScrolls = 250;
+    private const int InfiltrationRow = 490119;
+    private const int InfiltrationPotion = 900067000;
+    private const byte InvisibilityPotionBuff = 163;
+    private const short InfiltrationSeconds = 80;
+    private const int BadAreaRow = 490213;
     private const int OneSecond = 1000;
     private const short StoneBindingMana = 15;
     private const int Mace = 1111471741;
@@ -259,7 +264,7 @@ public class MagicReachTests : GameTestBase
     [InlineData(ChamberScroll, PlayerHp, TwoScrolls)]
     [InlineData(ShoutRow, PlayerHp, TwoScrolls)]
     [InlineData(OddStealthRow, PlayerHp, TwoScrolls)]
-    [InlineData(HideThenSummon, PlayerHp, 1)]
+    [InlineData(HideThenSummon, PlayerHp, TwoScrolls)]
     public async Task AScrollIsSpentOnlyWhenItsCastTakesEffect(int skillId, short friendHp, ushort scrollsLeft)
     {
         using var provider = Provider();
@@ -277,7 +282,7 @@ public class MagicReachTests : GameTestBase
     }
 
     [Fact]
-    public async Task AScrollIsSpentWhenOnlyItsExtraEffectLands()
+    public async Task AnExtraEffectNeverLandsWhenTheFirstTypeWasRefused()
     {
         var clock = new Clock();
         using var provider = Provider(clock);
@@ -294,8 +299,96 @@ public class MagicReachTests : GameTestBase
             clock.Advance(OneSecond);
         }
 
-        enemy.ActiveBuffs.Should().ContainKey(StrayWarpCurse, "about one cast in ten lands the extra effect");
-        bag.Count.Should().Be(ManyScrolls - 1, "only the cast whose extra effect landed spent a scroll");
+        enemy.ActiveBuffs.Should().NotContainKey(StrayWarpCurse, "the extra row follows only a first type that took effect");
+        bag.Count.Should().Be(ManyScrolls, "no cast took effect");
+    }
+
+    [Theory]
+    [InlineData(0, false, 0)]
+    [InlineData(1, true, 0)]
+    public async Task AnInfiltrationPotionHidesOnlyWithThePotionAndSpendsIt(ushort potions, bool hidden, ushort potionsLeft)
+    {
+        using var provider = Provider();
+        var rogue = Player(provider, 814, AccountNation.Karus, Moradon, Here);
+        var bag = rogue.Inventory[InventoryConstants.InventoryStart];
+        if (potions > 0)
+        {
+            bag.ItemId = InfiltrationPotion;
+            bag.Count = potions;
+            bag.Durability = 1;
+        }
+
+        await Cast(provider, rogue, InfiltrationRow, rogue.CharacterId);
+
+        (rogue.Invisibility == InvisibilityType.Infiltration).Should().Be(hidden,
+            "the stealth half of the potion must not run when its buff half was refused");
+        bag.Count.Should().Be(potionsLeft);
+    }
+
+    [Fact]
+    public async Task AnInfiltrationPotionIsNotDrunkInCombat()
+    {
+        using var provider = Provider();
+        var rogue = Player(provider, 815, AccountNation.Karus, Moradon, Here);
+        var bag = rogue.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = InfiltrationPotion;
+        bag.Count = 1;
+        bag.Durability = 1;
+        rogue.MarkCombat();
+
+        await Cast(provider, rogue, InfiltrationRow, rogue.CharacterId);
+
+        rogue.Invisibility.Should().Be(InvisibilityType.None);
+        bag.Count.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task APotionIsNotDrunkFromAStall()
+    {
+        using var provider = Provider();
+        var rogue = Player(provider, 816, AccountNation.Karus, Moradon, Here);
+        var bag = rogue.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = InfiltrationPotion;
+        bag.Count = 1;
+        bag.Durability = 1;
+        rogue.Trade.MerchantState = MerchantMode.Selling;
+
+        await Cast(provider, rogue, InfiltrationRow, rogue.CharacterId);
+
+        rogue.Invisibility.Should().Be(InvisibilityType.None, "a buyer could take the potion from the stall while it is drunk");
+        bag.Count.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AnAreaRowTheServerCannotRunKeepsItsReagent()
+    {
+        using var provider = Provider();
+        var warrior = Player(provider, 817, AccountNation.Karus, Moradon, Here);
+        var bag = warrior.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = BindingStone;
+        bag.Count = TwoScrolls;
+        bag.Durability = 1;
+        var worm = Worm(provider, Here + 10);
+
+        await Cast(provider, warrior, BadAreaRow, worm.UniqueId);
+
+        bag.Count.Should().Be(TwoScrolls);
+    }
+
+    [Fact]
+    public async Task AnOverTimeCastThatFindsNoOneTakesNoEffect()
+    {
+        using var provider = Provider();
+        var mage = Player(provider, 818, AccountNation.Karus, Moradon, Here);
+        var worm = Worm(provider, Here + 10);
+        var overTime = provider.GetRequiredService<MagicOverTimeService>();
+        var fireBlast = provider.GetRequiredService<IGameDataService>().GetMagic(FireBlast)!;
+
+        var atNoOne = await overTime.ExecuteAsync(mage, fireBlast, FireBlast, NoOne, new int[7]);
+        var atTheWorm = await overTime.ExecuteAsync(mage, fireBlast, FireBlast, worm.UniqueId, new int[7]);
+
+        atNoOne.Should().BeFalse("its second type and extra row must not run");
+        atTheWorm.Should().BeTrue();
     }
 
     [Fact]
@@ -404,6 +497,16 @@ public class MagicReachTests : GameTestBase
             });
             gameData.GetItem(item).Returns(new ItemData { Num = item, Countable = 1, Duration = 1 });
         }
+        gameData.GetMagic(InfiltrationRow).Returns(new MagicData
+        {
+            Id = InfiltrationRow, Type1 = (byte)MagicSkillType.Buff, Type2 = (byte)MagicSkillType.Stealth,
+            Moral = (byte)SkillMoral.Self, UseItem = InfiltrationPotion, ItemGroup = 9,
+        });
+        gameData.GetItem(InfiltrationPotion).Returns(new ItemData { Num = InfiltrationPotion, Countable = 1, Duration = 1 });
+        gameData.GetMagic(BadAreaRow).Returns(new MagicData
+        {
+            Id = BadAreaRow, Type1 = (byte)MagicSkillType.Area, Moral = (byte)SkillMoral.Enemy, Range = 30, UseItem = BindingStone,
+        });
         gameData.GetMagic(StrayWarp).Returns(new MagicData
         {
             Id = StrayWarp, Type1 = (byte)MagicSkillType.Warp, Moral = (byte)SkillMoral.FriendWithMe,
@@ -430,6 +533,10 @@ public class MagicReachTests : GameTestBase
         {
             [OddStealthRow] = new() { Id = OddStealthRow, StateChange = (byte)MagicStealthType.Absoluteness },
             [HideThenSummon] = new() { Id = HideThenSummon, StateChange = (byte)MagicStealthType.Absoluteness },
+            [InfiltrationRow] = new()
+            {
+                Id = InfiltrationRow, StateChange = (byte)MagicStealthType.DispelOnAttack, Duration = InfiltrationSeconds,
+            },
         });
         gameData.GetMagic(CureRow).Returns(new MagicData
         {
@@ -445,6 +552,7 @@ public class MagicReachTests : GameTestBase
         {
             [Binding] = new() { Id = Binding, TargetChange = (byte)MagicAreaTargetChange.Provoke, HitRate = 100, Duration = 9, Damage = 10 },
             [StoneBinding] = new() { Id = StoneBinding, TargetChange = (byte)MagicAreaTargetChange.Provoke, HitRate = 100, Duration = 9, Damage = 10 },
+            [BadAreaRow] = new() { Id = BadAreaRow, TargetChange = byte.MaxValue, HitRate = 100, Duration = 9 },
         });
         gameData.GetItemOps(Mace).Returns(
             [new ItemOpData { ItemId = Mace, TriggerType = HealStrike.ItemOpOnEquip, SkillId = HealStrike.ArmingSkill, TriggerRate = 100 }]);
@@ -463,6 +571,7 @@ public class MagicReachTests : GameTestBase
         {
             [Curse] = new() { Id = Curse, BuffType = (byte)BuffType.Ac, Ac = -50, Duration = 30 },
             [StrayWarpCurse] = new() { Id = StrayWarpCurse, BuffType = (byte)BuffType.Ac, Ac = -50, Duration = 30 },
+            [InfiltrationRow] = new() { Id = InfiltrationRow, BuffType = InvisibilityPotionBuff, Duration = InfiltrationSeconds },
         });
     }, configureServices: services =>
     {

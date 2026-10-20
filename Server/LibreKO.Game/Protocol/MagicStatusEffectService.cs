@@ -44,18 +44,12 @@ public class MagicStatusEffectService(
         int[] data, bool isPrimary = true) =>
         skillType switch
         {
-            MagicSkillType.Buff => Ran(ExecuteBuffAsync(caster, magic, skillId, targetId, data, isPrimary)),
+            MagicSkillType.Buff => ExecuteBuffAsync(caster, magic, skillId, targetId, data, isPrimary),
             MagicSkillType.Special => ExecuteSpecialAsync(caster, magic, skillId, targetId),
-            MagicSkillType.Transform => Ran(ExecuteTransformAsync(caster, magic, skillId, targetId)),
+            MagicSkillType.Transform => ExecuteTransformAsync(caster, magic, skillId, targetId),
             MagicSkillType.Stealth => ExecuteStealthAsync(caster, magic, skillId, targetId, data),
             _ => Task.FromResult(false)
         };
-
-    private static async Task<bool> Ran(Task effect)
-    {
-        await effect;
-        return true;
-    }
 
     public async Task CancelAsync(UserSession session, int skillId)
     {
@@ -126,6 +120,12 @@ public class MagicStatusEffectService(
         return magicItemUsageService.CanUseSkillItems(caster, magic);
     }
 
+    private Task<bool> SpendTransformationItemsAsync(UserSession caster, MagicData magic, MagicType6Data type6Data) =>
+        (TransformationUse)type6Data.UserSkillUse == TransformationUse.Monster
+        && !(magicItemUsageService.CanUseItem(caster, magic.BeforeAction) && magicItemUsageService.CanUseSkillItems(caster, magic))
+            ? magicItemUsageService.TryConsumeItemAsync(caster, DisguiseScrollItem)
+            : magicItemUsageService.TryConsumeSkillItemAsync(caster, magic);
+
     private static bool IsTransformationClassAllowed(short classId, short allowedClasses)
     {
         if (allowedClasses == 0)
@@ -171,13 +171,13 @@ public class MagicStatusEffectService(
     private const float NpcDebuffReachSlack = 3f;
     private const float PlayerReachSlack = 3f;
 
-    private async Task ExecuteBuffAsync(
+    private async Task<bool> ExecuteBuffAsync(
         UserSession caster, MagicData magic, int skillId, int targetId, int[] data, bool isPrimary)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, skillId, out var type4Data))
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         if (isPrimary && magic.UseItem != 0)
@@ -190,7 +190,7 @@ public class MagicStatusEffectService(
                     skillId, caster.Name, magic.ConsumedItem,
                     magicItemUsageService.CheckItem(caster, magic.ConsumedItem), caster.Class, caster.Level);
                 await SendMagicFailAsync(caster, skillId);
-                return;
+                return false;
             }
         }
 
@@ -198,40 +198,39 @@ public class MagicStatusEffectService(
 
         if (targetId == AreaTarget && (SkillMoral)magic.Moral != SkillMoral.Self)
         {
-            await ExecuteAreaBuffAsync(caster, magic, skillId, type4Data, isDebuff, data, isPrimary);
-            return;
+            return await ExecuteAreaBuffAsync(caster, magic, skillId, type4Data, isDebuff, data, isPrimary);
         }
 
         if (isDebuff
             && sessionManager.GetByCharacterId(targetId) == null
             && sessionManager.Regions.GetNpc(targetId) is { } npcTarget)
         {
-            await ExecuteNpcDebuffAsync(caster, magic, skillId, npcTarget, type4Data, data, isPrimary);
-            return;
+            return await ExecuteNpcDebuffAsync(caster, magic, skillId, npcTarget, type4Data, data, isPrimary);
         }
 
         var target = ResolveBuffTarget(caster, magic, targetId);
         if (target == null)
-            return;
+            return false;
 
         var (outcome, affected) = await ApplyBuffToPlayerAsync(caster, target, magic, skillId, type4Data, isDebuff, isPrimary);
         if (outcome != BuffOutcome.Applied)
         {
             if (outcome == BuffOutcome.Refused && isPrimary)
                 await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         await AnnounceBuffAsync(caster, affected.CharacterId, skillId, type4Data, data);
+        return true;
     }
 
-    private async Task ExecuteAreaBuffAsync(
+    private async Task<bool> ExecuteAreaBuffAsync(
         UserSession caster, MagicData magic, int skillId, MagicType4Data type4Data, bool isDebuff,
         int[] data, bool isPrimary)
     {
@@ -239,6 +238,12 @@ public class MagicStatusEffectService(
         var centreX = AreaCoordinate(data[0], caster.X);
         var centreZ = AreaCoordinate(data[2], caster.Z);
         var applied = false;
+
+        if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
+        {
+            await SendMagicFailAsync(caster, skillId);
+            return false;
+        }
 
         foreach (var player in AreaPlayers(caster, moral, type4Data.Radius, centreX, centreZ).ToList())
         {
@@ -263,13 +268,7 @@ public class MagicStatusEffectService(
         }
 
         if (!isPrimary)
-            return;
-
-        if (!await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
-        {
-            await SendMagicFailAsync(caster, skillId);
-            return;
-        }
+            return applied;
 
         if (!applied || moral >= SkillMoral.All)
         {
@@ -279,9 +278,10 @@ public class MagicStatusEffectService(
                     MagicProcessOpcode.Effecting, skillId, (short)caster.CharacterId, AreaTarget, data),
                 excludeSender: false);
         }
+        return true;
     }
 
-    private async Task ExecuteNpcDebuffAsync(
+    private async Task<bool> ExecuteNpcDebuffAsync(
         UserSession caster, MagicData magic, int skillId, NpcInstance npc, MagicType4Data type4Data,
         int[] data, bool isPrimary)
     {
@@ -291,17 +291,18 @@ public class MagicStatusEffectService(
         {
             if (isPrimary)
                 await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         if (isPrimary && !await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic))
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         await AnnounceBuffAsync(caster, npc.UniqueId, skillId, type4Data, data);
         await controlStateService.SyncAsync(npc);
+        return true;
     }
 
     private static bool TryDebuffNpc(
@@ -707,12 +708,12 @@ public class MagicStatusEffectService(
         _ => PartyStatusIcon.None,
     });
 
-    private async Task ExecuteTransformAsync(UserSession caster, MagicData magic, int skillId, int targetId)
+    private async Task<bool> ExecuteTransformAsync(UserSession caster, MagicData magic, int skillId, int targetId)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType6Table, magic, skillId, out var type6Data))
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         var target = (SkillMoral)magic.Moral == SkillMoral.Self
@@ -724,19 +725,19 @@ public class MagicStatusEffectService(
             && !SiegeRules.SiegeTransformationAllowed(skillId, caster.ZoneId, sessionManager.Battle.CastleSiegeOpen))
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         switch (use)
         {
             case TransformationUse.GuardTower:
                 await SendMagicFailAsync(caster, skillId);
-                return;
+                return false;
             case TransformationUse.MovingTower:
                 if (caster.ZoneId != ZoneDelos)
                 {
                     await SendMagicFailAsync(caster, skillId);
-                    return;
+                    return false;
                 }
                 break;
         }
@@ -745,13 +746,13 @@ public class MagicStatusEffectService(
             || !IsTransformationClassAllowed(caster.Class, type6Data.Class))
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         if (type6Data.Nation != (byte)EntityNation.All && (byte)target.Nation != type6Data.Nation)
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         if (target.IsTransformed)
@@ -760,18 +761,24 @@ public class MagicStatusEffectService(
                 "Transformation {SkillId} refused for {Name}: already transformed as {TransformId}",
                 skillId, caster.Name, target.TransformId);
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         if (type6Data.SkillSuccessRate > 0 && type6Data.SkillSuccessRate < 100
             && Random.Shared.Next(100) >= type6Data.SkillSuccessRate)
         {
             await SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
+        }
+
+        if (!await SpendTransformationItemsAsync(caster, magic, type6Data))
+        {
+            await SendMagicFailAsync(caster, skillId);
+            return false;
         }
 
         await ApplyTransformationAsync(caster, target, skillId, type6Data);
-        await magicItemUsageService.TryConsumeSkillItemAsync(caster, magic);
+        return true;
     }
 
     public async Task<bool> TransformAsync(UserSession target, int skillId)

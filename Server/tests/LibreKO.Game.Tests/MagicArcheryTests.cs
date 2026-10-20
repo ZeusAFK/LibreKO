@@ -65,6 +65,21 @@ public class MagicArcheryTests : GameTestBase
     }
 
     [Fact]
+    public async Task TheLastArrowInTheQuiverStillHits()
+    {
+        using var provider = Provider();
+        var (archer, client) = ArcherWith(provider, bow: true);
+        archer.Inventory[InventoryConstants.InventoryStart].Count = 1;
+        var worm = Worm(provider);
+
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, Shot, worm.UniqueId);
+        await Send(provider, client, archer, MagicProcessOpcode.Effecting, Shot, worm.UniqueId);
+
+        worm.Hp.Should().BeLessThan(WormHp, "the arrow was spent when it was loosed, not when it lands");
+        Arrows(archer).Should().Be(0);
+    }
+
+    [Fact]
     public async Task AVolleyHitsOncePerArrow()
     {
         using var provider = Provider();

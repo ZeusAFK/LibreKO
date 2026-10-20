@@ -365,21 +365,43 @@ public class MagicPacketCoordinator(
         return false;
     }
 
-    private Task HandleClientExecutionAsync(
+    private async Task HandleClientExecutionAsync(
         UserSession session,
         MagicData magic,
         int skillId,
         int targetId,
         int[] data)
     {
+        if (magic.UseItem != 0 && PaysFromTheCastersBag(magic, skillId)
+            && ((session.Hp > 0 && session.IsBusy)
+                || (magic.PrimaryType != MagicSkillType.Transform && !magicItemUsageService.CanUseSkillItems(session, magic))))
+        {
+            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
+            return;
+        }
+
+        if (session.IsInCombat && StealthRules.IsInfiltrationPotion(gameDataService, skillId))
+        {
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, StealthRules.InCombatRefusal));
+            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
+            return;
+        }
+
         if (magic.PrimaryType == MagicSkillType.Melee)
-            return ExecuteMeleeWithManaCostAsync(session, magic, skillId, targetId, data);
-
-        if (magic.PrimaryType != MagicSkillType.OverTime)
-            return ExecuteOtherWithManaCostAsync(session, magic, skillId, targetId, data);
-
-        return ExecuteOverTimeWithManaCostAsync(session, magic, skillId, targetId, data);
+            await ExecuteMeleeWithManaCostAsync(session, magic, skillId, targetId, data);
+        else if (magic.PrimaryType != MagicSkillType.OverTime)
+            await ExecuteOtherWithManaCostAsync(session, magic, skillId, targetId, data);
+        else
+            await ExecuteOverTimeWithManaCostAsync(session, magic, skillId, targetId, data);
     }
+
+    private bool PaysFromTheCastersBag(MagicData magic, int skillId) => magic.PrimaryType switch
+    {
+        MagicSkillType.Ranged => false,
+        MagicSkillType.Special => !MagicTypeLookup.TryResolve(gameDataService.MagicType5Table, magic, skillId, out var type5)
+            || (SpecialMagicType)type5.Type != SpecialMagicType.Resurrection,
+        _ => true,
+    };
 
     private async Task HandleCastingAsync(UserSession session, MagicData magic, int targetId, int[] data)
     {
@@ -403,19 +425,6 @@ public class MagicPacketCoordinator(
         int targetId,
         int[] data)
     {
-        if (!magicItemUsageService.CanUseSkillItems(session, magic))
-        {
-            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
-            return;
-        }
-
-        if (session.IsInCombat && StealthRules.IsInfiltrationPotion(gameDataService, skillId))
-        {
-            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, StealthRules.InCombatRefusal));
-            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
-            return;
-        }
-
         if (!await TryPaySkillCostAsync(session, magic, skillId))
             return;
 
@@ -436,12 +445,6 @@ public class MagicPacketCoordinator(
         int[] data)
     {
         var paysHere = magic.UseItem != 0 && !PaysItsOwnReagent(magic, skillId);
-        if (paysHere && (session.IsBusy || !magicItemUsageService.CanUseSkillItems(session, magic)))
-        {
-            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
-            return;
-        }
-
         if (magic.PrimaryType != MagicSkillType.Ranged && !await TryPaySkillCostAsync(session, magic, skillId))
             return;
 

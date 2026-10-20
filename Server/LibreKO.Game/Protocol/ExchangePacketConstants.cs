@@ -6,7 +6,7 @@ internal static class ExchangePacketConstants
 {
     public static bool IsWithinTradeRange(UserSession a, UserSession b)
     {
-        if (a.ZoneId != b.ZoneId)
+        if (a.ZoneId != b.ZoneId || a.Room != b.Room)
             return false;
 
         var dx = a.X - b.X;

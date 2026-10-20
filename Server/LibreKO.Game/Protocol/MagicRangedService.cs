@@ -11,12 +11,12 @@ public class MagicRangedService(
     IGameDataService gameDataService,
     ICombatLifecycleService combatLifecycleService)
 {
-    public async Task ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    public async Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType2Table, magic, skillId, out var type2Data))
         {
             await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         var finalDamage = 0;
@@ -26,7 +26,7 @@ public class MagicRangedService(
             if (!PvpRules.CanAttackPlayer(caster, target))
             {
                 await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-                return;
+                return false;
             }
 
             var items = target.BlockPhysical
@@ -62,13 +62,13 @@ public class MagicRangedService(
             if (npcTarget != null && npcTarget.IsAlive && !NpcHostility.IsAttackableBy(npcTarget, caster))
             {
                 await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-                return;
+                return false;
             }
 
             if (npcTarget == null || !npcTarget.IsAlive || npcTarget.ZoneId != caster.ZoneId)
             {
                 await EchoAsync(caster, skillId, targetId, data, 0);
-                return;
+                return true;
             }
 
             combatLifecycleService.SetNpcAggro(npcTarget, caster);
@@ -94,6 +94,7 @@ public class MagicRangedService(
         }
 
         await EchoAsync(caster, skillId, targetId, data, finalDamage);
+        return true;
     }
 
     private async Task EchoAsync(UserSession caster, int skillId, int targetId, int[] data, int finalDamage)

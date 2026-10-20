@@ -7,7 +7,7 @@ namespace LibreKO.Game.Protocol;
 
 public interface IMagicCombatEffectService
 {
-    Task ExecuteAsync(
+    Task<bool> ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
         int[] data);
     Task CancelAsync(UserSession target, int skillId);
@@ -19,7 +19,7 @@ public class MagicCombatEffectService(
     MagicOverTimeService overTimeService,
     MagicAreaService areaService) : IMagicCombatEffectService
 {
-    public Task ExecuteAsync(
+    public Task<bool> ExecuteAsync(
         UserSession caster, MagicData magic, MagicSkillType skillType, int skillId, int targetId,
         int[] data)
     {
@@ -30,7 +30,7 @@ public class MagicCombatEffectService(
             MagicSkillType.Ranged => rangedService.ExecuteAsync(caster, magic, skillId, targetId, data),
             MagicSkillType.OverTime => overTimeService.ExecuteAsync(caster, magic, skillId, targetId, data),
             MagicSkillType.Area => areaService.ExecuteAsync(caster, magic, skillId, targetId, data),
-            _ => Task.CompletedTask
+            _ => Task.FromResult(false)
         };
     }
 

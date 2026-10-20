@@ -28,6 +28,7 @@ public class MerchantStallTests : GameTestBase
     private const int RingSerial = 4242;
     private const float FarAway = 500f;
     private const int SomeoneElse = 1;
+    private const ushort OtherRoom = 3;
 
     [Fact]
     public async Task ABuyFromASlotThatNoLongerHoldsTheListedItemSellsNothing()
@@ -69,8 +70,12 @@ public class MerchantStallTests : GameTestBase
         ring.UniqueId.Should().Be(777);
     }
 
-    [Fact]
-    public async Task ABuyerInTheMiddleOfATradeBuysNothing()
+    [Theory]
+    [InlineData(BusyAs.Trading)]
+    [InlineData(BusyAs.Merchanting)]
+    [InlineData(BusyAs.Mining)]
+    [InlineData(BusyAs.Dead)]
+    public async Task ABuyerWhoIsBusyBuysNothing(BusyAs busy)
     {
         using var market = new Market();
         var seller = market.Player(96041, gold: 0);
@@ -79,12 +84,37 @@ public class MerchantStallTests : GameTestBase
         seller.Trade.MerchantState = MerchantMode.Selling;
         var buyer = market.Player(96042, gold: StartingGold);
         buyer.Trade.MerchantTargetUserId = seller.CharacterId;
-        buyer.Trade.ExchangeUser = SomeoneElse;
+        switch (busy)
+        {
+            case BusyAs.Trading: buyer.Trade.ExchangeUser = SomeoneElse; break;
+            case BusyAs.Merchanting: buyer.Trade.IsSellingMerchantPreparing = true; break;
+            case BusyAs.Mining: buyer.IsMining = true; break;
+            case BusyAs.Dead: buyer.Hp = 0; break;
+        }
 
         await market.BuyAsync(buyer, Ware, 1);
 
-        CountIn(buyer, Ware).Should().Be(0, "a buyer who is trading cannot also buy from a stall");
+        CountIn(buyer, Ware).Should().Be(0, "a busy buyer cannot also buy from a stall");
         buyer.Money.Should().Be(StartingGold);
+    }
+
+    public enum BusyAs { Trading, Merchanting, Mining, Dead }
+
+    [Fact]
+    public async Task ABuyerInAnotherRoomBuysNothing()
+    {
+        using var market = new Market();
+        var seller = market.Player(96059, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var buyer = market.Player(96060, gold: StartingGold);
+        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Room = OtherRoom;
+
+        await market.BuyAsync(buyer, Ware, 1);
+
+        CountIn(buyer, Ware).Should().Be(0, "a stall in one instance room does not sell into another");
     }
 
     [Fact]

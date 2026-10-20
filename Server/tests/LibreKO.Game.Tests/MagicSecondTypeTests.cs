@@ -58,6 +58,19 @@ public class MagicSecondTypeTests
         await combat.DidNotReceiveWithAnyArgs().ExecuteAsync(default!, default!, 0, 0, 0, default!);
     }
 
+    [Fact]
+    public async Task AFirstTypeThatIsRefusedRunsNothingElse()
+    {
+        var (execution, combat, status, _) = CreateExecutionService();
+        combat.ExecuteAsync(default!, default!, default, default, default, default!).ReturnsForAnyArgs(false);
+        var magic = new MagicData { Id = SkillId, Type1 = 3, Type2 = 4 };
+
+        var tookEffect = await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
+
+        tookEffect.Should().BeFalse();
+        await status.DidNotReceiveWithAnyArgs().ExecuteAsync(default!, default!, 0, 0, 0, default!);
+    }
+
     private static UserSession Caster() => new(Substitute.For<IClient>(), characterId: 7, accountId: 7);
 
     private static (IMagicExecutionService Execution,
@@ -68,6 +81,9 @@ public class MagicSecondTypeTests
         var combat = Substitute.For<IMagicCombatEffectService>();
         var status = Substitute.For<IMagicStatusEffectService>();
         var movement = Substitute.For<IMagicMovementEffectService>();
+        combat.ExecuteAsync(default!, default!, default, default, default, default!).ReturnsForAnyArgs(true);
+        status.ExecuteAsync(default!, default!, default, default, default, default!, default).ReturnsForAnyArgs(true);
+        movement.ExecuteAsync(default!, default!, default, default, default!).ReturnsForAnyArgs(true);
 
         var gameData = Substitute.For<IGameDataService>();
         gameData.MagicType1Table.Returns(new Dictionary<int, MagicType1Data> { [SkillId] = new() { Id = SkillId } });

@@ -347,6 +347,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         caster.TransformId.Should().Be(
             2200,
             "carrying the Disguise Scroll is enough on its own: it stands in for both the scroll and the gem");
+        caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(9, "standing in for them, it is spent");
         sent.Should().ContainSingle(s => s.GetOpcode() == (byte)GameOpcodes.GS_STATE_CHANGE);
     }
 

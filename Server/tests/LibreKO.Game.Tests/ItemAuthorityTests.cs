@@ -48,6 +48,7 @@ public class ItemAuthorityTests : GameTestBase
     private const ushort Split = 2;
     private const int NotAKeeper = 15_001;
     private const short PlayerMaxHp = 100;
+    private const float FarFromTheKeeper = 50f;
 
     [Theory]
     [InlineData(Sword, false)]
@@ -292,6 +293,22 @@ public class ItemAuthorityTests : GameTestBase
     }
 
     [Fact]
+    public async Task StorageStopsWorkingOnceThePlayerWalksAwayFromTheKeeper()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2018);
+        StandAtWarehouseKeeper(provider, client);
+        await OpenWarehouse(provider, client);
+        player.X += FarFromTheKeeper;
+        Put(Bag(player, BagFirst), Sword);
+
+        await Store(provider, client, Sword, BagFirst, 0, 1);
+
+        player.Warehouse[0].IsEmpty.Should().BeTrue();
+        Bag(player, BagFirst).ItemId.Should().Be(Sword);
+    }
+
+    [Fact]
     public async Task TheRouletteHandsOutNoFreeSpins()
     {
         using var provider = Provider();
@@ -323,7 +340,7 @@ public class ItemAuthorityTests : GameTestBase
     }
 
     [Fact]
-    public async Task AGenieClaimLoadedFromTheDatabaseCountsForToday()
+    public async Task AGenieClaimLoadedWithTheCharacterCountsForToday()
     {
         using var provider = Provider();
         var (player, client) = Player(provider, 2010);
