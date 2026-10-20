@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
@@ -22,11 +22,6 @@ public class MessengerPacketCoordinator(
     private const byte MessengerResultOk = 1;
     private const byte MessengerResultOffline = 0;     // target not online / not found
     private const byte MessengerResultBad = 2;         // empty target / text
-
-    private const int MessengerMaxLog = 30;            // recent messages kept per charId
-
-    // charId -> recent received whispers ("fromName: text"), newest last (in-memory; resets on restart).
-    private static readonly Dictionary<int, List<string>> messengerLog = new();
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -91,22 +86,9 @@ public class MessengerPacketCoordinator(
             return;
         }
 
-        AppendMessengerLog(target.CharacterId, $"{session.Name}: {text}");
         logger.LogDebug("{From} -> {To} (messenger): {Text}", session.Name, toName, text);
 
         await session.Client.SendPacket(MessengerPacketWriter.WhisperResult(
             MessengerSubSend, MessengerResultOk, toName));
-    }
-
-    private static void AppendMessengerLog(int charId, string line)
-    {
-        if (!messengerLog.TryGetValue(charId, out var log))
-        {
-            log = new List<string>();
-            messengerLog[charId] = log;
-        }
-        log.Add(line);
-        if (log.Count > MessengerMaxLog)
-            log.RemoveRange(0, log.Count - MessengerMaxLog);
     }
 }
