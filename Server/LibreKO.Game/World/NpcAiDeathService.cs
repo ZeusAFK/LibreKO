@@ -20,6 +20,9 @@ public class NpcAiDeathService(
 {
     public async Task HandlePlayerKilledByNpcAsync(UserSession target, NpcInstance npc)
     {
+        if (!target.TryRecordDeath())
+            return;
+
         var deadPacket = DeathPacketWriter.PlayerDeath(target.CharacterId, npc.UniqueId);
         await sessionManager.Regions.SendToRegion(target, deadPacket, excludeSender: false);
 

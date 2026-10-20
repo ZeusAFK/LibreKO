@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -148,6 +148,42 @@ public class DeathStateTests : GameTestBase
         deadPacket.ResetOffset();
         deadPacket.ReadInt().Should().Be(victim.CharacterId);
         deadPacket.ReadInt().Should().Be(CombatLifecycleService.NoKillerId);
+    }
+
+    [Fact]
+    public async Task HandlePlayerDeathAsync_CountsTwoBlowsOnOneLifeAsOneDeath()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var victim = CreateSession(sessionManager, 9501, AccountNation.Karus, []);
+        var killer = CreateSession(sessionManager, 9502, AccountNation.ElMorad, []);
+        victim.MaxHp = 100;
+        victim.Hp = 0;
+        sessionManager.Regions.AddToRegion(victim);
+        var lifecycle = provider.GetRequiredService<ICombatLifecycleService>();
+
+        await Task.WhenAll(lifecycle.HandlePlayerDeathAsync(victim, killer), lifecycle.HandlePlayerDeathAsync(victim, killer));
+
+        victim.Deaths.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HandlePlayerDeathAsync_CountsTheNextLifesDeathAgain()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var victim = CreateSession(sessionManager, 9503, AccountNation.Karus, []);
+        victim.MaxHp = 100;
+        victim.Hp = 0;
+        sessionManager.Regions.AddToRegion(victim);
+        var lifecycle = provider.GetRequiredService<ICombatLifecycleService>();
+
+        await lifecycle.HandlePlayerDeathAsync(victim, killer: null);
+        victim.Hp = victim.MaxHp;
+        victim.Hp = 0;
+        await lifecycle.HandlePlayerDeathAsync(victim, killer: null);
+
+        victim.Deaths.Should().Be(2);
     }
 
     [Theory]

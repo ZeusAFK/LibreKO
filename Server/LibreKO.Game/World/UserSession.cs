@@ -125,7 +125,22 @@ public class UserSession
 
     // Derived stats
     public short MaxHp { get; set; }
-    public short Hp { get; set; }
+    private short hp;
+    private int deathRecorded;
+
+    public short Hp
+    {
+        get => hp;
+        set
+        {
+            hp = value;
+            if (value > 0 && Volatile.Read(ref deathRecorded) != 0)
+                Interlocked.Exchange(ref deathRecorded, 0);
+        }
+    }
+
+    // One death per life: a second blow on the corpse records nothing.
+    public bool TryRecordDeath() => Interlocked.CompareExchange(ref deathRecorded, 1, 0) == 0;
     public short MaxMp { get; set; }
     public short Mp { get; set; }
 
