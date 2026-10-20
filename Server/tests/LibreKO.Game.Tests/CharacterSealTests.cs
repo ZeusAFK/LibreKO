@@ -37,6 +37,56 @@ public class CharacterSealTests : GameTestBase
 
     public enum Carried { Bound, Rented, Timed, TradeLockedData, NoTradeNumber, PetLink, UnknownItem }
 
+    public enum Held { Mail, Letter, AuctionBid, SlaveMerchant }
+
+    [Theory]
+    [InlineData(Held.Mail)]
+    [InlineData(Held.Letter)]
+    [InlineData(Held.AuctionBid)]
+    [InlineData(Held.SlaveMerchant)]
+    public async Task ACharacterWithSomethingWaitingOutsideTheBagIsNotSealed(Held what)
+    {
+        using var provider = Provider();
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            switch (what)
+            {
+                case Held.Mail:
+                    db.Mails.Add(new Mail
+                    {
+                        RecipientCharacterId = 11, Subject = "Gift", SentAt = DateTime.UtcNow,
+                        Attachments = [new MailAttachment { Kind = MailAttachmentKind.Item, ItemId = TradeLocked, Count = 1 }],
+                    });
+                    break;
+                case Held.Letter:
+                    db.MailBoxes.Add(new MailBox
+                    {
+                        RecipientId = "Velkan", SenderId = "Shop", Subject = "Gift", Message = "Gift", SendDate = DateTime.UtcNow,
+                        Status = ShoppingMallLetterProtocol.LetterStatusNew, Type = ShoppingMallPacketWriter.LetterTypeWithItem, ItemId = TradeLocked, Count = 1,
+                    });
+                    break;
+                case Held.AuctionBid:
+                    db.AuctionBids.Add(new AuctionBid { CharacterId = 11, CharacterName = "Velkan", Status = AuctionBidStatus.Won, PlacedAt = DateTime.UtcNow });
+                    break;
+                case Held.SlaveMerchant:
+                    db.SlaveMerchants.Add(new SlaveMerchantData { OwnerCharacterId = 11, OwnerAccountId = AccountA, OwnerName = "Velkan", BotName = "Velkan's Slave" });
+                    break;
+            }
+
+            await db.SaveChangesAsync();
+        }
+
+        var session = Session(provider, 10, AccountA, "Zeus");
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
+
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId.Should().Be(Scroll,
+            "what waits for the character outside its bag would change hands with the ring");
+    }
+
     private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null) => CreateProvider(db =>
     {
         db.Accounts.Add(new Account { Id = AccountA, Login = "a", Password = "x", Nation = AccountNation.Karus });

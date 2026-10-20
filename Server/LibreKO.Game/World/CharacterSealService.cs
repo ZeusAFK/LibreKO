@@ -3,6 +3,7 @@ using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using Microsoft.EntityFrameworkCore;
@@ -125,7 +126,7 @@ public sealed class CharacterSealService(
         {
             var target = await db.Characters.SingleOrDefaultAsync(character => character.Name == name);
             if (target == null || target.AccountId != session.AccountId || target.Sealed || target.IsOnline
-                || (target.KnightsId > 0 && target.Fame == ClanRules.FameChief))
+                || (target.KnightsId > 0 && target.Fame == ClanRules.FameChief) || await HoldsElsewhereAsync(db, target))
                 return false;
             if (CarriedRefusal(target) is { } carried)
             {
@@ -160,6 +161,14 @@ public sealed class CharacterSealService(
         scroll.UniqueId = characterId;
         return true;
     }
+
+    // Unclaimed mail and letters, open auction bids and a slave merchant would go into the ring with the character.
+    private static async Task<bool> HoldsElsewhereAsync(AppDbContext db, Character character) =>
+        await db.Mails.AnyAsync(mail => mail.RecipientCharacterId == character.Id && !mail.Deleted && mail.ClaimedAt == null && mail.Attachments.Any())
+        || await db.MailBoxes.AnyAsync(letter => letter.RecipientId == character.Name && !letter.Deleted
+            && letter.Status == ShoppingMallLetterProtocol.LetterStatusNew && letter.Type == ShoppingMallPacketWriter.LetterTypeWithItem)
+        || await db.AuctionBids.AnyAsync(bid => bid.CharacterId == character.Id && bid.ClosedAt == null)
+        || await db.SlaveMerchants.AnyAsync(slave => slave.OwnerCharacterId == character.Id);
 
     // A character goes into a ring only with what could change hands without one.
     private short? CarriedRefusal(Character character)
