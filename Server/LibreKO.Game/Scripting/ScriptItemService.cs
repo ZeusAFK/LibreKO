@@ -334,7 +334,7 @@ public class ScriptItemService(
             || give.Any(e => e.itemId is not (InventoryConstants.ItemGold or InventoryConstants.ItemExperience
                 or InventoryConstants.ItemQuestCount or InventoryConstants.ItemLadderPoint) && gameData.GetItem(e.itemId) is null)
             || take.Concat(granted).Any(e => e.itemId <= 0 || e.count <= 0)
-            || !CanInsertRewards(granted))
+            || !CanInsertRewards(give))
             return false;
         foreach (var group in take.GroupBy(e => e.itemId == InventoryConstants.ItemQuestCount
                      ? InventoryConstants.ItemLadderPoint : e.itemId))
@@ -460,7 +460,7 @@ public class ScriptItemService(
             return false;
         }
 
-        if (FindEmptyInventorySlot(rewardItemId) < 0)
+        if (session.FindSlotForItem(rewardItemId, gameData, (ushort)Math.Min(giveCount, ushort.MaxValue)) < 0)
             return false;
 
         // Consume one ore, grant the reward.
@@ -482,21 +482,6 @@ public class ScriptItemService(
         logger.LogInformation("Mining exchange: {Name} ore={OreType} {Origin}→{Reward}×{Count}",
             session.Name, oreType, originItemId, rewardItemId, giveCount);
         return true;
-    }
-
-    private int FindEmptyInventorySlot(int rewardItemId)
-    {
-        var itemData = gameData.GetItem(rewardItemId);
-        var stackable = itemData?.Countable == 1;
-        for (var i = InventoryConstants.InventoryStart;
-             i < InventoryConstants.InventoryStart + InventoryConstants.HaveMax;
-             i++)
-        {
-            var slot = session.Inventory[i];
-            if (slot.IsEmpty) return i;
-            if (stackable && slot.ItemId == rewardItemId && slot.IsPlain && slot.Count < MaxItemCount) return i;
-        }
-        return -1;
     }
 
     private int FirstEmptyBagSlot()
@@ -785,7 +770,10 @@ public class ScriptItemService(
         }
     }
 
-    private bool CanInsertRewards(IEnumerable<(int itemId, int count)> rewards)
+    private bool CanInsertRewards(IEnumerable<(int itemId, int count)> rewards) =>
+        CanInsertRewards(rewards.Select(reward => (reward.itemId, reward.count, 0)));
+
+    private bool CanInsertRewards(IEnumerable<(int itemId, int count, int rentalHours)> rewards)
     {
         var snapshot = session.Inventory
             .Select(slot =>
@@ -796,9 +784,9 @@ public class ScriptItemService(
             })
             .ToArray();
 
-        foreach (var (itemId, count) in rewards)
+        foreach (var (itemId, count, rentalHours) in rewards)
         {
-            if (TryInsertItem(snapshot, itemId, count, applyChanges: true) < 0)
+            if (TryInsertItem(snapshot, itemId, count, rentalHours, applyChanges: true) < 0)
             {
                 if (count > 0 && gameData.GetItem(itemId) is not null)
                     context.FailAction(InventoryFullReason);
@@ -809,7 +797,7 @@ public class ScriptItemService(
         return true;
     }
 
-    private int TryInsertItem(ItemSlot[] inventory, int itemId, int count, bool applyChanges)
+    private int TryInsertItem(ItemSlot[] inventory, int itemId, int count, int rentalHours, bool applyChanges)
     {
         if ((itemId == InventoryConstants.ItemGold || itemId == InventoryConstants.ItemExperience || itemId == InventoryConstants.ItemQuestCount || itemId == InventoryConstants.ItemLadderPoint) && count > 0)
             return 0;
@@ -818,7 +806,8 @@ public class ScriptItemService(
         if (itemData == null || count <= 0)
             return -1;
 
-        if (itemData.Countable != 0)
+        // A rental takes a slot of its own, as GiveItem gives it.
+        if (itemData.Countable != 0 && rentalHours <= 0)
         {
             for (var index = InventoryConstants.InventoryStart;
                  index < InventoryConstants.InventoryStart + InventoryConstants.HaveMax;
@@ -853,6 +842,7 @@ public class ScriptItemService(
                 slot.Count = (ushort)count;
                 slot.Durability = itemData.Duration;
                 slot.Flag = 0;
+                slot.ExpireInHours(rentalHours, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             }
 
             return index;

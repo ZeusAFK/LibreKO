@@ -29,6 +29,7 @@ public class QuestRewardSlotTests
     private const short Pitman = 31511;
     private const int EveryTime = 10000 * 5;
     private const ushort Ores = 2;
+    private const ushort AlmostFullStack = InventoryConstants.MaxStackCount - 1;
 
     private readonly IGameDataService data = Substitute.For<IGameDataService>();
     private readonly UserSession session;
@@ -167,6 +168,44 @@ public class QuestRewardSlotTests
 
         Bag(1).Count.Should().Be(Ores, "the ore is not taken for a reward that has no room");
         Bag(0).Count.Should().Be(1);
+    }
+
+    [Fact]
+    public void ARentedRewardDoesNotCountAPlainStackAsRoomAndTakesNothing()
+    {
+        FillBagExcept(0);
+        Place(0, Token);
+        session.Money = Purse;
+
+        context.Items.ApplyScriptReward([(InventoryConstants.ItemGold, Fee)], [(Token, 1, RentalHours)]).Should().BeFalse();
+
+        session.Money.Should().Be(Purse, "a rental needs a slot of its own, and the bag has none");
+        Bag(0).Count.Should().Be(1);
+        Bag(0).Expires.Should().BeFalse();
+    }
+
+    [Fact]
+    public void AMiningExchangeDoesNotCountAStackWithTooLittleRoomAndKeepsTheOre()
+    {
+        FillBagExcept(0);
+        Place(0, Token);
+        Bag(0).Count = AlmostFullStack;
+        Place(1, Ore);
+        Bag(1).Count = Ores;
+        data.GetItem(Ore).Returns(new ItemData { Num = Ore, Countable = 1 });
+        data.MiningExchangesByOreNpc.Returns(new[]
+        {
+            new MiningExchangeData
+            {
+                NpcId = Pitman, OreType = OreType, OriginItemNum = Ore, GiveItemNum = Token, GiveItemCount = (short)Ores,
+                SuccessRate = EveryTime,
+            },
+        }.ToLookup(entry => (entry.OreType, entry.NpcId)));
+
+        context.Items.RunMiningExchange(0, OreType).Should().BeFalse();
+
+        Bag(1).Count.Should().Be(Ores, "the ore is not taken for a reward the stack cannot hold");
+        Bag(0).Count.Should().Be(AlmostFullStack);
     }
 
     private ItemSlot Bag(int bagSlot) => session.Inventory[InventoryConstants.InventoryStart + bagSlot];
