@@ -16,6 +16,10 @@ public class MagicWarpTests : GameTestBase
 {
     private const int EscapeId = 209035;
     private const int SummonFriendId = 209004;
+    private const int RetrieveClanMemberId = 490042;
+    private const short Wolves = 71;
+    private const short Hounds = 72;
+    private const int OtherRoom = 3;
     private const int DescentId = 205650;
     private const short DescentRadius = 60;
     private const int WildAdventId = 208770;
@@ -119,12 +123,48 @@ public class MagicWarpTests : GameTestBase
         caster.Z = 260;
 
         var friend = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.PartyIndex = friend.PartyIndex = 1;
 
         await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
 
         friend.X.Should().BeApproximately(250, 0.5f);
         friend.Z.Should().BeApproximately(260, 0.5f);
         caster.X.Should().BeApproximately(250, 0.5f, "the caster does not move");
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, OtherRoom)]
+    public async Task SummonFriendLeavesAnyoneOutsideThePartyOrTheRoomWhereTheyAre(bool sameParty, int room)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, SummonFriendId, SkillMoral.Party, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var stranger = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        if (sameParty)
+            caster.PartyIndex = stranger.PartyIndex = 1;
+        stranger.Room = (ushort)room;
+
+        await Cast(provider, client, SummonFriendId, caster, stranger.CharacterId);
+
+        stranger.X.Should().BeApproximately(700, 0.5f);
+    }
+
+    [Theory]
+    [InlineData(Wolves, true)]
+    [InlineData(Hounds, false)]
+    public async Task RetrievingAClanMemberPullsOnlySomeoneOfTheCastersClan(short clan, bool pulled)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, RetrieveClanMemberId, SkillMoral.ClanAll, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var member = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.KnightsId = Wolves;
+        member.KnightsId = clan;
+
+        await Cast(provider, client, RetrieveClanMemberId, caster, member.CharacterId);
+
+        member.X.Should().BeApproximately(pulled ? caster.X : 700, 0.5f);
     }
 
     [Fact]

@@ -32,7 +32,7 @@ public class MagicMovementEffectService(
         bool? moved = warpType switch
         {
             MagicWarpType.BindPoint => await WarpToBindPointAsync(caster, magic),
-            MagicWarpType.SummonInZone => await SummonToCasterAsync(caster, targetId),
+            MagicWarpType.SummonInZone => await SummonToCasterAsync(caster, magic, targetId),
             MagicWarpType.MoveToTarget => await MoveToTargetAsync(caster, magic, type8Data, targetId),
             MagicWarpType.Blink => await BlinkAsync(caster, type8Data, data),
             MagicWarpType.Rush => await RushAsync(caster, magic, targetId, data),
@@ -113,19 +113,28 @@ public class MagicMovementEffectService(
         return true;
     }
 
-    private async Task<bool> SummonToCasterAsync(UserSession caster, int targetId)
+    private async Task<bool> SummonToCasterAsync(UserSession caster, MagicData magic, int targetId)
     {
         var target = sessionManager.GetByCharacterId(targetId);
         if (target == null
             || target.CharacterId == caster.CharacterId
             || target.Hp <= 0
             || target.ZoneId != caster.ZoneId
+            || target.Room != caster.Room
+            || !MaySummon(caster, target, (SkillMoral)magic.Moral)
             || target.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
             return false;
 
         await worldMovementService.WarpAsync(target, (ushort)caster.GetPosX, (ushort)caster.GetPosZ);
         return true;
     }
+
+    private static bool MaySummon(UserSession caster, UserSession target, SkillMoral moral) => moral switch
+    {
+        SkillMoral.Party or SkillMoral.PartyAll => caster.IsInParty && target.PartyIndex == caster.PartyIndex,
+        SkillMoral.Clan or SkillMoral.ClanAll => caster.KnightsId > 0 && target.KnightsId == caster.KnightsId,
+        _ => !PvpRules.IsHostile(caster, target),
+    };
 
     private async Task<bool> MoveToTargetAsync(
         UserSession caster, MagicData magic, MagicType8Data type8Data, int targetId)
