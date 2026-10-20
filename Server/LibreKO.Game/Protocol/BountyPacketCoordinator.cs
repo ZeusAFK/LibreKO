@@ -1,4 +1,5 @@
-﻿using LibreKO.Common.Domain.Entities;
+﻿using System.Collections.Concurrent;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -14,7 +15,7 @@ namespace LibreKO.Game.Protocol;
 public interface IBountyPacketCoordinator
 {
     Task HandleAsync(IClient client, Packet packet);
-    Task OnPlayerKilledAsync(UserSession victim, UserSession killer);
+    void RecordKill(UserSession victim, UserSession killer);
 }
 
 public class BountyPacketCoordinator(
@@ -34,13 +35,17 @@ public class BountyPacketCoordinator(
     private const int BountyMinReward = 1;
     private const int BountyMaxReward = 100_000_000;
     private const int BountyLifetimeDays = 7;
+    private const int MaxOpenBountiesPerPoster = 5;
     private const string ReturnSubject = "Bounty returned";
 
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly List<Bounty> board = [];
     private readonly Dictionary<int, HashSet<int>> huntersByBounty = [];
+    private readonly ConcurrentQueue<Kill> kills = new();
     private bool loaded;
+
+    private sealed record Kill(int VictimId, int KillerId, DateTime At);
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -66,23 +71,30 @@ public class BountyPacketCoordinator(
         }
     }
 
-    public async Task OnPlayerKilledAsync(UserSession victim, UserSession killer)
+    // The death path must not wait on the board's lock or the database.
+    public void RecordKill(UserSession victim, UserSession killer)
     {
-        await gate.WaitAsync();
+        kills.Enqueue(new Kill(victim.CharacterId, killer.CharacterId, time.GetUtcNow().UtcDateTime));
+        _ = SaveKillsAsync();
+    }
+
+    private async Task SaveKillsAsync()
+    {
         try
         {
-            await LoadAndExpireAsync();
-            foreach (var bounty in board.Where(b => b.TargetCharacterId == victim.CharacterId
-                         && b.PosterCharacterId != killer.CharacterId
-                         && !Hunters(b.Id).Contains(killer.CharacterId)).ToList())
+            await gate.WaitAsync();
+            try
             {
-                if (await TrySaveAsync(db => db.BountyHunters.Add(new BountyHunter { BountyId = bounty.Id, CharacterId = killer.CharacterId })))
-                    Hunters(bounty.Id).Add(killer.CharacterId);
+                await RefreshBoardAsync();
+            }
+            finally
+            {
+                gate.Release();
             }
         }
-        finally
+        catch (Exception exception)
         {
-            gate.Release();
+            logger.LogError(exception, "Could not save a bounty kill; the next use of the board tries again");
         }
     }
 
@@ -92,7 +104,7 @@ public class BountyPacketCoordinator(
         await gate.WaitAsync();
         try
         {
-            await LoadAndExpireAsync();
+            await RefreshBoardAsync();
             entries = board
                 .Select(b => new BountyPacketWriter.Entry(b.Id, b.TargetName, b.PosterName, b.Reward))
                 .ToList();
@@ -114,8 +126,9 @@ public class BountyPacketCoordinator(
         await gate.WaitAsync();
         try
         {
-            await LoadAndExpireAsync();
+            await RefreshBoardAsync();
             if (target.Length > 0 && reward is >= BountyMinReward and <= BountyMaxReward
+                && board.Count(b => b.PosterCharacterId == session.CharacterId) < MaxOpenBountiesPerPoster
                 && !string.Equals(target, session.Name, StringComparison.OrdinalIgnoreCase)
                 && await FindCharacterAsync(target) is { } wanted
                 && wanted.Id != session.CharacterId)
@@ -168,7 +181,7 @@ public class BountyPacketCoordinator(
         await gate.WaitAsync();
         try
         {
-            await LoadAndExpireAsync();
+            await RefreshBoardAsync();
             var bounty = board.FirstOrDefault(b => b.Id == bountyId);
             if (bounty != null && Hunters(bounty.Id).Contains(session.CharacterId)
                 && await PayAndCloseAsync(session, bounty))
@@ -202,9 +215,11 @@ public class BountyPacketCoordinator(
         await gate.WaitAsync();
         try
         {
-            await LoadAndExpireAsync();
+            await RefreshBoardAsync();
             var bounty = board.FirstOrDefault(b => b.Id == bountyId && b.PosterCharacterId == session.CharacterId);
-            if (bounty != null && Hunters(bounty.Id).Count == 0 && await PayAndCloseAsync(session, bounty))
+            // A kill still waiting for its save may have earned the bounty.
+            if (bounty != null && Hunters(bounty.Id).Count == 0 && !kills.Any(kill => kill.VictimId == bounty.TargetCharacterId)
+                && await PayAndCloseAsync(session, bounty))
                 withdrawn = bounty;
         }
         finally
@@ -238,7 +253,8 @@ public class BountyPacketCoordinator(
         return true;
     }
 
-    private async Task LoadAndExpireAsync()
+    // Kills are recorded before expiry, so a bounty earned in time never goes back to its poster.
+    private async Task RefreshBoardAsync()
     {
         if (!loaded)
         {
@@ -249,6 +265,9 @@ public class BountyPacketCoordinator(
                 Hunters(hunter.BountyId).Add(hunter.CharacterId);
             loaded = true;
         }
+
+        if (!await RecordQueuedKillsAsync())
+            return;
 
         var expiredBefore = time.GetUtcNow().UtcDateTime.AddDays(-BountyLifetimeDays);
         foreach (var bounty in board.Where(b => b.PostedAt <= expiredBefore && Hunters(b.Id).Count == 0).ToList())
@@ -282,22 +301,47 @@ public class BountyPacketCoordinator(
         }
     }
 
+    private async Task<bool> RecordQueuedKillsAsync()
+    {
+        while (kills.TryPeek(out var kill))
+        {
+            foreach (var bounty in board.Where(b => b.TargetCharacterId == kill.VictimId
+                         && b.PosterCharacterId != kill.KillerId
+                         && b.PostedAt <= kill.At && kill.At < b.PostedAt.AddDays(BountyLifetimeDays)
+                         && !Hunters(b.Id).Contains(kill.KillerId)).ToList())
+            {
+                if (!await TrySaveHunterAsync(bounty.Id, kill.KillerId))
+                    return false;
+                Hunters(bounty.Id).Add(kill.KillerId);
+            }
+
+            kills.TryDequeue(out _);
+        }
+
+        return true;
+    }
+
     private IEnumerable<BountyHunter> HunterRows(Bounty bounty) =>
         Hunters(bounty.Id).Select(hunter => new BountyHunter { BountyId = bounty.Id, CharacterId = hunter }).ToList();
 
-    private async Task<bool> TrySaveAsync(Action<AppDbContext> change)
+    // A save that failed after it was written must not fail again on its retry.
+    private async Task<bool> TrySaveHunterAsync(int bountyId, int characterId)
     {
         try
         {
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            change(db);
-            await db.SaveChangesAsync();
+            if (!await db.BountyHunters.AnyAsync(hunter => hunter.BountyId == bountyId && hunter.CharacterId == characterId))
+            {
+                db.BountyHunters.Add(new BountyHunter { BountyId = bountyId, CharacterId = characterId });
+                await db.SaveChangesAsync();
+            }
+
             return true;
         }
         catch (DbUpdateException exception)
         {
-            logger.LogError(exception, "Bounty board save failed");
+            logger.LogError(exception, "Could not save the kill on bounty {Id}; it is tried again on the board's next use", bountyId);
             return false;
         }
     }

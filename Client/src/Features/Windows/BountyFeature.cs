@@ -4,6 +4,10 @@ namespace LibreKO.Features.Windows;
 
 internal sealed class BountyFeature : IFeature, IClosableWindow
 {
+    internal const string PostRefused = "The bounty was not posted. Check the name, the reward and your gold; a player keeps at most five open.";
+    internal const string ClaimRefused = "The bounty could not be claimed.";
+    internal const string WithdrawRefused = "The bounty could not be withdrawn: someone may have earned it, or your purse is full.";
+
     private readonly IWorldContext context;
     private readonly BountySession bounty;
     private readonly IBountyRequests requests;
@@ -22,6 +26,7 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
     private VBoxContainer listBox = null!;
     private LineEdit targetEdit = null!;
     private LineEdit rewardEdit = null!;
+    private Label status = null!;
     private bool shown;
 
     public bool IsOpen => shown;
@@ -53,6 +58,10 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         postBtn.Pressed += OnPostPressed;
         form.AddChild(postBtn);
 
+        status = UiTheme.Text("", 12, UiTheme.TextLo);
+        status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        root.AddChild(status);
+
         root.AddChild(UiTheme.SectionTitle("Open Bounties"));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(380, 300), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
@@ -63,6 +72,7 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         bounty.BountyListEvent += OnList;
         bounty.BountyPostEvent += OnPost;
         bounty.BountyClaimEvent += OnClaim;
+        bounty.BountyWithdrawEvent += OnWithdraw;
     }
 
     public void Dispose()
@@ -70,6 +80,7 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         bounty.BountyListEvent -= OnList;
         bounty.BountyPostEvent -= OnPost;
         bounty.BountyClaimEvent -= OnClaim;
+        bounty.BountyWithdrawEvent -= OnWithdraw;
     }
 
     internal void Toggle()
@@ -129,6 +140,7 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
 
     private void OnPost(bool ok)
     {
+        status.Text = ok ? "" : PostRefused;
         if (ok)
         {
             targetEdit.Text = "";
@@ -138,6 +150,12 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
 
     private void OnClaim(int bountyId, bool ok)
     {
+        status.Text = ok ? "" : ClaimRefused;
         if (ok) requests.List();
+    }
+
+    private void OnWithdraw(int bountyId, bool ok)
+    {
+        status.Text = ok ? "" : WithdrawRefused;
     }
 }

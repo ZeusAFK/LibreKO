@@ -43,5 +43,11 @@ internal sealed class BountyReader : IPacketReader
             int bountyId = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
             bounty.RaiseBountyClaim(bountyId, ok);
         }
+        else if (sub == BountySubOpcode.Withdraw)
+        {
+            bool ok = p.RemainingBytes >= 1 && (BountyResult)p.ReadByte() == BountyResult.Succeeded;
+            int bountyId = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
+            bounty.RaiseBountyWithdraw(bountyId, ok);
+        }
     }
 }
