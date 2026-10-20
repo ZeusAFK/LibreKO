@@ -14,6 +14,8 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     private const int SlowdownStepMilliseconds = 500;
     private const int MaxSlowdownSeconds = 5;
     private const int TrackedBeforePruning = 10_000;
+    private const int PruneIntervalSeconds = 60;
+    private static readonly TimeSpan PruneInterval = TimeSpan.FromSeconds(PruneIntervalSeconds);
     private const int Ipv6NetworkBytes = 8;
     public static readonly TimeSpan Window = TimeSpan.FromMinutes(WindowMinutes);
     public static readonly TimeSpan SlowdownStep = TimeSpan.FromMilliseconds(SlowdownStepMilliseconds);
@@ -29,19 +31,23 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     private readonly ConcurrentDictionary<string, Failures> byAddress = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, Failures> byName = new(StringComparer.OrdinalIgnoreCase);
     private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
+    private long nextPruneTicks;
 
     // An attempt is counted before its password is checked, so attempts sent at once cannot all slip under the limit;
     // an address over the limit, for one login or in all, waits out the window before a password is checked.
     public bool TryAttempt(string address, string login)
     {
         var name = Normal(login);
-        Count(byName, name);
-        if (address.Length == 0)
-            return true;
+        if (address.Length > 0)
+        {
+            var forName = Count(byAddressAndName, Key(address, name));
+            var forAddress = Count(byAddress, address);
+            if (forName > MaxFailuresPerName || forAddress > MaxFailuresPerAddress)
+                return false;
+        }
 
-        var forName = Count(byAddressAndName, Key(address, name));
-        var forAddress = Count(byAddress, address);
-        return forName <= MaxFailuresPerName && forAddress <= MaxFailuresPerAddress;
+        Count(byName, name);
+        return true;
     }
 
     // A name guessed from many addresses is answered more slowly, so its owner is slowed but never locked out.
@@ -104,7 +110,10 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
 
     private int Count(ConcurrentDictionary<string, Failures> table, string key)
     {
-        if (table.Count > TrackedBeforePruning)
+        // Expired entries are swept at most once a minute, so a flood of new names cannot make every attempt sweep.
+        var due = Volatile.Read(ref nextPruneTicks);
+        if (table.Count > TrackedBeforePruning && Now.UtcTicks >= due
+            && Interlocked.CompareExchange(ref nextPruneTicks, (Now + PruneInterval).UtcTicks, due) == due)
             Prune(table);
 
         var failures = table.GetOrAdd(key, _ => new Failures { Since = Now });

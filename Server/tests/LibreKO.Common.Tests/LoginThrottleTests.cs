@@ -92,6 +92,17 @@ public class LoginThrottleTests
     }
 
     [Fact]
+    public void AttemptsRefusedAtTheAddressDoNotSlowTheName()
+    {
+        var throttle = new LoginThrottle();
+
+        for (var guess = 0; guess < 2 * LoginThrottle.FailuresBeforeSlowing; guess++)
+            throttle.TryAttempt(Address, "victim");
+
+        throttle.SlowdownFor("victim").Should().Be(TimeSpan.Zero, "only attempts that reach the password count against the name");
+    }
+
+    [Fact]
     public void AnIpv6NetworkCountsAsOneAddress()
     {
         LoginThrottle.Bucket(IPAddress.Parse("2001:db8:1:2:aaaa::1"))
