@@ -268,7 +268,7 @@ public class CombatLifecycleService(
         var avenged = killer.HasRival && killer.RivalId == victim.CharacterId;
 
         if (!penaltyFree)
-            bountyPacketCoordinator.OnPlayerKilled(victim, killer);
+            await bountyPacketCoordinator.OnPlayerKilledAsync(victim, killer);
 
         if (killer.Nation != victim.Nation && !penaltyFree)
         {

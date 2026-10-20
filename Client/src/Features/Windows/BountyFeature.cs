@@ -7,12 +7,14 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
     private readonly IWorldContext context;
     private readonly BountySession bounty;
     private readonly IBountyRequests requests;
+    private readonly SelfSession self;
 
-    public BountyFeature(IWorldContext context, BountySession bounty, IBountyRequests requests)
+    public BountyFeature(IWorldContext context, BountySession bounty, IBountyRequests requests, SelfSession self)
     {
         this.context = context;
         this.bounty = bounty;
         this.requests = requests;
+        this.self = self;
     }
 
     private CanvasLayer layer = null!;
@@ -111,8 +113,9 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
             hb.AddChild(UiTheme.Text($"{b.Reward:N0}g", 12, UiTheme.Gold));
 
             int id = b.Id;
-            var btn = new Button { Text = "Claim", FocusMode = Control.FocusModeEnum.None };
-            btn.Pressed += () => requests.Claim(id);
+            var own = b.Poster == (self.LastEnter.Name ?? "");
+            var btn = new Button { Text = own ? "Withdraw" : "Claim", FocusMode = Control.FocusModeEnum.None };
+            btn.Pressed += own ? () => requests.Withdraw(id) : () => requests.Claim(id);
             hb.AddChild(btn);
 
             listBox.AddChild(row);

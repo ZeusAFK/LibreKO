@@ -193,6 +193,43 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("AuctionResults", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.Bounty", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("PostedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("PosterCharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PosterName")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("varchar(21)");
+
+                    b.Property<int>("Reward")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TargetCharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TargetName")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("varchar(21)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetCharacterId");
+
+                    b.ToTable("Bounties");
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Character", b =>
                 {
                     b.Property<int>("Id")

@@ -811,7 +811,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Features.Add(ExpSealWindow = new ExpSealFeature(this, Game.Session.ExpSeal, Game.Session.Self, Game.Requests.ExpSeal, ExpBar));
         Features.Add(CommandList = new CommandListFeature(this, this, Game.Session.Clan, Game.Session.Party, Game.Session.UserOption, Game.Requests.Chat, Game.Requests.Clan, Game.Requests.ClanBattleWar, Game.Requests.UserOption));
         Features.Add(ClanMatchWindow = new ClanMatchFeature(this, Game.Session.BattleEvent, Game.Session.Clan, EntitySystem, EntityPlatesSystem));
-        Features.Add(Bounty = new BountyFeature(this, Game.Session.Bounty, Game.Requests.Bounty));
+        Features.Add(Bounty = new BountyFeature(this, Game.Session.Bounty, Game.Requests.Bounty, Game.Session.Self));
         Features.Add(Tournament = new TournamentFeature(this, Game.Session.Tournament, Game.Requests.Tournament));
         Features.Add(DisguiseWindow = new DisguiseFeature(this, Game.Session.Disguise, Game.Session.Premium, Game.Session.Self, Game.Requests.Combat));
         Features.Add(Messenger = new MessengerFeature(this, Game.Session.Messenger, Game.Requests.Messenger));

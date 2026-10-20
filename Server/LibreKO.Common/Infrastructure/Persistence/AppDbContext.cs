@@ -28,6 +28,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MailAttachment> MailAttachments { get; set; }
     public DbSet<MarketPriceDay> MarketPriceDays { get; set; }
     public DbSet<AuctionBid> AuctionBids { get; set; }
+    public DbSet<Bounty> Bounties { get; set; }
     public DbSet<AuctionResult> AuctionResults { get; set; }
     public DbSet<KingElectionList> KingElectionList { get; set; }
     public DbSet<KingCandidacyNoticeBoard> KingCandidacyNoticeBoard { get; set; }

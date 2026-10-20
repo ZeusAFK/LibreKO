@@ -1,45 +1,46 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
+﻿using LibreKO.Common.Domain.Entities;
+using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
-using LibreKO.Game.World;
-using Microsoft.Extensions.Logging;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol.Writers;
+using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.Protocol;
 
 public interface IBountyPacketCoordinator
 {
     Task HandleAsync(IClient client, Packet packet);
-    void OnPlayerKilled(UserSession victim, UserSession killer);
+    Task OnPlayerKilledAsync(UserSession victim, UserSession killer);
 }
 
 public class BountyPacketCoordinator(
     SessionManager sessionManager,
     IUserNotificationService userNotification,
-    ILogger<BountyPacketCoordinator> logger) : IBountyPacketCoordinator
+    IMailService mailService,
+    ICharacterStatePersister statePersister,
+    IServiceScopeFactory scopeFactory,
+    ILogger<BountyPacketCoordinator> logger,
+    TimeProvider? timeProvider = null) : IBountyPacketCoordinator
 {
-    private const byte BountySubList = 1;
-    private const byte BountySubPost = 2;
-    private const byte BountySubClaim = 3;
+    public const byte BountySubList = 1;
+    public const byte BountySubPost = 2;
+    public const byte BountySubClaim = 3;
+    public const byte BountySubWithdraw = 4;
 
     private const int BountyMinReward = 1;
     private const int BountyMaxReward = 100_000_000;
+    private const int BountyLifetimeDays = 7;
+    private const string ReturnSubject = "Bounty returned";
 
-    private sealed class Bounty
-    {
-        public int BountyId;
-        public string BountyTarget = "";
-        public string BountyPoster = "";
-        public int BountyPosterId;
-        public int BountyReward;
-        public readonly HashSet<int> Hunters = new();
-    }
-
-    // The open board (in-memory; resets on server restart). Guarded by BountyGate for the list/claim race.
-    private static readonly List<Bounty> BountyBoard = new();
-    private static readonly object BountyGate = new();
-    private static int BountyNextId = 1;
+    private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
+    private readonly SemaphoreSlim gate = new(1, 1);
+    private readonly List<Bounty> board = [];
+    private readonly Dictionary<int, HashSet<int>> huntersByBounty = [];
+    private bool loaded;
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -59,73 +60,121 @@ public class BountyPacketCoordinator(
             case BountySubClaim:
                 await HandleBountyClaimAsync(session, packet);
                 break;
+            case BountySubWithdraw:
+                await HandleBountyWithdrawAsync(session, packet);
+                break;
+        }
+    }
+
+    public async Task OnPlayerKilledAsync(UserSession victim, UserSession killer)
+    {
+        await gate.WaitAsync();
+        try
+        {
+            await LoadAndExpireAsync();
+            foreach (var bounty in board)
+            {
+                if (bounty.PosterCharacterId != killer.CharacterId && bounty.TargetCharacterId == victim.CharacterId)
+                    Hunters(bounty.Id).Add(killer.CharacterId);
+            }
+        }
+        finally
+        {
+            gate.Release();
         }
     }
 
     private async Task SendBountyListAsync(UserSession session)
     {
-        Bounty[] snapshot;
-        lock (BountyGate)
-            snapshot = BountyBoard.ToArray();
-
-        var entries = snapshot
-            .Select(b => new BountyPacketWriter.Entry(
-                b.BountyId, b.BountyTarget, b.BountyPoster, b.BountyReward))
-            .ToList();
+        List<BountyPacketWriter.Entry> entries;
+        await gate.WaitAsync();
+        try
+        {
+            await LoadAndExpireAsync();
+            entries = board
+                .Select(b => new BountyPacketWriter.Entry(b.Id, b.TargetName, b.PosterName, b.Reward))
+                .ToList();
+        }
+        finally
+        {
+            gate.Release();
+        }
 
         await session.Client.SendPacket(BountyPacketWriter.BountyList(BountySubList, entries));
     }
 
     private async Task HandleBountyPostAsync(UserSession session, Packet packet)
     {
-        string target = packet.RemainingBytes >= 1 ? packet.ReadSByteString() : "";
-        int reward = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
+        var target = (packet.RemainingBytes >= 1 ? packet.ReadSByteString() : "").Trim();
+        var reward = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
 
-
-        target = target.Trim();
-        if (target.Length == 0 || reward < BountyMinReward || reward > BountyMaxReward
-            || string.Equals(target, session.Name, StringComparison.OrdinalIgnoreCase)
-            || !session.WithLock(s => TryDebit(s, reward)))
+        Bounty? posted = null;
+        await gate.WaitAsync();
+        try
         {
-            await session.Client.SendPacket(BountyPacketWriter.Result(
-                BountySubPost, BountyPacketWriter.Failed));
+            await LoadAndExpireAsync();
+            if (target.Length > 0 && reward is >= BountyMinReward and <= BountyMaxReward
+                && !string.Equals(target, session.Name, StringComparison.OrdinalIgnoreCase)
+                && await FindCharacterAsync(target) is { } wanted
+                && wanted.Id != session.CharacterId)
+            {
+                var bounty = new Bounty
+                {
+                    PosterCharacterId = session.CharacterId,
+                    PosterName = session.Name,
+                    TargetCharacterId = wanted.Id,
+                    TargetName = wanted.Name,
+                    Reward = reward,
+                    PostedAt = time.GetUtcNow().UtcDateTime,
+                };
+                var outcome = await statePersister.CommitAsync(session, db =>
+                {
+                    if (!session.WithLock(s => TryDebit(s, reward)))
+                        return Task.FromResult(false);
+                    db.Bounties.Add(bounty);
+                    return Task.FromResult(true);
+                }, () => session.WithLock(s => GiveBack(s, reward)));
+                if (outcome == StateCommit.Saved)
+                {
+                    board.Add(bounty);
+                    posted = bounty;
+                }
+            }
+        }
+        finally
+        {
+            gate.Release();
+        }
+
+        if (posted == null)
+        {
+            await session.Client.SendPacket(BountyPacketWriter.Result(BountySubPost, BountyPacketWriter.Failed));
             return;
         }
 
-        lock (BountyGate)
-        {
-            BountyBoard.Add(new Bounty
-            {
-                BountyId = BountyNextId++,
-                BountyTarget = target,
-                BountyPoster = session.Name,
-                BountyPosterId = session.CharacterId,
-                BountyReward = reward,
-            });
-        }
-
         await userNotification.SendGoldLossAsync(session, reward);
-        logger.LogDebug("{Name} posted bounty on {Target} for {Reward}", session.Name, target, reward);
-        await session.Client.SendPacket(BountyPacketWriter.Result(
-            BountySubPost, BountyPacketWriter.Succeeded));
-
-        // Push the refreshed board so the poster (and form) sees their new entry immediately.
+        logger.LogDebug("{Name} posted bounty on {Target} for {Reward}", session.Name, posted.TargetName, reward);
+        await session.Client.SendPacket(BountyPacketWriter.Result(BountySubPost, BountyPacketWriter.Succeeded));
         await SendBountyListAsync(session);
     }
 
     private async Task HandleBountyClaimAsync(UserSession session, Packet packet)
     {
-        int bountyId = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
+        var bountyId = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
 
-
-        Bounty? claimed;
-        lock (BountyGate)
+        Bounty? claimed = null;
+        await gate.WaitAsync();
+        try
         {
-            claimed = BountyBoard.FirstOrDefault(b => b.BountyId == bountyId && b.Hunters.Contains(session.CharacterId));
-            if (claimed != null && session.WithLock(s => TryCredit(s, claimed.BountyReward)))
-                BountyBoard.Remove(claimed);
-            else
-                claimed = null;
+            await LoadAndExpireAsync();
+            var bounty = board.FirstOrDefault(b => b.Id == bountyId);
+            if (bounty != null && Hunters(bounty.Id).Contains(session.CharacterId)
+                && await PayAndCloseAsync(session, bounty))
+                claimed = bounty;
+        }
+        finally
+        {
+            gate.Release();
         }
 
         if (claimed == null)
@@ -135,28 +184,125 @@ public class BountyPacketCoordinator(
             return;
         }
 
-        await userNotification.SendGoldGainAsync(session, claimed.BountyReward);
-
+        await userNotification.SendGoldGainAsync(session, claimed.Reward);
         logger.LogDebug("{Name} claimed bounty {Id} on {Target} for {Reward}",
-            session.Name, claimed.BountyId, claimed.BountyTarget, claimed.BountyReward);
+            session.Name, claimed.Id, claimed.TargetName, claimed.Reward);
         await session.Client.SendPacket(BountyPacketWriter.BountyResult(
             BountySubClaim, BountyPacketWriter.Succeeded, bountyId));
-
-        // Refresh the board for the claimer so the claimed entry disappears.
         await SendBountyListAsync(session);
     }
 
-    public void OnPlayerKilled(UserSession victim, UserSession killer)
+    private async Task HandleBountyWithdrawAsync(UserSession session, Packet packet)
     {
-        lock (BountyGate)
+        var bountyId = packet.RemainingBytes >= 4 ? packet.ReadInt() : 0;
+
+        Bounty? withdrawn = null;
+        await gate.WaitAsync();
+        try
         {
-            foreach (var bounty in BountyBoard)
-            {
-                if (bounty.BountyPosterId != killer.CharacterId
-                    && string.Equals(bounty.BountyTarget, victim.Name, StringComparison.OrdinalIgnoreCase))
-                    bounty.Hunters.Add(killer.CharacterId);
-            }
+            await LoadAndExpireAsync();
+            var bounty = board.FirstOrDefault(b => b.Id == bountyId && b.PosterCharacterId == session.CharacterId);
+            if (bounty != null && Hunters(bounty.Id).Count == 0 && await PayAndCloseAsync(session, bounty))
+                withdrawn = bounty;
         }
+        finally
+        {
+            gate.Release();
+        }
+
+        await session.Client.SendPacket(BountyPacketWriter.BountyResult(
+            BountySubWithdraw, withdrawn != null ? BountyPacketWriter.Succeeded : BountyPacketWriter.Failed, bountyId));
+        if (withdrawn == null)
+            return;
+
+        await userNotification.SendGoldGainAsync(session, withdrawn.Reward);
+        await SendBountyListAsync(session);
+    }
+
+    private async Task<bool> PayAndCloseAsync(UserSession payee, Bounty bounty)
+    {
+        var outcome = await statePersister.CommitAsync(payee, db =>
+        {
+            if (!payee.WithLock(s => TryCredit(s, bounty.Reward)))
+                return Task.FromResult(false);
+            db.Bounties.Remove(new Bounty { Id = bounty.Id });
+            return Task.FromResult(true);
+        }, () => payee.WithLock(s => s.Money = Math.Max(0, s.Money - bounty.Reward)));
+        if (outcome != StateCommit.Saved)
+            return false;
+
+        Forget(bounty);
+        return true;
+    }
+
+    private async Task LoadAndExpireAsync()
+    {
+        if (!loaded)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            board.AddRange(await db.Bounties.AsNoTracking().OrderBy(b => b.Id).ToListAsync());
+            loaded = true;
+        }
+
+        var expiredBefore = time.GetUtcNow().UtcDateTime.AddDays(-BountyLifetimeDays);
+        foreach (var bounty in board.Where(b => b.PostedAt <= expiredBefore).ToList())
+        {
+            if (!await TryReturnByMailAsync(bounty))
+                continue;
+
+            Forget(bounty);
+            if (sessionManager.GetByCharacterId(bounty.PosterCharacterId) is { } poster)
+                await mailService.SendUnreadAsync(poster);
+        }
+    }
+
+    private async Task<bool> TryReturnByMailAsync(Bounty bounty)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Bounties.Remove(new Bounty { Id = bounty.Id });
+            mailService.StageSystemMail(db, bounty.PosterCharacterId, ReturnSubject,
+                $"Your bounty on {bounty.TargetName} was not claimed. Its {bounty.Reward:N0} coins are returned.",
+                [new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, bounty.Reward)]);
+            await db.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException exception)
+        {
+            logger.LogError(exception, "Could not return expired bounty {Id}", bounty.Id);
+            return false;
+        }
+    }
+
+    private void Forget(Bounty bounty)
+    {
+        board.Remove(bounty);
+        huntersByBounty.Remove(bounty.Id);
+    }
+
+    private async Task<(int Id, string Name)?> FindCharacterAsync(string name)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var found = await db.Characters.AsNoTracking()
+            .Where(c => c.Name == name)
+            .Select(c => new { c.Id, c.Name })
+            .FirstOrDefaultAsync();
+        return found == null ? null : (found.Id, found.Name);
+    }
+
+    private HashSet<int> Hunters(int bountyId)
+    {
+        if (!huntersByBounty.TryGetValue(bountyId, out var hunters))
+        {
+            hunters = [];
+            huntersByBounty[bountyId] = hunters;
+        }
+
+        return hunters;
     }
 
     private static bool TryDebit(UserSession session, int amount)
@@ -167,6 +313,9 @@ public class BountyPacketCoordinator(
         session.Money -= amount;
         return true;
     }
+
+    private static void GiveBack(UserSession session, int amount) =>
+        session.Money = (int)Math.Min((long)session.Money + amount, ExchangePacketConstants.CoinMax);
 
     private static bool TryCredit(UserSession session, int amount)
     {
