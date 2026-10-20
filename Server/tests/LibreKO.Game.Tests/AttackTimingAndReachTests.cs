@@ -23,6 +23,8 @@ public class AttackTimingAndReachTests : GameTestBase
     private const float SprintStep = 6.75f;
     private const float RunStep = 6.75f;
     private const short Sprint = 67;
+    private const int Dagger = 110110001;
+    private const short DaggerDelay = 50;
 
     private sealed class Clock : TimeProvider
     {
@@ -40,13 +42,49 @@ public class AttackTimingAndReachTests : GameTestBase
         var worm = Monster(provider, Here + 1);
 
         await Swing(provider, attacker, worm);
+        await Swing(provider, attacker, worm);
         clock.Advance(1000);
         await Swing(provider, attacker, worm);
-        Swings(sent).Should().Be(1, "a 1.5 s weapon cannot swing again after 1 s");
+        Swings(sent).Should().Be(2, "two swings bunched by a lag land, a third before the weapon is ready does not");
 
-        clock.Advance(200);
+        clock.Advance(500);
         await Swing(provider, attacker, worm);
-        Swings(sent).Should().Be(2);
+        Swings(sent).Should().Be(3);
+    }
+
+    [Fact]
+    public async Task TheFirstSwingWithAFasterWeaponKeepsItsOwnPace()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        var worm = Monster(provider, Here + 1);
+        await Swing(provider, attacker, worm);
+        await Swing(provider, attacker, worm);
+        attacker.Inventory[InventoryConstants.RightHand].ItemId = Dagger;
+
+        clock.Advance(1200);
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(3, "the sword's long wait does not carry over to the dagger");
+    }
+
+    [Fact]
+    public async Task SwappingWeaponsDoesNotResetTheSwingTimer()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        var worm = Monster(provider, Here + 1);
+        await Swing(provider, attacker, worm);
+        await Swing(provider, attacker, worm);
+
+        attacker.Inventory[InventoryConstants.RightHand].ItemId = Dagger;
+        await Swing(provider, attacker, worm);
+        attacker.Inventory[InventoryConstants.RightHand].ItemId = Sword;
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(2, "a weapon swap moves the wait by the difference, it does not end it");
     }
 
     [Fact]
@@ -247,6 +285,7 @@ public class AttackTimingAndReachTests : GameTestBase
     private static ServiceProvider Provider(Clock clock) => CreateProvider(_ => { }, gameData =>
     {
         gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Kind = 21, Slot = 1, Delay = SwordDelay, Range = 10, Damage = 10, Duration = 100 });
+        gameData.GetItem(Dagger).Returns(new ItemData { Num = Dagger, Kind = 21, Slot = 1, Delay = DaggerDelay, Range = 10, Damage = 10, Duration = 100 });
         gameData.GetMagic(Haste).Returns(new MagicData { Id = Haste, Type1 = (byte)MagicSkillType.Buff, Moral = 1 });
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
         {

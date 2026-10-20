@@ -25,7 +25,7 @@ public class MagicExecutionService(
     private const int AreaCentreX = 0;
     private const int AreaCentreZ = 2;
     private const float RangedPlayerShortcut = 38f;
-    // The client allows spells 15 m past their range on players; the rest covers movement.
+    // Movement slack: the server's positions can trail what the client saw.
     private const float SkillReachSlack = 20f;
     private const int PercentScale = 100;
 
@@ -119,7 +119,8 @@ public class MagicExecutionService(
         if (sessionManager.GetByCharacterId(targetId) is { } player)
             return player.ZoneId == caster.ZoneId && player.Room == caster.Room
                 && Within(caster, player.X, player.Z, AttackReach.PlayerBodyRadius, Reach(caster, magic, skillId))
-                && MayTouch(caster, player, magic, skillId);
+                && MayTouch(caster, player, magic, skillId)
+                && (player.Hp > 0 || !IsCleanse(magic, skillId));
 
         if (sessionManager.Regions.GetNpc(targetId) is { } npc)
             return npc.ZoneId == caster.ZoneId && npc.Room == caster.Room
@@ -127,6 +128,11 @@ public class MagicExecutionService(
 
         return true;
     }
+
+    private bool IsCleanse(MagicData magic, int skillId) =>
+        magic.PrimaryType == MagicSkillType.Special
+        && MagicTypeLookup.TryResolve(gameDataService.MagicType5Table, magic, skillId, out var type5)
+        && (SpecialMagicType)type5.Type is SpecialMagicType.RemoveDot or SpecialMagicType.RemoveBuff or SpecialMagicType.RemoveBless;
 
     private bool IsAimed(MagicData magic, int skillId) => magic.PrimaryType switch
     {

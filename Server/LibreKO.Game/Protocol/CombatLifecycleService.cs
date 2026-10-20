@@ -187,6 +187,9 @@ public class CombatLifecycleService(
 
     public async Task HandleNpcDeathAsync(NpcInstance npc, UserSession killer)
     {
+        if (!npc.TryBeginDeath())
+            return;
+
         if (npc.State == NpcState.Sleeping)
             await sessionManager.Regions.BroadcastFromNpc(
                 npc,

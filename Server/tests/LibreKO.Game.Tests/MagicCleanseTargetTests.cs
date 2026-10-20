@@ -21,6 +21,10 @@ public class MagicCleanseTargetTests : GameTestBase
     private const byte RemoveBlessSubtype = 5;
     private const byte Moradon = 21;
     private const byte RonarkLand = (byte)ZoneId.RonarkLand;
+    private const int PartyCure = 111526;
+    private const short CureMana = 10;
+    private const short CureRange = 25;
+    private const short PartyCureRange = 20;
 
     [Fact]
     public async Task ACureCannotBeAimedAtAnEnemyToStripTheirBuffs()
@@ -72,6 +76,64 @@ public class MagicCleanseTargetTests : GameTestBase
     }
 
     [Fact]
+    public async Task ACureReachesAFriendRunningJustPastItsRange()
+    {
+        using var provider = CreateProvider(_ => { }, Rows);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 957, AccountNation.Karus, Moradon, x: 100, z: 100);
+        var runner = CreatePlayer(sessions, 958, AccountNation.Karus, Moradon, x: 100 + CureRange + 5, z: 100);
+        Give(runner, Curse, BuffType.Blind);
+
+        await Cast(provider, caster, CureCurse, runner.CharacterId);
+
+        runner.ActiveBuffs.Should().NotContainKey(Curse, "a running friend's server position trails what the priest sees");
+    }
+
+    [Fact]
+    public async Task ACureDoesNotReachAFriendInAnotherRoom()
+    {
+        using var provider = CreateProvider(_ => { }, Rows);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 963, AccountNation.Karus, Moradon, x: 100, z: 100);
+        var elsewhere = CreatePlayer(sessions, 964, AccountNation.Karus, Moradon, x: 110, z: 100);
+        elsewhere.Room = 3;
+        Give(elsewhere, Curse, BuffType.Blind);
+
+        await Cast(provider, caster, CureCurse, elsewhere.CharacterId);
+
+        elsewhere.ActiveBuffs.Should().ContainKey(Curse);
+    }
+
+    [Fact]
+    public async Task ACureAimedAtTheDeadCostsNothing()
+    {
+        using var provider = CreateProvider(_ => { }, Rows);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 959, AccountNation.Karus, Moradon, x: 100, z: 100);
+        var dead = CreatePlayer(sessions, 960, AccountNation.Karus, Moradon, x: 110, z: 100);
+        dead.Hp = 0;
+
+        await Cast(provider, caster, CureCurse, dead.CharacterId);
+
+        caster.Mp.Should().Be(caster.MaxMp, "a cure that cannot land is refused before it is paid");
+    }
+
+    [Fact]
+    public async Task APartyCureReachesAMemberJustPastItsRange()
+    {
+        using var provider = CreateProvider(_ => { }, Rows);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 961, AccountNation.Karus, Moradon, x: 100, z: 100);
+        var member = CreatePlayer(sessions, 962, AccountNation.Karus, Moradon, x: 100 + PartyCureRange + 2, z: 100);
+        caster.PartyIndex = member.PartyIndex = 1;
+        Give(member, Curse, BuffType.Blind);
+
+        await Cast(provider, caster, PartyCure, -1);
+
+        member.ActiveBuffs.Should().NotContainKey(Curse);
+    }
+
+    [Fact]
     public async Task ADispelStripsANearbyEnemysBlessingsOnly()
     {
         using var provider = CreateProvider(_ => { }, Rows);
@@ -100,7 +162,11 @@ public class MagicCleanseTargetTests : GameTestBase
     {
         gameData.GetMagic(CureCurse).Returns(new MagicData
         {
-            Id = CureCurse, Type1 = 5, Moral = (byte)SkillMoral.FriendWithMe, Range = 25,
+            Id = CureCurse, Type1 = 5, Moral = (byte)SkillMoral.FriendWithMe, Range = CureRange, Msp = CureMana,
+        });
+        gameData.GetMagic(PartyCure).Returns(new MagicData
+        {
+            Id = PartyCure, Type1 = 5, Moral = (byte)SkillMoral.PartyAll, Range = PartyCureRange,
         });
         gameData.GetMagic(Dispel).Returns(new MagicData
         {
@@ -110,6 +176,7 @@ public class MagicCleanseTargetTests : GameTestBase
         gameData.MagicType5Table.Returns(new Dictionary<int, MagicType5Data>
         {
             [CureCurse] = new() { Id = CureCurse, Type = RemoveBuffSubtype },
+            [PartyCure] = new() { Id = PartyCure, Type = RemoveBuffSubtype },
             [Dispel] = new() { Id = Dispel, Type = RemoveBlessSubtype },
         });
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>

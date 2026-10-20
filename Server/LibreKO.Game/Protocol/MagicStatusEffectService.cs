@@ -170,6 +170,8 @@ public class MagicStatusEffectService(
     private const int ReflectCurseChance = 25;
     private const float NpcDebuffReachSlack = 3f;
     private const float PlayerReachSlack = 3f;
+    // As wide as the cast's own reach check, so it never refuses what that one allowed.
+    private const float CastReachSlack = 20f;
 
     private async Task<bool> ExecuteBuffAsync(
         UserSession caster, MagicData magic, int skillId, int targetId, int[] data, bool isPrimary)
@@ -540,7 +542,7 @@ public class MagicStatusEffectService(
         if (targetId == AreaTarget && IsCleanse(special) && IsAreaMoral((SkillMoral)magic.Moral))
         {
             var moral = (SkillMoral)magic.Moral;
-            foreach (var member in AreaPlayers(caster, moral, magic.Range, caster.X, caster.Z).ToList())
+            foreach (var member in AreaPlayers(caster, moral, magic.Range > 0 ? magic.Range + PlayerReachSlack : 0, caster.X, caster.Z).ToList())
             {
                 await CleanseAsync(member, special);
                 await sessionManager.Regions.SendToRegion(
@@ -631,7 +633,9 @@ public class MagicStatusEffectService(
 
         return target.Hp > 0
             && target.ZoneId == caster.ZoneId
-            && WithinRadius(target.X, target.Z, caster.X, caster.Z, magic.Range + PlayerReachSlack)
+            && target.Room == caster.Room
+            && AttackReach.Within(caster, target.X, target.Z,
+                magic.Range + AttackReach.PlayerBodyRadius * 2 + CastReachSlack)
             && AcceptsAreaPlayer(caster, target, moral);
     }
 

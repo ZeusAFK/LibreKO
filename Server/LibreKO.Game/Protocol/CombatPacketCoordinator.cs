@@ -201,14 +201,18 @@ public class CombatPacketCoordinator(
     private bool TakeSwing(UserSession session)
     {
         var now = time.GetUtcNow().UtcTicks;
-        if (now + SwingJitterMs * TimeSpan.TicksPerMillisecond < session.NextSwingTicks)
+        var interval = SwingInterval(session);
+        if (session.SwingIntervalTicks != 0)
+            session.NextSwingTicks += interval - session.SwingIntervalTicks;
+        session.SwingIntervalTicks = interval;
+        if (now + SwingJitterMs * TimeSpan.TicksPerMillisecond < session.NextSwingTicks - interval)
             return false;
 
-        session.NextSwingTicks = Math.Max(session.NextSwingTicks, now) + SwingIntervalTicks(session);
+        session.NextSwingTicks = Math.Max(session.NextSwingTicks, now) + interval;
         return true;
     }
 
-    private long SwingIntervalTicks(UserSession session)
+    private long SwingInterval(UserSession session)
     {
         var rightHand = session.GetEquippedItem(InventoryConstants.RightHand);
         var delay = rightHand.IsEmpty ? 0 : gameDataService.GetItem(rightHand.ItemId)?.Delay ?? 0;

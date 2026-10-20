@@ -352,8 +352,13 @@ public class NpcInstance
     public int NewRegionX => (int)(X / RegionManager.RegionSize);
     public int NewRegionZ => (int)(Z / RegionManager.RegionSize);
 
+    private int dying;
+
+    public bool TryBeginDeath() => Interlocked.CompareExchange(ref dying, 1, 0) == 0;
+
     public void Respawn()
     {
+        Interlocked.Exchange(ref dying, 0);
         Hp = MaxHp;
         Mp = MaxMp;
         X = SpawnX;

@@ -51,6 +51,27 @@ public class BattleNpcKillTests : GameTestBase
     }
 
     [Fact]
+    public async Task AWarderKilledByTwoBlowsAtOnceCountsOnce()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        sessionManager.Battle.OpenBattleZone(BattleZoneManager.NATION_BATTLE, WarZone);
+        var (karus, _) = CreatePlayer(provider, characterId: 965, AccountNation.Karus);
+        var warder = SpawnBattleNpc(sessionManager, BattleZoneManager.FirstWarderSpecialType, EntityNation.ElMorad, karus);
+        var lifecycle = provider.GetRequiredService<ICombatLifecycleService>();
+
+        await Task.WhenAll(lifecycle.HandleNpcDeathAsync(warder, karus), lifecycle.HandleNpcDeathAsync(warder, karus));
+        await lifecycle.HandleNpcDeathAsync(warder, karus);
+
+        karus.Loyalty.Should().Be(WarderLoyalty, "one death pays once");
+        sessionManager.Battle.KilledElmoNpc.Should().Be(1);
+
+        warder.Respawn();
+        await lifecycle.HandleNpcDeathAsync(warder, karus);
+        karus.Loyalty.Should().Be(2 * WarderLoyalty, "a respawned warder can die again");
+    }
+
+    [Fact]
     public async Task KillingTheEnemyWardersAndKeeperWinsTheWarOnce()
     {
         using var provider = CreateProvider(_ => { });

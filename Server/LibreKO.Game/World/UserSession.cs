@@ -315,6 +315,7 @@ public class UserSession
     public ConcurrentDictionary<int, int> PendingArrowHits { get; } = new();
     public long SkillBurstTicks { get; set; }
     public long NextSwingTicks { get; set; }
+    public long SwingIntervalTicks { get; set; }
     public long NextShotTicks { get; set; }
     public long LastPotionTicks { get; set; }
     public long MageStatusImmuneUntilTicks { get; set; }
