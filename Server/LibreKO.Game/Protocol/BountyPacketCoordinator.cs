@@ -111,8 +111,9 @@ public class BountyPacketCoordinator(
         try
         {
             if (await RefreshBoardAsync())
-                entries = board.Where(b => b.PosterCharacterId == session.CharacterId)
-                    .Concat(board.Where(b => b.PosterCharacterId != session.CharacterId).OrderByDescending(b => b.Id))
+                entries = board.OrderByDescending(b => b.PosterCharacterId == session.CharacterId)
+                    .ThenByDescending(b => HasEarned(b, session.CharacterId))
+                    .ThenByDescending(b => b.Id)
                     .Take(MaxListedBounties)
                     .Select(b => new BountyPacketWriter.Entry(b.Id, b.TargetName, b.PosterName, b.Reward))
                     .ToList();
@@ -264,8 +265,9 @@ public class BountyPacketCoordinator(
             db.BountyHunters.RemoveRange(HunterRows(bounty));
             return Task.FromResult(true);
         }, () => payee.WithLock(s => s.Money = Math.Max(0, s.Money - bounty.Reward)));
-        if (outcome == StateCommit.Failed)
-            await ForgetIfClosedAsync(bounty);
+        if (outcome == StateCommit.Failed && await ForgetIfClosedAsync(bounty))
+            logger.LogError("Bounty {Id} was closed for character {CharacterId} but the save reported a failure; {Reward} coins must be paid by hand",
+                bounty.Id, payee.CharacterId, bounty.Reward);
         if (outcome != StateCommit.Saved)
             return false;
 
@@ -465,6 +467,9 @@ public class BountyPacketCoordinator(
             return null;
         }
     }
+
+    private bool HasEarned(Bounty bounty, int characterId) =>
+        huntersByBounty.TryGetValue(bounty.Id, out var hunters) && hunters.Contains(characterId);
 
     private HashSet<int> Hunters(int bountyId)
     {

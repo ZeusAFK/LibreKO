@@ -10,6 +10,7 @@ using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace LibreKO.Game.Tests;
@@ -692,6 +693,12 @@ public class BountyTests : GameTestBase
     {
         using var provider = CreateProvider(db =>
         {
+            db.Bounties.Add(new Bounty
+            {
+                PosterCharacterId = 1284, PosterName = "Bounty1284", TargetCharacterId = 1285, TargetName = "Bounty1285",
+                Reward = Reward, PostedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
             for (var other = 0; other < SeededOthers; other++)
             {
                 db.Bounties.Add(new Bounty
@@ -701,12 +708,6 @@ public class BountyTests : GameTestBase
                 });
                 db.SaveChanges();
             }
-
-            db.Bounties.Add(new Bounty
-            {
-                PosterCharacterId = 1284, PosterName = "Bounty1284", TargetCharacterId = 1285, TargetName = "Bounty1285",
-                Reward = Reward, PostedAt = DateTime.UtcNow,
-            });
         });
         var viewer = CreatePlayer(provider, 1284, AccountNation.Karus);
 
@@ -718,11 +719,99 @@ public class BountyTests : GameTestBase
         list.ReadUShort().Should().Be(ListedLimit, "a list too long for one packet would break the board for everyone");
         list.ReadInt();
         list.ReadSByteString();
-        list.ReadSByteString().Should().Be("Bounty1284", "the viewer's own bounties come first");
+        list.ReadSByteString().Should().Be("Bounty1284", "the viewer's own bounties come first, however old");
         list.ReadInt();
         list.ReadInt();
         list.ReadSByteString();
         list.ReadSByteString().Should().Be($"Poster{SeededOthers - 1}", "then the newest");
+    }
+
+    [Fact]
+    public async Task TheListShowsAHuntersEarnedBountyHoweverOld()
+    {
+        using var provider = CreateProvider(db =>
+        {
+            db.Bounties.Add(new Bounty
+            {
+                PosterCharacterId = 1301, PosterName = "Bounty1301", TargetCharacterId = 1302, TargetName = "Bounty1302",
+                Reward = Reward, PostedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+            for (var other = 0; other < SeededOthers; other++)
+                db.Bounties.Add(new Bounty
+                {
+                    PosterCharacterId = 5000 + other, PosterName = $"Poster{other}", TargetCharacterId = 1304, TargetName = "Bounty1304",
+                    Reward = SmallReward, PostedAt = DateTime.UtcNow,
+                });
+        });
+        var target = CreatePlayer(provider, 1302, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1303, AccountNation.Karus);
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+        board.RecordKill(target.Session, hunter.Session);
+
+        await board.HandleAsync(hunter.Client, BountyPacket(ListSub));
+
+        IdOn(hunter, "Bounty1302").Should().NotBeNull("a hunter claims from the list, so an earned bounty must be on it");
+    }
+
+    [Fact]
+    public async Task AnUnreadNoticeWaitsOutsideTheBoardsLock()
+    {
+        var clock = new Clock();
+        using var provider = CreateProvider(_ => { });
+        var release = new TaskCompletionSource();
+        var mail = Substitute.For<IMailService>();
+        mail.SendUnreadAsync(Arg.Any<UserSession>()).Returns(release.Task);
+        var board = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider, (TimeProvider)clock, mail);
+        var poster = CreatePlayer(provider, 1305, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1306, AccountNation.ElMorad);
+        var viewer = CreatePlayer(provider, 1307, AccountNation.Karus);
+        await board.HandleAsync(poster.Client, PostPacket(target.Session.Name, Reward));
+        clock.Now = clock.Now.AddDays(ExpiryDays);
+
+        var expiring = board.HandleAsync(poster.Client, BountyPacket(ListSub));
+        var other = board.HandleAsync(viewer.Client, BountyPacket(ListSub));
+
+        (await Task.WhenAny(other, Task.Delay(DeathWait))).Should().BeSameAs(other, "a slow notice must not hold the board");
+        release.SetResult();
+        await expiring;
+    }
+
+    [Fact]
+    public async Task AClaimWrittenButReportedAsFailedIsLoggedForAHandPayout()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Bounty>().Any(entry => entry.State == EntityState.Deleted));
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var logger = new ListLogger();
+        var board = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider, (ILogger<BountyPacketCoordinator>)logger);
+        var poster = CreatePlayer(provider, 1308, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1309, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1310, AccountNation.Karus);
+        await board.HandleAsync(poster.Client, PostPacket(target.Session.Name, Reward));
+        var bountyId = await StoredBountyIdAsync(provider);
+        board.RecordKill(target.Session, hunter.Session);
+        faults.Armed = true;
+
+        await board.HandleAsync(hunter.Client, BountyPacket(ClaimSub, bountyId));
+
+        logger.Errors.Should().Contain(message => message.Contains(hunter.Session.CharacterId.ToString()) && message.Contains(Reward.ToString()),
+            "a payout the database kept but memory undid can only be fixed by hand");
+    }
+
+    private sealed class ListLogger : ILogger<BountyPacketCoordinator>
+    {
+        public List<string> Errors { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel >= LogLevel.Error)
+                Errors.Add(formatter(state, exception));
+        }
     }
 
     [Fact]
