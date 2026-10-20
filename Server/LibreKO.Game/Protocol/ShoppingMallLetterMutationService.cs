@@ -298,25 +298,60 @@ public class ShoppingMallLetterMutationService(
             return;
         }
 
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var journal = new InventoryJournal(session);
+        var refusal = Rejected;
+        var slot = -1;
+        var coins = 0;
+        // The bag, the purse and the letter are saved together.
+        var outcome = await statePersister.CommitAsync(session, async db =>
+        {
+            var letter = await db.MailBoxes
+                .OrderBy(mail => mail.LetterId)
+                .FirstOrDefaultAsync(mail => mail.LetterId == letterId
+                    && mail.RecipientId == session.Name
+                    && mail.Status == ShoppingMallLetterProtocol.LetterStatusNew
+                    && mail.Type == ShoppingMallPacketWriter.LetterTypeWithItem
+                    && !mail.Deleted);
+            if (letter == null)
+            {
+                refusal = GetItemNoLetter;
+                return false;
+            }
 
-        var letter = await db.MailBoxes
-            .OrderBy(mail => mail.LetterId)
-            .FirstOrDefaultAsync(mail => mail.LetterId == letterId
-                && mail.RecipientId == session.Name
-                && mail.Status == ShoppingMallLetterProtocol.LetterStatusNew
-                && mail.Type == ShoppingMallPacketWriter.LetterTypeWithItem
-                && !mail.Deleted);
+            if (!session.WithLock(_ => TakeLetter(session, letter, journal, out slot)))
+                return false;
 
-        if (letter == null)
+            coins = letter.Coins;
+            letter.Status = ShoppingMallLetterProtocol.LetterStatusRead;
+            return true;
+        }, journal.Restore);
+
+        if (outcome != StateCommit.Saved)
         {
             await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
-                ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, GetItemNoLetter));
+                ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem,
+                outcome == StateCommit.Unchanged ? refusal : Rejected));
             return;
         }
 
-        var slot = -1;
+        if (slot >= 0)
+        {
+            var slotEntry = session.Inventory[slot];
+            await userNotificationService.SendStackChangeAsync(
+                session, (byte)slot, slotEntry.ItemId, slotEntry.Count, slotEntry.Durability, journal.WasEmpty(slot));
+        }
+
+        if (coins > 0)
+            await userNotificationService.SendGoldGainAsync(session, coins);
+
+        await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
+            ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Succeeded));
+    }
+
+    // The enclosed item and all its coins arrive, or nothing does.
+    private bool TakeLetter(UserSession session, MailBox letter, InventoryJournal journal, out int slot)
+    {
+        slot = -1;
         ExchangeItem? enclosed = null;
         if (letter.ItemId > 0)
         {
@@ -333,54 +368,26 @@ public class ShoppingMallLetterMutationService(
             }
 
             if (itemData == null || slot < 0 || !CanReceiveItem(session, itemData, letter.Count))
-            {
-                await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
-                    ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Rejected));
-                return;
-            }
+                return false;
         }
 
-        // All the coins fit under the cap or none are handed out.
-        var coins = letter.Coins;
-        if (coins > 0 && !session.WithLock(s =>
-            {
-                if ((long)s.Money + coins > ExchangePacketConstants.CoinMax)
-                    return false;
-                s.Money += coins;
-                return true;
-            }))
-        {
-            await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
-                ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Rejected));
-            return;
-        }
+        if (letter.Coins > 0 && (long)session.Money + letter.Coins > ExchangePacketConstants.CoinMax)
+            return false;
+
+        if (letter.Coins > 0)
+            journal.AddMoney(letter.Coins);
 
         if (enclosed != null)
         {
-            var slotEntry = session.Inventory[slot];
+            var slotEntry = journal.Slot(slot);
             var isNewItem = slotEntry.IsEmpty;
             var durability = slotEntry.Durability;
             ItemPlacement.Put(slotEntry, enclosed);
             if (!isNewItem)
                 slotEntry.Durability = (short)(durability + letter.Durability);
-
-            await userNotificationService.SendStackChangeAsync(
-                session,
-                (byte)slot,
-                letter.ItemId,
-                slotEntry.Count,
-                slotEntry.Durability,
-                isNewItem);
         }
 
-        if (coins > 0)
-            await userNotificationService.SendGoldGainAsync(session, coins);
-
-        letter.Status = ShoppingMallLetterProtocol.LetterStatusRead;
-        await db.SaveChangesAsync();
-
-        await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
-            ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Succeeded));
+        return true;
     }
 
     private static bool CanReceiveItem(UserSession session, ItemData itemData, short count)

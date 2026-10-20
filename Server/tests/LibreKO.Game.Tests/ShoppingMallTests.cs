@@ -6,6 +6,7 @@ using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
+using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -853,6 +854,7 @@ public class ShoppingMallTests : GameTestBase
         using var provider = CreateProvider(
             db =>
             {
+                db.Characters.Add(new Character { Id = 27, AccountId = 37, Name = "Mailer" });
                 db.MailBoxes.Add(new MailBox
                 {
                     LetterId = letterId,
@@ -991,12 +993,16 @@ public class ShoppingMallTests : GameTestBase
         const int serial = 4242;
 
         using var provider = CreateProvider(
-            db => db.MailBoxes.Add(new MailBox
+            db =>
             {
-                LetterId = letterId, RecipientId = "Mailer", SenderId = "Sender", Subject = "Gift", Message = "Take it",
-                Type = 2, Status = 1, ItemId = itemId, Count = 2, Durability = 10, Flag = (byte)ItemFlag.NotBound,
-                ExpiresAt = rentalEnds, SerialNumber = serial, Coins = 0, SendDate = DateTime.UtcNow, Deleted = false,
-            }),
+                db.Characters.Add(new Character { Id = 28, AccountId = 38, Name = "Mailer" });
+                db.MailBoxes.Add(new MailBox
+                {
+                    LetterId = letterId, RecipientId = "Mailer", SenderId = "Sender", Subject = "Gift", Message = "Take it",
+                    Type = 2, Status = 1, ItemId = itemId, Count = 2, Durability = 10, Flag = (byte)ItemFlag.NotBound,
+                    ExpiresAt = rentalEnds, SerialNumber = serial, Coins = 0, SendDate = DateTime.UtcNow, Deleted = false,
+                });
+            },
             gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1, Weight = 1, Duration = 10 }));
 
         var client = Substitute.For<IClient>();
@@ -1400,6 +1406,75 @@ public class ShoppingMallTests : GameTestBase
         request.WriteInt(0);
         request.WriteString("Message");
         return request;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ALetterClaimIsSavedWithTheBag(bool saveFails)
+    {
+        const int itemId = 810003000;
+        const int letterId = 1002;
+        const int coins = 500;
+        const int purse = 1_000;
+        var faults = new ClaimFaults { Armed = saveFails };
+        using var provider = CreateProvider(
+            db =>
+            {
+                db.Characters.Add(new Character { Id = 29, AccountId = 39, Name = "Claimer", Money = purse });
+                db.MailBoxes.Add(new MailBox
+                {
+                    LetterId = letterId, RecipientId = "Claimer", SenderId = "Sender", Subject = "Gift", Message = "Take it",
+                    Type = ShoppingMallPacketWriter.LetterTypeWithItem, Status = ShoppingMallLetterProtocol.LetterStatusNew,
+                    ItemId = itemId, Count = 2, Durability = 10, Coins = coins, SendDate = DateTime.UtcNow,
+                });
+            },
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1, Weight = 1, Duration = 10 }),
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sent = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 29, accountId: 39);
+        session.Name = "Claimer";
+        session.Hp = 100;
+        session.Money = purse;
+        session.Stats.MaxWeight = 100;
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(ShoppingMallLetterProtocol.StoreLetter);
+        request.WriteByte(ShoppingMallLetterProtocol.LetterGetItem);
+        request.WriteInt(letterId);
+        request.ResetOffset();
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var letter = await db.MailBoxes.AsNoTracking().SingleAsync();
+        var stored = await db.Characters.AsNoTracking().SingleAsync(c => c.Id == 29);
+        if (saveFails)
+        {
+            session.Money.Should().Be(purse);
+            session.Inventory.Should().NotContain(slot => slot.ItemId == itemId);
+            letter.Status.Should().Be(ShoppingMallLetterProtocol.LetterStatusNew, "a failed claim leaves the letter to claim again");
+            return;
+        }
+
+        stored.Money.Should().Be(purse + coins, "the coins are saved with the claim, not at some later save");
+        stored.Items.Should().Equal(session.SerializeItems());
+        letter.Status.Should().Be(ShoppingMallLetterProtocol.LetterStatusRead);
+    }
+
+    private sealed class ClaimFaults : Microsoft.EntityFrameworkCore.Diagnostics.SaveChangesInterceptor
+    {
+        public bool Armed { get; init; }
+
+        public override ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>> SavingChangesAsync(
+            Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData eventData,
+            Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            Armed && eventData.Context?.ChangeTracker.Entries<MailBox>().Any(entry => entry.State == EntityState.Modified) == true
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
     private static byte LetterResult(List<Packet> sent)
