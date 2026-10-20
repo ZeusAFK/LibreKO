@@ -89,7 +89,7 @@ public class ExchangeTransferService(
 
             var srcPos = (byte)(InventoryConstants.SlotMax + pos);
             var slot = s.Inventory[srcPos];
-            if (slot.ItemId != itemId || slot.Count < count || !slot.IsTradable)
+            if (slot.ItemId != itemId || slot.Count < count || !MayChangeHands(itemData!, slot))
                 return (Success: false, Duration: (short)0, UniqueId: 0);
 
             var offer = new ExchangeItem
@@ -338,6 +338,10 @@ public class ExchangeTransferService(
 
         return delivered;
     }
+
+    // A trade, a stall or a sale to a buying stall takes no trade-locked race, held-back item or timed item.
+    internal static bool MayChangeHands(ItemData itemData, ItemSlot slot) =>
+        !itemData.IsTradeLocked && slot.IsTradable && !slot.Expires;
 
     internal static bool IsTradableItem(ItemData? itemData, int itemId, byte pos)
         => itemData != null

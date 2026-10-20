@@ -277,36 +277,55 @@ public class MerchantStallTests : GameTestBase
         CountIn(seller, Ware).Should().Be(1);
     }
 
-    [Fact]
-    public async Task AnExpiredItemOnAStallIsNotSold()
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(70, false)]
+    [InlineData(71, false)]
+    [InlineData(73, false)]
+    public async Task ATimedOrTradeLockedItemIsNotListed(byte race, bool timed)
     {
-        using var market = new Market();
+        using var market = new Market(race: race);
         var seller = market.Player(96061, gold: 0);
         var ware = Bag(seller, BagPos);
         Stock(ware, Ware, 1);
-        ware.ExpiresAt = RentalEnds;
+        if (timed)
+            ware.ExpiresAt = RentalEnds;
+
         await market.ListAsync(seller, Ware, BagPos);
-        seller.Trade.MerchantState = MerchantMode.Selling;
-        ware.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeSeconds();
-        seller.Trade.MerchantItems[StallSlot]!.ExpiresAt = ware.ExpiresAt;
-        var buyer = market.Player(96062, gold: StartingGold);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
 
-        await market.BuyAsync(buyer, Ware, 1);
+        seller.Trade.MerchantItems[StallSlot].Should().Match<MerchantItem?>(item => item == null || item.IsEmpty,
+            "the client never lists it, so the server takes no such listing");
+    }
 
-        buyer.Money.Should().Be(StartingGold);
-        buyer.Inventory.Should().NotContain(slot => slot.ItemId == Ware);
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(70, false)]
+    [InlineData(73, false)]
+    public async Task ATimedOrTradeLockedItemIsNotSoldToABuyingStall(byte race, bool timed)
+    {
+        using var market = new Market(race: race);
+        var owner = market.Player(96067, gold: Price);
+        await market.OpenBuyingStallAsync(owner, (Ware, 1, Price));
+        var seller = market.Player(96068, gold: 0);
+        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        Stock(Bag(seller, BagPos), Ware, 1);
+        if (timed)
+            Bag(seller, BagPos).ExpiresAt = RentalEnds;
+
+        await market.SellAsync(seller, BagPos, 1);
+
+        seller.Money.Should().Be(0);
+        CountIn(seller, Ware).Should().Be(1);
     }
 
     [Fact]
-    public async Task AListedItemIsBoughtWithItsFlagExpiryAndSerial()
+    public async Task AListedItemIsBoughtWithItsFlag()
     {
         using var market = new Market();
         var seller = market.Player(96053, gold: 0);
         var ware = Bag(seller, BagPos);
         Stock(ware, Ware, 1);
         ware.Flag = (byte)ItemFlag.NotBound;
-        ware.ExpiresAt = RentalEnds;
         await market.ListAsync(seller, Ware, BagPos);
         seller.Trade.MerchantState = MerchantMode.Selling;
         var buyer = market.Player(96054, gold: StartingGold);
@@ -316,7 +335,6 @@ public class MerchantStallTests : GameTestBase
 
         var bought = buyer.Inventory.Skip(InventoryConstants.InventoryStart).Single(slot => slot.ItemId == Ware);
         bought.Flag.Should().Be((byte)ItemFlag.NotBound);
-        bought.ExpiresAt.Should().Be(RentalEnds);
     }
 
     [Fact]
@@ -335,27 +353,6 @@ public class MerchantStallTests : GameTestBase
         await market.BuyAsync(buyer, InventoryConstants.CypherRing, 1);
 
         buyer.Inventory.Single(slot => slot.ItemId == InventoryConstants.CypherRing).UniqueId.Should().Be(RingSerial);
-    }
-
-    [Fact]
-    public async Task ATimedItemBoughtDoesNotJoinAPermanentStack()
-    {
-        using var market = new Market();
-        var seller = market.Player(96057, gold: 0);
-        var ware = Bag(seller, BagPos);
-        Stock(ware, Ware, 1);
-        ware.ExpiresAt = RentalEnds;
-        await market.ListAsync(seller, Ware, BagPos);
-        seller.Trade.MerchantState = MerchantMode.Selling;
-        var buyer = market.Player(96058, gold: StartingGold);
-        Stock(Bag(buyer, OtherBagPos), Ware, 1);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
-
-        await market.BuyAsync(buyer, Ware, 1);
-
-        Bag(buyer, OtherBagPos).Count.Should().Be(1, "the timed item must not merge into the permanent stack");
-        Bag(buyer, OtherBagPos).ExpiresAt.Should().Be(0);
-        Bag(buyer, BagPos).ExpiresAt.Should().Be(RentalEnds);
     }
 
     [Fact]
@@ -597,9 +594,9 @@ public class MerchantStallTests : GameTestBase
 
         public ServiceProvider Provider { get; }
 
-        public Market(Action<AppDbContext>? seed = null)
+        public Market(Action<AppDbContext>? seed = null, byte race = 1)
         {
-            var ware = new ItemData { Num = Ware, Countable = 1, Weight = 1, Race = 1 };
+            var ware = new ItemData { Num = Ware, Countable = 1, Weight = 1, Race = race };
             Provider = CreateProvider(db => seed?.Invoke(db), gameData =>
             {
                 gameData.GetItem(Ware).Returns(_ => Hold(ware));

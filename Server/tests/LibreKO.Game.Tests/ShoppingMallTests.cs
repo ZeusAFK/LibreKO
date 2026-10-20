@@ -931,8 +931,10 @@ public class ShoppingMallTests : GameTestBase
         (await db.MailBoxes.SingleAsync(mail => mail.LetterId == letterId)).Status.Should().Be(2);
     }
 
-    [Fact]
-    public async Task ASentLetterStoresTheItemsStateExpiryAndSerial()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ASentLetterStoresTheItemsStateAndSerialButTakesNoTimedItem(bool timed)
     {
         const long rentalEnds = 4_102_444_800;
         const int serial = 4242;
@@ -962,7 +964,7 @@ public class ShoppingMallTests : GameTestBase
         ring.Count = 1;
         ring.Durability = 1;
         ring.Flag = (byte)ItemFlag.NotBound;
-        ring.ExpiresAt = rentalEnds;
+        ring.ExpiresAt = timed ? rentalEnds : 0;
         ring.UniqueId = serial;
 
         var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
@@ -978,10 +980,17 @@ public class ShoppingMallTests : GameTestBase
         await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
 
         await using var scope = provider.CreateAsyncScope();
-        var letter = await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.SingleAsync();
+        var letters = await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.ToListAsync();
+        if (timed)
+        {
+            letters.Should().BeEmpty("a timed item cannot change hands");
+            ring.ItemId.Should().Be(InventoryConstants.CypherRing);
+            return;
+        }
+
+        var letter = letters.Single();
         letter.SerialNumber.Should().Be(serial, "the letter must not drop the sealed character the ring holds");
         letter.Flag.Should().Be((byte)ItemFlag.NotBound);
-        letter.ExpiresAt.Should().Be(rentalEnds);
     }
 
     [Fact]

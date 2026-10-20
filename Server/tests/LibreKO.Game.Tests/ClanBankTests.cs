@@ -19,6 +19,7 @@ public class ClanBankTests : GameTestBase
     private const byte Member = 3;
     private const byte Chief = 1;
     private const short AliveHp = 100;
+    private const long RentalEnds = 4_102_444_800;
     private const byte PageSize = 24;
 
     [Fact]
@@ -52,14 +53,19 @@ public class ClanBankTests : GameTestBase
         bank.Slots()[0].ItemId.Should().Be(StoredItem);
     }
 
-    [Fact]
-    public async Task AnUntradableItemIsNamedNotStorable()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AnUntradableItemIsNamedNotStorable(bool timed)
     {
         var bank = Bank(Wolves, Member);
         var bag = bank.Session.Inventory[InventoryConstants.SlotMax];
         bag.ItemId = StoredItem;
         bag.Count = 1;
-        bag.Flag = (byte)ItemFlag.Bound;
+        if (timed)
+            bag.ExpiresAt = RentalEnds;
+        else
+            bag.Flag = (byte)ItemFlag.Bound;
 
         await bank.Send(WarehouseSubOpcode.Input, packet =>
         {

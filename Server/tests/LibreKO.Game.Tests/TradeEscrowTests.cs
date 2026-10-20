@@ -25,7 +25,7 @@ public class TradeEscrowTests : GameTestBase
     private const byte PotionPos = 4;
     private const byte SwordPos = 5;
     private const ushort PotionStack = 5;
-    private const long SwordExpiry = 1_900_000_000;
+    private const long RentalEnds = 1_900_000_000;
     private const long OldPotionExpiry = 1_800_000_000;
     private const int SomeoneElse = 92003;
     private const int Purse = 1_000;
@@ -66,7 +66,6 @@ public class TradeEscrowTests : GameTestBase
         var sword = BagSlot(giver, SwordPos);
         sword.ItemId.Should().Be(Sword);
         sword.Flag.Should().Be((byte)ItemFlag.NotBound);
-        sword.ExpiresAt.Should().Be(SwordExpiry);
         sword.Durability.Should().Be(77);
         giver.Trade.ExchangeItemList.Should().BeEmpty();
         giver.Trade.IsTrading.Should().BeFalse();
@@ -135,12 +134,34 @@ public class TradeEscrowTests : GameTestBase
         fresh.Count.Should().Be(3);
         var sword = BagSlots(taker).Single(slot => slot.ItemId == Sword);
         sword.Flag.Should().Be((byte)ItemFlag.NotBound);
-        sword.ExpiresAt.Should().Be(SwordExpiry);
         sword.Durability.Should().Be(77);
 
         BagSlot(giver, PotionPos).Count.Should().Be(2);
         BagSlot(giver, SwordPos).IsEmpty.Should().BeTrue();
         CountInBag(giver, Sword).Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(70, false)]
+    [InlineData(71, false)]
+    [InlineData(73, false)]
+    public async Task ATimedOrTradeLockedItemIsNotOffered(byte race, bool timed)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            StockItems(gameData);
+            gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Countable = 0, Weight = 1, Duration = 100, Race = race });
+        });
+        var (giver, _, giverClient, _) = OpenTrade(provider);
+        StockSword(giver);
+        if (timed)
+            BagSlot(giver, SwordPos).ExpiresAt = RentalEnds;
+
+        await SendAsync(provider, giverClient, AddPacket(SwordPos, Sword, 1));
+
+        BagSlot(giver, SwordPos).ItemId.Should().Be(Sword, "the client never offers it, so the server takes none");
+        giver.Trade.ExchangeItemList.Should().BeEmpty();
     }
 
     [Fact]
@@ -532,7 +553,7 @@ public class TradeEscrowTests : GameTestBase
             items[i] = new ItemSlot();
         UserSessionBinaryState.LoadItems(items, saved.Items);
         items[InventoryConstants.InventoryStart + SwordPos].ItemId.Should().Be(Sword, "a crash mid-trade must not lose the offer");
-        items[InventoryConstants.InventoryStart + SwordPos].ExpiresAt.Should().Be(SwordExpiry);
+        items[InventoryConstants.InventoryStart + SwordPos].Flag.Should().Be((byte)ItemFlag.NotBound);
         saved.Money.Should().Be(Purse);
         BagSlot(giver, SwordPos).IsEmpty.Should().BeTrue("the live bag still has the offer in escrow");
     }
@@ -574,7 +595,6 @@ public class TradeEscrowTests : GameTestBase
         slot.Count = 1;
         slot.Durability = 77;
         slot.Flag = (byte)ItemFlag.NotBound;
-        slot.ExpiresAt = SwordExpiry;
     }
 
     private static ItemSlot BagSlot(UserSession session, byte pos) =>

@@ -59,8 +59,7 @@ public class MerchantListingService(
             refusal =
                 held.ItemId != itemId ? $"slot {absPos} holds {held.ItemId}, not {itemId}"
                 : held.Count < count ? $"slot {absPos} holds {held.Count}, fewer than {count}"
-                : !held.IsTradable ? $"item is {held.State}"
-                : gameDataService.GetItem(itemId)?.IsUntradeable == true ? "item cannot be traded"
+                : !ExchangeTransferService.MayChangeHands(itemData!, held) ? "item cannot be traded"
                 : null;
         }
 

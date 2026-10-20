@@ -89,7 +89,7 @@ public class ItemAuthorityTests : GameTestBase
         var (player, client) = Player(provider, 2003);
         var sword = Put(Bag(player, BagFirst), Sword);
         sword.Durability = WornDurability;
-        sword.ExpiresAt = RentalEnds;
+        sword.Flag = (byte)ItemFlag.NotBound;
         var bundles = Bundles(client);
 
         await Drop(provider, client, BagFirst, Sword, 1);
@@ -100,7 +100,21 @@ public class ItemAuthorityTests : GameTestBase
         var picked = player.Inventory.Skip(InventoryConstants.InventoryStart).Take(InventoryConstants.HaveMax)
             .Single(slot => slot.ItemId == Sword);
         picked.Durability.Should().Be(WornDurability, "a pickup does not repair");
-        picked.ExpiresAt.Should().Be(RentalEnds, "a pickup does not make a timed item permanent");
+        picked.Flag.Should().Be((byte)ItemFlag.NotBound);
+    }
+
+    [Fact]
+    public async Task ATimedItemIsNotDropped()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2004);
+        Put(Bag(player, BagFirst), Sword).ExpiresAt = RentalEnds;
+        var bundles = Bundles(client);
+
+        await Drop(provider, client, BagFirst, Sword, 1);
+
+        bundles.Should().BeEmpty("a timed item cannot change hands, and a drop hands it to whoever picks it up");
+        Bag(player, BagFirst).ItemId.Should().Be(Sword);
     }
 
     [Fact]

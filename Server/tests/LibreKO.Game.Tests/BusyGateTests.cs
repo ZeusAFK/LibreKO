@@ -24,6 +24,7 @@ public class BusyGateTests : GameTestBase
     private const int Other = 156_220_000;
     private const byte WarePos = 0;
     private const byte OtherPos = 1;
+    private const long RentalEnds = 4_102_444_800;
     private const int ShopNpcId = 5000;
     private const int SellingGroup = 1;
     private const string RecipientName = "Recipient";
@@ -97,10 +98,17 @@ public class BusyGateTests : GameTestBase
     [InlineData(Busy.Selling)]
     [InlineData(Busy.Preparing)]
     [InlineData(Busy.Gathering)]
-    public async Task OnlyAnIdlePlayerSellsToAnNpc(Busy state)
+    public async Task OnlyAnIdlePlayerSellsToAnNpc(Busy state) => await SellToAnNpc(state, timed: false);
+
+    [Fact]
+    public async Task ATimedItemIsNotSoldToAnNpc() => await SellToAnNpc(Busy.None, timed: true);
+
+    private async Task SellToAnNpc(Busy state, bool timed)
     {
         using var provider = Provider();
         var (session, client, _) = Player(provider, state);
+        if (timed)
+            Bag(session, WarePos).ExpiresAt = RentalEnds;
         var npc = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
         {
             NpcId = ShopNpcId,
@@ -123,9 +131,9 @@ public class BusyGateTests : GameTestBase
         packet.WriteUShort(1);
         await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, Reset(packet));
 
-        var idle = state == Busy.None;
-        Bag(session, WarePos).ItemId.Should().Be(idle ? 0 : Ware);
-        (session.Money > 0).Should().Be(idle);
+        var sold = state == Busy.None && !timed;
+        Bag(session, WarePos).ItemId.Should().Be(sold ? 0 : Ware);
+        (session.Money > 0).Should().Be(sold);
     }
 
     [Theory]

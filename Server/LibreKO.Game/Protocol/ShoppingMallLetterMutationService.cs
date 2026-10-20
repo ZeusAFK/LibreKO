@@ -151,7 +151,7 @@ public class ShoppingMallLetterMutationService(
             itemData = gameDataService.GetItem(itemId);
             if (itemData == null
                 || itemData.IsUnmailable
-                || itemData.IsUntradeable
+                || itemData.IsTradeLocked
                 || itemId >= InventoryConstants.ItemGold)
             {
                 await session.Client.SendPacket(ShoppingMallPacketWriter.Result(
@@ -223,7 +223,7 @@ public class ShoppingMallLetterMutationService(
             var slot = session.Inventory[sourceIndex];
             if (slot.ItemId != itemId || slot.IsEmpty || slot.Count == 0)
                 return (false, null, Rejected);
-            if (!slot.IsTradable)
+            if (!ExchangeTransferService.MayChangeHands(itemData!, slot))
                 return (false, null, SendItemNotMailable);
 
             item = new ExchangeItem

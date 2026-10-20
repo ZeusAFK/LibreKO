@@ -50,7 +50,7 @@ public class LootPacketCoordinator(
         var dropped = session.WithLock(s =>
         {
             var slot = s.Inventory[absPos];
-            if (slot.ItemId != itemId || slot.Count < count || !slot.IsTradable
+            if (slot.ItemId != itemId || slot.Count < count || !ExchangeTransferService.MayChangeHands(itemData, slot)
                 || !ExchangeTransferService.IsTradableItem(itemData, itemId, pos))
                 return null;
             var loot = new LootItem

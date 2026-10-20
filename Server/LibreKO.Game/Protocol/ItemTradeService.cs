@@ -360,7 +360,7 @@ public class ItemTradeService(
                 {
                     // Lines selling from the same stack add up against what it holds.
                     var sold = soldFrom.GetValueOrDefault(entry.Position) + entry.Count;
-                    if (slot.ItemId != entry.ItemId || slot.Count < sold || !slot.IsTradable || slot.IsLinked)
+                    if (slot.ItemId != entry.ItemId || slot.Count < sold || !slot.IsTradable || slot.IsLinked || slot.Expires)
                         return Refuse(ItemTradeRefusal.CannotTrade);
 
                     soldFrom[entry.Position] = sold;
