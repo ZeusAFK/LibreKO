@@ -1474,6 +1474,42 @@ public class ShoppingMallTests : GameTestBase
         letter.Status.Should().Be(ShoppingMallLetterProtocol.LetterStatusRead);
     }
 
+    [Fact]
+    public async Task ALetterWhoseCoinsWouldPassTheCapIsNotClaimed()
+    {
+        const int letterId = 1003;
+        const int coins = 500;
+        using var provider = CreateProvider(db =>
+        {
+            db.Characters.Add(new Character { Id = 29, AccountId = 39, Name = "Claimer" });
+            db.MailBoxes.Add(new MailBox
+            {
+                LetterId = letterId, RecipientId = "Claimer", SenderId = "Sender", Subject = "Coins", Message = "Take them",
+                Type = ShoppingMallPacketWriter.LetterTypeWithItem, Status = ShoppingMallLetterProtocol.LetterStatusNew,
+                Coins = coins, SendDate = DateTime.UtcNow,
+            });
+        });
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 29, accountId: 39);
+        session.Name = "Claimer";
+        session.Hp = 100;
+        session.Money = ExchangePacketConstants.CoinMax - coins + 1;
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(ShoppingMallLetterProtocol.StoreLetter);
+        request.WriteByte(ShoppingMallLetterProtocol.LetterGetItem);
+        request.WriteInt(letterId);
+        request.ResetOffset();
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        session.Money.Should().Be(ExchangePacketConstants.CoinMax - coins + 1, "a purse never passes the coin cap");
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.AsNoTracking().SingleAsync())
+            .Status.Should().Be(ShoppingMallLetterProtocol.LetterStatusNew, "the coins wait until they fit");
+    }
+
     private sealed class ClaimFaults : Microsoft.EntityFrameworkCore.Diagnostics.SaveChangesInterceptor
     {
         public bool Armed { get; init; }

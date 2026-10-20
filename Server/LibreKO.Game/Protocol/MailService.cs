@@ -323,7 +323,7 @@ public class MailService(
             if (claim.FirstRead)
                 mail.ReadAt = DateTime.UtcNow;
             return claim.Delivered || claim.Dropped > 0;
-        }, journal.Restore);
+        }, () => session.WithLock(_ => journal.Restore()));
 
         if (outcome == StateCommit.Failed)
         {

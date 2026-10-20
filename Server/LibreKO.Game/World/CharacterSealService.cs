@@ -133,7 +133,7 @@ public sealed class CharacterSealService(
             target.Sealed = true;
             sealedCharacter = target;
             return true;
-        }, journal.Restore);
+        }, () => session.WithLock(_ => journal.Restore()));
 
         if (outcome != StateCommit.Saved || sealedCharacter == null)
             return answer;
@@ -192,7 +192,7 @@ public sealed class CharacterSealService(
             sealedCharacter.AccountId = session.AccountId;
             sealedCharacter.Slot = slot;
             return true;
-        }, journal.Restore);
+        }, () => session.WithLock(_ => journal.Restore()));
 
         if (outcome != StateCommit.Saved)
             return CharacterSealPacketWriter.UnsealFailed();

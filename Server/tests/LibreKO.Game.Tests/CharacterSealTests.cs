@@ -10,6 +10,7 @@ using LibreKO.Game.World;
 using LibreKO.Common.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq.Expressions;
 using NSubstitute;
@@ -98,6 +99,76 @@ public class CharacterSealTests : GameTestBase
             .Sealed.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task AnUnsealWhoseSaveFailsKeepsTheRingAndTheSeal()
+    {
+        var faults = new UnsealFaults();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (buyer, ring) = await SealedVelkanAsync(provider);
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(buyer, UnsealRequest(InventoryConstants.CypherRing, 2));
+
+        ring.ItemId.Should().Be(InventoryConstants.CypherRing, "the ring and the character are saved together or not at all");
+        ring.UniqueId.Should().Be(11);
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.AsNoTracking().SingleAsync(c => c.Id == 11))
+            .Sealed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ABusyPlayerCannotUnseal()
+    {
+        using var provider = Provider();
+        var (buyer, ring) = await SealedVelkanAsync(provider);
+        buyer.Trade.MerchantState = MerchantMode.Selling;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(buyer, UnsealRequest(InventoryConstants.CypherRing, 2));
+
+        ring.ItemId.Should().Be(InventoryConstants.CypherRing, "a ring on an open stall can be bought while the unseal waits on the database");
+    }
+
+    [Fact]
+    public async Task ARingThatLeavesTheBagMidUnsealFreesNoOne()
+    {
+        UserSession? buyer = null;
+        var armed = false;
+        var sale = new DuringCharacterRead { Meanwhile = () => { if (armed) buyer!.Inventory[InventoryConstants.InventoryStart + BagPos].Clear(); } };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(sale)));
+        (buyer, _) = await SealedVelkanAsync(provider);
+        armed = true;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(buyer, UnsealRequest(InventoryConstants.CypherRing, 2));
+
+        using var scope = provider.CreateScope();
+        var velkan = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.AsNoTracking().SingleAsync(c => c.Id == 11);
+        velkan.Sealed.Should().BeTrue("the ring went to a buyer, so it frees no character");
+        velkan.AccountId.Should().Be(AccountA);
+    }
+
+    private static async Task<(UserSession Buyer, ItemSlot Ring)> SealedVelkanAsync(ServiceProvider provider)
+    {
+        var sealer = Session(provider, 10, AccountA, "Zeus");
+        sealer.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        sealer.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(sealer, SealRequest("Velkan", Pin));
+        var buyer = Session(provider, 20, AccountB, "Buyer");
+        var ring = buyer.Inventory[InventoryConstants.InventoryStart + BagPos];
+        ring.ItemId = InventoryConstants.CypherRing;
+        ring.Count = 1;
+        ring.UniqueId = 11;
+        return (buyer, ring);
+    }
+
+    private sealed class UnsealFaults : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            eventData.Context?.ChangeTracker.Entries<Character>().Any(entry => !entry.Entity.Sealed
+                && entry.State == EntityState.Modified && entry.Property(nameof(Character.Sealed)).IsModified) == true
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
     private sealed class SealFaults : SaveChangesInterceptor
     {
         public bool Failing { get; init; }
@@ -116,7 +187,8 @@ public class CharacterSealTests : GameTestBase
         public Expression QueryCompilationStarting(Expression queryExpression, QueryExpressionEventData eventData)
         {
             if (queryExpression.Type.IsGenericType && queryExpression.Type.GetGenericArguments().Contains(typeof(Character))
-                || queryExpression.Type == typeof(Character))
+                || queryExpression.Type == typeof(Character)
+                || queryExpression is MethodCallExpression { Arguments: [EntityQueryRootExpression root, ..] } && root.EntityType.ClrType == typeof(Character))
                 Meanwhile();
             return queryExpression;
         }

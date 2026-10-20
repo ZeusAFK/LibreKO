@@ -324,7 +324,7 @@ public class ShoppingMallLetterMutationService(
             coins = letter.Coins;
             letter.Status = ShoppingMallLetterProtocol.LetterStatusRead;
             return true;
-        }, journal.Restore);
+        }, () => session.WithLock(_ => journal.Restore()));
 
         if (outcome != StateCommit.Saved)
         {
