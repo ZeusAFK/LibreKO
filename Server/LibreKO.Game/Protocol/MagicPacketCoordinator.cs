@@ -435,8 +435,8 @@ public class MagicPacketCoordinator(
         int targetId,
         int[] data)
     {
-        var paysHere = !PaysItsOwnReagent(magic, skillId);
-        if (paysHere && !magicItemUsageService.CanUseSkillItems(session, magic))
+        var paysHere = magic.UseItem != 0 && !PaysItsOwnReagent(magic, skillId);
+        if (paysHere && (session.IsBusy || !magicItemUsageService.CanUseSkillItems(session, magic)))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
             return;

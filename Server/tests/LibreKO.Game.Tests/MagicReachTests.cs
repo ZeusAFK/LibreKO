@@ -30,6 +30,11 @@ public class MagicReachTests : GameTestBase
     private const int CureRow = 490300;
     private const int CureItem = 389060000;
     private const int NoOne = 99_999;
+    private const int HideThenSummon = 490051;
+    private const int StrayWarp = 490052;
+    private const int StrayWarpCurse = StrayWarp + 80000;
+    private const ushort ManyScrolls = 250;
+    private const int OneSecond = 1000;
     private const short StoneBindingMana = 15;
     private const int Mace = 1111471741;
     private const short FireBlastMana = 40;
@@ -254,6 +259,7 @@ public class MagicReachTests : GameTestBase
     [InlineData(ChamberScroll, PlayerHp, TwoScrolls)]
     [InlineData(ShoutRow, PlayerHp, TwoScrolls)]
     [InlineData(OddStealthRow, PlayerHp, TwoScrolls)]
+    [InlineData(HideThenSummon, PlayerHp, 1)]
     public async Task AScrollIsSpentOnlyWhenItsCastTakesEffect(int skillId, short friendHp, ushort scrollsLeft)
     {
         using var provider = Provider();
@@ -268,6 +274,46 @@ public class MagicReachTests : GameTestBase
         await Cast(provider, caster, skillId, friend.CharacterId);
 
         bag.Count.Should().Be(scrollsLeft);
+    }
+
+    [Fact]
+    public async Task AScrollIsSpentWhenOnlyItsExtraEffectLands()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var caster = Player(provider, 812, AccountNation.Karus, Ronark, Here);
+        var enemy = Player(provider, 813, AccountNation.ElMorad, Ronark, Here + 5);
+        var bag = caster.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = ScrollItem;
+        bag.Count = ManyScrolls;
+        bag.Durability = 1;
+
+        for (var cast = 0; cast < ManyScrolls && !enemy.ActiveBuffs.ContainsKey(StrayWarpCurse); cast++)
+        {
+            await Cast(provider, caster, StrayWarp, enemy.CharacterId);
+            clock.Advance(OneSecond);
+        }
+
+        enemy.ActiveBuffs.Should().ContainKey(StrayWarpCurse, "about one cast in ten lands the extra effect");
+        bag.Count.Should().Be(ManyScrolls - 1, "only the cast whose extra effect landed spent a scroll");
+    }
+
+    [Fact]
+    public async Task AScrollIsNotCastFromAStall()
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 810, AccountNation.Karus, Moradon, Here);
+        var friend = Player(provider, 811, AccountNation.Karus, Moradon, Here + 30);
+        var bag = caster.Inventory[InventoryConstants.InventoryStart];
+        bag.ItemId = ScrollItem;
+        bag.Count = TwoScrolls;
+        bag.Durability = 1;
+        caster.Trade.MerchantState = MerchantMode.Selling;
+
+        await Cast(provider, caster, SummonScroll, friend.CharacterId);
+
+        bag.Count.Should().Be(TwoScrolls, "a buyer could take the scroll from the stall while the cast runs");
+        friend.X.Should().Be(Here + 30);
     }
 
     [Theory]
@@ -358,14 +404,32 @@ public class MagicReachTests : GameTestBase
             });
             gameData.GetItem(item).Returns(new ItemData { Num = item, Countable = 1, Duration = 1 });
         }
+        gameData.GetMagic(StrayWarp).Returns(new MagicData
+        {
+            Id = StrayWarp, Type1 = (byte)MagicSkillType.Warp, Moral = (byte)SkillMoral.FriendWithMe,
+            UseItem = ScrollItem, ItemGroup = 9,
+        });
+        gameData.GetMagic(StrayWarpCurse).Returns(new MagicData
+        {
+            Id = StrayWarpCurse, Type1 = (byte)MagicSkillType.Buff, Moral = (byte)SkillMoral.Enemy, SuccessRate = 100,
+        });
+        gameData.GetMagic(HideThenSummon).Returns(new MagicData
+        {
+            Id = HideThenSummon, Type1 = (byte)MagicSkillType.Stealth, Type2 = (byte)MagicSkillType.Warp,
+            Moral = (byte)SkillMoral.FriendWithMe,
+            UseItem = ScrollItem, ItemGroup = 9,
+        });
         gameData.MagicType8Table.Returns(new Dictionary<int, MagicType8Data>
         {
             [SummonScroll] = new() { Id = SummonScroll, WarpType = (byte)MagicWarpType.SummonInZone },
+            [HideThenSummon] = new() { Id = HideThenSummon, WarpType = (byte)MagicWarpType.SummonInZone },
+            [StrayWarp] = new() { Id = StrayWarp, WarpType = (byte)MagicWarpType.MoveToTarget },
             [ChamberScroll] = new() { Id = ChamberScroll, WarpType = (byte)MagicWarpType.ChamberScroll },
         });
         gameData.MagicType9Table.Returns(new Dictionary<int, MagicType9Data>
         {
             [OddStealthRow] = new() { Id = OddStealthRow, StateChange = (byte)MagicStealthType.Absoluteness },
+            [HideThenSummon] = new() { Id = HideThenSummon, StateChange = (byte)MagicStealthType.Absoluteness },
         });
         gameData.GetMagic(CureRow).Returns(new MagicData
         {
@@ -398,6 +462,7 @@ public class MagicReachTests : GameTestBase
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
         {
             [Curse] = new() { Id = Curse, BuffType = (byte)BuffType.Ac, Ac = -50, Duration = 30 },
+            [StrayWarpCurse] = new() { Id = StrayWarpCurse, BuffType = (byte)BuffType.Ac, Ac = -50, Duration = 30 },
         });
     }, configureServices: services =>
     {

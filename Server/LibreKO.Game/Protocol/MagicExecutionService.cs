@@ -39,34 +39,33 @@ public class MagicExecutionService(
         if (magic.SecondaryType != MagicSkillType.None
             && HasTypeData(magic, magic.SecondaryType, skillId))
         {
-            await ExecuteTypeAsync(
-                session, magic, magic.SecondaryType, skillId, targetId, data, isPrimary: false);
+            tookEffect = await ExecuteTypeAsync(
+                session, magic, magic.SecondaryType, skillId, targetId, data, isPrimary: false) || tookEffect;
         }
 
-        await ExecuteExtendedEffectAsync(session, magic, skillId, targetId, data);
-        return tookEffect;
+        return await ExecuteExtendedEffectAsync(session, magic, skillId, targetId, data) || tookEffect;
     }
 
     private const int ExtendedEffectOffset = 80000;
 
-    private async Task ExecuteExtendedEffectAsync(
+    private async Task<bool> ExecuteExtendedEffectAsync(
         UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
         if (magic.PrimaryType is not (MagicSkillType.Melee or MagicSkillType.Ranged or MagicSkillType.OverTime or MagicSkillType.Warp))
-            return;
+            return false;
 
         var extendedId = skillId + ExtendedEffectOffset;
         if (gameDataService.GetMagic(extendedId) is not { PrimaryType: MagicSkillType.Buff } extended
             || !gameDataService.MagicType4Table.TryGetValue(extendedId, out var type4Data))
-            return;
+            return false;
 
         if (sessionManager.GetByCharacterId(targetId) is not { } target || !PvpRules.CanAttackPlayer(caster, target))
-            return;
+            return false;
 
         if (!StatusEffectChance.Lands(caster, target, (BuffType)type4Data.BuffType, StatusEffectChance.ExtendedRowChance))
-            return;
+            return false;
 
-        await magicStatusEffectService.ExecuteAsync(
+        return await magicStatusEffectService.ExecuteAsync(
             caster, extended, MagicSkillType.Buff, extendedId, targetId, data, isPrimary: false);
     }
 
