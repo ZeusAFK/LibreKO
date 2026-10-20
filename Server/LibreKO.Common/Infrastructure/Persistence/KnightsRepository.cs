@@ -28,9 +28,10 @@ public class KnightsRepository(AppDbContext context) : IKnightsRepository
         await context.SaveChangesAsync();
     }
 
+    // A save of a clan held in memory never writes its name, which only a rename changes.
     public async Task UpdateAsync(KnightsEntity clan)
     {
-        context.Set<KnightsEntity>().Update(clan);
+        context.Set<KnightsEntity>().Update(clan).Property(entity => entity.Name).IsModified = false;
         await context.SaveChangesAsync();
     }
 

@@ -41,9 +41,6 @@ public class MiscPacketCoordinator(
     IUserNotificationService userNotificationService,
     ILogger<MiscPacketCoordinator> logger) : IMiscPacketCoordinator
 {
-    // One rename at a time, so two players cannot both take the same free name.
-    private static readonly SemaphoreSlim NameChanges = new(1, 1);
-
     private const byte CommandAuthority = 0x01;
 
     private const byte NameChangeRequest = 0;
@@ -175,7 +172,7 @@ public class MiscPacketCoordinator(
         // The new name and the bag without the scroll are saved together.
         var journal = new InventoryJournal(session);
         StateCommit outcome;
-        await NameChanges.WaitAsync();
+        await NameRules.Changes.WaitAsync();
         try
         {
             outcome = await statePersister.CommitAsync(session, async db =>
@@ -191,7 +188,7 @@ public class MiscPacketCoordinator(
         }
         finally
         {
-            NameChanges.Release();
+            NameRules.Changes.Release();
         }
 
         if (outcome != StateCommit.Saved)
@@ -261,7 +258,7 @@ public class MiscPacketCoordinator(
         // The clan's new name and the chief's bag without the scroll are saved together.
         var journal = new InventoryJournal(session);
         StateCommit outcome;
-        await NameChanges.WaitAsync();
+        await NameRules.Changes.WaitAsync();
         try
         {
             outcome = await statePersister.CommitAsync(session, async db =>
@@ -277,7 +274,7 @@ public class MiscPacketCoordinator(
         }
         finally
         {
-            NameChanges.Release();
+            NameRules.Changes.Release();
         }
 
         if (outcome != StateCommit.Saved)

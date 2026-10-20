@@ -32,6 +32,9 @@ public class NameChangeTests : GameTestBase
     private const string NewName = "After";
     private const string OldClan = "Wolves";
     private const string NewClan = "Lions";
+    private const string OtherName = "Other";
+    private const string OtherClan = "Bears";
+    private static readonly TimeSpan RivalWait = TimeSpan.FromMilliseconds(300);
 
     [Fact]
     public async Task ARenameSavesTheNameWithTheBagThatNoLongerHoldsTheScroll()
@@ -182,6 +185,46 @@ public class NameChangeTests : GameTestBase
         Scroll(chief).ItemId.Should().Be(ClanNameScroll);
     }
 
+    [Fact]
+    public async Task TwoPlayersRenamedToOneNameAtOnceLeaveItWithOne()
+    {
+        var saves = new DuringSave();
+        using var provider = Provider(otherName: OtherName,
+            configure: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(saves)));
+        var (first, _) = Player(provider, ScrollOfIdentity);
+        var (second, _) = Player(provider, ScrollOfIdentity, OtherId, OtherName);
+        saves.Meanwhile = () => Rename(provider, second, CharacterRename, NewName);
+
+        await Rename(provider, first, CharacterRename, NewName);
+        await saves.Rival;
+
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.CountAsync(c => c.Name == NewName))
+            .Should().Be(1, "a name is checked and taken one rename at a time");
+    }
+
+    [Fact]
+    public async Task TwoClansRenamedToOneNameAtOnceLeaveItWithOne()
+    {
+        var saves = new DuringSave();
+        using var provider = Provider(otherName: OtherName, otherClan: OtherClan,
+            configure: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(saves)));
+        var (first, _) = Chief(provider);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        sessions.Knights.AddClan(ClanId + 1, new KnightsEntity { Id = ClanId + 1, Name = OtherClan, Chief = OtherName, Nation = (byte)AccountNation.Karus, Flag = 1, Members = 1 });
+        var (second, _) = Player(provider, ClanNameScroll, OtherId, OtherName);
+        second.KnightsId = ClanId + 1;
+        second.KnightsFame = ChiefFame;
+        saves.Meanwhile = () => Rename(provider, second, ClanRename, NewClan);
+
+        await Rename(provider, first, ClanRename, NewClan);
+        await saves.Rival;
+
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Knights.CountAsync(k => k.Name == NewClan))
+            .Should().Be(1, "a clan name is checked and taken one rename at a time");
+    }
+
     private static ServiceProvider Provider(
         string? king = null, string? otherName = null, string? otherClan = null, Action<IServiceCollection>? configure = null) =>
         CreateProvider(db =>
@@ -202,15 +245,16 @@ public class NameChangeTests : GameTestBase
                 : new Dictionary<byte, KingSystemData> { [(byte)AccountNation.Karus] = new() { Nation = (byte)AccountNation.Karus, KingName = king } });
         }, configureServices: configure);
 
-    private static (UserSession Session, List<Packet> Sent) Player(ServiceProvider provider, int scroll)
+    private static (UserSession Session, List<Packet> Sent) Player(
+        ServiceProvider provider, int scroll, int characterId = PlayerId, string name = OldName)
     {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         var sent = new List<Packet>();
         client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         var sessions = provider.GetRequiredService<SessionManager>();
-        var session = sessions.CreateSession(client, PlayerId, PlayerId);
-        session.Name = OldName;
+        var session = sessions.CreateSession(client, characterId, characterId);
+        session.Name = name;
         session.Nation = AccountNation.Karus;
         session.Level = 60;
         session.Hp = AliveHp;
@@ -273,6 +317,27 @@ public class NameChangeTests : GameTestBase
                 && entry.Entity is Character or KnightsEntity && entry.Property(nameof(Character.Name)).IsModified) == true
                 ? throw new DbUpdateException("the database went away")
                 : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    // The first save waits a while for a rival rename started inside it, which can finish only if nothing holds it back.
+    private sealed class DuringSave : SaveChangesInterceptor
+    {
+        private int saves;
+
+        public Func<Task> Meanwhile { get; set; } = () => Task.CompletedTask;
+        public Task Rival { get; private set; } = Task.CompletedTask;
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref saves) == 1)
+            {
+                Rival = Task.Run(Meanwhile);
+                await Task.WhenAny(Rival, Task.Delay(RivalWait, cancellationToken));
+            }
+
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
     }
 
     private sealed class DuringQuery : IQueryExpressionInterceptor
