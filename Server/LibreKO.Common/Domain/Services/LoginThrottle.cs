@@ -15,6 +15,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     private const int SlowdownStepMilliseconds = 500;
     private const int MaxSlowdownSeconds = 5;
     public const int MaxTracked = 100_000;
+    private const int KeptAfterEviction = MaxTracked / 10 * 9;
     private const int PruneIntervalSeconds = 60;
     private static readonly TimeSpan PruneInterval = TimeSpan.FromSeconds(PruneIntervalSeconds);
     private const int Ipv6NetworkBytes = 8;
@@ -33,6 +34,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         public readonly ConcurrentDictionary<string, Failures> Entries = new(StringComparer.OrdinalIgnoreCase);
         public int Size;
         public long NextPruneTicks;
+        public int Evicting;
     }
 
     private readonly Table byAddressAndName = new();
@@ -133,7 +135,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
             return Now - failures.Since < Window && failures.Count >= limit;
     }
 
-    // Each table sweeps its expired entries at most once a minute, and past its cap it counts nothing new.
+    // Each table sweeps its expired entries at most once a minute, and a full one makes room by dropping its oldest.
     private int Count(Table table, string key)
     {
         var due = Volatile.Read(ref table.NextPruneTicks);
@@ -143,7 +145,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         if (!table.Entries.TryGetValue(key, out var failures))
         {
             if (Volatile.Read(ref table.Size) >= MaxTracked)
-                return 0;
+                MakeRoom(table);
             var added = new Failures { Since = Now };
             failures = table.Entries.GetOrAdd(key, added);
             if (ReferenceEquals(failures, added))
@@ -165,6 +167,30 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
 
         lock (failures)
             failures.Count = Math.Max(0, failures.Count - 1);
+    }
+
+    private void MakeRoom(Table table)
+    {
+        if (Interlocked.CompareExchange(ref table.Evicting, 1, 0) != 0)
+            return;
+
+        try
+        {
+            Prune(table);
+            var excess = Volatile.Read(ref table.Size) - KeptAfterEviction;
+            if (excess <= 0)
+                return;
+
+            foreach (var (key, _) in table.Entries.OrderBy(entry => entry.Value.Since).Take(excess).ToList())
+            {
+                if (table.Entries.TryRemove(key, out _))
+                    Interlocked.Decrement(ref table.Size);
+            }
+        }
+        finally
+        {
+            Volatile.Write(ref table.Evicting, 0);
+        }
     }
 
     private void Prune(Table table)

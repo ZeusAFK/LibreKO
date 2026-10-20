@@ -150,15 +150,21 @@ public class LoginThrottleTests
     }
 
     [Fact]
-    public void EachTableStopsAtItsCap()
+    public void AFullTableStillCountsTheNewestAttemptsAndStaysBounded()
     {
-        var throttle = new LoginThrottle();
-
+        var clock = new Clock();
+        var throttle = new LoginThrottle(clock);
         for (var address = 0; address < LoginThrottle.MaxTracked + Burst; address++)
-            throttle.TryAttempt($"10.{address >> 16 & 0xFF}.{address >> 8 & 0xFF}.{address & 0xFF}", $"name{address}");
+            throttle.TryAttempt(Filler(address), $"name{address}");
+        clock.Now += TimeSpan.FromSeconds(1);
 
+        Attempts(throttle, Address, "victim", LoginThrottle.MaxFailuresPerName).Should().OnlyContain(allowed => allowed);
+
+        throttle.TryAttempt(Address, "victim").Should().BeFalse("a full table makes room rather than letting new attempts through uncounted");
         throttle.Tracked.Should().BeLessThanOrEqualTo(TablesTracked * LoginThrottle.MaxTracked);
     }
+
+    private static string Filler(int address) => $"10.{address >> 16 & 0xFF}.{address >> 8 & 0xFF}.{address & 0xFF}";
 
     [Fact]
     public void ExpiredAttemptsAreSweptFromEveryTable()
