@@ -7,7 +7,11 @@ using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
+using LibreKO.Common.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using System.Linq.Expressions;
 using NSubstitute;
 using Xunit;
 
@@ -21,17 +25,102 @@ public class CharacterSealTests : GameTestBase
     private const byte BagPos = 3;
     private const string Pin = "1234";
 
-    private static ServiceProvider Provider() => CreateProvider(db =>
+    private const short PlayerHp = 100;
+
+    private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null) => CreateProvider(db =>
     {
         db.Accounts.Add(new Account { Id = AccountA, Login = "a", Password = "x", Nation = AccountNation.Karus });
         db.Accounts.Add(new Account { Id = AccountB, Login = "b", Password = "x", Nation = AccountNation.Karus });
         db.Characters.Add(new Character { Id = 10, AccountId = AccountA, Slot = 0, Name = "Zeus", Race = 1, Class = 101, Level = 60, MapId = 21 });
         db.Characters.Add(new Character { Id = 11, AccountId = AccountA, Slot = 1, Name = "Velkan", Race = 1, Class = 105, Level = 70, MapId = 21 });
+        db.Characters.Add(new Character { Id = 20, AccountId = AccountB, Slot = 0, Name = "Buyer", Race = 1, Class = 101, Level = 60, MapId = 21 });
     }, gameData =>
     {
         gameData.GetItem(Scroll).Returns(new ItemData { Num = Scroll, Kind = CharacterSealService.ScrollKind });
         gameData.GetItem(InventoryConstants.CypherRing).Returns(new ItemData { Num = InventoryConstants.CypherRing, Kind = CharacterSealService.RingKind, Duration = 1 });
-    });
+    }, configureServices: configureServices);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TheRingAndTheSealedCharacterAreSavedTogether(bool saveFails)
+    {
+        var faults = new SealFaults { Failing = saveFails };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var session = Session(provider, 10, AccountA, "Zeus");
+        var scroll = session.Inventory[InventoryConstants.InventoryStart + BagPos];
+        scroll.ItemId = Scroll;
+        scroll.Count = 1;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
+
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var sealedCharacter = await db.Characters.AsNoTracking().SingleAsync(c => c.Id == 11);
+        var sealer = await db.Characters.AsNoTracking().SingleAsync(c => c.Id == 10);
+        sealedCharacter.Sealed.Should().Be(!saveFails, "a crash between the two writes would lose the character or keep the scroll");
+        scroll.ItemId.Should().Be(saveFails ? Scroll : InventoryConstants.CypherRing);
+        if (!saveFails)
+            sealer.Items.Should().Equal(session.SerializeItems());
+    }
+
+    [Fact]
+    public async Task ABusyPlayerCannotSeal()
+    {
+        using var provider = Provider();
+        var session = Session(provider, 10, AccountA, "Zeus");
+        var scroll = session.Inventory[InventoryConstants.InventoryStart + BagPos];
+        scroll.ItemId = Scroll;
+        scroll.Count = 1;
+        session.Trade.MerchantState = MerchantMode.Selling;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
+
+        scroll.ItemId.Should().Be(Scroll, "a scroll on an open stall can be bought while the seal waits on the database");
+    }
+
+    [Fact]
+    public async Task AScrollThatLeavesTheBagMidSealMakesNoRing()
+    {
+        UserSession? sealer = null;
+        var sale = new DuringCharacterRead { Meanwhile = () => sealer!.Inventory[InventoryConstants.InventoryStart + BagPos].Clear() };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(sale)));
+        sealer = Session(provider, 10, AccountA, "Zeus");
+        var scroll = sealer.Inventory[InventoryConstants.InventoryStart + BagPos];
+        scroll.ItemId = Scroll;
+        scroll.Count = 1;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(sealer, SealRequest("Velkan", Pin));
+
+        scroll.IsEmpty.Should().BeTrue("the scroll went to a buyer, so no ring is made from it");
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.AsNoTracking().SingleAsync(c => c.Id == 11))
+            .Sealed.Should().BeFalse();
+    }
+
+    private sealed class SealFaults : SaveChangesInterceptor
+    {
+        public bool Failing { get; init; }
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            Failing && eventData.Context?.ChangeTracker.Entries<Character>().Any(entry => entry.Entity.Sealed && entry.State == EntityState.Modified) == true
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private sealed class DuringCharacterRead : IQueryExpressionInterceptor
+    {
+        public Action Meanwhile { get; init; } = () => { };
+
+        public Expression QueryCompilationStarting(Expression queryExpression, QueryExpressionEventData eventData)
+        {
+            if (queryExpression.Type.IsGenericType && queryExpression.Type.GetGenericArguments().Contains(typeof(Character))
+                || queryExpression.Type == typeof(Character))
+                Meanwhile();
+            return queryExpression;
+        }
+    }
 
     private static UserSession Session(ServiceProvider provider, int characterId, int accountId, string name)
     {
@@ -42,6 +131,7 @@ public class CharacterSealTests : GameTestBase
         session.Name = name;
         session.Nation = AccountNation.Karus;
         session.VipPassword = Pin;
+        session.Hp = session.MaxHp = PlayerHp;
         for (int i = 0; i < session.Inventory.Length; i++) session.Inventory[i] = new ItemSlot();
         return session;
     }
@@ -129,6 +219,7 @@ public class CharacterSealTests : GameTestBase
         using var provider = Provider();
         var session = Session(provider, 10, AccountA, "Zeus");
         session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
         await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
 
         using var scope = provider.CreateScope();
@@ -145,6 +236,7 @@ public class CharacterSealTests : GameTestBase
         using var provider = Provider();
         var session = Session(provider, 10, AccountA, "Zeus");
         session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
         await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
 
         var client = Substitute.For<IClient>();
@@ -164,6 +256,7 @@ public class CharacterSealTests : GameTestBase
         using var provider = Provider();
         var session = Session(provider, 10, AccountA, "Zeus");
         session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
 
         await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", "9999"));
 
@@ -180,6 +273,7 @@ public class CharacterSealTests : GameTestBase
         using var provider = Provider();
         var sealer = Session(provider, 10, AccountA, "Zeus");
         sealer.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        sealer.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
         var seal = provider.GetRequiredService<ICharacterSealService>();
         await seal.HandleAsync(sealer, SealRequest("Velkan", Pin));
 

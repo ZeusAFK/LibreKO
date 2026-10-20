@@ -5,6 +5,7 @@ using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LibreKO.Game.World;
@@ -18,7 +19,8 @@ public interface ICharacterSealService
 public sealed class CharacterSealService(
     IServiceScopeFactory scopes,
     IGameDataService gameData,
-    IUserNotificationService notifications) : ICharacterSealService
+    IUserNotificationService notifications,
+    ICharacterStatePersister statePersister) : ICharacterSealService
 {
     public const int CypherRing = InventoryConstants.CypherRing;
     public const byte ScrollKind = 250;
@@ -100,33 +102,57 @@ public sealed class CharacterSealService(
         return CharacterSealPacketWriter.List(slots);
     }
 
+    // The ring and the sealed character are saved together, from the scroll the bag holds once everything is read.
     private async Task<Packet> SealAsync(UserSession session, byte bagPos, int scrollId, string name, string code)
     {
-        var scroll = BagSlot(session, bagPos);
-        if (scroll == null || scroll.ItemId != scrollId || gameData.GetItem(scrollId)?.Kind != ScrollKind
-            || scroll.Expires || scroll.State == ItemFlag.Rented
+        if (session.IsBusy || BagSlot(session, bagPos) == null || gameData.GetItem(scrollId)?.Kind != ScrollKind
             || string.Equals(name, session.Name, StringComparison.OrdinalIgnoreCase))
             return CharacterSealPacketWriter.SealFailed(GenericFailure);
         if (ItemUpgradeService.VaultPasswordRefusal(session, code) is { } refusal)
             return CharacterSealPacketWriter.SealFailed((byte)refusal);
 
-        using var scope = scopes.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-        var target = await repository.GetByName(name);
-        if (target == null || target.AccountId != session.AccountId || target.Sealed || target.IsOnline
-            || (target.KnightsId > 0 && target.Fame == ClanRules.FameChief))
-            return CharacterSealPacketWriter.SealFailed(GenericFailure);
-        if (CarriedRefusal(target) is { } carried)
-            return CharacterSealPacketWriter.SealRefused(carried);
+        var position = InventoryConstants.InventoryStart + bagPos;
+        var journal = new InventoryJournal(session);
+        var answer = CharacterSealPacketWriter.SealFailed(GenericFailure);
+        Character? sealedCharacter = null;
+        var outcome = await statePersister.CommitAsync(session, async db =>
+        {
+            var target = await db.Characters.SingleOrDefaultAsync(character => character.Name == name);
+            if (target == null || target.AccountId != session.AccountId || target.Sealed || target.IsOnline
+                || (target.KnightsId > 0 && target.Fame == ClanRules.FameChief))
+                return false;
+            if (CarriedRefusal(target) is { } carried)
+            {
+                answer = CharacterSealPacketWriter.SealRefused(carried);
+                return false;
+            }
 
-        target.Sealed = true;
-        await repository.UpdateAsync(target);
+            if (!session.WithLock(_ => MakeRing(journal.Slot(position), scrollId, target.Id)))
+                return false;
+
+            target.Sealed = true;
+            sealedCharacter = target;
+            return true;
+        }, journal.Restore);
+
+        if (outcome != StateCommit.Saved || sealedCharacter == null)
+            return answer;
+
+        var ring = session.Inventory[position];
+        await notifications.SendStackChangeAsync(session, (byte)position, ring.ItemId, ring.Count, ring.Durability);
+        return CharacterSealPacketWriter.Sealed(bagPos, CypherRing, sealedCharacter.Id, Summary(sealedCharacter));
+    }
+
+    private bool MakeRing(ItemSlot scroll, int scrollId, int characterId)
+    {
+        if (scroll.ItemId != scrollId || scroll.Count < 1 || scroll.Expires || scroll.State == ItemFlag.Rented)
+            return false;
+
         scroll.ItemId = CypherRing;
         scroll.Count = 1;
         scroll.Durability = gameData.GetItem(CypherRing)?.Duration ?? 0;
-        scroll.UniqueId = target.Id;
-        await notifications.SendStackChangeAsync(session, (byte)(InventoryConstants.InventoryStart + bagPos), scroll.ItemId, scroll.Count, scroll.Durability);
-        return CharacterSealPacketWriter.Sealed(bagPos, CypherRing, target.Id, Summary(target));
+        scroll.UniqueId = characterId;
+        return true;
     }
 
     private short? CarriedRefusal(Character character)
@@ -141,28 +167,47 @@ public sealed class CharacterSealService(
         return null;
     }
 
+    // The ring leaves the bag in the same save that hands the character over.
     private async Task<Packet> UnsealAsync(UserSession session, byte bagPos, int ringId, byte slot)
     {
         var ring = BagSlot(session, bagPos);
-        if (ring == null || ring.ItemId != ringId || !IsRing(ringId) || ring.UniqueId == 0 || slot >= GameConstants.MaxAccountCharacters)
+        if (session.IsBusy || ring == null || !IsRing(ringId) || ring.UniqueId == 0 || slot >= GameConstants.MaxAccountCharacters)
             return CharacterSealPacketWriter.UnsealFailed();
 
-        using var scope = scopes.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-        var sealedCharacter = await repository.GetById(ring.UniqueId);
-        var owned = await repository.GetCharactersByAccount(session.AccountId);
-        if (sealedCharacter == null || !sealedCharacter.Sealed || owned.Any(c => c.Slot == slot)
-            || !CharacterRaceNations.BelongsTo(sealedCharacter.Race, session.Nation))
-            return CharacterSealPacketWriter.UnsealFailed();
-
-        sealedCharacter.Sealed = false;
-        sealedCharacter.AccountId = session.AccountId;
-        sealedCharacter.Slot = slot;
-        await repository.UpdateAsync(sealedCharacter);
+        var position = InventoryConstants.InventoryStart + bagPos;
         var uniqueId = ring.UniqueId;
-        ring.Clear();
-        await notifications.SendStackChangeAsync(session, (byte)(InventoryConstants.InventoryStart + bagPos), 0, 0, 0);
+        var journal = new InventoryJournal(session);
+        var outcome = await statePersister.CommitAsync(session, async db =>
+        {
+            var sealedCharacter = await db.Characters.FindAsync(uniqueId);
+            var slotTaken = await db.Characters.AnyAsync(character => character.AccountId == session.AccountId && character.Slot == slot);
+            if (sealedCharacter == null || !sealedCharacter.Sealed || slotTaken
+                || !CharacterRaceNations.BelongsTo(sealedCharacter.Race, session.Nation))
+                return false;
+
+            if (!session.WithLock(_ => TakeRing(journal.Slot(position), ringId, uniqueId)))
+                return false;
+
+            sealedCharacter.Sealed = false;
+            sealedCharacter.AccountId = session.AccountId;
+            sealedCharacter.Slot = slot;
+            return true;
+        }, journal.Restore);
+
+        if (outcome != StateCommit.Saved)
+            return CharacterSealPacketWriter.UnsealFailed();
+
+        await notifications.SendStackChangeAsync(session, (byte)position, 0, 0, 0);
         return CharacterSealPacketWriter.Unsealed(bagPos, uniqueId);
+    }
+
+    private static bool TakeRing(ItemSlot ring, int ringId, int uniqueId)
+    {
+        if (ring.ItemId != ringId || ring.UniqueId != uniqueId || ring.Count < 1)
+            return false;
+
+        ring.Clear();
+        return true;
     }
 
     private async Task<Packet> SheetAsync(int uniqueId)
