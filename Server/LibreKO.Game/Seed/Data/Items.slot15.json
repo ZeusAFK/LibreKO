@@ -37064,7 +37064,7 @@
     "BuyPrice": 50000000,
     "SellPrice": 0,
     "Ac": 0,
-    "Countable": 0,
+    "Countable": 1,
     "Effect1": 0,
     "Effect2": 0,
     "ReqLevel": 0,

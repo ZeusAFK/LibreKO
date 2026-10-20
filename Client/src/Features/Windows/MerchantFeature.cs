@@ -114,6 +114,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
     }
 
     internal event System.Action? BuyingMerchantRequested;
+    internal event System.Action? SlaveMerchantRequested;
 
     private void BuildMenu()
     {
@@ -127,6 +128,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
 
         root.AddChild(MenuButton("Selling Merchant", OpenSellStall));
         root.AddChild(MenuButton("Buying Merchant", () => BuyingMerchantRequested?.Invoke()));
+        root.AddChild(MenuButton("Slave Merchant", () => { CloseMenu(); SlaveMerchantRequested?.Invoke(); }));
         root.AddChild(MenuButton("Market Price", OpenMarketPriceFromMenu));
     }
 
@@ -236,7 +238,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         MenuShown = false;
     }
 
-    private void OpenSellStall()
+    internal void OpenSellStall()
     {
         CloseMenu();
         if (context.Self.Dead) return;
@@ -459,6 +461,12 @@ internal sealed class MerchantFeature : IFeature, IEscapable
 
     internal void OnList(int merchantId, MerchantStallItem[] items)
     {
+        if (merchantId == 0)
+        {
+            if (shopShown) CloseShop();
+            return;
+        }
+
         CloseAmountPrompt();
         SetShopStatus("", false);
         shopTargetId = merchantId;
@@ -474,7 +482,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
     {
         string owner = context.Entities.Views.TryGetValue(merchantId, out var ent) ? ent.Name : "Shop";
         return Adverts.TryGetValue(merchantId, out string? advert) && advert.Length > 0
-            ? $"{owner} — {advert}"
+            ? $"{owner} â€” {advert}"
             : owner;
     }
 
@@ -804,11 +812,11 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         switch (verdict)
         {
             case MarketPriceVerdict.Low:
-                amountMarketHint.Text = $"{MarketPriceFeature.MarketPriceText(MarketPriceLowText, "Low Price")} · {UiKit.GoldAmount(average)}";
+                amountMarketHint.Text = $"{MarketPriceFeature.MarketPriceText(MarketPriceLowText, "Low Price")} Â· {UiKit.GoldAmount(average)}";
                 amountMarketHint.AddThemeColorOverride("font_color", UiTheme.Good);
                 break;
             case MarketPriceVerdict.Expensive:
-                amountMarketHint.Text = $"{MarketPriceFeature.MarketPriceText(MarketPriceExpensiveText, "Expensive")} · {UiKit.GoldAmount(average)}";
+                amountMarketHint.Text = $"{MarketPriceFeature.MarketPriceText(MarketPriceExpensiveText, "Expensive")} Â· {UiKit.GoldAmount(average)}";
                 amountMarketHint.AddThemeColorOverride("font_color", UiTheme.Bad);
                 break;
             default:

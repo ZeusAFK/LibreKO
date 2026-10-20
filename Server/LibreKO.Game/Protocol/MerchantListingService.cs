@@ -25,6 +25,7 @@ public class MerchantListingService(
     IMerchantLifecycleService merchantLifecycleService,
     IMarketPriceService marketPriceService,
     IDailyRankService dailyRankService,
+    ISlaveMerchantService slaveMerchantService,
     ILogger<MerchantListingService> logger) : IMerchantListingService
 {
     public async Task AddItemAsync(UserSession session, Packet packet)
@@ -247,6 +248,11 @@ public class MerchantListingService(
         await merchant.Client.SendPacket(soldNotify);
         await marketPriceService.RecordAsync(session, merchant, itemId, unitPrice, count);
         await dailyRankService.CountMerchantSaleAsync(merchant, totalCost);
+
+        if (merchant is SlaveMerchantBotSession slaveBot)
+        {
+            await slaveMerchantService.RecordSaleAsync(slaveBot, merchantSlot, itemId, count, totalCost, session.Name);
+        }
 
         if (merchant.Trade.MerchantItems.All(entry => entry == null || entry.IsEmpty))
         {

@@ -273,6 +273,7 @@ public class UserSession
 
     // Trade state (exchange, merchant, challenge)
     public TradeState Trade { get; } = new();
+    public bool IsSlaveMerchantMode { get; set; }
 
     // PvP Rival system
     public const int NoRival = -1;

@@ -47,6 +47,23 @@ internal static class ItemDataLoader
                 Icon = Int(o, "icon"), Duration = Int(o, "duration"),
             });
         }
+
+        // Offline Merchant Voucher (700111000)
+        ItemData.AddItem(new ItemData.Item
+        {
+            Id = 700111000,
+            Name = "Voucher of Offline Merchant",
+            Desc = "Offline Merchant Voucher. Allows deploying a Slave Merchant for 1 hour.",
+            Kind = 97,
+            Slot = 15,
+            Weight = 1,
+            Duration = 1,
+            BuyPrice = 50000000,
+            Countable = 1,
+            ReqLevel = 0,
+            ReqLevelMax = 100,
+            Icon = 22,
+        });
     }
 
     private static void LoadTexts(Godot.Collections.Dictionary root)

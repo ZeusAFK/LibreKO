@@ -194,6 +194,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
     internal UserVoteFeature UserVoteWindow { get; private set; } = null!;
     internal EquipViewFeature EquipView { get; private set; } = null!;
     internal ExpSealFeature ExpSealWindow { get; private set; } = null!;
+    internal SlaveMerchantFeature SlaveMerchantWindow { get; private set; } = null!;
     internal SpecialAuctionFeature SpecialAuctionWindow { get; private set; } = null!;
     internal ExpBarFeature? ExpBar { get; set; }
     internal MsgOutFeature MsgOut { get; private set; } = null!;
@@ -289,7 +290,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         loadStartedAt = FrameClock.Now();
         BuildLoading();
         GlyphWarmer.Warm(this);
-        if (!await LoadStep("Preparing…", 0.04f, "Lighting and sky")) return;
+        if (!await LoadStep("Preparingâ€¦", 0.04f, "Lighting and sky")) return;
 
         ScenerySystem.BuildEnvironment();
         Config.ApplyGraphicsToViewport();
@@ -297,15 +298,15 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
 
         string zoneLabel = $"Zone {info.Zone}";
         foreach (var z in ZoneCatalog.All) if (z.Id == info.Zone) { zoneLabel = $"{z.Name} (zone {z.Id})"; break; }
-        if (!await LoadStep("Loading terrain…", 0.15f, zoneLabel)) return;
+        if (!await LoadStep("Loading terrainâ€¦", 0.15f, zoneLabel)) return;
 
         bool hasTerrain = ScenerySystem.BuildTerrain(info.Zone);
         var ground = GetNodeOrNull<MeshInstance3D>("Ground");
         if (hasTerrain) ground?.QueueFree();
         else if (ground != null) ground.Position = Coord.ToGodot(info.X, 0, info.Z);
         FxBillboard.GroundHeight = hasTerrain ? ScenerySystem.FxGroundHeight : null;
-        if (!await LoadStep("Loading world objects…", 0.45f,
-            hasTerrain ? "Objects · collision · water · map FX" : "Flat placeholder (zone not baked)")) return;
+        if (!await LoadStep("Loading world objectsâ€¦", 0.45f,
+            hasTerrain ? "Objects Â· collision Â· water Â· map FX" : "Flat placeholder (zone not baked)")) return;
 
         if (hasTerrain)
         {
@@ -323,12 +324,12 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
             NpcRoleFx.Warm(this);
             GD.Print("[load] world objects: complete");
         }
-        if (!await LoadStep("Loading character…", 0.70f,
-            $"{(info.Name.Length > 0 ? info.Name : "You")} · Lv {Game.Session.Self.Sheet.Level} · {CharacterClassCatalog.DisplayName(info.Class)}")) return;
+        if (!await LoadStep("Loading characterâ€¦", 0.70f,
+            $"{(info.Name.Length > 0 ? info.Name : "You")} Â· Lv {Game.Session.Self.Sheet.Level} Â· {CharacterClassCatalog.DisplayName(info.Class)}")) return;
 
         PlayerSystem.BuildSelf(info);
 
-        if (!await LoadStep("Entering world…", 0.92f, "Spawning nearby players & monsters")) return;
+        if (!await LoadStep("Entering worldâ€¦", 0.92f, "Spawning nearby players & monsters")) return;
 
         EntitySystem.Attach();
         Selection.Attach();
@@ -358,7 +359,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Game.Connection.AcknowledgeWorldLoaded();
 
         var fxWarm = Hotbar.WarmFxInView();
-        if (!await LoadStep("Syncing server time…", 0.96f, $"{EntitySystem.Ents.Count} entities nearby")) return;
+        if (!await LoadStep("Syncing server timeâ€¦", 0.96f, $"{EntitySystem.Ents.Count} entities nearby")) return;
         await WaitForServerEnvironment(2.5);
 
         if (!Alive) return;
@@ -564,7 +565,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
     {
         Diag.Phase = $"world-load {progress * 100.0:0}% {status}";
         GD.Print($"[load] {progress * 100.0:0}% {status} (+{FrameClock.Now() - loadStartedAt:0.0}s)" +
-                 (string.IsNullOrWhiteSpace(detail) ? "" : $" — {detail}"));
+                 (string.IsNullOrWhiteSpace(detail) ? "" : $" â€” {detail}"));
         loadingLayer?.Set(status, progress, detail);
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         return Alive;
@@ -807,6 +808,8 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Features.Add(VanguardWindow = new VanguardFeature(this, Game.Session.Self, Game.Session.Vanguard, Game.Requests.Vanguard, Merchant, Map));
         Features.Add(Nereid = new NereidFeature(this, Game.Session.BattleEvent, Game.Session.Self, BattleEvent, Map));
         Features.Add(ExpSealWindow = new ExpSealFeature(this, Game.Session.ExpSeal, Game.Session.Self, Game.Requests.ExpSeal, ExpBar));
+        Features.Add(SlaveMerchantWindow = new SlaveMerchantFeature(this, this, Game.Session.Self, Game.Requests.Chat, Game.Session.Merchant));
+        Merchant.SlaveMerchantRequested += () => SlaveMerchantWindow.Open();
         Features.Add(CommandList = new CommandListFeature(this, this, Game.Session.Clan, Game.Session.Party, Game.Session.UserOption, Game.Requests.Chat, Game.Requests.Clan, Game.Requests.ClanBattleWar, Game.Requests.UserOption));
         Features.Add(ClanMatchWindow = new ClanMatchFeature(this, Game.Session.BattleEvent, Game.Session.Clan, EntitySystem, EntityPlatesSystem));
         Features.Add(Bounty = new BountyFeature(this, Game.Session.Bounty, Game.Requests.Bounty));
