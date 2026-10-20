@@ -41,18 +41,25 @@ public class EventEscapeTests : GameTestBase
         await provider.GetRequiredService<IEventSystemsPacketCoordinator>().HandleEventAsync(player.Client, leave);
 
         (player.ZoneId == (byte)ZoneId.Moradon).Should().Be(leaves, "the leave button is not a way out of a fight");
+        var replies = Sent(player);
+        replies.Any(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_EVENT && packet.ReadByte() == TempleEventDisband)
+            .Should().Be(leaves, "the client takes any leave reply to mean the player left");
+        replies.Any(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_CHAT).Should().Be(!leaves);
     }
 
+    public enum Tie { InPrison, Trading, Stunned, Fighting }
+
     [Theory]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task AScriptedPartyMoveLeavesAPrisonerAndABusyMember(bool inPrison, bool trading)
+    [InlineData(Tie.InPrison)]
+    [InlineData(Tie.Trading)]
+    [InlineData(Tie.Stunned)]
+    [InlineData(Tie.Fighting)]
+    public async Task AScriptedPartyMoveLeavesAMemberWhoIsTiedUp(Tie tie)
     {
         var sessions = new SessionManager();
         var leader = Player(sessions, 1, (byte)ZoneId.Moradon);
-        var member = Player(sessions, 2, inPrison ? (byte)ZoneId.Prison : (byte)ZoneId.Moradon);
-        if (trading)
-            member.Trade.ExchangeUser = leader.CharacterId;
+        var member = Player(sessions, 2, tie == Tie.InPrison ? (byte)ZoneId.Prison : (byte)ZoneId.Moradon);
+        TieUp(member, tie, leader);
         var party = sessions.Parties.CreateParty((short)leader.CharacterId);
         party.MemberIds[1] = (short)member.CharacterId;
         leader.PartyIndex = member.PartyIndex = party.Index;
@@ -76,6 +83,122 @@ public class EventEscapeTests : GameTestBase
         await transitions.Received(1).ChangeZoneAsync(leader, (byte)Coliseum, Arg.Any<float>(), Arg.Any<float>());
         await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
     }
+
+    [Theory]
+    [InlineData(Tie.InPrison)]
+    [InlineData(Tie.Trading)]
+    [InlineData(Tie.Fighting)]
+    public async Task AClanMatchLeavesAMemberWhoIsTiedUp(Tie tie)
+    {
+        const short clan = 40;
+        var sessions = new SessionManager();
+        sessions.Knights.AddClan(clan, new Common.Domain.Entities.KnightsEntity { Id = clan, Name = "Wolves" });
+        sessions.Knights.AddClan(clan + 1, new Common.Domain.Entities.KnightsEntity { Id = clan + 1, Name = "Lions" });
+        var free = Player(sessions, 1, (byte)ZoneId.Moradon);
+        var tied = Player(sessions, 2, tie == Tie.InPrison ? (byte)ZoneId.Prison : (byte)ZoneId.Moradon);
+        free.KnightsId = tied.KnightsId = clan;
+        TieUp(tied, tie, free);
+        var transitions = Substitute.For<IZoneTransitionService>();
+
+        await new ClanMatchService(sessions, transitions, Microsoft.Extensions.Logging.Abstractions.NullLogger<ClanMatchService>.Instance)
+            .StartAsync("Wolves", "Lions");
+
+        await transitions.Received(1).ChangeZoneAsync(free, ClanMatchService.Zone, Arg.Any<float>(), Arg.Any<float>());
+        await transitions.DidNotReceive().ChangeZoneAsync(tied, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
+    }
+
+    [Theory]
+    [InlineData(Tie.Trading)]
+    [InlineData(Tie.Fighting)]
+    public async Task AFullMoonPartyWithAMemberWhoIsTiedUpDoesNotEnter(Tie tie)
+    {
+        var transitions = Substitute.For<IZoneTransitionService>();
+        var items = Substitute.For<IMagicItemUsageService>();
+        items.TryConsumeItemAsync(Arg.Any<UserSession>(), FullMoonRules.VoucherItem).Returns(true);
+        using var provider = CreateProvider(_ => { }, configureServices: services =>
+        {
+            services.AddSingleton(transitions);
+            services.AddSingleton(items);
+        });
+        var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
+        TieUp(member, tie, leader);
+
+        var entered = await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
+
+        entered.Should().BeFalse();
+        await transitions.DidNotReceiveWithAnyArgs().ChangeZoneAsync(default!, default, default, default);
+        await items.DidNotReceiveWithAnyArgs().TryConsumeItemAsync(default!, default);
+    }
+
+    private static (UserSession Leader, UserSession Member) FullMoonParty(SessionManager sessions)
+    {
+        var leader = Player(sessions, 1, (byte)ZoneId.Moradon);
+        var member = Player(sessions, 2, (byte)ZoneId.Moradon);
+        var party = sessions.Parties.CreateParty((short)leader.CharacterId);
+        party.BoardType = FullMoonRules.FullMoonBoard;
+        party.TryJoin((short)member.CharacterId);
+        leader.PartyIndex = member.PartyIndex = party.Index;
+        foreach (var player in new[] { leader, member })
+        {
+            player.Level = FullMoonRules.MinEntryLevel;
+            player.Inventory[InventoryConstants.InventoryStart].ItemId = FullMoonRules.VoucherItem;
+            player.Inventory[InventoryConstants.InventoryStart].Count = 1;
+        }
+
+        return (leader, member);
+    }
+
+    [Fact]
+    public async Task OnlyFullMoonMembersWhoseVoucherWasSpentGoIn()
+    {
+        var transitions = Substitute.For<IZoneTransitionService>();
+        var items = Substitute.For<IMagicItemUsageService>();
+        using var provider = CreateProvider(_ => { }, configureServices: services =>
+        {
+            services.AddSingleton(transitions);
+            services.AddSingleton(items);
+        });
+        var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
+        items.TryConsumeItemAsync(leader, FullMoonRules.VoucherItem).Returns(true);
+        items.TryConsumeItemAsync(member, FullMoonRules.VoucherItem).Returns(false);
+
+        await provider.GetRequiredService<IFullMoonRiftService>().HandlePartyEntryAsync(leader);
+
+        await transitions.Received(1).ChangeZoneAsync(leader, (byte)ZoneId.DungeonDefence, Arg.Any<float>(), Arg.Any<float>());
+        await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
+        FullMoonRules.HasEnteredToday(member).Should().BeFalse("a member who spent nothing used up no entry");
+    }
+
+    private static void TieUp(UserSession player, Tie tie, UserSession partner)
+    {
+        switch (tie)
+        {
+            case Tie.Trading:
+                player.Trade.ExchangeUser = partner.CharacterId;
+                break;
+            case Tie.Stunned:
+                player.SetBuff(StunRow, new ActiveBuff
+                {
+                    MagicId = StunRow, CasterId = partner.CharacterId, BuffType = BuffType.Stun, Duration = 2,
+                    ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+                });
+                break;
+            case Tie.Fighting:
+                player.MarkCombat();
+                break;
+        }
+    }
+
+    private static List<Packet> Sent(UserSession player) =>
+        player.Client.ReceivedCalls()
+            .Where(call => call.GetMethodInfo().Name == nameof(IClient.SendPacket))
+            .Select(call =>
+            {
+                var packet = (Packet)call.GetArguments()[0]!;
+                packet.ResetOffset();
+                return packet;
+            })
+            .ToList();
 
     private static UserSession Player(SessionManager sessions, int id, byte zone)
     {

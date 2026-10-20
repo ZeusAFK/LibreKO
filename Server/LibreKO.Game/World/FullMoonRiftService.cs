@@ -151,6 +151,15 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             return false;
         }
 
+        var tiedUp = members.Where(m => !m.MayBeMovedByOthers).Select(m => m.Name).ToList();
+        if (tiedUp.Count > 0)
+        {
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                (byte)session.Nation, $"Cannot enter: {string.Join(", ", tiedUp)} cannot leave right now."));
+            await session.Client.SendPacket(EventPacketWriter.FullMoonEntry(FullMoonRules.InstanceFailed));
+            return false;
+        }
+
         var missingVouchers = members.Where(m => !FullMoonRules.HasVoucher(m)).Select(m => m.Name).ToList();
         if (missingVouchers.Count > 0)
         {
@@ -160,15 +169,26 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             return false;
         }
 
-        var difficulty = FullMoonRules.DifficultyForPartySize(members.Count);
-        var startStageId = FullMoonRules.StartingStageForDifficulty(difficulty);
-
+        // Only members whose voucher was spent go in.
         var entryTimestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var entering = new List<UserSession>();
         foreach (var member in members)
         {
+            if (!await itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem))
+                continue;
             member.DailyOps[(int)DailyOperation.FullMoonRift] = entryTimestamp;
-            await itemUsage.TryConsumeItemAsync(member, FullMoonRules.VoucherItem);
+            entering.Add(member);
         }
+
+        if (entering.Count == 0)
+        {
+            await session.Client.SendPacket(EventPacketWriter.FullMoonEntry(FullMoonRules.MemberWithoutVoucher));
+            return false;
+        }
+
+        members = entering;
+        var difficulty = FullMoonRules.DifficultyForPartySize(members.Count);
+        var startStageId = FullMoonRules.StartingStageForDifficulty(difficulty);
 
         var duration = TimeSpan.FromMinutes(FullMoonRules.RoomDurationMinutes);
         var room = rooms.Open((byte)ZoneId.DungeonDefence, (short)difficulty, duration, endsOnBossKill: false);

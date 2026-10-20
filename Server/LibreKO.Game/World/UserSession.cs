@@ -433,9 +433,10 @@ public class UserSession
     public bool IsHeld => activeBuffs.Any(entry => entry.Value.BuffType is BuffType.Freeze or BuffType.Stun && !entry.Value.IsExpired);
     public bool CarriesManes => activeBuffs.Any(entry => entry.Value.BuffType == BuffType.FragmentOfManes && !entry.Value.IsExpired);
 
-    // Another player's call moves this one only while free, not under NoRecall or the Fragment, and not in Prison.
+    // Another player's call moves this one only while free and out of a fight, not under NoRecall or the Fragment, and not in Prison.
     public bool MayBeMovedByOthers =>
-        !IsBusy && CanTeleport && !CarriesManes && !IsWarping && ZoneId != (byte)LibreKO.Common.Enums.ZoneId.Prison;
+        !IsBusy && !IsHeld && !IsInCombat && CanTeleport && !CarriesManes && !IsWarping
+        && ZoneId != (byte)LibreKO.Common.Enums.ZoneId.Prison;
     public bool BlinkOnArrival { get; set; }
     public ResurrectionOffer? PendingResurrection { get; set; }
     public int ControlSignature { get; set; }

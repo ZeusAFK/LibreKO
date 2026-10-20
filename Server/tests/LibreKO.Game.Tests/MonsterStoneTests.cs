@@ -214,21 +214,36 @@ public class MonsterStoneTests
         await rig.Entry.DidNotReceiveWithAnyArgs().EnterAloneAsync(default!, default, default, default, default, default);
     }
 
+    public enum Tie { Fighting, Stunned, Trading, NoRecall }
+
     [Theory]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task AStoneIsNotAWayOutOfAFight(bool fighting, bool stunned)
+    [InlineData(Tie.Fighting)]
+    [InlineData(Tie.Stunned)]
+    [InlineData(Tie.Trading)]
+    [InlineData(Tie.NoRecall)]
+    public async Task AStoneIsNotAWayOutOfAFight(Tie tie)
     {
         var rig = new Rig();
         var session = rig.Player(level: 60, zone: Moradon, hp: 1000, room: 0);
         rig.Items.CanUseItem(session, MonsterStoneRules.UniversalStone).Returns(true);
-        if (fighting)
-            session.MarkCombat();
-        if (stunned)
-            session.SetBuff(StunRow, new ActiveBuff
-            {
-                MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
-            });
+        switch (tie)
+        {
+            case Tie.Fighting:
+                session.MarkCombat();
+                break;
+            case Tie.Stunned:
+                session.SetBuff(StunRow, new ActiveBuff
+                {
+                    MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+                });
+                break;
+            case Tie.Trading:
+                session.Trade.ExchangeUser = 1;
+                break;
+            case Tie.NoRecall:
+                session.CanTeleport = false;
+                break;
+        }
 
         await rig.Service.UseAsync(session, MonsterStoneRules.UniversalStone);
 
