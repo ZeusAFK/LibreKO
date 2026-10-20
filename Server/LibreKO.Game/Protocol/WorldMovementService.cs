@@ -283,7 +283,6 @@ public class WorldMovementService(
 
     public async Task WarpAsync(UserSession session, ushort posX, ushort posZ)
     {
-        // Gathering belongs to the spot it started on, so a warp ends it as a step does.
         if (session.IsGathering)
             await miningPacketCoordinator.StopGatheringAsync(session);
 
@@ -311,6 +310,9 @@ public class WorldMovementService(
 
     public async Task DisplaceAsync(UserSession session, float x, float z)
     {
+        if (session.IsGathering)
+            await miningPacketCoordinator.StopGatheringAsync(session);
+
         MovePace.Placed(session, time.GetUtcNow().UtcTicks);
         session.X = x;
         session.Y = ResolveTargetHeight(session.ZoneId, x, z);

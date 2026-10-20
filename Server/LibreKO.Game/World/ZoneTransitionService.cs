@@ -26,7 +26,8 @@ public class ZoneTransitionService(
     ILogger<ZoneTransitionService> logger,
     IPartyPacketCoordinator? partyCoordinator = null,
     IMerchantLifecycleService? merchantLifecycle = null,
-    TimeProvider? timeProvider = null) : IZoneTransitionService
+    TimeProvider? timeProvider = null,
+    IMiningPacketCoordinator? mining = null) : IZoneTransitionService
 {
     private const byte ZoneAbilityUpdate = 1;
     private const byte DefaultTariff = 10;
@@ -49,6 +50,9 @@ public class ZoneTransitionService(
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, RebornBarredNotice));
             return;
         }
+
+        if (session.IsGathering && mining != null)
+            await mining.StopGatheringAsync(session);
 
         // Leaving the zone closes a stall, its held gold included.
         if (session.ZoneId != newZone && merchantLifecycle != null

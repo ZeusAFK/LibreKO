@@ -145,6 +145,52 @@ public class MagicWarpTests : GameTestBase
     }
 
     [Fact]
+    public async Task EscapeTakesABusyCasterHome()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 800, z: 800);
+        var party = sessionManager.Parties.CreateParty((short)caster.CharacterId);
+        party.MemberIds[1] = (short)friend.CharacterId;
+        caster.PartyIndex = party.Index;
+        caster.IsPartyLeader = true;
+        friend.PartyIndex = party.Index;
+        caster.Trade.ExchangeUser = friend.CharacterId;
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        caster.X.Should().BeApproximately(512, 0.5f, "the caster chose to go");
+    }
+
+    [Fact]
+    public async Task AZoneChangeEndsGathering()
+    {
+        using var provider = CreateProvider(_ => { });
+        var (_, caster, _) = CreateCaster(provider);
+        caster.IsMining = true;
+
+        await provider.GetRequiredService<IZoneTransitionService>().ChangeZoneAsync(caster, caster.ZoneId, caster.X + 10, caster.Z);
+
+        caster.IsMining.Should().BeFalse("gathering belongs to the spot it started on");
+    }
+
+    [Fact]
+    public async Task APullEndsGathering()
+    {
+        using var provider = CreateProvider(_ => { });
+        var (_, caster, _) = CreateCaster(provider);
+        caster.IsFishing = true;
+
+        await provider.GetRequiredService<IWorldMovementService>().DisplaceAsync(caster, caster.X + 5, caster.Z);
+
+        caster.IsFishing.Should().BeFalse("gathering belongs to the spot it started on");
+    }
+
+    [Fact]
     public async Task AWarpEndsGathering()
     {
         using var provider = CreateProvider(_ => { }, gameData =>
