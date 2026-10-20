@@ -165,6 +165,7 @@ public class TradeTests : GameTestBase
             Price = 1000,
             OriginalSlot = InventoryConstants.SlotMax
         };
+        merchantA.Inventory[InventoryConstants.SlotMax] = new ItemSlot { ItemId = itemId, Count = 1, Durability = 10 };
 
         var merchantBClient = Substitute.For<IClient>();
         merchantBClient.Id.Returns(Guid.NewGuid());
@@ -179,6 +180,7 @@ public class TradeTests : GameTestBase
             Price = 2000,
             OriginalSlot = InventoryConstants.SlotMax
         };
+        merchantB.Inventory[InventoryConstants.SlotMax] = new ItemSlot { ItemId = itemId, Count = 1, Durability = 20 };
 
         var coordinator = provider.GetRequiredService<IMerchantPacketCoordinator>();
 
@@ -246,6 +248,7 @@ public class TradeTests : GameTestBase
             Price = 2000,
             OriginalSlot = InventoryConstants.SlotMax
         };
+        merchant.Inventory[InventoryConstants.SlotMax] = new ItemSlot { ItemId = itemId, Count = 1, Durability = 20 };
 
         var coordinator = provider.GetRequiredService<IMerchantPacketCoordinator>();
 

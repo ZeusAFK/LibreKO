@@ -28,7 +28,7 @@ namespace LibreKO.Common.Migrations
                     Race = table.Column<byte>(type: "tinyint unsigned", nullable: false),
                     Class = table.Column<short>(type: "smallint", nullable: false),
                     Face = table.Column<byte>(type: "tinyint unsigned", nullable: false),
-                    Hair = table.Column<byte>(type: "tinyint unsigned", nullable: false),
+                    Hair = table.Column<int>(type: "int", nullable: false),
                     Level = table.Column<byte>(type: "tinyint unsigned", nullable: false),
                     ZoneId = table.Column<byte>(type: "tinyint unsigned", nullable: false),
                     X = table.Column<float>(type: "float", nullable: false),
@@ -45,11 +45,25 @@ namespace LibreKO.Common.Migrations
                     EarnedNoah = table.Column<long>(type: "bigint", nullable: false),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    FinishedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
+                    FinishedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    PaidUntil = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SlaveMerchants", x => x.Id);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "SlaveMerchantTimes",
+                columns: table => new
+                {
+                    CharacterId = table.Column<int>(type: "int", nullable: false),
+                    Hours = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SlaveMerchantTimes", x => x.CharacterId);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -69,6 +83,9 @@ namespace LibreKO.Common.Migrations
         {
             migrationBuilder.DropTable(
                 name: "SlaveMerchants");
+
+            migrationBuilder.DropTable(
+                name: "SlaveMerchantTimes");
         }
     }
 }

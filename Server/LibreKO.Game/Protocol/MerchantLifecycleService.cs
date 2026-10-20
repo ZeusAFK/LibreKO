@@ -20,7 +20,7 @@ public interface IMerchantLifecycleService
 public class MerchantLifecycleService(
     SessionManager sessionManager,
     IMerchantBotService merchantBotService,
-    ISlaveMerchantService slaveMerchantService,
+    ISlaveMerchantService slaveMerchants,
     ILogger<MerchantLifecycleService> logger) : IMerchantLifecycleService
 {
     private const short OpenAccepted = 1;
@@ -87,6 +87,7 @@ public class MerchantLifecycleService(
     public async Task InsertAsync(UserSession session, Packet packet)
     {
         var advertMessage = packet.ReadString();
+        var toSlave = packet.RemainingBytes > 0 && packet.ReadByte() != 0;
         var staged = session.Trade.MerchantItems.Count(item => item is { IsEmpty: false });
         var refusal =
             advertMessage.Length > MerchantPacketConstants.MaxAdvertLength ? $"advert is {advertMessage.Length} characters"
@@ -104,19 +105,12 @@ public class MerchantLifecycleService(
             "Merchant insert accepted for {Name}: advert \"{Advert}\", {Staged} staged, character {CharacterId}",
             session.Name, advertMessage, staged, session.CharacterId);
 
-        if (session.IsSlaveMerchantMode)
+        if (toSlave)
         {
-            var slaveBot = await slaveMerchantService.CreateSlaveMerchantAsync(session, advertMessage);
-            if (slaveBot != null)
-            {
-                session.IsSlaveMerchantMode = false;
-                await session.Client.SendPacket(MerchantPacketWriter.StallClosed(session.CharacterId));
-                await CloseAsync(session, null);
-                await session.Client.SendPacket(ChatPacketWriter.SystemNotice(
-                    (byte)session.Nation,
-                    $"[Slave Merchant] Bot '{slaveBot.Name}' berhasil dibuka! Anda bebas bergerak atau keluar game."));
-                return;
-            }
+            await slaveMerchants.DeployAsync(session, advertMessage);
+            await session.Client.SendPacket(MerchantPacketWriter.StallClosed(session.CharacterId));
+            await CloseAsync(session, null);
+            return;
         }
 
         if (session.IsGM)
@@ -156,7 +150,7 @@ public class MerchantLifecycleService(
 
         var refusal =
             merchant == null ? "no such merchant"
-            : merchant.CharacterId == session.CharacterId ? "that is your own stall"
+            : MerchantPacketConstants.IsOwnStall(merchant, session) ? "that is your own stall"
             : !merchant.Trade.IsMerchanting ? "the stall is closed"
             : merchant.Trade.IsBuyingMerchant != buying ? "wrong stall kind for that request"
             : session.Trade.IsMerchanting ? "you are running a stall"

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Concurrent;
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -18,944 +16,851 @@ using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.World;
 
-public class SlaveMerchantService : ISlaveMerchantService, IDisposable
+public class SlaveMerchantService(
+    SessionManager sessionManager,
+    IServiceScopeFactory scopeFactory,
+    IGameDataService gameDataService,
+    IUserNotificationService userNotificationService,
+    ICharacterStatePersister statePersister,
+    IMailService mailService,
+    ILogger<SlaveMerchantService> logger) : ISlaveMerchantService
 {
-    private readonly SessionManager sessionManager;
-    private readonly IServiceScopeFactory scopeFactory;
-    private readonly IGameDataService gameDataService;
-    private readonly IUserNotificationService userNotificationService;
-    private readonly ILogger<SlaveMerchantService> logger;
+    public const int OneDayCertificate = 751730000;
+    public const int ThirtyDayCertificate = 891063000;
+    public const int OneDayHours = 24;
+    public const int ThirtyDayHours = 720;
+    public const int MaxHours = ushort.MaxValue;
+    public const string NamePrefix = "[S]";
+    public const int NameLimit = 20;
+    public const string AwayLetterSubject = "Your Slave Merchant";
 
-    private readonly ConcurrentDictionary<int, SlaveMerchantBotSession> activeSlavesById = new();
-    private readonly ConcurrentDictionary<int, SlaveMerchantBotSession> activeSlavesByOwner = new();
-    private readonly CancellationTokenSource cts = new();
     private const int BotCharacterIdBase = 850_000;
-    private int nextSlaveBotCharacterId = BotCharacterIdBase;
+    private const int MoreLineLength = 16;
+    private static readonly TimeSpan PaidSpan = TimeSpan.FromHours(1);
 
-    public const int VoucherOfflineMerchant = 700111000;
-    public const int ItemOfflineMerchant = 924041913;
-    public const int ItemSlaveScroll = 751730000;
+    private readonly ConcurrentDictionary<int, SlaveMerchantBotSession> activeByOwner = new();
+    private readonly SemaphoreSlim gate = new(1, 1);
+    private int nextBotCharacterId = BotCharacterIdBase;
 
-    public IReadOnlyCollection<SlaveMerchantBotSession> ActiveSlaves => activeSlavesById.Values.ToList();
-
-    public SlaveMerchantService(
-        SessionManager sessionManager,
-        IServiceScopeFactory scopeFactory,
-        IGameDataService gameDataService,
-        IUserNotificationService userNotificationService,
-        ILogger<SlaveMerchantService> logger)
+    public static int HoursOf(int itemId) => itemId switch
     {
-        this.sessionManager = sessionManager;
-        this.scopeFactory = scopeFactory;
-        this.gameDataService = gameDataService;
-        this.userNotificationService = userNotificationService;
-        this.logger = logger;
+        OneDayCertificate => OneDayHours,
+        ThirtyDayCertificate => ThirtyDayHours,
+        _ => 0,
+    };
 
-        // Background loop to check for 1-hour duration expiration
-        _ = Task.Run(async () =>
-        {
-            while (!cts.IsCancellationRequested)
-            {
-                try
-                {
-                    await Task.Delay(10000, cts.Token);
-                    var now = DateTime.UtcNow;
-                    foreach (var bot in activeSlavesById.Values)
-                    {
-                        if (now >= bot.ExpiresAt)
-                        {
-                            await ExpireSlaveAsync(bot);
-                        }
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "[Slave Merchant] Error in expiration check loop");
-                }
-            }
-        });
+    public static string SlaveName(string ownerName)
+    {
+        var room = NameLimit - NamePrefix.Length;
+        return NamePrefix + (ownerName.Length <= room ? ownerName : ownerName[..room]);
     }
 
-    public void Dispose()
+    public async Task<bool> DeployAsync(UserSession owner, string advert)
     {
-        cts.Cancel();
-        cts.Dispose();
+        await gate.WaitAsync();
+        try
+        {
+            var result = await TryDeployAsync(owner, advert);
+            await owner.Client.SendPacket(SlaveMerchantPacketWriter.Deploy(result));
+            return result == SlaveMerchantDeployResult.Deployed;
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
-    public SlaveMerchantBotSession? GetActiveSlaveByOwner(int ownerCharacterId) =>
-        activeSlavesByOwner.TryGetValue(ownerCharacterId, out var bot) ? bot : null;
-
-    public async Task<SlaveMerchantBotSession?> CreateSlaveMerchantAsync(UserSession session, string advertMessage)
+    private async Task<SlaveMerchantDeployResult> TryDeployAsync(UserSession owner, string advert)
     {
-        if (activeSlavesByOwner.ContainsKey(session.CharacterId))
-        {
-            await SendNoticeAsync(session, "[Slave Merchant] You already have an active Slave Merchant. Close it first using +slaveclose.");
-            return null;
-        }
+        if (activeByOwner.ContainsKey(owner.CharacterId) || await HoldsAnythingAsync(owner.CharacterId))
+            return SlaveMerchantDeployResult.AlreadyOpen;
+        if (await HoursAsync(owner.CharacterId) < 1)
+            return SlaveMerchantDeployResult.NoTime;
 
-        var stagedCount = session.Trade.MerchantItems.Count(item => item is { IsEmpty: false });
-        if (stagedCount == 0)
-        {
-            await SendNoticeAsync(session, "[Slave Merchant] No items staged for merchant sale.");
-            return null;
-        }
+        var staged = owner.WithLock(StagedItems);
+        if (staged == null)
+            return SlaveMerchantDeployResult.ItemsMoved;
 
-        // Verify player has Voucher of Offline Merchant (700111000)
-        byte voucherSlot = 0;
-        bool hasVoucher = false;
-        for (byte slot = (byte)InventoryConstants.InventoryStart; slot < (byte)InventoryConstants.CospreStart; slot++)
-        {
-            var invItem = session.Inventory[slot];
-            if (invItem != null && !invItem.IsEmpty &&
-                (invItem.ItemId == VoucherOfflineMerchant || invItem.ItemId == ItemOfflineMerchant || invItem.ItemId == ItemSlaveScroll) &&
-                invItem.Count > 0)
-            {
-                voucherSlot = slot;
-                hasVoucher = true;
-                break;
-            }
-        }
+        var now = DateTime.UtcNow;
+        var bot = NewBot(owner.CharacterId, owner.AccountId, owner.Name, now + PaidSpan);
+        bot.Name = SlaveName(owner.Name);
+        bot.Nation = owner.Nation;
+        bot.Race = owner.Race;
+        bot.Class = owner.Class;
+        bot.Level = owner.Level > 0 ? owner.Level : BotSession.DefaultBotLevel;
+        bot.Face = owner.Face;
+        bot.Hair = owner.Hair;
+        bot.ZoneId = owner.ZoneId;
+        bot.X = owner.X;
+        bot.Y = owner.Y;
+        bot.Z = owner.Z;
+        bot.Direction = owner.Direction;
+        bot.Trade.PremiumMerchant = owner.Trade.PremiumMerchant;
+        bot.Trade.MerchantAdvert = advert;
 
-        if (!hasVoucher)
-        {
-            await SendNoticeAsync(session, "[Slave Merchant] You need 1x Voucher of Offline Merchant to open a Slave Merchant.");
-            return null;
-        }
+        var visuals = owner.WithLock(VisualsOf);
+        WearVisuals(bot, visuals);
+        foreach (var (stallSlot, item) in staged)
+            PutOnStall(bot, stallSlot, item);
 
-        var botId = Interlocked.Increment(ref nextSlaveBotCharacterId);
-        var botName = session.Name.Length <= 18 ? $"[S]{session.Name}" : $"[S]{session.Name[..18]}";
-
-        var client = new BotClient
+        var data = new SlaveMerchantData
         {
-            CharacterId = botId,
-            AccountId = -botId,
+            OwnerCharacterId = owner.CharacterId,
+            OwnerAccountId = owner.AccountId,
+            OwnerName = owner.Name,
+            BotName = bot.Name,
+            Nation = owner.Nation,
+            Race = owner.Race,
+            Class = owner.Class,
+            Face = owner.Face,
+            Hair = owner.Hair,
+            Level = bot.Level,
+            ZoneId = owner.ZoneId,
+            X = owner.X,
+            Y = owner.Y,
+            Z = owner.Z,
+            Direction = owner.Direction,
+            MerchantType = bot.Trade.PremiumMerchant ? MerchantType.PremiumSelling : MerchantType.Selling,
+            StallTitle = advert,
+            ItemsJson = JsonSerializer.Serialize(StallItems(bot)),
+            EquipmentJson = JsonSerializer.Serialize(visuals),
+            IsActive = true,
+            CreatedAt = now,
+            PaidUntil = bot.PaidUntil,
+            HeartbeatAt = now,
         };
 
-        var bot = new SlaveMerchantBotSession(client, botId, -botId)
+        var journal = new InventoryJournal(owner);
+        var hoursLeft = 0;
+        var outcome = await statePersister.CommitAsync(owner, async db =>
         {
-            OwnerCharacterId = session.CharacterId,
-            OwnerAccountId = session.AccountId,
-            OwnerName = session.Name,
-            Name = botName,
-            Nation = session.Nation,
-            Race = session.Race,
-            Class = session.Class,
-            Level = session.Level > 0 ? session.Level : BotSession.DefaultBotLevel,
-            Face = session.Face,
-            Hair = session.Hair,
-            ZoneId = session.ZoneId,
-            X = session.X,
-            Y = session.Y,
-            Z = session.Z,
-            Direction = session.Direction,
-            Room = session.Room,
-            Hp = BotSession.DefaultBotHp,
-            MaxHp = BotSession.DefaultBotHp,
-            Mp = BotSession.DefaultBotMp,
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddHours(1),
-        };
+            var time = await db.SlaveMerchantTimes.FindAsync(owner.CharacterId);
+            if (time == null || time.Hours < 1 || !owner.WithLock(active => Take(active, staged, journal)))
+                return false;
 
-        // Copy equipment visuals
-        var visualsList = new List<StoredVisual>();
-        for (byte slot = 0; slot < InventoryConstants.VisualSlots.Length; slot++)
-        {
-            var equipped = session.GetEquippedItem(slot);
-            if (!equipped.IsEmpty)
-            {
-                bot.Inventory[slot].ItemId = equipped.ItemId;
-                bot.Inventory[slot].Count = equipped.Count;
-                bot.Inventory[slot].Durability = equipped.Durability;
-                bot.Inventory[slot].Flag = equipped.Flag;
-
-                visualsList.Add(new StoredVisual
-                {
-                    Slot = slot,
-                    ItemId = equipped.ItemId,
-                    Durability = equipped.Durability,
-                    Flag = equipped.Flag,
-                });
-            }
-        }
-
-        // Deduct staged items from player inventory and transfer to bot
-        var itemsList = new List<StoredItem>();
-        for (byte i = 0; i < session.Trade.MerchantItems.Length; i++)
-        {
-            var src = session.Trade.MerchantItems[i];
-            if (src != null && !src.IsEmpty)
-            {
-                var bagSlot = InventoryConstants.SlotMax + i;
-                bot.Inventory[bagSlot].ItemId = src.ItemId;
-                bot.Inventory[bagSlot].Count = src.Count;
-                bot.Inventory[bagSlot].Durability = src.Durability;
-
-                bot.Trade.MerchantItems[i] = new MerchantItem
-                {
-                    ItemId = src.ItemId,
-                    Count = src.Count,
-                    Price = src.Price,
-                    Durability = src.Durability,
-                    OriginalSlot = (byte)bagSlot,
-                };
-
-                itemsList.Add(new StoredItem
-                {
-                    Slot = i,
-                    ItemId = src.ItemId,
-                    Count = (ushort)src.Count,
-                    Price = src.Price,
-                    Durability = src.Durability,
-                });
-
-                // Deduct from owner inventory
-                var ownerSlot = session.Inventory[src.OriginalSlot];
-                if (ownerSlot.ItemId == src.ItemId)
-                {
-                    ownerSlot.Count -= Math.Min(src.Count, ownerSlot.Count);
-                    var isEmpty = ownerSlot.Count <= 0;
-                    if (isEmpty) ownerSlot.Clear();
-                    await userNotificationService.SendStackChangeAsync(
-                        session, src.OriginalSlot, ownerSlot.ItemId, ownerSlot.Count, ownerSlot.Durability, isEmpty);
-                }
-            }
-        }
-
-        // Deduct 1 voucher item from player inventory
-        var voucherItem = session.Inventory[voucherSlot];
-        voucherItem.Count--;
-        var isVoucherEmpty = voucherItem.Count <= 0;
-        if (isVoucherEmpty) voucherItem.Clear();
-        await userNotificationService.SendStackChangeAsync(
-            session, voucherSlot, voucherItem.ItemId, voucherItem.Count, voucherItem.Durability, isVoucherEmpty);
-
-        session.RecalculateStatsWithBuffs(gameDataService);
-        await userNotificationService.SendWeightChangeAsync(session);
-
-        bot.Trade.MerchantState = MerchantMode.Selling;
-        bot.Trade.PremiumMerchant = session.Trade.PremiumMerchant;
-        bot.Trade.MerchantAdvert = string.IsNullOrWhiteSpace(advertMessage) ? $"{session.Name}'s Store" : advertMessage;
-        bot.IsSitting = true;
-
-        // Persist to database
-        using (var scope = scopeFactory.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await EnsureTableCreatedAsync(db);
-            var data = new SlaveMerchantData
-            {
-                OwnerCharacterId = session.CharacterId,
-                OwnerAccountId = session.AccountId,
-                OwnerName = session.Name,
-                BotName = bot.Name,
-                Nation = session.Nation,
-                Race = session.Race,
-                Class = session.Class,
-                Face = session.Face,
-                Hair = (byte)session.Hair,
-                Level = session.Level,
-                ZoneId = session.ZoneId,
-                X = session.X,
-                Y = session.Y,
-                Z = session.Z,
-                Direction = session.Direction,
-                MerchantType = bot.Trade.PremiumMerchant ? MerchantType.PremiumSelling : MerchantType.Selling,
-                StallTitle = bot.Trade.MerchantAdvert,
-                ItemsJson = JsonSerializer.Serialize(itemsList),
-                EquipmentJson = JsonSerializer.Serialize(visualsList),
-                EarnedNoah = 0,
-                IsActive = true,
-                CreatedAt = bot.CreatedAt,
-                ExpiresAt = bot.ExpiresAt,
-            };
-
+            time.Hours--;
+            hoursLeft = time.Hours;
             db.SlaveMerchants.Add(data);
-            await db.SaveChangesAsync();
-            bot.SlaveDatabaseId = data.Id;
+            return true;
+        }, () => owner.WithLock(_ => journal.Restore()));
+
+        if (outcome != StateCommit.Saved)
+            return outcome == StateCommit.Failed ? SlaveMerchantDeployResult.Failed : SlaveMerchantDeployResult.ItemsMoved;
+
+        bot.SlaveDatabaseId = data.Id;
+        foreach (var slot in journal.TouchedSlots)
+        {
+            var source = owner.Inventory[slot];
+            await userNotificationService.SendStackChangeAsync(owner, (byte)slot, source.ItemId, source.Count, source.Durability);
         }
 
-        // Register session & region
-        sessionManager.RegisterSession(bot);
-        sessionManager.Regions.AddToRegion(bot);
-        activeSlavesById[bot.CharacterId] = bot;
-        activeSlavesByOwner[session.CharacterId] = bot;
+        owner.RecalculateStatsWithBuffs(gameDataService);
+        await userNotificationService.SendWeightChangeAsync(owner);
 
-        // Broadcast UserInOut to surrounding players
-        var inPacket = BuildUserInOutPacket(bot, InOutType.In);
-        await sessionManager.Regions.SendToRegion(bot, inPacket, excludeSender: true);
-
-        // Broadcast StallInserted
-        var displayItemIds = bot.Trade.MerchantItems
-            .Where(item => item is { IsEmpty: false })
-            .Select(item => item.ItemId)
-            .ToArray();
-
-        var stallPacket = MerchantPacketWriter.StallInserted(
-            MerchantPacketWriter.Succeeded,
-            bot.Trade.MerchantAdvert,
-            bot.CharacterId,
-            (byte)(bot.Trade.PremiumMerchant ? 1 : 0),
-            displayItemIds);
-
-        await sessionManager.Regions.SendToRegion(bot, stallPacket, excludeSender: true);
-
-        logger.LogInformation("Slave merchant '{BotName}' (ID {BotId}) spawned for owner '{OwnerName}' for 1 hour at ({X:F1}, {Z:F1})",
-            bot.Name, bot.CharacterId, session.Name, bot.X, bot.Z);
-
-        await SendNoticeAsync(session,
-            $"[Slave Merchant] Slave merchant '{bot.Name}' deployed for 1 hour! You are now free to explore, change zones, or log out.");
-
-        return bot;
+        await SpawnAsync(bot);
+        await owner.Client.SendPacket(SlaveMerchantPacketWriter.Time(hoursLeft));
+        logger.LogInformation("Slave merchant {BotName} opened for {Owner} with {Count} items, {Hours} hours left",
+            bot.Name, owner.Name, staged.Count, hoursLeft);
+        return SlaveMerchantDeployResult.Deployed;
     }
 
-    public async Task RecordSaleAsync(SlaveMerchantBotSession bot, byte slot, int itemId, int count, long totalCost, string buyerName)
+    private static List<(int StallSlot, StoredItem Item)>? StagedItems(UserSession owner)
     {
-        using (var scope = scopeFactory.CreateScope())
+        var staged = new List<(int, StoredItem)>();
+        var taken = new Dictionary<int, int>();
+        for (var i = 0; i < owner.Trade.MerchantItems.Length; i++)
         {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var data = await db.SlaveMerchants.FindAsync(bot.SlaveDatabaseId);
-            if (data != null)
-            {
-                data.EarnedNoah += totalCost;
+            var entry = owner.Trade.MerchantItems[i];
+            if (entry == null || entry.IsEmpty)
+                continue;
 
-                // Update items in DB
-                var remainingItems = new List<StoredItem>();
-                for (byte i = 0; i < bot.Trade.MerchantItems.Length; i++)
-                {
-                    var it = bot.Trade.MerchantItems[i];
-                    if (it != null && !it.IsEmpty)
-                    {
-                        remainingItems.Add(new StoredItem
-                        {
-                            Slot = i,
-                            ItemId = it.ItemId,
-                            Count = (ushort)it.Count,
-                            Price = it.Price,
-                            Durability = it.Durability,
-                        });
-                    }
-                }
-                data.ItemsJson = JsonSerializer.Serialize(remainingItems);
+            var source = owner.Inventory[entry.OriginalSlot];
+            var already = taken.GetValueOrDefault(entry.OriginalSlot);
+            if (source.ItemId != entry.ItemId || source.Count < already + entry.Count || !source.IsTradable)
+                return null;
 
-                var allSoldOut = remainingItems.Count == 0;
-                if (allSoldOut)
-                {
-                    data.IsActive = false;
-                    data.FinishedAt = DateTime.UtcNow;
-                }
-
-                await db.SaveChangesAsync();
-            }
+            taken[entry.OriginalSlot] = already + entry.Count;
+            staged.Add((i, new StoredItem(entry.ItemId, entry.Count, entry.Price,
+                source.Durability, source.Flag, source.ExpiresAt, source.UniqueId)));
         }
 
-        var itemData = gameDataService.GetItem(itemId);
-        var itemName = itemData?.Name ?? $"Item #{itemId}";
-
-        // Notify owner if online
-        var owner = sessionManager.GetByCharacterId(bot.OwnerCharacterId);
-        if (owner != null)
-        {
-            await SendNoticeAsync(owner,
-                $"[Slave Merchant] {buyerName} purchased {itemName} x{count} for {totalCost:N0} Noah!");
-        }
-
-        // Check if all items are sold out
-        if (bot.Trade.MerchantItems.All(entry => entry == null || entry.IsEmpty))
-        {
-            var closePacket = MerchantPacketWriter.StallClosed(bot.CharacterId);
-            await sessionManager.Regions.SendToRegion(bot, closePacket, excludeSender: true);
-
-            var outPacket = VisibilityPacketWriter.UserOut(bot.CharacterId);
-            await sessionManager.Regions.SendToRegion(bot, outPacket, excludeSender: true);
-
-            sessionManager.RemoveSession(bot);
-            activeSlavesById.TryRemove(bot.CharacterId, out _);
-            activeSlavesByOwner.TryRemove(bot.OwnerCharacterId, out _);
-
-            if (owner != null)
-            {
-                await SendNoticeAsync(owner,
-                    "[Slave Merchant] All your stall items have been sold! Use +slaveclaim to collect your earnings.");
-            }
-
-            logger.LogInformation("Slave merchant '{BotName}' finished selling all items and closed", bot.Name);
-        }
+        return staged.Count == 0 ? null : staged;
     }
 
-    public async Task<long> ClaimEarningsAsync(UserSession session)
+    private static bool Take(UserSession owner, List<(int StallSlot, StoredItem Item)> staged, InventoryJournal journal)
     {
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var records = await db.SlaveMerchants
-            .Where(s => s.OwnerCharacterId == session.CharacterId && s.EarnedNoah > 0)
-            .ToListAsync();
-
-        if (records.Count == 0)
-        {
-            await SendNoticeAsync(session, "[Slave Merchant] No sales earnings available to claim.");
-            return 0;
-        }
-
-        long totalNoah = records.Sum(s => s.EarnedNoah);
-        foreach (var r in records)
-        {
-            r.EarnedNoah = 0;
-        }
-
-        await db.SaveChangesAsync();
-
-        session.Money += (int)totalNoah;
-        await userNotificationService.SendGoldGainAsync(session, (int)totalNoah);
-        await SendNoticeAsync(session, $"[Slave Merchant] Successfully claimed {totalNoah:N0} Noah!");
-
-        return totalNoah;
-    }
-
-    public async Task<bool> CloseSlaveAsync(UserSession session)
-    {
-        if (!activeSlavesByOwner.TryGetValue(session.CharacterId, out var bot))
-        {
-            // Also check DB for unclosed records just in case
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var activeRecord = await db.SlaveMerchants
-                .FirstOrDefaultAsync(s => s.OwnerCharacterId == session.CharacterId && s.IsActive);
-            if (activeRecord != null)
-            {
-                activeRecord.IsActive = false;
-                activeRecord.FinishedAt = DateTime.UtcNow;
-                await db.SaveChangesAsync();
-            }
-
-            await SendNoticeAsync(session, "[Slave Merchant] You do not have an active Slave Merchant.");
+        var current = StagedItems(owner);
+        if (current == null || !current.SequenceEqual(staged))
             return false;
-        }
 
-        // Close stall and remove bot
-        var closePacket = MerchantPacketWriter.StallClosed(bot.CharacterId);
-        await sessionManager.Regions.SendToRegion(bot, closePacket, excludeSender: true);
-
-        var outPacket = VisibilityPacketWriter.UserOut(bot.CharacterId);
-        await sessionManager.Regions.SendToRegion(bot, outPacket, excludeSender: true);
-
-        sessionManager.RemoveSession(bot);
-        activeSlavesById.TryRemove(bot.CharacterId, out _);
-        activeSlavesByOwner.TryRemove(bot.OwnerCharacterId, out _);
-
-        // Return unsold items to owner inventory
-        var returnedCount = 0;
-        for (int i = 0; i < bot.Trade.MerchantItems.Length; i++)
+        foreach (var (stallSlot, item) in staged)
         {
-            var it = bot.Trade.MerchantItems[i];
-            if (it != null && !it.IsEmpty)
-            {
-                var destination = session.FindSlotForItem(it.ItemId, gameDataService, (ushort)it.Count);
-                if (destination >= 0)
-                {
-                    var destSlot = session.Inventory[destination];
-                    var isNew = destSlot.IsEmpty;
-                    if (isNew)
-                    {
-                        destSlot.ItemId = it.ItemId;
-                        destSlot.Count = (ushort)it.Count;
-                        destSlot.Durability = it.Durability;
-                    }
-                    else
-                    {
-                        destSlot.Count += (ushort)it.Count;
-                    }
-
-                    await userNotificationService.SendStackChangeAsync(
-                        session, (byte)destination, destSlot.ItemId, destSlot.Count, destSlot.Durability, isNew);
-                    returnedCount++;
-                }
-                else
-                {
-                    logger.LogWarning("Owner inventory full when returning slave merchant item {ItemId} x{Count}",
-                        it.ItemId, it.Count);
-                }
-            }
+            var source = journal.Slot(owner.Trade.MerchantItems[stallSlot].OriginalSlot);
+            source.Count -= item.Count;
+            if (source.Count == 0)
+                source.Clear();
         }
-
-        session.RecalculateStatsWithBuffs(gameDataService);
-        await userNotificationService.SendWeightChangeAsync(session);
-
-        // Mark DB record inactive and claim any earned noah
-        long claimedNoah = 0;
-        using (var scope = scopeFactory.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var data = await db.SlaveMerchants.FindAsync(bot.SlaveDatabaseId);
-            if (data != null)
-            {
-                data.IsActive = false;
-                data.FinishedAt = DateTime.UtcNow;
-                data.ItemsJson = "[]";
-                claimedNoah = data.EarnedNoah;
-                data.EarnedNoah = 0;
-                await db.SaveChangesAsync();
-            }
-        }
-
-        if (claimedNoah > 0)
-        {
-            session.Money += (int)claimedNoah;
-            await userNotificationService.SendGoldGainAsync(session, (int)claimedNoah);
-        }
-
-        // Notify owner client directly that stall is closed and empty
-        await session.Client.SendPacket(closePacket);
-        var emptyStallOnClose = new List<MerchantPacketWriter.StallItem?>(MerchantPacketConstants.StallSlots);
-        for (var i = 0; i < MerchantPacketConstants.StallSlots; i++) emptyStallOnClose.Add(null);
-        await session.Client.SendPacket(MerchantPacketWriter.StallContents(MerchantSubOpcode.ItemList, 0, emptyStallOnClose));
-
-        await SendNoticeAsync(session,
-            $"[Slave Merchant] Your Slave Merchant has been closed. {returnedCount} item(s) and {claimedNoah:N0} Noah returned.");
 
         return true;
     }
 
-    public async Task<string> GetStatusAsync(UserSession session)
+    private static List<StoredVisual> VisualsOf(UserSession owner)
     {
-        if (activeSlavesByOwner.TryGetValue(session.CharacterId, out var bot))
+        var visuals = new List<StoredVisual>();
+        foreach (var slot in InventoryConstants.VisualSlots)
         {
-            var remainingItems = bot.Trade.MerchantItems.Count(it => it != null && !it.IsEmpty);
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var data = await db.SlaveMerchants.FindAsync(bot.SlaveDatabaseId);
-            var earned = data?.EarnedNoah ?? 0;
-
-            var remaining = bot.ExpiresAt - DateTime.UtcNow;
-            var remainingMinutes = Math.Max(0, (int)remaining.TotalMinutes);
-
-            return $"[Slave Merchant] Status: ACTIVE in Zone {bot.ZoneId} ({bot.X / 10:F0}, {bot.Z / 10:F0}). Time left: {remainingMinutes}m. Earnings: {earned:N0} Noah. Items: {remainingItems}. Use +slaveclose to close, +slaveclaim to claim.";
+            var equipped = owner.GetEquippedItem(slot);
+            if (!equipped.IsEmpty)
+                visuals.Add(new StoredVisual(slot, equipped.ItemId, equipped.Durability, equipped.Flag));
         }
 
-        using (var scope = scopeFactory.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var pendingNoah = await db.SlaveMerchants
-                .Where(s => s.OwnerCharacterId == session.CharacterId && s.EarnedNoah > 0)
-                .SumAsync(s => s.EarnedNoah);
-
-            if (pendingNoah > 0)
-            {
-                return $"[Slave Merchant] No active bot, but you have {pendingNoah:N0} unclaimed Noah! Type +slaveclaim to collect.";
-            }
-        }
-
-        return "[Slave Merchant] No active bot. Deploy a Slave Merchant from the merchant menu using Voucher of Offline Merchant.";
+        return visuals;
     }
 
-    public async Task SendSlaveStatusAsync(UserSession session)
+    public async Task<bool> SellAsync(SlaveMerchantBotSession bot, MerchantPurchase purchase, Func<Task> announce)
     {
-        if (activeSlavesByOwner.TryGetValue(session.CharacterId, out var bot))
+        await gate.WaitAsync();
+        try
         {
-            var remainingItems = bot.Trade.MerchantItems.Count(it => it != null && !it.IsEmpty);
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var data = await db.SlaveMerchants.FindAsync(bot.SlaveDatabaseId);
-            var earned = data?.EarnedNoah ?? 0;
+            if (!IsOpen(bot))
+                return false;
 
-            var remaining = bot.ExpiresAt - DateTime.UtcNow;
-            var remainingMinutes = Math.Max(0, (int)remaining.TotalMinutes);
-
-            var notice = $"[Slave Merchant] Status: ACTIVE in Zone {bot.ZoneId} ({bot.X / 10:F0}, {bot.Z / 10:F0}). Time left: {remainingMinutes}m. Earnings: {earned:N0} Noah. Items: {remainingItems}. Use +slaveclose to close, +slaveclaim to claim.";
-            await SendNoticeAsync(session, notice);
-
-            // Send StallContents packet so client opens and populates the merchant stall UI bar!
-            var stall = new List<MerchantPacketWriter.StallItem?>(MerchantPacketConstants.StallSlots);
-            for (var i = 0; i < bot.Trade.MerchantItems.Length; i++)
+            var outcome = await statePersister.CommitAsync(purchase.Buyer, async db =>
             {
-                var item = bot.Trade.MerchantItems[i];
-                stall.Add(item != null && !item.IsEmpty
-                    ? new MerchantPacketWriter.StallItem(item.ItemId, item.Count, item.Durability, item.Price)
-                    : null);
-            }
+                var applied = false;
+                UserSession.WithBoth(purchase.Buyer, bot, (_, _) => applied = purchase.TryApply(gameDataService));
+                if (!applied)
+                    return false;
 
-            await session.Client.SendPacket(MerchantPacketWriter.StallContents(
-                MerchantSubOpcode.ItemList, bot.CharacterId, stall));
+                var data = await db.SlaveMerchants.FindAsync(bot.SlaveDatabaseId)
+                    ?? throw new InvalidOperationException($"slave merchant record {bot.SlaveDatabaseId} is not stored");
+                data.EarnedNoah = bot.Money;
+                data.ItemsJson = JsonSerializer.Serialize(StallItems(bot));
+                if (sessionManager.GetByCharacterId(bot.OwnerCharacterId) == null)
+                    data.AwayReportJson = WriteReport(ReadReport(data.AwayReportJson).WithSale(purchase.ItemId, purchase.Count, purchase.Cost));
+                return true;
+            }, () => UserSession.WithBoth(purchase.Buyer, bot, (_, _) => purchase.Undo()));
+
+            if (outcome != StateCommit.Saved)
+                return false;
+
+            await announce();
+            if (sessionManager.GetByCharacterId(bot.OwnerCharacterId) is { } owner)
+                await owner.Client.SendPacket(SlaveMerchantPacketWriter.Sold(purchase.ItemId, purchase.Count, purchase.Cost));
+            if (purchase.StallIsEmpty)
+                await CloseAsync(bot, SlaveMerchantClosedReason.SoldOut);
+            return true;
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public async Task SendStatusAsync(UserSession owner)
+    {
+        var hours = await HoursAsync(owner.CharacterId);
+        if (activeByOwner.TryGetValue(owner.CharacterId, out var bot))
+        {
+            await owner.Client.SendPacket(SlaveMerchantPacketWriter.Status(open: true, hours, bot.Money, Lines(StallItems(bot))));
             return;
         }
 
-        // When no active bot, clear the client stall display by sending empty stall contents
-        var emptyStall = new List<MerchantPacketWriter.StallItem?>(MerchantPacketConstants.StallSlots);
-        for (var i = 0; i < MerchantPacketConstants.StallSlots; i++) emptyStall.Add(null);
-        await session.Client.SendPacket(MerchantPacketWriter.StallContents(MerchantSubOpcode.ItemList, 0, emptyStall));
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var held = await db.SlaveMerchants.AsNoTracking().FirstOrDefaultAsync(s => s.OwnerCharacterId == owner.CharacterId);
+        var items = held == null ? new List<StoredItem>() : ReadItems(held.ItemsJson);
+        await owner.Client.SendPacket(SlaveMerchantPacketWriter.Status(open: false, hours, held?.EarnedNoah ?? 0, Lines(items)));
+    }
 
-        using (var scope = scopeFactory.CreateScope())
+    public async Task CollectAsync(UserSession owner)
+    {
+        await gate.WaitAsync();
+        try
         {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var pendingNoah = await db.SlaveMerchants
-                .Where(s => s.OwnerCharacterId == session.CharacterId && s.EarnedNoah > 0)
-                .SumAsync(s => s.EarnedNoah);
-
-            if (pendingNoah > 0)
+            if (activeByOwner.TryGetValue(owner.CharacterId, out var bot) && !await CloseAsync(bot, closing: null))
             {
-                await SendNoticeAsync(session, $"[Slave Merchant] No active bot, but you have {pendingNoah:N0} unclaimed Noah! Type +slaveclaim to collect.");
+                await owner.Client.SendPacket(SlaveMerchantPacketWriter.CollectFailed());
                 return;
             }
-        }
 
-        await SendNoticeAsync(session, "[Slave Merchant] No active bot. Deploy a Slave Merchant from the merchant menu using Voucher of Offline Merchant.");
-    }
-
-    private async Task ExpireSlaveAsync(SlaveMerchantBotSession bot)
-    {
-        try
-        {
-            var closePacket = MerchantPacketWriter.StallClosed(bot.CharacterId);
-            await sessionManager.Regions.SendToRegion(bot, closePacket, excludeSender: true);
-
-            var outPacket = VisibilityPacketWriter.UserOut(bot.CharacterId);
-            await sessionManager.Regions.SendToRegion(bot, outPacket, excludeSender: true);
-
-            sessionManager.RemoveSession(bot);
-            activeSlavesById.TryRemove(bot.CharacterId, out _);
-            activeSlavesByOwner.TryRemove(bot.OwnerCharacterId, out _);
-
-            var owner = sessionManager.GetByCharacterId(bot.OwnerCharacterId);
-            var returnedCount = 0;
-            if (owner != null)
+            var journal = new InventoryJournal(owner);
+            var tally = new CollectTally();
+            var outcome = await statePersister.CommitAsync(owner, async db =>
             {
-                for (int i = 0; i < bot.Trade.MerchantItems.Length; i++)
-                {
-                    var it = bot.Trade.MerchantItems[i];
-                    if (it != null && !it.IsEmpty)
-                    {
-                        var destination = owner.FindSlotForItem(it.ItemId, gameDataService, (ushort)it.Count);
-                        if (destination >= 0)
-                        {
-                            var destSlot = owner.Inventory[destination];
-                            var isNew = destSlot.IsEmpty;
-                            if (isNew)
-                            {
-                                destSlot.ItemId = it.ItemId;
-                                destSlot.Count = (ushort)it.Count;
-                                destSlot.Durability = it.Durability;
-                            }
-                            else
-                            {
-                                destSlot.Count += (ushort)it.Count;
-                            }
+                var held = await db.SlaveMerchants.Where(s => s.OwnerCharacterId == owner.CharacterId).ToListAsync();
+                if (held.Count == 0)
+                    return false;
 
-                            await userNotificationService.SendStackChangeAsync(
-                                owner, (byte)destination, destSlot.ItemId, destSlot.Count, destSlot.Durability, isNew);
-                            returnedCount++;
-                        }
-                    }
-                }
+                owner.WithLock(active => TakeHome(active, held, journal, tally, db));
+                return true;
+            }, () => owner.WithLock(_ => journal.Restore()));
 
+            if (outcome == StateCommit.Failed)
+            {
+                await owner.Client.SendPacket(SlaveMerchantPacketWriter.CollectFailed());
+                return;
+            }
+
+            foreach (var slot in journal.TouchedSlots)
+            {
+                var returned = owner.Inventory[slot];
+                await userNotificationService.SendStackChangeAsync(
+                    owner, (byte)slot, returned.ItemId, returned.Count, returned.Durability, journal.WasEmpty(slot));
+            }
+
+            if (tally.Paid > 0)
+                await userNotificationService.SendGoldGainAsync(owner, (int)tally.Paid);
+            if (tally.Returned > 0)
+            {
                 owner.RecalculateStatsWithBuffs(gameDataService);
                 await userNotificationService.SendWeightChangeAsync(owner);
-
-                await owner.Client.SendPacket(closePacket);
-                var emptyStallOnExpire = new List<MerchantPacketWriter.StallItem?>(MerchantPacketConstants.StallSlots);
-                for (var i = 0; i < MerchantPacketConstants.StallSlots; i++) emptyStallOnExpire.Add(null);
-                await owner.Client.SendPacket(MerchantPacketWriter.StallContents(MerchantSubOpcode.ItemList, 0, emptyStallOnExpire));
             }
 
-            long claimedNoah = 0;
-            using (var scope = scopeFactory.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var data = await db.SlaveMerchants.FindAsync(bot.SlaveDatabaseId);
-                if (data != null)
-                {
-                    data.IsActive = false;
-                    data.FinishedAt = DateTime.UtcNow;
-                    if (owner != null)
-                    {
-                        claimedNoah = data.EarnedNoah;
-                        data.EarnedNoah = 0;
-                        data.ItemsJson = "[]";
-                    }
-                    await db.SaveChangesAsync();
-                }
-            }
-
-            if (owner != null)
-            {
-                if (claimedNoah > 0)
-                {
-                    owner.Money += (int)claimedNoah;
-                    await userNotificationService.SendGoldGainAsync(owner, (int)claimedNoah);
-                }
-
-                await SendNoticeAsync(owner,
-                    $"[Slave Merchant] Your 1-hour Slave Merchant duration has expired. Stall closed, {returnedCount} item(s) and {claimedNoah:N0} Noah returned.");
-            }
-
-            logger.LogInformation("Slave merchant '{BotName}' duration expired and closed cleanly.", bot.Name);
+            await owner.Client.SendPacket(SlaveMerchantPacketWriter.Collected(tally.Paid, tally.Returned, tally.Kept, tally.CoinsKept));
+            if (tally.Paid > 0 || tally.Returned > 0)
+                logger.LogInformation("{Name} collected {Coins} coins and {Items} items from their slave merchant",
+                    owner.Name, tally.Paid, tally.Returned);
         }
-        catch (Exception ex)
+        finally
         {
-            logger.LogError(ex, "Error while expiring slave merchant '{BotName}'", bot.Name);
+            gate.Release();
+        }
+
+        await SendStatusAsync(owner);
+    }
+
+    private void TakeHome(UserSession owner, List<SlaveMerchantData> held, InventoryJournal journal, CollectTally tally, AppDbContext db)
+    {
+        foreach (var data in held)
+        {
+            var room = Math.Max(0L, ExchangePacketConstants.CoinMax - (long)owner.Money);
+            var pay = Math.Min(data.EarnedNoah, room);
+            journal.AddMoney(pay);
+            tally.Paid += pay;
+            data.EarnedNoah -= pay;
+            tally.CoinsKept += data.EarnedNoah;
+
+            var left = new List<StoredItem>();
+            foreach (var item in ReadItems(data.ItemsJson))
+            {
+                if (GiveBack(owner, item, journal))
+                    tally.Returned++;
+                else
+                    left.Add(item);
+            }
+
+            tally.Kept += left.Count;
+            data.ItemsJson = JsonSerializer.Serialize(left);
+            if (left.Count == 0 && data.EarnedNoah == 0)
+                db.SlaveMerchants.Remove(data);
         }
     }
 
-    private async Task EnsureTableCreatedAsync(AppDbContext db)
+    private bool GiveBack(UserSession owner, StoredItem item, InventoryJournal journal)
     {
+        var destination = owner.FindSlotForItem(item.ItemId, gameDataService, item.Count);
+        if (destination < 0)
+            return false;
+
+        var slot = journal.Slot(destination);
+        if (slot.IsEmpty)
+        {
+            slot.ItemId = item.ItemId;
+            slot.Count = item.Count;
+            slot.Durability = item.Durability;
+            slot.Flag = item.Flag;
+            slot.ExpiresAt = item.ExpiresAt;
+            slot.UniqueId = item.UniqueId;
+        }
+        else
+        {
+            slot.Count += item.Count;
+        }
+
+        return true;
+    }
+
+    public async Task RedeemAsync(UserSession owner, byte bagPosition, int itemId)
+    {
+        await gate.WaitAsync();
         try
         {
-            await db.Database.ExecuteSqlRawAsync(@"
-CREATE TABLE IF NOT EXISTS `SlaveMerchants` (
-  `Id` int NOT NULL AUTO_INCREMENT,
-  `OwnerCharacterId` int NOT NULL,
-  `OwnerAccountId` int NOT NULL,
-  `OwnerName` varchar(32) NOT NULL,
-  `BotName` varchar(32) NOT NULL,
-  `Nation` tinyint NOT NULL,
-  `Race` tinyint unsigned NOT NULL,
-  `Class` smallint NOT NULL,
-  `Face` tinyint unsigned NOT NULL,
-  `Hair` tinyint unsigned NOT NULL,
-  `Level` tinyint unsigned NOT NULL,
-  `ZoneId` tinyint unsigned NOT NULL,
-  `X` float NOT NULL,
-  `Y` float NOT NULL,
-  `Z` float NOT NULL,
-  `Direction` smallint NOT NULL,
-  `MerchantType` int NOT NULL,
-  `StallTitle` varchar(128) NOT NULL,
-  `ItemsJson` varchar(4000) NOT NULL,
-  `EquipmentJson` varchar(2000) NOT NULL,
-  `EarnedNoah` bigint NOT NULL DEFAULT 0,
-  `IsActive` tinyint(1) NOT NULL DEFAULT 1,
-  `CreatedAt` datetime(6) NOT NULL,
-  `FinishedAt` datetime(6) DEFAULT NULL,
-  `ExpiresAt` datetime(6) DEFAULT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_SlaveMerchants_IsActive` (`IsActive`),
-  KEY `IX_SlaveMerchants_OwnerCharacterId` (`OwnerCharacterId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            var added = HoursOf(itemId);
+            var slotIndex = InventoryConstants.InventoryStart + bagPosition;
+            var journal = new InventoryJournal(owner);
+            var hours = 0;
+            var outcome = added == 0 || bagPosition >= InventoryConstants.HaveMax
+                ? StateCommit.Unchanged
+                : await statePersister.CommitAsync(owner, async db =>
+                {
+                    if (!owner.WithLock(_ => TakeOne(owner, slotIndex, itemId, journal)))
+                        return false;
+
+                    hours = await AddHoursAsync(db, owner.CharacterId, added);
+                    return true;
+                }, () => owner.WithLock(_ => journal.Restore()));
+
+            if (outcome != StateCommit.Saved)
+            {
+                await owner.Client.SendPacket(SlaveMerchantPacketWriter.Redeemed(
+                    SlaveMerchantRedeemResult.Failed, await HoursAsync(owner.CharacterId)));
+                return;
+            }
+
+            var slot = owner.Inventory[slotIndex];
+            await userNotificationService.SendStackChangeAsync(owner, (byte)slotIndex, slot.ItemId, slot.Count, slot.Durability);
+            owner.RecalculateStatsWithBuffs(gameDataService);
+            await userNotificationService.SendWeightChangeAsync(owner);
+            await owner.Client.SendPacket(SlaveMerchantPacketWriter.Redeemed(SlaveMerchantRedeemResult.Added, hours));
+            logger.LogInformation("{Name} used certificate {ItemId}: {Hours} slave merchant hours", owner.Name, itemId, hours);
         }
-        catch (Exception ex)
+        finally
         {
-            logger.LogWarning(ex, "[Slave Merchant] EnsureTableCreatedAsync: {Message}", ex.Message);
+            gate.Release();
         }
     }
 
-    public async Task<int> LoadActiveSlaveMerchantsAsync()
+    private static bool TakeOne(UserSession owner, int slotIndex, int itemId, InventoryJournal journal)
+    {
+        if (owner.Inventory[slotIndex].ItemId != itemId || owner.Inventory[slotIndex].Count == 0)
+            return false;
+
+        var slot = journal.Slot(slotIndex);
+        slot.Count--;
+        if (slot.Count == 0)
+            slot.Clear();
+        return true;
+    }
+
+    public async Task<int?> GiveHoursAsync(string characterName, int hours)
+    {
+        var characterId = sessionManager.GetByName(characterName)?.CharacterId;
+        if (characterId == null)
+        {
+            using var scope = scopeFactory.CreateScope();
+            characterId = (await scope.ServiceProvider.GetRequiredService<ICharacterRepository>().GetByName(characterName))?.Id;
+        }
+
+        if (characterId == null)
+            return null;
+
+        await gate.WaitAsync();
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var total = await AddHoursAsync(db, characterId.Value, hours);
+            await db.SaveChangesAsync();
+            if (sessionManager.GetByCharacterId(characterId.Value) is { } online)
+                await online.Client.SendPacket(SlaveMerchantPacketWriter.Time(total));
+            return total;
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public async Task ReportAwayAsync(UserSession owner)
+    {
+        await gate.WaitAsync();
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var reported = await db.SlaveMerchants
+                .Where(s => s.OwnerCharacterId == owner.CharacterId && s.AwayReportJson != string.Empty)
+                .ToListAsync();
+            if (reported.Count == 0)
+                return;
+
+            foreach (var data in reported)
+            {
+                mailService.StageSystemMail(db, owner.CharacterId, AwayLetterSubject, AwayLetter(ReadReport(data.AwayReportJson)));
+                data.AwayReportJson = string.Empty;
+            }
+
+            await db.SaveChangesAsync();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "The away report of {Name} could not be sent", owner.Name);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private string AwayLetter(AwayReport report)
+    {
+        var footer = new StringBuilder();
+        if (report.Closed is { } closed)
+            footer.Append(closed == SlaveMerchantClosedReason.SoldOut
+                ? "It closed: everything was sold.\n"
+                : "It closed: its Slave Merchant time ran out.\n");
+        footer.Append("Collect your coins and items in Merchant > Slave Merchant.");
+
+        var body = new StringBuilder(report.Sales.Count == 0
+            ? "While you were away, nothing was sold.\n"
+            : "While you were away, your Slave Merchant sold:\n");
+        for (var i = 0; i < report.Sales.Count; i++)
+        {
+            var sale = report.Sales[i];
+            var name = gameDataService.GetItem(sale.ItemId)?.Name ?? sale.ItemId.ToString(CultureInfo.InvariantCulture);
+            var line = string.Format(CultureInfo.InvariantCulture, "{0} x{1} for {2:N0} coins\n", name, sale.Count, sale.Coins);
+            if (body.Length + line.Length + footer.Length + MoreLineLength > MailLimits.BodyMax)
+            {
+                body.Append(CultureInfo.InvariantCulture, $"and {report.Sales.Count - i} more\n");
+                break;
+            }
+
+            body.Append(line);
+        }
+
+        return body.Append(footer).ToString();
+    }
+
+    public async Task<bool> DeleteOwnerAsync(int characterId, AppDbContext unitOfWork, Func<Task> commit)
+    {
+        await gate.WaitAsync();
+        try
+        {
+            unitOfWork.SlaveMerchants.RemoveRange(
+                await unitOfWork.SlaveMerchants.Where(s => s.OwnerCharacterId == characterId).ToListAsync());
+            if (await unitOfWork.SlaveMerchantTimes.FindAsync(characterId) is { } time)
+                unitOfWork.SlaveMerchantTimes.Remove(time);
+
+            try
+            {
+                await commit();
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Could not delete character {CharacterId} with its slave merchant", characterId);
+                return false;
+            }
+
+            if (activeByOwner.TryGetValue(characterId, out var bot))
+                await DespawnAsync(bot);
+            return true;
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public async Task TickAsync(DateTime utcNow)
+    {
+        await gate.WaitAsync();
+        try
+        {
+            foreach (var bot in activeByOwner.Values.ToList())
+            {
+                try
+                {
+                    await TickAsync(bot, utcNow);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError(exception, "Slave merchant {BotName} of {Owner} could not be charged", bot.Name, bot.OwnerName);
+                }
+            }
+
+            try
+            {
+                await BeatAsync(utcNow);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "The slave merchants' heartbeat could not be saved");
+            }
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task BeatAsync(DateTime utcNow)
+    {
+        var ids = activeByOwner.Values.Select(bot => bot.SlaveDatabaseId).ToList();
+        if (ids.Count == 0)
+            return;
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        foreach (var data in await db.SlaveMerchants.Where(s => ids.Contains(s.Id)).ToListAsync())
+            data.HeartbeatAt = utcNow;
+        await db.SaveChangesAsync();
+    }
+
+    private async Task TickAsync(SlaveMerchantBotSession bot, DateTime utcNow)
+    {
+        if (bot.Trade.MerchantItems.All(entry => entry == null || entry.IsEmpty))
+        {
+            await CloseAsync(bot, SlaveMerchantClosedReason.SoldOut);
+            return;
+        }
+
+        if (utcNow < bot.PaidUntil)
+            return;
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var time = await db.SlaveMerchantTimes.FindAsync(bot.OwnerCharacterId);
+        if (time == null || time.Hours < 1)
+        {
+            await CloseAsync(bot, SlaveMerchantClosedReason.OutOfTime);
+            return;
+        }
+
+        var paidUntil = bot.PaidUntil + PaidSpan;
+        time.Hours--;
+        if (await db.SlaveMerchants.FindAsync(bot.SlaveDatabaseId) is { } data)
+            data.PaidUntil = paidUntil;
+        await db.SaveChangesAsync();
+        bot.PaidUntil = paidUntil;
+
+        if (sessionManager.GetByCharacterId(bot.OwnerCharacterId) is { } owner)
+            await owner.Client.SendPacket(SlaveMerchantPacketWriter.Time(time.Hours));
+    }
+
+    public async Task<int> LoadActiveAsync()
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var now = DateTime.UtcNow;
+        var loaded = 0;
+        foreach (var data in await db.SlaveMerchants.Where(s => s.IsActive).ToListAsync())
+        {
+            var paidLeft = data.PaidUntil - (data.HeartbeatAt == default ? now : data.HeartbeatAt);
+            data.PaidUntil = now + (paidLeft < TimeSpan.Zero ? TimeSpan.Zero : paidLeft > PaidSpan ? PaidSpan : paidLeft);
+            data.HeartbeatAt = now;
+
+            var bot = NewBot(data.OwnerCharacterId, data.OwnerAccountId, data.OwnerName, data.PaidUntil);
+            bot.SlaveDatabaseId = data.Id;
+            bot.Name = data.BotName;
+            bot.Nation = data.Nation;
+            bot.Race = data.Race;
+            bot.Class = data.Class;
+            bot.Level = data.Level > 0 ? data.Level : BotSession.DefaultBotLevel;
+            bot.Face = data.Face;
+            bot.Hair = data.Hair;
+            bot.ZoneId = data.ZoneId;
+            bot.X = data.X;
+            bot.Y = data.Y;
+            bot.Z = data.Z;
+            bot.Direction = data.Direction;
+            bot.Money = (int)Math.Min(data.EarnedNoah, ExchangePacketConstants.CoinMax);
+            bot.Trade.PremiumMerchant = data.MerchantType == MerchantType.PremiumSelling;
+            bot.Trade.MerchantAdvert = data.StallTitle;
+
+            WearVisuals(bot, ReadVisuals(data.EquipmentJson));
+            var items = ReadItems(data.ItemsJson);
+            for (var i = 0; i < items.Count && i < bot.Trade.MerchantItems.Length; i++)
+                PutOnStall(bot, i, items[i]);
+
+            await SpawnAsync(bot);
+            loaded++;
+        }
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Loaded {Count} slave merchants", loaded);
+        return loaded;
+    }
+
+    private bool IsOpen(SlaveMerchantBotSession bot) =>
+        activeByOwner.TryGetValue(bot.OwnerCharacterId, out var open) && ReferenceEquals(open, bot) && bot.Trade.IsMerchanting;
+
+    private SlaveMerchantBotSession NewBot(int ownerId, int ownerAccountId, string ownerName, DateTime paidUntil)
+    {
+        var botId = Interlocked.Increment(ref nextBotCharacterId);
+        var client = new BotClient { CharacterId = botId, AccountId = -botId };
+        return new SlaveMerchantBotSession(client, botId, -botId)
+        {
+            OwnerCharacterId = ownerId,
+            OwnerAccountId = ownerAccountId,
+            OwnerName = ownerName,
+            PaidUntil = paidUntil,
+            Hp = BotSession.DefaultBotHp,
+            MaxHp = BotSession.DefaultBotHp,
+            Mp = BotSession.DefaultBotMp,
+            MaxMp = BotSession.DefaultBotMp,
+            IsSitting = true,
+        };
+    }
+
+    private static void WearVisuals(SlaveMerchantBotSession bot, IEnumerable<StoredVisual> visuals)
+    {
+        foreach (var visual in visuals)
+        {
+            if (visual.Slot < 0 || visual.Slot >= bot.Inventory.Length)
+                continue;
+            var slot = bot.Inventory[visual.Slot];
+            slot.ItemId = visual.ItemId;
+            slot.Count = 1;
+            slot.Durability = visual.Durability;
+            slot.Flag = visual.Flag;
+        }
+    }
+
+    private static void PutOnStall(SlaveMerchantBotSession bot, int stallSlot, StoredItem item)
+    {
+        var bagSlot = InventoryConstants.InventoryStart + stallSlot;
+        var slot = bot.Inventory[bagSlot];
+        slot.ItemId = item.ItemId;
+        slot.Count = item.Count;
+        slot.Durability = item.Durability;
+        slot.Flag = item.Flag;
+        slot.ExpiresAt = item.ExpiresAt;
+        slot.UniqueId = item.UniqueId;
+
+        bot.Trade.MerchantItems[stallSlot] = new MerchantItem
+        {
+            ItemId = item.ItemId,
+            Count = item.Count,
+            Price = item.Price,
+            Durability = item.Durability,
+            OriginalSlot = (byte)bagSlot,
+        };
+    }
+
+    private static List<StoredItem> StallItems(SlaveMerchantBotSession bot)
+    {
+        var items = new List<StoredItem>();
+        foreach (var entry in bot.Trade.MerchantItems)
+        {
+            if (entry == null || entry.IsEmpty)
+                continue;
+            var slot = bot.Inventory[entry.OriginalSlot];
+            items.Add(new StoredItem(entry.ItemId, entry.Count, entry.Price,
+                slot.Durability, slot.Flag, slot.ExpiresAt, slot.UniqueId));
+        }
+
+        return items;
+    }
+
+    private static List<SlaveMerchantLine> Lines(IEnumerable<StoredItem> items) =>
+        items.Select(item => new SlaveMerchantLine(item.ItemId, item.Count, item.Price)).ToList();
+
+    private async Task SpawnAsync(SlaveMerchantBotSession bot)
+    {
+        bot.Trade.MerchantState = MerchantMode.Selling;
+        sessionManager.RegisterSession(bot);
+        sessionManager.Regions.AddToRegion(bot);
+        activeByOwner[bot.OwnerCharacterId] = bot;
+
+        await sessionManager.Regions.SendToRegion(
+            bot, MerchantBotService.BuildUserInOutPacket(bot, InOutType.In), excludeSender: true);
+        await sessionManager.Regions.SendToRegion(bot, MerchantPacketWriter.StallInserted(
+            MerchantPacketWriter.Succeeded, bot.Trade.MerchantAdvert, bot.CharacterId,
+            MerchantLifecycleService.StallFlags(bot), MerchantLifecycleService.DisplayItemIds(bot)), excludeSender: true);
+    }
+
+    private async Task<bool> CloseAsync(SlaveMerchantBotSession bot, SlaveMerchantClosedReason? closing)
     {
         try
         {
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-            await EnsureTableCreatedAsync(db);
-
-            var list = await db.SlaveMerchants.Where(b => b.IsActive).ToListAsync();
-            var loaded = 0;
-
-            foreach (var data in list)
+            if (await db.SlaveMerchants.FindAsync(bot.SlaveDatabaseId) is { } data)
             {
-                var expiresAt = data.ExpiresAt ?? data.CreatedAt.AddHours(1);
-                if (DateTime.UtcNow >= expiresAt)
-                {
-                    data.IsActive = false;
-                    data.FinishedAt = DateTime.UtcNow;
-                    continue;
-                }
-
-                var botId = Interlocked.Increment(ref nextSlaveBotCharacterId);
-                var client = new BotClient
-                {
-                    CharacterId = botId,
-                    AccountId = -botId,
-                };
-
-                var bot = new SlaveMerchantBotSession(client, botId, -botId)
-                {
-                    OwnerCharacterId = data.OwnerCharacterId,
-                    OwnerAccountId = data.OwnerAccountId,
-                    OwnerName = data.OwnerName,
-                    SlaveDatabaseId = data.Id,
-                    Name = data.BotName,
-                    Nation = data.Nation,
-                    Race = data.Race,
-                    Class = data.Class,
-                    Level = data.Level > 0 ? data.Level : BotSession.DefaultBotLevel,
-                    Face = data.Face,
-                    Hair = data.Hair,
-                    ZoneId = data.ZoneId,
-                    X = data.X,
-                    Y = data.Y,
-                    Z = data.Z,
-                    Direction = data.Direction,
-                    Hp = BotSession.DefaultBotHp,
-                    MaxHp = BotSession.DefaultBotHp,
-                    Mp = BotSession.DefaultBotMp,
-                    CreatedAt = data.CreatedAt,
-                    ExpiresAt = expiresAt,
-                };
-
-                // Restore equipment
-                if (!string.IsNullOrEmpty(data.EquipmentJson))
-                {
-                    try
-                    {
-                        var visuals = JsonSerializer.Deserialize<List<StoredVisual>>(data.EquipmentJson);
-                        if (visuals != null)
-                        {
-                            foreach (var v in visuals)
-                            {
-                                if (v.Slot < bot.Inventory.Length)
-                                {
-                                    bot.Inventory[v.Slot].ItemId = v.ItemId;
-                                    bot.Inventory[v.Slot].Durability = v.Durability;
-                                    bot.Inventory[v.Slot].Flag = v.Flag;
-                                    bot.Inventory[v.Slot].Count = 1;
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogWarning(ex, "Failed to deserialize slave bot equipment");
-                    }
-                }
-
-                // Restore merchant items
-                if (!string.IsNullOrEmpty(data.ItemsJson))
-                {
-                    try
-                    {
-                        var items = JsonSerializer.Deserialize<List<StoredItem>>(data.ItemsJson);
-                        if (items != null)
-                        {
-                            foreach (var it in items)
-                            {
-                                if (it.Slot < bot.Trade.MerchantItems.Length)
-                                {
-                                    var bagSlot = InventoryConstants.SlotMax + it.Slot;
-                                    bot.Inventory[bagSlot].ItemId = it.ItemId;
-                                    bot.Inventory[bagSlot].Count = it.Count;
-                                    bot.Inventory[bagSlot].Durability = it.Durability;
-
-                                    bot.Trade.MerchantItems[it.Slot] = new MerchantItem
-                                    {
-                                        ItemId = it.ItemId,
-                                        Count = it.Count,
-                                        Price = it.Price,
-                                        Durability = it.Durability,
-                                        OriginalSlot = (byte)bagSlot,
-                                    };
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogWarning(ex, "Failed to deserialize slave bot merchant items");
-                    }
-                }
-
-                bot.Trade.MerchantState = MerchantMode.Selling;
-                bot.Trade.MerchantAdvert = data.StallTitle;
-                bot.Trade.PremiumMerchant = data.MerchantType == MerchantType.PremiumSelling;
-                bot.IsSitting = true;
-
-                sessionManager.RegisterSession(bot);
-                sessionManager.Regions.AddToRegion(bot);
-                activeSlavesById[bot.CharacterId] = bot;
-                activeSlavesByOwner[data.OwnerCharacterId] = bot;
-
-                var inPacket = BuildUserInOutPacket(bot, InOutType.In);
-                await sessionManager.Regions.SendToRegion(bot, inPacket, excludeSender: true);
-
-                var displayItemIds = bot.Trade.MerchantItems
-                    .Where(item => item is { IsEmpty: false })
-                    .Select(item => item.ItemId)
-                    .ToArray();
-
-                var stallPacket = MerchantPacketWriter.StallInserted(
-                    MerchantPacketWriter.Succeeded,
-                    bot.Trade.MerchantAdvert,
-                    bot.CharacterId,
-                    (byte)(bot.Trade.PremiumMerchant ? 1 : 0),
-                    displayItemIds);
-
-                await sessionManager.Regions.SendToRegion(bot, stallPacket, excludeSender: true);
-                loaded++;
+                data.IsActive = false;
+                data.FinishedAt = DateTime.UtcNow;
+                data.EarnedNoah = bot.Money;
+                data.ItemsJson = JsonSerializer.Serialize(StallItems(bot));
+                if (closing.HasValue && sessionManager.GetByCharacterId(bot.OwnerCharacterId) == null)
+                    data.AwayReportJson = WriteReport(ReadReport(data.AwayReportJson) with { Closed = closing });
+                await db.SaveChangesAsync();
             }
-
-            await db.SaveChangesAsync();
-
-            logger.LogInformation("Loaded and spawned {Count} active slave merchant bots from database", loaded);
-            return loaded;
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            logger.LogError(ex, "[Slave Merchant] Failed to load active slave merchants from database.");
-            return 0;
+            logger.LogError(exception, "Slave merchant {BotName} of {Owner} could not be closed", bot.Name, bot.OwnerName);
+            return false;
         }
+
+        await DespawnAsync(bot);
+        if (closing.HasValue && sessionManager.GetByCharacterId(bot.OwnerCharacterId) is { } owner)
+            await owner.Client.SendPacket(SlaveMerchantPacketWriter.Closed(closing.Value));
+
+        logger.LogInformation("Slave merchant {BotName} of {Owner} closed ({Closing})", bot.Name, bot.OwnerName, closing);
+        return true;
     }
 
-    private static Task SendNoticeAsync(UserSession session, string message) =>
-        session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, message));
-
-    private static Packet BuildUserInOutPacket(UserSession session, InOutType type) =>
-        UserInfoPacketWriter.InOut(
-            (byte)type,
-            session.CharacterId,
-            type == InOutType.Out ? null : UserStateOf(session));
-
-    private static UserInfoPacketWriter.UserState UserStateOf(UserSession session)
+    private async Task DespawnAsync(SlaveMerchantBotSession bot)
     {
-        var visuals = new List<UserInfoPacketWriter.VisualItem>(InventoryConstants.VisualSlotCount);
-        foreach (var slot in InventoryConstants.VisualSlots)
+        activeByOwner.TryRemove(new KeyValuePair<int, SlaveMerchantBotSession>(bot.OwnerCharacterId, bot));
+        bot.Trade.MerchantState = MerchantMode.None;
+        await sessionManager.Regions.SendToRegion(bot, MerchantPacketWriter.StallClosed(bot.CharacterId), excludeSender: true);
+        await sessionManager.Regions.SendToRegion(bot, VisibilityPacketWriter.UserOut(bot.CharacterId), excludeSender: true);
+        sessionManager.RemoveSession(bot);
+    }
+
+    private async Task<bool> HoldsAnythingAsync(int characterId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return await db.SlaveMerchants.AnyAsync(s => s.OwnerCharacterId == characterId);
+    }
+
+    private async Task<int> HoursAsync(int characterId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return (await db.SlaveMerchantTimes.AsNoTracking().FirstOrDefaultAsync(t => t.CharacterId == characterId))?.Hours ?? 0;
+    }
+
+    private static async Task<int> AddHoursAsync(AppDbContext db, int characterId, int hours)
+    {
+        var time = await db.SlaveMerchantTimes.FindAsync(characterId);
+        if (time == null)
         {
-            var item = session.GetEquippedItem(slot);
-            visuals.Add(new UserInfoPacketWriter.VisualItem(item.ItemId, item.Durability, item.Flag));
+            time = new SlaveMerchantTimeData { CharacterId = characterId };
+            db.SlaveMerchantTimes.Add(time);
         }
 
-        return new UserInfoPacketWriter.UserState(
-            session.Name,
-            (byte)session.Nation,
-            session.KnightsId,
-            session.KnightsFame,
-            null,
-            0,
-            session.Level,
-            session.Race,
-            session.Class,
-            session.GetPosX,
-            session.GetPosZ,
-            session.GetPosY,
-            session.Face,
-            session.Hair,
-            (byte)UserPoseState.Sitting,
-            NeedParty: false,
-            session.IsGM,
-            session.IsPartyLeader,
-            (byte)session.Invisibility,
-            session.Direction,
-            session.ZoneId,
-            session.IsHidingHelmet,
-            session.DisplayTitleId,
-            visuals);
+        time.Hours = (int)Math.Clamp((long)time.Hours + hours, 0L, MaxHours);
+        return time.Hours;
     }
 
-    private class StoredItem
+    private static AwayReport ReadReport(string json) =>
+        string.IsNullOrEmpty(json) ? new AwayReport([], null) : JsonSerializer.Deserialize<AwayReport>(json) ?? new AwayReport([], null);
+
+    private static string WriteReport(AwayReport report) =>
+        report.Sales.Count == 0 && report.Closed == null ? string.Empty : JsonSerializer.Serialize(report);
+
+    private static List<StoredItem> ReadItems(string json) =>
+        string.IsNullOrEmpty(json) ? new List<StoredItem>() : JsonSerializer.Deserialize<List<StoredItem>>(json) ?? new List<StoredItem>();
+
+    private static List<StoredVisual> ReadVisuals(string json) =>
+        string.IsNullOrEmpty(json) ? new List<StoredVisual>() : JsonSerializer.Deserialize<List<StoredVisual>>(json) ?? new List<StoredVisual>();
+
+    private sealed record StoredItem(int ItemId, ushort Count, int Price, short Durability, byte Flag, long ExpiresAt, int UniqueId);
+
+    private sealed record StoredVisual(int Slot, int ItemId, short Durability, byte Flag);
+
+    private sealed record AwaySale(int ItemId, int Count, long Coins);
+
+    private sealed record AwayReport(List<AwaySale> Sales, SlaveMerchantClosedReason? Closed)
     {
-        public byte Slot { get; set; }
-        public int ItemId { get; set; }
-        public ushort Count { get; set; }
-        public int Price { get; set; }
-        public short Durability { get; set; }
+        public AwayReport WithSale(int itemId, int count, long coins)
+        {
+            var earlier = Sales.FirstOrDefault(sale => sale.ItemId == itemId);
+            var sales = Sales.Where(sale => sale.ItemId != itemId).ToList();
+            sales.Add(new AwaySale(itemId, count + (earlier?.Count ?? 0), coins + (earlier?.Coins ?? 0)));
+            return this with { Sales = sales };
+        }
     }
 
-    private class StoredVisual
+    private sealed class CollectTally
     {
-        public byte Slot { get; set; }
-        public int ItemId { get; set; }
-        public short Durability { get; set; }
-        public byte Flag { get; set; }
+        public long Paid { get; set; }
+        public long CoinsKept { get; set; }
+        public int Returned { get; set; }
+        public int Kept { get; set; }
     }
 }

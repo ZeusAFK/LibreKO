@@ -18,6 +18,7 @@ public readonly record struct MailItemPick(byte Slot, ushort Count);
 public interface IMailService
 {
     Task SendSystemMailAsync(int recipientCharacterId, string subject, string body, IReadOnlyList<MailAttachmentDraft> attachments, MailKind kind = MailKind.System);
+    void StageSystemMail(AppDbContext unitOfWork, int recipientCharacterId, string subject, string body);
     Task SendInboxAsync(UserSession session);
     Task SendUnreadAsync(UserSession session);
     Task ReadAsync(UserSession session, int mailId);
@@ -47,6 +48,9 @@ public class MailService(
         if (recipient != null)
             await NotifyNewMailAsync(recipient, MailLimits.SystemSenderName, db);
     }
+
+    public void StageSystemMail(AppDbContext unitOfWork, int recipientCharacterId, string subject, string body) =>
+        unitOfWork.Mails.Add(NewMail(null, MailLimits.SystemSenderName, recipientCharacterId, subject, body, [], MailKind.System));
 
     public async Task SendInboxAsync(UserSession session)
     {

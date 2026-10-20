@@ -96,6 +96,7 @@ internal static class ModelBuilderExtensions
         Configure<BotMerchantData>(modelBuilder, "BotMerchants");
         Configure<UserBotData>(modelBuilder, "UserBots");
         Configure<SlaveMerchantData>(modelBuilder, "SlaveMerchants");
+        Configure<SlaveMerchantTimeData>(modelBuilder, "SlaveMerchantTimes");
 
         Configure<Patch>(modelBuilder, "Patches");
         Configure<SeedState>(modelBuilder, "SeedStates");

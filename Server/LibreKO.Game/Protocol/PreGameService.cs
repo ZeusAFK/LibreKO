@@ -3,6 +3,7 @@ using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
 using LibreKO.Game.Protocol.Writers;
@@ -39,6 +40,8 @@ public class PreGameService(
     ICharacterSealService characterSeal,
     INationRankService nationRanks,
     ISocialPacketCoordinator social,
+    ISlaveMerchantService slaveMerchants,
+    AppDbContext unitOfWork,
     ILogger<PreGameService> logger) : IPreGameService
 {
     private const byte NewCharacterStartZone = (byte)ZoneId.Moradon;
@@ -202,7 +205,8 @@ public class PreGameService(
         }
 
         character.DeletionTime = DateTime.UtcNow;
-        await characterRepository.UpdateAsync(character);
+        if (!await slaveMerchants.DeleteOwnerAsync(character.Id, unitOfWork, () => characterRepository.UpdateAsync(character)))
+            return DeleteRejected();
 
         return PreGamePacketWriter.DeleteCharacter(DeleteCharacterResult.Succeeded, slot);
     }

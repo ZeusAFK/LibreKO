@@ -103,6 +103,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BotMerchantData> BotMerchants { get; set; }
     public DbSet<UserBotData> UserBots { get; set; }
     public DbSet<SlaveMerchantData> SlaveMerchants { get; set; }
+    public DbSet<SlaveMerchantTimeData> SlaveMerchantTimes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

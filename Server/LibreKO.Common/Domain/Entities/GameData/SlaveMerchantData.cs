@@ -16,7 +16,7 @@ public class SlaveMerchantData
     public byte Race { get; set; }
     public short Class { get; set; }
     public byte Face { get; set; }
-    public byte Hair { get; set; }
+    public int Hair { get; set; }
     public byte Level { get; set; }
     public byte ZoneId { get; set; }
     public float X { get; set; }
@@ -31,7 +31,9 @@ public class SlaveMerchantData
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? FinishedAt { get; set; }
-    public DateTime? ExpiresAt { get; set; }
+    public DateTime PaidUntil { get; set; }
+    public DateTime HeartbeatAt { get; set; }
+    public string AwayReportJson { get; set; } = string.Empty;
 
     internal class EntityConfiguration : IEntityTypeConfiguration<SlaveMerchantData>
     {
@@ -45,8 +47,25 @@ public class SlaveMerchantData
             builder.Property(p => p.StallTitle).HasMaxLength(128);
             builder.Property(p => p.ItemsJson).HasMaxLength(4000);
             builder.Property(p => p.EquipmentJson).HasMaxLength(2000);
+            builder.Property(p => p.AwayReportJson).HasMaxLength(2000);
             builder.HasIndex(p => p.OwnerCharacterId);
             builder.HasIndex(p => p.IsActive);
+        }
+    }
+}
+
+public class SlaveMerchantTimeData
+{
+    public int CharacterId { get; set; }
+    public int Hours { get; set; }
+
+    internal class EntityConfiguration : IEntityTypeConfiguration<SlaveMerchantTimeData>
+    {
+        public void Configure(EntityTypeBuilder<SlaveMerchantTimeData> builder)
+        {
+            builder.ToTable("SlaveMerchantTimes");
+            builder.HasKey(p => p.CharacterId);
+            builder.Property(p => p.CharacterId).ValueGeneratedNever();
         }
     }
 }

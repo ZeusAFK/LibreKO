@@ -290,7 +290,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         loadStartedAt = FrameClock.Now();
         BuildLoading();
         GlyphWarmer.Warm(this);
-        if (!await LoadStep("Preparingâ€¦", 0.04f, "Lighting and sky")) return;
+        if (!await LoadStep("Preparing…", 0.04f, "Lighting and sky")) return;
 
         ScenerySystem.BuildEnvironment();
         Config.ApplyGraphicsToViewport();
@@ -298,15 +298,15 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
 
         string zoneLabel = $"Zone {info.Zone}";
         foreach (var z in ZoneCatalog.All) if (z.Id == info.Zone) { zoneLabel = $"{z.Name} (zone {z.Id})"; break; }
-        if (!await LoadStep("Loading terrainâ€¦", 0.15f, zoneLabel)) return;
+        if (!await LoadStep("Loading terrain…", 0.15f, zoneLabel)) return;
 
         bool hasTerrain = ScenerySystem.BuildTerrain(info.Zone);
         var ground = GetNodeOrNull<MeshInstance3D>("Ground");
         if (hasTerrain) ground?.QueueFree();
         else if (ground != null) ground.Position = Coord.ToGodot(info.X, 0, info.Z);
         FxBillboard.GroundHeight = hasTerrain ? ScenerySystem.FxGroundHeight : null;
-        if (!await LoadStep("Loading world objectsâ€¦", 0.45f,
-            hasTerrain ? "Objects Â· collision Â· water Â· map FX" : "Flat placeholder (zone not baked)")) return;
+        if (!await LoadStep("Loading world objects…", 0.45f,
+            hasTerrain ? "Objects · collision · water · map FX" : "Flat placeholder (zone not baked)")) return;
 
         if (hasTerrain)
         {
@@ -324,12 +324,12 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
             NpcRoleFx.Warm(this);
             GD.Print("[load] world objects: complete");
         }
-        if (!await LoadStep("Loading characterâ€¦", 0.70f,
-            $"{(info.Name.Length > 0 ? info.Name : "You")} Â· Lv {Game.Session.Self.Sheet.Level} Â· {CharacterClassCatalog.DisplayName(info.Class)}")) return;
+        if (!await LoadStep("Loading character…", 0.70f,
+            $"{(info.Name.Length > 0 ? info.Name : "You")} · Lv {Game.Session.Self.Sheet.Level} · {CharacterClassCatalog.DisplayName(info.Class)}")) return;
 
         PlayerSystem.BuildSelf(info);
 
-        if (!await LoadStep("Entering worldâ€¦", 0.92f, "Spawning nearby players & monsters")) return;
+        if (!await LoadStep("Entering world…", 0.92f, "Spawning nearby players & monsters")) return;
 
         EntitySystem.Attach();
         Selection.Attach();
@@ -359,7 +359,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Game.Connection.AcknowledgeWorldLoaded();
 
         var fxWarm = Hotbar.WarmFxInView();
-        if (!await LoadStep("Syncing server timeâ€¦", 0.96f, $"{EntitySystem.Ents.Count} entities nearby")) return;
+        if (!await LoadStep("Syncing server time…", 0.96f, $"{EntitySystem.Ents.Count} entities nearby")) return;
         await WaitForServerEnvironment(2.5);
 
         if (!Alive) return;
@@ -565,7 +565,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
     {
         Diag.Phase = $"world-load {progress * 100.0:0}% {status}";
         GD.Print($"[load] {progress * 100.0:0}% {status} (+{FrameClock.Now() - loadStartedAt:0.0}s)" +
-                 (string.IsNullOrWhiteSpace(detail) ? "" : $" â€” {detail}"));
+                 (string.IsNullOrWhiteSpace(detail) ? "" : $" — {detail}"));
         loadingLayer?.Set(status, progress, detail);
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         return Alive;
@@ -744,7 +744,8 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Facet(GatherSystem.GatherInit, GatherSystem.GatherDispose);
         Features.Add(MerchantStalls = new MerchantStallsFeature(this, Game.Session.Merchant, Game.Requests.Merchant, EntitySystem, EntityPlatesSystem));
         Features.Add(MarketPrice = new MarketPriceFeature(this, Game.Session.MarketPrice, Game.Requests.MarketPrice, Game.Session.Premium));
-        Features.Add(Merchant = new MerchantFeature(this, Game.Session.Merchant, Game.Session.Premium, Game.Session.Progress, Game.Session.Self, Game.Requests.Merchant, EntityPlatesSystem, PlayerMenu, MerchantStalls, MarketPrice));
+        Features.Add(Merchant = new MerchantFeature(this, Game.Session.Merchant, Game.Session.Premium, Game.Session.Progress, Game.Session.Self, Game.Requests.Merchant, EntityPlatesSystem, PlayerMenu, MerchantStalls, MarketPrice, Game.Session.SlaveMerchant, Game.Requests.SlaveMerchant));
+        Features.Add(SlaveMerchantWindow = new SlaveMerchantFeature(this, Game.Session.Self, Game.Session.SlaveMerchant, Game.Requests.SlaveMerchant, Merchant));
         Features.Add(MerchantSearch = new MerchantSearchFeature(this, MarketPrice, Game.Requests.Merchant, Game.Requests.MerchantSearch, Game.Session.MerchantSearch, MerchantStalls, Whispers, Hotbar));
         Features.Add(MerchantBuy = new MerchantBuyFeature(this, Merchant, Game.Session.Merchant, Game.Requests.Merchant, Game.Session.Self, MerchantStalls, Game.Session.Progress));
         Features.Add(Premium = new PremiumFeature(this, Game.Session.Clan, Game.Session.Premium, Game.Session.Progress, Game.Requests.Premium, TopIcons));
@@ -808,8 +809,6 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Features.Add(VanguardWindow = new VanguardFeature(this, Game.Session.Self, Game.Session.Vanguard, Game.Requests.Vanguard, Merchant, Map));
         Features.Add(Nereid = new NereidFeature(this, Game.Session.BattleEvent, Game.Session.Self, BattleEvent, Map));
         Features.Add(ExpSealWindow = new ExpSealFeature(this, Game.Session.ExpSeal, Game.Session.Self, Game.Requests.ExpSeal, ExpBar));
-        Features.Add(SlaveMerchantWindow = new SlaveMerchantFeature(this, this, Game.Session.Self, Game.Requests.Chat, Game.Session.Merchant));
-        Merchant.SlaveMerchantRequested += () => SlaveMerchantWindow.Open();
         Features.Add(CommandList = new CommandListFeature(this, this, Game.Session.Clan, Game.Session.Party, Game.Session.UserOption, Game.Requests.Chat, Game.Requests.Clan, Game.Requests.ClanBattleWar, Game.Requests.UserOption));
         Features.Add(ClanMatchWindow = new ClanMatchFeature(this, Game.Session.BattleEvent, Game.Session.Clan, EntitySystem, EntityPlatesSystem));
         Features.Add(Bounty = new BountyFeature(this, Game.Session.Bounty, Game.Requests.Bounty));
@@ -918,7 +917,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
     [
         SkillAreaSystem, Map, QuestNotifications, NpcDialogWindow, Vendor, Loot, Repair, Warehouse.AmountPromptPanel, Events,
         Warehouse, Upgrade, Seal, PieceChange, ClassChange, GenderChangeWindow, NationTransfer, NameChange, Exchange,
-        MarketPrice, Merchant, MerchantSearch, MerchantBuy, Merchant.SellStallAndMenu, ClanCreate, ClanPoints, Warp, Rank, PetHatch, Pet, ShoppingMall, Rebirth, AdminPanel.SpawnPanel, KingTreasury, KingElection, Siege,
+        MarketPrice, Merchant, MerchantSearch, MerchantBuy, SlaveMerchantWindow, Merchant.SellStallAndMenu, ClanCreate, ClanPoints, Warp, Rank, PetHatch, Pet, ShoppingMall, Rebirth, AdminPanel.SpawnPanel, KingTreasury, KingElection, Siege,
         CapeWindow, ClanWarehouse.AmountPromptPanel, ClanWarehouse, VipWarehouse.AmountPromptPanel, VipWarehouse, Report, EquipView, ChangeHair, Achievement, MailCompose, Mail, Lottery,
         SpecialAuctionWindow, Attendance, Bounty, Tournament, DisguiseWindow, SkillPreset, TitlePicker, ChatHost,
         Messenger, Forces, ChatRoom, NationChannels, Fortune, DrakiBoard, ItemCombineWindow, Roulette, FishingHall, GlobalMap, Genie, AdminPanel,

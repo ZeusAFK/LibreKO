@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -8,9 +10,18 @@ namespace LibreKO.Game.World;
 public interface ICharacterStatePersister
 {
     Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default);
+    Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
+        CancellationToken cancellationToken = default);
     Task SetOnlineStateAsync(int characterId, bool isOnline, CancellationToken cancellationToken = default);
 
     Task SaveQuestStateAsync(UserSession session, CancellationToken cancellationToken = default);
+}
+
+public enum StateCommit
+{
+    Unchanged,
+    Saved,
+    Failed,
 }
 
 public class CharacterStatePersister(
@@ -68,10 +79,7 @@ public class CharacterStatePersister(
         var dailyOp = await dailyOpRepository.GetOrCreateByCharacterId(session.CharacterId);
         var account = await accountRepository.GetById(session.AccountId);
 
-        var destination = (character.MapId, character.X, character.Y, character.Z);
-        userSessionCharacterMapper.ApplyToCharacter(session, character);
-        if (session.NationTransferCommitted)
-            (character.MapId, character.X, character.Y, character.Z) = destination;
+        ApplyToCharacter(session, character, userSessionCharacterMapper);
         userSessionCharacterMapper.ApplyToWarehouse(session, warehouse);
         userSessionCharacterMapper.ApplyToDailyOps(session, dailyOp);
         if (account != null)
@@ -84,6 +92,52 @@ public class CharacterStatePersister(
         await petService.SaveAsync(session);
 
         return true;
+    }
+
+    public async Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
+        CancellationToken cancellationToken = default)
+    {
+        await session.CharacterPersistenceGate.WaitAsync(cancellationToken);
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var mapper = scope.ServiceProvider.GetRequiredService<IUserSessionCharacterMapper>();
+            var character = await db.Characters.FindAsync([session.CharacterId], cancellationToken);
+            if (character == null)
+            {
+                logger.LogError("Could not commit {Name}: character {CharacterId} is not stored", session.Name, session.CharacterId);
+                return StateCommit.Failed;
+            }
+
+            try
+            {
+                if (!await change(db))
+                    return StateCommit.Unchanged;
+
+                session.WithLock(active => ApplyToCharacter(active, character, mapper));
+                await db.SaveChangesAsync(cancellationToken);
+                return StateCommit.Saved;
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Could not commit {Name}; the change is undone", session.Name);
+                undo();
+                return StateCommit.Failed;
+            }
+        }
+        finally
+        {
+            session.CharacterPersistenceGate.Release();
+        }
+    }
+
+    private static void ApplyToCharacter(UserSession session, Character character, IUserSessionCharacterMapper mapper)
+    {
+        var destination = (character.MapId, character.X, character.Y, character.Z);
+        mapper.ApplyToCharacter(session, character);
+        if (session.NationTransferCommitted)
+            (character.MapId, character.X, character.Y, character.Z) = destination;
     }
 
     public async Task SetOnlineStateAsync(int characterId, bool isOnline, CancellationToken cancellationToken = default)

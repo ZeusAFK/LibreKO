@@ -35,6 +35,7 @@ public sealed class GameSession
     public EventScheduleSession EventSchedule { get; } = new();
     public ExchangeSession Exchange { get; } = new();
     public ExpSealSession ExpSeal { get; } = new();
+    public SlaveMerchantSession SlaveMerchant { get; } = new();
     public FishingHallSession FishingHall { get; } = new();
     public ForcesSession Forces { get; } = new();
     public FriendsSession Friends { get; } = new();
@@ -164,6 +165,7 @@ public sealed class GameSession
         ZoneAbility.ClearOwnStatus();
         Party.Clear();
         Friends.Clear();
+        SlaveMerchant.Clear();
     }
 
     internal void ResetPendingOperations()

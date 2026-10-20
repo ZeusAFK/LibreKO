@@ -159,6 +159,7 @@ public enum GameOpcodes : byte
     GS_FORCES = 0xDD,
     GS_ROOM_MEDIA = 0xDF,
     GS_NATION_TAX = 0xE0,
+    GS_SLAVE_MERCHANT = 0xE1,
     GS_FISHING_HALL = 0xE3,
     GS_TARGET_STATE = 0xE4,
     GS_EVENT_SCHEDULE = 0xDA,

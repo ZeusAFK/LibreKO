@@ -211,10 +211,18 @@ public sealed class DailyRankService(
             sameClass.Take(DailyRankPacketWriter.MaxNames).Select(climber => climber.Name).ToList());
     }
 
-    public Task CountMerchantSaleAsync(UserSession seller, long gold) =>
-        seller.IsGM || gold <= 0
+    public Task CountMerchantSaleAsync(UserSession seller, long gold)
+    {
+        var sellerId = seller switch
+        {
+            SlaveMerchantBotSession slave => slave.OwnerCharacterId,
+            { IsBot: true } or { IsGM: true } => 0,
+            _ => seller.CharacterId,
+        };
+        return sellerId == 0 || gold <= 0
             ? Task.CompletedTask
-            : CountAsync(repository => repository.AddMerchantGoldAsync(seller.CharacterId, gold));
+            : CountAsync(repository => repository.AddMerchantGoldAsync(sellerId, gold));
+    }
 
     public Task CountBlessedUpgradeAsync(UserSession session) =>
         session.IsGM ? Task.CompletedTask : CountAsync(repository => repository.AddBlessedUpgradeAsync(session.CharacterId));

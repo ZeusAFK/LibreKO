@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibreKO.Common.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261020014840_AddSlaveMerchants")]
+    [Migration("20261020042435_AddSlaveMerchants")]
     partial class AddSlaveMerchants
     {
         /// <inheritdoc />
@@ -3275,8 +3275,8 @@ namespace LibreKO.Common.Migrations
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<byte>("Hair")
-                        .HasColumnType("tinyint unsigned");
+                    b.Property<int>("Hair")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -3306,6 +3306,9 @@ namespace LibreKO.Common.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
 
+                    b.Property<DateTime>("PaidUntil")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<byte>("Race")
                         .HasColumnType("tinyint unsigned");
 
@@ -3333,6 +3336,19 @@ namespace LibreKO.Common.Migrations
                     b.HasIndex("OwnerCharacterId");
 
                     b.ToTable("SlaveMerchants", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.SlaveMerchantTimeData", b =>
+                {
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Hours")
+                        .HasColumnType("int");
+
+                    b.HasKey("CharacterId");
+
+                    b.ToTable("SlaveMerchantTimes", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.SpecialAuctionLotData", b =>

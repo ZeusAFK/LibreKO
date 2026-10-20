@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibreKO.Common.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261020053631_PendingModelUpdates")]
-    partial class PendingModelUpdates
+    [Migration("20261020060303_AddSlaveMerchantAwayReport")]
+    partial class AddSlaveMerchantAwayReport
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -3247,6 +3247,11 @@ namespace LibreKO.Common.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AwayReportJson")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
                     b.Property<string>("BotName")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -3269,17 +3274,17 @@ namespace LibreKO.Common.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("varchar(2000)");
 
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<byte>("Face")
                         .HasColumnType("tinyint unsigned");
 
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<byte>("Hair")
-                        .HasColumnType("tinyint unsigned");
+                    b.Property<int>("Hair")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("HeartbeatAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -3309,6 +3314,9 @@ namespace LibreKO.Common.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
 
+                    b.Property<DateTime>("PaidUntil")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<byte>("Race")
                         .HasColumnType("tinyint unsigned");
 
@@ -3336,6 +3344,19 @@ namespace LibreKO.Common.Migrations
                     b.HasIndex("OwnerCharacterId");
 
                     b.ToTable("SlaveMerchants", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.SlaveMerchantTimeData", b =>
+                {
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Hours")
+                        .HasColumnType("int");
+
+                    b.HasKey("CharacterId");
+
+                    b.ToTable("SlaveMerchantTimes", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.SpecialAuctionLotData", b =>

@@ -36,6 +36,7 @@ internal static class PacketReaders
             new EventScheduleReader(session.EventSchedule),
             new ExchangeReader(session.Exchange, session.Pet, session.Progress),
             new ExpSealReader(session.ExpSeal),
+            new SlaveMerchantReader(session.SlaveMerchant),
             new FishingHallReader(session.FishingHall),
             new ForcesReader(session.Forces),
             new FriendsReader(session.Friends),

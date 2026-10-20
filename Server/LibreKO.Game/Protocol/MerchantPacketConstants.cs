@@ -21,4 +21,9 @@ internal static class MerchantPacketConstants
 
     public static bool CanReceive(LibreKO.Game.World.UserSession session, long amount) =>
         amount >= 0 && session.Money + amount <= MaxPrice;
+
+    public static bool IsOwnStall(LibreKO.Game.World.UserSession merchant, LibreKO.Game.World.UserSession viewer) =>
+        merchant.CharacterId == viewer.CharacterId
+        || merchant is LibreKO.Game.World.SlaveMerchantBotSession slave
+            && (slave.OwnerCharacterId == viewer.CharacterId || slave.OwnerAccountId == viewer.AccountId);
 }

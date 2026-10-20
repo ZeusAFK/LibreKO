@@ -11,7 +11,7 @@ public interface IMerchantRequests
     void RemoveItem(byte stallSlot);
     void List(int merchantCharId);
     void Buy(int itemId, int count, byte merchantSlot, byte buyerSlot);
-    void BeginSell(string advert);
+    void BeginSell(string advert, bool toSlave = false);
     void BuyMerchantInsert(IReadOnlyList<MerchantWishItem> wanted);
     void BuyMerchantList(int merchantCharId);
     void BuyMerchantSell(byte sellerSlot, byte wantedSlot, int count);
@@ -69,10 +69,11 @@ public sealed class MerchantRequests : IMerchantRequests
         sink.Send(p);
     }
 
-    public void BeginSell(string advert)
+    public void BeginSell(string advert, bool toSlave = false)
     {
         var p = Merchant(MerchantSubOpcode.Insert);
         p.WriteString(advert);
+        if (toSlave) p.WriteByte(1);
         sink.Send(p);
     }
 

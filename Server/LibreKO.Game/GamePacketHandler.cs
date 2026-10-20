@@ -29,6 +29,7 @@ public class GamePacketHandler(
     IInGameOpcodeRouter opcodeRouter,
     ICollectionRaceService collectionRaceService,
     IMailService mailService,
+    ISlaveMerchantService slaveMerchants,
     IRespawnBlinkService respawnBlinkService,
     ILogger<GamePacketHandler> logger) : IPacketHandler
 {
@@ -289,6 +290,7 @@ public class GamePacketHandler(
                 await client.SendPacket(ItemMovePacketMapper.BuildResponse(session, (byte)ItemMoveSubOpcode.Move));
             await clanBattleService.RestoreAsync(session);
             await collectionRaceService.SyncPlayerAsync(session);
+            await slaveMerchants.ReportAwayAsync(session);
             await mailService.SendUnreadAsync(session);
 
             if (session.Hp <= 0)

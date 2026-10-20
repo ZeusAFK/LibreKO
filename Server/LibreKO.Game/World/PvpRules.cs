@@ -3,7 +3,7 @@ namespace LibreKO.Game.World;
 public static class PvpRules
 {
     public static bool CanAttackPlayer(UserSession attacker, UserSession target)
-        => target.Hp > 0 && !target.IsInfiltrating && !target.IsBlinking && IsHostileTarget(attacker, target);
+        => target.Hp > 0 && !target.IsBot && !target.IsInfiltrating && !target.IsBlinking && IsHostileTarget(attacker, target);
 
     public static bool IsEnemy(UserSession caster, UserSession target)
     {

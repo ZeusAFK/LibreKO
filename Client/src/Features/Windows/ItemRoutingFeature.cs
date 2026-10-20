@@ -44,6 +44,7 @@ internal sealed class ItemRoutingFeature : IFeature, IItemActions
         var def = ItemData.Get(self.Inventory[absSlot].ItemId);
         if (def == null) return;
         if (world.CharacterSealWindow.ShowSealedSheet(self.Inventory[absSlot])) return;
+        if (world.SlaveMerchantWindow.AskRedeem(absSlot)) return;
 
         if (ItemMove.RegionOf(absSlot) != ItemMove.Region.Grid
             || ItemData.EquipSlotFor(def) >= 0
@@ -51,11 +52,6 @@ internal sealed class ItemRoutingFeature : IFeature, IItemActions
             || def.Slot == InventoryFeature.ItemSlotCodeBag)
         {
             world.InventoryWindow.Activate(absSlot);
-            return;
-        }
-        if (SlaveMerchantFeature.IsSlaveMerchantItem(self.Inventory[absSlot].ItemId))
-        {
-            world.SlaveMerchantWindow.Open();
             return;
         }
         if (self.Inventory[absSlot].ItemId == ExpSeal.EmptyJar)

@@ -1,17 +1,18 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using LibreKO.Common.Infrastructure.Persistence;
+using LibreKO.Game.Protocol;
 
 namespace LibreKO.Game.World;
 
 public interface ISlaveMerchantService
 {
-    IReadOnlyCollection<SlaveMerchantBotSession> ActiveSlaves { get; }
-    SlaveMerchantBotSession? GetActiveSlaveByOwner(int ownerCharacterId);
-    Task<SlaveMerchantBotSession?> CreateSlaveMerchantAsync(UserSession session, string advertMessage);
-    Task RecordSaleAsync(SlaveMerchantBotSession bot, byte slot, int itemId, int count, long totalCost, string buyerName);
-    Task<long> ClaimEarningsAsync(UserSession session);
-    Task<bool> CloseSlaveAsync(UserSession session);
-    Task<string> GetStatusAsync(UserSession session);
-    Task SendSlaveStatusAsync(UserSession session);
-    Task<int> LoadActiveSlaveMerchantsAsync();
+    Task<bool> DeployAsync(UserSession owner, string advert);
+    Task<bool> SellAsync(SlaveMerchantBotSession bot, MerchantPurchase purchase, Func<Task> announce);
+    Task SendStatusAsync(UserSession owner);
+    Task CollectAsync(UserSession owner);
+    Task RedeemAsync(UserSession owner, byte bagPosition, int itemId);
+    Task<int?> GiveHoursAsync(string characterName, int hours);
+    Task ReportAwayAsync(UserSession owner);
+    Task<bool> DeleteOwnerAsync(int characterId, AppDbContext unitOfWork, Func<Task> commit);
+    Task TickAsync(DateTime utcNow);
+    Task<int> LoadActiveAsync();
 }

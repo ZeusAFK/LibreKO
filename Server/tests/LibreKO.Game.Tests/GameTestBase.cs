@@ -179,6 +179,7 @@ public abstract class GameTestBase
         services.AddSingleton<IMerchantBuyingService, MerchantBuyingService>();
         services.AddSingleton<IMerchantBotService, MerchantBotService>();
         services.AddSingleton<ISlaveMerchantService, SlaveMerchantService>();
+        services.AddSingleton<ISlaveMerchantPacketCoordinator, SlaveMerchantPacketCoordinator>();
         services.AddSingleton<MagicMeleeService>();
         services.AddSingleton<MagicRangedService>();
         services.AddSingleton<MagicOverTimeService>();

@@ -406,7 +406,7 @@ public class MerchantBotService : IMerchantBotService
     private static Task SendNoticeAsync(UserSession session, string message) =>
         session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, message));
 
-    private static Packet BuildUserInOutPacket(UserSession session, InOutType type) =>
+    internal static Packet BuildUserInOutPacket(UserSession session, InOutType type) =>
         UserInfoPacketWriter.InOut(
             (byte)type,
             session.CharacterId,

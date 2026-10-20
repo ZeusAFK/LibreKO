@@ -67,7 +67,7 @@ public class NpcAiTargetingService(
 
         foreach (var player in sessionManager.Regions.GetNearbyUsersForNpc(npc))
         {
-            if (player.Hp <= 0 || player.IsGM || player.ZoneId != npc.ZoneId || player.IsInvisible || player.IsBlinking)
+            if (player.Hp <= 0 || player.IsGM || player.IsBot || player.ZoneId != npc.ZoneId || player.IsInvisible || player.IsBlinking)
                 continue;
 
             if (!NpcHostility.IsAttackableBy(npc, player))

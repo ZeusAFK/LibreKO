@@ -66,7 +66,7 @@ public class MarketPriceService(
 
     public async Task RecordAsync(UserSession buyer, UserSession seller, int itemId, int unitPrice, int quantity)
     {
-        if (buyer.IsBot || seller.IsBot || unitPrice <= 0 || quantity <= 0)
+        if (buyer.IsBot || seller is { IsBot: true } and not SlaveMerchantBotSession || unitPrice <= 0 || quantity <= 0)
             return;
 
         var now = clock.GetUtcNow().UtcDateTime;

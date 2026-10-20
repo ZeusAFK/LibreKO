@@ -25,7 +25,7 @@ public class MerchantListingService(
     IMerchantLifecycleService merchantLifecycleService,
     IMarketPriceService marketPriceService,
     IDailyRankService dailyRankService,
-    ISlaveMerchantService slaveMerchantService,
+    ISlaveMerchantService slaveMerchants,
     ILogger<MerchantListingService> logger) : IMerchantListingService
 {
     public async Task AddItemAsync(UserSession session, Packet packet)
@@ -150,118 +150,72 @@ public class MerchantListingService(
         var itemId = packet.ReadInt();
         var count = packet.ReadUShort();
         var merchantSlot = packet.ReadByte();
-        var buyerSlot = packet.ReadByte();
-
-        if (merchantSlot >= session.Trade.MerchantItems.Length || count == 0)
-        {
-            await RefuseBuyAsync(session);
-            return;
-        }
+        packet.ReadByte();
 
         var merchant = sessionManager.GetByCharacterId(session.Trade.MerchantTargetUserId);
-        if (merchant == null || !merchant.Trade.IsMerchanting || merchant.CharacterId == session.CharacterId)
+        if (merchant == null || !merchant.Trade.IsMerchanting || IsOwnStall(merchant, session))
         {
             session.Trade.MerchantTargetUserId = -1;
             await RefuseBuyAsync(session);
             return;
         }
 
-        var merchantItem = merchant.Trade.MerchantItems[merchantSlot];
-        var itemData = gameDataService.GetItem(itemId);
-        if (merchantItem == null
-            || merchantItem.IsEmpty
-            || merchantItem.ItemId != itemId
-            || merchantItem.Count < count
-            || itemData == null
-            || (itemData.Countable == 0 && count != 1))
-        {
-            await RefuseBuyAsync(session);
+        var purchase = new MerchantPurchase(session, merchant, itemId, count, merchantSlot);
+        var sold = merchant is SlaveMerchantBotSession slave
+            ? await slaveMerchants.SellAsync(slave, purchase, () => AnnounceAsync(purchase))
+            : await SellAsync(purchase);
+        if (sold)
             return;
-        }
 
-        var unitPrice = merchantItem.Price;
-        var totalCost = (long)unitPrice * count;
-        if (!IsSanePrice(totalCost) || totalCost > session.Money || !CanReceive(merchant, totalCost))
-        {
-            await RefuseBuyAsync(session);
-            return;
-        }
+        logger.LogDebug("Merchant buy refused for {Name}: {Reason} (item {ItemId} x{Count} from stall {Slot} of {Merchant})",
+            session.Name, purchase.Refusal ?? "the sale could not be saved", itemId, count, merchantSlot, merchant.Name);
+        await RefuseBuyAsync(session);
+    }
 
-        var destination = session.FindSlotForItem(itemId, gameDataService, count);
-        if (destination < 0)
-        {
-            logger.LogDebug("Merchant buy refused for {Name}: no free bag slot for {ItemId}", session.Name, itemId);
-            await RefuseBuyAsync(session);
-            return;
-        }
+    private async Task<bool> SellAsync(MerchantPurchase purchase)
+    {
+        var applied = false;
+        UserSession.WithBoth(purchase.Buyer, purchase.Merchant, (_, _) => applied = purchase.TryApply(gameDataService));
+        if (!applied)
+            return false;
 
-        buyerSlot = (byte)(destination - InventoryConstants.SlotMax);
-        var destinationSlot = session.Inventory[destination];
-        var destinationIsNew = destinationSlot.IsEmpty;
-        session.Money -= (int)totalCost;
-        merchant.Money += (int)totalCost;
+        await AnnounceAsync(purchase);
+        if (purchase.StallIsEmpty)
+            await merchantLifecycleService.CloseAsync(purchase.Merchant, MerchantInOut.StallClosed);
+        return true;
+    }
 
-        if (destinationIsNew)
-        {
-            destinationSlot.ItemId = merchantItem.ItemId;
-            destinationSlot.Count = count;
-            destinationSlot.Durability = merchantItem.Durability;
-        }
-        else
-        {
-            destinationSlot.Count += count;
-        }
-
-        merchantItem.Count -= count;
-        var remainingCount = merchantItem.Count;
-
-        var sellerSlot = merchant.Inventory[merchantItem.OriginalSlot];
-        if (sellerSlot.ItemId == merchantItem.ItemId)
-        {
-            sellerSlot.Count -= Math.Min(count, sellerSlot.Count);
-            if (sellerSlot.Count == 0)
-                sellerSlot.Clear();
-        }
-
-        if (remainingCount == 0)
-            merchant.Trade.MerchantItems[merchantSlot] = new MerchantItem();
-
+    private async Task AnnounceAsync(MerchantPurchase purchase)
+    {
+        var buyer = purchase.Buyer;
+        var merchant = purchase.Merchant;
         logger.LogInformation("{BuyerName} bought item {ItemId} x{Count} from {SellerName} for {Cost} gold",
-            session.Name, itemId, count, merchant.Name, totalCost);
+            buyer.Name, purchase.ItemId, purchase.Count, merchant.Name, purchase.Cost);
 
-        session.RecalculateStatsWithBuffs(gameDataService);
-        await userNotificationService.SendStackChangeAsync(session, (byte)destination,
-            destinationSlot.ItemId, destinationSlot.Count, destinationSlot.Durability, destinationIsNew);
-        await userNotificationService.SendStackChangeAsync(merchant, (byte)merchantItem.OriginalSlot,
+        var destination = buyer.Inventory[purchase.Destination];
+        var sellerSlot = merchant.Inventory[purchase.SellerSlot];
+        buyer.RecalculateStatsWithBuffs(gameDataService);
+        await userNotificationService.SendStackChangeAsync(buyer, (byte)purchase.Destination,
+            destination.ItemId, destination.Count, destination.Durability, purchase.DestinationIsNew);
+        await userNotificationService.SendStackChangeAsync(merchant, purchase.SellerSlot,
             sellerSlot.ItemId, sellerSlot.Count, sellerSlot.Durability);
-        var buyResult = MerchantPacketWriter.ItemBought(
-            MerchantSubOpcode.ItemBuy, itemId, remainingCount, merchantSlot, buyerSlot);
-        await session.Client.SendPacket(buyResult);
-        await userNotificationService.SendGoldLossAsync(session, (int)totalCost);
-        await userNotificationService.SendGoldGainAsync(merchant, (int)totalCost);
-        await userNotificationService.SendWeightChangeAsync(session);
+        await buyer.Client.SendPacket(MerchantPacketWriter.ItemBought(
+            MerchantSubOpcode.ItemBuy, purchase.ItemId, purchase.RemainingCount, purchase.MerchantSlot,
+            (byte)(purchase.Destination - InventoryConstants.SlotMax)));
+        await userNotificationService.SendGoldLossAsync(buyer, (int)purchase.Cost);
+        await userNotificationService.SendGoldGainAsync(merchant, (int)purchase.Cost);
+        await userNotificationService.SendWeightChangeAsync(buyer);
         merchant.RecalculateStatsWithBuffs(gameDataService);
         await userNotificationService.SendWeightChangeAsync(merchant);
 
-        var soldNotify = MerchantPacketWriter.ItemSold(
-            MerchantSubOpcode.ItemPurchased, itemId, session.Name);
-        await merchant.Client.SendPacket(soldNotify);
-        await marketPriceService.RecordAsync(session, merchant, itemId, unitPrice, count);
-        await dailyRankService.CountMerchantSaleAsync(merchant, totalCost);
+        await merchant.Client.SendPacket(MerchantPacketWriter.ItemSold(
+            MerchantSubOpcode.ItemPurchased, purchase.ItemId, buyer.Name));
+        await marketPriceService.RecordAsync(buyer, merchant, purchase.ItemId, purchase.UnitPrice, purchase.Count);
+        await dailyRankService.CountMerchantSaleAsync(merchant, purchase.Cost);
 
-        if (merchant is SlaveMerchantBotSession slaveBot)
-        {
-            await slaveMerchantService.RecordSaleAsync(slaveBot, merchantSlot, itemId, count, totalCost, session.Name);
-        }
-
-        if (merchant.Trade.MerchantItems.All(entry => entry == null || entry.IsEmpty))
-        {
-            await merchantLifecycleService.CloseAsync(merchant, MerchantInOut.StallClosed);
-            return;
-        }
-
-        if (remainingCount == 0 && merchantSlot < MerchantLifecycleService.ShowcaseSlots(merchant))
-            await sessionManager.Regions.SendToRegion(merchant, ShowcasePacket(merchant, merchantSlot), excludeSender: false);
+        if (purchase.RemainingCount == 0 && !purchase.StallIsEmpty
+            && purchase.MerchantSlot < MerchantLifecycleService.ShowcaseSlots(merchant))
+            await sessionManager.Regions.SendToRegion(merchant, ShowcasePacket(merchant, purchase.MerchantSlot), excludeSender: false);
     }
 
     private static Packet ShowcasePacket(UserSession merchant, byte slot)

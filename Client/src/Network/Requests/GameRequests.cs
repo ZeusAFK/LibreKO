@@ -28,6 +28,7 @@ public sealed class GameRequests
     public IEventScheduleRequests EventSchedule { get; }
     public IExchangeRequests Exchange { get; }
     public IExpSealRequests ExpSeal { get; }
+    public ISlaveMerchantRequests SlaveMerchant { get; }
     public IFishingHallRequests FishingHall { get; }
     public IForcesRequests Forces { get; }
     public IFriendsRequests Friends { get; }
@@ -116,6 +117,7 @@ public sealed class GameRequests
         EventSchedule = new EventScheduleRequests(sink);
         Exchange = new ExchangeRequests(sink);
         ExpSeal = new ExpSealRequests(sink);
+        SlaveMerchant = new SlaveMerchantRequests(sink);
         FishingHall = new FishingHallRequests(sink);
         Forces = new ForcesRequests(sink);
         Friends = new FriendsRequests(sink);

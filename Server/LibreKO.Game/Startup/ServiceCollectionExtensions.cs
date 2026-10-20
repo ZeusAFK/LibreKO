@@ -275,6 +275,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ILotteryService, LotteryService>();
         services.AddSingleton<IMerchantBotService, MerchantBotService>();
         services.AddSingleton<ISlaveMerchantService, SlaveMerchantService>();
+        services.AddSingleton<ISlaveMerchantPacketCoordinator, SlaveMerchantPacketCoordinator>();
         services.AddSingleton<IScriptEffectApplier, ScriptEffectApplier>();
         services.AddSingleton<LibreKO.Quests.Localization.IQuestTranslations>(provider =>
             QuestTranslationLoader.Load(provider));
@@ -337,6 +338,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService(sp => sp.GetRequiredService<NationRankService>());
         services.AddHostedService<ConcurrentPopulationUpdateService>();
         services.AddHostedService<GenieTickService>();
+        services.AddHostedService<SlaveMerchantTickService>();
         services.AddHostedService(sp => sp.GetRequiredService<BifrostEventService>());
         services.AddHostedService(sp => sp.GetRequiredService<SocketServer>());
         services.AddHostedService<GracefulShutdownService>();

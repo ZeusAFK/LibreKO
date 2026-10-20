@@ -14,9 +14,13 @@ internal sealed class MerchantFeature : IFeature, IEscapable
     private readonly PlayerMenuFeature playerMenu;
     private readonly MerchantStallsFeature stalls;
     private readonly MarketPriceFeature marketPriceWindow;
+    private readonly SlaveMerchantSession slaveMerchant;
+    private readonly ISlaveMerchantRequests slaveRequests;
 
-    public MerchantFeature(IWorldContext context, MerchantSession merchant, PremiumSession premium, ProgressSession progress, SelfSession self, IMerchantRequests requests, EntityPlatesSystem entityPlates, PlayerMenuFeature playerMenu, MerchantStallsFeature stalls, MarketPriceFeature marketPriceWindow)
+    public MerchantFeature(IWorldContext context, MerchantSession merchant, PremiumSession premium, ProgressSession progress, SelfSession self, IMerchantRequests requests, EntityPlatesSystem entityPlates, PlayerMenuFeature playerMenu, MerchantStallsFeature stalls, MarketPriceFeature marketPriceWindow, SlaveMerchantSession slaveMerchant, ISlaveMerchantRequests slaveRequests)
     {
+        this.slaveMerchant = slaveMerchant;
+        this.slaveRequests = slaveRequests;
         this.context = context;
         this.merchant = merchant;
         this.premium = premium;
@@ -42,6 +46,8 @@ internal sealed class MerchantFeature : IFeature, IEscapable
     private Label sellTotal = null!;
     private Label sellBalance = null!;
     private Label sellStatus = null!;
+    private CheckBox toSlave = null!;
+    private Label slaveCaption = null!;
     private bool sellStallShown;
 
     private readonly MerchantStallItem[] myStall = new MerchantStallItem[MerchantUi.StallSlots];
@@ -71,6 +77,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         merchant.MerchantSoldEvent += OnSold;
         merchant.MerchantInsertedEvent += OnInserted;
         merchant.MerchantStallClosedEvent += OnStallClosed;
+        slaveMerchant.HoursEvent += ShowSlaveHours;
         for (int i = 0; i < myStallSrc.Length; i++) myStallSrc[i] = -1;
         marketPriceWindow.PriceCached += RefreshStallPriceHint;
     }
@@ -101,6 +108,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         merchant.MerchantSoldEvent -= OnSold;
         merchant.MerchantInsertedEvent -= OnInserted;
         merchant.MerchantStallClosedEvent -= OnStallClosed;
+        slaveMerchant.HoursEvent -= ShowSlaveHours;
     }
 
     private void BuildPanels()
@@ -179,6 +187,24 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         };
         advertRow.AddChild(SellAdvert);
 
+        const string slaveHint = "Hand the stall to a Slave Merchant: a copy of you keeps selling while you play or log out. Each hour uses one hour of Slave Merchant time.";
+        var slaveRow = new HBoxContainer();
+        slaveRow.AddThemeConstantOverride("separation", 6);
+        root.AddChild(slaveRow);
+        toSlave = new CheckBox { FocusMode = Control.FocusModeEnum.None, TooltipText = slaveHint };
+        slaveRow.AddChild(toSlave);
+        slaveCaption = UiTheme.Text("", 12, UiTheme.TextHi);
+        slaveCaption.TooltipText = slaveHint;
+        slaveCaption.MouseFilter = Control.MouseFilterEnum.Stop;
+        slaveCaption.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        slaveCaption.GuiInput += input =>
+        {
+            if (input is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+                toSlave.ButtonPressed = !toSlave.ButtonPressed;
+        };
+        slaveRow.AddChild(slaveCaption);
+        ShowSlaveHours(slaveMerchant.Hours);
+
         sellStatus = UiTheme.Text("", 12, UiTheme.TextLo);
         sellStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         root.AddChild(sellStatus);
@@ -238,7 +264,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         MenuShown = false;
     }
 
-    internal void OpenSellStall()
+    private void OpenSellStall()
     {
         CloseMenu();
         if (context.Self.Dead) return;
@@ -268,6 +294,8 @@ internal sealed class MerchantFeature : IFeature, IEscapable
 
         for (int i = 0; i < myStall.Length; i++) { myStall[i] = default; myStallSrc[i] = -1; }
         SetSellStatus("", false);
+        toSlave.ButtonPressed = false;
+        slaveRequests.Status();
         RefreshSellStall();
         SellStallPanel.Visible = true;
         sellStallShown = true;
@@ -288,12 +316,22 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         int staged = 0;
         foreach (var slot in myStall) if (!slot.IsEmpty) staged++;
         if (staged == 0) { SetSellStatus("Put at least one item on the stall.", true); return; }
+        if (toSlave.ButtonPressed && SlaveMerchant.HasNoTime(slaveMerchant.Hours))
+        {
+            SetSellStatus("You have no Slave Merchant time. Use a Slave Merchant Certificate.", true);
+            return;
+        }
 
         sellStallShown = false;
         SellStallPanel.Visible = false;
         context.Tooltips.Hide();
-        requests.BeginSell(SellAdvert.Text.Trim());
+        requests.BeginSell(SellAdvert.Text.Trim(), toSlave.ButtonPressed);
     }
+
+    private void ShowSlaveHours(int hours) =>
+        slaveCaption.Text = hours == SlaveMerchantSession.UnknownHours
+            ? "Slave Merchant"
+            : $"Slave Merchant ({hours} {(hours == 1 ? "hour" : "hours")} left)";
 
     internal void StageStallItem(int gridIndex)
     {
@@ -461,12 +499,6 @@ internal sealed class MerchantFeature : IFeature, IEscapable
 
     internal void OnList(int merchantId, MerchantStallItem[] items)
     {
-        if (merchantId == 0)
-        {
-            if (shopShown) CloseShop();
-            return;
-        }
-
         CloseAmountPrompt();
         SetShopStatus("", false);
         shopTargetId = merchantId;
@@ -482,7 +514,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
     {
         string owner = context.Entities.Views.TryGetValue(merchantId, out var ent) ? ent.Name : "Shop";
         return Adverts.TryGetValue(merchantId, out string? advert) && advert.Length > 0
-            ? $"{owner} â€” {advert}"
+            ? $"{owner} — {advert}"
             : owner;
     }
 
@@ -812,11 +844,11 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         switch (verdict)
         {
             case MarketPriceVerdict.Low:
-                amountMarketHint.Text = $"{MarketPriceFeature.MarketPriceText(MarketPriceLowText, "Low Price")} Â· {UiKit.GoldAmount(average)}";
+                amountMarketHint.Text = $"{MarketPriceFeature.MarketPriceText(MarketPriceLowText, "Low Price")} · {UiKit.GoldAmount(average)}";
                 amountMarketHint.AddThemeColorOverride("font_color", UiTheme.Good);
                 break;
             case MarketPriceVerdict.Expensive:
-                amountMarketHint.Text = $"{MarketPriceFeature.MarketPriceText(MarketPriceExpensiveText, "Expensive")} Â· {UiKit.GoldAmount(average)}";
+                amountMarketHint.Text = $"{MarketPriceFeature.MarketPriceText(MarketPriceExpensiveText, "Expensive")} · {UiKit.GoldAmount(average)}";
                 amountMarketHint.AddThemeColorOverride("font_color", UiTheme.Bad);
                 break;
             default:
