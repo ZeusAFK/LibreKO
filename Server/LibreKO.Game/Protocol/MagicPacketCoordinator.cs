@@ -172,7 +172,10 @@ public class MagicPacketCoordinator(
                 await HandleCastingAsync(session, magic, targetId, data);
                 break;
             case MagicProcessOpcode.Flying:
-                if (!AllowTiming(session, magic, magicTimingService.CheckRelease(session, magic), magicOpcode))
+                if (!AllowTiming(session, magic, magicTimingService.CheckRelease(session, magic), magicOpcode)
+                    || (magic.PrimaryType == MagicSkillType.Ranged
+                        && (!AllowTiming(session, magic, magicTimingService.CheckVolley(session), magicOpcode)
+                            || !magicExecutionService.AllowsTarget(session, magic, skillId, targetId, data))))
                 {
                     await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
                     return;
@@ -196,6 +199,14 @@ public class MagicPacketCoordinator(
                         session,
                         MagicProcessPacketWriter.Create(MagicProcessOpcode.Effecting, magic.Id, (short)session.CharacterId, targetId, data),
                         excludeSender: false);
+                    return;
+                }
+
+                if (!OpensTransformationList(session, magic)
+                    && !magicExecutionService.AllowsTarget(session, magic, skillId, targetId, data))
+                {
+                    magicTimingService.OnCastAborted(session, skillId);
+                    await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
                     return;
                 }
 
@@ -451,7 +462,7 @@ public class MagicPacketCoordinator(
                 return;
             }
 
-            if (MagicSkillRequirement.IsClassSkill(magic) && !HoldsABow(session))
+            if (LoosesArrows(magic) && AttackReach.HeldBow(session, gameDataService) == null)
             {
                 await SendMagicFailAsync(session, magic.Id, MagicFailCode.KillFlying);
                 return;
@@ -495,10 +506,8 @@ public class MagicPacketCoordinator(
             excludeSender: false);
     }
 
-    private bool HoldsABow(UserSession session) =>
-        IsBow(session.GetEquippedItem(InventoryConstants.LeftHand)) || IsBow(session.GetEquippedItem(InventoryConstants.RightHand));
-
-    private bool IsBow(ItemSlot slot) => !slot.IsEmpty && gameDataService.GetItem(slot.ItemId)?.IsBow() == true;
+    private bool LoosesArrows(MagicData magic) =>
+        magic.UseItem != 0 && gameDataService.GetItem(magic.UseItem)?.Category == ItemKind.Arrow;
 
     private async Task<bool> TryPaySkillCostAsync(UserSession session, MagicData magic, int skillId)
     {

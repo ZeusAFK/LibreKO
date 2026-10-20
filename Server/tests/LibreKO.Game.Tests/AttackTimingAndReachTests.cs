@@ -77,6 +77,42 @@ public class AttackTimingAndReachTests : GameTestBase
         worm.Hp.Should().Be(worm.MaxHp);
     }
 
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(67, true)]
+    public async Task ARunningAttackerReachesWhatItsLastReportLagsBehind(short speed, bool reached)
+    {
+        using var provider = Provider(new Clock());
+        var (attacker, sent) = Attacker(provider);
+        attacker.MoveOldSpeed = speed;
+        var worm = Monster(provider, Here + 14);
+
+        await Swing(provider, attacker, worm);
+
+        (Swings(sent) == 1).Should().Be(reached, "a sprinter's position is up to 1.5 s old");
+    }
+
+    [Fact]
+    public async Task BareHandsSwingWithTheSameMarginAsAWeapon()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        attacker.Inventory[InventoryConstants.RightHand].ItemId = 0;
+        attacker.Inventory[InventoryConstants.RightHand].Count = 0;
+        var worm = Monster(provider, Here + 1);
+        const int swings = 4;
+        const int everyMs = 900;
+
+        for (var swing = 0; swing < swings; swing++)
+        {
+            await Swing(provider, attacker, worm);
+            clock.Advance(everyMs);
+        }
+
+        Swings(sent).Should().Be(swings, "a fist swings every second, and a client a tenth fast still lands");
+    }
+
     [Fact]
     public async Task ATargetInAnotherRoomIsNotAttacked()
     {

@@ -19,11 +19,11 @@ public class MagicAreaCastTests : GameTestBase
     private const int Firebolt = 110503;
     private const int BurstNova = 110570;
     private const int Sweep = 105725;
+    private const int Flyer = 114515;
     private const int AreaTarget = -1;
     private const byte Ronark = (byte)ZoneId.RonarkLand;
     private const byte Moradon = (byte)ZoneId.Moradon;
     private const short MeteorRange = 20;
-    private const byte NeutralSpellCharisma = 186;
     private const int WormHp = 100_000;
     private const float Here = 300f;
 
@@ -85,6 +85,7 @@ public class MagicAreaCastTests : GameTestBase
     [Theory]
     [InlineData(Sweep, true)]
     [InlineData(Slash, false)]
+    [InlineData(Flyer, false)]
     public async Task OnlyAnAreaMeleeSkillSweepsTheArea(int skill, bool hurt)
     {
         using var provider = Provider();
@@ -129,13 +130,15 @@ public class MagicAreaCastTests : GameTestBase
             [Meteor] = new() { Id = Meteor, DirectType = 1, FirstDamage = -120, Attribute = 1, Radius = 5 },
             [Firebolt] = new() { Id = Firebolt, DirectType = 1, FirstDamage = -120, Attribute = 1, Radius = 5 },
             [BurstNova] = new() { Id = BurstNova, DirectType = 1, FirstDamage = -120, Attribute = 1, Radius = 5 },
+            [Sweep] = new() { Id = Sweep, Radius = 5 },
         });
-        foreach (var (id, moral) in new[] { (Slash, SkillMoral.Enemy), (Sweep, SkillMoral.AreaEnemy) })
+        foreach (var (id, moral) in new[] { (Slash, SkillMoral.Enemy), (Sweep, SkillMoral.AreaEnemy), (Flyer, SkillMoral.AreaEnemy) })
             gameData.GetMagic(id).Returns(new MagicData { Id = id, Type1 = (byte)MagicSkillType.Melee, Moral = (byte)moral, Range = 5 });
         gameData.MagicType1Table.Returns(new Dictionary<int, MagicType1Data>
         {
             [Slash] = new() { Id = Slash, HitType = 0, HitRate = 1000, Hit = 300 },
             [Sweep] = new() { Id = Sweep, HitType = 0, HitRate = 1000, Hit = 300 },
+            [Flyer] = new() { Id = Flyer, HitType = 0, HitRate = 1000, Hit = 300 },
         });
     });
 
@@ -149,7 +152,7 @@ public class MagicAreaCastTests : GameTestBase
         var player = sessions.CreateSession(client, id, id + 100);
         player.Name = $"Player{id}";
         player.Level = 70;
-        player.Magic = NeutralSpellCharisma;
+        player.Magic = ListedSpellDamageCharisma;
         player.Nation = nation;
         player.ZoneId = zone;
         player.X = x;

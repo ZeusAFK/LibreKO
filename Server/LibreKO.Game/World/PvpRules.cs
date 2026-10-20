@@ -1,9 +1,11 @@
-namespace LibreKO.Game.World;
+﻿namespace LibreKO.Game.World;
 
 public static class PvpRules
 {
     public static bool CanAttackPlayer(UserSession attacker, UserSession target)
-        => target.Hp > 0 && !target.IsBot && !target.IsInfiltrating && !target.IsBlinking && IsHostileTarget(attacker, target);
+        => target.Hp > 0 && !target.IsBot && !target.IsInfiltrating && !target.IsBlinking
+            && !ZoneSafetyAreas.IsInEnemySafetyArea(attacker) && !ZoneSafetyAreas.IsInOwnSafetyArea(target)
+            && IsHostile(attacker, target);
 
     public static bool IsEnemy(UserSession caster, UserSession target)
     {
@@ -19,13 +21,9 @@ public static class PvpRules
     public static bool IsPenaltyFreeDeath(UserSession victim, UserSession killer)
         => victim.IsInArena || killer.IsInArena;
 
-    private static bool IsHostileTarget(UserSession attacker, UserSession target)
+    public static bool IsHostile(UserSession attacker, UserSession target)
     {
         if (attacker.CharacterId == target.CharacterId || attacker.ZoneId != target.ZoneId)
-            return false;
-
-        if (ZoneSafetyAreas.IsInEnemySafetyArea(attacker)
-            || ZoneSafetyAreas.IsInOwnSafetyArea(target))
             return false;
 
         if (attacker.IsInArena || target.IsInArena)

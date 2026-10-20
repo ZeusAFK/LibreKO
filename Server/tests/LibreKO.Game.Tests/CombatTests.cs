@@ -2516,7 +2516,7 @@ public class CombatTests : GameTestBase
         var mage = sessionManager.CreateSession(client, characterId: 562, accountId: 662);
         mage.Name = "Mage";
         mage.Class = 209;
-        mage.Magic = 186;
+        mage.Magic = ListedSpellDamageCharisma;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;
@@ -2610,7 +2610,7 @@ public class CombatTests : GameTestBase
         var mage = sessionManager.CreateSession(client, characterId: 563, accountId: 663);
         mage.Name = "Mage";
         mage.Class = 209;
-        mage.Magic = 186;
+        mage.Magic = ListedSpellDamageCharisma;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;
@@ -2739,7 +2739,7 @@ public class CombatTests : GameTestBase
         var mage = sessionManager.CreateSession(client, characterId: 5631, accountId: 6631);
         mage.Name = "Mage";
         mage.Class = 209;
-        mage.Magic = 186;
+        mage.Magic = ListedSpellDamageCharisma;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;

@@ -16,7 +16,6 @@ public class MagicCancelTests : GameTestBase
     private const int MultipleShot = 102040;
     private const int Healing = 211509;
     private const int FireBlast = 110518;
-    private const byte NeutralSpellCharisma = 186;
 
     [Fact]
     public async Task CancellingADrawFreesTheCasterForTheNextSkill()
@@ -382,7 +381,7 @@ public class MagicCancelTests : GameTestBase
         var caster = sessions.CreateSession(client, characterId: 710, accountId: 810);
         caster.Name = "Archer";
         caster.Class = 102;
-        caster.Magic = NeutralSpellCharisma;
+        caster.Magic = ListedSpellDamageCharisma;
         caster.Level = 60;
         caster.Nation = AccountNation.Karus;
         caster.ZoneId = 21;

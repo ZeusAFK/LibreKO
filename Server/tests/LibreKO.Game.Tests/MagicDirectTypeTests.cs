@@ -230,6 +230,10 @@ public class MagicDirectTypeTests : GameTestBase
                 {
                     [bladeOfHate] = new() { Id = bladeOfHate, HitType = 0, HitRate = 100, Hit = 150, AddDamage = 100 }
                 });
+                gameData.MagicType3Table.Returns(new Dictionary<int, MagicType3Data>
+                {
+                    [bladeOfHate] = new() { Id = bladeOfHate, Radius = 5 }
+                });
             });
         var sent = new List<Packet>();
         var (sessionManager, caster, client) = CreateCaster(provider, sent);

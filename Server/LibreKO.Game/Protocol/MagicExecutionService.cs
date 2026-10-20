@@ -8,6 +8,7 @@ namespace LibreKO.Game.Protocol;
 
 public interface IMagicExecutionService
 {
+    bool AllowsTarget(UserSession session, MagicData magic, int skillId, int targetId, int[] data);
     Task ExecuteAsync(UserSession session, MagicData magic, int skillId, int targetId, int[] data);
     Task CancelAsync(UserSession session, int skillId);
 }
@@ -23,22 +24,16 @@ public class MagicExecutionService(
     private const int AreaTarget = -1;
     private const int AreaCentreX = 0;
     private const int AreaCentreZ = 2;
-    private const float MeleeReach = 6f;
-    private const float PlayerBodyRadius = 1f;
     private const float RangedPlayerShortcut = 38f;
     // The client allows spells 15 m past their range on players; the rest covers movement.
     private const float SkillReachSlack = 20f;
-    private const float RangeUnitsPerMetre = 10f;
     private const int PercentScale = 100;
+
+    public bool AllowsTarget(UserSession session, MagicData magic, int skillId, int targetId, int[] data) =>
+        AreaCastAllowed(session, magic, skillId, targetId, data) && MayReach(session, magic, skillId, targetId);
 
     public async Task ExecuteAsync(UserSession session, MagicData magic, int skillId, int targetId, int[] data)
     {
-        if (!AreaCastAllowed(session, magic, skillId, targetId, data) || !MayReach(session, magic, skillId, targetId))
-        {
-            await MagicCombatHelper.SendMagicFailAsync(session, skillId);
-            return;
-        }
-
         await ExecuteTypeAsync(session, magic, magic.PrimaryType, skillId, targetId, data, isPrimary: true);
 
         if (magic.SecondaryType != MagicSkillType.None
@@ -85,7 +80,7 @@ public class MagicExecutionService(
 
         return !centred
             || !types.Any(type => type is MagicSkillType.Melee or MagicSkillType.OverTime or MagicSkillType.Buff or MagicSkillType.Area)
-            || Within(caster, data[AreaCentreX], data[AreaCentreZ], 0f, magic.Range > 0 ? magic.Range : MeleeReach);
+            || Within(caster, data[AreaCentreX], data[AreaCentreZ], 0f, magic.Range > 0 ? magic.Range : AttackReach.Melee);
     }
 
     private bool IsAreaCast(MagicData magic, int skillId)
@@ -94,9 +89,8 @@ public class MagicExecutionService(
         var groundMoral = moral is SkillMoral.AreaEnemy or SkillMoral.AreaFriend or SkillMoral.AreaAll;
         var casterMoral = moral is SkillMoral.PartyAll or SkillMoral.SelfArea;
         var radius = AreaRadius(magic, skillId);
-        var isArea = magic.PrimaryType == MagicSkillType.Melee
-            ? groundMoral || casterMoral
-            : radius > 0 && magic.PrimaryType is MagicSkillType.OverTime or MagicSkillType.Buff or MagicSkillType.Area;
+        var isArea = radius > 0
+            && magic.PrimaryType is MagicSkillType.Melee or MagicSkillType.OverTime or MagicSkillType.Buff or MagicSkillType.Area;
 
         return (isArea && (groundMoral || casterMoral))
             || (casterMoral && magic.PrimaryType is MagicSkillType.Buff or MagicSkillType.Special)
@@ -105,6 +99,8 @@ public class MagicExecutionService(
 
     private int AreaRadius(MagicData magic, int skillId) => magic.PrimaryType switch
     {
+        // The client takes a melee row's radius from the over-time row with the same id.
+        MagicSkillType.Melee when gameDataService.MagicType3Table.TryGetValue(skillId, out var melee) => melee.Radius,
         MagicSkillType.OverTime when MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, skillId, out var type3) => type3.Radius,
         MagicSkillType.Buff when MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, skillId, out var type4) => type4.Radius,
         MagicSkillType.Area when MagicTypeLookup.TryResolve(gameDataService.MagicType7Table, magic, skillId, out var type7) => type7.Radius,
@@ -115,14 +111,13 @@ public class MagicExecutionService(
     {
         if (targetId == AreaTarget || targetId == caster.CharacterId
             || (SkillMoral)magic.Moral is SkillMoral.Self or SkillMoral.SelfArea
-            || magic.PrimaryType is not (MagicSkillType.Melee or MagicSkillType.Ranged or MagicSkillType.OverTime
-                or MagicSkillType.Buff or MagicSkillType.Special))
+            || !IsAimed(magic, skillId))
             return true;
 
         if (sessionManager.GetByCharacterId(targetId) is { } player)
             return player.ZoneId == caster.ZoneId && player.Room == caster.Room
-                && Within(caster, player.X, player.Z, PlayerBodyRadius, Reach(caster, magic, skillId))
-                && MayTouch(caster, player, (SkillMoral)magic.Moral);
+                && Within(caster, player.X, player.Z, AttackReach.PlayerBodyRadius, Reach(caster, magic, skillId))
+                && MayTouch(caster, player, magic, skillId);
 
         if (sessionManager.Regions.GetNpc(targetId) is { } npc)
             return npc.ZoneId == caster.ZoneId && npc.Room == caster.Room
@@ -131,14 +126,28 @@ public class MagicExecutionService(
         return true;
     }
 
-    private static bool MayTouch(UserSession caster, UserSession target, SkillMoral moral) => moral switch
+    private bool IsAimed(MagicData magic, int skillId) => magic.PrimaryType switch
+    {
+        MagicSkillType.Melee or MagicSkillType.Ranged or MagicSkillType.OverTime or MagicSkillType.Buff
+            or MagicSkillType.Special => true,
+        MagicSkillType.Area => AreaRadius(magic, skillId) == 0,
+        _ => false,
+    };
+
+    private bool MayTouch(UserSession caster, UserSession target, MagicData magic, int skillId) => (SkillMoral)magic.Moral switch
     {
         SkillMoral.Enemy or SkillMoral.AreaEnemy or SkillMoral.Npc => PvpRules.CanAttackPlayer(caster, target),
-        SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe or SkillMoral.Party or SkillMoral.PartyAll
-            or SkillMoral.AreaFriend or SkillMoral.Clan or SkillMoral.ClanAll or SkillMoral.CorpseFriend
-            => !PvpRules.IsEnemy(caster, target),
+        SkillMoral.Party or SkillMoral.PartyAll => caster.IsInParty && target.PartyIndex == caster.PartyIndex,
+        SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe or SkillMoral.AreaFriend or SkillMoral.Clan
+            or SkillMoral.ClanAll or SkillMoral.CorpseFriend
+            => !PvpRules.IsHostile(caster, target)
+                || (HealStrikes(caster, magic, skillId) && PvpRules.CanAttackPlayer(caster, target)),
         _ => true,
     };
+
+    private bool HealStrikes(UserSession caster, MagicData magic, int skillId) =>
+        MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, skillId, out var type3)
+        && HealStrike.Turns(caster.HealStrikesEnemies, (SkillMoral)magic.Moral, (MagicDirectType)type3.DirectType);
 
     private float Reach(UserSession caster, MagicData magic, int skillId)
     {
@@ -148,32 +157,22 @@ public class MagicExecutionService(
         if (magic.Range > 0)
             return magic.Range;
 
-        return MeleeReach;
+        return AttackReach.Melee;
     }
 
     private float BowReach(UserSession caster, MagicData magic, int skillId)
     {
-        var bow = new[] { InventoryConstants.LeftHand, InventoryConstants.RightHand }
-            .Select(slot => caster.GetEquippedItem(slot))
-            .Where(slot => !slot.IsEmpty)
-            .Select(slot => gameDataService.GetItem(slot.ItemId))
-            .FirstOrDefault(item => item?.IsBow() == true);
-        if (bow == null)
+        if (AttackReach.HeldBow(caster, gameDataService) is not { } bow)
             return 0f;
 
         var addRange = MagicTypeLookup.TryResolve(gameDataService.MagicType2Table, magic, skillId, out var type2)
             ? Math.Max(PercentScale, (int)type2.AddRange)
             : PercentScale;
-        return bow.Range / RangeUnitsPerMetre * addRange / PercentScale;
+        return bow.Range / AttackReach.RangeUnitsPerMetre * addRange / PercentScale;
     }
 
-    private static bool Within(UserSession caster, float x, float z, float targetRadius, float reach)
-    {
-        var allowed = reach + PlayerBodyRadius + targetRadius + SkillReachSlack;
-        var dx = caster.X - x;
-        var dz = caster.Z - z;
-        return dx * dx + dz * dz <= allowed * allowed;
-    }
+    private static bool Within(UserSession caster, float x, float z, float targetRadius, float reach) =>
+        AttackReach.Within(caster, x, z, reach + AttackReach.PlayerBodyRadius + targetRadius + SkillReachSlack);
 
     private bool HasTypeData(MagicData magic, MagicSkillType skillType, int skillId) => skillType switch
     {

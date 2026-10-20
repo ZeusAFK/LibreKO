@@ -17,7 +17,6 @@ public class MagicClassSkillTests : GameTestBase
     private const int EventBlast = 491200;
     private const short Mage = 110;
     private const short Warrior = 105;
-    private const byte NeutralSpellCharisma = 186;
 
     [Fact]
     public async Task AMageCastsTheirOwnClassesSkill()
@@ -103,7 +102,7 @@ public class MagicClassSkillTests : GameTestBase
         caster.Name = "Caster";
         caster.Class = classId;
         caster.Level = 60;
-        caster.Magic = NeutralSpellCharisma;
+        caster.Magic = ListedSpellDamageCharisma;
         caster.Nation = AccountNation.Karus;
         caster.ZoneId = 21;
         caster.X = 100;

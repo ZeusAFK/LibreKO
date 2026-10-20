@@ -68,16 +68,18 @@ public static class MagicSkillRequirement
     public static bool IsClassPassive(MagicData magic) =>
         magic.PrimaryType == MagicSkillType.None && IsClassTree(magic.Skill);
 
+    public static short ClassOf(int skillId) => (short)(skillId / SkillIdsPerClass);
+
+    public static bool IsClassSkill(int skillId) => IsPlayerClass(ClassOf(skillId));
+
     public static bool IsCastableBy(MagicData magic, int classId)
     {
-        var prefix = magic.Id / SkillIdsPerClass;
-        if (IsPlayerClass((short)prefix))
+        var prefix = ClassOf(magic.Id);
+        if (IsPlayerClass(prefix))
             return prefix == classId;
 
         return magic.UseItem != 0 || prefix is < FirstMonsterSkillPrefix or > LastMonsterSkillPrefix;
     }
-
-    public static bool IsClassSkill(MagicData magic) => IsPlayerClass((short)(magic.Id / SkillIdsPerClass));
 
     private static bool IsClassTree(int skillTree) => IsPlayerClass((short)(skillTree / TreesPerClass));
 

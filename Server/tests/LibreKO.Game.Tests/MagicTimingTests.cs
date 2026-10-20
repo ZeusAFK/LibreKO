@@ -67,6 +67,47 @@ public class MagicTimingTests
         session.CastingSkillId.Should().Be(0, "the last arrow closes the cast");
         session.PendingArrowHits.Should().BeEmpty();
         timing.CheckRelease(session, volley).Should().Be(MagicTimingVerdict.NotCast, "a fourth hit is not part of the volley, whose cast is spent");
+        timing.CheckCasting(session, volley).Should().Be(MagicTimingVerdict.OnCooldown, "the volley's 3 s cooldown still runs");
+    }
+
+    [Fact]
+    public void ABowLoosesNoFasterThanItIsDrawn()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var shot = new MagicData { Id = Archery, Type1 = 2, CastTime = 13, UseItem = 391010000 };
+
+        timing.CheckVolley(session).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnVolleyAccepted(session, shot, arrows: 1);
+        clock.Advance(TimeSpan.FromMilliseconds(100));
+        timing.CheckVolley(session).Should().Be(MagicTimingVerdict.TooSoonAfterLastSkill);
+
+        clock.Advance(TimeSpan.FromMilliseconds(300));
+        timing.CheckVolley(session).Should().Be(MagicTimingVerdict.Allowed, "an honest bow is drawn again 400 ms later at the earliest");
+    }
+
+    [Fact]
+    public void ShotsSentEarlyDoNotAddUpToAFasterBow()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var shot = new MagicData { Id = Archery, Type1 = 2, CastTime = 13, UseItem = 391010000 };
+        const int attempts = 20;
+        const int everyMs = 200;
+        const int drawMs = 400;
+
+        var loosed = 0;
+        for (var attempt = 0; attempt < attempts; attempt++)
+        {
+            if (timing.CheckVolley(session) == MagicTimingVerdict.Allowed)
+            {
+                timing.OnVolleyAccepted(session, shot, arrows: 1);
+                loosed++;
+            }
+            clock.Advance(TimeSpan.FromMilliseconds(everyMs));
+        }
+
+        loosed.Should().BeLessThanOrEqualTo(attempts * everyMs / drawMs + 1);
     }
 
     [Fact]

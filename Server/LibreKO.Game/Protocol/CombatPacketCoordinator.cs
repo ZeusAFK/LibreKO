@@ -32,14 +32,11 @@ public class CombatPacketCoordinator(
     private const short BareHandedSwingInterval = 100;
     private const int MillisecondsPerDelayUnit = 10;
     private const int BareHandedSwingMs = 1000;
-    // The server has no item-extension table; this is the fastest attack interval any extension gives.
+    // The item extension rows carry no attack interval; this is the fastest one any extension gives.
     private const int FastestAttackIntervalPercent = 90;
     private const int PercentScale = 100;
     private const int SwingJitterMs = 250;
-    private const float MeleeReach = 6f;
-    private const float PlayerBodyRadius = 1f;
     private const float MovementSlack = 4f;
-    private const float RangeUnitsPerMetre = 10f;
 
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
 
@@ -97,7 +94,8 @@ public class CombatPacketCoordinator(
         var target = sessionManager.GetByCharacterId(targetId);
         var npcInReach = target == null ? sessionManager.Regions.GetNpc(targetId) : null;
         var inReach = target != null
-            ? target.Room == session.Room && WithinAttackReach(session, target.X, target.Z, PlayerBodyRadius, weaponProto, isBowAttack)
+            ? target.Room == session.Room && WithinAttackReach(
+                session, target.X, target.Z, AttackReach.PlayerBodyRadius + AttackReach.MovementLag(target), weaponProto, isBowAttack)
             : npcInReach != null && npcInReach.Room == session.Room
                 && WithinAttackReach(session, npcInReach.X, npcInReach.Z, npcInReach.BulkRadius, weaponProto, isBowAttack);
         if (!inReach)
@@ -192,11 +190,9 @@ public class CombatPacketCoordinator(
     private static bool WithinAttackReach(
         UserSession session, float targetX, float targetZ, float targetRadius, ItemData? weapon, bool isBowAttack)
     {
-        var weaponReach = isBowAttack && weapon != null ? weapon.Range / RangeUnitsPerMetre : MeleeReach;
-        var reach = weaponReach + PlayerBodyRadius + targetRadius + MovementSlack;
-        var dx = session.X - targetX;
-        var dz = session.Z - targetZ;
-        return dx * dx + dz * dz <= reach * reach;
+        var weaponReach = isBowAttack && weapon != null ? weapon.Range / AttackReach.RangeUnitsPerMetre : AttackReach.Melee;
+        var reach = weaponReach + AttackReach.PlayerBodyRadius + targetRadius + MovementSlack + AttackReach.MovementLag(session);
+        return AttackReach.Within(session, targetX, targetZ, reach);
     }
 
     private bool TakeSwing(UserSession session)
@@ -213,9 +209,8 @@ public class CombatPacketCoordinator(
     {
         var rightHand = session.GetEquippedItem(InventoryConstants.RightHand);
         var delay = rightHand.IsEmpty ? 0 : gameDataService.GetItem(rightHand.ItemId)?.Delay ?? 0;
-        double ms = delay > 0
-            ? (double)delay * MillisecondsPerDelayUnit * FastestAttackIntervalPercent / PercentScale
-            : BareHandedSwingMs;
+        double ms = (delay > 0 ? (double)delay * MillisecondsPerDelayUnit : BareHandedSwingMs)
+            * FastestAttackIntervalPercent / PercentScale;
         return (long)(ms / AttackSpeedFactor(session) * TimeSpan.TicksPerMillisecond);
     }
 

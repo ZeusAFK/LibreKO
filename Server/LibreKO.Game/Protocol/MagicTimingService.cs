@@ -21,6 +21,8 @@ public interface IMagicTimingService
 
     MagicTimingVerdict CheckRelease(UserSession session, MagicData magic);
 
+    MagicTimingVerdict CheckVolley(UserSession session);
+
     void OnCastAccepted(UserSession session, MagicData magic, bool armCooldown = true);
 
     void OnVolleyAccepted(UserSession session, MagicData magic, int arrows);
@@ -116,8 +118,17 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         session.CastExpireTicks = session.CastReadyTicks + AbandonedCastGraceMs * TimeSpan.TicksPerMillisecond;
     }
 
-    public void OnVolleyAccepted(UserSession session, MagicData magic, int arrows) =>
+    public MagicTimingVerdict CheckVolley(UserSession session) =>
+        time.GetUtcNow().UtcTicks + LatencyGraceMs * TimeSpan.TicksPerMillisecond < session.NextShotTicks
+            ? MagicTimingVerdict.TooSoonAfterLastSkill
+            : MagicTimingVerdict.Allowed;
+
+    public void OnVolleyAccepted(UserSession session, MagicData magic, int arrows)
+    {
         session.PendingArrowHits[magic.Id] = Math.Max(1, arrows);
+        session.NextShotTicks = Math.Max(session.NextShotTicks, time.GetUtcNow().UtcTicks)
+            + RangedCommitMs * TimeSpan.TicksPerMillisecond;
+    }
 
     public void OnFlightLaunched(UserSession session, MagicData magic)
     {

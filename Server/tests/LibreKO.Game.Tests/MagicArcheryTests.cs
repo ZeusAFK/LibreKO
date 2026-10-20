@@ -17,9 +17,19 @@ public class MagicArcheryTests : GameTestBase
     private const int VolleyArrows = 3;
     private const int Bow = 160210001;
     private const int Arrow = 391010000;
+    private const int KnifeThrow = 107656;
+    private const int Knife = 370007000;
+    private const byte KnifeKind = 95;
     private const ushort Quiver = 50;
     private const int WormHp = 100_000;
     private const short Archer = 107;
+
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => Now;
+        public void Advance(int milliseconds) => Now = Now.AddMilliseconds(milliseconds);
+    }
 
     [Fact]
     public async Task AnArrowThatWasNeverLoosedDoesNotHit()
@@ -84,20 +94,74 @@ public class MagicArcheryTests : GameTestBase
         worm.Hp.Should().Be(WormHp);
     }
 
-    private static ServiceProvider Provider() => CreateProvider(_ => { }, gameData =>
+    [Fact]
+    public async Task ThrowingKnivesNeedNoBow()
     {
-        foreach (var (id, arrows) in new[] { (Shot, 1), (Volley, VolleyArrows) })
-            gameData.GetMagic(id).Returns(new MagicData { Id = id, Type1 = (byte)MagicSkillType.Ranged, Moral = 7, Range = 40, UseItem = Arrow });
+        using var provider = Provider();
+        var (archer, client) = ArcherWith(provider, bow: false, ammo: Knife);
+        var worm = Worm(provider);
+
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, KnifeThrow, worm.UniqueId);
+        await Send(provider, client, archer, MagicProcessOpcode.Effecting, KnifeThrow, worm.UniqueId);
+
+        Arrows(archer).Should().Be(Quiver - 1);
+        worm.Hp.Should().BeLessThan(WormHp);
+    }
+
+    [Fact]
+    public async Task ArrowsAreNotLoosedFasterThanABowIsDrawn()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (archer, client) = ArcherWith(provider, bow: true);
+        var worm = Worm(provider);
+
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, Shot, worm.UniqueId);
+        clock.Advance(100);
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, Shot, worm.UniqueId);
+        Arrows(archer).Should().Be(Quiver - 1, "a second arrow 100 ms after the first was never drawn");
+
+        clock.Advance(300);
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, Shot, worm.UniqueId);
+        Arrows(archer).Should().Be(Quiver - 2);
+    }
+
+    [Fact]
+    public async Task AnArrowAtAMonsterOutOfReachIsNotLoosed()
+    {
+        using var provider = Provider();
+        var (archer, client) = ArcherWith(provider, bow: true);
+        var worm = Worm(provider, x: 300);
+
+        await Send(provider, client, archer, MagicProcessOpcode.Flying, Shot, worm.UniqueId);
+
+        Arrows(archer).Should().Be(Quiver);
+        archer.Mp.Should().Be(archer.MaxMp);
+    }
+
+    private static ServiceProvider Provider(Clock? clock = null) => CreateProvider(_ => { }, gameData =>
+    {
+        foreach (var (id, ammo) in new[] { (Shot, Arrow), (Volley, Arrow), (KnifeThrow, Knife) })
+            gameData.GetMagic(id).Returns(new MagicData
+            {
+                Id = id, Type1 = (byte)MagicSkillType.Ranged, Moral = 7, Range = 40, UseItem = ammo, Msp = 5,
+            });
         gameData.MagicType2Table.Returns(new Dictionary<int, MagicType2Data>
         {
             [Shot] = new() { Id = Shot, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
             [Volley] = new() { Id = Volley, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = VolleyArrows },
+            [KnifeThrow] = new() { Id = KnifeThrow, HitType = 1, HitRate = 101, AddDamage = 100, NeedArrow = 1 },
         });
         gameData.GetItem(Bow).Returns(new ItemData { Num = Bow, Kind = 70, Slot = 4, Delay = 150, Range = 350, Duration = 83 });
         gameData.GetItem(Arrow).Returns(new ItemData { Num = Arrow, Kind = 120, Countable = 1, Duration = 1, ReqLevelMax = 83 });
+        gameData.GetItem(Knife).Returns(new ItemData { Num = Knife, Kind = KnifeKind, Countable = 1, Duration = 1, ReqLevelMax = 83 });
+    }, configureServices: services =>
+    {
+        if (clock != null)
+            services.AddSingleton<TimeProvider>(clock);
     });
 
-    private static (UserSession Archer, IClient Client) ArcherWith(ServiceProvider provider, bool bow)
+    private static (UserSession Archer, IClient Client) ArcherWith(ServiceProvider provider, bool bow, int ammo = Arrow)
     {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
@@ -122,17 +186,17 @@ public class MagicArcheryTests : GameTestBase
             archer.Inventory[InventoryConstants.LeftHand].Count = 1;
             archer.Inventory[InventoryConstants.LeftHand].Durability = 83;
         }
-        archer.Inventory[InventoryConstants.InventoryStart].ItemId = Arrow;
+        archer.Inventory[InventoryConstants.InventoryStart].ItemId = ammo;
         archer.Inventory[InventoryConstants.InventoryStart].Count = Quiver;
         archer.Inventory[InventoryConstants.InventoryStart].Durability = 1;
         sessions.Regions.AddToRegion(archer);
         return (archer, client);
     }
 
-    private static NpcInstance Worm(ServiceProvider provider) =>
+    private static NpcInstance Worm(ServiceProvider provider, float x = 110) =>
         provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
         {
-            IsMonster = true, NpcId = 750, Name = "Worm", ZoneId = 21, X = 110, Z = 100, SpawnX = 110,
+            IsMonster = true, NpcId = 750, Name = "Worm", ZoneId = 21, X = x, Z = 100, SpawnX = x,
             SpawnZ = 100, Hp = WormHp, MaxHp = WormHp, Ac = 5, EvadeRate = 1,
         });
 
