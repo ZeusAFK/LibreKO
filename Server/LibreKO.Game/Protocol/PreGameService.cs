@@ -54,7 +54,7 @@ public class PreGameService(
     {
         if (!throttle.TryAttempt(address, login))
         {
-            logger.LogWarning("Too many failed logins for {Login} from {Address}; refused without checking", login, address);
+            logger.LogDebug("Too many failed logins from {Address}; refused without checking", address);
             return new(0, 0, false);
         }
 

@@ -70,7 +70,7 @@ public class LoginService(
         if (locked)
         {
             result = LoginResult.InvalidPassword;
-            logger.LogWarning("Too many failed logins for {Login} from {Address}; refused without checking", login, address);
+            logger.LogDebug("Too many failed logins from {Address}; refused without checking", address);
         }
         else if (account == null)
         {

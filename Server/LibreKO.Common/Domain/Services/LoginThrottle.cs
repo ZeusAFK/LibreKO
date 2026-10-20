@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Common.Domain.Services;
@@ -13,7 +14,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     private const int WindowMinutes = 15;
     private const int SlowdownStepMilliseconds = 500;
     private const int MaxSlowdownSeconds = 5;
-    private const int TrackedBeforePruning = 10_000;
+    public const int MaxTracked = 100_000;
     private const int PruneIntervalSeconds = 60;
     private static readonly TimeSpan PruneInterval = TimeSpan.FromSeconds(PruneIntervalSeconds);
     private const int Ipv6NetworkBytes = 8;
@@ -27,19 +28,34 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         public DateTimeOffset Since;
     }
 
-    private readonly ConcurrentDictionary<string, Failures> byAddressAndName = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, Failures> byAddress = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, Failures> byName = new(StringComparer.OrdinalIgnoreCase);
-    private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
-    private long nextPruneTicks;
+    private sealed class Table
+    {
+        public readonly ConcurrentDictionary<string, Failures> Entries = new(StringComparer.OrdinalIgnoreCase);
+        public int Size;
+        public long NextPruneTicks;
+    }
 
-    // An attempt counts before its password is checked, and an address over a limit waits out the window.
+    private readonly Table byAddressAndName = new();
+    private readonly Table byAddress = new();
+    private readonly Table byName = new();
+    private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
+
+    public int Tracked => Volatile.Read(ref byAddressAndName.Size) + Volatile.Read(ref byAddress.Size) + Volatile.Read(ref byName.Size);
+
+    // An attempt counts before its password is checked; an address over a limit waits out the window and adds nothing while it waits.
     public bool TryAttempt(string address, string login)
     {
+        if (login.Length > Account.MaxLoginLength)
+            return false;
+
         var name = Normal(login);
         if (address.Length > 0)
         {
-            var forName = Count(byAddressAndName, Key(address, name));
+            var key = Key(address, name);
+            if (Over(byAddress, address, MaxFailuresPerAddress) || Over(byAddressAndName, key, MaxFailuresPerName))
+                return false;
+
+            var forName = Count(byAddressAndName, key);
             var forAddress = Count(byAddress, address);
             if (forName > MaxFailuresPerName || forAddress > MaxFailuresPerAddress)
                 return false;
@@ -52,7 +68,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     // A name guessed from many addresses is answered more slowly but never locked.
     public TimeSpan SlowdownFor(string login)
     {
-        if (!byName.TryGetValue(Normal(login), out var failures))
+        if (!byName.Entries.TryGetValue(Normal(login), out var failures))
             return TimeSpan.Zero;
 
         lock (failures)
@@ -71,7 +87,8 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         Uncount(byName, name);
         if (address.Length == 0)
             return;
-        byAddressAndName.TryRemove(Key(address, name), out _);
+        if (byAddressAndName.Entries.TryRemove(Key(address, name), out _))
+            Interlocked.Decrement(ref byAddressAndName.Size);
         Uncount(byAddress, address);
     }
 
@@ -107,15 +124,32 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
 
     private static string Key(string address, string login) => $"{address}\n{login}";
 
-    private int Count(ConcurrentDictionary<string, Failures> table, string key)
+    private bool Over(Table table, string key, int limit)
     {
-        // Expired entries are swept at most once a minute.
-        var due = Volatile.Read(ref nextPruneTicks);
-        if (table.Count > TrackedBeforePruning && Now.UtcTicks >= due
-            && Interlocked.CompareExchange(ref nextPruneTicks, (Now + PruneInterval).UtcTicks, due) == due)
+        if (!table.Entries.TryGetValue(key, out var failures))
+            return false;
+
+        lock (failures)
+            return Now - failures.Since < Window && failures.Count >= limit;
+    }
+
+    // Each table sweeps its expired entries at most once a minute, and past its cap it counts nothing new.
+    private int Count(Table table, string key)
+    {
+        var due = Volatile.Read(ref table.NextPruneTicks);
+        if (Now.UtcTicks >= due && Interlocked.CompareExchange(ref table.NextPruneTicks, (Now + PruneInterval).UtcTicks, due) == due)
             Prune(table);
 
-        var failures = table.GetOrAdd(key, _ => new Failures { Since = Now });
+        if (!table.Entries.TryGetValue(key, out var failures))
+        {
+            if (Volatile.Read(ref table.Size) >= MaxTracked)
+                return 0;
+            var added = new Failures { Since = Now };
+            failures = table.Entries.GetOrAdd(key, added);
+            if (ReferenceEquals(failures, added))
+                Interlocked.Increment(ref table.Size);
+        }
+
         lock (failures)
         {
             if (Now - failures.Since >= Window)
@@ -124,24 +158,24 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         }
     }
 
-    private static void Uncount(ConcurrentDictionary<string, Failures> table, string key)
+    private static void Uncount(Table table, string key)
     {
-        if (!table.TryGetValue(key, out var failures))
+        if (!table.Entries.TryGetValue(key, out var failures))
             return;
 
         lock (failures)
             failures.Count = Math.Max(0, failures.Count - 1);
     }
 
-    private void Prune(ConcurrentDictionary<string, Failures> table)
+    private void Prune(Table table)
     {
-        foreach (var (key, failures) in table)
+        foreach (var (key, failures) in table.Entries)
         {
             bool expired;
             lock (failures)
                 expired = Now - failures.Since >= Window;
-            if (expired)
-                table.TryRemove(key, out _);
+            if (expired && table.Entries.TryRemove(key, out _))
+                Interlocked.Decrement(ref table.Size);
         }
     }
 }

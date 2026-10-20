@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using FluentAssertions;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using Xunit;
@@ -11,6 +12,8 @@ public class LoginThrottleTests
     private const string Address = "203.0.113.7";
     private const string OtherAddress = "198.51.100.9";
     private const int Burst = 64;
+    private const int Flood = 5_000;
+    private const int TablesTracked = 3;
 
     private sealed class Clock : TimeProvider
     {
@@ -120,6 +123,55 @@ public class LoginThrottleTests
             throttle.TryAttempt(string.Empty, "someone");
 
         throttle.TryAttempt(string.Empty, "anyone").Should().BeTrue();
+    }
+
+    [Fact]
+    public void AnAddressOverItsLimitStoresNothingMore()
+    {
+        var throttle = new LoginThrottle();
+        for (var name = 0; name <= LoginThrottle.MaxFailuresPerAddress; name++)
+            throttle.TryAttempt(Address, $"guess{name}");
+        var tracked = throttle.Tracked;
+
+        for (var name = 0; name < Flood; name++)
+            throttle.TryAttempt(Address, $"flood{name}").Should().BeFalse();
+
+        throttle.Tracked.Should().Be(tracked, "a refused attempt must not cost the server memory");
+    }
+
+    [Fact]
+    public void ALoginLongerThanAnyAccountIsRefusedAndNotKept()
+    {
+        var throttle = new LoginThrottle();
+
+        throttle.TryAttempt(Address, new string('x', Account.MaxLoginLength + 1)).Should().BeFalse();
+
+        throttle.Tracked.Should().Be(0);
+    }
+
+    [Fact]
+    public void EachTableStopsAtItsCap()
+    {
+        var throttle = new LoginThrottle();
+
+        for (var address = 0; address < LoginThrottle.MaxTracked + Burst; address++)
+            throttle.TryAttempt($"10.{address >> 16 & 0xFF}.{address >> 8 & 0xFF}.{address & 0xFF}", $"name{address}");
+
+        throttle.Tracked.Should().BeLessThanOrEqualTo(TablesTracked * LoginThrottle.MaxTracked);
+    }
+
+    [Fact]
+    public void ExpiredAttemptsAreSweptFromEveryTable()
+    {
+        var clock = new Clock();
+        var throttle = new LoginThrottle(clock);
+        Attempts(throttle, Address, "owner", LoginThrottle.MaxFailuresPerName);
+        Attempts(throttle, OtherAddress, "other", LoginThrottle.MaxFailuresPerName);
+
+        clock.Now += LoginThrottle.Window + LoginThrottle.Window;
+        throttle.TryAttempt(Address, "later");
+
+        throttle.Tracked.Should().Be(TablesTracked, "only the newest attempt's address, name and pair are still kept");
     }
 
     [Theory]
