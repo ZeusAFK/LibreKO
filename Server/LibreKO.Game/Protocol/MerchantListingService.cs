@@ -126,13 +126,14 @@ public class MerchantListingService(
     {
         var targetId = packet.ReadInt();
         var merchant = sessionManager.GetByCharacterId(targetId);
+        var generation = merchant?.Trade.StallGeneration ?? 0;
         if (merchant == null || !merchant.Trade.IsMerchanting || !ExchangePacketConstants.IsWithinTradeRange(session, merchant))
         {
             session.Trade.MerchantTargetUserId = -1;
             return;
         }
 
-        session.Trade.MerchantTargetUserId = merchant.CharacterId;
+        session.Trade.LookAt(merchant.CharacterId, generation);
         logger.LogDebug("{Name} browsing merchant shop of {MerchantName}", session.Name, merchant.Name);
 
         var stall = new List<MerchantPacketWriter.StallItem?>(session.Trade.MerchantItems.Length);

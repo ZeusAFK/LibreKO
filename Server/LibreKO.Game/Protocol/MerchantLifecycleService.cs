@@ -158,6 +158,7 @@ public class MerchantLifecycleService(
     {
         var merchantId = packet.ReadInt();
         var merchant = sessionManager.GetByCharacterId(merchantId);
+        var generation = merchant?.Trade.StallGeneration ?? 0;
         bool buying = sub is MerchantSubOpcode.BuyingStallRequest or MerchantSubOpcode.BuyingStallOpen;
 
         var refusal =
@@ -186,7 +187,7 @@ public class MerchantLifecycleService(
 
         ReleaseViewedStall(session);
         merchant!.Trade.MerchantViewerId = session.CharacterId;
-        session.Trade.MerchantTargetUserId = merchant.CharacterId;
+        session.Trade.LookAt(merchant.CharacterId, generation);
 
         await session.Client.SendPacket(windowStep
             ? MerchantPacketWriter.StallWindowOpen(

@@ -26,6 +26,15 @@ public class TradeState
     public string MerchantAdvert { get; set; } = string.Empty;
     public int MerchantTargetUserId { get; set; } = -1;
     public int MerchantViewerId { get; set; } = -1;
+
+    private int stallGeneration;
+
+    // A look at a stall holds only for the stall that was open when the look began.
+    public int StallGeneration => Volatile.Read(ref stallGeneration);
+    public void EndStall() => Interlocked.Increment(ref stallGeneration);
+    public int ViewedStallGeneration { get; private set; }
+
+    public void LookAt(int merchantId, int generation) => (MerchantTargetUserId, ViewedStallGeneration) = (merchantId, generation);
     public MerchantItem[] MerchantItems { get; } = new MerchantItem[MerchantSlots];
     public MerchantItem[] BuyMerchantItems { get; } = new MerchantItem[MerchantSlots];
 

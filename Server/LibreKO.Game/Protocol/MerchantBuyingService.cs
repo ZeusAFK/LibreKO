@@ -132,6 +132,7 @@ public class MerchantBuyingService(
     {
         var merchantId = packet.ReadInt();
         var merchant = sessionManager.GetByCharacterId(merchantId);
+        var generation = merchant?.Trade.StallGeneration ?? 0;
 
         if (merchant == null
             || merchant.CharacterId == session.CharacterId
@@ -144,7 +145,7 @@ public class MerchantBuyingService(
             return;
         }
 
-        session.Trade.MerchantTargetUserId = merchant.CharacterId;
+        session.Trade.LookAt(merchant.CharacterId, generation);
 
         var wanted = new List<MerchantPacketWriter.StallItem?>(MerchantPacketConstants.StallSlots);
         foreach (var item in merchant.Trade.BuyMerchantItems)
@@ -304,7 +305,8 @@ public class MerchantBuyingService(
     private BuyingMerchantResult Refusal(
         UserSession session, UserSession? merchant, byte sellerSlot, byte wantedSlot, ushort stackSize)
     {
-        if (merchant == null || !merchant.Trade.IsBuyingMerchant || merchant.CharacterId == session.CharacterId)
+        if (merchant == null || !merchant.Trade.IsBuyingMerchant || merchant.CharacterId == session.CharacterId
+            || session.Trade.ViewedStallGeneration != merchant.Trade.StallGeneration)
             return BuyingMerchantResult.WrongStallSetup;
 
         if (session.Hp <= 0)

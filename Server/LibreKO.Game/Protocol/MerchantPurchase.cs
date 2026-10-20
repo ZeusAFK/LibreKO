@@ -77,6 +77,8 @@ public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, in
             return "bad request";
         if (!merchant.Trade.IsMerchanting)
             return "the stall is closed";
+        if (buyer.Trade.ViewedStallGeneration != merchant.Trade.StallGeneration)
+            return "the stall closed since the buyer looked at it";
         if (IsOwnStall(merchant, buyer))
             return "that is the buyer's own stall";
         if (buyer.IsBusy)

@@ -81,6 +81,7 @@ public class SessionManager
     // A stall that closed is looked at afresh once it opens again.
     public void ForgetStall(UserSession merchant)
     {
+        merchant.Trade.EndStall();
         merchant.Trade.MerchantViewerId = -1;
         foreach (var looker in GetAll())
         {
