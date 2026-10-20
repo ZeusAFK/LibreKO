@@ -112,6 +112,55 @@ public class MagicWarpTests : GameTestBase
         friend.X.Should().BeApproximately(512, 0.5f, "escape takes the party, not only the caster");
     }
 
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task EscapeLeavesABusyPartyMemberWhereTheyAre(bool trading, bool selling, bool mining)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 800, z: 800);
+        var party = sessionManager.Parties.CreateParty((short)caster.CharacterId);
+        party.MemberIds[1] = (short)friend.CharacterId;
+        caster.PartyIndex = party.Index;
+        caster.IsPartyLeader = true;
+        friend.PartyIndex = party.Index;
+        if (trading)
+            friend.Trade.ExchangeUser = caster.CharacterId;
+        if (selling)
+            friend.Trade.MerchantState = MerchantMode.Selling;
+        friend.IsMining = mining;
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        var busy = trading || selling || mining;
+        friend.X.Should().BeApproximately(busy ? 800 : 512, 0.5f, "a trade, a stall or gathering counts on the player staying put");
+        caster.X.Should().BeApproximately(512, 0.5f);
+    }
+
+    [Fact]
+    public async Task AWarpEndsGathering()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (_, caster, client) = CreateCaster(provider);
+        caster.IsMining = true;
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        caster.X.Should().BeApproximately(512, 0.5f);
+        caster.IsMining.Should().BeFalse("gathering belongs to the spot it started on");
+    }
+
     [Fact]
     public async Task SummonFriendPullsAPartyMemberToTheCaster()
     {

@@ -82,8 +82,9 @@ public class MagicMovementEffectService(
             if (memberId < 0)
                 continue;
 
+            // A trade or a stall counts on the player staying where they are; the caster chose to go.
             var member = sessionManager.GetByCharacterId(memberId);
-            if (member == null || member.Hp <= 0)
+            if (member == null || member.Hp <= 0 || (member != caster && member.IsBusy))
                 continue;
 
             warped |= await SendHomeAsync(member);

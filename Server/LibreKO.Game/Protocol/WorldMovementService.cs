@@ -283,6 +283,10 @@ public class WorldMovementService(
 
     public async Task WarpAsync(UserSession session, ushort posX, ushort posZ)
     {
+        // Gathering belongs to the spot it started on, so a warp ends it as a step does.
+        if (session.IsGathering)
+            await miningPacketCoordinator.StopGatheringAsync(session);
+
         var realX = posX / 10.0f;
         var realZ = posZ / 10.0f;
 
