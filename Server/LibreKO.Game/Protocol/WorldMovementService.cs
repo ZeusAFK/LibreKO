@@ -55,11 +55,14 @@ public class WorldMovementService(
 {
     public const byte MoveEchoFinish = 0;
     private const byte MoveEchoStart = 1;
-    private const byte MoveEchoMove = 3;
+    public const byte MoveEchoMove = 3;
 
     private const float PositionScale = 10f;
 
     private const short DamageZoneHp = 10;
+    private const int PlacementGraceMs = 1000;
+    // The NPC and gate ranges are 10 m; this leaves room to step back from them.
+    private const float WarpListReach = 15f;
 
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
 
@@ -97,20 +100,40 @@ public class WorldMovementService(
         if (sessionManager.Maps != null && !sessionManager.Maps.IsValidPosition(session.ZoneId, newX, newZ))
             return;
 
+        var now = time.GetUtcNow().UtcTicks;
+        if (!session.IsGM && !MovePace.TryStep(session, newX, newZ, now))
+        {
+            logger.LogDebug("Move refused for {Name}: ({FromX:F1},{FromZ:F1}) to ({X:F1},{Z:F1}) is faster than it can run",
+                session.Name, session.X, session.Z, newX, newZ);
+            if (now - session.PlacedTicks > PlacementGraceMs * TimeSpan.TicksPerMillisecond)
+                await session.Client.SendPacket(MovementPacketWriter.Warp(Tenths(session.X), Tenths(session.Z)));
+            return;
+        }
+
         if (echo == MoveEchoFinish
             || (sessionManager.Maps != null
-                && !sessionManager.Maps.IsValidPosition(session.ZoneId, willX / PositionScale, willZ / PositionScale)))
+                && !sessionManager.Maps.IsValidPosition(session.ZoneId, willX / PositionScale, willZ / PositionScale))
+            || (!session.IsGM && MovePace.LeadsTooFar(session, newX, newZ, willX / PositionScale, willZ / PositionScale, now)))
             (willX, willZ, willY) = (curX, curZ, curY);
 
-        if (willX != session.MoveOldWillX || willZ != session.MoveOldWillZ)
+        var stepped = newX != session.X || newZ != session.Z;
+        var sinceReport = (float)(now - session.LastMoveTicks) / TimeSpan.TicksPerSecond;
+        var stepX = newX - session.X;
+        var stepZ = newZ - session.Z;
+        session.LastStepSpeed = session.MoveOldEcho != MoveEchoFinish && sinceReport > 0f
+            ? MathF.Sqrt(stepX * stepX + stepZ * stepZ) / sinceReport
+            : 0f;
+        if (stepped || willX != session.MoveOldWillX || willZ != session.MoveOldWillZ)
             await stealthService.RevealAsync(session, InvisibilityType.DispelOnMove);
+        if (stepped)
+            session.IsSitting = false;
 
         session.X = newX;
         session.Y = curY / PositionScale;
         session.Z = newZ;
         session.MoveOldEcho = echo;
         session.MoveOldSpeed = speed;
-        session.LastMoveTicks = time.GetUtcNow().UtcTicks;
+        session.LastMoveTicks = now;
         session.MoveOldWillX = willX;
         session.MoveOldWillY = willY;
         session.MoveOldWillZ = willZ;
@@ -193,7 +216,7 @@ public class WorldMovementService(
         var type = packet.ReadByte();
         var value = packet.RemainingBytes >= 4 ? packet.ReadInt() : packet.ReadByte();
 
-        if (type == (byte)StateChangeType.Stealth)
+        if (!PlayerMayAnnounce((StateChangeType)type, value))
             return;
 
         if (type == (byte)StateChangeType.Pose)
@@ -208,6 +231,17 @@ public class WorldMovementService(
         var result = MovementPacketWriter.StateChange(session.CharacterId, type, value);
         await sessionManager.Regions.SendToRegion(session, result, excludeSender: false);
     }
+
+    private static bool PlayerMayAnnounce(StateChangeType type, int value) => type switch
+    {
+        StateChangeType.Pose => value is (int)UserPoseState.Standing or (int)UserPoseState.Sitting,
+        StateChangeType.CombatStance => value is (int)CombatStanceState.Relaxed or (int)CombatStanceState.Ready,
+        StateChangeType.NeedParty => value is UserInfoPacketWriter.NotSeekingParty or UserInfoPacketWriter.SeekingParty,
+        StateChangeType.Action => true,
+        _ => false,
+    };
+
+    private static ushort Tenths(float metres) => (ushort)Math.Clamp(metres * PositionScale, 0f, ushort.MaxValue);
 
     public async Task HandleHomeAsync(IClient client)
     {
@@ -247,6 +281,7 @@ public class WorldMovementService(
         var realZ = posZ / 10.0f;
 
         await session.Client.SendPacket(MovementPacketWriter.Warp(posX, posZ));
+        session.PlacedTicks = time.GetUtcNow().UtcTicks;
 
         await worldVisibilityService.BroadcastUserInOutAsync(session, InOutType.Out);
         sessionManager.Regions.DropAggroOn(session.CharacterId);
@@ -266,6 +301,7 @@ public class WorldMovementService(
 
     public async Task DisplaceAsync(UserSession session, float x, float z)
     {
+        session.PlacedTicks = time.GetUtcNow().UtcTicks;
         session.X = x;
         session.Y = ResolveTargetHeight(session.ZoneId, x, z);
         session.Z = z;
@@ -353,6 +389,11 @@ public class WorldMovementService(
         }
 
         var warpId = packet.ReadShort();
+        if (!TakeOfferedWarp(session, warpId))
+        {
+            logger.LogDebug("Warp {WarpId} refused for {Name}: not on a list opened for them here", warpId, session.Name);
+            return;
+        }
 
         var mapWarp = sessionManager.Maps?.GetWarp(session.ZoneId, warpId);
         if (mapWarp != null)
@@ -453,8 +494,30 @@ public class WorldMovementService(
                 (uint)Math.Max(0, warp.Fee)))
             .ToList();
 
+        lock (session.OfferedWarps)
+        {
+            session.OfferedWarps.Clear();
+            foreach (var warp in warps)
+                session.OfferedWarps.Add(warp.WarpId);
+            session.OfferedWarpsX = session.X;
+            session.OfferedWarpsZ = session.Z;
+        }
+
         await session.Client.SendPacket(WarpListPacketWriter.Menu(entries));
     }
+
+    private static bool TakeOfferedWarp(UserSession session, short warpId)
+    {
+        lock (session.OfferedWarps)
+        {
+            var offered = session.Hp > 0 && session.OfferedWarps.Contains(warpId)
+                && WithinReach(session.X - session.OfferedWarpsX, session.Z - session.OfferedWarpsZ, WarpListReach);
+            session.OfferedWarps.Clear();
+            return offered;
+        }
+    }
+
+    private static bool WithinReach(float dx, float dz, float reach) => dx * dx + dz * dz <= reach * reach;
 
     private IReadOnlyList<WarpInfo> GetNpcWarps(UserSession session, short npcId)
     {

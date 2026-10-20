@@ -33,7 +33,7 @@ public class StealthTests : GameTestBase
         session.Invisibility.Should().Be(InvisibilityType.DispelOnMove,
             "the skill's own description is 'invisible without moving'");
 
-        await MoveAsync(provider, session, x: 200, z: 200);
+        await MoveAsync(provider, session, x: 1020, z: 1000);
 
         session.Invisibility.Should().Be(InvisibilityType.None);
         session.ActiveBuffs.Should().NotContainKey(Hide);
@@ -49,7 +49,7 @@ public class StealthTests : GameTestBase
         session.Invisibility.Should().Be(InvisibilityType.DispelOnAttack,
             "the skill's own description is 'invisible without attacking'");
 
-        await MoveAsync(provider, session, x: 200, z: 200);
+        await MoveAsync(provider, session, x: 1020, z: 1000);
         session.Invisibility.Should().Be(InvisibilityType.DispelOnAttack,
             "walking is not attacking");
 

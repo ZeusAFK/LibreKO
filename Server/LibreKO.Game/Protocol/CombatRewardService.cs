@@ -263,7 +263,7 @@ public class CombatRewardService(
         if (coins == 0 && droppedItems.Count == 0)
             return;
 
-        var bundle = sessionManager.Regions.CreateBundle(npc.X, npc.Z, npc.Y);
+        var bundle = sessionManager.Regions.CreateBundle(npc.ZoneId, npc.Room, npc.X, npc.Z, npc.Y);
         bundle.OwnerCharId = rewardRecipient.CharacterId;
         bundle.OwnerPartyIndex = rewardRecipient.IsInParty ? rewardRecipient.PartyIndex : -1;
 

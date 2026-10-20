@@ -20,7 +20,10 @@ public static class AttackReach
         if (session.MoveOldEcho == WorldMovementService.MoveEchoFinish || sinceReport > MoveReportSeconds + LateReportSeconds)
             return 0f;
 
-        return Math.Abs((int)session.MoveOldSpeed) / SpeedUnitsPerMetre * Math.Clamp(sinceReport, 0f, MoveReportSeconds);
+        var speed = Math.Min(Math.Abs((int)session.MoveOldSpeed) / SpeedUnitsPerMetre, MovePace.TopSpeed(session, now));
+        if (session.MoveOldEcho == WorldMovementService.MoveEchoMove)
+            speed = Math.Min(speed, session.LastStepSpeed);
+        return speed * Math.Clamp(sinceReport, 0f, MoveReportSeconds);
     }
 
     public static ItemData? HeldBow(UserSession session, IGameDataService gameData) =>

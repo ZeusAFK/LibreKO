@@ -64,7 +64,7 @@ public class LootPacketCoordinator(
         if (!dropped)
             return;
 
-        var bundle = sessionManager.Regions.CreateBundle(session.X, session.Z, session.Y);
+        var bundle = sessionManager.Regions.CreateBundle(session.ZoneId, session.Room, session.X, session.Z, session.Y);
         bundle.Items.Add(new LootItem { ItemId = itemId, Count = count });
         logger.LogDebug("{Name} dropped item {ItemId} x{Count}", session.Name, itemId, count);
 
@@ -90,7 +90,7 @@ public class LootPacketCoordinator(
             return;
         }
 
-        if (bundle.DistanceSquaredTo(session.X, session.Z) > LootBundle.MaxLootRange)
+        if (!bundle.IsBeside(session, LootBundle.MaxLootRange))
             return;
 
         if (!bundle.CanLoot(session.CharacterId, session.IsInParty ? session.PartyIndex : -1, DateTime.UtcNow.Ticks))
@@ -131,7 +131,7 @@ public class LootPacketCoordinator(
             return;
         }
 
-        if (bundle.DistanceSquaredTo(session.X, session.Z) > LootBundle.MaxLootRange)
+        if (!bundle.IsBeside(session, LootBundle.MaxLootRange))
         {
             await SendItemGetErrorAsync(session, bundleId);
             return;
@@ -265,7 +265,7 @@ public class LootPacketCoordinator(
         foreach (var member in members)
         {
             if (member.Hp <= 0 || member.ZoneId != zoneId
-                || bundle.DistanceSquaredTo(member.X, member.Z) > PartyCoinRange * PartyCoinRange)
+                || !bundle.IsBeside(member, PartyCoinRange * PartyCoinRange))
                 continue;
 
             var share = (int)((long)coins * member.Level / levelSum);

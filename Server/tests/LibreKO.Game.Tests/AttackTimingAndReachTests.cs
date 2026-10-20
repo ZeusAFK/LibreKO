@@ -18,7 +18,9 @@ public class AttackTimingAndReachTests : GameTestBase
     private const short HasteAttackSpeed = 150;
     private const byte Zone = 21;
     private const float Here = 500f;
+    private const byte Starting = 1;
     private const byte Moving = 3;
+    private const float SprintStep = 6.75f;
     private const short Sprint = 67;
 
     private sealed class Clock : TimeProvider
@@ -67,6 +69,20 @@ public class AttackTimingAndReachTests : GameTestBase
     }
 
     [Fact]
+    public async Task ASwingStandsThePlayerUp()
+    {
+        using var provider = Provider(new Clock());
+        var (attacker, sent) = Attacker(provider);
+        attacker.IsSitting = true;
+        var worm = Monster(provider, Here + 1);
+
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(1);
+        attacker.IsSitting.Should().BeFalse("sitting regenerates faster only while sitting");
+    }
+
+    [Fact]
     public async Task ATargetFarAwayIsNotAttacked()
     {
         using var provider = Provider(new Clock());
@@ -80,23 +96,28 @@ public class AttackTimingAndReachTests : GameTestBase
     }
 
     [Theory]
-    [InlineData(0, Moving, 1000, false)]
-    [InlineData(Sprint, Moving, 1000, true)]
-    [InlineData(Sprint, WorldMovementService.MoveEchoFinish, 1000, false)]
-    [InlineData(Sprint, Moving, 5000, false)]
-    public async Task ARunningAttackerReachesWhatItsLastReportLagsBehind(short speed, byte echo, int sinceReportMs, bool reached)
+    [InlineData(0, Moving, 1000, SprintStep, false)]
+    [InlineData(Sprint, Moving, 1000, SprintStep, true)]
+    [InlineData(Sprint, Starting, 1000, 0f, true)]
+    [InlineData(Sprint, Moving, 1000, 0f, false)]
+    [InlineData(Sprint, WorldMovementService.MoveEchoFinish, 1000, SprintStep, false)]
+    [InlineData(Sprint, Moving, 5000, SprintStep, false)]
+    public async Task ARunningAttackerReachesWhatItsLastReportLagsBehind(
+        short speed, byte echo, int sinceReportMs, float lastStepSpeed, bool reached)
     {
         var clock = new Clock();
         using var provider = Provider(clock);
         var (attacker, sent) = Attacker(provider);
         attacker.MoveOldSpeed = speed;
         attacker.MoveOldEcho = echo;
+        attacker.LastStepSpeed = lastStepSpeed;
         attacker.LastMoveTicks = clock.Now.AddMilliseconds(-sinceReportMs).UtcTicks;
         var worm = Monster(provider, Here + 14);
 
         await Swing(provider, attacker, worm);
 
-        (Swings(sent) == 1).Should().Be(reached, "a sprinter may be a second's run past its last report, but not after it stopped or went quiet");
+        (Swings(sent) == 1).Should().Be(reached,
+            "a sprinter may be a second's run past its last report, but not after it stopped, went quiet or stood still");
     }
 
     [Theory]
@@ -117,6 +138,7 @@ public class AttackTimingAndReachTests : GameTestBase
         runner.Hp = runner.MaxHp = 100;
         runner.MoveOldSpeed = Sprint;
         runner.MoveOldEcho = echo;
+        runner.LastStepSpeed = SprintStep;
         runner.LastMoveTicks = clock.Now.AddSeconds(-1).UtcTicks;
         sessions.Regions.AddToRegion(runner);
 
@@ -133,10 +155,15 @@ public class AttackTimingAndReachTests : GameTestBase
         var (attacker, sent) = Attacker(provider);
         var worm = Monster(provider, Here + 14);
 
-        await Move(provider, attacker, Sprint, Moving);
+        await Move(provider, attacker, Sprint, Starting);
         clock.Advance(1000);
         await Swing(provider, attacker, worm);
         Swings(sent).Should().Be(1);
+
+        await Move(provider, attacker, Sprint, Moving);
+        clock.Advance(1400);
+        await Swing(provider, attacker, worm);
+        Swings(sent).Should().Be(1, "a report of running that went nowhere gives no allowance");
 
         await Move(provider, attacker, 0, WorldMovementService.MoveEchoFinish);
         clock.Advance(2000);

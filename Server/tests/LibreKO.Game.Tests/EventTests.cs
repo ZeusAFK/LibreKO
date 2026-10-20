@@ -450,7 +450,7 @@ public class EventTests : GameTestBase
         session.Z = 200;
         session.Hp = 100;
 
-        var bundle = sessionManager.Regions.CreateBundle(session.X, session.Z, session.Y);
+        var bundle = sessionManager.Regions.CreateBundle(session.ZoneId, session.Room, session.X, session.Z, session.Y);
         bundle.OwnerCharId = session.CharacterId;
         bundle.Items.Add(new LootItem
         {
@@ -487,7 +487,7 @@ public class EventTests : GameTestBase
         using var provider = CreateProvider(_ => { });
         var (client, session, sentPackets) = CreateLooter(provider);
         var sessionManager = provider.GetRequiredService<SessionManager>();
-        var bundle = sessionManager.Regions.CreateBundle(session.X + beyondLootRange, session.Z, session.Y);
+        var bundle = sessionManager.Regions.CreateBundle(session.ZoneId, session.Room, session.X + beyondLootRange, session.Z, session.Y);
         bundle.OwnerCharId = session.CharacterId;
         bundle.Items.Add(new LootItem { ItemId = 379109000, Count = 1 });
 
@@ -565,7 +565,7 @@ public class EventTests : GameTestBase
         session.Z = 25;
         session.Hp = 100;
 
-        var bundle = sessionManager.Regions.CreateBundle(session.X, session.Z, session.Y);
+        var bundle = sessionManager.Regions.CreateBundle(session.ZoneId, session.Room, session.X, session.Z, session.Y);
         bundle.OwnerCharId = session.CharacterId;
         bundle.Items.Add(new LootItem
         {

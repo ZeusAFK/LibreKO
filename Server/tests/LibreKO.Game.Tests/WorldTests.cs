@@ -428,7 +428,7 @@ public class WorldTests : GameTestBase
         sessionManager.Regions.AddToRegion(viewer);
 
         var packet = new Packet(GameOpcodes.GS_MOVE);
-        packet.WriteUShort(600);
+        packet.WriteUShort(560);
         packet.WriteUShort(80);
         packet.WriteUShort(0);
         packet.WriteShort(45);
@@ -443,12 +443,12 @@ public class WorldTests : GameTestBase
 
         mover.X.Should().Be(50f);
         mover.Z.Should().Be(8);
-        mover.MoveOldWillX.Should().Be(600);
+        mover.MoveOldWillX.Should().Be(560);
 
         movePacket.Should().NotBeNull();
         movePacket!.ResetOffset();
         movePacket.ReadInt().Should().Be(mover.CharacterId);
-        movePacket.ReadUShort().Should().Be(600);
+        movePacket.ReadUShort().Should().Be(560);
         movePacket.ReadUShort().Should().Be(80);
         movePacket.ReadUShort().Should().Be(0);
         movePacket.ReadShort().Should().Be(45);
@@ -854,7 +854,7 @@ public class WorldTests : GameTestBase
         var session = sessionManager.CreateSession(client, characterId: 282, accountId: 292);
         session.Name = "Walker";
         session.ZoneId = 1;
-        session.X = 8;
+        session.X = 46;
         session.Z = 8;
         session.Y = 0;
         session.Hp = 100;
@@ -1161,6 +1161,7 @@ public class WorldTests : GameTestBase
         });
         session.Quest.EventNpcUniqueId = npc.UniqueId;
 
+        await OfferWarps(provider, session, 21);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(900);
         packet.WriteShort(21);
@@ -1221,6 +1222,7 @@ public class WorldTests : GameTestBase
         session.Z = 20;
         sessionManager.Regions.AddToRegion(session);
 
+        await OfferWarps(provider, session, 21);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(2);
         packet.WriteShort(21);
@@ -1232,7 +1234,7 @@ public class WorldTests : GameTestBase
         session.X.Should().Be(30);
         session.Z.Should().Be(40);
 
-        var warpListAck = sentPackets.First(p => p.GetOpcode() == (byte)GameOpcodes.GS_WARP_LIST);
+        var warpListAck = sentPackets.Last(p => p.GetOpcode() == (byte)GameOpcodes.GS_WARP_LIST);
         warpListAck.ResetOffset();
         warpListAck.ReadByte().Should().Be(2);
         warpListAck.ReadByte().Should().Be(1);
@@ -1295,6 +1297,7 @@ public class WorldTests : GameTestBase
         session.Z = 20;
         sessionManager.Regions.AddToRegion(session);
 
+        await OfferWarps(provider, session, 2121);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(4013);
         packet.WriteShort(2121);
@@ -1369,6 +1372,7 @@ public class WorldTests : GameTestBase
         session.Z = 104;
         sessionManager.Regions.AddToRegion(session);
 
+        await OfferWarps(provider, session, 7314);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(4020);
         packet.WriteShort(7314);
@@ -1438,6 +1442,7 @@ public class WorldTests : GameTestBase
         session.Z = 526;
         sessionManager.Regions.AddToRegion(session);
 
+        await OfferWarps(provider, session, 2114);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(4014);
         packet.WriteShort(2114);
@@ -2057,4 +2062,7 @@ public class WorldTests : GameTestBase
         sent().Should().BeNull();
     }
 
+    private static Task OfferWarps(ServiceProvider provider, UserSession session, params short[] warpIds) =>
+        provider.GetRequiredService<IWorldMovementService>().SendWarpListAsync(
+            session, [.. warpIds.Select(id => new WarpListEntry(id, string.Empty, string.Empty, 0, 0, 0))]);
 }

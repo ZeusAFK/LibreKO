@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.World;
@@ -298,11 +298,13 @@ public class RegionManager
     // ─────────────────────────────────────────────
     // Ground loot bundle management
     // ─────────────────────────────────────────────
-    public LootBundle CreateBundle(float x, float z, float y)
+    public LootBundle CreateBundle(byte zoneId, ushort room, float x, float z, float y)
     {
         var bundle = new LootBundle
         {
             BundleId = Interlocked.Increment(ref nextBundleId),
+            ZoneId = zoneId,
+            Room = room,
             X = x,
             Z = z,
             Y = y,

@@ -1,4 +1,4 @@
-namespace LibreKO.Game.World;
+﻿namespace LibreKO.Game.World;
 
 public class LootItem
 {
@@ -42,6 +42,8 @@ public class LootBundle
         using var scope = sync.EnterScope();
         return [.. Items];
     }
+    public byte ZoneId { get; set; }
+    public ushort Room { get; set; }
     public float X { get; set; }
     public float Z { get; set; }
     public float Y { get; set; }
@@ -64,6 +66,9 @@ public class LootBundle
         if (OwnerPartyIndex >= 0 && OwnerPartyIndex == partyIndex) return true;
         return false;
     }
+
+    public bool IsBeside(UserSession player, float range) =>
+        player.ZoneId == ZoneId && player.Room == Room && DistanceSquaredTo(player.X, player.Z) <= range;
 
     public float DistanceSquaredTo(float x, float z)
     {

@@ -169,6 +169,7 @@ public class MagicPacketCoordinator(
                 }
 
                 magicTimingService.OnCastAccepted(session, magic, armCooldown: InstantMagicBuffOf(session, magic) is null);
+                session.IsSitting = false;
                 await HandleCastingAsync(session, magic, targetId, data);
                 break;
             case MagicProcessOpcode.Flying:
@@ -212,6 +213,7 @@ public class MagicPacketCoordinator(
 
                 var instantMagic = InstantMagicBuffOf(session, magic);
                 magicTimingService.OnReleaseAccepted(session, magic, armCooldown: instantMagic is null);
+                session.IsSitting = false;
 
                 if (OpensTransformationList(session, magic))
                 {

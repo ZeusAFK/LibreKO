@@ -107,6 +107,13 @@ public class UserSession
     public ushort MoveOldWillY { get; set; }
     public short MoveOldSpeed { get; set; }
     public long LastMoveTicks { get; set; }
+    public float MoveBudget { get; set; }
+    public float LastStepSpeed { get; set; }
+    public long MoveBudgetTicks { get; set; }
+    public long PlacedTicks { get; set; }
+    public HashSet<short> OfferedWarps { get; } = [];
+    public float OfferedWarpsX { get; set; }
+    public float OfferedWarpsZ { get; set; }
     public byte MoveOldEcho { get; set; }
 
     // Set when this player moved; the movement-broadcast service coalesces the GS_MOVE
@@ -343,7 +350,15 @@ public class UserSession
 
     // Quest & NPC interaction state
     public QuestState Quest { get; } = new();
-    public bool IsWarping { get; set; }          // True during zone change, prevents re-entry
+    // A client that never finishes loading the new zone is no longer shielded after this.
+    private const int WarpingTimeoutSeconds = 60;
+    public long WarpingUntilTicks { get; set; }
+
+    public bool IsWarping
+    {
+        get => WarpingUntilTicks != 0 && DateTime.UtcNow.Ticks < WarpingUntilTicks;
+        set => WarpingUntilTicks = value ? DateTime.UtcNow.AddSeconds(WarpingTimeoutSeconds).Ticks : 0;
+    }
     public byte KillerNpcType { get; set; }      // NpcType of NPC that killed this player (0 = PvP/alive)
     public bool IsSitting { get; set; }           // True when player is sitting (affects HP/MP regen rate)
     public bool InCombatStance { get; set; }

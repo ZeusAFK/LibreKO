@@ -111,6 +111,8 @@ public class CombatPacketCoordinator(
             return;
         }
 
+        session.IsSitting = false;
+
         var attackResult = AttackResult.Failed;
 
         if (target != null)

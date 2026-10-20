@@ -297,7 +297,7 @@ public class LootCoinTests : GameTestBase
 
     private static LootBundle CoinBox(SessionManager sessionManager, UserSession owner, ushort coins)
     {
-        var bundle = sessionManager.Regions.CreateBundle(owner.X, owner.Z, owner.Y);
+        var bundle = sessionManager.Regions.CreateBundle(owner.ZoneId, owner.Room, owner.X, owner.Z, owner.Y);
         bundle.OwnerCharId = owner.CharacterId;
         bundle.Items.Add(new LootItem { ItemId = InventoryConstants.ItemGold, Count = coins });
         return bundle;
