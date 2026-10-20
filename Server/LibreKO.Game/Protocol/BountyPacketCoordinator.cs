@@ -40,8 +40,8 @@ public class BountyPacketCoordinator(
     private const int MaxListedBounties = 200;
     private const string ReturnSubject = "Bounty returned";
     private const string RewardSubject = "Bounty reward";
-    public const int LoadRetrySeconds = 30;
-    private static readonly TimeSpan LoadRetryDelay = TimeSpan.FromSeconds(LoadRetrySeconds);
+    public const int RetrySeconds = 30;
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(RetrySeconds);
 
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -50,6 +50,8 @@ public class BountyPacketCoordinator(
     private readonly ConcurrentQueue<Kill> kills = new();
     private readonly List<Kill> unsaved = [];
     private readonly ConcurrentQueue<int> unreadNotices = new();
+    private readonly Dictionary<int, long> restingTargets = [];
+    private readonly Dictionary<int, long> restingCloses = [];
     private bool loaded;
     private long loadRetryAtTicks;
     private int draining;
@@ -58,13 +60,27 @@ public class BountyPacketCoordinator(
 
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    // Kills still queued at shutdown are saved before the server stops.
+    // Kills still queued at shutdown are saved before the server stops, within the host's shutdown time.
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await gate.WaitAsync(CancellationToken.None);
+        try
+        {
+            await SaveBeforeStopAsync().WaitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("The shutdown ran out of time before {Count} bounty kill(s) were saved", kills.Count + unsaved.Count);
+        }
+    }
+
+    private async Task SaveBeforeStopAsync()
+    {
+        await gate.WaitAsync();
         try
         {
             Interlocked.Exchange(ref loadRetryAtTicks, 0);
+            restingTargets.Clear();
+            restingCloses.Clear();
             await RefreshBoardAsync();
             var lost = kills.Count + unsaved.Count;
             if (lost > 0)
@@ -133,13 +149,18 @@ public class BountyPacketCoordinator(
             }
             finally
             {
-                Volatile.Write(ref draining, 0);
+                Interlocked.Exchange(ref draining, 0);
             }
         }
     }
 
-    private bool LoadResting => !Volatile.Read(ref loaded) && time.GetUtcNow().UtcDateTime.Ticks < Interlocked.Read(ref loadRetryAtTicks);
+    private bool LoadResting => !Volatile.Read(ref loaded) && Now < Interlocked.Read(ref loadRetryAtTicks);
 
+    private long Now => time.GetUtcNow().UtcDateTime.Ticks;
+
+    private long RestEnd => (time.GetUtcNow().UtcDateTime + RetryDelay).Ticks;
+
+    private bool Resting(Dictionary<int, long> rests, int id) => rests.TryGetValue(id, out var until) && Now < until;
 
     private async Task SendBountyListAsync(UserSession session)
     {
@@ -318,7 +339,7 @@ public class BountyPacketCoordinator(
         return true;
     }
 
-    // Queued kills are recorded before any bounty runs out; a board that failed to load rests before it tries again.
+    // Queued kills are recorded before any bounty runs out; a failed load, kill or expiry rests before the board tries it again.
     private async Task<bool> RefreshBoardAsync()
     {
         if (!loaded)
@@ -327,19 +348,22 @@ public class BountyPacketCoordinator(
                 return false;
             if (!await TryLoadAsync())
             {
-                Interlocked.Exchange(ref loadRetryAtTicks, (time.GetUtcNow().UtcDateTime + LoadRetryDelay).Ticks);
+                Interlocked.Exchange(ref loadRetryAtTicks, RestEnd);
                 return false;
             }
         }
 
         await RecordQueuedKillsAsync();
         var expiredBefore = time.GetUtcNow().UtcDateTime.AddDays(-BountyLifetimeDays);
-        foreach (var bounty in board.Where(b => b.PostedAt <= expiredBefore && !KillWaitsOn(b)).ToList())
+        foreach (var bounty in board.Where(b => b.PostedAt <= expiredBefore && !KillWaitsOn(b) && !Resting(restingCloses, b.Id)).ToList())
         {
             var hunter = Hunters(bounty.Id).Select(id => (int?)id).FirstOrDefault();
             var recipient = hunter ?? bounty.PosterCharacterId;
             if (!await TryCloseByMailAsync(bounty, recipient, hunter != null) && !await ForgetIfClosedAsync(bounty))
+            {
+                restingCloses[bounty.Id] = RestEnd;
                 continue;
+            }
 
             Forget(bounty);
             unreadNotices.Enqueue(recipient);
@@ -402,12 +426,20 @@ public class BountyPacketCoordinator(
         var heldTargets = new HashSet<int>();
         foreach (var kill in unsaved.ToList())
         {
-            if (heldTargets.Contains(kill.VictimId) || !await TryRecordKillAsync(kill))
+            if (heldTargets.Contains(kill.VictimId) || Resting(restingTargets, kill.VictimId))
             {
                 heldTargets.Add(kill.VictimId);
                 continue;
             }
 
+            if (!await TryRecordKillAsync(kill))
+            {
+                heldTargets.Add(kill.VictimId);
+                restingTargets[kill.VictimId] = RestEnd;
+                continue;
+            }
+
+            restingTargets.Remove(kill.VictimId);
             unsaved.Remove(kill);
         }
     }
@@ -505,6 +537,7 @@ public class BountyPacketCoordinator(
     {
         board.Remove(bounty);
         huntersByBounty.Remove(bounty.Id);
+        restingCloses.Remove(bounty.Id);
     }
 
     private async Task<(int Id, string Name)?> FindCharacterAsync(string name)

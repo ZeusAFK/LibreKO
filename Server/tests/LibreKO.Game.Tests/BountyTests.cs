@@ -31,7 +31,7 @@ public class BountyTests : GameTestBase
     private const int ListedLimit = 200;
     private const int SeededOthers = 250;
     private static readonly TimeSpan DeathWait = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan PastTheLoadRest = TimeSpan.FromSeconds(BountyPacketCoordinator.LoadRetrySeconds + 1);
+    private static readonly TimeSpan PastTheLoadRest = TimeSpan.FromSeconds(BountyPacketCoordinator.RetrySeconds + 1);
     private const int KillsWhileDown = 10;
 
     [Fact]
@@ -452,6 +452,7 @@ public class BountyTests : GameTestBase
         await board.HandleAsync(poster.Client, BountyPacket(ListSub));
         (await GoldMailedToAsync(provider, poster)).Should().Be(0, "a bounty does not run out while a kill on its target waits for its save");
         faults.Failing = false;
+        clock.Now += PastTheLoadRest;
 
         await board.HandleAsync(hunter.Client, BountyPacket(ClaimSub, bountyId));
 
@@ -912,12 +913,17 @@ public class BountyTests : GameTestBase
     public async Task ALaterKillOnTheSameTargetWaitsBehindAFailedFirstKill()
     {
         const int firstId = 1294;
+        var clock = new Clock();
         var faults = new SaveFaults
         {
             Applies = context => context.ChangeTracker.Entries<BountyHunter>().Any(entry => entry.Entity.CharacterId == firstId),
         };
         using var provider = CreateProvider(_ => { },
-            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+            configureServices: services =>
+            {
+                services.AddSingleton<TimeProvider>(clock);
+                services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults));
+            });
         var poster = CreatePlayer(provider, 1292, AccountNation.Karus);
         var target = CreatePlayer(provider, 1293, AccountNation.ElMorad);
         var first = CreatePlayer(provider, firstId, AccountNation.Karus);
@@ -931,12 +937,97 @@ public class BountyTests : GameTestBase
         board.RecordKill(target.Session, second.Session);
         await BountyIdOnAsync(provider, poster, target.Session.Name);
         faults.Failing = false;
+        clock.Now += PastTheLoadRest;
 
         await ClaimAsync(provider, second, bountyId);
         await ClaimAsync(provider, first, bountyId);
 
         second.Session.Money.Should().Be(StartingGold, "the first kill came first, though its save failed");
         first.Session.Money.Should().Be(StartingGold + Reward);
+    }
+
+    [Fact]
+    public async Task AKillThatCannotBeSavedRestsInsteadOfHoldingUpEveryRequest()
+    {
+        var clock = new Clock();
+        var faults = new SaveFaults { Applies = context => context.ChangeTracker.Entries<BountyHunter>().Any() };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services =>
+            {
+                services.AddSingleton<TimeProvider>(clock);
+                services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults));
+            });
+        var board = provider.GetRequiredService<IBountyPacketCoordinator>();
+        var poster = CreatePlayer(provider, 1330, AccountNation.Karus);
+        var hunter = CreatePlayer(provider, 1331, AccountNation.Karus);
+        var bystander = CreatePlayer(provider, 1332, AccountNation.Karus);
+        Player[] targets = [CreatePlayer(provider, 1333, AccountNation.ElMorad), CreatePlayer(provider, 1334, AccountNation.ElMorad)];
+        foreach (var target in targets)
+            await PostAsync(provider, poster, target.Session.Name, SmallReward);
+        faults.Failing = true;
+        foreach (var target in targets)
+            board.RecordKill(target.Session, hunter.Session);
+        await board.HandleAsync(bystander.Client, BountyPacket(ListSub));
+        var tried = faults.Attempts;
+
+        await board.HandleAsync(bystander.Client, BountyPacket(ListSub));
+        faults.Attempts.Should().Be(tried, "a kill whose save failed rests instead of making every request wait on the database");
+        tried.Should().Be(targets.Length, "each stuck target is tried once");
+
+        clock.Now += PastTheLoadRest;
+        await board.HandleAsync(bystander.Client, BountyPacket(ListSub));
+        faults.Attempts.Should().Be(tried + targets.Length, "after the rest the board tries again");
+    }
+
+    [Fact]
+    public async Task AnExpiryThatCannotBeSavedRestsBeforeTryingAgain()
+    {
+        var clock = new Clock();
+        var faults = new SaveFaults { Applies = context => context.ChangeTracker.Entries<Mail>().Any() };
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var board = ActivatorUtilities.CreateInstance<BountyPacketCoordinator>(provider, (TimeProvider)clock);
+        var poster = CreatePlayer(provider, 1335, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1336, AccountNation.ElMorad);
+        await board.HandleAsync(poster.Client, PostPacket(target.Session.Name, Reward));
+        clock.Now = clock.Now.AddDays(ExpiryDays);
+        faults.Failing = true;
+
+        await board.HandleAsync(poster.Client, BountyPacket(ListSub));
+        await board.HandleAsync(poster.Client, BountyPacket(ListSub));
+        faults.Attempts.Should().Be(1, "an expiry whose mail failed rests instead of making every request wait on the database");
+
+        faults.Failing = false;
+        clock.Now += PastTheLoadRest;
+        await board.HandleAsync(poster.Client, BountyPacket(ListSub));
+        (await GoldMailedToAsync(provider, poster)).Should().Be(Reward, "after the rest the expiry is tried again");
+    }
+
+    [Fact]
+    public async Task AShutdownDoesNotWaitPastItsTimeForTheBoard()
+    {
+        var held = new HeldSaves(context => context.ChangeTracker.Entries<BountyHunter>().Any());
+        using var provider = CreateProvider(_ => { },
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(held)));
+        var poster = CreatePlayer(provider, 1337, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1338, AccountNation.ElMorad);
+        var hunter = CreatePlayer(provider, 1339, AccountNation.Karus);
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+        var board = provider.GetRequiredService<BountyPacketCoordinator>();
+        held.Holding = true;
+        board.RecordKill(target.Session, hunter.Session);
+        await held.Reached;
+
+        try
+        {
+            var stop = ((IHostedService)board).StopAsync(new CancellationToken(canceled: true));
+
+            (await Task.WhenAny(stop, Task.Delay(DeathWait))).Should().BeSameAs(stop, "the host's shutdown time bounds the wait for the board");
+        }
+        finally
+        {
+            held.Release();
+        }
     }
 
     [Fact]
@@ -1173,11 +1264,13 @@ public class BountyTests : GameTestBase
     private sealed class SaveFaults : SaveChangesInterceptor
     {
         private readonly TaskCompletionSource thrown = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int attempts;
 
         public bool Failing { get; set; }
         public Func<DbContext, bool> Applies { get; init; } = _ => true;
         public Func<Exception> Error { get; init; } = () => new DbUpdateException("the database went away");
         public Task Thrown => thrown.Task;
+        public int Attempts => Volatile.Read(ref attempts);
 
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
@@ -1185,6 +1278,7 @@ public class BountyTests : GameTestBase
             if (!Failing || eventData.Context is not { } context || !Applies(context))
                 return base.SavingChangesAsync(eventData, result, cancellationToken);
 
+            Interlocked.Increment(ref attempts);
             thrown.TrySetResult();
             throw Error();
         }
