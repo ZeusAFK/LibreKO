@@ -23,23 +23,21 @@ public class RoulettePacketCoordinator(
 
     private const int RouletteSpinCost = 1;          // coins per spin
 
-    // One slice of the prize wheel. A slice is either an item (ItemId != 0) or gold (Gold != 0).
-    private readonly struct RouletteSlice(int weight, int itemId, int gold)
+    private const int NoPrizeItem = 0;
+
+    private readonly struct RouletteSlice(int weight, int gold)
     {
         public readonly int Weight = weight;
-        public readonly int ItemId = itemId;
         public readonly int Gold = gold;
     }
 
-    // Static weighted prize wheel (shared by all characters). Higher weight = more likely.
+    // Weight is the slice's share of the wheel.
     private static readonly RouletteSlice[] RouletteWheel =
     {
-        new(40, 0, 1_000),          // common: 1k gold
-        new(25, 0, 5_000),          // 5k gold
-        new(15, 379_022_000, 0),    // an item (HP potion id, illustrative)
-        new(10, 0, 25_000),         // 25k gold
-        new(7,  385_000_000, 0),    // another item
-        new(3,  0, 100_000),        // 100k gold jackpot
+        new(40, 1_000),
+        new(25, 5_000),
+        new(10, 25_000),
+        new(3, 100_000),
     };
 
     private static readonly int RouletteWheelTotalWeight = ComputeTotalWeight();
@@ -95,7 +93,7 @@ public class RoulettePacketCoordinator(
 
     private async Task HandleRouletteSpinAsync(UserSession session)
     {
-        int prizeItemId = 0;
+        const int prizeItemId = NoPrizeItem;
         int prizeGold = 0;
         byte rouletteResult;
 
@@ -110,7 +108,6 @@ public class RoulettePacketCoordinator(
             {
                 rouletteCoins[session.CharacterId] = coins - RouletteSpinCost;
                 var slice = RollRouletteSlice();
-                prizeItemId = slice.ItemId;
                 prizeGold = slice.Gold;
                 AppendRoulettePrizeLog(session.CharacterId, prizeItemId, prizeGold);
                 rouletteResult = RouletteResultSpun;
