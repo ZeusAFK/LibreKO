@@ -96,6 +96,17 @@ public class SpecialAuctionTests : GameTestBase
         return new Player(session, client, sent);
     }
 
+    private static async Task<(int Money, ItemSlot[] Items)> StoredAsync(ServiceProvider provider, int id)
+    {
+        await using var scope = provider.CreateAsyncScope();
+        var stored = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.AsNoTracking().SingleAsync(c => c.Id == id);
+        var items = new ItemSlot[InventoryConstants.InventoryTotal];
+        for (var i = 0; i < items.Length; i++)
+            items[i] = new ItemSlot();
+        UserSessionBinaryState.LoadItems(items, stored.Items);
+        return (stored.Money, items);
+    }
+
     private static async Task<Packet> Send(ServiceProvider provider, Player player, byte sub, Action<Packet>? body = null)
     {
         var packet = new Packet(GameOpcodes.GS_AUCTION);
@@ -182,6 +193,9 @@ public class SpecialAuctionTests : GameTestBase
 
         player.Session.Money.Should().Be(5_000_000);
         player.Session.Inventory[InventoryConstants.SlotMax].IsEmpty.Should().BeTrue();
+        var (storedMoney, storedItems) = await StoredAsync(provider, 100);
+        storedMoney.Should().Be(5_000_000, "the coins leave the saved purse with the bid");
+        storedItems.Should().NotContain(slot => slot.ItemId == Check, "the check leaves the saved bag with the bid");
         var today = await Send(provider, player, Today);
         today.ReadShort();
         today.ReadInt();
@@ -377,6 +391,7 @@ public class SpecialAuctionTests : GameTestBase
 
         claim.ReadShort().Should().Be(1);
         winner.Session.Inventory.Should().Contain(s => s.ItemId == Earrings);
+        (await StoredAsync(provider, 100)).Items.Should().Contain(slot => slot.ItemId == Earrings, "the prize is saved with the claim");
         Rows(await Send(provider, winner, MyInfo)).Should().BeEmpty();
 
         var log = await Send(provider, winner, Log);

@@ -21,6 +21,7 @@ public class LotteryService : ILotteryService
     private int lastAnnouncedMinute = -1;
     private int lastAutoCheckMinute = -1;
     private readonly ScheduleClock scheduleClock;
+    private readonly TimeProvider clock;
 
     public LotteryService(
         SessionManager sessionManager,
@@ -28,8 +29,10 @@ public class LotteryService : ILotteryService
         IUserNotificationService userNotificationService,
         IMailService mailService,
         ScheduleClock scheduleClock,
-        ILogger<LotteryService> logger)
+        ILogger<LotteryService> logger,
+        TimeProvider? clock = null)
     {
+        this.clock = clock ?? TimeProvider.System;
         this.sessionManager = sessionManager;
         this.gameDataService = gameDataService;
         this.userNotificationService = userNotificationService;
@@ -60,8 +63,8 @@ public class LotteryService : ILotteryService
             }
 
             var duration = durationMinutes ?? (eventData.DurationMinutes > 0 ? eventData.DurationMinutes : LotteryEventData.DefaultDurationMinutes);
-            var endTime = DateTime.UtcNow.AddMinutes(duration);
-            active = new ActiveLottery(eventData, endTime);
+            var endTime = clock.GetUtcNow().UtcDateTime.AddMinutes(duration);
+            active = new ActiveLottery(eventData, endTime, clock);
             lastAnnouncedMinute = duration + 1;
         }
 

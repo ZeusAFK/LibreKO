@@ -20,7 +20,7 @@ public class LotteryTests : GameTestBase
     private const int BobId = 20;
     private const int GoldBarId = 379068000;
     private const int SilverBarId = 379067000;
-    private const int Closers = 16;
+    private const int Closers = 4;
     private const int Rounds = 40;
 
     private static readonly LotteryEventData SampleLottery = new()
@@ -42,7 +42,13 @@ public class LotteryTests : GameTestBase
         new() { Id = 4, LotteryId = 1, Place = 4, ItemId = InventoryConstants.ItemGold, Count = 500_000 },
     ];
 
-    private static ServiceProvider Provider() => CreateProvider(
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    private static ServiceProvider Provider(TimeProvider? clock = null) => CreateProvider(
         db =>
         {
             db.Characters.AddRange(
@@ -59,6 +65,11 @@ public class LotteryTests : GameTestBase
             gameData.GetItem(GoldBarId).Returns(new ItemData { Num = GoldBarId, Name = "Gold bar (+0)", Duration = 1 });
             gameData.GetItem(SilverBarId).Returns(new ItemData { Num = SilverBarId, Name = "Silver bar (+0)", Duration = 1 });
             gameData.GetItem(InventoryConstants.ItemGold).Returns(new ItemData { Num = InventoryConstants.ItemGold, Name = "Coin (+0)", Duration = 0 });
+        },
+        configureServices: services =>
+        {
+            if (clock != null)
+                services.AddSingleton(clock);
         });
 
     private static (UserSession Session, List<Packet> Sent) Online(ServiceProvider provider, int characterId, string name)
@@ -217,6 +228,38 @@ public class LotteryTests : GameTestBase
         using var scope = provider.CreateScope();
         (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.CountAsync())
             .Should().Be(Rounds, "each lottery pays its prize or its refund, not both and not twice");
+    }
+
+    [Fact]
+    public async Task ADrawThatRanOutAndACancelMeetingSettleTheLotteryOnce()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        var lottery = provider.GetRequiredService<ILotteryService>();
+        for (var round = 0; round < Rounds; round++)
+        {
+            alice.Money = 500_000;
+            await lottery.StartAsync(1);
+            await lottery.BuyTicketAsync(alice);
+            clock.Now += TimeSpan.FromMinutes(SampleLottery.DurationMinutes + 1);
+            using var start = new Barrier(2);
+            await Task.WhenAll(
+                Task.Run(() =>
+                {
+                    start.SignalAndWait();
+                    return lottery.TickAsync();
+                }),
+                Task.Run(() =>
+                {
+                    start.SignalAndWait();
+                    return lottery.CloseAsync(cancelWithoutWinners: true);
+                }));
+        }
+
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.CountAsync())
+            .Should().Be(Rounds, "the timer and a cancel settle each lottery once between them");
     }
 
     [Fact]

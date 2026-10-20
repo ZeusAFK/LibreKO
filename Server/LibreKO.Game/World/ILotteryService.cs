@@ -12,13 +12,16 @@ public sealed class ActiveLottery
     public bool Closed { get; set; }
     public object Lock { get; } = new();
 
-    public ActiveLottery(LotteryEventData data, DateTime endTime)
+    private readonly TimeProvider clock;
+
+    public ActiveLottery(LotteryEventData data, DateTime endTime, TimeProvider? clock = null)
     {
         EventData = data;
         EndTime = endTime;
+        this.clock = clock ?? TimeProvider.System;
     }
 
-    public int RemainingSeconds => Math.Max(0, (int)(EndTime - DateTime.UtcNow).TotalSeconds);
+    public int RemainingSeconds => Math.Max(0, (int)(EndTime - clock.GetUtcNow().UtcDateTime).TotalSeconds);
     public int TotalTickets => Tickets.Count;
     public int TicketsFor(int characterId) => PlayerTicketCounts.GetValueOrDefault(characterId, 0);
 }
