@@ -4,7 +4,7 @@ public class LootItem
 {
     public int ItemId { get; set; }
     public ushort Count { get; set; }
-    public short Durability { get; set; }
+    public short? Durability { get; set; }
     public byte Flag { get; set; }
     public long ExpiresAt { get; set; }
     public int UniqueId { get; set; }
@@ -32,6 +32,15 @@ public class LootBundle
             return false;
         Items.RemoveAt(slotIndex);
         claimed = item;
+        return true;
+    }
+
+    public bool TryClaimSlot(int slotIndex, LootItem expected)
+    {
+        using var scope = sync.EnterScope();
+        if (slotIndex < 0 || slotIndex >= Items.Count || !ReferenceEquals(Items[slotIndex], expected))
+            return false;
+        Items.RemoveAt(slotIndex);
         return true;
     }
 

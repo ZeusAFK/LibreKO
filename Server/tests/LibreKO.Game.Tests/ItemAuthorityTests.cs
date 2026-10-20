@@ -35,6 +35,19 @@ public class ItemAuthorityTests : GameTestBase
     private const int GenieGold = 20_000;
     private const byte GenieClaim = 2;
     private const int ShortReply = 8;
+    private const byte NpcSwap = 3;
+    private const int CosHelmet = 900_100_000;
+    private const int OtherCosHelmet = 900_110_000;
+    private const int CosWings = 900_200_000;
+    private const byte CospreHelmetSlot = 107;
+    private const byte CospreWingsSlot = 110;
+    private const int MagicBag = 700_010_000;
+    private const int OtherMagicBag = 700_020_000;
+    private const byte BagItemSlot = 25;
+    private const byte FirstBagSlot = 0;
+    private const ushort Split = 2;
+    private const int NotAKeeper = 15_001;
+    private const short PlayerMaxHp = 100;
 
     [Theory]
     [InlineData(Sword, false)]
@@ -90,6 +103,23 @@ public class ItemAuthorityTests : GameTestBase
     }
 
     [Fact]
+    public async Task AWornOutItemDroppedIsPickedUpWornOut()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2011);
+        Put(Bag(player, BagFirst), Sword).Durability = 0;
+        var bundles = Bundles(client);
+
+        await Drop(provider, client, BagFirst, Sword, 1);
+        var bundle = provider.GetRequiredService<SessionManager>().Regions.GetBundle(bundles.Single())!;
+        bundle.DropTimeTicks -= TimeSpan.FromMilliseconds(LootBundle.OwnerExclusiveMs + 1).Ticks;
+        await Pick(provider, client, bundle.BundleId, Sword);
+
+        player.Inventory.Skip(InventoryConstants.InventoryStart).Take(InventoryConstants.HaveMax)
+            .Single(slot => slot.ItemId == Sword).Durability.Should().Be(0, "dropping a broken item does not repair it");
+    }
+
+    [Fact]
     public async Task ANpcSwapKeepsEachItemsExpiry()
     {
         using var provider = Provider();
@@ -97,7 +127,7 @@ public class ItemAuthorityTests : GameTestBase
         Put(Bag(player, BagFirst), Sword).ExpiresAt = RentalEnds;
         Put(Bag(player, BagSecond), Ring);
         var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
-        packet.WriteByte(3);
+        packet.WriteByte(NpcSwap);
         packet.WriteInt(Sword);
         packet.WriteByte(BagFirst);
         packet.WriteByte(BagSecond);
@@ -107,6 +137,72 @@ public class ItemAuthorityTests : GameTestBase
         Bag(player, BagSecond).ItemId.Should().Be(Sword);
         Bag(player, BagSecond).ExpiresAt.Should().Be(RentalEnds);
         Bag(player, BagFirst).ExpiresAt.Should().Be(0, "the ring was never timed");
+    }
+
+    [Theory]
+    [InlineData(OtherCosHelmet, true)]
+    [InlineData(CosWings, false)]
+    public async Task TakingOffACospreOntoABagItemSwapsOnlyIfThatItemFitsTheCospreSlot(int bagItem, bool swapped)
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2012);
+        Put(player.Inventory[InventoryConstants.CosHelmet], CosHelmet);
+        Put(Bag(player, BagFirst), bagItem);
+
+        await MoveItem(provider, client, ItemMoveDirection.CospreToInventory, CosHelmet, InventoryConstants.CosPosHelmet, BagFirst);
+
+        player.Inventory[InventoryConstants.CosHelmet].ItemId.Should().Be(swapped ? bagItem : CosHelmet);
+        Bag(player, BagFirst).ItemId.Should().Be(swapped ? CosHelmet : bagItem);
+    }
+
+    [Theory]
+    [InlineData(OtherMagicBag, true)]
+    [InlineData(Potion, false)]
+    public async Task TakingOffABagOntoABagItemSwapsOnlyIfThatItemIsABag(int bagItem, bool swapped)
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2013);
+        var worn = InventoryConstants.BagSlotStart + FirstBagSlot;
+        Put(player.Inventory[worn], MagicBag);
+        Put(Bag(player, BagFirst), bagItem);
+
+        await MoveItem(provider, client, ItemMoveDirection.BagSlotToInventory, MagicBag, FirstBagSlot, BagFirst);
+
+        player.Inventory[worn].ItemId.Should().Be(swapped ? bagItem : MagicBag);
+        Bag(player, BagFirst).ItemId.Should().Be(swapped ? MagicBag : bagItem);
+    }
+
+    [Fact]
+    public async Task PartOfATimedStackIsNotSplitOntoAPermanentOne()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2014);
+        var timed = Put(Bag(player, BagFirst), Potion);
+        timed.Count = Stack;
+        timed.ExpiresAt = RentalEnds;
+        Put(Bag(player, BagSecond), Potion).Count = Stack;
+
+        await MoveItem(provider, client, ItemMoveDirection.InventoryToInventory, Potion, BagFirst, BagSecond, Split);
+
+        Bag(player, BagFirst).Count.Should().Be(Stack);
+        Bag(player, BagSecond).Count.Should().Be(Stack, "potions that expire are not split onto ones that do not");
+    }
+
+    [Fact]
+    public void ABundleEntryIsClaimedOnlyIfItIsStillTheOneThatWasSeen()
+    {
+        var bundle = new LootBundle();
+        var first = new LootItem { ItemId = Potion, Count = 1 };
+        var second = new LootItem { ItemId = Potion, Count = Stack };
+        var third = new LootItem { ItemId = Potion, Count = Split };
+        bundle.Items.AddRange([first, second, third]);
+        var seen = bundle.SnapshotItems()[1];
+
+        bundle.TryClaimSlot(0, first).Should().BeTrue();
+
+        bundle.TryClaimSlot(1, seen).Should().BeFalse("another entry of the same item now sits where this one was seen");
+        bundle.Items.Should().Equal(second, third);
+        bundle.TryClaimSlot(0, seen).Should().BeTrue();
     }
 
     [Fact]
@@ -168,6 +264,34 @@ public class ItemAuthorityTests : GameTestBase
     }
 
     [Fact]
+    public async Task TheWarehouseDoesNotOpenAtAnNpcThatKeepsNone()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2015);
+        TalkTo(provider, player, NotAKeeper);
+        var sent = Sent(client);
+
+        await OpenWarehouse(provider, client);
+
+        sent.Any(reply => reply.GetOpcode() == (byte)GameOpcodes.GS_WAREHOUSE && reply.GetLength() > ShortReply).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task StorageOpenedAtAKeeperStillWorksAfterTalkingToAnotherNpc()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2016);
+        StandAtWarehouseKeeper(provider, client);
+        await OpenWarehouse(provider, client);
+        TalkTo(provider, player, NotAKeeper);
+        Put(Bag(player, BagFirst), Sword);
+
+        await Store(provider, client, Sword, BagFirst, 0, 1);
+
+        player.Warehouse[0].ItemId.Should().Be(Sword);
+    }
+
+    [Fact]
     public async Task TheRouletteHandsOutNoFreeSpins()
     {
         using var provider = Provider();
@@ -203,12 +327,29 @@ public class ItemAuthorityTests : GameTestBase
     {
         using var provider = Provider();
         var (player, client) = Player(provider, 2010);
-        player.Money = Purse;
-        player.GenieRewardClaimedOn = DateTime.UtcNow.Date;
+        var character = new Common.Domain.Entities.Character
+        {
+            Name = player.Name, Money = Purse, GenieRewardClaimedOn = DateTime.UtcNow.Date,
+        };
+        new UserSessionCharacterMapper().HydrateSession(player, character, new Common.Domain.Entities.Account(),
+            new Common.Domain.Entities.Warehouse(), PlayerMaxHp, PlayerMaxHp, provider.GetRequiredService<Common.Domain.Services.IGameDataService>());
 
         await provider.GetRequiredService<IGeniePacketCoordinator>().HandleAsync(client, Claim());
 
         player.Money.Should().Be(Purse);
+    }
+
+    [Fact]
+    public async Task AGenieClaimThatWouldOverfillThePurseIsRefusedAndKeepsTheDay()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, 2017);
+        player.Money = ExchangePacketConstants.CoinMax - GenieGold + 1;
+
+        await provider.GetRequiredService<IGeniePacketCoordinator>().HandleAsync(client, Claim());
+
+        player.Money.Should().Be(ExchangePacketConstants.CoinMax - GenieGold + 1);
+        player.GenieRewardClaimedOn.Should().BeNull("a refused claim leaves the day's reward to take later");
     }
 
     private static ServiceProvider Provider() => CreateProvider(_ => { }, gameData =>
@@ -224,6 +365,10 @@ public class ItemAuthorityTests : GameTestBase
         });
         gameData.GetItem(Potion).Returns(new ItemData { Num = Potion, Countable = 1, Duration = 1 });
         gameData.GetItem(Untradeable).Returns(new ItemData { Num = Untradeable, Race = UntradeableRace, Duration = 1 });
+        foreach (var (id, slot) in new[] { (CosHelmet, CospreHelmetSlot), (OtherCosHelmet, CospreHelmetSlot), (CosWings, CospreWingsSlot) })
+            gameData.GetItem(id).Returns(new ItemData { Num = id, Slot = slot, Duration = 1 });
+        foreach (var id in new[] { MagicBag, OtherMagicBag })
+            gameData.GetItem(id).Returns(new ItemData { Num = id, Slot = BagItemSlot, Duration = 1 });
     });
 
     private static (UserSession Player, IClient Client) Player(ServiceProvider provider, int id)
@@ -276,7 +421,8 @@ public class ItemAuthorityTests : GameTestBase
     }
 
     private static Task MoveItem(
-        ServiceProvider provider, IClient client, ItemMoveDirection direction, int itemId, int source, int destination)
+        ServiceProvider provider, IClient client, ItemMoveDirection direction, int itemId, int source, int destination,
+        ushort? amount = null)
     {
         var packet = new Packet(GameOpcodes.GS_ITEM_MOVE);
         packet.WriteByte(Moved);
@@ -284,6 +430,8 @@ public class ItemAuthorityTests : GameTestBase
         packet.WriteInt(itemId);
         packet.WriteByte((byte)source);
         packet.WriteByte((byte)destination);
+        if (amount is { } split)
+            packet.WriteUShort(split);
         return provider.GetRequiredService<IItemPacketCoordinator>().HandleMoveAsync(client, Reset(packet));
     }
 
@@ -315,6 +463,23 @@ public class ItemAuthorityTests : GameTestBase
         packet.WriteByte(from);
         packet.WriteByte(to);
         packet.WriteInt(count);
+        return provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, Reset(packet));
+    }
+
+    private static void TalkTo(ServiceProvider provider, UserSession player, int npcId)
+    {
+        var npc = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = npcId, Name = "Merchant", ZoneId = player.ZoneId, X = player.X, Z = player.Z,
+            SpawnX = player.X, SpawnZ = player.Z, Hp = 1, MaxHp = 1,
+        });
+        player.Quest.EventNpcUniqueId = npc.UniqueId;
+    }
+
+    private static Task OpenWarehouse(ServiceProvider provider, IClient client)
+    {
+        var packet = new Packet(GameOpcodes.GS_WAREHOUSE);
+        packet.WriteByte((byte)WarehouseSubOpcode.Open);
         return provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, Reset(packet));
     }
 

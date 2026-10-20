@@ -337,6 +337,15 @@ public class RegionManager
         return true;
     }
 
+    public bool TryClaimBundleItem(int bundleId, int slotIndex, LootItem expected)
+    {
+        if (!bundles.TryGetValue(bundleId, out var bundle) || !bundle.TryClaimSlot(slotIndex, expected))
+            return false;
+        if (bundle.IsEmpty())
+            bundles.TryRemove(bundleId, out _);
+        return true;
+    }
+
     public void CleanupExpiredBundles()
     {
         var now = DateTime.UtcNow.Ticks;

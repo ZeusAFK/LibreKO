@@ -14,6 +14,8 @@ public class ClanBankTests : GameTestBase
 {
     private const short Wolves = 71;
     private const int StoredItem = 156_210_000;
+    private const int OwnersOnly = 389_020_000;
+    private const byte UntradeableRace = 20;
     private const byte Member = 3;
     private const byte Chief = 1;
     private const short AliveHp = 100;
@@ -73,6 +75,28 @@ public class ClanBankTests : GameTestBase
         bank.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(StoredItem);
     }
 
+    [Fact]
+    public async Task AnItemThatCanNeverBeTradedIsNamedNotStorable()
+    {
+        var bank = Bank(Wolves, Member);
+        var bag = bank.Session.Inventory[InventoryConstants.SlotMax];
+        bag.ItemId = OwnersOnly;
+        bag.Count = 1;
+
+        await bank.Send(WarehouseSubOpcode.Input, packet =>
+        {
+            packet.WriteInt(0);
+            packet.WriteInt(OwnersOnly);
+            packet.WriteByte(0);
+            packet.WriteByte(0);
+            packet.WriteByte(0);
+            packet.WriteInt(1);
+        });
+
+        bank.LastResult(WarehouseSubOpcode.Input).Should().Be((byte)ClanWarehouseResult.NotStorable);
+        bank.Slots()[0].IsEmpty.Should().BeTrue("another member could take it out on a different character");
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -130,8 +154,11 @@ public class ClanBankTests : GameTestBase
             if (clan <= 0) return;
             db.Knights.Add(new KnightsEntity { Id = clan, Name = "Wolves", Chief = "Alpha", Nation = 1 });
             db.SaveChanges();
-        }, data => data.GetItem(StoredItem)
-            .Returns(new ItemData { Num = StoredItem, Countable = 0, Duration = 50 }));
+        }, data =>
+        {
+            data.GetItem(StoredItem).Returns(new ItemData { Num = StoredItem, Countable = 0, Duration = 50 });
+            data.GetItem(OwnersOnly).Returns(new ItemData { Num = OwnersOnly, Race = UntradeableRace, Duration = 50 });
+        });
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         var sent = new List<Packet>();

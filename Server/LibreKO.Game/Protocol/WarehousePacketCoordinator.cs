@@ -293,7 +293,14 @@ public class WarehousePacketCoordinator(
 
     private bool AtWarehouseKeeper(UserSession session)
     {
-        if (sessionManager.Regions.GetNpc(session.Quest.EventNpcUniqueId) is not { NpcType: NpcData.TypeWarehouse } keeper
+        if (IsKeeperBeside(session, session.Quest.EventNpcUniqueId))
+            session.WarehouseKeeperId = session.Quest.EventNpcUniqueId;
+        return IsKeeperBeside(session, session.WarehouseKeeperId);
+    }
+
+    private bool IsKeeperBeside(UserSession session, int npcUniqueId)
+    {
+        if (sessionManager.Regions.GetNpc(npcUniqueId) is not { NpcType: NpcData.TypeWarehouse } keeper
             || keeper.ZoneId != session.ZoneId)
             return false;
 
@@ -306,5 +313,4 @@ public class WarehousePacketCoordinator(
         itemData.Race != NonStorableRace
         && itemData.Race is < VaultTicketRaceFirst or > VaultTicketRaceLast
         && itemData.Num is < NonStorableIdFirst or > NonStorableIdLast;
-
 }

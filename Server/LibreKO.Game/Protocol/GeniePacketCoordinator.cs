@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
@@ -64,28 +63,26 @@ public class GeniePacketCoordinator(
 
     private async Task HandleGenieClaimAsync(UserSession session)
     {
-
-        var gained = session.WithLock(s =>
+        var claimed = session.WithLock(s =>
         {
-            if (ClaimedToday(s))
-                return -1;
+            if (ClaimedToday(s) || (long)s.Money + GenieRewardGold > ExchangePacketConstants.CoinMax)
+                return false;
             s.GenieRewardClaimedOn = DateTime.UtcNow.Date;
-            var reward = (int)Math.Min(GenieRewardGold, (long)ExchangePacketConstants.CoinMax - s.Money);
-            s.Money += reward;
-            return reward;
+            s.Money += GenieRewardGold;
+            return true;
         });
-        if (gained < 0)
+        if (!claimed)
         {
             await session.Client.SendPacket(GeniePacketWriter.ClaimResult(
                 GenieSubClaim, GeniePacketWriter.Failed, GeniePacketWriter.NoReward));
             return;
         }
 
-        await userNotification.SendGoldGainAsync(session, gained);
-        logger.LogDebug("{Name} claimed daily genie reward ({Gold} gold)", session.Name, gained);
+        await userNotification.SendGoldGainAsync(session, GenieRewardGold);
+        logger.LogDebug("{Name} claimed daily genie reward ({Gold} gold)", session.Name, GenieRewardGold);
 
         await session.Client.SendPacket(GeniePacketWriter.ClaimResult(
-            GenieSubClaim, GeniePacketWriter.Succeeded, gained));
+            GenieSubClaim, GeniePacketWriter.Succeeded, GenieRewardGold));
     }
 
     private static string PickGenieTip(byte level)

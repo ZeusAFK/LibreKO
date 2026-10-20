@@ -23,7 +23,6 @@ public class VipWarehousePacketCoordinator(
     private const int RentalCapDays = 60;
     private const int UseKeyBytes = 11;
     internal const byte PasswordTriesAllowed = 3;
-    private const int ItemCountMax = 9999;
     private const int CoinMax = 2_100_000_000;
 
     public async Task HandleAsync(IClient client, Packet packet)
@@ -362,7 +361,6 @@ public class VipWarehousePacketCoordinator(
     {
         await session.Client.SendPacket(WarehousePacketWriter.VipResult(sub, result));
     }
-
 
     private async Task SetPasswordAsync(UserSession session, Packet packet)
     {

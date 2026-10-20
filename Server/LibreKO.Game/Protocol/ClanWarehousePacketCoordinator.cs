@@ -28,7 +28,6 @@ public class ClanWarehousePacketCoordinator(
     private const int ItemNoTradeMax = 999_999_999;
     private const int CoinMax = 2_100_000_000;
     private const int WarehousePageSize = 24;
-    private const int ItemCountMax = 9999;
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -125,7 +124,8 @@ public class ClanWarehousePacketCoordinator(
             await SendResult(session, WarehouseSubOpcode.Input, ClanWarehouseResult.Failed);
             return;
         }
-        if ((itemId >= ItemNoTradeMin && itemId <= ItemNoTradeMax) || !WarehousePacketCoordinator.Storable(itemData))
+        if ((itemId >= ItemNoTradeMin && itemId <= ItemNoTradeMax) || itemData.IsUntradeable
+            || !WarehousePacketCoordinator.Storable(itemData))
         {
             await SendResult(session, WarehouseSubOpcode.Input, ClanWarehouseResult.NotStorable);
             return;
@@ -376,7 +376,6 @@ public class ClanWarehousePacketCoordinator(
 
     private static bool IsLeaderOrAssistant(UserSession session)
         => session.KnightsFame == 1 || session.KnightsFame == 2;
-
 
     private async Task PersistClanAsync(KnightsEntity clan, bool items)
     {
