@@ -81,10 +81,13 @@ public class ClanBankTests : GameTestBase
         bank.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(StoredItem);
     }
 
-    [Fact]
-    public async Task AnItemThatCanNeverBeTradedIsNamedNotStorable()
+    [Theory]
+    [InlineData(UntradeableRace)]
+    [InlineData(70)]
+    [InlineData(71)]
+    public async Task AnItemThatCanNeverBeTradedIsNamedNotStorable(byte race)
     {
-        var bank = Bank(Wolves, Member);
+        var bank = Bank(Wolves, Member, race);
         var bag = bank.Session.Inventory[InventoryConstants.SlotMax];
         bag.ItemId = OwnersOnly;
         bag.Count = 1;
@@ -153,7 +156,7 @@ public class ClanBankTests : GameTestBase
         bank.Slots()[1].IsEmpty.Should().BeTrue();
     }
 
-    private static BankHarness Bank(short clan, byte fame)
+    private static BankHarness Bank(short clan, byte fame, byte ownersOnlyRace = UntradeableRace)
     {
         var provider = CreateProvider(db =>
         {
@@ -163,7 +166,7 @@ public class ClanBankTests : GameTestBase
         }, data =>
         {
             data.GetItem(StoredItem).Returns(new ItemData { Num = StoredItem, Countable = 0, Duration = 50 });
-            data.GetItem(OwnersOnly).Returns(new ItemData { Num = OwnersOnly, Race = UntradeableRace, Duration = 50 });
+            data.GetItem(OwnersOnly).Returns(new ItemData { Num = OwnersOnly, Race = ownersOnlyRace, Duration = 50 });
         });
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());

@@ -10,6 +10,8 @@ public class ItemUseRulesTests
     private const int QuestRace = 20;
     private const int NoStoreRace = 73;
     private const int NoSaleRace = 12;
+    private const int NoTradeDestroyRace = 70;
+    private const int NoTradeDestroyAltRace = 71;
 
     [Fact]
     public void PlainItemsGoEverywhere()
@@ -53,5 +55,16 @@ public class ItemUseRulesTests
     {
         Assert.Equal(ItemUseRules.NonStorableText, ItemUseRules.Refusal(ItemUse.ClanBank, Sword, 0, (byte)ItemFlag.Bound));
         Assert.Equal(ItemUseRules.NonStorableText, ItemUseRules.Refusal(ItemUse.ClanBank, Sword, 0, 0, timed: true));
+    }
+
+    [Theory]
+    [InlineData(QuestRace)]
+    [InlineData(NoTradeDestroyRace)]
+    [InlineData(NoTradeDestroyAltRace)]
+    public void TheClanBankKeepsOutWhatCannotBeTraded(int race)
+    {
+        Assert.Equal(ItemUseRules.NonStorableText, ItemUseRules.Refusal(ItemUse.ClanBank, Sword, race, 0));
+        Assert.Equal(ItemUseRules.CannotTradeText, ItemUseRules.Refusal(ItemUse.Trade, Sword, race, 0));
+        Assert.Equal(ItemUseRules.Allowed, ItemUseRules.Refusal(ItemUse.Warehouse, Sword, race, 0));
     }
 }

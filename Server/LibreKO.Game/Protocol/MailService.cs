@@ -221,7 +221,8 @@ public class MailService(
             if (itemData == null || pick.Count == 0 || pick.Count > entry.Count)
                 return CannotAttach;
 
-            if (!entry.IsTradable || !ExchangeTransferService.IsTradableItem(itemData, entry.ItemId, (byte)(slot - InventoryConstants.InventoryStart)))
+            if (!ExchangeTransferService.MayChangeHands(itemData, entry)
+                || !ExchangeTransferService.IsTradableItem(itemData, entry.ItemId, (byte)(slot - InventoryConstants.InventoryStart)))
                 return $"{itemData.Name} cannot be traded, so it cannot be mailed.";
 
             picks.Add((slot, pick.Count, itemData));

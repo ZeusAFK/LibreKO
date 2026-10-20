@@ -870,6 +870,26 @@ public class SlaveMerchantTests : GameTestBase
     }
 
     [Fact]
+    public async Task ATimedItemASlaveKeptFromAnOlderRecordIsNotSold()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, Scroll, StackSlot, count: 4, stock: 4);
+        await Insert(provider, owner, toSlave: true);
+        var slave = Slave(provider);
+        var entry = slave.Trade.MerchantItems[0];
+        entry.ExpiresAt = RentalEnds;
+        slave.Inventory[entry.OriginalSlot].ExpiresAt = RentalEnds;
+
+        await Buy(provider, slave, count: 1);
+
+        provider.GetRequiredService<SessionManager>().GetByCharacterId(BuyerId)!.Money
+            .Should().Be(BuyerPurse, "a timed item cannot change hands, whenever it was listed");
+        entry.Count.Should().Be(4);
+    }
+
+    [Fact]
     public async Task DeletingTheOwnerTakesTheSlaveItsGoodsAndItsHoursWithIt()
     {
         using var provider = Provider();

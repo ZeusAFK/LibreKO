@@ -36,18 +36,19 @@ public class MailServiceTests : GameTestBase
     private const long LongExpired = 1;
     private static readonly TimeSpan SweepGrace = TimeSpan.FromMilliseconds(300);
 
-    private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null) => CreateProvider(
+    private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null, Action<Common.Domain.Services.IGameDataService>? gameData = null) => CreateProvider(
         db => db.Characters.AddRange(
             new Character { Id = AliceId, AccountId = 1, Name = "Alice" },
             new Character { Id = BobId, AccountId = 2, Name = "Bob" }),
-        gameData =>
+        data =>
         {
-            gameData.GetItem(Apple).Returns(new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 });
-            gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Name = "Sword", Countable = 0, Duration = 5000, Weight = 1 });
-            gameData.GetItem(InventoryConstants.CypherRing).Returns(new ItemData
+            data.GetItem(Apple).Returns(new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 });
+            data.GetItem(Sword).Returns(new ItemData { Num = Sword, Name = "Sword", Countable = 0, Duration = 5000, Weight = 1 });
+            data.GetItem(InventoryConstants.CypherRing).Returns(new ItemData
             {
                 Num = InventoryConstants.CypherRing, Name = "Cypher Ring", Countable = 0, Duration = 1, Weight = 1,
             });
+            gameData?.Invoke(data);
         },
         configureServices: configureServices);
 
@@ -147,7 +148,6 @@ public class MailServiceTests : GameTestBase
         sword.Count = 1;
         sword.Durability = 0;
         sword.Flag = (byte)ItemFlag.NotBound;
-        sword.ExpiresAt = RentalEnds;
         var ring = alice.Inventory[InventoryConstants.InventoryStart + 1];
         ring.ItemId = InventoryConstants.CypherRing;
         ring.Count = 1;
@@ -166,22 +166,41 @@ public class MailServiceTests : GameTestBase
         var got = bag.Single(slot => slot.ItemId == Sword);
         got.Durability.Should().Be(0, "the post does not repair a broken sword");
         got.Flag.Should().Be((byte)ItemFlag.NotBound);
-        got.ExpiresAt.Should().Be(RentalEnds);
         bag.Single(slot => slot.ItemId == InventoryConstants.CypherRing).UniqueId.Should().Be(SealedCharacter);
     }
 
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(70, false)]
+    [InlineData(71, false)]
+    [InlineData(73, false)]
+    public async Task ATimedOrTradeLockedItemIsNotMailed(byte race, bool timed)
+    {
+        using var provider = Provider(gameData: data =>
+            data.GetItem(Sword).Returns(new ItemData { Num = Sword, Countable = 0, Duration = 100, Race = race }));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        Online(provider, BobId, "Bob");
+        var sword = alice.Inventory[InventoryConstants.InventoryStart];
+        sword.ItemId = Sword;
+        sword.Count = 1;
+        if (timed)
+            sword.ExpiresAt = RentalEnds;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Kit", "", 0,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, 1)]);
+
+        sword.ItemId.Should().Be(Sword, "mail hands an item to another player, as a trade does");
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(0);
+    }
+
     [Fact]
-    public async Task AMailedTimedStackDoesNotJoinAPermanentOne()
+    public async Task ATimedStackMailedByTheServerDoesNotJoinAPermanentOne()
     {
         using var provider = Provider();
-        var (alice, _) = Online(provider, AliceId, "Alice");
         var (bob, bobSent) = Online(provider, BobId, "Bob");
-        var apples = alice.Inventory[InventoryConstants.InventoryStart];
-        apples.ItemId = Apple;
-        apples.Count = Sent;
-        apples.ExpiresAt = RentalEnds;
         var mail = provider.GetRequiredService<IMailService>();
-        await mail.SendAsync(alice, "Bob", "Apples", "Fresh.", 0, [new MailItemPick((byte)InventoryConstants.InventoryStart, Sent)]);
+        await mail.SendSystemMailAsync(BobId, "Apples", "Fresh.",
+            [new MailAttachmentDraft(MailAttachmentKind.Item, Apple, Sent, ExpiresAt: RentalEnds)]);
         EmptyBag(bob);
         var own = bob.Inventory[InventoryConstants.InventoryStart];
         own.ItemId = Apple;
@@ -743,7 +762,7 @@ public class MailServiceTests : GameTestBase
         var sword = alice.Inventory[InventoryConstants.InventoryStart + 1];
         sword.ItemId = Sword;
         sword.Count = 1;
-        sword.ExpiresAt = RentalEnds;
+        sword.Flag = (byte)ItemFlag.NotBound;
 
         await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Kit", "", MailedGold,
         [
@@ -753,7 +772,7 @@ public class MailServiceTests : GameTestBase
 
         apples.Count.Should().Be(Sent, "the mail and the bag are saved together or not at all");
         sword.ItemId.Should().Be(Sword);
-        sword.ExpiresAt.Should().Be(RentalEnds);
+        sword.Flag.Should().Be((byte)ItemFlag.NotBound);
         alice.Money.Should().Be(Purse);
         MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(0);
     }
@@ -768,7 +787,7 @@ public class MailServiceTests : GameTestBase
         var sword = alice.Inventory[InventoryConstants.InventoryStart];
         sword.ItemId = Sword;
         sword.Count = 1;
-        sword.ExpiresAt = RentalEnds;
+        sword.Flag = (byte)ItemFlag.NotBound;
         faults.Meanwhile = () =>
         {
             FillBagLeaving(alice, 0);
@@ -778,7 +797,7 @@ public class MailServiceTests : GameTestBase
         await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Kit", "", MailedGold,
             [new MailItemPick((byte)InventoryConstants.InventoryStart, 1)]);
 
-        alice.Warehouse.Should().Contain(slot => slot.ItemId == Sword && slot.ExpiresAt == RentalEnds,
+        alice.Warehouse.Should().Contain(slot => slot.ItemId == Sword && slot.Flag == (byte)ItemFlag.NotBound,
             "the bag filled while the save ran, and the sword must not vanish");
         alice.WarehouseMoney.Should().Be(MailedGold);
     }

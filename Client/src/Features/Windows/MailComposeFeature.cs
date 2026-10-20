@@ -58,9 +58,6 @@ internal sealed partial class MailComposeFeature : IFeature, IEscapable
     private const int AttachRowGap = 8;
     private const int AttachAreaHeight = (int)(MailWire.ItemAttachmentsMax * QuestRows.IconSide + (MailWire.ItemAttachmentsMax - 1) * AttachRowGap) + 20;
     private const int RecipientSuggestions = 8;
-    private const int UntradeableRace = 20;
-    private const int NoTradeItemMin = 900000001;
-    private const int NoTradeItemMax = 1_000_000_000;
     private const long GoldMax = int.MaxValue;
     private const int BodyWarnRemaining = 40;
     private const double SuggestDebounceSeconds = 0.25;
@@ -297,14 +294,9 @@ internal sealed partial class MailComposeFeature : IFeature, IEscapable
         Callable.From(ComposeWindow.ResetSize).CallDeferred();
     }
 
-    private static bool ItemTradable(ItemSlot slot)
-    {
-        if (slot.IsEmpty) return false;
-        var data = ItemData.Get(slot.ItemId);
-        if (data == null || data.Race == UntradeableRace) return false;
-        if (slot.ItemId >= NoTradeItemMin && slot.ItemId < NoTradeItemMax) return false;
-        return slot.State is not (ItemFlag.Rented or ItemFlag.CharacterSeal or ItemFlag.Duplicate or ItemFlag.Sealed or ItemFlag.Bound);
-    }
+    private static bool ItemTradable(ItemSlot slot) =>
+        !slot.IsEmpty && ItemData.Get(slot.ItemId) != null
+        && ItemStacks.UseRefusal(ItemUse.Trade, slot) == ItemUseRules.Allowed;
 
     private bool CanAttachSlot(int abs) =>
         self.Inventory.IsGridSlot(abs) && abs < self.Inventory.Length

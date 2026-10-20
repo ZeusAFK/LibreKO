@@ -94,6 +94,8 @@ public sealed class MerchantPurchase(UserSession buyer, UserSession merchant, in
         if (sellerSlot.ItemId != itemId || sellerSlot.Count < count || !sellerSlot.IsTradable
             || sellerSlot.Flag != entry.Flag || sellerSlot.ExpiresAt != entry.ExpiresAt || sellerSlot.UniqueId != entry.UniqueId)
             return "the seller no longer holds that";
+        if (!ExchangeTransferService.MayChangeHands(itemData, sellerSlot))
+            return "the item cannot change hands";
 
         UnitPrice = entry.Price;
         Cost = (long)UnitPrice * count;

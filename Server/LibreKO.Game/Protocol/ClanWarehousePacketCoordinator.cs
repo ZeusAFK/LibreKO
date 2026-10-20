@@ -149,7 +149,7 @@ public class ClanWarehousePacketCoordinator(
                 var source = s.Inventory[absSrc];
                 if (source.ItemId != itemId || source.Count < count)
                     return false;
-                if (!source.IsTradable || source.Expires)
+                if (!ExchangeTransferService.MayChangeHands(itemData, source))
                 {
                     untradable = true;
                     return false;
