@@ -20,6 +20,14 @@ public class MagicAreaTests : GameTestBase
     private const byte RonarkLand = BattleZoneManager.ZONE_RONARK_LAND;
     private const byte AreaRadius = 30;
     private const short SleepSeconds = 20;
+    private const int InstantSkillPaceMs = 250;
+
+    private sealed class Clock : TimeProvider
+    {
+        private DateTimeOffset now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => now;
+        public void Advance(int milliseconds) => now = now.AddMilliseconds(milliseconds);
+    }
 
     [Fact]
     public async Task SleepWingPutsTheMonsterToSleepAndTellsEveryoneNearby()
@@ -87,8 +95,10 @@ public class MagicAreaTests : GameTestBase
     [Fact]
     public async Task BindingCanPullAMonsterOffAnotherPlayer()
     {
+        var clock = new Clock();
         using var provider = CreateProvider(_ => { }, gameData => Type7(gameData, BindingId,
-            new MagicType7Data { Id = BindingId, TargetChange = (byte)MagicAreaTargetChange.Provoke, Damage = 10, Duration = 9 }));
+            new MagicType7Data { Id = BindingId, TargetChange = (byte)MagicAreaTargetChange.Provoke, Damage = 10, Duration = 9 }),
+            configureServices: services => services.AddSingleton<TimeProvider>(clock));
 
         var (sessionManager, caster, client) = CreateCaster(provider);
         var ally = CreateVictim(sessionManager);
@@ -102,6 +112,7 @@ public class MagicAreaTests : GameTestBase
             monster.State = NpcState.Fighting;
 
             await Cast(provider, client, BindingId, caster, monster.UniqueId);
+            clock.Advance(InstantSkillPaceMs);
 
             if (monster.TargetUserId == caster.CharacterId)
                 switched++;
