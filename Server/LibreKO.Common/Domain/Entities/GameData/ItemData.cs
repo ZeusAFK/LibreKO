@@ -92,6 +92,10 @@ public class ItemData
 
     public ItemKind Category => (ItemKind)Kind;
 
+    public int GradeClass(IReadOnlyDictionary<int, int> gradeBonuses) =>
+        ItemClass + gradeBonuses.GetValueOrDefault(
+            ItemGradeBonusData.KeyOf(Extension, Num % ItemGradeBonusData.ExtensionSpan));
+
     public bool IsBow() => Category
         is ItemKind.Bow or ItemKind.Crossbow or ItemKind.LongBow or ItemKind.Launcher;
 

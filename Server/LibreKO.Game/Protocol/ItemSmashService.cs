@@ -26,7 +26,6 @@ public class ItemSmashService(
     private const int RequestBytes = 4 + 1 + 4;
     private const int ItemNumberSpan = 1_000_000_000;
     private const int LastSmashableNumber = 900_000_000;
-    private const int ExtensionIdSpan = 1000;
     private const byte HighFeeTypeUnique = 4;
     private const byte HighFeeTypeReverseUnique = 12;
     private static readonly (byte From, byte To)[] SmashableKinds =
@@ -116,12 +115,8 @@ public class ItemSmashService(
     public static int FeeFor(ItemData item) =>
         item.ItemType is HighFeeTypeUnique or HighFeeTypeReverseUnique ? HighFee : LowFee;
 
-    public ItemSmashClassData? ClassOf(ItemData item)
-    {
-        var bonus = gameDataService.ItemGradeBonuses.GetValueOrDefault(
-            ItemGradeBonusData.KeyOf(item.Extension, item.Num % ExtensionIdSpan));
-        return gameDataService.ItemSmashClassesByGrade.GetValueOrDefault(item.ItemClass + bonus);
-    }
+    public ItemSmashClassData? ClassOf(ItemData item) =>
+        gameDataService.ItemSmashClassesByGrade.GetValueOrDefault(item.GradeClass(gameDataService.ItemGradeBonuses));
 
     public static bool Smashable(ItemSlot slot, ItemData item) =>
         item.Countable == 0

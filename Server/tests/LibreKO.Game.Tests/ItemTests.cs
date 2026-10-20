@@ -1564,11 +1564,26 @@ public class ItemTests : GameTestBase
     private const byte UpgradeTypeNormal = 1;
     private const byte UpgradeTypePreview = 2;
     private const byte UpgradeTypeUnknown = 9;
+    private const byte UpgradeResultSucceeded = 1;
     private const byte UpgradeResultTrading = 2;
     private const byte UpgradeResultNoMatch = 4;
+    private const int LowClassUpgradeScroll = 379221000;
+    private const int LowClassHpScroll = 379223000;
+    private const int ReverseConvertScroll = 379256000;
+    private const int PlusSixItem = 262005006;
+    private const int PlusSevenItem = 262005007;
+    private const int UpgradeExtension = 17;
+    private const int PlusSevenExtensionId = 7;
+    private const int GradeStep = 1;
+    private const short LowItemClass = 1;
+    private const short MiddleItemClass = 2;
+    private const short HighItemClass = 3;
+    private const short UniqueItemClass = 7;
+    private const short KrowazItemClass = 33;
+    private const int CertainSuccessRate = 10_000;
 
-    private static ItemData UpgradeItem(int num, short itemType = 5, short itemClass = 3, short duration = 15)
-        => new() { Num = num, Kind = 52, ItemType = (byte)itemType, ItemClass = itemClass, Duration = duration };
+    private static ItemData UpgradeItem(int num, short itemType = 5, short itemClass = 3, short duration = 15, int extension = 0)
+        => new() { Num = num, Kind = 52, ItemType = (byte)itemType, ItemClass = itemClass, Duration = duration, Extension = extension };
 
     private static Packet UpgradeRequest(byte subOpcode, byte upgradeType, params (int ItemId, byte Position)[] slots)
     {
@@ -1840,6 +1855,85 @@ public class ItemTests : GameTestBase
         provider.GetRequiredService<IGameDataService>()
             .Received(0)
             .GetUpgradeSetting(Arg.Any<short>(), Arg.Any<short>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    private static ServiceProvider GradeClassUpgradeProvider(int originItemId, short itemClass, int scrollId) =>
+        CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId, itemClass: itemClass, extension: UpgradeExtension));
+                gameData.GetItem(originItemId + 1).Returns(UpgradeItem(originItemId + 1, itemClass: itemClass));
+                gameData.ItemGradeBonuses.Returns(new Dictionary<int, int>
+                {
+                    [ItemGradeBonusData.KeyOf(UpgradeExtension, PlusSevenExtensionId)] = GradeStep
+                });
+                gameData.GetUpgradeRecipe(originItemId, scrollId).Returns(new ItemUpgradeRecipeData
+                {
+                    OriginNumber = originItemId,
+                    NewNumber = originItemId + 1,
+                    RequiredItem = scrollId
+                });
+                gameData.GetUpgradeSetting(Arg.Any<short>(), Arg.Any<short>(), scrollId, Arg.Any<int>())
+                    .Returns(new ItemUpgradeSettingsData
+                    {
+                        ReqItem1 = scrollId,
+                        ItemType = ItemData.TypeStandard,
+                        ItemGrade = ItemUpgradeSettingsData.AnyGrade,
+                        SuccessRate = CertainSuccessRate
+                    });
+            });
+
+    [Theory]
+    [InlineData(PlusSixItem, LowItemClass, LowClassHpScroll, true)]
+    [InlineData(PlusSixItem, LowItemClass, LowClassUpgradeScroll, true)]
+    [InlineData(PlusSevenItem, LowItemClass, LowClassHpScroll, false)]
+    [InlineData(PlusSevenItem, LowItemClass, LowClassUpgradeScroll, false)]
+    [InlineData(PlusSevenItem, LowItemClass, MiddleClassScroll, true)]
+    [InlineData(PlusSevenItem, MiddleItemClass, MiddleClassScroll, false)]
+    [InlineData(PlusSevenItem, MiddleItemClass, HighClassScroll, true)]
+    [InlineData(PlusSevenItem, MiddleItemClass, ReverseConvertScroll, true)]
+    [InlineData(PlusSevenItem, HighItemClass, HighClassScroll, true)]
+    [InlineData(PlusSevenItem, HighItemClass, ReverseConvertScroll, true)]
+    [InlineData(PlusSevenItem, UniqueItemClass, HighClassScroll, true)]
+    [InlineData(PlusSevenItem, UniqueItemClass, ReverseConvertScroll, true)]
+    [InlineData(PlusSevenItem, KrowazItemClass, HighClassScroll, true)]
+    [InlineData(PlusSevenItem, KrowazItemClass, ReverseConvertScroll, true)]
+    public async Task HandleUpgradeAsync_FitsTheScrollToTheGradeClassOfTheItem(
+        int originItemId, short itemClass, int scrollId, bool fits)
+    {
+        using var provider = GradeClassUpgradeProvider(originItemId, itemClass, scrollId);
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", originItemId, scrollId);
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(
+            client, UpgradeRequest((byte)ItemUpgradeSubOpcode.Upgrade, UpgradeTypeNormal, (originItemId, 0), (scrollId, 1)));
+
+        session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(fits ? originItemId + 1 : originItemId);
+        ReadUpgradeReply(sentPackets).Result.Should().Be(fits ? UpgradeResultSucceeded : UpgradeResultNoMatch);
+        provider.GetRequiredService<IGameDataService>()
+            .Received(fits ? 1 : 0)
+            .GetUpgradeSetting(Arg.Any<short>(), Arg.Any<short>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task HandleUpgradeAsync_PreviewRefusesALowClassScrollOnALowClassItemRaisedToMiddle()
+    {
+        using var provider = GradeClassUpgradeProvider(PlusSevenItem, LowItemClass, LowClassHpScroll);
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", PlusSevenItem, LowClassHpScroll);
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(
+            client,
+            UpgradeRequest((byte)ItemUpgradeSubOpcode.Upgrade, UpgradeTypePreview, (PlusSevenItem, 0), (LowClassHpScroll, 1)));
+
+        session.Inventory[InventoryConstants.InventoryStart + 1].ItemId.Should().Be(LowClassHpScroll);
+        ReadUpgradeReply(sentPackets).Should().Be(
+            ((byte)ItemUpgradeSubOpcode.Upgrade, UpgradeTypePreview, UpgradeResultNoMatch, PlusSevenItem, (byte)0));
     }
 
     [Fact]
