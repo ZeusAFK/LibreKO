@@ -22,7 +22,8 @@ public sealed class CharacterSealService(
     IGameDataService gameData,
     IUserNotificationService notifications,
     ICharacterStatePersister statePersister,
-    SessionManager sessionManager) : ICharacterSealService
+    SessionManager sessionManager,
+    SealGates sealGates) : ICharacterSealService
 {
     public const int CypherRing = InventoryConstants.CypherRing;
     public const byte ScrollKind = 250;
@@ -118,6 +119,11 @@ public sealed class CharacterSealService(
         if (ItemUpgradeService.VaultPasswordRefusal(session, code) is { } refusal)
             return CharacterSealPacketWriter.SealFailed((byte)refusal);
 
+        var targetId = await CharacterIdAsync(name);
+        if (targetId == null)
+            return CharacterSealPacketWriter.SealFailed(GenericFailure);
+
+        using var turn = await sealGates.EnterAsync(targetId.Value);
         var position = InventoryConstants.InventoryStart + bagPos;
         var journal = new InventoryJournal(session);
         var answer = CharacterSealPacketWriter.SealFailed(GenericFailure);
@@ -125,7 +131,7 @@ public sealed class CharacterSealService(
         var outcome = await statePersister.CommitAsync(session, async db =>
         {
             var target = await db.Characters.SingleOrDefaultAsync(character => character.Name == name);
-            if (target == null || target.AccountId != session.AccountId || target.Sealed || target.IsOnline
+            if (target == null || target.Id != targetId || target.AccountId != session.AccountId || target.Sealed || target.IsOnline
                 || (target.KnightsId > 0 && target.Fame == ClanRules.FameChief) || await HoldsElsewhereAsync(db, target))
                 return false;
             if (CarriedRefusal(target) is { } carried)
@@ -148,6 +154,15 @@ public sealed class CharacterSealService(
         var ring = session.Inventory[position];
         await notifications.SendStackChangeAsync(session, (byte)position, ring.ItemId, ring.Count, ring.Durability);
         return CharacterSealPacketWriter.Sealed(bagPos, CypherRing, sealedCharacter.Id, Summary(sealedCharacter));
+    }
+
+    private async Task<int?> CharacterIdAsync(string name)
+    {
+        using var scope = scopes.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters
+            .Where(character => character.Name == name)
+            .Select(character => (int?)character.Id)
+            .FirstOrDefaultAsync();
     }
 
     private bool MakeRing(ItemSlot scroll, int scrollId, int characterId)

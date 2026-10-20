@@ -150,6 +150,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INereidMonumentService, NereidMonumentService>();
         services.AddSingleton<IExpSealService, ExpSealService>();
         services.AddSingleton<ICharacterSealService, CharacterSealService>();
+        services.AddSingleton<SealGates>();
         services.AddSingleton<ClanMatchService>();
         services.AddSingleton<IClanMatchService>(sp => sp.GetRequiredService<ClanMatchService>());
         services.AddSingleton<VanguardService>();

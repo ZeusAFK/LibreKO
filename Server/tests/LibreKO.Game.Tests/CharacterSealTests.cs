@@ -34,6 +34,9 @@ public class CharacterSealTests : GameTestBase
     private const byte TradeLockedRace = 70;
     private const int PetSerial = 31;
     private const int CarriedAt = InventoryConstants.InventoryStart;
+    private const int SenderPurse = 100_000;
+    private const int MailedGold = 100;
+    private static readonly TimeSpan SendWait = TimeSpan.FromMilliseconds(300);
 
     public enum Carried { Bound, Rented, Timed, TradeLockedData, NoTradeNumber, PetLink, UnknownItem }
 
@@ -355,6 +358,72 @@ public class CharacterSealTests : GameTestBase
                 && entry.State == EntityState.Modified && entry.Property(nameof(Character.Sealed)).IsModified) == true
                 ? throw new DbUpdateException("the database went away")
                 : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    public enum Sent { Mail, Letter }
+
+    [Theory]
+    [InlineData(Sent.Mail)]
+    [InlineData(Sent.Letter)]
+    public async Task WhatIsSentWhileTheCharacterIsBeingSealedWaitsAndIsRefused(Sent what)
+    {
+        UserSession? sender = null;
+        IServiceProvider? services = null;
+        Task sending = Task.CompletedTask;
+        var during = new DuringSealSave
+        {
+            Meanwhile = () =>
+            {
+                sending = what == Sent.Mail
+                    ? services!.GetRequiredService<IMailService>().SendAsync(sender!, "Velkan", "Gift", "Gift", MailedGold, [])
+                    : services!.GetRequiredService<IShoppingMallLetterMutationService>().HandleSendAsync(sender!, LetterRequest("Velkan"));
+                return Task.WhenAny(sending, Task.Delay(SendWait));
+            },
+        };
+        using var provider = Provider(collection => collection.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(during)));
+        services = provider;
+        sender = Session(provider, 20, AccountB, "Buyer");
+        sender.Money = SenderPurse;
+        var sealer = Session(provider, 10, AccountA, "Zeus");
+        sealer.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        sealer.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(sealer, SealRequest("Velkan", Pin));
+        await sending;
+
+        sealer.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId.Should().Be(CharacterSealService.CypherRing);
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        (await db.Mails.CountAsync(mail => mail.RecipientCharacterId == 11)).Should().Be(0, "nothing reaches a character between its seal's check and its save");
+        (await db.MailBoxes.CountAsync(letter => letter.RecipientId == "Velkan")).Should().Be(0);
+        sender.Money.Should().Be(SenderPurse, "what was refused cost nothing");
+    }
+
+    private static Packet LetterRequest(string recipient)
+    {
+        var packet = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        packet.WriteSByteString(recipient);
+        packet.WriteSByteString("Gift");
+        packet.WriteByte(ShoppingMallPacketWriter.LetterTypePlain);
+        packet.WriteString("Gift");
+        packet.ResetOffset();
+        return packet;
+    }
+
+    private sealed class DuringSealSave : SaveChangesInterceptor
+    {
+        private int fired;
+
+        public Func<Task> Meanwhile { get; init; } = () => Task.CompletedTask;
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (eventData.Context?.ChangeTracker.Entries<Character>().Any(entry => entry.Entity.Sealed && entry.State == EntityState.Modified) == true
+                && Interlocked.Exchange(ref fired, 1) == 0)
+                await Meanwhile();
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
     }
 
     private sealed class SealFaults : SaveChangesInterceptor

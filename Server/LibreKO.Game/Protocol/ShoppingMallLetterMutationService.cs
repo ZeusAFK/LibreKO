@@ -25,6 +25,7 @@ public class ShoppingMallLetterMutationService(
     IGameDataService gameDataService,
     IUserNotificationService userNotificationService,
     ICharacterStatePersister statePersister,
+    SealGates sealGates,
     ILogger<ShoppingMallLetterMutationService> logger) : IShoppingMallLetterMutationService
 {
     private const byte Malformed = 0;
@@ -126,7 +127,7 @@ public class ShoppingMallLetterMutationService(
 
         var recipient = await db.Characters
             .Where(character => character.Name == recipientName && character.DeletionTime == null)
-            .Select(character => new { character.Sealed })
+            .Select(character => new { character.Id, character.Sealed })
             .FirstOrDefaultAsync();
         // A sealed character cannot log in to claim it.
         if (recipient == null || recipient.Sealed)
@@ -161,11 +162,15 @@ public class ShoppingMallLetterMutationService(
         }
 
         (bool Taken, ExchangeItem? Item, byte Refusal) taken = (false, null, Rejected);
-        var outcome = await statePersister.CommitAsync(session, unitOfWork =>
+        using var turn = await sealGates.EnterAsync(recipient.Id);
+        var outcome = await statePersister.CommitAsync(session, async unitOfWork =>
         {
+            if (await unitOfWork.Characters.Where(character => character.Id == recipient.Id).Select(character => character.Sealed).FirstOrDefaultAsync())
+                return false;
+
             taken = session.WithLock(s => TakeLetterCost(s, sourceIndex, itemId, itemData, cost));
             if (!taken.Taken)
-                return Task.FromResult(false);
+                return false;
 
             var enclosed = taken.Item;
             unitOfWork.MailBoxes.Add(new MailBox
@@ -186,7 +191,7 @@ public class ShoppingMallLetterMutationService(
                 Coins = coins,
                 Deleted = false
             });
-            return Task.FromResult(true);
+            return true;
         }, () => session.WithLock(s => GiveBackLetterCost(s, cost, taken.Item)));
         if (outcome != StateCommit.Saved)
         {

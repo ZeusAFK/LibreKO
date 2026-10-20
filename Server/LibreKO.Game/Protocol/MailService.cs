@@ -38,6 +38,7 @@ public class MailService(
     IPlayerProgressionService playerProgressionService,
     ILoyaltyService loyaltyService,
     ICharacterStatePersister statePersister,
+    SealGates sealGates,
     ILogger<MailService> logger) : IMailService
 {
     private const string BusySender = "You cannot send mail while trading, keeping a stall, gathering or dead.";
@@ -160,14 +161,21 @@ public class MailService(
         var drafts = new List<MailAttachmentDraft>();
         var taken = new List<(int Slot, ExchangeItem Item)>();
         string? refusal = null;
-        var outcome = await statePersister.CommitAsync(session, unitOfWork =>
+        using var turn = await sealGates.EnterAsync(recipient.Id);
+        var outcome = await statePersister.CommitAsync(session, async unitOfWork =>
         {
+            if (await IsSealedAsync(unitOfWork, recipient.Id))
+            {
+                refusal = $"{recipient.Name} is sealed and cannot receive mail.";
+                return false;
+            }
+
             refusal = session.WithLock(s => TakeAttachments(s, gold, items, drafts, taken));
             if (refusal != null)
-                return Task.FromResult(false);
+                return false;
 
             unitOfWork.Mails.Add(NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts, MailKind.Player));
-            return Task.FromResult(true);
+            return true;
         }, () => session.WithLock(s => GiveBackAttachments(s, gold, taken)));
         if (outcome != StateCommit.Saved)
         {
@@ -197,6 +205,9 @@ public class MailService(
         if (online != null)
             await NotifyNewMailAsync(online, session.Name, db);
     }
+
+    private static Task<bool> IsSealedAsync(AppDbContext db, int characterId) =>
+        db.Characters.Where(character => character.Id == characterId).Select(character => character.Sealed).FirstOrDefaultAsync();
 
     // Checked and taken in one locked step.
     private string? TakeAttachments(UserSession session, int gold, IReadOnlyList<MailItemPick> items,
