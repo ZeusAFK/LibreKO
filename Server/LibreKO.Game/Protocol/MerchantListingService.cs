@@ -126,7 +126,7 @@ public class MerchantListingService(
     {
         var targetId = packet.ReadInt();
         var merchant = sessionManager.GetByCharacterId(targetId);
-        if (merchant == null || !merchant.Trade.IsMerchanting)
+        if (merchant == null || !merchant.Trade.IsMerchanting || !ExchangePacketConstants.IsWithinTradeRange(session, merchant))
         {
             session.Trade.MerchantTargetUserId = -1;
             return;

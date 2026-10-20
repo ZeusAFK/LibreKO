@@ -238,6 +238,25 @@ public class MerchantStallTests : GameTestBase
     }
 
     [Fact]
+    public async Task AStallsGoodsAreListedOnlyToSomeoneAtTheStall()
+    {
+        using var market = new Market();
+        var seller = market.Player(96069, gold: 0);
+        Stock(Bag(seller, BagPos), Ware, 1);
+        await market.ListAsync(seller, Ware, BagPos);
+        seller.Trade.MerchantState = MerchantMode.Selling;
+        var browser = market.Player(96070, gold: 0);
+        browser.X = seller.X + FarAway;
+        var sent = new List<Packet>();
+        browser.Client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        await market.SendAsync(browser, MerchantSubOpcode.ItemList, packet => packet.WriteInt(seller.CharacterId));
+
+        sent.Should().NotContain(p => p.GetOpcode() == (byte)GameOpcodes.GS_MERCHANT, "the stall list is no server-wide price radar");
+        browser.Trade.MerchantTargetUserId.Should().Be(-1);
+    }
+
+    [Fact]
     public async Task ABuyerWhoLookedBeforeTheStallClosedBuysNothingFromItsReopening()
     {
         using var market = new Market();
