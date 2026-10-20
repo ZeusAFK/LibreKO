@@ -3,9 +3,13 @@ using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 
@@ -38,7 +42,7 @@ public class SpecialAuctionTests : GameTestBase
     private static int Serial => SpecialAuctionSchedule.SerialOf(new DateOnly(2026, 10, 10));
     private static int Day => SpecialAuctionSchedule.DayOf(Serial);
 
-    private static (ServiceProvider Provider, Clock Clock) Provider()
+    private static (ServiceProvider Provider, Clock Clock) Provider(Action<IServiceCollection>? configure = null)
     {
         var clock = new Clock(Evening);
         var row = SpecialAuctionSchedule.Row(1, Day);
@@ -52,7 +56,11 @@ public class SpecialAuctionTests : GameTestBase
             gameData.SpecialAuctionLotsByRow.Returns(lots.ToLookup(l => l.Row));
             gameData.GetItem(Check).Returns(new ItemData { Num = Check, Name = "Mythril Check (1B)", Kind = 255, Slot = 15, Countable = 0, Duration = 1, ReqLevelMax = 100 });
             gameData.GetItem(Earrings).Returns(new ItemData { Num = Earrings, Name = "Akara's Elf Metal Earrings", Kind = 93, Slot = 7, Countable = 0, Duration = 1000, ReqLevelMax = 100 });
-        }, settings => settings.SpecialAuctionGroup = 1, services => services.AddSingleton<TimeProvider>(clock));
+        }, settings => settings.SpecialAuctionGroup = 1, services =>
+        {
+            services.AddSingleton<TimeProvider>(clock);
+            configure?.Invoke(services);
+        });
         return (provider, clock);
     }
 
@@ -62,6 +70,13 @@ public class SpecialAuctionTests : GameTestBase
         client.Id.Returns(Guid.NewGuid());
         var sent = new List<Packet>();
         client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Characters.Add(new Character { Id = id, AccountId = id + 1000, Name = name, Items = new byte[InventoryConstants.InventoryTotal * 8] });
+            db.SaveChanges();
+        }
+
         var sessions = provider.GetRequiredService<SessionManager>();
         var session = sessions.CreateSession(client, characterId: id, accountId: id + 1000);
         session.Name = name;
@@ -371,6 +386,192 @@ public class SpecialAuctionTests : GameTestBase
         log.ReadInt().Should().Be(Necklace);
         log.ReadLong().Should().Be(0);
         log.ReadByte().Should().Be((byte)AuctionBidStatus.Cancelled);
+    }
+
+    [Fact]
+    public async Task AClaimThatDoesNotFitGivesNothingAndKeepsTheWin()
+    {
+        var (provider, _) = Provider();
+        using var _p = provider;
+        var winner = Join(provider, 100, "Winner", 0);
+        FillBagLeaving(winner.Session, 1);
+        SeedWin(provider, winner, Earrings, count: 2);
+
+        (await ClaimWin(provider, winner, Earrings, 2)).ReadShort().Should().Be(SpecialAuctionPacketWriter.BagFull);
+        CountOf(winner, Earrings).Should().Be(0, "a part of the lot would leave the rest claimable again");
+
+        winner.Session.Inventory[InventoryConstants.InventoryStart].Clear();
+        (await ClaimWin(provider, winner, Earrings, 2)).ReadShort().Should().Be(1);
+        CountOf(winner, Earrings).Should().Be(2);
+        (await ClaimWin(provider, winner, Earrings, 2)).ReadShort().Should().Be(SpecialAuctionPacketWriter.NoWin);
+    }
+
+    [Fact]
+    public async Task ABidWhoseSaveFailsKeepsTheCoinsAndTheChecks()
+    {
+        var faults = new Faults(context => context.ChangeTracker.Entries<AuctionBid>().Any(entry => entry.State == EntityState.Added));
+        var (provider, _) = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        using var _p = provider;
+        var bidder = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+
+        (await PlaceBid(provider, bidder, 0, Earrings, 2 * Million, 0)).ReadShort().Should().NotBe(1);
+
+        bidder.Session.Money.Should().Be(10_000_000, "the bid and the purse are saved together or not at all");
+        CountOf(bidder, Check).Should().Be(1);
+        (await provider.GetRequiredService<ISpecialAuctionService>().HasOpenAuctionAsync(100)).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AStakeThatLeavesMidBidStakesNothing(bool coins)
+    {
+        Player? bidder = null;
+        var sale = new DuringBidRead
+        {
+            Meanwhile = () =>
+            {
+                if (coins)
+                    bidder!.Session.Money = 0;
+                else
+                    bidder!.Session.Inventory[InventoryConstants.InventoryStart].Clear();
+            },
+        };
+        var (provider, _) = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(sale)));
+        using var _p = provider;
+        bidder = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+
+        (await PlaceBid(provider, bidder, 0, Earrings, 2 * Million, 0)).ReadShort()
+            .Should().Be(coins ? SpecialAuctionPacketWriter.NotEnoughBalance : SpecialAuctionPacketWriter.WrongChecks);
+
+        bidder.Session.Money.Should().Be(coins ? 0 : 10_000_000);
+        CountOf(bidder, Check).Should().Be(coins ? 1 : 0);
+        (await provider.GetRequiredService<ISpecialAuctionService>().HasOpenAuctionAsync(100)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ACollectWhoseSaveFailsKeepsTheBidOpen()
+    {
+        var faults = new Faults(context => context.ChangeTracker.Entries<AuctionBid>()
+            .Any(entry => entry.State == EntityState.Modified && entry.Entity.ClosedAt != null));
+        var (provider, _) = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        using var _p = provider;
+        var first = Join(provider, 100, "First", 10_000_000, checks: 1);
+        var second = Join(provider, 200, "Second", 10_000_000, checks: 2);
+        (await PlaceBid(provider, first, 0, Earrings, 2 * Million, 0)).ReadShort().Should().Be(1);
+        (await PlaceBid(provider, second, 0, Earrings, 2 * Million, 0, 1)).ReadShort().Should().Be(1);
+        var row = Rows(await Send(provider, first, MyInfo)).Single();
+
+        await Send(provider, first, Collect, p =>
+        {
+            p.WriteInt(row.Channel);
+            p.WriteByte(row.Day);
+            p.WriteByte(row.Slot);
+            p.WriteInt(row.Item);
+            p.WriteShort(row.Count);
+            p.WriteInt(row.Serial);
+            p.WriteByte(0);
+        });
+
+        first.Session.Money.Should().Be((int)(10_000_000 - 2 * Million), "nothing comes back unless the bid is closed in the same save");
+        CountOf(first, Check).Should().Be(0);
+        Rows(await Send(provider, first, MyInfo)).Should().ContainSingle();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ACollectThatCannotFitKeepsTheBid(bool fullPurse)
+    {
+        var (provider, _) = Provider();
+        using var _p = provider;
+        var first = Join(provider, 100, "First", 10_000_000, checks: 1);
+        var second = Join(provider, 200, "Second", 10_000_000, checks: 2);
+        (await PlaceBid(provider, first, 0, Earrings, 2 * Million, 0)).ReadShort().Should().Be(1);
+        (await PlaceBid(provider, second, 0, Earrings, 2 * Million, 0, 1)).ReadShort().Should().Be(1);
+        var row = Rows(await Send(provider, first, MyInfo)).Single();
+        if (fullPurse)
+            first.Session.Money = ExchangePacketConstants.CoinMax;
+        else
+            FillBagLeaving(first.Session, 0);
+        var purse = first.Session.Money;
+
+        var reply = await Send(provider, first, Collect, p =>
+        {
+            p.WriteInt(row.Channel);
+            p.WriteByte(row.Day);
+            p.WriteByte(row.Slot);
+            p.WriteInt(row.Item);
+            p.WriteShort(row.Count);
+            p.WriteInt(row.Serial);
+            p.WriteByte(0);
+        });
+
+        reply.ReadShort().Should().Be(fullPurse ? SpecialAuctionPacketWriter.CoinsFull : SpecialAuctionPacketWriter.NoRoomForChecks);
+        first.Session.Money.Should().Be(purse);
+        CountOf(first, Check).Should().Be(0);
+        Rows(await Send(provider, first, MyInfo)).Should().ContainSingle("the bid waits until its coins and checks fit");
+    }
+
+    private static int CountOf(Player player, int itemId) =>
+        player.Session.Inventory.Where(slot => slot.ItemId == itemId).Sum(slot => slot.Count);
+
+    private static void FillBagLeaving(UserSession session, int free)
+    {
+        for (var i = InventoryConstants.InventoryStart; i < InventoryConstants.InventoryStart + InventoryConstants.HaveMax - free; i++)
+        {
+            session.Inventory[i].ItemId = Necklace;
+            session.Inventory[i].Count = 1;
+        }
+    }
+
+    private static void SeedWin(ServiceProvider provider, Player winner, int itemId, short count)
+    {
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.AuctionBids.Add(new AuctionBid
+        {
+            Channel = ChannelOf(provider), Serial = Serial, Day = (byte)Day, Slot = 0, ItemId = itemId, Count = count,
+            CharacterId = winner.Session.CharacterId, CharacterName = winner.Session.Name, Coins = Million,
+            Status = AuctionBidStatus.Won, PlacedAt = Evening,
+        });
+        db.SaveChanges();
+    }
+
+    private static int ChannelOf(ServiceProvider provider) =>
+        provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<LibreKO.Game.Configuration.GameServerSettings>>().Value.ServerId;
+
+    private static Task<Packet> ClaimWin(ServiceProvider provider, Player winner, int itemId, short count) =>
+        Send(provider, winner, Claim, p =>
+        {
+            p.WriteInt(ChannelOf(provider));
+            p.WriteByte((byte)Day);
+            p.WriteByte(0);
+            p.WriteInt(itemId);
+            p.WriteShort(count);
+        });
+
+    private sealed class Faults(Func<DbContext, bool> failing) : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            eventData.Context is { } context && failing(context)
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private sealed class DuringBidRead : IQueryExpressionInterceptor
+    {
+        public Action Meanwhile { get; init; } = () => { };
+
+        public System.Linq.Expressions.Expression QueryCompilationStarting(
+            System.Linq.Expressions.Expression queryExpression, QueryExpressionEventData eventData)
+        {
+            if (queryExpression is System.Linq.Expressions.MethodCallExpression { Arguments: [EntityQueryRootExpression root, ..] }
+                && root.EntityType.ClrType == typeof(AuctionBid))
+                Meanwhile();
+            return queryExpression;
+        }
     }
 
     [Fact]

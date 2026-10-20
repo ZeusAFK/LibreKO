@@ -50,6 +50,38 @@ public sealed class InventoryJournal(UserSession session)
         return false;
     }
 
+    // The whole count reaches the bag or none of it does: a countable item as one stack, any other one per slot.
+    public bool DeliverAll(ItemData item, int count)
+    {
+        var countable = item.Countable != 0;
+        var delivery = new ExchangeItem
+        {
+            ItemId = item.Num, Count = countable ? count : 1, Durability = item.Duration, Countable = countable,
+        };
+        if (countable)
+        {
+            var index = count <= InventoryConstants.MaxStackCount
+                ? ItemPlacement.FindForDelivery(session.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, delivery)
+                : -1;
+            if (index < 0)
+                return false;
+
+            ItemPlacement.Put(Slot(index), delivery);
+            return true;
+        }
+
+        var empty = Enumerable.Range(InventoryConstants.InventoryStart, InventoryConstants.HaveMax)
+            .Where(index => session.Inventory[index].IsEmpty)
+            .Take(count)
+            .ToList();
+        if (empty.Count < count)
+            return false;
+
+        foreach (var index in empty)
+            ItemPlacement.Put(Slot(index), delivery);
+        return true;
+    }
+
     public void AddMoney(long amount)
     {
         money ??= session.Money;

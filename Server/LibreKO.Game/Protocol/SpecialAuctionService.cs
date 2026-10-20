@@ -26,7 +26,6 @@ public class SpecialAuctionService(
     IServiceScopeFactory scopeFactory,
     IGameDataService gameDataService,
     IUserNotificationService userNotificationService,
-    IItemGrantService itemGrantService,
     ICharacterStatePersister statePersister,
     IOptions<GameServerSettings> settings,
     ILogger<SpecialAuctionService> logger,
@@ -140,10 +139,7 @@ public class SpecialAuctionService(
             return SpecialAuctionPacketWriter.NoSuchItem;
 
         if (!checksValid || checkSlots.Distinct().Count() != checkSlots.Count
-            || checkSlots.Any(s => session.Inventory[s].ItemId != MythrilCheck
-                || session.Inventory[s].Count == 0
-                || !session.Inventory[s].IsTradable
-                || session.Inventory[s].Expires))
+            || checkSlots.Any(s => !IsStakedCheck(session.Inventory[s])))
             return SpecialAuctionPacketWriter.WrongChecks;
 
         if (coins % CoinUnit != 0 || coins > MaxCoins || coins > session.Money)
@@ -154,31 +150,28 @@ public class SpecialAuctionService(
 
         if (!await stateLock.WaitAsync(0))
             return SpecialAuctionPacketWriter.Busy;
+        var journal = new InventoryJournal(session);
+        var answer = SpecialAuctionPacketWriter.Busy;
         try
         {
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var lotBids = await db.AuctionBids
-                .Where(b => b.Channel == Channel && b.Serial == moment.Serial && b.Slot == slot && b.ClosedAt == null)
-                .ToListAsync();
-            var top = lotBids.FirstOrDefault(b => b.Status == AuctionBidStatus.Top);
-            if (top?.CharacterId == session.CharacterId)
-                return SpecialAuctionPacketWriter.AlreadyTopBidder;
-            if (lotBids.Any(b => b.CharacterId == session.CharacterId))
-                return SpecialAuctionPacketWriter.CollectFirst;
-            if (total < (top?.Total(CheckValue) ?? lot.StartPrice) + lot.Step)
-                return SpecialAuctionPacketWriter.NotEnoughBalance;
+            // The coins, the checks and the bid are saved together.
+            var outcome = await statePersister.CommitAsync(session, async db =>
+            {
+                var lotBids = await db.AuctionBids
+                    .Where(b => b.Channel == Channel && b.Serial == moment.Serial && b.Slot == slot && b.ClosedAt == null)
+                    .ToListAsync();
+                var top = lotBids.FirstOrDefault(b => b.Status == AuctionBidStatus.Top);
+                answer = top?.CharacterId == session.CharacterId ? SpecialAuctionPacketWriter.AlreadyTopBidder
+                    : lotBids.Any(b => b.CharacterId == session.CharacterId) ? SpecialAuctionPacketWriter.CollectFirst
+                    : total < (top?.Total(CheckValue) ?? lot.StartPrice) + lot.Step ? SpecialAuctionPacketWriter.NotEnoughBalance
+                    : session.WithLock(s => TakeStake(s, journal, checkSlots, coins));
+                if (answer != SpecialAuctionPacketWriter.Success)
+                    return false;
 
-            session.Money -= (int)coins;
-            foreach (var bagSlot in checkSlots)
-            {
-                session.Inventory[bagSlot].Clear();
-                await userNotificationService.SendStackChangeAsync(session, (byte)bagSlot, 0, 0, 0);
-            }
-            if (top != null)
-                top.Status = AuctionBidStatus.Outbid;
-            db.AuctionBids.Add(new AuctionBid
-            {
+                if (top != null)
+                    top.Status = AuctionBidStatus.Outbid;
+                db.AuctionBids.Add(new AuctionBid
+                {
                 Channel = Channel,
                 Serial = moment.Serial,
                 Day = (byte)moment.Day,
@@ -191,19 +184,23 @@ public class SpecialAuctionService(
                 Checks = checkSlots.Count,
                 Status = AuctionBidStatus.Top,
                 PlacedAt = Now,
-            });
-            await db.SaveChangesAsync();
+                });
+                return true;
+            }, () => session.WithLock(_ => journal.Restore()));
+            if (outcome != StateCommit.Saved)
+                return outcome == StateCommit.Unchanged ? answer : SpecialAuctionPacketWriter.Busy;
         }
         finally
         {
             stateLock.Release();
         }
 
+        foreach (var bagSlot in journal.TouchedSlots)
+            await userNotificationService.SendStackChangeAsync(session, (byte)bagSlot, 0, 0, 0);
         if (coins > 0)
             await userNotificationService.SendGoldLossAsync(session, (int)coins);
         if (checkSlots.Count > 0)
             await userNotificationService.SendWeightChangeAsync(session);
-        await statePersister.SaveAsync(session);
         logger.LogInformation("{Name} bid {Total} on auction lot {Slot} ({ItemId})", session.Name, total, slot, itemId);
         return SpecialAuctionPacketWriter.Success;
     }
@@ -221,46 +218,81 @@ public class SpecialAuctionService(
             return SpecialAuctionPacketWriter.WrongChannel;
 
         await stateLock.WaitAsync();
+        var journal = new InventoryJournal(session);
+        var answer = SpecialAuctionPacketWriter.NoHistory;
+        long coins = 0;
         try
         {
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var bid = await db.AuctionBids.FirstOrDefaultAsync(b => b.Channel == Channel && b.CharacterId == session.CharacterId
-                && b.Serial == serial && b.Slot == slot && b.ItemId == itemId && b.Count == count && b.ClosedAt == null);
-            if (bid == null)
-                return SpecialAuctionPacketWriter.NoHistory;
-            if (bid.Status is AuctionBidStatus.Top or AuctionBidStatus.Won)
-                return SpecialAuctionPacketWriter.AlreadyTopBidder;
-            if (session.Money + bid.Coins > ExchangePacketConstants.CoinMax)
-                return SpecialAuctionPacketWriter.CoinsFull;
-            if (bid.Checks > 0 && (gameDataService.GetItem(MythrilCheck) == null || FreeBagSlots(session) < bid.Checks))
-                return SpecialAuctionPacketWriter.NoRoomForChecks;
+            // The bid closes in the same save that brings its coins and checks back.
+            var outcome = await statePersister.CommitAsync(session, async db =>
+            {
+                var bid = await db.AuctionBids.FirstOrDefaultAsync(b => b.Channel == Channel && b.CharacterId == session.CharacterId
+                    && b.Serial == serial && b.Slot == slot && b.ItemId == itemId && b.Count == count && b.ClosedAt == null);
+                answer = bid == null ? SpecialAuctionPacketWriter.NoHistory
+                    : bid.Status is AuctionBidStatus.Top or AuctionBidStatus.Won ? SpecialAuctionPacketWriter.AlreadyTopBidder
+                    : session.WithLock(s => GiveBack(s, journal, bid));
+                if (answer != SpecialAuctionPacketWriter.Success)
+                    return false;
 
-            bid.ClosedAt = Now;
-            await db.SaveChangesAsync();
-
-            session.Money += (int)bid.Coins;
-            if (bid.Coins > 0)
-                await userNotificationService.SendGoldGainAsync(session, (int)bid.Coins);
-            if (bid.Checks > 0)
-                await itemGrantService.GrantAsync(session, gameDataService.GetItem(MythrilCheck)!, bid.Checks);
+                bid!.ClosedAt = Now;
+                coins = bid.Coins;
+                return true;
+            }, () => session.WithLock(_ => journal.Restore()));
+            if (outcome != StateCommit.Saved)
+                return outcome == StateCommit.Unchanged ? answer : SpecialAuctionPacketWriter.Busy;
         }
         finally
         {
             stateLock.Release();
         }
 
-        await statePersister.SaveAsync(session);
+        await SendDeliveredAsync(session, journal);
+        if (coins > 0)
+            await userNotificationService.SendGoldGainAsync(session, (int)coins);
         return SpecialAuctionPacketWriter.Success;
     }
 
-    private static int FreeBagSlots(UserSession session)
+    private static bool IsStakedCheck(ItemSlot slot) =>
+        slot.ItemId == MythrilCheck && slot.Count > 0 && slot.IsTradable && !slot.Expires;
+
+    // The stake leaves the bag only as it was checked.
+    private static short TakeStake(UserSession session, InventoryJournal journal, List<int> checkSlots, long coins)
     {
-        var free = 0;
-        for (var i = InventoryConstants.SlotMax; i < InventoryConstants.SlotMax + InventoryConstants.HaveMax; i++)
-            if (session.Inventory[i].IsEmpty)
-                free++;
-        return free;
+        if (coins > session.Money)
+            return SpecialAuctionPacketWriter.NotEnoughBalance;
+        if (checkSlots.Any(index => !IsStakedCheck(session.Inventory[index])))
+            return SpecialAuctionPacketWriter.WrongChecks;
+
+        foreach (var index in checkSlots)
+            journal.Slot(index).Clear();
+        journal.AddMoney(-coins);
+        return SpecialAuctionPacketWriter.Success;
+    }
+
+    private short GiveBack(UserSession session, InventoryJournal journal, AuctionBid bid)
+    {
+        if (session.Money + bid.Coins > ExchangePacketConstants.CoinMax)
+            return SpecialAuctionPacketWriter.CoinsFull;
+        if (bid.Checks > 0 && (gameDataService.GetItem(MythrilCheck) is not { } check || !journal.DeliverAll(check, bid.Checks)))
+            return SpecialAuctionPacketWriter.NoRoomForChecks;
+
+        journal.AddMoney(bid.Coins);
+        return SpecialAuctionPacketWriter.Success;
+    }
+
+    private async Task SendDeliveredAsync(UserSession session, InventoryJournal journal)
+    {
+        foreach (var index in journal.TouchedSlots)
+        {
+            var slot = session.Inventory[index];
+            await userNotificationService.SendStackChangeAsync(session, (byte)index, slot.ItemId, slot.Count, slot.Durability, journal.WasEmpty(index));
+        }
+
+        if (journal.TouchedSlots.Count > 0)
+        {
+            session.RecalculateStatsWithBuffs(gameDataService);
+            await userNotificationService.SendWeightChangeAsync(session);
+        }
     }
 
     private async Task MyInfoAsync(UserSession session)
@@ -296,29 +328,42 @@ public class SpecialAuctionService(
             return SpecialAuctionPacketWriter.ClaimWrongChannel;
 
         await stateLock.WaitAsync();
+        var journal = new InventoryJournal(session);
+        var answer = SpecialAuctionPacketWriter.NoWin;
         try
         {
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var bid = await db.AuctionBids
-                .Where(b => b.Channel == Channel && b.CharacterId == session.CharacterId && b.Status == AuctionBidStatus.Won
-                    && b.Day == day && b.Slot == slot && b.ItemId == itemId && b.Count == count && b.ClosedAt == null)
-                .OrderBy(b => b.Serial)
-                .FirstOrDefaultAsync();
-            if (bid == null || gameDataService.GetItem(itemId) is not { } item)
-                return SpecialAuctionPacketWriter.NoWin;
-            if (FreeBagSlots(session) == 0 || await itemGrantService.GrantAsync(session, item, count) < count)
-                return SpecialAuctionPacketWriter.BagFull;
+            // The whole lot reaches the bag in the same save that closes the bid, or nothing does.
+            var outcome = await statePersister.CommitAsync(session, async db =>
+            {
+                var bid = await db.AuctionBids
+                    .Where(b => b.Channel == Channel && b.CharacterId == session.CharacterId && b.Status == AuctionBidStatus.Won
+                        && b.Day == day && b.Slot == slot && b.ItemId == itemId && b.Count == count && b.ClosedAt == null)
+                    .OrderBy(b => b.Serial)
+                    .FirstOrDefaultAsync();
+                if (bid == null || gameDataService.GetItem(itemId) is not { } item)
+                {
+                    answer = SpecialAuctionPacketWriter.NoWin;
+                    return false;
+                }
 
-            bid.ClosedAt = Now;
-            await db.SaveChangesAsync();
+                if (!session.WithLock(_ => journal.DeliverAll(item, count)))
+                {
+                    answer = SpecialAuctionPacketWriter.BagFull;
+                    return false;
+                }
+
+                bid.ClosedAt = Now;
+                return true;
+            }, () => session.WithLock(_ => journal.Restore()));
+            if (outcome != StateCommit.Saved)
+                return outcome == StateCommit.Unchanged ? answer : SpecialAuctionPacketWriter.Busy;
         }
         finally
         {
             stateLock.Release();
         }
 
-        await statePersister.SaveAsync(session);
+        await SendDeliveredAsync(session, journal);
         return SpecialAuctionPacketWriter.Success;
     }
 
