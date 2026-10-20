@@ -78,7 +78,7 @@ public static class MagicSkillRequirement
 
     public static bool IsClassSkill(int skillId) => IsPlayerClass(ClassOf(skillId));
 
-    // A row outside the class trees needs its item, an event tree, or a place on the client's own bars.
+    // A row outside the class trees needs its item, an event tree, or a place on the client's own skill bars.
     public static bool IsCastableBy(MagicData magic, int classId, int transformId, AccountNation nation)
     {
         var prefix = ClassOf(magic.Id);

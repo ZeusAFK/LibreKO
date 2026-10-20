@@ -148,7 +148,7 @@ public class CharacterCommitTests : GameTestBase
         var savedWhileOpen = characters.ReceivedCalls().Count();
         characters.ClearReceivedCalls();
 
-        session.SavesSealed = true;
+        session.SealSaves();
         await persister.SaveQuestStateAsync(session);
         await Task.Delay(QuestSavePollMs * QuestSavePolls);
 

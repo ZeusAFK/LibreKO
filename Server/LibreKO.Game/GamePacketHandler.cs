@@ -68,7 +68,6 @@ public class GamePacketHandler(
     {
         var opcode = (GameOpcodes)packet.GetOpcode();
 
-        // A compressed packet is taken only from a signed-in connection, and never holds another.
         if (opcode == GameOpcodes.GS_COMPRESS_PACKET)
         {
             if (client.AccountId == 0)
@@ -86,15 +85,15 @@ public class GamePacketHandler(
             return;
         }
 
-        // In-game traffic (movement, combat, …) is the overwhelming majority, and its
-        // handlers are singleton coordinators that scope their own DB work. Skip the
-        // per-packet DI scope + DbContext entirely for it — only the rare per-connection
-        // auth / pre-game / game-start paths need scoped services.
         // A connection that lost its account to a kick, or whose session is closing, is heard no more.
         if (client.AccountId != 0
             && (!accountLockService.Owns(client) || sessionManager.GetByClientId(client.Id) is { IsClosing: true }))
             return;
 
+        // In-game traffic (movement, combat, …) is the overwhelming majority, and its
+        // handlers are singleton coordinators that scope their own DB work. Skip the
+        // per-packet DI scope + DbContext entirely for it — only the rare per-connection
+        // auth / pre-game / game-start paths need scoped services.
         if (client.AccountId != 0 && client.CharacterId != 0)
         {
             await HandleInGamePacket(client, packet, opcode);
@@ -208,10 +207,32 @@ public class GamePacketHandler(
         return packet.GetData()[0] is (byte)AllCharacterInfoOpcode.ArrangeOpen or (byte)AllCharacterInfoOpcode.ArrangeReceive;
     }
 
-    private async Task HandleInGamePacket(
-        IClient client,
-        Packet packet,
-        GameOpcodes opcode)
+    private async Task HandleInGamePacket(IClient client, Packet packet, GameOpcodes opcode)
+    {
+        var session = sessionManager.GetByClientId(client.Id);
+        if (session == null)
+        {
+            await DispatchInGameAsync(client, packet, opcode);
+            return;
+        }
+
+        await session.PacketGate.WaitAsync();
+        try
+        {
+            // A close that began while this packet waited has already saved the session for the last time.
+            if (session.IsClosing)
+                return;
+
+            using (PacketTurn.Of(session))
+                await DispatchInGameAsync(client, packet, opcode);
+        }
+        finally
+        {
+            session.PacketGate.Release();
+        }
+    }
+
+    private async Task DispatchInGameAsync(IClient client, Packet packet, GameOpcodes opcode)
     {
         switch (opcode)
         {
@@ -256,7 +277,6 @@ public class GamePacketHandler(
             return;
         }
 
-        // Each step of the game start runs once per login.
         if (subOpcode == 1)
         {
             if (sessionManager.GetByClientId(client.Id) != null)
@@ -266,9 +286,22 @@ public class GamePacketHandler(
             if (session == null)
                 return;
 
+            if (!accountLockService.Owns(client))
+            {
+                sessionManager.RemoveSession(session);
+                return;
+            }
+
             logger.LogDebug(
                 "GameStart subOp=1: {Name} (id={Id}) entered zone={Zone} pos=({X},{Z}) region=({RX},{RZ})",
                 session.Name, session.CharacterId, session.ZoneId, session.X, session.Z, session.RegionX, session.RegionZ);
+        }
+
+        if (subOpcode == 2)
+        {
+            session = sessionManager.GetByClientId(client.Id) ?? await gameSessionInitializer.InitializeAsync(client);
+            if (session == null || !session.TryBeginGame())
+                return;
         }
 
         var responses = await preGameService.GameStartAsync(client.CharacterId, client.AccountId, subOpcode, session);
@@ -287,12 +320,8 @@ public class GamePacketHandler(
             }
         }
 
-        if (subOpcode == 2)
+        if (subOpcode == 2 && session != null)
         {
-            session ??= sessionManager.GetByClientId(client.Id) ?? await gameSessionInitializer.InitializeAsync(client);
-            if (session == null || !session.TryBeginGame())
-                return;
-
             logger.LogDebug(
                 "GameStart subOp=2: {Name} (id={Id}) ready in zone={Zone} pos=({X},{Z}) region=({RX},{RZ}) — broadcasting Respawn",
                 session.Name, session.CharacterId, session.ZoneId, session.X, session.Z, session.RegionX, session.RegionZ);

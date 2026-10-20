@@ -44,6 +44,7 @@ public class UserSession
     public int CharacterId { get; }
     public int AccountId { get; }
     public SemaphoreSlim CharacterPersistenceGate { get; } = new(1, 1);
+    public SemaphoreSlim PacketGate { get; } = new(1, 1);
 
     private int closing;
     private readonly TaskCompletionSource closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -54,22 +55,26 @@ public class UserSession
     public Task Closed => closed.Task;
     public void MarkClosed() => closed.TrySetResult();
 
+    private volatile bool savesSealed;
+
     // After the final save nothing more is written for this session.
-    public volatile bool SavesSealed;
+    public bool SavesSealed => savesSealed;
+
+    public void SealSaves() => savesSealed = true;
 
     private int gameStarted;
 
     public bool TryBeginGame() => Interlocked.CompareExchange(ref gameStarted, 1, 0) == 0;
 
-    private const int ClientSaveCooldownMs = 10_000;
-    private long lastClientSaveTicks;
+    public const int ClientSaveCooldownMs = 10_000;
+    private long lastClientSaveMs;
 
     // A save the client asks for runs at most once per cooldown.
-    public bool TryTakeClientSave(long nowTicks)
+    public bool TryTakeClientSave(long nowMs)
     {
-        var last = Interlocked.Read(ref lastClientSaveTicks);
-        return (last == 0 || nowTicks - last >= ClientSaveCooldownMs * TimeSpan.TicksPerMillisecond)
-            && Interlocked.CompareExchange(ref lastClientSaveTicks, nowTicks, last) == last;
+        var last = Interlocked.Read(ref lastClientSaveMs);
+        return (last == 0 || nowMs - last >= ClientSaveCooldownMs)
+            && Interlocked.CompareExchange(ref lastClientSaveMs, nowMs, last) == last;
     }
     public bool NationTransferCommitted { get; set; }
     public string Name { get; set; } = string.Empty;

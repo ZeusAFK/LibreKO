@@ -201,7 +201,7 @@ public class MagicDebuffTargetTests : GameTestBase
         await Cast(provider, client, FreezingDistanceId, caster, victim.CharacterId);
 
         victim.ActiveBuffs.Should().ContainKey(FreezingDistanceId);
-        victim.CanUseSkills.Should().BeFalse();
+        victim.IsHeld.Should().BeTrue("a frozen player casts nothing but a friendly item, as when stunned");
         victim.BlockMagic.Should().BeTrue();
         victim.BlockPhysical.Should().BeTrue();
     }

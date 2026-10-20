@@ -39,6 +39,7 @@ public class SessionTerminationService(
     // dropping at once) can't exhaust the connection pool. Static = shared across all
     // terminations regardless of this service's DI lifetime.
     private const int MaxConcurrentDisconnectDbOps = 24;
+    private const int OtherConnectionWaitSeconds = 10;
     private static readonly SemaphoreSlim DisconnectDbGate = new(MaxConcurrentDisconnectDbOps);
 
     public async Task SaveAsync(UserSession session, CancellationToken cancellationToken = default)
@@ -68,21 +69,22 @@ public class SessionTerminationService(
             return;
         }
 
-        session.Client.ExpectedClose = true;
-        await RemoveFromWorldAsync(session);
-        await knightsRuntime.NotifyMemberOfflineAsync(session);
-
+        var waited = await WaitForPacketInProgressAsync(session);
         try
         {
-            await ReleaseWorldStateAsync(session);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
-        }
+            session.Client.ExpectedClose = true;
+            await RemoveFromWorldAsync(session);
+            await knightsRuntime.NotifyMemberOfflineAsync(session);
 
-        try
-        {
+            try
+            {
+                await ReleaseWorldStateAsync(session);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
+            }
+
             if (!session.IsBot && !await characterStatePersister.SaveAndSealAsync(session))
                 logger.LogWarning("Could not save character state during login takeover for {Name}", session.Name);
         }
@@ -93,8 +95,23 @@ public class SessionTerminationService(
         finally
         {
             sessionManager.RemoveSession(session);
+            if (waited)
+                session.PacketGate.Release();
             session.MarkClosed();
         }
+    }
+
+    // A close from another connection lets that connection's packet in progress finish first.
+    private async Task<bool> WaitForPacketInProgressAsync(UserSession session)
+    {
+        if (ReferenceEquals(PacketTurn.Current, session))
+            return false;
+
+        if (await session.PacketGate.WaitAsync(TimeSpan.FromSeconds(OtherConnectionWaitSeconds)))
+            return true;
+
+        logger.LogWarning("The packet {Name} was handling did not finish; closing anyway", session.Name);
+        return false;
     }
 
     private async Task TerminateAsync(IClient client, bool unexpectedDisconnect, CancellationToken cancellationToken)
@@ -128,19 +145,19 @@ public class SessionTerminationService(
 
         if (!session.TryBeginClosing())
         {
-            await session.Closed;
+            await session.Closed.WaitAsync(cancellationToken);
             client.CharacterId = 0;
             return;
         }
 
-        if (unexpectedDisconnect)
-            logger.LogInformation("Client disconnected unexpectedly: {Name} (CharId={CharId})", session.Name, session.CharacterId);
-
-        await RemoveFromWorldAsync(session);
-        await knightsRuntime.NotifyMemberOfflineAsync(session);
-
+        var waited = await WaitForPacketInProgressAsync(session);
         try
         {
+            if (unexpectedDisconnect)
+                logger.LogInformation("Client disconnected unexpectedly: {Name} (CharId={CharId})", session.Name, session.CharacterId);
+
+            await RemoveFromWorldAsync(session);
+            await knightsRuntime.NotifyMemberOfflineAsync(session);
             await CleanupAsync(session, cancellationToken);
         }
         catch (Exception ex)
@@ -152,6 +169,8 @@ public class SessionTerminationService(
             sessionManager.RemoveSession(session);
             await MarkOfflineAsync(session.CharacterId, cancellationToken);
             client.CharacterId = 0;
+            if (waited)
+                session.PacketGate.Release();
             session.MarkClosed();
         }
     }
@@ -177,7 +196,6 @@ public class SessionTerminationService(
 
     private async Task CleanupAsync(UserSession session, CancellationToken cancellationToken)
     {
-        // The final save runs even when releasing world state fails.
         try
         {
             await ReleaseWorldStateAsync(session);

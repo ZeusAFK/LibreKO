@@ -515,13 +515,15 @@ public class MagicReachTests : GameTestBase
         priest.CastingSkillId.Should().Be(0, "the client drops a cast a stun breaks, and the server drops it too");
     }
 
-    [Fact]
-    public async Task AStunnedPlayerCannotCastButMayStillDrinkAPotion()
+    [Theory]
+    [InlineData(BuffType.Stun)]
+    [InlineData(BuffType.Freeze)]
+    public async Task AHeldPlayerCannotCastButMayStillDrinkAPotion(BuffType hold)
     {
         using var provider = Provider();
         var caster = Player(provider, 812, AccountNation.Karus, Moradon, Here, hp: PlayerHp / 2);
         HoldReagent(provider, caster, HealthPotionItem);
-        Stun(caster);
+        Stun(caster, hold);
         var worm = Worm(provider, Here + 10);
 
         await Cast(provider, caster, FireBlast, worm.UniqueId);
@@ -746,10 +748,10 @@ public class MagicReachTests : GameTestBase
         return player;
     }
 
-    private static void Stun(UserSession player) =>
+    private static void Stun(UserSession player, BuffType hold = BuffType.Stun) =>
         player.SetBuff(StunRow, new ActiveBuff
         {
-            MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+            MagicId = StunRow, CasterId = 1, BuffType = hold, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
         });
 
     private static NpcInstance Worm(ServiceProvider provider, float x) =>

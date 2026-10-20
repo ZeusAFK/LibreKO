@@ -368,7 +368,6 @@ internal static class UserSessionMagicState
                 break;
             case BuffType.Freeze:
                 session.SpeedAmount = (byte)buff.BonusSpeed;
-                session.CanUseSkills = false;
                 session.BlockMagic = true;
                 session.BlockPhysical = true;
                 break;

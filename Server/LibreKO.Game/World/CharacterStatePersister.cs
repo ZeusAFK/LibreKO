@@ -73,7 +73,7 @@ public class CharacterStatePersister(
             finally
             {
                 if (seal)
-                    session.SavesSealed = true;
+                    session.SealSaves();
             }
         }
         finally
@@ -219,7 +219,7 @@ public class CharacterStatePersister(
 
     public Task SaveQuestStateAsync(UserSession session, CancellationToken cancellationToken = default)
     {
-        if (session.IsBot || session.SavesSealed)
+        if (session.IsBot)
             return Task.CompletedTask;
 
         var slot = questSaveSlots.GetOrAdd(session.CharacterId, static _ => new QuestSaveSlot());
@@ -253,9 +253,6 @@ public class CharacterStatePersister(
                 session = slot.Session;
             }
 
-            if (session.SavesSealed)
-                continue;
-
             await questSaveGate.WaitAsync();
             try
             {
@@ -274,9 +271,20 @@ public class CharacterStatePersister(
 
     private async Task PersistQuestBlobAsync(UserSession session)
     {
-        using var scope = scopeFactory.CreateScope();
-        var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-        // Direct single-column UPDATE — no full character row read or rewrite.
-        await characterRepository.UpdateQuestDataAsync(session.CharacterId, session.SerializeQuestData());
+        await session.CharacterPersistenceGate.WaitAsync();
+        try
+        {
+            if (session.SavesSealed)
+                return;
+
+            using var scope = scopeFactory.CreateScope();
+            var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
+            // Direct single-column UPDATE — no full character row read or rewrite.
+            await characterRepository.UpdateQuestDataAsync(session.CharacterId, session.SerializeQuestData());
+        }
+        finally
+        {
+            session.CharacterPersistenceGate.Release();
+        }
     }
 }

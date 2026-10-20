@@ -5,6 +5,7 @@ using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -36,6 +37,87 @@ public class SessionLifecycleTests : GameTestBase
 
         sent.Count(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_MYINFO).Should().Be(1);
         session.BlinkUntilTicks.Should().Be(0, "a second start would arm the respawn blink again");
+    }
+
+    [Fact]
+    public async Task ARepeatedSecondStepDoesNotWriteTheCharacterAgain()
+    {
+        using var provider = Provider();
+        var (client, _) = await SignedInAsync(provider, First);
+        await GameStart(provider, client, FirstStep);
+        await GameStart(provider, client, SecondStep);
+        await SetOnlineAsync(provider, First, online: false);
+
+        await GameStart(provider, client, SecondStep);
+
+        (await StoredAsync(provider, First)).IsOnline.Should().BeFalse("a step 2 in flight during a kick would write an old row over the final save");
+    }
+
+    [Fact]
+    public async Task AGameStartWhoseAccountWasLostWhileLoadingLeavesNoSession()
+    {
+        var initializer = Substitute.For<IGameSessionInitializer>();
+        using var provider = CreateProvider(SeedAccount, configureServices: services => services.AddScoped(_ => initializer));
+        var (client, _) = await SignedInAsync(provider, First);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        initializer.InitializeAsync(client).Returns(async _ =>
+        {
+            await provider.GetRequiredService<IAccountLockService>().ReleaseAsync(client);
+            return sessions.CreateSession(client, client.CharacterId, client.AccountId);
+        });
+
+        await GameStart(provider, client, FirstStep);
+
+        sessions.GetByClientId(client.Id).Should().BeNull("a kick that landed while the character loaded leaves no session behind");
+    }
+
+    [Fact]
+    public async Task ACloseFromAnotherConnectionWaitsForThePacketInProgress()
+    {
+        using var provider = Provider();
+        var persister = Substitute.For<ICharacterStatePersister>();
+        persister.SaveAndSealAsync(Arg.Any<UserSession>(), Arg.Any<CancellationToken>()).Returns(true);
+        var termination = ActivatorUtilities.CreateInstance<SessionTerminationService>(provider, persister);
+        var client = Client([]);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, 1, 1);
+        session.Name = First;
+        await session.PacketGate.WaitAsync();
+
+        var takeover = termination.EvictForTakeoverAsync(session);
+        var savedWhileThePacketRan = persister.ReceivedCalls().Any();
+        session.PacketGate.Release();
+        await takeover;
+
+        savedWhileThePacketRan.Should().BeFalse("the last save comes after the packet it was handling");
+        await persister.Received(1).SaveAndSealAsync(session, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task APacketThatWaitedPastTheStartOfACloseIsDropped()
+    {
+        using var provider = Provider();
+        var (client, sent) = await SignedInAsync(provider, First);
+        await GameStart(provider, client, FirstStep);
+        var session = provider.GetRequiredService<SessionManager>().GetByClientId(client.Id)!;
+        await session.PacketGate.WaitAsync();
+
+        var ask = AskLanguage(provider, client);
+        session.TryBeginClosing();
+        session.PacketGate.Release();
+        await ask;
+
+        Languages(sent).Should().Be(0);
+    }
+
+    [Fact]
+    public void AClientSaveIsAllowedAgainAfterTheCooldown()
+    {
+        var session = new UserSession(Client([]), 1, 1);
+        const long start = 1_000;
+
+        session.TryTakeClientSave(start).Should().BeTrue();
+        session.TryTakeClientSave(start + UserSession.ClientSaveCooldownMs - 1).Should().BeFalse();
+        session.TryTakeClientSave(start + UserSession.ClientSaveCooldownMs).Should().BeTrue();
     }
 
     [Fact]
@@ -264,6 +346,22 @@ public class SessionLifecycleTests : GameTestBase
         client.CharacterId.Returns(characterName == null ? 0 : await GetCharacterIdAsync(provider, characterName));
         (await provider.GetRequiredService<IAccountLockService>().AcquireAsync(client, accountId)).Granted.Should().BeTrue();
         return (client, sent);
+    }
+
+    private static async Task<Character> StoredAsync(ServiceProvider provider, string name)
+    {
+        await using var scope = provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<Common.Infrastructure.Persistence.AppDbContext>().Characters
+            .AsNoTracking().SingleAsync(character => character.Name == name);
+    }
+
+    private static async Task SetOnlineAsync(ServiceProvider provider, string name, bool online)
+    {
+        await using var scope = provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<Common.Infrastructure.Persistence.AppDbContext>();
+        var character = await db.Characters.SingleAsync(row => row.Name == name);
+        character.IsOnline = online;
+        await db.SaveChangesAsync();
     }
 
     private static Task GameStart(ServiceProvider provider, IClient client, byte step)

@@ -65,13 +65,13 @@ public class MagicPacketCoordinator(
         }
 
         if ((!session.CanUseSkills || (session.IsBlinking && !RespawnBlinkService.AllowsSkill(magic)))
-            && !IsTerminator((MagicProcessOpcode)magicOpcode))
+            && CastsSomething((MagicProcessOpcode)magicOpcode))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
             return;
         }
 
-        if (session.IsHeld && RequiresLearnedSkill((MagicProcessOpcode)magicOpcode) && !MayUseWhileHeld(magic))
+        if (session.IsHeld && CastsSomething((MagicProcessOpcode)magicOpcode) && !MayUseWhileHeld(magic))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
             return;
@@ -336,7 +336,8 @@ public class MagicPacketCoordinator(
             && (SkillMoral)magic.Moral is SkillMoral.Self or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe
                 or SkillMoral.Party or SkillMoral.PartyAll or SkillMoral.AreaFriend or SkillMoral.Clan or SkillMoral.ClanAll
                 or SkillMoral.CorpseFriend
-            && magic.PrimaryType is not (MagicSkillType.Warp or MagicSkillType.Transform or MagicSkillType.Stealth));
+            && magic.PrimaryType is not (MagicSkillType.Warp or MagicSkillType.Transform or MagicSkillType.Stealth)
+            && magic.SecondaryType is not (MagicSkillType.Warp or MagicSkillType.Transform or MagicSkillType.Stealth));
 
     // A dead player revives only with a self row: a Life Crystal under the castle, a resurrection scroll elsewhere.
     private bool RevivesTheCaster(UserSession session, MagicData magic, int skillId) =>
@@ -348,6 +349,10 @@ public class MagicPacketCoordinator(
         && (SpecialMagicType)type5Data.Type == (session.ZoneId == (byte)ZoneId.UnderCastle
             ? SpecialMagicType.LifeCrystal
             : SpecialMagicType.ResurrectionSelf);
+
+    // A stage that ends or reports a cast is still taken from a player who may not cast.
+    private static bool CastsSomething(MagicProcessOpcode opcode) =>
+        !IsTerminator(opcode) && opcode != MagicProcessOpcode.Fail;
 
     private static bool IsTerminator(MagicProcessOpcode opcode) =>
         opcode is MagicProcessOpcode.Cancel
