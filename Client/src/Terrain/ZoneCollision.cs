@@ -8,9 +8,11 @@ public sealed class ZoneCollision
 {
     public Vector3[] Verts = Array.Empty<Vector3>();
 
+    internal static string ResPath(string stem) => $"res://assets/terrain/{stem}/collision.bin";
+
     public static ZoneCollision? Load(string stem)
     {
-        using var f = FileAccess.Open($"res://assets/terrain/{stem}/collision.bin", FileAccess.ModeFlags.Read);
+        using var f = FileAccess.Open(ResPath(stem), FileAccess.ModeFlags.Read);
         if (f == null)
             return null;
         var buf = f.GetBuffer((long)f.GetLength());

@@ -5,7 +5,7 @@ namespace LibreKO;
 
 public static class Build
 {
-    private const string VersionResPath = "res://version.txt";
+    internal const string VersionResPath = "res://version.txt";
     private const string ApkBuildResPath = "res://apkbuild.txt";
 
     private static string? version;
