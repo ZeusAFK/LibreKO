@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
@@ -22,6 +23,8 @@ public class SessionLifecycleTests : GameTestBase
     private const byte GetLanguage = ClientSettingsPacketCoordinator.SubGetLanguage;
     private const byte SetLanguage = ClientSettingsPacketCoordinator.SubSetLanguage;
     private const int OwnCloseSeconds = 5;
+    private const string Guesser = "203.0.113.7";
+    private const string Owner = "198.51.100.9";
     private const int PacketInProgressMs = 50;
 
     [Fact]
@@ -171,6 +174,20 @@ public class SessionLifecycleTests : GameTestBase
 
         await knights.Received(1).NotifyMemberOnlineAsync(Arg.Any<UserSession>());
         await social.Received(1).NotifyFriendLoggedInAsync(Arg.Any<UserSession>());
+    }
+
+    [Fact]
+    public async Task FiveMissedPasswordsLockTheLoginFromThatAddressOnly()
+    {
+        using var provider = Provider();
+        using var scope = provider.CreateScope();
+        var preGame = scope.ServiceProvider.GetRequiredService<IPreGameService>();
+
+        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
+            (await preGame.LoginAsync(Login, "wrong", Guesser)).Success.Should().BeFalse();
+
+        (await preGame.LoginAsync(Login, "pw", Guesser)).Success.Should().BeFalse("the guesser waits out the window");
+        (await preGame.LoginAsync(Login, "pw", Owner)).Success.Should().BeTrue("the owner is not locked out by someone else's guesses");
     }
 
     [Fact]

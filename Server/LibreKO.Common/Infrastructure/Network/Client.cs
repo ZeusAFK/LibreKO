@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.Buffers;
 using System.Net.Sockets;
 using System.Numerics;
@@ -251,7 +251,8 @@ public class Client(Socket socket, ServerType serverType, ILogger<Client> logger
 
         if (logger.IsEnabled(LogLevel.Trace))
             logger.LogTrace("Received packet 0x{Opcode:X2} ({OpcodeName}): {Packet}",
-                packet.GetOpcode(), ResolveOpcodeName(packet.GetOpcode(), outbound: false, packet.GetLength()), Convert.ToHexString(packet.GetBytes()));
+                packet.GetOpcode(), ResolveOpcodeName(packet.GetOpcode(), outbound: false, packet.GetLength()),
+                LoggedBytes(serverType, packet));
 
         return packet;
     }
@@ -276,6 +277,18 @@ public class Client(Socket socket, ServerType serverType, ILogger<Client> logger
         readBuffer?.Dispose();
         stream.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    public const string WithheldCredentials = "(credentials withheld)";
+
+    // A login or kick request carries the password in the clear inside the decrypted packet.
+    public static string LoggedBytes(ServerType serverType, Packet packet)
+    {
+        var opcode = packet.GetOpcode();
+        var credentials = serverType == ServerType.Login
+            ? opcode is (byte)LoginOpcodes.LS_LOGIN or (byte)LoginOpcodes.LS_MGAME_LOGIN or (byte)LoginOpcodes.LS_OTP
+            : opcode is (byte)GameOpcodes.GS_LOGIN or (byte)GameOpcodes.GS_KICKOUT;
+        return credentials ? WithheldCredentials : Convert.ToHexString(packet.GetBytes());
     }
 
     private string ResolveOpcodeName(byte opcode, bool outbound, int bodyLength)

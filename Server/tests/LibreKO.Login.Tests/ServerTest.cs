@@ -72,6 +72,7 @@ public abstract class ServerTest : IDisposable
 
                 services.AddScoped<IAccountRepository, AccountRepository>();
                 services.AddScoped<ILoginService, LoginService>();
+                services.AddSingleton<LoginThrottle>();
 
                 services.AddSingleton<IServerRepository, ServerRepository>();
                 services.AddSingleton<IKingRepository, KingRepository>();

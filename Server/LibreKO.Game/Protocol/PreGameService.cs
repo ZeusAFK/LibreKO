@@ -15,7 +15,7 @@ public record CharacterSelectResult(Packet Packet, int CharacterId);
 
 public interface IPreGameService
 {
-    Task<GameLoginResult> LoginAsync(string login, string password);
+    Task<GameLoginResult> LoginAsync(string login, string password, string address = "");
     Task<Packet> SelectNationAsync(int accountId, AccountNation nation);
     Task<Packet> GetAllCharacterInfoAsync(int accountId);
     Task<Packet> LoadingLoginAsync(byte subOpcode);
@@ -42,6 +42,7 @@ public class PreGameService(
     ISocialPacketCoordinator social,
     ISlaveMerchantService slaveMerchants,
     AppDbContext unitOfWork,
+    LoginThrottle throttle,
     ILogger<PreGameService> logger) : IPreGameService
 {
     private const byte NewCharacterStartZone = (byte)ZoneId.Moradon;
@@ -49,14 +50,23 @@ public class PreGameService(
     private const int MaxCharacterNameLength = 20;
     private const int MaxSocialNumberLength = 15;
 
-    public async Task<GameLoginResult> LoginAsync(string login, string password)
+    public async Task<GameLoginResult> LoginAsync(string login, string password, string address = "")
     {
+        if (throttle.IsLocked(address, login))
+        {
+            logger.LogWarning("Too many failed logins for {Login} from {Address}; refused without checking", login, address);
+            return new(0, 0, false);
+        }
+
         var account = await accountRepository.GetByLogin(login);
         if (account == null || !PasswordHasher.Verify(password, account.Password))
         {
+            throttle.Failed(address, login);
             logger.LogWarning("Login failed for {Login}: invalid credentials", login);
             return new(0, 0, false);
         }
+
+        throttle.Succeeded(address, login);
 
         if (account.Authority == AccountAuthority.Banned)
         {

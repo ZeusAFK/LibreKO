@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Gameplay;
@@ -16,7 +16,8 @@ public interface ILoginService
 {
     Task<Packet> VersionCheckAsync();
     Task<Packet> DownloadInfoAsync(short version);
-    Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN, LoginRequestFlags flags = LoginRequestFlags.None);
+    Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN,
+        LoginRequestFlags flags = LoginRequestFlags.None, string address = "");
     Task<Packet> ServerListAsync(short echo);
     Task<Packet> NewsAsync();
     Task<Packet> UnknownF7Async();
@@ -30,6 +31,7 @@ public class LoginService(
     IPatchRepository patchRepository,
     IKingRepository kingRepository,
     IOptions<LoginServerSettings> settings,
+    LoginThrottle throttle,
     ILogger<LoginService> logger) : ILoginService
 {
     private const string NewsTitle = "LoginNotice";
@@ -54,14 +56,21 @@ public class LoginService(
         return LoginPacketWriter.DownloadInfo(ftpSettings.Url, ftpSettings.Path, fileNames);
     }
 
-    public async Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN, LoginRequestFlags flags = LoginRequestFlags.None)
+    public async Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN,
+        LoginRequestFlags flags = LoginRequestFlags.None, string address = "")
     {
-        var account = await accountRepository.GetByLogin(login);
+        var locked = throttle.IsLocked(address, login);
+        var account = locked ? null : await accountRepository.GetByLogin(login);
         short remainingPremiumHours = 0;
         Server? occupiedServer = null;
 
         LoginResult result;
-        if (account == null)
+        if (locked)
+        {
+            result = LoginResult.InvalidPassword;
+            logger.LogWarning("Too many failed logins for {Login} from {Address}; refused without checking", login, address);
+        }
+        else if (account == null)
         {
             // Auto-create account if enabled
             if (settings.Value.Account.AutoCreate)
@@ -119,6 +128,11 @@ public class LoginService(
             logger.LogInformation("Account logged in successfully: {Login}", login);
             remainingPremiumHours = account.RemainingPremiumHours;
         }
+
+        if (!locked && result is LoginResult.IdNotFound or LoginResult.InvalidPassword)
+            throttle.Failed(address, login);
+        else if (result == LoginResult.Success)
+            throttle.Succeeded(address, login);
 
         return result switch
         {

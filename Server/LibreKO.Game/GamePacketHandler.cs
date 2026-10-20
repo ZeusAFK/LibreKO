@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using LibreKO.Common.Domain.Services;
+using System.Collections.Concurrent;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
@@ -119,7 +120,7 @@ public class GamePacketHandler(
                     return;
                 }
                 var preGameService = scope.ServiceProvider.GetRequiredService<IPreGameService>();
-                var response = await preGameService.LoginAsync(packet.ReadString(), packet.ReadString());
+                var response = await preGameService.LoginAsync(packet.ReadString(), packet.ReadString(), LoginThrottle.AddressOf(client));
                 await HandleLoginAsync(client, response);
                 return;
             }
@@ -181,7 +182,7 @@ public class GamePacketHandler(
         var login = packet.ReadString();
         var password = packet.ReadString();
 
-        var auth = await preGameService.LoginAsync(login, password);
+        var auth = await preGameService.LoginAsync(login, password, LoginThrottle.AddressOf(client));
         if (!auth.Success)
         {
             logger.LogWarning("Rejected kick request for '{Login}' from client {ClientId}", login, client.Id);

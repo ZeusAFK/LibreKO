@@ -1,4 +1,4 @@
-using LibreKO.Login;
+﻿using LibreKO.Login;
 using LibreKO.Login.Seed;
 using LibreKO.Login.Startup;
 using LibreKO.Common.Domain.Services;
@@ -62,6 +62,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddMemoryCache();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ILoginService, LoginService>();
+        services.AddSingleton<LoginThrottle>();
 
         services.AddSingleton<IPatchRepository, PatchRepository>();
         services.AddSingleton<IServerRepository, ServerRepository>();

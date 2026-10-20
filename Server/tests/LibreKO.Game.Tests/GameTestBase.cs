@@ -94,6 +94,7 @@ public abstract class GameTestBase
         services.AddScoped<ISheriffReportRepository, SheriffReportRepository>();
         services.AddSingleton<IHostEnvironment>(TestHostEnvironmentFactory.Create());
         services.AddScoped<IPreGameService, PreGameService>();
+        services.AddSingleton<LoginThrottle>();
         services.AddScoped<IGameSessionInitializer, GameSessionInitializer>();
         services.AddSingleton<SessionManager>();
         services.AddSingleton<CharacterPacketMapper>();
