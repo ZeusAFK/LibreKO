@@ -300,6 +300,8 @@ public class UserSession
     // Party
     public int PartyIndex { get; set; } = -1;
     public bool IsInParty => PartyIndex >= 0;
+    public int InvitedToParty { get; set; } = -1;
+    public PartyBoardInvite? BoardInvite { get; set; }
     private bool isPartyLeader;
 
     public bool IsPartyLeader

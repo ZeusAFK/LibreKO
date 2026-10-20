@@ -72,7 +72,7 @@ public class PartyMemberBuffsTests : GameTestBase
         var member = CreateMember(sessionManager, 631);
         var party = FormParty(sessionManager, leader, member);
         var invitee = CreateMember(sessionManager, 632);
-        invitee.PartyIndex = party.Index;
+        invitee.InvitedToParty = party.Index;
 
         invitee.SetBuff(FirstSkill, Lasting(FirstSkill));
 
@@ -111,7 +111,7 @@ public class PartyMemberBuffsTests : GameTestBase
         member.SetBuff(SecondSkill, Lasting(SecondSkill));
         joiner.SetBuff(JoinerSkill, Lasting(JoinerSkill));
         var party = FormParty(sessionManager, leader, member);
-        joiner.PartyIndex = party.Index;
+        joiner.InvitedToParty = party.Index;
         leaderSent.Clear();
         memberSent.Clear();
 

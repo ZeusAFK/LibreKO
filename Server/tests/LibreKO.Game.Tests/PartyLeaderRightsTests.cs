@@ -40,7 +40,7 @@ public class PartyLeaderRightsTests : GameTestBase
         var member = CreateMember(sessions, 421);
         var invitee = CreateMember(sessions, 422);
         var party = PartyOf(sessions, leader, member);
-        invitee.PartyIndex = party.Index;
+        invitee.InvitedToParty = party.Index;
 
         await provider.GetRequiredService<IPartyPacketCoordinator>().HandleAsync(invitee.Client, Request(PartyRequest.Delete));
 
@@ -81,11 +81,85 @@ public class PartyLeaderRightsTests : GameTestBase
         var coordinator = provider.GetRequiredService<IPartyPacketCoordinator>();
 
         await coordinator.HandleAsync(leader.Client, Request(PartyRequest.Insert, stranger.Name));
-        stranger.PartyIndex.Should().Be(party.Index);
+        stranger.InvitedToParty.Should().Be(party.Index);
+        stranger.IsInParty.Should().BeFalse("an invite is not membership until it is accepted");
 
         await coordinator.HandleAsync(leader.Client, Request(PartyRequest.Delete));
         sessions.Parties.GetParty(party.Index).Should().BeNull();
         member.PartyIndex.Should().Be(-1);
+    }
+
+    [Fact]
+    public async Task AMembersDeclineDoesNotTakeThemOutOfTheParty()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var leader = CreateMember(sessions, 444);
+        var member = CreateMember(sessions, 445);
+        var party = PartyOf(sessions, leader, member, CreateMember(sessions, 446));
+
+        await provider.GetRequiredService<IPartyPacketCoordinator>().HandleAsync(member.Client, Permit(accept: false));
+
+        member.PartyIndex.Should().Be(party.Index, "a member who never left stays in the party, so they cannot join a second one");
+        party.FindMember((short)member.CharacterId).Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task OnlyThePartysLeaderPromotes()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var leader = CreateMember(sessions, 447);
+        var member = CreateMember(sessions, 448);
+        var party = PartyOf(sessions, leader, member);
+        member.IsPartyLeader = true;
+
+        await provider.GetRequiredService<IPartyPacketCoordinator>().HandleAsync(member.Client, Promote(member.CharacterId));
+
+        party.LeaderId.Should().Be((short)leader.CharacterId, "a leftover leader flag is not the party's leader");
+    }
+
+    [Fact]
+    public async Task OnlyThePartysLeaderAppointsTheCommander()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var leader = CreateMember(sessions, 449);
+        var commander = CreateMember(sessions, 450);
+        var third = CreateMember(sessions, 451);
+        var party = PartyOf(sessions, leader, commander, third);
+        party.CommandLeaderId = (short)commander.CharacterId;
+
+        await provider.GetRequiredService<IPartyPacketCoordinator>().HandleAsync(commander.Client, CommandPromote(third.CharacterId));
+
+        party.CommandLeaderId.Should().Be((short)commander.CharacterId);
+    }
+
+    private static Packet Permit(bool accept)
+    {
+        var packet = new Packet(GameOpcodes.GS_PARTY);
+        packet.WriteByte((byte)PartyRequest.Permit);
+        packet.WriteByte(accept ? (byte)1 : (byte)0);
+        packet.ResetOffset();
+        return packet;
+    }
+
+    private static Packet Promote(int characterId)
+    {
+        var packet = new Packet(GameOpcodes.GS_PARTY);
+        packet.WriteByte((byte)PartyRequest.Promote);
+        packet.WriteInt(characterId);
+        packet.ResetOffset();
+        return packet;
+    }
+
+    private static Packet CommandPromote(int characterId)
+    {
+        var packet = new Packet(GameOpcodes.GS_PARTY);
+        packet.WriteByte((byte)PartyRequest.CommandPromote);
+        packet.WriteInt(characterId);
+        packet.ResetOffset();
+        return packet;
     }
 
     private static PartyGroup PartyOf(SessionManager sessions, UserSession leader, params UserSession[] members)

@@ -44,7 +44,7 @@ public class PartyPacketCoordinator(
                     break;
 
                 if (packet.ReadByte() != 0)
-                    await InsertAsync(session);
+                    await AcceptInviteAsync(session);
                 else
                     await CancelAsync(session);
                 break;
@@ -106,7 +106,7 @@ public class PartyPacketCoordinator(
     private async Task HandleCommandPromoteAsync(UserSession session, Packet packet)
     {
         var party = sessionManager.Parties.GetParty(session.PartyIndex);
-        if (party == null || !party.IsCommandLeader((short)session.CharacterId))
+        if (party == null || party.LeaderId != (short)session.CharacterId)
             return;
 
         var now = DateTime.UtcNow;
@@ -300,7 +300,7 @@ public class PartyPacketCoordinator(
             }
         }
 
-        target!.PartyIndex = session.PartyIndex;
+        target!.InvitedToParty = session.PartyIndex;
 
         var invite = PartyPacketWriter.Invite(session.CharacterId, session.Name);
         await target.Client.SendPacket(invite);
@@ -312,14 +312,21 @@ public class PartyPacketCoordinator(
         if (!await InviteAllowedAsync(inviter, target, boardType) || !await HasRoomToInviteAsync(inviter))
             return;
 
-        await target!.Client.SendPacket(PartyBbsPacketWriter.BoardInvite(
+        target!.BoardInvite = new PartyBoardInvite(inviter.CharacterId, boardType);
+        await target.Client.SendPacket(PartyBbsPacketWriter.BoardInvite(
             boardType, inviter.Name, (byte)inviter.Level, (short)inviter.Class));
     }
 
+    // A board accept answers the invite this player was sent, and only once.
     public async Task BoardAcceptAsync(UserSession target, string inviterName, byte boardType)
     {
         var inviter = sessionManager.GetByName(inviterName);
-        if (inviter == null || !await InviteAllowedAsync(inviter, target, boardType) || !await HasRoomToInviteAsync(inviter))
+        var invite = target.BoardInvite;
+        if (inviter == null || invite != new PartyBoardInvite(inviter.CharacterId, boardType))
+            return;
+
+        target.BoardInvite = null;
+        if (!await InviteAllowedAsync(inviter, target, boardType) || !await HasRoomToInviteAsync(inviter))
             return;
 
         if (!inviter.IsInParty)
@@ -374,7 +381,7 @@ public class PartyPacketCoordinator(
         if (!inviter.IsInParty)
             return true;
         var party = sessionManager.Parties.GetParty(inviter.PartyIndex);
-        if (!inviter.IsPartyLeader || party == null)
+        if (party == null || party.LeaderId != (short)inviter.CharacterId)
         {
             await SendErrorAsync(inviter, PartyInviteError.CannotParty);
             return false;
@@ -492,13 +499,24 @@ public class PartyPacketCoordinator(
             excludeSender: false);
     }
 
-    private async Task CancelAsync(UserSession session)
+    // Joining answers the invite this player was sent; a member is not a pending invitee.
+    private async Task AcceptInviteAsync(UserSession session)
     {
-        if (!session.IsInParty)
+        if (session.InvitedToParty < 0 || session.IsInParty)
             return;
 
-        var party = sessionManager.Parties.GetParty(session.PartyIndex);
-        session.PartyIndex = -1;
+        session.PartyIndex = session.InvitedToParty;
+        session.InvitedToParty = -1;
+        await InsertAsync(session);
+    }
+
+    private async Task CancelAsync(UserSession session)
+    {
+        if (session.InvitedToParty < 0)
+            return;
+
+        var party = sessionManager.Parties.GetParty(session.InvitedToParty);
+        session.InvitedToParty = -1;
 
         if (party == null)
             return;
@@ -558,11 +576,8 @@ public class PartyPacketCoordinator(
 
     private async Task PromoteAsync(UserSession session, short newLeaderId)
     {
-        if (!session.IsPartyLeader)
-            return;
-
         var party = sessionManager.Parties.GetParty(session.PartyIndex);
-        if (party == null)
+        if (party == null || party.LeaderId != (short)session.CharacterId)
             return;
 
         var memberPos = party.FindMember(newLeaderId);

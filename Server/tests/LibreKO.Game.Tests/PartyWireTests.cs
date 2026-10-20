@@ -26,7 +26,7 @@ public class PartyWireTests : GameTestBase
         var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
         leader.PartyIndex = party.Index;
         leader.IsPartyLeader = true;
-        invitee.PartyIndex = party.Index;
+        invitee.InvitedToParty = party.Index;
 
         var accept = new Packet(GameOpcodes.GS_PARTY);
         accept.WriteByte((byte)PartyRequest.Permit);
@@ -50,7 +50,7 @@ public class PartyWireTests : GameTestBase
         var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
         leader.PartyIndex = party.Index;
         leader.IsPartyLeader = true;
-        invitee.PartyIndex = party.Index;
+        invitee.InvitedToParty = party.Index;
 
         var accept = new Packet(GameOpcodes.GS_PARTY);
         accept.WriteByte((byte)PartyRequest.Permit);
@@ -132,7 +132,7 @@ public class PartyWireTests : GameTestBase
         await coordinator.HandleAsync(leader.Client, InviteOf(target));
 
         RejectionsIn(sent).Should().BeEmpty();
-        target.PartyIndex.Should().Be(leader.PartyIndex);
+        target.InvitedToParty.Should().Be(leader.PartyIndex);
     }
 
     [Fact]
@@ -169,12 +169,46 @@ public class PartyWireTests : GameTestBase
         var inviter = CreateMember(sessionManager, 522);
         var target = CreateMember(sessionManager, 523);
 
+        await board.HandleAsync(inviter.Client, BoardPacket(PartyBbsPacketWriter.SubInvite, target.Name));
         await board.HandleAsync(target.Client, BoardPacket(PartyBbsPacketWriter.SubInviteAccept, inviter.Name));
 
         inviter.IsPartyLeader.Should().BeTrue();
         var party = sessionManager.Parties.GetParty(inviter.PartyIndex);
         party.Should().NotBeNull();
         party!.FindMember((short)target.CharacterId).Should().BeGreaterThanOrEqualTo(0);
+    }
+
+    [Fact]
+    public async Task ABoardAcceptWithoutAnInviteJoinsNobody()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var board = provider.GetRequiredService<IPartyBbsPacketCoordinator>();
+        var leader = CreateMember(sessionManager, 524);
+        var stranger = CreateMember(sessionManager, 525);
+
+        await board.HandleAsync(stranger.Client, BoardPacket(PartyBbsPacketWriter.SubInviteAccept, leader.Name));
+
+        stranger.IsInParty.Should().BeFalse();
+        leader.IsInParty.Should().BeFalse("nobody is put at the head of a party they did not form");
+    }
+
+    [Fact]
+    public async Task ABoardInviteIsAnsweredOnce()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var board = provider.GetRequiredService<IPartyBbsPacketCoordinator>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var inviter = CreateMember(sessionManager, 526);
+        var target = CreateMember(sessionManager, 527);
+        await board.HandleAsync(inviter.Client, BoardPacket(PartyBbsPacketWriter.SubInvite, target.Name));
+        await board.HandleAsync(target.Client, BoardPacket(PartyBbsPacketWriter.SubInviteAccept, inviter.Name));
+        await parties.RemoveMemberAsync(target, (short)target.CharacterId);
+
+        await board.HandleAsync(target.Client, BoardPacket(PartyBbsPacketWriter.SubInviteAccept, inviter.Name));
+
+        target.IsInParty.Should().BeFalse();
     }
 
     private static Packet BoardPacket(byte sub, string name)

@@ -137,7 +137,7 @@ public class PartySignalTests : GameTestBase
         await EchoAfterAsync(coordinator, 50, (member, memberSent));
         await signal.TickAsync();
 
-        joiner.PartyIndex = party.Index;
+        joiner.InvitedToParty = party.Index;
         await coordinator.HandleAsync(joiner.Client, Accept());
 
         TablesIn(joinerSent).Should().ContainSingle()

@@ -1,4 +1,4 @@
-namespace LibreKO.Game.World;
+﻿namespace LibreKO.Game.World;
 
 public class PartyGroup
 {
@@ -78,3 +78,5 @@ public class PartyManager
         parties.Remove(index);
     }
 }
+
+public sealed record PartyBoardInvite(int InviterId, byte BoardType);
