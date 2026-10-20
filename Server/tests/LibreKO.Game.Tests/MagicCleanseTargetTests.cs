@@ -29,6 +29,8 @@ public class MagicCleanseTargetTests : GameTestBase
     private const short PartyCureRange = 20;
     private const int NearCure = 111528;
     private const float NoRangeCureDistance = 26f;
+    private const int SidelessCure = 111529;
+    private const int SidelessDispel = 111530;
 
     [Fact]
     public async Task ACureCannotBeAimedAtAnEnemyToStripTheirBuffs()
@@ -177,6 +179,82 @@ public class MagicCleanseTargetTests : GameTestBase
         ally.ActiveBuffs.Should().ContainKey(Shield, "a dispel is aimed at enemies only");
     }
 
+    [Theory]
+    [InlineData(SkillMoral.SelfArea)]
+    [InlineData(SkillMoral.AreaAll)]
+    [InlineData(SkillMoral.All)]
+    public async Task ACureWhoseMoralNamesNoSideDoesNotHelpAnEnemy(SkillMoral moral)
+    {
+        using var provider = CreateProvider(_ => { }, gameData => Sideless(gameData, moral));
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 967, AccountNation.Karus, RonarkLand, x: 100, z: 100);
+        var enemy = CreatePlayer(sessions, 968, AccountNation.ElMorad, RonarkLand, x: 105, z: 100);
+        Give(enemy, Curse, BuffType.Blind);
+
+        await Cast(provider, caster, SidelessCure, enemy.CharacterId);
+
+        enemy.ActiveBuffs.Should().ContainKey(Curse, "a cure lifts curses from friends only, whatever its moral");
+        caster.Mp.Should().Be(caster.MaxMp, "the cast is refused before it is paid");
+    }
+
+    [Fact]
+    public async Task ACureWhoseMoralNamesNoSideStillHelpsAFriend()
+    {
+        using var provider = CreateProvider(_ => { }, gameData => Sideless(gameData, SkillMoral.AreaAll));
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 969, AccountNation.Karus, RonarkLand, x: 100, z: 100);
+        var friend = CreatePlayer(sessions, 970, AccountNation.Karus, RonarkLand, x: 105, z: 100);
+        Give(friend, Curse, BuffType.Blind);
+
+        await Cast(provider, caster, SidelessCure, friend.CharacterId);
+
+        friend.ActiveBuffs.Should().NotContainKey(Curse);
+    }
+
+    [Theory]
+    [InlineData(SkillMoral.SelfArea)]
+    [InlineData(SkillMoral.AreaAll)]
+    [InlineData(SkillMoral.All)]
+    public async Task ADispelWhoseMoralNamesNoSideDoesNotStripAFriend(SkillMoral moral)
+    {
+        using var provider = CreateProvider(_ => { }, gameData => Sideless(gameData, moral));
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 971, AccountNation.Karus, RonarkLand, x: 100, z: 100);
+        var ally = CreatePlayer(sessions, 972, AccountNation.Karus, RonarkLand, x: 105, z: 100);
+        Give(ally, Shield, BuffType.Ac);
+
+        await Cast(provider, caster, SidelessDispel, ally.CharacterId);
+
+        ally.ActiveBuffs.Should().ContainKey(Shield, "a dispel strips enemies only, whatever its moral");
+    }
+
+    [Fact]
+    public async Task ADispelWhoseMoralNamesNoSideStillStripsAnEnemy()
+    {
+        using var provider = CreateProvider(_ => { }, gameData => Sideless(gameData, SkillMoral.AreaAll));
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 973, AccountNation.Karus, RonarkLand, x: 100, z: 100);
+        var enemy = CreatePlayer(sessions, 974, AccountNation.ElMorad, RonarkLand, x: 105, z: 100);
+        Give(enemy, Shield, BuffType.Ac);
+
+        await Cast(provider, caster, SidelessDispel, enemy.CharacterId);
+
+        enemy.ActiveBuffs.Should().NotContainKey(Shield);
+    }
+
+    private static void Sideless(IGameDataService gameData, SkillMoral moral)
+    {
+        Rows(gameData);
+        gameData.GetMagic(SidelessCure).Returns(new MagicData
+        {
+            Id = SidelessCure, Type1 = 5, Moral = (byte)moral, Range = CureRange, Msp = CureMana,
+        });
+        gameData.GetMagic(SidelessDispel).Returns(new MagicData
+        {
+            Id = SidelessDispel, Type1 = 5, Moral = (byte)moral, Range = CureRange,
+        });
+    }
+
     private static void Rows(IGameDataService gameData)
     {
         gameData.GetMagic(CureCurse).Returns(new MagicData
@@ -202,6 +280,8 @@ public class MagicCleanseTargetTests : GameTestBase
             [PartyCure] = new() { Id = PartyCure, Type = RemoveBuffSubtype },
             [NearCure] = new() { Id = NearCure, Type = RemoveBuffSubtype },
             [Dispel] = new() { Id = Dispel, Type = RemoveBlessSubtype },
+            [SidelessCure] = new() { Id = SidelessCure, Type = RemoveBuffSubtype },
+            [SidelessDispel] = new() { Id = SidelessDispel, Type = RemoveBlessSubtype },
         });
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
         {

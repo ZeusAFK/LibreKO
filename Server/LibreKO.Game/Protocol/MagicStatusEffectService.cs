@@ -560,7 +560,7 @@ public class MagicStatusEffectService(
         else
         {
             var resolved = targetId == AreaTarget && IsCleanse(special) ? caster : sessionManager.GetByCharacterId(targetId);
-            if (resolved == null || (IsCleanse(special) && !MayCleanse(caster, resolved, magic)))
+            if (resolved == null || (IsCleanse(special) && !MayCleanse(caster, resolved, magic, special)))
             {
                 await SendMagicFailAsync(caster, skillId);
                 return false;
@@ -623,7 +623,7 @@ public class MagicStatusEffectService(
         moral is SkillMoral.PartyAll or SkillMoral.AreaEnemy or SkillMoral.AreaFriend or SkillMoral.AreaAll
             or SkillMoral.SelfArea;
 
-    private static bool MayCleanse(UserSession caster, UserSession target, MagicData magic)
+    private static bool MayCleanse(UserSession caster, UserSession target, MagicData magic, SpecialMagicType special)
     {
         var moral = (SkillMoral)magic.Moral;
         if (moral == SkillMoral.Self || target == caster)
@@ -634,7 +634,7 @@ public class MagicStatusEffectService(
             && target.Room == caster.Room
             && AttackReach.Within(caster, target.X, target.Z,
                 (magic.Range > 0 ? magic.Range : AttackReach.Melee) + AttackReach.PlayerBodyRadius * 2 + AttackReach.SkillSlack)
-            && PvpRules.MayTouch(caster, target, moral, static () => false);
+            && PvpRules.MayTouch(caster, target, PvpRules.CureMoral(moral, special == SpecialMagicType.RemoveBless), healStrikes: false);
     }
 
     private async Task CleanseAsync(UserSession target, SpecialMagicType special)

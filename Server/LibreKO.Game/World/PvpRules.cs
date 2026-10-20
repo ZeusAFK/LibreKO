@@ -1,4 +1,5 @@
 ﻿using LibreKO.Common.Enums;
+
 namespace LibreKO.Game.World;
 
 public static class PvpRules
@@ -47,14 +48,22 @@ public static class PvpRules
     }
 
     // One rule for who an aimed skill may touch, both before the cast is paid and when it lands.
-    public static bool MayTouch(UserSession caster, UserSession target, SkillMoral moral, Func<bool> healStrikes) => moral switch
+    public static bool MayTouch(UserSession caster, UserSession target, SkillMoral moral, bool healStrikes) => moral switch
     {
         SkillMoral.Enemy or SkillMoral.AreaEnemy or SkillMoral.Npc => CanAttackPlayer(caster, target),
         SkillMoral.Party or SkillMoral.PartyAll => caster.IsInParty && target.PartyIndex == caster.PartyIndex,
         SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe or SkillMoral.AreaFriend or SkillMoral.Clan
             or SkillMoral.ClanAll or SkillMoral.CorpseFriend
-            => !IsHostile(caster, target) || (healStrikes() && CanAttackPlayer(caster, target)),
+            => !IsHostile(caster, target) || (healStrikes && CanAttackPlayer(caster, target)),
         _ => true,
+    };
+
+    // A cure whose moral names no side takes it from what it lifts: blessings come off enemies, harm off friends.
+    public static SkillMoral CureMoral(SkillMoral moral, bool liftsBlessings) => moral switch
+    {
+        SkillMoral.None or SkillMoral.All or SkillMoral.AreaAll or SkillMoral.SelfArea
+            => liftsBlessings ? SkillMoral.Enemy : SkillMoral.FriendWithMe,
+        _ => moral,
     };
 
     private static bool AtClanWar(UserSession attacker, UserSession target)

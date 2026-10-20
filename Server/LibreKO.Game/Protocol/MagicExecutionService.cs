@@ -113,7 +113,7 @@ public class MagicExecutionService(
             return targetId == caster.CharacterId;
 
         if (targetId == AreaTarget || targetId == caster.CharacterId
-            || (SkillMoral)magic.Moral == SkillMoral.SelfArea
+            || ((SkillMoral)magic.Moral == SkillMoral.SelfArea && Cure(magic, skillId) == null)
             || !IsAimed(magic, skillId))
             return true;
 
@@ -121,7 +121,7 @@ public class MagicExecutionService(
             return player.ZoneId == caster.ZoneId && player.Room == caster.Room
                 && Within(caster, player.X, player.Z, AttackReach.PlayerBodyRadius, Reach(caster, magic, skillId))
                 && MayTouch(caster, player, magic, skillId)
-                && (player.Hp > 0 || !IsCleanse(magic, skillId));
+                && (player.Hp > 0 || Cure(magic, skillId) == null);
 
         if (sessionManager.Regions.GetNpc(targetId) is { } npc)
             return npc.ZoneId == caster.ZoneId && npc.Room == caster.Room
@@ -130,10 +130,12 @@ public class MagicExecutionService(
         return true;
     }
 
-    private bool IsCleanse(MagicData magic, int skillId) =>
+    private SpecialMagicType? Cure(MagicData magic, int skillId) =>
         magic.PrimaryType == MagicSkillType.Special
         && MagicTypeLookup.TryResolve(gameDataService.MagicType5Table, magic, skillId, out var type5)
-        && (SpecialMagicType)type5.Type is SpecialMagicType.RemoveDot or SpecialMagicType.RemoveBuff or SpecialMagicType.RemoveBless;
+        && (SpecialMagicType)type5.Type is SpecialMagicType.RemoveDot or SpecialMagicType.RemoveBuff or SpecialMagicType.RemoveBless
+            ? (SpecialMagicType)type5.Type
+            : null;
 
     private bool IsAimed(MagicData magic, int skillId) => magic.PrimaryType switch
     {
@@ -144,7 +146,9 @@ public class MagicExecutionService(
     };
 
     private bool MayTouch(UserSession caster, UserSession target, MagicData magic, int skillId) =>
-        PvpRules.MayTouch(caster, target, (SkillMoral)magic.Moral, () => HealStrikes(caster, magic, skillId));
+        PvpRules.MayTouch(caster, target,
+            Cure(magic, skillId) is { } cure ? PvpRules.CureMoral((SkillMoral)magic.Moral, cure == SpecialMagicType.RemoveBless) : (SkillMoral)magic.Moral,
+            HealStrikes(caster, magic, skillId));
 
     private bool HealStrikes(UserSession caster, MagicData magic, int skillId) =>
         MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, skillId, out var type3)
