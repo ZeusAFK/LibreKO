@@ -36,6 +36,7 @@ public class BountyPacketCoordinator(
     private const int BountyMaxReward = 100_000_000;
     private const int BountyLifetimeDays = 7;
     private const int MaxOpenBountiesPerPoster = 5;
+    private const int MaxListedBounties = 200;
     private const string ReturnSubject = "Bounty returned";
     private const string RewardSubject = "Bounty reward";
 
@@ -45,6 +46,7 @@ public class BountyPacketCoordinator(
     private readonly Dictionary<int, HashSet<int>> huntersByBounty = [];
     private readonly ConcurrentQueue<Kill> kills = new();
     private readonly List<Kill> unsaved = [];
+    private readonly ConcurrentQueue<int> unreadNotices = new();
     private bool loaded;
 
     private sealed record Kill(int VictimId, int KillerId, DateTime At);
@@ -93,6 +95,8 @@ public class BountyPacketCoordinator(
             {
                 gate.Release();
             }
+
+            await SendUnreadNoticesAsync();
         }
         catch (Exception exception)
         {
@@ -107,7 +111,9 @@ public class BountyPacketCoordinator(
         try
         {
             if (await RefreshBoardAsync())
-                entries = board
+                entries = board.Where(b => b.PosterCharacterId == session.CharacterId)
+                    .Concat(board.Where(b => b.PosterCharacterId != session.CharacterId).OrderByDescending(b => b.Id))
+                    .Take(MaxListedBounties)
                     .Select(b => new BountyPacketWriter.Entry(b.Id, b.TargetName, b.PosterName, b.Reward))
                     .ToList();
         }
@@ -115,6 +121,8 @@ public class BountyPacketCoordinator(
         {
             gate.Release();
         }
+
+        await SendUnreadNoticesAsync();
 
         if (entries == null)
             return;
@@ -131,10 +139,9 @@ public class BountyPacketCoordinator(
         await gate.WaitAsync();
         try
         {
-            // A bounty someone has earned is theirs, so only unearned ones count toward the limit.
             if (await RefreshBoardAsync()
                 && target.Length > 0 && reward is >= BountyMinReward and <= BountyMaxReward
-                && board.Count(b => b.PosterCharacterId == session.CharacterId && Hunters(b.Id).Count == 0) < MaxOpenBountiesPerPoster
+                && board.Count(b => b.PosterCharacterId == session.CharacterId) < MaxOpenBountiesPerPoster
                 && !string.Equals(target, session.Name, StringComparison.OrdinalIgnoreCase)
                 && await FindCharacterAsync(target) is { } wanted
                 && wanted.Id != session.CharacterId)
@@ -167,6 +174,8 @@ public class BountyPacketCoordinator(
             gate.Release();
         }
 
+        await SendUnreadNoticesAsync();
+
         if (posted == null)
         {
             await session.Client.SendPacket(BountyPacketWriter.Result(BountySubPost, BountyPacketWriter.Failed));
@@ -196,6 +205,8 @@ public class BountyPacketCoordinator(
         {
             gate.Release();
         }
+
+        await SendUnreadNoticesAsync();
 
         if (claimed == null)
         {
@@ -232,6 +243,8 @@ public class BountyPacketCoordinator(
             gate.Release();
         }
 
+        await SendUnreadNoticesAsync();
+
         await session.Client.SendPacket(BountyPacketWriter.BountyResult(
             BountySubWithdraw, withdrawn != null ? BountyPacketWriter.Succeeded : BountyPacketWriter.Failed, bountyId));
         if (withdrawn == null)
@@ -251,6 +264,8 @@ public class BountyPacketCoordinator(
             db.BountyHunters.RemoveRange(HunterRows(bounty));
             return Task.FromResult(true);
         }, () => payee.WithLock(s => s.Money = Math.Max(0, s.Money - bounty.Reward)));
+        if (outcome == StateCommit.Failed)
+            await ForgetIfClosedAsync(bounty);
         if (outcome != StateCommit.Saved)
             return false;
 
@@ -258,7 +273,7 @@ public class BountyPacketCoordinator(
         return true;
     }
 
-    // Kills are recorded before expiry, so a bounty earned in time goes to its hunter, never back to its poster.
+    // Queued kills are recorded before any bounty runs out.
     private async Task<bool> RefreshBoardAsync()
     {
         if (!loaded && !await TryLoadAsync())
@@ -270,18 +285,17 @@ public class BountyPacketCoordinator(
         {
             var hunter = Hunters(bounty.Id).Select(id => (int?)id).FirstOrDefault();
             var recipient = hunter ?? bounty.PosterCharacterId;
-            if (!await TryCloseByMailAsync(bounty, recipient, hunter != null))
+            if (!await TryCloseByMailAsync(bounty, recipient, hunter != null) && !await ForgetIfClosedAsync(bounty))
                 continue;
 
             Forget(bounty);
-            if (sessionManager.GetByCharacterId(recipient) is { } online)
-                await mailService.SendUnreadAsync(online);
+            unreadNotices.Enqueue(recipient);
         }
 
         return true;
     }
 
-    // Loaded whole or not at all, so a failed load never leaves half a board to be loaded again on top.
+    // Loaded whole or not at all.
     private async Task<bool> TryLoadAsync()
     {
         try
@@ -326,7 +340,7 @@ public class BountyPacketCoordinator(
         }
     }
 
-    // Kills on one target are recorded in order, so after a failed save the first kill still earns the bounty.
+    // Kills on one target are recorded in the order they happened.
     private async Task RecordQueuedKillsAsync()
     {
         while (kills.TryDequeue(out var queued))
@@ -389,13 +403,50 @@ public class BountyPacketCoordinator(
         }
     }
 
+    // A close reported as failed may still have been written.
+    private async Task<bool> ForgetIfClosedAsync(Bounty bounty)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            if (await db.Bounties.AnyAsync(b => b.Id == bounty.Id))
+                return false;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "Could not check whether bounty {Id} is closed", bounty.Id);
+            return false;
+        }
+
+        Forget(bounty);
+        return true;
+    }
+
+    private async Task SendUnreadNoticesAsync()
+    {
+        while (unreadNotices.TryDequeue(out var characterId))
+        {
+            if (sessionManager.GetByCharacterId(characterId) is not { } online)
+                continue;
+
+            try
+            {
+                await mailService.SendUnreadAsync(online);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogError(exception, "Could not tell {Name} of a bounty mail", online.Name);
+            }
+        }
+    }
+
     private void Forget(Bounty bounty)
     {
         board.Remove(bounty);
         huntersByBounty.Remove(bounty.Id);
     }
 
-    // A deleted or sealed character can never be hunted.
     private async Task<(int Id, string Name)?> FindCharacterAsync(string name)
     {
         try
