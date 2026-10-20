@@ -10,6 +10,10 @@ public class CostumeLookTests
     private const int Helmet = 508053000;
     private const int PauldronResource = 50800101;
     private const int HelmetResource = 50800301;
+    private const int GryphonPrefix = 47;
+    private const int GryphonPauldronResource = 50847100;
+    private const int WorldCupUsPrefix = 30;
+    private const int WorldCupUsTopResource = 50830100;
 
     private static int ResourceOf(int itemId) => itemId switch
     {
@@ -49,6 +53,16 @@ public class CostumeLookTests
     [Fact]
     public void AnUnprefixedPartHasOneStem() =>
         Assert.Equal(new[] { "5_1801_10_0" }, CostumeLook.PartStems(0, 51800100, 1));
+
+    [Fact]
+    public void APuriTuarekMagicianWearsThePuriTuarekPart() =>
+        Assert.Equal(new[] { "47_5_0851_10_0", "5_0851_10_0" },
+            CostumeLook.PartStems(GryphonPrefix, GryphonPauldronResource, PlayerRig.PuriTuarekMagician));
+
+    [Fact]
+    public void AMagicianNeverAsksForTheNeighbouringModelOfAnotherRace() =>
+        Assert.DoesNotContain(CostumeLook.ArmorStem(WorldCupUsTopResource, PlayerRig.PuriTuarekMagician),
+            CostumeLook.PartStems(WorldCupUsPrefix, WorldCupUsTopResource, PlayerRig.PuriTuarekMagician));
 
     [Fact]
     public void TheOutfitSwapsOnlyThePieceType() =>
