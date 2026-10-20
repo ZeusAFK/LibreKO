@@ -22,6 +22,7 @@ public class KingPurseTests : GameTestBase
     private const int WritersAtOnce = 5;
     private const int SavesForAWriteAndOneWaiting = 2;
     private static readonly TimeSpan RivalWait = TimeSpan.FromMilliseconds(300);
+    private static readonly TimeSpan StoreWait = TimeSpan.FromSeconds(5);
 
     [Fact]
     public async Task APrizeIsPaidFromTheTreasury()
@@ -120,7 +121,58 @@ public class KingPurseTests : GameTestBase
             .NationalTreasury.Should().Be(Treasury - Prize);
     }
 
-    // The first save waits a while for a rival write started inside it, which can finish only if nothing holds it back.
+    [Fact]
+    public async Task EveryTreasuryRequestThatSharedAFailedWriteFails()
+    {
+        var kingdom = new KingSystemData { Nation = (byte)AccountNation.Karus, KingName = King, NationalTreasury = Treasury };
+        var saves = new FirstSaveWaits { LaterSavesFail = true };
+        using var provider = Provider(kingdom, services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(saves)));
+        var runtime = provider.GetRequiredService<IKingSystemRuntimeService>();
+        var requests = new List<Task>();
+        saves.Meanwhile = () =>
+        {
+            KingSystemRuntimeService.TrySpendTreasury(kingdom, Prize);
+            requests.AddRange(Enumerable.Range(0, WritersAtOnce).Select(_ => runtime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury)));
+            return Task.WhenAll(requests);
+        };
+
+        await runtime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
+        var rival = () => saves.Rival;
+
+        await rival.Should().ThrowAsync<DbUpdateException>();
+        requests.Should().OnlyContain(request => request.IsFaulted, "a request that shared a failed write learns it failed, as its own write would have");
+    }
+
+    [Fact]
+    public async Task TreasuryWritesOfOneServerDoNotHoldBackAnother()
+    {
+        var kingdom = new KingSystemData { Nation = (byte)AccountNation.Karus, KingName = King, NationalTreasury = Treasury };
+        var held = new FirstSaveHeld();
+        using var first = Provider(kingdom, services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(held)));
+        using var second = Provider(kingdom);
+        var firstRuntime = first.GetRequiredService<IKingSystemRuntimeService>();
+        var holding = firstRuntime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
+        await held.Reached;
+        var waiting = firstRuntime.PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
+
+        try
+        {
+            KingSystemRuntimeService.TrySpendTreasury(kingdom, Prize);
+            var store = second.GetRequiredService<IKingSystemRuntimeService>().PersistKingPropertyAsync(kingdom, entry => entry.NationalTreasury);
+            (await Task.WhenAny(store, Task.Delay(StoreWait))).Should().BeSameAs(store, "one service's held write does not hold another's");
+
+            await using var scope = second.CreateAsyncScope();
+            (await scope.ServiceProvider.GetRequiredService<AppDbContext>().KingSystem.AsNoTracking().SingleAsync())
+                .NationalTreasury.Should().Be(Treasury - Prize, "a write waiting in one service does not stand for another's");
+        }
+        finally
+        {
+            held.Release();
+            await Task.WhenAll(holding, waiting);
+        }
+    }
+
+    // The first save starts the rival writes before it goes on, and waits a while for them, as they finish only if nothing holds them back.
     private sealed class FirstSaveWaits : SaveChangesInterceptor
     {
         private int saves;
@@ -128,14 +180,43 @@ public class KingPurseTests : GameTestBase
         public Func<Task> Meanwhile { get; set; } = () => Task.CompletedTask;
         public Task Rival { get; private set; } = Task.CompletedTask;
         public int Saves => Volatile.Read(ref saves);
+        public bool LaterSavesFail { get; init; }
 
         public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
             if (Interlocked.Increment(ref saves) == 1)
             {
-                Rival = Task.Run(Meanwhile);
+                Rival = Meanwhile();
                 await Task.WhenAny(Rival, Task.Delay(RivalWait, cancellationToken));
+            }
+            else if (LaterSavesFail)
+            {
+                throw new DbUpdateException("the database went away");
+            }
+
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+    }
+
+    // The first save waits until it is let go.
+    private sealed class FirstSaveHeld : SaveChangesInterceptor
+    {
+        private int saves;
+        private readonly TaskCompletionSource reached = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Reached => reached.Task;
+
+        public void Release() => release.TrySetResult();
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref saves) == 1)
+            {
+                reached.TrySetResult();
+                await release.Task;
             }
 
             return await base.SavingChangesAsync(eventData, result, cancellationToken);

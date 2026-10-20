@@ -37,8 +37,8 @@ public class KingSystemRuntimeService(
     public const ushort ElmoradKingCape = 98;
 
     private static readonly Lock Purses = new();
-    private static readonly SemaphoreSlim Writes = new(1, 1);
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(byte Nation, string Property), byte> Waiting = new();
+    private readonly SemaphoreSlim writes = new(1, 1);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(byte Nation, string Property), TaskCompletionSource> queued = new();
 
     // The treasury, tax and tribute change only under one lock.
     public static bool TrySpendTreasury(KingSystemData kingData, int amount)
@@ -89,36 +89,46 @@ public class KingSystemRuntimeService(
     public static ushort KingCapeOf(AccountNation nation) =>
         nation == AccountNation.ElMorad ? ElmoradKingCape : KarusKingCape;
 
-    // Writes run one at a time, each storing the value as it stands when it runs.
-    // A write already waiting stores the newest value when it runs, so another one for the same value adds nothing.
-    public async Task PersistKingPropertyAsync<TProperty>(
+    // A request that finds a write for its value still waiting shares that write and its outcome.
+    public Task PersistKingPropertyAsync<TProperty>(
         KingSystemData kingData,
         Expression<Func<KingSystemData, TProperty>> propertySelector)
     {
-        var waiting = (kingData.Nation, ((MemberExpression)propertySelector.Body).Member.Name);
-        if (!Waiting.TryAdd(waiting, 0))
-            return;
+        var key = (kingData.Nation, ((MemberExpression)propertySelector.Body).Member.Name);
+        var write = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var waiting = queued.GetOrAdd(key, write);
+        if (waiting == write)
+            _ = StoreAsync(key, write, kingData, propertySelector);
+        return waiting.Task;
+    }
 
-        var read = propertySelector.Compile();
-        await Writes.WaitAsync();
+    // Writes run one at a time, each storing the value as it stands when it runs.
+    private async Task StoreAsync<TProperty>((byte Nation, string Property) key, TaskCompletionSource write,
+        KingSystemData kingData, Expression<Func<KingSystemData, TProperty>> propertySelector)
+    {
+        await writes.WaitAsync();
         try
         {
-            Waiting.TryRemove(waiting, out _);
+            queued.TryRemove(KeyValuePair.Create(key, write));
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var stored = new KingSystemData { Nation = kingData.Nation };
             db.Attach(stored);
             var property = db.Entry(stored).Property(propertySelector);
-            property.CurrentValue = read(kingData);
+            property.CurrentValue = propertySelector.Compile()(kingData);
             property.IsModified = true;
             await db.SaveChangesAsync();
+            logger.LogInformation("King property persisted for nation {Nation}", kingData.Nation);
+            write.SetResult();
+        }
+        catch (Exception exception)
+        {
+            write.SetException(exception);
         }
         finally
         {
-            Writes.Release();
+            writes.Release();
         }
-
-        logger.LogInformation("King property persisted for nation {Nation}", kingData.Nation);
     }
 
     public async Task BroadcastToNationAsync(AccountNation nation, Packet packet)
