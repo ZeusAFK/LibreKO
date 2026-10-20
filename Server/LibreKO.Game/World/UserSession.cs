@@ -324,6 +324,7 @@ public class UserSession
     public ConcurrentDictionary<int, long> AcceptedCasts { get; } = new();
     public ConcurrentDictionary<int, int> PendingArrowHits { get; } = new();
     public long SkillBurstTicks { get; set; }
+    public long InstantSkillReadyTicks { get; set; }
     public long NextSwingTicks { get; set; }
     public long SwingIntervalTicks { get; set; }
     public long NextShotTicks { get; set; }
@@ -338,6 +339,8 @@ public class UserSession
     public bool CanUseSkills { get; set; } = true;
     public long BlinkUntilTicks { get; set; }
     public bool IsBlinking => BlinkUntilTicks != 0;
+    public bool IsHeld => activeBuffs.Values.Any(buff => buff.BuffType is BuffType.Freeze or BuffType.Stun && !buff.IsExpired);
+    public bool CarriesManes => activeBuffs.Values.Any(buff => buff.BuffType == BuffType.FragmentOfManes && !buff.IsExpired);
     public bool BlinkOnArrival { get; set; }
     public ResurrectionOffer? PendingResurrection { get; set; }
     public int ControlSignature { get; set; }

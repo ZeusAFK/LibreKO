@@ -55,7 +55,7 @@ public class MagicClassSkillTests : GameTestBase
     }
 
     [Fact]
-    public async Task AnEventSkillOfNoClassIsCastByAnyone()
+    public async Task ASkillOfNoClassWithoutAnItemIsNotForPlayers()
     {
         using var provider = Provider();
         var (caster, client) = Caster(provider, Warrior);
@@ -63,7 +63,19 @@ public class MagicClassSkillTests : GameTestBase
 
         await Cast(provider, client, caster, EventBlast, worm.UniqueId);
 
-        worm.Hp.Should().BeLessThan(worm.MaxHp);
+        worm.Hp.Should().Be(worm.MaxHp);
+    }
+
+    [Fact]
+    public async Task AnEventTreeSkillIsRefusedOutsideItsZone()
+    {
+        using var provider = Provider(tree: ChaosRules.DungeonDefenseSkillTree);
+        var (caster, client) = Caster(provider, Warrior);
+        var worm = Worm(provider);
+
+        await Cast(provider, client, caster, EventBlast, worm.UniqueId);
+
+        worm.Hp.Should().Be(worm.MaxHp);
     }
 
     [Fact]
@@ -80,11 +92,31 @@ public class MagicClassSkillTests : GameTestBase
         worm.Hp.Should().BeLessThan(worm.MaxHp);
     }
 
-    private static ServiceProvider Provider() => CreateProvider(_ => { }, gameData =>
+    [Theory]
+    [InlineData(400, true)]
+    [InlineData(200, false)]
+    public async Task ASkillThatCostsHpNeedsThatMuchHp(short hp, bool cast)
+    {
+        const short hpCost = 300;
+        using var provider = Provider(hpCost: hpCost);
+        var (caster, client) = Caster(provider, Mage);
+        caster.Hp = hp;
+        var worm = Worm(provider);
+
+        await Cast(provider, client, caster, FireBlast, worm.UniqueId);
+
+        (worm.Hp < worm.MaxHp).Should().Be(cast);
+    }
+
+    private static ServiceProvider Provider(short tree = 0, short hpCost = 0) => CreateProvider(_ => { }, gameData =>
     {
         var blasts = new[] { FireBlast, MonsterBlast, EventBlast };
         foreach (var id in blasts)
-            gameData.GetMagic(id).Returns(new MagicData { Id = id, Type1 = (byte)MagicSkillType.OverTime, Moral = 7, Range = 20 });
+            gameData.GetMagic(id).Returns(new MagicData
+            {
+                Id = id, Type1 = (byte)MagicSkillType.OverTime, Moral = 7, Range = 20, Skill = id == EventBlast ? tree : (short)0,
+                Hp = hpCost,
+            });
         gameData.MagicType3Table.Returns(blasts.ToDictionary(id => id, id => new MagicType3Data
         {
             Id = id, DirectType = 1, FirstDamage = -120, Attribute = 1,

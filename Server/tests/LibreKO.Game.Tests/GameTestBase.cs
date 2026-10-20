@@ -294,6 +294,15 @@ public abstract class GameTestBase
             caster.Class = MagicSkillRequirement.ClassOf(skillId);
     }
 
+    protected static void HoldReagent(ServiceProvider provider, UserSession holder, int itemId, ushort count = 1)
+    {
+        provider.GetRequiredService<IGameDataService>().GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1 });
+        var slot = holder.Inventory[InventoryConstants.InventoryStart];
+        slot.ItemId = itemId;
+        slot.Count = count;
+        slot.Durability = 1;
+    }
+
     protected static ILookup<int, ItemSellData> ShopList(int sellingGroup, params int[] itemIds) =>
         itemIds
             .Select((itemId, index) => new ItemSellData

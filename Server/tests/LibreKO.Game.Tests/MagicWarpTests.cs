@@ -17,6 +17,7 @@ public class MagicWarpTests : GameTestBase
     private const int EscapeId = 209035;
     private const int SummonFriendId = 209004;
     private const int RetrieveClanMemberId = 490042;
+    private const int RetrieveClanMemberScroll = 389042000;
     private const short Wolves = 71;
     private const short Hounds = 72;
     private const int OtherRoom = 3;
@@ -275,8 +276,9 @@ public class MagicWarpTests : GameTestBase
     public async Task RetrievingAClanMemberPullsOnlySomeoneOfTheCastersClan(short clan, bool pulled)
     {
         using var provider = CreateProvider(_ => { }, gameData =>
-            Warp(gameData, RetrieveClanMemberId, SkillMoral.ClanAll, MagicWarpType.SummonInZone));
+            Warp(gameData, RetrieveClanMemberId, SkillMoral.ClanAll, MagicWarpType.SummonInZone, useItem: RetrieveClanMemberScroll));
         var (sessionManager, caster, client) = CreateCaster(provider);
+        HoldReagent(provider, caster, RetrieveClanMemberScroll);
         var member = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
         caster.KnightsId = Wolves;
         member.KnightsId = clan;
@@ -539,14 +541,15 @@ public class MagicWarpTests : GameTestBase
 
     private static void Warp(
         IGameDataService gameData, int skillId, SkillMoral moral, MagicWarpType warpType, short radius = 0,
-        short range = 10000)
+        short range = 10000, int useItem = 0)
     {
         gameData.GetMagic(skillId).Returns(new MagicData
         {
             Id = skillId,
             Type1 = 8,
             Moral = (byte)moral,
-            Range = range
+            Range = range,
+            UseItem = useItem
         });
 
         var rows = new Dictionary<int, MagicType8Data>(

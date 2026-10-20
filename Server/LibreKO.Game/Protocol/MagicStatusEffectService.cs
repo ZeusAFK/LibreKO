@@ -732,6 +732,8 @@ public class MagicStatusEffectService(
 
         switch (use)
         {
+            case TransformationUse.Monster
+                when BattleZoneManager.IsBattleZone(caster.ZoneId) || BattleZoneManager.IsPvpZone(caster.ZoneId):
             case TransformationUse.GuardTower:
                 await SendMagicFailAsync(caster, skillId);
                 return false;

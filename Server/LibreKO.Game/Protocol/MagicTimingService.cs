@@ -88,8 +88,11 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         if (magic.CastTime > 0 && !HasInstantMagic(session))
             return MagicTimingVerdict.NotCast;
 
-        return RemainingCooldownMs(session, magic.Id, now) > 0 || (IsPotion(magic) && PotionCooldownRunning(session, now))
-            ? MagicTimingVerdict.OnCooldown
+        if (RemainingCooldownMs(session, magic.Id, now) > 0 || (IsPotion(magic) && PotionCooldownRunning(session, now)))
+            return MagicTimingVerdict.OnCooldown;
+
+        return IsPacedRelease(magic) && now < session.InstantSkillReadyTicks - SkillBurstFloorMs * TimeSpan.TicksPerMillisecond
+            ? MagicTimingVerdict.TooSoonAfterLastSkill
             : MagicTimingVerdict.Allowed;
     }
 
@@ -160,9 +163,19 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
             session.LastPotionTicks = time.GetUtcNow().UtcTicks;
 
         if (session.CastingSkillId == magic.Id)
+        {
             ClearCast(session);
-        else if (!releasesAnAcceptedCast && armCooldown)
-            ArmCooldown(session, magic, time.GetUtcNow().UtcTicks);
+            return;
+        }
+
+        if (releasesAnAcceptedCast)
+            return;
+
+        var now = time.GetUtcNow().UtcTicks;
+        if (armCooldown)
+            ArmCooldown(session, magic, now);
+        if (IsPacedRelease(magic))
+            session.InstantSkillReadyTicks = Math.Max(session.InstantSkillReadyTicks, now) + SkillBurstFloorMs * TimeSpan.TicksPerMillisecond;
     }
 
     public void OnCastAborted(UserSession session, int skillId)
@@ -269,6 +282,10 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
     }
 
     private static bool ConsumesAnItem(MagicData magic) => magic.UseItem != 0;
+
+    // A skill released without a cast keeps one per burst floor, two at once.
+    private static bool IsPacedRelease(MagicData magic) =>
+        !ConsumesAnItem(magic) && magic.PrimaryType != MagicSkillType.Ranged;
 
     private static bool HasInstantMagic(UserSession session) =>
         session.ActiveBuffs.Values.Any(buff => buff.BuffType == BuffType.InstantMagic && !buff.IsExpired);

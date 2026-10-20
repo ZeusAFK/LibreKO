@@ -16,6 +16,7 @@ public class MagicDirectTypeTests : GameTestBase
 {
     private const int VampiricTouchId = 208650;
     private const int BulletId = 490099;
+    private const int BulletItem = 389159000;
     private const int MagicHammerId = 490153;
     private const int AngerExplosionId = 205255;
     private const byte RonarkLand = BattleZoneManager.ZONE_RONARK_LAND;
@@ -100,7 +101,8 @@ public class MagicDirectTypeTests : GameTestBase
                     Id = BulletId,
                     Type1 = 3,
                     Moral = 7,
-                    Range = 25
+                    Range = 25,
+                    UseItem = BulletItem
                 });
                 gameData.MagicType3Table.Returns(new Dictionary<int, MagicType3Data>
                 {
@@ -117,6 +119,7 @@ public class MagicDirectTypeTests : GameTestBase
         var victim = CreateVictim(sessionManager, nation: AccountNation.ElMorad);
         victim.Hp = 1000;
         victim.MaxHp = 1000;
+        HoldReagent(provider, caster, BulletItem);
 
         await Cast(provider, client, BulletId, caster, victim.CharacterId);
 

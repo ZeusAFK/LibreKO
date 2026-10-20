@@ -43,7 +43,7 @@ public class CombatPacketCoordinator(
     public async Task HandleAttackAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || session.Hp <= 0 || session.IsBlinking)
+        if (session == null || session.Hp <= 0 || session.IsBlinking || session.IsHeld)
             return;
 
         if (packet.RemainingBytes < 10)
@@ -228,7 +228,7 @@ public class CombatPacketCoordinator(
         {
             if (buff.IsExpired || gameDataService.GetMagic(magicId) is not { PrimaryType: MagicSkillType.Buff } magic
                 || !MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, magicId, out var type4)
-                || type4.AttackSpeed <= PercentScale)
+                || type4.AttackSpeed is <= 0 or PercentScale)
                 continue;
             factor *= type4.AttackSpeed / (double)PercentScale;
         }

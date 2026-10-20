@@ -25,6 +25,19 @@ public class MagicSkillRequirementTests : GameTestBase
     private const int ElmoradAssault = 230014;
     private const int MonsterStone = 610064;
     private const int EventTreeSkill = 491330;
+    private const int Adamant = 491068;
+    private const int Fear = 492027;
+    private const int AttackScroll = 500610;
+    private const int StompGesture = 490049;
+    private const int HealthCoins = 490076;
+    private const int CommanderForward = 492066;
+    private const int OfficialList = 500126;
+    private const int GuardTowerArrow = 450018;
+    private const int DrawbridgeDestruction = 120011;
+    private const int ChaosSpiritSword = 490219;
+    private const int Warrior = 105;
+    private const int RamLook = 30040;
+    private const int EventItem = 978006000;
     private const int KurianMaster = 115;
 
     private const int IceTree = 6;
@@ -142,6 +155,47 @@ public class MagicSkillRequirementTests : GameTestBase
     public void OnlyAPassiveSkillOfAClassTreeIsRefused(int skillId, int tree, int type1, bool passive)
     {
         MagicSkillRequirement.IsClassPassive(Magic(skillId, tree, skillLevel: 1, (byte)type1)).Should().Be(passive);
+    }
+
+    [Theory]
+    [InlineData(Adamant, 0)]
+    [InlineData(Fear, 0)]
+    [InlineData(AttackScroll, 0)]
+    [InlineData(MonsterStone, 0)]
+    [InlineData(DrawbridgeDestruction, 0)]
+    public void ARowOfNoClassWithoutAnItemIsNotForPlayers(int skillId, int tree)
+    {
+        MagicSkillRequirement.IsCastableBy(Magic(skillId, tree, skillLevel: 0), Warrior, transformId: 0).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(StompGesture)]
+    [InlineData(HealthCoins)]
+    [InlineData(CommanderForward)]
+    [InlineData(Shouting)]
+    [InlineData(OfficialList)]
+    [InlineData(GuardTowerArrow)]
+    public void TheRowsTheClientCastsWithoutAnItemStayOpen(int skillId)
+    {
+        MagicSkillRequirement.IsCastableBy(Magic(skillId, tree: 0, skillLevel: 0), Warrior, transformId: 0).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ARamStrikeNeedsTheRamForm()
+    {
+        var strike = Magic(DrawbridgeDestruction, tree: 0, skillLevel: 0);
+
+        MagicSkillRequirement.IsCastableBy(strike, Warrior, RamLook).Should().BeTrue();
+        MagicSkillRequirement.IsCastableBy(strike, Warrior, transformId: 0).Should().BeFalse();
+    }
+
+    [Fact]
+    public void AnEventRowAndAnItemRowAreLeftToTheirOwnRules()
+    {
+        MagicSkillRequirement.IsCastableBy(Magic(ChaosSpiritSword, ChaosRules.ChaosSkillTree, 0), Warrior, 0).Should().BeTrue();
+        var scroll = Magic(Adamant, tree: 0, skillLevel: 0);
+        scroll.UseItem = EventItem;
+        MagicSkillRequirement.IsCastableBy(scroll, Warrior, 0).Should().BeTrue();
     }
 
     [Fact]

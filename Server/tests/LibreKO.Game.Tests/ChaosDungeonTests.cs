@@ -66,6 +66,24 @@ public class ChaosDungeonTests : GameTestBase
         ChaosRules.SkillAllowedIn((byte)ZoneId.Moradon, 105).Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData(ChaosRules.DungeonDefenseSkillTree)]
+    [InlineData(ChaosRules.KnightRoyaleSkillTree)]
+    [InlineData(ChaosRules.SealedZoneSkillTree)]
+    [InlineData(ChaosRules.FirstTournamentSkillTree)]
+    [InlineData(ChaosRules.TournamentSkillTreeEnd - 1)]
+    public void AnEventTreeIsRefusedInTheOpenWorld(short tree)
+    {
+        ChaosRules.SkillAllowedIn((byte)ZoneId.Moradon, tree).Should().BeFalse();
+    }
+
+    [Fact]
+    public void TheTreesAroundTheTournamentBandAreNotEventTrees()
+    {
+        ChaosRules.IsEventSkillTree(ChaosRules.FirstTournamentSkillTree - 1).Should().BeFalse();
+        ChaosRules.IsEventSkillTree(ChaosRules.TournamentSkillTreeEnd).Should().BeFalse();
+    }
+
     [Fact]
     public void ThePlateClockUsesStyleSevenSubNine()
     {

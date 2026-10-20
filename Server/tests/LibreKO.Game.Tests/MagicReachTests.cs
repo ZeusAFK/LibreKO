@@ -16,7 +16,7 @@ public class MagicReachTests : GameTestBase
     private const int FireBlast = 110518;
     private const int Heal = 111509;
     private const int Curse = 111757;
-    private const int PartyHeal = 490214;
+    private const int PartyHeal = 111557;
     private const int Binding = 105630;
     private const int StoneBinding = 105632;
     private const int BindingStone = 379091000;
@@ -57,6 +57,9 @@ public class MagicReachTests : GameTestBase
     }
     private const short FireBlastRange = 20;
     private const short HealAmount = 200;
+    private const int HealthPotion = 490010;
+    private const int StunRow = 110560;
+    private const int HealthPotionItem = 389010000;
     private const byte Moradon = (byte)ZoneId.Moradon;
     private const byte Ronark = (byte)ZoneId.RonarkLand;
     private const int WormHp = 5000;
@@ -457,6 +460,42 @@ public class MagicReachTests : GameTestBase
         bag.Count.Should().Be(1, "a trade's offers are out of the bag and gathering only adds to it");
     }
 
+    [Fact]
+    public async Task AStunnedPlayerCannotCastButMayStillDrinkAPotion()
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 812, AccountNation.Karus, Moradon, Here, hp: PlayerHp / 2);
+        HoldReagent(provider, caster, HealthPotionItem);
+        caster.SetBuff(StunRow, new ActiveBuff
+        {
+            MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+        });
+        var worm = Worm(provider, Here + 10);
+
+        await Cast(provider, caster, FireBlast, worm.UniqueId);
+        await Cast(provider, caster, HealthPotion, caster.CharacterId);
+
+        worm.Hp.Should().Be(WormHp, "a stunned caster's skill does not leave their hands");
+        caster.Hp.Should().BeGreaterThan(PlayerHp / 2);
+    }
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public async Task AHealthPotionHealsOnlyTheOneWhoDrinksIt(bool drinker, bool healed)
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 810, AccountNation.Karus, Moradon, Here, hp: PlayerHp / 2);
+        var friend = Player(provider, 811, AccountNation.Karus, Moradon, Here + 5, hp: PlayerHp / 2);
+        HoldReagent(provider, caster, HealthPotionItem, count: TwoScrolls);
+        var healedOne = drinker ? caster : friend;
+
+        await Cast(provider, caster, HealthPotion, healedOne.CharacterId);
+
+        (healedOne.Hp > PlayerHp / 2).Should().Be(healed);
+        caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(healed ? (ushort)1 : TwoScrolls);
+    }
+
     [Theory]
     [InlineData(true, 1)]
     [InlineData(false, TwoScrolls)]
@@ -522,6 +561,10 @@ public class MagicReachTests : GameTestBase
         gameData.GetMagic(PartyHeal).Returns(new MagicData
         {
             Id = PartyHeal, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.Party, Range = 20,
+        });
+        gameData.GetMagic(HealthPotion).Returns(new MagicData
+        {
+            Id = HealthPotion, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.Self, UseItem = HealthPotionItem,
         });
         gameData.GetMagic(Binding).Returns(new MagicData
         {
@@ -614,6 +657,7 @@ public class MagicReachTests : GameTestBase
             [StoneSpell] = new() { Id = StoneSpell, DirectType = 1, FirstDamage = -120, Attribute = 1 },
             [Heal] = new() { Id = Heal, DirectType = 1, FirstDamage = HealAmount },
             [PartyHeal] = new() { Id = PartyHeal, DirectType = 1, FirstDamage = HealAmount },
+            [HealthPotion] = new() { Id = HealthPotion, DirectType = 1, FirstDamage = HealAmount },
         });
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
         {

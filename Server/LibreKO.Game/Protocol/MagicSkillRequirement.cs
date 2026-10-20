@@ -18,13 +18,20 @@ public static class MagicSkillRequirement
     private const int LastNationBuffLine = 5;
     private const int TreesPerClass = 10;
     private const int SkillIdsPerClass = 1000;
-    private const int FirstMonsterSkillPrefix = 300;
-    private const int LastMonsterSkillPrefix = 309;
+    private const int RamLook = 30040;
 
     public const int NoNationRole = 0;
     public const int NationRoleFirstBand = 1;
 
     private static readonly HashSet<int> CommandForms = [20007, 20008, 31501, 31502, 31503, 31504, 31505, 31506, 31507];
+
+    private static readonly HashSet<int> CorpseGestures = [490049, 490065, 490066, 490067];
+    private static readonly HashSet<int> CoinHeals = [490076, 490084];
+    private static readonly HashSet<int> CommanderOrders = [492065, 492066, 492067, 492068, 492072, 492073];
+    private static readonly HashSet<int> CommanderShouts = [130013, 130014, 230013, 230014];
+    private static readonly HashSet<int> SiegeForms = [450018];
+    private static readonly HashSet<int> OfficialList = [500126];
+    private static readonly HashSet<int> RamStrikes = [120011, 220011];
 
     public static int MasteryTreeOf(int skillTree)
     {
@@ -72,13 +79,21 @@ public static class MagicSkillRequirement
 
     public static bool IsClassSkill(int skillId) => IsPlayerClass(ClassOf(skillId));
 
-    public static bool IsCastableBy(MagicData magic, int classId)
+    // A row outside the class trees needs its item, an event tree, or a place on the client's own skill bars.
+    public static bool IsCastableBy(MagicData magic, int classId, int transformId)
     {
         var prefix = ClassOf(magic.Id);
         if (IsPlayerClass(prefix))
             return prefix == classId;
 
-        return magic.UseItem != 0 || prefix is < FirstMonsterSkillPrefix or > LastMonsterSkillPrefix;
+        if (magic.UseItem != 0 || ChaosRules.IsEventSkillTree(magic.Skill))
+            return true;
+
+        if (RamStrikes.Contains(magic.Id))
+            return transformId == RamLook;
+
+        return CorpseGestures.Contains(magic.Id) || CoinHeals.Contains(magic.Id) || CommanderOrders.Contains(magic.Id)
+            || CommanderShouts.Contains(magic.Id) || SiegeForms.Contains(magic.Id) || OfficialList.Contains(magic.Id);
     }
 
     private static bool IsClassTree(int skillTree) => IsPlayerClass((short)(skillTree / TreesPerClass));

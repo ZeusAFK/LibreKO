@@ -13,7 +13,17 @@ namespace LibreKO.Game.Tests;
 public class MagicDeadCasterTests : GameTestBase
 {
     private const int FireBlast = 110518;
-    private const int LifeCrystal = 490500;
+    private const int LifeCrystal = 480013;
+    private const int LifeCrystalItem = 800159000;
+    private const int SelfRevive = 480002;
+    private const int SelfReviveItem = 910022000;
+    private const int FriendRevive = 480001;
+    private const int FriendReviveItem = 379006000;
+    private const int UnofferedRevive = 480004;
+    private const int UnofferedReviveItem = 800039000;
+    private const byte Ronark = 71;
+    private const byte SixthLevel = 6;
+    private const byte FifthLevel = 5;
 
     [Fact]
     public async Task ADeadPlayerCannotCastAtAMonster()
@@ -51,26 +61,46 @@ public class MagicDeadCasterTests : GameTestBase
         Stages(sent).Should().NotContain(MagicProcessOpcode.Effecting).And.NotContain(MagicProcessOpcode.Casting);
     }
 
-    [Fact]
-    public async Task ADeadPlayerMayStillReviveWithALifeCrystal()
+    [Theory]
+    [InlineData(LifeCrystal, LifeCrystalItem, (byte)ZoneId.UnderCastle, SixthLevel, true)]
+    [InlineData(LifeCrystal, LifeCrystalItem, Ronark, SixthLevel, false)]
+    [InlineData(SelfRevive, SelfReviveItem, Ronark, SixthLevel, true)]
+    [InlineData(SelfRevive, SelfReviveItem, (byte)ZoneId.UnderCastle, SixthLevel, false)]
+    [InlineData(SelfRevive, SelfReviveItem, Ronark, FifthLevel, false)]
+    [InlineData(FriendRevive, FriendReviveItem, Ronark, SixthLevel, false)]
+    [InlineData(UnofferedRevive, UnofferedReviveItem, Ronark, SixthLevel, false)]
+    public async Task ADeadPlayerRevivesOnlyWithWhatTheDeathWindowOffers(int skillId, int item, byte zone, byte level, bool revived)
     {
         using var provider = CreateProvider(
             _ => { },
             gameData =>
             {
-                gameData.GetMagic(LifeCrystal).Returns(new MagicData { Id = LifeCrystal, Type1 = 5, Moral = 1 });
+                foreach (var (row, reagent, moral, kind) in new[]
+                         {
+                             (LifeCrystal, LifeCrystalItem, SkillMoral.Self, SpecialMagicType.LifeCrystal),
+                             (SelfRevive, SelfReviveItem, SkillMoral.Self, SpecialMagicType.ResurrectionSelf),
+                             (FriendRevive, FriendReviveItem, SkillMoral.CorpseFriend, SpecialMagicType.ResurrectionSelf),
+                             (UnofferedRevive, UnofferedReviveItem, SkillMoral.Self, SpecialMagicType.ResurrectionSelf),
+                         })
+                    gameData.GetMagic(row).Returns(new MagicData { Id = row, Type1 = 5, Moral = (byte)moral, UseItem = reagent });
                 gameData.MagicType5Table.Returns(new Dictionary<int, MagicType5Data>
                 {
                     [LifeCrystal] = new() { Id = LifeCrystal, Type = (byte)SpecialMagicType.LifeCrystal },
+                    [SelfRevive] = new() { Id = SelfRevive, Type = (byte)SpecialMagicType.ResurrectionSelf, ExpRecover = 50 },
+                    [FriendRevive] = new() { Id = FriendRevive, Type = (byte)SpecialMagicType.ResurrectionSelf, ExpRecover = 60 },
+                    [UnofferedRevive] = new() { Id = UnofferedRevive, Type = (byte)SpecialMagicType.ResurrectionSelf, ExpRecover = 50 },
                 });
             });
         var (caster, client, _) = CreateCaster(provider);
+        HoldReagent(provider, caster, item);
+        caster.ZoneId = zone;
+        caster.Level = level;
         caster.Hp = 0;
 
         await provider.GetRequiredService<IMagicPacketCoordinator>()
-            .HandleAsync(client, Magic(MagicProcessOpcode.Effecting, LifeCrystal, caster, caster.CharacterId));
+            .HandleAsync(client, Magic(MagicProcessOpcode.Effecting, skillId, caster, caster.CharacterId));
 
-        caster.Hp.Should().Be(caster.MaxHp);
+        (caster.Hp > 0).Should().Be(revived);
     }
 
     private static (UserSession Caster, IClient Client, List<Packet> Sent) CreateCaster(ServiceProvider provider)

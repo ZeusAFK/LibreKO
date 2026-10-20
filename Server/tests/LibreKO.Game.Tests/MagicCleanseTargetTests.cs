@@ -15,6 +15,7 @@ public class MagicCleanseTargetTests : GameTestBase
 {
     private const int CureCurse = 111525;
     private const int Dispel = 490409;
+    private const int DispelScroll = 900173000;
     private const int Shield = 190100;
     private const int Curse = 190001;
     private const byte RemoveBuffSubtype = 2;
@@ -158,6 +159,7 @@ public class MagicCleanseTargetTests : GameTestBase
         var near = CreatePlayer(sessions, 958, AccountNation.ElMorad, RonarkLand, x: 110, z: 100);
         var far = CreatePlayer(sessions, 959, AccountNation.ElMorad, RonarkLand, x: 600, z: 100);
         var ally = CreatePlayer(sessions, 960, AccountNation.Karus, RonarkLand, x: 105, z: 100);
+        HoldReagent(provider, caster, DispelScroll, count: 3);
         foreach (var player in new[] { near, far, ally })
         {
             Give(player, Shield, BuffType.Ac);
@@ -190,7 +192,7 @@ public class MagicCleanseTargetTests : GameTestBase
         });
         gameData.GetMagic(Dispel).Returns(new MagicData
         {
-            Id = Dispel, Type1 = 5, Moral = (byte)SkillMoral.Enemy, Range = 25,
+            Id = Dispel, Type1 = 5, Moral = (byte)SkillMoral.Enemy, Range = 25, UseItem = DispelScroll,
         });
         gameData.GetMagic(Shield).Returns(new MagicData { Id = Shield, Type1 = 4, Moral = (byte)SkillMoral.FriendWithMe });
         gameData.MagicType5Table.Returns(new Dictionary<int, MagicType5Data>

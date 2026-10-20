@@ -25,6 +25,9 @@ public class MagicPacketCoordinator(
 {
     private const int ArrowMissedMarker = -101;
     private const int MissMarkerSlot = 3;
+    private const int SelfReviveMinLevelExclusive = 5;
+    private const int UnofferedSelfRevive = 480004;
+    private const int HpCostCap = 10000;
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -61,7 +64,8 @@ public class MagicPacketCoordinator(
             return;
         }
 
-        if ((!session.CanUseSkills || (session.IsBlinking && !RespawnBlinkService.AllowsSkill(magic)))
+        if ((!session.CanUseSkills || (session.IsBlinking && !RespawnBlinkService.AllowsSkill(magic))
+                || (session.IsHeld && !MayUseWhileHeld(magic)))
             && !IsTerminator((MagicProcessOpcode)magicOpcode))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
@@ -71,7 +75,7 @@ public class MagicPacketCoordinator(
         // A dead player cannot be hit back, so only the rows that revive the caster work while dead.
         if (session.Hp <= 0
             && RequiresLearnedSkill((MagicProcessOpcode)magicOpcode)
-            && !RevivesTheCaster(magic, skillId))
+            && !RevivesTheCaster(session, magic, skillId))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
             return;
@@ -99,7 +103,7 @@ public class MagicPacketCoordinator(
         }
 
         if (RequiresLearnedSkill((MagicProcessOpcode)magicOpcode) && !session.IsGM
-            && !MagicSkillRequirement.IsCastableBy(magic, session.Class))
+            && !MagicSkillRequirement.IsCastableBy(magic, session.Class, session.TransformId))
         {
             logger.LogWarning("Refusing skill {SkillId} from {Name}: not a skill of class {Class}",
                 skillId, session.Name, session.Class);
@@ -321,10 +325,20 @@ public class MagicPacketCoordinator(
         && !BattleZoneManager.IsBattleZone(session.ZoneId)
         && !BattleZoneManager.IsPvpZone(session.ZoneId);
 
-    private bool RevivesTheCaster(MagicData magic, int skillId) =>
+    // A frozen or stunned player can only use an item that does not move them.
+    private static bool MayUseWhileHeld(MagicData magic) =>
+        magic.UseItem != 0 && magic.PrimaryType != MagicSkillType.Warp;
+
+    // A dead player revives only with a self row: a Life Crystal under the castle, a resurrection scroll elsewhere.
+    private bool RevivesTheCaster(UserSession session, MagicData magic, int skillId) =>
         magic.PrimaryType == MagicSkillType.Special
+        && (SkillMoral)magic.Moral == SkillMoral.Self
+        && skillId != UnofferedSelfRevive
+        && session.Level > SelfReviveMinLevelExclusive
         && MagicTypeLookup.TryResolve(gameDataService.MagicType5Table, magic, skillId, out var type5Data)
-        && (SpecialMagicType)type5Data.Type is SpecialMagicType.ResurrectionSelf or SpecialMagicType.LifeCrystal;
+        && (SpecialMagicType)type5Data.Type == (session.ZoneId == (byte)ZoneId.UnderCastle
+            ? SpecialMagicType.LifeCrystal
+            : SpecialMagicType.ResurrectionSelf);
 
     private static bool IsTerminator(MagicProcessOpcode opcode) =>
         opcode is MagicProcessOpcode.Cancel
@@ -536,6 +550,13 @@ public class MagicPacketCoordinator(
 
     private async Task<bool> TryPaySkillCostAsync(UserSession session, MagicData magic, int skillId)
     {
+        // An HP cost below the cap needs that much HP.
+        if (magic.Hp is > 0 and < HpCostCap && session.Hp < magic.Hp)
+        {
+            await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);
+            return false;
+        }
+
         if (session.Mp < magic.Msp)
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.NotEnoughMp);

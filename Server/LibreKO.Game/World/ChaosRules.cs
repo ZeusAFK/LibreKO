@@ -87,13 +87,22 @@ public static class ChaosRules
         premium ? Math.Min(MaxPremiumExp, exp * PremiumExpFactor) : 0;
 
     public const short DungeonDefenseSkillTree = 3500;
+    public const short KnightRoyaleSkillTree = 3100;
+    public const short SealedZoneSkillTree = 3200;
+    public const short FirstTournamentSkillTree = 3610;
+    public const short TournamentSkillTreeEnd = 3650;
 
+    // Event trees work only inside their own event zone.
     public static bool SkillAllowedIn(byte zoneId, short skillTree) =>
         zoneId == Zone
             ? skillTree == ChaosSkillTree
             : zoneId == (byte)ZoneId.DungeonDefence
                 ? skillTree == DungeonDefenseSkillTree
-                : skillTree != ChaosSkillTree;
+                : !IsEventSkillTree(skillTree);
+
+    public static bool IsEventSkillTree(short skillTree) =>
+        skillTree is ChaosSkillTree or KnightRoyaleSkillTree or SealedZoneSkillTree or DungeonDefenseSkillTree
+            or >= FirstTournamentSkillTree and < TournamentSkillTreeEnd;
 
     public static int SkillDamageOf(int skillId) => skillId == KillingBladeSkill ? KillingBladeDamage : SkillDamage;
 }

@@ -401,6 +401,56 @@ public class MagicTimingTests
         new() { Id = id, Type1 = 3, Moral = 1, ItemGroup = 9, UseItem = useItem, CastTime = (byte)castTenths, ReCastTime = (short)recastTenths };
 
     [Fact]
+    public void InstantSkillsReleasedWithoutACastKeepTheBurstFloor()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var instants = new[] { Slash, Crash, Inferno }.Select(id => Magic(id, castTenths: 0, recastTenths: 0)).ToArray();
+
+        foreach (var instant in instants.Take(2))
+        {
+            timing.CheckRelease(session, instant).Should().Be(MagicTimingVerdict.Allowed, "two at once ride out a lag spike");
+            timing.OnReleaseAccepted(session, instant);
+        }
+
+        timing.CheckRelease(session, instants[2]).Should().Be(MagicTimingVerdict.TooSoonAfterLastSkill);
+        clock.Advance(TimeSpan.FromMilliseconds(250));
+        timing.CheckRelease(session, instants[2]).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void ARefusedInstantSkillDoesNotUseUpThePace()
+    {
+        var (timing, _) = Subject();
+        var session = Session();
+        var slash = Magic(Slash, castTenths: 0, recastTenths: 0);
+
+        for (var i = 0; i < 3; i++)
+            timing.OnReleaseRefused(session, slash);
+
+        timing.CheckRelease(session, slash).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void ItemsAndArrowsAreNotHeldToTheInstantPace()
+    {
+        var (timing, _) = Subject();
+        var session = Session();
+        var potion = Magic(500023, castTenths: 0, recastTenths: 0, useItem: 379090000);
+        var arrow = Magic(Archery, castTenths: 0, recastTenths: 0);
+        arrow.Type1 = (byte)MagicSkillType.Ranged;
+
+        for (var i = 0; i < 3; i++)
+        {
+            timing.OnReleaseAccepted(session, potion);
+            timing.OnReleaseAccepted(session, arrow);
+        }
+
+        timing.CheckRelease(session, potion).Should().Be(MagicTimingVerdict.Allowed);
+        timing.CheckRelease(session, arrow).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
     public void AConsumableIsExemptFromTheBurstFloor()
     {
         var (timing, _) = Subject();

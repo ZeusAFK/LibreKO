@@ -293,8 +293,10 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         caster.TransformId.Should().Be(26009);
     }
 
-    [Fact]
-    public async Task AMobPickedFromTheListTransformsWithOnlyTheDisguiseScroll()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AMobPickedFromTheListTransformsWithOnlyTheDisguiseScroll(bool inPvpZone)
     {
         const int RavenHarpy = 472250;
 
@@ -318,6 +320,8 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         var caster = CreateCaster(provider, sessionManager, row, items);
         for (var i = 0; i < caster.SkillPoints.Length; i++)
             caster.SkillPoints[i] = 99;
+        if (inPvpZone)
+            caster.ZoneId = BattleZoneManager.ZONE_RONARK_LAND;
 
         for (var i = InventoryConstants.InventoryStart; i < caster.Inventory.Length; i++)
             caster.Inventory[i] = new ItemSlot();
@@ -343,6 +347,13 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
 
         foreach (var s in sent)
             output.WriteLine($"  0x{s.GetOpcode():X2} {Convert.ToHexString(s.GetBytes())}");
+
+        if (inPvpZone)
+        {
+            caster.TransformId.Should().Be(0, "the list never opens in a PvP zone, so a form named straight away is refused too");
+            caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(10);
+            return;
+        }
 
         caster.TransformId.Should().Be(
             2200,

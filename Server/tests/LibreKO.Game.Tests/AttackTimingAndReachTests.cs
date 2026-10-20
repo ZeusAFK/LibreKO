@@ -16,6 +16,9 @@ public class AttackTimingAndReachTests : GameTestBase
     private const short SwordDelay = 150;
     private const int Haste = 490900;
     private const short HasteAttackSpeed = 150;
+    private const int Slow = 111724;
+    private const short SlowAttackSpeed = 70;
+    private const int StunRow = 110560;
     private const byte Zone = 21;
     private const float Here = 500f;
     private const byte Starting = 1;
@@ -105,6 +108,67 @@ public class AttackTimingAndReachTests : GameTestBase
         await Swing(provider, attacker, worm);
 
         Swings(sent).Should().Be(2);
+    }
+
+    [Theory]
+    [InlineData(false, 3)]
+    [InlineData(true, 2)]
+    public async Task AnAttackSlowLengthensTheSwing(bool slowed, int swings)
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        if (slowed)
+            attacker.SetBuff(Slow, new ActiveBuff
+            {
+                MagicId = Slow, CasterId = 1, BuffType = BuffType.AttackSpeed, ExpireTicks = DateTime.UtcNow.AddMinutes(1).Ticks,
+            });
+        var worm = Monster(provider, Here + 1);
+        const int aBitOverASwing = 1500;
+
+        await Swing(provider, attacker, worm);
+        await Swing(provider, attacker, worm);
+        clock.Advance(aBitOverASwing);
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(swings, "a burst of two lands at once, and the next waits out the slowed swing");
+    }
+
+    [Theory]
+    [InlineData(BuffType.Stun)]
+    [InlineData(BuffType.Freeze)]
+    public async Task AHeldPlayerDoesNotSwing(BuffType hold)
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        attacker.SetBuff(StunRow, new ActiveBuff
+        {
+            MagicId = StunRow, CasterId = 1, BuffType = hold, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+        });
+        var worm = Monster(provider, Here + 1);
+
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(0);
+        worm.Hp.Should().Be(worm.MaxHp);
+    }
+
+    [Fact]
+    public async Task ASwingLandsOnceTheHoldIsOver()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var (attacker, sent) = Attacker(provider);
+        attacker.SetBuff(StunRow, new ActiveBuff
+        {
+            MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(-1).Ticks,
+        });
+        var worm = Monster(provider, Here + 1);
+
+        await Swing(provider, attacker, worm);
+
+        Swings(sent).Should().Be(1);
     }
 
     [Fact]
@@ -287,9 +351,11 @@ public class AttackTimingAndReachTests : GameTestBase
         gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Kind = 21, Slot = 1, Delay = SwordDelay, Range = 10, Damage = 10, Duration = 100 });
         gameData.GetItem(Dagger).Returns(new ItemData { Num = Dagger, Kind = 21, Slot = 1, Delay = DaggerDelay, Range = 10, Damage = 10, Duration = 100 });
         gameData.GetMagic(Haste).Returns(new MagicData { Id = Haste, Type1 = (byte)MagicSkillType.Buff, Moral = 1 });
+        gameData.GetMagic(Slow).Returns(new MagicData { Id = Slow, Type1 = (byte)MagicSkillType.Buff, Moral = 7 });
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
         {
             [Haste] = new() { Id = Haste, BuffType = (byte)BuffType.AttackSpeed, AttackSpeed = HasteAttackSpeed },
+            [Slow] = new() { Id = Slow, BuffType = (byte)BuffType.AttackSpeed, AttackSpeed = SlowAttackSpeed },
         });
     }, configureServices: services => services.AddSingleton<TimeProvider>(clock));
 
