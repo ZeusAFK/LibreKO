@@ -161,15 +161,17 @@ public sealed class CharacterSealService(
         return true;
     }
 
+    // A character goes into a ring only with what could change hands without one.
     private short? CarriedRefusal(Character character)
     {
         var items = new ItemSlot[InventoryConstants.InventoryTotal];
         for (int i = 0; i < items.Length; i++) items[i] = new ItemSlot();
         UserSessionBinaryState.LoadItems(items, character.Items);
-        if (items.Any(i => i.Flag == (byte)ItemFlag.Bound))
-            return BoundItemRefusal;
-        if (items.Any(i => i.Flag == (byte)ItemFlag.Rented))
+        var carried = items.Where(item => !item.IsEmpty).ToList();
+        if (carried.Any(item => item.Expires || item.State == ItemFlag.Rented))
             return RentalItemRefusal;
+        if (carried.Any(item => gameData.GetItem(item.ItemId) is not { } data || !ExchangeTransferService.MayChangeHands(data, item)))
+            return BoundItemRefusal;
         return null;
     }
 

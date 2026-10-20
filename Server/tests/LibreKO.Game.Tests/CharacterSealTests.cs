@@ -27,6 +27,14 @@ public class CharacterSealTests : GameTestBase
     private const string Pin = "1234";
 
     private const short PlayerHp = 100;
+    private const int Plain = 389010000;
+    private const int TradeLocked = 389020000;
+    private const int Unknown = 389030000;
+    private const byte TradeLockedRace = 70;
+    private const int PetSerial = 31;
+    private const int CarriedAt = InventoryConstants.InventoryStart;
+
+    public enum Carried { Bound, Rented, Timed, TradeLockedData, PetLink, UnknownItem }
 
     private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null) => CreateProvider(db =>
     {
@@ -39,7 +47,81 @@ public class CharacterSealTests : GameTestBase
     {
         gameData.GetItem(Scroll).Returns(new ItemData { Num = Scroll, Kind = CharacterSealService.ScrollKind });
         gameData.GetItem(InventoryConstants.CypherRing).Returns(new ItemData { Num = InventoryConstants.CypherRing, Kind = CharacterSealService.RingKind, Duration = 1 });
+        gameData.GetItem(Plain).Returns(new ItemData { Num = Plain, Duration = 1 });
+        gameData.GetItem(TradeLocked).Returns(new ItemData { Num = TradeLocked, Duration = 1, Race = TradeLockedRace });
     }, configureServices: configureServices);
+
+    [Theory]
+    [InlineData(Carried.Bound, CharacterSealService.BoundItemRefusal)]
+    [InlineData(Carried.Rented, CharacterSealService.RentalItemRefusal)]
+    [InlineData(Carried.Timed, CharacterSealService.RentalItemRefusal)]
+    [InlineData(Carried.TradeLockedData, CharacterSealService.BoundItemRefusal)]
+    [InlineData(Carried.PetLink, CharacterSealService.BoundItemRefusal)]
+    [InlineData(Carried.UnknownItem, CharacterSealService.BoundItemRefusal)]
+    public async Task ACharacterCarryingWhatCouldNotBeTradedIsNotSealed(Carried what, short refusal)
+    {
+        using var provider = Provider();
+        var item = new ItemSlot { ItemId = Plain, Count = 1, Durability = 1 };
+        switch (what)
+        {
+            case Carried.Bound:
+                item.Flag = (byte)ItemFlag.Bound;
+                break;
+            case Carried.Rented:
+                item.ExpireInHours(24, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                break;
+            case Carried.Timed:
+                item.ExpiresAt = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds();
+                break;
+            case Carried.TradeLockedData:
+                item.ItemId = TradeLocked;
+                break;
+            case Carried.PetLink:
+                item.UniqueId = PetSerial;
+                break;
+            case Carried.UnknownItem:
+                item.ItemId = Unknown;
+                break;
+        }
+        await CarryAsync(provider, item);
+        var session = Session(provider, 10, AccountA, "Zeus");
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
+
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId.Should().Be(Scroll, "a ring would carry the item past the trade lock");
+        var reply = LastSent(session);
+        while (reply.RemainingBytes > sizeof(short))
+            reply.ReadByte();
+        reply.ReadShort().Should().Be(refusal);
+    }
+
+    [Fact]
+    public async Task ACharacterCarryingOnlyTradableItemsIsSealed()
+    {
+        using var provider = Provider();
+        await CarryAsync(provider, new ItemSlot { ItemId = Plain, Count = 1, Durability = 1 });
+        var session = Session(provider, 10, AccountA, "Zeus");
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId = Scroll;
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].Count = 1;
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
+
+        session.Inventory[InventoryConstants.InventoryStart + BagPos].ItemId.Should().Be(InventoryConstants.CypherRing);
+    }
+
+    private static async Task CarryAsync(ServiceProvider provider, ItemSlot item)
+    {
+        var items = new ItemSlot[InventoryConstants.InventoryTotal];
+        for (var i = 0; i < items.Length; i++)
+            items[i] = new ItemSlot();
+        items[CarriedAt] = item;
+        await using var scope = provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        (await db.Characters.SingleAsync(c => c.Name == "Velkan")).Items = UserSessionBinaryState.SerializeItems(items);
+        await db.SaveChangesAsync();
+    }
 
     [Theory]
     [InlineData(false)]
