@@ -52,6 +52,8 @@ public class MiscPacketCoordinator(
     private const byte NameChangeInClan = 4;
     private const byte NameChangeAuctionOpen = 11;
     private const byte ClanNameSuccess = 16;
+    private const string RenameWhileBusyNotice = "You cannot change a name while trading, keeping a stall, gathering or dead.";
+    private const string KingKeepsNameNotice = "A reigning king keeps their name.";
     private const int ScrollOfIdentity = 800032000;
     private const int ClanNameScroll = 800086000;
 
@@ -153,6 +155,8 @@ public class MiscPacketCoordinator(
 
         if (session.IsBusy || KingSystemRuntimeService.IsKingOf(gameDataService, session.Nation, session.Name))
         {
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                session.IsBusy ? RenameWhileBusyNotice : KingKeepsNameNotice));
             await SendNameChangeResultAsync(session, NameChangeInvalid);
             return;
         }
@@ -242,6 +246,7 @@ public class MiscPacketCoordinator(
 
         if (session.IsBusy)
         {
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, RenameWhileBusyNotice));
             await SendClanNameChangeResultAsync(session, NameChangeInvalid);
             return;
         }

@@ -198,6 +198,44 @@ public class EventEscapeTests : GameTestBase
         FullMoonRules.HasEnteredToday(leader).Should().BeTrue();
     }
 
+    [Fact]
+    public async Task ADungeonLeavesATiedUpMemberBehindAndSaysSo()
+    {
+        var transitions = Substitute.For<IZoneTransitionService>();
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(transitions));
+        var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
+        TieUp(member, Tie.Fighting, leader);
+
+        await provider.GetRequiredService<IInstanceEntryService>().EnterAsync(leader, Coliseum, 1, 0f, 0f);
+
+        await transitions.Received(1).ChangeZoneAsync(leader, Coliseum, Arg.Any<float>(), Arg.Any<float>());
+        await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
+        Notices(member).Should().ContainSingle(notice => notice.Contains("stayed behind"));
+        Notices(leader).Should().Contain(notice => notice.Contains(member.Name));
+    }
+
+    [Fact]
+    public async Task ADungeonChecksEachMemberAgainJustBeforeTheMove()
+    {
+        var transitions = Substitute.For<IZoneTransitionService>();
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(transitions));
+        var (leader, member) = FullMoonParty(provider.GetRequiredService<SessionManager>());
+        transitions.When(t => t.ChangeZoneAsync(leader, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>()))
+            .Do(_ => TieUp(member, Tie.Trading, leader));
+
+        await provider.GetRequiredService<IInstanceEntryService>().EnterAsync(leader, Coliseum, 1, 0f, 0f);
+
+        await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
+        member.Room.Should().Be(0);
+    }
+
+    private static List<string> Notices(UserSession player) =>
+        [.. Sent(player).Where(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_CHAT).Select(packet =>
+        {
+            var bytes = packet.GetBytes();
+            return System.Text.Encoding.ASCII.GetString(bytes);
+        })];
+
     private static (UserSession Leader, UserSession Member) FullMoonParty(SessionManager sessions)
     {
         var leader = Player(sessions, 1, (byte)ZoneId.Moradon);

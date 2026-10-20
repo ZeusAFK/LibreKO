@@ -83,12 +83,13 @@ public class NameChangeTests : GameTestBase
     public async Task TheKingKeepsTheirName()
     {
         using var provider = Provider(king: OldName);
-        var (player, _) = Player(provider, ScrollOfIdentity);
+        var (player, sent) = Player(provider, ScrollOfIdentity);
 
         await Rename(provider, player, CharacterRename, NewName);
 
         player.Name.Should().Be(OldName, "the throne is held by name");
         Scroll(player).ItemId.Should().Be(ScrollOfIdentity);
+        Notices(sent).Should().ContainSingle(notice => notice.Contains("king"));
     }
 
     [Fact]
@@ -150,13 +151,14 @@ public class NameChangeTests : GameTestBase
     public async Task ATradingChiefCannotRenameTheClan()
     {
         using var provider = Provider();
-        var (chief, _) = Chief(provider);
+        var (chief, sent) = Chief(provider);
         chief.Trade.ExchangeUser = OtherId;
 
         await Rename(provider, chief, ClanRename, NewClan);
 
         provider.GetRequiredService<SessionManager>().Knights.GetClan(ClanId)!.Name.Should().Be(OldClan);
         Scroll(chief).ItemId.Should().Be(ClanNameScroll);
+        Notices(sent).Should().ContainSingle(notice => notice.Contains("trading"));
     }
 
     [Fact]
@@ -318,6 +320,24 @@ public class NameChangeTests : GameTestBase
                 ? throw new DbUpdateException("the database went away")
                 : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
+
+    [Fact]
+    public async Task ABusyPlayerIsToldWhyTheRenameWasRefused()
+    {
+        using var provider = Provider();
+        var (player, sent) = Player(provider, ScrollOfIdentity);
+        player.Trade.ExchangeUser = OtherId;
+
+        await Rename(provider, player, CharacterRename, NewName);
+
+        player.Name.Should().Be(OldName);
+        Notices(sent).Should().ContainSingle(notice => notice.Contains("trading"),
+            "the dialog's answer reads as a bad name, so the reason comes as a notice");
+    }
+
+    private static List<string> Notices(List<Packet> sent) =>
+        [.. sent.Where(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_CHAT)
+            .Select(packet => System.Text.Encoding.ASCII.GetString(packet.GetBytes()))];
 
     // The first save waits a while for a rival rename started inside it, which can finish only if nothing holds it back.
     private sealed class DuringSave : SaveChangesInterceptor
