@@ -114,6 +114,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGenieSystemPacketCoordinator, GenieSystemPacketCoordinator>();
         services.AddSingleton<IUserOptionPacketCoordinator, UserOptionPacketCoordinator>();
         services.AddSingleton<IGenieHammerService, GenieHammerService>();
+        services.AddSingleton<IGenieActivationService, GenieActivationService>();
         services.AddSingleton<ICollectionRacePacketCoordinator, CollectionRacePacketCoordinator>();
         services.AddSingleton<ILotteryPacketCoordinator, LotteryPacketCoordinator>();
         services.AddSingleton<INationSystemsPacketCoordinator, NationSystemsPacketCoordinator>();

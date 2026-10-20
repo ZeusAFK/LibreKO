@@ -49,6 +49,7 @@ public class WorldMovementService(
     IRespawnBlinkService respawnBlinkService,
     ISoccerService soccerService,
     IKrowazTrapService krowazTrapService,
+    IGenieActivationService genieActivation,
     ILogger<WorldMovementService> logger) : IWorldMovementService
 {
     private const byte MoveEchoFinish = 0;
@@ -230,6 +231,8 @@ public class WorldMovementService(
 
         var (x, z) = startPos.RandomSpawn(session.Nation);
 
+        if (session.GenieActive)
+            await genieActivation.StopAsync(session);
         await soccerService.LeaveAsync(session);
         await WarpAsync(session, (ushort)(x * 10), (ushort)(z * 10));
     }

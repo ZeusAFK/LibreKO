@@ -240,7 +240,8 @@ public class GenieSystemTests
             magic ?? Substitute.For<IMagicPacketCoordinator>(),
             world ?? Substitute.For<IWorldPacketCoordinator>(),
             Substitute.For<ILogger<GenieSystemPacketCoordinator>>(),
-            Substitute.For<IGenieHammerService>());
+            Substitute.For<IGenieHammerService>(),
+            new GenieActivationService(sessionManager));
         return (coordinator, session, client);
     }
 }
