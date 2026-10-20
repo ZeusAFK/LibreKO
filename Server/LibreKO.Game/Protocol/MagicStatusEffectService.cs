@@ -635,7 +635,7 @@ public class MagicStatusEffectService(
             && target.ZoneId == caster.ZoneId
             && target.Room == caster.Room
             && AttackReach.Within(caster, target.X, target.Z,
-                magic.Range + AttackReach.PlayerBodyRadius * 2 + CastReachSlack)
+                (magic.Range > 0 ? magic.Range : AttackReach.Melee) + AttackReach.PlayerBodyRadius * 2 + CastReachSlack)
             && AcceptsAreaPlayer(caster, target, moral);
     }
 

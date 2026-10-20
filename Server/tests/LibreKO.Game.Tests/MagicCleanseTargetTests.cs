@@ -25,6 +25,8 @@ public class MagicCleanseTargetTests : GameTestBase
     private const short CureMana = 10;
     private const short CureRange = 25;
     private const short PartyCureRange = 20;
+    private const int NearCure = 111528;
+    private const float NoRangeCureDistance = 26f;
 
     [Fact]
     public async Task ACureCannotBeAimedAtAnEnemyToStripTheirBuffs()
@@ -87,6 +89,20 @@ public class MagicCleanseTargetTests : GameTestBase
         await Cast(provider, caster, CureCurse, runner.CharacterId);
 
         runner.ActiveBuffs.Should().NotContainKey(Curse, "a running friend's server position trails what the priest sees");
+    }
+
+    [Fact]
+    public async Task ACureWithNoRangeReachesAsFarAsItsCastDid()
+    {
+        using var provider = CreateProvider(_ => { }, Rows);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessions, 965, AccountNation.Karus, Moradon, x: 100, z: 100);
+        var friend = CreatePlayer(sessions, 966, AccountNation.Karus, Moradon, x: 100 + NoRangeCureDistance, z: 100);
+        Give(friend, Curse, BuffType.Blind);
+
+        await Cast(provider, caster, NearCure, friend.CharacterId);
+
+        friend.ActiveBuffs.Should().NotContainKey(Curse, "the cast was allowed this far, so the cure must not refuse it after the mana is paid");
     }
 
     [Fact]
@@ -168,6 +184,10 @@ public class MagicCleanseTargetTests : GameTestBase
         {
             Id = PartyCure, Type1 = 5, Moral = (byte)SkillMoral.PartyAll, Range = PartyCureRange,
         });
+        gameData.GetMagic(NearCure).Returns(new MagicData
+        {
+            Id = NearCure, Type1 = 5, Moral = (byte)SkillMoral.FriendWithMe, Msp = CureMana,
+        });
         gameData.GetMagic(Dispel).Returns(new MagicData
         {
             Id = Dispel, Type1 = 5, Moral = (byte)SkillMoral.Enemy, Range = 25,
@@ -177,6 +197,7 @@ public class MagicCleanseTargetTests : GameTestBase
         {
             [CureCurse] = new() { Id = CureCurse, Type = RemoveBuffSubtype },
             [PartyCure] = new() { Id = PartyCure, Type = RemoveBuffSubtype },
+            [NearCure] = new() { Id = NearCure, Type = RemoveBuffSubtype },
             [Dispel] = new() { Id = Dispel, Type = RemoveBlessSubtype },
         });
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
