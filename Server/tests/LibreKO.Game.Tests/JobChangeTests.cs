@@ -267,22 +267,58 @@ public class JobChangeTests : GameTestBase
     public async Task ARetryingStoreCanTellAWrittenSaveFromALostOne()
     {
         LostAnswer.Answers.Clear();
+        LostAnswer.LoseNextAnswer = true;
         using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options
             .ReplaceService<IExecutionStrategyFactory, LostAnswerFactory>()
             .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))));
         var player = Player(provider);
+        await StoreBagAsync(provider, player);
 
         await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
 
         LostAnswer.Answers.Should().Equal([true],
             "a save whose answer is lost is checked against the store before it is run again, and this one was written");
         (await StoredAsync(provider)).Class.Should().NotBe(Warrior);
+        player.Class.Should().NotBe(Warrior);
     }
 
-    // A store that retries and asks, after each save, whether it was written, as when the answer to a commit is lost.
+    [Fact]
+    public async Task ARetryingStoreRunsAgainACommitLostBeforeItWasWritten()
+    {
+        LostAnswer.Answers.Clear();
+        LostAnswer.LoseNextAnswer = true;
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options
+            .ReplaceService<IExecutionStrategyFactory, LostAnswerFactory>()
+            .AddInterceptors(new FirstClassSaveLost())
+            .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))));
+        var player = Player(provider);
+        await StoreBagAsync(provider, player);
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        LostAnswer.Answers.Should().Equal([false], "a commit whose answer was lost is read back, and this one never reached the store");
+        (await StoredAsync(provider)).Class.Should().NotBe(Warrior, "the second run wrote it");
+        player.Class.Should().NotBe(Warrior);
+    }
+
+    // The first save of a new class reaches nothing, as a commit rolled back after its answer was lost.
+    private sealed class FirstClassSaveLost : SaveChangesInterceptor
+    {
+        private int lost;
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            eventData.Context?.ChangeTracker.Entries<Character>().Any(entry => entry.Property(nameof(Character.Class)).IsModified) == true
+                && Interlocked.Exchange(ref lost, 1) == 0
+                ? ValueTask.FromResult(InterceptionResult<int>.SuppressWithResult(1))
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    // A store that retries, and asks after a failed attempt whether it was written, as when the answer to a commit is lost.
     private sealed class LostAnswer(DbContext context) : IExecutionStrategy
     {
         public static System.Collections.Concurrent.ConcurrentQueue<bool> Answers { get; } = new();
+        public static bool LoseNextAnswer { get; set; }
 
         public bool RetriesOnFailure => true;
 
@@ -296,10 +332,27 @@ public class JobChangeTests : GameTestBase
             Func<DbContext, TState, CancellationToken, Task<ExecutionResult<TResult>>>? verifySucceeded,
             CancellationToken cancellationToken = default)
         {
-            var result = await operation(context, state, cancellationToken);
-            if (verifySucceeded != null)
-                Answers.Enqueue((await verifySucceeded(context, state, cancellationToken)).IsSuccessful);
-            return result;
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    var result = await operation(context, state, cancellationToken);
+                    if (LoseNextAnswer && verifySucceeded != null)
+                    {
+                        LoseNextAnswer = false;
+                        throw new TimeoutException("the answer to the commit was lost");
+                    }
+
+                    return result;
+                }
+                catch (Exception) when (attempt == 0 && verifySucceeded != null)
+                {
+                    var verdict = await verifySucceeded(context, state, cancellationToken);
+                    Answers.Enqueue(verdict.IsSuccessful);
+                    if (verdict.IsSuccessful)
+                        return verdict.Result;
+                }
+            }
         }
     }
 
@@ -371,6 +424,15 @@ public class JobChangeTests : GameTestBase
     }
 
     private static ItemSlot Token(UserSession session) => session.Inventory[InventoryConstants.InventoryStart];
+
+    private static async Task StoreBagAsync(ServiceProvider provider, UserSession player)
+    {
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var stored = await db.Characters.SingleAsync(c => c.Id == PlayerId);
+        stored.Items = UserSessionBinaryState.SerializeItems(player.Inventory);
+        await db.SaveChangesAsync();
+    }
 
     private static async Task<Character> StoredAsync(ServiceProvider provider)
     {

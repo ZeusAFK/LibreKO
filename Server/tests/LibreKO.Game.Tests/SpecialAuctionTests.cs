@@ -30,6 +30,9 @@ public class SpecialAuctionTests : GameTestBase
     private const byte Notice = 5;
     private const byte Claim = 6;
     private const byte Log = 7;
+    private const int BidderId = 100;
+    private const int Purse = 10_000_000;
+    private const int OneCheck = 1;
 
     private sealed class Clock(DateTime start) : TimeProvider
     {
@@ -166,7 +169,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000);
+        var player = Join(provider, BidderId, "Bidder", Purse);
 
         var reply = await Send(provider, player, Today);
 
@@ -188,7 +191,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        var player = Join(provider, BidderId, "Bidder", Purse, checks: OneCheck);
 
         (await PlaceBid(provider, player, 0, Earrings, 5 * Million, 0)).ReadShort().Should().Be(1);
 
@@ -219,7 +222,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000, checks);
+        var player = Join(provider, BidderId, "Bidder", Purse, checks);
 
         (await PlaceBid(provider, player, 0, Earrings, coins)).ReadShort().Should().Be(expected);
         player.Session.Money.Should().Be(10_000_000);
@@ -230,7 +233,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000);
+        var player = Join(provider, BidderId, "Bidder", Purse);
 
         (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 3)).ReadShort().Should().Be(-2);
     }
@@ -240,7 +243,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        var player = Join(provider, BidderId, "Bidder", Purse, checks: OneCheck);
         var offered = player.Session.Inventory[InventoryConstants.SlotMax];
         offered.Count = 0;
         player.Session.Trade.ExchangeUser = 200;
@@ -258,7 +261,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        var player = Join(provider, BidderId, "Bidder", Purse, checks: OneCheck);
         player.Session.Inventory[InventoryConstants.SlotMax].ExpiresAt = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds();
 
         (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 0)).ReadShort()
@@ -271,7 +274,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        var player = Join(provider, BidderId, "Bidder", Purse, checks: OneCheck);
         player.Session.Inventory[InventoryConstants.SlotMax].Count = 0;
 
         (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 0)).ReadShort()
@@ -284,7 +287,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        var player = Join(provider, BidderId, "Bidder", Purse, checks: OneCheck);
         player.Session.Trade.MerchantState = MerchantMode.Selling;
 
         (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 0)).ReadShort()
@@ -297,7 +300,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000);
+        var player = Join(provider, BidderId, "Bidder", Purse);
 
         var reply = await Send(provider, player, Bid, p =>
         {
@@ -317,7 +320,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000);
+        var player = Join(provider, BidderId, "Bidder", Purse);
 
         (await PlaceBid(provider, player, 0, Earrings, 2 * Million)).ReadShort().Should().Be(1);
         (await PlaceBid(provider, player, 0, Earrings, 4 * Million)).ReadShort().Should().Be(-7);
@@ -328,7 +331,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var first = Join(provider, 100, "First", 10_000_000, checks: 1);
+        var first = Join(provider, BidderId, "First", Purse, checks: OneCheck);
         var second = Join(provider, 200, "Second", 10_000_000, checks: 2);
 
         (await PlaceBid(provider, first, 0, Earrings, 2 * Million, 0)).ReadShort().Should().Be(1);
@@ -360,7 +363,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, clock) = Provider();
         using var _p = provider;
-        var winner = Join(provider, 100, "Winner", 10_000_000);
+        var winner = Join(provider, BidderId, "Winner", Purse);
         var watcher = Join(provider, 200, "Watcher", 0);
 
         (await PlaceBid(provider, winner, 0, Earrings, 3 * Million)).ReadShort().Should().Be(1);
@@ -410,7 +413,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var winner = Join(provider, 100, "Winner", 0);
+        var winner = Join(provider, BidderId, "Winner", 0);
         FillBagLeaving(winner.Session, 1);
         SeedWin(provider, winner, Earrings, count: 2);
 
@@ -429,7 +432,7 @@ public class SpecialAuctionTests : GameTestBase
         var faults = new Faults(context => context.ChangeTracker.Entries<AuctionBid>().Any(entry => entry.State == EntityState.Added));
         var (provider, _) = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
         using var _p = provider;
-        var bidder = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        var bidder = Join(provider, BidderId, "Bidder", Purse, checks: OneCheck);
 
         (await PlaceBid(provider, bidder, 0, Earrings, 2 * Million, 0)).ReadShort().Should().NotBe(1);
 
@@ -456,7 +459,7 @@ public class SpecialAuctionTests : GameTestBase
         };
         var (provider, _) = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(sale)));
         using var _p = provider;
-        bidder = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        bidder = Join(provider, BidderId, "Bidder", Purse, checks: OneCheck);
 
         (await PlaceBid(provider, bidder, 0, Earrings, 2 * Million, 0)).ReadShort()
             .Should().Be(coins ? SpecialAuctionPacketWriter.NotEnoughBalance : SpecialAuctionPacketWriter.WrongChecks);
@@ -473,7 +476,7 @@ public class SpecialAuctionTests : GameTestBase
             .Any(entry => entry.State == EntityState.Modified && entry.Entity.ClosedAt != null));
         var (provider, _) = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
         using var _p = provider;
-        var first = Join(provider, 100, "First", 10_000_000, checks: 1);
+        var first = Join(provider, BidderId, "First", Purse, checks: OneCheck);
         var second = Join(provider, 200, "Second", 10_000_000, checks: 2);
         (await PlaceBid(provider, first, 0, Earrings, 2 * Million, 0)).ReadShort().Should().Be(1);
         (await PlaceBid(provider, second, 0, Earrings, 2 * Million, 0, 1)).ReadShort().Should().Be(1);
@@ -502,7 +505,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var first = Join(provider, 100, "First", 10_000_000, checks: 1);
+        var first = Join(provider, BidderId, "First", Purse, checks: OneCheck);
         var second = Join(provider, 200, "Second", 10_000_000, checks: 2);
         (await PlaceBid(provider, first, 0, Earrings, 2 * Million, 0)).ReadShort().Should().Be(1);
         (await PlaceBid(provider, second, 0, Earrings, 2 * Million, 0, 1)).ReadShort().Should().Be(1);
@@ -535,7 +538,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Wanderer", 10_000_000, checks: 1);
+        var player = Join(provider, BidderId, "Wanderer", Purse, checks: OneCheck);
         SeedWin(provider, player, Earrings, count: 1);
         player.Session.Quest.EventNpcUniqueId = 0;
 
@@ -554,7 +557,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var first = Join(provider, 100, "First", 10_000_000, checks: 1);
+        var first = Join(provider, BidderId, "First", Purse, checks: OneCheck);
         var second = Join(provider, 200, "Second", 10_000_000, checks: 2);
         (await PlaceBid(provider, first, 0, Earrings, 2 * Million, 0)).ReadShort().Should().Be(1);
         (await PlaceBid(provider, second, 0, Earrings, 2 * Million, 0, 1)).ReadShort().Should().Be(1);
@@ -645,7 +648,7 @@ public class SpecialAuctionTests : GameTestBase
     {
         var (provider, _) = Provider();
         using var _p = provider;
-        var player = Join(provider, 100, "Bidder", 10_000_000);
+        var player = Join(provider, BidderId, "Bidder", Purse);
 
         (await provider.GetRequiredService<ISpecialAuctionService>().HasOpenAuctionAsync(100)).Should().BeFalse();
         (await PlaceBid(provider, player, 0, Earrings, 2 * Million)).ReadShort().Should().Be(1);

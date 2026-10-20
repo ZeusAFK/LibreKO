@@ -16,6 +16,7 @@ public class ClanFundTests : GameTestBase
     private const short ClanId = 90;
     private const int PlayerId = 660;
     private const int Small = 10;
+    private static readonly TimeSpan LockWait = TimeSpan.FromSeconds(5);
 
     [Fact]
     public void FundChangesArrivingTogetherAllCount()
@@ -100,7 +101,7 @@ public class ClanFundTests : GameTestBase
     }
 
     [Fact]
-    public async Task AGainForAPlayerNoLongerInTheClanContributesNothingToIt()
+    public void AGainForAPlayerPutOutOfTheClanMeanwhileContributesNothingToIt()
     {
         using var provider = Provider();
         var clan = Clan(fund: 0);
@@ -108,11 +109,25 @@ public class ClanFundTests : GameTestBase
         var player = Player(provider);
         player.KnightsId = ClanId;
         var loyalty = provider.GetRequiredService<ILoyaltyService>();
-        player.KnightsId = 0;
+        using var holding = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = new Thread(() => player.WithLock(s =>
+        {
+            holding.Set();
+            release.Wait();
+            s.KnightsId = 0;
+        }));
+        holder.Start();
+        holding.Wait();
+        var gainer = new Thread(() => loyalty.ChangeAsync(player, 1).GetAwaiter().GetResult());
 
-        await loyalty.ChangeAsync(player, 1);
+        gainer.Start();
+        SpinWait.SpinUntil(() => gainer.ThreadState.HasFlag(ThreadState.WaitSleepJoin), LockWait).Should().BeTrue("the gain waits for the player's lock");
+        release.Set();
+        holder.Join();
+        gainer.Join();
 
-        clan.ClanPointFund.Should().Be(0);
+        clan.ClanPointFund.Should().Be(0, "the player was out of the clan by the time the gain was counted");
         player.KnightsPoints.Should().Be(0);
         player.Loyalty.Should().Be(1);
     }

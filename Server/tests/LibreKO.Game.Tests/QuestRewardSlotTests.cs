@@ -21,6 +21,8 @@ public class QuestRewardSlotTests
     private const int Reward = 123;
     private const int BackHalfSlot = 20;
     private const int NoFreeSlot = -1;
+    private const short Warrior = 101;
+    private const byte Kurian = (byte)JobChangeTarget.Kurian;
     private const int Token = JobChangeRules.MasterChangeScroll;
     private const ushort Held = 50;
     private const ushort Given = 10;
@@ -98,12 +100,12 @@ public class QuestRewardSlotTests
     [Fact]
     public void AJobChangeTokenInTheBackHalfOfTheBagNamesThatSlot()
     {
-        session.Class = 101;
+        session.Class = Warrior;
         session.Race = 1;
         session.Nation = AccountNation.Karus;
         Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
 
-        context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeTrue();
+        context.Character.JobChange(0, changeType: 0, newJob: Kurian).Should().BeTrue();
 
         CountChangePositions().Should().Equal((byte)BackHalfSlot);
     }
@@ -111,7 +113,7 @@ public class QuestRewardSlotTests
     [Fact]
     public void AQuestJobChangeResetsTheStatsAndIsSavedWithItsRace()
     {
-        session.Class = 101;
+        session.Class = Warrior;
         session.Race = 1;
         session.Nation = AccountNation.Karus;
         session.Level = JobLevel;
@@ -119,7 +121,7 @@ public class QuestRewardSlotTests
         session.StatPoints = 0;
         Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
 
-        context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeTrue();
+        context.Character.JobChange(0, changeType: 0, newJob: Kurian).Should().BeTrue();
 
         session.StatPoints.Should().Be(ProgressionTable.StatPointsForLevel(JobLevel), "a new job starts from its own base stats, as the packet path does");
         session.Strength.Should().NotBe(SpentStrength);
@@ -137,7 +139,7 @@ public class QuestRewardSlotTests
     [InlineData(Tie.Fighting)]
     public void APlayerTiedUpKeepsTheTokenAndTheJobAQuestWouldChange(Tie tie)
     {
-        session.Class = 101;
+        session.Class = Warrior;
         session.Race = 1;
         session.Nation = AccountNation.Karus;
         switch (tie)
@@ -157,7 +159,7 @@ public class QuestRewardSlotTests
         }
         Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
 
-        context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeFalse();
+        context.Character.JobChange(0, changeType: 0, newJob: Kurian).Should().BeFalse();
 
         session.Class.Should().Be(101);
         Bag(BackHalfSlot).ItemId.Should().Be(JobChangeRules.MasterChangeScroll,

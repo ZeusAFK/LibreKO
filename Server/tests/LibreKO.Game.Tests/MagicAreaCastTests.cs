@@ -90,11 +90,11 @@ public class MagicAreaCastTests : GameTestBase
     {
         using var provider = Provider();
         var warrior = Player(provider, 783, AccountNation.Karus, Here, Moradon);
-        var worm = Worm(provider, Here + 2);
+        NpcInstance[] worms = [Worm(provider, Here + 1), Worm(provider, Here + 2), Worm(provider, Here + 3)];
 
         await Cast(provider, warrior, skill, AreaTarget, Here + 2, Here);
 
-        (worm.Hp < WormHp).Should().Be(hurt);
+        worms.Any(worm => worm.Hp < WormHp).Should().Be(hurt, "each blow of a sweep can miss on its own, but not all three together");
     }
 
     private static ServiceProvider Provider() => CreateProvider(_ => { }, gameData =>

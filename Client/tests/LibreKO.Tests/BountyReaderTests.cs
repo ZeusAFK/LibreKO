@@ -74,6 +74,37 @@ public class BountyReaderTests
     }
 
     [Fact]
+    public void EachRowOfALongerListKeepsItsOwnStanding()
+    {
+        var (dispatcher, session) = Readers();
+        List<BountyEntry>? listed = null;
+        session.Bounty.BountyListEvent += list => listed = list;
+        BountyEntry[] rows =
+        [
+            new() { Id = BountyId, Target = "First", Poster = "Poster", Reward = BountyId, Standing = BountyStanding.Own },
+            new() { Id = BountyId + 1, Target = "Second", Poster = "Other", Reward = BountyId + 1, Standing = BountyStanding.Earned },
+        ];
+        var p = new Packet(GameOpcodes.GS_BOUNTY);
+        p.WriteByte((byte)BountySubOpcode.List);
+        p.WriteUShort((ushort)rows.Length);
+        foreach (var row in rows)
+        {
+            p.WriteInt(row.Id);
+            p.WriteSByteString(row.Target);
+            p.WriteSByteString(row.Poster);
+            p.WriteInt(row.Reward);
+            p.WriteByte((byte)row.Standing);
+        }
+
+        p.ResetOffset();
+
+        dispatcher.Dispatch(p);
+
+        Assert.Equal(rows.Select(row => (row.Id, row.Target, row.Poster, row.Reward, row.Standing)),
+            listed!.Select(row => (row.Id, row.Target, row.Poster, row.Reward, row.Standing)));
+    }
+
+    [Fact]
     public void AClaimResultReachesTheBoard()
     {
         var (dispatcher, session) = Readers();

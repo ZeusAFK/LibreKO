@@ -21,6 +21,7 @@ public class WorldTests : GameTestBase
     private const byte ResetRace = 1;
     private const int ResetPurse = 2_000_000;
     private const byte SpentStrength = 80;
+
     [Fact]
     public void NpcInstance_UsesNpcSpawnStyle_DistinguishesMonsterFromNpcStyleSpawn()
     {
