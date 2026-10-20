@@ -27,6 +27,7 @@ public class BusyGateTests : GameTestBase
     private const int ShopNpcId = 5000;
     private const int SellingGroup = 1;
     private const string RecipientName = "Recipient";
+    private const string SenderName = "Busy";
 
     [Theory]
     [InlineData(Busy.None)]
@@ -291,6 +292,7 @@ public class BusyGateTests : GameTestBase
         {
             if (!seedRecipient)
                 return;
+            db.Characters.Add(new Character { Id = CharacterId, AccountId = CharacterId + 1000, Name = SenderName });
             db.Characters.Add(new Character
             {
                 AccountId = 1,
@@ -327,7 +329,7 @@ public class BusyGateTests : GameTestBase
         client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, CharacterId, CharacterId + 1000);
-        session.Name = "Busy";
+        session.Name = SenderName;
         session.Hp = 100;
         session.ZoneId = 1;
         session.X = 10;

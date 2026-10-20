@@ -43,11 +43,13 @@ public class ItemExpiryService(
                 await session.Client.SendPacket(WarehousePacketWriter.VipKeyExpired(VipVault.OwnStorage));
             }
 
-            ItemExpiry.Sweep(session.Warehouse, nowUnixSeconds);
-            ItemExpiry.Sweep(session.VipWarehouse, nowUnixSeconds);
-
-            var cleared = ItemExpiry.Sweep(session.Inventory, nowUnixSeconds,
-                InventoryConstants.InventoryStart, InventoryConstants.HaveMax);
+            // Under the player's lock, so no handler sees an item it has checked vanish before it takes it.
+            var cleared = session.WithLock(s =>
+            {
+                ItemExpiry.Sweep(s.Warehouse, nowUnixSeconds);
+                ItemExpiry.Sweep(s.VipWarehouse, nowUnixSeconds);
+                return ItemExpiry.Sweep(s.Inventory, nowUnixSeconds, InventoryConstants.InventoryStart, InventoryConstants.HaveMax);
+            });
             if (cleared.Count == 0)
                 continue;
 

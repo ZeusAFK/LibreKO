@@ -719,6 +719,7 @@ public class ShoppingMallTests : GameTestBase
                     Items = new byte[InventoryConstants.InventoryTotal * 8],
                     SkillPointData = new byte[9]
                 });
+                db.Characters.Add(new Character { Id = 26, AccountId = 36, Name = "Sender" });
             },
             gameData =>
             {
@@ -799,6 +800,7 @@ public class ShoppingMallTests : GameTestBase
                     Items = new byte[InventoryConstants.InventoryTotal * 8],
                     SkillPointData = new byte[9]
                 });
+                db.Characters.Add(new Character { Id = 27, AccountId = 37, Name = "Sender" });
             },
             gameData =>
             {
@@ -934,11 +936,13 @@ public class ShoppingMallTests : GameTestBase
         const int serial = 4242;
 
         using var provider = CreateProvider(
-            db => db.Characters.Add(new Character
-            {
-                AccountId = 1, Slot = 0, Name = "Recipient", Race = 1, Class = 101, Face = 1, Hair = 1, Level = 10,
-                Hp = 100, Mp = 100, MapId = 1, Items = new byte[InventoryConstants.InventoryTotal * 8], SkillPointData = new byte[9],
-            }),
+            db => db.Characters.AddRange(
+                new Character
+                {
+                    AccountId = 1, Slot = 0, Name = "Recipient", Race = 1, Class = 101, Face = 1, Hair = 1, Level = 10,
+                    Hp = 100, Mp = 100, MapId = 1, Items = new byte[InventoryConstants.InventoryTotal * 8], SkillPointData = new byte[9],
+                },
+                new Character { Id = 29, AccountId = 39, Name = "Sender" }),
             gameData => gameData.GetItem(InventoryConstants.CypherRing).Returns(new ItemData
             {
                 Num = InventoryConstants.CypherRing, Duration = 1,
@@ -1158,5 +1162,156 @@ public class ShoppingMallTests : GameTestBase
         await using var scope = provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         (await db.MailBoxes.SingleAsync(mail => mail.LetterId == letterId)).Status.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ALetterToASealedCharacterIsRefusedAndTheRingStays()
+    {
+        const int sealedId = 77;
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { Id = sealedId, AccountId = 1, Name = "Sealed", Sealed = true },
+                new Character { Id = 30, AccountId = 40, Name = "Sender" }),
+            gameData => gameData.GetItem(InventoryConstants.CypherRing).Returns(new ItemData
+            {
+                Num = InventoryConstants.CypherRing, Duration = 1,
+            }));
+        var (session, client, sent) = LetterWriter(provider, characterId: 30, accountId: 40);
+        var ring = session.Inventory[InventoryConstants.InventoryStart];
+        ring.ItemId = InventoryConstants.CypherRing;
+        ring.Count = 1;
+        ring.UniqueId = sealedId;
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>()
+            .HandleAsync(client, LetterWithItem("Sealed", InventoryConstants.CypherRing, 0));
+
+        LetterResult(sent).Should().Be(unchecked((byte)-1));
+        ring.UniqueId.Should().Be(sealedId, "a sealed character could never log in to take back the ring that unseals it");
+        session.Money.Should().Be(20000);
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ALetterToADeletedCharacterIsRefused()
+    {
+        const int itemId = 810002000;
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { AccountId = 1, Name = "Gone", DeletionTime = DateTime.UtcNow },
+                new Character { Id = 33, AccountId = 43, Name = "Sender" }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Race = 1 }));
+        var (session, client, sent) = LetterWriter(provider, characterId: 33, accountId: 43);
+        var item = session.Inventory[InventoryConstants.InventoryStart];
+        item.ItemId = itemId;
+        item.Count = 1;
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>()
+            .HandleAsync(client, LetterWithItem("Gone", itemId, 0));
+
+        LetterResult(sent).Should().Be(unchecked((byte)-1));
+        item.ItemId.Should().Be(itemId, "no one will ever read it");
+        session.Money.Should().Be(20000);
+    }
+
+    [Fact]
+    public async Task ALetterWhoseSaveFailsKeepsTheItemAndTheGold()
+    {
+        const int itemId = 810002000;
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { AccountId = 1, Name = "Recipient" },
+                new Character { Id = 31, AccountId = 41, Name = "Sender" }),
+            gameData => gameData.GetItem(itemId).Returns(new ItemData { Num = itemId, Race = 1 }),
+            configureServices: services => services.ConfigureDbContext<AppDbContext>(
+                options => options.AddInterceptors(new LetterSaveFaults())));
+        var (session, client, sent) = LetterWriter(provider, characterId: 31, accountId: 41);
+        var item = session.Inventory[InventoryConstants.InventoryStart];
+        item.ItemId = itemId;
+        item.Count = 1;
+        item.Durability = 25;
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>()
+            .HandleAsync(client, LetterWithItem("Recipient", itemId, 0));
+
+        LetterResult(sent).Should().Be(unchecked((byte)-1));
+        item.ItemId.Should().Be(itemId, "the letter and the bag are saved together or not at all");
+        item.Durability.Should().Be(25);
+        session.Money.Should().Be(20000);
+    }
+
+    [Fact]
+    public async Task ALetterStillHoldingItsItemIsNotDeleted()
+    {
+        using var provider = CreateProvider(db => db.MailBoxes.AddRange(
+            new MailBox { RecipientId = "Mailer", Type = 2, Status = 1, ItemId = InventoryConstants.CypherRing, Count = 1 },
+            new MailBox { RecipientId = "Mailer", Type = 2, Status = 2, ItemId = InventoryConstants.CypherRing, Count = 1 },
+            new MailBox { RecipientId = "Mailer", Type = 1, Status = 1 }));
+        var (session, client, _) = LetterWriter(provider, characterId: 32, accountId: 42);
+        session.Name = "Mailer";
+        int[] ids;
+        await using (var scope = provider.CreateAsyncScope())
+            ids = await scope.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.OrderBy(mail => mail.LetterId).Select(mail => mail.LetterId).ToArrayAsync();
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(6);
+        request.WriteByte(7);
+        request.WriteByte((byte)ids.Length);
+        foreach (var id in ids)
+            request.WriteInt(id);
+
+        await provider.GetRequiredService<IShoppingMallPacketCoordinator>().HandleAsync(client, request);
+
+        await using var check = provider.CreateAsyncScope();
+        var kept = await check.ServiceProvider.GetRequiredService<AppDbContext>().MailBoxes.Where(mail => !mail.Deleted).ToListAsync();
+        kept.Should().ContainSingle("only the letter whose ring was never taken stays")
+            .Which.LetterId.Should().Be(ids[0]);
+    }
+
+    private static (UserSession Session, IClient Client, List<Packet> Sent) LetterWriter(ServiceProvider provider, int characterId, int accountId)
+    {
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sent = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sent.Add(packet)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId, accountId);
+        session.Hp = 100;
+        session.Name = "Sender";
+        session.Money = 20000;
+        session.Stats = new DerivedStats { MaxWeight = 10_000 };
+        return (session, client, sent);
+    }
+
+    private static Packet LetterWithItem(string recipient, int itemId, byte bagPosition)
+    {
+        var request = new Packet(GameOpcodes.GS_SHOPPING_MALL);
+        request.WriteByte(6);
+        request.WriteByte(6);
+        request.WriteSByteString(recipient);
+        request.WriteSByteString("Subject");
+        request.WriteByte(2);
+        request.WriteInt(itemId);
+        request.WriteByte(bagPosition);
+        request.WriteInt(0);
+        request.WriteString("Message");
+        return request;
+    }
+
+    private static byte LetterResult(List<Packet> sent)
+    {
+        var response = sent.Last(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_SHOPPING_MALL);
+        response.ResetOffset();
+        response.ReadByte();
+        response.ReadByte();
+        return response.ReadByte();
+    }
+
+    private sealed class LetterSaveFaults : Microsoft.EntityFrameworkCore.Diagnostics.SaveChangesInterceptor
+    {
+        public override ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>> SavingChangesAsync(
+            Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData eventData,
+            Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            eventData.Context?.ChangeTracker.Entries<MailBox>().Any(entry => entry.State == EntityState.Added) == true
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 }

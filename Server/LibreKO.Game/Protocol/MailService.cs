@@ -37,8 +37,13 @@ public class MailService(
     IUserNotificationService userNotificationService,
     IPlayerProgressionService playerProgressionService,
     ILoyaltyService loyaltyService,
+    ICharacterStatePersister statePersister,
     ILogger<MailService> logger) : IMailService
 {
+    private const string BusySender = "You cannot send mail while trading, keeping a stall, gathering or dead.";
+    private const string NotThatMuchGold = "You do not carry that much gold.";
+    private const string CannotAttach = "That item cannot be attached.";
+
     public async Task SendSystemMailAsync(int recipientCharacterId, string subject, string body, IReadOnlyList<MailAttachmentDraft> attachments, MailKind kind = MailKind.System)
     {
         using var scope = scopeFactory.CreateScope();
@@ -105,7 +110,7 @@ public class MailService(
 
         if (session.IsBusy)
         {
-            await Fail(session, "You cannot send mail while trading, keeping a stall, gathering or dead.");
+            await Fail(session, BusySender);
             return;
         }
 
@@ -121,9 +126,9 @@ public class MailService(
             return;
         }
 
-        if (gold < 0 || gold > session.Money)
+        if (gold < 0)
         {
-            await Fail(session, "You do not carry that much gold.");
+            await Fail(session, NotThatMuchGold);
             return;
         }
 
@@ -133,40 +138,11 @@ public class MailService(
             return;
         }
 
-        var drafts = new List<MailAttachmentDraft>();
-        var picks = new List<(int Slot, ushort Count, ItemData Item)>();
-        var seenSlots = new HashSet<int>();
-        foreach (var pick in items)
-        {
-            var slot = pick.Slot;
-            if (slot < InventoryConstants.InventoryStart || slot >= InventoryConstants.InventoryStart + InventoryConstants.HaveMax || !seenSlots.Add(slot))
-            {
-                await Fail(session, "That item cannot be attached.");
-                return;
-            }
-
-            var entry = session.Inventory[slot];
-            var itemData = entry.IsEmpty ? null : gameDataService.GetItem(entry.ItemId);
-            if (itemData == null || pick.Count == 0 || pick.Count > entry.Count)
-            {
-                await Fail(session, "That item cannot be attached.");
-                return;
-            }
-
-            if (!entry.IsTradable || !ExchangeTransferService.IsTradableItem(itemData, entry.ItemId, (byte)(slot - InventoryConstants.InventoryStart)))
-            {
-                await Fail(session, $"{itemData.Name} cannot be traded, so it cannot be mailed.");
-                return;
-            }
-
-            picks.Add((slot, pick.Count, itemData));
-        }
-
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var recipient = await db.Characters
-            .Where(c => c.Name == recipientName)
-            .Select(c => new { c.Id, c.Name })
+            .Where(c => c.Name == recipientName && c.DeletionTime == null)
+            .Select(c => new { c.Id, c.Name, c.Sealed })
             .FirstOrDefaultAsync();
         if (recipient == null)
         {
@@ -174,33 +150,45 @@ public class MailService(
             return;
         }
 
-        foreach (var (slot, count, itemData) in picks)
+        // A sealed character cannot log in, so a mail to it could hold the very ring that unseals it.
+        if (recipient.Sealed)
+        {
+            await Fail(session, $"{recipient.Name} is sealed and cannot receive mail.");
+            return;
+        }
+
+        var drafts = new List<MailAttachmentDraft>();
+        var taken = new List<(int Slot, ExchangeItem Item)>();
+        string? refusal = null;
+        var outcome = await statePersister.CommitAsync(session, unitOfWork =>
+        {
+            refusal = session.WithLock(s => TakeAttachments(s, gold, items, drafts, taken));
+            if (refusal != null)
+                return Task.FromResult(false);
+
+            unitOfWork.Mails.Add(NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts, MailKind.Player));
+            return Task.FromResult(true);
+        }, () => session.WithLock(s => GiveBackAttachments(s, gold, taken)));
+        if (outcome != StateCommit.Saved)
+        {
+            await Fail(session, refusal ?? "The mail could not be sent.");
+            return;
+        }
+
+        foreach (var (slot, _) in taken)
         {
             var entry = session.Inventory[slot];
-            var sent = new MailAttachmentDraft(MailAttachmentKind.Item, itemData.Num, count,
-                count == entry.Count ? entry.Durability : itemData.Duration, entry.Flag, entry.ExpiresAt, entry.UniqueId);
-            entry.Count = (ushort)(entry.Count - count);
-            if (entry.Count == 0)
-                entry.Clear();
-            drafts.Add(sent);
             await userNotificationService.SendStackChangeAsync(session, (byte)slot, entry.ItemId, entry.Count, entry.Durability);
         }
 
         if (gold > 0)
-        {
-            session.Money -= gold;
-            drafts.Add(new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, gold));
             await userNotificationService.SendGoldLossAsync(session, gold);
-        }
 
-        if (picks.Count > 0)
+        if (taken.Count > 0)
         {
             session.RecalculateStatsWithBuffs(gameDataService);
             await userNotificationService.SendWeightChangeAsync(session);
         }
-
-        db.Mails.Add(NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts, MailKind.Player));
-        await db.SaveChangesAsync();
 
         logger.LogInformation("{Sender} mailed {Recipient}: '{Subject}' with {Attachments} attachments", session.Name, recipient.Name, subject, drafts.Count);
         await session.Client.SendPacket(MailPacketWriter.SendResult(true, $"Mail sent to {recipient.Name}."));
@@ -208,6 +196,72 @@ public class MailService(
         var online = sessionManager.GetByCharacterId(recipient.Id);
         if (online != null)
             await NotifyNewMailAsync(online, session.Name, db);
+    }
+
+    // Checked and taken in one locked step, so nothing can change or expire an item in between.
+    private string? TakeAttachments(UserSession session, int gold, IReadOnlyList<MailItemPick> items,
+        List<MailAttachmentDraft> drafts, List<(int Slot, ExchangeItem Item)> taken)
+    {
+        if (session.IsBusy)
+            return BusySender;
+
+        if (gold > session.Money)
+            return NotThatMuchGold;
+
+        var picks = new List<(int Slot, ushort Count, ItemData Item)>();
+        var seenSlots = new HashSet<int>();
+        foreach (var pick in items)
+        {
+            var slot = pick.Slot;
+            if (slot < InventoryConstants.InventoryStart || slot >= InventoryConstants.InventoryStart + InventoryConstants.HaveMax || !seenSlots.Add(slot))
+                return CannotAttach;
+
+            var entry = session.Inventory[slot];
+            var itemData = entry.IsEmpty ? null : gameDataService.GetItem(entry.ItemId);
+            if (itemData == null || pick.Count == 0 || pick.Count > entry.Count)
+                return CannotAttach;
+
+            if (!entry.IsTradable || !ExchangeTransferService.IsTradableItem(itemData, entry.ItemId, (byte)(slot - InventoryConstants.InventoryStart)))
+                return $"{itemData.Name} cannot be traded, so it cannot be mailed.";
+
+            picks.Add((slot, pick.Count, itemData));
+        }
+
+        foreach (var (slot, count, itemData) in picks)
+        {
+            var entry = session.Inventory[slot];
+            drafts.Add(new MailAttachmentDraft(MailAttachmentKind.Item, itemData.Num, count,
+                count == entry.Count ? entry.Durability : itemData.Duration, entry.Flag, entry.ExpiresAt, entry.UniqueId));
+            taken.Add((slot, new ExchangeItem
+            {
+                ItemId = entry.ItemId, Count = count, Durability = entry.Durability, Flag = entry.Flag,
+                ExpiresAt = entry.ExpiresAt, UniqueId = entry.UniqueId, Countable = itemData.Countable != 0,
+            }));
+            entry.Count = (ushort)(entry.Count - count);
+            if (entry.Count == 0)
+                entry.Clear();
+        }
+
+        if (gold > 0)
+        {
+            session.Money -= gold;
+            drafts.Add(new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, gold));
+        }
+
+        return null;
+    }
+
+    private void GiveBackAttachments(UserSession session, int gold, List<(int Slot, ExchangeItem Item)> taken)
+    {
+        session.Money = (int)Math.Min((long)session.Money + gold, ExchangePacketConstants.CoinMax);
+        foreach (var (slot, item) in taken)
+        {
+            var back = ItemPlacement.FindForReturn(session.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item, slot);
+            if (back >= 0)
+                ItemPlacement.Put(session.Inventory[back], item);
+            else
+                logger.LogError("{Name}'s unsent mail item {ItemId} x{Count} found no room to come back", session.Name, item.ItemId, item.Count);
+        }
     }
 
     public async Task DeleteAsync(UserSession session, int mailId)

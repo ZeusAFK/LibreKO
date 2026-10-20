@@ -8,7 +8,9 @@ using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -24,8 +26,17 @@ public class MailServiceTests : GameTestBase
     private const int SealedCharacter = 4242;
     private const ushort Held = 3;
     private const ushort Sent = 5;
+    private const int SealedAccount = 3;
+    private const string SealedName = "Sealed";
+    private const int GoneId = 5;
+    private const int GoneAccount = 5;
+    private const string GoneName = "Gone";
+    private const int Purse = 1_000;
+    private const int MailedGold = 100;
+    private const long LongExpired = 1;
+    private static readonly TimeSpan SweepGrace = TimeSpan.FromMilliseconds(300);
 
-    private static ServiceProvider Provider() => CreateProvider(
+    private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null) => CreateProvider(
         db => db.Characters.AddRange(
             new Character { Id = AliceId, AccountId = 1, Name = "Alice" },
             new Character { Id = BobId, AccountId = 2, Name = "Bob" }),
@@ -37,7 +48,8 @@ public class MailServiceTests : GameTestBase
             {
                 Num = InventoryConstants.CypherRing, Name = "Cypher Ring", Countable = 0, Duration = 1, Weight = 1,
             });
-        });
+        },
+        configureServices: configureServices);
 
     private static void FillBagLeaving(UserSession session, int freeSlots)
     {
@@ -629,4 +641,123 @@ public class MailServiceTests : GameTestBase
 
     private static int UnreadPackets(List<Packet> sent) =>
         sent.Count(p => p.GetOpcode() == (byte)GameOpcodes.GS_MAIL && p.GetData()[0] == MailPacketWriter.SubUnread);
+
+    [Fact]
+    public async Task AMailToASealedCharacterIsRefusedAndTheRingStays()
+    {
+        using var provider = Provider();
+        await AddCharacterAsync(provider, new Character { Id = SealedCharacter, AccountId = SealedAccount, Name = SealedName, Sealed = true });
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        var ring = alice.Inventory[InventoryConstants.InventoryStart];
+        ring.ItemId = InventoryConstants.CypherRing;
+        ring.Count = 1;
+        ring.UniqueId = SealedCharacter;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, SealedName, "Your ring", "", 0,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, 1)]);
+
+        ring.ItemId.Should().Be(InventoryConstants.CypherRing, "a sealed character could never log in to take back the ring that unseals it");
+        ring.UniqueId.Should().Be(SealedCharacter);
+        (await MailCountAsync(provider)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AMailToADeletedCharacterIsRefused()
+    {
+        using var provider = Provider();
+        await AddCharacterAsync(provider, new Character { Id = GoneId, AccountId = GoneAccount, Name = GoneName, DeletionTime = DateTime.UtcNow });
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        alice.Money = Purse;
+        var apples = alice.Inventory[InventoryConstants.InventoryStart];
+        apples.ItemId = Apple;
+        apples.Count = Sent;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, GoneName, "Apples", "", MailedGold,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, Held)]);
+
+        apples.Count.Should().Be(Sent, "no one will ever read it");
+        alice.Money.Should().Be(Purse);
+        (await MailCountAsync(provider)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AMailWhoseSaveFailsKeepsTheItemsAndTheGold()
+    {
+        var faults = new MailSaveFaults();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        alice.Money = Purse;
+        var apples = alice.Inventory[InventoryConstants.InventoryStart];
+        apples.ItemId = Apple;
+        apples.Count = Sent;
+        var sword = alice.Inventory[InventoryConstants.InventoryStart + 1];
+        sword.ItemId = Sword;
+        sword.Count = 1;
+        sword.ExpiresAt = RentalEnds;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Kit", "", MailedGold,
+        [
+            new MailItemPick((byte)InventoryConstants.InventoryStart, Held),
+            new MailItemPick((byte)(InventoryConstants.InventoryStart + 1), 1),
+        ]);
+
+        apples.Count.Should().Be(Sent, "the mail and the bag are saved together or not at all");
+        sword.ItemId.Should().Be(Sword);
+        sword.ExpiresAt.Should().Be(RentalEnds);
+        alice.Money.Should().Be(Purse);
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task TheExpirySweepWaitsForThePlayersLock()
+    {
+        using var provider = Provider();
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        var rented = alice.Inventory[InventoryConstants.InventoryStart];
+        rented.ItemId = Sword;
+        rented.Count = 1;
+        rented.ExpiresAt = LongExpired;
+        var expiry = new ItemExpiryService(provider.GetRequiredService<SessionManager>(), NullLogger<ItemExpiryService>.Instance);
+        using var inside = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = Task.Run(() => alice.WithLock(_ =>
+        {
+            inside.Set();
+            release.Wait();
+        }));
+        inside.Wait();
+
+        var sweep = Task.Run(() => expiry.ProcessTickAsync(DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
+        await Task.WhenAny(sweep, Task.Delay(SweepGrace));
+        var whileHeld = rented.ItemId;
+        release.Set();
+        await holder;
+        await sweep;
+
+        whileHeld.Should().Be(Sword, "a handler holding the lock has checked the item and is about to take it");
+        rented.IsEmpty.Should().BeTrue();
+    }
+
+    private static async Task AddCharacterAsync(ServiceProvider provider, Character character)
+    {
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Characters.Add(character);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task<int> MailCountAsync(ServiceProvider provider)
+    {
+        using var scope = provider.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.CountAsync();
+    }
+
+    private sealed class MailSaveFaults : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            eventData.Context?.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added) == true
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
 }
