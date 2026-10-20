@@ -396,6 +396,35 @@ public class TradeEscrowTests : GameTestBase
     }
 
     [Fact]
+    public async Task ASecondTradeAlsoWaitsForThePartnersAccept()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var firstClient = MakeClient();
+        var secondClient = MakeClient();
+        var first = MakeSession(sessionManager, firstClient, GiverId);
+        var second = MakeSession(sessionManager, secondClient, TakerId);
+        first.Money = Purse;
+        second.Money = Purse;
+        await SendAsync(provider, firstClient, RequestPacket(TakerId));
+        await SendAsync(provider, secondClient, AgreePacket(1));
+        await SendAsync(provider, firstClient, AddPacket(0, InventoryConstants.ItemGold, OfferedGold));
+        await SendAsync(provider, firstClient, DecidePacket());
+        await SendAsync(provider, secondClient, DecidePacket());
+        second.Money.Should().Be(Purse + OfferedGold, "the first trade completes");
+        var sentBefore = Sent(firstClient).Count;
+
+        await SendAsync(provider, secondClient, RequestPacket(GiverId));
+        await SendAsync(provider, secondClient, AddPacket(0, InventoryConstants.ItemGold, OfferedGold));
+        await SendAsync(provider, secondClient, DecidePacket());
+
+        second.Trade.ExchangeItemList.Should().BeEmpty("nothing can be offered before the partner accepts");
+        second.Money.Should().Be(Purse + OfferedGold);
+        Sent(firstClient).Skip(sentBefore).Should().NotContain(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE
+            && FirstByte(p) == ExchangePacketConstants.ExchangeOtherDecide);
+    }
+
+    [Fact]
     public async Task AnAcceptThatFindsTheAskerGoneElsewhereClosesTheWindow()
     {
         using var provider = CreateProvider(_ => { }, StockItems);

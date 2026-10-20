@@ -64,7 +64,6 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
 
         var agreed = packet.ReadByte();
         var target = sessionManager.GetByCharacterId(session.Trade.ExchangeUser);
-        // A refused request still hands back anything offered into escrow before the answer.
         if (target == null)
         {
             await SettleReturnAsync(session, session.WithLock(s => s.InitExchange(false)));

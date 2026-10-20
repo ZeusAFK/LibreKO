@@ -797,6 +797,7 @@ public class UserSession
         Trade.ExchangeItemList.Clear();
         Trade.ExchangeUser = -1;
         Trade.ExchangeOk = false;
+        Trade.ExchangeAccepted = false;
         Trade.AskedForExchange = false;
     }
 }
